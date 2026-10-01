@@ -35,6 +35,15 @@ interface QaHeaderMetricsProps {
   auditorName: string;
   onSelectAuditor: (name: string) => void;
   qaStaffList: QaStaffMember[];
+  templates?: SafeAny[];
+  activeTemplate?: SafeAny | null;
+  selectedTemplateCode?: string;
+  onSelectTemplateCode?: (code: string) => void;
+  evaluatedStaffId?: number | null;
+  onSelectEvaluatedStaff?: (staffId: number | null) => void;
+  isPreApproved?: boolean;
+  onTogglePreApproved?: (checked: boolean) => void;
+  allStaffList?: SafeAny[];
   isMobileFocusMode: boolean;
   onToggleMobileFocusMode: () => void;
   isMobileScreen: boolean;
@@ -64,6 +73,15 @@ export const QaHeaderMetrics: React.FC<QaHeaderMetricsProps> = ({
   auditorName,
   onSelectAuditor,
   qaStaffList,
+  templates = [],
+  activeTemplate,
+  selectedTemplateCode = '',
+  onSelectTemplateCode,
+  evaluatedStaffId,
+  onSelectEvaluatedStaff,
+  isPreApproved = false,
+  onTogglePreApproved,
+  allStaffList = [],
   isMobileFocusMode,
   onToggleMobileFocusMode,
   isMobileScreen,
@@ -266,6 +284,70 @@ export const QaHeaderMetrics: React.FC<QaHeaderMetricsProps> = ({
                 />
               </div>
 
+              <div className={styles.controlGroup}>
+                <Text className={`${styles.controlLabel} text-slate-600 dark:text-slate-400`}>Bộ Tiêu Chuẩn:</Text>
+                <Select
+                  aria-label="Chọn bộ tiêu chuẩn kiểm tra"
+                  value={activeTemplate?.code || selectedTemplateCode || ''}
+                  onChange={(val) => onSelectTemplateCode?.(val)}
+                  style={{ minWidth: 260 }}
+                  options={[
+                    {
+                      value: `${selectedBranch}.Reception.DAILY.check`,
+                      label: `🏬 Vận Hành Cửa Hàng & CSVC (${selectedBranch})`,
+                    },
+                    {
+                      value: 'CV.Personal.Grooming.Station.check',
+                      label: '💅 Tác Phong & Phòng Nối Mi KTV (Lộ Trình CV)',
+                    },
+                  ]}
+                />
+              </div>
+
+              {activeTemplate?.code === 'CV.Personal.Grooming.Station.check' && (
+                <>
+                  <div className={styles.controlGroup}>
+                    <Text className={`${styles.controlLabel} text-slate-600 dark:text-slate-400`}>
+                      Kỹ Thuật Viên Được Kiểm Định:
+                    </Text>
+                    <Select
+                      showSearch
+                      placeholder="Chọn KTV kiểm định..."
+                      aria-label="Chọn KTV kiểm định"
+                      value={evaluatedStaffId || undefined}
+                      onChange={(val) => onSelectEvaluatedStaff?.(val || null)}
+                      filterOption={(input, option) =>
+                        (option?.label as string)?.toLowerCase().includes(input.toLowerCase())
+                      }
+                      style={{ minWidth: 220 }}
+                      options={allStaffList.map((s) => ({
+                        value: s.id,
+                        label: `${s.displayName || s.username} (${s.role || 'technician'})`,
+                      }))}
+                    />
+                  </div>
+
+                  <div className={styles.controlGroup}>
+                    <Text className={`${styles.controlLabel} text-slate-600 dark:text-slate-400`}>
+                      Đơn Xin Phép Trước:
+                    </Text>
+                    <Tooltip title="Nếu kỹ thuật viên đã làm đơn xin phép trước 1 ngày và được phê duyệt: Cho phép ân hạn khắc phục trong ngày và hạn chót ngày hôm sau tái kiểm (REMEDIATION_PENDING), không bị khóa nâng cấp ngay lập tức.">
+                      <ToolbarToggle
+                        className={`${styles.toggleControl} ${
+                          isPreApproved
+                            ? 'border-emerald-500 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300'
+                            : 'border-slate-200 bg-transparent text-slate-500 dark:border-slate-700'
+                        }`}
+                        label={isPreApproved ? 'Đã duyệt đơn trước (Ân hạn)' : 'Không có đơn'}
+                        aria-label="Đơn xin phép trước"
+                        checked={isPreApproved}
+                        onChange={(checked) => onTogglePreApproved?.(checked)}
+                      />
+                    </Tooltip>
+                  </div>
+                </>
+              )}
+
               <div className={`${styles.controlGroup} ${styles.quickCheckGroup}`}>
                 <Text className={`${styles.controlLabel} text-slate-600 dark:text-slate-400`}>Kiểm Tra Nhanh:</Text>
                 <Tooltip title="Bật Chế độ Mobile tập trung (Full-screen Mobile Inspection Mode) ẩn Sidebar & Clutter">
@@ -333,30 +415,69 @@ export const QaHeaderMetrics: React.FC<QaHeaderMetricsProps> = ({
             </div>
 
             <div className={styles.scoreSummary}>
-              <span className={`${styles.scoreLabel} text-slate-600 dark:text-slate-400`}>Tỷ lệ đạt:</span>
-              <span
-                className={hasRecordedInspectionResult ? 'text-xl font-bold tabular-nums' : styles.pendingScoreValue}
-                style={{
-                  color: !hasRecordedInspectionResult
-                    ? isDark
-                      ? '#94a3b8'
-                      : '#64748b'
-                    : inspectionStats.passRate >= 90
-                      ? '#10b981'
-                      : inspectionStats.passRate >= 80
-                        ? '#f59e0b'
-                        : '#ef4444',
-                }}
-              >
-                {inspectionProgressLabel}
-              </span>
-              <div className="flex gap-1.5 ml-2">
+              <div className="flex items-center gap-2">
+                <span className={`${styles.scoreLabel} text-slate-600 dark:text-slate-400`}>Tỷ lệ đạt:</span>
+                <span
+                  className={hasRecordedInspectionResult ? 'text-xl font-bold tabular-nums' : styles.pendingScoreValue}
+                  style={{
+                    color: !hasRecordedInspectionResult
+                      ? isDark
+                        ? '#94a3b8'
+                        : '#64748b'
+                      : inspectionStats.passRate >= 90
+                        ? '#10b981'
+                        : inspectionStats.passRate >= 80
+                          ? '#f59e0b'
+                          : '#ef4444',
+                  }}
+                >
+                  {inspectionProgressLabel}
+                </span>
+              </div>
+
+              {activeTemplate?.code === 'CV.Personal.Grooming.Station.check' && hasRecordedInspectionResult && (
+                <div className="mt-1">
+                  {inspectionStats.evaluationResult === 'PASSED' && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                      🟢 ĐẠT TIÊU CHUẨN THĂNG CẤP
+                    </span>
+                  )}
+                  {inspectionStats.evaluationResult === 'REMEDIATION_PENDING' && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                      ⏳ ĐANG ÂN HẠN KHẮC PHỤC
+                    </span>
+                  )}
+                  {inspectionStats.evaluationResult === 'FAILED' && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30">
+                      🔴 KHÔNG ĐẠT (KHÓA NÂNG CẤP)
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-1.5 ml-0 sm:ml-2 mt-1">
                 <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 tabular-nums">
                   {inspectionStats.passed} Đạt
                 </span>
                 <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-rose-500/10 text-rose-600 dark:text-rose-400 tabular-nums">
                   {inspectionStats.failed} Lỗi
                 </span>
+                {inspectionStats.criticalFailed > 0 && (
+                  <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-red-600 text-white tabular-nums">
+                    {inspectionStats.criticalFailed} Nghiêm Trọng (Rớt ngay)
+                  </span>
+                )}
+                {inspectionStats.minorFailed > 0 && (
+                  <span
+                    className={`px-2 py-0.5 rounded text-[11px] font-medium tabular-nums ${
+                      inspectionStats.minorFailed >= 3
+                        ? 'bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold'
+                        : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                    }`}
+                  >
+                    {inspectionStats.minorFailed}/3 Lỗi nhỏ
+                  </span>
+                )}
                 <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-500/10 text-slate-600 dark:text-slate-400 tabular-nums">
                   {inspectionStats.na} N/A
                 </span>

@@ -2,6 +2,7 @@ import {
   DEFAULT_CAREER_PROGRESSION_CONFIG,
   type CareerProgressionConfig,
   type StaffCareerStatus,
+  type CareerStaffSummary,
 } from '@mos-lab/shared';
 import { api, dedupeApiGet, invalidateApiGetCache, ApiRequestOptions } from './base';
 
@@ -37,11 +38,37 @@ export const careerApi = {
       );
       return res.data;
     },
-    getStaffProgression: async (staffId: number, options?: ApiRequestOptions): Promise<StaffCareerStatus> => {
+    listStaff: async (
+      params?: { role?: string; search?: string },
+      options?: ApiRequestOptions
+    ): Promise<CareerStaffSummary[]> => {
+      try {
+        const res = await dedupeApiGet<{ success: boolean; data: CareerStaffSummary[] }>(
+          '/career/staff-list',
+          params,
+          5000,
+          options
+        );
+        return res?.data || [];
+      } catch (_err) {
+        return [];
+      }
+    },
+    syncProd: async (): Promise<{ success: boolean; message: string; timestamp: string }> => {
+      const res = await api.post<{ success: boolean; message: string; timestamp: string }>('/career/sync-prod');
+      invalidateApiGetCache(['/career/']);
+      return res.data;
+    },
+    getStaffProgression: async (
+      staffId: number,
+      refresh = false,
+      options?: ApiRequestOptions
+    ): Promise<StaffCareerStatus> => {
+      const query = refresh ? { refresh: 'true' } : undefined;
       const res = await dedupeApiGet<{ success: boolean; data: StaffCareerStatus }>(
         `/career/staff/${staffId}`,
-        undefined,
-        5000,
+        query,
+        refresh ? 0 : 5000,
         options
       );
       return res.data;

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Modal, Form, Input, InputNumber, Select, Row, Col, FormInstance } from 'antd';
+import { Modal, Form, Input, InputNumber, Select, Row, Col, Switch, FormInstance } from 'antd';
 import { EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { SafeAny } from '@mos-lab/shared';
 
@@ -101,6 +101,20 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
             </Form.Item>
           </Col>
         </Row>
+
+        <Form.Item
+          name="isCritical"
+          valuePropName="checked"
+          label="Phân Loại Tiêu Chí Kiểm Định (Career Progression Gate):"
+          tooltip="Lỗi Nghiêm Trọng (Critical): Kỹ thuật viên vi phạm 1 lỗi là RỚT ngay lập tức! Lỗi Nhỏ (Minor): Vi phạm từ 3 lỗi mới rớt."
+        >
+          <div className="flex items-center gap-3 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+            <Switch checkedChildren="🔴 Nghiêm Trọng" unCheckedChildren="🟡 Lỗi Nhỏ" />
+            <span className="text-xs text-slate-600 dark:text-slate-400">
+              Bật để đánh dấu tiêu chí này là <strong>Lỗi Nghiêm Trọng (Vi phạm 1 lỗi rớt ngay)</strong>
+            </span>
+          </div>
+        </Form.Item>
       </Form>
     </Modal>
   );

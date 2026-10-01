@@ -821,7 +821,22 @@ export class AcademyWorkshopService {
     return row;
   }
 
-  private static async detail(row: SafeAny): Promise<AcademyWorkshopDetail> {
+  private static async detail(fastify: FastifyInstance, row: SafeAny): Promise<AcademyWorkshopDetail> {
+    if (row.status === 'DRAFT' && row.scheduledPublishAt && new Date(row.scheduledPublishAt).getTime() <= Date.now()) {
+      row.status = 'SCHEDULED';
+      row.publishedAt = row.scheduledPublishAt;
+      row.scheduledPublishAt = null;
+      void fastify.prisma.crm.crmAcademyWorkshop
+        .update({
+          where: { id: row.id },
+          data: {
+            status: 'SCHEDULED',
+            publishedAt: row.publishedAt,
+            scheduledPublishAt: null,
+          },
+        })
+        .catch(() => undefined);
+    }
     const participants = await Promise.all(row.participants.map((item: SafeAny) => toParticipant(item, row.feeVnd)));
     return {
       id: Number(row.id),
@@ -842,6 +857,8 @@ export class AcademyWorkshopService {
       feeVnd: Math.max(0, Math.round(Number(row.feeVnd) || 0)),
       feeDueAt: row.feeDueAt ? new Date(row.feeDueAt).toISOString() : null,
       status: row.status,
+      publishedAt: row.publishedAt ? new Date(row.publishedAt).toISOString() : null,
+      scheduledPublishAt: row.scheduledPublishAt ? new Date(row.scheduledPublishAt).toISOString() : null,
       agendaTemplate: row.agendaTemplate ? toAcademyWorkshopAgendaTemplate(row.agendaTemplate) : null,
       menuTemplate: row.menuTemplate ? toAcademyWorkshopMenuTemplate(row.menuTemplate) : null,
       menuAgendaItemId: row.menuAgendaItemId == null ? null : Number(row.menuAgendaItemId),
@@ -882,11 +899,11 @@ export class AcademyWorkshopService {
   }
 
   static async getById(fastify: FastifyInstance, actor: AcademyActor, workshopId: number) {
-    return this.detail(await this.rowById(fastify, actor, workshopId));
+    return this.detail(fastify, await this.rowById(fastify, actor, workshopId));
   }
 
   static async getBySlug(fastify: FastifyInstance, actor: AcademyActor, slug: string) {
-    return this.detail(await this.rowBySlug(fastify, actor, slug));
+    return this.detail(fastify, await this.rowBySlug(fastify, actor, slug));
   }
 
   static async list(fastify: FastifyInstance, actor: AcademyActor, params: ListAcademyWorkshopsParams = {}) {
@@ -914,7 +931,7 @@ export class AcademyWorkshopService {
     });
     const mapped = await Promise.all(
       visible.map(async (row) => {
-        const detail = await this.detail(row);
+        const detail = await this.detail(fastify, row);
         const {
           summary: _summary,
           agenda: _agenda,
@@ -1371,6 +1388,26 @@ export class AcademyWorkshopService {
     if (endsAt <= startsAt) throw new AcademySalesError('Agenda workshop cần có ít nhất một mục có thời lượng.');
     const heroImageUrl =
       input.heroImageUrl === undefined ? row.heroImageUrl : normalizeHeroImageUrl(input.heroImageUrl);
+    let publishedAt: Date | null = row.publishedAt ? new Date(row.publishedAt) : null;
+    let scheduledPublishAt: Date | null = row.scheduledPublishAt ? new Date(row.scheduledPublishAt) : null;
+
+    if (input.scheduledPublishAt !== undefined) {
+      scheduledPublishAt = input.scheduledPublishAt
+        ? parseDate(input.scheduledPublishAt, 'Hạn hẹn giờ công bố', true)
+        : null;
+    }
+
+    if (input.publishedAt !== undefined) {
+      publishedAt = input.publishedAt ? parseDate(input.publishedAt, 'Thời gian công bố', true) : null;
+    }
+
+    if (input.status === 'SCHEDULED' && row.status !== 'SCHEDULED') {
+      if (!publishedAt) publishedAt = new Date();
+      scheduledPublishAt = null;
+    } else if (input.status === 'DRAFT' && row.status !== 'DRAFT') {
+      if (input.publishedAt === undefined) publishedAt = null;
+    }
+
     await fastify.prisma.crm.$transaction(async (tx) => {
       await tx.crmAcademyCampaign.update({
         where: { id: row.campaignId },
@@ -1401,6 +1438,8 @@ export class AcademyWorkshopService {
           designSelectionDeadline,
           heroImageUrl,
           status: input.status || row.status,
+          publishedAt,
+          scheduledPublishAt,
           registrationOpen:
             input.registrationOpen === undefined ? row.registrationOpen : Boolean(input.registrationOpen),
           agendaTemplateId: agendaTemplate?.id ?? null,

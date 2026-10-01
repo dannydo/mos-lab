@@ -119,6 +119,8 @@ export interface AcademyWorkshopListItem {
   feeVnd: number;
   feeDueAt: string | null;
   status: AcademyWorkshopStatus;
+  publishedAt?: string | null;
+  scheduledPublishAt?: string | null;
   assignedStaffIds: number[];
   participantCount: number;
   checkedInCount: number;
@@ -605,6 +607,8 @@ export interface AcademyWorkshopPublicRegistrationInfo {
     capacity: number;
     remainingSeats: number;
     feeVnd: number;
+    publishedAt?: string | null;
+    scheduledPublishAt?: string | null;
     equipment: {
       required: boolean;
       packages: Array<
@@ -749,6 +753,8 @@ export interface CreateAcademyWorkshopRequest {
 export interface UpdateAcademyWorkshopRequest extends Partial<CreateAcademyWorkshopRequest> {
   status?: AcademyWorkshopStatus;
   registrationOpen?: boolean;
+  publishedAt?: string | null;
+  scheduledPublishAt?: string | null;
 }
 
 export interface ListAcademyWorkshopsParams extends PageQuery {
@@ -950,7 +956,12 @@ export interface AcademyWorkshopPricingTierPreset {
 }
 
 export const ACADEMY_WORKSHOP_PRICING_PRESETS: AcademyWorkshopPricingTierPreset[] = [
-  { id: 'full', label: 'Vé tiêu chuẩn (Full)', description: 'Thu đủ 100% học phí niêm yết (tặng kèm nâng cấp bộ dụng cụ 499K Free)', type: 'FULL' },
+  {
+    id: 'full',
+    label: 'Vé tiêu chuẩn (Full)',
+    description: 'Thu đủ 100% học phí niêm yết (tặng kèm nâng cấp bộ dụng cụ 499K Free)',
+    type: 'FULL',
+  },
   { id: 'discount_10', label: 'Ưu đãi 10%', description: 'Giảm 10% học phí niêm yết', type: 'PERCENT', percent: 10 },
   { id: 'discount_50', label: 'Ưu đãi 50%', description: 'Học bổng / Đối tác giảm 50%', type: 'PERCENT', percent: 50 },
   { id: 'custom', label: 'Tùy chỉnh', description: 'Nhập học phí áp dụng / mức giảm đặc biệt', type: 'CUSTOM' },

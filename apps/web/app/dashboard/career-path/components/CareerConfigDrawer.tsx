@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Slider } from 'antd';
+import { Slider, Switch } from 'antd';
 import type { CareerProgressionConfig } from '@mos-lab/shared';
 import { AdaptiveDrawer } from '../../../../components/ui/AdaptiveOverlay';
 
@@ -31,6 +31,8 @@ export function CareerConfigDrawer({
     maxFixRate: 0.02,
     minHappinessIndex: 0.7,
     maxDisciplinaryViolations: 0,
+    minWeeklyQaAudits: 1,
+    requireZeroFailedAudits: true,
     trialDurationDays: 30,
     minSelfComboRate: 0.25,
     allowSelfConsultTrial: true,
@@ -132,6 +134,51 @@ export function CareerConfigDrawer({
               max={60}
               value={cvToCc.trialDurationDays}
               onChange={(val) => onConfigChange({ ...config, cvToCc: { ...cvToCc, trialDurationDays: val } })}
+            />
+          </div>
+
+          <div>
+            <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+              <span>Tần suất kiểm tra QA/QC tác phong & phòng mi tối thiểu:</span>
+              <span className="font-mono text-pink-600">{cvToCc.minWeeklyQaAudits || 1} lần/tuần</span>
+            </div>
+            <Slider
+              min={1}
+              max={3}
+              step={1}
+              value={cvToCc.minWeeklyQaAudits || 1}
+              onChange={(val) => onConfigChange({ ...config, cvToCc: { ...cvToCc, minWeeklyQaAudits: val } })}
+            />
+          </div>
+
+          <div>
+            <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+              <span>Chuối vàng tối thiểu (&gt; 0 Chuối):</span>
+              <span className="font-mono text-amber-500 font-black">{cvToCc.minBananaCount ?? 1} 🍌</span>
+            </div>
+            <Slider
+              min={1}
+              max={10}
+              step={1}
+              value={cvToCc.minBananaCount ?? 1}
+              onChange={(val) => onConfigChange({ ...config, cvToCc: { ...cvToCc, minBananaCount: val } })}
+            />
+          </div>
+
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60">
+            <div>
+              <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                Khóa nâng cấp nếu có bài Failed QA/QC:
+              </div>
+              <div className="text-[11px] text-slate-400">
+                Nếu bị 1 biên bản hoặc bài kiểm tra không đạt ➔ Bị đóng băng thăng cấp
+              </div>
+            </div>
+            <Switch
+              checked={cvToCc.requireZeroFailedAudits !== false}
+              onChange={(checked) =>
+                onConfigChange({ ...config, cvToCc: { ...cvToCc, requireZeroFailedAudits: checked } })
+              }
             />
           </div>
         </div>

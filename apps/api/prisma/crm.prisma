@@ -1616,6 +1616,8 @@ model CrmAcademyWorkshop {
   feeDueAt           DateTime? @map("fee_due_at") @db.DateTime(0)
   heroImageUrl       String?   @map("hero_image_url") @db.VarChar(512)
   status             String    @default("DRAFT") @db.VarChar(24)
+  publishedAt        DateTime? @map("published_at") @db.DateTime(0)
+  scheduledPublishAt DateTime? @map("scheduled_publish_at") @db.DateTime(0)
   agendaPresetKey    String    @default("HAPPY_FRIDAY") @map("agenda_preset_key") @db.VarChar(48)
   agendaTemplateId   Int?      @map("agenda_template_id")
   menuAgendaItemId   Int?      @unique @map("menu_agenda_item_id")

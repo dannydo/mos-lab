@@ -33,17 +33,27 @@ function registrationCode(value: unknown): string {
   return code;
 }
 
-function registrationPhase(workshop: { status: string; registrationOpen: boolean }): AcademyWorkshopPublicPhase {
+function registrationPhase(workshop: {
+  status: string;
+  registrationOpen: boolean;
+  scheduledPublishAt?: Date | string | null;
+}): AcademyWorkshopPublicPhase {
   if (workshop.status === 'CHECKIN_OPEN') return 'CHECKIN';
   if (workshop.status === 'LIVE' || workshop.status === 'PAUSED') return 'LIVE';
   if (workshop.status === 'COMPLETED') return 'COMPLETED';
-  if (workshop.status === 'SCHEDULED' && workshop.registrationOpen) return 'REGISTRATION';
+  const isScheduled =
+    workshop.status === 'SCHEDULED' ||
+    (workshop.status === 'DRAFT' &&
+      workshop.scheduledPublishAt &&
+      new Date(workshop.scheduledPublishAt).getTime() <= Date.now());
+  if (isScheduled && workshop.registrationOpen) return 'REGISTRATION';
   return 'CLOSED';
 }
 
 export function getAcademyWorkshopPublicRegistrationPhase(workshop: {
   status: string;
   registrationOpen: boolean;
+  scheduledPublishAt?: Date | string | null;
 }): AcademyWorkshopPublicPhase {
   return registrationPhase(workshop);
 }
@@ -483,6 +493,8 @@ export class AcademyWorkshopPublicJoinService {
         heroImageUrl: workshop.heroImageUrl ?? null,
         startsAt: workshop.startsAt.toISOString(),
         endsAt: workshop.endsAt.toISOString(),
+        publishedAt: workshop.publishedAt ? workshop.publishedAt.toISOString() : null,
+        scheduledPublishAt: workshop.scheduledPublishAt ? workshop.scheduledPublishAt.toISOString() : null,
         menuSelectionDeadline: (workshop.menuSelectionDeadline || workshop.startsAt).toISOString(),
         equipmentSelectionDeadline: (workshop.equipmentSelectionDeadline || workshop.startsAt).toISOString(),
         designSelectionDeadline: (workshop.designSelectionDeadline || workshop.startsAt).toISOString(),
@@ -542,6 +554,8 @@ export class AcademyWorkshopPublicJoinService {
           status: string;
           registration_open: number;
           starts_at: Date;
+          published_at: Date | null;
+          scheduled_publish_at: Date | null;
           menu_selection_deadline: Date | null;
           equipment_selection_deadline: Date | null;
           design_selection_deadline: Date | null;
@@ -550,7 +564,7 @@ export class AcademyWorkshopPublicJoinService {
           design_agenda_item_id: number | null;
         }>
       >(
-        `SELECT id, campaign_id, capacity, status, registration_open, starts_at, menu_selection_deadline, equipment_selection_deadline, design_selection_deadline, menu_agenda_item_id, equipment_agenda_item_id, design_agenda_item_id
+        `SELECT id, campaign_id, capacity, status, registration_open, starts_at, published_at, scheduled_publish_at, menu_selection_deadline, equipment_selection_deadline, design_selection_deadline, menu_agenda_item_id, equipment_agenda_item_id, design_agenda_item_id
          FROM crm_academy_workshops WHERE registration_code = ? FOR UPDATE`,
         code
       );
@@ -559,10 +573,24 @@ export class AcademyWorkshopPublicJoinService {
         throw new AcademySalesError('Workshop không tồn tại hoặc không còn mở công khai.', 404);
       }
       if (
-        registrationPhase({ status: workshop.status, registrationOpen: Boolean(workshop.registration_open) }) !==
-        'REGISTRATION'
+        registrationPhase({
+          status: workshop.status,
+          registrationOpen: Boolean(workshop.registration_open),
+          scheduledPublishAt: workshop.scheduled_publish_at,
+        }) !== 'REGISTRATION'
       ) {
         throw new AcademySalesError('Đăng ký online hiện đã đóng. Vui lòng liên hệ Academy để được hỗ trợ.', 409);
+      }
+
+      if (workshop.status === 'DRAFT') {
+        await tx.crmAcademyWorkshop.update({
+          where: { id: workshop.id },
+          data: {
+            status: 'SCHEDULED',
+            publishedAt: workshop.scheduled_publish_at || new Date(),
+            scheduledPublishAt: null,
+          },
+        });
       }
 
       const menuSelectionDeadlineMs = new Date(workshop.menu_selection_deadline || workshop.starts_at).getTime();
@@ -595,7 +623,14 @@ export class AcademyWorkshopPublicJoinService {
         : [];
       const availableEquipmentPackages = await tx.crmAcademyWorkshopEquipmentPackage.findMany({
         where: { workshopId: workshop.id, isAvailable: true },
-        select: { id: true, name: true, description: true, includedItemsJson: true, priceVnd: true, isIncludedInFee: true },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          includedItemsJson: true,
+          priceVnd: true,
+          isIncludedInFee: true,
+        },
       });
       const equipmentSelection = workshop.equipment_agenda_item_id
         ? validateEquipmentSelection(input.equipmentPackageId, availableEquipmentPackages)

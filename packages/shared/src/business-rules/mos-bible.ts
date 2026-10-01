@@ -1285,6 +1285,52 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       },
     ],
   },
+  {
+    id: 'CAREER-QA-001',
+    book: 'PEOPLE',
+    title: 'Kiểm Định QA/QC Tác Phong & Phòng Nối Mi Trong Lộ Trình Thăng Tiến CV',
+    summary:
+      'Để đủ điều kiện nâng cấp (CV lên CV+, CV++), kỹ thuật viên CV bắt buộc phải chủ động mời QA/QC kiểm tra tác phong bản thân và phòng nối mi định kỳ ít nhất 1 lần/tuần. Nếu có bài kiểm tra FAILED, nhân viên bị khóa quyền nâng cấp.',
+    commandments: [
+      'Chủ động mời QA/QC kiểm tra định kỳ: Kỹ thuật viên CV phải chủ động sắp xếp và mời QA/QC kiểm tra tác phong bản thân và phòng nối mi ít nhất 1 lần mỗi tuần trong suốt chu kỳ xét thăng cấp.',
+      'Nội dung kiểm tra song song hai hạng mục: (1) Tác phong bản thân (đồng phục, đầu tóc, vệ sinh móng tay, khẩu trang, giao tiếp) và (2) Phòng nối mi cá nhân (giường, đèn chiếu sáng không dính keo/mi, khay dụng cụ khử trùng chuẩn, nhíp sạch, không đồ cá nhân).',
+      'Cổng kiểm soát chất lượng tuyệt đối (Hard Gatekeeper): Nếu có bất kỳ bài kiểm tra nào bị FAILED hoặc không đạt tần suất tối thiểu 1 lần/tuần, nhân viên lập tức bị KHÓA QUYỀN NÂNG CẤP, không được mở Ải Trùm Cuối và không được duyệt thăng hạng.',
+      'Duy trì liên tục: Khi đã thăng cấp lên CV+ hoặc CV++, kỹ thuật viên vẫn phải duy trì kiểm định QA/QC định kỳ hàng tuần; vi phạm kiểm định là căn cứ xem xét giáng cấp.',
+    ],
+    rationale:
+      'Tay nghề kỹ thuật và doanh số tự bán combo chỉ có giá trị bền vững khi đi kèm kỷ luật tác phong và chuẩn mực vệ sinh phòng nối mi. Quy định này đảm bảo khách hàng luôn được phục vụ trong không gian sạch sẽ, an toàn và chuyên nghiệp nhất.',
+    examples: [
+      'CV hoàn thành vượt chỉ tiêu số ca, tip và combo nhưng trong 12 tuần chỉ mời QA kiểm tra 8 lần (< 1 lần/tuần): Hệ thống báo Chưa đủ tần suất kiểm định QA/QC, khóa quyền thăng cấp cho đến khi đạt đủ tuần kiểm tra.',
+      'CV có bài kiểm tra bị FAILED do đèn mi dính keo hoặc không chuẩn tác phong: Toàn bộ tiến trình nâng cấp bị đóng băng, bắt buộc rèn luyện lại và kiểm định đạt chuẩn.',
+    ],
+    tags: [
+      'career',
+      'progression',
+      'thăng tiến',
+      'CV',
+      'CV+',
+      'CV++',
+      'QA',
+      'QC',
+      'tác phong',
+      'phòng nối mi',
+      'kiểm tra',
+    ],
+    routeScopes: ['/dashboard/career-path'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-10-01',
+    sources: [
+      {
+        label: 'Career Progression Service',
+        reference: 'apps/api/src/modules/career/career.service.ts',
+      },
+      {
+        label: 'Career Path Simulation',
+        reference: 'apps/web/app/dashboard/career-path/page.tsx',
+      },
+    ],
+  },
 ];
 
 export function getMosBibleBook(bookKey: MosBibleBookKey): MosBibleBook {

@@ -239,6 +239,15 @@ export const QaChecklistTab: React.FC<QaChecklistTabProps> = ({
                                         [{area}]
                                       </span>
                                     )}
+                                    {itm.isCritical ? (
+                                      <span className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[10px] font-bold shrink-0 border border-rose-500/20">
+                                        🔴 Nghiêm trọng (1 lỗi rớt)
+                                      </span>
+                                    ) : (
+                                      <span className="px-1.5 py-0.5 rounded bg-slate-500/10 text-slate-500 dark:text-slate-400 text-[10px] font-medium shrink-0">
+                                        🟡 Lỗi nhỏ
+                                      </span>
+                                    )}
                                   </div>
 
                                   {/* Minimal Vector Pure Icon-Only Toggle Bar */}

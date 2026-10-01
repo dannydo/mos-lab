@@ -50,6 +50,15 @@ export default function QaShopPage() {
         auditorName={state.auditorName}
         onSelectAuditor={state.setAuditorName}
         qaStaffList={state.qaStaffList}
+        templates={state.templates}
+        activeTemplate={state.activeTemplate}
+        selectedTemplateCode={state.selectedTemplateCode}
+        onSelectTemplateCode={state.setSelectedTemplateCode}
+        evaluatedStaffId={state.evaluatedStaffId}
+        onSelectEvaluatedStaff={state.handleSelectEvaluatedStaff}
+        isPreApproved={state.isPreApproved}
+        onTogglePreApproved={state.setIsPreApproved}
+        allStaffList={state.allStaffList}
         isMobileFocusMode={state.isMobileFocusMode}
         onToggleMobileFocusMode={() => state.setIsMobileFocusMode((prev) => !prev)}
         isMobileScreen={state.isMobileScreen}

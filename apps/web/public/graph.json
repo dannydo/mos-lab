@@ -1177,7 +1177,7 @@
         "dbSource": "crm",
         "modelName": "CrmAcademyWorkshop",
         "tableName": "crm_academy_workshops",
-        "fieldCount": 53,
+        "fieldCount": 55,
         "readOnly": false,
         "isCatalogException": false,
         "relations": ["campaignId", "agendaTemplateId"],
@@ -6648,7 +6648,7 @@
         "path": "/api/calls/daily",
         "module": "calls",
         "handler": "inlineHandler",
-        "line": 224
+        "line": 225
       }
     },
     {
@@ -6662,7 +6662,7 @@
         "path": "/api/calls/:customerId",
         "module": "calls",
         "handler": "inlineHandler",
-        "line": 444
+        "line": 445
       }
     },
     {
@@ -7167,6 +7167,20 @@
         "module": "career",
         "handler": "inlineHandler",
         "line": 61
+      }
+    },
+    {
+      "id": "route:POST:/api/career/sync-prod",
+      "type": "FastifyRoute",
+      "label": "POST /api/career/sync-prod",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/career/career.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/career/sync-prod",
+        "module": "career",
+        "handler": "inlineHandler",
+        "line": 108
       }
     },
     {
@@ -8300,7 +8314,7 @@
         "path": "/api/customers/:id/bookings",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1753
+        "line": 1752
       }
     },
     {
@@ -8314,7 +8328,7 @@
         "path": "/api/customers/:id/calls",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1975
+        "line": 1974
       }
     },
     {
@@ -12226,8 +12240,17 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "metadata": {
         "routePath": "/dashboard/career-path",
-        "apiCallsCount": 3,
-        "apiCalls": ["career.getConfig", "career.getMyProgression", "career.updateConfig"]
+        "apiCallsCount": 8,
+        "apiCalls": [
+          "career.getStaffProgression",
+          "career.getConfig",
+          "career.listStaff",
+          "career.syncProd",
+          "career.activateTrial",
+          "career.promoteStaff",
+          "career.switchToSpecialist",
+          "career.updateConfig"
+        ]
       }
     },
     {
@@ -19276,6 +19299,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:CvToCvPlusRequirements",
+      "type": "SharedType",
+      "label": "CvToCvPlusRequirements",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CvToCvPlusRequirements",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:CvToCcRequirements",
       "type": "SharedType",
       "label": "CvToCcRequirements",
@@ -19284,6 +19319,30 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CvToCcRequirements",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CvPlusToCvPlusPlusRequirements",
+      "type": "SharedType",
+      "label": "CvPlusToCvPlusPlusRequirements",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CvPlusToCvPlusPlusRequirements",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CvPlusPlusToFmRequirements",
+      "type": "SharedType",
+      "label": "CvPlusPlusToFmRequirements",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CvPlusPlusToFmRequirements",
         "package": "@mos-lab/shared"
       }
     },
@@ -19308,6 +19367,30 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "FmToChoRequirements",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MaintenanceAndDemotionRules",
+      "type": "SharedType",
+      "label": "MaintenanceAndDemotionRules",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MaintenanceAndDemotionRules",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CompensationPackageConfig",
+      "type": "SharedType",
+      "label": "CompensationPackageConfig",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CompensationPackageConfig",
         "package": "@mos-lab/shared"
       }
     },
@@ -19344,6 +19427,18 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CareerProgressionConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CareerStaffSummary",
+      "type": "SharedType",
+      "label": "CareerStaffSummary",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CareerStaffSummary",
         "package": "@mos-lab/shared"
       }
     },
@@ -24652,6 +24747,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:QaAuditEvaluationResult",
+      "type": "SharedType",
+      "label": "QaAuditEvaluationResult",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/qa-shop.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "QaAuditEvaluationResult",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:QaChecklistItem",
       "type": "SharedType",
       "label": "QaChecklistItem",
@@ -28660,8 +28767,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13266406,
-        "lineCount": 288327,
+        "sizeBytes": 13281566,
+        "lineCount": 288571,
         "ext": ".ts"
       }
     },
@@ -29089,8 +29196,8 @@
       "filePath": "apps/api/src/modules/academy-workshops/academy-workshop-public.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 37113,
-        "lineCount": 922,
+        "sizeBytes": 38104,
+        "lineCount": 950,
         "ext": ".ts"
       }
     },
@@ -29102,8 +29209,8 @@
       "filePath": "apps/api/src/modules/academy-workshops/academy-workshop-rules.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 30803,
-        "lineCount": 872,
+        "sizeBytes": 31734,
+        "lineCount": 898,
         "ext": ".ts"
       }
     },
@@ -29141,8 +29248,8 @@
       "filePath": "apps/api/src/modules/academy-workshops/academy-workshop.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 123151,
-        "lineCount": 3034,
+        "sizeBytes": 124859,
+        "lineCount": 3077,
         "ext": ".ts"
       }
     },
@@ -29791,8 +29898,8 @@
       "filePath": "apps/api/src/modules/calls/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17347,
-        "lineCount": 494,
+        "sizeBytes": 17405,
+        "lineCount": 495,
         "ext": ".ts"
       }
     },
@@ -29830,8 +29937,8 @@
       "filePath": "apps/api/src/modules/campaigns/campaign.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 117264,
-        "lineCount": 3369,
+        "sizeBytes": 118045,
+        "lineCount": 3387,
         "ext": ".ts"
       }
     },
@@ -29856,8 +29963,8 @@
       "filePath": "apps/api/src/modules/career/career.routes.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4310,
-        "lineCount": 138,
+        "sizeBytes": 5360,
+        "lineCount": 163,
         "ext": ".ts"
       }
     },
@@ -29869,8 +29976,8 @@
       "filePath": "apps/api/src/modules/career/career.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7047,
-        "lineCount": 195,
+        "sizeBytes": 8628,
+        "lineCount": 241,
         "ext": ".ts"
       }
     },
@@ -29895,8 +30002,8 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11190,
-        "lineCount": 339,
+        "sizeBytes": 36555,
+        "lineCount": 952,
         "ext": ".ts"
       }
     },
@@ -30051,7 +30158,7 @@
       "filePath": "apps/api/src/modules/customers/routes/appointments.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 55802,
+        "sizeBytes": 55814,
         "lineCount": 1333,
         "ext": ".ts"
       }
@@ -30090,7 +30197,7 @@
       "filePath": "apps/api/src/modules/customers/routes/booking.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 49725,
+        "sizeBytes": 49749,
         "lineCount": 1184,
         "ext": ".ts"
       }
@@ -30116,8 +30223,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-detail.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 86417,
-        "lineCount": 2041,
+        "sizeBytes": 86502,
+        "lineCount": 2040,
         "ext": ".ts"
       }
     },
@@ -30155,7 +30262,7 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-notes.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 15301,
+        "sizeBytes": 15344,
         "lineCount": 390,
         "ext": ".ts"
       }
@@ -30207,8 +30314,8 @@
       "filePath": "apps/api/src/modules/customers/routes/helpers.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3746,
-        "lineCount": 105,
+        "sizeBytes": 4300,
+        "lineCount": 120,
         "ext": ".ts"
       }
     },
@@ -30402,8 +30509,8 @@
       "filePath": "apps/api/src/modules/customers/services/customer-access.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4679,
-        "lineCount": 136,
+        "sizeBytes": 11843,
+        "lineCount": 402,
         "ext": ".ts"
       }
     },
@@ -30415,8 +30522,8 @@
       "filePath": "apps/api/src/modules/customers/services/customer-access.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2906,
-        "lineCount": 92,
+        "sizeBytes": 8223,
+        "lineCount": 251,
         "ext": ".ts"
       }
     },
@@ -31884,8 +31991,8 @@
       "filePath": "apps/api/src/modules/qa-shop/qa-shop.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 34081,
-        "lineCount": 933,
+        "sizeBytes": 43614,
+        "lineCount": 1155,
         "ext": ".ts"
       }
     },
@@ -32995,6 +33102,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/scripts/data-migrations/20261001130000_update_workshop_k02_fee_and_equipment_policy.ts",
+      "type": "File",
+      "label": "20261001130000_update_workshop_k02_fee_and_equipment_policy.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/scripts/data-migrations/20261001130000_update_workshop_k02_fee_and_equipment_policy.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 2785,
+        "lineCount": 77,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/scripts/data-migrations/types.ts",
       "type": "File",
       "label": "types.ts",
@@ -33418,8 +33538,8 @@
       "filePath": "apps/web/app/academy/workshops/register/[code]/AcademyWorkshopRegistrationPage.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 117945,
-        "lineCount": 2195,
+        "sizeBytes": 122397,
+        "lineCount": 2301,
         "ext": ".tsx"
       }
     },
@@ -33977,8 +34097,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopParticipantOverlays.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 42783,
-        "lineCount": 997,
+        "sizeBytes": 42637,
+        "lineCount": 989,
         "ext": ".tsx"
       }
     },
@@ -33990,8 +34110,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopParticipantSelectionsModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14845,
-        "lineCount": 328,
+        "sizeBytes": 16146,
+        "lineCount": 348,
         "ext": ".tsx"
       }
     },
@@ -34005,6 +34125,19 @@
       "metadata": {
         "sizeBytes": 12597,
         "lineCount": 261,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/academy-leads/components/AcademyWorkshopPublishControl.tsx",
+      "type": "File",
+      "label": "AcademyWorkshopPublishControl.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/academy-leads/components/AcademyWorkshopPublishControl.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 15014,
+        "lineCount": 384,
         "ext": ".tsx"
       }
     },
@@ -34549,8 +34682,8 @@
       "filePath": "apps/web/app/dashboard/academy-leads/workshops/[slug]/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25280,
-        "lineCount": 590,
+        "sizeBytes": 25706,
+        "lineCount": 601,
         "ext": ".tsx"
       }
     },
@@ -35303,8 +35436,8 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path.constants.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1378,
-        "lineCount": 56,
+        "sizeBytes": 16101,
+        "lineCount": 335,
         "ext": ".ts"
       }
     },
@@ -35316,8 +35449,34 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5889,
-        "lineCount": 158,
+        "sizeBytes": 7924,
+        "lineCount": 199,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
+      "type": "File",
+      "label": "RealStaffSimulationCard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 63274,
+        "lineCount": 1328,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
+      "type": "File",
+      "label": "StaffCareerSelector.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 12331,
+        "lineCount": 267,
         "ext": ".tsx"
       }
     },
@@ -35329,8 +35488,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 43891,
-        "lineCount": 890,
+        "sizeBytes": 29073,
+        "lineCount": 664,
         "ext": ".tsx"
       }
     },
@@ -37097,8 +37256,8 @@
       "filePath": "apps/web/app/dashboard/qa-shop/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11573,
-        "lineCount": 294,
+        "sizeBytes": 12029,
+        "lineCount": 303,
         "ext": ".tsx"
       }
     },
@@ -38072,8 +38231,8 @@
       "filePath": "apps/web/lib/api/career.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2552,
-        "lineCount": 70,
+        "sizeBytes": 3410,
+        "lineCount": 97,
         "ext": ".ts"
       }
     },
@@ -38501,8 +38660,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 89088,
-        "lineCount": 1343,
+        "sizeBytes": 92133,
+        "lineCount": 1377,
         "ext": ".ts"
       }
     },
@@ -38644,8 +38803,8 @@
       "filePath": "packages/shared/src/types/academy-workshop.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 42048,
-        "lineCount": 1331,
+        "sizeBytes": 42139,
+        "lineCount": 1330,
         "ext": ".ts"
       }
     },
@@ -38774,8 +38933,8 @@
       "filePath": "packages/shared/src/types/career-progression.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 7554,
-        "lineCount": 182,
+        "sizeBytes": 17056,
+        "lineCount": 420,
         "ext": ".ts"
       }
     },
@@ -39164,8 +39323,8 @@
       "filePath": "packages/shared/src/types/qa-shop.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3608,
-        "lineCount": 152,
+        "sizeBytes": 4009,
+        "lineCount": 162,
         "ext": ".ts"
       }
     },
@@ -42584,6 +42743,13 @@
     {
       "id": "edge:route:GET:/api/career/my-progression:ws:apps/api",
       "source": "route:GET:/api/career/my-progression",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/career/sync-prod:ws:apps/api",
+      "source": "route:POST:/api/career/sync-prod",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -49176,8 +49342,29 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:CvToCvPlusRequirements:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CvToCvPlusRequirements",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:CvToCcRequirements:ws:packages/shared",
       "source": "type:@mos-lab/shared:CvToCcRequirements",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CvPlusToCvPlusPlusRequirements:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CvPlusToCvPlusPlusRequirements",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CvPlusPlusToFmRequirements:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CvPlusPlusToFmRequirements",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -49192,6 +49379,20 @@
     {
       "id": "edge:type:@mos-lab/shared:FmToChoRequirements:ws:packages/shared",
       "source": "type:@mos-lab/shared:FmToChoRequirements",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MaintenanceAndDemotionRules:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MaintenanceAndDemotionRules",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CompensationPackageConfig:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CompensationPackageConfig",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -49213,6 +49414,13 @@
     {
       "id": "edge:type:@mos-lab/shared:CareerProgressionConfig:ws:packages/shared",
       "source": "type:@mos-lab/shared:CareerProgressionConfig",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CareerStaffSummary:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CareerStaffSummary",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -52307,6 +52515,13 @@
     {
       "id": "edge:type:@mos-lab/shared:QaTicketStatus:ws:packages/shared",
       "source": "type:@mos-lab/shared:QaTicketStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:QaAuditEvaluationResult:ws:packages/shared",
+      "source": "type:@mos-lab/shared:QaAuditEvaluationResult",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -57583,6 +57798,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/academy-leads/components/AcademyWorkshopPublishControl.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/academy-leads/components/AcademyWorkshopPublishControl.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/academy-leads/components/AcademyWorkshopQuizManager.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/academy-leads/components/AcademyWorkshopQuizManager.tsx",
       "target": "ws:packages/shared",
@@ -58117,6 +58339,20 @@
     {
       "id": "edge:file:apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -60806,6 +61042,13 @@
       "id": "edge:file:apps/api/src/modules/customers/services/customer-access.service.ts:prisma:crm:CrmCustomerAssignment",
       "source": "file:apps/api/src/modules/customers/services/customer-access.service.ts",
       "target": "prisma:crm:CrmCustomerAssignment",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/services/customer-access.service.ts:prisma:crm:CrmCampaignCustomer",
+      "source": "file:apps/api/src/modules/customers/services/customer-access.service.ts",
+      "target": "prisma:crm:CrmCampaignCustomer",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -66743,14 +66986,21 @@
       "source": "page:/dashboard/career-path",
       "target": "route:GET:/api/career/config",
       "type": "API_CALL",
-      "label": "CALLS career.getConfig"
+      "label": "CALLS career.getStaffProgression"
     },
     {
       "id": "edge:page:/dashboard/career-path:route:GET:/api/career/my-progression",
       "source": "page:/dashboard/career-path",
       "target": "route:GET:/api/career/my-progression",
       "type": "API_CALL",
-      "label": "CALLS career.getConfig"
+      "label": "CALLS career.getStaffProgression"
+    },
+    {
+      "id": "edge:page:/dashboard/career-path:route:POST:/api/career/sync-prod",
+      "source": "page:/dashboard/career-path",
+      "target": "route:POST:/api/career/sync-prod",
+      "type": "API_CALL",
+      "label": "CALLS career.getStaffProgression"
     },
     {
       "id": "edge:page:/dashboard/career-path:route:GET:/api/nyc/config",
@@ -70928,6 +71178,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/career/my-progression",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/career/my-progression",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/career/sync-prod",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/career/sync-prod",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -75429,6 +75686,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/career/my-progression",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/career/my-progression",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/career/sync-prod",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/career/sync-prod",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -82972,6 +83236,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/career/sync-prod",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/career/sync-prod",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/catalog/groups",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/catalog/groups",
@@ -85430,31 +85701,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3012,
-    "totalEdges": 6584,
+    "totalNodes": 3024,
+    "totalEdges": 6600,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 160,
-      "FastifyRoute": 643,
+      "FastifyRoute": 644,
       "Component": 57,
-      "SharedType": 1103,
+      "SharedType": 1110,
       "DesignToken": 12,
       "UIComponent": 207,
-      "File": 827
+      "File": 831
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1275,
-      "HANDLES_ROUTE": 643,
+      "EXPORTS": 1282,
+      "HANDLES_ROUTE": 644,
       "RENDERS": 264,
       "USES_TOKEN": 209,
-      "IMPORTS": 455,
-      "QUERIES_MODEL": 372,
-      "API_CALL": 3366
+      "IMPORTS": 458,
+      "QUERIES_MODEL": 373,
+      "API_CALL": 3370
     },
-    "fastifyRouteCount": 648,
+    "fastifyRouteCount": 649,
     "prismaModelCount": 160,
     "nextPageCount": 57,
-    "sharedTypeCount": 1103
+    "sharedTypeCount": 1110
   },
   "routes": [
     {
@@ -87581,6 +87852,13 @@
     {
       "method": "GET",
       "path": "/api/career/my-progression",
+      "filePath": "apps/api/src/modules/career/career.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "career"
+    },
+    {
+      "method": "POST",
+      "path": "/api/career/sync-prod",
       "filePath": "apps/api/src/modules/career/career.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "career"
@@ -90566,7 +90844,7 @@
       "dbSource": "crm",
       "modelName": "CrmAcademyWorkshop",
       "tableName": "crm_academy_workshops",
-      "fieldCount": 53,
+      "fieldCount": 55,
       "readOnly": false,
       "isCatalogException": false,
       "relations": ["campaignId", "agendaTemplateId"]

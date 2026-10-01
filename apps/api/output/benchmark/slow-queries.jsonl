@@ -2,3 +2,9 @@
 {"type":"SLOW_API","source":"fastify","timestamp":"2026-09-20T03:38:30.611Z","durationMs":1281,"method":"GET","url":"/api/dashboard/today?dateFrom=2026-06-01&dateTo=2026-06-30&endAt=2026-06-30+23:59:59","statusCode":200}
 {"type":"SLOW_API","source":"fastify","timestamp":"2026-09-20T03:38:30.615Z","durationMs":1283,"method":"GET","url":"/api/dashboard/today?dateFrom=2026-07-01&dateTo=2026-07-31","statusCode":200}
 {"type":"PRISMA_QUERY","source":"legacy","timestamp":"2026-09-22T14:32:09.916Z","durationMs":578,"query":"UPDATE promotion \n           SET discount_percentage = ?,\n               discount_amount = ?,\n               is_disabled = ?,\n               date_expired = ?,\n               date_updated = NOW()\n           WHERE id = ?","params":"[0,3000000,1,\"2026-08-31 00:00:00\",740]"}
+{"type":"SLOW_API","source":"fastify","timestamp":"2026-10-01T07:24:56.464Z","durationMs":8014,"method":"POST","url":"/api/ai/avatar-nudge-message","statusCode":200}
+{"type":"SLOW_API","source":"fastify","timestamp":"2026-10-01T07:33:00.052Z","durationMs":7824,"method":"POST","url":"/api/ai/avatar-nudge-message","statusCode":200}
+{"type":"SLOW_API","source":"fastify","timestamp":"2026-10-01T07:52:56.431Z","durationMs":8021,"method":"POST","url":"/api/ai/avatar-nudge-message","statusCode":200}
+{"type":"SLOW_API","source":"fastify","timestamp":"2026-10-01T08:24:06.222Z","durationMs":7816,"method":"POST","url":"/api/ai/avatar-nudge-message","statusCode":200}
+{"type":"SLOW_API","source":"fastify","timestamp":"2026-10-01T08:27:31.056Z","durationMs":8012,"method":"POST","url":"/api/ai/avatar-nudge-message","statusCode":200}
+{"type":"SLOW_API","source":"fastify","timestamp":"2026-10-01T08:28:09.708Z","durationMs":7725,"method":"POST","url":"/api/ai/avatar-nudge-message","statusCode":200}

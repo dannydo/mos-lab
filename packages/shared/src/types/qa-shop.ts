@@ -9,6 +9,7 @@ export interface QaShopBranch {
 export type QaAuditResult = 'PASS' | 'FAIL' | 'NA';
 export type QaSeverity = 'LOW' | 'MEDIUM' | 'MID' | 'HIGH' | 'CRITICAL';
 export type QaTicketStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'VERIFIED';
+export type QaAuditEvaluationResult = 'PASSED' | 'FAILED' | 'REMEDIATION_PENDING';
 
 export interface QaChecklistItem {
   id: string;
@@ -74,6 +75,12 @@ export interface QaDailyAudit {
   status: 'DRAFT' | 'COMPLETED';
   notes?: string;
   createdAt: string;
+  evaluatedStaffId?: number | null;
+  evaluatedStaffName?: string | null;
+  isPreApproved?: boolean;
+  criticalFailuresCount?: number;
+  minorFailuresCount?: number;
+  auditEvaluationResult?: QaAuditEvaluationResult;
   items: QaAuditItemRecord[];
   itemSnapshot?: Record<string, unknown>;
   sectionsSnapshot?: QaChecklistSection[];
@@ -140,6 +147,9 @@ export interface QaSaveAuditInput {
   auditorName: string;
   auditDate: string;
   shift: 'Sáng' | 'Chiều' | 'Tối' | 'Toàn ngày';
+  evaluatedStaffId?: number | null;
+  evaluatedStaffName?: string | null;
+  isPreApproved?: boolean;
   notes?: string;
   items: {
     itemId: string;

@@ -82,22 +82,68 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
   );
 
   /**
-   * Xem tiến trình thăng cấp của một nhân viên cụ thể
-   * GET /api/career/staff/:staffId
+   * Danh sách nhân viên tham gia lộ trình thăng tiến kèm chỉ số thực tế
+   * GET /api/career/staff-list
    */
-  fastify.get<{ Params: { staffId: string } }>(
+  fastify.get<{ Querystring: { role?: string; search?: string } }>(
+    '/career/staff-list',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const staffList = await CareerProgressionService.listStaff(fastify, request.query);
+        return reply.send({ success: true, data: staffList });
+      } catch (err: any) {
+        fastify.log.error({ err }, 'Failed to list career staff');
+        return reply.status(500).send({ success: false, message: 'Lỗi tải danh sách nhân sự' });
+      }
+    }
+  );
+
+  /**
+   * Làm mới dữ liệu từ Production
+   * POST /api/career/sync-prod
+   */
+  fastify.post(
+    '/career/sync-prod',
+    {
+      preHandler: [requireAuth],
+    },
+    async (_request, reply) => {
+      try {
+        CareerProgressionService.invalidateCache();
+        return reply.send({
+          success: true,
+          message: 'Đã xóa bộ nhớ đệm và làm mới dữ liệu mới nhất từ Production thành công!',
+          timestamp: new Date().toISOString(),
+        });
+      } catch (err: any) {
+        fastify.log.error({ err }, 'Failed to sync prod career data');
+        return reply.status(500).send({ success: false, message: 'Lỗi làm mới dữ liệu Production' });
+      }
+    }
+  );
+
+  /**
+   * Xem tiến trình thăng cấp của một nhân viên cụ thể
+   * GET /api/career/staff/:staffId?refresh=true
+   */
+  fastify.get<{ Params: { staffId: string }; Querystring: { refresh?: string } }>(
     '/career/staff/:staffId',
     {
       preHandler: [requireAuth],
     },
     async (request, reply) => {
       const staffId = Number(request.params.staffId);
+      const forceRefresh = request.query?.refresh === 'true';
+
       if (isNaN(staffId) || staffId <= 0) {
         return reply.status(400).send({ success: false, message: 'ID nhân viên không hợp lệ' });
       }
 
       try {
-        const status = await CareerProgressionService.getStaffProgression(fastify, staffId);
+        const status = await CareerProgressionService.getStaffProgression(fastify, staffId, forceRefresh);
         return reply.send({ success: true, data: status });
       } catch (err: any) {
         fastify.log.error({ err, staffId }, 'Failed to get staff career status');
@@ -128,7 +174,7 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
         });
       } catch (err: any) {
         fastify.log.error({ err, staffId }, 'Failed to activate trial gate');
-        return reply.status(500).send({ success: false, message: 'Lỗi kích hoạt ải thử thách' });
+        return reply.status(400).send({ success: false, message: err.message || 'Lỗi kích hoạt ải thử thách' });
       }
     }
   );
@@ -160,7 +206,7 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
         });
       } catch (err: any) {
         fastify.log.error({ err, staffId }, 'Failed to promote staff');
-        return reply.status(500).send({ success: false, message: 'Lỗi phê duyệt thăng cấp' });
+        return reply.status(400).send({ success: false, message: err.message || 'Lỗi phê duyệt thăng cấp' });
       }
     }
   );

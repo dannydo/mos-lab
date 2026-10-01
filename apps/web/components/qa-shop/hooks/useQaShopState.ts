@@ -21,6 +21,11 @@ export function useQaShopState() {
   const [selectedShift, setSelectedShift] = useState<'Sáng' | 'Chiều' | 'Tối' | 'Toàn ngày'>('Sáng');
   const [auditorName, setAuditorName] = useState<string>('');
   const [qaStaffList, setQaStaffList] = useState<QaStaffMember[]>([]);
+  const [selectedTemplateCode, setSelectedTemplateCode] = useState<string>('');
+  const [evaluatedStaffId, setEvaluatedStaffId] = useState<number | null>(null);
+  const [evaluatedStaffName, setEvaluatedStaffName] = useState<string>('');
+  const [isPreApproved, setIsPreApproved] = useState<boolean>(false);
+  const [allStaffList, setAllStaffList] = useState<SafeAny[]>([]);
   const itemNotesRef = useRef<Record<string, string>>({});
   const [itemStatuses, setItemStatuses] = useState<ItemStatusMap>({});
 
@@ -77,15 +82,47 @@ export function useQaShopState() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Active Template for current branch
+  // Active Template for current branch or specific selection
   const activeTemplate = useMemo(() => {
     if (!templates || templates.length === 0) return null;
+    if (selectedTemplateCode) {
+      const match = templates.find((t) => t.code === selectedTemplateCode || t.id === selectedTemplateCode);
+      if (match) return match;
+    }
     return templates.find((t) => t.branchCode === selectedBranch || t.code?.startsWith(selectedBranch)) || templates[0];
-  }, [templates, selectedBranch]);
+  }, [templates, selectedBranch, selectedTemplateCode]);
 
-  // Group sections into 2 Core Areas: LOBBY & LASHROOM
+  // Group sections into 2 Core Areas: LOBBY & LASHROOM or GROOMING & STATION
   const groupedAreas: GroupedArea[] = useMemo(() => {
     if (!activeTemplate || !Array.isArray(activeTemplate.sections)) return [];
+
+    if (activeTemplate.code === 'CV.Personal.Grooming.Station.check') {
+      const groomingSecs = activeTemplate.sections.filter(
+        (s: SafeAny) => s.id === 'sec-cv-grooming' || (s.title || '').includes('Tác Phong')
+      );
+      const stationSecs = activeTemplate.sections.filter(
+        (s: SafeAny) =>
+          s.id === 'sec-cv-station' || (s.title || '').includes('Phòng') || (s.title || '').includes('Giường')
+      );
+      return [
+        {
+          id: 'area-cv-grooming',
+          code: 'GROOMING',
+          title: '👗 TÁC PHONG & DIỆN MẠO BẢN THÂN (Quy chuẩn 5 sao KTV)',
+          badgeColor: 'blue',
+          subSections: groomingSecs,
+          totalItems: groomingSecs.reduce((acc: number, s: SafeAny) => acc + (s.items?.length || 0), 0),
+        },
+        {
+          id: 'area-cv-station',
+          code: 'STATION',
+          title: '🛏️ PHÒNG NỐI MI & GIƯỜNG MI 5S CÁ NHÂN (Vô trùng & Ngăn nắp)',
+          badgeColor: 'purple',
+          subSections: stationSecs,
+          totalItems: stationSecs.reduce((acc: number, s: SafeAny) => acc + (s.items?.length || 0), 0),
+        },
+      ].filter((area) => area.subSections.length > 0);
+    }
 
     const lobbySections: SafeAny[] = [];
     const lashroomSections: SafeAny[] = [];
@@ -164,6 +201,34 @@ export function useQaShopState() {
     fetchQaStaffList();
   }, [fetchQaStaffList]);
 
+  // Fetch all staff for technician evaluation
+  const fetchAllStaff = useCallback(async () => {
+    try {
+      const list = await apiClient.staff.list();
+      setAllStaffList(Array.isArray(list) ? list : []);
+    } catch (err) {
+      console.error('Fetch all staff error:', err);
+      setAllStaffList([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAllStaff();
+  }, [fetchAllStaff]);
+
+  const handleSelectEvaluatedStaff = useCallback(
+    (staffId: number | null) => {
+      setEvaluatedStaffId(staffId);
+      if (!staffId) {
+        setEvaluatedStaffName('');
+        return;
+      }
+      const found = allStaffList.find((s) => s.id === staffId);
+      setEvaluatedStaffName(found ? found.displayName || found.username : `Nhân viên #${staffId}`);
+    },
+    [allStaffList]
+  );
+
   // Fetch QA Shop Data
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -217,10 +282,23 @@ export function useQaShopState() {
   // Compute Live Score Metrics
   const inspectionStats: InspectionStats = useMemo(() => {
     const totalItems = Object.keys(itemStatuses).length;
-    if (totalItems === 0) return { total: 0, passed: 0, failed: 0, na: 0, passRate: 100, failedItemsList: [] };
+    if (totalItems === 0)
+      return {
+        total: 0,
+        passed: 0,
+        failed: 0,
+        criticalFailed: 0,
+        minorFailed: 0,
+        na: 0,
+        passRate: 100,
+        evaluationResult: 'PASSED',
+        failedItemsList: [],
+      };
 
     let passed = 0;
     let failed = 0;
+    let criticalFailed = 0;
+    let minorFailed = 0;
     let na = 0;
     const failedItemsList: InspectionStats['failedItemsList'] = [];
 
@@ -233,10 +311,12 @@ export function useQaShopState() {
             else if (st.result === 'NA') na++;
             else if (st.result === 'FAIL') {
               failed++;
+              if (itm.isCritical) criticalFailed++;
+              else minorFailed++;
               failedItemsList.push({
                 secTitle: sec.title,
                 itemTitle: itm.title,
-                severity: itm.severity || 'MID',
+                severity: itm.severity || (itm.isCritical ? 'CRITICAL' : 'MID'),
                 note: st.note || 'Không đạt quy chuẩn tiêu chí',
                 photoUrl: st.photoUrl || '',
               });
@@ -249,8 +329,27 @@ export function useQaShopState() {
     const scorable = totalItems - na;
     const passRate = scorable > 0 ? Math.round((passed / scorable) * 1000) / 10 : 100;
 
-    return { total: totalItems, passed, failed, na, passRate, failedItemsList };
-  }, [itemStatuses, activeTemplate]);
+    let evaluationResult: 'PASSED' | 'FAILED' | 'REMEDIATION_PENDING' = 'PASSED';
+    if (criticalFailed >= 1 || minorFailed >= 3) {
+      if (isPreApproved) {
+        evaluationResult = 'REMEDIATION_PENDING';
+      } else {
+        evaluationResult = 'FAILED';
+      }
+    }
+
+    return {
+      total: totalItems,
+      passed,
+      failed,
+      criticalFailed,
+      minorFailed,
+      na,
+      passRate,
+      evaluationResult,
+      failedItemsList,
+    };
+  }, [itemStatuses, activeTemplate, isPreApproved]);
 
   const hasRecordedInspectionResult = inspectionStats.passed + inspectionStats.failed + inspectionStats.na > 0;
   const inspectionProgressLabel = hasRecordedInspectionResult ? `${inspectionStats.passRate.toFixed(1)}%` : 'Chưa chấm';
@@ -315,9 +414,10 @@ export function useQaShopState() {
         sectionId: foundSecId,
         title: item.title || '',
         standardRequirement: item.standardRequirement || '',
-        severity: item.severity || (item.isCritical ? 'HIGH' : 'MID'),
+        severity: item.severity || (item.isCritical ? 'CRITICAL' : 'MID'),
         unitQty: item.unitQty || item.weight || 1,
         area: item.area || '',
+        isCritical: item.isCritical !== undefined ? item.isCritical : item.severity === 'CRITICAL',
       });
     } else {
       crudForm.resetFields();
@@ -325,6 +425,7 @@ export function useQaShopState() {
         sectionId: sectionId || activeTemplate?.sections?.[0]?.id,
         severity: 'MID',
         unitQty: 1,
+        isCritical: false,
       });
     }
     setIsItemModalOpen(true);
@@ -351,6 +452,8 @@ export function useQaShopState() {
         sectionId = newSecId;
       }
 
+      const isCriticalVal = typeof values.isCritical === 'boolean' ? values.isCritical : values.severity === 'CRITICAL';
+
       const newItemId = editingItem?.id || `itm-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
       const newItemObj = {
         id: newItemId,
@@ -361,7 +464,7 @@ export function useQaShopState() {
         weight: values.unitQty || 1,
         unitQty: values.unitQty || 1,
         area: values.area || '',
-        isCritical: values.severity === 'CRITICAL',
+        isCritical: isCriticalVal,
         requirePhotoOnFail: true,
       };
 
@@ -423,6 +526,7 @@ export function useQaShopState() {
         }
       }
 
+      const isPersonalCheck = activeTemplate.code === 'CV.Personal.Grooming.Station.check';
       const auditPayload = {
         templateId: activeTemplate.id || 'tpl-wings-dt',
         branchCode: selectedBranch as SafeAny,
@@ -430,7 +534,19 @@ export function useQaShopState() {
         auditorName: auditorName || 'Nguyễn Thị Minh QA',
         auditDate: dayjs().format('YYYY-MM-DD'),
         shift: selectedShift,
-        notes: `Biên bản kiểm tra cửa hàng ${selectedBranch} ca ${selectedShift}. Tỷ lệ đạt: ${inspectionStats.passRate}% (${inspectionStats.failed} lỗi phát hiện).`,
+        evaluatedStaffId: isPersonalCheck ? evaluatedStaffId : null,
+        evaluatedStaffName: isPersonalCheck ? evaluatedStaffName : null,
+        isPreApproved: isPersonalCheck ? isPreApproved : false,
+        notes:
+          isPersonalCheck && evaluatedStaffName
+            ? `Biên bản kiểm định tác phong & phòng mi KTV ${evaluatedStaffName} (${selectedBranch} ca ${selectedShift}). Kết quả: ${
+                inspectionStats.evaluationResult === 'PASSED'
+                  ? 'ĐẠT'
+                  : inspectionStats.evaluationResult === 'REMEDIATION_PENDING'
+                    ? 'Ân hạn khắc phục (Có đơn xin trước)'
+                    : 'KHÔNG ĐẠT (Khóa nâng cấp)'
+              } (${inspectionStats.criticalFailed} lỗi nghiêm trọng, ${inspectionStats.minorFailed} lỗi nhỏ).`
+            : `Biên bản kiểm tra cửa hàng ${selectedBranch} ca ${selectedShift}. Tỷ lệ đạt: ${inspectionStats.passRate}% (${inspectionStats.failed} lỗi phát hiện).`,
         items: auditItems,
         itemSnapshot: itemStatuses,
         sectionsSnapshot: activeTemplate.sections,
@@ -647,6 +763,16 @@ export function useQaShopState() {
     auditorName,
     setAuditorName,
     qaStaffList,
+    selectedTemplateCode,
+    setSelectedTemplateCode,
+    evaluatedStaffId,
+    setEvaluatedStaffId,
+    evaluatedStaffName,
+    setEvaluatedStaffName,
+    handleSelectEvaluatedStaff,
+    isPreApproved,
+    setIsPreApproved,
+    allStaffList,
 
     // Checklist statuses
     itemStatuses,

@@ -33,8 +33,11 @@ export interface InspectionStats {
   total: number;
   passed: number;
   failed: number;
+  criticalFailed: number;
+  minorFailed: number;
   na: number;
   passRate: number;
+  evaluationResult: 'PASSED' | 'FAILED' | 'REMEDIATION_PENDING';
   failedItemsList: FailedItemSummary[];
 }
 

@@ -1,13 +1,15 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Card, Slider, message, Tooltip, Switch } from 'antd';
-import { Sparkles, Trophy, Settings, ChevronRight, Shield, Heart, Zap, Award } from 'lucide-react';
-import type { CareerProgressionConfig, StaffCareerStatus } from '@mos-lab/shared';
+import { Card, Slider, message, Tooltip, Switch, Avatar } from 'antd';
+import { Settings, Zap, Award } from 'lucide-react';
+import type { CareerProgressionConfig, StaffCareerStatus, CareerStaffSummary } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
 import { useTheme } from '../../../context/ThemeContext';
 import { CareerConfigDrawer } from './components/CareerConfigDrawer';
-import { FALLBACK_CAREER_PROGRESSION_CONFIG } from './career-path.constants';
+import { StaffCareerSelector } from './components/StaffCareerSelector';
+import { RealStaffSimulationCard } from './components/RealStaffSimulationCard';
+import { FALLBACK_CAREER_PROGRESSION_CONFIG, getCareerIslands, formatCareerRoleName } from './career-path.constants';
 
 export default function CareerPathPage() {
   const { themeMode } = useTheme();
@@ -30,20 +32,28 @@ export default function CareerPathPage() {
   }, []);
 
   // State
-  const [activeIsland, setActiveIsland] = useState<'cv' | 'cc' | 'fm' | 'cho' | 'boss'>('cv');
-  const [selectedHero, setSelectedHero] = useState<string>('thao_my');
+  const [activeIsland, setActiveIsland] = useState<'cv' | 'cv_plus' | 'cv_plus_plus' | 'fm' | 'cho' | 'boss' | 'cc'>(
+    'cv'
+  );
   const [config, setConfig] = useState<CareerProgressionConfig>(FALLBACK_CAREER_PROGRESSION_CONFIG);
-  const [liveData, setLiveData] = useState<StaffCareerStatus | null>(null);
+  const [staffList, setStaffList] = useState<CareerStaffSummary[]>([]);
+  const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
+  const [selectedStaffStatus, setSelectedStaffStatus] = useState<StaffCareerStatus | null>(null);
+  const [syncingProd, setSyncingProd] = useState<boolean>(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<boolean>(false);
+  const [activeRoleFilter, setActiveRoleFilter] = useState<string>('ALL');
+
   const [loading, setLoading] = useState<boolean>(true);
   const [isConfigDrawerOpen, setIsConfigDrawerOpen] = useState<boolean>(false);
   const [savingConfig, setSavingConfig] = useState<boolean>(false);
 
   // Sliders for interactive simulation
-  const [sliderOrders, setSliderOrders] = useState<number>(340);
+  const [sliderOrders, setSliderOrders] = useState<number>(300);
   const [sliderTip, setSliderTip] = useState<number>(18);
   const [sliderFix, setSliderFix] = useState<number>(1.2);
-  const [sliderHi, setSliderHi] = useState<number>(84);
-  const [sliderCombo, setSliderCombo] = useState<number>(24.5);
+  const [sliderHi, setSliderHi] = useState<number>(85);
+  const [sliderCombo, setSliderCombo] = useState<number>(25);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -54,6 +64,9 @@ export default function CareerPathPage() {
     return {
       ...base,
       ...config,
+      cvToCvPlus: { ...base.cvToCvPlus, ...(config.cvToCvPlus || {}) },
+      cvPlusToCvPlusPlus: { ...base.cvPlusToCvPlusPlus, ...(config.cvPlusToCvPlusPlus || {}) },
+      cvPlusPlusToFm: { ...base.cvPlusPlusToFm, ...(config.cvPlusPlusToFm || {}) },
       cvToCc: { ...base.cvToCc, ...(config.cvToCc || {}) },
       ccToFm: { ...base.ccToFm, ...(config.ccToFm || {}) },
       fmToCho: { ...base.fmToCho, ...(config.fmToCho || {}) },
@@ -62,29 +75,57 @@ export default function CareerPathPage() {
     };
   }, [config]);
 
-  const { cvToCc, ccToFm, fmToCho, choToBoss, rewardRates } = safeConfig;
+  const { cvToCc, cvPlusToCvPlusPlus, cvPlusPlusToFm, ccToFm, fmToCho, choToBoss, rewardRates } = safeConfig;
+
+  const fetchStaffProgression = useCallback(async (staffId: number, refresh = false) => {
+    try {
+      const res = await apiClient.career.getStaffProgression(staffId, refresh);
+      setSelectedStaffStatus(res);
+      if (res?.metrics) {
+        setSliderOrders(res.metrics.ordersCount || 300);
+        setSliderCombo(Math.round((res.metrics.selfComboRate || 0.25) * 100));
+        setSliderTip(Math.round((res.metrics.tipRatioAboveShop || 0.15) * 100));
+        setSliderFix(Number(((res.metrics.fixRate || 0.01) * 100).toFixed(1)));
+        setSliderHi(Math.round((res.metrics.happinessIndex || 0.85) * 100));
+      }
+      if (res?.lastSyncedAt) {
+        setLastSyncedAt(res.lastSyncedAt);
+      }
+    } catch (_err) {
+      // fallback
+    }
+  }, []);
 
   // Load config & live data
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [fetchedConfig, myStatus] = await Promise.allSettled([
+      const [fetchedConfig, fetchedStaffList] = await Promise.allSettled([
         apiClient.career.getConfig(),
-        apiClient.career.getMyProgression(),
+        apiClient.career.listStaff(),
       ]);
 
       if (fetchedConfig.status === 'fulfilled' && fetchedConfig.value?.cvToCc) {
         setConfig(fetchedConfig.value);
       }
-      if (myStatus.status === 'fulfilled' && myStatus.value) {
-        setLiveData(myStatus.value);
+
+      if (fetchedStaffList.status === 'fulfilled' && fetchedStaffList.value?.length > 0) {
+        const list = fetchedStaffList.value;
+        setStaffList(list);
+
+        // Auto select first technician or staff member
+        const defaultStaff = list.find((s) => ['CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole)) || list[0];
+        if (defaultStaff) {
+          setSelectedStaffId(defaultStaff.id);
+          fetchStaffProgression(defaultStaff.id, false);
+        }
       }
     } catch (_err) {
       // Graceful fallback to default simulation
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchStaffProgression]);
 
   useEffect(() => {
     loadData();
@@ -211,35 +252,85 @@ export default function CareerPathPage() {
     render();
   };
 
-  // Change preset hero
-  // Change preset hero
-  const handleSelectHero = (heroVal: string) => {
+  const handleSelectStaff = (staffId: number) => {
     playSound('pop');
-    setSelectedHero(heroVal);
-    if (heroVal === 'thao_my') {
-      setSliderOrders(340);
-      setSliderTip(15);
-      setSliderFix(1.2);
-      setSliderHi(84);
-      setSliderCombo(28.0);
-    } else if (heroVal === 'lan_anh') {
-      setSliderOrders(180);
-      setSliderTip(5);
-      setSliderFix(3.4);
-      setSliderHi(62);
-      setSliderCombo(15.0);
-    } else if (heroVal === 'bao_tran') {
-      setSliderOrders(490);
-      setSliderTip(25);
-      setSliderFix(0.4);
-      setSliderHi(94);
-      setSliderCombo(38.0);
-    } else if (heroVal === 'my_account' && liveData) {
-      setSliderOrders(liveData.metrics.ordersCount || 300);
-      setSliderTip(Math.round((liveData.metrics.tipRatioAboveShop || 0) * 100));
-      setSliderFix(Number(((liveData.metrics.fixRate || 0) * 100).toFixed(1)));
-      setSliderHi(Math.round((liveData.metrics.happinessIndex || 0.8) * 100));
-      setSliderCombo(liveData.metrics.selfComboRate ? Math.round(liveData.metrics.selfComboRate * 100) : 26);
+    setSelectedStaffId(staffId);
+    fetchStaffProgression(staffId, false);
+  };
+
+  const handleSyncProd = async () => {
+    try {
+      setSyncingProd(true);
+      const res = await apiClient.career.syncProd();
+      message.success(res.message || 'Đã làm mới dữ liệu từ Production!');
+      setLastSyncedAt(res.timestamp || new Date().toISOString());
+
+      const updatedList = await apiClient.career.listStaff();
+      setStaffList(updatedList);
+
+      if (selectedStaffId) {
+        await fetchStaffProgression(selectedStaffId, true);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Lỗi làm mới dữ liệu';
+      message.error(msg);
+    } finally {
+      setSyncingProd(false);
+    }
+  };
+
+  const handleActivateTrial = async () => {
+    if (!selectedStaffId) return;
+    try {
+      setActionLoading(true);
+      const res = await apiClient.career.activateTrial(selectedStaffId);
+      setSelectedStaffStatus(res);
+      playSound('fanfare');
+      triggerConfetti();
+      message.success('Đã mở khóa Ải Trùm Cuối: Bắt đầu 30 ngày thử thách tự tư vấn!');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Lỗi mở ải';
+      message.error(msg);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handlePromote = async () => {
+    if (!selectedStaffId || !selectedStaffStatus) return;
+    try {
+      setActionLoading(true);
+      const res = await apiClient.career.promoteStaff(selectedStaffId, selectedStaffStatus.targetRole);
+      setSelectedStaffStatus(res);
+      playSound('fanfare');
+      triggerConfetti();
+      message.success(
+        `🎉 Chúc mừng ${selectedStaffStatus.staffName} đã thăng cấp thành công lên ${formatCareerRoleName(selectedStaffStatus.targetRole)}!`
+      );
+      setStaffList((prev) =>
+        prev.map((s) => (s.id === selectedStaffId ? { ...s, careerRole: selectedStaffStatus.targetRole } : s))
+      );
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Lỗi duyệt thăng cấp';
+      message.error(msg);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleSwitchSpecialist = async () => {
+    if (!selectedStaffId) return;
+    try {
+      setActionLoading(true);
+      const res = await apiClient.career.switchToSpecialist(selectedStaffId);
+      setSelectedStaffStatus(res);
+      playSound('fanfare');
+      message.info('⭐ Đã chuyển thành công sang Lộ trình Chuyên Gia (Master Technician)!');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Lỗi chuyển nhánh';
+      message.error(msg);
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -271,128 +362,7 @@ export default function CareerPathPage() {
   };
 
   // Island details
-  const islands = [
-    {
-      id: 'cv' as const,
-      name: 'CV · Thợ Lash',
-      badge: 'Ải 1',
-      icon: '👁️',
-      sub: '70% Tip + Thâm Niên',
-      title: 'Tập Sự Thiên Thần · Lash Artisan',
-      desc: 'Đôi bàn tay mềm mại, từng sợi mi êm ru ru giấc ngủ nàng thơ.',
-      focus: 'Kỹ thuật tinh xảo & An toàn tuyệt đối tại giường (3 tháng liền)',
-      skills: [
-        { name: 'Khử Trùng Phép Thuật', desc: 'Vệ sinh giường, nhíp tiệt trùng 100%, 0 biên bản QA/QC' },
-        { name: 'Nối Mi Êm Ái', desc: 'Đúng SLA, không cộm, không cay mắt' },
-        { name: 'Bảo Hành Kỹ Thuật', desc: 'Chịu trách nhiệm sửa ca Fix không tính công' },
-      ],
-      perks: [
-        'Hưởng trọn vẹn 70% tổng tiền tip khách yêu quý (20% CC + 3% CS)',
-        'Thưởng nóng tiền tươi khi khách đánh giá 5★',
-        'Thưởng giữ chân khách quen (Retention Bonus)',
-        'Thưởng Thâm Niên: +5% đến +20% trên Thưởng CV Xoay hàng tháng',
-      ],
-      gateText: `Đạt ${cvToCc.minOrders} ca mi (3 tháng liên tiếp) + Tip cao hơn TB shop ≥ ${(cvToCc.minTipRatioAboveShop * 100).toFixed(0)}% + Fix ≤ ${(cvToCc.maxFixRate * 100).toFixed(1)}% + HI ≥ ${(cvToCc.minHappinessIndex * 100).toFixed(0)}% (0 biên bản QA/QC) ➔ Mở khóa ải Trùm Cuối Tự Bán Combo (≥ ${(cvToCc.minSelfComboRate * 100).toFixed(0)}% khách của mình) để thăng cấp CC!`,
-    },
-    {
-      id: 'cc' as const,
-      name: 'CC · Phù Thủy Sảnh',
-      badge: 'Ải 2',
-      icon: '🌸',
-      sub: `Lv × ${rewardRates.ccBonusRatePerLevel}đ`,
-      title: 'Chiến Binh Nụ Cười · Client Consultant',
-      desc: 'Nụ cười tỏa nắng chào đón, lắng nghe và thấu hiểu phong cách của từng nàng thơ.',
-      focus: 'Tư vấn chuyên sâu, chốt combo & lan tỏa niềm vui',
-      skills: [
-        { name: 'Thấu Cảm Khách Hàng', desc: 'Nhìn dáng mắt, gợi ý dáng mi tôn nét quý phái' },
-        { name: 'Bậc Thầy Chốt Combo', desc: 'Tư vấn trọn gói mi + dưỡng, tối ưu chi phí cho khách' },
-        {
-          name: 'Đại Sứ Google 5★',
-          desc: `Đạt tối thiểu ${ccToFm.minMonthlyGoogleReviews || 30} Google Review 5 sao/tháng`,
-        },
-      ],
-      perks: [
-        'Lương giờ + Thưởng Level CC tăng dần đều (Level × 65đ)',
-        '20% tiền tip từ khách hàng (10% khi chia 2 CC)',
-        'Thưởng doanh số Combo & Sản phẩm bán lẻ',
-        'Thưởng Thâm Niên: +5% đến +20% trên Thưởng CC Cash hàng tháng',
-        'Cơ hội tranh cúp Chiến Thần Bán Hàng & Minigame hàng tuần',
-      ],
-      gateText: `Thâm niên CC ≥ ${ccToFm.minMonthsInRole} tháng + Tối thiểu ${ccToFm.minMonthlyGoogleReviews || 30} Google Review/tháng + 0 biên bản HR/QA-QC + Kiểm tra kho & CSVC hàng tuần ➔ Thăng cấp Floor Manager (FM)!`,
-    },
-    {
-      id: 'fm' as const,
-      name: 'FM · Nữ Thần Sàn',
-      badge: 'Ải 3',
-      icon: '🏰',
-      sub: '% Shop + Kho',
-      title: 'Nhạc Trưởng Vận Hành · Floor Manager',
-      desc: 'Giữ cho cả tiệm vận hành chuẩn xác như đồng hồ Thụy Sĩ. 100% Lý tính & Kỷ luật.',
-      focus: 'Quản trị kho hàng hàng tuần, kiểm soát 5 giác quan CSVC & nâng đỡ đồng đội',
-      skills: [
-        { name: 'Mắt Thần Kho Bãi', desc: 'Kiểm kê kho & CSVC hàng tuần, chống thất thoát ≤ 0.5%' },
-        { name: 'Nâng Tầm Đồng Đội', desc: 'Chăm sóc và kèm cặp giúp nhân sự có điểm HI thấp tiến bộ hơn' },
-        {
-          name: 'Giám Sát 5 Giác Quan',
-          desc: 'Mắt thấy sạch, tai nghe dịu, mũi ngửi thơm, giường nằm êm, trà bánh ngon',
-        },
-      ],
-      perks: [
-        'Lương cứng cấp quản lý + Thưởng % Doanh thu chi nhánh (0.8%)',
-        'Thưởng vượt target doanh số shop hàng tháng',
-        `Túi Chuối Thần Kỳ: Được cấp ${rewardRates.fmMonthlyBananaGrant} Chuối/tháng để thưởng nóng tức thì cho nhân viên xuất sắc`,
-        'Thưởng Tiết Kiệm: Nhận 20% số tiền chi phí vận hành tiết kiệm được (khi kho hao hụt ≤ 0.5% & vật tư ≤ 5%)',
-      ],
-      gateText: `Chi nhánh đạt Target ≥ ${fmToCho.minTargetHitMonths} tháng + Giúp đỡ người có HI thấp tiến bộ + Thất thoát kho ≤ ${(fmToCho.maxInventoryLossRate * 100).toFixed(1)}% + CSVC 5 giác quan ≥ ${fmToCho.minFacilityScore}% ➔ Thăng cấp Chief Happiness Officer (CHO)!`,
-    },
-    {
-      id: 'cho' as const,
-      name: 'CHO · Mẹ Thiên Thần',
-      badge: 'Ải 4',
-      icon: '💖',
-      sub: 'Khách Mới 1/Shop',
-      title: 'Nữ Thần Hạnh Phúc · Chief Happiness Officer',
-      desc: 'Trái tim của chi nhánh. 100% Cảm tính & Yêu thương con người. Duy nhất 1 người/Shop. Tập trung 100% Khách Mới & Hạnh Phúc Thiên Thần (không gánh P&L).',
-      focus: 'Đón tiếp và thu hút khách mới (ra tiền!) & Nâng đỡ điểm HI Thiên Thần',
-      skills: [
-        { name: 'Người Giữ Lửa Văn Hóa', desc: 'Lắng nghe tâm tư, chữa lành áp lực và nâng đỡ bạn có điểm HI thấp' },
-        {
-          name: 'Lan Tỏa & Thu Hút Khách Mới',
-          desc: 'Đón tiếp chuẩn 5 sao cho khách mới đến shop (Định mức ≤ 20K/khách)',
-        },
-        { name: 'Bồi Dưỡng Kế Cận', desc: 'Kèm cặp và đào tạo thế hệ FM & CHO mới tiếp quản' },
-      ],
-      perks: [
-        'Gói đãi ngộ Executive cấp Trưởng Ban (Lương cứng 11M)',
-        `Thưởng trực tiếp theo số lượng khách mới đến shop (Đạt ≥ ${choToBoss.minMonthlyNewCustomers || 60} khách mới/tháng hoặc 50K/khách)`,
-        `Thưởng gắn kết nội bộ khi điểm eNPS Thiên Thần ≥ ${choToBoss.minStaffEnps} & nâng đỡ thợ HI thấp`,
-        'Thưởng Tiết Kiệm: Đồng hưởng 20% chi phí vận hành tiết kiệm được cùng FM',
-        'Được tài trợ 100% các khóa đào tạo Lãnh đạo Khai vấn chuyên sâu',
-      ],
-      gateText: `Shop có lãi P&L dương liên tục ≥ ${choToBoss.minProfitableMonths} tháng + Khách mới đến shop ≥ ${choToBoss.minMonthlyNewCustomers || 60} khách/tháng + Biên LN ròng ≥ ${(choToBoss.minNetProfitMargin * 100).toFixed(0)}% + Đã đào tạo thành công 1 FM mới & 1 CHO kế cận ➔ Bổ nhiệm làm BOSS Co-Owner!`,
-    },
-    {
-      id: 'boss' as const,
-      name: 'BOSS · Co-Owner',
-      badge: 'Ải 5',
-      icon: '👑',
-      sub: 'Cổ Tức P&L',
-      title: 'Nữ Hoàng Đồng Sáng Lập · Partner & Co-Owner',
-      desc: 'Đỉnh cao sự nghiệp. Từ bàn tay cầm nhíp trở thành Bà Chủ đồng sở hữu tiệm. Trách nhiệm tối cao: Tối ưu chi phí & Lợi nhuận P&L.',
-      focus: 'Tối ưu chi phí vận hành, quản trị P&L, chia sẻ lợi nhuận & nhân bản chi nhánh',
-      skills: [
-        { name: 'Tầm Nhìn Chiến Lược', desc: 'Đồng hành cùng Danny mở rộng chuỗi chi nhánh' },
-        { name: 'Quản Trị & Tối Ưu Chi Phí', desc: 'Cân đối P&L, siết chặt lãng phí, nâng cao biên lợi nhuận ròng' },
-        { name: 'Nhân Bản Văn Hóa', desc: 'Truyền cảm hứng và bệ phóng cho hàng trăm bạn nữ trẻ yêu nghề' },
-      ],
-      perks: [
-        'Nhận Cổ tức Lợi nhuận P&L chi nhánh hàng quý (15% - 20% Lợi nhuận ròng)',
-        'Đặc quyền cấp vốn mở chi nhánh nhượng quyền Wings Lashes mới',
-        'Tự do tài chính và vị thế Người dẫn dắt trong ngành làm đẹp',
-      ],
-      gateText: 'Đỉnh vinh quang! Bạn đã đạt nấc thang cao nhất và trở thành Đồng sở hữu Wings Lashes.',
-    },
-  ];
+  const islands = useMemo(() => getCareerIslands(safeConfig), [safeConfig]);
 
   const currentIslandData = islands.find((i) => i.id === activeIsland) || islands[0];
   const expProgressStyle = { width: `${Math.min(100, Math.round((sliderOrders / cvToCc.minOrders) * 100))}%` };
@@ -403,39 +373,37 @@ export default function CareerPathPage() {
 
       {/* TOP GAMER STATUS BAR (PLAYER HUD) */}
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-pink-200 dark:border-slate-800 px-3.5 py-2.5 shadow-xs">
-        <div className="max-w-md mx-auto flex items-center justify-between">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
           {/* Player Avatar & Status */}
           <div className="flex items-center gap-2.5">
             <div className="relative">
               <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-400 via-rose-400 to-purple-400 p-0.5 shadow-md shadow-pink-500/25">
-                <div className="w-full h-full rounded-[14px] bg-slate-900 flex items-center justify-center text-xl overflow-hidden">
-                  🧝‍♀️
-                </div>
+                <Avatar
+                  src={selectedStaffStatus?.avatarUrl || undefined}
+                  shape="square"
+                  className="w-full h-full rounded-[14px] bg-slate-900 flex items-center justify-center text-lg overflow-hidden font-black text-white border-0 [&>img]:object-cover [&>img]:w-full [&>img]:h-full"
+                >
+                  {selectedStaffStatus?.staffName ? selectedStaffStatus.staffName.slice(0, 1).toUpperCase() : '🧝‍♀️'}
+                </Avatar>
               </div>
               <span className="absolute -bottom-1 -right-1 text-[10px] font-black bg-pink-500 text-white px-1 py-0.2 rounded-full border border-white font-mono">
-                Lv.4
+                {formatCareerRoleName(selectedStaffStatus?.currentRole || 'CV')}
               </span>
             </div>
 
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-black text-xs sm:text-sm text-slate-900 dark:text-white">
-                  {selectedHero === 'my_account' && liveData
-                    ? liveData.staffName
-                    : selectedHero === 'lan_anh'
-                      ? 'Lan Anh'
-                      : selectedHero === 'bao_tran'
-                        ? 'Bảo Trân'
-                        : 'Thảo My'}
+                  {selectedStaffStatus?.staffName || 'Đang chọn nhân sự...'}
                 </span>
                 <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300">
-                  ✨ Tu Chân CV
+                  ✨ {formatCareerRoleName(selectedStaffStatus?.currentRole || 'CV')}
                 </span>
               </div>
 
               {/* Mini EXP Bar */}
               <div className="flex items-center gap-1.5 mt-0.5">
-                <div className="w-20 sm:w-24 h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-300 dark:border-slate-700">
+                <div className="w-20 sm:w-28 h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-300 dark:border-slate-700">
                   <div
                     className="h-full bg-gradient-to-r from-pink-500 to-purple-500 rounded-full transition-all duration-300"
                     style={expProgressStyle}
@@ -449,11 +417,11 @@ export default function CareerPathPage() {
           </div>
 
           {/* Currencies & Admin Setting Button */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             {/* Chuối (Banana Coin) */}
             <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs font-bold font-mono shadow-xs">
               <span>🍌</span>
-              <span className="tabular-nums">1,450</span>
+              <span className="tabular-nums">{safeConfig.rewardRates.fmMonthlyBananaGrant} Chuối</span>
             </div>
 
             {/* Admin Config Button */}
@@ -474,15 +442,15 @@ export default function CareerPathPage() {
       </header>
 
       {/* MAIN CONTAINER */}
-      <main className="max-w-md mx-auto px-3.5 pt-3.5 space-y-4">
-        {/* WORLD MAP BANNER: 5 FLOATING ISLANDS */}
+      <main className="max-w-5xl mx-auto px-3.5 pt-3.5 space-y-4">
+        {/* WORLD MAP BANNER: 6 FLOATING ISLANDS */}
         <div className="rounded-3xl p-4 bg-gradient-to-br from-pink-50 via-purple-50 to-sky-50 dark:from-slate-900 dark:via-purple-950/40 dark:to-slate-900 border-2 border-pink-200/80 dark:border-pink-500/30 shadow-md relative overflow-hidden">
           <div className="flex items-center justify-between mb-2">
             <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-pink-500 text-white text-[10px] font-black tracking-wide shadow-xs">
               🗺️ BẢN ĐỒ THẾ GIỚI THIÊN THẦN
             </div>
             <span className="text-[10px] text-pink-600 dark:text-pink-300 font-bold font-mono">
-              5 Vương Quốc · Vuốt ➔
+              6 Vương Quốc · Vuốt ➔
             </span>
           </div>
 
@@ -491,10 +459,11 @@ export default function CareerPathPage() {
             <span className="text-sm">✨</span>
           </h1>
           <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-snug mt-1">
-            Vượt ải Thợ Kỹ Thuật ➔ Mở khóa Phù Thủy Sảnh ➔ Nhạc Trưởng Sàn ➔ Nữ Thần Hạnh Phúc ➔ Nữ Hoàng Đồng Sáng Lập!
+            Vượt ải Thợ Kỹ Thuật ➔ Thợ Tự Chủ ➔ Đàn Chị Sảnh ➔ Nhạc Trưởng Sàn ➔ Nữ Thần Hạnh Phúc ➔ Nữ Hoàng Đồng Sáng
+            Lập!
           </p>
 
-          {/* 5 ISLANDS INTERACTIVE TRACK */}
+          {/* 6 ISLANDS INTERACTIVE TRACK */}
           <div className="mt-3.5 pt-3 border-t border-pink-200/60 dark:border-pink-500/20">
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 pt-0.5 -mx-2 px-2 scroll-smooth">
               {islands.map((island) => {
@@ -538,11 +507,37 @@ export default function CareerPathPage() {
           </div>
         </div>
 
-        {/* ACTIVE REALM HERO CARD */}
-        <div className="rounded-3xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3.5">
-          <div className="flex items-start justify-between">
+        {/* STAFF SELECTOR BAR */}
+        <StaffCareerSelector
+          staffList={staffList}
+          selectedStaffId={selectedStaffId}
+          onSelectStaff={handleSelectStaff}
+          onSyncProd={handleSyncProd}
+          syncing={syncingProd}
+          lastSyncedAt={lastSyncedAt}
+          activeRoleFilter={activeRoleFilter}
+          onRoleFilterChange={setActiveRoleFilter}
+        />
+
+        {/* REAL STAFF SIMULATION CARD (FULL-WIDTH CENTERPIECE) */}
+        <RealStaffSimulationCard
+          status={selectedStaffStatus}
+          config={safeConfig}
+          sliderOrders={sliderOrders}
+          setSliderOrders={setSliderOrders}
+          sliderCombo={sliderCombo}
+          setSliderCombo={setSliderCombo}
+          onActivateTrial={handleActivateTrial}
+          onPromote={handlePromote}
+          onSwitchSpecialist={handleSwitchSpecialist}
+          loadingAction={actionLoading}
+        />
+
+        {/* ACTIVE REALM LORE & SKILL ENCYCLOPEDIA */}
+        <div className="rounded-3xl p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-1">
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300">
+              <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300">
                 {currentIslandData.badge}: {currentIslandData.name}
               </span>
               <h2 className="text-base font-black text-slate-900 dark:text-white mt-1">{currentIslandData.title}</h2>
@@ -550,326 +545,108 @@ export default function CareerPathPage() {
                 &ldquo;{currentIslandData.desc}&rdquo;
               </p>
             </div>
-            <span className="text-3xl p-2 rounded-2xl bg-pink-50 dark:bg-slate-800 border border-pink-100 dark:border-slate-700">
+            <span className="text-3xl p-2.5 rounded-2xl bg-pink-50 dark:bg-slate-800 border border-pink-100 dark:border-slate-700 shrink-0 self-start sm:self-auto">
               {currentIslandData.icon}
             </span>
           </div>
 
-          <div className="text-[11px] text-slate-600 dark:text-slate-300 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <strong>Trọng tâm sứ mệnh:</strong> {currentIslandData.focus}
-          </div>
-
-          {/* SKILLS ACCORDION */}
-          <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-            <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-              <Zap className="w-3.5 h-3.5 text-amber-500" />
-              <span>BỘ KỸ NĂNG CẦN LUYỆN</span>
-            </div>
-            <div className="space-y-1.5">
-              {currentIslandData.skills.map((skill, idx) => (
-                <div
-                  key={idx}
-                  className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between"
-                >
-                  <div>
-                    <div className="text-xs font-bold text-slate-900 dark:text-white">{skill.name}</div>
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400">{skill.desc}</div>
-                  </div>
-                  <span className="text-[9px] font-black text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-500/10 px-1.5 py-0.5 rounded-md font-mono border border-pink-200 dark:border-pink-800">
-                    Lv.Max
-                  </span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+            {/* Sứ mệnh */}
+            <div className="space-y-2">
+              <div className="text-xs font-bold text-slate-800 dark:text-slate-200">🎯 Trọng tâm sứ mệnh</div>
+              <div className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                {currentIslandData.focus}
+              </div>
+              <div className="pt-1">
+                <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 text-[11px] text-purple-900 dark:text-purple-300">
+                  🎯 <strong>Cổng thăng cấp:</strong> {currentIslandData.gateText}
                 </div>
-              ))}
+              </div>
+            </div>
+
+            {/* Skills */}
+            <div className="space-y-2">
+              <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 text-amber-500" />
+                <span>Bộ kỹ năng cần luyện</span>
+              </div>
+              <div className="space-y-1.5">
+                {currentIslandData.skills.map((skill, idx) => (
+                  <div
+                    key={idx}
+                    className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between"
+                  >
+                    <div className="min-w-0 pr-2">
+                      <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{skill.name}</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{skill.desc}</div>
+                    </div>
+                    <span className="text-[9px] font-black text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-500/10 px-1.5 py-0.5 rounded-md font-mono border border-pink-200 dark:border-pink-800 shrink-0">
+                      Lv.Max
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Perks */}
+            <div className="p-3.5 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-500/30 space-y-2">
+              <div className="text-xs font-black text-amber-900 dark:text-amber-300 flex items-center gap-1">
+                <Award className="w-3.5 h-3.5 text-amber-500" />
+                <span>Quyền lợi & Thu nhập mở khóa</span>
+              </div>
+              <ul className="text-[11px] text-amber-800 dark:text-amber-200 space-y-1.5 pl-4 list-disc">
+                {currentIslandData.perks.map((perk, idx) => (
+                  <li key={idx}>{perk}</li>
+                ))}
+              </ul>
             </div>
           </div>
-
-          {/* PERKS LIST */}
-          <div className="p-3 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-500/30 space-y-1.5">
-            <div className="text-xs font-black text-amber-900 dark:text-amber-300 flex items-center gap-1">
-              <Award className="w-3.5 h-3.5 text-amber-500" />
-              <span>QUYỀN LỢI & THU NHẬP MỞ KHÓA</span>
-            </div>
-            <ul className="text-[11px] text-amber-800 dark:text-amber-200 space-y-1 pl-4 list-disc">
-              {currentIslandData.perks.map((perk, idx) => (
-                <li key={idx}>{perk}</li>
-              ))}
-            </ul>
-          </div>
-
-          {/* GATE INFO NOTE */}
-          <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 text-[11px] text-purple-900 dark:text-purple-300">
-            🎯 <strong>Cánh Cổng Thăng Cấp:</strong> {currentIslandData.gateText}
-          </div>
-        </div>
-
-        {/* RPG QUEST BOARD & BOSS BATTLE (SIMULATOR FOR IPHONE 12) */}
-        <div className="rounded-3xl p-4 bg-white dark:bg-slate-900 border-2 border-purple-200 dark:border-purple-900/50 shadow-sm space-y-3.5">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
-            <div>
-              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-500/20 text-purple-800 dark:text-purple-300 text-[10px] font-black">
-                ⚔️ ĐẤU TRƯỜNG THĂNG CẤP (CV ➔ CC)
-              </div>
-              <h2 className="text-sm font-black text-slate-900 dark:text-white mt-0.5">Chinh Phục 5 Ải Thử Thách</h2>
-            </div>
-
-            <select
-              value={selectedHero}
-              onChange={(e) => handleSelectHero(e.target.value)}
-              className="bg-pink-50 dark:bg-slate-950 border border-pink-300 dark:border-purple-800 text-pink-900 dark:text-purple-300 text-xs rounded-xl px-2 py-1 font-bold focus:outline-none"
-            >
-              <option value="thao_my">Thảo My (Chiến Thần)</option>
-              <option value="lan_anh">Lan Anh (Học Việc)</option>
-              <option value="bao_tran">Bảo Trân (Siêu Sao)</option>
-              {liveData && <option value="my_account">Tài khoản của tôi (Live)</option>}
-            </select>
-          </div>
-
-          {/* 4 Standard Quests + 1 Final Boss Battle */}
-          <div className="space-y-2.5">
-            {/* Quest 1 */}
-            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 space-y-1.5">
-              <div className="flex justify-between items-center text-xs font-bold">
-                <span className="text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                  <span>🎯</span>
-                  <span>1. Vũ Điệu Nhíp Vàng (3 Tháng Liền)</span>
-                </span>
-                <span
-                  className={`font-mono font-black tabular-nums ${
-                    q1Passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'
-                  }`}
-                >
-                  {sliderOrders} / {cvToCc.minOrders} ca {q1Passed ? '✔' : '✖'}
-                </span>
-              </div>
-              <Slider
-                min={100}
-                max={600}
-                value={sliderOrders}
-                onChange={(val) => {
-                  playSound('pop');
-                  setSliderOrders(val);
-                }}
-              />
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 flex justify-between">
-                <span>Cần tối thiểu: {cvToCc.minOrders} ca mi trong 3 tháng liên tiếp</span>
-                <span className={q1Passed ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
-                  {q1Passed ? 'ĐẠT CHỈ TIÊU' : 'CHƯA ĐỦ CA'}
-                </span>
-              </div>
-            </div>
-
-            {/* Quest 2 */}
-            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 space-y-1.5">
-              <div className="flex justify-between items-center text-xs font-bold">
-                <span className="text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                  <span>💖</span>
-                  <span>2. Cơn Mưa Tiền Tip (Cao Hơn TB Shop +{(cvToCc.minTipRatioAboveShop * 100).toFixed(0)}%)</span>
-                </span>
-                <span
-                  className={`font-mono font-black tabular-nums ${
-                    q2Passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'
-                  }`}
-                >
-                  {sliderTip > 0 ? `+${sliderTip}%` : `${sliderTip}%`} {q2Passed ? '✔' : '✖'}
-                </span>
-              </div>
-              <Slider
-                min={-30}
-                max={50}
-                value={sliderTip}
-                onChange={(val) => {
-                  playSound('pop');
-                  setSliderTip(val);
-                }}
-              />
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 flex justify-between">
-                <span>Yêu cầu: % Tip cao hơn TB shop ≥ +{(cvToCc.minTipRatioAboveShop * 100).toFixed(0)}%</span>
-                <span className={q2Passed ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
-                  {q2Passed ? 'KHÁCH CỰC MÊ' : 'CẦN NỤ CƯỜI HƠN'}
-                </span>
-              </div>
-            </div>
-
-            {/* Quest 3 */}
-            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 space-y-1.5">
-              <div className="flex justify-between items-center text-xs font-bold">
-                <span className="text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                  <span>🛡️</span>
-                  <span>3. Khắc Tinh Rụng Mi (Lỗi Fix)</span>
-                </span>
-                <span
-                  className={`font-mono font-black tabular-nums ${
-                    q3Passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'
-                  }`}
-                >
-                  {sliderFix.toFixed(1)}% {q3Passed ? '✔' : '✖'}
-                </span>
-              </div>
-              <Slider
-                min={0}
-                max={5}
-                step={0.1}
-                value={sliderFix}
-                onChange={(val) => {
-                  playSound('pop');
-                  setSliderFix(val);
-                }}
-              />
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 flex justify-between">
-                <span>Tiêu chuẩn: Tỷ lệ Fix &le; {(cvToCc.maxFixRate * 100).toFixed(1)}%</span>
-                <span className={q3Passed ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
-                  {q3Passed ? 'TAY NGHỀ VỮNG' : 'LỖI FIX CAO'}
-                </span>
-              </div>
-            </div>
-
-            {/* Quest 4 */}
-            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 space-y-1.5">
-              <div className="flex justify-between items-center text-xs font-bold">
-                <span className="text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                  <span>⭐</span>
-                  <span>4. Nụ Cười Thiên Sứ (HI Check-in Thả Tim)</span>
-                </span>
-                <span
-                  className={`font-mono font-black tabular-nums ${
-                    q4Passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'
-                  }`}
-                >
-                  {sliderHi}% {q4Passed ? '✔' : '✖'}
-                </span>
-              </div>
-              <Slider
-                min={40}
-                max={100}
-                value={sliderHi}
-                onChange={(val) => {
-                  playSound('pop');
-                  setSliderHi(val);
-                }}
-              />
-              <div className="text-[10px] text-slate-500 dark:text-slate-400 flex justify-between">
-                <span>
-                  Mục tiêu: Đạt &ge; {(cvToCc.minHappinessIndex * 100).toFixed(0)}% (TB shop 75%, 0 biên bản QA/QC)
-                </span>
-                <span className={q4Passed ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
-                  {q4Passed ? 'SIÊU THIỆN CẢM' : 'CHƯA ĐẠT HI'}
-                </span>
-              </div>
-            </div>
-
-            {/* Quest 5: TRÙM CUỐI */}
-            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-rose-500/10 border-2 border-pink-400/80 dark:border-pink-500/80 shadow-md space-y-2">
-              <div className="flex justify-between items-center text-xs font-black">
-                <span className="text-pink-700 dark:text-pink-300 flex items-center gap-1.5">
-                  <span className="text-base">🔥</span>
-                  <span>TRÙM CUỐI: TỰ BÁN COMBO (Khách của mình)</span>
-                </span>
-                <span
-                  className={`font-mono text-sm font-black tabular-nums ${
-                    bossPassed ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'
-                  }`}
-                >
-                  {sliderCombo.toFixed(1)}% {bossPassed ? '✔ VƯỢT MỐC' : '✖'}
-                </span>
-              </div>
-              <Slider
-                min={0}
-                max={50}
-                step={0.5}
-                value={sliderCombo}
-                onChange={(val) => {
-                  playSound('pop');
-                  setSliderCombo(val);
-                }}
-              />
-              <div className="flex items-center justify-between text-[10px] text-slate-600 dark:text-slate-300 font-bold">
-                <span className="px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300 border border-pink-300 dark:border-pink-700">
-                  MỐC SỐNG CÒN: &ge; {(cvToCc.minSelfComboRate * 100).toFixed(0)}% TỰ BÁN COMBO KHÁCH NỐI MI
-                </span>
-                <span className={bossPassed ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}>
-                  {bossPassed ? 'ĐÃ VƯỢT ẢI TRÙM' : 'DƯỚI CHỈ TIÊU'}
-                </span>
-              </div>
-            </div>
-
-            {/* QA/QC Invariant Note */}
-            <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 flex items-center justify-between text-[10px] text-rose-800 dark:text-rose-300 font-medium">
-              <span>⚠️ Kỷ luật vàng: 0 biên bản QA/QC (Bị 1 biên bản vi phạm là FAILED ngay)</span>
-              <span className="font-bold text-emerald-600 dark:text-emerald-400">0 BIÊN BẢN ✔</span>
-            </div>
-          </div>
-
-          {/* VICTORY OR ALTERNATE PATH BANNER */}
-          {allPassed && (
-            <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-700 text-xs text-emerald-900 dark:text-emerald-200 space-y-1">
-              <div className="font-black flex items-center gap-1.5">
-                <span>🏆</span>
-                <span>HOÀN THÀNH 5/5 THỬ THÁCH! VICTORY</span>
-              </div>
-              <p className="text-[11px] leading-relaxed">
-                Tuyệt vời! Thiên Thần đã hạ gục toàn bộ 4 chỉ số tay nghề thợ mi (300 ca trong 3 tháng liền, tip cao hơn
-                TB shop 10%, HI &ge; 70%, 0 biên bản QA/QC) và vượt qua Ải Trùm Cuối với tỷ lệ tự bán Combo{' '}
-                {sliderCombo.toFixed(1)}% (&ge; {(cvToCc.minSelfComboRate * 100).toFixed(0)}%). Hãy nhấn nút bên dưới để
-                mở khóa chức danh <strong>Phù Thủy Sảnh (CC)</strong>!
-              </p>
-            </div>
-          )}
-
-          {isMasterTech && (
-            <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-700 text-xs text-amber-900 dark:text-amber-200 space-y-1">
-              <div className="font-black flex items-center gap-1.5">
-                <span>⭐</span>
-                <span>LỘ TRÌNH ĐỀ XUẤT: MASTER TECHNICIAN</span>
-              </div>
-              <p className="text-[11px] leading-relaxed">
-                Thiên Thần đạt điểm tuyệt đối về kỹ thuật nối mi nhưng không phù hợp với bán hàng tư vấn (dưới{' '}
-                {(cvToCc.minSelfComboRate * 100).toFixed(0)}% Combo). Bạn hoàn toàn có thể phát huy tối đa theo nhánh{' '}
-                <strong>Chuyên Viên Bậc Cao (Master Tech)</strong> chuyên phục vụ khách VIP và đào tạo thợ mới!
-              </p>
-            </div>
-          )}
         </div>
       </main>
 
       {/* BOTTOM ACTION BAR */}
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-pink-200 dark:border-slate-800 p-3 pb-[max(12px,env(safe-area-inset-bottom))] shadow-lg">
-        <div className="max-w-md mx-auto flex items-center justify-between gap-2.5">
+        <div className="max-w-5xl mx-auto flex items-center justify-between gap-2.5">
           <div className="pl-14 sm:pl-0 text-[11px] leading-tight min-w-0 flex-1">
             <div className="font-bold text-slate-800 dark:text-slate-200 truncate">
-              {allPassed
-                ? 'ĐỦ ĐIỀU KIỆN THĂNG CẤP CC'
-                : isMasterTech
-                  ? 'ĐỀ XUẤT NHÁNH MASTER TECH'
-                  : `TIẾN ĐỘ: ${passedCount}/5 ẢI ĐẠT`}
+              {selectedStaffStatus
+                ? `${selectedStaffStatus.staffName}: ${formatCareerRoleName(selectedStaffStatus.currentRole)} ➔ ${formatCareerRoleName(selectedStaffStatus.targetRole)}`
+                : `TIẾN ĐỘ THĂNG CẤP`}
             </div>
             <div className="text-pink-600 dark:text-pink-400 font-mono text-[10px] truncate">
-              {allPassed ? 'Mở khóa Level × 65đ + 20% Tip (CV nhận 70%)' : 'Cần rèn luyện thêm'}
+              {selectedStaffStatus?.qualifiedQuests.allPassed
+                ? `Đủ điều kiện thăng cấp lên ${formatCareerRoleName(selectedStaffStatus.targetRole)}`
+                : isMasterTech
+                  ? 'Đề xuất nhánh Master Tech'
+                  : 'Đang rèn luyện theo chỉ số thực tế từ Production'}
             </div>
           </div>
 
           <button
             onClick={() => {
-              if (allPassed) {
-                triggerConfetti();
-                message.success('🎉 Chúc mừng Thiên Thần đã thăng cấp thành công lên Phù Thủy Sảnh (CC)!');
+              if (selectedStaffStatus?.qualifiedQuests.allPassed) {
+                handlePromote();
               } else if (isMasterTech) {
-                playSound('fanfare');
-                message.info('⭐ Đã chuyển thành công sang Lộ trình Chuyên Gia (Master Technician)!');
+                handleSwitchSpecialist();
               } else {
-                playSound('pop');
-                message.warning(`Bạn cần hoàn thành cả 5 ải (Hiện đạt ${passedCount}/5)!`);
+                handleActivateTrial();
               }
             }}
+            disabled={actionLoading}
             className={`flex-shrink-0 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 ${
-              allPassed
+              selectedStaffStatus?.qualifiedQuests.allPassed
                 ? 'bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 text-white shadow-pink-500/30 animate-pulse'
-                : isMasterTech
-                  ? 'bg-amber-500 text-white shadow-amber-500/30'
-                  : 'bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-not-allowed'
+                : 'bg-amber-500 text-white shadow-amber-500/30'
             }`}
           >
             <span>🎉</span>
-            <span>{allPassed ? 'THĂNG CẤP LÊN CC!' : isMasterTech ? 'CHỌN MASTER TECH' : 'CHƯA ĐỦ ĐIỀU KIỆN'}</span>
+            <span>
+              {selectedStaffStatus?.qualifiedQuests.allPassed
+                ? `DUYỆT LÊN ${formatCareerRoleName(selectedStaffStatus.targetRole)}`
+                : isMasterTech
+                  ? 'CHỌN MASTER TECH'
+                  : 'MỞ ẢI TRÙM CUỐI'}
+            </span>
           </button>
         </div>
       </div>

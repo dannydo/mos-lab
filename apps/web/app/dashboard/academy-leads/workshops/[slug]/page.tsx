@@ -38,6 +38,7 @@ import {
   AcademyWorkshopMetrics,
   AcademyWorkshopSettlement,
 } from '../../components/AcademyWorkshopWorkspaceSections';
+import AcademyWorkshopPublishControl from '../../components/AcademyWorkshopPublishControl';
 import AcademyWorkshopAgendaManager from '../../components/AcademyWorkshopAgendaManager';
 import AcademyWorkshopMenuManager from '../../components/AcademyWorkshopMenuManager';
 import AcademyWorkshopEquipmentManager from '../../components/AcademyWorkshopEquipmentManager';
@@ -204,6 +205,16 @@ export default function AcademyWorkshopWorkspacePage() {
         />
       }
     >
+      <AcademyWorkshopPublishControl
+        workshop={workshop}
+        canManage={canManage}
+        onUpdated={(updated) => {
+          setWorkshop(updated);
+          if (updated.slug !== slug) {
+            router.replace(`/dashboard/academy-leads/workshops/${encodeURIComponent(updated.slug)}`);
+          }
+        }}
+      />
       <AcademyWorkshopMetrics summary={workshop.summary} />
 
       <Tabs

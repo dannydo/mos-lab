@@ -135,6 +135,25 @@ export const ManageItemsModal: React.FC<ManageItemsModalProps> = ({
               render: (val: string) => renderSeverityDot(val),
             },
             {
+              title: 'Cổng Thăng Cấp',
+              dataIndex: 'isCritical',
+              key: 'isCritical',
+              width: 120,
+              align: 'center',
+              render: (val: boolean, record: SafeAny) => {
+                const isCrit = val !== undefined ? val : record.severity === 'CRITICAL';
+                return isCrit ? (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                    🔴 Rớt ngay
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                    🟡 3 lỗi rớt
+                  </span>
+                );
+              },
+            },
+            {
               title: 'SL',
               dataIndex: 'unitQty',
               key: 'unitQty',

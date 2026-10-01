@@ -32,7 +32,9 @@ function createTestApp() {
       $queryRawUnsafe: async (sql: string) => {
         if (sql.includes('COUNT(os.id)') || sql.includes('COUNT(DISTINCT os.order_id)')) return [{ total_orders: 340 }];
         if (sql.includes('fix_count')) return [{ fix_count: 4 }];
-        if (sql.includes('staff_tip')) return [{ staff_tip: 1500000 }];
+        if (sql.includes('shop_total_tip')) return [{ shop_total_tip: 10000000, shop_orders: 1000 }];
+        if (sql.includes('staff_tip')) return [{ staff_tip: 15000000, total_tip: 15000000 }];
+        if (sql.includes('banana_count') || sql.includes('Credit')) return [{ banana_count: 5 }];
         return [];
       },
     },
@@ -116,12 +118,17 @@ test('GET /career/my-progression calculates technician metrics against dynamic c
   assert.equal(body.success, true);
   assert.equal(body.data.staffId, 10);
   assert.equal(body.data.currentRole, 'CV');
-  assert.equal(body.data.targetRole, 'CC');
+  assert.equal(body.data.targetRole, 'CV_PLUS');
   assert.equal(body.data.metrics.ordersCount, 340);
-  assert.equal(body.data.qualifiedQuests.foundationCompleted, true);
+  assert.ok(body.data.metrics.qaAudit);
+  assert.equal(body.data.metrics.qaAudit.isPassed, false);
+  assert.equal(body.data.metrics.qaAudit.weeklyAuditRate, 0);
+  assert.equal(body.data.metrics.qaAudit.totalAudits, 0);
+  assert.equal(body.data.qualifiedQuests.qaAuditCompleted, false);
+  assert.equal(body.data.qualifiedQuests.foundationCompleted, false);
 });
 
-test('POST /career/staff/:id/trial activates 30-day trial gate', async () => {
+test('POST /career/staff/:id/trial rejects if QA/QC audit is not passed', async () => {
   const app = createTestApp();
   await app.register(careerRoutes);
 
@@ -131,7 +138,25 @@ test('POST /career/staff/:id/trial activates 30-day trial gate', async () => {
     headers: { 'x-test-role': 'admin' },
   });
 
-  assert.equal(res.statusCode, 200);
+  assert.equal(res.statusCode, 400);
   const body = JSON.parse(res.body);
-  assert.equal(body.success, true);
+  assert.equal(body.success, false);
+  assert.match(body.message, /QA\/QC/);
+});
+
+test('POST /career/staff/:id/promote requires QA/QC audit to be passed', async () => {
+  const app = createTestApp();
+  await app.register(careerRoutes);
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/career/staff/10/promote',
+    headers: { 'x-test-role': 'admin' },
+    payload: { newRole: 'CV_PLUS' },
+  });
+
+  assert.equal(res.statusCode, 400);
+  const body = JSON.parse(res.body);
+  assert.equal(body.success, false);
+  assert.match(body.message, /QA\/QC/);
 });
