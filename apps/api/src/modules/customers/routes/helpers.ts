@@ -49,7 +49,22 @@ export const createRouteHelpers = (fastify: FastifyInstance) => ({
 
     reply.status(403).send({
       error: 'Forbidden',
-      message: 'Telesales chỉ được xem và thao tác trên khách hàng đã được phân bổ cho mình.',
+      message: 'Telesales chỉ được xem khách hàng đã được phân bổ cho mình hoặc trong Active Shared Pool.',
+    });
+    return false;
+  },
+  ensureTelesalesCustomerMutateAccess: async (
+    request: SafeAny,
+    reply: SafeAny,
+    customerId: number
+  ): Promise<boolean> => {
+    const user = request.user as { id: number; role?: string };
+    const check = await CustomerAccessService.canMutateCustomer(fastify, user, customerId);
+    if (check.allowed) return true;
+
+    reply.status(403).send({
+      error: 'Forbidden',
+      message: check.reason || 'Telesales chỉ được thao tác trên khách hàng đã được phân bổ cho mình.',
     });
     return false;
   },

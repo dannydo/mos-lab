@@ -66,10 +66,11 @@ export async function callRoutes(fastify: FastifyInstance) {
         });
       }
 
-      if (!(await CustomerAccessService.canTelesalesAccessCustomer(fastify, user, legacyUserId))) {
+      const mutateCheck = await CustomerAccessService.canMutateCustomer(fastify, user, legacyUserId);
+      if (!mutateCheck.allowed) {
         return reply.status(403).send({
           error: 'Forbidden',
-          message: 'Telesales chỉ được thao tác trên khách hàng đã được phân bổ cho mình.',
+          message: mutateCheck.reason || 'Telesales chỉ được thao tác trên khách hàng đã được phân bổ cho mình.',
         });
       }
 

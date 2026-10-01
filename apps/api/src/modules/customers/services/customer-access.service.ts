@@ -58,9 +58,107 @@ export class CustomerAccessService {
   }
 
   /**
-   * Customer access is decided solely from the current durable owner row.
-   * Historic batch items, assignment history, and ledger events are evidence,
-   * not authorization grants.
+   * Finds an active Shared Pool campaign customer record for a given staff member.
+   * A customer is considered in the staff member's Active Pool if:
+   * 1. The campaign is ACTIVE, not deleted, and operates in SHARED_POOL mode.
+   * 2. The staff member is authorized for this campaign (assignedStaffIds is empty or contains staffId).
+   * 3. The customer is active in the campaign (removedAt is null, poolStatus is not 'EXCLUDED').
+   * 4. The customer's batch has been activated (batchNumber <= campaign.currentBatchNumber).
+   */
+  static async findActiveSharedPoolCustomer(
+    fastify: FastifyInstance,
+    staffId: number,
+    legacyUserId: number
+  ): Promise<{
+    campaignId: number;
+    campaignCustomerId: number;
+    poolStatus: string;
+    claimedByStaffId: number | null;
+    claimedByStaffName: string | null;
+    claimExpiresAt: Date | null;
+    isClaimedByMe: boolean;
+    isClaimedByOther: boolean;
+  } | null> {
+    if (!fastify.prisma?.crm?.crmCampaignCustomer?.findMany) return null;
+
+    const records = await fastify.prisma.crm.crmCampaignCustomer.findMany({
+      where: {
+        legacyUserId,
+        removedAt: null,
+        poolStatus: { not: 'EXCLUDED' },
+        campaign: {
+          operationMode: 'SHARED_POOL',
+          status: 'ACTIVE',
+          deletedAt: null,
+        },
+      },
+      select: {
+        id: true,
+        campaignId: true,
+        batchNumber: true,
+        poolStatus: true,
+        claimedByStaffId: true,
+        claimedByStaffName: true,
+        claimExpiresAt: true,
+        campaign: {
+          select: {
+            id: true,
+            currentBatchNumber: true,
+            assignedStaffIds: true,
+          },
+        },
+      },
+    });
+
+    if (records.length === 0) return null;
+
+    const now = new Date();
+    for (const record of records) {
+      const { campaign } = record;
+      let isMember = false;
+      if (!campaign.assignedStaffIds || campaign.assignedStaffIds.trim() === '' || campaign.assignedStaffIds === '[]') {
+        isMember = true;
+      } else {
+        try {
+          const allowedIds = JSON.parse(campaign.assignedStaffIds);
+          if (Array.isArray(allowedIds)) {
+            isMember = allowedIds.length === 0 || allowedIds.includes(staffId);
+          }
+        } catch {
+          isMember = false;
+        }
+      }
+
+      if (!isMember) continue;
+
+      const currentBatch = campaign.currentBatchNumber || 1;
+      if (record.batchNumber <= currentBatch) {
+        const isClaimedActive =
+          record.poolStatus === 'CLAIMED' &&
+          Boolean(record.claimExpiresAt && record.claimExpiresAt > now);
+
+        const isClaimedByMe = isClaimedActive && record.claimedByStaffId === staffId;
+        const isClaimedByOther = isClaimedActive && record.claimedByStaffId !== staffId;
+
+        return {
+          campaignId: record.campaignId,
+          campaignCustomerId: record.id,
+          poolStatus: record.poolStatus,
+          claimedByStaffId: record.claimedByStaffId,
+          claimedByStaffName: record.claimedByStaffName,
+          claimExpiresAt: record.claimExpiresAt,
+          isClaimedByMe,
+          isClaimedByOther,
+        };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Customer read access: granted to global managers/admins, durable assigned telesales,
+   * or any verified staff member whose active Shared Pool campaign includes this customer.
    */
   static async canAccessCustomer(
     fastify: FastifyInstance,
@@ -77,7 +175,54 @@ export class CustomerAccessService {
       select: { id: true },
     });
 
-    return Boolean(assignment);
+    if (assignment) return true;
+
+    const sharedPoolCust = await this.findActiveSharedPoolCustomer(fastify, user.id, legacyUserId);
+    return Boolean(sharedPoolCust);
+  }
+
+  /**
+   * Customer mutate access: write operations (edit, booking, notes, calls) require either
+   * durable ownership or an active Claim lock in the Shared Pool.
+   */
+  static async canMutateCustomer(
+    fastify: FastifyInstance,
+    user: CustomerAccessUser,
+    legacyUserId: number
+  ): Promise<{ allowed: boolean; reason?: string }> {
+    if (this.hasGlobalCustomerAccess(user)) return { allowed: true };
+
+    const assignment = await fastify.prisma.crm.crmCustomerAssignment.findFirst({
+      where: {
+        legacyUserId,
+        staffId: user.id,
+      },
+      select: { id: true },
+    });
+
+    if (assignment) return { allowed: true };
+
+    const sharedPoolCust = await this.findActiveSharedPoolCustomer(fastify, user.id, legacyUserId);
+    if (sharedPoolCust) {
+      if (sharedPoolCust.isClaimedByMe) {
+        return { allowed: true };
+      }
+      if (sharedPoolCust.isClaimedByOther) {
+        return {
+          allowed: false,
+          reason: `Khách hàng đang được xử lý bởi ${sharedPoolCust.claimedByStaffName || 'nhân viên khác'} trong Shared Pool.`,
+        };
+      }
+      return {
+        allowed: false,
+        reason: 'Bạn cần nhận (Claim) khách hàng này trong Shared Pool trước khi thao tác.',
+      };
+    }
+
+    return {
+      allowed: false,
+      reason: 'Telesales chỉ được xem và thao tác trên khách hàng đã được phân bổ cho mình.',
+    };
   }
 
   /** @deprecated Use canAccessCustomer so the global-role branch is explicit. */

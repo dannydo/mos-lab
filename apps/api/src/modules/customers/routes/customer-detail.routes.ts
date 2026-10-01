@@ -10,7 +10,7 @@ import { TeamService } from '../../teams/team.service.js';
 import { createRouteHelpers } from './helpers.js';
 
 export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
-  const { ensureTelesalesCustomerAccess } = createRouteHelpers(fastify);
+  const { ensureTelesalesCustomerAccess, ensureTelesalesCustomerMutateAccess } = createRouteHelpers(fastify);
 
   // DELETE /api/customers/:id
   // Soft delete a customer by setting is_deleted = 1
@@ -370,7 +370,7 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Invalid customer ID' });
     }
 
-    if (!(await ensureTelesalesCustomerAccess(request, reply, customerId))) return;
+    if (!(await ensureTelesalesCustomerMutateAccess(request, reply, customerId))) return;
 
     const { name, email, gender, dob, phones, isForeign, is_foreign } = request.body as {
       name: string;

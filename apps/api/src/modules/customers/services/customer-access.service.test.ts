@@ -133,3 +133,230 @@ test('telesales and legacy booker accounts are allowed into LoCa but remain cust
   assert.equal(isTelesalesRole('booker'), true);
   assert.equal(canAccessLoca('technician'), false);
 });
+
+test('Shared Pool - verified campaign member can read customer history in Active Pool without personal assignment', async () => {
+  const fastify = {
+    prisma: {
+      crm: {
+        crmCustomerAssignment: {
+          findFirst: async () => null, // No personal assignment
+        },
+        crmCampaignCustomer: {
+          findMany: async () => [
+            {
+              id: 101,
+              campaignId: 5,
+              batchNumber: 1,
+              poolStatus: 'AVAILABLE',
+              claimedByStaffId: null,
+              claimedByStaffName: null,
+              claimExpiresAt: null,
+              campaign: {
+                id: 5,
+                currentBatchNumber: 1,
+                assignedStaffIds: JSON.stringify([41, 42]),
+              },
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  const canAccess = await CustomerAccessService.canAccessCustomer(
+    fastify as never,
+    { id: 41, role: 'telesales' },
+    888
+  );
+
+  assert.equal(canAccess, true);
+});
+
+test('Shared Pool - denied read access if staff is not in campaign assignedStaffIds', async () => {
+  const fastify = {
+    prisma: {
+      crm: {
+        crmCustomerAssignment: {
+          findFirst: async () => null,
+        },
+        crmCampaignCustomer: {
+          findMany: async () => [
+            {
+              id: 101,
+              campaignId: 5,
+              batchNumber: 1,
+              poolStatus: 'AVAILABLE',
+              claimedByStaffId: null,
+              claimedByStaffName: null,
+              claimExpiresAt: null,
+              campaign: {
+                id: 5,
+                currentBatchNumber: 1,
+                assignedStaffIds: JSON.stringify([99, 100]), // Staff 41 is NOT in this list
+              },
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  const canAccess = await CustomerAccessService.canAccessCustomer(
+    fastify as never,
+    { id: 41, role: 'telesales' },
+    888
+  );
+
+  assert.equal(canAccess, false);
+});
+
+test('Shared Pool - denied read access if customer is in an unactivated future batch', async () => {
+  const fastify = {
+    prisma: {
+      crm: {
+        crmCustomerAssignment: {
+          findFirst: async () => null,
+        },
+        crmCampaignCustomer: {
+          findMany: async () => [
+            {
+              id: 101,
+              campaignId: 5,
+              batchNumber: 3, // Batch 3, but campaign is still on Batch 1
+              poolStatus: 'AVAILABLE',
+              claimedByStaffId: null,
+              claimedByStaffName: null,
+              claimExpiresAt: null,
+              campaign: {
+                id: 5,
+                currentBatchNumber: 1,
+                assignedStaffIds: null, // open to all
+              },
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  const canAccess = await CustomerAccessService.canAccessCustomer(
+    fastify as never,
+    { id: 41, role: 'telesales' },
+    888
+  );
+
+  assert.equal(canAccess, false);
+});
+
+test('Shared Pool - mutate access requires an active Claim lock', async () => {
+  const now = new Date();
+  const future = new Date(now.getTime() + 15 * 60 * 1000);
+
+  // Case 1: Unclaimed customer in Shared Pool -> Cannot mutate without claim
+  const fastifyUnclaimed = {
+    prisma: {
+      crm: {
+        crmCustomerAssignment: { findFirst: async () => null },
+        crmCampaignCustomer: {
+          findMany: async () => [
+            {
+              id: 101,
+              campaignId: 5,
+              batchNumber: 1,
+              poolStatus: 'AVAILABLE',
+              claimedByStaffId: null,
+              claimedByStaffName: null,
+              claimExpiresAt: null,
+              campaign: { id: 5, currentBatchNumber: 1, assignedStaffIds: null },
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  const resUnclaimed = await CustomerAccessService.canMutateCustomer(
+    fastifyUnclaimed as never,
+    { id: 41, role: 'telesales' },
+    888
+  );
+  assert.equal(resUnclaimed.allowed, false);
+  assert.match(resUnclaimed.reason || '', /Claim/i);
+
+  // Case 2: Claimed by another staff -> Cannot mutate
+  const fastifyClaimedByOther = {
+    prisma: {
+      crm: {
+        crmCustomerAssignment: { findFirst: async () => null },
+        crmCampaignCustomer: {
+          findMany: async () => [
+            {
+              id: 101,
+              campaignId: 5,
+              batchNumber: 1,
+              poolStatus: 'CLAIMED',
+              claimedByStaffId: 99,
+              claimedByStaffName: 'Nguyen Van B',
+              claimExpiresAt: future,
+              campaign: { id: 5, currentBatchNumber: 1, assignedStaffIds: null },
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  const resClaimedOther = await CustomerAccessService.canMutateCustomer(
+    fastifyClaimedByOther as never,
+    { id: 41, role: 'telesales' },
+    888
+  );
+  assert.equal(resClaimedOther.allowed, false);
+  assert.match(resClaimedOther.reason || '', /Nguyen Van B|nhân viên khác/i);
+
+  // Case 3: Claimed by me and still valid -> Allowed!
+  const fastifyClaimedByMe = {
+    prisma: {
+      crm: {
+        crmCustomerAssignment: { findFirst: async () => null },
+        crmCampaignCustomer: {
+          findMany: async () => [
+            {
+              id: 101,
+              campaignId: 5,
+              batchNumber: 1,
+              poolStatus: 'CLAIMED',
+              claimedByStaffId: 41,
+              claimedByStaffName: 'Telesales A',
+              claimExpiresAt: future,
+              campaign: { id: 5, currentBatchNumber: 1, assignedStaffIds: null },
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  const resClaimedMe = await CustomerAccessService.canMutateCustomer(
+    fastifyClaimedByMe as never,
+    { id: 41, role: 'telesales' },
+    888
+  );
+  assert.equal(resClaimedMe.allowed, true);
+
+  // Case 4: Durable personal assignment -> Always allowed regardless of pool
+  const fastifyAssigned = {
+    prisma: {
+      crm: {
+        crmCustomerAssignment: { findFirst: async () => ({ id: 1 }) },
+      },
+    },
+  };
+
+  const resAssigned = await CustomerAccessService.canMutateCustomer(
+    fastifyAssigned as never,
+    { id: 41, role: 'telesales' },
+    888
+  );
+  assert.equal(resAssigned.allowed, true);
+});

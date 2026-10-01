@@ -2027,6 +2027,11 @@ export class CampaignService {
         OR: [{ legacyUserId: customerId }, { id: customerId }],
         removedAt: null,
       },
+      include: {
+        campaign: {
+          select: { operationMode: true },
+        },
+      },
     });
 
     if (!campaignCustomer) {
@@ -2034,17 +2039,30 @@ export class CampaignService {
     }
 
     if (restrictToAssignedStaffId) {
-      const assignment = await fastify.prisma.crm.crmCustomerAssignment.findFirst({
-        where: {
-          legacyUserId: campaignCustomer.legacyUserId,
-          staffId: restrictToAssignedStaffId,
-        },
-        select: { id: true },
-      });
-      if (!assignment) {
-        const error = new Error('Telesales chỉ được thao tác trên khách hàng đã được phân bổ cho mình.');
-        (error as any).statusCode = 403;
-        throw error;
+      if (campaignCustomer.campaign?.operationMode === 'SHARED_POOL') {
+        const now = new Date();
+        const isClaimedByMe =
+          campaignCustomer.poolStatus === 'CLAIMED' &&
+          campaignCustomer.claimedByStaffId === restrictToAssignedStaffId &&
+          Boolean(campaignCustomer.claimExpiresAt && campaignCustomer.claimExpiresAt > now);
+        if (!isClaimedByMe) {
+          const error = new Error('Bạn cần nhận (Claim) khách hàng này trong Shared Pool trước khi thao tác.');
+          (error as any).statusCode = 403;
+          throw error;
+        }
+      } else {
+        const assignment = await fastify.prisma.crm.crmCustomerAssignment.findFirst({
+          where: {
+            legacyUserId: campaignCustomer.legacyUserId,
+            staffId: restrictToAssignedStaffId,
+          },
+          select: { id: true },
+        });
+        if (!assignment) {
+          const error = new Error('Telesales chỉ được thao tác trên khách hàng đã được phân bổ cho mình.');
+          (error as any).statusCode = 403;
+          throw error;
+        }
       }
     }
 
@@ -2252,7 +2270,7 @@ export class CampaignService {
       select: { id: true, legacyUserId: true, addedAt: true },
     });
 
-    if (restrictToAssignedStaffId && customers.length > 0) {
+    if (restrictToAssignedStaffId && customers.length > 0 && campaign.operationMode !== 'SHARED_POOL') {
       const assignments = await fastify.prisma.crm.crmCustomerAssignment.findMany({
         where: {
           staffId: restrictToAssignedStaffId,
