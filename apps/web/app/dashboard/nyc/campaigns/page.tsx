@@ -242,6 +242,17 @@ export default function CampaignManagementPage() {
         dates: null,
         status: 'ACTIVE',
         showInSidebar: true,
+        operationMode: 'PERSONAL',
+        sharedPoolBatchSize: 100,
+        sharedPoolMaxClaims: 1,
+        sharedPoolTtl: 15,
+        sharedPoolCooldown: 60,
+        sharedPoolWarningThreshold: 30,
+        sharedPoolCriticalThreshold: 10,
+        recycleThinking: 3,
+        recycleNoAnswer: 1,
+        recycleBusy: 1,
+        recycleError: 1,
         touchpoints: [
           { label: 'Chạm D1', key: 'TP_D1', icon: 'Smile', daysMin: 1, daysMax: 1, color: '#34ff1a', sortOrder: 1 },
           { label: 'Chạm D3', key: 'TP_D3', icon: 'Handshake', daysMin: 3, daysMax: 3, color: '#2e1ac7', sortOrder: 2 },
@@ -280,6 +291,16 @@ export default function CampaignManagementPage() {
       const isShown =
         campaignVisibilityMap[details.slug] !== false && campaignVisibilityMap[String(details.id)] !== false;
 
+      let sharedPoolConfig: any = {};
+      try {
+        if (details.sharedPoolConfig) {
+          sharedPoolConfig =
+            typeof details.sharedPoolConfig === 'string'
+              ? JSON.parse(details.sharedPoolConfig)
+              : details.sharedPoolConfig;
+        }
+      } catch {}
+
       setTimeout(() => {
         form.resetFields();
         form.setFieldsValue({
@@ -289,6 +310,17 @@ export default function CampaignManagementPage() {
           dates: dates,
           status: details.status,
           showInSidebar: isShown,
+          operationMode: details.operationMode || 'PERSONAL',
+          sharedPoolBatchSize: sharedPoolConfig.batchSize || 100,
+          sharedPoolMaxClaims: sharedPoolConfig.maxClaimsPerStaff || 1,
+          sharedPoolTtl: sharedPoolConfig.claimTtlMinutes || 15,
+          sharedPoolCooldown: sharedPoolConfig.cooldownMinutes || 60,
+          sharedPoolWarningThreshold: sharedPoolConfig.warningThreshold || 30,
+          sharedPoolCriticalThreshold: sharedPoolConfig.criticalThreshold || 10,
+          recycleThinking: sharedPoolConfig.recycleRules?.THINKING ?? 3,
+          recycleNoAnswer: sharedPoolConfig.recycleRules?.NO_ANSWER ?? 1,
+          recycleBusy: sharedPoolConfig.recycleRules?.BUSY ?? 1,
+          recycleError: sharedPoolConfig.recycleRules?.ERROR ?? 1,
           assignedStaffIds: details.assignedStaffIds || [],
           touchpoints: (details.touchpoints || details.CampaignTouchpoint || []).map((tp: any, idx: number) => ({
             label: tp.label,
@@ -497,6 +529,26 @@ export default function CampaignManagementPage() {
           };
         });
 
+      const operationMode = values.operationMode || 'PERSONAL';
+      let sharedPoolConfig: any = undefined;
+      if (operationMode === 'SHARED_POOL') {
+        sharedPoolConfig = {
+          batchSize: Number(values.sharedPoolBatchSize) || 100,
+          claimTtlMinutes: Number(values.sharedPoolTtl) || 15,
+          maxClaimsPerStaff: Number(values.sharedPoolMaxClaims) || 1,
+          cooldownMinutes: Number(values.sharedPoolCooldown) || 60,
+          warningThreshold: Number(values.sharedPoolWarningThreshold) || 30,
+          criticalThreshold: Number(values.sharedPoolCriticalThreshold) || 10,
+          isPaused: editingCampaign?.sharedPoolConfig?.isPaused ?? false,
+          recycleRules: {
+            THINKING: Number(values.recycleThinking) || 3,
+            NO_ANSWER: Number(values.recycleNoAnswer) || 1,
+            BUSY: Number(values.recycleBusy) || 1,
+            ERROR: Number(values.recycleError) || 1,
+          },
+        };
+      }
+
       if (editingCampaign) {
         const updateDto: UpdateCampaignDto = {
           name: values.name,
@@ -504,6 +556,8 @@ export default function CampaignManagementPage() {
           startDate,
           endDate,
           status: values.status,
+          operationMode,
+          sharedPoolConfig,
           assignedStaffIds: values.assignedStaffIds || null,
           touchpoints,
           promotions,
@@ -518,6 +572,8 @@ export default function CampaignManagementPage() {
           startDate,
           endDate,
           status: values.status || 'ACTIVE',
+          operationMode,
+          sharedPoolConfig,
           assignedStaffIds: values.assignedStaffIds || null,
           touchpoints,
           promotions,
@@ -614,6 +670,28 @@ export default function CampaignManagementPage() {
       dataIndex: 'status',
       key: 'status',
       render: (status: CampaignStatus) => renderStatusTag(status),
+    },
+    {
+      title: 'Chế độ khai thác',
+      key: 'operationMode',
+      render: (_: any, record: Campaign) => {
+        if (record.operationMode === 'SHARED_POOL') {
+          return (
+            <Tooltip title="Teamwork / Shared Pool: Khai thác theo Batch, Claim & Chống gọi trùng">
+              <Tag color="purple" className="font-semibold inline-flex items-center gap-1">
+                <TeamOutlined /> SHARED POOL
+              </Tag>
+            </Tooltip>
+          );
+        }
+        return (
+          <Tooltip title="Cá nhân: Data phân bổ riêng cho từng Booker">
+            <Tag color="cyan" className="inline-flex items-center gap-1">
+              <UserOutlined /> CÁ NHÂN
+            </Tag>
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'Quyền truy cập',
@@ -1021,6 +1099,180 @@ export default function CampaignManagementPage() {
                           label: `${s.displayName || s.username} (${s.username})`,
                         }))}
                       />
+                    </Form.Item>
+
+                    <Divider className="my-3" />
+
+                    <Form.Item
+                      name="operationMode"
+                      label={
+                        <span className="inline-flex items-center gap-1.5 font-semibold text-sm">
+                          <TeamOutlined className="text-purple-500" />
+                          <span>Chế độ khai thác Data</span>
+                        </span>
+                      }
+                      initialValue="PERSONAL"
+                      tooltip="Chế độ phân bổ và khai thác khách hàng của chiến dịch"
+                    >
+                      <Select
+                        options={[
+                          {
+                            value: 'PERSONAL',
+                            label: '👤 Cá nhân — Data phân bổ riêng cho từng Booker (Chỉ NV được giao mới thấy)',
+                          },
+                          {
+                            value: 'SHARED_POOL',
+                            label: '👥 Teamwork / Shared Pool — Khai thác chung data theo Batch, Claim & Chống gọi trùng',
+                          },
+                        ]}
+                      />
+                    </Form.Item>
+
+                    <Form.Item
+                      noStyle
+                      shouldUpdate={(prevValues, currentValues) => prevValues.operationMode !== currentValues.operationMode}
+                    >
+                      {({ getFieldValue }) => {
+                        const isSharedPool = getFieldValue('operationMode') === 'SHARED_POOL';
+                        if (!isSharedPool) return null;
+
+                        return (
+                          <div className="p-3.5 rounded-lg border border-purple-200 dark:border-purple-900/60 bg-purple-50/50 dark:bg-purple-950/20 space-y-3">
+                            <div className="flex items-center justify-between pb-1.5 border-b border-purple-200 dark:border-purple-900/40">
+                              <span className="font-semibold text-xs text-purple-700 dark:text-purple-300 uppercase tracking-wide">
+                                ⚙️ Cấu hình Vận hành Teamwork / Shared Pool
+                              </span>
+                              <Tag color="purple">Batch Active</Tag>
+                            </div>
+
+                            <Row gutter={12}>
+                              <Col span={8}>
+                                <Form.Item
+                                  name="sharedPoolBatchSize"
+                                  label="Số KH / Batch"
+                                  tooltip="Quy mô mỗi đợt mở data cho cả đội telesales cùng khai thác"
+                                  initialValue={100}
+                                  rules={[{ required: true, message: 'Nhập số KH/batch' }]}
+                                  className="mb-2"
+                                >
+                                  <InputNumber min={10} max={2000} className="w-full" />
+                                </Form.Item>
+                              </Col>
+                              <Col span={8}>
+                                <Form.Item
+                                  name="sharedPoolMaxClaims"
+                                  label="Giới hạn nhận / NV"
+                                  tooltip="Số lượng khách tối đa 1 nhân viên được giữ cùng lúc (chống găm giữ data)"
+                                  initialValue={1}
+                                  rules={[{ required: true, message: 'Nhập giới hạn' }]}
+                                  className="mb-2"
+                                >
+                                  <InputNumber min={1} max={10} className="w-full" />
+                                </Form.Item>
+                              </Col>
+                              <Col span={8}>
+                                <Form.Item
+                                  name="sharedPoolTtl"
+                                  label="Hạn giữ (phút)"
+                                  tooltip="Thời gian tối đa để nhân viên xử lý khách trước khi bị thu hồi về pool (TTL)"
+                                  initialValue={15}
+                                  rules={[{ required: true, message: 'Nhập số phút' }]}
+                                  className="mb-2"
+                                >
+                                  <InputNumber min={5} max={180} className="w-full" />
+                                </Form.Item>
+                              </Col>
+                            </Row>
+
+                            <Row gutter={12}>
+                              <Col span={8}>
+                                <Form.Item
+                                  name="sharedPoolCooldown"
+                                  label="Giãn cách gọi (phút)"
+                                  tooltip="Thời gian tối thiểu giữa 2 cuộc gọi tới cùng 1 khách hàng (chống spam)"
+                                  initialValue={60}
+                                  rules={[{ required: true, message: 'Nhập phút giãn cách' }]}
+                                  className="mb-2"
+                                >
+                                  <InputNumber min={10} max={1440} className="w-full" />
+                                </Form.Item>
+                              </Col>
+                              <Col span={8}>
+                                <Form.Item
+                                  name="sharedPoolWarningThreshold"
+                                  label="Cảnh báo sắp hết (%)"
+                                  tooltip="Hệ thống bật chuông cảnh báo vàng khi % data còn lại dưới ngưỡng này"
+                                  initialValue={30}
+                                  rules={[{ required: true, message: 'Nhập ngưỡng' }]}
+                                  className="mb-2"
+                                >
+                                  <InputNumber min={5} max={50} className="w-full" />
+                                </Form.Item>
+                              </Col>
+                              <Col span={8}>
+                                <Form.Item
+                                  name="sharedPoolCriticalThreshold"
+                                  label="Cảnh báo nguy cấp (%)"
+                                  tooltip="Hệ thống bật chuông báo động đỏ nguy cấp khi % data còn lại dưới ngưỡng này"
+                                  initialValue={10}
+                                  rules={[{ required: true, message: 'Nhập ngưỡng' }]}
+                                  className="mb-2"
+                                >
+                                  <InputNumber min={1} max={25} className="w-full" />
+                                </Form.Item>
+                              </Col>
+                            </Row>
+
+                            <div className="pt-1.5 border-t border-purple-200 dark:border-purple-900/40">
+                              <div className="text-xs font-semibold text-purple-700 dark:text-purple-300 mb-2">
+                                🔄 Chu kỳ quay lại Pool theo kết quả cuộc gọi (Recycle Rules)
+                              </div>
+                              <Row gutter={12}>
+                                <Col span={6}>
+                                  <Form.Item
+                                    name="recycleThinking"
+                                    label="Suy nghĩ (ngày)"
+                                    initialValue={3}
+                                    className="mb-0"
+                                  >
+                                    <InputNumber min={1} max={30} className="w-full" />
+                                  </Form.Item>
+                                </Col>
+                                <Col span={6}>
+                                  <Form.Item
+                                    name="recycleNoAnswer"
+                                    label="Không nghe (ngày)"
+                                    initialValue={1}
+                                    className="mb-0"
+                                  >
+                                    <InputNumber min={1} max={14} className="w-full" />
+                                  </Form.Item>
+                                </Col>
+                                <Col span={6}>
+                                  <Form.Item
+                                    name="recycleBusy"
+                                    label="Bận máy (ngày)"
+                                    initialValue={1}
+                                    className="mb-0"
+                                  >
+                                    <InputNumber min={1} max={14} className="w-full" />
+                                  </Form.Item>
+                                </Col>
+                                <Col span={6}>
+                                  <Form.Item
+                                    name="recycleError"
+                                    label="Lỗi mạng (ngày)"
+                                    initialValue={1}
+                                    className="mb-0"
+                                  >
+                                    <InputNumber min={1} max={14} className="w-full" />
+                                  </Form.Item>
+                                </Col>
+                              </Row>
+                            </div>
+                          </div>
+                        );
+                      }}
                     </Form.Item>
                   </div>
                 ),

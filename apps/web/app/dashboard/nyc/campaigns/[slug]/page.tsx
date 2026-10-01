@@ -32,6 +32,7 @@ import {
   Avatar,
   Tabs,
   Alert,
+  Popconfirm,
 } from 'antd';
 import { GoogleSheetColorPicker } from '../../../../../components/GoogleSheetColorPicker';
 import { TouchpointIconPicker, getIconComponent } from '../../../../../components/campaign/TouchpointIconPicker';
@@ -58,6 +59,12 @@ import {
   AimOutlined,
   WarningOutlined,
   FilterOutlined,
+  LockOutlined,
+  UnlockOutlined,
+  HistoryOutlined,
+  ForwardOutlined,
+  PlayCircleOutlined,
+  PauseCircleOutlined,
 } from '@ant-design/icons';
 import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -93,6 +100,9 @@ import {
   CampaignTouchpointCell,
   CampaignTouchpointItem,
 } from '../../../../../components/campaign/CampaignTouchpointCell';
+import { SharedPoolOverviewBanner } from '../../../../../components/campaign/SharedPoolOverviewBanner';
+import { SharedPoolWrapupModal } from '../../../../../components/campaign/SharedPoolWrapupModal';
+import { SharedPoolAuditDrawer } from '../../../../../components/campaign/SharedPoolAuditDrawer';
 
 const KissIcon: React.FC<{ size?: number; style?: React.CSSProperties; className?: string }> = ({
   size = 16,
@@ -131,6 +141,8 @@ import {
   CALL_RESULT_LABELS,
   isAdminOrSuperAdminRole,
   vietnameseSearchFilter,
+  SharedPoolOverviewStats,
+  CampaignSharedPoolLog,
 } from '@mos-lab/shared';
 
 const getRowClassName = (record: any, themeMode: string) => {
@@ -236,6 +248,35 @@ const CAMPAIGN_BOOKING_STATUS_OPTIONS: Array<{
   },
 ];
 
+const ClaimCountdown: React.FC<{ expiresAt: string | null }> = ({ expiresAt }) => {
+  const [secondsLeft, setSecondsLeft] = useState<number>(() => {
+    if (!expiresAt) return 0;
+    const diff = Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000);
+    return Math.max(0, diff);
+  });
+
+  useEffect(() => {
+    if (!expiresAt) return;
+    const interval = setInterval(() => {
+      const diff = Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000);
+      setSecondsLeft(Math.max(0, diff));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [expiresAt]);
+
+  if (secondsLeft <= 0) {
+    return <span className="text-rose-500 font-bold text-[10px]">HẾT GIỜ</span>;
+  }
+
+  const mins = Math.floor(secondsLeft / 60);
+  const secs = secondsLeft % 60;
+  return (
+    <span className="font-mono tabular-nums text-[10px] text-amber-600 dark:text-amber-400 font-bold">
+      {mins}:{secs < 10 ? `0${secs}` : secs}
+    </span>
+  );
+};
+
 export default function CampaignDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -252,6 +293,19 @@ export default function CampaignDetailPage() {
   const [touchpoints, setTouchpoints] = useState<CampaignTouchpoint[]>([]);
   const [promotions, setPromotions] = useState<CampaignPromotion[]>([]);
   const [stats, setStats] = useState<CampaignStatsResponse | null>(null);
+
+  // Shared Pool state
+  const [sharedPoolOverview, setSharedPoolOverview] = useState<SharedPoolOverviewStats | null>(null);
+  const [selectedBatch, setSelectedBatch] = useState<number | 'ALL'>('ALL');
+  const [selectedPoolStatus, setSelectedPoolStatus] = useState<string>('ALL');
+  const [sharedPoolLoading, setSharedPoolLoading] = useState<boolean>(false);
+  const [auditDrawerOpen, setAuditDrawerOpen] = useState<boolean>(false);
+  const [auditCustomer, setAuditCustomer] = useState<any | null>(null);
+  const [auditLogs, setAuditLogs] = useState<CampaignSharedPoolLog[]>([]);
+  const [auditLogsLoading, setAuditLogsLoading] = useState<boolean>(false);
+  const [wrapupModalOpen, setWrapupModalOpen] = useState<boolean>(false);
+  const [wrapupCustomer, setWrapupCustomer] = useState<any | null>(null);
+  const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
 
   // Customer table state
   const [customersLoading, setCustomersLoading] = useState<boolean>(true);
@@ -603,6 +657,22 @@ export default function CampaignDetailPage() {
     }
   }, [slug]);
 
+  // Fetch Shared Pool Overview
+  const fetchSharedPoolOverview = useCallback(async () => {
+    const campId = campaign?.id;
+    if (!campId || campaign?.operationMode !== 'SHARED_POOL') return;
+    try {
+      setSharedPoolLoading(true);
+      const res = await apiClient.campaigns.getSharedPoolOverview(campId);
+      setSharedPoolOverview(res);
+      setSelectedBatch((curr) => (curr === 'ALL' && res?.activeBatchNumber ? res.activeBatchNumber : curr));
+    } catch (err) {
+      console.error('Fetch shared pool overview error:', err);
+    } finally {
+      setSharedPoolLoading(false);
+    }
+  }, [campaign?.id, campaign?.operationMode]);
+
   // Fetch Campaign Customers
   const fetchCampaignCustomers = useCallback(async () => {
     const campId = campaign?.id;
@@ -622,6 +692,14 @@ export default function CampaignDetailPage() {
       if (bookingStatusFilter !== 'ALL') {
         params.bookingStatus = bookingStatusFilter;
       }
+      if (campaign?.operationMode === 'SHARED_POOL') {
+        if (selectedBatch !== 'ALL') {
+          params.batchNumber = selectedBatch;
+        }
+        if (selectedPoolStatus !== 'ALL') {
+          params.poolStatus = selectedPoolStatus;
+        }
+      }
       const res: any = await apiClient.campaigns.getCustomers(campId, params);
       const list = Array.isArray(res) ? res : res?.items || res?.data || [];
       setCustomers(list);
@@ -632,7 +710,109 @@ export default function CampaignDetailPage() {
     } finally {
       setCustomersLoading(false);
     }
-  }, [bookingStatusFilter, campaign?.id, currentPage, deferredSearchQuery, pageSize, selectedBookerId]);
+  }, [
+    bookingStatusFilter,
+    campaign,
+    currentPage,
+    deferredSearchQuery,
+    pageSize,
+    selectedBatch,
+    selectedBookerId,
+    selectedPoolStatus,
+  ]);
+
+  // Shared Pool Handlers
+  const handleClaimCustomer = async (record: any) => {
+    if (!campaign?.id) return;
+    const targetId = record.id || record.legacyUserId;
+    setActionLoadingId(targetId);
+    try {
+      const res = await apiClient.campaigns.claimSharedCustomer(campaign.id, { customerId: targetId });
+      message.success(res.message || 'Đã nhận khách vào xử lý!');
+      await Promise.all([fetchCampaignCustomers(), fetchSharedPoolOverview()]);
+    } catch (err: any) {
+      console.error('Claim customer error:', err);
+      message.error(err?.response?.data?.message || 'Không thể nhận khách hàng');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleReleaseCustomer = async (record: any) => {
+    if (!campaign?.id) return;
+    const targetId = record.id || record.legacyUserId;
+    setActionLoadingId(targetId);
+    try {
+      const res = await apiClient.campaigns.releaseSharedCustomer(campaign.id, { customerId: targetId });
+      message.success(res.message || 'Đã nhả khách về Shared Pool!');
+      await Promise.all([fetchCampaignCustomers(), fetchSharedPoolOverview()]);
+    } catch (err: any) {
+      console.error('Release customer error:', err);
+      message.error(err?.response?.data?.message || 'Không thể nhả khách hàng');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleOpenAuditLogs = async (record: any) => {
+    if (!campaign?.id) return;
+    setAuditCustomer(record);
+    setAuditDrawerOpen(true);
+    setAuditLogsLoading(true);
+    try {
+      const targetId = record.id || record.legacyUserId;
+      const logs = await apiClient.campaigns.getSharedPoolLogs(campaign.id, targetId);
+      setAuditLogs(logs);
+    } catch (err) {
+      console.error('Fetch audit logs error:', err);
+      message.error('Không thể tải lịch sử tương tác');
+    } finally {
+      setAuditLogsLoading(false);
+    }
+  };
+
+  const handleAdvanceBatch = async () => {
+    if (!campaign?.id) return;
+    try {
+      const res = await apiClient.campaigns.advanceSharedPoolBatch(campaign.id);
+      message.success(res.message || 'Đã mở Batch tiếp theo!');
+      await Promise.all([fetchSharedPoolOverview(), fetchCampaignCustomers()]);
+    } catch (err: any) {
+      console.error('Advance batch error:', err);
+      message.error(err?.response?.data?.message || 'Không thể chuyển Batch');
+    }
+  };
+
+  const handleTogglePause = async (isPaused: boolean) => {
+    if (!campaign?.id) return;
+    try {
+      const res = await apiClient.campaigns.toggleSharedPoolPause(campaign.id, { isPaused });
+      message.success(res.message || 'Đã cập nhật trạng thái Shared Pool!');
+      await Promise.all([fetchSharedPoolOverview(), fetchCampaignCustomers()]);
+    } catch (err: any) {
+      console.error('Toggle pause error:', err);
+      message.error(err?.response?.data?.message || 'Không thể cập nhật trạng thái');
+    }
+  };
+
+  const handleManagerCustomerAction = async (record: any, action: 'RELEASE_CLAIM' | 'RETURN_TO_POOL' | 'EXCLUDE') => {
+    if (!campaign?.id) return;
+    const targetId = record.id || record.legacyUserId;
+    setActionLoadingId(targetId);
+    try {
+      const res = await apiClient.campaigns.managerSharedPoolAction(campaign.id, {
+        customerId: targetId,
+        action,
+      });
+      message.success(res.message || 'Thao tác quản lý thành công!');
+      await Promise.all([fetchCampaignCustomers(), fetchSharedPoolOverview()]);
+    } catch (err: any) {
+      console.error('Manager pool action error:', err);
+      message.error(err?.response?.data?.message || 'Thao tác thất bại');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
   useEffect(() => {
     if (!slug) return;
@@ -647,8 +827,7 @@ export default function CampaignDetailPage() {
         setPromotions(campRes.promotions || campRes.CampaignPromotion || []);
 
         if (campRes.id) {
-          // Fetch stats + customers in parallel
-          const [statsRes, customersRes] = await Promise.allSettled([
+          const promises: Promise<any>[] = [
             apiClient.campaigns.getStats(campRes.id),
             apiClient.campaigns.getCustomers(campRes.id, {
               page: currentPage,
@@ -657,19 +836,31 @@ export default function CampaignDetailPage() {
               ...(selectedBookerId !== 'ALL' ? { assignedStaffId: selectedBookerId } : {}),
               ...(bookingStatusFilter !== 'ALL' ? { bookingStatus: bookingStatusFilter } : {}),
             }),
-          ]);
+          ];
+          if (campRes.operationMode === 'SHARED_POOL') {
+            promises.push(apiClient.campaigns.getSharedPoolOverview(campRes.id));
+          }
+
+          const settled = await Promise.allSettled(promises);
           if (cancelled) return;
-          if (statsRes.status === 'fulfilled') setStats(statsRes.value as any);
-          if (customersRes.status === 'fulfilled') {
-            const list = Array.isArray(customersRes.value)
-              ? customersRes.value
-              : (customersRes.value as any)?.items || (customersRes.value as any)?.data || [];
+          if (settled[0].status === 'fulfilled') setStats(settled[0].value as any);
+          if (settled[1].status === 'fulfilled') {
+            const list = Array.isArray(settled[1].value)
+              ? settled[1].value
+              : (settled[1].value as any)?.items || (settled[1].value as any)?.data || [];
             setCustomers(list);
             setCustomersTotal(
-              Array.isArray(customersRes.value)
+              Array.isArray(settled[1].value)
                 ? list.length
-                : Number((customersRes.value as any)?.total ?? list.length)
+                : Number((settled[1].value as any)?.total ?? list.length)
             );
+          }
+          if (campRes.operationMode === 'SHARED_POOL' && settled[2]?.status === 'fulfilled') {
+            const overviewData = settled[2].value as SharedPoolOverviewStats;
+            setSharedPoolOverview(overviewData);
+            if (overviewData?.activeBatchNumber) {
+              setSelectedBatch(overviewData.activeBatchNumber);
+            }
           }
         }
         isInitializedRef.current = true;
@@ -1426,15 +1617,156 @@ export default function CampaignDetailPage() {
         );
       },
     },
+    ...(campaign?.operationMode === 'SHARED_POOL'
+      ? [
+          {
+            title: 'Trạng thái Pool',
+            key: 'poolStatus',
+            width: 170,
+            render: (_: any, record: any) => {
+              const status = record.poolStatus || 'AVAILABLE';
+              const isClaimed = status === 'CLAIMED';
+              const isMe = record.isClaimedByMe;
+              const hasCooldown = record.cooldownUntil && new Date(record.cooldownUntil) > new Date();
+              const cooldownMinutes = hasCooldown
+                ? Math.ceil((new Date(record.cooldownUntil).getTime() - Date.now()) / (60 * 1000))
+                : 0;
+
+              return (
+                <div className="flex flex-col gap-1 text-xs">
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {status === 'AVAILABLE' && (
+                      <Tag color="success" className="font-bold text-[11px] m-0">
+                        🟢 SẴN SÀNG
+                      </Tag>
+                    )}
+                    {status === 'CLAIMED' && (
+                      <Tag
+                        color={isMe ? 'purple' : 'orange'}
+                        className="font-bold text-[11px] m-0 inline-flex items-center gap-1"
+                      >
+                        <LockOutlined />
+                        <span>{isMe ? 'BẠN ĐANG GIỮ' : `ĐANG GIỮ: ${record.claimedByStaffName || 'NV'}`}</span>
+                        <ClaimCountdown expiresAt={record.claimExpiresAt} />
+                      </Tag>
+                    )}
+                    {status === 'RECYCLING' && (
+                      <Tag color="magenta" className="font-semibold text-[11px] m-0">
+                        🟣 CHỜ QUAY LẠI {record.availableAt ? `(${dayjs(record.availableAt).format('DD/MM')})` : ''}
+                      </Tag>
+                    )}
+                    {status === 'EXPLOITED' && (
+                      <Tag color="default" className="text-[11px] m-0">
+                        ⚪ ĐÃ GỌI {record.lastCallStaffName ? `(${record.lastCallStaffName})` : ''}
+                      </Tag>
+                    )}
+                    {status === 'BOOKED' && (
+                      <Tag color="processing" className="font-bold text-[11px] m-0 inline-flex items-center gap-1">
+                        <CheckCircleOutlined /> ĐÃ BOOKING ({record.bookedByStaffName || 'NV'})
+                      </Tag>
+                    )}
+                    {status === 'EXCLUDED' && (
+                      <Tag color="error" className="text-[11px] m-0">
+                        🔴 ĐÃ LOẠI
+                      </Tag>
+                    )}
+                  </div>
+
+                  {hasCooldown && (
+                    <Tag color="warning" className="text-[10px] tabular-nums m-0 inline-flex items-center gap-1 w-fit">
+                      <ClockCircleOutlined /> Giãn cách còn {cooldownMinutes}p
+                    </Tag>
+                  )}
+                </div>
+              );
+            },
+          },
+        ]
+      : []),
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 100,
+      width: campaign?.operationMode === 'SHARED_POOL' ? 180 : 100,
       align: 'center' as const,
       render: (_: any, record: any) => {
         const phone = record.customerPhone || record.phone || record.phones?.[0]?.phone_number;
+        const isSharedPool = campaign?.operationMode === 'SHARED_POOL';
+        const isLoadingThis = actionLoadingId === (record.id || record.legacyUserId);
+
         return (
-          <Space size="small">
+          <Space size="small" wrap>
+            {isSharedPool && (
+              <>
+                {record.canClaim && (
+                  <Tooltip title="Nhận khách này vào xử lý (Claim)">
+                    <Button
+                      size="small"
+                      type="primary"
+                      icon={<LockOutlined />}
+                      loading={isLoadingThis}
+                      onClick={() => handleClaimCustomer(record)}
+                      className="bg-emerald-600 hover:bg-emerald-500 font-semibold text-white text-xs"
+                    >
+                      Nhận
+                    </Button>
+                  </Tooltip>
+                )}
+
+                {record.isClaimedByMe && (
+                  <>
+                    <Tooltip title="Báo cáo kết quả cuộc gọi & cập nhật Shared Pool">
+                      <Button
+                        size="small"
+                        type="primary"
+                        icon={<PhoneOutlined />}
+                        onClick={() => {
+                          setWrapupCustomer(record);
+                          setWrapupModalOpen(true);
+                        }}
+                        className="bg-purple-600 hover:bg-purple-500 font-semibold text-white text-xs"
+                      >
+                        Báo cáo
+                      </Button>
+                    </Tooltip>
+
+                    <Tooltip title="Nhả khách lại về Shared Pool">
+                      <Button
+                        size="small"
+                        icon={<UnlockOutlined />}
+                        loading={isLoadingThis}
+                        onClick={() => handleReleaseCustomer(record)}
+                        className="text-xs"
+                      >
+                        Nhả
+                      </Button>
+                    </Tooltip>
+                  </>
+                )}
+
+                <Tooltip title="Lịch sử tương tác & Chống tranh công">
+                  <Button
+                    size="small"
+                    icon={<HistoryOutlined />}
+                    onClick={() => handleOpenAuditLogs(record)}
+                  />
+                </Tooltip>
+
+                {isAdmin && (
+                  <Popconfirm
+                    title="Thao tác quản lý khách hàng"
+                    description="Chọn hành động đối với khách hàng trong Shared Pool"
+                    okText="Đưa về Pool"
+                    cancelText="Hủy"
+                    onConfirm={() => handleManagerCustomerAction(record, 'RETURN_TO_POOL')}
+                  >
+                    <Tooltip title="Menu Quản lý Pool">
+                      <Button size="small" icon={<SettingOutlined />} />
+                    </Tooltip>
+                  </Popconfirm>
+                )}
+              </>
+            )}
+
             <Tooltip title="Gửi SMS">
               <Button
                 size="small"
@@ -1694,6 +2026,28 @@ export default function CampaignDetailPage() {
           )}
         </div>
       </div>
+
+      {/* SHARED POOL OVERVIEW & CONTROL BANNER */}
+      {campaign?.operationMode === 'SHARED_POOL' && (
+        <SharedPoolOverviewBanner
+          overview={sharedPoolOverview}
+          loading={sharedPoolLoading}
+          isAdmin={isAdmin}
+          onAdvanceBatch={handleAdvanceBatch}
+          onTogglePause={handleTogglePause}
+          onAddCustomers={handleOpenAddCustomersDrawer}
+          selectedBatch={selectedBatch}
+          onSelectBatch={(batch) => {
+            setSelectedBatch(batch);
+            setCurrentPage(1);
+          }}
+          selectedPoolStatus={selectedPoolStatus}
+          onSelectPoolStatus={(status) => {
+            setSelectedPoolStatus(status);
+            setCurrentPage(1);
+          }}
+        />
+      )}
 
       {/* Zero Touchpoints Warning Alert */}
       {campaign && touchpoints.length === 0 && (
@@ -2566,6 +2920,40 @@ export default function CampaignDetailPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Shared Pool Call Wrapup Modal */}
+      <SharedPoolWrapupModal
+        open={wrapupModalOpen}
+        onCancel={() => {
+          setWrapupModalOpen(false);
+          setWrapupCustomer(null);
+        }}
+        onSuccess={() => {
+          setWrapupModalOpen(false);
+          setWrapupCustomer(null);
+          fetchCampaignCustomers();
+          fetchSharedPoolOverview();
+        }}
+        campaignId={campaign?.id || 0}
+        customer={wrapupCustomer}
+      />
+
+      {/* Shared Pool Immutable Audit Logs Drawer */}
+      <SharedPoolAuditDrawer
+        open={auditDrawerOpen}
+        onClose={() => {
+          setAuditDrawerOpen(false);
+          setAuditCustomer(null);
+        }}
+        customer={auditCustomer}
+        logs={auditLogs}
+        loading={auditLogsLoading}
+        onRefresh={() => {
+          if (auditCustomer) {
+            handleOpenAuditLogs(auditCustomer);
+          }
+        }}
+      />
     </div>
   );
 }

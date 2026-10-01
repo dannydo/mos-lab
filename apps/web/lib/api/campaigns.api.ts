@@ -30,6 +30,14 @@ import type {
   ToggleCampaignTouchpointLogDto,
   TransferCampaignCustomersDto,
   UpdateCampaignDto,
+  SharedPoolOverviewStats,
+  ClaimSharedCustomerDto,
+  ReleaseSharedCustomerDto,
+  UpdateSharedPoolStatusDto,
+  AdvanceSharedPoolBatchDto,
+  ToggleSharedPoolPauseDto,
+  ManagerPoolActionDto,
+  CampaignSharedPoolLog,
 } from '@mos-lab/shared';
 
 import { api, dedupeApiGet } from './base';
@@ -276,6 +284,56 @@ export const campaignsApi = {
     },
     getCustomerActivePromotions: async (customerId: number): Promise<CustomerCampaignPromotionInfo[]> => {
       const response = await api.get(`/campaigns/customer/${customerId}/active-promotions`);
+      return response.data;
+    },
+    getSharedPoolOverview: async (campaignId: number): Promise<SharedPoolOverviewStats> => {
+      const response = await api.get(`/campaigns/${campaignId}/shared-pool/overview`);
+      return response.data;
+    },
+    claimSharedCustomer: async (
+      campaignId: number,
+      dto: ClaimSharedCustomerDto
+    ): Promise<{ success: boolean; message: string; customer: unknown }> => {
+      const response = await api.post(`/campaigns/${campaignId}/shared-pool/claim`, dto);
+      return response.data;
+    },
+    releaseSharedCustomer: async (
+      campaignId: number,
+      dto: ReleaseSharedCustomerDto
+    ): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post(`/campaigns/${campaignId}/shared-pool/release`, dto);
+      return response.data;
+    },
+    updateSharedPoolStatus: async (
+      campaignId: number,
+      dto: UpdateSharedPoolStatusDto
+    ): Promise<{ success: boolean; message: string; poolStatus: string }> => {
+      const response = await api.post(`/campaigns/${campaignId}/shared-pool/status`, dto);
+      return response.data;
+    },
+    advanceSharedPoolBatch: async (
+      campaignId: number,
+      dto?: AdvanceSharedPoolBatchDto
+    ): Promise<{ success: boolean; message: string; currentBatchNumber: number }> => {
+      const response = await api.post(`/campaigns/${campaignId}/shared-pool/advance-batch`, dto || {});
+      return response.data;
+    },
+    toggleSharedPoolPause: async (
+      campaignId: number,
+      dto: ToggleSharedPoolPauseDto
+    ): Promise<{ success: boolean; message: string; isPaused: boolean }> => {
+      const response = await api.post(`/campaigns/${campaignId}/shared-pool/toggle-pause`, dto);
+      return response.data;
+    },
+    managerSharedPoolAction: async (
+      campaignId: number,
+      dto: ManagerPoolActionDto
+    ): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post(`/campaigns/${campaignId}/shared-pool/manager-action`, dto);
+      return response.data;
+    },
+    getSharedPoolLogs: async (campaignId: number, customerId: number): Promise<CampaignSharedPoolLog[]> => {
+      const response = await api.get(`/campaigns/${campaignId}/shared-pool/customers/${customerId}/logs`);
       return response.data;
     },
   },

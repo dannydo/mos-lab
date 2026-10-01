@@ -14,6 +14,12 @@ import {
   CreateCampaignPromotionDto,
   CampaignBookingStatusFilter,
   ListCampaignsParams,
+  ClaimSharedCustomerDto,
+  ReleaseSharedCustomerDto,
+  UpdateSharedPoolStatusDto,
+  AdvanceSharedPoolBatchDto,
+  ToggleSharedPoolPauseDto,
+  ManagerPoolActionDto,
 } from '@mos-lab/shared';
 
 export async function campaignRoutes(fastify: FastifyInstance) {
@@ -335,12 +341,21 @@ export async function campaignRoutes(fastify: FastifyInstance) {
             ? query.bookingStatus
             : 'ALL';
 
+        const batchNumber =
+          query.batchNumber !== undefined && query.batchNumber !== ''
+            ? query.batchNumber === 'ALL'
+              ? 'ALL'
+              : parseInt(query.batchNumber, 10)
+            : undefined;
+
         const result = await CampaignService.getCampaignCustomers(fastify, id, {
           bookerId,
           restrictToAssignedStaffId: isTelesales ? user.id : undefined,
           search: query.search,
           touchpointKey: query.touchpointKey,
           bookingStatus,
+          batchNumber: !isNaN(batchNumber as any) ? batchNumber : undefined,
+          poolStatus: query.poolStatus || undefined,
           page: query.page ? parseInt(query.page, 10) : 1,
           pageSize: query.pageSize ? parseInt(query.pageSize, 10) : 20,
         });
@@ -602,6 +617,202 @@ export async function campaignRoutes(fastify: FastifyInstance) {
       } catch (err: any) {
         request.log.error('Failed to fetch active customer campaign promotions:', err);
         return reply.status(500).send({ error: 'Internal Server Error', message: err.message });
+      }
+    }
+  );
+
+  // 17. Shared Pool: Get Overview & Burn Rate Stats
+  fastify.get(
+    '/campaigns/:id/shared-pool/overview',
+    { preHandler: [requireAuth] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const params = request.params as { id: string };
+        const id = parseInt(params.id, 10);
+        if (isNaN(id)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
+        }
+        const overview = await CampaignService.getSharedPoolOverview(fastify, id);
+        return reply.send(overview);
+      } catch (err: any) {
+        request.log.error('Failed to get shared pool overview:', err);
+        return reply.status(err.statusCode || 400).send({ error: 'Bad Request', message: err.message });
+      }
+    }
+  );
+
+  // 18. Shared Pool: Claim / Lock Customer
+  fastify.post(
+    '/campaigns/:id/shared-pool/claim',
+    { preHandler: [requireAuth] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const params = request.params as { id: string };
+        const id = parseInt(params.id, 10);
+        if (isNaN(id)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
+        }
+        const user = request.user;
+        const dto = request.body as ClaimSharedCustomerDto;
+        if (!dto.customerId) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID khách hàng không được để trống' });
+        }
+        const result = await CampaignService.claimCustomer(fastify, id, dto.customerId, user.id);
+        return reply.send(result);
+      } catch (err: any) {
+        request.log.error('Failed to claim shared pool customer:', err);
+        return reply.status(err.statusCode || 400).send({ error: 'Bad Request', message: err.message });
+      }
+    }
+  );
+
+  // 19. Shared Pool: Release Claim Lock
+  fastify.post(
+    '/campaigns/:id/shared-pool/release',
+    { preHandler: [requireAuth] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const params = request.params as { id: string };
+        const id = parseInt(params.id, 10);
+        if (isNaN(id)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
+        }
+        const user = request.user;
+        const dto = request.body as ReleaseSharedCustomerDto;
+        if (!dto.customerId) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID khách hàng không được để trống' });
+        }
+        const isManager = canManageCampaign(user);
+        const result = await CampaignService.releaseClaim(fastify, id, dto.customerId, user.id, isManager);
+        return reply.send(result);
+      } catch (err: any) {
+        request.log.error('Failed to release shared pool claim:', err);
+        return reply.status(err.statusCode || 400).send({ error: 'Bad Request', message: err.message });
+      }
+    }
+  );
+
+  // 20. Shared Pool: Record Call & Pool Status
+  fastify.post(
+    '/campaigns/:id/shared-pool/status',
+    { preHandler: [requireAuth] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const params = request.params as { id: string };
+        const id = parseInt(params.id, 10);
+        if (isNaN(id)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
+        }
+        const user = request.user;
+        const dto = request.body as UpdateSharedPoolStatusDto;
+        if (!dto.customerId || !dto.callResult) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu ID khách hàng hoặc kết quả cuộc gọi' });
+        }
+        const result = await CampaignService.recordSharedPoolStatus(fastify, id, dto.customerId, user.id, dto);
+        return reply.send(result);
+      } catch (err: any) {
+        request.log.error('Failed to record shared pool status:', err);
+        return reply.status(err.statusCode || 400).send({ error: 'Bad Request', message: err.message });
+      }
+    }
+  );
+
+  // 21. Shared Pool: Advance Batch (Manager / Admin)
+  fastify.post(
+    '/campaigns/:id/shared-pool/advance-batch',
+    { preHandler: [requireAuth, requireCampaignAdmin] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const params = request.params as { id: string };
+        const id = parseInt(params.id, 10);
+        if (isNaN(id)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
+        }
+        const user = request.user;
+        const dto = (request.body || {}) as AdvanceSharedPoolBatchDto;
+        const result = await CampaignService.advanceBatch(fastify, id, user.id, dto.targetBatchNumber);
+        return reply.send(result);
+      } catch (err: any) {
+        request.log.error('Failed to advance shared pool batch:', err);
+        return reply.status(err.statusCode || 400).send({ error: 'Bad Request', message: err.message });
+      }
+    }
+  );
+
+  // 22. Shared Pool: Toggle Pause / Resume (Manager / Admin)
+  fastify.post(
+    '/campaigns/:id/shared-pool/toggle-pause',
+    { preHandler: [requireAuth, requireCampaignAdmin] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const params = request.params as { id: string };
+        const id = parseInt(params.id, 10);
+        if (isNaN(id)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
+        }
+        const user = request.user;
+        const dto = request.body as ToggleSharedPoolPauseDto;
+        if (typeof dto.isPaused !== 'boolean') {
+          return reply.status(400).send({ error: 'Bad Request', message: 'Trạng thái isPaused không hợp lệ' });
+        }
+        const result = await CampaignService.togglePause(fastify, id, user.id, dto.isPaused);
+        return reply.send(result);
+      } catch (err: any) {
+        request.log.error('Failed to toggle shared pool pause:', err);
+        return reply.status(err.statusCode || 400).send({ error: 'Bad Request', message: err.message });
+      }
+    }
+  );
+
+  // 23. Shared Pool: Manager Action on Customer (Manager / Admin)
+  fastify.post(
+    '/campaigns/:id/shared-pool/manager-action',
+    { preHandler: [requireAuth, requireCampaignAdmin] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const params = request.params as { id: string };
+        const id = parseInt(params.id, 10);
+        if (isNaN(id)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
+        }
+        const user = request.user;
+        const dto = request.body as ManagerPoolActionDto;
+        if (!dto.customerId || !dto.action) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu thông tin khách hàng hoặc hành động' });
+        }
+        const result = await CampaignService.managerPoolAction(
+          fastify,
+          id,
+          dto.customerId,
+          user.id,
+          dto.action,
+          dto.reason
+        );
+        return reply.send(result);
+      } catch (err: any) {
+        request.log.error('Failed to execute manager pool action:', err);
+        return reply.status(err.statusCode || 400).send({ error: 'Bad Request', message: err.message });
+      }
+    }
+  );
+
+  // 24. Shared Pool: Get Customer Interaction & Audit Logs (Chống tranh công)
+  fastify.get(
+    '/campaigns/:id/shared-pool/customers/:customerId/logs',
+    { preHandler: [requireAuth] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const params = request.params as { id: string; customerId: string };
+        const id = parseInt(params.id, 10);
+        const customerId = parseInt(params.customerId, 10);
+        if (isNaN(id) || isNaN(customerId)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID không hợp lệ' });
+        }
+        const logs = await CampaignService.getSharedPoolLogs(fastify, id, customerId);
+        return reply.send(logs);
+      } catch (err: any) {
+        request.log.error('Failed to get customer shared pool logs:', err);
+        return reply.status(err.statusCode || 400).send({ error: 'Bad Request', message: err.message });
       }
     }
   );
