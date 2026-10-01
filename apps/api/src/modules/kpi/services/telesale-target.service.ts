@@ -6,6 +6,7 @@ import {
   TelesaleCustomerPoolResponse,
   TelesaleCustomerPoolItem,
   TelesaleStaffTarget,
+  TelesaleTodayLiveEvent,
   TelesalePipelineStage,
   TelesalePacingStatus,
   TelesalePeriodStatus,
@@ -484,8 +485,90 @@ export class TelesaleTargetService {
       fastify.log.warn(`Failed to query staff_working_shift: ${err}`);
     }
 
-    // Aggregate by Staff
-    const staffTargets: TelesaleStaffTarget[] = config.staffTargets.map((st) => {
+    // 2c. Dynamic Telesales Staff Resolution & Avatar Lookup (MOS-FEAT-83)
+    const allStaffCandidates: Array<{
+      legacyStaffId: number;
+      name: string;
+      doneTarget: number;
+      avatarUrl?: string | null;
+    }> = config.staffTargets.map((st) => ({
+      legacyStaffId: st.legacyStaffId,
+      name: st.name,
+      doneTarget: st.doneTarget,
+      avatarUrl: st.avatarUrl || null,
+    }));
+
+    const staffAvatarMap = new Map<number, string | null>();
+    const staffNameMap = new Map<number, string>();
+
+    // Seed maps with config names
+    for (const st of config.staffTargets) {
+      staffNameMap.set(st.legacyStaffId, st.name);
+      if (st.avatarUrl) staffAvatarMap.set(st.legacyStaffId, st.avatarUrl);
+    }
+
+    try {
+      const crmStaffList = await fastify.prisma.crm.crmStaff.findMany({
+        where: {
+          isActive: true,
+          OR: [
+            { role: 'telesales' },
+            { legacyStaffId: { in: activeBkTelesalesIds } },
+          ],
+        },
+        select: {
+          id: true,
+          legacyStaffId: true,
+          displayName: true,
+          avatarUrl: true,
+        },
+      });
+
+      for (const s of crmStaffList) {
+        const legacyId = Number(s.legacyStaffId);
+        if (legacyId && !isNaN(legacyId)) {
+          if (s.avatarUrl) staffAvatarMap.set(legacyId, s.avatarUrl);
+          if (s.displayName) staffNameMap.set(legacyId, s.displayName);
+
+          if (!allStaffCandidates.some((c) => c.legacyStaffId === legacyId)) {
+            allStaffCandidates.push({
+              legacyStaffId: legacyId,
+              name: s.displayName,
+              doneTarget: 100,
+              avatarUrl: s.avatarUrl || null,
+            });
+          }
+        }
+      }
+    } catch (err) {
+      fastify.log.warn(`Failed to resolve CRM staff for telesale target: ${err}`);
+    }
+
+    // Query legacy user_profile for any missing avatars or names
+    const allCandidateIds = allStaffCandidates.map((c) => c.legacyStaffId);
+    if (allCandidateIds.length > 0) {
+      try {
+        const legacyProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT user_id, full_name, COALESCE(NULLIF(avatar, ''), NULLIF(avatar_internal, '')) as avatarUrl 
+           FROM \`user_profile\` 
+           WHERE user_id IN (${allCandidateIds.join(',')})`
+        );
+        for (const p of legacyProfiles) {
+          const uid = Number(p.user_id);
+          if (!staffAvatarMap.get(uid) && p.avatarUrl) {
+            staffAvatarMap.set(uid, p.avatarUrl);
+          }
+          if (!staffNameMap.get(uid) && p.full_name) {
+            staffNameMap.set(uid, p.full_name);
+          }
+        }
+      } catch (err) {
+        fastify.log.warn(`Failed to query legacy user_profile: ${err}`);
+      }
+    }
+
+    // Aggregate by Staff (MOS-FEAT-83: All active telesales staff with Book & Done today + % contribution)
+    const staffTargets: TelesaleStaffTarget[] = allStaffCandidates.map((st) => {
       const staffMonthOrders = monthOrders.filter((o) => Number(o.bookerId) === st.legacyStaffId);
       const staffCompletedOrders = staffMonthOrders.filter((o) => o.orderState === 'Completed');
       const staffDoneActual = staffCompletedOrders.filter((o) => Number(o.isComboLive) !== 1).length;
@@ -498,6 +581,11 @@ export class TelesaleTargetService {
       const staffTodayDoneOrders = todayDoneOrders.filter((o) => Number(o.bookerId) === st.legacyStaffId);
       const staffDoneToday = staffTodayDoneOrders.length;
       const staffComboLiveDoneToday = 0;
+
+      const staffTodayBookOrders = todayBookOrders.filter((o) => Number(o.bookerId) === st.legacyStaffId);
+      const staffBookToday = staffTodayBookOrders.length;
+      const bookContributionPercent =
+        teamDailyBookActual > 0 ? Math.round((staffBookToday / teamDailyBookActual) * 100) : 0;
 
       // MOS-BUG-76: Metrics for individual KPI (Done)
       let staffExpectedDone: number;
@@ -548,13 +636,19 @@ export class TelesaleTargetService {
         pickupRate: 0,
       };
 
+      const resolvedAvatar = staffAvatarMap.get(st.legacyStaffId) || st.avatarUrl || null;
+      const resolvedName = staffNameMap.get(st.legacyStaffId) || st.name;
+
       return {
         legacyStaffId: st.legacyStaffId,
-        name: st.name,
+        name: resolvedName,
+        avatarUrl: resolvedAvatar,
         doneTarget: st.doneTarget,
         doneActual: staffDoneActual,
         comboLiveDoneActual: staffComboLiveDoneActual,
         doneToday: staffDoneToday,
+        bookToday: staffBookToday,
+        bookContributionPercent,
         comboLiveDoneToday: staffComboLiveDoneToday,
         callTargetDaily: config.dailyCallPerStaff || 83,
         callActualToday: staffCallMetrics.callCount,
@@ -569,6 +663,47 @@ export class TelesaleTargetService {
         progressStatusLabel,
       };
     });
+
+    // Mark Top Book staff member
+    const maxBookToday = Math.max(0, ...staffTargets.map((s) => s.bookToday || 0));
+    for (const st of staffTargets) {
+      st.isTopBookToday = maxBookToday > 0 && st.bookToday === maxBookToday;
+    }
+
+    // Build today's live events feed for TV Celebration
+    const bookEvents: TelesaleTodayLiveEvent[] = todayBookOrders.map((o) => {
+      const bookerId = Number(o.bookerId);
+      return {
+        id: `book-${o.id}`,
+        type: 'BOOK' as const,
+        staffId: bookerId,
+        staffName: staffNameMap.get(bookerId) || allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name || 'Telesales',
+        avatarUrl: staffAvatarMap.get(bookerId) || null,
+        timestamp: o.dateCreated ? new Date(o.dateCreated).toISOString() : new Date().toISOString(),
+        orderId: Number(o.id),
+      };
+    });
+
+    const doneEvents: TelesaleTodayLiveEvent[] = todayDoneOrders.map((o) => {
+      const bookerId = Number(o.bookerId);
+      return {
+        id: `done-${o.id}`,
+        type: 'DONE' as const,
+        staffId: bookerId,
+        staffName: staffNameMap.get(bookerId) || allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name || 'Telesales',
+        avatarUrl: staffAvatarMap.get(bookerId) || null,
+        timestamp: o.actualBookingDateStart
+          ? new Date(o.actualBookingDateStart).toISOString()
+          : o.bookingDateStart
+            ? new Date(o.bookingDateStart).toISOString()
+            : new Date().toISOString(),
+        orderId: Number(o.id),
+      };
+    });
+
+    const todayLiveEvents: TelesaleTodayLiveEvent[] = [...bookEvents, ...doneEvents].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
 
     // 3. Aggregate 4 Pipeline Stages (Done in Month per stage)
     const stageCounts: Record<
@@ -880,6 +1015,7 @@ export class TelesaleTargetService {
         },
       },
       pipelineStages,
+      todayLiveEvents,
     };
   }
 

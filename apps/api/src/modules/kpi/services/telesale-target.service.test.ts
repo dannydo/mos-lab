@@ -332,38 +332,6 @@ test('TelesaleTargetService.getOverview correctly counts today Book and Done whe
 
   // Orders returned from MySQL with real JavaScript Date objects
   const todayDateObj = new Date(`${todayStr}T10:00:00+07:00`);
-  const mockTodayOrders = [
-    // Staff 50670: 1 booking created today, and 1 appointment completed today
-    {
-      id: 101,
-      bookerId: 50670,
-      orderState: 'New',
-      dateCreated: todayDateObj,
-      bookingDateStart: new Date(`${todayStr}T14:00:00+07:00`),
-      isBookToday: 1,
-      isDoneToday: 0,
-      isComboLive: 0,
-    },
-    {
-      id: 102,
-      bookerId: 50670,
-      orderState: 'Completed',
-      dateCreated: new Date('2026-09-25T10:00:00+07:00'),
-      bookingDateStart: todayDateObj,
-      isBookToday: 0,
-      isDoneToday: 1,
-      isComboLive: 0,
-    },
-    // Staff 52648: 1 booking created today (with Date object, test fallback without isBookToday)
-    {
-      id: 103,
-      bookerId: 52648,
-      orderState: 'New',
-      dateCreated: todayDateObj,
-      bookingDateStart: new Date(`${todayStr}T16:00:00+07:00`),
-      isComboLive: 0,
-    },
-  ];
 
   const mockFastify = {
     prisma: {
@@ -513,3 +481,107 @@ test('TelesaleTargetService.getOverview computes Daily Action Call & Pickup with
   assert.equal(kieuAction.status, 'OFF');
   assert.equal(kieuAction.statusLabel, 'Nghỉ');
 });
+
+test('TelesaleTargetService.getOverview calculates staff Book today, contribution percent, top Book glow, and returns todayLiveEvents (MOS-FEAT-83)', async () => {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const mockConfig: any = {
+    month: todayStr.slice(0, 7),
+    teamDoneTarget: 450,
+    teamBookTarget: 650,
+    dailyDoneTarget: 18,
+    dailyBookTarget: 25,
+    dailyCallPerStaff: 83,
+    dailyPickupPerStaff: 25,
+    staffTargets: [
+      { legacyStaffId: 50670, name: 'Phượng', doneTarget: 150 },
+      { legacyStaffId: 52648, name: 'Kiều', doneTarget: 100 },
+    ],
+    stageTargets: { '0_30': 200, '31_60': 110, '61_120': 80, gt_120: 60 },
+  };
+
+  const mockFastify = {
+    prisma: {
+      crm: {
+        crmConfig: {
+          findUnique: async () => ({ value: JSON.stringify(mockConfig) }),
+        },
+        crmStaff: {
+          findMany: async () => [
+            { id: 22, legacyStaffId: 50670, displayName: 'Bích Phượng', avatarUrl: 'https://avatar/phuong.jpg' },
+            { id: 71, legacyStaffId: 52648, displayName: 'Thuý Kiều', avatarUrl: 'https://avatar/kieu.jpg' },
+          ],
+        },
+      },
+      legacy: {
+        $queryRawUnsafe: async (sql: string) => {
+          if (sql.includes('staff_working_shift')) {
+            return [];
+          }
+          if (sql.includes('report_order ro') || sql.includes('ro.actual_booking_date_start')) {
+            return [
+              { id: 201, bookerId: 50670, orderState: 'Completed', totalPrice: 500000, actualBookingDateStart: new Date() },
+              { id: 202, bookerId: 50670, orderState: 'Completed', totalPrice: 300000, actualBookingDateStart: new Date() },
+            ];
+          }
+          if (sql.includes('user_profile')) {
+            return [
+              { user_id: 50670, full_name: 'Bích Phượng', avatarUrl: 'https://avatar/phuong.jpg' },
+              { user_id: 52648, full_name: 'Thuý Kiều', avatarUrl: 'https://avatar/kieu.jpg' },
+            ];
+          }
+          // Month orders
+          if (sql.includes("o.booking_date_start >=")) {
+            return [
+              { id: 1, bookerId: 50670, orderState: 'Completed', isComboLive: 0 },
+            ];
+          }
+          // Today book orders: Phượng has 3 books, Kiều has 1 book -> Total 4 books
+          if (sql.includes("o.date_created >=")) {
+            return [
+              { id: 101, bookerId: 50670, orderState: 'New', dateCreated: new Date() },
+              { id: 102, bookerId: 50670, orderState: 'New', dateCreated: new Date() },
+              { id: 103, bookerId: 50670, orderState: 'New', dateCreated: new Date() },
+              { id: 104, bookerId: 52648, orderState: 'New', dateCreated: new Date() },
+            ];
+          }
+          return [];
+        },
+      },
+    },
+    log: { warn: () => {}, error: () => {} },
+  };
+
+  const overview = await TelesaleTargetService.getOverview(mockFastify as any, todayStr.slice(0, 7));
+
+  // Team daily metrics
+  assert.equal(overview.teamDaily.bookActual, 4);
+  assert.equal(overview.teamDaily.doneActual, 2);
+
+  // Staff targets verification
+  const phuong = overview.staffTargets.find((s) => s.legacyStaffId === 50670);
+  assert.ok(phuong);
+  assert.equal(phuong.bookToday, 3);
+  assert.equal(phuong.doneToday, 2);
+  // 3 out of 4 books = 75%
+  assert.equal(phuong.bookContributionPercent, 75);
+  // Phượng has the highest books (3 vs 1) -> isTopBookToday must be true
+  assert.equal(phuong.isTopBookToday, true);
+  assert.equal(phuong.avatarUrl, 'https://avatar/phuong.jpg');
+
+  const kieu = overview.staffTargets.find((s) => s.legacyStaffId === 52648);
+  assert.ok(kieu);
+  assert.equal(kieu.bookToday, 1);
+  assert.equal(kieu.doneToday, 0);
+  // 1 out of 4 books = 25%
+  assert.equal(kieu.bookContributionPercent, 25);
+  assert.equal(kieu.isTopBookToday, false);
+
+  // Live events feed verification
+  assert.ok(overview.todayLiveEvents);
+  assert.equal(overview.todayLiveEvents.length, 6); // 4 books + 2 dones
+  const bookEvents = overview.todayLiveEvents.filter((e) => e.type === 'BOOK');
+  const doneEvents = overview.todayLiveEvents.filter((e) => e.type === 'DONE');
+  assert.equal(bookEvents.length, 4);
+  assert.equal(doneEvents.length, 2);
+});
+

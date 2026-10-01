@@ -97,4 +97,31 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({ error: err.message || 'Internal Server Error' });
     }
   });
+
+  // 5. Realtime WebSocket stream for TV Monitor Live Celebration & Pacing
+  const tvSockets = new Set<any>();
+
+  fastify.get('/kpi/telesale-target/stream', { websocket: true }, (socket) => {
+    tvSockets.add(socket);
+    try {
+      socket.send(JSON.stringify({ type: 'CONNECTED', timestamp: new Date().toISOString() }));
+    } catch {
+      // ignore
+    }
+
+    socket.on('message', (raw: any) => {
+      try {
+        const msg = JSON.parse(raw.toString());
+        if (msg.type === 'PING') {
+          socket.send(JSON.stringify({ type: 'PONG', timestamp: new Date().toISOString() }));
+        }
+      } catch {
+        // ignore
+      }
+    });
+
+    socket.on('close', () => tvSockets.delete(socket));
+    socket.on('error', () => tvSockets.delete(socket));
+  });
 }
+

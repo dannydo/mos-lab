@@ -42,7 +42,36 @@ const mockOverview: TelesaleTargetOverview = {
     bookTarget: 25,
     bookActual: 19,
   },
-  staffTargets: [],
+  staffTargets: [
+    {
+      legacyStaffId: 50670,
+      name: 'Bích Phượng',
+      avatarUrl: 'https://avatar/phuong.jpg',
+      doneTarget: 150,
+      doneActual: 45,
+      doneToday: 4,
+      bookToday: 6,
+      bookContributionPercent: 32,
+      isTopBookToday: true,
+      callTargetDaily: 83,
+      callActualToday: 75,
+      pickupActualToday: 24,
+    },
+    {
+      legacyStaffId: 52648,
+      name: 'Thuý Kiều',
+      avatarUrl: null,
+      doneTarget: 100,
+      doneActual: 30,
+      doneToday: 2,
+      bookToday: 3,
+      bookContributionPercent: 16,
+      isTopBookToday: false,
+      callTargetDaily: 83,
+      callActualToday: 60,
+      pickupActualToday: 18,
+    },
+  ],
   dailyAction: {
     callTargetPerStaff: 40,
     bookTargetPerDay: 25,
@@ -90,7 +119,7 @@ describe('TelesaleTodayTvMonitorCard', () => {
 });
 
 describe('TelesaleTvMonitorFullscreen', () => {
-  it('renders full TV Monitor screen when open=true and triggers close on button click', () => {
+  it('renders full TV Monitor screen with individual staff contribution section and sound settings (MOS-FEAT-83)', () => {
     const handleClose = vi.fn();
     const handleRefresh = vi.fn();
 
@@ -107,6 +136,18 @@ describe('TelesaleTvMonitorFullscreen', () => {
     expect(screen.getByText('DONE HÔM NAY')).toBeInTheDocument();
     expect(screen.getByText(/BOOK HÔM NAY · TẠO LỊCH/i)).toBeInTheDocument();
 
+    // Individual Staff Contribution section
+    expect(screen.getByText(/ĐÓNG GÓP CÁ NHÂN HÔM NAY · TELESALES EXECUTIVES/i)).toBeInTheDocument();
+    expect(screen.getByText('Bích Phượng')).toBeInTheDocument();
+    expect(screen.getByText('Thuý Kiều')).toBeInTheDocument();
+    expect(screen.getByText('TOP BOOK')).toBeInTheDocument();
+    expect(screen.getByText('32% Team')).toBeInTheDocument();
+    expect(screen.getByText('16% Team')).toBeInTheDocument();
+
+    // Sound settings button
+    const soundButton = screen.getByTestId('tv-sound-settings-button');
+    expect(soundButton).toBeInTheDocument();
+
     // Close button
     const closeButton = screen.getByRole('button', { name: /Đóng TV/i });
     expect(closeButton).toBeInTheDocument();
@@ -121,3 +162,4 @@ describe('TelesaleTvMonitorFullscreen', () => {
     expect(container.firstChild).toBeNull();
   });
 });
+

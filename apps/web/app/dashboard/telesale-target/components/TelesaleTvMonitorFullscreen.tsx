@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Tooltip, Progress, theme } from 'antd';
+import { Button, Tooltip, Progress, theme, Popover, Slider, Switch, Select } from 'antd';
 import {
   X,
   Maximize2,
@@ -13,12 +13,16 @@ import {
   Clock,
   Flame,
   Volume2,
+  VolumeX,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
 import { TelesaleTargetOverview } from '@mos-lab/shared';
 import { calculateShiftPacing, calculateTvMonitorMetrics } from '../utils/tv-monitor-pacing';
 import { TelesaleTvCelebration } from './TelesaleTvCelebration';
+import { useTelesaleTvLiveCelebration } from '../hooks/useTelesaleTvLiveCelebration';
+import { TelesaleTvLiveCelebrationBanner } from './TelesaleTvLiveCelebrationBanner';
+import { TelesaleTvStaffContributionGrid } from './TelesaleTvStaffContributionGrid';
 
 interface TelesaleTvMonitorFullscreenProps {
   overview: TelesaleTargetOverview;
@@ -77,6 +81,27 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
   const pacing = calculateShiftPacing(now);
   const metrics = calculateTvMonitorMetrics(overview.teamDaily, pacing);
 
+  // Live Voice Celebration hook (MOS-FEAT-83)
+  const {
+    settings: voiceSettings,
+    updateSettings: updateVoiceSettings,
+    activeCelebration,
+    isSpeaking,
+    isQuietHours,
+    ingestLiveEvents,
+    checkMilestones,
+    triggerDemoCelebration,
+  } = useTelesaleTvLiveCelebration();
+
+  // Ingest live events & check milestones whenever overview is updated
+  useEffect(() => {
+    if (!open || !overview) return;
+    if (overview.todayLiveEvents) {
+      ingestLiveEvents(overview.todayLiveEvents);
+    }
+    checkMilestones(overview.teamDaily.date, metrics.bookActual, metrics.doneActual);
+  }, [open, overview, ingestLiveEvents, checkMilestones, metrics.bookActual, metrics.doneActual]);
+
   // Trigger celebration when completed
   useEffect(() => {
     if (open && metrics.teamState === 'COMPLETED') {
@@ -117,9 +142,94 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
     }
   };
 
+  const soundSettingsContent = (
+    <div className="w-72 p-1 flex flex-col gap-4 text-zinc-100">
+      <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
+        <span className="font-bold text-sm flex items-center gap-1.5 text-zinc-100">
+          <Volume2 className="w-4 h-4 text-amber-400" />
+          Âm thanh chúc mừng
+        </span>
+        <Switch
+          checked={voiceSettings.soundEnabled}
+          onChange={(checked) => updateVoiceSettings({ soundEnabled: checked })}
+          className="bg-zinc-700"
+        />
+      </div>
+
+      <div>
+        <div className="flex justify-between text-xs font-mono text-zinc-400 mb-1">
+          <span>Âm lượng loa</span>
+          <span className="text-amber-300 font-bold">{Math.round(voiceSettings.volume * 100)}%</span>
+        </div>
+        <Slider
+          min={0}
+          max={1}
+          step={0.05}
+          value={voiceSettings.volume}
+          onChange={(val) => updateVoiceSettings({ volume: val })}
+          disabled={!voiceSettings.soundEnabled}
+        />
+      </div>
+
+      <div>
+        <span className="text-xs text-zinc-400 block mb-1">Loại sự kiện phát loa</span>
+        <Select
+          value={voiceSettings.eventTypeFilter}
+          onChange={(val) => updateVoiceSettings({ eventTypeFilter: val })}
+          className="w-full"
+          options={[
+            { label: 'Tất cả (Book & Done)', value: 'ALL' },
+            { label: 'Chỉ Book mới', value: 'BOOK_ONLY' },
+            { label: 'Chỉ Done mới', value: 'DONE_ONLY' },
+          ]}
+        />
+      </div>
+
+      <div className="flex items-center justify-between border-t border-zinc-800 pt-2.5">
+        <div>
+          <span className="text-xs font-medium block text-zinc-200">Chế độ im lặng</span>
+          <span className="text-[10px] text-zinc-400 block">Tự động nghỉ 12:00-13:30</span>
+        </div>
+        <Switch
+          checked={voiceSettings.quietModeEnabled}
+          onChange={(checked) => updateVoiceSettings({ quietModeEnabled: checked })}
+          className="bg-zinc-700"
+        />
+      </div>
+
+      <div className="border-t border-zinc-800 pt-2.5 flex flex-col gap-1.5">
+        <span className="text-[11px] font-mono text-zinc-400">Thử nghiệm loa (Demo):</span>
+        <div className="grid grid-cols-3 gap-1.5">
+          <Button
+            size="small"
+            className="text-[11px] bg-blue-950 border-blue-600 text-blue-300 hover:bg-blue-900"
+            onClick={() => triggerDemoCelebration('BOOK')}
+          >
+            Test Book
+          </Button>
+          <Button
+            size="small"
+            className="text-[11px] bg-emerald-950 border-emerald-600 text-emerald-300 hover:bg-emerald-900"
+            onClick={() => triggerDemoCelebration('DONE')}
+          >
+            Test Done
+          </Button>
+          <Button
+            size="small"
+            className="text-[11px] bg-amber-950 border-amber-600 text-amber-300 hover:bg-amber-900"
+            onClick={() => triggerDemoCelebration('MILESTONE')}
+          >
+            Milestone
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="fixed inset-0 z-[100] bg-zinc-950 text-zinc-100 flex flex-col justify-between p-4 sm:p-8 lg:p-10 select-none overflow-y-auto lg:overflow-hidden font-sans">
+    <div className="fixed inset-0 z-[100] bg-zinc-950 text-zinc-100 flex flex-col justify-between p-4 sm:p-8 lg:p-10 select-none overflow-y-auto font-sans">
       <TelesaleTvCelebration active={showCelebration} onComplete={() => setShowCelebration(false)} />
+      <TelesaleTvLiveCelebrationBanner celebration={activeCelebration} isSpeaking={isSpeaking} />
 
       {/* Ambient background glows for TV high-contrast ambiance */}
       <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[140px] pointer-events-none" />
@@ -163,6 +273,33 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
 
         {/* Right Toolbar Controls */}
         <div className="flex items-center gap-2">
+          {/* Sound & Voice Celebration Settings Popover */}
+          <Popover
+            content={soundSettingsContent}
+            trigger="click"
+            placement="bottomRight"
+            overlayClassName="tv-sound-settings-popover"
+          >
+            <Tooltip title="Cài đặt âm thanh & Live Voice Celebration">
+              <Button
+                type="text"
+                data-testid="tv-sound-settings-button"
+                icon={
+                  !voiceSettings.soundEnabled || isQuietHours ? (
+                    <VolumeX className="w-4 h-4 text-zinc-400" />
+                  ) : (
+                    <Volume2 className="w-4 h-4 text-amber-400 animate-pulse" />
+                  )
+                }
+                className={`!rounded-xl !h-10 !w-10 !p-0 flex items-center justify-center border ${
+                  voiceSettings.soundEnabled && !isQuietHours
+                    ? '!text-amber-400 border-amber-500/40 hover:!bg-amber-500/20'
+                    : '!text-zinc-400 border-zinc-700 hover:!bg-zinc-800'
+                }`}
+              />
+            </Tooltip>
+          </Popover>
+
           {/* Confetti celebration manual trigger */}
           <Tooltip title="Bắn pháo hoa ăn mừng thành tích">
             <Button
@@ -430,6 +567,12 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
           </div>
         </div>
       </main>
+
+      {/* 2.5 INDIVIDUAL STAFF CONTRIBUTIONS TODAY (MOS-FEAT-83) */}
+      <TelesaleTvStaffContributionGrid
+        staffTargets={overview.staffTargets}
+        totalTeamBookToday={metrics.bookActual}
+      />
 
       {/* 3. BOTTOM SECTION: COUNTDOWN & ACTIONABLE MESSAGE & TEAM STATUS */}
       <footer className="relative z-10 border-t border-zinc-800/80 pt-4 flex flex-col lg:flex-row items-center justify-between gap-4">

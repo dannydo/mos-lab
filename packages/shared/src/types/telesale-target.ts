@@ -7,6 +7,9 @@ export interface TelesaleStaffTarget {
   doneTarget: number;
   doneActual: number;
   doneToday: number;
+  bookToday?: number;
+  bookContributionPercent?: number;
+  isTopBookToday?: boolean;
   comboLiveDoneActual?: number;
   comboLiveDoneToday?: number;
   callTargetDaily: number;
@@ -134,6 +137,17 @@ export interface TelesaleTargetOverview {
     };
   };
   pipelineStages: TelesalePipelineStage[];
+  todayLiveEvents?: TelesaleTodayLiveEvent[];
+}
+
+export interface TelesaleTodayLiveEvent {
+  id: string;
+  type: 'BOOK' | 'DONE';
+  staffId: number;
+  staffName: string;
+  avatarUrl?: string | null;
+  timestamp: string;
+  orderId?: number;
 }
 
 export interface TelesaleTargetConfigDto {
@@ -148,6 +162,7 @@ export interface TelesaleTargetConfigDto {
     legacyStaffId: number;
     name: string;
     doneTarget: number;
+    avatarUrl?: string | null;
   }>;
   stageTargets: {
     '0_30': number;
