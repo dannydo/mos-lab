@@ -18,6 +18,7 @@ interface CustomerPoolDrawerProps {
   stage: TelesalePipelineStage | null;
   currentUserRole?: string;
   currentStaffId?: number;
+  staffList?: Array<{ legacyStaffId: number; name: string }>;
 }
 
 export const CustomerPoolDrawer: React.FC<CustomerPoolDrawerProps> = ({
@@ -26,6 +27,7 @@ export const CustomerPoolDrawer: React.FC<CustomerPoolDrawerProps> = ({
   stage,
   currentUserRole = 'admin',
   currentStaffId,
+  staffList = [],
 }) => {
   const [loading, setLoading] = useState(false);
   const [poolData, setPoolData] = useState<TelesaleCustomerPoolResponse | null>(null);
@@ -162,10 +164,17 @@ export const CustomerPoolDrawer: React.FC<CustomerPoolDrawerProps> = ({
                 size="small"
                 options={[
                   { label: '🌟 Tất cả đã phân bổ (Team Pool)', value: 'ALL' },
-                  { label: 'Phượng (50670)', value: '50670' },
-                  { label: 'Kiều (52648)', value: '52648' },
-                  { label: 'Điệp (32268)', value: '32268' },
-                  { label: 'Vũ (52598)', value: '52598' },
+                  ...(staffList && staffList.length > 0
+                    ? staffList.map((s) => ({
+                        label: `${s.name} (${s.legacyStaffId})`,
+                        value: String(s.legacyStaffId),
+                      }))
+                    : [
+                        { label: 'Phượng (50670)', value: '50670' },
+                        { label: 'Kiều (52648)', value: '52648' },
+                        { label: 'Điệp (32268)', value: '32268' },
+                        { label: 'Vũ (52598)', value: '52598' },
+                      ]),
                 ]}
               />
             </div>

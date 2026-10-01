@@ -25,6 +25,11 @@ export const TargetConfigModal: React.FC<TargetConfigModalProps> = ({ open, onCl
 
   useEffect(() => {
     if (open && overview) {
+      const staffTargetMap: Record<string, number> = {};
+      (overview.staffTargets || []).forEach((st) => {
+        staffTargetMap[`staffTarget_${st.legacyStaffId}`] = st.doneTarget || 100;
+      });
+
       const initialValues = {
         teamDoneTarget: overview.teamMonth.doneTarget,
         teamBookTarget: overview.teamMonth.bookTarget,
@@ -32,10 +37,7 @@ export const TargetConfigModal: React.FC<TargetConfigModalProps> = ({ open, onCl
         dailyBookTarget: overview.teamDaily.bookTarget,
         dailyCallPerStaff: overview.dailyAction.callTargetPerStaff || 83,
         dailyPickupPerStaff: overview.dailyAction.pickupTargetPerStaff || 25,
-        staffPhuong: overview.staffTargets.find((s) => s.name.includes('Phượng'))?.doneTarget || 150,
-        staffKieu: overview.staffTargets.find((s) => s.name.includes('Kiều'))?.doneTarget || 100,
-        staffDiep: overview.staffTargets.find((s) => s.name.includes('Điệp'))?.doneTarget || 100,
-        staffVu: overview.staffTargets.find((s) => s.name.includes('Vũ'))?.doneTarget || 100,
+        ...staffTargetMap,
         stage_0_30: overview.pipelineStages.find((p) => p.key === '0_30')?.doneTarget || 200,
         stage_31_60: overview.pipelineStages.find((p) => p.key === '31_60')?.doneTarget || 110,
         stage_61_120: overview.pipelineStages.find((p) => p.key === '61_120')?.doneTarget || 80,
@@ -77,28 +79,12 @@ export const TargetConfigModal: React.FC<TargetConfigModalProps> = ({ open, onCl
         dailyBookTarget: Number(values.dailyBookTarget),
         dailyCallPerStaff: Number(values.dailyCallPerStaff || 83),
         dailyPickupPerStaff: Number(values.dailyPickupPerStaff || 25),
-        staffTargets: [
-          {
-            legacyStaffId: overview?.staffTargets.find((s) => s.name.includes('Phượng'))?.legacyStaffId || 50670,
-            name: 'Phượng',
-            doneTarget: Number(values.staffPhuong),
-          },
-          {
-            legacyStaffId: overview?.staffTargets.find((s) => s.name.includes('Kiều'))?.legacyStaffId || 52648,
-            name: 'Kiều',
-            doneTarget: Number(values.staffKieu),
-          },
-          {
-            legacyStaffId: overview?.staffTargets.find((s) => s.name.includes('Điệp'))?.legacyStaffId || 32268,
-            name: 'Điệp',
-            doneTarget: Number(values.staffDiep),
-          },
-          {
-            legacyStaffId: overview?.staffTargets.find((s) => s.name.includes('Vũ'))?.legacyStaffId || 52598,
-            name: 'Vũ',
-            doneTarget: Number(values.staffVu),
-          },
-        ],
+        staffTargets: (overview?.staffTargets || []).map((st) => ({
+          legacyStaffId: st.legacyStaffId,
+          name: st.name,
+          doneTarget: Number(values[`staffTarget_${st.legacyStaffId}`] ?? st.doneTarget ?? 100),
+          avatarUrl: st.avatarUrl || null,
+        })),
         stageTargets: {
           '0_30': Number(values.stage_0_30),
           '31_60': Number(values.stage_31_60),
@@ -190,32 +176,23 @@ export const TargetConfigModal: React.FC<TargetConfigModalProps> = ({ open, onCl
 
         <Divider className="my-2 border-zinc-800" />
 
-        {/* Row 2: KPI Cá Nhân 4 Bạn */}
+        {/* Row 2: KPI Cá Nhân Từng Bạn Telesales từ HR */}
         <div>
           <Text strong className="text-amber-300 uppercase tracking-wider text-xs">
-            2. Chỉ Tiêu Done Từng Bạn Telesales
+            2. Chỉ Tiêu Done Từng Bạn Telesales ({overview?.staffTargets?.length || 0} Nhân sự)
           </Text>
           <Row gutter={16} className="mt-2">
-            <Col xs={12} sm={6}>
-              <Form.Item name="staffPhuong" label="Phượng (Done)">
-                <InputNumber min={1} className="w-full font-semibold" />
-              </Form.Item>
-            </Col>
-            <Col xs={12} sm={6}>
-              <Form.Item name="staffKieu" label="Kiều (Done)">
-                <InputNumber min={1} className="w-full font-semibold" />
-              </Form.Item>
-            </Col>
-            <Col xs={12} sm={6}>
-              <Form.Item name="staffDiep" label="Điệp (Done)">
-                <InputNumber min={1} className="w-full font-semibold" />
-              </Form.Item>
-            </Col>
-            <Col xs={12} sm={6}>
-              <Form.Item name="staffVu" label="Vũ (Done)">
-                <InputNumber min={1} className="w-full font-semibold" />
-              </Form.Item>
-            </Col>
+            {(overview?.staffTargets || []).map((st) => (
+              <Col xs={12} sm={6} key={st.legacyStaffId}>
+                <Form.Item
+                  name={`staffTarget_${st.legacyStaffId}`}
+                  label={`${st.name} (Done)`}
+                  rules={[{ required: true, message: 'Nhập Done' }]}
+                >
+                  <InputNumber min={1} className="w-full font-semibold" />
+                </Form.Item>
+              </Col>
+            ))}
           </Row>
         </div>
 

@@ -18,8 +18,9 @@ import {
   TelesaleStaffDailyAction,
   TelesaleDailyActionOverview,
   SafeAny,
+  TELESALES_EXECUTIVE_STANDARDS,
 } from '@mos-lab/shared';
-import { getActiveBkTelesalesIds } from './bk-salary.service.js';
+import { getBkCallMetricsByLegacyStaffIds } from './bk-salary.service.js';
 import { BkLeaderboardService } from './bk-leaderboard.service.js';
 import { buildComboLiveAtBookingSql } from '../../customers/services/combo-recognition.service.js';
 
@@ -50,48 +51,142 @@ export class TelesaleTargetService {
     return `TELESALE_TARGET_CONFIG_${month}`;
   }
 
-  static normalizeStaffTargetIds(staffTargets: SafeAny[]): SafeAny[] {
-    if (!Array.isArray(staffTargets)) return [];
-    return staffTargets.map((st) => {
-      let legacyStaffId = Number(st.legacyStaffId);
-      const name = String(st.name || '');
-      if (legacyStaffId === 52454 || name.includes('Phượng')) {
-        legacyStaffId = 50670;
-      } else if (legacyStaffId === 52086 || name.includes('Kiều')) {
-        legacyStaffId = 52648;
+  /**
+   * Nguồn danh sách nhân sự chuẩn từ Quản lý Nhân Sự & Vai Trò (HR) -> Danh sách nhân sự Active (MOS-BUG-84):
+   * Điều kiện lọc:
+   * - Vai trò = Telesales Executive (role IN ['telesales', 'Telesales Executive'])
+   * - Trạng thái = Active (isActive = true)
+   * - legacyStaffId hợp lệ (> 0)
+   *
+   * Tự động phản ánh khi HR thêm, đổi vai trò, khóa hoặc kích hoạt nhân viên.
+   */
+  static async getActiveTelesalesStaffFromHr(
+    fastify: FastifyInstance,
+    fallbackStaffTargets?: Array<{ legacyStaffId: number; name: string; avatarUrl?: string | null }>
+  ): Promise<Array<{
+    crmStaffId: number;
+    legacyStaffId: number;
+    name: string;
+    avatarUrl: string | null;
+  }>> {
+    try {
+      if (fastify?.prisma?.crm?.crmStaff?.findMany) {
+        const staffList = await fastify.prisma.crm.crmStaff.findMany({
+          where: {
+            isActive: true,
+            OR: [
+              { role: 'telesales' },
+              { role: 'Telesales Executive' },
+              { role: TELESALES_EXECUTIVE_STANDARDS.roleKey },
+              { role: TELESALES_EXECUTIVE_STANDARDS.roleName },
+            ],
+          },
+          select: {
+            id: true,
+            legacyStaffId: true,
+            displayName: true,
+            avatarUrl: true,
+          },
+          orderBy: { displayName: 'asc' },
+        });
+
+        const validStaff = staffList
+          .filter((s) => s.legacyStaffId && Number(s.legacyStaffId) > 0)
+          .map((s) => ({
+            crmStaffId: s.id,
+            legacyStaffId: Number(s.legacyStaffId),
+            name: s.displayName,
+            avatarUrl: s.avatarUrl || null,
+          }));
+
+        if (validStaff.length > 0) {
+          return validStaff;
+        }
       }
-      return {
-        ...st,
-        legacyStaffId,
-      };
-    });
+    } catch (err) {
+      fastify.log?.warn?.(`Failed to query active telesales staff from HR (crmStaff): ${err}`);
+    }
+
+    if (fallbackStaffTargets && fallbackStaffTargets.length > 0) {
+      return fallbackStaffTargets.map((st) => ({
+        crmStaffId: 0,
+        legacyStaffId: st.legacyStaffId,
+        name: st.name,
+        avatarUrl: st.avatarUrl || null,
+      }));
+    }
+
+    return DEFAULT_OCTOBER_CONFIG.staffTargets.map((st) => ({
+      crmStaffId: 0,
+      legacyStaffId: st.legacyStaffId,
+      name: st.name,
+      avatarUrl: st.avatarUrl || null,
+    }));
   }
 
   static async getConfig(fastify: FastifyInstance, month = '2026-10'): Promise<TelesaleTargetConfigDto> {
+    let baseConfig: TelesaleTargetConfigDto = { ...DEFAULT_OCTOBER_CONFIG, month };
+    let hasSavedRow = false;
     try {
       const row = await fastify.prisma.crm.crmConfig.findUnique({
         where: { key: this.getConfigKey(month) },
       });
       if (row?.value) {
+        hasSavedRow = true;
         const parsed = JSON.parse(row.value) as TelesaleTargetConfigDto;
         if (!parsed.dailyCallPerStaff) parsed.dailyCallPerStaff = 83;
         if (!parsed.dailyPickupPerStaff) parsed.dailyPickupPerStaff = 25;
-        if (parsed.staffTargets) {
-          parsed.staffTargets = this.normalizeStaffTargetIds(parsed.staffTargets) as SafeAny;
-        }
-        return parsed;
+        baseConfig = parsed;
       }
     } catch (err) {
       fastify.log.warn(`Failed to read telesale config for ${month}, using default: ${err}`);
     }
-    return { ...DEFAULT_OCTOBER_CONFIG, month };
+
+    // Luôn đồng bộ danh sách nhân viên từ module HR Active (Single Source of Truth)
+    const activeHrStaff = await this.getActiveTelesalesStaffFromHr(fastify, baseConfig.staffTargets);
+    const existingStaffTargets = baseConfig.staffTargets || [];
+    const existingTargetMap = new Map(existingStaffTargets.map((st) => [st.legacyStaffId, st.doneTarget]));
+
+    const defaultDoneTarget =
+      activeHrStaff.length > 0 ? Math.round(Number(baseConfig.teamDoneTarget || 450) / activeHrStaff.length) : 100;
+
+    const reconciledStaffTargets = activeHrStaff.map((s) => ({
+      legacyStaffId: s.legacyStaffId,
+      name: s.name,
+      doneTarget: existingTargetMap.get(s.legacyStaffId) ?? defaultDoneTarget,
+      avatarUrl: s.avatarUrl || null,
+    }));
+
+    // Tự động chuẩn hóa dữ liệu crmConfig nếu có staffTargets không thuộc HR Telesales hoặc thiếu nhân sự Active
+    if (hasSavedRow && fastify?.prisma?.crm?.crmConfig?.update) {
+      const hasInvalidStaff = existingStaffTargets.some(
+        (st) => !activeHrStaff.some((hr) => hr.legacyStaffId === st.legacyStaffId)
+      );
+      const hasMissingStaff = activeHrStaff.some(
+        (hr) => !existingStaffTargets.some((st) => st.legacyStaffId === hr.legacyStaffId)
+      );
+      if (hasInvalidStaff || hasMissingStaff) {
+        const updatedValue = JSON.stringify({
+          ...baseConfig,
+          staffTargets: reconciledStaffTargets,
+        });
+        fastify.prisma.crm.crmConfig
+          .update({
+            where: { key: this.getConfigKey(month) },
+            data: { value: updatedValue, updatedAt: new Date() },
+          })
+          .catch((err) => fastify.log.warn(`Auto-repair telesale config error: ${err}`));
+      }
+    }
+
+    return {
+      ...baseConfig,
+      month,
+      staffTargets: reconciledStaffTargets,
+    };
   }
 
   static async saveConfig(fastify: FastifyInstance, config: TelesaleTargetConfigDto): Promise<TelesaleTargetConfigDto> {
-    if (config.staffTargets) {
-      config.staffTargets = this.normalizeStaffTargetIds(config.staffTargets) as SafeAny;
-    }
-
     const sumStages =
       Number(config.stageTargets['0_30'] || 0) +
       Number(config.stageTargets['31_60'] || 0) +
@@ -104,8 +199,26 @@ export class TelesaleTargetService {
       );
     }
 
+    // Đảm bảo staffTargets chỉ lưu các nhân viên Active Telesales từ HR
+    const activeHrStaff = await this.getActiveTelesalesStaffFromHr(fastify, config.staffTargets);
+    const incomingTargetMap = new Map((config.staffTargets || []).map((st) => [st.legacyStaffId, st.doneTarget]));
+    const defaultDoneTarget =
+      activeHrStaff.length > 0 ? Math.round(Number(config.teamDoneTarget) / activeHrStaff.length) : 100;
+
+    const cleanStaffTargets = activeHrStaff.map((s) => ({
+      legacyStaffId: s.legacyStaffId,
+      name: s.name,
+      doneTarget: incomingTargetMap.get(s.legacyStaffId) ?? defaultDoneTarget,
+      avatarUrl: s.avatarUrl || null,
+    }));
+
+    const cleanConfig: TelesaleTargetConfigDto = {
+      ...config,
+      staffTargets: cleanStaffTargets,
+    };
+
     const key = this.getConfigKey(config.month);
-    const value = JSON.stringify(config);
+    const value = JSON.stringify(cleanConfig);
 
     await fastify.prisma.crm.crmConfig.upsert({
       where: { key },
@@ -113,7 +226,7 @@ export class TelesaleTargetService {
       create: { key, value },
     });
 
-    return config;
+    return cleanConfig;
   }
 
   static async cloneConfig(
@@ -381,17 +494,10 @@ export class TelesaleTargetService {
     const todayStartStr = `${todayStr} 00:00:00`;
     const todayEndStr = `${todayStr} 23:59:59`;
 
-    // Active staff IDs from config
+    // Active staff IDs strictly reconciled from HR Active Telesales (crmStaff)
     const targetStaffIds = config.staffTargets.map((s) => s.legacyStaffId);
-
-    // Active Telesales staff IDs from unified single source of truth
-    let activeBkTelesalesIds = targetStaffIds;
-    try {
-      activeBkTelesalesIds = await getActiveBkTelesalesIds(fastify);
-    } catch (err) {
-      fastify.log.warn(`Failed to resolve active BK Telesales staff IDs: ${err}`);
-    }
-    const combinedStaffIds = Array.from(new Set([...targetStaffIds, ...activeBkTelesalesIds]));
+    const bkIdsStr = targetStaffIds.length > 0 ? targetStaffIds.join(',') : '0';
+    const combinedStaffIds = targetStaffIds;
 
     // 1. Fetch Month and Today metrics directly from BkLeaderboardService (Single Source of Truth)
     const [
@@ -459,7 +565,7 @@ export class TelesaleTargetService {
     const workingShiftMap = new Map<number, boolean>();
     let shiftRows: SafeAny[] = [];
     try {
-      const shiftStaffIds = Array.from(new Set([...targetStaffIds, ...activeBkTelesalesIds]));
+      const shiftStaffIds = targetStaffIds;
       if (shiftStaffIds.length > 0) {
         shiftRows = await fastify.prisma.legacy
           .$queryRawUnsafe<SafeAny[]>(
@@ -518,51 +624,29 @@ export class TelesaleTargetService {
       }
     }
 
-    // Also include any active telesales staff that aren't yet in config
-    for (const id of activeBkTelesalesIds) {
-      if (!allStaffCandidates.some((c) => c.legacyStaffId === id)) {
-        const foundName = staffNameMap.get(id) || `Telesales #${id}`;
-        allStaffCandidates.push({
-          legacyStaffId: id,
-          name: foundName,
-          doneTarget: 100,
-          avatarUrl: staffAvatarMap.get(id) || null,
-        });
-      }
-    }
-
     try {
-      const crmStaffList = await fastify.prisma.crm.crmStaff.findMany({
-        where: {
-          isActive: true,
-          OR: [{ role: 'telesales' }, { legacyStaffId: { in: activeBkTelesalesIds } }],
-        },
-        select: {
-          id: true,
-          legacyStaffId: true,
-          displayName: true,
-          avatarUrl: true,
-        },
-      });
+      if (targetStaffIds.length > 0) {
+        const crmStaffList = await fastify.prisma.crm.crmStaff.findMany({
+          where: {
+            legacyStaffId: { in: targetStaffIds },
+          },
+          select: {
+            legacyStaffId: true,
+            displayName: true,
+            avatarUrl: true,
+          },
+        });
 
-      for (const s of crmStaffList) {
-        const legacyId = Number(s.legacyStaffId);
-        if (legacyId && !isNaN(legacyId)) {
-          if (s.avatarUrl) staffAvatarMap.set(legacyId, s.avatarUrl);
-          if (s.displayName) staffNameMap.set(legacyId, s.displayName);
-
-          if (!allStaffCandidates.some((c) => c.legacyStaffId === legacyId)) {
-            allStaffCandidates.push({
-              legacyStaffId: legacyId,
-              name: s.displayName,
-              doneTarget: 100,
-              avatarUrl: s.avatarUrl || null,
-            });
+        for (const s of crmStaffList) {
+          const legacyId = Number(s.legacyStaffId);
+          if (legacyId && !isNaN(legacyId)) {
+            if (s.avatarUrl) staffAvatarMap.set(legacyId, s.avatarUrl);
+            if (s.displayName) staffNameMap.set(legacyId, s.displayName);
           }
         }
       }
     } catch (err) {
-      fastify.log.warn(`Failed to resolve CRM staff for telesale target: ${err}`);
+      fastify.log.warn(`Failed to resolve CRM staff avatars for telesale target: ${err}`);
     }
 
     // Query legacy user_profile for any missing avatars or names
@@ -1141,7 +1225,18 @@ export class TelesaleTargetService {
         ? `(DATEDIFF(CURDATE(), up.last_order_booking) > 120 OR up.last_order_booking IS NULL)`
         : `DATEDIFF(CURDATE(), up.last_order_booking) >= ${dayMin} AND DATEDIFF(CURDATE(), up.last_order_booking) <= ${dayMax}`;
 
-    const bookerFilter = bookerId && bookerId > 0 ? `AND (u.id % 4 = ${bookerId % 4})` : '';
+    const activeStaffList = await this.getActiveTelesalesStaffFromHr(fastify);
+    const activeStaffIds =
+      activeStaffList.length > 0 ? activeStaffList.map((s) => s.legacyStaffId) : [50670, 52648, 32268, 52598];
+    const staffCount = Math.max(1, activeStaffIds.length);
+    const bookerIndex = bookerId && bookerId > 0 ? activeStaffIds.indexOf(bookerId) : -1;
+
+    const bookerFilter =
+      bookerIndex >= 0
+        ? `AND (u.id % ${staffCount} = ${bookerIndex})`
+        : bookerId && bookerId > 0
+          ? `AND (u.id % ${staffCount} = ${bookerId % staffCount})`
+          : '';
 
     const listSql = `
       SELECT 
@@ -1184,16 +1279,15 @@ export class TelesaleTargetService {
 
     const total = Number(countRows[0]?.totalCount || 0);
 
-    const activeStaffNames: Record<number, string> = {
-      50670: 'Phượng',
-      52648: 'Kiều',
-      32268: 'Điệp',
-      52598: 'Vũ',
-    };
-    const activeStaffIds = [50670, 52648, 32268, 52598];
+    const activeStaffNames: Record<number, string> =
+      activeStaffList.length > 0
+        ? Object.fromEntries(activeStaffList.map((s) => [s.legacyStaffId, s.name]))
+        : { 50670: 'Phượng', 52648: 'Kiều', 32268: 'Điệp', 52598: 'Vũ' };
 
     const items: TelesaleCustomerPoolItem[] = rows.map((r, idx) => {
-      const assignedId = bookerId && bookerId > 0 ? bookerId : activeStaffIds[Number(r.customerId) % 4];
+      const assignedIndex =
+        bookerIndex >= 0 ? bookerIndex : Math.abs(Number(r.customerId)) % staffCount;
+      const assignedId = activeStaffIds[assignedIndex] || bookerId || 0;
       return {
         id: idx + 1,
         customerId: Number(r.customerId),
