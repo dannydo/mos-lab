@@ -40,28 +40,54 @@ test('derives workshop fee readiness exclusively from append-only ledger totals 
 });
 
 test('resolves workshop participant pricing tiers and calculates paid status accurately', () => {
-  const workshopFee = 1_900_000;
-  // Tier 1: Early bird 1.500k
-  const target1500 = resolveAcademyWorkshopParticipantTargetFee(workshopFee, 1_500_000);
-  assert.equal(target1500, 1_500_000);
-  assert.equal(calculateAcademyWorkshopFeeStatus(target1500, 1_500_000, false), 'PAID');
-  assert.equal(calculateAcademyWorkshopFeeStatus(target1500, 1_000_000, false), 'PARTIAL');
+  const workshopFee = 1_990_000;
+  // Tier 1: Discount 10% (1.791.000)
+  const target10Pct = resolveAcademyWorkshopParticipantTargetFee(workshopFee, null, 199_000);
+  assert.equal(target10Pct, 1_791_000);
+  assert.equal(calculateAcademyWorkshopFeeStatus(target10Pct, 1_791_000, false), 'PAID');
 
-  // Tier 2: Discount 10% (1.710.000)
-  const target10Pct = resolveAcademyWorkshopParticipantTargetFee(workshopFee, null, 190_000);
-  assert.equal(target10Pct, 1_710_000);
-  assert.equal(calculateAcademyWorkshopFeeStatus(target10Pct, 1_710_000, false), 'PAID');
+  // Tier 2: Discount 50% (995.000)
+  const target50Pct = resolveAcademyWorkshopParticipantTargetFee(workshopFee, 995_000);
+  assert.equal(target50Pct, 995_000);
+  assert.equal(calculateAcademyWorkshopFeeStatus(target50Pct, 995_000, false), 'PAID');
 
-  // Tier 3: Discount 50% (950.000)
-  const target50Pct = resolveAcademyWorkshopParticipantTargetFee(workshopFee, 950_000);
-  assert.equal(target50Pct, 950_000);
-  assert.equal(calculateAcademyWorkshopFeeStatus(target50Pct, 950_000, false), 'PAID');
-
-  // Tier 4: Standard Full (1.900.000)
+  // Tier 3: Standard Full (1.990.000)
   const targetFull = resolveAcademyWorkshopParticipantTargetFee(workshopFee, null, 0);
-  assert.equal(targetFull, 1_900_000);
-  assert.equal(calculateAcademyWorkshopFeeStatus(targetFull, 1_500_000, false), 'PARTIAL');
-  assert.equal(calculateAcademyWorkshopFeeStatus(targetFull, 1_900_000, false), 'PAID');
+  assert.equal(targetFull, 1_990_000);
+  assert.equal(calculateAcademyWorkshopFeeStatus(targetFull, 1_000_000, false), 'PARTIAL');
+  assert.equal(calculateAcademyWorkshopFeeStatus(targetFull, 1_990_000, false), 'PAID');
+});
+
+test('supports updated workshop policy: full fee 1.990.000d with upgraded 499k package included free, while deposit retains 299k basic kit', () => {
+  const packages = [
+    {
+      id: 1,
+      name: 'Combo Cơ Bản 299k (Dành cho cọc)',
+      description: 'Dụng cụ cơ bản kèm theo',
+      includedItemsJson: JSON.stringify(['Nhíp', 'Keo']),
+      priceVnd: 299_000,
+      isIncludedInFee: false,
+      images: [],
+    },
+    {
+      id: 2,
+      name: 'Combo Luyện Tập 499k (Nâng cấp Free khi thu Full)',
+      description: 'Dụng cụ nâng cấp',
+      includedItemsJson: JSON.stringify(['Nhíp cao cấp', 'Keo xịn', 'Đèn']),
+      priceVnd: 499_000,
+      isIncludedInFee: true, // Upgraded package is included in fee for full payment
+      images: [],
+    },
+  ];
+
+  const publicEquipment = buildPublicEquipment(packages, true);
+  // Both packages have effective price 0 because 499k is included and 299k <= 499k
+  const pkg299 = publicEquipment.packages.find((p) => p.id === 1);
+  const pkg499 = publicEquipment.packages.find((p) => p.id === 2);
+  assert.equal(pkg499?.effectivePriceVnd, 0);
+  assert.equal(pkg499?.isIncludedInFee, true);
+  assert.equal(pkg299?.effectivePriceVnd, 0);
+  assert.equal(pkg299?.isIncludedInFee, false);
 });
 
 test('keeps public registration, check-in, and live workshop phases separate', () => {

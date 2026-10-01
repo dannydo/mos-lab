@@ -190,6 +190,10 @@ export default function AcademyWorkshopParticipantSelectionsModal({
             </div>
           ) : (
             <div>
+              <div className="mb-2.5 rounded-lg border border-indigo-200/60 bg-indigo-50/50 p-2 text-[11px] leading-relaxed text-indigo-900 dark:border-indigo-900/40 dark:bg-indigo-950/20 dark:text-indigo-200">
+                <span className="font-semibold">Chính sách dụng cụ:</span> Học viên đóng đủ Full (1.990k) được nâng cấp lên bộ 499K Free. Học viên cọc nhận bộ cơ bản 299K.
+              </div>
+
               <Form.Item
                 name="equipmentPackageId"
                 label={<span className="text-xs font-medium">Gói dụng cụ</span>}
@@ -199,10 +203,22 @@ export default function AcademyWorkshopParticipantSelectionsModal({
                   onChange={(val) => setSelectedPkgId(val && Number(val) > 0 ? Number(val) : null)}
                   options={[
                     { value: 0, label: '— Không chọn (Học viên tự túc mang đồ nghề) —' },
-                    ...workshop.equipmentPackages.map((pkg) => ({
-                      value: pkg.id,
-                      label: `${pkg.name} · Phụ thu ${pkg.priceVnd.toLocaleString('vi-VN')} đ`,
-                    })),
+                    ...workshop.equipmentPackages.map((pkg) => {
+                      let tag = '';
+                      if (pkg.isIncludedInFee || pkg.priceVnd === 499000) {
+                        tag = ' · Nâng cấp Free khi thu Full 1.990k (0 đ)';
+                      } else if (pkg.priceVnd === 299000) {
+                        tag = ' · Bộ cơ bản cho học viên cọc';
+                      } else if (pkg.priceVnd > 0) {
+                        tag = ` · Phụ thu ${pkg.priceVnd.toLocaleString('vi-VN')} đ`;
+                      } else {
+                        tag = ' · Miễn phí kèm vé (0 đ)';
+                      }
+                      return {
+                        value: pkg.id,
+                        label: `${pkg.name}${tag}`,
+                      };
+                    }),
                   ]}
                   className="w-full"
                 />
@@ -213,9 +229,13 @@ export default function AcademyWorkshopParticipantSelectionsModal({
                   <div className="flex items-center justify-between font-semibold text-indigo-950 dark:text-indigo-200">
                     <span>{selectedPkg.name}</span>
                     <span className="tabular-nums">
-                      {selectedPkg.priceVnd > 0
-                        ? `+${selectedPkg.priceVnd.toLocaleString('vi-VN')} đ`
-                        : 'Miễn phí kèm vé'}
+                      {selectedPkg.isIncludedInFee || selectedPkg.priceVnd === 499000
+                        ? 'Nâng cấp Free (0 đ)'
+                        : selectedPkg.priceVnd === 299000
+                          ? 'Bộ cơ bản (Cọc)'
+                          : selectedPkg.priceVnd > 0
+                            ? `+${selectedPkg.priceVnd.toLocaleString('vi-VN')} đ`
+                            : 'Miễn phí kèm vé'}
                     </span>
                   </div>
                   {selectedPkg.description && <div className="mt-1 opacity-70">{selectedPkg.description}</div>}

@@ -180,11 +180,7 @@ export default function AcademyWorkshopParticipantOverlays({
 
   React.useEffect(() => {
     if (!selected) return;
-    if (selected.appliedFeeVnd === 1500000 || selected.discountReason?.includes('1.500')) {
-      setPricingPreset('promo_1500');
-      setCustomAppliedFee(null);
-      setCustomReason('');
-    } else if (
+    if (
       selected.appliedFeeVnd === Math.round(workshop.feeVnd * 0.9) ||
       selected.discountReason?.includes('10%')
     ) {
@@ -221,10 +217,7 @@ export default function AcademyWorkshopParticipantOverlays({
 
   const handleSelectPreset = (presetId: string) => {
     setPricingPreset(presetId);
-    if (presetId === 'promo_1500') {
-      setCustomAppliedFee(1500000);
-      setCustomReason('Ưu đãi giữ chỗ sớm 1.500k');
-    } else if (presetId === 'discount_10') {
+    if (presetId === 'discount_10') {
       setCustomAppliedFee(Math.round(workshop.feeVnd * 0.9));
       setCustomReason('Ưu đãi 10%');
     } else if (presetId === 'discount_50') {
@@ -254,10 +247,6 @@ export default function AcademyWorkshopParticipantOverlays({
         appliedFeeVnd = workshop.feeVnd;
         discountVnd = 0;
         discountReason = 'Vé tiêu chuẩn (Full)';
-      } else if (pricingPreset === 'promo_1500') {
-        appliedFeeVnd = 1500000;
-        discountVnd = Math.max(0, workshop.feeVnd - 1500000);
-        discountReason = 'Ưu đãi giữ chỗ sớm 1.500k';
       } else if (pricingPreset === 'discount_10') {
         appliedFeeVnd = Math.round(workshop.feeVnd * 0.9);
         discountVnd = workshop.feeVnd - appliedFeeVnd;
@@ -761,6 +750,10 @@ export default function AcademyWorkshopParticipantOverlays({
                     )}
                   </div>
 
+                  <div className="mb-2.5 rounded-lg border border-indigo-200/60 bg-indigo-50/50 p-2 text-[11px] leading-relaxed text-indigo-900 dark:border-indigo-900/40 dark:bg-indigo-950/20 dark:text-indigo-200">
+                    <span className="font-semibold">Chính sách Workshop:</span> Thu full được nâng cấp bộ dụng cụ từ 299K lên bộ 499K Free (đã kèm trong học phí). Học viên đóng cọc nhận bộ 299K cơ bản.
+                  </div>
+
                   <div className="space-y-2.5">
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {ACADEMY_WORKSHOP_PRICING_PRESETS.map((preset) => {
@@ -824,12 +817,11 @@ export default function AcademyWorkshopParticipantOverlays({
 
                     <div className="flex items-center justify-between pt-1">
                       <div className="text-[11px] text-slate-500 dark:text-slate-400">
-                        {pricingPreset === 'promo_1500' && 'Ưu đãi giữ chỗ sớm 1.500.000 đ (giảm 400.000 đ)'}
+                        {pricingPreset === 'full' && 'Vé tiêu chuẩn: 100% học phí niêm yết (nâng cấp bộ dụng cụ 499K Free)'}
                         {pricingPreset === 'discount_10' &&
                           `Ưu đãi 10%: ${Math.round(workshop.feeVnd * 0.9).toLocaleString('vi-VN')} đ (giảm ${Math.round(workshop.feeVnd * 0.1).toLocaleString('vi-VN')} đ)`}
                         {pricingPreset === 'discount_50' &&
                           `Ưu đãi 50%: ${Math.round(workshop.feeVnd * 0.5).toLocaleString('vi-VN')} đ (giảm ${Math.round(workshop.feeVnd * 0.5).toLocaleString('vi-VN')} đ)`}
-                        {pricingPreset === 'full' && 'Vé tiêu chuẩn: 100% học phí niêm yết'}
                         {pricingPreset === 'custom' &&
                           (customAppliedFee !== null
                             ? `Mức phí áp dụng: ${customAppliedFee.toLocaleString('vi-VN')} đ`

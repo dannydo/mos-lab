@@ -950,14 +950,7 @@ export interface AcademyWorkshopPricingTierPreset {
 }
 
 export const ACADEMY_WORKSHOP_PRICING_PRESETS: AcademyWorkshopPricingTierPreset[] = [
-  { id: 'full', label: 'Vé tiêu chuẩn (Full)', description: 'Thu đủ 100% học phí niêm yết', type: 'FULL' },
-  {
-    id: 'promo_1500',
-    label: 'Ưu đãi 1.500k',
-    description: 'Ưu đãi giữ chỗ sớm 1.500.000 đ',
-    type: 'FIXED',
-    fixedAmountVnd: 1_500_000,
-  },
+  { id: 'full', label: 'Vé tiêu chuẩn (Full)', description: 'Thu đủ 100% học phí niêm yết (tặng kèm nâng cấp bộ dụng cụ 499K Free)', type: 'FULL' },
   { id: 'discount_10', label: 'Ưu đãi 10%', description: 'Giảm 10% học phí niêm yết', type: 'PERCENT', percent: 10 },
   { id: 'discount_50', label: 'Ưu đãi 50%', description: 'Học bổng / Đối tác giảm 50%', type: 'PERCENT', percent: 50 },
   { id: 'custom', label: 'Tùy chỉnh', description: 'Nhập học phí áp dụng / mức giảm đặc biệt', type: 'CUSTOM' },
