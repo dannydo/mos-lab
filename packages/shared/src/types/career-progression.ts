@@ -210,7 +210,7 @@ const DEFAULT_CV_TO_CV_PLUS: CvToCvPlusRequirements = {
   minQaAudits: 12, // Tối thiểu 12 lần trong 3 tháng qua (cho phép tự chỉnh)
   requireZeroFailedAudits: true, // Nếu có bài kiểm tra failed -> KHÔNG được nâng cấp
   trialDurationDays: 30,
-  minSelfComboRate: 0.25, // CV tự tư vấn khách của mình tối thiểu 25%
+  minSelfComboRate: 0.2, // Tối thiểu 20% trên tệp khách tiềm năng chưa có gói combo (~8 combo/tháng)
   allowSelfConsultTrial: true,
 };
 
@@ -429,6 +429,10 @@ export interface StaffCareerStatus {
       customerTotalTip?: number;
       monthlySelfComboRev?: number;
       predictedComboCount?: number;
+      potentialComboCustomers?: number;
+      avgComboPrice?: number;
+      serumCommissionAmount?: number;
+      minComboRequired?: number;
     };
   };
   lastSyncedAt?: string;

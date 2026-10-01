@@ -9252,7 +9252,7 @@
         "path": "/api/kpi/bk/booking/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 48
+        "line": 49
       }
     },
     {
@@ -9266,7 +9266,7 @@
         "path": "/api/kpi/bk/booking/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 231
+        "line": 60
       }
     },
     {
@@ -9280,7 +9280,7 @@
         "path": "/api/kpi/bk/done/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 446
+        "line": 275
       }
     },
     {
@@ -9294,7 +9294,7 @@
         "path": "/api/kpi/bk/done/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 574
+        "line": 286
       }
     },
     {
@@ -9308,7 +9308,7 @@
         "path": "/api/kpi/bk/tip/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 764
+        "line": 476
       }
     },
     {
@@ -9322,7 +9322,7 @@
         "path": "/api/kpi/bk/tip/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 877
+        "line": 589
       }
     },
     {
@@ -9336,7 +9336,7 @@
         "path": "/api/kpi/bk/revenue/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 981
+        "line": 693
       }
     },
     {
@@ -9350,7 +9350,7 @@
         "path": "/api/kpi/bk/revenue/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1081
+        "line": 704
       }
     },
     {
@@ -9364,7 +9364,7 @@
         "path": "/api/kpi/bk/paystub",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1177
+        "line": 800
       }
     },
     {
@@ -9378,7 +9378,7 @@
         "path": "/api/kpi/bk/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1210
+        "line": 833
       }
     },
     {
@@ -9392,7 +9392,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1244
+        "line": 867
       }
     },
     {
@@ -9406,7 +9406,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1289
+        "line": 912
       }
     },
     {
@@ -9420,7 +9420,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1341
+        "line": 964
       }
     },
     {
@@ -9434,7 +9434,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1353
+        "line": 976
       }
     },
     {
@@ -9448,7 +9448,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1374
+        "line": 997
       }
     },
     {
@@ -9462,7 +9462,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1392
+        "line": 1015
       }
     },
     {
@@ -9476,7 +9476,7 @@
         "path": "/api/kpi/bk/games/:id/finalize",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1413
+        "line": 1036
       }
     },
     {
@@ -9490,7 +9490,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1434
+        "line": 1057
       }
     },
     {
@@ -30132,8 +30132,8 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 45285,
-        "lineCount": 1133,
+        "sizeBytes": 46113,
+        "lineCount": 1149,
         "ext": ".ts"
       }
     },
@@ -30951,8 +30951,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 57786,
-        "lineCount": 1450,
+        "sizeBytes": 42585,
+        "lineCount": 1073,
         "ext": ".ts"
       }
     },
@@ -31178,6 +31178,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/kpi/services/bk-leaderboard.service.ts",
+      "type": "File",
+      "label": "bk-leaderboard.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/bk-leaderboard.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 18672,
+        "lineCount": 525,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/kpi/services/bk-salary.service.test.ts",
       "type": "File",
       "label": "bk-salary.service.test.ts",
@@ -31198,8 +31211,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-salary.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 38878,
-        "lineCount": 1078,
+        "sizeBytes": 39525,
+        "lineCount": 1095,
         "ext": ".ts"
       }
     },
@@ -31328,8 +31341,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 22000,
-        "lineCount": 628,
+        "sizeBytes": 25078,
+        "lineCount": 685,
         "ext": ".ts"
       }
     },
@@ -31341,8 +31354,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 50666,
-        "lineCount": 1299,
+        "sizeBytes": 53878,
+        "lineCount": 1386,
         "ext": ".ts"
       }
     },
@@ -35579,8 +35592,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9117,
-        "lineCount": 230,
+        "sizeBytes": 9171,
+        "lineCount": 233,
         "ext": ".tsx"
       }
     },
@@ -35592,8 +35605,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 74727,
-        "lineCount": 1524,
+        "sizeBytes": 76446,
+        "lineCount": 1566,
         "ext": ".tsx"
       }
     },
@@ -37789,8 +37802,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TargetConfigModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11700,
-        "lineCount": 284,
+        "sizeBytes": 12209,
+        "lineCount": 300,
         "ext": ".tsx"
       }
     },
@@ -39141,8 +39154,8 @@
       "filePath": "packages/shared/src/types/career-progression.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 17861,
-        "lineCount": 436,
+        "sizeBytes": 18035,
+        "lineCount": 440,
         "ext": ".ts"
       }
     },
@@ -57355,6 +57368,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-leaderboard.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/bk-leaderboard.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/kpi/services/bk-salary.service.ts",
       "target": "ws:packages/shared",
@@ -61688,9 +61708,9 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary.service.ts:prisma:crm:CrmStaff",
-      "source": "file:apps/api/src/modules/kpi/services/bk-salary.service.ts",
-      "target": "prisma:crm:CrmStaff",
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-leaderboard.service.ts:prisma:crm:CrmBkGame",
+      "source": "file:apps/api/src/modules/kpi/services/bk-leaderboard.service.ts",
+      "target": "prisma:crm:CrmBkGame",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -86189,8 +86209,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 3040,
-    "totalEdges": 6640,
+    "totalNodes": 3041,
+    "totalEdges": 6641,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 160,
@@ -86199,14 +86219,14 @@
       "SharedType": 1113,
       "DesignToken": 12,
       "UIComponent": 209,
-      "File": 837
+      "File": 838
     },
     "edgeTypeCounts": {
       "EXPORTS": 1285,
       "HANDLES_ROUTE": 649,
       "RENDERS": 266,
       "USES_TOKEN": 211,
-      "IMPORTS": 461,
+      "IMPORTS": 462,
       "QUERIES_MODEL": 374,
       "API_CALL": 3394
     },

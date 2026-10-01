@@ -892,16 +892,25 @@ export class CareerProgressionService {
     const monthlyOrdersCount =
       lastMonthOrders > 0 ? lastMonthOrders : ordersCount > 0 ? Math.round(ordersCount / 3) : 80;
 
-    // Dự đoán số combo tự tư vấn: ~10% số khách (theo yêu cầu: "riêng hoa hồng thì đoán thôi")
-    const predictedComboCount = Math.max(5, Math.round(monthlyOrdersCount * 0.1));
-    const monthlySelfComboRev = predictedComboCount * 650000;
+    // Tệp khách hàng có thể bán combo: 40% số khách (loại trừ khách đang có gói combo live)
+    const potentialComboCustomers = Math.max(20, Math.round(monthlyOrdersCount * 0.4));
+    // Tỷ lệ chốt combo tối thiểu để duy trì chuẩn CV+: 20% tệp tiềm năng -> ~8 combo
+    const minComboRequired = Math.max(6, Math.round(potentialComboCustomers * 0.2));
+    const predictedComboCount = minComboRequired;
+    // Giá trung bình combo thực tế tại Wings Lashes (dữ liệu DB: 4.497.831đ ~ 4.5M)
+    const avgComboPrice = 4500000;
+    const monthlySelfComboRev = predictedComboCount * avgComboPrice;
+
+    // Thưởng bán lẻ cây dưỡng mi Yeppeum 6ml (1.100.000đ): 10% = 110.000đ/cây
+    const lashSerumPrice = 1100000;
+    const serumCommissionAmount = Math.round(lashSerumPrice * 0.1);
 
     let wageCurrent = hourlyWages.cv;
     let wageNext = hourlyWages.cvPlus;
     let tipShareCurrent = actualTipReceived; // Hiện tại nhận 70%
     let tipShareNext = Math.round(customerTotalTip * 0.9); // Khi lên CV+ nhận 90%
     let comboCommCurrent = 0;
-    let comboCommNext = Math.round(monthlySelfComboRev * 0.025); // 2.5% hoa hồng tự tư vấn combo
+    let comboCommNext = Math.round(monthlySelfComboRev * 0.025); // 2.5% hoa hồng tự tư vấn combo (900.000đ)
 
     if (currentRole === 'CV_PLUS') {
       wageCurrent = hourlyWages.cvPlus;
@@ -1008,6 +1017,10 @@ export class CareerProgressionService {
           customerTotalTip,
           monthlySelfComboRev,
           predictedComboCount,
+          potentialComboCustomers,
+          avgComboPrice,
+          serumCommissionAmount,
+          minComboRequired,
         },
       },
       lastSyncedAt: new Date().toISOString(),

@@ -1295,14 +1295,14 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
 
                 <div>
                   <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300 mb-1">
-                    <span className="font-medium">Mục tiêu chốt combo dưỡng mi:</span>
+                    <span className="font-medium">Mục tiêu chốt combo (khách tiềm năng ~40%):</span>
                     <span className="font-bold tabular-nums text-purple-600 dark:text-purple-400">
                       {sliderCombo}%{' '}
-                      {sliderCombo >= cvReq.minSelfComboRate * 100 ? (
-                        <span className="text-emerald-500 font-bold text-[10px]">(Đủ Ải ✓)</span>
+                      {sliderCombo >= (cvReq.minSelfComboRate || 0.2) * 100 ? (
+                        <span className="text-emerald-500 font-bold text-[10px]">(Đủ Ải Duy Trì CV+ ✓)</span>
                       ) : (
                         <span className="text-amber-500 font-bold text-[10px]">
-                          (Cần ≥ {(cvReq.minSelfComboRate * 100).toFixed(0)}%)
+                          (Cần ≥ {((cvReq.minSelfComboRate || 0.2) * 100).toFixed(0)}% để duy trì CV+)
                         </span>
                       )}
                     </span>
@@ -1476,19 +1476,21 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     </div>
                   </div>
 
-                  {/* 3. Hoa hồng combo */}
-                  <div className="p-2 rounded-lg bg-slate-50/80 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80">
+                  {/* 3. Hoa hồng combo & Dưỡng mi */}
+                  <div className="p-2.5 rounded-lg bg-slate-50/80 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80 space-y-1.5">
                     <div className="flex justify-between items-center text-[11px]">
                       <div className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-200">
-                        <span>🏹 Hoa hồng combo:</span>
+                        <span>🏹 Hoa hồng combo &amp; Dưỡng mi:</span>
                         <span className="font-normal text-slate-500 dark:text-slate-400">
                           {status.currentRole === 'CV' ? (
                             <>
                               0% ➔ <strong className="text-emerald-600 dark:text-emerald-400 font-bold">2.5%</strong>{' '}
-                              <span className="text-[10px] text-emerald-600 font-normal">(Doanh thu)</span>
+                              <span className="text-[10px] text-emerald-600 font-normal">
+                                (Doanh thu combo) + 10% Dưỡng mi
+                              </span>
                             </>
                           ) : (
-                            '2.5% + Thưởng vượt mốc'
+                            '2.5% combo + 10% Dưỡng mi'
                           )}
                         </span>
                       </div>
@@ -1496,16 +1498,37 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                         +{formatVnd(comboGain)}/tháng
                       </span>
                     </div>
-                    <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 flex items-center justify-between">
-                      <span>
-                        * Dự đoán tự tư vấn ~{earnings.details.predictedComboCount || 6} combo/tháng (~10% số ca) mang
-                        về +{formatVnd(comboGain)}/tháng
-                      </span>
+
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 space-y-1 leading-relaxed">
+                      <div>
+                        • <strong>Bán combo (2.5% DT):</strong> ~{earnings.details.predictedComboCount || 8} combo/tháng
+                        (chốt 20% trên ~{earnings.details.potentialComboCustomers || 40} khách tiềm năng chưa có gói, TB
+                        4.5M/combo) ➔{' '}
+                        <strong className="text-emerald-600 dark:text-emerald-400">
+                          +{formatVnd(comboGain)}/tháng
+                        </strong>
+                      </div>
+                      <div>
+                        • <strong>Bán 1 cây dưỡng mi Yeppeum (1.100.000đ):</strong> Thưởng 10% ➔{' '}
+                        <strong className="text-emerald-600 dark:text-emerald-400">
+                          +{formatVnd(earnings.details.serumCommissionAmount || 110000)}/cây
+                        </strong>
+                      </div>
                       {sliderCombo > 0 && (
-                        <span className="text-purple-600 dark:text-purple-400 font-medium">
-                          (Kéo test {sliderCombo}% combo: +
-                          {formatVnd(Math.round((sliderOrders / 3) * (sliderCombo / 100) * 650000 * 0.025))}/tháng)
-                        </span>
+                        <div className="pt-0.5 text-purple-600 dark:text-purple-400 font-medium">
+                          (Kéo test {sliderCombo}% combo trên ~{Math.round((sliderOrders / 3) * 0.4)} khách tiềm năng: ~
+                          {Math.round((sliderOrders / 3) * 0.4 * (sliderCombo / 100))} combo ➔ +
+                          {formatVnd(
+                            Math.round(
+                              (sliderOrders / 3) *
+                                0.4 *
+                                (sliderCombo / 100) *
+                                (earnings.details.avgComboPrice || 4500000) *
+                                0.025
+                            )
+                          )}
+                          /tháng)
+                        </div>
                       )}
                     </div>
                   </div>
