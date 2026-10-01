@@ -17,7 +17,7 @@ import { createRouteHelpers } from './helpers.js';
 import { TeamService } from '../../teams/team.service.js';
 
 export async function registerBookingRoutes(fastify: FastifyInstance) {
-  const { ensureTelesalesCustomerAccess } = createRouteHelpers(fastify);
+  const { ensureTelesalesCustomerMutateAccess } = createRouteHelpers(fastify);
 
   // POST /api/customers/booking
   // Create a new booking (order and order_service) in the legacy core database
@@ -68,7 +68,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         finalCustomerId = await CustomerCreationService.findCustomerIdByPhone(fastify, newCustomerPhone);
       }
 
-      if (finalCustomerId && !(await ensureTelesalesCustomerAccess(request, reply, finalCustomerId))) return;
+      if (finalCustomerId && !(await ensureTelesalesCustomerMutateAccess(request, reply, finalCustomerId))) return;
 
       // 1. New leads use the same customer-creation service as the standalone
       // flow, keeping referrer attribution and legacy profile records aligned.
@@ -431,7 +431,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy lịch hẹn trên hệ thống.' });
 
       const customerId = Number(order.user_id);
-      if (!canRescheduleAnyCustomer && !(await ensureTelesalesCustomerAccess(request, reply, customerId))) return;
+      if (!canRescheduleAnyCustomer && !(await ensureTelesalesCustomerMutateAccess(request, reply, customerId))) return;
 
       const currentPromotionId = Number(order.selected_promotion_id || order.promotion_id || 0) || null;
       return reply.send(
@@ -904,7 +904,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       const finalCustomerId = Number(order.user_id);
       const originalStaffId = order.created_staff_id ? Number(order.created_staff_id) : null;
 
-      if (!canRescheduleAnyCustomer && !(await ensureTelesalesCustomerAccess(request, reply, finalCustomerId))) return;
+      if (!canRescheduleAnyCustomer && !(await ensureTelesalesCustomerMutateAccess(request, reply, finalCustomerId))) return;
 
       const oldData = {
         bookingDateStart: order.booking_date_start ? new Date(order.booking_date_start).toISOString() : null,

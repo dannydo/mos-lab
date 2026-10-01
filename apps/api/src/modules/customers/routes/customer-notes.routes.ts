@@ -4,7 +4,7 @@ import { SafeAny, isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { createRouteHelpers } from './helpers.js';
 
 export async function registerCustomerNotesRoutes(fastify: FastifyInstance) {
-  const { ensureTelesalesCustomerAccess } = createRouteHelpers(fastify);
+  const { ensureTelesalesCustomerAccess, ensureTelesalesCustomerMutateAccess } = createRouteHelpers(fastify);
 
   // POST /api/customers/:id/notes
   // Create a new note for a customer in user_note table
@@ -21,7 +21,7 @@ export async function registerCustomerNotesRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Bad Request', message: 'ID khách hàng không hợp lệ' });
     }
 
-    if (!(await ensureTelesalesCustomerAccess(request, reply, customerId))) return;
+    if (!(await ensureTelesalesCustomerMutateAccess(request, reply, customerId))) return;
 
     if (!note || !note.trim()) {
       return reply.status(400).send({ error: 'Bad Request', message: 'Nội dung ghi chú là bắt buộc' });

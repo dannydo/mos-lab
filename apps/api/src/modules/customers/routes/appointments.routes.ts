@@ -7,7 +7,7 @@ import { TeamService } from '../../teams/team.service.js';
 import { createRouteHelpers } from './helpers.js';
 
 export async function registerAppointmentsRoutes(fastify: FastifyInstance) {
-  const { ensureTelesalesCustomerAccess } = createRouteHelpers(fastify);
+  const { ensureTelesalesCustomerMutateAccess } = createRouteHelpers(fastify);
 
   // GET /api/customers/appointments
   // Get list of appointments for assigned customers
@@ -1091,7 +1091,7 @@ export async function registerAppointmentsRoutes(fastify: FastifyInstance) {
       if (!legacyUserId) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy lịch hẹn trên hệ thống.' });
       }
-      if (!(await ensureTelesalesCustomerAccess(request, reply, legacyUserId))) return;
+      if (!(await ensureTelesalesCustomerMutateAccess(request, reply, legacyUserId))) return;
 
       const log = await fastify.prisma.crm.crmMissedLog.upsert({
         where: { orderId: numOrderId },
