@@ -18,6 +18,7 @@ import {
 } from '@ant-design/icons';
 import { SharedPoolOverviewStats } from '@mos-lab/shared';
 import { useTheme } from '../../context/ThemeContext';
+import { SharedPoolStaffPerformanceCard } from './SharedPoolStaffPerformanceCard';
 
 interface SharedPoolOverviewBannerProps {
   overview: SharedPoolOverviewStats | null;
@@ -30,6 +31,8 @@ interface SharedPoolOverviewBannerProps {
   onSelectBatch: (batch: number | 'ALL') => void;
   selectedPoolStatus: string;
   onSelectPoolStatus: (status: string) => void;
+  selectedStaffId?: string | number | null;
+  onSelectStaff?: (staffId: string) => void;
 }
 
 export const SharedPoolOverviewBanner: React.FC<SharedPoolOverviewBannerProps> = ({
@@ -43,6 +46,8 @@ export const SharedPoolOverviewBanner: React.FC<SharedPoolOverviewBannerProps> =
   onSelectBatch,
   selectedPoolStatus,
   onSelectPoolStatus,
+  selectedStaffId,
+  onSelectStaff,
 }) => {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
@@ -193,15 +198,16 @@ export const SharedPoolOverviewBanner: React.FC<SharedPoolOverviewBannerProps> =
         {/* Header Bar: Status & Control Actions */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pb-3 border-b border-purple-200/50 dark:border-purple-900/30">
           <div className="flex items-center gap-2.5 flex-wrap">
-            <Tag color="purple" className="font-bold text-xs px-2.5 py-0.5 rounded-md inline-flex items-center gap-1.5 m-0">
+            <Tag
+              color="purple"
+              className="font-bold text-xs px-2.5 py-0.5 rounded-md inline-flex items-center gap-1.5 m-0"
+            >
               <TeamOutlined /> TEAMWORK / SHARED POOL
             </Tag>
 
             <span className="font-bold text-sm text-slate-800 dark:text-slate-100 flex items-center gap-1">
               <span>Đợt khai thác:</span>
-              <span className="font-mono text-purple-600 dark:text-purple-400">
-                Batch #{activeBatchNumber}
-              </span>
+              <span className="font-mono text-purple-600 dark:text-purple-400">Batch #{activeBatchNumber}</span>
               <span className="text-xs text-gray-400 font-normal">/ {totalBatches} đợt</span>
             </span>
 
@@ -215,9 +221,7 @@ export const SharedPoolOverviewBanner: React.FC<SharedPoolOverviewBannerProps> =
               </Tag>
             )}
 
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              ({batchSize} KH / batch)
-            </span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">({batchSize} KH / batch)</span>
           </div>
 
           {/* Manager Action Buttons */}
@@ -290,9 +294,7 @@ export const SharedPoolOverviewBanner: React.FC<SharedPoolOverviewBannerProps> =
               <span className="text-xs">🟠</span>
             </span>
             <div className="flex items-baseline gap-1 mt-1">
-              <span className="text-xl font-bold tabular-nums text-amber-600 dark:text-amber-400">
-                {batchClaimed}
-              </span>
+              <span className="text-xl font-bold tabular-nums text-amber-600 dark:text-amber-400">{batchClaimed}</span>
               <span className="text-[10px] text-gray-400 font-normal">KH</span>
             </div>
           </div>
@@ -318,9 +320,7 @@ export const SharedPoolOverviewBanner: React.FC<SharedPoolOverviewBannerProps> =
               <span className="text-xs">🔵</span>
             </span>
             <div className="flex items-baseline gap-1 mt-1">
-              <span className="text-xl font-bold tabular-nums text-sky-600 dark:text-sky-400">
-                {batchBooked}
-              </span>
+              <span className="text-xl font-bold tabular-nums text-sky-600 dark:text-sky-400">{batchBooked}</span>
               <span className="text-[10px] text-gray-400 font-normal">đơn</span>
             </div>
           </div>
@@ -386,7 +386,8 @@ export const SharedPoolOverviewBanner: React.FC<SharedPoolOverviewBannerProps> =
 
           <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2">
             <span>
-              Tổng KH chiến dịch: <strong className="tabular-nums font-bold text-slate-800 dark:text-slate-100">{totalCustomers}</strong>
+              Tổng KH chiến dịch:{' '}
+              <strong className="tabular-nums font-bold text-slate-800 dark:text-slate-100">{totalCustomers}</strong>
             </span>
             <span>·</span>
             <span>
@@ -394,6 +395,16 @@ export const SharedPoolOverviewBanner: React.FC<SharedPoolOverviewBannerProps> =
             </span>
           </div>
         </div>
+
+        {/* Staff Performance Block (MOS-BUG-81) */}
+        {overview.staffPerformance && (
+          <SharedPoolStaffPerformanceCard
+            performance={overview.staffPerformance}
+            loading={loading}
+            selectedStaffId={selectedStaffId}
+            onSelectStaff={onSelectStaff}
+          />
+        )}
       </Card>
     </div>
   );

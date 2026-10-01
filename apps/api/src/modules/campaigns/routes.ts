@@ -641,6 +641,25 @@ export async function campaignRoutes(fastify: FastifyInstance) {
     }
   );
 
+  // 17b. Team Performance: Get Staff Performance in Campaign Teamwork (MOS-BUG-81)
+  const handleStaffPerformance = async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const params = request.params as { id: string };
+      const id = parseInt(params.id, 10);
+      if (isNaN(id)) {
+        return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
+      }
+      const performance = await CampaignService.getCampaignStaffPerformance(fastify, id);
+      return reply.send(performance);
+    } catch (err: any) {
+      request.log.error('Failed to get campaign staff performance:', err);
+      return reply.status(err.statusCode || 400).send({ error: 'Bad Request', message: err.message });
+    }
+  };
+
+  fastify.get('/campaigns/:id/staff-performance', { preHandler: [requireAuth] }, handleStaffPerformance);
+  fastify.get('/campaigns/:id/shared-pool/staff-performance', { preHandler: [requireAuth] }, handleStaffPerformance);
+
   // 18. Shared Pool: Claim / Lock Customer
   fastify.post(
     '/campaigns/:id/shared-pool/claim',
