@@ -30,6 +30,7 @@ interface TelesaleTvMonitorFullscreenProps {
   onClose: () => void;
   onRefresh?: () => void;
   refreshing?: boolean;
+  liveCelebration?: ReturnType<typeof useTelesaleTvLiveCelebration>;
 }
 
 export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenProps> = ({
@@ -38,6 +39,7 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
   onClose,
   onRefresh,
   refreshing = false,
+  liveCelebration: externalCelebration,
 }) => {
   const { token } = theme.useToken();
   const [now, setNow] = useState<Date>(new Date());
@@ -82,6 +84,8 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
   const metrics = calculateTvMonitorMetrics(overview.teamDaily, pacing);
 
   // Live Voice Celebration hook (MOS-FEAT-83)
+  const internalCelebration = useTelesaleTvLiveCelebration();
+  const celebration = externalCelebration || internalCelebration;
   const {
     settings: voiceSettings,
     updateSettings: updateVoiceSettings,
@@ -91,7 +95,7 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
     ingestLiveEvents,
     checkMilestones,
     triggerDemoCelebration,
-  } = useTelesaleTvLiveCelebration();
+  } = celebration;
 
   // Ingest live events & check milestones whenever overview is updated
   useEffect(() => {

@@ -320,53 +320,112 @@ export function useTelesaleTvLiveCelebration() {
     [processQueue, settings.eventTypeFilter]
   );
 
+  // Auto-unlock AudioContext on first user interaction
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const unlock = () => {
+      try {
+        const AudioCtx =
+          window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        if (AudioCtx) {
+          const ctx = new AudioCtx();
+          ctx.resume().then(() => ctx.close()).catch(() => {});
+        }
+      } catch {}
+      window.removeEventListener('click', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+    window.addEventListener('click', unlock, { once: true });
+    window.addEventListener('keydown', unlock, { once: true });
+    return () => {
+      window.removeEventListener('click', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+  }, []);
+
   // 6. Ingest Live Events from API (todayLiveEvents)
   const ingestLiveEvents = useCallback(
     (events: TelesaleTodayLiveEvent[] = []) => {
       if (!events || events.length === 0) return;
 
-      // On first initial mount, register all existing events as seen to prevent blasting old events
-      if (!isInitializedRef.current) {
-        events.forEach((e) => seenEventIdsRef.current.add(e.id));
-        isInitializedRef.current = true;
-        return;
+      // Hydrate seen events from sessionStorage on first run
+      if (seenEventIdsRef.current.size === 0 && typeof window !== 'undefined') {
+        try {
+          const raw = sessionStorage.getItem('MOS_TV_SEEN_EVENT_IDS');
+          if (raw) {
+            const list: string[] = JSON.parse(raw);
+            list.forEach((id) => seenEventIdsRef.current.add(id));
+          }
+        } catch {}
       }
 
-      // Detect new events
-      for (const ev of events) {
-        if (!seenEventIdsRef.current.has(ev.id)) {
-          // Immediately mark as seen so it doesn't get processed twice
-          seenEventIdsRef.current.add(ev.id);
-          const staffName = ev.staffName || 'Bạn Telesales';
-          const defaultQuote = getRandomQuote(ev.type === 'BOOK' ? BOOK_QUOTES : DONE_QUOTES, staffName);
+      const nowMs = Date.now();
+      const eventsToAnnounce: TelesaleTodayLiveEvent[] = [];
 
-          // Asynchronously query Gemini AI for unique seductive & encouraging quote
-          apiClient.telesaleTarget
-            .getCelebrationQuote({ type: ev.type, staffName })
-            .then((res) => {
-              const quote = res?.quote?.trim() || defaultQuote;
-              enqueueCelebration({
-                id: ev.id,
-                kind: ev.type,
-                staffName,
-                avatarUrl: ev.avatarUrl,
-                textToSpeak: quote,
-                badgeText: ev.type === 'BOOK' ? '+1 BOOK HÔM NAY' : '+1 DONE HÔM NAY',
-                colorTheme: ev.type === 'BOOK' ? 'blue' : 'emerald',
-              });
-            })
-            .catch(() => {
-              enqueueCelebration({
-                id: ev.id,
-                kind: ev.type,
-                staffName,
-                avatarUrl: ev.avatarUrl,
-                textToSpeak: defaultQuote,
-                badgeText: ev.type === 'BOOK' ? '+1 BOOK HÔM NAY' : '+1 DONE HÔM NAY',
-                colorTheme: ev.type === 'BOOK' ? 'blue' : 'emerald',
-              });
-            });
+      if (!isInitializedRef.current) {
+        isInitializedRef.current = true;
+        for (const ev of events) {
+          if (seenEventIdsRef.current.has(ev.id)) continue;
+          const evTime = new Date(ev.timestamp).getTime();
+          const ageMs = nowMs - evTime;
+          // If booking was created in the last 3 minutes (180s), celebrate it!
+          if (ageMs <= 180000) {
+            eventsToAnnounce.push(ev);
+          } else {
+            // Older events are marked as seen so they are not re-announced
+            seenEventIdsRef.current.add(ev.id);
+          }
         }
+      } else {
+        for (const ev of events) {
+          if (!seenEventIdsRef.current.has(ev.id)) {
+            eventsToAnnounce.push(ev);
+          }
+        }
+      }
+
+      // Persist seenEventIds to sessionStorage
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem(
+            'MOS_TV_SEEN_EVENT_IDS',
+            JSON.stringify(Array.from(seenEventIdsRef.current))
+          );
+        } catch {}
+      }
+
+      // Process new events (limit to newest 2 if multiple fresh events arrive at once)
+      for (const ev of eventsToAnnounce.slice(0, 2)) {
+        seenEventIdsRef.current.add(ev.id);
+        const staffName = ev.staffName || 'Bạn Telesales';
+        const defaultQuote = getRandomQuote(ev.type === 'BOOK' ? BOOK_QUOTES : DONE_QUOTES, staffName);
+
+        // Asynchronously query Gemini AI for unique seductive & encouraging quote
+        apiClient.telesaleTarget
+          .getCelebrationQuote({ type: ev.type, staffName })
+          .then((res) => {
+            const quote = res?.quote?.trim() || defaultQuote;
+            enqueueCelebration({
+              id: ev.id,
+              kind: ev.type,
+              staffName,
+              avatarUrl: ev.avatarUrl,
+              textToSpeak: quote,
+              badgeText: ev.type === 'BOOK' ? '+1 BOOK HÔM NAY' : '+1 DONE HÔM NAY',
+              colorTheme: ev.type === 'BOOK' ? 'blue' : 'emerald',
+            });
+          })
+          .catch(() => {
+            enqueueCelebration({
+              id: ev.id,
+              kind: ev.type,
+              staffName,
+              avatarUrl: ev.avatarUrl,
+              textToSpeak: defaultQuote,
+              badgeText: ev.type === 'BOOK' ? '+1 BOOK HÔM NAY' : '+1 DONE HÔM NAY',
+              colorTheme: ev.type === 'BOOK' ? 'blue' : 'emerald',
+            });
+          });
       }
     },
     [enqueueCelebration]
