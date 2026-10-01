@@ -200,8 +200,9 @@ export function useTelesaleTvLiveCelebration() {
           const voice = getBestVietnameseVoice(isMaleCharm ? 'male' : 'female');
           if (voice) utterance.voice = voice;
           utterance.lang = voice?.lang || 'vi-VN';
-          utterance.rate = isMaleCharm ? 0.95 : 1.05;
-          utterance.pitch = isMaleCharm ? 0.8 : 1.05;
+          // Natural speech rate and pitch (do not pitch-down to 0.8 to avoid distortion)
+          utterance.rate = 1.0;
+          utterance.pitch = 1.0;
           utterance.volume = settings.volume;
 
           utterance.onend = finishCelebration;
@@ -214,52 +215,75 @@ export function useTelesaleTvLiveCelebration() {
 
       // Priority 1: Studio Neural Voice via Backend Audio API (Nam Minh / Hoài My)
       const isBrowserLocal = settings.voiceStyle === 'BROWSER_LOCAL';
-      if (!isBrowserLocal && typeof window !== 'undefined' && window.Audio) {
-        try {
-          const neuralVoice = settings.voiceStyle === 'FEMALE_SWEET' ? 'vi-VN-HoaiMyNeural' : 'vi-VN-NamMinhNeural';
-          const baseUrl = resolveApiBaseUrl();
-          const audioUrl = `${baseUrl}/kpi/telesale-target/live-celebration-audio?text=${encodeURIComponent(nextEvent.textToSpeak)}&voice=${encodeURIComponent(neuralVoice)}`;
-          const audio = new Audio(audioUrl);
-          audio.volume = settings.volume;
+      if (!isBrowserLocal && typeof window !== 'undefined' && typeof window.fetch === 'function') {
+        let objectUrl: string | null = null;
+        let fallbackTimeout: NodeJS.Timeout | null = null;
+        let hasEnded = false;
 
-          let hasEnded = false;
-          const onAudioEnd = () => {
-            if (hasEnded) return;
-            hasEnded = true;
-            finishCelebration();
-          };
-
-          audio.onended = onAudioEnd;
-          audio.onerror = () => {
-            if (!hasEnded) {
-              hasEnded = true;
-              fallbackToBrowserSynthesis();
-            }
-          };
-
-          const fallbackTimeout = setTimeout(() => {
-            if (!hasEnded) {
-              hasEnded = true;
-              audio.pause();
-              finishCelebration();
-            }
-          }, 15000);
-
-          audio.play().catch(() => {
-            if (!hasEnded) {
-              hasEnded = true;
-              clearTimeout(fallbackTimeout);
-              fallbackToBrowserSynthesis();
-            }
-          });
-
-          return () => {
+        const cleanup = () => {
+          if (fallbackTimeout) {
             clearTimeout(fallbackTimeout);
-            audio.pause();
-          };
-        } catch {
+            fallbackTimeout = null;
+          }
+          if (objectUrl) {
+            URL.revokeObjectURL(objectUrl);
+            objectUrl = null;
+          }
+        };
+
+        const handleSuccessFinish = () => {
+          if (hasEnded) return;
+          hasEnded = true;
+          cleanup();
+          finishCelebration();
+        };
+
+        const handleFailureFallback = () => {
+          if (hasEnded) return;
+          hasEnded = true;
+          cleanup();
           fallbackToBrowserSynthesis();
-        }
+        };
+
+        (async () => {
+          try {
+            const neuralVoice = settings.voiceStyle === 'FEMALE_SWEET' ? 'vi-VN-HoaiMyNeural' : 'vi-VN-NamMinhNeural';
+            const baseUrl = resolveApiBaseUrl();
+            const audioUrl = `${baseUrl}/kpi/telesale-target/live-celebration-audio?text=${encodeURIComponent(nextEvent.textToSpeak)}&voice=${encodeURIComponent(neuralVoice)}`;
+
+            // Fetch via CORS to completely prevent Chrome ORB (Opaque Response Blocking)
+            const response = await fetch(audioUrl, {
+              mode: 'cors',
+              signal: AbortSignal.timeout(10000),
+            });
+
+            if (!response.ok) {
+              throw new Error(`Audio fetch failed: ${response.status}`);
+            }
+
+            const audioBlob = await response.blob();
+            objectUrl = URL.createObjectURL(audioBlob);
+
+            const audio = new Audio(objectUrl);
+            audio.volume = settings.volume;
+
+            audio.onended = handleSuccessFinish;
+            audio.onerror = handleFailureFallback;
+
+            fallbackTimeout = setTimeout(() => {
+              audio.pause();
+              handleSuccessFinish();
+            }, 18000);
+
+            await audio.play();
+          } catch {
+            handleFailureFallback();
+          }
+        })();
+
+        return () => {
+          cleanup();
+        };
       } else {
         fallbackToBrowserSynthesis();
       }
