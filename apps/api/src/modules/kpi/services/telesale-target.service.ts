@@ -1,4 +1,8 @@
 import { FastifyInstance } from 'fastify';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import {
   TelesaleTargetOverview,
   TelesaleTargetConfigDto,
@@ -1221,4 +1225,74 @@ YÊU CẦU BẮT BUỘC:
 
     return { quote: fallbackQuote, source: 'fallback' };
   }
+
+  static async synthesizeCelebrationAudio(
+    text: string,
+    voice = 'vi-VN-NamMinhNeural'
+  ): Promise<Buffer> {
+    const cleanText = text.replace(/[\r\n\t]+/g, ' ').trim();
+    if (!cleanText) throw new Error('Text is empty');
+
+    const cacheDir = '/tmp/telesale_audio_cache';
+    if (!existsSync(cacheDir)) {
+      mkdirSync(cacheDir, { recursive: true });
+    }
+
+    const hash = createHash('md5').update(`${cleanText}_${voice}`).digest('hex');
+    const cacheFile = `${cacheDir}/${hash}.mp3`;
+
+    if (existsSync(cacheFile)) {
+      const buf = readFileSync(cacheFile);
+      if (buf.length > 500) {
+        return buf;
+      }
+    }
+
+    const edgeTtsCandidates = [
+      'edge-tts',
+      '/usr/local/bin/edge-tts',
+      '/usr/bin/edge-tts',
+      '/Users/dannydo/.gemini/antigravity/venv-f5tts/bin/edge-tts',
+    ];
+
+    let binaryPath = 'edge-tts';
+    for (const c of edgeTtsCandidates) {
+      if (c === 'edge-tts' || existsSync(c)) {
+        binaryPath = c;
+        break;
+      }
+    }
+
+    const tempFile = `${cacheDir}/tmp_${Date.now()}_${Math.random().toString(36).slice(2)}.mp3`;
+    const execFileAsync = promisify(execFile);
+
+    try {
+      await execFileAsync(
+        binaryPath,
+        ['--text', cleanText, '--voice', voice, '--rate=+5%', '--write-media', tempFile],
+        { timeout: 10_000 }
+      );
+
+      if (existsSync(tempFile)) {
+        const audioBuf = readFileSync(tempFile);
+        if (audioBuf.length > 500) {
+          try {
+            writeFileSync(cacheFile, audioBuf);
+            unlinkSync(tempFile);
+          } catch {
+            // cache write failure is non-fatal
+          }
+          return audioBuf;
+        }
+      }
+    } catch (err: any) {
+      if (existsSync(tempFile)) {
+        try { unlinkSync(tempFile); } catch {}
+      }
+      throw new Error(`Edge TTS synthesis failed: ${err.message}`, { cause: err });
+    }
+
+    throw new Error('No audio produced by Edge TTS');
+  }
 }
+

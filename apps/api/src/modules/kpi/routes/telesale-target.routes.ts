@@ -145,4 +145,27 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
       });
     }
   });
+
+  // 7. Synthesize Studio Neural Audio for Live Celebration (Nam Minh / Hoài My)
+  fastify.get('/kpi/telesale-target/live-celebration-audio', async (request, reply) => {
+    const query = request.query as { text?: string; voice?: string };
+    const text = (query.text || '').trim();
+    const voice = query.voice || 'vi-VN-NamMinhNeural';
+
+    if (!text) {
+      return reply.status(400).send({ error: 'Text is required' });
+    }
+
+    try {
+      const audioBuffer = await TelesaleTargetService.synthesizeCelebrationAudio(text, voice);
+      return reply
+        .header('Content-Type', 'audio/mpeg')
+        .header('Cache-Control', 'public, max-age=86400')
+        .send(audioBuffer);
+    } catch (err: any) {
+      fastify.log.error(`Failed to synthesize celebration audio: ${err.message}`);
+      return reply.status(500).send({ error: 'Failed to synthesize celebration audio' });
+    }
+  });
 }
+

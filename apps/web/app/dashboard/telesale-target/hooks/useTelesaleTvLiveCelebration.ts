@@ -4,13 +4,14 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { TelesaleTodayLiveEvent } from '@mos-lab/shared';
 import { getBestVietnameseVoice } from '../../../../components/voice-assistant/speech-utils';
 import { apiClient } from '../../../../lib/api-client';
+import { resolveApiBaseUrl } from '../../../../lib/api-base-url';
 
 export interface TvCelebrationSettings {
   soundEnabled: boolean;
   volume: number; // 0 to 1
   eventTypeFilter: 'ALL' | 'BOOK_ONLY' | 'DONE_ONLY';
   quietModeEnabled: boolean; // Manual quiet mode or during quiet hours
-  voiceStyle?: 'MALE_CHARM' | 'FEMALE_SWEET';
+  voiceStyle?: 'MALE_CHARM' | 'FEMALE_SWEET' | 'BROWSER_LOCAL';
 }
 
 export interface ActiveCelebration {
@@ -175,19 +176,8 @@ export function useTelesaleTvLiveCelebration() {
       playCelebratoryChime(settings.volume, nextEvent.kind);
     }
 
-    if (shouldPlaySound && typeof window !== 'undefined' && window.speechSynthesis) {
+    if (shouldPlaySound) {
       setIsSpeaking(true);
-      window.speechSynthesis.cancel();
-
-      const utterance = new SpeechSynthesisUtterance(nextEvent.textToSpeak);
-      const isMaleCharm = (settings.voiceStyle || 'MALE_CHARM') === 'MALE_CHARM';
-      const voice = getBestVietnameseVoice(isMaleCharm ? 'male' : 'female');
-      if (voice) utterance.voice = voice;
-      utterance.lang = voice?.lang || 'vi-VN';
-      // Giọng nam thần: pitch trầm ấm 0.8, rate nhịp nhàng quyến rũ 0.95
-      utterance.rate = isMaleCharm ? 0.95 : 1.05;
-      utterance.pitch = isMaleCharm ? 0.8 : 1.05;
-      utterance.volume = settings.volume;
 
       const finishCelebration = () => {
         setIsSpeaking(false);
@@ -202,15 +192,77 @@ export function useTelesaleTvLiveCelebration() {
         }, 1500);
       };
 
-      utterance.onend = finishCelebration;
-      utterance.onerror = finishCelebration;
+      const fallbackToBrowserSynthesis = () => {
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(nextEvent.textToSpeak);
+          const isMaleCharm = (settings.voiceStyle || 'MALE_CHARM') === 'MALE_CHARM';
+          const voice = getBestVietnameseVoice(isMaleCharm ? 'male' : 'female');
+          if (voice) utterance.voice = voice;
+          utterance.lang = voice?.lang || 'vi-VN';
+          utterance.rate = isMaleCharm ? 0.95 : 1.05;
+          utterance.pitch = isMaleCharm ? 0.8 : 1.05;
+          utterance.volume = settings.volume;
 
-      // Fallback timeout in case SpeechSynthesis hangs
-      const fallbackTimeout = setTimeout(finishCelebration, 12000);
+          utterance.onend = finishCelebration;
+          utterance.onerror = finishCelebration;
+          window.speechSynthesis.speak(utterance);
+        } else {
+          finishCelebration();
+        }
+      };
 
-      window.speechSynthesis.speak(utterance);
+      // Priority 1: Studio Neural Voice via Backend Audio API (Nam Minh / Hoài My)
+      const isBrowserLocal = settings.voiceStyle === 'BROWSER_LOCAL';
+      if (!isBrowserLocal && typeof window !== 'undefined' && window.Audio) {
+        try {
+          const neuralVoice = settings.voiceStyle === 'FEMALE_SWEET' ? 'vi-VN-HoaiMyNeural' : 'vi-VN-NamMinhNeural';
+          const baseUrl = resolveApiBaseUrl();
+          const audioUrl = `${baseUrl}/kpi/telesale-target/live-celebration-audio?text=${encodeURIComponent(nextEvent.textToSpeak)}&voice=${encodeURIComponent(neuralVoice)}`;
+          const audio = new Audio(audioUrl);
+          audio.volume = settings.volume;
 
-      return () => clearTimeout(fallbackTimeout);
+          let hasEnded = false;
+          const onAudioEnd = () => {
+            if (hasEnded) return;
+            hasEnded = true;
+            finishCelebration();
+          };
+
+          audio.onended = onAudioEnd;
+          audio.onerror = () => {
+            if (!hasEnded) {
+              hasEnded = true;
+              fallbackToBrowserSynthesis();
+            }
+          };
+
+          const fallbackTimeout = setTimeout(() => {
+            if (!hasEnded) {
+              hasEnded = true;
+              audio.pause();
+              finishCelebration();
+            }
+          }, 15000);
+
+          audio.play().catch(() => {
+            if (!hasEnded) {
+              hasEnded = true;
+              clearTimeout(fallbackTimeout);
+              fallbackToBrowserSynthesis();
+            }
+          });
+
+          return () => {
+            clearTimeout(fallbackTimeout);
+            audio.pause();
+          };
+        } catch {
+          fallbackToBrowserSynthesis();
+        }
+      } else {
+        fallbackToBrowserSynthesis();
+      }
     } else {
       // If muted or in quiet hours, still show visual banner for 3.5s
       setTimeout(() => {

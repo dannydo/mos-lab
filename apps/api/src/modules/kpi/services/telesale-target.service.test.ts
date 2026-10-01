@@ -617,3 +617,11 @@ test('TelesaleTargetService.generateLiveCelebrationQuote falls back gracefully w
     process.env.GEMINI_API_KEY = originalKey;
   }
 });
+
+test('TelesaleTargetService.synthesizeCelebrationAudio throws on empty text and handles cache', async () => {
+  await assert.rejects(
+    async () => TelesaleTargetService.synthesizeCelebrationAudio(''),
+    /empty/
+  );
+});
+

@@ -192,8 +192,9 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
           onChange={(val) => updateVoiceSettings({ voiceStyle: val })}
           className="w-full"
           options={[
-            { label: '👑 Nam thần gợi cảm (Trầm ấm, 4 giá trị Wings)', value: 'MALE_CHARM' },
-            { label: '🌸 Nữ ngọt ngào (Tươi sáng & Tự nhiên)', value: 'FEMALE_SWEET' },
+            { label: '👑 Nam thần Nam Minh (Studio Neural · Trầm ấm & gợi cảm)', value: 'MALE_CHARM' },
+            { label: '🌸 Nữ thần Hoài My (Studio Neural · Ngọt ngào & ân cần)', value: 'FEMALE_SWEET' },
+            { label: '💻 Trình duyệt máy (Local Speech Synth)', value: 'BROWSER_LOCAL' },
           ]}
         />
       </div>
