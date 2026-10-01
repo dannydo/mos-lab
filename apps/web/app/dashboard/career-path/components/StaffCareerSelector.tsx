@@ -160,7 +160,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 m-0">
-              Dữ liệu đồng bộ trực tiếp từ danh sách Báo Cáo CV (Số ca 90 ngày, Fix, Tip, Combo, Chuối FAL)
+              Dữ liệu đồng bộ trực tiếp từ danh sách Báo Cáo CV (Số ca 90 ngày, Fix, Tip, Combo, Chuối Yêu Thương)
             </p>
           </div>
         </div>

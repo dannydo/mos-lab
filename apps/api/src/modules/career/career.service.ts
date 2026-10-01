@@ -46,10 +46,21 @@ export class CareerProgressionService {
 
       if (record?.value) {
         const parsed = JSON.parse(record.value) as CareerProgressionConfig;
+        const normalizedCvReq = {
+          ...DEFAULT_CAREER_PROGRESSION_CONFIG.cvToCc,
+          ...DEFAULT_CAREER_PROGRESSION_CONFIG.cvToCvPlus,
+          ...(parsed.cvToCc || {}),
+          ...(parsed.cvToCvPlus || {}),
+        };
+        if (!normalizedCvReq.minBananaCount || normalizedCvReq.minBananaCount <= 1) {
+          normalizedCvReq.minBananaCount = 45;
+        }
+
         cachedConfig = {
           ...DEFAULT_CAREER_PROGRESSION_CONFIG,
           ...parsed,
-          cvToCc: { ...DEFAULT_CAREER_PROGRESSION_CONFIG.cvToCc, ...(parsed.cvToCc || {}) },
+          cvToCc: normalizedCvReq,
+          cvToCvPlus: normalizedCvReq,
           ccToFm: { ...DEFAULT_CAREER_PROGRESSION_CONFIG.ccToFm, ...(parsed.ccToFm || {}) },
           fmToCho: { ...DEFAULT_CAREER_PROGRESSION_CONFIG.fmToCho, ...(parsed.fmToCho || {}) },
           choToBoss: { ...DEFAULT_CAREER_PROGRESSION_CONFIG.choToBoss, ...(parsed.choToBoss || {}) },
@@ -76,13 +87,21 @@ export class CareerProgressionService {
     updatedBy: string
   ): Promise<CareerProgressionConfig> {
     const current = await this.getConfig(fastify);
+    const mergedCvReq = {
+      ...current.cvToCc,
+      ...current.cvToCvPlus,
+      ...(newConfig.cvToCc || {}),
+      ...(newConfig.cvToCvPlus || {}),
+    };
+
     const merged: CareerProgressionConfig = {
       ...current,
       ...newConfig,
       version: newConfig.version || current.version || '2026.1',
       updatedAt: new Date().toISOString(),
       updatedBy: updatedBy || 'Admin',
-      cvToCc: { ...current.cvToCc, ...(newConfig.cvToCc || {}) },
+      cvToCc: mergedCvReq,
+      cvToCvPlus: mergedCvReq,
       ccToFm: { ...current.ccToFm, ...(newConfig.ccToFm || {}) },
       fmToCho: { ...current.fmToCho, ...(newConfig.fmToCho || {}) },
       choToBoss: { ...current.choToBoss, ...(newConfig.choToBoss || {}) },
@@ -176,12 +195,15 @@ export class CareerProgressionService {
     const tipsMap: Record<number, { totalTip: number; tipCount: number; validTipOrders?: number }> = {};
     const combosMap: Record<number, number> = {};
     const bonusesMap: Record<number, { points: number; cash: number; banana: number }> = {};
+    const bananasMap: Record<number, number> = {};
+    const hiMap: Record<number, number> = {};
     let shopAvgTip = 38000;
     const shopTipRate = 0.45;
 
     try {
-      const [orderRows, tipRows, comboRows, bonusRows, shopTipRows, legacyProfileRows] = await Promise.all([
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const [orderRows, tipRows, comboRows, bonusRows, shopTipRows, legacyProfileRows, bananaRows, hiRows] =
+        await Promise.all([
+          fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
             os.assigned_staff_id,
             COUNT(DISTINCT os.order_id) as total_orders,
@@ -192,7 +214,7 @@ export class CareerProgressionService {
             AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
           GROUP BY os.assigned_staff_id
         `),
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+          fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
             st.user_id,
             COALESCE(SUM(st.tip_amount), 0) as total_tip,
@@ -204,7 +226,7 @@ export class CareerProgressionService {
             AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
           GROUP BY st.user_id
         `),
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+          fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
             os.assigned_staff_id,
             COUNT(DISTINCT osc.order_id) as combo_orders
@@ -215,7 +237,7 @@ export class CareerProgressionService {
             AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
           GROUP BY os.assigned_staff_id
         `),
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+          fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
             sb.user_id,
             COALESCE(SUM(CASE WHEN sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END), 0) as monthly_points,
@@ -225,7 +247,7 @@ export class CareerProgressionService {
           WHERE sb.date_created >= DATE_SUB(NOW(), INTERVAL 90 DAY)
           GROUP BY sb.user_id
         `),
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+          fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
             COALESCE(SUM(st.tip_amount), 0) as shop_total_tip,
             COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as shop_valid_tip_orders,
@@ -235,12 +257,39 @@ export class CareerProgressionService {
           WHERE o.order_state = 'Completed'
             AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
         `),
-        legacyIds.length > 0
-          ? fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-              `SELECT user_id, avatar FROM user_profile WHERE user_id IN (${legacyIds.join(',')}) AND avatar IS NOT NULL AND avatar != ''`
-            )
-          : Promise.resolve([]),
-      ]);
+          legacyIds.length > 0
+            ? fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+                `SELECT user_id, avatar FROM user_profile WHERE user_id IN (${legacyIds.join(',')}) AND avatar IS NOT NULL AND avatar != ''`
+              )
+            : Promise.resolve([]),
+          legacyIds.length > 0
+            ? fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+              SELECT 
+                g.to_user_id as user_id,
+                COALESCE(SUM(g.give_away_amount), 0) as banana_count
+              FROM staff_give_away g
+              JOIN staff_give_away_rule r ON g.staff_give_away_rule_id = r.id
+              WHERE r.type = 'CheckIn5MinuteEarly'
+                AND g.from_user_id != g.to_user_id
+                AND (g.created_staff_id IS NULL OR g.created_staff_id != g.to_user_id)
+                AND g.date_created >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+                AND g.to_user_id IN (${legacyIds.join(',')})
+              GROUP BY g.to_user_id
+            `)
+            : Promise.resolve([]),
+          legacyIds.length > 0
+            ? fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+              SELECT 
+                user_id,
+                COALESCE(SUM(relationship_happy_count), 0) as happy_count,
+                COALESCE(SUM(relationship_happy_count + relationship_neutral_count + relationship_unhappy_count), 0) as total_evaluations
+              FROM report_staff_relationship
+              WHERE user_id IN (${legacyIds.join(',')})
+                AND date >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+              GROUP BY user_id
+            `)
+            : Promise.resolve([]),
+        ]);
 
       if (Array.isArray(legacyProfileRows)) {
         legacyProfileRows.forEach((r: any) => {
@@ -284,6 +333,24 @@ export class CareerProgressionService {
           };
         }
       });
+
+      if (Array.isArray(bananaRows)) {
+        bananaRows.forEach((r: any) => {
+          if (r.user_id) {
+            bananasMap[Number(r.user_id)] = Number(r.banana_count) || 0;
+          }
+        });
+      }
+
+      if (Array.isArray(hiRows)) {
+        hiRows.forEach((r: any) => {
+          if (r.user_id) {
+            const total = Number(r.total_evaluations) || 0;
+            const happy = Number(r.happy_count) || 0;
+            hiMap[Number(r.user_id)] = total > 0 ? Number((happy / total).toFixed(3)) : 0.75;
+          }
+        });
+      }
 
       let shopTipRate = 0.45;
       if (shopTipRows && shopTipRows.length > 0) {
@@ -358,21 +425,21 @@ export class CareerProgressionService {
         staffTipRate,
         shopTipRate,
         selfComboRate,
-        happinessIndex: 0.85,
-        bananaCount: bonusesMap[legacyId]?.banana || 0,
-        isBananaPassed: (bonusesMap[legacyId]?.banana || 0) >= (config.cvToCvPlus?.minBananaCount ?? 100),
+        happinessIndex: hiMap[legacyId] ?? 0.75,
+        bananaCount: bananasMap[legacyId] ?? 0,
+        isBananaPassed: (bananasMap[legacyId] ?? 0) >= (config.cvToCvPlus?.minBananaCount ?? 45),
         ccLevel: ['CC', 'FM'].includes(careerRole) ? ccLevel : null,
         monthlyPoints: ['CC', 'FM'].includes(careerRole) ? monthlyPoints : null,
         qaAuditPassed: (() => {
+          const reqAudits = config.cvToCvPlus?.minQaAudits ?? 12;
           const realAudits = qaShopService
             .getStaffAudits(staff.id)
             .concat(legacyId !== staff.id ? qaShopService.getStaffAudits(legacyId) : []);
           if (realAudits.length > 0) {
             const hasFail = realAudits.some((a) => a.auditEvaluationResult === 'FAILED');
-            const rate = Number((realAudits.length / 12).toFixed(2));
-            return rate >= 1.0 && !hasFail;
+            return realAudits.length >= reqAudits && !hasFail;
           }
-          return false;
+          return reqAudits === 0;
         })(),
         hasFailedQaAudit: (() => {
           const realAudits = qaShopService
@@ -456,29 +523,39 @@ export class CareerProgressionService {
     let tippedOrdersCount = 0;
     let selfComboCount = 0;
     let selfComboRate = 0;
-    const happinessIndex = 0.85;
+    let happinessIndex = 0.7;
     let bananaCount = 0;
     let monthlyPoints = 0;
     let ccLevel = 1;
     let ccBonusCash = 0;
     let ccTipShare = 0;
     const totalVisits = 0;
+    let lastMonthOrders = 0;
+    let lastMonthTip = 0;
+    let lastMonthWorkingHours = 0;
+    let avg90dWorkingHours = 0;
 
     try {
-      const [orderRes, fixRes, tipRes, comboRes, bonusRes, shopTipRes] = await Promise.all([
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-          `
-          SELECT COUNT(DISTINCT os.order_id) as total_orders
+      const [orderRes, fixRes, tipRes, comboRes, bonusRes, shopTipRes, hiRes, bananaRes, workingHoursRes] =
+        await Promise.all([
+          fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+            `
+          SELECT 
+            COUNT(DISTINCT os.order_id) as total_orders,
+            COUNT(DISTINCT CASE 
+              WHEN o.booking_date_start >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00')
+               AND o.booking_date_start <= CONCAT(LAST_DAY(DATE_SUB(NOW(), INTERVAL 1 MONTH)), ' 23:59:59')
+              THEN os.order_id END) as last_month_orders
           FROM order_service os
           JOIN \`order\` o ON o.id = os.order_id
           WHERE os.assigned_staff_id = ?
             AND o.order_state = 'Completed'
             AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
         `,
-          targetLegacyStaffId
-        ),
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-          `
+            targetLegacyStaffId
+          ),
+          fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+            `
           SELECT COUNT(os.id) as fix_count
           FROM order_service os
           JOIN \`order\` o ON o.id = os.order_id
@@ -487,12 +564,16 @@ export class CareerProgressionService {
             AND o.order_state = 'Completed'
             AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
         `,
-          targetLegacyStaffId
-        ),
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-          `
+            targetLegacyStaffId
+          ),
+          fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+            `
           SELECT 
             COALESCE(SUM(st.tip_amount), 0) as total_tip,
+            COALESCE(SUM(CASE 
+              WHEN o.booking_date_start >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00')
+               AND o.booking_date_start <= CONCAT(LAST_DAY(DATE_SUB(NOW(), INTERVAL 1 MONTH)), ' 23:59:59')
+              THEN st.tip_amount ELSE 0 END), 0) as last_month_tip,
             COUNT(st.id) as tip_count,
             COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as valid_tip_orders
           FROM staff_tip st
@@ -501,10 +582,10 @@ export class CareerProgressionService {
             AND o.order_state = 'Completed'
             AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
         `,
-          targetLegacyStaffId
-        ),
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-          `
+            targetLegacyStaffId
+          ),
+          fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+            `
           SELECT COUNT(DISTINCT osc.order_id) as combo_orders
           FROM order_service os
           JOIN \`order\` o ON o.id = os.order_id
@@ -513,10 +594,10 @@ export class CareerProgressionService {
             AND o.order_state = 'Completed'
             AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
         `,
-          targetLegacyStaffId
-        ),
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-          `
+            targetLegacyStaffId
+          ),
+          fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+            `
           SELECT 
             COALESCE(SUM(CASE WHEN sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END), 0) as monthly_points,
             COALESCE(SUM(CASE WHEN sb.bonus_type = 'Cash' THEN sb.bonus_amount ELSE 0 END), 0) as cc_cash,
@@ -525,9 +606,9 @@ export class CareerProgressionService {
           WHERE sb.user_id = ?
             AND sb.date_created >= DATE_SUB(NOW(), INTERVAL 90 DAY)
         `,
-          targetLegacyStaffId
-        ),
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+            targetLegacyStaffId
+          ),
+          fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
             COALESCE(SUM(st.tip_amount), 0) as shop_total_tip,
             COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as shop_valid_tip_orders,
@@ -537,12 +618,82 @@ export class CareerProgressionService {
           WHERE o.order_state = 'Completed'
             AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
         `),
-      ]);
+          fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+            `
+          SELECT 
+            COALESCE(SUM(relationship_happy_count), 0) as happy_count,
+            COALESCE(SUM(relationship_neutral_count), 0) as neutral_count,
+            COALESCE(SUM(relationship_unhappy_count), 0) as unhappy_count,
+            COALESCE(SUM(relationship_happy_count + relationship_neutral_count + relationship_unhappy_count), 0) as total_evaluations
+          FROM report_staff_relationship
+          WHERE user_id = ?
+            AND date >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+        `,
+            targetLegacyStaffId
+          ),
+          fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+            `
+          SELECT 
+            COALESCE(SUM(g.give_away_amount), 0) as checkin_banana_count
+          FROM staff_give_away g
+          JOIN staff_give_away_rule r ON g.staff_give_away_rule_id = r.id
+          WHERE g.to_user_id = ?
+            AND r.type = 'CheckIn5MinuteEarly'
+            AND g.from_user_id != g.to_user_id
+            AND (g.created_staff_id IS NULL OR g.created_staff_id != g.to_user_id)
+            AND g.date_created >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+        `,
+            targetLegacyStaffId
+          ),
+          fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+            `
+          SELECT 
+            ROUND(COALESCE(SUM(CASE 
+              WHEN date >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01')
+               AND date <= LAST_DAY(DATE_SUB(NOW(), INTERVAL 1 MONTH))
+              THEN TIMESTAMPDIFF(MINUTE, start_time, end_time) ELSE 0 END), 0) / 60, 1) as last_month_hours,
+            ROUND(COALESCE(SUM(TIMESTAMPDIFF(MINUTE, start_time, end_time)), 0) / 60 / 3, 1) as avg_90d_hours
+          FROM staff_working_shift
+          WHERE user_id = ?
+            AND date >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+        `,
+            targetLegacyStaffId
+          ),
+        ]);
+
+      const totalHi = Number(hiRes?.[0]?.total_evaluations || 0);
+      const happyCount = Number(hiRes?.[0]?.happy_count || 0);
+      if (totalHi > 0) {
+        happinessIndex = Number((happyCount / totalHi).toFixed(3));
+      } else {
+        try {
+          const allTimeHi = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+            `
+            SELECT 
+              COALESCE(SUM(relationship_happy_count), 0) as happy_count,
+              COALESCE(SUM(relationship_happy_count + relationship_neutral_count + relationship_unhappy_count), 0) as total_evaluations
+            FROM report_staff_relationship
+            WHERE user_id = ?
+          `,
+            targetLegacyStaffId
+          );
+          const totalAllTime = Number(allTimeHi?.[0]?.total_evaluations || 0);
+          if (totalAllTime > 0) {
+            happinessIndex = Number((Number(allTimeHi?.[0]?.happy_count || 0) / totalAllTime).toFixed(3));
+          }
+        } catch (_hiErr) {
+          // Safe fallback
+        }
+      }
 
       ordersCount = Number(orderRes?.[0]?.total_orders || 0);
+      lastMonthOrders = Number(orderRes?.[0]?.last_month_orders || 0);
       fixCount = Number(fixRes?.[0]?.fix_count || 0);
       fixRate = ordersCount > 0 ? Number((fixCount / ordersCount).toFixed(4)) : 0;
       totalTip = Number(tipRes?.[0]?.total_tip ?? tipRes?.[0]?.staff_tip ?? 0);
+      lastMonthTip = Number(tipRes?.[0]?.last_month_tip || 0);
+      lastMonthWorkingHours = Number(workingHoursRes?.[0]?.last_month_hours || 0);
+      avg90dWorkingHours = Number(workingHoursRes?.[0]?.avg_90d_hours || 0);
       staffAvgTip = ordersCount > 0 ? Math.round(totalTip / ordersCount) : 0;
 
       tippedOrdersCount = Number(tipRes?.[0]?.valid_tip_orders || 0);
@@ -580,7 +731,7 @@ export class CareerProgressionService {
 
       monthlyPoints = Number(bonusRes?.[0]?.monthly_points || 0);
       ccBonusCash = Number(bonusRes?.[0]?.cc_cash || 0);
-      bananaCount = Number(bonusRes?.[0]?.banana_count || 0);
+      bananaCount = Number(bananaRes?.[0]?.checkin_banana_count || 0);
       ccLevel = monthlyPoints > 0 ? Math.floor(monthlyPoints / 100) + 1 : 1;
       ccTipShare = totalTip;
     } catch (err) {
@@ -624,11 +775,12 @@ export class CareerProgressionService {
     // Quest gates evaluation against dynamic config
 
     // QA/QC Audit Quest Evaluation (Kinh Thánh mOS Điều răn CAREER-QA-001)
-    // Để nâng cấp thì CV phải mời QA/QC kiểm tra tác phong bản thân và phòng nối mi định kỳ ít nhất 1 lần/tuần. Nếu failed thì không được nâng cấp.
+    // Tối thiểu QA, QC 12 lần trong 3 tháng qua (cho phép Danny tự chỉnh qua config)
     const minWeeklyQaAudits = cvReq.minWeeklyQaAudits ?? 1;
     const requireZeroFailedAudits = cvReq.requireZeroFailedAudits !== false;
     const evaluatedWeeks = 12; // 90 ngày tương đương 12 tuần làm việc
-    const requiredAudits = Math.max(1, Math.round(evaluatedWeeks * minWeeklyQaAudits));
+    const requiredAudits =
+      cvReq.minQaAudits ?? (cvReq.minWeeklyQaAudits ? Math.round(cvReq.minWeeklyQaAudits * 12) : 12);
 
     // Truy vấn dữ liệu biên bản kiểm tra QA/QC tác phong & phòng mi thực tế từ QaShopService
     const staffAuditRecords = qaShopService
@@ -666,7 +818,8 @@ export class CareerProgressionService {
       lastAuditDate = null;
     }
 
-    const isQaPassed = weeklyAuditRate >= minWeeklyQaAudits && (!requireZeroFailedAudits || !hasFailedAudit);
+    const isQaPassed =
+      (requiredAudits === 0 || totalAudits >= requiredAudits) && (!requireZeroFailedAudits || !hasFailedAudit);
 
     const qaAudit = {
       totalAudits,
@@ -693,8 +846,8 @@ export class CareerProgressionService {
     // 3. tip > 10% trung bình của shop: staffTipRate >= targetTipRate || tipRatioAboveShop >= 0.10
     // 4. QA AC >= 1 lần/tuần: weeklyAuditRate >= 1.0 và không có bài FAILED
     // 5. HI > 70%: happinessIndex >= 0.70
-    // 6. Chuối >= 100: bananaCount >= minBananaCount
-    const minBananaCount = cvReq.minBananaCount ?? 100;
+    // 6. Chuối Yêu Thương >= 45: bananaCount >= minBananaCount (15 quả/tháng * 3T)
+    const minBananaCount = cvReq.minBananaCount ?? 45;
     const isOrdersPassed = ordersCount >= cvReq.minOrders;
     const isFixPassed = fixRate <= cvReq.maxFixRate;
     const isTipPassed = staffTipRate >= targetTipRate || tipRatioAboveShop >= cvReq.minTipRatioAboveShop;
@@ -716,57 +869,79 @@ export class CareerProgressionService {
       recommendedAction = 'START_TRIAL';
     }
 
-    // Earnings simulation based on real numbers
+    // Earnings simulation based on real numbers of the specific CV
     const hourlyWages = config.compensation?.hourlyWages || {
       cv: 25500,
       cvPlus: 27500,
       cvPlusPlus: 29500,
     };
 
-    const monthlyEstimatedHours = 200;
-    const monthlyTipAvg = ordersCount > 0 ? Math.round(totalTip / 3) : 2500000;
-    const monthlySelfComboRev = selfComboCount > 0 ? Math.round((selfComboCount / 3) * 650000) : 0;
+    // Giờ công thực tế: ưu tiên số giờ thực tế tháng trước của CV, nếu chưa có ca thì lấy trung bình 90 ngày, fallback 260h
+    const actualWorkingHours =
+      lastMonthWorkingHours > 0 ? lastMonthWorkingHours : avg90dWorkingHours > 0 ? avg90dWorkingHours : 260;
+    const monthlyEstimatedHours = actualWorkingHours;
+
+    // Tiền tip thực tế CV đã nhận (70%): ưu tiên tháng trước, nếu tháng trước = 0 thì lấy trung bình 3 tháng (totalTip / 3)
+    const actualTipReceived = lastMonthTip > 0 ? lastMonthTip : ordersCount > 0 ? Math.round(totalTip / 3) : 2500000;
+    const monthlyTipAvg = actualTipReceived;
+
+    // Tổng tiền tip mà khách hàng thực tế đã cho trên hóa đơn (100% tip khách: actualTipReceived / 0.7)
+    const customerTotalTip = Math.round(actualTipReceived / 0.7);
+
+    // Số đơn làm trong tháng: ưu tiên tháng trước, nếu không thì lấy trung bình 3 tháng
+    const monthlyOrdersCount =
+      lastMonthOrders > 0 ? lastMonthOrders : ordersCount > 0 ? Math.round(ordersCount / 3) : 80;
+
+    // Dự đoán số combo tự tư vấn: ~10% số khách (theo yêu cầu: "riêng hoa hồng thì đoán thôi")
+    const predictedComboCount = Math.max(5, Math.round(monthlyOrdersCount * 0.1));
+    const monthlySelfComboRev = predictedComboCount * 650000;
 
     let wageCurrent = hourlyWages.cv;
     let wageNext = hourlyWages.cvPlus;
-    let tipShareCurrent = Math.round(monthlyTipAvg * 0.7);
-    let tipShareNext = Math.round(monthlyTipAvg * 0.9);
+    let tipShareCurrent = actualTipReceived; // Hiện tại nhận 70%
+    let tipShareNext = Math.round(customerTotalTip * 0.9); // Khi lên CV+ nhận 90%
     let comboCommCurrent = 0;
-    let comboCommNext = Math.round(monthlySelfComboRev * 0.025);
+    let comboCommNext = Math.round(monthlySelfComboRev * 0.025); // 2.5% hoa hồng tự tư vấn combo
 
     if (currentRole === 'CV_PLUS') {
       wageCurrent = hourlyWages.cvPlus;
       wageNext = hourlyWages.cvPlusPlus;
-      tipShareCurrent = Math.round(monthlyTipAvg * 0.9);
-      tipShareNext = Math.round(monthlyTipAvg * 0.9 + 500000); // Cross-consult
+      tipShareCurrent = Math.round(customerTotalTip * 0.9);
+      tipShareNext = Math.round(customerTotalTip * 0.9 + 500000); // Cross-consult
       comboCommCurrent = Math.round(monthlySelfComboRev * 0.025);
       comboCommNext = Math.round(monthlySelfComboRev * 0.03 + 800000);
     } else if (currentRole === 'CV_PLUS_PLUS') {
       wageCurrent = hourlyWages.cvPlusPlus;
       wageNext = 0;
-      tipShareCurrent = Math.round(monthlyTipAvg * 0.9 + 500000);
-      tipShareNext = Math.round(monthlyTipAvg * 0.2); // FM package tip
+      tipShareCurrent = Math.round(customerTotalTip * 0.9 + 500000);
+      tipShareNext = Math.round(customerTotalTip * 0.2); // FM package tip
     }
 
+    const wageGain = Math.max(0, (wageNext - wageCurrent) * actualWorkingHours);
+    const tipGain = Math.max(0, tipShareNext - tipShareCurrent);
+    const comboGain = Math.max(0, comboCommNext - comboCommCurrent);
+
+    const cvXoayAllowance = 2500000;
     const currentEstimatedIncome =
       currentRole === 'FM'
         ? 8000000 + ccBonusCash + Math.round(totalTip * 0.2) + 2000000
         : currentRole === 'CHO'
           ? 11000000 + 3000000 + 3500000
-          : wageCurrent * monthlyEstimatedHours + tipShareCurrent + comboCommCurrent + 2500000; // CV Xoay
+          : wageCurrent * actualWorkingHours + tipShareCurrent + comboCommCurrent + cvXoayAllowance;
+
+    const incomeGain =
+      currentRole === 'CV' ? wageGain + tipGain + comboGain : Math.max(0, wageGain + tipGain + comboGain);
 
     const nextTierEstimatedIncome =
       currentRole === 'CV'
-        ? wageNext * monthlyEstimatedHours + tipShareNext + comboCommNext + 2500000
+        ? currentEstimatedIncome + incomeGain
         : currentRole === 'CV_PLUS'
-          ? wageNext * monthlyEstimatedHours + tipShareNext + comboCommNext + 3000000
+          ? wageNext * actualWorkingHours + tipShareNext + comboCommNext + 3000000
           : currentRole === 'CV_PLUS_PLUS'
-            ? 8000000 + 2000000 + Math.round(monthlyTipAvg * 0.2) + 1500000
+            ? 8000000 + 2000000 + Math.round(customerTotalTip * 0.2) + 1500000
             : currentRole === 'FM'
               ? 11000000 + 3000000 + 3500000
               : currentEstimatedIncome * 1.5;
-
-    const incomeGain = Math.max(0, nextTierEstimatedIncome - currentEstimatedIncome);
 
     return {
       staffId: staff.id,
@@ -823,6 +998,16 @@ export class CareerProgressionService {
           tipShareNext,
           comboCommissionCurrent: comboCommCurrent,
           comboCommissionNext: comboCommNext,
+          wageGain,
+          tipGain,
+          comboGain,
+          monthlyEstimatedHours: actualWorkingHours,
+          actualWorkingHours,
+          monthlyTipAvg,
+          actualTipReceived,
+          customerTotalTip,
+          monthlySelfComboRev,
+          predictedComboCount,
         },
       },
       lastSyncedAt: new Date().toISOString(),
