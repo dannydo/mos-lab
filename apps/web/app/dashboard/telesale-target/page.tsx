@@ -130,8 +130,8 @@ function TelesaleTargetContent() {
   useEffect(() => {
     fetchOverview(selectedMonth);
 
-    // Auto-refresh: 8s if in TV fullscreen mode, 10s in normal War Room mode for prompt celebration
-    const pollInterval = tvModeOpen ? 8000 : 10000;
+    // Auto-refresh: 5s if in TV fullscreen mode, 8s in normal War Room mode for prompt celebration
+    const pollInterval = tvModeOpen ? 5000 : 8000;
     const interval = setInterval(() => {
       fetchOverview(selectedMonth, true);
     }, pollInterval);

@@ -778,4 +778,91 @@ test('TelesaleTargetService strictly pulls active Telesales staff from HR (crmSt
   assert.ok(!configStaffIds.includes(48791));
 });
 
+test('TelesaleTargetService.getOverview (MOS-BUG-86) strictly requires Completed orderState for Done live events and uses doneDate completion timestamp', async () => {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const mockConfig: any = {
+    month: todayStr.slice(0, 7),
+    teamDoneTarget: 450,
+    teamBookTarget: 650,
+    dailyDoneTarget: 18,
+    dailyBookTarget: 25,
+    dailyCallPerStaff: 83,
+    dailyPickupPerStaff: 25,
+    staffTargets: [
+      { legacyStaffId: 50670, name: 'Bích Phượng', doneTarget: 150 },
+    ],
+    stageTargets: { '0_30': 200, '31_60': 110, '61_120': 80, gt_120: 60 },
+  };
+
+  let capturedDoneOrdersSql = '';
+  const mockFastify = {
+    prisma: {
+      crm: {
+        crmConfig: {
+          findUnique: async () => ({ value: JSON.stringify(mockConfig) }),
+        },
+        crmStaff: {
+          findMany: async () => [
+            { id: 22, legacyStaffId: 50670, displayName: 'Bích Phượng', avatarUrl: 'https://avatar/phuong.jpg' },
+          ],
+        },
+      },
+      legacy: {
+        $queryRawUnsafe: async (sql: string) => {
+          if (sql.includes('staff_working_shift')) return [];
+          if (sql.includes('doneCount')) {
+            return [{ bookerId: 50670, displayName: 'Bích Phượng', doneCount: 1 }];
+          }
+          if (sql.includes('totalCreatedBookings')) {
+            return [{ bookerId: 50670, displayName: 'Bích Phượng', totalCreatedBookings: 0, doneBookings: 1, missedBookings: 0 }];
+          }
+          if (sql.includes('completedOrdersCount')) {
+            return [{ bookerId: 50670, displayName: 'Bích Phượng', completedOrdersCount: 1, totalRevenue: 500000 }];
+          }
+          if (sql.includes('user_profile')) {
+            return [{ user_id: 50670, full_name: 'Bích Phượng', avatarUrl: 'https://avatar/phuong.jpg' }];
+          }
+          if (sql.includes('doneDate')) {
+            capturedDoneOrdersSql = sql;
+            return [
+              {
+                id: 336827,
+                bookerId: 50670,
+                orderState: 'Completed',
+                totalPrice: 582120,
+                bookingDateStart: '2026-10-01 10:30:00',
+                actualBookingDateStart: '2026-10-01 10:23:47',
+                actualBookingDateEnd: '2026-10-01 13:15:18',
+                dateUpdated: '2026-10-01 13:15:18',
+                doneDate: '2026-10-01 13:15:18',
+              },
+            ];
+          }
+          if (sql.includes('report_order ro') || sql.includes('ro.actual_booking_date_start')) {
+            return [];
+          }
+          return [];
+        },
+      },
+    },
+    log: { warn: () => {}, error: () => {} },
+  };
+
+  const overview = await TelesaleTargetService.getOverview(mockFastify as any, todayStr.slice(0, 7));
+
+  // SQL must strictly require order_state = 'Completed' and NOT have loose OR total_price > 0
+  assert.ok(capturedDoneOrdersSql.includes("o.order_state = 'Completed'"));
+  assert.ok(!capturedDoneOrdersSql.includes("total_price > 0"));
+  assert.ok(!capturedDoneOrdersSql.includes("ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0"));
+
+  // Done live event must use actual completion timestamp (doneDate), not checkin time
+  assert.ok(overview.todayLiveEvents);
+  assert.equal(overview.todayLiveEvents.length, 1);
+  const doneEv = overview.todayLiveEvents[0];
+  assert.equal(doneEv.type, 'DONE');
+  assert.equal(doneEv.id, 'done-336827');
+  assert.equal(doneEv.staffName, 'Bích Phượng');
+  assert.equal(new Date(doneEv.timestamp).toISOString(), new Date('2026-10-01 13:15:18').toISOString());
+});
+
 

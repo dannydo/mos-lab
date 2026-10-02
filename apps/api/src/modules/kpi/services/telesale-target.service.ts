@@ -835,7 +835,10 @@ export class TelesaleTargetService {
           o.order_state as orderState,
           o.total_price as totalPrice,
           o.booking_date_start as bookingDateStart,
-          ro.actual_booking_date_start as actualBookingDateStart
+          ro.actual_booking_date_start as actualBookingDateStart,
+          ro.actual_booking_date_end as actualBookingDateEnd,
+          o.date_updated as dateUpdated,
+          COALESCE(ro.actual_booking_date_end, o.date_updated, ro.actual_booking_date_start, o.date_created) as doneDate
         FROM \`order\` o
         LEFT JOIN report_order ro ON ro.order_id = o.id
         WHERE o.created_staff_id IN (${candidateIdsStr})
@@ -843,7 +846,7 @@ export class TelesaleTargetService {
             (ro.actual_booking_date_start >= '${todayStartStr}' AND ro.actual_booking_date_start <= '${todayEndStr}')
             OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${todayStartStr}' AND o.booking_date_start <= '${todayEndStr}')
           )
-          AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)
+          AND o.order_state = 'Completed'
       `).catch(() => []),
     ]);
 
@@ -872,11 +875,15 @@ export class TelesaleTargetService {
           staffId: bookerId,
           staffName: staffNameMap.get(bookerId) || allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name || 'Telesales',
           avatarUrl: staffAvatarMap.get(bookerId) || null,
-          timestamp: o.actualBookingDateStart
-            ? new Date(o.actualBookingDateStart).toISOString()
-            : o.bookingDateStart
-              ? new Date(o.bookingDateStart).toISOString()
-              : new Date().toISOString(),
+          timestamp: o.doneDate
+            ? new Date(o.doneDate).toISOString()
+            : o.actualBookingDateEnd
+              ? new Date(o.actualBookingDateEnd).toISOString()
+              : o.dateUpdated
+                ? new Date(o.dateUpdated).toISOString()
+                : o.actualBookingDateStart
+                  ? new Date(o.actualBookingDateStart).toISOString()
+                  : new Date().toISOString(),
           orderId: Number(o.id),
         };
       });
