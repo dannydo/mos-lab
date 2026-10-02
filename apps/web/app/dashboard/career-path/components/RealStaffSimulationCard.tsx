@@ -694,7 +694,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
             <div className="flex items-center justify-between text-xs font-bold text-slate-200">
               <span className="flex items-center gap-1">
                 <span>🎯</span>
-                <span className="text-[11px]">Sản Lượng</span>
+                <span className="text-[11px]">Bộ Mi</span>
               </span>
               <span className="text-[10px] text-slate-400 font-normal">3 Tháng</span>
             </div>
@@ -702,7 +702,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
               <div className="flex items-baseline justify-between">
                 <div className="text-sm font-black tabular-nums text-white">
                   {metrics.ordersCount || 0}{' '}
-                  <span className="text-[10px] font-normal text-slate-400">/ {targetOrders} ca</span>
+                  <span className="text-[10px] font-normal text-slate-400">/ {targetOrders} bộ</span>
                 </div>
                 <span
                   className={`text-[10px] font-bold tabular-nums ${
@@ -726,7 +726,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   <span>✓</span> Đạt chuẩn
                 </span>
               ) : (
-                <span className="text-amber-400">Thiếu {ordersGap} ca</span>
+                <span className="text-amber-400">Thiếu {ordersGap} bộ</span>
               )}
             </div>
           </div>
@@ -1025,7 +1025,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 <div className="flex items-baseline justify-between mt-1">
                   <div className="text-lg font-black text-slate-800 dark:text-slate-100 tabular-nums">
                     {metrics.ordersCount}{' '}
-                    <span className="text-xs font-normal text-slate-400">/ {targetOrders} ca</span>
+                    <span className="text-xs font-normal text-slate-400">/ {targetOrders} bộ</span>
                   </div>
                   <span className="text-[11px] font-bold tabular-nums text-slate-500 dark:text-slate-400">
                     {Math.round(((metrics.ordersCount || 0) / targetOrders) * 100)}%
