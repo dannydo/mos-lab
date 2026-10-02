@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Calendar,
   Tv,
+  Users,
 } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
 import { TelesaleTargetOverview, TelesalePipelineStage } from '@mos-lab/shared';
@@ -27,6 +28,7 @@ import { DataPipelineStages } from './components/DataPipelineStages';
 import { CustomerPoolDrawer } from './components/CustomerPoolDrawer';
 import { TargetConfigModal } from './components/TargetConfigModal';
 import { PlanCloneModal } from './components/PlanCloneModal';
+import { TeamSelectModal } from './components/TeamSelectModal';
 import { TelesaleTvMonitorFullscreen } from './components/TelesaleTvMonitorFullscreen';
 import { calculateShiftPacing, calculateTvMonitorMetrics } from './utils/tv-monitor-pacing';
 import { useTelesaleTvLiveCelebration } from './hooks/useTelesaleTvLiveCelebration';
@@ -52,6 +54,7 @@ function TelesaleTargetContent() {
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
   const [configModalOpen, setConfigModalOpen] = useState<boolean>(false);
   const [cloneModalOpen, setCloneModalOpen] = useState<boolean>(false);
+  const [teamSelectModalOpen, setTeamSelectModalOpen] = useState<boolean>(false);
 
   // Synchronize with URL query parameter
   useEffect(() => {
@@ -360,6 +363,17 @@ function TelesaleTargetContent() {
               </Button>
             </Tooltip>
 
+            {/* Select Team Button (MOS-BUG-93) */}
+            <Tooltip title="Chọn Đội nhóm áp dụng làm nguồn nhân sự cho War Room">
+              <Button
+                icon={<Users className="w-3.5 h-3.5" />}
+                onClick={() => setTeamSelectModalOpen(true)}
+                className="bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 border-amber-500/40 text-xs rounded-xl font-medium flex items-center gap-1.5 shadow-sm"
+              >
+                <span>Chọn Team: {overview?.teamName || 'Telesales'}</span>
+              </Button>
+            </Tooltip>
+
             <Tooltip title="Cập nhật số liệu tức thì">
               <Button
                 icon={<RotateCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />}
@@ -463,6 +477,17 @@ function TelesaleTargetContent() {
         availableMonths={availableMonths}
         overview={overview}
         onSuccess={handleCloneSuccess}
+      />
+
+      {/* 7. MODAL: SELECT TEAM (MOS-BUG-93) */}
+      <TeamSelectModal
+        open={teamSelectModalOpen}
+        onClose={() => setTeamSelectModalOpen(false)}
+        currentMonth={selectedMonth}
+        overview={overview}
+        onSuccess={async () => {
+          await fetchOverview(selectedMonth, false);
+        }}
       />
 
       {/* 7. DEDICATED FULLSCREEN TV MONITOR VIEW (MOS-BUG-71) */}

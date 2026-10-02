@@ -158,6 +158,136 @@ export class TelesaleTargetService {
     }));
   }
 
+  static async getTeamNameByCode(fastify: FastifyInstance, teamCode: string): Promise<string> {
+    try {
+      if (fastify?.prisma?.crm?.crmTeam?.findUnique) {
+        const team = await fastify.prisma.crm.crmTeam.findUnique({
+          where: { code: teamCode },
+          select: { name: true },
+        });
+        if (team?.name) return team.name;
+      }
+    } catch {
+      // ignore
+    }
+    if (teamCode === 'BK_TELESALES') return 'Telesales';
+    if (teamCode === 'BK_CS') return 'Customer Service (CS)';
+    if (teamCode === 'BK') return 'Booker';
+    if (teamCode === 'CC') return 'Client Consultant';
+    if (teamCode === 'CV') return 'Chuyên Viên / KTV';
+    return teamCode;
+  }
+
+  /**
+   * Nguồn danh sách nhân sự của War Room lấy từ Đội nhóm (Cấu trúc Phòng ban & Đội nhóm) (MOS-BUG-93):
+   * - Team được chọn (mặc định 'BK_TELESALES')
+   * - Lấy toàn bộ thành viên hiện tại của Team (crm_team_members where is_active = true)
+   * - Không phụ thuộc Role cá nhân (Manager, Admin, Telesales, v.v. đều được lấy nếu thuộc Team)
+   * - Áp dụng đồng bộ cho KPI cá nhân, Call/Pickup, Book/Done, TV Monitor, Đóng góp cá nhân.
+   */
+  static async getActiveStaffFromTeam(
+    fastify: FastifyInstance,
+    teamCode = 'BK_TELESALES',
+    fallbackStaffTargets?: Array<{ legacyStaffId: number; name: string; avatarUrl?: string | null }>
+  ): Promise<
+    Array<{
+      crmStaffId: number;
+      legacyStaffId: number;
+      name: string;
+      avatarUrl: string | null;
+    }>
+  > {
+    try {
+      if (fastify?.prisma?.crm?.crmTeam?.findMany) {
+        const teams = await fastify.prisma.crm.crmTeam.findMany({
+          where: {
+            OR: [{ code: teamCode }, { parent: { code: teamCode } }],
+            isActive: true,
+          },
+          include: {
+            members: {
+              where: { isActive: true },
+              orderBy: [{ sortOrder: 'asc' }, { id: 'asc' }],
+            },
+          },
+        });
+
+        const activeMembersMap = new Map<number, SafeAny>();
+        teams.forEach((t) => {
+          (t.members || []).forEach((m: SafeAny) => {
+            const legId = Number(m.legacyStaffId);
+            if (m.isActive !== false && legId > 0 && !activeMembersMap.has(legId)) {
+              activeMembersMap.set(legId, m);
+            }
+          });
+        });
+
+        const activeLegacyIds = Array.from(activeMembersMap.keys());
+
+        if (activeLegacyIds.length > 0) {
+          const crmStaffList = await fastify.prisma.crm.crmStaff.findMany({
+            where: {
+              legacyStaffId: { in: activeLegacyIds },
+            },
+            select: {
+              id: true,
+              legacyStaffId: true,
+              displayName: true,
+              avatarUrl: true,
+            },
+          });
+
+          const staffByLegacyId = new Map(
+            crmStaffList.map((s) => [Number(s.legacyStaffId), s])
+          );
+
+          let legacyProfiles: SafeAny[] = [];
+          try {
+            legacyProfiles = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+              `SELECT user_id, full_name, avatar FROM user_profile WHERE user_id IN (${activeLegacyIds.join(',')})`
+            );
+          } catch {
+            // ignore
+          }
+          const legacyProfileMap = new Map(
+            legacyProfiles.map((p) => [Number(p.user_id), p])
+          );
+
+          const result = activeLegacyIds.map((legId) => {
+            const m = activeMembersMap.get(legId);
+            const crmStaff = staffByLegacyId.get(legId);
+            const legProf = legacyProfileMap.get(legId);
+            const name =
+              crmStaff?.displayName ||
+              m?.displayName ||
+              legProf?.full_name ||
+              `Nhân sự #${legId}`;
+            const avatarUrl =
+              crmStaff?.avatarUrl ||
+              legProf?.avatar ||
+              null;
+
+            return {
+              crmStaffId: crmStaff?.id || m?.crmStaffId || 0,
+              legacyStaffId: legId,
+              name,
+              avatarUrl: typeof avatarUrl === 'string' && avatarUrl.trim() ? avatarUrl.trim() : null,
+            };
+          });
+
+          if (result.length > 0) {
+            return result;
+          }
+        }
+      }
+    } catch (err) {
+      fastify.log?.warn?.(`Failed to query active team staff for ${teamCode}: ${err}`);
+    }
+
+    // Fallback to HR active telesales query for backwards compatibility
+    return this.getActiveTelesalesStaffFromHr(fastify, fallbackStaffTargets);
+  }
+
   static async getConfig(fastify: FastifyInstance, month = '2026-10'): Promise<TelesaleTargetConfigDto> {
     let baseConfig: TelesaleTargetConfigDto = { ...DEFAULT_OCTOBER_CONFIG, month };
     let hasSavedRow = false;
@@ -176,17 +306,20 @@ export class TelesaleTargetService {
       fastify.log.warn(`Failed to read telesale config for ${month}, using default: ${err}`);
     }
 
-    // Luôn đồng bộ danh sách nhân viên từ module HR Active (Single Source of Truth)
-    const activeHrStaff = await this.getActiveTelesalesStaffFromHr(fastify, baseConfig.staffTargets);
+    const appliedTeamCode = baseConfig.teamCode || 'BK_TELESALES';
+    const appliedTeamName = baseConfig.teamName || (await this.getTeamNameByCode(fastify, appliedTeamCode));
+
+    // Nguồn nhân sự của War Room = thành viên hiện tại của Team được chọn (MOS-BUG-93)
+    const activeStaff = await this.getActiveStaffFromTeam(fastify, appliedTeamCode, baseConfig.staffTargets);
     const existingStaffTargets = baseConfig.staffTargets || [];
     const existingTargetMap = new Map(
       existingStaffTargets.map((st) => [Number(st.legacyStaffId), Number(st.doneTarget)])
     );
 
     const defaultDoneTarget =
-      activeHrStaff.length > 0 ? Math.round(Number(baseConfig.teamDoneTarget || 450) / activeHrStaff.length) : 100;
+      activeStaff.length > 0 ? Math.round(Number(baseConfig.teamDoneTarget || 450) / activeStaff.length) : 100;
 
-    const reconciledStaffTargets = activeHrStaff.map((s) => {
+    const reconciledStaffTargets = activeStaff.map((s) => {
       const staffId = Number(s.legacyStaffId);
       const customTarget = existingTargetMap.get(staffId);
       return {
@@ -198,16 +331,20 @@ export class TelesaleTargetService {
       };
     });
 
-    // Tự động chuẩn hóa dữ liệu crmConfig nếu có staffTargets không thuộc HR Telesales hoặc thiếu nhân sự Active
+    // Tự động chuẩn hóa dữ liệu crmConfig nếu có staffTargets không thuộc Team hoặc thiếu thành viên
     if (hasSavedRow && fastify?.prisma?.crm?.crmConfig?.update) {
-      const activeIdsSet = new Set(activeHrStaff.map((hr) => Number(hr.legacyStaffId)));
+      const activeIdsSet = new Set(activeStaff.map((hr) => Number(hr.legacyStaffId)));
       const existingIdsSet = new Set(existingStaffTargets.map((st) => Number(st.legacyStaffId)));
 
       const hasInvalidStaff = existingStaffTargets.some((st) => !activeIdsSet.has(Number(st.legacyStaffId)));
-      const hasMissingStaff = activeHrStaff.some((hr) => !existingIdsSet.has(Number(hr.legacyStaffId)));
-      if (hasInvalidStaff || hasMissingStaff) {
+      const hasMissingStaff = activeStaff.some((hr) => !existingIdsSet.has(Number(hr.legacyStaffId)));
+      const missingTeamInfo = !baseConfig.teamCode;
+
+      if (hasInvalidStaff || hasMissingStaff || missingTeamInfo) {
         const updatedValue = JSON.stringify({
           ...baseConfig,
+          teamCode: appliedTeamCode,
+          teamName: appliedTeamName,
           staffTargets: reconciledStaffTargets,
         });
         fastify.prisma.crm.crmConfig
@@ -222,6 +359,8 @@ export class TelesaleTargetService {
     return {
       ...baseConfig,
       month,
+      teamCode: appliedTeamCode,
+      teamName: appliedTeamName,
       staffTargets: reconciledStaffTargets,
     };
   }
@@ -239,15 +378,18 @@ export class TelesaleTargetService {
       );
     }
 
-    // Đảm bảo staffTargets chỉ lưu các nhân viên Active Telesales từ HR
-    const activeHrStaff = await this.getActiveTelesalesStaffFromHr(fastify, config.staffTargets);
+    const appliedTeamCode = config.teamCode || 'BK_TELESALES';
+    const appliedTeamName = config.teamName || (await this.getTeamNameByCode(fastify, appliedTeamCode));
+
+    // Đảm bảo staffTargets lấy toàn bộ thành viên hiện tại của Team (MOS-BUG-93)
+    const activeStaff = await this.getActiveStaffFromTeam(fastify, appliedTeamCode, config.staffTargets);
     const incomingTargetMap = new Map(
       (config.staffTargets || []).map((st) => [Number(st.legacyStaffId), Number(st.doneTarget)])
     );
     const defaultDoneTarget =
-      activeHrStaff.length > 0 ? Math.round(Number(config.teamDoneTarget) / activeHrStaff.length) : 100;
+      activeStaff.length > 0 ? Math.round(Number(config.teamDoneTarget) / activeStaff.length) : 100;
 
-    const cleanStaffTargets = activeHrStaff.map((s) => {
+    const cleanStaffTargets = activeStaff.map((s) => {
       const staffId = Number(s.legacyStaffId);
       const customTarget = incomingTargetMap.get(staffId);
       return {
@@ -261,6 +403,8 @@ export class TelesaleTargetService {
 
     const cleanConfig: TelesaleTargetConfigDto = {
       ...config,
+      teamCode: appliedTeamCode,
+      teamName: appliedTeamName,
       staffTargets: cleanStaffTargets,
     };
 
@@ -274,6 +418,47 @@ export class TelesaleTargetService {
     });
 
     return cleanConfig;
+  }
+
+  static async selectTeam(
+    fastify: FastifyInstance,
+    month: string,
+    teamCode: string
+  ): Promise<TelesaleTargetConfigDto> {
+    if (!teamCode || typeof teamCode !== 'string') {
+      throw new Error('Mã team không hợp lệ');
+    }
+    const currentConfig = await this.getConfig(fastify, month);
+    const teamName = await this.getTeamNameByCode(fastify, teamCode);
+
+    const activeStaff = await this.getActiveStaffFromTeam(fastify, teamCode);
+    const defaultDoneTarget =
+      activeStaff.length > 0 ? Math.round(Number(currentConfig.teamDoneTarget || 450) / activeStaff.length) : 100;
+
+    const newStaffTargets = activeStaff.map((s) => ({
+      legacyStaffId: Number(s.legacyStaffId),
+      name: s.name,
+      doneTarget: defaultDoneTarget,
+      avatarUrl: s.avatarUrl || null,
+    }));
+
+    const updatedConfig: TelesaleTargetConfigDto = {
+      ...currentConfig,
+      teamCode,
+      teamName,
+      staffTargets: newStaffTargets,
+    };
+
+    const key = this.getConfigKey(month);
+    const value = JSON.stringify(updatedConfig);
+
+    await fastify.prisma.crm.crmConfig.upsert({
+      where: { key },
+      update: { value, updatedAt: new Date() },
+      create: { key, value },
+    });
+
+    return updatedConfig;
   }
 
   static async cloneConfig(
@@ -1231,6 +1416,8 @@ export class TelesaleTargetService {
 
     return {
       month,
+      teamCode: config.teamCode,
+      teamName: config.teamName,
       updatedAt: nowIct.toISOString(),
       teamMonth: {
         doneTarget: config.teamDoneTarget,
@@ -1313,7 +1500,8 @@ export class TelesaleTargetService {
         ? `(DATEDIFF(CURDATE(), up.last_order_booking) > 120 OR up.last_order_booking IS NULL)`
         : `DATEDIFF(CURDATE(), up.last_order_booking) >= ${dayMin} AND DATEDIFF(CURDATE(), up.last_order_booking) <= ${dayMax}`;
 
-    const activeStaffList = await this.getActiveTelesalesStaffFromHr(fastify);
+    const currentConfig = await this.getConfig(fastify);
+    const activeStaffList = currentConfig.staffTargets;
     const activeStaffIds =
       activeStaffList.length > 0 ? activeStaffList.map((s) => s.legacyStaffId) : [50670, 52648, 32268, 52598];
     const staffCount = Math.max(1, activeStaffIds.length);
@@ -1581,7 +1769,9 @@ YÊU CẦU BẮT BUỘC:
     const targetDate =
       dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : new Date().toISOString().slice(0, 10);
 
-    const activeStaff = await this.getActiveTelesalesStaffFromHr(fastify);
+    const monthStr = targetDate.slice(0, 7);
+    const config = await this.getConfig(fastify, monthStr);
+    const activeStaff = config.staffTargets;
     const candidateIds = activeStaff.map((s) => s.legacyStaffId).filter((id) => id > 0);
     const candidateIdsStr = candidateIds.length > 0 ? candidateIds.join(', ') : '0';
 

@@ -449,6 +449,13 @@ export const kpiApi = {
       const response = await api.post('/kpi/telesale-target/clone', data);
       return response.data;
     },
+    selectTeam: async (data: {
+      month: string;
+      teamCode: string;
+    }): Promise<{ success: boolean; config: TelesaleTargetConfigDto }> => {
+      const response = await api.post('/kpi/telesale-target/select-team', data);
+      return response.data;
+    },
     getMonths: async (): Promise<string[]> => {
       const response = await api.get('/kpi/telesale-target/months');
       return response.data?.months || ['2026-10'];

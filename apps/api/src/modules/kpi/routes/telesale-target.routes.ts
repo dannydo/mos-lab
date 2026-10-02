@@ -72,6 +72,23 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // 5. Select Team for War Room (Manager/Admin) (MOS-BUG-93)
+  fastify.post('/kpi/telesale-target/select-team', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { month, teamCode } = request.body as { month: string; teamCode: string };
+
+    try {
+      if (!month || !teamCode) {
+        return reply.status(400).send({ error: 'Cần cung cấp cả tháng (month) và mã team (teamCode)' });
+      }
+
+      const updated = await TelesaleTargetService.selectTeam(fastify, month, teamCode);
+      return reply.send({ success: true, config: updated });
+    } catch (err: any) {
+      fastify.log.error(`Failed to select team for telesale target: ${err.message}`);
+      return reply.status(400).send({ error: err.message });
+    }
+  });
+
   // 3. Get Customer Pool for Stage
   fastify.get('/kpi/telesale-target/pool', { preHandler: [requireAuth] }, async (request, reply) => {
     const { stage, bookerId, limit, offset } = request.query as {

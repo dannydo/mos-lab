@@ -1206,3 +1206,134 @@ test('TelesaleTargetService.getOverview (MOS-BUG-86) strictly requires Completed
   assert.equal(doneEv.staffName, 'Bích Phượng');
   assert.equal(new Date(doneEv.timestamp).toISOString(), new Date('2026-10-01 13:15:18').toISOString());
 });
+
+test('TelesaleTargetService: resolves team members regardless of personal role (MOS-BUG-93)', async () => {
+  const mockFastify = {
+    prisma: {
+      crm: {
+        crmTeam: {
+          findMany: async ({ where }: any) => {
+            if (where?.OR?.[0]?.code === 'BK_TELESALES') {
+              return [
+                {
+                  id: 4,
+                  code: 'BK_TELESALES',
+                  name: 'Telesales',
+                  members: [
+                    { id: 101, legacyStaffId: 48791, displayName: 'Tâm Nguyễn (Admin)', isActive: true },
+                    { id: 102, legacyStaffId: 32268, displayName: 'Ngọc Điệp (Telesale)', isActive: true },
+                    { id: 103, legacyStaffId: 50670, displayName: 'Bích Phượng (Telesale)', isActive: true },
+                    { id: 104, legacyStaffId: 99999, displayName: 'Inactive Staff', isActive: false },
+                  ],
+                },
+              ];
+            }
+            return [];
+          },
+        },
+        crmStaff: {
+          findMany: async ({ where }: any) => {
+            return [
+              { id: 1, legacyStaffId: 48791, displayName: 'Tâm Nguyễn', avatarUrl: 'https://avatar/tam.jpg' },
+              { id: 2, legacyStaffId: 32268, displayName: 'Ngọc Điệp', avatarUrl: 'https://avatar/diep.jpg' },
+              { id: 3, legacyStaffId: 50670, displayName: 'Bích Phượng', avatarUrl: 'https://avatar/phuong.jpg' },
+            ];
+          },
+        },
+      },
+      legacy: {
+        $queryRawUnsafe: async () => [],
+      },
+    },
+    log: { warn: () => {}, error: () => {} },
+  };
+
+  const staff = await TelesaleTargetService.getActiveStaffFromTeam(mockFastify as any, 'BK_TELESALES');
+
+  // Must include all active team members, including legacyStaffId 48791 whose role is admin!
+  assert.equal(staff.length, 3);
+  assert.deepEqual(
+    staff.map((s) => s.legacyStaffId),
+    [48791, 32268, 50670]
+  );
+  assert.equal(staff[0].name, 'Tâm Nguyễn');
+  assert.equal(staff[0].avatarUrl, 'https://avatar/tam.jpg');
+});
+
+test('TelesaleTargetService.selectTeam updates teamCode and re-synchronizes staff (MOS-BUG-93)', async () => {
+  const store = new Map<string, string>();
+
+  const mockFastify = {
+    prisma: {
+      crm: {
+        crmConfig: {
+          findUnique: async ({ where }: any) => {
+            const val = store.get(where.key);
+            return val ? { key: where.key, value: val } : null;
+          },
+          upsert: async ({ where, create, update }: any) => {
+            const val = update?.value || create?.value;
+            store.set(where.key, val);
+            return { key: where.key, value: val };
+          },
+        },
+        crmTeam: {
+          findUnique: async ({ where }: any) => {
+            if (where.code === 'BK_CS') return { id: 5, code: 'BK_CS', name: 'Customer Service (CS)' };
+            if (where.code === 'BK_TELESALES') return { id: 4, code: 'BK_TELESALES', name: 'Telesales' };
+            return null;
+          },
+          findMany: async ({ where }: any) => {
+            if (where?.OR?.[0]?.code === 'BK_CS') {
+              return [
+                {
+                  id: 5,
+                  code: 'BK_CS',
+                  name: 'Customer Service (CS)',
+                  members: [
+                    { id: 201, legacyStaffId: 43554, displayName: 'CS Member 1', isActive: true },
+                    { id: 202, legacyStaffId: 52454, displayName: 'CS Member 2', isActive: true },
+                  ],
+                },
+              ];
+            }
+            return [];
+          },
+        },
+        crmStaff: {
+          findMany: async () => [
+            { id: 10, legacyStaffId: 43554, displayName: 'Hồng Vân', avatarUrl: null },
+            { id: 11, legacyStaffId: 52454, displayName: 'Minh Thư', avatarUrl: null },
+          ],
+        },
+      },
+      legacy: {
+        $queryRawUnsafe: async () => [],
+      },
+    },
+    log: { warn: () => {}, error: () => {} },
+  };
+
+  // 1. Initial config has default team
+  const initial = await TelesaleTargetService.getConfig(mockFastify as any, '2026-10');
+  assert.equal(initial.teamCode, 'BK_TELESALES');
+  assert.equal(initial.teamName, 'Telesales');
+
+  // 2. Select team 'BK_CS'
+  const updated = await TelesaleTargetService.selectTeam(mockFastify as any, '2026-10', 'BK_CS');
+  assert.equal(updated.teamCode, 'BK_CS');
+  assert.equal(updated.teamName, 'Customer Service (CS)');
+  assert.equal(updated.staffTargets.length, 2);
+  assert.deepEqual(
+    updated.staffTargets.map((s) => s.legacyStaffId),
+    [43554, 52454]
+  );
+  assert.equal(updated.staffTargets[0].name, 'Hồng Vân');
+
+  // 3. Subsequent getConfig retrieves 'BK_CS' and preserved staff
+  const refetched = await TelesaleTargetService.getConfig(mockFastify as any, '2026-10');
+  assert.equal(refetched.teamCode, 'BK_CS');
+  assert.equal(refetched.teamName, 'Customer Service (CS)');
+  assert.equal(refetched.staffTargets.length, 2);
+});
+

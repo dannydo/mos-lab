@@ -79,6 +79,8 @@ export const TargetConfigModal: React.FC<TargetConfigModalProps> = ({ open, onCl
       setSubmitting(true);
       const payload: TelesaleTargetConfigDto = {
         month: overview?.month || '2026-10',
+        teamCode: overview?.teamCode,
+        teamName: overview?.teamName,
         teamDoneTarget: Number(values.teamDoneTarget),
         teamBookTarget: Number(values.teamBookTarget),
         dailyDoneTarget: Number(values.dailyDoneTarget),

@@ -84,6 +84,8 @@ export interface TelesaleDailyActionOverview {
 
 export interface TelesaleTargetOverview {
   month: string; // '2026-10'
+  teamCode?: string;
+  teamName?: string;
   updatedAt: string;
   teamMonth: {
     doneTarget: number;
@@ -188,6 +190,8 @@ export interface TelesaleTvJournalOverview {
 
 export interface TelesaleTargetConfigDto {
   month: string;
+  teamCode?: string;
+  teamName?: string;
   teamDoneTarget: number;
   teamBookTarget: number;
   dailyDoneTarget: number;
