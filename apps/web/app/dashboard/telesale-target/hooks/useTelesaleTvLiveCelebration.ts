@@ -100,6 +100,7 @@ export function useTelesaleTvLiveCelebration() {
 
   const queueRef = useRef<ActiveCelebration[]>([]);
   const seenEventIdsRef = useRef<Set<string>>(new Set());
+  const enqueuedIdsRef = useRef<Set<string>>(new Set());
   const announcedMilestonesRef = useRef<Set<string>>(new Set());
   const isProcessingRef = useRef<boolean>(false);
   const lastSpokenTimeRef = useRef<number>(0);
@@ -195,12 +196,7 @@ export function useTelesaleTvLiveCelebration() {
       const fallbackToBrowserSynthesis = () => {
         const isMaleCharm = (settings.voiceStyle || 'MALE_CHARM') === 'MALE_CHARM';
         if (typeof window !== 'undefined' && window.speechSynthesis) {
-          const voice = getBestVietnameseVoice(isMaleCharm ? 'male' : 'female');
-          // If male charm voice was requested but browser only has female voice (e.g. Apple Linh), avoid playing weird female voice
-          if (isMaleCharm && voice && !voice.name.toLowerCase().includes('nam') && !voice.name.toLowerCase().includes('male')) {
-            finishCelebration();
-            return;
-          }
+          const voice = getBestVietnameseVoice(isMaleCharm ? 'male' : 'female') || getBestVietnameseVoice('female');
 
           window.speechSynthesis.cancel();
           const utterance = new SpeechSynthesisUtterance(nextEvent.textToSpeak);
@@ -306,9 +302,9 @@ export function useTelesaleTvLiveCelebration() {
   // 5. Enqueue celebration event
   const enqueueCelebration = useCallback(
     (event: ActiveCelebration) => {
-      // Prevent duplicates
-      if (seenEventIdsRef.current.has(event.id)) return;
-      seenEventIdsRef.current.add(event.id);
+      // Prevent duplicates in celebration queue
+      if (enqueuedIdsRef.current.has(event.id)) return;
+      enqueuedIdsRef.current.add(event.id);
 
       // Check manager filter
       if (settings.eventTypeFilter === 'BOOK_ONLY' && event.kind === 'DONE') return;
@@ -329,7 +325,10 @@ export function useTelesaleTvLiveCelebration() {
           window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         if (AudioCtx) {
           const ctx = new AudioCtx();
-          ctx.resume().then(() => ctx.close()).catch(() => {});
+          ctx
+            .resume()
+            .then(() => ctx.close())
+            .catch(() => {});
         }
       } catch {}
       window.removeEventListener('click', unlock);
@@ -346,12 +345,13 @@ export function useTelesaleTvLiveCelebration() {
   // 6. Ingest Live Events from API (todayLiveEvents)
   const ingestLiveEvents = useCallback(
     (events: TelesaleTodayLiveEvent[] = []) => {
-      if (!events || events.length === 0) return;
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const storageKey = `MOS_TV_SEEN_EVENT_IDS_${todayKey}`;
 
-      // Hydrate seen events from sessionStorage on first run
+      // Hydrate seen events from localStorage on first run
       if (seenEventIdsRef.current.size === 0 && typeof window !== 'undefined') {
         try {
-          const raw = sessionStorage.getItem('MOS_TV_SEEN_EVENT_IDS');
+          const raw = localStorage.getItem(storageKey);
           if (raw) {
             const list: string[] = JSON.parse(raw);
             list.forEach((id) => seenEventIdsRef.current.add(id));
@@ -359,44 +359,43 @@ export function useTelesaleTvLiveCelebration() {
         } catch {}
       }
 
-      const nowMs = Date.now();
-      const eventsToAnnounce: TelesaleTodayLiveEvent[] = [];
-
       if (!isInitializedRef.current) {
         isInitializedRef.current = true;
-        for (const ev of events) {
-          if (seenEventIdsRef.current.has(ev.id)) continue;
-          const evTime = new Date(ev.timestamp).getTime();
-          const ageMs = nowMs - evTime;
-          // If booking was created in the last 3 minutes (180s), celebrate it!
-          if (ageMs <= 180000) {
-            eventsToAnnounce.push(ev);
-          } else {
-            // Older events are marked as seen so they are not re-announced
+        // On initial page load / hydration, mark ALL existing historical events as seen so they are NOT re-announced upon refresh/reconnect
+        if (events && events.length > 0) {
+          for (const ev of events) {
             seenEventIdsRef.current.add(ev.id);
           }
-        }
-      } else {
-        for (const ev of events) {
-          if (!seenEventIdsRef.current.has(ev.id)) {
-            eventsToAnnounce.push(ev);
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem(storageKey, JSON.stringify(Array.from(seenEventIdsRef.current)));
+            } catch {}
           }
+        }
+        return;
+      }
+
+      if (!events || events.length === 0) return;
+
+      const eventsToAnnounce: TelesaleTodayLiveEvent[] = [];
+
+      // Subsequent polls: any event not yet seen is a fresh Book or Done event to be announced immediately
+      for (const ev of events) {
+        if (!seenEventIdsRef.current.has(ev.id)) {
+          eventsToAnnounce.push(ev);
+          seenEventIdsRef.current.add(ev.id);
         }
       }
 
-      // Persist seenEventIds to sessionStorage
+      // Persist seenEventIds to localStorage
       if (typeof window !== 'undefined') {
         try {
-          sessionStorage.setItem(
-            'MOS_TV_SEEN_EVENT_IDS',
-            JSON.stringify(Array.from(seenEventIdsRef.current))
-          );
+          localStorage.setItem(storageKey, JSON.stringify(Array.from(seenEventIdsRef.current)));
         } catch {}
       }
 
-      // Process new events (limit to newest 2 if multiple fresh events arrive at once)
-      for (const ev of eventsToAnnounce.slice(0, 2)) {
-        seenEventIdsRef.current.add(ev.id);
+      // Process new events (limit to newest 3 if multiple fresh events arrive in the same poll)
+      for (const ev of eventsToAnnounce.slice(0, 3)) {
         const staffName = ev.staffName || 'Bạn Telesales';
         const defaultQuote = getRandomQuote(ev.type === 'BOOK' ? BOOK_QUOTES : DONE_QUOTES, staffName);
 

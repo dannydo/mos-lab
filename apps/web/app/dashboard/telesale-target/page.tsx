@@ -120,18 +120,14 @@ function TelesaleTargetContent() {
     }
     const pacing = calculateShiftPacing(new Date());
     const metrics = calculateTvMonitorMetrics(overview.teamDaily, pacing);
-    liveCelebration.checkMilestones(
-      overview.teamDaily.date,
-      metrics.bookActual,
-      metrics.doneActual
-    );
+    liveCelebration.checkMilestones(overview.teamDaily.date, metrics.bookActual, metrics.doneActual);
   }, [overview, liveCelebration]);
 
   useEffect(() => {
     fetchOverview(selectedMonth);
 
-    // Auto-refresh: 8s if in TV fullscreen mode, 10s in normal War Room mode for prompt celebration
-    const pollInterval = tvModeOpen ? 8000 : 10000;
+    // Auto-refresh: 5s if in TV fullscreen mode, 8s in normal War Room mode for prompt celebration
+    const pollInterval = tvModeOpen ? 5000 : 8000;
     const interval = setInterval(() => {
       fetchOverview(selectedMonth, true);
     }, pollInterval);
@@ -420,9 +416,7 @@ function TelesaleTargetContent() {
       )}
 
       {/* 2. ROW 1: KPI OVERVIEW CARDS (Team Month, Daily, Staff) */}
-      {overview && (
-        <KpiOverviewCards overview={overview} onOpenTvFullscreen={() => setTvModeOpen(true)} />
-      )}
+      {overview && <KpiOverviewCards overview={overview} onOpenTvFullscreen={() => setTvModeOpen(true)} />}
 
       {/* 3. ROW 2: ACTION & SCHEDULE (LEFT) + DATA PIPELINE STAGES (RIGHT) */}
       {overview && (

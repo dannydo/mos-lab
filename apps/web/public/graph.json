@@ -30327,7 +30327,7 @@
       "filePath": "apps/api/src/modules/customers/routes/booking.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 49749,
+        "sizeBytes": 49755,
         "lineCount": 1184,
         "ext": ".ts"
       }
@@ -30678,8 +30678,8 @@
       "filePath": "apps/api/src/modules/customers/services/customer-creation.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10267,
-        "lineCount": 275,
+        "sizeBytes": 10836,
+        "lineCount": 291,
         "ext": ".ts"
       }
     },
@@ -30782,8 +30782,8 @@
       "filePath": "apps/api/src/modules/customers/services/user-service-type.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5038,
-        "lineCount": 138,
+        "sizeBytes": 6417,
+        "lineCount": 171,
         "ext": ".ts"
       }
     },
@@ -30795,8 +30795,8 @@
       "filePath": "apps/api/src/modules/customers/services/user-service-type.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7507,
-        "lineCount": 209,
+        "sizeBytes": 8513,
+        "lineCount": 229,
         "ext": ".ts"
       }
     },
@@ -31341,8 +31341,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 30074,
-        "lineCount": 782,
+        "sizeBytes": 37313,
+        "lineCount": 951,
         "ext": ".ts"
       }
     },
@@ -31354,8 +31354,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 57821,
-        "lineCount": 1480,
+        "sizeBytes": 58775,
+        "lineCount": 1502,
         "ext": ".ts"
       }
     },
@@ -35605,8 +35605,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 89957,
-        "lineCount": 1826,
+        "sizeBytes": 91912,
+        "lineCount": 1852,
         "ext": ".tsx"
       }
     },
@@ -37802,8 +37802,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TargetConfigModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11106,
-        "lineCount": 277,
+        "sizeBytes": 11632,
+        "lineCount": 289,
         "ext": ".tsx"
       }
     },
@@ -37919,8 +37919,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.test.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1745,
-        "lineCount": 34,
+        "sizeBytes": 5639,
+        "lineCount": 163,
         "ext": ".ts"
       }
     },
@@ -37932,8 +37932,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22503,
-        "lineCount": 585,
+        "sizeBytes": 22511,
+        "lineCount": 589,
         "ext": ".ts"
       }
     },
@@ -37945,8 +37945,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20919,
-        "lineCount": 498,
+        "sizeBytes": 20952,
+        "lineCount": 500,
         "ext": ".tsx"
       }
     },
@@ -38881,8 +38881,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 92206,
-        "lineCount": 1389,
+        "sizeBytes": 92898,
+        "lineCount": 1393,
         "ext": ".ts"
       }
     },
@@ -39154,8 +39154,8 @@
       "filePath": "packages/shared/src/types/career-progression.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 21014,
-        "lineCount": 490,
+        "sizeBytes": 21679,
+        "lineCount": 502,
         "ext": ".ts"
       }
     },
@@ -59582,6 +59582,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.test.ts:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.test.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -86210,7 +86217,7 @@
   ],
   "stats": {
     "totalNodes": 3041,
-    "totalEdges": 6641,
+    "totalEdges": 6642,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 160,
@@ -86226,7 +86233,7 @@
       "HANDLES_ROUTE": 649,
       "RENDERS": 266,
       "USES_TOKEN": 211,
-      "IMPORTS": 462,
+      "IMPORTS": 463,
       "QUERIES_MODEL": 374,
       "API_CALL": 3394
     },

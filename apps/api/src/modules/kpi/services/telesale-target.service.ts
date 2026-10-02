@@ -63,12 +63,14 @@ export class TelesaleTargetService {
   static async getActiveTelesalesStaffFromHr(
     fastify: FastifyInstance,
     fallbackStaffTargets?: Array<{ legacyStaffId: number; name: string; avatarUrl?: string | null }>
-  ): Promise<Array<{
-    crmStaffId: number;
-    legacyStaffId: number;
-    name: string;
-    avatarUrl: string | null;
-  }>> {
+  ): Promise<
+    Array<{
+      crmStaffId: number;
+      legacyStaffId: number;
+      name: string;
+      avatarUrl: string | null;
+    }>
+  > {
     try {
       if (fastify?.prisma?.crm?.crmStaff?.findMany) {
         const staffList = await fastify.prisma.crm.crmStaff.findMany({
@@ -158,7 +160,8 @@ export class TelesaleTargetService {
       return {
         legacyStaffId: staffId,
         name: s.name,
-        doneTarget: customTarget !== undefined && !isNaN(customTarget) && customTarget > 0 ? customTarget : defaultDoneTarget,
+        doneTarget:
+          customTarget !== undefined && !isNaN(customTarget) && customTarget > 0 ? customTarget : defaultDoneTarget,
         avatarUrl: s.avatarUrl || null,
       };
     });
@@ -168,12 +171,8 @@ export class TelesaleTargetService {
       const activeIdsSet = new Set(activeHrStaff.map((hr) => Number(hr.legacyStaffId)));
       const existingIdsSet = new Set(existingStaffTargets.map((st) => Number(st.legacyStaffId)));
 
-      const hasInvalidStaff = existingStaffTargets.some(
-        (st) => !activeIdsSet.has(Number(st.legacyStaffId))
-      );
-      const hasMissingStaff = activeHrStaff.some(
-        (hr) => !existingIdsSet.has(Number(hr.legacyStaffId))
-      );
+      const hasInvalidStaff = existingStaffTargets.some((st) => !activeIdsSet.has(Number(st.legacyStaffId)));
+      const hasMissingStaff = activeHrStaff.some((hr) => !existingIdsSet.has(Number(hr.legacyStaffId)));
       if (hasInvalidStaff || hasMissingStaff) {
         const updatedValue = JSON.stringify({
           ...baseConfig,
@@ -222,7 +221,8 @@ export class TelesaleTargetService {
       return {
         legacyStaffId: staffId,
         name: s.name,
-        doneTarget: customTarget !== undefined && !isNaN(customTarget) && customTarget > 0 ? customTarget : defaultDoneTarget,
+        doneTarget:
+          customTarget !== undefined && !isNaN(customTarget) && customTarget > 0 ? customTarget : defaultDoneTarget,
         avatarUrl: s.avatarUrl || null,
       };
     });
@@ -515,13 +515,7 @@ export class TelesaleTargetService {
     const combinedStaffIds = targetStaffIds;
 
     // 1. Fetch Month and Today metrics directly from BkLeaderboardService (Single Source of Truth)
-    const [
-      monthBookingRes,
-      todayBookingRes,
-      monthDoneRes,
-      todayDoneRes,
-      monthRevenueRes,
-    ] = await Promise.all([
+    const [monthBookingRes, todayBookingRes, monthDoneRes, todayDoneRes, monthRevenueRes] = await Promise.all([
       BkLeaderboardService.getBookingLeaderboard(fastify, {
         dateFrom: startDateStr,
         dateTo: endDateStr,
@@ -734,7 +728,9 @@ export class TelesaleTargetService {
     const staffTargets: TelesaleStaffTarget[] = allStaffCandidates.map((st) => {
       const staffMonthDone = monthDoneRes.leaderboard.find((l) => Number(l.bookerId) === Number(st.legacyStaffId));
       const staffTodayDone = todayDoneRes.leaderboard.find((l) => Number(l.bookerId) === Number(st.legacyStaffId));
-      const staffTodayBooking = todayBookingRes.leaderboard.find((l) => Number(l.bookerId) === Number(st.legacyStaffId));
+      const staffTodayBooking = todayBookingRes.leaderboard.find(
+        (l) => Number(l.bookerId) === Number(st.legacyStaffId)
+      );
       const staffMonthRev = monthRevenueRes.leaderboard.find((l) => Number(l.bookerId) === Number(st.legacyStaffId));
 
       const staffDoneActual = staffMonthDone?.doneCount || 0;
@@ -832,7 +828,9 @@ export class TelesaleTargetService {
     // 5. Build today's live events feed for TV Celebration
 
     const [todayBookOrders, todayDoneOrders] = await Promise.all([
-      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+      fastify.prisma.legacy
+        .$queryRawUnsafe<SafeAny[]>(
+          `
         SELECT 
           o.id,
           o.created_staff_id as bookerId,
@@ -842,15 +840,22 @@ export class TelesaleTargetService {
         WHERE o.date_created >= '${todayStartStr}' 
           AND o.date_created <= '${todayEndStr}'
           AND o.created_staff_id IN (${candidateIdsStr})
-      `).catch(() => []),
-      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+      `
+        )
+        .catch(() => []),
+      fastify.prisma.legacy
+        .$queryRawUnsafe<SafeAny[]>(
+          `
         SELECT 
           o.id as id,
           o.created_staff_id as bookerId,
           o.order_state as orderState,
           o.total_price as totalPrice,
           o.booking_date_start as bookingDateStart,
-          ro.actual_booking_date_start as actualBookingDateStart
+          ro.actual_booking_date_start as actualBookingDateStart,
+          ro.actual_booking_date_end as actualBookingDateEnd,
+          o.date_updated as dateUpdated,
+          COALESCE(ro.actual_booking_date_end, o.date_updated, ro.actual_booking_date_start, o.date_created) as doneDate
         FROM \`order\` o
         LEFT JOIN report_order ro ON ro.order_id = o.id
         WHERE o.created_staff_id IN (${candidateIdsStr})
@@ -858,8 +863,10 @@ export class TelesaleTargetService {
             (ro.actual_booking_date_start >= '${todayStartStr}' AND ro.actual_booking_date_start <= '${todayEndStr}')
             OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${todayStartStr}' AND o.booking_date_start <= '${todayEndStr}')
           )
-          AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)
-      `).catch(() => []),
+          AND o.order_state = 'Completed'
+      `
+        )
+        .catch(() => []),
     ]);
 
     const bookEvents: TelesaleTodayLiveEvent[] = todayBookOrders
@@ -870,7 +877,10 @@ export class TelesaleTargetService {
           id: `book-${o.id}`,
           type: 'BOOK' as const,
           staffId: bookerId,
-          staffName: staffNameMap.get(bookerId) || allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name || 'Telesales',
+          staffName:
+            staffNameMap.get(bookerId) ||
+            allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name ||
+            'Telesales',
           avatarUrl: staffAvatarMap.get(bookerId) || null,
           timestamp: o.dateCreated ? new Date(o.dateCreated).toISOString() : new Date().toISOString(),
           orderId: Number(o.id),
@@ -885,13 +895,20 @@ export class TelesaleTargetService {
           id: `done-${o.id}`,
           type: 'DONE' as const,
           staffId: bookerId,
-          staffName: staffNameMap.get(bookerId) || allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name || 'Telesales',
+          staffName:
+            staffNameMap.get(bookerId) ||
+            allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name ||
+            'Telesales',
           avatarUrl: staffAvatarMap.get(bookerId) || null,
-          timestamp: o.actualBookingDateStart
-            ? new Date(o.actualBookingDateStart).toISOString()
-            : o.bookingDateStart
-              ? new Date(o.bookingDateStart).toISOString()
-              : new Date().toISOString(),
+          timestamp: o.doneDate
+            ? new Date(o.doneDate).toISOString()
+            : o.actualBookingDateEnd
+              ? new Date(o.actualBookingDateEnd).toISOString()
+              : o.dateUpdated
+                ? new Date(o.dateUpdated).toISOString()
+                : o.actualBookingDateStart
+                  ? new Date(o.actualBookingDateStart).toISOString()
+                  : new Date().toISOString(),
           orderId: Number(o.id),
         };
       });
@@ -1300,8 +1317,7 @@ export class TelesaleTargetService {
         : { 50670: 'Phượng', 52648: 'Kiều', 32268: 'Điệp', 52598: 'Vũ' };
 
     const items: TelesaleCustomerPoolItem[] = rows.map((r, idx) => {
-      const assignedIndex =
-        bookerIndex >= 0 ? bookerIndex : Math.abs(Number(r.customerId)) % staffCount;
+      const assignedIndex = bookerIndex >= 0 ? bookerIndex : Math.abs(Number(r.customerId)) % staffCount;
       const assignedId = activeStaffIds[assignedIndex] || bookerId || 0;
       return {
         id: idx + 1,
@@ -1422,10 +1438,7 @@ YÊU CẦU BẮT BUỘC:
     return { quote: fallbackQuote, source: 'fallback' };
   }
 
-  static async synthesizeCelebrationAudio(
-    text: string,
-    voice = 'vi-VN-NamMinhNeural'
-  ): Promise<Buffer> {
+  static async synthesizeCelebrationAudio(text: string, voice = 'vi-VN-NamMinhNeural'): Promise<Buffer> {
     const cleanText = text.replace(/[\r\n\t]+/g, ' ').trim();
     if (!cleanText) throw new Error('Text is empty');
 
@@ -1483,7 +1496,9 @@ YÊU CẦU BẮT BUỘC:
       }
     } catch (err: any) {
       if (existsSync(tempFile)) {
-        try { unlinkSync(tempFile); } catch {}
+        try {
+          unlinkSync(tempFile);
+        } catch {}
       }
       throw new Error(`Edge TTS synthesis failed: ${err.message}`, { cause: err });
     }
@@ -1491,4 +1506,3 @@ YÊU CẦU BẮT BUỘC:
     throw new Error('No audio produced by Edge TTS');
   }
 }
-
