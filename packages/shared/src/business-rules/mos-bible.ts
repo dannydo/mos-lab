@@ -686,31 +686,35 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Trạng thái làm dịch vụ của khách hàng (user_service_type) được hệ thống tự động xác định khi tạo hoặc dời lịch hẹn, không hardcode.',
     commandments: [
       'Trạng thái user_service_type phải được tính toán tự động qua UserServiceTypeService khi tạo mới hoặc dời lịch hẹn.',
-      'Các phân loại chuẩn gồm: new (khách mới lần đầu), combo (đang sở hữu gói combo còn lượt), combo_last (còn đúng 1 lượt cuối trong gói), combo_expired (hết hạn sử dụng gói combo), combo_over (đã dùng hết sạch lượt trong gói), lapser (quá 60 ngày chưa quay lại tiệm), long_time (quá 180 ngày chưa quay lại tiệm).',
+      'Các phân loại chuẩn gồm: lead_book (khách đặt lịch làm lần đầu, chưa từng hoàn thành ca dịch vụ nào), new (khách mới quay lại trong vòng 30 ngày sau lần làm đầu tiên), combo (đang sở hữu gói combo còn lượt), combo_last (còn đúng 1 lượt cuối trong gói), combo_expired (hết hạn sử dụng gói combo), combo_over (đã dùng hết sạch lượt trong gói), lapser (quá 60 ngày chưa quay lại tiệm), long_time (quá 180 ngày chưa quay lại tiệm).',
+      'Khách hàng chưa từng có ca dịch vụ hoàn thành nào trước ngày hẹn khi book lịch hẹn vào hệ thống bắt buộc phải mang trạng thái lead_book, tuyệt đối không gán nhầm new.',
       'Tuyệt đối không hardcode chuỗi "new" hoặc giữ nguyên trạng thái cũ khi lịch hẹn bị thay đổi thời gian.',
       'Trạng thái này quyết định trực tiếp icon huy hiệu hiển thị trước tên khách hàng trên ứng dụng iPad/iOS và CRM Web.',
     ],
     rationale:
       'Nhận diện đúng trạng thái giúp KTV và CC biết trước khách là khách mới cần hướng dẫn kỹ hay khách combo sắp hết lượt để kịp thời tư vấn tái ký.',
     examples: [
+      'Khách đặt lịch làm lần đầu tiên: trạng thái hiển thị là lead_book, nhắc CC đón tiếp và tư vấn dịch vụ lần đầu chu đáo.',
       'Khách đã mua Combo 5 lượt và đã dùng 4 lượt: trạng thái hiển thị là combo_last, nhắc CC chuẩn bị kịch bản tư vấn mua tiếp combo mới.',
     ],
-    tags: ['user_service_type', 'khách hàng', 'combo', 'combo_last', 'lapser', 'long_time', 'phân loại khách'],
+    tags: ['user_service_type', 'lead_book', 'khách hàng', 'combo', 'combo_last', 'lapser', 'long_time', 'phân loại khách'],
     routeScopes: [
       '/dashboard/customers',
       '/dashboard/appointments',
       '/dashboard/schedule-calendar',
       '/dashboard/today',
+      '/dashboard/cc',
     ],
     status: 'ACTIVE',
-    version: '1.0.0',
-    effectiveFrom: '2026-09-28',
+    version: '1.1.0',
+    effectiveFrom: '2026-10-02',
     sources: [
       { label: 'Quy tắc xác định user_service_type', reference: 'AGENTS.md · Rule #40' },
       {
         label: 'Service tính toán phân loại khách',
         reference: 'apps/api/src/modules/customers/services/user-service-type.service.ts',
       },
+      { label: 'Sửa lỗi khách làm lần đầu hiển thị new thay vì lead_book', reference: 'MOS-BUG-85' },
     ],
   },
   {

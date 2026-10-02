@@ -260,7 +260,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         Number(finalServiceId) || 1,
         'Normal',
         serviceGroup,
-        userServiceType || 'new',
+        userServiceType || 'lead_book',
         technicianId ? Number(technicianId) : null,
         technicianId ? Number(technicianId) : null,
         Number(srvDuration) || 90,

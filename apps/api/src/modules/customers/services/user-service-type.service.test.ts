@@ -135,3 +135,36 @@ test('keeps the legacy Lashes aggregate lookup across top and under service grou
     '2026-08-18',
   ]);
 });
+
+test('classifies first-time customer without user_service_type record as lead_book', async () => {
+  const fastify = createFastify((sql) => {
+    if (sql.includes('user_service_balance_transaction') || sql.includes('FROM user_service_type')) return [];
+    if (sql.includes('report_order_service') && sql.includes('COUNT(*)')) {
+      return [{ cnt: 0n }];
+    }
+    return [];
+  });
+
+  const type = await UserServiceTypeService.determineUserServiceType(fastify as never, 42, '2026-08-18', 'LashesTop');
+  assert.equal(type, 'lead_book');
+});
+
+test('classifies returning customer without user_service_type record but with completed orders as new', async () => {
+  const fastify = createFastify((sql) => {
+    if (sql.includes('user_service_balance_transaction') || sql.includes('FROM user_service_type')) return [];
+    if (sql.includes('report_order_service') && sql.includes('COUNT(*)')) {
+      return [{ cnt: 1n }];
+    }
+    return [];
+  });
+
+  const type = await UserServiceTypeService.determineUserServiceType(fastify as never, 42, '2026-08-18', 'LashesTop');
+  assert.equal(type, 'new');
+});
+
+test('returns lead_book when customerId is missing or falsy', async () => {
+  const fastify = createFastify(() => []);
+  const type = await UserServiceTypeService.determineUserServiceType(fastify as never, 0, '2026-08-18', 'LashesTop');
+  assert.equal(type, 'lead_book');
+});
+

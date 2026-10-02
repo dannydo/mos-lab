@@ -56,7 +56,7 @@ export class UserServiceTypeService {
     serviceGroup = 'LashesTop',
     clientBusinessId = 1
   ): Promise<string> {
-    if (!customerId) return 'new';
+    if (!customerId) return 'lead_book';
 
     const bookingDate = toLegacyDate(bookingDateStart);
     const normalizedServiceGroup = String(serviceGroup || 'LashesTop').trim() || 'LashesTop';
@@ -196,13 +196,33 @@ export class UserServiceTypeService {
           customerId,
           normalizedServiceGroup
         );
-        type = String(savedTypes[0]?.user_service_type || 'new');
+        type = String(savedTypes[0]?.user_service_type || '');
+      }
+
+      if (!type) {
+        // Fallback when no explicit user_service_type record exists in the database:
+        // Check if customer has ever completed any service prior to the booking date.
+        // A customer with 0 completed services booking an appointment is always 'lead_book' (first-time service).
+        const completedCountRows = await fastify.prisma.legacy.$queryRawUnsafe<{ cnt: bigint }[]>(
+          `SELECT (
+             (SELECT COUNT(*) FROM report_order_service WHERE client_business_id = ? AND user_id = ? AND date < ?)
+             +
+             (SELECT COUNT(*) FROM \`order\` WHERE user_id = ? AND order_state = 'Completed' AND DATE(COALESCE(booking_date_start, date_created)) < ?)
+           ) AS cnt`,
+          clientBusinessId,
+          customerId,
+          bookingDate,
+          customerId,
+          bookingDate
+        );
+        const completedCount = Number(completedCountRows[0]?.cnt || 0);
+        type = completedCount === 0 ? 'lead_book' : 'new';
       }
 
       return type === 'lead' ? 'lead_book' : type;
     } catch (error) {
       fastify.log.error(error as Error, `UserServiceTypeService error for customer ${customerId}`);
-      return 'new';
+      return 'lead_book';
     }
   }
 }
