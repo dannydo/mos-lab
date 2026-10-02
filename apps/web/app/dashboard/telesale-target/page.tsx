@@ -453,7 +453,9 @@ function TelesaleTargetContent() {
         open={configModalOpen}
         onClose={() => setConfigModalOpen(false)}
         overview={overview}
-        onSuccess={() => fetchOverview(selectedMonth, false)}
+        onSuccess={async () => {
+          await fetchOverview(selectedMonth, false);
+        }}
       />
 
       {/* 6. MODAL: PLAN CLONE (ANY MONTH) */}

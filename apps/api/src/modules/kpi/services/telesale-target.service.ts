@@ -145,25 +145,34 @@ export class TelesaleTargetService {
     // Luôn đồng bộ danh sách nhân viên từ module HR Active (Single Source of Truth)
     const activeHrStaff = await this.getActiveTelesalesStaffFromHr(fastify, baseConfig.staffTargets);
     const existingStaffTargets = baseConfig.staffTargets || [];
-    const existingTargetMap = new Map(existingStaffTargets.map((st) => [st.legacyStaffId, st.doneTarget]));
+    const existingTargetMap = new Map(
+      existingStaffTargets.map((st) => [Number(st.legacyStaffId), Number(st.doneTarget)])
+    );
 
     const defaultDoneTarget =
       activeHrStaff.length > 0 ? Math.round(Number(baseConfig.teamDoneTarget || 450) / activeHrStaff.length) : 100;
 
-    const reconciledStaffTargets = activeHrStaff.map((s) => ({
-      legacyStaffId: s.legacyStaffId,
-      name: s.name,
-      doneTarget: existingTargetMap.get(s.legacyStaffId) ?? defaultDoneTarget,
-      avatarUrl: s.avatarUrl || null,
-    }));
+    const reconciledStaffTargets = activeHrStaff.map((s) => {
+      const staffId = Number(s.legacyStaffId);
+      const customTarget = existingTargetMap.get(staffId);
+      return {
+        legacyStaffId: staffId,
+        name: s.name,
+        doneTarget: customTarget !== undefined && !isNaN(customTarget) && customTarget > 0 ? customTarget : defaultDoneTarget,
+        avatarUrl: s.avatarUrl || null,
+      };
+    });
 
     // Tự động chuẩn hóa dữ liệu crmConfig nếu có staffTargets không thuộc HR Telesales hoặc thiếu nhân sự Active
     if (hasSavedRow && fastify?.prisma?.crm?.crmConfig?.update) {
+      const activeIdsSet = new Set(activeHrStaff.map((hr) => Number(hr.legacyStaffId)));
+      const existingIdsSet = new Set(existingStaffTargets.map((st) => Number(st.legacyStaffId)));
+
       const hasInvalidStaff = existingStaffTargets.some(
-        (st) => !activeHrStaff.some((hr) => hr.legacyStaffId === st.legacyStaffId)
+        (st) => !activeIdsSet.has(Number(st.legacyStaffId))
       );
       const hasMissingStaff = activeHrStaff.some(
-        (hr) => !existingStaffTargets.some((st) => st.legacyStaffId === hr.legacyStaffId)
+        (hr) => !existingIdsSet.has(Number(hr.legacyStaffId))
       );
       if (hasInvalidStaff || hasMissingStaff) {
         const updatedValue = JSON.stringify({
@@ -201,16 +210,22 @@ export class TelesaleTargetService {
 
     // Đảm bảo staffTargets chỉ lưu các nhân viên Active Telesales từ HR
     const activeHrStaff = await this.getActiveTelesalesStaffFromHr(fastify, config.staffTargets);
-    const incomingTargetMap = new Map((config.staffTargets || []).map((st) => [st.legacyStaffId, st.doneTarget]));
+    const incomingTargetMap = new Map(
+      (config.staffTargets || []).map((st) => [Number(st.legacyStaffId), Number(st.doneTarget)])
+    );
     const defaultDoneTarget =
       activeHrStaff.length > 0 ? Math.round(Number(config.teamDoneTarget) / activeHrStaff.length) : 100;
 
-    const cleanStaffTargets = activeHrStaff.map((s) => ({
-      legacyStaffId: s.legacyStaffId,
-      name: s.name,
-      doneTarget: incomingTargetMap.get(s.legacyStaffId) ?? defaultDoneTarget,
-      avatarUrl: s.avatarUrl || null,
-    }));
+    const cleanStaffTargets = activeHrStaff.map((s) => {
+      const staffId = Number(s.legacyStaffId);
+      const customTarget = incomingTargetMap.get(staffId);
+      return {
+        legacyStaffId: staffId,
+        name: s.name,
+        doneTarget: customTarget !== undefined && !isNaN(customTarget) && customTarget > 0 ? customTarget : defaultDoneTarget,
+        avatarUrl: s.avatarUrl || null,
+      };
+    });
 
     const cleanConfig: TelesaleTargetConfigDto = {
       ...config,
@@ -591,9 +606,9 @@ export class TelesaleTargetService {
       doneTarget: number;
       avatarUrl?: string | null;
     }> = config.staffTargets.map((st) => ({
-      legacyStaffId: st.legacyStaffId,
+      legacyStaffId: Number(st.legacyStaffId),
       name: st.name,
-      doneTarget: st.doneTarget,
+      doneTarget: Number(st.doneTarget),
       avatarUrl: st.avatarUrl || null,
     }));
 
@@ -717,10 +732,10 @@ export class TelesaleTargetService {
 
     // 4. Map staffTargets directly from BK Leaderboard results (Single Source of Truth)
     const staffTargets: TelesaleStaffTarget[] = allStaffCandidates.map((st) => {
-      const staffMonthDone = monthDoneRes.leaderboard.find((l) => l.bookerId === st.legacyStaffId);
-      const staffTodayDone = todayDoneRes.leaderboard.find((l) => l.bookerId === st.legacyStaffId);
-      const staffTodayBooking = todayBookingRes.leaderboard.find((l) => l.bookerId === st.legacyStaffId);
-      const staffMonthRev = monthRevenueRes.leaderboard.find((l) => l.bookerId === st.legacyStaffId);
+      const staffMonthDone = monthDoneRes.leaderboard.find((l) => Number(l.bookerId) === Number(st.legacyStaffId));
+      const staffTodayDone = todayDoneRes.leaderboard.find((l) => Number(l.bookerId) === Number(st.legacyStaffId));
+      const staffTodayBooking = todayBookingRes.leaderboard.find((l) => Number(l.bookerId) === Number(st.legacyStaffId));
+      const staffMonthRev = monthRevenueRes.leaderboard.find((l) => Number(l.bookerId) === Number(st.legacyStaffId));
 
       const staffDoneActual = staffMonthDone?.doneCount || 0;
       const staffDoneToday = staffTodayDone?.doneCount || 0;
@@ -730,7 +745,7 @@ export class TelesaleTargetService {
       const staffRevenueActual = staffMonthRev?.totalRevenue || 0;
 
       const staffComboOrders = monthOrders.filter(
-        (o) => Number(o.bookerId) === st.legacyStaffId && Number(o.isComboLive) === 1
+        (o) => Number(o.bookerId) === Number(st.legacyStaffId) && Number(o.isComboLive) === 1
       );
       const staffComboLiveDoneActual = staffComboOrders.length;
 

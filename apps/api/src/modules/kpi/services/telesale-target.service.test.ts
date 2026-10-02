@@ -778,4 +778,87 @@ test('TelesaleTargetService strictly pulls active Telesales staff from HR (crmSt
   assert.ok(!configStaffIds.includes(48791));
 });
 
+test('TelesaleTargetService.saveConfig correctly stores and preserves custom individual staff KPI Done without resetting (MOS-BUG-87)', async () => {
+  let configStore: Record<string, string> = {};
+
+  const mockFastify = {
+    prisma: {
+      crm: {
+        crmStaff: {
+          findMany: async () => [
+            { id: 1, legacyStaffId: 50670, displayName: 'Bích Phượng', role: 'telesales', isActive: true, avatarUrl: null },
+            { id: 2, legacyStaffId: 52648, displayName: 'Thuý Kiều', role: 'telesales', isActive: true, avatarUrl: null },
+            { id: 3, legacyStaffId: 32268, displayName: 'Ngọc Điệp', role: 'telesales', isActive: true, avatarUrl: null },
+            { id: 4, legacyStaffId: 52598, displayName: 'Thanh Vũ', role: 'telesales', isActive: true, avatarUrl: null },
+          ],
+        },
+        crmConfig: {
+          findUnique: async ({ where }: any) => {
+            const val = configStore[where.key];
+            return val ? { key: where.key, value: val } : null;
+          },
+          upsert: async ({ where, create, update }: any) => {
+            const val = update?.value || create?.value;
+            configStore[where.key] = val;
+            return { key: where.key, value: val };
+          },
+          update: async ({ where, data }: any) => {
+            configStore[where.key] = data.value;
+            return { key: where.key, value: data.value };
+          },
+        },
+      },
+    },
+    log: { warn: () => {}, error: () => {} },
+  };
+
+  // 1. Manager updates Bích Phượng from 113 to 150
+  const inputConfig = {
+    month: '2026-10',
+    teamDoneTarget: 450,
+    teamBookTarget: 650,
+    dailyDoneTarget: 18,
+    dailyBookTarget: 25,
+    dailyCallPerStaff: 90,
+    dailyPickupPerStaff: 54,
+    staffTargets: [
+      { legacyStaffId: 50670, name: 'Bích Phượng', doneTarget: 150 },
+      { legacyStaffId: 52648, name: 'Thuý Kiều', doneTarget: 100 },
+      { legacyStaffId: 32268, name: 'Ngọc Điệp', doneTarget: 100 },
+      { legacyStaffId: 52598, name: 'Thanh Vũ', doneTarget: 100 },
+    ],
+    stageTargets: {
+      '0_30': 200,
+      '31_60': 110,
+      '61_120': 80,
+      gt_120: 60,
+    },
+  };
+
+  const saved = await TelesaleTargetService.saveConfig(mockFastify as any, inputConfig);
+  assert.equal(saved.staffTargets.find((s) => s.legacyStaffId === 50670)?.doneTarget, 150);
+
+  // 2. Subsequent getConfig must return Bích Phượng with 150, not reset to default 113
+  const reloaded = await TelesaleTargetService.getConfig(mockFastify as any, '2026-10');
+  const phuong = reloaded.staffTargets.find((s) => s.legacyStaffId === 50670);
+  assert.equal(phuong?.doneTarget, 150);
+  const kieu = reloaded.staffTargets.find((s) => s.legacyStaffId === 52648);
+  assert.equal(kieu?.doneTarget, 100);
+
+  // 3. Even if legacyStaffId is passed as string, it must match and preserve custom target
+  const stringIdConfig = {
+    ...inputConfig,
+    staffTargets: [
+      { legacyStaffId: '50670' as any, name: 'Bích Phượng', doneTarget: 160 },
+      { legacyStaffId: '52648' as any, name: 'Thuý Kiều', doneTarget: 110 },
+      { legacyStaffId: '32268' as any, name: 'Ngọc Điệp', doneTarget: 90 },
+      { legacyStaffId: '52598' as any, name: 'Thanh Vũ', doneTarget: 90 },
+    ],
+  };
+  await TelesaleTargetService.saveConfig(mockFastify as any, stringIdConfig);
+  const reloadedString = await TelesaleTargetService.getConfig(mockFastify as any, '2026-10');
+  assert.equal(reloadedString.staffTargets.find((s) => s.legacyStaffId === 50670)?.doneTarget, 160);
+  assert.equal(reloadedString.staffTargets.find((s) => s.legacyStaffId === 52648)?.doneTarget, 110);
+});
+
 

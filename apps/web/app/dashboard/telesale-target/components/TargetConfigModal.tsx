@@ -13,18 +13,22 @@ interface TargetConfigModalProps {
   open: boolean;
   onClose: () => void;
   overview: TelesaleTargetOverview | null;
-  onSuccess: () => void;
+  onSuccess: () => void | Promise<void>;
 }
 
 export const TargetConfigModal: React.FC<TargetConfigModalProps> = ({ open, onClose, overview, onSuccess }) => {
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
+  const wasOpenRef = React.useRef(false);
 
   const [stageSum, setStageSum] = useState<number>(450);
   const [teamDoneTarget, setTeamDoneTarget] = useState<number>(450);
 
   useEffect(() => {
-    if (open && overview) {
+    // Only initialize form fields when modal transitions from closed to open
+    // Prevents background polling ticks from resetting the user's edits
+    if (open && !wasOpenRef.current && overview) {
+      wasOpenRef.current = true;
       const staffTargetMap: Record<string, number> = {};
       (overview.staffTargets || []).forEach((st) => {
         staffTargetMap[`staffTarget_${st.legacyStaffId}`] = st.doneTarget || 100;
@@ -48,6 +52,8 @@ export const TargetConfigModal: React.FC<TargetConfigModalProps> = ({ open, onCl
       setStageSum(
         initialValues.stage_0_30 + initialValues.stage_31_60 + initialValues.stage_61_120 + initialValues.stage_gt_120
       );
+    } else if (!open) {
+      wasOpenRef.current = false;
     }
   }, [open, overview, form]);
 
@@ -79,12 +85,16 @@ export const TargetConfigModal: React.FC<TargetConfigModalProps> = ({ open, onCl
         dailyBookTarget: Number(values.dailyBookTarget),
         dailyCallPerStaff: Number(values.dailyCallPerStaff || 83),
         dailyPickupPerStaff: Number(values.dailyPickupPerStaff || 25),
-        staffTargets: (overview?.staffTargets || []).map((st) => ({
-          legacyStaffId: st.legacyStaffId,
-          name: st.name,
-          doneTarget: Number(values[`staffTarget_${st.legacyStaffId}`] ?? st.doneTarget ?? 100),
-          avatarUrl: st.avatarUrl || null,
-        })),
+        staffTargets: (overview?.staffTargets || []).map((st) => {
+          const rawVal = values[`staffTarget_${st.legacyStaffId}`];
+          const parsedVal = Number(rawVal);
+          return {
+            legacyStaffId: Number(st.legacyStaffId),
+            name: st.name,
+            doneTarget: !isNaN(parsedVal) && parsedVal > 0 ? parsedVal : (Number(st.doneTarget) || 100),
+            avatarUrl: st.avatarUrl || null,
+          };
+        }),
         stageTargets: {
           '0_30': Number(values.stage_0_30),
           '31_60': Number(values.stage_31_60),
@@ -95,7 +105,9 @@ export const TargetConfigModal: React.FC<TargetConfigModalProps> = ({ open, onCl
 
       await apiClient.telesaleTarget.saveConfig(payload);
       message.success('Đã lưu cấu hình mục tiêu tháng thành công!');
-      onSuccess();
+      if (onSuccess) {
+        await onSuccess();
+      }
       onClose();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Lỗi khi lưu cấu hình';
