@@ -717,6 +717,13 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         serviceGroup
       );
 
+      const { isNew, comboSaleRequired } = await BookingSaleClassificationService.determineBookingSaleClassification(
+        fastify,
+        finalCustomerId,
+        mysqlStart,
+        serviceGroup
+      );
+
       // Keep all legacy writes atomic. A rejected service or a later write failure
       // must not leave the appointment time updated while its service is unchanged.
       await fastify.prisma.legacy.$transaction(async (tx) => {
@@ -733,6 +740,8 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
                selected_promotion_id = ?,
                campaign_id = ?,
                order_state = ?,
+               combo_sale_required = ?,
+               is_new = ?,
                date_updated = NOW()
            WHERE id = ?`,
           mysqlStart,
@@ -746,6 +755,8 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
           promotionResolution.legacyPromotionId,
           promotionResolution.legacyCampaignId,
           finalOrderState,
+          comboSaleRequired,
+          isNew,
           orderId
         );
 
@@ -904,7 +915,8 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       const finalCustomerId = Number(order.user_id);
       const originalStaffId = order.created_staff_id ? Number(order.created_staff_id) : null;
 
-      if (!canRescheduleAnyCustomer && !(await ensureTelesalesCustomerMutateAccess(request, reply, finalCustomerId))) return;
+      if (!canRescheduleAnyCustomer && !(await ensureTelesalesCustomerMutateAccess(request, reply, finalCustomerId)))
+        return;
 
       const oldData = {
         bookingDateStart: order.booking_date_start ? new Date(order.booking_date_start).toISOString() : null,

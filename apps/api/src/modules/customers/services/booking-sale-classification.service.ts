@@ -103,10 +103,12 @@ export class BookingSaleClassificationService {
            AND (service_group IS NULL OR service_group IN (${placeholders}))
            AND (normal_count + retain_count > 1)
            AND (date_expired IS NULL OR date_expired >= ?)
+           AND (date_created <= ?)
          LIMIT 1`,
         clientBusinessId,
         customerId,
         ...targetGroups,
+        bookingDate,
         bookingDate
       );
 

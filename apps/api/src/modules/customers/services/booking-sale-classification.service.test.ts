@@ -126,3 +126,21 @@ test('returns isNew=1 and comboSaleRequired=1 when customerId is 0 or missing', 
   assert.equal(result.isNew, 1);
   assert.equal(result.comboSaleRequired, 1);
 });
+
+test('classifies customer who only purchased a combo on/after appointment date as comboSaleRequired=1 at booking time', async () => {
+  // If activeCombos query filters by date_created <= bookingDate and returned empty
+  const fastify = createMockFastify({
+    userProfile: { last_order_booking: new Date('2026-08-20') },
+    previousOrders: [{ id: 331000 }],
+    activeBalances: [], // Mock activeCombos returning empty because date_created > bookingDate
+  });
+
+  const result = await BookingSaleClassificationService.determineBookingSaleClassification(
+    fastify as never,
+    3005,
+    '2026-09-28 14:00:00'
+  );
+
+  assert.equal(result.isNew, 0);
+  assert.equal(result.comboSaleRequired, 1);
+});

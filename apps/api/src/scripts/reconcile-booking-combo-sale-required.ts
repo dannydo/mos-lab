@@ -10,6 +10,7 @@ import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 
 const envCandidates = [
+  '/home/web/mos-lab/.env',
   path.resolve(process.cwd(), 'apps/api/.env'),
   path.resolve(process.cwd(), '.env'),
   path.resolve(homedir(), 'projects/mos-lab/apps/api/.env'),

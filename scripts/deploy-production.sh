@@ -58,6 +58,9 @@ pnpm --filter @mos-lab/api data-migrations:plan -- --commit="${DEPLOY_COMMIT}"
 echo '[VPS] Running pending production data migrations...'
 pnpm --filter @mos-lab/api data-migrations:run -- --commit="${DEPLOY_COMMIT}"
 
+echo '[VPS] Reconciling booking combo sale required snapshots...'
+pnpm --filter @mos-lab/api tsx src/scripts/reconcile-booking-combo-sale-required.ts --apply || true
+
 echo '[VPS] Building backend packages...'
 pnpm --filter @mos-lab/shared build
 pnpm --filter @mos-lab/api build
