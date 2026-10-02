@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Progress, Tooltip, Button, theme } from 'antd';
-import { Tv, CheckCircle2, Calendar, Maximize2, Sparkles, Clock, AlertCircle, Volume2 } from 'lucide-react';
-import { TelesaleTargetOverview } from '@mos-lab/shared';
+import { Tv, CheckCircle2, Calendar, Maximize2, Sparkles, Clock, AlertCircle, Volume2, ClipboardList } from 'lucide-react';
+import { TelesaleTargetOverview, isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { calculateShiftPacing, calculateTvMonitorMetrics } from '../utils/tv-monitor-pacing';
 import { TelesaleTvCelebration } from './TelesaleTvCelebration';
+import { TelesaleTvJournalModal } from './TelesaleTvJournalModal';
 
 interface TelesaleTodayTvMonitorCardProps {
   overview: TelesaleTargetOverview;
@@ -20,6 +21,18 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
   const { teamDaily } = overview;
   const [now, setNow] = useState<Date>(new Date());
   const [showCelebration, setShowCelebration] = useState<boolean>(false);
+  const [journalOpen, setJournalOpen] = useState<boolean>(false);
+
+  const isManagerOrAdmin = useMemo(() => {
+    try {
+      const stored = localStorage.getItem('mos_auth_user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        return isAdminOrSuperAdminRole(u?.role) || u?.role === 'manager';
+      }
+    } catch {}
+    return true;
+  }, []);
 
   // Update clock every 5 seconds for smooth countdown without excessive re-renders
   useEffect(() => {
@@ -104,6 +117,21 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
               <Volume2 className="w-3 h-3 text-amber-400" />
               Loa TV: Bật
             </span>
+
+            {isManagerOrAdmin && (
+              <Tooltip title="Nhật ký giám sát Live TV Monitor">
+                <Button
+                  type="default"
+                  size="small"
+                  data-testid="tv-journal-card-button"
+                  icon={<ClipboardList className="w-3.5 h-3.5 text-amber-300" />}
+                  onClick={() => setJournalOpen(true)}
+                  className="bg-zinc-900 hover:bg-zinc-800 text-amber-300 border-zinc-700 rounded-xl text-xs h-7 px-2 flex items-center gap-1"
+                >
+                  <span className="hidden md:inline">Nhật ký TV</span>
+                </Button>
+              </Tooltip>
+            )}
 
             {onOpenFullscreen && (
               <Tooltip title="Mở Chế độ TV Monitor toàn màn hình cho phòng Telesales">
@@ -294,6 +322,13 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
           </p>
         </div>
       </div>
+
+      {/* TV Journal Modal (MOS-BUG-90) */}
+      <TelesaleTvJournalModal
+        open={journalOpen}
+        onClose={() => setJournalOpen(false)}
+        staffList={overview.staffTargets || []}
+      />
     </div>
   );
 };

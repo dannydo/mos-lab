@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Button, Tooltip, Progress, theme, Popover, Slider, Switch, Select } from 'antd';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Button, Tooltip, Progress, theme, Popover, Slider, Switch, Select, message } from 'antd';
 import {
   X,
   Maximize2,
@@ -14,15 +14,17 @@ import {
   Flame,
   Volume2,
   VolumeX,
+  ClipboardList,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
-import { TelesaleTargetOverview } from '@mos-lab/shared';
+import { TelesaleTargetOverview, isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { calculateShiftPacing, calculateTvMonitorMetrics } from '../utils/tv-monitor-pacing';
 import { TelesaleTvCelebration } from './TelesaleTvCelebration';
 import { useTelesaleTvLiveCelebration } from '../hooks/useTelesaleTvLiveCelebration';
 import { TelesaleTvLiveCelebrationBanner } from './TelesaleTvLiveCelebrationBanner';
 import { TelesaleTvStaffContributionGrid } from './TelesaleTvStaffContributionGrid';
+import { TelesaleTvJournalModal } from './TelesaleTvJournalModal';
 
 interface TelesaleTvMonitorFullscreenProps {
   overview: TelesaleTargetOverview;
@@ -45,6 +47,27 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
   const [now, setNow] = useState<Date>(new Date());
   const [isBrowserFullscreen, setIsBrowserFullscreen] = useState<boolean>(false);
   const [showCelebration, setShowCelebration] = useState<boolean>(false);
+  const [journalOpen, setJournalOpen] = useState<boolean>(false);
+
+  const isManagerOrAdmin = useMemo(() => {
+    if (typeof window === 'undefined') return true;
+    try {
+      const stored = localStorage.getItem('mos_user') || localStorage.getItem('user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        return isAdminOrSuperAdminRole(u?.role) || u?.role === 'manager';
+      }
+    } catch {}
+    return true;
+  }, []);
+
+  const handleOpenJournal = () => {
+    if (!isManagerOrAdmin) {
+      message.warning('Chỉ Quản lý (Manager) và Quản trị viên (Admin) mới có quyền truy cập Nhật ký TV Monitor');
+      return;
+    }
+    setJournalOpen(true);
+  };
 
   // 1. Clock timer running every second for high-precision TV clock
   useEffect(() => {
@@ -296,6 +319,21 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
 
         {/* Right Toolbar Controls */}
         <div className="flex items-center gap-2">
+          {/* TV Journal Modal Trigger (MOS-BUG-90) */}
+          {isManagerOrAdmin && (
+            <Tooltip title="Nhật ký giám sát Live TV Monitor">
+              <Button
+                type="text"
+                data-testid="tv-journal-button"
+                icon={<ClipboardList className="w-4 h-4 text-amber-300" />}
+                onClick={handleOpenJournal}
+                className="!text-amber-300 hover:!bg-amber-500/20 !rounded-xl !h-10 px-3 flex items-center gap-1.5 border border-amber-500/40 font-medium text-xs"
+              >
+                <span className="hidden sm:inline">Nhật ký TV</span>
+              </Button>
+            </Tooltip>
+          )}
+
           {/* Sound & Voice Celebration Settings Popover */}
           <Popover
             content={soundSettingsContent}
@@ -628,6 +666,13 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
           </div>
         </div>
       </footer>
+
+      {/* TV Journal Modal (MOS-BUG-90) */}
+      <TelesaleTvJournalModal
+        open={journalOpen}
+        onClose={() => setJournalOpen(false)}
+        staffList={overview.staffTargets || []}
+      />
     </div>
   );
 };

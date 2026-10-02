@@ -148,6 +148,42 @@ export interface TelesaleTodayLiveEvent {
   avatarUrl?: string | null;
   timestamp: string;
   orderId?: number;
+  changeResult?: string;
+}
+
+export interface TelesaleTvEventLog {
+  id: string;
+  type: 'BOOK' | 'DONE' | 'MILESTONE';
+  staffId?: number;
+  staffName: string;
+  avatarUrl?: string | null;
+  timestamp: string;
+  timeFormatted?: string;
+  changeResult: string;
+  orderId?: number;
+
+  // Pipeline execution tracking
+  eventReceived: boolean;
+  eventReceivedAt?: string;
+
+  voiceTriggered: boolean;
+  voiceErrorReason?: string | null;
+
+  overlayTriggered: boolean;
+  overlayErrorReason?: string | null;
+
+  status: 'SUCCESS' | 'ERROR';
+  errorMessage?: string | null;
+}
+
+export interface TelesaleTvJournalOverview {
+  totalEvents: number;
+  voiceSuccess: number;
+  voiceError: number;
+  overlaySuccess: number;
+  overlayError: number;
+  latestEventTime: string | null;
+  events: TelesaleTvEventLog[];
 }
 
 export interface TelesaleTargetConfigDto {

@@ -1,6 +1,12 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
-import { TelesalePipelineStageKey, TelesaleTargetConfigDto, TelesaleTargetCloneDto } from '@mos-lab/shared';
+import {
+  TelesalePipelineStageKey,
+  TelesaleTargetConfigDto,
+  TelesaleTargetCloneDto,
+  isAdminOrSuperAdminRole,
+  TelesaleTvEventLog,
+} from '@mos-lab/shared';
 import { TelesaleTargetService } from '../services/telesale-target.service.js';
 
 export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
@@ -168,6 +174,39 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
     } catch (err: any) {
       fastify.log.error(`Failed to synthesize celebration audio: ${err.message}`);
       return reply.status(500).send({ error: 'Failed to synthesize celebration audio' });
+    }
+  });
+
+  // 8. TV Monitor Live Journal (Nhật ký TV Monitor - Manager/Admin Only)
+  fastify.get('/kpi/telesale-target/tv-journal', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = (request as any).user;
+    const isManagerOrAdmin = isAdminOrSuperAdminRole(user?.role) || user?.role === 'manager';
+
+    if (!isManagerOrAdmin) {
+      return reply.status(403).send({
+        error: 'Chỉ Manager và Admin mới có quyền truy cập Nhật ký TV Monitor',
+      });
+    }
+
+    const { date } = request.query as { date?: string };
+    try {
+      const journal = await TelesaleTargetService.getTvJournal(fastify, date);
+      return reply.send(journal);
+    } catch (err: any) {
+      fastify.log.error(`Failed to get TV journal: ${err.message}`);
+      return reply.status(500).send({ error: err.message || 'Internal Server Error' });
+    }
+  });
+
+  // 9. Sync Live Event Execution Status from TV Monitor Client
+  fastify.post('/kpi/telesale-target/tv-journal/sync', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { records } = (request.body as { records?: TelesaleTvEventLog[] }) || {};
+    try {
+      const result = TelesaleTargetService.recordTvJournalSync(records || []);
+      return reply.send(result);
+    } catch (err: any) {
+      fastify.log.error(`Failed to sync TV journal execution status: ${err.message}`);
+      return reply.status(500).send({ error: err.message || 'Internal Server Error' });
     }
   });
 }

@@ -11,6 +11,7 @@ vi.mock('../../../../lib/api-client', () => ({
       getCelebrationQuote: vi.fn().mockResolvedValue({
         quote: 'Chúc mừng Bích Phượng hoàn thành xuất sắc một Done!',
       }),
+      syncTvJournal: vi.fn().mockResolvedValue({ success: true, count: 1 }),
     },
   },
 }));

@@ -11,6 +11,8 @@ import {
   TelesaleCustomerPoolItem,
   TelesaleStaffTarget,
   TelesaleTodayLiveEvent,
+  TelesaleTvEventLog,
+  TelesaleTvJournalOverview,
   TelesalePipelineStage,
   TelesalePacingStatus,
   TelesalePeriodStatus,
@@ -869,49 +871,75 @@ export class TelesaleTargetService {
         .catch(() => []),
     ]);
 
-    const bookEvents: TelesaleTodayLiveEvent[] = todayBookOrders
+    const sortedTodayBookOrders = [...todayBookOrders]
       .filter((o) => o && o.id)
-      .map((o) => {
-        const bookerId = Number(o.bookerId);
-        return {
-          id: `book-${o.id}`,
-          type: 'BOOK' as const,
-          staffId: bookerId,
-          staffName:
-            staffNameMap.get(bookerId) ||
-            allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name ||
-            'Telesales',
-          avatarUrl: staffAvatarMap.get(bookerId) || null,
-          timestamp: o.dateCreated ? new Date(o.dateCreated).toISOString() : new Date().toISOString(),
-          orderId: Number(o.id),
-        };
+      .sort((a, b) => new Date(a.dateCreated || 0).getTime() - new Date(b.dateCreated || 0).getTime());
+
+    const staffBookCountMap = new Map<number, number>();
+    const bookEvents: TelesaleTodayLiveEvent[] = sortedTodayBookOrders.map((o) => {
+      const bookerId = Number(o.bookerId);
+      const prevCount = staffBookCountMap.get(bookerId) || 0;
+      const newCount = prevCount + 1;
+      staffBookCountMap.set(bookerId, newCount);
+
+      return {
+        id: `book-${o.id}`,
+        type: 'BOOK' as const,
+        staffId: bookerId,
+        staffName:
+          staffNameMap.get(bookerId) ||
+          allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name ||
+          'Telesales',
+        avatarUrl: staffAvatarMap.get(bookerId) || null,
+        timestamp: o.dateCreated ? new Date(o.dateCreated).toISOString() : new Date().toISOString(),
+        orderId: Number(o.id),
+        changeResult: `Book ${prevCount} → ${newCount}`,
+      };
+    });
+
+    const sortedTodayDoneOrders = [...todayDoneOrders]
+      .filter((o) => o && o.id)
+      .sort((a, b) => {
+        const timeA = new Date(
+          a.doneDate || a.actualBookingDateEnd || a.dateUpdated || a.actualBookingDateStart || 0
+        ).getTime();
+        const timeB = new Date(
+          b.doneDate || b.actualBookingDateEnd || b.dateUpdated || b.actualBookingDateStart || 0
+        ).getTime();
+        return timeA - timeB;
       });
 
-    const doneEvents: TelesaleTodayLiveEvent[] = todayDoneOrders
-      .filter((o) => o && o.id)
-      .map((o) => {
-        const bookerId = Number(o.bookerId);
-        return {
-          id: `done-${o.id}`,
-          type: 'DONE' as const,
-          staffId: bookerId,
-          staffName:
-            staffNameMap.get(bookerId) ||
-            allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name ||
-            'Telesales',
-          avatarUrl: staffAvatarMap.get(bookerId) || null,
-          timestamp: o.doneDate
-            ? new Date(o.doneDate).toISOString()
-            : o.actualBookingDateEnd
-              ? new Date(o.actualBookingDateEnd).toISOString()
-              : o.dateUpdated
-                ? new Date(o.dateUpdated).toISOString()
-                : o.actualBookingDateStart
-                  ? new Date(o.actualBookingDateStart).toISOString()
-                  : new Date().toISOString(),
-          orderId: Number(o.id),
-        };
-      });
+    const staffDoneCountMap = new Map<number, number>();
+    const doneEvents: TelesaleTodayLiveEvent[] = sortedTodayDoneOrders.map((o) => {
+      const bookerId = Number(o.bookerId);
+      const prevDone = staffDoneCountMap.get(bookerId) || 0;
+      const newDone = prevDone + 1;
+      staffDoneCountMap.set(bookerId, newDone);
+
+      const timestamp = o.doneDate
+        ? new Date(o.doneDate).toISOString()
+        : o.actualBookingDateEnd
+          ? new Date(o.actualBookingDateEnd).toISOString()
+          : o.dateUpdated
+            ? new Date(o.dateUpdated).toISOString()
+            : o.actualBookingDateStart
+              ? new Date(o.actualBookingDateStart).toISOString()
+              : new Date().toISOString();
+
+      return {
+        id: `done-${o.id}`,
+        type: 'DONE' as const,
+        staffId: bookerId,
+        staffName:
+          staffNameMap.get(bookerId) ||
+          allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name ||
+          'Telesales',
+        avatarUrl: staffAvatarMap.get(bookerId) || null,
+        timestamp,
+        orderId: Number(o.id),
+        changeResult: `Done ${prevDone} → ${newDone}`,
+      };
+    });
 
     const todayLiveEvents: TelesaleTodayLiveEvent[] = [...bookEvents, ...doneEvents].sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
@@ -1504,5 +1532,304 @@ YÊU CẦU BẮT BUỘC:
     }
 
     throw new Error('No audio produced by Edge TTS');
+  }
+
+  private static tvJournalExecutionStore = new Map<string, Partial<TelesaleTvEventLog>>();
+
+  static recordTvJournalSync(records: TelesaleTvEventLog[]): { success: boolean; count: number } {
+    if (!Array.isArray(records)) return { success: true, count: 0 };
+    for (const rec of records) {
+      if (rec && rec.id) {
+        this.tvJournalExecutionStore.set(rec.id, {
+          ...this.tvJournalExecutionStore.get(rec.id),
+          ...rec,
+        });
+      }
+    }
+    return { success: true, count: records.length };
+  }
+
+  static async getTvJournal(
+    fastify: FastifyInstance,
+    dateParam?: string
+  ): Promise<TelesaleTvJournalOverview> {
+    const targetDate =
+      dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
+        ? dateParam
+        : new Date().toISOString().slice(0, 10);
+
+    const activeStaff = await this.getActiveTelesalesStaffFromHr(fastify);
+    const candidateIds = activeStaff.map((s) => s.legacyStaffId).filter((id) => id > 0);
+    const candidateIdsStr = candidateIds.length > 0 ? candidateIds.join(', ') : '0';
+
+    const staffNameMap = new Map<number, string>();
+    const staffAvatarMap = new Map<number, string | null>();
+    activeStaff.forEach((s) => {
+      staffNameMap.set(s.legacyStaffId, s.name);
+      staffAvatarMap.set(s.legacyStaffId, s.avatarUrl || null);
+    });
+
+    const dayStartStr = `${targetDate} 00:00:00`;
+    const dayEndStr = `${targetDate} 23:59:59`;
+
+    const [dayBookOrders, dayDoneOrders] = await Promise.all([
+      fastify.prisma.legacy
+        .$queryRawUnsafe<SafeAny[]>(
+          `
+        SELECT 
+          o.id,
+          o.created_staff_id as bookerId,
+          o.order_state as orderState,
+          o.date_created as dateCreated
+        FROM \`order\` o
+        WHERE o.date_created >= '${dayStartStr}' 
+          AND o.date_created <= '${dayEndStr}'
+          AND o.created_staff_id IN (${candidateIdsStr})
+      `
+        )
+        .catch(() => []),
+      fastify.prisma.legacy
+        .$queryRawUnsafe<SafeAny[]>(
+          `
+        SELECT 
+          o.id as id,
+          o.created_staff_id as bookerId,
+          o.order_state as orderState,
+          o.total_price as totalPrice,
+          o.booking_date_start as bookingDateStart,
+          ro.actual_booking_date_start as actualBookingDateStart,
+          ro.actual_booking_date_end as actualBookingDateEnd,
+          o.date_updated as dateUpdated,
+          COALESCE(ro.actual_booking_date_end, o.date_updated, ro.actual_booking_date_start, o.date_created) as doneDate
+        FROM \`order\` o
+        LEFT JOIN report_order ro ON ro.order_id = o.id
+        WHERE o.created_staff_id IN (${candidateIdsStr})
+          AND (
+            (ro.actual_booking_date_start >= '${dayStartStr}' AND ro.actual_booking_date_start <= '${dayEndStr}')
+            OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${dayStartStr}' AND o.booking_date_start <= '${dayEndStr}')
+          )
+          AND o.order_state = 'Completed'
+      `
+        )
+        .catch(() => []),
+    ]);
+
+    const sortedDayBookOrders = [...dayBookOrders]
+      .filter((o) => o && o.id)
+      .sort((a, b) => new Date(a.dateCreated || 0).getTime() - new Date(b.dateCreated || 0).getTime());
+
+    const staffBookCountMap = new Map<number, number>();
+    const bookEvents: TelesaleTvEventLog[] = sortedDayBookOrders.map((o) => {
+      const bookerId = Number(o.bookerId);
+      const prevCount = staffBookCountMap.get(bookerId) || 0;
+      const newCount = prevCount + 1;
+      staffBookCountMap.set(bookerId, newCount);
+
+      const id = `book-${o.id}`;
+      const timestamp = o.dateCreated ? new Date(o.dateCreated).toISOString() : new Date().toISOString();
+      const timeFormatted = new Date(timestamp).toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      });
+
+      const exec = this.tvJournalExecutionStore.get(id);
+      return {
+        id,
+        type: 'BOOK' as const,
+        staffId: bookerId,
+        staffName: staffNameMap.get(bookerId) || 'Telesales',
+        avatarUrl: staffAvatarMap.get(bookerId) || null,
+        timestamp,
+        timeFormatted,
+        changeResult: `Book ${prevCount} → ${newCount}`,
+        orderId: Number(o.id),
+        eventReceived: exec?.eventReceived ?? true,
+        eventReceivedAt: exec?.eventReceivedAt ?? timestamp,
+        voiceTriggered: exec?.voiceTriggered ?? false,
+        voiceErrorReason:
+          exec?.voiceErrorReason ?? (exec?.voiceTriggered ? null : 'TV Monitor chưa kích hoạt Voice'),
+        overlayTriggered: exec?.overlayTriggered ?? false,
+        overlayErrorReason:
+          exec?.overlayErrorReason ?? (exec?.overlayTriggered ? null : 'TV Monitor chưa kích hoạt Overlay'),
+        status: exec?.status ?? (exec?.voiceTriggered && exec?.overlayTriggered ? 'SUCCESS' : 'ERROR'),
+        errorMessage:
+          exec?.errorMessage ??
+          (exec?.voiceTriggered && exec?.overlayTriggered ? null : 'Chưa nhận phản hồi từ TV Monitor'),
+      };
+    });
+
+    const sortedDayDoneOrders = [...dayDoneOrders]
+      .filter((o) => o && o.id)
+      .sort((a, b) => {
+        const timeA = new Date(
+          a.doneDate || a.actualBookingDateEnd || a.dateUpdated || a.actualBookingDateStart || 0
+        ).getTime();
+        const timeB = new Date(
+          b.doneDate || b.actualBookingDateEnd || b.dateUpdated || b.actualBookingDateStart || 0
+        ).getTime();
+        return timeA - timeB;
+      });
+
+    const staffDoneCountMap = new Map<number, number>();
+    const doneEvents: TelesaleTvEventLog[] = sortedDayDoneOrders.map((o) => {
+      const bookerId = Number(o.bookerId);
+      const prevDone = staffDoneCountMap.get(bookerId) || 0;
+      const newDone = prevDone + 1;
+      staffDoneCountMap.set(bookerId, newDone);
+
+      const id = `done-${o.id}`;
+      const timestamp = o.doneDate
+        ? new Date(o.doneDate).toISOString()
+        : o.actualBookingDateEnd
+          ? new Date(o.actualBookingDateEnd).toISOString()
+          : o.dateUpdated
+            ? new Date(o.dateUpdated).toISOString()
+            : o.actualBookingDateStart
+              ? new Date(o.actualBookingDateStart).toISOString()
+              : new Date().toISOString();
+      const timeFormatted = new Date(timestamp).toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      });
+
+      const exec = this.tvJournalExecutionStore.get(id);
+      return {
+        id,
+        type: 'DONE' as const,
+        staffId: bookerId,
+        staffName: staffNameMap.get(bookerId) || 'Telesales',
+        avatarUrl: staffAvatarMap.get(bookerId) || null,
+        timestamp,
+        timeFormatted,
+        changeResult: `Done ${prevDone} → ${newDone}`,
+        orderId: Number(o.id),
+        eventReceived: exec?.eventReceived ?? true,
+        eventReceivedAt: exec?.eventReceivedAt ?? timestamp,
+        voiceTriggered: exec?.voiceTriggered ?? false,
+        voiceErrorReason:
+          exec?.voiceErrorReason ?? (exec?.voiceTriggered ? null : 'TV Monitor chưa kích hoạt Voice'),
+        overlayTriggered: exec?.overlayTriggered ?? false,
+        overlayErrorReason:
+          exec?.overlayErrorReason ?? (exec?.overlayTriggered ? null : 'TV Monitor chưa kích hoạt Overlay'),
+        status: exec?.status ?? (exec?.voiceTriggered && exec?.overlayTriggered ? 'SUCCESS' : 'ERROR'),
+        errorMessage:
+          exec?.errorMessage ??
+          (exec?.voiceTriggered && exec?.overlayTriggered ? null : 'Chưa nhận phản hồi từ TV Monitor'),
+      };
+    });
+
+    // Milestone events based on total Book and Done on that date
+    const milestoneEvents: TelesaleTvEventLog[] = [];
+    const totalBookOnDate = bookEvents.length;
+    const totalDoneOnDate = doneEvents.length;
+
+    const addMilestoneIfReached = (
+      id: string,
+      threshold: number,
+      current: number,
+      changeResult: string,
+      targetTimestamp: string
+    ) => {
+      if (current >= threshold) {
+        const exec = this.tvJournalExecutionStore.get(id);
+        const timeFormatted = new Date(targetTimestamp).toLocaleTimeString('vi-VN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        });
+        milestoneEvents.push({
+          id,
+          type: 'MILESTONE' as const,
+          staffName: 'Toàn team Telesales',
+          avatarUrl: null,
+          timestamp: targetTimestamp,
+          timeFormatted,
+          changeResult,
+          eventReceived: exec?.eventReceived ?? true,
+          eventReceivedAt: exec?.eventReceivedAt ?? targetTimestamp,
+          voiceTriggered: exec?.voiceTriggered ?? false,
+          voiceErrorReason:
+            exec?.voiceErrorReason ?? (exec?.voiceTriggered ? null : 'TV Monitor chưa kích hoạt Voice'),
+          overlayTriggered: exec?.overlayTriggered ?? false,
+          overlayErrorReason:
+            exec?.overlayErrorReason ?? (exec?.overlayTriggered ? null : 'TV Monitor chưa kích hoạt Overlay'),
+          status: exec?.status ?? (exec?.voiceTriggered && exec?.overlayTriggered ? 'SUCCESS' : 'ERROR'),
+          errorMessage:
+            exec?.errorMessage ??
+            (exec?.voiceTriggered && exec?.overlayTriggered ? null : 'Chưa nhận phản hồi từ TV Monitor'),
+        });
+      }
+    };
+
+    if (totalBookOnDate >= 10 && bookEvents[9]) {
+      addMilestoneIfReached(
+        `milestone-${targetDate}-book-10`,
+        10,
+        totalBookOnDate,
+        'Cán mốc 10 Book',
+        bookEvents[9].timestamp
+      );
+    }
+    if (totalBookOnDate >= 20 && bookEvents[19]) {
+      addMilestoneIfReached(
+        `milestone-${targetDate}-book-20`,
+        20,
+        totalBookOnDate,
+        'Chạm mốc 20 Book',
+        bookEvents[19].timestamp
+      );
+    }
+    if (totalBookOnDate >= 25 && bookEvents[24]) {
+      addMilestoneIfReached(
+        `milestone-${targetDate}-book-25`,
+        25,
+        totalBookOnDate,
+        'Cán mốc 25 Book',
+        bookEvents[24].timestamp
+      );
+    }
+    if (totalBookOnDate > 25 && bookEvents[25]) {
+      addMilestoneIfReached(
+        `milestone-${targetDate}-book-gt25`,
+        26,
+        totalBookOnDate,
+        'Vượt mốc 25 Book',
+        bookEvents[25].timestamp
+      );
+    }
+    if (totalDoneOnDate >= 18 && doneEvents[17]) {
+      addMilestoneIfReached(
+        `milestone-${targetDate}-done-18`,
+        18,
+        totalDoneOnDate,
+        'Hoàn thành 18 Done',
+        doneEvents[17].timestamp
+      );
+    }
+
+    const allEvents = [...bookEvents, ...doneEvents, ...milestoneEvents].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+
+    const voiceSuccess = allEvents.filter((e) => e.voiceTriggered).length;
+    const voiceError = allEvents.filter((e) => !e.voiceTriggered).length;
+    const overlaySuccess = allEvents.filter((e) => e.overlayTriggered).length;
+    const overlayError = allEvents.filter((e) => !e.overlayTriggered).length;
+    const latestEventTime = allEvents.length > 0 ? allEvents[0].timestamp : null;
+
+    return {
+      totalEvents: allEvents.length,
+      voiceSuccess,
+      voiceError,
+      overlaySuccess,
+      overlayError,
+      latestEventTime,
+      events: allEvents,
+    };
   }
 }

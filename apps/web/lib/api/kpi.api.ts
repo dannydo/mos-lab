@@ -68,6 +68,8 @@ import type {
   TelesaleTargetConfigDto,
   TelesaleTargetCloneDto,
   TelesaleCustomerPoolResponse,
+  TelesaleTvJournalOverview,
+  TelesaleTvEventLog,
 } from '@mos-lab/shared';
 
 import { api } from './base';
@@ -462,6 +464,16 @@ export const kpiApi = {
       staffName: string;
     }): Promise<{ quote: string; source: 'gemini' | 'fallback' }> => {
       const response = await api.post('/kpi/telesale-target/live-celebration-quote', data);
+      return response.data;
+    },
+    getTvJournal: async (params?: { date?: string }): Promise<TelesaleTvJournalOverview> => {
+      const response = await api.get('/kpi/telesale-target/tv-journal', { params });
+      return response.data;
+    },
+    syncTvJournal: async (
+      records: TelesaleTvEventLog[]
+    ): Promise<{ success: boolean; count: number }> => {
+      const response = await api.post('/kpi/telesale-target/tv-journal/sync', { records });
       return response.data;
     },
   },

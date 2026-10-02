@@ -692,6 +692,112 @@ test('TelesaleTargetService.getOverview calculates staff Book today, contributio
   const doneEvents = overview.todayLiveEvents.filter((e) => e.type === 'DONE');
   assert.equal(bookEvents.length, 4);
   assert.equal(doneEvents.length, 2);
+  assert.ok(bookEvents[0].changeResult?.includes('Book'));
+  assert.ok(doneEvents[0].changeResult?.includes('Done'));
+});
+
+test('TelesaleTargetService.getTvJournal and recordTvJournalSync track Live Events, steps, and error reasons (MOS-BUG-90)', async () => {
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const mockFastify = {
+    prisma: {
+      crm: {
+        crmConfig: {
+          findUnique: async () => ({
+            value: JSON.stringify({
+              month: todayStr.slice(0, 7),
+              teamDoneTarget: 450,
+              teamBookTarget: 650,
+              dailyDoneTarget: 18,
+              dailyBookTarget: 25,
+              dailyCallPerStaff: 83,
+              dailyPickupPerStaff: 25,
+              staffTargets: [{ legacyStaffId: 50670, name: 'Phượng', doneTarget: 150 }],
+              stageTargets: { '0_30': 200, '31_60': 110, '61_120': 80, gt_120: 60 },
+            }),
+          }),
+        },
+        crmStaff: {
+          findMany: async () => [
+            { id: 22, legacyStaffId: 50670, displayName: 'Bích Phượng', avatarUrl: 'https://avatar/phuong.jpg' },
+          ],
+        },
+      },
+      legacy: {
+        $queryRawUnsafe: async (sql: string) => {
+          if (sql.includes('staff_working_shift')) return [];
+          if (sql.includes('doneCount')) return [{ bookerId: 50670, displayName: 'Bích Phượng', doneCount: 1 }];
+          if (sql.includes('totalCreatedBookings')) return [{ bookerId: 50670, displayName: 'Bích Phượng', totalCreatedBookings: 1 }];
+          if (sql.includes('SELECT \n          o.id,\n          o.created_staff_id as bookerId')) {
+            return [
+              { id: 101, bookerId: 50670, orderState: 'New', dateCreated: `${todayStr} 10:32:15` },
+            ];
+          }
+          if (sql.includes('COALESCE(ro.actual_booking_date_end')) {
+            return [
+              { id: 201, bookerId: 50670, orderState: 'Completed', totalPrice: 300000, doneDate: `${todayStr} 11:15:00` },
+            ];
+          }
+          return [];
+        },
+      },
+    },
+  } as any;
+
+  // 1. Initial getTvJournal before sync
+  const journalBefore = await TelesaleTargetService.getTvJournal(mockFastify, todayStr);
+  assert.ok(journalBefore);
+  assert.equal(journalBefore.totalEvents, 2); // 1 book + 1 done
+
+  // 2. TV Monitor syncs execution status
+  TelesaleTargetService.recordTvJournalSync([
+    {
+      id: 'book-101',
+      type: 'BOOK',
+      staffName: 'Bích Phượng',
+      changeResult: 'Book 0 → 1',
+      timestamp: `${todayStr}T10:32:15.000Z`,
+      eventReceived: true,
+      voiceTriggered: true,
+      overlayTriggered: true,
+      status: 'SUCCESS',
+    },
+    {
+      id: 'done-201',
+      type: 'DONE',
+      staffName: 'Bích Phượng',
+      changeResult: 'Done 0 → 1',
+      timestamp: `${todayStr}T11:15:00.000Z`,
+      eventReceived: true,
+      voiceTriggered: false,
+      voiceErrorReason: 'Tắt âm thanh trong cài đặt TV',
+      overlayTriggered: true,
+      status: 'ERROR',
+      errorMessage: 'Tắt âm thanh trong cài đặt TV',
+    },
+  ]);
+
+  // 3. getTvJournal after sync
+  const journalAfter = await TelesaleTargetService.getTvJournal(mockFastify, todayStr);
+  assert.equal(journalAfter.totalEvents, 2);
+  assert.equal(journalAfter.voiceSuccess, 1);
+  assert.equal(journalAfter.voiceError, 1);
+  assert.equal(journalAfter.overlaySuccess, 2);
+  assert.equal(journalAfter.overlayError, 0);
+
+  const bookEv = journalAfter.events.find((e) => e.id === 'book-101');
+  assert.ok(bookEv);
+  assert.equal(bookEv.eventReceived, true);
+  assert.equal(bookEv.voiceTriggered, true);
+  assert.equal(bookEv.overlayTriggered, true);
+  assert.equal(bookEv.status, 'SUCCESS');
+
+  const doneEv = journalAfter.events.find((e) => e.id === 'done-201');
+  assert.ok(doneEv);
+  assert.equal(doneEv.eventReceived, true);
+  assert.equal(doneEv.voiceTriggered, false);
+  assert.equal(doneEv.voiceErrorReason, 'Tắt âm thanh trong cài đặt TV');
+  assert.equal(doneEv.overlayTriggered, true);
+  assert.equal(doneEv.status, 'ERROR');
 });
 
 test('TelesaleTargetService.getFallbackCelebrationQuote embeds staffName and cultural values', () => {

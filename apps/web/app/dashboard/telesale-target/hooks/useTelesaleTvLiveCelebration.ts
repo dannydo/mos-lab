@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { TelesaleTodayLiveEvent } from '@mos-lab/shared';
+import { TelesaleTodayLiveEvent, TelesaleTvEventLog } from '@mos-lab/shared';
 import { getBestVietnameseVoice } from '../../../../components/voice-assistant/speech-utils';
 import { apiClient } from '../../../../lib/api-client';
 import { resolveApiBaseUrl } from '../../../../lib/api-base-url';
@@ -17,11 +17,14 @@ export interface TvCelebrationSettings {
 export interface ActiveCelebration {
   id: string;
   kind: 'BOOK' | 'DONE' | 'MILESTONE';
+  staffId?: number;
   staffName?: string;
   avatarUrl?: string | null;
   textToSpeak: string;
   badgeText: string;
   colorTheme: 'blue' | 'emerald' | 'amber';
+  changeResult?: string;
+  orderId?: number;
 }
 
 const SETTINGS_STORAGE_KEY = 'MOS_TV_MONITOR_VOICE_SETTINGS';
@@ -152,6 +155,41 @@ export function useTelesaleTvLiveCelebration() {
     return false;
   }, [settings.quietModeEnabled]);
 
+  // Record Live Event execution status into local journal & sync with server
+  const recordEventLog = useCallback((log: TelesaleTvEventLog) => {
+    const now = new Date();
+    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const storageKey = `MOS_TV_MONITOR_EVENT_LOGS_${todayKey}`;
+
+    let currentLogs: TelesaleTvEventLog[] = [];
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem(storageKey);
+        if (raw) currentLogs = JSON.parse(raw);
+      } catch {}
+    }
+
+    const idx = currentLogs.findIndex((item) => item.id === log.id);
+    if (idx >= 0) {
+      currentLogs[idx] = { ...currentLogs[idx], ...log };
+    } else {
+      currentLogs.unshift(log);
+    }
+
+    if (currentLogs.length > 150) currentLogs = currentLogs.slice(0, 150);
+
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(currentLogs));
+      } catch {}
+    }
+
+    // Background sync to API (fire-and-forget)
+    try {
+      apiClient?.telesaleTarget?.syncTvJournal?.([log])?.catch?.(() => {});
+    } catch {}
+  }, []);
+
   // 4. Process Celebration Queue with Cooldown (3-5s)
   const processQueue = useCallback(() => {
     if (isProcessingRef.current || queueRef.current.length === 0) return;
@@ -180,14 +218,44 @@ export function useTelesaleTvLiveCelebration() {
       playCelebratoryChime(settings.volume, nextEvent.kind);
     }
 
+    const logBase: Omit<TelesaleTvEventLog, 'voiceTriggered' | 'voiceErrorReason' | 'status' | 'errorMessage'> = {
+      id: nextEvent.id,
+      type: nextEvent.kind,
+      staffId: nextEvent.staffId,
+      staffName: nextEvent.staffName || 'Telesales',
+      avatarUrl: nextEvent.avatarUrl,
+      timestamp: new Date().toISOString(),
+      timeFormatted: new Date().toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      }),
+      changeResult:
+        nextEvent.changeResult ||
+        (nextEvent.kind === 'BOOK' ? '+1 Book' : nextEvent.kind === 'DONE' ? '+1 Done' : 'Cán mốc'),
+      orderId: nextEvent.orderId,
+      eventReceived: true,
+      eventReceivedAt: new Date().toISOString(),
+      overlayTriggered: true,
+      overlayErrorReason: null,
+    };
+
     if (shouldPlaySound) {
       setIsSpeaking(true);
 
-      const finishCelebration = () => {
+      const finishCelebration = (success = true, voiceErrorReason: string | null = null) => {
         setIsSpeaking(false);
         const elapsed = Date.now() - celebrationStartTime;
-        // Keep visual overlay for 4.5s minimum (or until speech finishes if speech is longer)
         const remainingDisplayMs = Math.max(0, 4500 - elapsed);
+
+        recordEventLog({
+          ...logBase,
+          voiceTriggered: success,
+          voiceErrorReason,
+          status: success ? 'SUCCESS' : 'ERROR',
+          errorMessage: voiceErrorReason,
+        });
 
         setTimeout(() => {
           setIsFadingOut(true);
@@ -215,11 +283,11 @@ export function useTelesaleTvLiveCelebration() {
           utterance.pitch = 1.0;
           utterance.volume = settings.volume;
 
-          utterance.onend = finishCelebration;
-          utterance.onerror = finishCelebration;
+          utterance.onend = () => finishCelebration(true);
+          utterance.onerror = () => finishCelebration(false, 'Lỗi tổng hợp giọng nói từ trình duyệt');
           window.speechSynthesis.speak(utterance);
         } else {
-          finishCelebration();
+          finishCelebration(false, 'Trình duyệt không hỗ trợ phát âm thanh');
         }
       };
 
@@ -245,7 +313,7 @@ export function useTelesaleTvLiveCelebration() {
           if (hasEnded) return;
           hasEnded = true;
           cleanup();
-          finishCelebration();
+          finishCelebration(true);
         };
 
         const handleFailureFallback = () => {
@@ -299,6 +367,20 @@ export function useTelesaleTvLiveCelebration() {
       }
     } else {
       // If muted or in quiet hours, still show achievement overlay for 4.5s, then fade out
+      const reason = !settings.soundEnabled
+        ? 'Tắt âm thanh trong cài đặt TV'
+        : quiet
+          ? 'Đang trong giờ im lặng (12:00-13:30 hoặc ngoài ca trực)'
+          : 'Âm thanh không được kích hoạt';
+
+      recordEventLog({
+        ...logBase,
+        voiceTriggered: false,
+        voiceErrorReason: reason,
+        status: 'ERROR',
+        errorMessage: reason,
+      });
+
       setTimeout(() => {
         setIsFadingOut(true);
         setTimeout(() => {
@@ -310,7 +392,7 @@ export function useTelesaleTvLiveCelebration() {
         }, 450);
       }, 4500);
     }
-  }, [isQuietHours, settings.soundEnabled, settings.volume, settings.voiceStyle]);
+  }, [isQuietHours, recordEventLog, settings.soundEnabled, settings.volume, settings.voiceStyle]);
 
   // 5. Enqueue celebration event
   const enqueueCelebration = useCallback(
@@ -320,13 +402,43 @@ export function useTelesaleTvLiveCelebration() {
       enqueuedIdsRef.current.add(event.id);
 
       // Check manager filter
-      if (settings.eventTypeFilter === 'BOOK_ONLY' && event.kind === 'DONE') return;
-      if (settings.eventTypeFilter === 'DONE_ONLY' && event.kind === 'BOOK') return;
+      if (
+        (settings.eventTypeFilter === 'BOOK_ONLY' && event.kind === 'DONE') ||
+        (settings.eventTypeFilter === 'DONE_ONLY' && event.kind === 'BOOK')
+      ) {
+        recordEventLog({
+          id: event.id,
+          type: event.kind,
+          staffId: event.staffId,
+          staffName: event.staffName || 'Telesales',
+          avatarUrl: event.avatarUrl,
+          timestamp: new Date().toISOString(),
+          timeFormatted: new Date().toLocaleTimeString('vi-VN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false,
+          }),
+          changeResult:
+            event.changeResult ||
+            (event.kind === 'BOOK' ? '+1 Book' : event.kind === 'DONE' ? '+1 Done' : 'Cán mốc'),
+          orderId: event.orderId,
+          eventReceived: true,
+          eventReceivedAt: new Date().toISOString(),
+          voiceTriggered: false,
+          voiceErrorReason: `Bị bỏ qua bởi bộ lọc loại sự kiện (${settings.eventTypeFilter})`,
+          overlayTriggered: false,
+          overlayErrorReason: `Bị bỏ qua bởi bộ lọc loại sự kiện (${settings.eventTypeFilter})`,
+          status: 'ERROR',
+          errorMessage: `Bị bỏ qua bởi bộ lọc loại sự kiện (${settings.eventTypeFilter})`,
+        });
+        return;
+      }
 
       queueRef.current.push(event);
       processQueue();
     },
-    [processQueue, settings.eventTypeFilter]
+    [processQueue, recordEventLog, settings.eventTypeFilter]
   );
 
   // Auto-unlock AudioContext on first user interaction
@@ -379,6 +491,30 @@ export function useTelesaleTvLiveCelebration() {
         if (events && events.length > 0) {
           for (const ev of events) {
             seenEventIdsRef.current.add(ev.id);
+            recordEventLog({
+              id: ev.id,
+              type: ev.type,
+              staffId: ev.staffId,
+              staffName: ev.staffName || 'Telesales',
+              avatarUrl: ev.avatarUrl,
+              timestamp: ev.timestamp,
+              timeFormatted: new Date(ev.timestamp).toLocaleTimeString('vi-VN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false,
+              }),
+              changeResult: ev.changeResult || `${ev.type === 'BOOK' ? 'Book' : 'Done'} hôm nay`,
+              orderId: ev.orderId,
+              eventReceived: true,
+              eventReceivedAt: new Date().toISOString(),
+              voiceTriggered: false,
+              voiceErrorReason: 'Event phát sinh trước khi TV Monitor mở (Lịch sử)',
+              overlayTriggered: false,
+              overlayErrorReason: 'Event phát sinh trước khi TV Monitor mở (Lịch sử)',
+              status: 'ERROR',
+              errorMessage: 'Event phát sinh trước khi TV Monitor mở',
+            });
           }
           if (typeof window !== 'undefined') {
             try {
@@ -421,22 +557,28 @@ export function useTelesaleTvLiveCelebration() {
             enqueueCelebration({
               id: ev.id,
               kind: ev.type,
+              staffId: ev.staffId,
               staffName,
               avatarUrl: ev.avatarUrl,
               textToSpeak: quote,
               badgeText: ev.type === 'BOOK' ? '+1 BOOK HÔM NAY' : '+1 DONE HÔM NAY',
               colorTheme: ev.type === 'BOOK' ? 'blue' : 'emerald',
+              changeResult: ev.changeResult,
+              orderId: ev.orderId,
             });
           })
           .catch(() => {
             enqueueCelebration({
               id: ev.id,
               kind: ev.type,
+              staffId: ev.staffId,
               staffName,
               avatarUrl: ev.avatarUrl,
               textToSpeak: defaultQuote,
               badgeText: ev.type === 'BOOK' ? '+1 BOOK HÔM NAY' : '+1 DONE HÔM NAY',
               colorTheme: ev.type === 'BOOK' ? 'blue' : 'emerald',
+              changeResult: ev.changeResult,
+              orderId: ev.orderId,
             });
           });
       }
@@ -489,9 +631,11 @@ export function useTelesaleTvLiveCelebration() {
           enqueueCelebration({
             id: milestoneKey,
             kind: 'MILESTONE',
+            staffName: 'Toàn team Telesales',
             textToSpeak: text,
             badgeText: badge,
             colorTheme: 'amber',
+            changeResult: badge,
           });
         }
       };
@@ -627,5 +771,6 @@ export function useTelesaleTvLiveCelebration() {
     ingestLiveEvents,
     checkMilestones,
     triggerDemoCelebration,
+    recordEventLog,
   };
 }

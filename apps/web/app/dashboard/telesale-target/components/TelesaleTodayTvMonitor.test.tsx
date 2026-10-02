@@ -5,6 +5,23 @@ import { TelesaleTodayTvMonitorCard } from './TelesaleTodayTvMonitorCard';
 import { TelesaleTvMonitorFullscreen } from './TelesaleTvMonitorFullscreen';
 import { TelesaleTargetOverview } from '@mos-lab/shared';
 
+vi.mock('../../../../lib/api-client', () => ({
+  apiClient: {
+    telesaleTarget: {
+      getTvJournal: vi.fn().mockResolvedValue({
+        totalEvents: 0,
+        voiceSuccess: 0,
+        voiceError: 0,
+        overlaySuccess: 0,
+        overlayError: 0,
+        latestEventTime: null,
+        events: [],
+      }),
+      syncTvJournal: vi.fn().mockResolvedValue({ success: true, count: 0 }),
+    },
+  },
+}));
+
 const mockOverview: TelesaleTargetOverview = {
   month: '2026-10',
   updatedAt: '2026-10-06T12:00:00Z',
@@ -110,6 +127,12 @@ describe('TelesaleTodayTvMonitorCard', () => {
     expect(screen.getByText('19')).toBeInTheDocument();
     expect(screen.getByText('/ 25')).toBeInTheDocument();
 
+    // TV Journal button on card (MOS-BUG-90)
+    const journalCardButton = screen.getByTestId('tv-journal-card-button');
+    expect(journalCardButton).toBeInTheDocument();
+    fireEvent.click(journalCardButton);
+    expect(screen.getByText(/NHẬT KÝ TV MONITOR · GIÁM SÁT LIVE EVENTS/i)).toBeInTheDocument();
+
     // Open TV fullscreen button
     const openTvButton = screen.getByRole('button', { name: /Mở TV/i });
     expect(openTvButton).toBeInTheDocument();
@@ -119,7 +142,7 @@ describe('TelesaleTodayTvMonitorCard', () => {
 });
 
 describe('TelesaleTvMonitorFullscreen', () => {
-  it('renders full TV Monitor screen with individual staff contribution section and sound settings (MOS-FEAT-83)', () => {
+  it('renders full TV Monitor screen with individual staff contribution section, sound settings, and TV journal button (MOS-BUG-90)', () => {
     const handleClose = vi.fn();
     const handleRefresh = vi.fn();
 
@@ -147,6 +170,12 @@ describe('TelesaleTvMonitorFullscreen', () => {
     // Sound settings button
     const soundButton = screen.getByTestId('tv-sound-settings-button');
     expect(soundButton).toBeInTheDocument();
+
+    // TV Journal button (MOS-BUG-90)
+    const journalButton = screen.getByTestId('tv-journal-button');
+    expect(journalButton).toBeInTheDocument();
+    fireEvent.click(journalButton);
+    expect(screen.getByText(/NHẬT KÝ TV MONITOR · GIÁM SÁT LIVE EVENTS/i)).toBeInTheDocument();
 
     // Close button
     const closeButton = screen.getByRole('button', { name: /Đóng TV/i });
