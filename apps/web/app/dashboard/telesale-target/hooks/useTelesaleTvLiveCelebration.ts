@@ -97,6 +97,7 @@ export function useTelesaleTvLiveCelebration() {
   const [settings, setSettings] = useState<TvCelebrationSettings>(DEFAULT_SETTINGS);
   const [activeCelebration, setActiveCelebration] = useState<ActiveCelebration | null>(null);
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+  const [isFadingOut, setIsFadingOut] = useState<boolean>(false);
 
   const queueRef = useRef<ActiveCelebration[]>([]);
   const seenEventIdsRef = useRef<Set<string>>(new Set());
@@ -166,7 +167,9 @@ export function useTelesaleTvLiveCelebration() {
     const nextEvent = queueRef.current.shift();
     if (!nextEvent) return;
 
+    const celebrationStartTime = Date.now();
     isProcessingRef.current = true;
+    setIsFadingOut(false);
     setActiveCelebration(nextEvent);
 
     const quiet = isQuietHours();
@@ -182,15 +185,21 @@ export function useTelesaleTvLiveCelebration() {
 
       const finishCelebration = () => {
         setIsSpeaking(false);
-        lastSpokenTimeRef.current = Date.now();
-        isProcessingRef.current = false;
+        const elapsed = Date.now() - celebrationStartTime;
+        // Keep visual overlay for 4.5s minimum (or until speech finishes if speech is longer)
+        const remainingDisplayMs = Math.max(0, 4500 - elapsed);
 
-        // Keep visual banner for an extra 1.5s after speech ends
         setTimeout(() => {
-          setActiveCelebration((current) => (current?.id === nextEvent.id ? null : current));
-          // Check for next item in queue after cooldown
-          setTimeout(processQueue, 3500);
-        }, 1500);
+          setIsFadingOut(true);
+          setTimeout(() => {
+            setActiveCelebration((current) => (current?.id === nextEvent.id ? null : current));
+            setIsFadingOut(false);
+            lastSpokenTimeRef.current = Date.now();
+            isProcessingRef.current = false;
+            // Check for next item in queue after cooldown
+            setTimeout(processQueue, 1500);
+          }, 450);
+        }, remainingDisplayMs);
       };
 
       const fallbackToBrowserSynthesis = () => {
@@ -289,13 +298,17 @@ export function useTelesaleTvLiveCelebration() {
         fallbackToBrowserSynthesis();
       }
     } else {
-      // If muted or in quiet hours, still show visual banner for 3.5s
+      // If muted or in quiet hours, still show achievement overlay for 4.5s, then fade out
       setTimeout(() => {
-        lastSpokenTimeRef.current = Date.now();
-        isProcessingRef.current = false;
-        setActiveCelebration(null);
-        setTimeout(processQueue, 2000);
-      }, 3500);
+        setIsFadingOut(true);
+        setTimeout(() => {
+          setActiveCelebration(null);
+          setIsFadingOut(false);
+          lastSpokenTimeRef.current = Date.now();
+          isProcessingRef.current = false;
+          setTimeout(processQueue, 1500);
+        }, 450);
+      }, 4500);
     }
   }, [isQuietHours, settings.soundEnabled, settings.volume, settings.voiceStyle]);
 
@@ -345,7 +358,8 @@ export function useTelesaleTvLiveCelebration() {
   // 6. Ingest Live Events from API (todayLiveEvents)
   const ingestLiveEvents = useCallback(
     (events: TelesaleTodayLiveEvent[] = []) => {
-      const todayKey = new Date().toISOString().slice(0, 10);
+      const now = new Date();
+      const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       const storageKey = `MOS_TV_SEEN_EVENT_IDS_${todayKey}`;
 
       // Hydrate seen events from localStorage on first run
@@ -394,8 +408,8 @@ export function useTelesaleTvLiveCelebration() {
         } catch {}
       }
 
-      // Process new events (limit to newest 3 if multiple fresh events arrive in the same poll)
-      for (const ev of eventsToAnnounce.slice(0, 3)) {
+      // Process all fresh events in sequence (không bỏ sót bất kỳ event nào)
+      for (const ev of eventsToAnnounce) {
         const staffName = ev.staffName || 'Bạn Telesales';
         const defaultQuote = getRandomQuote(ev.type === 'BOOK' ? BOOK_QUOTES : DONE_QUOTES, staffName);
 
@@ -433,12 +447,45 @@ export function useTelesaleTvLiveCelebration() {
   // 7. Milestone Checkers
   const checkMilestones = useCallback(
     (date: string, bookActual: number, doneActual: number) => {
-      if (!isInitializedRef.current) return;
+      const now = new Date();
+      const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const storageKey = `MOS_TV_ANNOUNCED_MILESTONES_${todayKey}`;
+
+      // Hydrate announced milestones on first run
+      if (announcedMilestonesRef.current.size === 0 && typeof window !== 'undefined') {
+        try {
+          const raw = localStorage.getItem(storageKey);
+          if (raw) {
+            const list: string[] = JSON.parse(raw);
+            list.forEach((id) => announcedMilestonesRef.current.add(id));
+          }
+        } catch {}
+      }
+
+      const saveMilestonesToStorage = () => {
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(storageKey, JSON.stringify(Array.from(announcedMilestonesRef.current)));
+          } catch {}
+        }
+      };
+
+      // If system not yet initialized with live events, mark all milestones up to current actuals as seen so they are NOT announced on refresh/reconnect
+      if (!isInitializedRef.current) {
+        if (bookActual >= 10) announcedMilestonesRef.current.add(`milestone-${date}-book-10`);
+        if (bookActual >= 20) announcedMilestonesRef.current.add(`milestone-${date}-book-20`);
+        if (bookActual >= 25) announcedMilestonesRef.current.add(`milestone-${date}-book-25`);
+        if (bookActual > 25) announcedMilestonesRef.current.add(`milestone-${date}-book-gt25`);
+        if (doneActual >= 18) announcedMilestonesRef.current.add(`milestone-${date}-done-18`);
+        saveMilestonesToStorage();
+        return;
+      }
 
       const checkAndQueue = (key: string, text: string, badge: string) => {
         const milestoneKey = `milestone-${date}-${key}`;
         if (!announcedMilestonesRef.current.has(milestoneKey)) {
           announcedMilestonesRef.current.add(milestoneKey);
+          saveMilestonesToStorage();
           enqueueCelebration({
             id: milestoneKey,
             kind: 'MILESTONE',
@@ -575,6 +622,7 @@ export function useTelesaleTvLiveCelebration() {
     updateSettings,
     activeCelebration,
     isSpeaking,
+    isFadingOut,
     isQuietHours: isQuietHours(),
     ingestLiveEvents,
     checkMilestones,

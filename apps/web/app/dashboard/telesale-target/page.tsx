@@ -384,11 +384,14 @@ function TelesaleTargetContent() {
         </div>
       </header>
 
-      {/* Real-time Voice & Visual Celebration Banner (MOS-FEAT-83) */}
-      <TelesaleTvLiveCelebrationBanner
-        celebration={liveCelebration.activeCelebration}
-        isSpeaking={liveCelebration.isSpeaking}
-      />
+      {/* Real-time Voice & Visual Celebration Overlay (MOS-FEAT-83 & MOS-BUG-89) */}
+      {!tvModeOpen && (
+        <TelesaleTvLiveCelebrationBanner
+          celebration={liveCelebration.activeCelebration}
+          isSpeaking={liveCelebration.isSpeaking}
+          isFadingOut={liveCelebration.isFadingOut}
+        />
+      )}
 
       {/* Fallback / Error State if overview is null and not loading */}
       {!overview && !loading && (
