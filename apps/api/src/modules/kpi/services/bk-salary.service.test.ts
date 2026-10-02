@@ -527,3 +527,98 @@ test('fetchBkExceptionAdjustedAttendanceMap accurately recalculates work days co
   // Staff 32268 had no exceptions, so retains 18.0
   assert.equal(adjustedMap.get(32268), 18.0);
 });
+
+test('upsertTelesalesAttendanceException handles MANUAL_CHECKIN_OUT validation, persistence, and audit logging (MOS-BUG-91)', async () => {
+  let createdException: any = null;
+  const auditLogs: any[] = [];
+
+  const fastify = {
+    prisma: {
+      crm: {
+        crmStaff: {
+          findFirst: async () => ({ id: 50670, legacyStaffId: 50670, role: 'telesales' }),
+        },
+        crmTeamMember: {
+          findFirst: async () => null,
+        },
+        crmTelesalesAttendanceException: {
+          findUnique: async () => null,
+          create: async ({ data }: { data: any }) => {
+            createdException = {
+              id: 201,
+              ...data,
+              createdAt: new Date('2026-08-11T09:00:00Z'),
+              updatedAt: new Date('2026-08-11T09:00:00Z'),
+            };
+            return createdException;
+          },
+        },
+        crmTelesalesAttendanceExceptionLog: {
+          create: async ({ data }: { data: any }) => {
+            auditLogs.push(data);
+            return { id: auditLogs.length, ...data, createdAt: new Date() };
+          },
+        },
+      },
+    },
+  } as unknown as FastifyInstance;
+
+  // 1. Missing manualInTime must throw
+  await assert.rejects(
+    async () => {
+      await upsertTelesalesAttendanceException(fastify, {
+        staffId: 50670,
+        workDate: '2026-08-11',
+        exceptionType: 'MANUAL_CHECKIN_OUT',
+        reason: 'Máy chấm công lỗi',
+        manualInTime: '',
+        manualOutTime: '17:00',
+      });
+    },
+    { message: /Bắt buộc nhập giờ IN thủ công/ }
+  );
+
+  // 2. Missing manualOutTime must throw
+  await assert.rejects(
+    async () => {
+      await upsertTelesalesAttendanceException(fastify, {
+        staffId: 50670,
+        workDate: '2026-08-11',
+        exceptionType: 'MANUAL_CHECKIN_OUT',
+        reason: 'Máy chấm công lỗi',
+        manualInTime: '08:00',
+        manualOutTime: '  ',
+      });
+    },
+    { message: /Bắt buộc nhập giờ OUT thủ công/ }
+  );
+
+  // 3. Valid MANUAL_CHECKIN_OUT creation
+  const res = await upsertTelesalesAttendanceException(fastify, {
+    staffId: 50670,
+    workDate: '2026-08-11',
+    exceptionType: 'MANUAL_CHECKIN_OUT',
+    reason: 'Nhân viên có đi làm thực tế, chấm công lỗi không ghi nhận IN/OUT. Manager xác nhận.',
+    manualInTime: '08:05',
+    manualOutTime: '17:15',
+    note: 'Đã kiểm tra camera cửa ra vào',
+    performedByStaffId: 1,
+    performedByName: 'Admin Danny',
+  });
+
+  assert.equal(res.success, true);
+  assert.equal(res.exception?.workCredit, 1.0);
+  assert.equal(res.exception?.exceptionType, 'MANUAL_CHECKIN_OUT');
+  assert.equal(res.exception?.manualInTime, '08:05');
+  assert.equal(res.exception?.manualOutTime, '17:15');
+  assert.equal(res.exception?.note, 'Đã kiểm tra camera cửa ra vào');
+
+  assert.equal(auditLogs.length, 1);
+  assert.equal(auditLogs[0].action, 'CREATE');
+  assert.equal(auditLogs[0].newType, 'MANUAL_CHECKIN_OUT');
+  assert.equal(auditLogs[0].newCredit, 1.0);
+  assert.equal(auditLogs[0].manualInTime, '08:05');
+  assert.equal(auditLogs[0].manualOutTime, '17:15');
+  assert.equal(auditLogs[0].note, 'Đã kiểm tra camera cửa ra vào');
+  assert.equal(auditLogs[0].performedByName, 'Admin Danny');
+});

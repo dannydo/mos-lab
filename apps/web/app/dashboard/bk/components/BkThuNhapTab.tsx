@@ -137,6 +137,9 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
   const [selectedWorkLog, setSelectedWorkLog] = useState<BkWorkLogRecord | null>(null);
   const [exceptionType, setExceptionType] = useState<TelesalesAttendanceExceptionType | 'CLEAR'>('OFF_MORNING');
   const [exceptionReason, setExceptionReason] = useState('');
+  const [manualInTime, setManualInTime] = useState('08:00');
+  const [manualOutTime, setManualOutTime] = useState('17:00');
+  const [exceptionNote, setExceptionNote] = useState('');
   const [savingException, setSavingException] = useState(false);
   const [activeDrawerTab, setActiveDrawerTab] = useState<'attendance' | 'audit'>('attendance');
 
@@ -145,9 +148,15 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
     if (row.exception) {
       setExceptionType(row.exception.exceptionType);
       setExceptionReason(row.exception.reason);
+      setManualInTime(row.exception.manualInTime || row.firstIn || '08:00');
+      setManualOutTime(row.exception.manualOutTime || row.lastOut || '17:00');
+      setExceptionNote(row.exception.note || '');
     } else {
       setExceptionType('OFF_MORNING');
       setExceptionReason('');
+      setManualInTime(row.firstIn || '08:00');
+      setManualOutTime(row.lastOut || '17:00');
+      setExceptionNote('');
     }
     setExceptionModalOpen(true);
   };
@@ -161,6 +170,16 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
         message.error('Vui lòng nhập lý do duyệt ngoại lệ (tối thiểu 3 ký tự).');
         return;
       }
+      if (targetType === 'MANUAL_CHECKIN_OUT') {
+        if (!manualInTime.trim()) {
+          message.error('Vui lòng nhập giờ IN thủ công (bắt buộc).');
+          return;
+        }
+        if (!manualOutTime.trim()) {
+          message.error('Vui lòng nhập giờ OUT thủ công (bắt buộc).');
+          return;
+        }
+      }
     }
 
     setSavingException(true);
@@ -170,6 +189,9 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
         workDate: selectedWorkLog.workDate,
         exceptionType: targetType,
         reason: targetType === 'CLEAR' ? exceptionReason.trim() || 'Hủy ngoại lệ chấm công' : exceptionReason.trim(),
+        manualInTime: targetType === 'MANUAL_CHECKIN_OUT' ? manualInTime.trim() : undefined,
+        manualOutTime: targetType === 'MANUAL_CHECKIN_OUT' ? manualOutTime.trim() : undefined,
+        note: targetType === 'MANUAL_CHECKIN_OUT' ? exceptionNote.trim() : undefined,
       });
       message.success(res.message || 'Cập nhật ngoại lệ chấm công thành công!');
       setExceptionModalOpen(false);
@@ -1158,36 +1180,74 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
                               dataIndex: 'firstIn',
                               key: 'firstIn',
                               align: 'center' as const,
-                              width: 120,
-                              render: (val: string | null) =>
-                                val ? (
-                                  <Tag
-                                    color="green"
-                                    className="tabular-nums font-mono font-semibold m-0 text-xs py-0.5 px-2 inline-flex items-center"
-                                  >
-                                    <LoginOutlined className="mr-1" /> {val}
-                                  </Tag>
-                                ) : (
-                                  <Tag className="tabular-nums text-slate-400 m-0 text-[11px]">Chưa quẹt IN</Tag>
-                                ),
+                              width: 130,
+                              render: (val: string | null, r: BkWorkLogRecord) => {
+                                const isManual = r.exception?.exceptionType === 'MANUAL_CHECKIN_OUT';
+                                const manualIn = r.exception?.manualInTime || r.manualInTime;
+                                return (
+                                  <div className="flex flex-col items-center gap-1">
+                                    {val ? (
+                                      <Tag
+                                        color={isManual ? 'default' : 'green'}
+                                        className={`tabular-nums font-mono font-semibold m-0 text-xs py-0.5 px-2 inline-flex items-center ${
+                                          isManual ? 'opacity-60' : ''
+                                        }`}
+                                      >
+                                        <LoginOutlined className="mr-1" /> {val}
+                                      </Tag>
+                                    ) : (
+                                      <Tag className="tabular-nums text-slate-400 m-0 text-[11px]">Chưa quẹt IN</Tag>
+                                    )}
+                                    {isManual && manualIn && (
+                                      <Tooltip title={`Bổ sung IN thủ công: ${manualIn} (Manual / Manager Approved)`}>
+                                        <Tag
+                                          color="cyan"
+                                          className="tabular-nums font-mono font-semibold m-0 text-[10px] py-0.5 px-1.5 inline-flex items-center gap-0.5 border-cyan-400"
+                                        >
+                                          <LoginOutlined /> {manualIn} (Bổ sung)
+                                        </Tag>
+                                      </Tooltip>
+                                    )}
+                                  </div>
+                                );
+                              },
                             },
                             {
                               title: 'Giờ Ra (OUT)',
                               dataIndex: 'lastOut',
                               key: 'lastOut',
                               align: 'center' as const,
-                              width: 120,
-                              render: (val: string | null) =>
-                                val ? (
-                                  <Tag
-                                    color="volcano"
-                                    className="tabular-nums font-mono font-semibold m-0 text-xs py-0.5 px-2 inline-flex items-center"
-                                  >
-                                    <LogoutOutlined className="mr-1" /> {val}
-                                  </Tag>
-                                ) : (
-                                  <Tag className="tabular-nums text-slate-400 m-0 text-[11px]">Chưa quẹt OUT</Tag>
-                                ),
+                              width: 130,
+                              render: (val: string | null, r: BkWorkLogRecord) => {
+                                const isManual = r.exception?.exceptionType === 'MANUAL_CHECKIN_OUT';
+                                const manualOut = r.exception?.manualOutTime || r.manualOutTime;
+                                return (
+                                  <div className="flex flex-col items-center gap-1">
+                                    {val ? (
+                                      <Tag
+                                        color={isManual ? 'default' : 'volcano'}
+                                        className={`tabular-nums font-mono font-semibold m-0 text-xs py-0.5 px-2 inline-flex items-center ${
+                                          isManual ? 'opacity-60' : ''
+                                        }`}
+                                      >
+                                        <LogoutOutlined className="mr-1" /> {val}
+                                      </Tag>
+                                    ) : (
+                                      <Tag className="tabular-nums text-slate-400 m-0 text-[11px]">Chưa quẹt OUT</Tag>
+                                    )}
+                                    {isManual && manualOut && (
+                                      <Tooltip title={`Bổ sung OUT thủ công: ${manualOut} (Manual / Manager Approved)`}>
+                                        <Tag
+                                          color="cyan"
+                                          className="tabular-nums font-mono font-semibold m-0 text-[10px] py-0.5 px-1.5 inline-flex items-center gap-0.5 border-cyan-400"
+                                        >
+                                          <LogoutOutlined /> {manualOut} (Bổ sung)
+                                        </Tag>
+                                      </Tooltip>
+                                    )}
+                                  </div>
+                                );
+                              },
                             },
                             {
                               title: 'Thời Gian Làm',
@@ -1225,6 +1285,34 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
                                                 r.exceptionBadge.text}
                                             </strong>
                                           </div>
+                                          {r.exception?.exceptionType === 'MANUAL_CHECKIN_OUT' && (
+                                            <>
+                                              <div>
+                                                <span className="text-slate-300">IN bổ sung:</span>{' '}
+                                                <strong className="text-cyan-400 font-mono">
+                                                  {r.exception.manualInTime || '--'}
+                                                </strong>
+                                              </div>
+                                              <div>
+                                                <span className="text-slate-300">OUT bổ sung:</span>{' '}
+                                                <strong className="text-cyan-400 font-mono">
+                                                  {r.exception.manualOutTime || '--'}
+                                                </strong>
+                                              </div>
+                                              {r.exception.note && (
+                                                <div>
+                                                  <span className="text-slate-300">Ghi chú:</span>{' '}
+                                                  <span className="italic">{r.exception.note}</span>
+                                                </div>
+                                              )}
+                                              <div>
+                                                <span className="text-slate-300">Đánh dấu:</span>{' '}
+                                                <Tag color="cyan" className="m-0 text-[10px]">
+                                                  Manual / Manager Approved
+                                                </Tag>
+                                              </div>
+                                            </>
+                                          )}
                                           <div>
                                             <span className="text-slate-300">Lý do:</span>{' '}
                                             <strong>{r.exception?.reason}</strong>
@@ -1398,11 +1486,22 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
                               },
                             },
                             {
-                              title: 'Lý Do Duyệt',
-                              dataIndex: 'reason',
-                              key: 'reason',
-                              render: (val: string) => (
-                                <span className="text-xs text-slate-700 dark:text-slate-300">{val}</span>
+                              title: 'Lý Do & Chi Tiết Bổ Sung',
+                              key: 'reasonDetails',
+                              render: (_: any, r: SafeAny) => (
+                                <div className="space-y-1">
+                                  <div className="text-xs text-slate-700 dark:text-slate-300 font-medium">
+                                    {r.reason}
+                                  </div>
+                                  {(r.manualInTime || r.manualOutTime) && (
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <Tag color="cyan" className="tabular-nums font-mono text-[10px] m-0">
+                                        IN: {r.manualInTime || '--'} · OUT: {r.manualOutTime || '--'}
+                                      </Tag>
+                                      {r.note && <span className="text-[11px] text-slate-400 italic">({r.note})</span>}
+                                    </div>
+                                  )}
+                                </div>
                               ),
                             },
                             {
@@ -1618,6 +1717,55 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
               />
             </div>
 
+            {exceptionType === 'MANUAL_CHECKIN_OUT' && (
+              <div className="space-y-3 p-3 rounded-xl bg-cyan-50/70 dark:bg-cyan-950/20 border border-cyan-200 dark:border-cyan-800/50">
+                <div className="text-[11px] text-cyan-800 dark:text-cyan-300 font-medium flex items-center gap-1.5">
+                  <InfoCircleOutlined />
+                  <span>
+                    Dữ liệu gốc máy chấm công được giữ nguyên để đối soát. IN/OUT bổ sung được đánh dấu Manual / Manager
+                    Approved.
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                      <LoginOutlined className="text-emerald-500" /> Giờ IN bổ sung{' '}
+                      <span className="text-rose-500">*</span>:
+                    </label>
+                    <Input
+                      placeholder="HH:mm (VD: 08:00)"
+                      value={manualInTime}
+                      onChange={(e) => setManualInTime(e.target.value)}
+                      className="tabular-nums font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                      <LogoutOutlined className="text-volcano-500" /> Giờ OUT bổ sung{' '}
+                      <span className="text-rose-500">*</span>:
+                    </label>
+                    <Input
+                      placeholder="HH:mm (VD: 17:00)"
+                      value={manualOutTime}
+                      onChange={(e) => setManualOutTime(e.target.value)}
+                      className="tabular-nums font-mono"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Ghi chú thêm (nếu cần):
+                  </label>
+                  <Input
+                    placeholder="Ghi chú nội bộ cho ca làm việc..."
+                    value={exceptionNote}
+                    onChange={(e) => setExceptionNote(e.target.value)}
+                    maxLength={200}
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between">
                 <span>
@@ -1627,7 +1775,11 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
               </label>
               <Input.TextArea
                 rows={3}
-                placeholder="Ví dụ: Đau bụng – xin OFF buổi sáng, Manager duyệt"
+                placeholder={
+                  exceptionType === 'MANUAL_CHECKIN_OUT'
+                    ? 'Nhân viên có đi làm thực tế, chấm công lỗi không ghi nhận IN/OUT. Manager xác nhận.'
+                    : 'Ví dụ: Đau bụng – xin OFF buổi sáng, Manager duyệt'
+                }
                 value={exceptionReason}
                 onChange={(e) => setExceptionReason(e.target.value)}
                 maxLength={500}

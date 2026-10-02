@@ -332,7 +332,8 @@ export type TelesalesAttendanceExceptionType =
   | 'HALF_DAY'
   | 'LATE_EXCUSED'
   | 'EARLY_LEAVE_EXCUSED'
-  | 'OVERTIME_OFF_DAY';
+  | 'OVERTIME_OFF_DAY'
+  | 'MANUAL_CHECKIN_OUT';
 
 export interface TelesalesAttendanceExceptionItem {
   id?: number;
@@ -341,6 +342,9 @@ export interface TelesalesAttendanceExceptionItem {
   exceptionType: TelesalesAttendanceExceptionType;
   workCredit: number; // 0, 0.5, 1.0
   reason: string;
+  manualInTime?: string | null;
+  manualOutTime?: string | null;
+  note?: string | null;
   approvedByStaffId?: number | null;
   approvedByName?: string | null;
   createdAt?: string;
@@ -358,6 +362,9 @@ export interface TelesalesAttendanceExceptionAuditLog {
   previousCredit?: number | null;
   newCredit?: number | null;
   reason: string;
+  manualInTime?: string | null;
+  manualOutTime?: string | null;
+  note?: string | null;
   performedByStaffId?: number | null;
   performedByName?: string | null;
   createdAt: string;
@@ -376,6 +383,8 @@ export interface BkWorkLogRecord {
   status: 'VALID' | 'OFF' | 'ADJUSTED';
   dailySalary: number;
   exception?: TelesalesAttendanceExceptionItem | null;
+  manualInTime?: string | null;
+  manualOutTime?: string | null;
   effectiveWorkCredit?: number;
   exceptionBadge?: {
     text: string;

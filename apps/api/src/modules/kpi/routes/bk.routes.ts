@@ -875,9 +875,12 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       workDate?: string;
       exceptionType?: TelesalesAttendanceExceptionType | 'CLEAR';
       reason?: string;
+      manualInTime?: string;
+      manualOutTime?: string;
+      note?: string;
     };
 
-    const { staffId, workDate, exceptionType, reason } = body || {};
+    const { staffId, workDate, exceptionType, reason, manualInTime, manualOutTime, note } = body || {};
 
     if (!staffId || typeof staffId !== 'number') {
       return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu staffId hoặc staffId không hợp lệ.' });
@@ -904,6 +907,9 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         workDate,
         exceptionType,
         reason,
+        manualInTime,
+        manualOutTime,
+        note,
         performedByStaffId: user.id,
         performedByName: user.displayName || user.username,
       });

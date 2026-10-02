@@ -801,6 +801,9 @@ export async function fetchTelesalesAttendanceExceptions(
           exceptionType: r.exceptionType as TelesalesAttendanceExceptionType,
           workCredit: Number(r.workCredit),
           reason: r.reason,
+          manualInTime: r.manualInTime,
+          manualOutTime: r.manualOutTime,
+          note: r.note,
           approvedByStaffId: r.approvedByStaffId,
           approvedByName: r.approvedByName,
           createdAt: r.createdAt.toISOString(),
@@ -845,6 +848,9 @@ export async function fetchTelesalesAttendanceAuditLogs(
         previousCredit: l.previousCredit !== null ? Number(l.previousCredit) : null,
         newCredit: l.newCredit !== null ? Number(l.newCredit) : null,
         reason: l.reason,
+        manualInTime: l.manualInTime,
+        manualOutTime: l.manualOutTime,
+        note: l.note,
         performedByStaffId: l.performedByStaffId,
         performedByName: l.performedByName,
         createdAt: l.createdAt.toISOString(),
@@ -863,11 +869,24 @@ export async function upsertTelesalesAttendanceException(
     workDate: string;
     exceptionType: TelesalesAttendanceExceptionType | 'CLEAR';
     reason?: string;
+    manualInTime?: string;
+    manualOutTime?: string;
+    note?: string;
     performedByStaffId?: number;
     performedByName?: string;
   }
 ): Promise<{ success: boolean; message: string; exception?: TelesalesAttendanceExceptionItem | null }> {
-  const { staffId, workDate, exceptionType, reason, performedByStaffId, performedByName } = params;
+  const {
+    staffId,
+    workDate,
+    exceptionType,
+    reason,
+    manualInTime,
+    manualOutTime,
+    note,
+    performedByStaffId,
+    performedByName,
+  } = params;
 
   // 1. Verify staff is Telesales Executive
   const isTelesales = await isStaffTelesalesExecutive(fastify, staffId);
@@ -899,6 +918,9 @@ export async function upsertTelesalesAttendanceException(
         previousCredit: Number(existing.workCredit),
         newCredit: null,
         reason: reason?.trim() || 'Hủy ngoại lệ chấm công',
+        manualInTime: null,
+        manualOutTime: null,
+        note: null,
         performedByStaffId,
         performedByName: performedByName || 'Quản lý',
       },
@@ -911,6 +933,20 @@ export async function upsertTelesalesAttendanceException(
   const trimmedReason = reason?.trim();
   if (!trimmedReason || trimmedReason.length < 3) {
     throw new Error('Bắt buộc nhập lý do khi duyệt ngoại lệ chấm công (tối thiểu 3 ký tự).');
+  }
+
+  // Validate manual checkin/checkout times for MANUAL_CHECKIN_OUT (MOS-BUG-91)
+  const trimmedIn = manualInTime?.trim();
+  const trimmedOut = manualOutTime?.trim();
+  const trimmedNote = note?.trim();
+
+  if (exceptionType === 'MANUAL_CHECKIN_OUT') {
+    if (!trimmedIn) {
+      throw new Error('Bắt buộc nhập giờ IN thủ công khi duyệt trường hợp Bổ sung IN/OUT.');
+    }
+    if (!trimmedOut) {
+      throw new Error('Bắt buộc nhập giờ OUT thủ công khi duyệt trường hợp Bổ sung IN/OUT.');
+    }
   }
 
   const opt = TELESALES_ATTENDANCE_EXCEPTION_OPTIONS[exceptionType];
@@ -928,6 +964,9 @@ export async function upsertTelesalesAttendanceException(
         exceptionType,
         workCredit,
         reason: trimmedReason,
+        manualInTime: trimmedIn || null,
+        manualOutTime: trimmedOut || null,
+        note: trimmedNote || null,
         approvedByStaffId: performedByStaffId,
         approvedByName: performedByName,
       },
@@ -939,6 +978,9 @@ export async function upsertTelesalesAttendanceException(
       exceptionType: updated.exceptionType as TelesalesAttendanceExceptionType,
       workCredit: Number(updated.workCredit),
       reason: updated.reason,
+      manualInTime: updated.manualInTime,
+      manualOutTime: updated.manualOutTime,
+      note: updated.note,
       approvedByStaffId: updated.approvedByStaffId,
       approvedByName: updated.approvedByName,
       createdAt: updated.createdAt.toISOString(),
@@ -956,6 +998,9 @@ export async function upsertTelesalesAttendanceException(
         previousCredit: Number(existing.workCredit),
         newCredit: workCredit,
         reason: trimmedReason,
+        manualInTime: trimmedIn || null,
+        manualOutTime: trimmedOut || null,
+        note: trimmedNote || null,
         performedByStaffId,
         performedByName: performedByName || 'Quản lý',
       },
@@ -968,6 +1013,9 @@ export async function upsertTelesalesAttendanceException(
         exceptionType,
         workCredit,
         reason: trimmedReason,
+        manualInTime: trimmedIn || null,
+        manualOutTime: trimmedOut || null,
+        note: trimmedNote || null,
         approvedByStaffId: performedByStaffId,
         approvedByName: performedByName,
       },
@@ -979,6 +1027,9 @@ export async function upsertTelesalesAttendanceException(
       exceptionType: created.exceptionType as TelesalesAttendanceExceptionType,
       workCredit: Number(created.workCredit),
       reason: created.reason,
+      manualInTime: created.manualInTime,
+      manualOutTime: created.manualOutTime,
+      note: created.note,
       approvedByStaffId: created.approvedByStaffId,
       approvedByName: created.approvedByName,
       createdAt: created.createdAt.toISOString(),
@@ -996,6 +1047,9 @@ export async function upsertTelesalesAttendanceException(
         previousCredit: null,
         newCredit: workCredit,
         reason: trimmedReason,
+        manualInTime: trimmedIn || null,
+        manualOutTime: trimmedOut || null,
+        note: trimmedNote || null,
         performedByStaffId,
         performedByName: performedByName || 'Quản lý',
       },
@@ -1496,6 +1550,8 @@ export async function getBkWorkLogs(
       scheduledEnd: r.scheduledEnd ? String(r.scheduledEnd) : null,
       firstIn: r.firstIn ? String(r.firstIn) : null,
       lastOut: r.lastOut ? String(r.lastOut) : null,
+      manualInTime: ex?.manualInTime || null,
+      manualOutTime: ex?.manualOutTime || null,
       workingMinute: minute,
       totalHours: Number((minute / 60).toFixed(2)),
       isCheckIn,
@@ -1525,6 +1581,8 @@ export async function getBkWorkLogs(
         scheduledEnd: null,
         firstIn: null,
         lastOut: null,
+        manualInTime: ex?.manualInTime || null,
+        manualOutTime: ex?.manualOutTime || null,
         workingMinute: 0,
         totalHours: 0,
         isCheckIn: false,

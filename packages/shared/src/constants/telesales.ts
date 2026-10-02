@@ -39,7 +39,8 @@ export interface TelesalesAttendanceExceptionConfigItem {
     | 'HALF_DAY'
     | 'LATE_EXCUSED'
     | 'EARLY_LEAVE_EXCUSED'
-    | 'OVERTIME_OFF_DAY';
+    | 'OVERTIME_OFF_DAY'
+    | 'MANUAL_CHECKIN_OUT';
   label: string;
   shortLabel: string;
   badgeText: string;
@@ -111,5 +112,14 @@ export const TELESALES_ATTENDANCE_EXCEPTION_OPTIONS: Record<string, TelesalesAtt
     badgeColor: 'green',
     workCredit: 1.0,
     description: 'Đi làm bù hoặc trực vào ngày nghỉ/Chủ Nhật, tính cộng thêm 1 ngày công',
+  },
+  MANUAL_CHECKIN_OUT: {
+    type: 'MANUAL_CHECKIN_OUT',
+    label: 'Bổ sung IN/OUT do lỗi hệ thống (Tính đủ 1 công)',
+    shortLabel: 'IN/OUT bổ sung',
+    badgeText: 'IN/OUT BỔ SUNG – MANAGER ĐÃ DUYỆT',
+    badgeColor: 'cyan',
+    workCredit: 1.0,
+    description: 'Bổ sung IN/OUT do lỗi hệ thống chấm công hoặc không ghi nhận, Manager xác nhận tính đủ 1 ngày công',
   },
 };

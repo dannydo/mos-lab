@@ -375,6 +375,9 @@ export const kpiApi = {
       workDate: string;
       exceptionType: TelesalesAttendanceExceptionType | 'CLEAR';
       reason?: string;
+      manualInTime?: string;
+      manualOutTime?: string;
+      note?: string;
     }): Promise<{ success: boolean; message: string; exception?: TelesalesAttendanceExceptionItem | null }> => {
       const response = await api.post('/kpi/bk/attendance-exception', data);
       return response.data;
@@ -470,9 +473,7 @@ export const kpiApi = {
       const response = await api.get('/kpi/telesale-target/tv-journal', { params });
       return response.data;
     },
-    syncTvJournal: async (
-      records: TelesaleTvEventLog[]
-    ): Promise<{ success: boolean; count: number }> => {
+    syncTvJournal: async (records: TelesaleTvEventLog[]): Promise<{ success: boolean; count: number }> => {
       const response = await api.post('/kpi/telesale-target/tv-journal/sync', { records });
       return response.data;
     },

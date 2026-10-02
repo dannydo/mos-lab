@@ -3577,6 +3577,9 @@ model CrmTelesalesAttendanceException {
   exceptionType     String   @map("exception_type") @db.VarChar(30)
   workCredit        Float    @default(1.0) @map("work_credit")
   reason            String   @db.Text
+  manualInTime      String?  @map("manual_in_time") @db.VarChar(20)
+  manualOutTime     String?  @map("manual_out_time") @db.VarChar(20)
+  note              String?  @db.Text
   approvedByStaffId Int?     @map("approved_by_staff_id")
   approvedByName    String?  @map("approved_by_name") @db.VarChar(100)
   createdAt         DateTime @default(now()) @map("created_at") @db.DateTime(0)
@@ -3599,6 +3602,9 @@ model CrmTelesalesAttendanceExceptionLog {
   previousCredit     Float?   @map("previous_credit")
   newCredit          Float?   @map("new_credit")
   reason             String   @db.Text
+  manualInTime       String?  @map("manual_in_time") @db.VarChar(20)
+  manualOutTime      String?  @map("manual_out_time") @db.VarChar(20)
+  note               String?  @db.Text
   performedByStaffId Int?     @map("performed_by_staff_id")
   performedByName    String?  @map("performed_by_name") @db.VarChar(100)
   createdAt          DateTime @default(now()) @map("created_at") @db.DateTime(0)
