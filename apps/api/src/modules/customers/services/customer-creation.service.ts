@@ -240,6 +240,22 @@ export class CustomerCreationService {
         );
       }
 
+      const defaultServiceGroups = ['Product', 'Sauna', 'LashesTop', 'LashesUnder'];
+      for (const serviceGroup of defaultServiceGroups) {
+        await tx.$executeRawUnsafe(
+          `INSERT INTO user_service_type (
+            client_id, client_business_id, client_store_id, user_id,
+            service_group, user_service_type, frequency_point, is_current, date_created
+          ) VALUES (?, ?, ?, ?, ?, ?, 0, 1, NOW())`,
+          11,
+          1,
+          storeId,
+          createdUser.id,
+          serviceGroup,
+          'lead_book'
+        );
+      }
+
       return { id: createdUser.id, name, phone };
     });
 
