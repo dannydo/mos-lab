@@ -91,6 +91,7 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
     updateSettings: updateVoiceSettings,
     activeCelebration,
     isSpeaking,
+    isFadingOut,
     isQuietHours,
     ingestLiveEvents,
     checkMilestones,
@@ -247,7 +248,11 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
   return (
     <div className="fixed inset-0 z-[100] bg-zinc-950 text-zinc-100 flex flex-col justify-between p-4 sm:p-8 lg:p-10 select-none overflow-y-auto font-sans">
       <TelesaleTvCelebration active={showCelebration} onComplete={() => setShowCelebration(false)} />
-      <TelesaleTvLiveCelebrationBanner celebration={activeCelebration} isSpeaking={isSpeaking} />
+      <TelesaleTvLiveCelebrationBanner
+        celebration={activeCelebration}
+        isSpeaking={isSpeaking}
+        isFadingOut={isFadingOut}
+      />
 
       {/* Ambient background glows for TV high-contrast ambiance */}
       <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[140px] pointer-events-none" />
