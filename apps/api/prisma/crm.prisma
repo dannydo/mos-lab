@@ -3567,6 +3567,43 @@ model CrmPilotAssessmentCriterion {
   @@map("crm_pilot_assessment_criteria")
 }
 
+// ═════════════════════════════════════════════════════════════════
+// Telesales Executive Attendance Exceptions & Audit Logs (MOS-BUG-88)
+// ═════════════════════════════════════════════════════════════════
+model CrmTelesalesAttendanceException {
+  id                Int      @id @default(autoincrement())
+  staffId           Int      @map("staff_id")
+  workDate          String   @map("work_date") @db.VarChar(10)
+  exceptionType     String   @map("exception_type") @db.VarChar(30)
+  workCredit        Float    @default(1.0) @map("work_credit")
+  reason            String   @db.Text
+  approvedByStaffId Int?     @map("approved_by_staff_id")
+  approvedByName    String?  @map("approved_by_name") @db.VarChar(100)
+  createdAt         DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.DateTime(0)
 
+  @@unique([staffId, workDate], name: "staffId_workDate")
+  @@index([staffId])
+  @@index([workDate])
+  @@map("crm_telesales_attendance_exceptions")
+}
 
+model CrmTelesalesAttendanceExceptionLog {
+  id                 Int      @id @default(autoincrement())
+  exceptionId        Int?     @map("exception_id")
+  staffId            Int      @map("staff_id")
+  workDate           String   @map("work_date") @db.VarChar(10)
+  action             String   @db.VarChar(20) // CREATE, UPDATE, DELETE
+  previousType       String?  @map("previous_type") @db.VarChar(30)
+  newType            String?  @map("new_type") @db.VarChar(30)
+  previousCredit     Float?   @map("previous_credit")
+  newCredit          Float?   @map("new_credit")
+  reason             String   @db.Text
+  performedByStaffId Int?     @map("performed_by_staff_id")
+  performedByName    String?  @map("performed_by_name") @db.VarChar(100)
+  createdAt          DateTime @default(now()) @map("created_at") @db.DateTime(0)
 
+  @@index([staffId, workDate])
+  @@index([createdAt])
+  @@map("crm_telesales_attendance_exception_logs")
+}

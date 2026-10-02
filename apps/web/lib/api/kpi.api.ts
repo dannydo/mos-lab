@@ -14,6 +14,9 @@ import type {
   BkTipLeaderboardResponse,
   BkTipResponse,
   BkWorkLogResponse,
+  TelesalesAttendanceExceptionType,
+  TelesalesAttendanceExceptionItem,
+  TelesalesAttendanceExceptionAuditLog,
   BkGame,
   BkGameCreateInput,
   BkGameUpdateInput,
@@ -363,6 +366,23 @@ export const kpiApi = {
       dateTo?: string;
     }): Promise<BkWorkLogResponse> => {
       const response = await api.get('/kpi/bk/work-logs', { params });
+      return response.data;
+    },
+    saveAttendanceException: async (data: {
+      staffId: number;
+      workDate: string;
+      exceptionType: TelesalesAttendanceExceptionType | 'CLEAR';
+      reason?: string;
+    }): Promise<{ success: boolean; message: string; exception?: TelesalesAttendanceExceptionItem | null }> => {
+      const response = await api.post('/kpi/bk/attendance-exception', data);
+      return response.data;
+    },
+    getAttendanceExceptionAuditLogs: async (params?: {
+      staffId?: number;
+      dateFrom?: string;
+      dateTo?: string;
+    }): Promise<{ data: TelesalesAttendanceExceptionAuditLog[]; total: number }> => {
+      const response = await api.get('/kpi/bk/attendance-exception/audit-logs', { params });
       return response.data;
     },
     getConfig: async (): Promise<BkConfigResponse> => {

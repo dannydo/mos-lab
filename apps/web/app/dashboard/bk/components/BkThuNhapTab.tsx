@@ -4,7 +4,24 @@ import { MobileRecordList, TableIndexHeader } from '~/components/ui';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import dayjs from 'dayjs';
-import { Card, Table, Tag, Modal, Typography, Row, Col, Statistic, theme, Space, Button, Tooltip } from 'antd';
+import {
+  Card,
+  Table,
+  Tag,
+  Modal,
+  Typography,
+  Row,
+  Col,
+  Statistic,
+  theme,
+  Space,
+  Button,
+  Tooltip,
+  Select,
+  Input,
+  Tabs,
+  message,
+} from 'antd';
 import {
   WalletOutlined,
   EyeOutlined,
@@ -18,11 +35,17 @@ import {
   CalendarOutlined,
   LoginOutlined,
   LogoutOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  HistoryOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons';
 import {
   BkPaystubRecord,
   BkWorkLogRecord,
   BkWorkLogResponse,
+  TelesalesAttendanceExceptionType,
+  TELESALES_ATTENDANCE_EXCEPTION_OPTIONS,
   type ReportComparisonMode,
   calculateFractionToday,
 } from '@mos-lab/shared';
@@ -107,6 +130,59 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
       console.error('Error fetching BK work logs:', err);
     } finally {
       setWorkLogLoading(false);
+    }
+  };
+
+  const [exceptionModalOpen, setExceptionModalOpen] = useState(false);
+  const [selectedWorkLog, setSelectedWorkLog] = useState<BkWorkLogRecord | null>(null);
+  const [exceptionType, setExceptionType] = useState<TelesalesAttendanceExceptionType | 'CLEAR'>('OFF_MORNING');
+  const [exceptionReason, setExceptionReason] = useState('');
+  const [savingException, setSavingException] = useState(false);
+  const [activeDrawerTab, setActiveDrawerTab] = useState<'attendance' | 'audit'>('attendance');
+
+  const openExceptionModal = (row: BkWorkLogRecord) => {
+    setSelectedWorkLog(row);
+    if (row.exception) {
+      setExceptionType(row.exception.exceptionType);
+      setExceptionReason(row.exception.reason);
+    } else {
+      setExceptionType('OFF_MORNING');
+      setExceptionReason('');
+    }
+    setExceptionModalOpen(true);
+  };
+
+  const handleSaveException = async (overrideType?: TelesalesAttendanceExceptionType | 'CLEAR') => {
+    if (!workLogRecord || !selectedWorkLog) return;
+    const targetType = overrideType || exceptionType;
+
+    if (targetType !== 'CLEAR') {
+      if (!exceptionReason.trim() || exceptionReason.trim().length < 3) {
+        message.error('Vui lòng nhập lý do duyệt ngoại lệ (tối thiểu 3 ký tự).');
+        return;
+      }
+    }
+
+    setSavingException(true);
+    try {
+      const res = await apiClient.bk.saveAttendanceException({
+        staffId: workLogRecord.staffId,
+        workDate: selectedWorkLog.workDate,
+        exceptionType: targetType,
+        reason: targetType === 'CLEAR' ? exceptionReason.trim() || 'Hủy ngoại lệ chấm công' : exceptionReason.trim(),
+      });
+      message.success(res.message || 'Cập nhật ngoại lệ chấm công thành công!');
+      setExceptionModalOpen(false);
+
+      // Refresh work logs
+      await handleOpenWorkLogs(workLogRecord);
+      // Refresh main paystub table & stats
+      await fetchPaystub();
+    } catch (err: any) {
+      console.error('Error saving exception:', err);
+      message.error(err?.response?.data?.message || err?.message || 'Lỗi khi lưu ngoại lệ chấm công.');
+    } finally {
+      setSavingException(false);
     }
   };
 
@@ -927,7 +1003,7 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
       {workLogRecord && (
         <Modal
           title={
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 pr-6">
               <ClockCircleOutlined className="text-blue-500 text-lg" />
               <span>
                 Báo Cáo Chi Tiết Chấm Công (IN/OUT) - Booker:{' '}
@@ -936,12 +1012,17 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
               <Tag color={workLogRecord.store === 'PXL' ? 'blue' : 'purple'} className="ml-2 font-mono">
                 {workLogRecord.store}
               </Tag>
+              {workLogData?.isTelesalesExecutive && (
+                <Tag color="cyan" className="font-semibold text-xs py-0.5">
+                  Vai trò: Telesales Executive
+                </Tag>
+              )}
             </div>
           }
           open={workLogModalOpen}
           onCancel={() => setWorkLogModalOpen(false)}
           footer={null}
-          width={880}
+          width={920}
           destroyOnHidden
         >
           {workLogLoading ? (
@@ -977,7 +1058,11 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
                       title={<span className="text-xs text-slate-500 uppercase font-semibold">∑ Quẹt Thẻ Máy</span>}
                       value={workLogData.actualCheckInDays}
                       suffix={
-                        workLogData.workDaysAdjustment > 0 ? `(+${workLogData.workDaysAdjustment} duyệt)` : 'ngày'
+                        workLogData.workDaysAdjustment > 0
+                          ? `(+${workLogData.workDaysAdjustment} duyệt)`
+                          : workLogData.workDaysAdjustment < 0
+                            ? `(${workLogData.workDaysAdjustment} duyệt)`
+                            : 'ngày'
                       }
                       className="[&_.ant-statistic-content-value]:text-emerald-600 dark:[&_.ant-statistic-content-value]:text-emerald-400"
                       valueStyle={{ fontSize: '15px', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
@@ -1017,127 +1102,594 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
                 </Col>
               </Row>
 
-              {/* Table of Daily IN/OUT */}
-              <Table
-                dataSource={workLogData.data}
-                rowKey="workDate"
-                size="small"
-                pagination={{ pageSize: 15, showSizeChanger: true, pageSizeOptions: ['15', '31', '50'] }}
-                bordered
-                columns={[
-                  {
-                    title: 'Ngày Làm Việc',
-                    dataIndex: 'workDate',
-                    key: 'workDate',
-                    width: 140,
-                    render: (val: string, r: BkWorkLogRecord) => (
-                      <div className="flex flex-col">
-                        <span className="font-semibold tabular-nums text-slate-800 dark:text-slate-200 text-xs">
-                          {val}
+              {workLogData.isTelesalesExecutive && (
+                <div className="p-3 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <InfoCircleOutlined className="text-blue-500 text-sm shrink-0" />
+                    <span>
+                      Hệ thống áp dụng <strong>Ngoại lệ chấm công</strong> theo ngày cho Telesales Executive. Giờ
+                      check-in/out thực tế của máy luôn được lưu trữ toàn vẹn để đối soát.
+                    </span>
+                  </div>
+                  {(workLogData.summary.totalExceptionDays || 0) > 0 && (
+                    <Tag color="orange" className="font-bold tabular-nums m-0">
+                      {workLogData.summary.totalExceptionDays} ngày đã duyệt ngoại lệ
+                    </Tag>
+                  )}
+                </div>
+              )}
+
+              {workLogData.isTelesalesExecutive ? (
+                <Tabs
+                  activeKey={activeDrawerTab}
+                  onChange={(k) => setActiveDrawerTab(k as 'attendance' | 'audit')}
+                  items={[
+                    {
+                      key: 'attendance',
+                      label: (
+                        <span className="flex items-center gap-1.5 font-medium">
+                          <ClockCircleOutlined /> Ca làm việc & Chấm công
                         </span>
-                        <span className="text-[11px] text-slate-500">{r.dayOfWeek}</span>
-                      </div>
-                    ),
-                  },
-                  {
-                    title: 'Giờ Vào (IN)',
-                    dataIndex: 'firstIn',
-                    key: 'firstIn',
-                    align: 'center' as const,
-                    width: 130,
-                    render: (val: string | null) =>
-                      val ? (
-                        <Tag
-                          color="green"
-                          className="tabular-nums font-mono font-semibold m-0 text-xs py-0.5 px-2 inline-flex items-center"
-                        >
-                          <LoginOutlined className="mr-1" /> {val}
-                        </Tag>
-                      ) : (
-                        <Tag className="tabular-nums text-slate-400 m-0 text-[11px]">Chưa quẹt IN</Tag>
                       ),
-                  },
-                  {
-                    title: 'Giờ Ra (OUT)',
-                    dataIndex: 'lastOut',
-                    key: 'lastOut',
-                    align: 'center' as const,
-                    width: 130,
-                    render: (val: string | null) =>
-                      val ? (
-                        <Tag
-                          color="volcano"
-                          className="tabular-nums font-mono font-semibold m-0 text-xs py-0.5 px-2 inline-flex items-center"
-                        >
-                          <LogoutOutlined className="mr-1" /> {val}
-                        </Tag>
-                      ) : (
-                        <Tag className="tabular-nums text-slate-400 m-0 text-[11px]">Chưa quẹt OUT</Tag>
+                      children: (
+                        <Table
+                          dataSource={workLogData.data}
+                          rowKey="workDate"
+                          size="small"
+                          pagination={{ pageSize: 15, showSizeChanger: true, pageSizeOptions: ['15', '31', '50'] }}
+                          bordered
+                          columns={[
+                            {
+                              title: 'Ngày Làm Việc',
+                              dataIndex: 'workDate',
+                              key: 'workDate',
+                              width: 130,
+                              render: (val: string, r: BkWorkLogRecord) => (
+                                <div className="flex flex-col">
+                                  <span className="font-semibold tabular-nums text-slate-800 dark:text-slate-200 text-xs">
+                                    {val}
+                                  </span>
+                                  <span className="text-[11px] text-slate-500">{r.dayOfWeek}</span>
+                                </div>
+                              ),
+                            },
+                            {
+                              title: 'Giờ Vào (IN)',
+                              dataIndex: 'firstIn',
+                              key: 'firstIn',
+                              align: 'center' as const,
+                              width: 120,
+                              render: (val: string | null) =>
+                                val ? (
+                                  <Tag
+                                    color="green"
+                                    className="tabular-nums font-mono font-semibold m-0 text-xs py-0.5 px-2 inline-flex items-center"
+                                  >
+                                    <LoginOutlined className="mr-1" /> {val}
+                                  </Tag>
+                                ) : (
+                                  <Tag className="tabular-nums text-slate-400 m-0 text-[11px]">Chưa quẹt IN</Tag>
+                                ),
+                            },
+                            {
+                              title: 'Giờ Ra (OUT)',
+                              dataIndex: 'lastOut',
+                              key: 'lastOut',
+                              align: 'center' as const,
+                              width: 120,
+                              render: (val: string | null) =>
+                                val ? (
+                                  <Tag
+                                    color="volcano"
+                                    className="tabular-nums font-mono font-semibold m-0 text-xs py-0.5 px-2 inline-flex items-center"
+                                  >
+                                    <LogoutOutlined className="mr-1" /> {val}
+                                  </Tag>
+                                ) : (
+                                  <Tag className="tabular-nums text-slate-400 m-0 text-[11px]">Chưa quẹt OUT</Tag>
+                                ),
+                            },
+                            {
+                              title: 'Thời Gian Làm',
+                              dataIndex: 'workingMinute',
+                              key: 'workingMinute',
+                              align: 'right' as const,
+                              width: 110,
+                              render: (val: number, r: BkWorkLogRecord) => (
+                                <div className="text-right">
+                                  <span className="tabular-nums font-semibold text-xs text-slate-700 dark:text-slate-300">
+                                    {val > 0 ? `${val} phút` : '--'}
+                                  </span>
+                                  {val > 0 && (
+                                    <span className="block text-[10px] text-slate-400">({r.totalHours}h)</span>
+                                  )}
+                                </div>
+                              ),
+                            },
+                            {
+                              title: 'Trạng Thái',
+                              dataIndex: 'isCheckIn',
+                              key: 'isCheckIn',
+                              align: 'center' as const,
+                              width: 140,
+                              render: (isCheckIn: boolean, r: BkWorkLogRecord) => {
+                                if (r.exceptionBadge) {
+                                  return (
+                                    <Tooltip
+                                      title={
+                                        <div className="text-xs space-y-1">
+                                          <div>
+                                            <span className="text-slate-300">Loại ngoại lệ:</span>{' '}
+                                            <strong>
+                                              {TELESALES_ATTENDANCE_EXCEPTION_OPTIONS[r.exceptionBadge.type]?.label ||
+                                                r.exceptionBadge.text}
+                                            </strong>
+                                          </div>
+                                          <div>
+                                            <span className="text-slate-300">Lý do:</span>{' '}
+                                            <strong>{r.exception?.reason}</strong>
+                                          </div>
+                                          {r.exception?.approvedByName && (
+                                            <div>
+                                              <span className="text-slate-300">Duyệt bởi:</span>{' '}
+                                              {r.exception.approvedByName}
+                                            </div>
+                                          )}
+                                          {r.exception?.updatedAt && (
+                                            <div>
+                                              <span className="text-slate-300">Thời gian:</span>{' '}
+                                              {dayjs(r.exception.updatedAt).format('DD/MM/YYYY HH:mm')}
+                                            </div>
+                                          )}
+                                          <div>
+                                            <span className="text-slate-300">Ngày công tính lại:</span>{' '}
+                                            <strong className="text-emerald-400">
+                                              {r.effectiveWorkCredit} ngày công
+                                            </strong>
+                                          </div>
+                                        </div>
+                                      }
+                                    >
+                                      <Tag
+                                        color={r.exceptionBadge.color}
+                                        className="text-[11px] font-semibold m-0 cursor-help"
+                                      >
+                                        {r.exceptionBadge.text}
+                                      </Tag>
+                                    </Tooltip>
+                                  );
+                                }
+                                if (isCheckIn) {
+                                  return (
+                                    <Tag color="success" className="text-[11px] m-0">
+                                      Đủ công
+                                    </Tag>
+                                  );
+                                }
+                                if (r.dayOfWeek === 'Chủ Nhật') {
+                                  return (
+                                    <Tag color="default" className="text-[11px] m-0 text-slate-400">
+                                      Chủ Nhật (OFF)
+                                    </Tag>
+                                  );
+                                }
+                                return (
+                                  <Tag color="warning" className="text-[11px] m-0">
+                                    Nghỉ (OFF)
+                                  </Tag>
+                                );
+                              },
+                            },
+                            {
+                              title: 'Lương Ngày',
+                              dataIndex: 'dailySalary',
+                              key: 'dailySalary',
+                              align: 'right' as const,
+                              width: 120,
+                              render: (val: number) => (
+                                <span
+                                  className={`tabular-nums font-semibold text-xs ${
+                                    val > 0 ? 'text-blue-500' : 'text-slate-400'
+                                  }`}
+                                >
+                                  {val > 0 ? formatCurrency(val) : '0 ₫'}
+                                </span>
+                              ),
+                            },
+                            {
+                              title: 'Ngoại Lệ',
+                              key: 'exceptionAction',
+                              align: 'center' as const,
+                              width: 120,
+                              render: (_: any, r: BkWorkLogRecord) => {
+                                if (workLogData.canManageExceptions) {
+                                  return (
+                                    <Button
+                                      size="small"
+                                      type={r.exception ? 'primary' : 'default'}
+                                      ghost={!!r.exception}
+                                      icon={<EditOutlined />}
+                                      className="text-[11px] font-medium"
+                                      onClick={() => openExceptionModal(r)}
+                                    >
+                                      {r.exception ? 'Sửa' : 'Duyệt'}
+                                    </Button>
+                                  );
+                                }
+                                return (
+                                  <Tooltip title="Chỉ Quản lý (Manager) hoặc Admin mới có quyền thao tác">
+                                    <span className="text-[11px] text-slate-400 italic">Chỉ xem</span>
+                                  </Tooltip>
+                                );
+                              },
+                            },
+                          ]}
+                        />
                       ),
-                  },
-                  {
-                    title: 'Thời Gian Làm',
-                    dataIndex: 'workingMinute',
-                    key: 'workingMinute',
-                    align: 'right' as const,
-                    width: 130,
-                    render: (val: number, r: BkWorkLogRecord) => (
-                      <div className="text-right">
-                        <span className="tabular-nums font-semibold text-xs text-slate-700 dark:text-slate-300">
-                          {val > 0 ? `${val} phút` : '--'}
-                        </span>
-                        {val > 0 && <span className="block text-[10px] text-slate-400">({r.totalHours}h)</span>}
-                      </div>
-                    ),
-                  },
-                  {
-                    title: 'Trạng Thái',
-                    dataIndex: 'isCheckIn',
-                    key: 'isCheckIn',
-                    align: 'center' as const,
-                    width: 130,
-                    render: (isCheckIn: boolean, r: BkWorkLogRecord) => {
-                      if (isCheckIn) {
-                        return (
-                          <Tag color="success" className="text-[11px] m-0">
-                            Đủ công
-                          </Tag>
-                        );
-                      }
-                      if (r.dayOfWeek === 'Chủ Nhật') {
-                        return (
-                          <Tag color="default" className="text-[11px] m-0 text-slate-400">
-                            Chủ Nhật (OFF)
-                          </Tag>
-                        );
-                      }
-                      return (
-                        <Tag color="warning" className="text-[11px] m-0">
-                          Nghỉ (OFF)
-                        </Tag>
-                      );
                     },
-                  },
-                  {
-                    title: 'Lương Ngày',
-                    dataIndex: 'dailySalary',
-                    key: 'dailySalary',
-                    align: 'right' as const,
-                    width: 130,
-                    render: (val: number) => (
-                      <span
-                        className={`tabular-nums font-semibold text-xs ${val > 0 ? 'text-blue-500' : 'text-slate-400'}`}
-                      >
-                        {val > 0 ? formatCurrency(val) : '0 ₫'}
-                      </span>
-                    ),
-                  },
-                ]}
-              />
+                    {
+                      key: 'audit',
+                      label: (
+                        <span className="flex items-center gap-1.5 font-medium">
+                          <HistoryOutlined /> Lịch sử Audit Log ({workLogData.auditLogs?.length || 0})
+                        </span>
+                      ),
+                      children: (
+                        <Table
+                          dataSource={workLogData.auditLogs || []}
+                          rowKey="id"
+                          size="small"
+                          pagination={{ pageSize: 10 }}
+                          bordered
+                          locale={{ emptyText: 'Chưa có lịch sử điều chỉnh ngoại lệ chấm công' }}
+                          columns={[
+                            {
+                              title: 'Thời Gian Chỉnh',
+                              dataIndex: 'createdAt',
+                              key: 'createdAt',
+                              width: 150,
+                              render: (val: string) => (
+                                <span className="tabular-nums text-xs text-slate-600 dark:text-slate-300 font-mono">
+                                  {dayjs(val).format('DD/MM/YYYY HH:mm:ss')}
+                                </span>
+                              ),
+                            },
+                            {
+                              title: 'Ngày Làm Việc',
+                              dataIndex: 'workDate',
+                              key: 'workDate',
+                              width: 110,
+                              render: (val: string) => (
+                                <span className="tabular-nums text-xs font-semibold">{val}</span>
+                              ),
+                            },
+                            {
+                              title: 'Hành Động',
+                              dataIndex: 'action',
+                              key: 'action',
+                              width: 110,
+                              align: 'center' as const,
+                              render: (val: string) =>
+                                val === 'CREATE' ? (
+                                  <Tag color="blue">Thêm mới</Tag>
+                                ) : val === 'UPDATE' ? (
+                                  <Tag color="orange">Cập nhật</Tag>
+                                ) : (
+                                  <Tag color="red">Xóa</Tag>
+                                ),
+                            },
+                            {
+                              title: 'Trạng Thái Trước → Sau',
+                              key: 'statusChange',
+                              width: 220,
+                              render: (_: any, r: SafeAny) => {
+                                const prevLabel = r.previousType
+                                  ? TELESALES_ATTENDANCE_EXCEPTION_OPTIONS[r.previousType]?.shortLabel || r.previousType
+                                  : 'Mặc định';
+                                const nextLabel = r.newType
+                                  ? TELESALES_ATTENDANCE_EXCEPTION_OPTIONS[r.newType]?.shortLabel || r.newType
+                                  : 'Mặc định';
+                                return (
+                                  <span className="text-xs">
+                                    <span className="text-slate-400">{prevLabel}</span> →{' '}
+                                    <strong className="text-emerald-500">{nextLabel}</strong>
+                                  </span>
+                                );
+                              },
+                            },
+                            {
+                              title: 'Lý Do Duyệt',
+                              dataIndex: 'reason',
+                              key: 'reason',
+                              render: (val: string) => (
+                                <span className="text-xs text-slate-700 dark:text-slate-300">{val}</span>
+                              ),
+                            },
+                            {
+                              title: 'Người Chỉnh',
+                              dataIndex: 'performedByName',
+                              key: 'performedByName',
+                              width: 130,
+                              render: (val: string) => (
+                                <span className="text-xs font-semibold text-blue-500">{val || 'Quản lý'}</span>
+                              ),
+                            },
+                          ]}
+                        />
+                      ),
+                    },
+                  ]}
+                />
+              ) : (
+                <Table
+                  dataSource={workLogData.data}
+                  rowKey="workDate"
+                  size="small"
+                  pagination={{ pageSize: 15, showSizeChanger: true, pageSizeOptions: ['15', '31', '50'] }}
+                  bordered
+                  columns={[
+                    {
+                      title: 'Ngày Làm Việc',
+                      dataIndex: 'workDate',
+                      key: 'workDate',
+                      width: 140,
+                      render: (val: string, r: BkWorkLogRecord) => (
+                        <div className="flex flex-col">
+                          <span className="font-semibold tabular-nums text-slate-800 dark:text-slate-200 text-xs">
+                            {val}
+                          </span>
+                          <span className="text-[11px] text-slate-500">{r.dayOfWeek}</span>
+                        </div>
+                      ),
+                    },
+                    {
+                      title: 'Giờ Vào (IN)',
+                      dataIndex: 'firstIn',
+                      key: 'firstIn',
+                      align: 'center' as const,
+                      width: 130,
+                      render: (val: string | null) =>
+                        val ? (
+                          <Tag
+                            color="green"
+                            className="tabular-nums font-mono font-semibold m-0 text-xs py-0.5 px-2 inline-flex items-center"
+                          >
+                            <LoginOutlined className="mr-1" /> {val}
+                          </Tag>
+                        ) : (
+                          <Tag className="tabular-nums text-slate-400 m-0 text-[11px]">Chưa quẹt IN</Tag>
+                        ),
+                    },
+                    {
+                      title: 'Giờ Ra (OUT)',
+                      dataIndex: 'lastOut',
+                      key: 'lastOut',
+                      align: 'center' as const,
+                      width: 130,
+                      render: (val: string | null) =>
+                        val ? (
+                          <Tag
+                            color="volcano"
+                            className="tabular-nums font-mono font-semibold m-0 text-xs py-0.5 px-2 inline-flex items-center"
+                          >
+                            <LogoutOutlined className="mr-1" /> {val}
+                          </Tag>
+                        ) : (
+                          <Tag className="tabular-nums text-slate-400 m-0 text-[11px]">Chưa quẹt OUT</Tag>
+                        ),
+                    },
+                    {
+                      title: 'Thời Gian Làm',
+                      dataIndex: 'workingMinute',
+                      key: 'workingMinute',
+                      align: 'right' as const,
+                      width: 130,
+                      render: (val: number, r: BkWorkLogRecord) => (
+                        <div className="text-right">
+                          <span className="tabular-nums font-semibold text-xs text-slate-700 dark:text-slate-300">
+                            {val > 0 ? `${val} phút` : '--'}
+                          </span>
+                          {val > 0 && <span className="block text-[10px] text-slate-400">({r.totalHours}h)</span>}
+                        </div>
+                      ),
+                    },
+                    {
+                      title: 'Trạng Thái',
+                      dataIndex: 'isCheckIn',
+                      key: 'isCheckIn',
+                      align: 'center' as const,
+                      width: 130,
+                      render: (isCheckIn: boolean, r: BkWorkLogRecord) => {
+                        if (isCheckIn) {
+                          return (
+                            <Tag color="success" className="text-[11px] m-0">
+                              Đủ công
+                            </Tag>
+                          );
+                        }
+                        if (r.dayOfWeek === 'Chủ Nhật') {
+                          return (
+                            <Tag color="default" className="text-[11px] m-0 text-slate-400">
+                              Chủ Nhật (OFF)
+                            </Tag>
+                          );
+                        }
+                        return (
+                          <Tag color="warning" className="text-[11px] m-0">
+                            Nghỉ (OFF)
+                          </Tag>
+                        );
+                      },
+                    },
+                    {
+                      title: 'Lương Ngày',
+                      dataIndex: 'dailySalary',
+                      key: 'dailySalary',
+                      align: 'right' as const,
+                      width: 130,
+                      render: (val: number) => (
+                        <span
+                          className={`tabular-nums font-semibold text-xs ${
+                            val > 0 ? 'text-blue-500' : 'text-slate-400'
+                          }`}
+                        >
+                          {val > 0 ? formatCurrency(val) : '0 ₫'}
+                        </span>
+                      ),
+                    },
+                  ]}
+                />
+              )}
             </div>
           ) : null}
         </Modal>
       )}
+
+      {/* Modal Duyệt / Chỉnh sửa Ngoại lệ Chấm công (MOS-BUG-88) */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2">
+            <EditOutlined className="text-amber-500 text-lg" />
+            <span>
+              Ngoại lệ chấm công: <strong className="text-blue-500">{selectedWorkLog?.workDate}</strong> (
+              {selectedWorkLog?.dayOfWeek})
+            </span>
+          </div>
+        }
+        open={exceptionModalOpen}
+        onCancel={() => setExceptionModalOpen(false)}
+        footer={null}
+        width={560}
+        destroyOnHidden
+      >
+        {selectedWorkLog && workLogData && (
+          <div className="space-y-4 py-3">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs space-y-1.5">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Nhân viên:</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">
+                  {workLogRecord?.staffName} ·{' '}
+                  <Tag color="cyan" className="m-0 text-[10px]">
+                    Telesales Executive
+                  </Tag>
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">Dữ liệu máy quẹt thẻ:</span>
+                <span className="font-mono tabular-nums text-slate-700 dark:text-slate-300">
+                  IN: {selectedWorkLog.firstIn || 'Chưa quẹt'} · OUT: {selectedWorkLog.lastOut || 'Chưa quẹt'} (
+                  {selectedWorkLog.workingMinute} phút)
+                </span>
+              </div>
+              <div className="text-[11px] text-slate-400 italic">
+                * Giờ Check-in / Check-out thực tế trên hệ thống được giữ nguyên 100% để đối soát.
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Loại ngoại lệ chấm công <span className="text-rose-500">*</span>:
+              </label>
+              <Select
+                value={exceptionType}
+                onChange={(val) => setExceptionType(val as any)}
+                className="w-full"
+                options={[
+                  ...Object.values(TELESALES_ATTENDANCE_EXCEPTION_OPTIONS).map((opt) => ({
+                    value: opt.type,
+                    label: (
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">{opt.label}</span>
+                        <Tag color={opt.badgeColor} className="m-0 text-[10px]">
+                          {opt.badgeText}
+                        </Tag>
+                      </div>
+                    ),
+                  })),
+                  ...(selectedWorkLog.exception
+                    ? [
+                        {
+                          value: 'CLEAR' as const,
+                          label: <span className="text-slate-400">(Hủy ngoại lệ · Quay về chấm công theo máy)</span>,
+                        },
+                      ]
+                    : []),
+                ]}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <span>
+                  Lý do duyệt ngoại lệ <span className="text-rose-500">*</span>:
+                </span>
+                <span className="text-[11px] text-slate-400 font-normal">Bắt buộc nhập lý do</span>
+              </label>
+              <Input.TextArea
+                rows={3}
+                placeholder="Ví dụ: Đau bụng – xin OFF buổi sáng, Manager duyệt"
+                value={exceptionReason}
+                onChange={(e) => setExceptionReason(e.target.value)}
+                maxLength={500}
+                showCount
+              />
+            </div>
+
+            {/* Preview Box */}
+            {(() => {
+              const opt = exceptionType !== 'CLEAR' ? TELESALES_ATTENDANCE_EXCEPTION_OPTIONS[exceptionType] : null;
+              const credit = opt ? opt.workCredit : selectedWorkLog.isCheckIn ? 1.0 : 0.0;
+              const dailyRate =
+                workLogData.standardWorkDays > 0
+                  ? Math.round(workLogData.monthlyBaseSalary / workLogData.standardWorkDays)
+                  : 0;
+              const previewDailySalary = Math.round(credit * dailyRate);
+
+              return (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-1.5 tabular-nums">
+                  <div className="font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                    <InfoCircleOutlined />
+                    <span>Xem trước kết quả tự động tính lại:</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pt-1 text-slate-700 dark:text-slate-300">
+                    <div>
+                      <span className="text-slate-500">Ngày công tính lại:</span>{' '}
+                      <strong className="text-blue-600 dark:text-blue-400 font-bold">{credit} ngày công</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Lương ngày tính lại:</span>{' '}
+                      <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
+                        {formatCurrency(previewDailySalary)}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div className="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-slate-700">
+              {selectedWorkLog.exception ? (
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  loading={savingException}
+                  onClick={() => handleSaveException('CLEAR')}
+                >
+                  Hủy ngoại lệ
+                </Button>
+              ) : (
+                <div />
+              )}
+              <Space>
+                <Button onClick={() => setExceptionModalOpen(false)}>Đóng</Button>
+                <Button type="primary" loading={savingException} onClick={() => handleSaveException()}>
+                  Lưu ngoại lệ
+                </Button>
+              </Space>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

@@ -325,6 +325,44 @@ export interface BkConfigResponse {
   allStaffOptions: BkStaffOption[];
 }
 
+export type TelesalesAttendanceExceptionType =
+  | 'OFF_MORNING'
+  | 'OFF_AFTERNOON'
+  | 'OFF_FULL_DAY'
+  | 'HALF_DAY'
+  | 'LATE_EXCUSED'
+  | 'EARLY_LEAVE_EXCUSED'
+  | 'OVERTIME_OFF_DAY';
+
+export interface TelesalesAttendanceExceptionItem {
+  id?: number;
+  staffId: number;
+  workDate: string; // YYYY-MM-DD
+  exceptionType: TelesalesAttendanceExceptionType;
+  workCredit: number; // 0, 0.5, 1.0
+  reason: string;
+  approvedByStaffId?: number | null;
+  approvedByName?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface TelesalesAttendanceExceptionAuditLog {
+  id: number;
+  exceptionId?: number | null;
+  staffId: number;
+  workDate: string;
+  action: 'CREATE' | 'UPDATE' | 'DELETE';
+  previousType?: string | null;
+  newType?: string | null;
+  previousCredit?: number | null;
+  newCredit?: number | null;
+  reason: string;
+  performedByStaffId?: number | null;
+  performedByName?: string | null;
+  createdAt: string;
+}
+
 export interface BkWorkLogRecord {
   workDate: string;
   dayOfWeek: string;
@@ -337,6 +375,13 @@ export interface BkWorkLogRecord {
   isCheckIn: boolean;
   status: 'VALID' | 'OFF' | 'ADJUSTED';
   dailySalary: number;
+  exception?: TelesalesAttendanceExceptionItem | null;
+  effectiveWorkCredit?: number;
+  exceptionBadge?: {
+    text: string;
+    color: string;
+    type: TelesalesAttendanceExceptionType;
+  } | null;
 }
 
 export interface BkWorkLogResponse {
@@ -344,6 +389,8 @@ export interface BkWorkLogResponse {
   staffName: string;
   avatar?: string | null;
   store: string;
+  isTelesalesExecutive?: boolean;
+  canManageExceptions?: boolean;
   monthlyBaseSalary: number;
   standardWorkDays: number;
   actualWorkDays: number;
@@ -356,6 +403,8 @@ export interface BkWorkLogResponse {
     totalWorkingMinutes: number;
     totalWorkingHours: number;
     totalDailySalary: number;
+    totalExceptionDays?: number;
   };
   data: BkWorkLogRecord[];
+  auditLogs?: TelesalesAttendanceExceptionAuditLog[];
 }

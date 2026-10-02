@@ -3,11 +3,17 @@ import test from 'node:test';
 import type { FastifyInstance } from 'fastify';
 import {
   calculateStandardWorkDays,
+  canUserManageTelesalesAttendance,
   computeBkOrderCheckins,
   fetchBkAttendanceMap,
+  fetchBkExceptionAdjustedAttendanceMap,
+  fetchTelesalesAttendanceAuditLogs,
+  fetchTelesalesAttendanceExceptions,
   getActiveBkTelesalesIds,
   getBkWorkDaysOverrides,
+  isStaffTelesalesExecutive,
   resolveBkTelesalesStaffScope,
+  upsertTelesalesAttendanceException,
 } from './bk-salary.service.js';
 
 test('BK Done scope uses only active BK_TELESALES members', async () => {
@@ -263,4 +269,261 @@ test('getBkWorkDaysOverrides reads overrides from crmConfig', async () => {
 
   const overrides = await getBkWorkDaysOverrides(fastify);
   assert.deepEqual(overrides, { '50670_2026-08': 23 });
+});
+
+test('isStaffTelesalesExecutive identifies staff via crmStaff role or team membership', async () => {
+  const fastify = {
+    log: { warn: () => undefined },
+    prisma: {
+      crm: {
+        crmStaff: {
+          findFirst: async ({ where }: { where: { OR: Array<{ legacyStaffId?: number; id?: number }> } }) => {
+            const id = where.OR[0]?.legacyStaffId;
+            if (id === 50670) return { id: 1, role: 'telesales', legacyStaffId: 50670 };
+            if (id === 12345) return { id: 2, role: 'cc', legacyStaffId: 12345 };
+            return null;
+          },
+        },
+        crmTeamMember: {
+          findFirst: async ({ where }: { where: { legacyStaffId: number } }) => {
+            if (where.legacyStaffId === 99999) return { id: 3, legacyStaffId: 99999 };
+            return null;
+          },
+        },
+      },
+    },
+  } as unknown as FastifyInstance;
+
+  assert.equal(await isStaffTelesalesExecutive(fastify, 50670), true);
+  assert.equal(await isStaffTelesalesExecutive(fastify, 99999), true);
+  assert.equal(await isStaffTelesalesExecutive(fastify, 12345), false);
+  assert.equal(await isStaffTelesalesExecutive(fastify, 77777), false);
+});
+
+test('canUserManageTelesalesAttendance verifies admin, manager, and user permissions', async () => {
+  const fastify = {
+    log: { warn: () => undefined },
+    prisma: {
+      crm: {
+        crmStaff: {
+          findFirst: async ({ where }: { where: { OR: Array<{ legacyStaffId?: number; id?: number }> } }) => {
+            const id = where.OR[0]?.legacyStaffId;
+            if (id === 50670) return { id: 1, role: 'telesales', legacyStaffId: 50670 };
+            return null;
+          },
+        },
+        crmTeamMember: {
+          findFirst: async () => null,
+        },
+      },
+    },
+  } as unknown as FastifyInstance;
+
+  // Admin and Super Admin can always manage
+  assert.equal(await canUserManageTelesalesAttendance(fastify, { id: 1, role: 'admin' }, 50670), true);
+  assert.equal(await canUserManageTelesalesAttendance(fastify, { id: 2, role: 'super_admin' }, 50670), true);
+
+  // Manager can manage Telesales staff
+  assert.equal(await canUserManageTelesalesAttendance(fastify, { id: 3, role: 'manager' }, 50670), true);
+  // Manager cannot manage non-telesales staff
+  assert.equal(await canUserManageTelesalesAttendance(fastify, { id: 3, role: 'manager' }, 99999), false);
+
+  // Regular staff cannot manage
+  assert.equal(await canUserManageTelesalesAttendance(fastify, { id: 4, role: 'staff' }, 50670), false);
+});
+
+test('upsertTelesalesAttendanceException rejects empty or short reason', async () => {
+  const fastify = {
+    log: { warn: () => undefined },
+    prisma: {
+      crm: {
+        crmStaff: {
+          findFirst: async () => ({ id: 1, role: 'telesales', legacyStaffId: 50670 }),
+        },
+        crmTelesalesAttendanceException: {
+          findUnique: async () => null,
+        },
+      },
+    },
+  } as unknown as FastifyInstance;
+
+  await assert.rejects(
+    () =>
+      upsertTelesalesAttendanceException(fastify, {
+        staffId: 50670,
+        workDate: '2026-08-10',
+        exceptionType: 'OFF_MORNING',
+        reason: '  ',
+      }),
+    /Bắt buộc nhập lý do khi duyệt ngoại lệ chấm công/
+  );
+
+  await assert.rejects(
+    () =>
+      upsertTelesalesAttendanceException(fastify, {
+        staffId: 50670,
+        workDate: '2026-08-10',
+        exceptionType: 'OFF_MORNING',
+        reason: 'ok',
+      }),
+    /Bắt buộc nhập lý do khi duyệt ngoại lệ chấm công/
+  );
+});
+
+test('upsertTelesalesAttendanceException performs CREATE, UPDATE, and CLEAR with audit logging', async () => {
+  let createdException: any = null;
+  let updatedException: any = null;
+  let deletedExceptionId: number | null = null;
+  const auditLogs: any[] = [];
+
+  let mockExisting: any = null;
+
+  const fastify = {
+    log: { warn: () => undefined },
+    prisma: {
+      crm: {
+        crmStaff: {
+          findFirst: async () => ({ id: 1, role: 'telesales', legacyStaffId: 50670 }),
+        },
+        crmTelesalesAttendanceException: {
+          findUnique: async () => mockExisting,
+          create: async ({ data }: { data: any }) => {
+            createdException = {
+              id: 101,
+              ...data,
+              createdAt: new Date('2026-08-10T10:00:00Z'),
+              updatedAt: new Date('2026-08-10T10:00:00Z'),
+            };
+            mockExisting = createdException;
+            return createdException;
+          },
+          update: async ({ data }: { data: any }) => {
+            updatedException = {
+              ...mockExisting,
+              ...data,
+              updatedAt: new Date('2026-08-10T11:00:00Z'),
+            };
+            mockExisting = updatedException;
+            return updatedException;
+          },
+          delete: async ({ where }: { where: { id: number } }) => {
+            deletedExceptionId = where.id;
+            mockExisting = null;
+            return { id: where.id };
+          },
+        },
+        crmTelesalesAttendanceExceptionLog: {
+          create: async ({ data }: { data: any }) => {
+            auditLogs.push(data);
+            return { id: auditLogs.length, ...data, createdAt: new Date() };
+          },
+        },
+      },
+    },
+  } as unknown as FastifyInstance;
+
+  // 1. CREATE exception: OFF_MORNING (0.5 công)
+  const res1 = await upsertTelesalesAttendanceException(fastify, {
+    staffId: 50670,
+    workDate: '2026-08-10',
+    exceptionType: 'OFF_MORNING',
+    reason: 'Xin nghỉ sáng khám răng',
+    performedByStaffId: 99,
+    performedByName: 'Admin Danny',
+  });
+  assert.equal(res1.success, true);
+  assert.equal(res1.exception?.workCredit, 0.5);
+  assert.equal(auditLogs.length, 1);
+  assert.equal(auditLogs[0].action, 'CREATE');
+  assert.equal(auditLogs[0].newType, 'OFF_MORNING');
+  assert.equal(auditLogs[0].newCredit, 0.5);
+
+  // 2. UPDATE exception: change to OFF_FULL_DAY (0 công)
+  const res2 = await upsertTelesalesAttendanceException(fastify, {
+    staffId: 50670,
+    workDate: '2026-08-10',
+    exceptionType: 'OFF_FULL_DAY',
+    reason: 'Chuyển sang nghỉ nguyên ngày',
+    performedByStaffId: 99,
+    performedByName: 'Admin Danny',
+  });
+  assert.equal(res2.success, true);
+  assert.equal(res2.exception?.workCredit, 0.0);
+  assert.equal(auditLogs.length, 2);
+  assert.equal(auditLogs[1].action, 'UPDATE');
+  assert.equal(auditLogs[1].previousType, 'OFF_MORNING');
+  assert.equal(auditLogs[1].newType, 'OFF_FULL_DAY');
+  assert.equal(auditLogs[1].newCredit, 0.0);
+
+  // 3. CLEAR exception: revert to machine records
+  const res3 = await upsertTelesalesAttendanceException(fastify, {
+    staffId: 50670,
+    workDate: '2026-08-10',
+    exceptionType: 'CLEAR',
+    reason: 'Hủy ngoại lệ do đi làm lại bình thường',
+    performedByStaffId: 99,
+    performedByName: 'Admin Danny',
+  });
+  assert.equal(res3.success, true);
+  assert.equal(deletedExceptionId, 101);
+  assert.equal(auditLogs.length, 3);
+  assert.equal(auditLogs[2].action, 'DELETE');
+  assert.equal(auditLogs[2].previousType, 'OFF_FULL_DAY');
+});
+
+test('fetchBkExceptionAdjustedAttendanceMap accurately recalculates work days combining raw check-ins and exceptions', async () => {
+  const baseMap = new Map<number, number>([
+    [50670, 20.0],
+    [32268, 18.0],
+  ]);
+
+  const fastify = {
+    log: { warn: () => undefined },
+    prisma: {
+      crm: {
+        crmTelesalesAttendanceException: {
+          findMany: async () => [
+            // Staff 50670 has 2 exceptions:
+            // 2026-08-05: OFF_MORNING (0.5 credit instead of 1.0)
+            { staffId: 50670, workDate: '2026-08-05', workCredit: 0.5 },
+            // 2026-08-16 (Sunday): OVERTIME_OFF_DAY (+1.0 credit where raw is 0)
+            { staffId: 50670, workDate: '2026-08-16', workCredit: 1.0 },
+          ],
+        },
+      },
+      legacy: {
+        $queryRawUnsafe: async (sql: string) => {
+          if (sql.includes('user_id = 50670')) {
+            // Raw records for 50670: 20 days checked in (Aug 1 to 21, excluding Sunday Aug 16)
+            const rows: Array<{ workDate: string; isCheckIn: number }> = [];
+            for (let d = 1; d <= 21; d++) {
+              if (d === 16) continue; // Sunday off
+              const dayStr = d < 10 ? `0${d}` : `${d}`;
+              rows.push({ workDate: `2026-08-${dayStr}`, isCheckIn: 1 });
+            }
+            return rows;
+          }
+          return [];
+        },
+      },
+    },
+  } as unknown as FastifyInstance;
+
+  const adjustedMap = await fetchBkExceptionAdjustedAttendanceMap(
+    fastify,
+    '2026-08-01',
+    '2026-08-31',
+    [50670, 32268],
+    baseMap
+  );
+
+  // Staff 50670:
+  // 19 normal days @ 1.0 = 19.0
+  // 2026-08-05 exception @ 0.5 = 0.5
+  // 2026-08-16 exception @ 1.0 = 1.0
+  // Total = 20.5
+  assert.equal(adjustedMap.get(50670), 20.5);
+
+  // Staff 32268 had no exceptions, so retains 18.0
+  assert.equal(adjustedMap.get(32268), 18.0);
 });

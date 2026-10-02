@@ -2644,6 +2644,42 @@
       }
     },
     {
+      "id": "prisma:crm:CrmTelesalesAttendanceException",
+      "type": "PrismaModel",
+      "label": "crm.CrmTelesalesAttendanceException",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmTelesalesAttendanceException",
+        "tableName": "crm_telesales_attendance_exceptions",
+        "fieldCount": 10,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmTelesalesAttendanceExceptionLog",
+      "type": "PrismaModel",
+      "label": "crm.CrmTelesalesAttendanceExceptionLog",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmTelesalesAttendanceExceptionLog",
+        "tableName": "crm_telesales_attendance_exception_logs",
+        "fieldCount": 13,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
       "id": "prisma:legacy:client_store_language",
       "type": "PrismaModel",
       "label": "legacy.client_store_language",
@@ -9252,7 +9288,7 @@
         "path": "/api/kpi/bk/booking/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 49
+        "line": 53
       }
     },
     {
@@ -9266,7 +9302,7 @@
         "path": "/api/kpi/bk/booking/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 60
+        "line": 64
       }
     },
     {
@@ -9280,7 +9316,7 @@
         "path": "/api/kpi/bk/done/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 275
+        "line": 279
       }
     },
     {
@@ -9294,7 +9330,7 @@
         "path": "/api/kpi/bk/done/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 286
+        "line": 290
       }
     },
     {
@@ -9308,7 +9344,7 @@
         "path": "/api/kpi/bk/tip/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 476
+        "line": 480
       }
     },
     {
@@ -9322,7 +9358,7 @@
         "path": "/api/kpi/bk/tip/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 589
+        "line": 593
       }
     },
     {
@@ -9336,7 +9372,7 @@
         "path": "/api/kpi/bk/revenue/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 693
+        "line": 697
       }
     },
     {
@@ -9350,7 +9386,7 @@
         "path": "/api/kpi/bk/revenue/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 704
+        "line": 708
       }
     },
     {
@@ -9364,7 +9400,7 @@
         "path": "/api/kpi/bk/paystub",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 800
+        "line": 804
       }
     },
     {
@@ -9378,7 +9414,35 @@
         "path": "/api/kpi/bk/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 833
+        "line": 837
+      }
+    },
+    {
+      "id": "route:POST:/api/kpi/bk/attendance-exception",
+      "type": "FastifyRoute",
+      "label": "POST /api/kpi/bk/attendance-exception",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/kpi/bk/attendance-exception",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 871
+      }
+    },
+    {
+      "id": "route:GET:/api/kpi/bk/attendance-exception/audit-logs",
+      "type": "FastifyRoute",
+      "label": "GET /api/kpi/bk/attendance-exception/audit-logs",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/kpi/bk/attendance-exception/audit-logs",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 920
       }
     },
     {
@@ -9392,7 +9456,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 867
+        "line": 939
       }
     },
     {
@@ -9406,7 +9470,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 912
+        "line": 984
       }
     },
     {
@@ -9420,7 +9484,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 964
+        "line": 1036
       }
     },
     {
@@ -9434,7 +9498,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 976
+        "line": 1048
       }
     },
     {
@@ -9448,7 +9512,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 997
+        "line": 1069
       }
     },
     {
@@ -9462,7 +9526,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1015
+        "line": 1087
       }
     },
     {
@@ -9476,7 +9540,7 @@
         "path": "/api/kpi/bk/games/:id/finalize",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1036
+        "line": 1108
       }
     },
     {
@@ -9490,7 +9554,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1057
+        "line": 1129
       }
     },
     {
@@ -16713,6 +16777,42 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "BkConfigResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TelesalesAttendanceExceptionType",
+      "type": "SharedType",
+      "label": "TelesalesAttendanceExceptionType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesalesAttendanceExceptionType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TelesalesAttendanceExceptionItem",
+      "type": "SharedType",
+      "label": "TelesalesAttendanceExceptionItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesalesAttendanceExceptionItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TelesalesAttendanceExceptionAuditLog",
+      "type": "SharedType",
+      "label": "TelesalesAttendanceExceptionAuditLog",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesalesAttendanceExceptionAuditLog",
         "package": "@mos-lab/shared"
       }
     },
@@ -28897,8 +28997,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13281566,
-        "lineCount": 288571,
+        "sizeBytes": 13400690,
+        "lineCount": 291310,
         "ext": ".ts"
       }
     },
@@ -30951,8 +31051,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 42585,
-        "lineCount": 1073,
+        "sizeBytes": 45495,
+        "lineCount": 1145,
         "ext": ".ts"
       }
     },
@@ -31198,8 +31298,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-salary.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 8632,
-        "lineCount": 267,
+        "sizeBytes": 17777,
+        "lineCount": 531,
         "ext": ".ts"
       }
     },
@@ -31211,8 +31311,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-salary.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 39525,
-        "lineCount": 1095,
+        "sizeBytes": 55250,
+        "lineCount": 1591,
         "ext": ".ts"
       }
     },
@@ -31341,8 +31441,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 37313,
-        "lineCount": 951,
+        "sizeBytes": 38938,
+        "lineCount": 1103,
         "ext": ".ts"
       }
     },
@@ -31354,8 +31454,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 58775,
-        "lineCount": 1502,
+        "sizeBytes": 58905,
+        "lineCount": 1509,
         "ext": ".ts"
       }
     },
@@ -35124,8 +35224,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 49999,
-        "lineCount": 1144,
+        "sizeBytes": 76842,
+        "lineCount": 1670,
         "ext": ".tsx"
       }
     },
@@ -35605,8 +35705,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 91912,
-        "lineCount": 1852,
+        "sizeBytes": 89957,
+        "lineCount": 1826,
         "ext": ".tsx"
       }
     },
@@ -37932,8 +38032,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22511,
-        "lineCount": 589,
+        "sizeBytes": 22442,
+        "lineCount": 584,
         "ext": ".ts"
       }
     },
@@ -37945,8 +38045,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20952,
-        "lineCount": 500,
+        "sizeBytes": 20910,
+        "lineCount": 494,
         "ext": ".tsx"
       }
     },
@@ -38504,8 +38604,8 @@
       "filePath": "apps/web/lib/api/kpi.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17154,
-        "lineCount": 449,
+        "sizeBytes": 18011,
+        "lineCount": 469,
         "ext": ".ts"
       }
     },
@@ -38920,8 +39020,8 @@
       "filePath": "packages/shared/src/constants/telesales.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 1176,
-        "lineCount": 33,
+        "sizeBytes": 3930,
+        "lineCount": 120,
         "ext": ".ts"
       }
     },
@@ -39102,8 +39202,8 @@
       "filePath": "packages/shared/src/types/bk.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 9003,
-        "lineCount": 362,
+        "sizeBytes": 10311,
+        "lineCount": 412,
         "ext": ".ts"
       }
     },
@@ -39154,8 +39254,8 @@
       "filePath": "packages/shared/src/types/career-progression.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 21679,
-        "lineCount": 502,
+        "sizeBytes": 21014,
+        "lineCount": 490,
         "ext": ".ts"
       }
     },
@@ -40731,6 +40831,20 @@
     {
       "id": "edge:prisma:crm:CrmPilotAssessmentCriterion:ws:apps/api",
       "source": "prisma:crm:CrmPilotAssessmentCriterion",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmTelesalesAttendanceException:ws:apps/api",
+      "source": "prisma:crm:CrmTelesalesAttendanceException",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmTelesalesAttendanceExceptionLog:ws:apps/api",
+      "source": "prisma:crm:CrmTelesalesAttendanceExceptionLog",
       "target": "ws:apps/api",
       "type": "EXPORTS",
       "label": "DEFINED_IN"
@@ -44070,6 +44184,20 @@
     {
       "id": "edge:route:GET:/api/kpi/bk/work-logs:ws:apps/api",
       "source": "route:GET:/api/kpi/bk/work-logs",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/kpi/bk/attendance-exception:ws:apps/api",
+      "source": "route:POST:/api/kpi/bk/attendance-exception",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/kpi/bk/attendance-exception/audit-logs:ws:apps/api",
+      "source": "route:GET:/api/kpi/bk/attendance-exception/audit-logs",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -48046,6 +48174,27 @@
     {
       "id": "edge:type:@mos-lab/shared:BkConfigResponse:ws:packages/shared",
       "source": "type:@mos-lab/shared:BkConfigResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TelesalesAttendanceExceptionType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesalesAttendanceExceptionType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TelesalesAttendanceExceptionItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesalesAttendanceExceptionItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TelesalesAttendanceExceptionAuditLog:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesalesAttendanceExceptionAuditLog",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -61722,6 +61871,13 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary.service.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/kpi/services/bk-salary.service.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary.service.ts:prisma:crm:CrmCallLog",
       "source": "file:apps/api/src/modules/kpi/services/bk-salary.service.ts",
       "target": "prisma:crm:CrmCallLog",
@@ -61739,6 +61895,27 @@
       "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary.service.ts:prisma:crm:CrmOmicallLog",
       "source": "file:apps/api/src/modules/kpi/services/bk-salary.service.ts",
       "target": "prisma:crm:CrmOmicallLog",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary.service.ts:prisma:crm:CrmTeamMember",
+      "source": "file:apps/api/src/modules/kpi/services/bk-salary.service.ts",
+      "target": "prisma:crm:CrmTeamMember",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary.service.ts:prisma:crm:CrmTelesalesAttendanceException",
+      "source": "file:apps/api/src/modules/kpi/services/bk-salary.service.ts",
+      "target": "prisma:crm:CrmTelesalesAttendanceException",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary.service.ts:prisma:crm:CrmTelesalesAttendanceExceptionLog",
+      "source": "file:apps/api/src/modules/kpi/services/bk-salary.service.ts",
+      "target": "prisma:crm:CrmTelesalesAttendanceExceptionLog",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -67917,6 +68094,20 @@
       "label": "CALLS kpi.getCcXoayReport"
     },
     {
+      "id": "edge:page:/dashboard/cc:route:POST:/api/kpi/bk/attendance-exception",
+      "source": "page:/dashboard/cc",
+      "target": "route:POST:/api/kpi/bk/attendance-exception",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
+      "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/bk/attendance-exception/audit-logs",
+      "source": "page:/dashboard/cc",
+      "target": "route:GET:/api/kpi/bk/attendance-exception/audit-logs",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
       "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/bk/config",
       "source": "page:/dashboard/cc",
       "target": "route:GET:/api/kpi/bk/config",
@@ -72684,6 +72875,20 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/kpi/bk/attendance-exception",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/kpi/bk/attendance-exception",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/bk/attendance-exception/audit-logs",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/kpi/bk/attendance-exception/audit-logs",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/bk/config",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/kpi/bk/config",
@@ -77223,6 +77428,20 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/bk/work-logs",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/kpi/bk/work-logs",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/kpi/bk/attendance-exception",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/kpi/bk/attendance-exception",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/bk/attendance-exception/audit-logs",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/kpi/bk/attendance-exception/audit-logs",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -84822,6 +85041,20 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/kpi/bk/attendance-exception",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/kpi/bk/attendance-exception",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/bk/attendance-exception/audit-logs",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/kpi/bk/attendance-exception/audit-logs",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/bk/config",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/kpi/bk/config",
@@ -86216,31 +86449,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3041,
-    "totalEdges": 6642,
+    "totalNodes": 3048,
+    "totalEdges": 6661,
     "nodeTypeCounts": {
       "Workspace": 3,
-      "PrismaModel": 160,
-      "FastifyRoute": 649,
+      "PrismaModel": 162,
+      "FastifyRoute": 651,
       "Component": 57,
-      "SharedType": 1113,
+      "SharedType": 1116,
       "DesignToken": 12,
       "UIComponent": 209,
       "File": 838
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1285,
-      "HANDLES_ROUTE": 649,
+      "EXPORTS": 1290,
+      "HANDLES_ROUTE": 651,
       "RENDERS": 266,
       "USES_TOKEN": 211,
       "IMPORTS": 463,
-      "QUERIES_MODEL": 374,
-      "API_CALL": 3394
+      "QUERIES_MODEL": 378,
+      "API_CALL": 3402
     },
-    "fastifyRouteCount": 654,
-    "prismaModelCount": 160,
+    "fastifyRouteCount": 656,
+    "prismaModelCount": 162,
     "nextPageCount": 57,
-    "sharedTypeCount": 1113
+    "sharedTypeCount": 1116
   },
   "routes": [
     {
@@ -89478,6 +89711,20 @@
       "moduleName": "kpi"
     },
     {
+      "method": "POST",
+      "path": "/api/kpi/bk/attendance-exception",
+      "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "GET",
+      "path": "/api/kpi/bk/attendance-exception/audit-logs",
+      "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
       "method": "GET",
       "path": "/api/kpi/bk/config",
       "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
@@ -92124,6 +92371,24 @@
       "modelName": "CrmPilotAssessmentCriterion",
       "tableName": "crm_pilot_assessment_criteria",
       "fieldCount": 8,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmTelesalesAttendanceException",
+      "tableName": "crm_telesales_attendance_exceptions",
+      "fieldCount": 10,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmTelesalesAttendanceExceptionLog",
+      "tableName": "crm_telesales_attendance_exception_logs",
+      "fieldCount": 13,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []
