@@ -253,8 +253,8 @@ export function useTelesaleTvLiveCelebration() {
           ...logBase,
           voiceTriggered: success,
           voiceErrorReason,
-          status: success ? 'SUCCESS' : 'ERROR',
-          errorMessage: voiceErrorReason,
+          status: 'SUCCESS',
+          errorMessage: success ? null : voiceErrorReason,
         });
 
         setTimeout(() => {
@@ -377,8 +377,8 @@ export function useTelesaleTvLiveCelebration() {
         ...logBase,
         voiceTriggered: false,
         voiceErrorReason: reason,
-        status: 'ERROR',
-        errorMessage: reason,
+        status: 'SUCCESS',
+        errorMessage: null,
       });
 
       setTimeout(() => {
@@ -418,19 +418,19 @@ export function useTelesaleTvLiveCelebration() {
             minute: '2-digit',
             second: '2-digit',
             hour12: false,
+            timeZone: 'Asia/Ho_Chi_Minh',
           }),
           changeResult:
-            event.changeResult ||
-            (event.kind === 'BOOK' ? '+1 Book' : event.kind === 'DONE' ? '+1 Done' : 'Cán mốc'),
+            event.changeResult || (event.kind === 'BOOK' ? '+1 Book' : event.kind === 'DONE' ? '+1 Done' : 'Cán mốc'),
           orderId: event.orderId,
           eventReceived: true,
           eventReceivedAt: new Date().toISOString(),
           voiceTriggered: false,
-          voiceErrorReason: `Bị bỏ qua bởi bộ lọc loại sự kiện (${settings.eventTypeFilter})`,
+          voiceErrorReason: `Bỏ qua theo cài đặt bộ lọc (${settings.eventTypeFilter})`,
           overlayTriggered: false,
-          overlayErrorReason: `Bị bỏ qua bởi bộ lọc loại sự kiện (${settings.eventTypeFilter})`,
-          status: 'ERROR',
-          errorMessage: `Bị bỏ qua bởi bộ lọc loại sự kiện (${settings.eventTypeFilter})`,
+          overlayErrorReason: `Bỏ qua theo cài đặt bộ lọc (${settings.eventTypeFilter})`,
+          status: 'SUCCESS',
+          errorMessage: null,
         });
         return;
       }
@@ -450,20 +450,37 @@ export function useTelesaleTvLiveCelebration() {
           window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         if (AudioCtx) {
           const ctx = new AudioCtx();
-          ctx
-            .resume()
-            .then(() => ctx.close())
-            .catch(() => {});
+          if (ctx.state === 'suspended') {
+            ctx
+              .resume()
+              .then(() => ctx.close())
+              .catch(() => {});
+          } else {
+            ctx.close().catch(() => {});
+          }
         }
+        const silentAudio = new Audio();
+        silentAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+        silentAudio.volume = 0.01;
+        silentAudio
+          .play()
+          .then(() => silentAudio.pause())
+          .catch(() => {});
       } catch {}
       window.removeEventListener('click', unlock);
       window.removeEventListener('keydown', unlock);
+      window.removeEventListener('touchstart', unlock);
+      window.removeEventListener('pointerdown', unlock);
     };
     window.addEventListener('click', unlock, { once: true });
     window.addEventListener('keydown', unlock, { once: true });
+    window.addEventListener('touchstart', unlock, { once: true });
+    window.addEventListener('pointerdown', unlock, { once: true });
     return () => {
       window.removeEventListener('click', unlock);
       window.removeEventListener('keydown', unlock);
+      window.removeEventListener('touchstart', unlock);
+      window.removeEventListener('pointerdown', unlock);
     };
   }, []);
 
@@ -489,8 +506,20 @@ export function useTelesaleTvLiveCelebration() {
         isInitializedRef.current = true;
         // On initial page load / hydration, mark ALL existing historical events as seen so they are NOT re-announced upon refresh/reconnect
         if (events && events.length > 0) {
+          let existingLogs: TelesaleTvEventLog[] = [];
+          if (typeof window !== 'undefined') {
+            try {
+              const raw = localStorage.getItem(`MOS_TV_MONITOR_EVENT_LOGS_${todayKey}`);
+              if (raw) existingLogs = JSON.parse(raw);
+            } catch {}
+          }
+          const existingLogMap = new Map<string, TelesaleTvEventLog>(existingLogs.map((l) => [l.id, l]));
+
           for (const ev of events) {
             seenEventIdsRef.current.add(ev.id);
+            // If already processed and recorded in local journal earlier today, preserve its existing record!
+            if (existingLogMap.has(ev.id)) continue;
+
             recordEventLog({
               id: ev.id,
               type: ev.type,
@@ -503,17 +532,18 @@ export function useTelesaleTvLiveCelebration() {
                 minute: '2-digit',
                 second: '2-digit',
                 hour12: false,
+                timeZone: 'Asia/Ho_Chi_Minh',
               }),
               changeResult: ev.changeResult || `${ev.type === 'BOOK' ? 'Book' : 'Done'} hôm nay`,
               orderId: ev.orderId,
-              eventReceived: true,
-              eventReceivedAt: new Date().toISOString(),
+              eventReceived: false,
+              eventReceivedAt: undefined,
               voiceTriggered: false,
-              voiceErrorReason: 'Event phát sinh trước khi TV Monitor mở (Lịch sử)',
+              voiceErrorReason: 'Sự kiện trước khi mở TV Monitor (Lịch sử)',
               overlayTriggered: false,
-              overlayErrorReason: 'Event phát sinh trước khi TV Monitor mở (Lịch sử)',
-              status: 'ERROR',
-              errorMessage: 'Event phát sinh trước khi TV Monitor mở',
+              overlayErrorReason: 'Sự kiện trước khi mở TV Monitor (Lịch sử)',
+              status: 'SUCCESS',
+              errorMessage: null,
             });
           }
           if (typeof window !== 'undefined') {
@@ -549,10 +579,14 @@ export function useTelesaleTvLiveCelebration() {
         const staffName = ev.staffName || 'Bạn Telesales';
         const defaultQuote = getRandomQuote(ev.type === 'BOOK' ? BOOK_QUOTES : DONE_QUOTES, staffName);
 
-        // Asynchronously query Gemini AI for unique seductive & encouraging quote
-        apiClient.telesaleTarget
-          .getCelebrationQuote({ type: ev.type, staffName })
-          .then((res) => {
+        // Fetch quote with 1500ms timeout so we don't delay celebration
+        const quotePromise = Promise.race([
+          apiClient.telesaleTarget.getCelebrationQuote({ type: ev.type, staffName }),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+        ]);
+
+        quotePromise
+          .then((res: SafeAny) => {
             const quote = res?.quote?.trim() || defaultQuote;
             enqueueCelebration({
               id: ev.id,
@@ -583,7 +617,7 @@ export function useTelesaleTvLiveCelebration() {
           });
       }
     },
-    [enqueueCelebration]
+    [enqueueCelebration, recordEventLog]
   );
 
   // 7. Milestone Checkers
@@ -642,7 +676,7 @@ export function useTelesaleTvLiveCelebration() {
 
       // Milestone rules (Specification 3 & Wings 4 Cultural Keys):
       // - 10 Book
-      if (bookActual >= 10 && bookActual < 20) {
+      if (bookActual >= 10) {
         checkAndQueue(
           'book-10',
           'Cả đội chú ý! 10 Book đã vào giỏ rồi! Năng lượng vui vẻ và chân thành của các em đang thắp sáng cả ngày hôm nay. Tiếp tục cùng anh tăng tốc bùng nổ nhé!',
@@ -650,7 +684,7 @@ export function useTelesaleTvLiveCelebration() {
         );
       }
       // - 20 Book
-      if (bookActual >= 20 && bookActual < 25) {
+      if (bookActual >= 20) {
         checkAndQueue(
           'book-20',
           'Xuất sắc lắm các cô gái của anh! 20 Book rồi! Tư vấn khoa học, chăm sóc ân cần, phong độ của cả đội hôm nay thực sự quá đỗi quyến rũ và không thể ngăn cản!',
@@ -658,7 +692,7 @@ export function useTelesaleTvLiveCelebration() {
         );
       }
       // - 25 Book
-      if (bookActual === 25) {
+      if (bookActual >= 25) {
         checkAndQueue(
           'book-25',
           '25 Book! Một con số hoàn hảo minh chứng cho sức mạnh đồng đội và 4 giá trị văn hóa Wings. Anh rất tự hào về tinh thần chiến binh ngọt ngào của tất cả các em!',

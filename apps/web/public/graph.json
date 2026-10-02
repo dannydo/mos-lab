@@ -31350,8 +31350,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-salary.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 21046,
-        "lineCount": 626,
+        "sizeBytes": 21045,
+        "lineCount": 625,
         "ext": ".ts"
       }
     },
@@ -31363,8 +31363,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-salary.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 57110,
-        "lineCount": 1636,
+        "sizeBytes": 57149,
+        "lineCount": 1646,
         "ext": ".ts"
       }
     },
@@ -31506,8 +31506,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 71332,
-        "lineCount": 1836,
+        "sizeBytes": 72213,
+        "lineCount": 1839,
         "ext": ".ts"
       }
     },
@@ -35276,8 +35276,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 86440,
-        "lineCount": 1845,
+        "sizeBytes": 86472,
+        "lineCount": 1848,
         "ext": ".tsx"
       }
     },
@@ -38019,8 +38019,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvJournalModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24243,
-        "lineCount": 602,
+        "sizeBytes": 26098,
+        "lineCount": 645,
         "ext": ".tsx"
       }
     },
@@ -38110,8 +38110,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30217,
-        "lineCount": 777,
+        "sizeBytes": 31541,
+        "lineCount": 806,
         "ext": ".ts"
       }
     },
@@ -38682,8 +38682,8 @@
       "filePath": "apps/web/lib/api/kpi.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18603,
-        "lineCount": 484,
+        "sizeBytes": 18591,
+        "lineCount": 482,
         "ext": ".ts"
       }
     },
@@ -39098,8 +39098,8 @@
       "filePath": "packages/shared/src/constants/telesales.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 4377,
-        "lineCount": 127,
+        "sizeBytes": 4371,
+        "lineCount": 126,
         "ext": ".ts"
       }
     },

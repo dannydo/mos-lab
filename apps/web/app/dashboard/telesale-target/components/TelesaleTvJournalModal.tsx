@@ -29,11 +29,7 @@ interface TelesaleTvJournalModalProps {
   staffList?: Array<{ legacyStaffId: number; name: string }>;
 }
 
-export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({
-  open,
-  onClose,
-  staffList = [],
-}) => {
+export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ open, onClose, staffList = [] }) => {
   const [selectedDate, setSelectedDate] = useState<string>(() => dayjs().format('YYYY-MM-DD'));
   const [loading, setLoading] = useState<boolean>(false);
   const [journalData, setJournalData] = useState<TelesaleTvJournalOverview | null>(null);
@@ -90,9 +86,9 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({
       mergedEvents.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
       const voiceSuccess = mergedEvents.filter((e) => e.voiceTriggered).length;
-      const voiceError = mergedEvents.filter((e) => !e.voiceTriggered).length;
+      const voiceError = mergedEvents.filter((e) => e.eventReceived && !e.voiceTriggered).length;
       const overlaySuccess = mergedEvents.filter((e) => e.overlayTriggered).length;
-      const overlayError = mergedEvents.filter((e) => !e.overlayTriggered).length;
+      const overlayError = mergedEvents.filter((e) => e.eventReceived && !e.overlayTriggered).length;
       const latestEventTime = mergedEvents.length > 0 ? mergedEvents[0].timestamp : null;
 
       setJournalData({
@@ -115,9 +111,9 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({
             setJournalData({
               totalEvents: list.length,
               voiceSuccess: list.filter((e) => e.voiceTriggered).length,
-              voiceError: list.filter((e) => !e.voiceTriggered).length,
+              voiceError: list.filter((e) => e.eventReceived && !e.voiceTriggered).length,
               overlaySuccess: list.filter((e) => e.overlayTriggered).length,
-              overlayError: list.filter((e) => !e.overlayTriggered).length,
+              overlayError: list.filter((e) => e.eventReceived && !e.overlayTriggered).length,
               latestEventTime: list.length > 0 ? list[0].timestamp : null,
               events: list,
             });
@@ -142,8 +138,7 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({
       // Staff filter
       if (staffFilter !== 'ALL') {
         const staffMatch =
-          String(ev.staffId) === staffFilter ||
-          ev.staffName?.toLowerCase().includes(staffFilter.toLowerCase());
+          String(ev.staffId) === staffFilter || ev.staffName?.toLowerCase().includes(staffFilter.toLowerCase());
         if (!staffMatch) return false;
       }
 
@@ -161,9 +156,22 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({
     });
   }, [journalData, staffFilter, typeFilter, statusFilter]);
 
-  const latestTimeFormatted = journalData?.latestEventTime
-    ? dayjs(journalData.latestEventTime).format('HH:mm:ss')
-    : 'Chưa có sự kiện';
+  const latestTimeFormatted = useMemo(() => {
+    if (!journalData?.latestEventTime) return 'Chưa có sự kiện';
+    const firstEvent = journalData.events?.[0];
+    if (firstEvent?.timeFormatted) return firstEvent.timeFormatted;
+    try {
+      return new Date(journalData.latestEventTime).toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+        timeZone: 'Asia/Ho_Chi_Minh',
+      });
+    } catch {
+      return dayjs(journalData.latestEventTime).format('HH:mm:ss');
+    }
+  }, [journalData]);
 
   const columns = [
     {
@@ -172,12 +180,21 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({
       key: 'timestamp',
       width: 110,
       render: (val: string, record: TelesaleTvEventLog) => {
-        const time = record.timeFormatted || dayjs(val).format('HH:mm:ss');
-        return (
-          <span className="font-mono text-xs font-semibold text-zinc-300 tabular-nums">
-            {time}
-          </span>
-        );
+        let time = record.timeFormatted;
+        if (!time && val) {
+          try {
+            time = new Date(val).toLocaleTimeString('vi-VN', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false,
+              timeZone: 'Asia/Ho_Chi_Minh',
+            });
+          } catch {
+            time = dayjs(val).format('HH:mm:ss');
+          }
+        }
+        return <span className="font-mono text-xs font-semibold text-zinc-300 tabular-nums">{time || '--:--:--'}</span>;
       },
     },
     {
@@ -278,9 +295,9 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({
             ✅ Đã nhận
           </span>
         ) : (
-          <Tooltip title="TV Monitor chưa kết nối hoặc chưa tiếp nhận sự kiện này">
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-rose-950 text-rose-300 border border-rose-500/40">
-              ❌ Chưa nhận
+          <Tooltip title="Sự kiện phát sinh trước khi mở TV Monitor (Lịch sử) hoặc chưa tiếp nhận">
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700 cursor-help">
+              ⏸️ Chưa nhận
             </span>
           </Tooltip>
         ),
@@ -301,9 +318,20 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({
             ✅ Đã phát
           </span>
         ) : (
-          <Tooltip title={record.voiceErrorReason || 'Âm thanh không được phát'}>
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-rose-950 text-rose-300 border border-rose-500/40 cursor-help">
-              ❌ Không phát
+          <Tooltip
+            title={
+              record.voiceErrorReason ||
+              (record.eventReceived ? 'Âm thanh không được phát' : 'Sự kiện trước khi mở TV Monitor (Lịch sử)')
+            }
+          >
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-semibold cursor-help ${
+                record.eventReceived
+                  ? 'bg-rose-950 text-rose-300 border border-rose-500/40'
+                  : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+              }`}
+            >
+              {record.eventReceived ? '❌ Lỗi phát' : '⏸️ Không phát'}
             </span>
           </Tooltip>
         ),
@@ -324,9 +352,20 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({
             ✅ Đã hiện
           </span>
         ) : (
-          <Tooltip title={record.overlayErrorReason || 'Banner không hiển thị'}>
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-rose-950 text-rose-300 border border-rose-500/40 cursor-help">
-              ❌ Không hiện
+          <Tooltip
+            title={
+              record.overlayErrorReason ||
+              (record.eventReceived ? 'Banner không hiển thị' : 'Sự kiện trước khi mở TV Monitor (Lịch sử)')
+            }
+          >
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-semibold cursor-help ${
+                record.eventReceived
+                  ? 'bg-rose-950 text-rose-300 border border-rose-500/40'
+                  : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+              }`}
+            >
+              {record.eventReceived ? '❌ Không hiện' : '⏸️ Không hiện'}
             </span>
           </Tooltip>
         ),
@@ -343,7 +382,7 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({
               {isSuccess ? (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-600/50">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                  Thành công
+                  {record.eventReceived ? 'Thành công' : 'Ghi nhận'}
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-rose-950/80 text-rose-400 border border-rose-600/50">
@@ -353,8 +392,19 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({
               )}
             </div>
             {!isSuccess && (record.errorMessage || record.voiceErrorReason || record.overlayErrorReason) && (
-              <span className="text-[11px] text-rose-300/90 font-mono line-clamp-1" title={record.errorMessage || record.voiceErrorReason || record.overlayErrorReason || ''}>
+              <span
+                className="text-[11px] text-rose-300/90 font-mono line-clamp-1"
+                title={record.errorMessage || record.voiceErrorReason || record.overlayErrorReason || ''}
+              >
                 {record.errorMessage || record.voiceErrorReason || record.overlayErrorReason}
+              </span>
+            )}
+            {isSuccess && !record.eventReceived && (
+              <span
+                className="text-[10px] text-zinc-400 font-mono line-clamp-1"
+                title="Sự kiện lịch sử (phát sinh trước khi mở TV Monitor)"
+              >
+                Lịch sử ca làm
               </span>
             )}
           </div>

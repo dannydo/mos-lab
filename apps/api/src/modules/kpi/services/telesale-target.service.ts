@@ -48,6 +48,36 @@ export const DEFAULT_OCTOBER_CONFIG: TelesaleTargetConfigDto = {
   },
 };
 
+export function parseVietnamDateToIso(rawDate: unknown): string {
+  if (!rawDate) return new Date().toISOString();
+  if (typeof rawDate === 'string') {
+    if (rawDate.includes('+') || rawDate.endsWith('Z')) {
+      return new Date(rawDate).toISOString();
+    }
+    const formatted = rawDate.replace(' ', 'T');
+    return new Date(`${formatted}+07:00`).toISOString();
+  }
+  if (rawDate instanceof Date) {
+    const isoWithoutZ = rawDate
+      .toISOString()
+      .replace(/\.\d{3}Z$/, '')
+      .replace(/Z$/, '');
+    return new Date(`${isoWithoutZ}+07:00`).toISOString();
+  }
+  return new Date().toISOString();
+}
+
+export function formatVietnamTime(isoOrDate: string | Date): string {
+  const d = typeof isoOrDate === 'string' ? new Date(isoOrDate) : isoOrDate;
+  return d.toLocaleTimeString('vi-VN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+    timeZone: 'Asia/Ho_Chi_Minh',
+  });
+}
+
 export class TelesaleTargetService {
   static getConfigKey(month: string): string {
     return `TELESALE_TARGET_CONFIG_${month}`;
@@ -837,7 +867,7 @@ export class TelesaleTargetService {
           o.id,
           o.created_staff_id as bookerId,
           o.order_state as orderState,
-          o.date_created as dateCreated
+          DATE_FORMAT(o.date_created, '%Y-%m-%dT%H:%i:%s+07:00') as dateCreated
         FROM \`order\` o
         WHERE o.date_created >= '${todayStartStr}' 
           AND o.date_created <= '${todayEndStr}'
@@ -853,11 +883,11 @@ export class TelesaleTargetService {
           o.created_staff_id as bookerId,
           o.order_state as orderState,
           o.total_price as totalPrice,
-          o.booking_date_start as bookingDateStart,
-          ro.actual_booking_date_start as actualBookingDateStart,
-          ro.actual_booking_date_end as actualBookingDateEnd,
-          o.date_updated as dateUpdated,
-          COALESCE(ro.actual_booking_date_end, o.date_updated, ro.actual_booking_date_start, o.date_created) as doneDate
+          DATE_FORMAT(o.booking_date_start, '%Y-%m-%dT%H:%i:%s+07:00') as bookingDateStart,
+          DATE_FORMAT(ro.actual_booking_date_start, '%Y-%m-%dT%H:%i:%s+07:00') as actualBookingDateStart,
+          DATE_FORMAT(ro.actual_booking_date_end, '%Y-%m-%dT%H:%i:%s+07:00') as actualBookingDateEnd,
+          DATE_FORMAT(o.date_updated, '%Y-%m-%dT%H:%i:%s+07:00') as dateUpdated,
+          DATE_FORMAT(COALESCE(ro.actual_booking_date_end, o.date_updated, ro.actual_booking_date_start, o.date_created), '%Y-%m-%dT%H:%i:%s+07:00') as doneDate
         FROM \`order\` o
         LEFT JOIN report_order ro ON ro.order_id = o.id
         WHERE o.created_staff_id IN (${candidateIdsStr})
@@ -873,7 +903,11 @@ export class TelesaleTargetService {
 
     const sortedTodayBookOrders = [...todayBookOrders]
       .filter((o) => o && o.id)
-      .sort((a, b) => new Date(a.dateCreated || 0).getTime() - new Date(b.dateCreated || 0).getTime());
+      .sort(
+        (a, b) =>
+          new Date(parseVietnamDateToIso(a.dateCreated)).getTime() -
+          new Date(parseVietnamDateToIso(b.dateCreated)).getTime()
+      );
 
     const staffBookCountMap = new Map<number, number>();
     const bookEvents: TelesaleTodayLiveEvent[] = sortedTodayBookOrders.map((o) => {
@@ -891,7 +925,7 @@ export class TelesaleTargetService {
           allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name ||
           'Telesales',
         avatarUrl: staffAvatarMap.get(bookerId) || null,
-        timestamp: o.dateCreated ? new Date(o.dateCreated).toISOString() : new Date().toISOString(),
+        timestamp: parseVietnamDateToIso(o.dateCreated),
         orderId: Number(o.id),
         changeResult: `Book ${prevCount} → ${newCount}`,
       };
@@ -901,10 +935,10 @@ export class TelesaleTargetService {
       .filter((o) => o && o.id)
       .sort((a, b) => {
         const timeA = new Date(
-          a.doneDate || a.actualBookingDateEnd || a.dateUpdated || a.actualBookingDateStart || 0
+          parseVietnamDateToIso(a.doneDate || a.actualBookingDateEnd || a.dateUpdated || a.actualBookingDateStart || 0)
         ).getTime();
         const timeB = new Date(
-          b.doneDate || b.actualBookingDateEnd || b.dateUpdated || b.actualBookingDateStart || 0
+          parseVietnamDateToIso(b.doneDate || b.actualBookingDateEnd || b.dateUpdated || b.actualBookingDateStart || 0)
         ).getTime();
         return timeA - timeB;
       });
@@ -916,15 +950,9 @@ export class TelesaleTargetService {
       const newDone = prevDone + 1;
       staffDoneCountMap.set(bookerId, newDone);
 
-      const timestamp = o.doneDate
-        ? new Date(o.doneDate).toISOString()
-        : o.actualBookingDateEnd
-          ? new Date(o.actualBookingDateEnd).toISOString()
-          : o.dateUpdated
-            ? new Date(o.dateUpdated).toISOString()
-            : o.actualBookingDateStart
-              ? new Date(o.actualBookingDateStart).toISOString()
-              : new Date().toISOString();
+      const timestamp = parseVietnamDateToIso(
+        o.doneDate || o.actualBookingDateEnd || o.dateUpdated || o.actualBookingDateStart || o.bookingDateStart
+      );
 
       return {
         id: `done-${o.id}`,
@@ -1549,14 +1577,9 @@ YÊU CẦU BẮT BUỘC:
     return { success: true, count: records.length };
   }
 
-  static async getTvJournal(
-    fastify: FastifyInstance,
-    dateParam?: string
-  ): Promise<TelesaleTvJournalOverview> {
+  static async getTvJournal(fastify: FastifyInstance, dateParam?: string): Promise<TelesaleTvJournalOverview> {
     const targetDate =
-      dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)
-        ? dateParam
-        : new Date().toISOString().slice(0, 10);
+      dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : new Date().toISOString().slice(0, 10);
 
     const activeStaff = await this.getActiveTelesalesStaffFromHr(fastify);
     const candidateIds = activeStaff.map((s) => s.legacyStaffId).filter((id) => id > 0);
@@ -1580,7 +1603,7 @@ YÊU CẦU BẮT BUỘC:
           o.id,
           o.created_staff_id as bookerId,
           o.order_state as orderState,
-          o.date_created as dateCreated
+          DATE_FORMAT(o.date_created, '%Y-%m-%dT%H:%i:%s+07:00') as dateCreated
         FROM \`order\` o
         WHERE o.date_created >= '${dayStartStr}' 
           AND o.date_created <= '${dayEndStr}'
@@ -1596,11 +1619,11 @@ YÊU CẦU BẮT BUỘC:
           o.created_staff_id as bookerId,
           o.order_state as orderState,
           o.total_price as totalPrice,
-          o.booking_date_start as bookingDateStart,
-          ro.actual_booking_date_start as actualBookingDateStart,
-          ro.actual_booking_date_end as actualBookingDateEnd,
-          o.date_updated as dateUpdated,
-          COALESCE(ro.actual_booking_date_end, o.date_updated, ro.actual_booking_date_start, o.date_created) as doneDate
+          DATE_FORMAT(o.booking_date_start, '%Y-%m-%dT%H:%i:%s+07:00') as bookingDateStart,
+          DATE_FORMAT(ro.actual_booking_date_start, '%Y-%m-%dT%H:%i:%s+07:00') as actualBookingDateStart,
+          DATE_FORMAT(ro.actual_booking_date_end, '%Y-%m-%dT%H:%i:%s+07:00') as actualBookingDateEnd,
+          DATE_FORMAT(o.date_updated, '%Y-%m-%dT%H:%i:%s+07:00') as dateUpdated,
+          DATE_FORMAT(COALESCE(ro.actual_booking_date_end, o.date_updated, ro.actual_booking_date_start, o.date_created), '%Y-%m-%dT%H:%i:%s+07:00') as doneDate
         FROM \`order\` o
         LEFT JOIN report_order ro ON ro.order_id = o.id
         WHERE o.created_staff_id IN (${candidateIdsStr})
@@ -1616,7 +1639,11 @@ YÊU CẦU BẮT BUỘC:
 
     const sortedDayBookOrders = [...dayBookOrders]
       .filter((o) => o && o.id)
-      .sort((a, b) => new Date(a.dateCreated || 0).getTime() - new Date(b.dateCreated || 0).getTime());
+      .sort(
+        (a, b) =>
+          new Date(parseVietnamDateToIso(a.dateCreated)).getTime() -
+          new Date(parseVietnamDateToIso(b.dateCreated)).getTime()
+      );
 
     const staffBookCountMap = new Map<number, number>();
     const bookEvents: TelesaleTvEventLog[] = sortedDayBookOrders.map((o) => {
@@ -1626,15 +1653,11 @@ YÊU CẦU BẮT BUỘC:
       staffBookCountMap.set(bookerId, newCount);
 
       const id = `book-${o.id}`;
-      const timestamp = o.dateCreated ? new Date(o.dateCreated).toISOString() : new Date().toISOString();
-      const timeFormatted = new Date(timestamp).toLocaleTimeString('vi-VN', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-      });
+      const timestamp = parseVietnamDateToIso(o.dateCreated);
+      const timeFormatted = formatVietnamTime(timestamp);
 
       const exec = this.tvJournalExecutionStore.get(id);
+      const isExecuted = Boolean(exec);
       return {
         id,
         type: 'BOOK' as const,
@@ -1645,18 +1668,26 @@ YÊU CẦU BẮT BUỘC:
         timeFormatted,
         changeResult: `Book ${prevCount} → ${newCount}`,
         orderId: Number(o.id),
-        eventReceived: exec?.eventReceived ?? true,
-        eventReceivedAt: exec?.eventReceivedAt ?? timestamp,
+        eventReceived: exec?.eventReceived ?? false,
+        eventReceivedAt: exec?.eventReceivedAt ?? (exec?.eventReceived ? timestamp : undefined),
         voiceTriggered: exec?.voiceTriggered ?? false,
         voiceErrorReason:
-          exec?.voiceErrorReason ?? (exec?.voiceTriggered ? null : 'TV Monitor chưa kích hoạt Voice'),
+          exec?.voiceErrorReason ??
+          (exec?.voiceTriggered
+            ? null
+            : isExecuted
+              ? 'Không phát âm thanh'
+              : 'Sự kiện trước ca trực / chưa qua TV Monitor online'),
         overlayTriggered: exec?.overlayTriggered ?? false,
         overlayErrorReason:
-          exec?.overlayErrorReason ?? (exec?.overlayTriggered ? null : 'TV Monitor chưa kích hoạt Overlay'),
-        status: exec?.status ?? (exec?.voiceTriggered && exec?.overlayTriggered ? 'SUCCESS' : 'ERROR'),
-        errorMessage:
-          exec?.errorMessage ??
-          (exec?.voiceTriggered && exec?.overlayTriggered ? null : 'Chưa nhận phản hồi từ TV Monitor'),
+          exec?.overlayErrorReason ??
+          (exec?.overlayTriggered
+            ? null
+            : isExecuted
+              ? 'Không hiển thị Overlay'
+              : 'Sự kiện trước ca trực / chưa qua TV Monitor online'),
+        status: exec?.status ?? 'SUCCESS',
+        errorMessage: exec?.errorMessage ?? (isExecuted ? null : null),
       };
     });
 
@@ -1664,10 +1695,10 @@ YÊU CẦU BẮT BUỘC:
       .filter((o) => o && o.id)
       .sort((a, b) => {
         const timeA = new Date(
-          a.doneDate || a.actualBookingDateEnd || a.dateUpdated || a.actualBookingDateStart || 0
+          parseVietnamDateToIso(a.doneDate || a.actualBookingDateEnd || a.dateUpdated || a.actualBookingDateStart || 0)
         ).getTime();
         const timeB = new Date(
-          b.doneDate || b.actualBookingDateEnd || b.dateUpdated || b.actualBookingDateStart || 0
+          parseVietnamDateToIso(b.doneDate || b.actualBookingDateEnd || b.dateUpdated || b.actualBookingDateStart || 0)
         ).getTime();
         return timeA - timeB;
       });
@@ -1680,23 +1711,13 @@ YÊU CẦU BẮT BUỘC:
       staffDoneCountMap.set(bookerId, newDone);
 
       const id = `done-${o.id}`;
-      const timestamp = o.doneDate
-        ? new Date(o.doneDate).toISOString()
-        : o.actualBookingDateEnd
-          ? new Date(o.actualBookingDateEnd).toISOString()
-          : o.dateUpdated
-            ? new Date(o.dateUpdated).toISOString()
-            : o.actualBookingDateStart
-              ? new Date(o.actualBookingDateStart).toISOString()
-              : new Date().toISOString();
-      const timeFormatted = new Date(timestamp).toLocaleTimeString('vi-VN', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-      });
+      const timestamp = parseVietnamDateToIso(
+        o.doneDate || o.actualBookingDateEnd || o.dateUpdated || o.actualBookingDateStart || o.bookingDateStart
+      );
+      const timeFormatted = formatVietnamTime(timestamp);
 
       const exec = this.tvJournalExecutionStore.get(id);
+      const isExecuted = Boolean(exec);
       return {
         id,
         type: 'DONE' as const,
@@ -1707,18 +1728,26 @@ YÊU CẦU BẮT BUỘC:
         timeFormatted,
         changeResult: `Done ${prevDone} → ${newDone}`,
         orderId: Number(o.id),
-        eventReceived: exec?.eventReceived ?? true,
-        eventReceivedAt: exec?.eventReceivedAt ?? timestamp,
+        eventReceived: exec?.eventReceived ?? false,
+        eventReceivedAt: exec?.eventReceivedAt ?? (exec?.eventReceived ? timestamp : undefined),
         voiceTriggered: exec?.voiceTriggered ?? false,
         voiceErrorReason:
-          exec?.voiceErrorReason ?? (exec?.voiceTriggered ? null : 'TV Monitor chưa kích hoạt Voice'),
+          exec?.voiceErrorReason ??
+          (exec?.voiceTriggered
+            ? null
+            : isExecuted
+              ? 'Không phát âm thanh'
+              : 'Sự kiện trước ca trực / chưa qua TV Monitor online'),
         overlayTriggered: exec?.overlayTriggered ?? false,
         overlayErrorReason:
-          exec?.overlayErrorReason ?? (exec?.overlayTriggered ? null : 'TV Monitor chưa kích hoạt Overlay'),
-        status: exec?.status ?? (exec?.voiceTriggered && exec?.overlayTriggered ? 'SUCCESS' : 'ERROR'),
-        errorMessage:
-          exec?.errorMessage ??
-          (exec?.voiceTriggered && exec?.overlayTriggered ? null : 'Chưa nhận phản hồi từ TV Monitor'),
+          exec?.overlayErrorReason ??
+          (exec?.overlayTriggered
+            ? null
+            : isExecuted
+              ? 'Không hiển thị Overlay'
+              : 'Sự kiện trước ca trực / chưa qua TV Monitor online'),
+        status: exec?.status ?? 'SUCCESS',
+        errorMessage: exec?.errorMessage ?? (isExecuted ? null : null),
       };
     });
 
@@ -1736,12 +1765,8 @@ YÊU CẦU BẮT BUỘC:
     ) => {
       if (current >= threshold) {
         const exec = this.tvJournalExecutionStore.get(id);
-        const timeFormatted = new Date(targetTimestamp).toLocaleTimeString('vi-VN', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          hour12: false,
-        });
+        const timeFormatted = formatVietnamTime(targetTimestamp);
+        const isExecuted = Boolean(exec);
         milestoneEvents.push({
           id,
           type: 'MILESTONE' as const,
@@ -1750,18 +1775,26 @@ YÊU CẦU BẮT BUỘC:
           timestamp: targetTimestamp,
           timeFormatted,
           changeResult,
-          eventReceived: exec?.eventReceived ?? true,
-          eventReceivedAt: exec?.eventReceivedAt ?? targetTimestamp,
+          eventReceived: exec?.eventReceived ?? false,
+          eventReceivedAt: exec?.eventReceivedAt ?? (exec?.eventReceived ? targetTimestamp : undefined),
           voiceTriggered: exec?.voiceTriggered ?? false,
           voiceErrorReason:
-            exec?.voiceErrorReason ?? (exec?.voiceTriggered ? null : 'TV Monitor chưa kích hoạt Voice'),
+            exec?.voiceErrorReason ??
+            (exec?.voiceTriggered
+              ? null
+              : isExecuted
+                ? 'Không phát âm thanh'
+                : 'Sự kiện trước ca trực / chưa qua TV Monitor online'),
           overlayTriggered: exec?.overlayTriggered ?? false,
           overlayErrorReason:
-            exec?.overlayErrorReason ?? (exec?.overlayTriggered ? null : 'TV Monitor chưa kích hoạt Overlay'),
-          status: exec?.status ?? (exec?.voiceTriggered && exec?.overlayTriggered ? 'SUCCESS' : 'ERROR'),
-          errorMessage:
-            exec?.errorMessage ??
-            (exec?.voiceTriggered && exec?.overlayTriggered ? null : 'Chưa nhận phản hồi từ TV Monitor'),
+            exec?.overlayErrorReason ??
+            (exec?.overlayTriggered
+              ? null
+              : isExecuted
+                ? 'Không hiển thị Overlay'
+                : 'Sự kiện trước ca trực / chưa qua TV Monitor online'),
+          status: exec?.status ?? 'SUCCESS',
+          errorMessage: exec?.errorMessage ?? (isExecuted ? null : null),
         });
       }
     };
@@ -1817,9 +1850,9 @@ YÊU CẦU BẮT BUỘC:
     );
 
     const voiceSuccess = allEvents.filter((e) => e.voiceTriggered).length;
-    const voiceError = allEvents.filter((e) => !e.voiceTriggered).length;
+    const voiceError = allEvents.filter((e) => e.eventReceived && !e.voiceTriggered).length;
     const overlaySuccess = allEvents.filter((e) => e.overlayTriggered).length;
-    const overlayError = allEvents.filter((e) => !e.overlayTriggered).length;
+    const overlayError = allEvents.filter((e) => e.eventReceived && !e.overlayTriggered).length;
     const latestEventTime = allEvents.length > 0 ? allEvents[0].timestamp : null;
 
     return {
