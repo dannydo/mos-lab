@@ -213,7 +213,7 @@ export class CareerProgressionService {
           fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
             os.assigned_staff_id,
-            COUNT(DISTINCT os.order_id) as total_orders,
+            COUNT(os.id) as total_orders,
             COUNT(CASE WHEN os.next_fix_order_service_id IS NOT NULL THEN 1 END) as fix_count
           FROM order_service os
           JOIN \`order\` o ON o.id = os.order_id
@@ -549,11 +549,11 @@ export class CareerProgressionService {
           fastify.prisma.legacy.$queryRawUnsafe<any[]>(
             `
           SELECT 
-            COUNT(DISTINCT os.order_id) as total_orders,
-            COUNT(DISTINCT CASE 
+            COUNT(os.id) as total_orders,
+            COUNT(CASE 
               WHEN o.booking_date_start >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00')
                AND o.booking_date_start <= CONCAT(LAST_DAY(DATE_SUB(NOW(), INTERVAL 1 MONTH)), ' 23:59:59')
-              THEN os.order_id END) as last_month_orders
+              THEN os.id END) as last_month_orders
           FROM order_service os
           JOIN \`order\` o ON o.id = os.order_id
           WHERE os.assigned_staff_id = ?

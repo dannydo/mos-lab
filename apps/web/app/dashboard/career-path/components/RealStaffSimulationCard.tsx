@@ -1042,8 +1042,8 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
               </div>
 
               <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-2 font-medium">
-                <span>{ordersGap === 0 ? '✓ Đã cán mốc tối thiểu' : `⚡ Còn thiếu ${ordersGap} ca nữa`}</span>
-                <span className="tabular-nums">Mục tiêu: {targetOrders} ca/90 ngày</span>
+                <span>{ordersGap === 0 ? '✓ Đã cán mốc tối thiểu' : `⚡ Còn thiếu ${ordersGap} bộ mi nữa`}</span>
+                <span className="tabular-nums">Mục tiêu: {targetOrders} bộ mi / 3 tháng</span>
               </div>
             </div>
 
@@ -1094,7 +1094,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
 
               <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-2 font-medium">
                 <span className="tabular-nums">
-                  {metrics.fixCount || 0} ca sửa / {metrics.ordersCount || 0} ca mi
+                  {metrics.fixCount || 0} ca sửa / {metrics.ordersCount || 0} bộ mi
                 </span>
                 <span>Ngưỡng tối đa: &lt; {(targetMaxFix * 100).toFixed(1)}%</span>
               </div>
@@ -1424,14 +1424,14 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
               <div className="md:col-span-7 space-y-3">
                 <div>
                   <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300 mb-1">
-                    <span className="font-medium">Mục tiêu số ca mi:</span>
+                    <span className="font-medium">Mục tiêu số bộ mi:</span>
                     <span className="font-bold tabular-nums text-rose-600 dark:text-rose-400">
-                      {sliderOrders} ca mi / 3 tháng{' '}
+                      {sliderOrders} bộ mi / 3 tháng{' '}
                       {sliderOrders >= targetOrders ? (
                         <span className="text-emerald-500 font-bold text-[10px]">(Đủ Ải ✓)</span>
                       ) : (
                         <span className="text-amber-500 font-bold text-[10px]">
-                          (Thiếu {targetOrders - sliderOrders} ca)
+                          (Thiếu {targetOrders - sliderOrders} bộ)
                         </span>
                       )}
                     </span>

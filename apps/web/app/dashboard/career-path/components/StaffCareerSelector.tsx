@@ -278,7 +278,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
             {getRoleBadge(selectedStaff.careerRole)}
             <span className="text-slate-400">·</span>
             <span className="tabular-nums text-slate-600 dark:text-slate-300">
-              <strong>{selectedStaff.ordersCount}</strong> ca mi (90 ngày)
+              <strong>{selectedStaff.ordersCount}</strong> bộ mi (90 ngày)
             </span>
             <span className="text-slate-400">·</span>
             <span className="tabular-nums text-slate-600 dark:text-slate-300">

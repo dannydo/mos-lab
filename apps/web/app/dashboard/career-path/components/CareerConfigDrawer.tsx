@@ -175,8 +175,10 @@ export function CareerConfigDrawer({
               {/* 1.1 Số ca làm tối thiểu */}
               <div>
                 <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-                  <span>Số ca làm tối thiểu (trong 3 tháng liền):</span>
-                  <span className="font-mono text-blue-600 dark:text-blue-400 font-black">{cvToCc.minOrders} ca</span>
+                  <span>Số bộ mi tối thiểu (trong 3 tháng liền):</span>
+                  <span className="font-mono text-blue-600 dark:text-blue-400 font-black">
+                    {cvToCc.minOrders} bộ mi
+                  </span>
                 </div>
                 <Slider
                   min={100}
@@ -565,9 +567,9 @@ export function CareerConfigDrawer({
               {/* 1.2 Số ca làm tối thiểu trong 3 tháng liền */}
               <div>
                 <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-                  <span>Số ca làm tối thiểu (trong 3 tháng liền):</span>
+                  <span>Số bộ mi tối thiểu (trong 3 tháng liền):</span>
                   <span className="font-mono text-blue-600 dark:text-blue-400 font-black">
-                    {cvPlusToCvPlusPlus.minOrders ?? 350} ca
+                    {cvPlusToCvPlusPlus.minOrders ?? 350} bộ mi
                   </span>
                 </div>
                 <Slider
