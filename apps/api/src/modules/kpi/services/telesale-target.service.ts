@@ -237,9 +237,7 @@ export class TelesaleTargetService {
             },
           });
 
-          const staffByLegacyId = new Map(
-            crmStaffList.map((s) => [Number(s.legacyStaffId), s])
-          );
+          const staffByLegacyId = new Map(crmStaffList.map((s) => [Number(s.legacyStaffId), s]));
 
           let legacyProfiles: SafeAny[] = [];
           try {
@@ -249,23 +247,14 @@ export class TelesaleTargetService {
           } catch {
             // ignore
           }
-          const legacyProfileMap = new Map(
-            legacyProfiles.map((p) => [Number(p.user_id), p])
-          );
+          const legacyProfileMap = new Map(legacyProfiles.map((p) => [Number(p.user_id), p]));
 
           const result = activeLegacyIds.map((legId) => {
             const m = activeMembersMap.get(legId);
             const crmStaff = staffByLegacyId.get(legId);
             const legProf = legacyProfileMap.get(legId);
-            const name =
-              crmStaff?.displayName ||
-              m?.displayName ||
-              legProf?.full_name ||
-              `Nhân sự #${legId}`;
-            const avatarUrl =
-              crmStaff?.avatarUrl ||
-              legProf?.avatar ||
-              null;
+            const name = crmStaff?.displayName || m?.displayName || legProf?.full_name || `Nhân sự #${legId}`;
+            const avatarUrl = crmStaff?.avatarUrl || legProf?.avatar || null;
 
             return {
               crmStaffId: crmStaff?.id || m?.crmStaffId || 0,
@@ -420,11 +409,7 @@ export class TelesaleTargetService {
     return cleanConfig;
   }
 
-  static async selectTeam(
-    fastify: FastifyInstance,
-    month: string,
-    teamCode: string
-  ): Promise<TelesaleTargetConfigDto> {
+  static async selectTeam(fastify: FastifyInstance, month: string, teamCode: string): Promise<TelesaleTargetConfigDto> {
     if (!teamCode || typeof teamCode !== 'string') {
       throw new Error('Mã team không hợp lệ');
     }
@@ -522,7 +507,7 @@ export class TelesaleTargetService {
    * Tính toán tiến độ ngày làm việc và các chỉ số quản trị KPI Team (MOS-BUG-67)
    * - Loại trừ ngày OFF cố định (Chủ Nhật) & các kỳ nghỉ lễ đã cấu hình
    * - Trạng thái: Chưa bắt đầu, Vượt nhịp, Đúng nhịp, Chậm nhịp
-   * - Tính Kỳ vọng, Gap KPI, Còn lại, Cần TB/ngày cho cả Done và Book
+   * - Tính Kỳ vọng, Gap KPI, Còn lại, Cần TB/ngày cho cả Done, Incoming và Book (MOS-BUG-95)
    */
   static async calculateTeamWorkDaysPacing(
     fastify: FastifyInstance,
@@ -532,7 +517,9 @@ export class TelesaleTargetService {
     doneTarget: number,
     doneActual: number,
     bookTarget: number,
-    bookActual: number
+    bookActual: number,
+    incomingTarget?: number,
+    incomingActual?: number
   ): Promise<{
     workDaysTotal: number;
     workDaysElapsed: number;
@@ -542,12 +529,16 @@ export class TelesaleTargetService {
     pacingStatusLabel: string;
     expectedProgressRate: number;
     expectedDone: number;
+    expectedIncoming: number;
     expectedBook: number;
     gapDone: number;
+    gapIncoming: number;
     gapBook: number;
     remainingDone: number;
+    remainingIncoming: number;
     remainingBook: number;
     dailyRequiredDone: number;
+    dailyRequiredIncoming: number;
     dailyRequiredBook: number;
     pacingRatio: number;
     isPacingOnTrack: boolean;
@@ -626,25 +617,35 @@ export class TelesaleTargetService {
         ? Number(Math.min(1, workDaysElapsed / workDaysTotal).toFixed(4))
         : 0;
 
+    const effectiveIncomingTarget = incomingTarget !== undefined ? incomingTarget : bookTarget;
+    const effectiveIncomingActual = incomingActual !== undefined ? incomingActual : bookActual;
+
     // 4. Mức kỳ vọng và Gap KPI
     const expectedDone = Math.round(doneTarget * expectedProgressRate);
-    const expectedBook = Math.round(bookTarget * expectedProgressRate);
+    const expectedIncoming = Math.round(effectiveIncomingTarget * expectedProgressRate);
+    const expectedBook = expectedIncoming;
     const gapDone = doneActual - expectedDone;
-    const gapBook = bookActual - expectedBook;
+    const gapIncoming = effectiveIncomingActual - expectedIncoming;
+    const gapBook = gapIncoming;
     const remainingDone = Math.max(0, doneTarget - doneActual);
-    const remainingBook = Math.max(0, bookTarget - bookActual);
+    const remainingIncoming = Math.max(0, effectiveIncomingTarget - effectiveIncomingActual);
+    const remainingBook = remainingIncoming;
 
     let dailyRequiredDone: number;
+    let dailyRequiredIncoming: number;
     let dailyRequiredBook: number;
 
     if (periodStatus === 'NOT_STARTED') {
       dailyRequiredDone = workDaysTotal > 0 ? Number((doneTarget / workDaysTotal).toFixed(1)) : 0;
-      dailyRequiredBook = workDaysTotal > 0 ? Number((bookTarget / workDaysTotal).toFixed(1)) : 0;
+      dailyRequiredIncoming = workDaysTotal > 0 ? Number((effectiveIncomingTarget / workDaysTotal).toFixed(1)) : 0;
+      dailyRequiredBook = dailyRequiredIncoming;
     } else if (periodStatus === 'IN_PROGRESS') {
       dailyRequiredDone = workDaysRemaining > 0 ? Number((remainingDone / workDaysRemaining).toFixed(1)) : 0;
-      dailyRequiredBook = workDaysRemaining > 0 ? Number((remainingBook / workDaysRemaining).toFixed(1)) : 0;
+      dailyRequiredIncoming = workDaysRemaining > 0 ? Number((remainingIncoming / workDaysRemaining).toFixed(1)) : 0;
+      dailyRequiredBook = dailyRequiredIncoming;
     } else {
       dailyRequiredDone = 0;
+      dailyRequiredIncoming = 0;
       dailyRequiredBook = 0;
     }
 
@@ -690,12 +691,16 @@ export class TelesaleTargetService {
       pacingStatusLabel,
       expectedProgressRate,
       expectedDone,
+      expectedIncoming,
       expectedBook,
       gapDone,
+      gapIncoming,
       gapBook,
       remainingDone,
+      remainingIncoming,
       remainingBook,
       dailyRequiredDone,
+      dailyRequiredIncoming,
       dailyRequiredBook,
       pacingRatio,
       isPacingOnTrack,
@@ -732,50 +737,57 @@ export class TelesaleTargetService {
     const combinedStaffIds = targetStaffIds;
 
     // 1. Fetch Month and Today metrics directly from BkLeaderboardService (Single Source of Truth)
-    const [monthBookingRes, todayBookingRes, monthDoneRes, todayDoneRes, monthRevenueRes] = await Promise.all([
-      BkLeaderboardService.getBookingLeaderboard(fastify, {
-        dateFrom: startDateStr,
-        dateTo: endDateStr,
-        targetStaffIds: combinedStaffIds,
-        skipCache: true,
-      }),
-      BkLeaderboardService.getBookingLeaderboard(fastify, {
-        dateFrom: todayStr,
-        dateTo: todayStr,
-        targetStaffIds: combinedStaffIds,
-        skipCache: true,
-      }),
-      BkLeaderboardService.getDoneLeaderboard(fastify, {
-        dateFrom: startDateStr,
-        dateTo: endDateStr,
-        targetStaffIds: combinedStaffIds,
-        skipCache: true,
-      }),
-      BkLeaderboardService.getDoneLeaderboard(fastify, {
-        dateFrom: todayStr,
-        dateTo: todayStr,
-        targetStaffIds: combinedStaffIds,
-        skipCache: true,
-      }),
-      BkLeaderboardService.getRevenueLeaderboard(fastify, {
-        dateFrom: startDateStr,
-        dateTo: endDateStr,
-        targetStaffIds: combinedStaffIds,
-        skipCache: true,
-      }),
-    ]);
+    const [monthBookingRes, todayBookingRes, monthDoneRes, todayDoneRes, monthRevenueRes, teamMonthIncomingActual] =
+      await Promise.all([
+        BkLeaderboardService.getBookingLeaderboard(fastify, {
+          dateFrom: startDateStr,
+          dateTo: endDateStr,
+          targetStaffIds: combinedStaffIds,
+          skipCache: true,
+        }),
+        BkLeaderboardService.getBookingLeaderboard(fastify, {
+          dateFrom: todayStr,
+          dateTo: todayStr,
+          targetStaffIds: combinedStaffIds,
+          skipCache: true,
+        }),
+        BkLeaderboardService.getDoneLeaderboard(fastify, {
+          dateFrom: startDateStr,
+          dateTo: endDateStr,
+          targetStaffIds: combinedStaffIds,
+          skipCache: true,
+        }),
+        BkLeaderboardService.getDoneLeaderboard(fastify, {
+          dateFrom: todayStr,
+          dateTo: todayStr,
+          targetStaffIds: combinedStaffIds,
+          skipCache: true,
+        }),
+        BkLeaderboardService.getRevenueLeaderboard(fastify, {
+          dateFrom: startDateStr,
+          dateTo: endDateStr,
+          targetStaffIds: combinedStaffIds,
+          skipCache: true,
+        }),
+        BkLeaderboardService.getIncomingBookingsCount(fastify, {
+          dateFrom: startDateStr,
+          dateTo: endDateStr,
+          targetStaffIds: combinedStaffIds,
+        }),
+      ]);
 
     // Team Month actuals: 100% unified with BK Leaderboard
     const teamMonthBookActual = monthBookingRes.summary.totalBookings;
     const teamMonthDoneActual = monthDoneRes.summary.totalDone;
     let teamMonthComboLiveDoneActual = 0;
+    const incomingTarget = config.teamIncomingTarget ?? config.teamBookTarget;
 
     // Team Daily actuals: 100% unified with BK Leaderboard
     const teamDailyBookActual = todayBookingRes.summary.totalBookings;
     const teamDailyDoneActual = todayDoneRes.summary.totalDone;
     const teamDailyComboLiveDoneActual = 0;
 
-    // Pacing & Management metrics calculation (MOS-BUG-67)
+    // Pacing & Management metrics calculation (MOS-BUG-67, MOS-BUG-95: Incoming replaces created Bookings in Ô 1)
     const pacing = await this.calculateTeamWorkDaysPacing(
       fastify,
       month,
@@ -784,7 +796,9 @@ export class TelesaleTargetService {
       config.teamDoneTarget,
       teamMonthDoneActual,
       config.teamBookTarget,
-      teamMonthBookActual
+      teamMonthIncomingActual,
+      incomingTarget,
+      teamMonthIncomingActual
     );
 
     // 2. Query today's working shift for target staff to evaluate isWorkingToday (MOS-BUG-77)
@@ -1423,8 +1437,10 @@ export class TelesaleTargetService {
         doneTarget: config.teamDoneTarget,
         doneActual: teamMonthDoneActual,
         comboLiveDoneActual: teamMonthComboLiveDoneActual,
+        incomingTarget,
+        incomingActual: teamMonthIncomingActual,
         bookTarget: config.teamBookTarget,
-        bookActual: teamMonthBookActual,
+        bookActual: teamMonthIncomingActual,
         workDaysTotal: pacing.workDaysTotal,
         workDaysElapsed: pacing.workDaysElapsed,
         workDaysRemaining: pacing.workDaysRemaining,
@@ -1433,12 +1449,16 @@ export class TelesaleTargetService {
         pacingStatusLabel: pacing.pacingStatusLabel,
         expectedProgressRate: pacing.expectedProgressRate,
         expectedDone: pacing.expectedDone,
+        expectedIncoming: pacing.expectedIncoming,
         expectedBook: pacing.expectedBook,
         gapDone: pacing.gapDone,
+        gapIncoming: pacing.gapIncoming,
         gapBook: pacing.gapBook,
         remainingDone: pacing.remainingDone,
+        remainingIncoming: pacing.remainingIncoming,
         remainingBook: pacing.remainingBook,
         dailyRequiredDone: pacing.dailyRequiredDone,
+        dailyRequiredIncoming: pacing.dailyRequiredIncoming,
         dailyRequiredBook: pacing.dailyRequiredBook,
         pacingRatio: pacing.pacingRatio,
         isPacingOnTrack: pacing.isPacingOnTrack,

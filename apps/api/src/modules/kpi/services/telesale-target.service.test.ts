@@ -1341,3 +1341,80 @@ test('TelesaleTargetService.selectTeam updates teamCode and re-synchronizes staf
   assert.equal(refetched.teamName, 'Customer Service (CS)');
   assert.equal(refetched.staffTargets.length, 2);
 });
+
+test('TelesaleTargetService & BkLeaderboardService: MOS-BUG-95 computes incoming bookings count and pacing for War Room team', async () => {
+  const { BkLeaderboardService } = await import('./bk-leaderboard.service.js');
+
+  let executedSql = '';
+  const mockFastify = {
+    prisma: {
+      legacy: {
+        $queryRawUnsafe: async (sql: string) => {
+          executedSql = sql;
+          return [{ incomingCount: 78 }];
+        },
+      },
+      crm: {
+        crmConfig: {
+          findUnique: async () => ({
+            key: 'ACTIVE_BK_TELESALES_STAFF_CONFIG',
+            value: JSON.stringify({ activeStaffIds: [50670, 52648] }),
+          }),
+        },
+      },
+    },
+    cache: {
+      get: () => null,
+      set: () => {},
+    },
+  };
+
+  // 1. Test BkLeaderboardService.getIncomingBookingsCount
+  const count = await BkLeaderboardService.getIncomingBookingsCount(mockFastify as any, {
+    dateFrom: '2026-10-01',
+    dateTo: '2026-10-31',
+    targetStaffIds: [50670, 52648],
+  });
+
+  assert.equal(count, 78);
+  assert.match(executedSql, /booking_date_start >= '2026-10-01 00:00:00'/);
+  assert.match(executedSql, /booking_date_start <= '2026-10-31 23:59:59'/);
+  assert.match(executedSql, /booking_date_start > NOW\(\)/);
+  assert.match(executedSql, /order_state NOT IN \('Completed', 'CheckOut', 'Cancelled'\)/);
+  assert.match(executedSql, /ro\.actual_booking_date_start IS NULL/);
+  assert.match(executedSql, /total_price IS NULL OR o\.total_price = 0/);
+  assert.match(executedSql, /50670,52648/);
+
+  // 2. Test calculateTeamWorkDaysPacing with incoming target & actual
+  const nowMid = new Date('2026-10-15T10:00:00.000Z');
+  const pacingMockFastify = {
+    prisma: {
+      crm: {
+        crmHolidayPeriod: {
+          findMany: async () => [],
+        },
+      },
+    },
+    log: { warn: () => {} },
+  };
+
+  const pacing = await TelesaleTargetService.calculateTeamWorkDaysPacing(
+    pacingMockFastify as any,
+    '2026-10',
+    [50670, 52648],
+    nowMid,
+    450,
+    220,
+    650,
+    78,
+    650,
+    78
+  );
+
+  assert.equal(pacing.expectedIncoming, 313);
+  assert.equal(pacing.gapIncoming, 78 - 313); // -235
+  assert.equal(pacing.remainingIncoming, 650 - 78); // 572
+  assert.equal(pacing.dailyRequiredIncoming, 40.9);
+  assert.equal(pacing.expectedBook, pacing.expectedIncoming);
+  assert.equal(pacing.gapBook, pacing.gapIncoming);
+});

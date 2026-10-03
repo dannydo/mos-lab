@@ -93,7 +93,7 @@ export const TargetConfigModal: React.FC<TargetConfigModalProps> = ({ open, onCl
           return {
             legacyStaffId: Number(st.legacyStaffId),
             name: st.name,
-            doneTarget: !isNaN(parsedVal) && parsedVal > 0 ? parsedVal : (Number(st.doneTarget) || 100),
+            doneTarget: !isNaN(parsedVal) && parsedVal > 0 ? parsedVal : Number(st.doneTarget) || 100,
             avatarUrl: st.avatarUrl || null,
           };
         }),
@@ -161,7 +161,11 @@ export const TargetConfigModal: React.FC<TargetConfigModalProps> = ({ open, onCl
               </Form.Item>
             </Col>
             <Col xs={12} sm={6}>
-              <Form.Item name="teamBookTarget" label="KPI Team Book" rules={[{ required: true, message: 'Nhập Book' }]}>
+              <Form.Item
+                name="teamBookTarget"
+                label="KPI Team Incoming"
+                rules={[{ required: true, message: 'Nhập Incoming' }]}
+              >
                 <InputNumber min={1} className="w-full font-bold" />
               </Form.Item>
             </Col>

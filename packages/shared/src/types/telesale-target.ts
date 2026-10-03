@@ -91,6 +91,8 @@ export interface TelesaleTargetOverview {
     doneTarget: number;
     doneActual: number;
     comboLiveDoneActual?: number;
+    incomingTarget?: number;
+    incomingActual?: number;
     bookTarget: number;
     bookActual: number;
     // Workdays pacing & KPI management metrics (MOS-BUG-67)
@@ -103,13 +105,17 @@ export interface TelesaleTargetOverview {
     pacingRatio: number;
     isPacingOnTrack: boolean;
     dailyRequiredDone: number;
+    dailyRequiredIncoming?: number;
     dailyRequiredBook: number;
     expectedProgressRate: number;
     expectedDone: number;
+    expectedIncoming?: number;
     expectedBook: number;
     gapDone: number;
+    gapIncoming?: number;
     gapBook: number;
     remainingDone: number;
+    remainingIncoming?: number;
     remainingBook: number;
     pacingDaysElapsed?: number;
     pacingDaysTotal?: number;
@@ -194,6 +200,7 @@ export interface TelesaleTargetConfigDto {
   teamName?: string;
   teamDoneTarget: number;
   teamBookTarget: number;
+  teamIncomingTarget?: number;
   dailyDoneTarget: number;
   dailyBookTarget: number;
   dailyCallPerStaff: number;
