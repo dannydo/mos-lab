@@ -689,10 +689,10 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
   const tipExcessPercent = Math.max(0, Number((staffTipRatePercent - targetTipRatePercent).toFixed(1)));
   const tipProgressPercent = Math.min(100, Math.max(0, Math.round((staffTipRate / targetTipRate) * 100)));
 
-  // 4. QA/QC tối thiểu 12 lần trong 3 tháng qua
+  // 4. QA/QC tối thiểu 4 lần trong tháng hoàn tất gần nhất (1 lần/tuần)
   const qaAudit = metrics.qaAudit;
   const requiredQaAudits =
-    targetReq.minQaAudits ?? (targetReq.minWeeklyQaAudits ? Math.round(targetReq.minWeeklyQaAudits * 12) : 12);
+    targetReq.minQaAudits ?? (targetReq.minWeeklyQaAudits ? Math.round(targetReq.minWeeklyQaAudits * 4) : 4);
   const totalQaAudits = qaAudit?.totalAudits ?? 0;
   const isQaPassed =
     requiredQaAudits === 0 ||
@@ -703,7 +703,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
       ? 100
       : isQaPassed
         ? 100
-        : Math.min(100, Math.round((totalQaAudits / (requiredQaAudits || 12)) * 100));
+        : Math.min(100, Math.round((totalQaAudits / (requiredQaAudits || 4)) * 100));
 
   // 5. HI (Happiness Index)
   const happinessIndex = metrics.happinessIndex ?? 0;
@@ -758,7 +758,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
       isPassed: isSimTipPassed,
     },
     {
-      label: requiredQaAudits > 0 ? `QA ≥ ${requiredQaAudits}L/3T` : 'QA (Miễn)',
+      label: requiredQaAudits > 0 ? `QA ≥ ${requiredQaAudits}L/1T` : 'QA (Miễn)',
       icon: '🛡️',
       name: 'Kiểm định QA',
       isPassed: isSimQaPassed,
@@ -769,7 +769,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
       name: 'Teamwork HI',
       isPassed: isSimHiPassed,
     },
-    { label: `Chuối ≥ ${minBananaCountVal}/90N`, icon: '🍌', name: 'Chuối Yêu Thương', isPassed: isSimBananaPassed },
+    { label: `Chuối ≥ ${minBananaCountVal}/1T`, icon: '🍌', name: 'Chuối Yêu Thương', isPassed: isSimBananaPassed },
   ];
 
   const radarActualScores = [
@@ -778,7 +778,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
       ? 1.0 + Math.max(0, 0.2 - (metrics.fixRate || 0) * 10)
       : Math.max(0.2, 1.0 - ((metrics.fixRate || 0) - targetMaxFix) * 25),
     targetTipRate > 0 ? Math.min(1.2, Math.max(0.2, staffTipRate / targetTipRate)) : 0.5,
-    requiredQaAudits > 0 ? (hasFailedQa ? 0.2 : Math.min(1.2, totalQaAudits / (requiredQaAudits || 12))) : 1.0,
+    requiredQaAudits > 0 ? (hasFailedQa ? 0.2 : Math.min(1.2, totalQaAudits / (requiredQaAudits || 4))) : 1.0,
     happinessIndex >= minHappinessIndex
       ? Math.min(1.2, 1.0 + Math.min(0.2, (happinessIndex - minHappinessIndex) * 2))
       : Math.max(0.2, happinessIndex / minHappinessIndex),
@@ -794,7 +794,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
       ? 1.0 + Math.max(0, 0.2 - (sliderFixRate / 100) * 10)
       : Math.max(0.2, 1.0 - (sliderFixRate / 100 - targetMaxFix) * 25),
     targetTipRate > 0 ? Math.min(1.2, Math.max(0.2, sliderTipRate / 100 / targetTipRate)) : 0.5,
-    requiredQaAudits > 0 ? (hasFailedQa ? 0.2 : Math.min(1.2, sliderQaAudits / (requiredQaAudits || 12))) : 1.0,
+    requiredQaAudits > 0 ? (hasFailedQa ? 0.2 : Math.min(1.2, sliderQaAudits / (requiredQaAudits || 4))) : 1.0,
     sliderHappinessIndex / 100 >= minHappinessIndex
       ? Math.min(1.2, 1.0 + Math.min(0.2, (sliderHappinessIndex / 100 - minHappinessIndex) * 2))
       : Math.max(0.2, sliderHappinessIndex / 100 / minHappinessIndex),
@@ -813,7 +813,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
       shortName: 'Bộ mi',
       title: '1. Sản Lượng Bộ Mi / 3 Tháng',
       currentValText: `${sliderOrders} bộ mi`,
-      targetText: `≥ ${targetOrders} bộ / 90 ngày`,
+      targetText: `≥ ${targetOrders} bộ / 3 tháng hoàn tất`,
       actualText: `${metrics.ordersCount || 0} bộ`,
       isPassed: isSimOrdersPassed,
       min: 50,
@@ -829,7 +829,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
         { label: `Đạt chuẩn (${targetOrders})`, val: targetOrders },
         { label: 'Về thực tế', val: metrics.ordersCount || 300 },
       ],
-      desc: 'Đạt đủ số bộ mi trong 90 ngày thể hiện tay nghề nhanh nhẹn, ổn định và năng lực phục vụ khách hàng liên tục.',
+      desc: 'Đạt đủ số bộ mi trong 3 tháng hoàn tất gần nhất thể hiện tay nghề nhanh nhẹn, ổn định và năng lực phục vụ khách hàng liên tục.',
     },
     {
       index: 1,
@@ -883,7 +883,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
       shortName: 'QA/QC',
       title: '4. Kiểm Định QA/QC Định Kỳ',
       currentValText: `${sliderQaAudits} lần kiểm`,
-      targetText: `≥ ${requiredQaAudits} lần / 90 ngày (0 bài Failed)`,
+      targetText: `≥ ${requiredQaAudits} lần / tháng hoàn tất (0 bài Failed)`,
       actualText: `${totalQaAudits} lần`,
       isPassed: isSimQaPassed,
       min: 0,
@@ -932,7 +932,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
       shortName: 'Chuối',
       title: '6. Chuối Yêu Thương Check-in',
       currentValText: `${sliderBananaCount} 🍌 chuối`,
-      targetText: `≥ ${minBananaCountVal} chuối / 90 ngày`,
+      targetText: `≥ ${minBananaCountVal} chuối / tháng hoàn tất`,
       actualText: `${bananaCount} chuối`,
       isPassed: isSimBananaPassed,
       min: 0,
@@ -1517,8 +1517,8 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">
                     <span>
                       {ordersGap === 0
-                        ? '✓ Đã cán mốc tối thiểu 90 ngày'
-                        : `⚡ Cần thêm ${ordersGap} bộ mi trong kỳ 90 ngày`}
+                        ? '✓ Đã cán mốc tối thiểu 3 tháng hoàn tất'
+                        : `⚡ Cần thêm ${ordersGap} bộ mi trong kỳ 3 tháng hoàn tất`}
                     </span>
                     <span className="tabular-nums font-semibold text-slate-300">Mục tiêu: {targetOrders} bộ</span>
                   </div>
@@ -2182,10 +2182,10 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">
                     <span className="truncate">
                       {isBananaPassed
-                        ? `✓ Đạt chuẩn ≥ ${minBananaCount} chuối trong 90 ngày`
-                        : `⚡ Còn thiếu ${Math.max(0, minBananaCount - bananaCount)} chuối trong 90 ngày`}
+                        ? `✓ Đạt chuẩn ≥ ${minBananaCount} chuối trong tháng hoàn tất`
+                        : `⚡ Còn thiếu ${Math.max(0, minBananaCount - bananaCount)} chuối trong tháng hoàn tất`}
                     </span>
-                    <span className="shrink-0 font-semibold tabular-nums text-slate-300">90N ≥ {minBananaCount}</span>
+                    <span className="shrink-0 font-semibold tabular-nums text-slate-300">1T ≥ {minBananaCount}</span>
                   </div>
                 </div>
               )}

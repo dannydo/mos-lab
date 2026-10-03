@@ -432,7 +432,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
-        <Tooltip title="Bộ mi: Số ca hoàn thành trong 3 tháng (Chuẩn ≥ 300 bộ)">
+        <Tooltip title="Bộ mi: Số ca hoàn thành trong 3 tháng hoàn tất gần nhất (Chuẩn ≥ 300 bộ)">
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <Eye className="w-4 h-4 text-slate-600 dark:text-slate-300" />
           </span>
@@ -447,7 +447,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
         const count = ordersCount || 0;
         const status = getOrdersStatus(count);
         return (
-          <Tooltip title={`${count}/300 bộ mi (3 tháng) · ${getStatusLabel(status)}`}>
+          <Tooltip title={`${count}/300 bộ mi (3 tháng hoàn tất) · ${getStatusLabel(status)}`}>
             <span
               className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${getStatusBadgeClass(
                 status
@@ -461,7 +461,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
-        <Tooltip title="Fix: Tỷ lệ sửa mi / bảo hành trong tháng gần nhất (Chuẩn ≤ 2.0%)">
+        <Tooltip title="Fix: Tỷ lệ sửa mi / bảo hành trong tháng hoàn tất gần nhất (Chuẩn ≤ 2.0%)">
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <Bug className="w-4 h-4 text-slate-600 dark:text-slate-300" />
           </span>
@@ -476,7 +476,9 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
         const fixPct = Number(((fixRate || 0) * 100).toFixed(1));
         const status = getFixStatus(fixRate || 0);
         return (
-          <Tooltip title={`Tỷ lệ bảo hành / sửa: ${fixPct}% tháng gần nhất (chuẩn ≤ 2.0%) · ${getStatusLabel(status)}`}>
+          <Tooltip
+            title={`Tỷ lệ bảo hành / sửa: ${fixPct}% tháng hoàn tất gần nhất (chuẩn ≤ 2.0%) · ${getStatusLabel(status)}`}
+          >
             <span
               className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${getStatusBadgeClass(
                 status
@@ -490,7 +492,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
-        <Tooltip title="Tip: Tỷ lệ khách tip ≥ 20K trong tháng gần nhất (Chuẩn vượt 10% TB chi nhánh)">
+        <Tooltip title="Tip: Tỷ lệ khách tip ≥ 20K trong tháng hoàn tất gần nhất (Chuẩn vượt 10% TB chi nhánh)">
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <Coins className="w-4 h-4 text-slate-600 dark:text-slate-300" />
           </span>
@@ -509,7 +511,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
         const targetTipPct = Number(((staff.shopTipRate || staff.branchTipRate || 0.45) * 1.1 * 100).toFixed(1));
         return (
           <Tooltip
-            title={`Tip tháng gần nhất: ${tipPct}% (mục tiêu ≥ ${targetTipPct}% · TB ${branchLabel}: ${branchTipPct}%, ${
+            title={`Tip tháng hoàn tất gần nhất: ${tipPct}% (mục tiêu ≥ ${targetTipPct}% · TB ${branchLabel}: ${branchTipPct}%, ${
               diffShop >= 0 ? `+${diffShop}%` : `${diffShop}%`
             }) · ${getStatusLabel(status)}`}
           >
@@ -526,7 +528,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
-        <Tooltip title="QA & QC: Kiểm định định kỳ trong tháng gần nhất (Chuẩn ≥ 4 lần/tháng và không vi phạm FAILED)">
+        <Tooltip title="QA & QC: Kiểm định định kỳ trong tháng hoàn tất gần nhất (Chuẩn ≥ 4 lần/tháng và không vi phạm FAILED)">
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <ShieldCheck className="w-4 h-4 text-slate-600 dark:text-slate-300" />
           </span>
@@ -544,7 +546,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
             title={
               staff.hasFailedQaAudit
                 ? '✕ Có biên bản vi phạm QA'
-                : `${audits}/4 lần kiểm định tác phong & vệ sinh tháng gần nhất · ${getStatusLabel(status)}`
+                : `${audits}/4 lần kiểm định tác phong & vệ sinh tháng hoàn tất gần nhất · ${getStatusLabel(status)}`
             }
           >
             <span
@@ -560,7 +562,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
-        <Tooltip title="HI: Chỉ số Hạnh Phúc trong tháng gần nhất (Chuẩn ≥ 70%)">
+        <Tooltip title="HI: Chỉ số Hạnh Phúc trong tháng hoàn tất gần nhất (Chuẩn ≥ 70%)">
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <Heart className="w-4 h-4 text-slate-600 dark:text-slate-300" />
           </span>
@@ -575,7 +577,9 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
         const hiPct = Math.round((happinessIndex || 0.75) * 100);
         const status = getHiStatus(happinessIndex || 0.75);
         return (
-          <Tooltip title={`Chỉ số Hạnh Phúc HI tháng gần nhất: ${hiPct}% (chuẩn ≥ 70%) · ${getStatusLabel(status)}`}>
+          <Tooltip
+            title={`Chỉ số Hạnh Phúc HI tháng hoàn tất gần nhất: ${hiPct}% (chuẩn ≥ 70%) · ${getStatusLabel(status)}`}
+          >
             <span
               className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${getStatusBadgeClass(
                 status
@@ -589,7 +593,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
-        <Tooltip title="Chuối yêu thương: Check-in nhận từ đồng đội trong tháng gần nhất (Chuẩn ≥ 20 🍌)">
+        <Tooltip title="Chuối yêu thương: Check-in nhận từ đồng đội trong tháng hoàn tất gần nhất (Chuẩn ≥ 20 🍌)">
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <Banana className="w-4 h-4 text-amber-500" />
           </span>
@@ -604,7 +608,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
         const count = bananaCount || 0;
         const status = getBananaCountStatus(count);
         return (
-          <Tooltip title={`${count}/20 chuối yêu thương tháng gần nhất · ${getStatusLabel(status)}`}>
+          <Tooltip title={`${count}/20 chuối yêu thương tháng hoàn tất gần nhất · ${getStatusLabel(status)}`}>
             <span
               className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${getStatusBadgeClass(
                 status
@@ -662,7 +666,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
               {filteredStaff.length}
             </span>
             <Tooltip
-              title="Dữ liệu đồng bộ trực tiếp từ danh sách Báo Cáo CV (Số bộ mi 3 tháng; Bug, Tip, QA/QC, HI, Chuối yêu thương tháng gần nhất)"
+              title="Dữ liệu đánh giá theo tháng hoàn tất gần nhất (VD: Tháng 10 tính tháng 9 trọn vẹn). Riêng số bộ mi & combo tính 3 tháng hoàn tất gần nhất (T7, T8, T9)."
               placement="bottomLeft"
             >
               <span className="cursor-help text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-0.5 inline-flex items-center">
@@ -906,7 +910,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
                       )}`}
                     >
                       <ShieldCheck className="w-2.5 h-2.5" />
-                      <span>{audits}/12</span>
+                      <span>{audits}/4</span>
                     </div>
                     <div
                       className={`flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-full border tabular-nums font-bold ${getStatusBadgeClass(
@@ -965,7 +969,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
             )}
             <span className="text-slate-400">·</span>
             <span className="tabular-nums text-slate-600 dark:text-slate-300">
-              <strong>{selectedStaff.ordersCount}</strong> bộ mi (90 ngày)
+              <strong>{selectedStaff.ordersCount}</strong> bộ mi (3 tháng hoàn tất)
             </span>
             <span className="text-slate-400">·</span>
             <span className="tabular-nums text-slate-600 dark:text-slate-300">
@@ -977,7 +981,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
             </span>
             <span className="text-slate-400">·</span>
             <span className="tabular-nums text-slate-600 dark:text-slate-300">
-              QA: <strong>{getQaAuditsCount(selectedStaff)}/12</strong>
+              QA: <strong>{getQaAuditsCount(selectedStaff)}/4</strong>
             </span>
             <span className="text-slate-400">·</span>
             <span className="tabular-nums text-slate-600 dark:text-slate-300">
