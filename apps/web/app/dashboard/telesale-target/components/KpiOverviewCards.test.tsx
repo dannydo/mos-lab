@@ -164,4 +164,27 @@ describe('KpiOverviewCards - MOS-BUG-72 Individual KPI (Done)', () => {
     // 10. Combo must be present for all 3 staff
     expect(screen.getAllByText(/Combo:/i).length).toBe(3);
   });
+
+  it('MOS-BUG-95: renders Incoming Tháng card with 6 management metrics and excludes Book Tháng', () => {
+    render(<KpiOverviewCards overview={mockOverview} />);
+
+    // 1. Header & Badge
+    expect(screen.getByText('Incoming Tháng')).toBeInTheDocument();
+    expect(screen.getByText('SẮP TỚI')).toBeInTheDocument();
+    expect(screen.queryByText('Book Tháng')).not.toBeInTheDocument();
+
+    // 2. Incoming count / target
+    expect(screen.getByText('240')).toBeInTheDocument();
+    expect(screen.getByText('/ 650 Incoming')).toBeInTheDocument();
+
+    // 3. Expected, Gap, Remaining, Daily Required
+    expect(screen.getByText('250')).toBeInTheDocument();
+    expect(screen.getByText('-10')).toBeInTheDocument();
+    expect(screen.getByText('410')).toBeInTheDocument();
+    expect(screen.getByText('25.6/ngày')).toBeInTheDocument();
+
+    // 4. Target footer
+    expect(screen.getByText('Chỉ tiêu Incoming')).toBeInTheDocument();
+    expect(screen.getByText('650 Incoming')).toBeInTheDocument();
+  });
 });

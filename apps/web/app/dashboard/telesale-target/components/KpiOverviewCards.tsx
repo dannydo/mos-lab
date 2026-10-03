@@ -25,8 +25,12 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
   const totalMonthDone = teamMonth.doneActual + comboLiveMonthActual;
   const comboLiveMonthShare = totalMonthDone > 0 ? Math.round((comboLiveMonthActual / totalMonthDone) * 100) : 0;
 
-  const bookPercent = Math.round((teamMonth.bookActual / (teamMonth.bookTarget || 1)) * 100);
-  const isBookOver100 = bookPercent > 100;
+  const incomingTarget = teamMonth.incomingTarget ?? teamMonth.bookTarget ?? 1;
+  const incomingActual = teamMonth.incomingActual ?? teamMonth.bookActual ?? 0;
+  const incomingPercent = Math.round((incomingActual / (incomingTarget || 1)) * 100);
+  const isIncomingOver100 = incomingPercent > 100;
+  const bookPercent = incomingPercent;
+  const isBookOver100 = isIncomingOver100;
 
   const isPeriodNotStarted = teamMonth.periodStatus === 'NOT_STARTED';
   const isPeriodCompleted = teamMonth.periodStatus === 'COMPLETED';
@@ -238,37 +242,37 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
                 </div>
               </div>
 
-              {/* 2. Book Card (Leading Action / KPI dẫn dắt - nhỏ hơn một cấp) */}
+              {/* 2. Incoming Card (MOS-BUG-95: Điều chỉnh Ô 1 – KPI Team tháng: Book → Incoming) */}
               <div className="bg-black/40 rounded-xl p-3 border border-zinc-800 flex flex-col justify-between transition-all hover:border-zinc-700">
                 <div>
                   <div className="flex items-center justify-between text-zinc-400 text-xs">
                     <span className="flex items-center gap-1.5">
                       <Calendar className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                      <strong className="text-zinc-300 font-medium">Book Tháng</strong>
+                      <strong className="text-zinc-300 font-medium">Incoming Tháng</strong>
                     </span>
                     <span className="text-[10px] text-blue-400 font-mono bg-blue-950/60 px-1.5 py-0.5 rounded border border-blue-500/20">
-                      DẪN DẮT
+                      SẮP TỚI
                     </span>
                   </div>
                   <div className="mt-1.5 flex items-baseline gap-1.5">
                     <span className="text-xl sm:text-2xl font-bold font-mono text-zinc-200 tabular-nums">
-                      {teamMonth.bookActual}
+                      {incomingActual}
                     </span>
-                    <span className="text-zinc-500 text-xs font-mono">/ {teamMonth.bookTarget} Book</span>
+                    <span className="text-zinc-500 text-xs font-mono">/ {incomingTarget} Incoming</span>
                   </div>
                   <Progress
-                    percent={isPeriodNotStarted ? 0 : Math.min(100, bookPercent)}
+                    percent={isPeriodNotStarted ? 0 : Math.min(100, incomingPercent)}
                     strokeColor={
                       isPeriodNotStarted
                         ? token.colorTextQuaternary
-                        : isBookOver100
+                        : isIncomingOver100
                           ? token.colorWarning
                           : token.colorInfo
                     }
                     strokeWidth={5}
                     size="small"
                     showInfo={false}
-                    className={`mt-2 ${isBookOver100 ? 'supercharged-bar' : ''}`}
+                    className={`mt-2 ${isIncomingOver100 ? 'supercharged-bar' : ''}`}
                   />
                   <div className="flex justify-between items-center text-[11px] mt-1.5 font-mono">
                     <span className="text-zinc-400">Tiến độ</span>
@@ -276,24 +280,29 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
                       className={
                         isPeriodNotStarted
                           ? 'text-zinc-500 font-semibold'
-                          : isBookOver100
+                          : isIncomingOver100
                             ? 'text-amber-400 font-bold'
                             : 'text-blue-400 font-bold'
                       }
                     >
-                      {isPeriodNotStarted ? '0%' : isBookOver100 ? `✨ ${bookPercent}% VƯỢT` : `${bookPercent}%`}
+                      {isPeriodNotStarted
+                        ? '0%'
+                        : isIncomingOver100
+                          ? `✨ ${incomingPercent}% VƯỢT`
+                          : `${incomingPercent}%`}
                     </span>
                   </div>
 
-                  {/* Management Metrics: Đủ 6 chỉ số đối chiếu cho Book */}
+                  {/* Management Metrics: Đủ 6 chỉ số đối chiếu cho Incoming */}
                   <div className="mt-2.5 pt-2 border-t border-zinc-800/80 grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] font-mono">
                     <div className="flex justify-between items-center text-zinc-400">
                       <span>Kỳ vọng:</span>
                       <span className="text-zinc-200 font-semibold tabular-nums">
                         {isPeriodNotStarted
                           ? '-'
-                          : (teamMonth.expectedBook ??
-                            Math.round(teamMonth.bookTarget * (workDaysElapsed / (workDaysTotal || 1))))}
+                          : (teamMonth.expectedIncoming ??
+                            teamMonth.expectedBook ??
+                            Math.round(incomingTarget * (workDaysElapsed / (workDaysTotal || 1))))}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-zinc-400">
@@ -302,34 +311,38 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
                         className={`font-bold tabular-nums ${
                           isPeriodNotStarted
                             ? 'text-zinc-400'
-                            : (teamMonth.gapBook ?? 0) >= 0
+                            : (teamMonth.gapIncoming ?? teamMonth.gapBook ?? 0) >= 0
                               ? 'text-emerald-400'
                               : 'text-rose-400'
                         }`}
                       >
                         {isPeriodNotStarted
                           ? '-'
-                          : `${(teamMonth.gapBook ?? 0) >= 0 ? '+' : ''}${teamMonth.gapBook ?? 0}`}
+                          : `${(teamMonth.gapIncoming ?? teamMonth.gapBook ?? 0) >= 0 ? '+' : ''}${teamMonth.gapIncoming ?? teamMonth.gapBook ?? 0}`}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-zinc-400">
                       <span>Còn lại:</span>
                       <span className="text-zinc-200 font-semibold tabular-nums">
-                        {teamMonth.remainingBook ?? Math.max(0, teamMonth.bookTarget - teamMonth.bookActual)}
+                        {teamMonth.remainingIncoming ??
+                          teamMonth.remainingBook ??
+                          Math.max(0, incomingTarget - incomingActual)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-zinc-400">
                       <span>Cần TB:</span>
                       <span className="text-blue-300 font-semibold tabular-nums">
-                        {isPeriodCompleted ? '-' : `${teamMonth.dailyRequiredBook ?? 0}/ngày`}
+                        {isPeriodCompleted
+                          ? '-'
+                          : `${teamMonth.dailyRequiredIncoming ?? teamMonth.dailyRequiredBook ?? 0}/ngày`}
                       </span>
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-2.5 pt-2 border-t border-zinc-800/80 text-[10px] text-zinc-400 font-mono flex items-center justify-between">
-                  <span>Chỉ tiêu Booking</span>
-                  <span className="text-zinc-300">{teamMonth.bookTarget} Book</span>
+                  <span>Chỉ tiêu Incoming</span>
+                  <span className="text-zinc-300">{incomingTarget} Incoming</span>
                 </div>
               </div>
             </div>

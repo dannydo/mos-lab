@@ -1,10 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import {
-  BkBookingLeaderboardEntry,
-  BkDoneLeaderboardEntry,
-  BkRevenueLeaderboardEntry,
-  SafeAny,
-} from '@mos-lab/shared';
+import { BkBookingLeaderboardEntry, BkDoneLeaderboardEntry, BkRevenueLeaderboardEntry, SafeAny } from '@mos-lab/shared';
 import {
   formatIctDateTime,
   formatIctDate,
@@ -520,5 +515,50 @@ export class BkLeaderboardService {
     }
 
     return payload;
+  }
+
+  /**
+   * MOS-BUG-95: Count incoming (Sắp tới) bookings in month for War Room team.
+   * Unified with BK Leaderboard -> Done -> Chi tiết Khách hàng Đặt Lịch & Bonus Done.
+   * Condition:
+   * - booking_date_start within date range (selected month)
+   * - booking_date_start > NOW() (future appointment)
+   * - created_staff_id in target staff IDs
+   * - order_state not in ('Completed', 'CheckOut', 'Cancelled')
+   * - ro.actual_booking_date_start IS NULL
+   * - total_price IS NULL or 0
+   */
+  static async getIncomingBookingsCount(
+    fastify: FastifyInstance,
+    params: {
+      dateFrom: string;
+      dateTo: string;
+      targetStaffIds?: number[];
+    }
+  ): Promise<number> {
+    const { dateFrom, dateTo, targetStaffIds } = params;
+    const startPart = dateFrom.includes('T') ? dateFrom.split('T')[0] : dateFrom.split(' ')[0];
+    const endPart = dateTo.includes('T') ? dateTo.split('T')[0] : dateTo.split(' ')[0];
+
+    const activeTelesalesIds =
+      targetStaffIds && targetStaffIds.length > 0 ? targetStaffIds : await getActiveBkTelesalesIds(fastify);
+
+    if (activeTelesalesIds.length === 0) return 0;
+
+    const sql = `
+      SELECT COUNT(DISTINCT o.id) as incomingCount
+      FROM \`order\` o
+      LEFT JOIN report_order ro ON ro.order_id = o.id
+      WHERE o.created_staff_id IN (${activeTelesalesIds.join(',')})
+        AND o.booking_date_start >= '${startPart} 00:00:00'
+        AND o.booking_date_start <= '${endPart} 23:59:59'
+        AND o.booking_date_start > NOW()
+        AND o.order_state NOT IN ('Completed', 'CheckOut', 'Cancelled')
+        AND ro.actual_booking_date_start IS NULL
+        AND (o.total_price IS NULL OR o.total_price = 0)
+    `;
+
+    const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql).catch(() => []);
+    return Number(rows[0]?.incomingCount || 0);
   }
 }
