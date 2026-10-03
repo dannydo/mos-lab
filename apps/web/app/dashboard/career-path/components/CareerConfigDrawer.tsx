@@ -484,6 +484,36 @@ export function CareerConfigDrawer({
                     +{formatVnd(comboCommissionEstimated)}/tháng.
                   </p>
                 </div>
+
+                {/* 2.3 TỶ LỆ CHỐT COMBO TỰ THÂN TỐI THIỂU (CHUẨN CV+) */}
+                <div className="pt-2.5 border-t border-purple-200/60 dark:border-purple-800/50">
+                  <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+                    <span className="flex items-center gap-1">
+                      <span>🎯</span>
+                      <span>Tỷ lệ tự chốt combo tối thiểu (Chuẩn CV+):</span>
+                    </span>
+                    <span className="font-mono text-purple-600 dark:text-purple-400 font-black text-sm">
+                      {((cvToCc.minSelfComboRate ?? 0.2) * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                  <Slider
+                    min={5}
+                    max={50}
+                    step={1}
+                    value={Math.round((cvToCc.minSelfComboRate ?? 0.2) * 100)}
+                    onChange={(val) =>
+                      onConfigChange({
+                        ...config,
+                        cvToCc: { ...cvToCc, minSelfComboRate: val / 100 },
+                        cvToCvPlus: { ...(config.cvToCvPlus || cvToCc), minSelfComboRate: val / 100 },
+                      })
+                    }
+                  />
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 m-0 mt-0.5 italic">
+                    * Chuẩn tỷ lệ chốt combo tối thiểu trên tệp khách tiềm năng. Nếu thợ đạt dưới mức này, chế tài doanh
+                    nghiệp sẽ tạm khóa phần lương giờ tăng thêm (+2.000đ/h) và thưởng bán hàng.
+                  </p>
+                </div>
               </div>
 
               {/* Mini-Summary Box */}
@@ -571,12 +601,14 @@ export function CareerConfigDrawer({
                 />
               </div>
 
-              {/* Chế tài bảo vệ chất lượng nếu dưới 20% combo */}
+              {/* Chế tài bảo vệ chất lượng nếu dưới chuẩn combo */}
               <div className="p-2.5 rounded-xl bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-800/60 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-rose-800 dark:text-rose-200 flex items-center gap-1.5">
                     <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
-                    <span>Chế tài nếu không đạt tối thiểu 20% combo:</span>
+                    <span>
+                      Chế tài nếu không đạt tối thiểu {((cvToCc.minSelfComboRate ?? 0.2) * 100).toFixed(0)}% combo:
+                    </span>
                   </span>
                   <Switch
                     checked={cvToCc.enforceComboPenalty !== false}
@@ -590,7 +622,7 @@ export function CareerConfigDrawer({
                   />
                 </div>
                 <div className="text-[10px] text-rose-700 dark:text-rose-300 leading-relaxed">
-                  Nếu tỷ lệ chốt combo &lt; 20%:{' '}
+                  Nếu tỷ lệ chốt combo &lt; {((cvToCc.minSelfComboRate ?? 0.2) * 100).toFixed(0)}%:{' '}
                   <strong>Khóa phần lương tăng thêm (+{formatVnd((cvToCc.hourlyWage ?? 27500) - 25500)}/h)</strong> và{' '}
                   <strong>toàn bộ thưởng bán hàng (combo/dưỡng mi)</strong>. Chỉ được giữ lại 20% tip tư vấn!
                 </div>
@@ -921,16 +953,19 @@ export function CareerConfigDrawer({
               {/* 2.1 Tỷ lệ tự chốt combo khách mình */}
               <div>
                 <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-                  <span>Tỷ lệ tự chốt combo trên khách của mình:</span>
-                  <span className="font-mono text-purple-600 dark:text-purple-400 font-black">
-                    {((cvPlusToCvPlusPlus.minSelfComboRate ?? 0.3) * 100).toFixed(0)}%
+                  <span className="flex items-center gap-1">
+                    <span>🎯</span>
+                    <span>Tỷ lệ tự chốt combo tối thiểu trên khách của mình (Chuẩn CV++):</span>
+                  </span>
+                  <span className="font-mono text-purple-600 dark:text-purple-400 font-black text-sm">
+                    {((cvPlusToCvPlusPlus.minSelfComboRate ?? 0.25) * 100).toFixed(0)}%
                   </span>
                 </div>
                 <Slider
-                  min={15}
+                  min={5}
                   max={60}
                   step={1}
-                  value={(cvPlusToCvPlusPlus.minSelfComboRate ?? 0.3) * 100}
+                  value={Math.round((cvPlusToCvPlusPlus.minSelfComboRate ?? 0.25) * 100)}
                   onChange={(val) =>
                     onConfigChange({
                       ...config,
@@ -938,6 +973,11 @@ export function CareerConfigDrawer({
                     })
                   }
                 />
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 m-0 mt-0.5 italic">
+                  * Chuẩn duy trì cho CV++. Nếu chốt dưới tỷ lệ này, hệ thống sẽ kích hoạt chế tài tạm khóa phần phụ cấp
+                  lương giờ tăng thêm (+{formatVnd((cvPlusToCvPlusPlus.hourlyWage ?? 29500) - 25500)}/h) và thưởng bán
+                  hàng.
+                </p>
               </div>
 
               {/* 2.2 Số gói combo cá nhân dự kiến bán / tháng */}
@@ -1210,6 +1250,35 @@ export function CareerConfigDrawer({
                     })
                   }
                 />
+              </div>
+
+              {/* Chế tài bảo vệ chất lượng nếu dưới chuẩn combo CV++ */}
+              <div className="p-2.5 rounded-xl bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-800/60 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-rose-800 dark:text-rose-200 flex items-center gap-1.5">
+                    <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+                    <span>
+                      Chế tài nếu không đạt tối thiểu {((cvPlusToCvPlusPlus.minSelfComboRate ?? 0.25) * 100).toFixed(0)}
+                      % combo:
+                    </span>
+                  </span>
+                  <Switch
+                    checked={cvPlusToCvPlusPlus.enforceComboPenalty !== false}
+                    onChange={(checked) =>
+                      onConfigChange({
+                        ...config,
+                        cvPlusToCvPlusPlus: { ...cvPlusToCvPlusPlus, enforceComboPenalty: checked },
+                      })
+                    }
+                  />
+                </div>
+                <div className="text-[10px] text-rose-700 dark:text-rose-300 leading-relaxed">
+                  Nếu tỷ lệ chốt combo &lt; {((cvPlusToCvPlusPlus.minSelfComboRate ?? 0.25) * 100).toFixed(0)}%:{' '}
+                  <strong>
+                    Khóa phần lương tăng thêm (+{formatVnd((cvPlusToCvPlusPlus.hourlyWage ?? 29500) - 25500)}/h)
+                  </strong>{' '}
+                  và <strong>toàn bộ thưởng bán hàng cá nhân</strong>. Nhân viên chỉ được giữ tip tư vấn!
+                </div>
               </div>
             </div>
 

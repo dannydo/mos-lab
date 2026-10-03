@@ -30308,8 +30308,8 @@
       "filePath": "apps/api/src/modules/career/career.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10006,
-        "lineCount": 276,
+        "sizeBytes": 10005,
+        "lineCount": 275,
         "ext": ".ts"
       }
     },
@@ -30334,8 +30334,8 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 62977,
-        "lineCount": 1564,
+        "sizeBytes": 63018,
+        "lineCount": 1582,
         "ext": ".ts"
       }
     },
@@ -31543,8 +31543,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 47973,
-        "lineCount": 1340,
+        "sizeBytes": 48056,
+        "lineCount": 1344,
         "ext": ".ts"
       }
     },
@@ -35781,8 +35781,8 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path.constants.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17177,
-        "lineCount": 372,
+        "sizeBytes": 17176,
+        "lineCount": 371,
         "ext": ".ts"
       }
     },
@@ -35794,8 +35794,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/BananaTransactionDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18361,
-        "lineCount": 417,
+        "sizeBytes": 18378,
+        "lineCount": 413,
         "ext": ".tsx"
       }
     },
@@ -35807,8 +35807,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 69940,
-        "lineCount": 1394,
+        "sizeBytes": 74318,
+        "lineCount": 1470,
         "ext": ".tsx"
       }
     },
@@ -35820,8 +35820,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 142910,
-        "lineCount": 2829,
+        "sizeBytes": 143397,
+        "lineCount": 2835,
         "ext": ".tsx"
       }
     },
@@ -35846,7 +35846,7 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 39388,
+        "sizeBytes": 39655,
         "lineCount": 867,
         "ext": ".tsx"
       }
@@ -39421,8 +39421,8 @@
       "filePath": "packages/shared/src/types/career-progression.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 26763,
-        "lineCount": 630,
+        "sizeBytes": 26748,
+        "lineCount": 623,
         "ext": ".ts"
       }
     },

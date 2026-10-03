@@ -2404,11 +2404,11 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                         </span>
                         {sliderCombos >= minComboRequired ? (
                           <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold text-[9px] whitespace-nowrap">
-                            ✓ Đủ ải
+                            ✓ Đạt chuẩn ≥{(minSelfComboRate * 100).toFixed(0)}% ({minComboRequired} combo)
                           </span>
                         ) : (
                           <span className="px-1.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold text-[9px] whitespace-nowrap">
-                            Cần ≥{minComboRequired}
+                            Chuẩn: ≥{(minSelfComboRate * 100).toFixed(0)}% (Cần ≥{minComboRequired} combo)
                           </span>
                         )}
                       </div>
@@ -2589,15 +2589,16 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     <span className="text-[10px] text-slate-400 dark:text-slate-500 italic">Nhận thêm mỗi tháng</span>
                   </div>
 
-                  {/* Cảnh báo chế tài nếu dưới 20% combo */}
+                  {/* Cảnh báo chế tài nếu dưới tỷ lệ combo chuẩn tối thiểu */}
                   {isPenaltyActive && (
                     <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-2.5 text-rose-700 dark:text-rose-300 text-xs">
                       <ShieldAlert className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
                       <div>
                         <strong>Chế tài Doanh nghiệp đang áp dụng:</strong> Do mục tiêu combo ({simulatedComboCount}{' '}
-                        combo ~ {simulatedComboPct}%) chưa đạt mức tối thiểu 20% (~{minComboRequired} combo), hệ thống
-                        tạm khóa phần lương giờ tăng thêm (+{formatVnd(hourlyWageNext - hourlyWageCurrent)}/h) và thưởng
-                        bán hàng. Nhân viên chỉ được giữ 20% tip tư vấn!
+                        combo ~ {simulatedComboPct}%) chưa đạt mức tối thiểu {(minSelfComboRate * 100).toFixed(0)}% (~
+                        {minComboRequired} combo), hệ thống tạm khóa phần lương giờ tăng thêm (+
+                        {formatVnd(hourlyWageNext - hourlyWageCurrent)}/h) và thưởng bán hàng. Nhân viên chỉ được giữ
+                        20% tip tư vấn!
                       </div>
                     </div>
                   )}

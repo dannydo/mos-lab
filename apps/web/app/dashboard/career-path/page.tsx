@@ -354,11 +354,13 @@ export default function CareerPathPage() {
   };
 
   // Condition checks against dynamic config
-  const q1Passed = sliderOrders >= cvToCc.minOrders;
-  const q2Passed = sliderTip >= cvToCc.minTipRatioAboveShop * 100;
-  const q3Passed = sliderFix <= cvToCc.maxFixRate * 100;
-  const q4Passed = sliderHi >= cvToCc.minHappinessIndex * 100;
-  const bossPassed = sliderCombo >= cvToCc.minSelfComboRate * 100;
+  const activeReq =
+    simulationTarget === 'CV_PLUS_PLUS' ? safeConfig.cvPlusToCvPlusPlus : safeConfig.cvToCvPlus || cvToCc;
+  const q1Passed = sliderOrders >= (activeReq.minOrders ?? cvToCc.minOrders);
+  const q2Passed = sliderTip >= (activeReq.minTipRatioAboveShop ?? cvToCc.minTipRatioAboveShop) * 100;
+  const q3Passed = sliderFix <= (activeReq.maxFixRate ?? cvToCc.maxFixRate) * 100;
+  const q4Passed = sliderHi >= (activeReq.minHappinessIndex ?? cvToCc.minHappinessIndex) * 100;
+  const bossPassed = sliderCombo >= (activeReq.minSelfComboRate ?? cvToCc.minSelfComboRate) * 100;
 
   const passedCount = [q1Passed, q2Passed, q3Passed, q4Passed, bossPassed].filter(Boolean).length;
   const allPassed = passedCount === 5;
