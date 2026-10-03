@@ -339,3 +339,32 @@ export function formatCareerRoleName(role?: string | null): string {
       return role.replace(/_/g, ' ');
   }
 }
+
+/**
+ * Tính tiền thưởng hoa hồng Combo bậc thang theo giá trị gói (Kinh Thánh mOS Điều răn COMBO-REWARD-001):
+ * - Combo < 2M: 50K
+ * - Combo 2M - < 3M: 100K
+ * - Combo 3M - < 4M: 150K
+ * - Từ 4M trở lên: 150K + 50K cho mỗi 1M tăng thêm (e.g. 4.5M -> 200K, 6M -> 300K, 8M -> 400K)
+ */
+export function calculateComboBonus(
+  price: number,
+  config?: {
+    comboUnder2mBonus?: number;
+    comboUnder3mBonus?: number;
+    comboUnder4mBonus?: number;
+    comboStepPerMillionBonus?: number;
+  }
+): number {
+  const under2m = config?.comboUnder2mBonus ?? 50_000;
+  const under3m = config?.comboUnder3mBonus ?? 100_000;
+  const under4m = config?.comboUnder4mBonus ?? 150_000;
+  const step = config?.comboStepPerMillionBonus ?? 50_000;
+
+  if (price < 2_000_000) return under2m;
+  if (price < 3_000_000) return under3m;
+  if (price < 4_000_000) return under4m;
+
+  const millionsAbove4m = Math.floor((price - 4_000_000) / 1_000_000);
+  return under4m + (1 + millionsAbove4m) * step;
+}

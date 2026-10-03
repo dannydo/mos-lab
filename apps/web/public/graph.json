@@ -9936,6 +9936,20 @@
       }
     },
     {
+      "id": "route:POST:/api/kpi/telesale-target/select-team",
+      "type": "FastifyRoute",
+      "label": "POST /api/kpi/telesale-target/select-team",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/kpi/telesale-target/select-team",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 76
+      }
+    },
+    {
       "id": "route:GET:/api/kpi/telesale-target/pool",
       "type": "FastifyRoute",
       "label": "GET /api/kpi/telesale-target/pool",
@@ -9946,7 +9960,7 @@
         "path": "/api/kpi/telesale-target/pool",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 76
+        "line": 93
       }
     },
     {
@@ -9960,7 +9974,7 @@
         "path": "/api/kpi/telesale-target/stream",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 110
+        "line": 127
       }
     },
     {
@@ -9974,7 +9988,7 @@
         "path": "/api/kpi/telesale-target/live-celebration-quote",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 134
+        "line": 151
       }
     },
     {
@@ -9988,7 +10002,7 @@
         "path": "/api/kpi/telesale-target/live-celebration-audio",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 156
+        "line": 173
       }
     },
     {
@@ -10002,7 +10016,7 @@
         "path": "/api/kpi/telesale-target/tv-journal",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 181
+        "line": 198
       }
     },
     {
@@ -10016,7 +10030,7 @@
         "path": "/api/kpi/telesale-target/tv-journal/sync",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 202
+        "line": 219
       }
     },
     {
@@ -19673,6 +19687,42 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "StaffCareerStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BananaTransactionCategory",
+      "type": "SharedType",
+      "label": "BananaTransactionCategory",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BananaTransactionCategory",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BananaTransactionItem",
+      "type": "SharedType",
+      "label": "BananaTransactionItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BananaTransactionItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BananaTransactionResponse",
+      "type": "SharedType",
+      "label": "BananaTransactionResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BananaTransactionResponse",
         "package": "@mos-lab/shared"
       }
     },
@@ -30258,8 +30308,8 @@
       "filePath": "apps/api/src/modules/career/career.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 8720,
-        "lineCount": 242,
+        "sizeBytes": 10006,
+        "lineCount": 276,
         "ext": ".ts"
       }
     },
@@ -30284,8 +30334,8 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 49230,
-        "lineCount": 1199,
+        "sizeBytes": 62977,
+        "lineCount": 1564,
         "ext": ".ts"
       }
     },
@@ -31259,8 +31309,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 8385,
-        "lineCount": 214,
+        "sizeBytes": 9143,
+        "lineCount": 231,
         "ext": ".ts"
       }
     },
@@ -31493,8 +31543,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 42996,
-        "lineCount": 1209,
+        "sizeBytes": 47973,
+        "lineCount": 1340,
         "ext": ".ts"
       }
     },
@@ -31506,8 +31556,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 72213,
-        "lineCount": 1839,
+        "sizeBytes": 79220,
+        "lineCount": 2059,
         "ext": ".ts"
       }
     },
@@ -35731,9 +35781,22 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path.constants.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16171,
-        "lineCount": 342,
+        "sizeBytes": 17177,
+        "lineCount": 372,
         "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/BananaTransactionDrawer.tsx",
+      "type": "File",
+      "label": "BananaTransactionDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/BananaTransactionDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 18361,
+        "lineCount": 417,
+        "ext": ".tsx"
       }
     },
     {
@@ -35744,8 +35807,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 50431,
-        "lineCount": 1051,
+        "sizeBytes": 69940,
+        "lineCount": 1394,
         "ext": ".tsx"
       }
     },
@@ -35757,8 +35820,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 89957,
-        "lineCount": 1826,
+        "sizeBytes": 142910,
+        "lineCount": 2829,
         "ext": ".tsx"
       }
     },
@@ -35783,8 +35846,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30309,
-        "lineCount": 693,
+        "sizeBytes": 39388,
+        "lineCount": 867,
         "ext": ".tsx"
       }
     },
@@ -37954,8 +38017,34 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TargetConfigModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11632,
-        "lineCount": 289,
+        "sizeBytes": 11708,
+        "lineCount": 291,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/TeamSelectModal.test.tsx",
+      "type": "File",
+      "label": "TeamSelectModal.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/TeamSelectModal.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4299,
+        "lineCount": 157,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/TeamSelectModal.tsx",
+      "type": "File",
+      "label": "TeamSelectModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/TeamSelectModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10208,
+        "lineCount": 254,
         "ext": ".tsx"
       }
     },
@@ -38019,8 +38108,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvJournalModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26098,
-        "lineCount": 645,
+        "sizeBytes": 26259,
+        "lineCount": 652,
         "ext": ".tsx"
       }
     },
@@ -38110,8 +38199,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 31541,
-        "lineCount": 806,
+        "sizeBytes": 31607,
+        "lineCount": 811,
         "ext": ".ts"
       }
     },
@@ -38123,8 +38212,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21017,
-        "lineCount": 497,
+        "sizeBytes": 22105,
+        "lineCount": 522,
         "ext": ".tsx"
       }
     },
@@ -38630,8 +38719,8 @@
       "filePath": "apps/web/lib/api/career.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3562,
-        "lineCount": 100,
+        "sizeBytes": 4067,
+        "lineCount": 114,
         "ext": ".ts"
       }
     },
@@ -38682,8 +38771,8 @@
       "filePath": "apps/web/lib/api/kpi.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18591,
-        "lineCount": 482,
+        "sizeBytes": 18859,
+        "lineCount": 489,
         "ext": ".ts"
       }
     },
@@ -39111,8 +39200,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2421,
-        "lineCount": 63,
+        "sizeBytes": 2490,
+        "lineCount": 64,
         "ext": ".ts"
       }
     },
@@ -39332,8 +39421,8 @@
       "filePath": "packages/shared/src/types/career-progression.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 21014,
-        "lineCount": 490,
+        "sizeBytes": 26763,
+        "lineCount": 630,
         "ext": ".ts"
       }
     },
@@ -39826,8 +39915,8 @@
       "filePath": "packages/shared/src/types/telesale-target.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 6041,
-        "lineCount": 241,
+        "sizeBytes": 6125,
+        "lineCount": 245,
         "ext": ".ts"
       }
     },
@@ -44521,6 +44610,13 @@
     {
       "id": "edge:route:POST:/api/kpi/telesale-target/config:ws:apps/api",
       "source": "route:POST:/api/kpi/telesale-target/config",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/kpi/telesale-target/select-team:ws:apps/api",
+      "source": "route:POST:/api/kpi/telesale-target/select-team",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -49939,6 +50035,27 @@
     {
       "id": "edge:type:@mos-lab/shared:StaffCareerStatus:ws:packages/shared",
       "source": "type:@mos-lab/shared:StaffCareerStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BananaTransactionCategory:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BananaTransactionCategory",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BananaTransactionItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BananaTransactionItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BananaTransactionResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BananaTransactionResponse",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -58904,6 +59021,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/BananaTransactionDrawer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/BananaTransactionDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "target": "ws:packages/shared",
@@ -59802,6 +59926,20 @@
     {
       "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TargetConfigModal.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-target/components/TargetConfigModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TeamSelectModal.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/TeamSelectModal.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TeamSelectModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/TeamSelectModal.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -62113,6 +62251,13 @@
       "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target.service.ts:prisma:crm:CrmConfig",
       "source": "file:apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "target": "prisma:crm:CrmConfig",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/telesale-target.service.ts:prisma:crm:CrmTeam",
+      "source": "file:apps/api/src/modules/kpi/services/telesale-target.service.ts",
+      "target": "prisma:crm:CrmTeam",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -68473,6 +68618,13 @@
       "label": "CALLS kpi.getCcXoayReport"
     },
     {
+      "id": "edge:page:/dashboard/cc:route:POST:/api/kpi/telesale-target/select-team",
+      "source": "page:/dashboard/cc",
+      "target": "route:POST:/api/kpi/telesale-target/select-team",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
       "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/telesale-target/pool",
       "source": "page:/dashboard/cc",
       "target": "route:GET:/api/kpi/telesale-target/pool",
@@ -73268,6 +73420,13 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/kpi/telesale-target/select-team",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/kpi/telesale-target/select-team",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/telesale-target/pool",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/kpi/telesale-target/pool",
@@ -77835,6 +77994,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/kpi/telesale-target/config",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/kpi/telesale-target/config",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/kpi/telesale-target/select-team",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/kpi/telesale-target/select-team",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -85462,6 +85628,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/kpi/telesale-target/select-team",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/kpi/telesale-target/select-team",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/telesale-target/pool",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/kpi/telesale-target/pool",
@@ -86625,31 +86798,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3054,
-    "totalEdges": 6675,
+    "totalNodes": 3061,
+    "totalEdges": 6687,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 162,
-      "FastifyRoute": 653,
+      "FastifyRoute": 654,
       "Component": 57,
-      "SharedType": 1118,
+      "SharedType": 1121,
       "DesignToken": 12,
       "UIComponent": 209,
-      "File": 840
+      "File": 843
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1292,
-      "HANDLES_ROUTE": 653,
+      "EXPORTS": 1295,
+      "HANDLES_ROUTE": 654,
       "RENDERS": 266,
       "USES_TOKEN": 211,
-      "IMPORTS": 465,
-      "QUERIES_MODEL": 378,
-      "API_CALL": 3410
+      "IMPORTS": 468,
+      "QUERIES_MODEL": 379,
+      "API_CALL": 3414
     },
-    "fastifyRouteCount": 658,
+    "fastifyRouteCount": 659,
     "prismaModelCount": 162,
     "nextPageCount": 57,
-    "sharedTypeCount": 1118
+    "sharedTypeCount": 1121
   },
   "routes": [
     {
@@ -90141,6 +90314,13 @@
     {
       "method": "POST",
       "path": "/api/kpi/telesale-target/config",
+      "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "POST",
+      "path": "/api/kpi/telesale-target/select-team",
       "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "kpi"

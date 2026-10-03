@@ -3,6 +3,7 @@ import {
   type CareerProgressionConfig,
   type StaffCareerStatus,
   type CareerStaffSummary,
+  type BananaTransactionResponse,
 } from '@mos-lab/shared';
 import { api, dedupeApiGet, invalidateApiGetCache, ApiRequestOptions } from './base';
 
@@ -94,6 +95,19 @@ export const careerApi = {
       );
       invalidateApiGetCache(['/career/']);
       return res.data.data;
+    },
+    getBananaTransactions: async (
+      staffId: number,
+      params?: { category?: string; timeRange?: string; search?: string; limit?: number },
+      options?: ApiRequestOptions
+    ): Promise<BananaTransactionResponse> => {
+      const res = await dedupeApiGet<{ success: boolean; data: BananaTransactionResponse }>(
+        `/career/staff/${staffId}/banana-transactions`,
+        params as any,
+        3000,
+        options
+      );
+      return res.data;
     },
   },
 };

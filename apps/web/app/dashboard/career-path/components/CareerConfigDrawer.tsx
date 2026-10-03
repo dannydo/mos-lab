@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Slider, Switch, Segmented } from 'antd';
-import { Target, Sparkles, ShieldCheck, Flame, DollarSign, Crown } from 'lucide-react';
-import type { CareerProgressionConfig } from '@mos-lab/shared';
+import { Slider, Switch, Segmented, InputNumber } from 'antd';
+import { Target, Sparkles, ShieldCheck, Flame, DollarSign, Crown, Coins, ShieldAlert } from 'lucide-react';
+import { type CareerProgressionConfig } from '@mos-lab/shared';
+import { calculateComboBonus } from '../career-path.constants';
 import { AdaptiveDrawer } from '../../../../components/ui/AdaptiveOverlay';
 
 interface CareerConfigDrawerProps {
@@ -48,6 +49,12 @@ export function CareerConfigDrawer({
       allowSelfConsultTrial: true,
       expectedSerumsPerWeek: 4,
       expectedCombosPerMonth: 6,
+      serumOriginalPriceBonus: 100000,
+      serumDiscountedPriceBonus: 50000,
+      comboUnder2mBonus: 50000,
+      comboUnder3mBonus: 100000,
+      comboUnder4mBonus: 150000,
+      comboStepPerMillionBonus: 50000,
     };
 
   const cvPlusToCvPlusPlus = config?.cvPlusToCvPlusPlus || {
@@ -67,6 +74,13 @@ export function CareerConfigDrawer({
     minSelfComboRate: 0.3,
     expectedSerumsPerWeek: 4,
     expectedCombosPerMonth: 10,
+    serumOriginalPriceBonus: 100000,
+    serumDiscountedPriceBonus: 50000,
+    comboUnder2mBonus: 50000,
+    comboUnder3mBonus: 100000,
+    comboUnder4mBonus: 150000,
+    comboStepPerMillionBonus: 50000,
+    crossConsultCvShareRate: 0.2,
   };
 
   const formatVnd = (num?: number | null) => {
@@ -77,8 +91,12 @@ export function CareerConfigDrawer({
   // Tab 1 calculations (CV -> CV+)
   const combosPerMonth = cvToCc.expectedCombosPerMonth ?? 6;
   const serumsPerWeek = cvToCc.expectedSerumsPerWeek ?? 4;
-  const comboCommissionEstimated = combosPerMonth * 4500000 * 0.025;
-  const serumCommissionWeekly = serumsPerWeek * 110000;
+  const serumOrigBonus = cvToCc.serumOriginalPriceBonus ?? 100000;
+  const serumDiscountBonus = cvToCc.serumDiscountedPriceBonus ?? 50000;
+
+  const sampleComboBonus = calculateComboBonus(4500000, cvToCc);
+  const comboCommissionEstimated = combosPerMonth * sampleComboBonus;
+  const serumCommissionWeekly = serumsPerWeek * serumOrigBonus;
   const serumCommissionMonthly = serumCommissionWeekly * 4;
   const totalSalesCommissionMonthly = comboCommissionEstimated + serumCommissionMonthly;
 
@@ -87,15 +105,17 @@ export function CareerConfigDrawer({
   const cvPlusSerums = cvPlusToCvPlusPlus.expectedSerumsPerWeek ?? 4;
   const cvPlusCrossRate = cvPlusToCvPlusPlus.crossConsultCommissionRate ?? 0.025;
   const cvPlusCrossTipRate = cvPlusToCvPlusPlus.crossConsultTipRate ?? 0.2;
+  const cvPlusCrossCvShare = cvPlusToCvPlusPlus.crossConsultCvShareRate ?? 0.2;
   const cvPlusCrossOrders = cvPlusToCvPlusPlus.expectedCrossConsultOrdersPerMonth ?? 20;
   const cvPlusCrossCombos = cvPlusToCvPlusPlus.expectedCrossConsultCombosPerMonth ?? 4;
 
-  const cvPlusComboComm = cvPlusCombos * 4500000 * 0.025;
-  const cvPlusSerumWeekly = cvPlusSerums * 110000;
+  const cvPlusSampleComboBonus = calculateComboBonus(4500000, cvPlusToCvPlusPlus);
+  const cvPlusComboComm = cvPlusCombos * cvPlusSampleComboBonus;
+  const cvPlusSerumWeekly = cvPlusSerums * (cvPlusToCvPlusPlus.serumOriginalPriceBonus ?? 100000);
   const cvPlusSerumMonthly = cvPlusSerumWeekly * 4;
-  // CV++ tư vấn cho CV khác: Nhận 20% tip + Thêm tiền bán combo
   const cvPlusCrossTipAmount = Math.round(cvPlusCrossOrders * 40000 * cvPlusCrossTipRate);
-  const cvPlusCrossComboComm = Math.round(cvPlusCrossCombos * 4500000 * cvPlusCrossRate);
+  const cvPlusCrossComboComm = Math.round(cvPlusCrossCombos * cvPlusSampleComboBonus);
+  const cvPlusCrossCvSharedAmount = Math.round(cvPlusCrossComboComm * cvPlusCrossCvShare);
   const cvPlusTotalCrossConsult = cvPlusCrossTipAmount + cvPlusCrossComboComm;
   const cvPlusTotalSalesComm = cvPlusComboComm + cvPlusSerumMonthly + cvPlusTotalCrossConsult;
 
@@ -240,78 +260,230 @@ export function CareerConfigDrawer({
               </div>
             </div>
 
-            {/* NHÓM 2: DỰ KIẾN BÁN HÀNG & HOA HỒNG THÁNG */}
-            <div className="p-4 rounded-2xl bg-purple-50/40 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-800/40 space-y-3.5 shadow-xs">
+            {/* NHÓM 2: DỰ KIẾN BÁN HÀNG & HOA HỒNG THỰC CHIẾN */}
+            <div className="p-4 rounded-2xl bg-purple-50/40 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-800/40 space-y-4 shadow-xs">
               <div className="flex items-center justify-between border-b border-purple-200/50 dark:border-purple-800/40 pb-2">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400">
                     <Sparkles className="w-3.5 h-3.5" />
                   </div>
                   <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-100 m-0">
-                    2. Bán Hàng &amp; Doanh Thu Tháng
+                    2. Bán Hàng: Tiền Tươi Theo Món &amp; Bậc Thang
                   </h3>
                 </div>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 uppercase tracking-tight">
-                  Hoa hồng
+                  Tiền tươi theo món
                 </span>
               </div>
 
-              {/* 2.1 Số gói Combo bán dự kiến / tháng */}
-              <div>
-                <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-                  <div>
-                    <span>🏹 Số gói Combo bán dự kiến / tháng:</span>
-                    <p className="text-[10px] text-slate-400 font-normal mt-0.5">
-                      Hoa hồng 2.5% (TB 4.5M/combo = ~112.500đ/gói). Nhận thêm: +{formatVnd(comboCommissionEstimated)}
-                      /tháng
-                    </p>
-                  </div>
-                  <span className="font-mono text-purple-600 dark:text-purple-400 font-black">
-                    {combosPerMonth} combo
+              {/* 2.1 CẤU HÌNH THƯỞNG DƯỠNG MI YEPPEUM */}
+              <div className="p-3 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/60 space-y-3">
+                <div className="flex items-center justify-between border-b border-emerald-200/60 dark:border-emerald-800/50 pb-1.5">
+                  <span className="text-xs font-black text-emerald-800 dark:text-emerald-200 flex items-center gap-1.5">
+                    <span>✨</span>
+                    <span>Thưởng Bán Cây Dưỡng Mi Yeppeum</span>
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                    Nhận: +{formatVnd(serumCommissionMonthly)}/tháng
                   </span>
                 </div>
-                <Slider
-                  min={0}
-                  max={30}
-                  step={1}
-                  value={combosPerMonth}
-                  onChange={(val) =>
-                    onConfigChange({
-                      ...config,
-                      cvToCc: { ...cvToCc, expectedCombosPerMonth: val },
-                      cvToCvPlus: { ...(config.cvToCvPlus || cvToCc), expectedCombosPerMonth: val },
-                    })
-                  }
-                />
+
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                      Giá Gốc (1.1M):
+                    </label>
+                    <InputNumber
+                      className="w-full"
+                      value={cvToCc.serumOriginalPriceBonus ?? 100000}
+                      step={10000}
+                      min={0}
+                      formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                      parser={(val) => Number(val?.replace(/\$\s?|(,*)/g, '') || 0)}
+                      addonAfter="đ"
+                      onChange={(val) =>
+                        onConfigChange({
+                          ...config,
+                          cvToCc: { ...cvToCc, serumOriginalPriceBonus: Number(val || 0) },
+                          cvToCvPlus: { ...(config.cvToCvPlus || cvToCc), serumOriginalPriceBonus: Number(val || 0) },
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                      Giá Giảm / Combo:
+                    </label>
+                    <InputNumber
+                      className="w-full"
+                      value={cvToCc.serumDiscountedPriceBonus ?? 50000}
+                      step={5000}
+                      min={0}
+                      formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                      parser={(val) => Number(val?.replace(/\$\s?|(,*)/g, '') || 0)}
+                      addonAfter="đ"
+                      onChange={(val) =>
+                        onConfigChange({
+                          ...config,
+                          cvToCc: { ...cvToCc, serumDiscountedPriceBonus: Number(val || 0) },
+                          cvToCvPlus: { ...(config.cvToCvPlus || cvToCc), serumDiscountedPriceBonus: Number(val || 0) },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+                    <span>Số cây dưỡng mi dự kiến / tuần:</span>
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-black">
+                      {serumsPerWeek} cây/tuần (+{formatVnd(serumCommissionWeekly)}/tuần)
+                    </span>
+                  </div>
+                  <Slider
+                    min={0}
+                    max={20}
+                    step={1}
+                    value={serumsPerWeek}
+                    onChange={(val) =>
+                      onConfigChange({
+                        ...config,
+                        cvToCc: { ...cvToCc, expectedSerumsPerWeek: val },
+                        cvToCvPlus: { ...(config.cvToCvPlus || cvToCc), expectedSerumsPerWeek: val },
+                      })
+                    }
+                  />
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 m-0 mt-0.5 italic">
+                    * Bán giá gốc nhận 100K, giảm giá nhận 50K, tặng kèm 0K. Dự kiến {serumsPerWeek} cây giá gốc = +
+                    {formatVnd(serumCommissionMonthly)}/tháng.
+                  </p>
+                </div>
               </div>
 
-              {/* 2.2 Số cây Dưỡng mi bán dự kiến / tuần */}
-              <div>
-                <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-                  <div>
-                    <span>✨ Số cây Dưỡng mi bán dự kiến / tuần:</span>
-                    <p className="text-[10px] text-slate-400 font-normal mt-0.5">
-                      Thưởng 10% (110.000đ/cây). Nhận thêm: +{formatVnd(serumCommissionMonthly)}/tháng (+
-                      {formatVnd(serumCommissionWeekly)}/tuần)
-                    </p>
-                  </div>
-                  <span className="font-mono text-emerald-600 dark:text-emerald-400 font-black">
-                    {serumsPerWeek} cây/tuần
+              {/* 2.2 CẤU HÌNH THƯỞNG COMBO BẬC THANG */}
+              <div className="p-3 rounded-xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200/80 dark:border-purple-800/60 space-y-3">
+                <div className="flex items-center justify-between border-b border-purple-200/60 dark:border-purple-800/50 pb-1.5">
+                  <span className="text-xs font-black text-purple-800 dark:text-purple-200 flex items-center gap-1.5">
+                    <span>🏹</span>
+                    <span>Thưởng Hoa Hồng Combo Nối Mi (Bậc Thang)</span>
+                  </span>
+                  <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400">
+                    Gói 4.5M: +{formatVnd(sampleComboBonus)}/combo
                   </span>
                 </div>
-                <Slider
-                  min={0}
-                  max={20}
-                  step={1}
-                  value={serumsPerWeek}
-                  onChange={(val) =>
-                    onConfigChange({
-                      ...config,
-                      cvToCc: { ...cvToCc, expectedSerumsPerWeek: val },
-                      cvToCvPlus: { ...(config.cvToCvPlus || cvToCc), expectedSerumsPerWeek: val },
-                    })
-                  }
-                />
+
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                      Gói &lt; 2 Triệu:
+                    </label>
+                    <InputNumber
+                      className="w-full"
+                      value={cvToCc.comboUnder2mBonus ?? 50000}
+                      step={5000}
+                      min={0}
+                      formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                      parser={(val) => Number(val?.replace(/\$\s?|(,*)/g, '') || 0)}
+                      addonAfter="đ"
+                      onChange={(val) =>
+                        onConfigChange({
+                          ...config,
+                          cvToCc: { ...cvToCc, comboUnder2mBonus: Number(val || 0) },
+                          cvToCvPlus: { ...(config.cvToCvPlus || cvToCc), comboUnder2mBonus: Number(val || 0) },
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                      Gói 2M – &lt; 3 Triệu:
+                    </label>
+                    <InputNumber
+                      className="w-full"
+                      value={cvToCc.comboUnder3mBonus ?? 100000}
+                      step={5000}
+                      min={0}
+                      formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                      parser={(val) => Number(val?.replace(/\$\s?|(,*)/g, '') || 0)}
+                      addonAfter="đ"
+                      onChange={(val) =>
+                        onConfigChange({
+                          ...config,
+                          cvToCc: { ...cvToCc, comboUnder3mBonus: Number(val || 0) },
+                          cvToCvPlus: { ...(config.cvToCvPlus || cvToCc), comboUnder3mBonus: Number(val || 0) },
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                      Gói 3M – &lt; 4 Triệu:
+                    </label>
+                    <InputNumber
+                      className="w-full"
+                      value={cvToCc.comboUnder4mBonus ?? 150000}
+                      step={5000}
+                      min={0}
+                      formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                      parser={(val) => Number(val?.replace(/\$\s?|(,*)/g, '') || 0)}
+                      addonAfter="đ"
+                      onChange={(val) =>
+                        onConfigChange({
+                          ...config,
+                          cvToCc: { ...cvToCc, comboUnder4mBonus: Number(val || 0) },
+                          cvToCvPlus: { ...(config.cvToCvPlus || cvToCc), comboUnder4mBonus: Number(val || 0) },
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">
+                      Từ 4M trở lên (+mỗi 1M):
+                    </label>
+                    <InputNumber
+                      className="w-full"
+                      value={cvToCc.comboStepPerMillionBonus ?? 50000}
+                      step={5000}
+                      min={0}
+                      formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                      parser={(val) => Number(val?.replace(/\$\s?|(,*)/g, '') || 0)}
+                      addonAfter="đ"
+                      onChange={(val) =>
+                        onConfigChange({
+                          ...config,
+                          cvToCc: { ...cvToCc, comboStepPerMillionBonus: Number(val || 0) },
+                          cvToCvPlus: { ...(config.cvToCvPlus || cvToCc), comboStepPerMillionBonus: Number(val || 0) },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+                    <span>Số gói combo cá nhân dự kiến / tháng:</span>
+                    <span className="font-mono text-purple-600 dark:text-purple-400 font-black">
+                      {combosPerMonth} combo (+{formatVnd(comboCommissionEstimated)}/tháng)
+                    </span>
+                  </div>
+                  <Slider
+                    min={0}
+                    max={30}
+                    step={1}
+                    value={combosPerMonth}
+                    onChange={(val) =>
+                      onConfigChange({
+                        ...config,
+                        cvToCc: { ...cvToCc, expectedCombosPerMonth: val },
+                        cvToCvPlus: { ...(config.cvToCvPlus || cvToCc), expectedCombosPerMonth: val },
+                      })
+                    }
+                  />
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 m-0 mt-0.5 italic">
+                    * Gói trung bình 4.5M được thưởng {formatVnd(sampleComboBonus)}/combo. Bán {combosPerMonth} combo =
+                    +{formatVnd(comboCommissionEstimated)}/tháng.
+                  </p>
+                </div>
               </div>
 
               {/* Mini-Summary Box */}
@@ -320,7 +492,7 @@ export function CareerConfigDrawer({
                   <DollarSign className="w-4 h-4 text-emerald-500" />
                   <div>
                     <div className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">
-                      Tổng hoa hồng bán hàng dự kiến
+                      Tổng hoa hồng bán hàng dự kiến (CV+)
                     </div>
                     <div className="text-[11px] text-slate-600 dark:text-slate-300">
                       Combo ({formatVnd(comboCommissionEstimated)}) + Dưỡng mi ({formatVnd(serumCommissionMonthly)})
@@ -333,7 +505,99 @@ export function CareerConfigDrawer({
               </div>
             </div>
 
-            {/* NHÓM 3: KỶ LUẬT QA & VĂN HÓA ĐỘI NGŨ */}
+            {/* NHÓM 3: ĐÃI NGỘ LƯƠNG GIỜ, TIP & CHẾ TÀI 20% COMBO */}
+            <div className="p-4 rounded-2xl bg-amber-50/40 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-800/40 space-y-3.5 shadow-xs">
+              <div className="flex items-center justify-between border-b border-amber-200/50 dark:border-amber-800/40 pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                    <Coins className="w-3.5 h-3.5" />
+                  </div>
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-100 m-0">
+                    3. Lương Giờ, Tip &amp; Chế Tài 20% Combo
+                  </h3>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 uppercase tracking-tight">
+                  Đãi ngộ CV+
+                </span>
+              </div>
+
+              {/* Lương theo giờ */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+                  <span>Lương theo giờ CV+ (Gốc CV: 25.500đ/h):</span>
+                  <span className="font-mono text-amber-600 dark:text-amber-400 font-black">
+                    {formatVnd(cvToCc.hourlyWage ?? 27500)}/h (+{formatVnd((cvToCc.hourlyWage ?? 27500) - 25500)}/h)
+                  </span>
+                </div>
+                <InputNumber
+                  className="w-full"
+                  value={cvToCc.hourlyWage ?? 27500}
+                  step={500}
+                  min={25500}
+                  max={50000}
+                  formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(val) => Number(val?.replace(/\$\s?|(,*)/g, '') || 0)}
+                  addonAfter="đ/h"
+                  onChange={(val) =>
+                    onConfigChange({
+                      ...config,
+                      cvToCc: { ...cvToCc, hourlyWage: Number(val || 0) },
+                      cvToCvPlus: { ...(config.cvToCvPlus || cvToCc), hourlyWage: Number(val || 0) },
+                    })
+                  }
+                />
+              </div>
+
+              {/* Tỷ lệ tip hưởng trọn */}
+              <div>
+                <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+                  <span>Tỷ lệ hưởng Tip khi tự tư vấn &amp; làm mi:</span>
+                  <span className="font-mono text-emerald-600 dark:text-emerald-400 font-black">
+                    {((cvToCc.tipShareRatio ?? 0.9) * 100).toFixed(0)}% (70% Mi + 20% Tư vấn)
+                  </span>
+                </div>
+                <Slider
+                  min={70}
+                  max={100}
+                  step={5}
+                  value={(cvToCc.tipShareRatio ?? 0.9) * 100}
+                  onChange={(val) =>
+                    onConfigChange({
+                      ...config,
+                      cvToCc: { ...cvToCc, tipShareRatio: val / 100 },
+                      cvToCvPlus: { ...(config.cvToCvPlus || cvToCc), tipShareRatio: val / 100 },
+                    })
+                  }
+                />
+              </div>
+
+              {/* Chế tài bảo vệ chất lượng nếu dưới 20% combo */}
+              <div className="p-2.5 rounded-xl bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-800/60 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-rose-800 dark:text-rose-200 flex items-center gap-1.5">
+                    <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+                    <span>Chế tài nếu không đạt tối thiểu 20% combo:</span>
+                  </span>
+                  <Switch
+                    checked={cvToCc.enforceComboPenalty !== false}
+                    onChange={(checked) =>
+                      onConfigChange({
+                        ...config,
+                        cvToCc: { ...cvToCc, enforceComboPenalty: checked },
+                        cvToCvPlus: { ...(config.cvToCvPlus || cvToCc), enforceComboPenalty: checked },
+                      })
+                    }
+                  />
+                </div>
+                <div className="text-[10px] text-rose-700 dark:text-rose-300 leading-relaxed">
+                  Nếu tỷ lệ chốt combo &lt; 20%:{' '}
+                  <strong>Khóa phần lương tăng thêm (+{formatVnd((cvToCc.hourlyWage ?? 27500) - 25500)}/h)</strong> và{' '}
+                  <strong>toàn bộ thưởng bán hàng (combo/dưỡng mi)</strong>. Chỉ được giữ lại 20% tip tư vấn!
+                </div>
+              </div>
+            </div>
+
+            {/* NHÓM 4: KỶ LUẬT QA & VĂN HÓA ĐỘI NGŨ */}
             <div className="p-4 rounded-2xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 space-y-3.5 shadow-xs">
               <div className="flex items-center justify-between border-b border-emerald-200/50 dark:border-emerald-800/40 pb-2">
                 <div className="flex items-center gap-2">
@@ -341,7 +605,7 @@ export function CareerConfigDrawer({
                     <ShieldCheck className="w-3.5 h-3.5" />
                   </div>
                   <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-100 m-0">
-                    3. Kỷ Luật QA &amp; Văn Hóa Đội Ngũ
+                    4. Kỷ Luật QA &amp; Văn Hóa Đội Ngũ
                   </h3>
                 </div>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase tracking-tight">
@@ -433,11 +697,18 @@ export function CareerConfigDrawer({
               {/* 3.4 Chỉ số HI */}
               <div>
                 <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-                  <span>😊 Chỉ số HI tối thiểu (Check-in thả tim):</span>
+                  <span className="flex items-center gap-1">
+                    <span>😊 Chỉ số HI tối thiểu:</span>
+                    <span className="text-[10px] font-normal text-slate-400">(Teamwork check-in/out thả tim)</span>
+                  </span>
                   <span className="font-mono text-emerald-600 dark:text-emerald-400 font-black">
                     {(cvToCc.minHappinessIndex * 100).toFixed(0)}%
                   </span>
                 </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 mb-1 leading-normal">
+                  Tỷ lệ % lượt đồng nghiệp tự thả tim cho nhau khi check-in / check-out ca làm việc trên app WingsBeauty
+                  (đo lường sự gắn kết và tinh thần teamwork).
+                </p>
                 <Slider
                   min={50}
                   max={95}
@@ -632,14 +903,14 @@ export function CareerConfigDrawer({
             </div>
 
             {/* NHÓM 2: BÁN HÀNG, HOA HỒNG & TƯ VẤN CHÉO */}
-            <div className="p-4 rounded-2xl bg-purple-50/40 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-800/40 space-y-3.5 shadow-xs">
+            <div className="p-4 rounded-2xl bg-purple-50/40 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-800/40 space-y-4 shadow-xs">
               <div className="flex items-center justify-between border-b border-purple-200/50 dark:border-purple-800/40 pb-2">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-600 dark:text-purple-400">
                     <Sparkles className="w-3.5 h-3.5" />
                   </div>
                   <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-100 m-0">
-                    2. Bán Hàng &amp; Tư Vấn Chéo
+                    2. Bán Hàng &amp; Tư Vấn Chéo (CV++)
                   </h3>
                 </div>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 uppercase tracking-tight">
@@ -669,13 +940,14 @@ export function CareerConfigDrawer({
                 />
               </div>
 
-              {/* 2.2 Số gói combo dự kiến bán / tháng */}
+              {/* 2.2 Số gói combo cá nhân dự kiến bán / tháng */}
               <div>
                 <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
                   <div>
-                    <span>🏹 Số gói Combo bán dự kiến / tháng:</span>
+                    <span>🏹 Số gói Combo cá nhân dự kiến / tháng:</span>
                     <p className="text-[10px] text-slate-400 font-normal mt-0.5">
-                      Hoa hồng 2.5% (TB 4.5M/combo = ~112.500đ/gói). Nhận thêm: +{formatVnd(cvPlusComboComm)}/tháng
+                      Gói 4.5M (+{formatVnd(cvPlusSampleComboBonus)}/combo). Nhận thêm: +{formatVnd(cvPlusComboComm)}
+                      /tháng
                     </p>
                   </div>
                   <span className="font-mono text-purple-600 dark:text-purple-400 font-black">
@@ -701,7 +973,7 @@ export function CareerConfigDrawer({
                 <div className="flex items-center justify-between border-b border-amber-200/60 dark:border-amber-800/50 pb-1.5">
                   <span className="text-xs font-black text-amber-800 dark:text-amber-200 flex items-center gap-1.5">
                     <span>💖</span>
-                    <span>Tư vấn cho CV khác: Nhận 20% Tip</span>
+                    <span>Tư vấn cho CV khác: Nhận Tip chéo</span>
                   </span>
                   <span className="text-xs font-black text-amber-600 dark:text-amber-400 tabular-nums">
                     +{formatVnd(cvPlusCrossTipAmount)}/tháng
@@ -749,18 +1021,20 @@ export function CareerConfigDrawer({
                     }
                   />
                   <p className="text-[10px] text-slate-500 dark:text-slate-400 m-0 mt-0.5 italic">
-                    * Đàn Chị Sảnh tư vấn/bán chéo cho khách của CV khác được nhận 20% tiền tip của ca đó (
-                    {cvPlusCrossOrders} ca × ~40K tip × 20% = +{formatVnd(cvPlusCrossTipAmount)}/tháng).
+                    * Đàn Chị Sảnh tư vấn/bán chéo cho khách của CV khác được nhận{' '}
+                    {(cvPlusCrossTipRate * 100).toFixed(0)}% tiền tip ({cvPlusCrossOrders} ca × ~40K tip ×{' '}
+                    {(cvPlusCrossTipRate * 100).toFixed(0)}% = +{formatVnd(cvPlusCrossTipAmount)}/tháng). Thợ CV làm mi
+                    vẫn nhận đủ 70% tiền tip!
                   </p>
                 </div>
               </div>
 
-              {/* 2.4 Tư vấn cho CV khác: Thêm tiền bán combo */}
-              <div className="p-3 rounded-xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200/80 dark:border-purple-800/60 space-y-2.5">
+              {/* 2.4 Tư vấn chốt combo hộ CV khác & Chia hoa hồng cho CV */}
+              <div className="p-3 rounded-xl bg-purple-50/70 dark:bg-purple-950/30 border border-purple-200/80 dark:border-purple-800/60 space-y-3">
                 <div className="flex items-center justify-between border-b border-purple-200/60 dark:border-purple-800/50 pb-1.5">
                   <span className="text-xs font-black text-purple-800 dark:text-purple-200 flex items-center gap-1.5">
                     <span>🏹</span>
-                    <span>Tư vấn cho CV khác: Thêm tiền bán combo</span>
+                    <span>Tư vấn chốt combo hộ CV khác: Tiền tươi bậc thang</span>
                   </span>
                   <span className="text-xs font-black text-purple-600 dark:text-purple-400 tabular-nums">
                     +{formatVnd(cvPlusCrossComboComm)}/tháng
@@ -788,29 +1062,39 @@ export function CareerConfigDrawer({
                   />
                 </div>
 
-                <div>
-                  <div className="flex justify-between text-xs text-slate-700 dark:text-slate-300 font-medium">
-                    <span>% Hoa hồng chốt combo chéo hộ CV khác:</span>
-                    <span className="font-mono text-purple-600 dark:text-purple-400 font-bold">
-                      {(cvPlusCrossRate * 100).toFixed(1)}%
+                {/* TỶ LỆ CHIA HOA HỒNG CHO THỢ CV LÀM MI */}
+                <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 space-y-1.5">
+                  <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+                    <span className="text-emerald-700 dark:text-emerald-300">
+                      💖 Tỷ lệ chia hoa hồng cho CV làm mi (CV get % of CV++):
+                    </span>
+                    <span className="font-mono text-emerald-600 dark:text-emerald-400 font-black">
+                      {(cvPlusCrossCvShare * 100).toFixed(0)}%
                     </span>
                   </div>
                   <Slider
-                    min={1}
-                    max={5}
-                    step={0.5}
-                    value={cvPlusCrossRate * 100}
+                    min={10}
+                    max={50}
+                    step={5}
+                    value={cvPlusCrossCvShare * 100}
                     onChange={(val) =>
                       onConfigChange({
                         ...config,
-                        cvPlusToCvPlusPlus: { ...cvPlusToCvPlusPlus, crossConsultCommissionRate: val / 100 },
+                        cvPlusToCvPlusPlus: { ...cvPlusToCvPlusPlus, crossConsultCvShareRate: val / 100 },
                       })
                     }
                   />
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 m-0 mt-0.5 italic">
-                    * Khi chốt combo cho khách của CV khác, nhận thêm hoa hồng ({cvPlusCrossCombos} combo × 4.5M ×{' '}
-                    {(cvPlusCrossRate * 100).toFixed(1)}% = +{formatVnd(cvPlusCrossComboComm)}/tháng).
-                  </p>
+                  <div className="text-[10px] text-emerald-800 dark:text-emerald-200 space-y-0.5 leading-relaxed">
+                    <div>
+                      • <strong>Thợ CV làm mi được hưởng:</strong> {(cvPlusCrossCvShare * 100).toFixed(0)}% hoa hồng bán
+                      combo (+{formatVnd(cvPlusCrossCvSharedAmount)}/tháng) và dưỡng mi (+
+                      {formatVnd(Math.round(serumOrigBonus * cvPlusCrossCvShare))}/cây gốc).
+                    </div>
+                    <div>
+                      • <strong>CV++ chốt hộ:</strong> Hưởng trọn 100% tiền thưởng hoa hồng (+
+                      {formatVnd(cvPlusCrossComboComm)}/tháng).
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -818,9 +1102,10 @@ export function CareerConfigDrawer({
               <div>
                 <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
                   <div>
-                    <span>✨ Số cây Dưỡng mi bán dự kiến / tuần:</span>
+                    <span>✨ Số cây Dưỡng mi bán dự kiến / tuần (CV++):</span>
                     <p className="text-[10px] text-slate-400 font-normal mt-0.5">
-                      Thưởng 10% (110.000đ/cây). Nhận thêm: +{formatVnd(cvPlusSerumMonthly)}/tháng (+
+                      Thưởng giá gốc ({formatVnd(cvPlusToCvPlusPlus.serumOriginalPriceBonus ?? 100000)}/cây). Nhận thêm:
+                      +{formatVnd(cvPlusSerumMonthly)}/tháng (+
                       {formatVnd(cvPlusSerumWeekly)}/tuần)
                     </p>
                   </div>
@@ -851,8 +1136,8 @@ export function CareerConfigDrawer({
                       Tổng hoa hồng bán hàng &amp; tư vấn chéo CV++
                     </div>
                     <div className="text-[11px] text-slate-600 dark:text-slate-300">
-                      Combo ({formatVnd(cvPlusComboComm)}) + Dưỡng mi ({formatVnd(cvPlusSerumMonthly)}) + 20% Tip chéo (
-                      {formatVnd(cvPlusCrossTipAmount)}) + Combo chéo ({formatVnd(cvPlusCrossComboComm)})
+                      Combo ({formatVnd(cvPlusComboComm)}) + Dưỡng mi ({formatVnd(cvPlusSerumMonthly)}) + Tip chéo ( +
+                      {formatVnd(cvPlusCrossTipAmount)}) + Combo chéo (+{formatVnd(cvPlusCrossComboComm)})
                     </div>
                   </div>
                 </div>
@@ -862,7 +1147,73 @@ export function CareerConfigDrawer({
               </div>
             </div>
 
-            {/* NHÓM 3: KỶ LUẬT QA & VĂN HÓA ĐỘI NGŨ */}
+            {/* NHÓM 3: ĐÃI NGỘ LƯƠNG GIỜ & TIP ĐÀN CHỊ */}
+            <div className="p-4 rounded-2xl bg-amber-50/40 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-800/40 space-y-3.5 shadow-xs">
+              <div className="flex items-center justify-between border-b border-amber-200/50 dark:border-amber-800/40 pb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                    <Coins className="w-3.5 h-3.5" />
+                  </div>
+                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-100 m-0">
+                    3. Lương Giờ &amp; Tip Đàn Chị (CV++)
+                  </h3>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 uppercase tracking-tight">
+                  Đãi ngộ CV++
+                </span>
+              </div>
+
+              {/* Lương theo giờ CV++ */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+                  <span>Lương theo giờ CV++ (Gốc CV: 25.500đ/h):</span>
+                  <span className="font-mono text-amber-600 dark:text-amber-400 font-black">
+                    {formatVnd(cvPlusToCvPlusPlus.hourlyWage ?? 29500)}/h (+
+                    {formatVnd((cvPlusToCvPlusPlus.hourlyWage ?? 29500) - 25500)}/h)
+                  </span>
+                </div>
+                <InputNumber
+                  className="w-full"
+                  value={cvPlusToCvPlusPlus.hourlyWage ?? 29500}
+                  step={500}
+                  min={25500}
+                  max={60000}
+                  formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(val) => Number(val?.replace(/\$\s?|(,*)/g, '') || 0)}
+                  addonAfter="đ/h"
+                  onChange={(val) =>
+                    onConfigChange({
+                      ...config,
+                      cvPlusToCvPlusPlus: { ...cvPlusToCvPlusPlus, hourlyWage: Number(val || 0) },
+                    })
+                  }
+                />
+              </div>
+
+              {/* Tỷ lệ tip trên khách của mình */}
+              <div>
+                <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+                  <span>Tỷ lệ hưởng Tip khách của mình:</span>
+                  <span className="font-mono text-emerald-600 dark:text-emerald-400 font-black">
+                    {((cvPlusToCvPlusPlus.tipShareRatio ?? 0.9) * 100).toFixed(0)}% (Tự tư vấn + Tự làm mi)
+                  </span>
+                </div>
+                <Slider
+                  min={70}
+                  max={100}
+                  step={5}
+                  value={(cvPlusToCvPlusPlus.tipShareRatio ?? 0.9) * 100}
+                  onChange={(val) =>
+                    onConfigChange({
+                      ...config,
+                      cvPlusToCvPlusPlus: { ...cvPlusToCvPlusPlus, tipShareRatio: val / 100 },
+                    })
+                  }
+                />
+              </div>
+            </div>
+
+            {/* NHÓM 4: KỶ LUẬT QA & VĂN HÓA ĐỘI NGŨ */}
             <div className="p-4 rounded-2xl bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 space-y-3.5 shadow-xs">
               <div className="flex items-center justify-between border-b border-emerald-200/50 dark:border-emerald-800/40 pb-2">
                 <div className="flex items-center gap-2">
@@ -870,7 +1221,7 @@ export function CareerConfigDrawer({
                     <ShieldCheck className="w-3.5 h-3.5" />
                   </div>
                   <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-100 m-0">
-                    3. Kỷ Luật QA &amp; Văn Hóa Đội Ngũ
+                    4. Kỷ Luật QA &amp; Văn Hóa Đội Ngũ
                   </h3>
                 </div>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 uppercase tracking-tight">
@@ -960,11 +1311,18 @@ export function CareerConfigDrawer({
               {/* 3.4 Chỉ số HI (Đồng đội tin yêu) */}
               <div>
                 <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-                  <span>😊 Chỉ số HI tối thiểu (Đồng đội tin yêu &amp; quý mến):</span>
+                  <span className="flex items-center gap-1">
+                    <span>😊 Chỉ số HI tối thiểu:</span>
+                    <span className="text-[10px] font-normal text-slate-400">(Đồng đội tin yêu &amp; quý mến)</span>
+                  </span>
                   <span className="font-mono text-emerald-600 dark:text-emerald-400 font-black">
                     {((cvPlusToCvPlusPlus.minHappinessIndex ?? 0.8) * 100).toFixed(0)}%
                   </span>
                 </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 mb-1 leading-normal">
+                  Đàn chị sảnh gương mẫu: Yêu cầu đạt tỷ lệ đồng đội tin yêu, hỗ trợ và tự thả tim nhau ≥ 80% khi
+                  check-in / check-out.
+                </p>
                 <Slider
                   min={50}
                   max={95}

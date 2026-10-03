@@ -1,11 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Slider, Progress, Tooltip, Avatar, Segmented } from 'antd';
+import { Slider, Progress, Tooltip, Avatar, Segmented, ConfigProvider } from 'antd';
 import {
   Sparkles,
   Trophy,
   CheckCircle2,
+  Check,
   XCircle,
   AlertCircle,
   TrendingUp,
@@ -17,10 +18,23 @@ import {
   Flame,
   Award,
   Crown,
+  Clock,
+  Gem,
+  Users,
+  ShieldAlert,
+  LayoutGrid,
+  SlidersHorizontal,
+  ChevronDown,
+  ChevronUp,
+  Filter,
+  Eye,
+  Bug,
+  Coins,
+  Heart,
 } from 'lucide-react';
 import { StatusTag } from '../../../../components/ui';
-import type { StaffCareerStatus, CareerProgressionConfig } from '@mos-lab/shared';
-import { formatCareerRoleName } from '../career-path.constants';
+import { type StaffCareerStatus, type CareerProgressionConfig } from '@mos-lab/shared';
+import { formatCareerRoleName, calculateComboBonus } from '../career-path.constants';
 
 interface RealStaffSimulationCardProps {
   status: StaffCareerStatus | null;
@@ -42,11 +56,66 @@ interface StatRadarChartProps {
   targetScores: number[]; // [1, 1, 1, 1, 1, 1]
   simulatedScores: number[]; // [simOrders, fix, tip, qa, hi, banana]
   qaLabel?: string;
-  customAxes?: Array<{ label: string; icon: string }>;
+  customAxes?: Array<{ label: string; icon: string; name?: string; isPassed?: boolean }>;
+  passedAxes?: boolean[];
+  activeNodeIndex?: number;
+  onSelectNode?: (index: number) => void;
 }
 
 /**
+ * Render icon đồng bộ cho 6 ải / 6 đỉnh Radar Career Path:
+ * 0: Eye (Sản lượng bộ mi)
+ * 1: Bug (Tỷ lệ bảo hành / sửa mi)
+ * 2: Coins (Tỷ lệ tip - triệt tiêu icon 🪙 bị lỗi đĩa xám trên macOS)
+ * 3: ShieldCheck (Kiểm định QA/QC)
+ * 4: Heart (Teamwork HI Thả tim)
+ * 5: 🍌 (Chuối Yêu Thương)
+ */
+export const renderCareerNodeIcon = (index: number, className = 'w-4 h-4 shrink-0', bananaSizeClass = 'text-xs') => {
+  switch (index) {
+    case 0:
+      return <Eye className={className} />;
+    case 1:
+      return <Bug className={className} />;
+    case 2:
+      return <Coins className={className} />;
+    case 3:
+      return <ShieldCheck className={className} />;
+    case 4:
+      return <Heart className={`${className} fill-current/20`} />;
+    case 5:
+    default:
+      return <span className={`${bananaSizeClass} shrink-0 select-none`}>🍌</span>;
+  }
+};
+
+const renderRadarAxisIcon = (index: number, isActive: boolean, isPassed: boolean) => {
+  const iconColorClass = isActive
+    ? 'text-white'
+    : isPassed
+      ? 'text-emerald-700 dark:text-emerald-300'
+      : 'text-rose-600 dark:text-rose-400';
+
+  switch (index) {
+    case 0:
+      return <Eye size={12} strokeWidth={2.5} className={iconColorClass} />;
+    case 1:
+      return <Bug size={12} strokeWidth={2.5} className={iconColorClass} />;
+    case 2:
+      return <Coins size={12} strokeWidth={2.5} className={iconColorClass} />;
+    case 3:
+      return <ShieldCheck size={12} strokeWidth={2.5} className={iconColorClass} />;
+    case 4:
+      return <Heart size={12} strokeWidth={2.5} className={`${iconColorClass} fill-current/20`} />;
+    case 5:
+    default:
+      return null;
+  }
+};
+
+/**
  * Biểu đồ Radar RPG 6 Cánh - Hiển thị 6 chỉ số thăng hạng CV -> CV+ của Kỹ thuật viên
+ * Thiết kế vuông vức (aspect-square), full-width trên mobile, hỗ trợ chạm trực tiếp vào từng đỉnh
  */
 const StatRadarChart: React.FC<StatRadarChartProps> = ({
   actualScores,
@@ -54,17 +123,20 @@ const StatRadarChart: React.FC<StatRadarChartProps> = ({
   simulatedScores,
   qaLabel,
   customAxes,
+  passedAxes,
+  activeNodeIndex = 0,
+  onSelectNode,
 }) => {
-  const cx = 110;
-  const cy = 100;
-  const R = 68;
-  const defaultAxes = [
-    { label: '300 Ca/3T', icon: '🎯' },
-    { label: 'Fix < 2%', icon: '🛡️' },
-    { label: 'Tip > 10% Shop', icon: '💖' },
-    { label: qaLabel || 'QA ≥ 12L/3T', icon: '📋' },
-    { label: 'HI > 70%', icon: '😊' },
-    { label: 'Chuối ≥ 45/90N', icon: '🍌' },
+  const cx = 230;
+  const cy = 170;
+  const R = 74;
+  const defaultAxes: Array<{ label: string; icon: string; name?: string; isPassed?: boolean }> = [
+    { label: '300 Ca/3T', icon: '👁️', name: 'Bộ mi' },
+    { label: 'Fix < 2%', icon: '🐛', name: 'Bảo hành' },
+    { label: 'Tip > 10% Shop', icon: '🪙', name: 'Tỷ lệ Tip' },
+    { label: qaLabel || 'QA ≥ 12L/3T', icon: '🛡️', name: 'Kiểm định QA' },
+    { label: 'HI > 70%', icon: '💖', name: 'Teamwork HI' },
+    { label: 'Chuối ≥ 45/90N', icon: '🍌', name: 'Chuối Yêu Thương' },
   ];
   const axes = customAxes && customAxes.length === 6 ? customAxes : defaultAxes;
 
@@ -72,7 +144,7 @@ const StatRadarChart: React.FC<StatRadarChartProps> = ({
     return scores
       .map((score, i) => {
         const angle = -Math.PI / 2 + (i * 2 * Math.PI) / 6;
-        const r = R * Math.max(0.1, Math.min(1.15, score));
+        const r = R * Math.max(0, Math.min(1.18, score));
         return `${(cx + r * Math.cos(angle)).toFixed(1)},${(cy + r * Math.sin(angle)).toFixed(1)}`;
       })
       .join(' ');
@@ -93,28 +165,41 @@ const StatRadarChart: React.FC<StatRadarChartProps> = ({
   const simulatedPoints = getPoints(simulatedScores);
 
   return (
-    <div className="relative flex flex-col items-center select-none py-1">
-      <svg width="220" height="200" viewBox="0 0 220 200" className="overflow-visible">
+    <div className="relative flex flex-col items-center select-none w-full max-w-[390px] aspect-[460/340] mx-auto">
+      <svg viewBox="0 0 460 340" className="w-full h-full overflow-visible touch-manipulation drop-shadow-sm">
+        <defs>
+          {/* Glow filter for active vertex */}
+          <filter id="activeGlow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
         {/* Background Grid Polygons */}
         {[0.25, 0.5, 0.75, 1.0].map((level) => (
           <polygon
             key={level}
             points={getGridPoints(level)}
             strokeWidth={level === 1.0 ? '1.5' : '1'}
-            strokeDasharray={level === 1.0 ? 'none' : '2,2'}
+            strokeDasharray={level === 1.0 ? 'none' : '3,3'}
             className={
               level === 1.0
-                ? 'fill-rose-500/5 stroke-slate-300 dark:stroke-slate-700/60'
-                : 'fill-none stroke-slate-300 dark:stroke-slate-700/60'
+                ? 'fill-slate-500/5 dark:fill-slate-400/5 stroke-slate-300 dark:stroke-slate-700/80'
+                : 'fill-none stroke-slate-200 dark:stroke-slate-800'
             }
           />
         ))}
 
-        {/* Axis lines */}
+        {/* 6 Axis Spoke Lines from Center (cx, cy) to Outer Rim */}
         {[0, 1, 2, 3, 4, 5].map((i) => {
           const angle = -Math.PI / 2 + (i * 2 * Math.PI) / 6;
           const x = cx + R * Math.cos(angle);
           const y = cy + R * Math.sin(angle);
+          const isActive = activeNodeIndex === i;
+          const isPassedAxis = axes[i]?.isPassed ?? passedAxes?.[i] ?? false;
           return (
             <line
               key={i}
@@ -122,73 +207,273 @@ const StatRadarChart: React.FC<StatRadarChartProps> = ({
               y1={cy}
               x2={x}
               y2={y}
-              className="stroke-slate-200 dark:stroke-slate-800"
-              strokeWidth="1"
+              className={
+                isActive
+                  ? isPassedAxis
+                    ? 'stroke-emerald-400 dark:stroke-emerald-400'
+                    : 'stroke-rose-400 dark:stroke-rose-400'
+                  : 'stroke-slate-300 dark:stroke-slate-700/80'
+              }
+              strokeWidth={isActive ? '2' : '1'}
+              strokeDasharray={isActive ? 'none' : '3,3'}
             />
           );
         })}
+
+        {/* Center Hub / Origin Anchor */}
+        <circle
+          cx={cx}
+          cy={cy}
+          r="4"
+          className="fill-slate-400 dark:fill-slate-600 stroke-2 stroke-white dark:stroke-slate-900 shadow-sm"
+        />
 
         {/* Target 100% Polygon (Gold Dashed) */}
         <polygon
           points={targetPoints}
           strokeWidth="1.5"
-          strokeDasharray="3,3"
-          className="fill-none stroke-amber-500 opacity-75"
+          strokeDasharray="4,4"
+          className="fill-none stroke-amber-500/80 dark:stroke-amber-400/80"
         />
 
         {/* Simulated Polygon (Emerald dashed glow) */}
         <polygon
           points={simulatedPoints}
-          strokeWidth="2"
-          strokeDasharray="4,2"
-          className="fill-emerald-500/15 stroke-emerald-500 transition-all duration-300"
+          strokeWidth="2.5"
+          strokeDasharray="5,3"
+          className="fill-emerald-500/20 stroke-emerald-500 transition-all duration-300"
         />
 
         {/* Actual Staff Polygon (Rose/Purple gradient filled) */}
         <polygon
           points={actualPoints}
           strokeWidth="2.5"
-          className="fill-rose-500/25 stroke-rose-500 transition-all duration-500 drop-shadow-sm"
+          className="fill-rose-500/25 stroke-rose-500 transition-all duration-300 drop-shadow-sm"
         />
 
-        {/* Stat Vertex Dots and Labels */}
+        {/* Stat Vertex Dots and Interactive Touch Nodes */}
         {axes.map((axis, i) => {
           const angle = -Math.PI / 2 + (i * 2 * Math.PI) / 6;
-          const labelDist = R + 18;
-          const lx = cx + labelDist * Math.cos(angle);
-          const ly = cy + labelDist * Math.sin(angle);
+          const isActive = activeNodeIndex === i;
+          const isPassed = axis.isPassed ?? passedAxes?.[i] ?? simulatedScores[i] >= (targetScores[i] || 1.0);
 
-          const actualR = R * Math.max(0.1, Math.min(1.15, actualScores[i]));
-          const dx = cx + actualR * Math.cos(angle);
-          const dy = cy + actualR * Math.sin(angle);
+          // Vị trí và kích thước nhãn pill chuẩn xác (Zero Overlay Guarantee & Pixel-Perfect Alignment)
+          let pillWidth = 112;
+          let pillLeft = 0;
+          let ly = cy;
+
+          if (i === 0) {
+            // Đỉnh 0: Trên cùng (Bộ mi)
+            pillWidth = isPassed ? 106 : 98;
+            pillLeft = cx - pillWidth / 2;
+            ly = 20;
+          } else if (i === 3) {
+            // Đỉnh 3: Dưới cùng (QA)
+            pillWidth = isPassed ? 112 : 104;
+            pillLeft = cx - pillWidth / 2;
+            ly = 320;
+          } else if (i === 1) {
+            // Đỉnh 1: Phía trên bên phải (Fix mi) -> neo lề phải x = 452 (mép trái x = 340, cách đỉnh > 34px)
+            pillWidth = 112;
+            pillLeft = 452 - pillWidth;
+            ly = 110;
+          } else if (i === 2) {
+            // Đỉnh 2: Phía dưới bên phải (Tip) -> neo lề phải x = 452 (mép trái x = 340, cách đỉnh > 34px)
+            pillWidth = 112;
+            pillLeft = 452 - pillWidth;
+            ly = 230;
+          } else if (i === 4) {
+            // Đỉnh 4: Phía dưới bên trái (HI) -> neo lề trái x = 8 (mép phải x = 120, cách đỉnh > 34px)
+            pillWidth = 112;
+            pillLeft = 8;
+            ly = 230;
+          } else if (i === 5) {
+            // Đỉnh 5: Phía trên bên trái (Chuối) -> neo lề trái x = 8 (mép phải x = 120, cách đỉnh > 34px)
+            pillWidth = 112;
+            pillLeft = 8;
+            ly = 110;
+          }
+
+          const pillHeight = 22;
+          const pillTop = ly - pillHeight / 2;
+          const pillRight = pillLeft + pillWidth;
+
+          // Tọa độ đỉnh thực tế & dự phóng (chuẩn tâm cx, cy khi score = 0)
+          const actualR = R * Math.max(0, Math.min(1.18, actualScores[i]));
+          const adx = cx + actualR * Math.cos(angle);
+          const ady = cy + actualR * Math.sin(angle);
+
+          const simR = R * Math.max(0, Math.min(1.18, simulatedScores[i]));
+          const sdx = cx + simR * Math.cos(angle);
+          const sdy = cy + simR * Math.sin(angle);
+
+          // Tọa độ các thành phần bên trong pill (tách riêng emoji, text, checkmark để không bị lệch)
+          const iconX = pillLeft + 13;
+          const checkX = pillRight - 11;
+          const textCenterX = isPassed ? (pillLeft + 24 + pillRight - 20) / 2 : (pillLeft + 24 + pillRight - 8) / 2;
 
           return (
-            <g key={i}>
-              <circle cx={dx} cy={dy} r="3" className="fill-rose-500 drop-shadow" />
+            <g
+              key={i}
+              className="cursor-pointer group select-none transition-transform active:scale-95"
+              onClick={() => onSelectNode?.(i)}
+            >
+              {/* Invisible large touch target area for easy mobile tapping */}
+              <circle cx={pillLeft + pillWidth / 2} cy={ly} r="32" className="fill-transparent" />
+              <circle cx={cx + R * Math.cos(angle)} cy={cy + R * Math.sin(angle)} r="28" className="fill-transparent" />
+
+              {/* Active vertex glowing beacon */}
+              {isActive && (
+                <>
+                  <circle
+                    cx={sdx}
+                    cy={sdy}
+                    r="12"
+                    className="fill-emerald-500/25 stroke-2 stroke-emerald-400 animate-pulse pointer-events-none"
+                  />
+                  <circle
+                    cx={adx}
+                    cy={ady}
+                    r="10"
+                    className={`${
+                      isPassed
+                        ? 'fill-emerald-500/25 stroke-2 stroke-emerald-400'
+                        : 'fill-rose-500/30 stroke-2 stroke-rose-400'
+                    } animate-pulse pointer-events-none`}
+                  />
+                </>
+              )}
+
+              {/* Simulated Dot (ẩn khi r = 0 để không đè lên Center Hub) */}
+              {simR > 2 && (
+                <circle
+                  cx={sdx}
+                  cy={sdy}
+                  r={isActive ? '5' : '3.5'}
+                  className="fill-emerald-400 stroke-2 stroke-white dark:stroke-slate-900 transition-all duration-200"
+                />
+              )}
+
+              {/* Actual Dot (ẩn khi r = 0 để không đè lên Center Hub) */}
+              {actualR > 2 && (
+                <circle
+                  cx={adx}
+                  cy={ady}
+                  r={isActive ? '5.5' : '4'}
+                  className="fill-rose-500 stroke-2 stroke-white dark:stroke-slate-900 drop-shadow transition-all duration-200"
+                />
+              )}
+
+              {/* Active pill glowing halo */}
+              {isActive && (
+                <rect
+                  x={pillLeft - 2}
+                  y={pillTop - 2}
+                  width={pillWidth + 4}
+                  height={pillHeight + 4}
+                  rx="13"
+                  className={`fill-none stroke-2 ${
+                    isPassed ? 'stroke-emerald-400/70' : 'stroke-rose-400/70'
+                  } animate-pulse pointer-events-none`}
+                />
+              )}
+
+              {/* Label Pill Container */}
+              <rect
+                x={pillLeft}
+                y={pillTop}
+                width={pillWidth}
+                height={pillHeight}
+                rx="11"
+                className={`transition-all duration-200 ${
+                  isActive
+                    ? isPassed
+                      ? 'fill-emerald-600 stroke-2 stroke-white dark:stroke-slate-900 shadow-md'
+                      : 'fill-rose-600 stroke-2 stroke-white dark:stroke-slate-900 shadow-md'
+                    : isPassed
+                      ? 'fill-emerald-50/95 dark:fill-emerald-950/60 stroke stroke-emerald-500/50 dark:stroke-emerald-500/40 group-hover:fill-emerald-100/90 dark:group-hover:fill-emerald-900/40 group-hover:stroke-emerald-400'
+                      : 'fill-white/95 dark:fill-slate-800/95 stroke stroke-slate-200/90 dark:stroke-slate-700/90 group-hover:fill-rose-50 dark:group-hover:fill-rose-950/40 group-hover:stroke-rose-300'
+                }`}
+              />
+
+              {/* Icon (Vector Lucide icon cho đỉnh 0..4, 🍌 cho đỉnh 5) */}
+              {i === 5 ? (
+                <text
+                  x={iconX}
+                  y={ly}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  className="text-[11px] select-none pointer-events-none"
+                >
+                  🍌
+                </text>
+              ) : i < 5 ? (
+                <g transform={`translate(${iconX - 6}, ${ly - 6})`} className="pointer-events-none select-none">
+                  {renderRadarAxisIcon(i, isActive, isPassed)}
+                </g>
+              ) : (
+                <text
+                  x={iconX}
+                  y={ly}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  className="text-[11px] select-none pointer-events-none"
+                >
+                  {axis.icon}
+                </text>
+              )}
+
+              {/* Label text (Căn giữa hoàn hảo trong khoảng không gian giữa Icon và Checkmark) */}
               <text
-                x={lx}
+                x={textCenterX}
                 y={ly}
                 textAnchor="middle"
                 dominantBaseline="central"
-                className="text-[9px] font-bold fill-slate-600 dark:fill-slate-300"
+                className={`text-[9px] font-bold tracking-tight select-none pointer-events-none transition-colors ${
+                  isActive
+                    ? 'fill-white'
+                    : isPassed
+                      ? 'fill-emerald-800 dark:fill-emerald-300 group-hover:fill-emerald-600 dark:group-hover:fill-emerald-400'
+                      : 'fill-slate-700 dark:fill-slate-200 group-hover:fill-rose-600 dark:group-hover:fill-rose-400'
+                }`}
               >
-                {axis.icon} {axis.label}
+                {axis.label}
               </text>
+
+              {/* Pass Checkmark ✓ (Căn lề phải cố định, cách mép 11px sắc nét) */}
+              {isPassed && (
+                <text
+                  x={checkX}
+                  y={ly}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  className={`text-[10px] font-black select-none pointer-events-none ${
+                    isActive ? 'fill-white' : 'fill-emerald-600 dark:fill-emerald-400 group-hover:fill-emerald-500'
+                  }`}
+                >
+                  ✓
+                </text>
+              )}
             </g>
           );
         })}
       </svg>
 
-      {/* Legend */}
-      <div className="flex items-center gap-3 text-[10px] mt-2 font-semibold">
-        <span className="flex items-center gap-1 text-rose-500">
-          <span className="w-2 h-2 rounded-full bg-rose-500" /> Thực tế
-        </span>
-        <span className="flex items-center gap-1 text-amber-500">
-          <span className="w-2 h-0.5 border-b border-amber-500 border-dashed" /> Ải chuẩn
-        </span>
-        <span className="flex items-center gap-1 text-emerald-500">
-          <span className="w-2 h-2 rounded-full bg-emerald-500" /> Dự phóng
+      {/* Legend & Tap hint */}
+      <div className="flex items-center justify-between w-full px-1 sm:px-2 mt-1 text-[10px] sm:text-[10.5px] font-semibold text-slate-500 dark:text-slate-400 flex-wrap gap-y-1">
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          <span className="flex items-center gap-1 text-rose-500 font-bold">
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> Thực tế
+          </span>
+          <span className="flex items-center gap-1 text-amber-500 font-bold">
+            <span className="w-2.5 h-0.5 border-b border-amber-500 border-dashed" /> Chuẩn
+          </span>
+          <span className="flex items-center gap-1 text-emerald-500 font-bold">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Dự phóng
+          </span>
+        </div>
+        <span className="text-[10px] text-rose-500 dark:text-rose-400 font-bold flex items-center gap-0.5">
+          <span>👆 Chạm đỉnh để chỉnh</span>
         </span>
       </div>
     </div>
@@ -228,6 +513,13 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
         minSelfComboRate: 0.3,
         expectedSerumsPerWeek: 4,
         expectedCombosPerMonth: 10,
+        serumOriginalPriceBonus: 100000,
+        serumDiscountedPriceBonus: 50000,
+        comboUnder2mBonus: 50000,
+        comboUnder3mBonus: 100000,
+        comboUnder4mBonus: 150000,
+        comboStepPerMillionBonus: 50000,
+        crossConsultCvShareRate: 0.2,
       }
     : config.cvToCvPlus ||
       config.cvToCc || {
@@ -246,22 +538,41 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
         allowSelfConsultTrial: true,
         expectedSerumsPerWeek: 4,
         expectedCombosPerMonth: 6,
+        serumOriginalPriceBonus: 100000,
+        serumDiscountedPriceBonus: 50000,
+        comboUnder2mBonus: 50000,
+        comboUnder3mBonus: 100000,
+        comboUnder4mBonus: 150000,
+        comboStepPerMillionBonus: 50000,
       };
 
   const cvReq = targetReq;
   const earnings = status?.earningsSimulation;
 
-  // Dự kiến mỗi tuần bán dưỡng mi (Theo cấu hình Danny hoặc thanh trượt)
-  const defaultSerums = earnings?.details?.expectedSerumsPerWeek ?? cvReq.expectedSerumsPerWeek ?? 4;
+  // Dự kiến mỗi tuần bán dưỡng mi (Ưu tiên cấu hình Danny từ cvReq hoặc thanh trượt)
+  const defaultSerums = cvReq.expectedSerumsPerWeek ?? earnings?.details?.expectedSerumsPerWeek ?? 4;
   const [sliderSerums, setSliderSerums] = React.useState<number>(defaultSerums);
 
   React.useEffect(() => {
-    if (typeof earnings?.details?.expectedSerumsPerWeek === 'number') {
-      setSliderSerums(earnings.details.expectedSerumsPerWeek);
-    } else if (typeof cvReq.expectedSerumsPerWeek === 'number') {
+    if (typeof cvReq.expectedSerumsPerWeek === 'number') {
       setSliderSerums(cvReq.expectedSerumsPerWeek);
+    } else if (typeof earnings?.details?.expectedSerumsPerWeek === 'number') {
+      setSliderSerums(earnings.details.expectedSerumsPerWeek);
     }
-  }, [earnings?.details?.expectedSerumsPerWeek, cvReq.expectedSerumsPerWeek]);
+  }, [cvReq.expectedSerumsPerWeek, earnings?.details?.expectedSerumsPerWeek]);
+
+  // Dự kiến số combo cá nhân bán mỗi tháng (Ưu tiên cấu hình Danny từ cvReq)
+  const defaultCombos =
+    cvReq.expectedCombosPerMonth ?? earnings?.details?.expectedCombosPerMonth ?? (isTargetCvPlusPlus ? 10 : 8);
+  const [sliderCombos, setSliderCombos] = React.useState<number>(defaultCombos);
+
+  React.useEffect(() => {
+    if (typeof cvReq.expectedCombosPerMonth === 'number') {
+      setSliderCombos(cvReq.expectedCombosPerMonth);
+    } else if (typeof earnings?.details?.expectedCombosPerMonth === 'number') {
+      setSliderCombos(earnings.details.expectedCombosPerMonth);
+    }
+  }, [cvReq.expectedCombosPerMonth, earnings?.details?.expectedCombosPerMonth]);
 
   // Dự kiến số ca bán chéo / tư vấn chéo (lên đến 300 ca/tháng theo yêu cầu Danny)
   const defaultCrossOrders =
@@ -269,6 +580,38 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
     (targetReq as any).expectedCrossConsultOrdersPerMonth ??
     20;
   const [sliderCrossOrders, setSliderCrossOrders] = React.useState<number>(defaultCrossOrders);
+  const [gateViewMode, setGateViewMode] = React.useState<'simple' | 'expanded'>('simple');
+  const [expandedGates, setExpandedGates] = React.useState<number[]>([]);
+  const [gateFilter, setGateFilter] = React.useState<'ALL' | 'UNPASSED' | 'PASSED'>('ALL');
+
+  // Selected Radar Node for Interactive Slider Editing (0: Orders, 1: Fix, 2: Tip, 3: QA, 4: HI, 5: Banana)
+  const [selectedRadarNode, setSelectedRadarNode] = React.useState<number>(0);
+  const [isExtraPerksExpanded, setIsExtraPerksExpanded] = React.useState<boolean>(false);
+
+  // Dynamic What-If Sliders for Nodes 1..5 (Declared unconditionally at top of component)
+  const [sliderFixRate, setSliderFixRate] = React.useState<number>(1.2);
+  const [sliderTipRate, setSliderTipRate] = React.useState<number>(48.5);
+  const [sliderQaAudits, setSliderQaAudits] = React.useState<number>(12);
+  const [sliderHappinessIndex, setSliderHappinessIndex] = React.useState<number>(85);
+  const [sliderBananaCount, setSliderBananaCount] = React.useState<number>(45);
+
+  const toggleGate = (idx: number) => {
+    setExpandedGates((prev) => {
+      const next = prev.includes(idx) ? prev.filter((i) => i !== idx) : [...prev, idx];
+      if (next.length === 6) setGateViewMode('expanded');
+      else if (next.length === 0) setGateViewMode('simple');
+      return next;
+    });
+  };
+
+  const handleSetGateViewMode = (mode: 'simple' | 'expanded') => {
+    setGateViewMode(mode);
+    if (mode === 'simple') {
+      setExpandedGates([]);
+    } else {
+      setExpandedGates([1, 2, 3, 4, 5, 6]);
+    }
+  };
 
   React.useEffect(() => {
     if (typeof earnings?.details?.expectedCrossConsultOrdersPerMonth === 'number') {
@@ -277,6 +620,28 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
       setSliderCrossOrders((targetReq as any).expectedCrossConsultOrdersPerMonth);
     }
   }, [earnings?.details?.expectedCrossConsultOrdersPerMonth, (targetReq as any)?.expectedCrossConsultOrdersPerMonth]);
+
+  // Synchronize when active staff or metrics change
+  React.useEffect(() => {
+    if (status?.metrics) {
+      const m = status.metrics;
+      setSliderFixRate(Number(((m.fixRate || 0) * 100).toFixed(1)));
+      const stTip =
+        m.staffTipRate ??
+        (m.ordersCount ? Math.min(0.65, Math.max(0.2, ((m.totalTip || 0) / (m.ordersCount * 38000)) * 0.45)) : 0.314);
+      setSliderTipRate(Number((stTip * 100).toFixed(1)));
+      setSliderQaAudits(m.qaAudit?.totalAudits ?? 0);
+      setSliderHappinessIndex(Math.round((m.happinessIndex ?? 0.85) * 100));
+      setSliderBananaCount(m.bananaCount ?? 45);
+    }
+  }, [
+    status?.staffId,
+    status?.metrics?.ordersCount,
+    status?.metrics?.fixRate,
+    status?.metrics?.totalTip,
+    status?.metrics?.happinessIndex,
+    status?.metrics?.bananaCount,
+  ]);
 
   if (!status) return null;
 
@@ -345,7 +710,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
   const isBananaPassed = bananaCount >= minBananaCountVal;
   const bananaProgressPercent = Math.min(100, Math.round((bananaCount / minBananaCountVal) * 100));
 
-  // Gamified Quest XP Progress (Tổng 6 ải hoàn thành)
+  // Gamified Quest XP Progress (Tổng 6 ải hoàn thành thực tế)
   const passedQuestsCount =
     Number(isOrdersPassed) +
     Number(isFixPassed) +
@@ -355,26 +720,49 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
     Number(isBananaPassed);
   const xpPercent = Math.round((passedQuestsCount / 6) * 100);
 
-  // What-If Dynamic Simulation
+  // What-If Dynamic Simulation across all 6 Nodes
   const isSimOrdersPassed = sliderOrders >= targetOrders;
+  const isSimFixPassed = sliderFixRate / 100 <= targetMaxFix;
+  const isSimTipPassed =
+    sliderTipRate / 100 >= targetTipRate ||
+    (targetTipRate > 0 && sliderTipRate / 100 >= shopTipRate * (1 + minTipRatioAboveShop));
+  const isSimQaPassed = requiredQaAudits === 0 || (!hasFailedQa && sliderQaAudits >= requiredQaAudits);
+  const isSimHiPassed = sliderHappinessIndex / 100 >= minHappinessIndex;
+  const isSimBananaPassed = sliderBananaCount >= minBananaCountVal;
+
   const isSimComboPassed = sliderCombo / 100 >= minSelfComboRate;
   const simPassedCount =
     Number(isSimOrdersPassed) +
-    Number(isFixPassed) +
-    Number(isTipPassed) +
-    Number(isQaPassed) +
-    Number(isHiPassed) +
-    Number(isBananaPassed);
+    Number(isSimFixPassed) +
+    Number(isSimTipPassed) +
+    Number(isSimQaPassed) +
+    Number(isSimHiPassed) +
+    Number(isSimBananaPassed);
   const isSimAllPassed = simPassedCount === 6;
 
   // Radar Scores (Normalized 6 Cánh)
   const customRadarAxes = [
-    { label: `${targetOrders} Ca/3T`, icon: '🎯' },
-    { label: `Fix < ${(targetMaxFix * 100).toFixed(1)}%`, icon: '🛡️' },
-    { label: `Tip > ${(minTipRatioAboveShop * 100).toFixed(0)}% Shop`, icon: '💖' },
-    { label: requiredQaAudits > 0 ? `QA ≥ ${requiredQaAudits}L/3T` : 'QA (Miễn)', icon: '📋' },
-    { label: `HI > ${(minHappinessIndex * 100).toFixed(0)}%`, icon: '😊' },
-    { label: `Chuối ≥ ${minBananaCountVal}/90N`, icon: '🍌' },
+    { label: `${targetOrders} Ca/3T`, icon: '👁️', name: 'Bộ mi', isPassed: isSimOrdersPassed },
+    { label: `Fix < ${(targetMaxFix * 100).toFixed(1)}%`, icon: '🐛', name: 'Bảo hành', isPassed: isSimFixPassed },
+    {
+      label: `Tip > ${(minTipRatioAboveShop * 100).toFixed(0)}% Shop`,
+      icon: '🪙',
+      name: 'Tỷ lệ Tip',
+      isPassed: isSimTipPassed,
+    },
+    {
+      label: requiredQaAudits > 0 ? `QA ≥ ${requiredQaAudits}L/3T` : 'QA (Miễn)',
+      icon: '🛡️',
+      name: 'Kiểm định QA',
+      isPassed: isSimQaPassed,
+    },
+    {
+      label: `HI > ${(minHappinessIndex * 100).toFixed(0)}%`,
+      icon: '💖',
+      name: 'Teamwork HI',
+      isPassed: isSimHiPassed,
+    },
+    { label: `Chuối ≥ ${minBananaCountVal}/90N`, icon: '🍌', name: 'Chuối Yêu Thương', isPassed: isSimBananaPassed },
   ];
 
   const radarActualScores = [
@@ -383,7 +771,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
       ? 1.0 + Math.max(0, 0.2 - (metrics.fixRate || 0) * 10)
       : Math.max(0.2, 1.0 - ((metrics.fixRate || 0) - targetMaxFix) * 25),
     targetTipRate > 0 ? Math.min(1.2, Math.max(0.2, staffTipRate / targetTipRate)) : 0.5,
-    requiredQaAudits > 0 ? (hasFailedQa ? 0.2 : Math.min(1.2, Math.max(0.1, totalQaAudits / requiredQaAudits))) : 1.0,
+    requiredQaAudits > 0 ? (hasFailedQa ? 0.2 : Math.min(1.2, totalQaAudits / (requiredQaAudits || 12))) : 1.0,
     happinessIndex >= minHappinessIndex
       ? Math.min(1.2, 1.0 + Math.min(0.2, (happinessIndex - minHappinessIndex) * 2))
       : Math.max(0.2, happinessIndex / minHappinessIndex),
@@ -392,16 +780,169 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
       : Math.min(0.9, bananaCount / minBananaCountVal),
   ];
 
+  // Radar Simulated Scores (Phản ánh trực tiếp 6 slider mô phỏng của Danny)
   const radarSimulatedScores = [
     Math.min(1.2, sliderOrders / (targetOrders || 300)),
-    radarActualScores[1],
-    radarActualScores[2],
-    radarActualScores[3],
-    radarActualScores[4],
-    radarActualScores[5],
+    sliderFixRate / 100 <= targetMaxFix
+      ? 1.0 + Math.max(0, 0.2 - (sliderFixRate / 100) * 10)
+      : Math.max(0.2, 1.0 - (sliderFixRate / 100 - targetMaxFix) * 25),
+    targetTipRate > 0 ? Math.min(1.2, Math.max(0.2, sliderTipRate / 100 / targetTipRate)) : 0.5,
+    requiredQaAudits > 0 ? (hasFailedQa ? 0.2 : Math.min(1.2, sliderQaAudits / (requiredQaAudits || 12))) : 1.0,
+    sliderHappinessIndex / 100 >= minHappinessIndex
+      ? Math.min(1.2, 1.0 + Math.min(0.2, (sliderHappinessIndex / 100 - minHappinessIndex) * 2))
+      : Math.max(0.2, sliderHappinessIndex / 100 / minHappinessIndex),
+    sliderBananaCount >= minBananaCountVal
+      ? Math.min(1.2, 1.0 + Math.min(0.2, (sliderBananaCount - minBananaCountVal) / 100))
+      : Math.min(0.9, sliderBananaCount / minBananaCountVal),
   ];
 
   const radarTargetScores = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
+
+  // 6 Đỉnh Radar Metadata cho Node Controller & Quick Switcher
+  const radarNodeMeta = [
+    {
+      index: 0,
+      icon: '👁️',
+      shortName: 'Bộ mi',
+      title: '1. Sản Lượng Bộ Mi / 3 Tháng',
+      currentValText: `${sliderOrders} bộ mi`,
+      targetText: `≥ ${targetOrders} bộ / 90 ngày`,
+      actualText: `${metrics.ordersCount || 0} bộ`,
+      isPassed: isSimOrdersPassed,
+      min: 50,
+      max: 500,
+      step: 5,
+      value: sliderOrders,
+      onChange: (v: number) => setSliderOrders(v),
+      presets: [
+        { label: '-25', val: Math.max(50, sliderOrders - 25) },
+        { label: '-10', val: Math.max(50, sliderOrders - 10) },
+        { label: '+10', val: Math.min(500, sliderOrders + 10) },
+        { label: '+25', val: Math.min(500, sliderOrders + 25) },
+        { label: `Đạt chuẩn (${targetOrders})`, val: targetOrders },
+        { label: 'Về thực tế', val: metrics.ordersCount || 300 },
+      ],
+      desc: 'Đạt đủ số bộ mi trong 90 ngày thể hiện tay nghề nhanh nhẹn, ổn định và năng lực phục vụ khách hàng liên tục.',
+    },
+    {
+      index: 1,
+      icon: '🐛',
+      shortName: 'Fix mi',
+      title: '2. Tỷ Lệ Bảo Hành & Sửa Mi',
+      currentValText: `${sliderFixRate.toFixed(1)}% sửa`,
+      targetText: `< ${(targetMaxFix * 100).toFixed(1)}% tối đa`,
+      actualText: `${((metrics.fixRate || 0) * 100).toFixed(1)}%`,
+      isPassed: isSimFixPassed,
+      min: 0,
+      max: 5,
+      step: 0.1,
+      value: sliderFixRate,
+      onChange: (v: number) => setSliderFixRate(Number(v.toFixed(1))),
+      presets: [
+        { label: '0.5%', val: 0.5 },
+        { label: '1.0%', val: 1.0 },
+        { label: '1.5%', val: 1.5 },
+        { label: `${(targetMaxFix * 100).toFixed(1)}% (Chuẩn)`, val: Number((targetMaxFix * 100).toFixed(1)) },
+        { label: 'Về thực tế', val: Number(((metrics.fixRate || 0) * 100).toFixed(1)) },
+      ],
+      desc: 'Tỷ lệ khách quay lại sửa mi phải dưới mức an toàn, đảm bảo kỹ thuật gắn mi chuẩn xác và độ bền cao.',
+    },
+    {
+      index: 2,
+      icon: '🪙',
+      shortName: 'Tỷ lệ Tip',
+      title: '3. Tỷ Lệ Khách Tip (Vượt Shop)',
+      currentValText: `${sliderTipRate.toFixed(1)}% tip`,
+      targetText: `≥ ${targetTipRatePercent}% (vượt ${(minTipRatioAboveShop * 100).toFixed(0)}% TB Shop)`,
+      actualText: `${staffTipRatePercent}%`,
+      isPassed: isSimTipPassed,
+      min: 10,
+      max: 90,
+      step: 0.5,
+      value: sliderTipRate,
+      onChange: (v: number) => setSliderTipRate(Number(v.toFixed(1))),
+      presets: [
+        { label: '30%', val: 30 },
+        { label: '40%', val: 40 },
+        { label: `${targetTipRatePercent}% (Chuẩn)`, val: targetTipRatePercent },
+        { label: '60%', val: 60 },
+        { label: 'Về thực tế', val: staffTipRatePercent },
+      ],
+      desc: 'Khách tự nguyện tip tiền (≥ 20K) cho thấy thái độ phục vụ tận tâm, làm khách hài lòng và yêu mến.',
+    },
+    {
+      index: 3,
+      icon: '🛡️',
+      shortName: 'QA/QC',
+      title: '4. Kiểm Định QA/QC Định Kỳ',
+      currentValText: `${sliderQaAudits} lần kiểm`,
+      targetText: `≥ ${requiredQaAudits} lần / 90 ngày (0 bài Failed)`,
+      actualText: `${totalQaAudits} lần`,
+      isPassed: isSimQaPassed,
+      min: 0,
+      max: 24,
+      step: 1,
+      value: sliderQaAudits,
+      onChange: (v: number) => setSliderQaAudits(v),
+      presets: [
+        { label: '0', val: 0 },
+        { label: '6', val: 6 },
+        { label: `${requiredQaAudits} (Chuẩn)`, val: requiredQaAudits },
+        { label: '18', val: 18 },
+        { label: 'Về thực tế', val: totalQaAudits },
+      ],
+      desc: 'Kỹ thuật viên chủ động mời QA/QC kiểm tra định kỳ mỗi tuần để giữ vững tác phong và vệ sinh phòng mi.',
+    },
+    {
+      index: 4,
+      icon: '💖',
+      shortName: 'HI Thả tim',
+      title: '5. Chỉ Số Teamwork HI Thả Tim',
+      currentValText: `${sliderHappinessIndex}% HI`,
+      targetText: `> ${((cvReq.minHappinessIndex || minHappinessIndex) * 100).toFixed(0)}% thả tim`,
+      actualText: `${hiPercent}%`,
+      isPassed: isSimHiPassed,
+      min: 30,
+      max: 100,
+      step: 1,
+      value: sliderHappinessIndex,
+      onChange: (v: number) => setSliderHappinessIndex(v),
+      presets: [
+        { label: '50%', val: 50 },
+        { label: '70%', val: 70 },
+        {
+          label: `${((cvReq.minHappinessIndex || minHappinessIndex) * 100).toFixed(0)}% (Chuẩn)`,
+          val: Math.round((cvReq.minHappinessIndex || minHappinessIndex) * 100),
+        },
+        { label: '90%', val: 90 },
+        { label: 'Về thực tế', val: hiPercent },
+      ],
+      desc: 'Đồng đội tự thả tim cho nhau mỗi khi check-in/out ca làm việc để ghi nhận tinh thần tương trợ và gắn kết.',
+    },
+    {
+      index: 5,
+      icon: '🍌',
+      shortName: 'Chuối',
+      title: '6. Chuối Yêu Thương Check-in',
+      currentValText: `${sliderBananaCount} 🍌 chuối`,
+      targetText: `≥ ${minBananaCountVal} chuối / 90 ngày`,
+      actualText: `${bananaCount} chuối`,
+      isPassed: isSimBananaPassed,
+      min: 0,
+      max: 150,
+      step: 1,
+      value: sliderBananaCount,
+      onChange: (v: number) => setSliderBananaCount(v),
+      presets: [
+        { label: '15', val: 15 },
+        { label: '30', val: 30 },
+        { label: `${minBananaCountVal} (Chuẩn)`, val: minBananaCountVal },
+        { label: '70', val: 70 },
+        { label: 'Về thực tế', val: bananaCount },
+      ],
+      desc: 'Chuối yêu thương được thiên thần khác tặng lúc check-in mỗi ngày, ghi nhận sự quý mến giữa các thành viên.',
+    },
+  ];
 
   const formatVnd = (num?: number | null) => {
     if (!num) return '0đ';
@@ -454,24 +995,46 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
   const safetyShieldPercent = Math.max(0, Math.min(100, Math.round((1 - (metrics.fixRate || 0)) * 100)));
 
   // Detailed monthly income gains per perk
-  const wageGain =
-    earnings?.details?.wageGain ??
-    Math.max(
-      0,
-      ((earnings?.details?.hourlyWageNext || 27500) - (earnings?.details?.hourlyWageCurrent || 25500)) *
-        (earnings?.details?.actualWorkingHours || earnings?.details?.monthlyEstimatedHours || 260)
-    );
+  const hourlyWageNext = cvReq.hourlyWage || earnings?.details?.hourlyWageNext || (isTargetCvPlusPlus ? 29500 : 27500);
+  const hourlyWageCurrent = config.compensation?.hourlyWages?.cv || earnings?.details?.hourlyWageCurrent || 25500;
+  const actualHours = earnings?.details?.actualWorkingHours || earnings?.details?.monthlyEstimatedHours || 260;
+  const wageGain = Math.max(0, (hourlyWageNext - hourlyWageCurrent) * actualHours);
 
-  const tipGain =
-    earnings?.details?.tipGain ??
-    Math.max(0, (earnings?.details?.tipShareNext || 0) - (earnings?.details?.tipShareCurrent || 0));
+  const targetTipRatio = cvReq.tipShareRatio ?? 0.9;
+  const baseTipRatio = config.rewardRates?.tipShareCvRatio ?? 0.7;
+  const totalCustomerTip =
+    (earnings?.details as any)?.customerTotalTip || (earnings?.details as any)?.totalCustomerTip || 4171200;
+  const tipGain = Math.max(0, Math.round(totalCustomerTip * (targetTipRatio - baseTipRatio)));
 
-  const comboGain =
-    earnings?.details?.comboGain ??
-    Math.max(0, (earnings?.details?.comboCommissionNext || 0) - (earnings?.details?.comboCommissionCurrent || 0));
-
-  const weeklySerumBonus = sliderSerums * 110000;
+  // Cấu hình tiền tươi dưỡng mi & combo bậc thang
+  const serumOrigBonus = cvReq.serumOriginalPriceBonus ?? 100000;
+  const serumDiscountBonus = cvReq.serumDiscountedPriceBonus ?? 50000;
+  const weeklySerumBonus = sliderSerums * serumOrigBonus;
   const monthlySerumBonus = weeklySerumBonus * 4;
+
+  const avgComboPrice = earnings?.details?.avgComboPrice || 4500000;
+  const singleComboBonus = calculateComboBonus(avgComboPrice, cvReq);
+  const potentialCustomers = Math.max(20, Math.round((sliderOrders / 3) * 0.4));
+  const minComboRequired = Math.max(1, Math.round(potentialCustomers * minSelfComboRate));
+  const simulatedComboCount = sliderCombos;
+  const simulatedComboPct = potentialCustomers > 0 ? Math.round((simulatedComboCount / potentialCustomers) * 100) : 22;
+
+  // Tiền combo cá nhân theo slider / config của Danny
+  const simulatedPersonalComboBonus = simulatedComboCount * singleComboBonus;
+
+  // Đối với CV++: tư vấn combo chốt hộ khách CV khác
+  const cvPlusReq = config.cvPlusToCvPlusPlus || {};
+  const crossConsultCombos = earnings?.details?.expectedCrossConsultCombosPerMonth ?? 4;
+  const crossComboBonusPerItem = calculateComboBonus(avgComboPrice, cvPlusReq);
+  const crossConsultComboBonus = isTargetCvPlusPlus ? crossConsultCombos * crossComboBonusPerItem : 0;
+  const crossConsultCvShareRate = cvPlusReq.crossConsultCvShareRate ?? 0.2;
+  const crossConsultCvSharedAmount = isTargetCvPlusPlus
+    ? Math.round(crossConsultComboBonus * crossConsultCvShareRate)
+    : 0;
+
+  const totalSimulatedComboBonus = simulatedPersonalComboBonus + crossConsultComboBonus;
+  const baseComboCommission = earnings?.details?.comboCommissionCurrent || 0;
+  const comboGain = Math.max(0, totalSimulatedComboBonus - baseComboCommission);
 
   const crossTipRate = earnings?.details?.crossConsultTipRate ?? 0.2;
   const simulatedCrossTipAmount = isTargetCvPlusPlus ? Math.round(sliderCrossOrders * 40000 * crossTipRate) : 0;
@@ -480,9 +1043,17 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
     (isTargetCvPlusPlus ? Math.round(defaultCrossOrders * 40000 * crossTipRate) : 0);
   const dynamicCrossTipDelta = isTargetCvPlusPlus ? simulatedCrossTipAmount - baseCrossTipAmount : 0;
 
-  // Dynamic Simulated Earnings based on interactive sliders
-  const activeSerumGain = monthlySerumBonus;
-  const totalSimulatedGain = wageGain + tipGain + comboGain + activeSerumGain + dynamicCrossTipDelta;
+  // Chế tài bảo vệ chất lượng khi dưới 20% combo (Quy tắc Danny):
+  const isPenaltyActive = cvReq.enforceComboPenalty !== false && simulatedComboCount < minComboRequired;
+
+  const effectiveWageGain = isPenaltyActive ? 0 : wageGain;
+  const effectiveSerumGain = isPenaltyActive ? 0 : monthlySerumBonus;
+  const effectiveComboGain = isPenaltyActive ? 0 : comboGain;
+  const effectiveTipGain = tipGain; // Vẫn được giữ 20% tip tư vấn!
+
+  // Dynamic Simulated Earnings based on interactive sliders & penalties
+  const totalSimulatedGain =
+    effectiveWageGain + effectiveTipGain + effectiveComboGain + effectiveSerumGain + dynamicCrossTipDelta;
   const simulatedNextTierIncome = (earnings?.currentEstimatedIncome || 0) + totalSimulatedGain;
 
   return (
@@ -647,19 +1218,91 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
             </div>
           </div>
 
-          {totalSimulatedGain ? (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 self-start md:self-auto shrink-0">
-              <Sparkles className="w-4 h-4 text-emerald-400" />
-              <div className="text-left md:text-right">
-                <div className="text-[10px] text-emerald-300 font-semibold uppercase tracking-wider">
-                  Thu nhập tạm tính tăng thêm
-                </div>
-                <div className="text-xs font-black text-emerald-400 tabular-nums">
-                  +{formatVnd(totalSimulatedGain)}/tháng
+          <div className="flex items-center gap-2 flex-wrap self-start md:self-auto">
+            {/* Quick Filter chips: All, Unpassed, Passed */}
+            <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-800/90 border border-white/10 shadow-inner">
+              <button
+                type="button"
+                onClick={() => setGateFilter('ALL')}
+                className={`px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all flex items-center gap-1 ${
+                  gateFilter === 'ALL' ? 'bg-slate-700 text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <span>Tất cả</span>
+                <span className="text-[9px] px-1 rounded-full bg-white/10 tabular-nums">6</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setGateFilter('UNPASSED')}
+                className={`px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all flex items-center gap-1 ${
+                  gateFilter === 'UNPASSED'
+                    ? 'bg-amber-500/30 text-amber-300 border border-amber-500/40 shadow-xs'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <span>⚡ Cần vượt</span>
+                <span className="text-[9px] px-1 rounded-full bg-amber-400/20 text-amber-300 tabular-nums">
+                  {6 - passedQuestsCount}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setGateFilter('PASSED')}
+                className={`px-2 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all flex items-center gap-1 ${
+                  gateFilter === 'PASSED'
+                    ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 shadow-xs'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <span>✓ Đã đạt</span>
+                <span className="text-[9px] px-1 rounded-full bg-emerald-400/20 text-emerald-300 tabular-nums">
+                  {passedQuestsCount}
+                </span>
+              </button>
+            </div>
+
+            {/* Toggle all simple vs expanded */}
+            <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-800/90 border border-white/10 shadow-inner">
+              <button
+                type="button"
+                onClick={() => handleSetGateViewMode('simple')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all flex items-center gap-1.5 ${
+                  expandedGates.length === 0
+                    ? 'bg-gradient-to-r from-rose-500 to-purple-600 text-white shadow-xs'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span>Thu gọn</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSetGateViewMode('expanded')}
+                className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-[11px] font-bold transition-all flex items-center gap-1.5 ${
+                  expandedGates.length > 0
+                    ? 'bg-gradient-to-r from-rose-500 to-purple-600 text-white shadow-xs'
+                    : 'text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                <span>Chi tiết 6 ải</span>
+              </button>
+            </div>
+
+            {totalSimulatedGain ? (
+              <div className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 shrink-0">
+                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
+                <div className="text-left md:text-right">
+                  <div className="text-[9px] sm:text-[10px] text-emerald-300 font-semibold uppercase tracking-wider">
+                    Thu nhập tạm tính tăng thêm
+                  </div>
+                  <div className="text-xs sm:text-xs font-black text-emerald-400 tabular-nums">
+                    +{formatVnd(totalSimulatedGain)}/tháng
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </div>
 
         {/* 6-Segment XP Bar */}
@@ -681,1130 +1324,1496 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
           </div>
         </div>
 
-        {/* 6 Clean Quest Status Cards */}
-        <div className="relative z-10 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+        {/* COMBINED, SIMPLIFIED & EXPANDABLE 6-QUEST CARDS (OPTIMIZED FOR IPHONE 12 & DESKTOP) */}
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
           {/* Card 1: 300 Ca / 3 Tháng */}
-          <div
-            className={`p-2.5 rounded-xl border transition-all flex flex-col justify-between ${
-              isOrdersPassed
-                ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
-                : 'bg-slate-800/40 border-slate-700/60 text-slate-300'
-            }`}
-          >
-            <div className="flex items-center justify-between text-xs font-bold text-slate-200">
-              <span className="flex items-center gap-1">
-                <span>🎯</span>
-                <span className="text-[11px]">Bộ Mi</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-normal">3 Tháng</span>
-            </div>
-            <div className="my-1.5">
-              <div className="flex items-baseline justify-between">
-                <div className="text-sm font-black tabular-nums text-white">
-                  {metrics.ordersCount || 0}{' '}
-                  <span className="text-[10px] font-normal text-slate-400">/ {targetOrders} bộ</span>
-                </div>
-                <span
-                  className={`text-[10px] font-bold tabular-nums ${
-                    isOrdersPassed ? 'text-emerald-400' : 'text-slate-400'
-                  }`}
-                >
-                  {ordersProgressPercent}%
-                </span>
-              </div>
-              <Progress
-                percent={ordersProgressPercent}
-                size="small"
-                showInfo={false}
-                status={isOrdersPassed ? 'success' : 'normal'}
-                className="m-0 mt-1.5"
-              />
-            </div>
-            <div className="text-[10px] font-semibold flex items-center justify-between">
-              {isOrdersPassed ? (
-                <span className="text-emerald-400 flex items-center gap-0.5">
-                  <span>✓</span> Đạt chuẩn
-                </span>
-              ) : (
-                <span className="text-amber-400">Thiếu {ordersGap} bộ</span>
-              )}
-            </div>
-          </div>
-
-          {/* Card 2: Fix < 2% */}
-          <div
-            className={`p-2.5 rounded-xl border transition-all flex flex-col justify-between ${
-              isFixPassed
-                ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
-                : 'bg-rose-950/20 border-rose-500/30 text-rose-300'
-            }`}
-          >
-            <div className="flex items-center justify-between text-xs font-bold text-slate-200">
-              <span className="flex items-center gap-1">
-                <span>🛡️</span>
-                <span className="text-[11px]">Tỷ Lệ Fix</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-normal">&lt; {(targetMaxFix * 100).toFixed(1)}%</span>
-            </div>
-            <div className="my-1.5">
-              <div className="flex items-baseline justify-between">
-                <div className="text-sm font-black tabular-nums text-white">
-                  {Number(((metrics.fixRate || 0) * 100).toFixed(1))}%
-                </div>
-                <span
-                  className={`text-[10px] font-bold tabular-nums ${isFixPassed ? 'text-emerald-400' : 'text-rose-400'}`}
-                >
-                  {safetyShieldPercent}% an toàn
-                </span>
-              </div>
-              <Progress
-                percent={safetyShieldPercent}
-                size="small"
-                showInfo={false}
-                status={isFixPassed ? 'success' : 'exception'}
-                className="m-0 mt-1.5"
-              />
-            </div>
-            <div className="text-[10px] font-semibold flex items-center justify-between">
-              {isFixPassed ? (
-                <span className="text-emerald-400 flex items-center gap-0.5">
-                  <span>✓</span> An toàn
-                </span>
-              ) : (
-                <span className="text-rose-400">Vượt ngưỡng {(targetMaxFix * 100).toFixed(1)}%</span>
-              )}
-            </div>
-          </div>
-
-          {/* Card 3: Tip > 10% TB Shop */}
-          <Tooltip
-            title={`Tỷ lệ Tip: Shop trung bình ${shopTipRatePercent}%. Bạn cần thêm 10% của shop (+${shopBonusPercent}%), tức là cần đạt ≥ ${targetTipRatePercent}% để thăng cấp! Hiện tại: ${staffTipRatePercent}%.`}
-          >
+          {(gateFilter === 'ALL' ||
+            (gateFilter === 'PASSED' && isOrdersPassed) ||
+            (gateFilter === 'UNPASSED' && !isOrdersPassed)) && (
             <div
-              className={`p-2.5 rounded-xl border transition-all flex flex-col justify-between cursor-help ${
-                isTipPassed
+              id="gate-card-1"
+              className={`rounded-2xl border transition-all duration-200 overflow-hidden flex flex-col justify-between ${
+                isOrdersPassed
                   ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
-                  : 'bg-amber-950/20 border-amber-500/30 text-amber-300'
+                  : 'bg-slate-900/80 border-slate-700/60 text-slate-300'
               }`}
             >
-              <div className="flex items-center justify-between text-xs font-bold text-slate-200">
-                <span className="flex items-center gap-1">
-                  <span>💖</span>
-                  <span className="text-[11px]">Tỷ Lệ Tip</span>
-                </span>
-                <span className="text-[10px] text-slate-400 font-normal">≥ {targetTipRatePercent}%</span>
-              </div>
-              <div className="my-1.5">
-                <div className="flex items-baseline justify-between">
-                  <div className="text-sm font-black tabular-nums text-white">
-                    {staffTipRatePercent}%{' '}
-                    <span className="text-[10px] font-normal text-slate-400">
-                      (
-                      {staffTipRate >= shopTipRate
-                        ? `+${Number(((staffTipRate - shopTipRate) * 100).toFixed(1))}%`
-                        : `-${Number(((shopTipRate - staffTipRate) * 100).toFixed(1))}%`}{' '}
-                      TB)
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => toggleGate(1)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') toggleGate(1);
+                }}
+                className="p-3 sm:p-3.5 cursor-pointer select-none active:scale-[0.99] transition-transform flex flex-col gap-1.5"
+              >
+                {/* Header row: Title + Status Badge + Chevron */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <Eye className={`w-4 h-4 shrink-0 ${isOrdersPassed ? 'text-emerald-400' : 'text-amber-400'}`} />
+                    <span className="font-bold text-xs sm:text-sm text-slate-100 truncate">
+                      1. {targetOrders} bộ mi / 3 tháng
                     </span>
                   </div>
-                  <span
-                    className={`text-[10px] font-bold tabular-nums ${
-                      isTipPassed ? 'text-emerald-400' : 'text-slate-400'
-                    }`}
-                  >
-                    {tipProgressPercent}%
-                  </span>
-                </div>
-                <Progress
-                  percent={tipProgressPercent}
-                  size="small"
-                  showInfo={false}
-                  status={isTipPassed ? 'success' : 'normal'}
-                  className="m-0 mt-1.5"
-                />
-              </div>
-              <div className="text-[10px] font-semibold flex items-center justify-between">
-                {isTipPassed ? (
-                  <span className="text-emerald-400 flex items-center gap-0.5">
-                    <span>✓</span> Đạt chuẩn
-                  </span>
-                ) : (
-                  <span className="text-amber-400">Thiếu {tipGapPercent}%</span>
-                )}
-              </div>
-            </div>
-          </Tooltip>
-
-          {/* Card 4: QA/QC Định Kỳ */}
-          <div
-            className={`p-2.5 rounded-xl border transition-all flex flex-col justify-between ${
-              isQaPassed
-                ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
-                : 'bg-amber-950/20 border-amber-500/30 text-amber-300'
-            }`}
-          >
-            <div className="flex items-center justify-between text-xs font-bold text-slate-200">
-              <span className="flex items-center gap-1">
-                <span>📋</span>
-                <span className="text-[11px]">Kiểm Định QA</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-normal">≥ {requiredQaAudits}L/3T</span>
-            </div>
-            <div className="my-1.5">
-              <div className="flex items-baseline justify-between">
-                <div className="text-sm font-black tabular-nums text-white">
-                  {totalQaAudits}{' '}
-                  <span className="text-[10px] font-normal text-slate-400">/ {requiredQaAudits} lần (3T)</span>
-                </div>
-                <span
-                  className={`text-[10px] font-bold tabular-nums ${
-                    isQaPassed ? 'text-emerald-400' : hasFailedQa ? 'text-rose-400' : 'text-slate-400'
-                  }`}
-                >
-                  {qaProgressPercent}%
-                </span>
-              </div>
-              <Progress
-                percent={qaProgressPercent}
-                size="small"
-                showInfo={false}
-                status={isQaPassed ? 'success' : hasFailedQa ? 'exception' : 'normal'}
-                className="m-0 mt-1.5"
-              />
-            </div>
-            <div className="text-[10px] font-semibold flex items-center justify-between">
-              {isQaPassed ? (
-                <span className="text-emerald-400 flex items-center gap-0.5">
-                  <span>✓</span> Đạt chuẩn
-                </span>
-              ) : hasFailedQa ? (
-                <span className="text-rose-400">Có bài Fail</span>
-              ) : totalQaAudits === 0 ? (
-                <span className="text-amber-400">Chưa kiểm định (0/{requiredQaAudits})</span>
-              ) : (
-                <span className="text-amber-400">Thiếu {requiredQaAudits - totalQaAudits} lần</span>
-              )}
-            </div>
-          </div>
-
-          {/* Card 5: Chỉ Số Hài Lòng HI */}
-          <div
-            className={`p-2.5 rounded-xl border transition-all flex flex-col justify-between ${
-              isHiPassed
-                ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
-                : 'bg-amber-950/20 border-amber-500/30 text-amber-300'
-            }`}
-          >
-            <div className="flex items-center justify-between text-xs font-bold text-slate-200">
-              <span className="flex items-center gap-1">
-                <span>😊</span>
-                <span className="text-[11px]">Chỉ Số HI</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-normal">
-                &gt; {(minHappinessIndex * 100).toFixed(0)}%
-              </span>
-            </div>
-            <div className="my-1.5">
-              <div className="flex items-baseline justify-between">
-                <div className="text-sm font-black tabular-nums text-white">{hiPercent}%</div>
-                <span
-                  className={`text-[10px] font-bold tabular-nums ${isHiPassed ? 'text-emerald-400' : 'text-slate-400'}`}
-                >
-                  {hiProgressPercent}%
-                </span>
-              </div>
-              <Progress
-                percent={hiProgressPercent}
-                size="small"
-                showInfo={false}
-                status={isHiPassed ? 'success' : 'normal'}
-                className="m-0 mt-1.5"
-              />
-            </div>
-            <div className="text-[10px] font-semibold flex items-center justify-between">
-              {isHiPassed ? (
-                <span className="text-emerald-400 flex items-center gap-0.5">
-                  <span>✓</span> Hài lòng cao
-                </span>
-              ) : (
-                <span className="text-amber-400">
-                  Thiếu {Math.max(0, Math.round(minHappinessIndex * 100) - hiPercent)}%
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Card 6: Chuối Yêu Thương (Check-in) */}
-          <div
-            className={`p-2.5 rounded-xl border transition-all flex flex-col justify-between ${
-              isBananaPassed
-                ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
-                : 'bg-amber-950/20 border-amber-500/30 text-amber-300'
-            }`}
-          >
-            <div className="flex items-center justify-between text-xs font-bold text-slate-200">
-              <span className="flex items-center gap-1">
-                <span>🍌</span>
-                <span className="text-[11px]">Chuối Yêu Thương</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-normal">≥ {minBananaCount}</span>
-            </div>
-            <div className="my-1.5">
-              <div className="flex items-baseline justify-between">
-                <div className="text-sm font-black tabular-nums text-white">
-                  {bananaCount} <span className="text-[10px] font-normal text-slate-400">/ {minBananaCount} chuối</span>
-                </div>
-                <span
-                  className={`text-[10px] font-bold tabular-nums ${
-                    isBananaPassed ? 'text-emerald-400' : 'text-slate-400'
-                  }`}
-                >
-                  {bananaProgressPercent}%
-                </span>
-              </div>
-              <Progress
-                percent={bananaProgressPercent}
-                size="small"
-                showInfo={false}
-                status={isBananaPassed ? 'success' : 'normal'}
-                className="m-0 mt-1.5"
-              />
-            </div>
-            <div className="text-[10px] font-semibold flex items-center justify-between">
-              {isBananaPassed ? (
-                <span className="text-emerald-400 flex items-center gap-0.5">
-                  <span>✓</span> Đã tích lũy
-                </span>
-              ) : (
-                <span className="text-amber-400">Thiếu {Math.max(0, minBananaCount - bananaCount)} chuối</span>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Grid: 5 Gamified Quests + Interactive Radar & Sliders vs Earnings Reward */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-4">
-        {/* Left column (7 cols): Quests & Radar What-If Simulation */}
-        <div className="lg:col-span-7 space-y-3.5">
-          <div className="flex items-center justify-between">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 m-0 flex items-center gap-1.5">
-              <ShieldCheck className="w-4 h-4 text-rose-500" />
-              Chi Tiết 6 Ải Cốt Lõi Nâng Cấp{' '}
-              {isTargetCvPlusPlus ? 'CV+ ➔ CV++ (Đàn Chị Sảnh)' : 'CV ➔ CV+ (Thợ Tự Chủ)'} (90 Ngày)
-            </h4>
-            <span className="text-[11px] text-slate-400 tabular-nums font-semibold">
-              Kèm kiểm định QA/QC &amp; Chuối thưởng
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            {/* Quest 1: targetOrders bộ mi / 3 tháng */}
-            <div
-              className={`min-w-0 p-3.5 rounded-xl border transition-all flex flex-col justify-between ${
-                isOrdersPassed
-                  ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40 shadow-xs'
-                  : 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/40 shadow-xs'
-              }`}
-            >
-              <div>
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
-                    🎯 1. {targetOrders} bộ mi / 3 tháng
-                  </span>
-                  {isOrdersPassed ? (
-                    <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> ĐẠT
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold text-[11px]">
-                      <AlertCircle className="w-3.5 h-3.5" /> CẦN THÊM
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {isOrdersPassed ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> ĐẠT CHUẨN
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" /> CẦN THÊM
+                      </span>
+                    )}
+                    <div
+                      className={`p-1 rounded-lg bg-white/5 transition-transform duration-200 ${
+                        expandedGates.includes(1) ? 'rotate-180 text-rose-400' : 'text-slate-400'
+                      }`}
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex items-baseline justify-between mt-1">
-                  <div className="text-lg font-black text-slate-800 dark:text-slate-100 tabular-nums">
-                    {metrics.ordersCount}{' '}
+                {/* Metric row */}
+                <div className="flex items-baseline justify-between gap-2 mt-0.5">
+                  <div className="text-base sm:text-lg font-black text-white tabular-nums">
+                    {metrics.ordersCount || 0}{' '}
                     <span className="text-xs font-normal text-slate-400">/ {targetOrders} bộ</span>
                   </div>
-                  <span className="text-[11px] font-bold tabular-nums text-slate-500 dark:text-slate-400">
-                    {Math.round(((metrics.ordersCount || 0) / targetOrders) * 100)}%
+                  <span
+                    className={`text-[11px] font-bold tabular-nums ${
+                      isOrdersPassed ? 'text-emerald-400' : 'text-amber-400'
+                    }`}
+                  >
+                    {ordersProgressPercent}%
                   </span>
                 </div>
 
+                {/* Progress bar */}
                 <Progress
-                  percent={Math.min(100, Math.round(((metrics.ordersCount || 0) / targetOrders) * 100))}
+                  percent={ordersProgressPercent}
                   size="small"
                   showInfo={false}
                   status={isOrdersPassed ? 'success' : 'normal'}
-                  className="m-0 mt-1.5"
+                  className="m-0 mt-0.5"
                 />
-              </div>
 
-              <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-2 font-medium">
-                <span>{ordersGap === 0 ? '✓ Đã cán mốc tối thiểu' : `⚡ Còn thiếu ${ordersGap} bộ mi nữa`}</span>
-                <span className="tabular-nums">Mục tiêu: {targetOrders} bộ mi / 3 tháng</span>
-              </div>
-            </div>
-
-            {/* Quest 2: fix < targetMaxFix */}
-            <div
-              className={`min-w-0 p-3.5 rounded-xl border transition-all flex flex-col justify-between ${
-                isFixPassed
-                  ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40 shadow-xs'
-                  : 'bg-rose-50/70 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800/40 shadow-xs'
-              }`}
-            >
-              <div>
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
-                    🛡️ 2. Tỷ lệ Fix &lt; {(targetMaxFix * 100).toFixed(1)}%
-                  </span>
-                  {isFixPassed ? (
-                    <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> XUẤT SẮC
+                {/* Collapsed quick hint */}
+                {!expandedGates.includes(1) && (
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium pt-0.5">
+                    <span className="truncate">
+                      {isOrdersPassed ? '✓ Đã đạt định mức' : `⚡ Còn thiếu ${ordersGap} bộ mi nữa`}
                     </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400 font-bold text-[11px]">
-                      <XCircle className="w-3.5 h-3.5" /> VƯỢT MỨC
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-baseline justify-between mt-1">
-                  <div className="text-lg font-black text-slate-800 dark:text-slate-100 tabular-nums">
-                    {((metrics.fixRate || 0) * 100).toFixed(1)}%{' '}
-                    <span className="text-xs font-normal text-slate-400">
-                      (mục tiêu &lt; {(targetMaxFix * 100).toFixed(1)}%)
+                    <span className="text-rose-400/80 hover:text-rose-300 text-[10px] font-semibold shrink-0">
+                      Chi tiết ▾
                     </span>
                   </div>
-                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                )}
+              </div>
+
+              {/* Expanded details */}
+              {expandedGates.includes(1) && (
+                <div className="px-3 pb-3 sm:px-3.5 sm:pb-3.5 border-t border-white/10 text-[11px] space-y-2 pt-2.5">
+                  <div className="grid grid-cols-2 gap-2 text-[10px] p-2 rounded-xl bg-slate-800/80 border border-slate-700/60">
+                    <div>
+                      <div className="text-slate-400">Đã hoàn thành</div>
+                      <div className="text-white font-bold text-xs tabular-nums mt-0.5">
+                        {metrics.ordersCount || 0} bộ mi
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-slate-400">Định mức 3 tháng</div>
+                      <div className="text-amber-400 font-bold text-xs tabular-nums mt-0.5">
+                        {targetOrders} bộ mi (~{Math.round(targetOrders / 3)} bộ/tháng)
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">
+                    <span>
+                      {ordersGap === 0
+                        ? '✓ Đã cán mốc tối thiểu 90 ngày'
+                        : `⚡ Cần thêm ${ordersGap} bộ mi trong kỳ 90 ngày`}
+                    </span>
+                    <span className="tabular-nums font-semibold text-slate-300">Mục tiêu: {targetOrders} bộ</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Card 2: Fix < 2% */}
+          {(gateFilter === 'ALL' ||
+            (gateFilter === 'PASSED' && isFixPassed) ||
+            (gateFilter === 'UNPASSED' && !isFixPassed)) && (
+            <div
+              id="gate-card-2"
+              className={`rounded-2xl border transition-all duration-200 overflow-hidden flex flex-col justify-between ${
+                isFixPassed
+                  ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
+                  : 'bg-rose-950/20 border-rose-500/30 text-rose-300'
+              }`}
+            >
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => toggleGate(2)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') toggleGate(2);
+                }}
+                className="p-3 sm:p-3.5 cursor-pointer select-none active:scale-[0.99] transition-transform flex flex-col gap-1.5"
+              >
+                {/* Header row: Title + Status Badge + Chevron */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <Bug className={`w-4 h-4 shrink-0 ${isFixPassed ? 'text-emerald-400' : 'text-rose-400'}`} />
+                    <span className="font-bold text-xs sm:text-sm text-slate-100 truncate">
+                      2. Tỷ lệ Fix &lt; {(targetMaxFix * 100).toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {isFixPassed ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> XUẤT SẮC
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1">
+                        <XCircle className="w-3 h-3" /> VƯỢT MỨC
+                      </span>
+                    )}
+                    <div
+                      className={`p-1 rounded-lg bg-white/5 transition-transform duration-200 ${
+                        expandedGates.includes(2) ? 'rotate-180 text-rose-400' : 'text-slate-400'
+                      }`}
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Metric row */}
+                <div className="flex items-baseline justify-between gap-2 mt-0.5">
+                  <div className="text-base sm:text-lg font-black text-white tabular-nums">
+                    {((metrics.fixRate || 0) * 100).toFixed(1)}%{' '}
+                    <span className="text-xs font-normal text-slate-400">
+                      (&lt; {(targetMaxFix * 100).toFixed(1)}%)
+                    </span>
+                  </div>
+                  <span
+                    className={`text-[11px] font-bold tabular-nums ${
+                      isFixPassed ? 'text-emerald-400' : 'text-rose-400'
+                    }`}
+                  >
                     {safetyShieldPercent}% an toàn
                   </span>
                 </div>
 
+                {/* Progress bar */}
                 <Progress
                   percent={safetyShieldPercent}
                   size="small"
                   showInfo={false}
                   status={isFixPassed ? 'success' : 'exception'}
-                  className="m-0 mt-1.5"
+                  className="m-0 mt-0.5"
                 />
+
+                {/* Collapsed quick hint */}
+                {!expandedGates.includes(2) && (
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium pt-0.5">
+                    <span className="truncate">
+                      {metrics.fixCount || 0} ca sửa / {metrics.ordersCount || 0} bộ mi
+                    </span>
+                    <span className="text-rose-400/80 hover:text-rose-300 text-[10px] font-semibold shrink-0">
+                      Chi tiết ▾
+                    </span>
+                  </div>
+                )}
               </div>
 
-              <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-2 font-medium">
-                <span className="tabular-nums">
-                  {metrics.fixCount || 0} ca sửa / {metrics.ordersCount || 0} bộ mi
-                </span>
-                <span>Ngưỡng tối đa: &lt; {(targetMaxFix * 100).toFixed(1)}%</span>
-              </div>
+              {/* Expanded details */}
+              {expandedGates.includes(2) && (
+                <div className="px-3 pb-3 sm:px-3.5 sm:pb-3.5 border-t border-white/10 text-[11px] space-y-2 pt-2.5">
+                  <div className="grid grid-cols-2 gap-2 text-[10px] p-2 rounded-xl bg-slate-800/80 border border-slate-700/60">
+                    <div>
+                      <div className="text-slate-400">Ca bảo hành / sửa</div>
+                      <div className="text-white font-bold text-xs tabular-nums mt-0.5">
+                        {metrics.fixCount || 0} ca / {metrics.ordersCount || 0} bộ
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-slate-400">Ngưỡng tối đa</div>
+                      <div className="text-emerald-400 font-bold text-xs tabular-nums mt-0.5">
+                        &lt; {(targetMaxFix * 100).toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">
+                    <span>
+                      {isFixPassed
+                        ? '✓ Tay nghề vững vàng, bảo hành trong ngưỡng kiểm soát'
+                        : '⚡ Tỷ lệ sửa vượt mức an toàn, cần rà soát kỹ thuật nối mi'}
+                    </span>
+                    <span className="tabular-nums font-semibold text-slate-300">{safetyShieldPercent}% an toàn</span>
+                  </div>
+                </div>
+              )}
             </div>
+          )}
 
-            {/* Quest 3: tip > minTipRatioAboveShop trung bình của shop */}
+          {/* Card 3: Tip > 10% TB Shop */}
+          {(gateFilter === 'ALL' ||
+            (gateFilter === 'PASSED' && isTipPassed) ||
+            (gateFilter === 'UNPASSED' && !isTipPassed)) && (
             <div
-              className={`min-w-0 p-3.5 rounded-xl border transition-all flex flex-col justify-between ${
+              id="gate-card-3"
+              className={`rounded-2xl border transition-all duration-200 overflow-hidden flex flex-col justify-between ${
                 isTipPassed
-                  ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40 shadow-xs'
-                  : 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/40 shadow-xs'
+                  ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
+                  : 'bg-amber-950/20 border-amber-500/30 text-amber-300'
               }`}
             >
-              <div>
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
-                    💖 3. Tip &gt; {(minTipRatioAboveShop * 100).toFixed(0)}% TB Shop
-                  </span>
-                  {isTipPassed ? (
-                    <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> ĐẠT CHUẨN
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => toggleGate(3)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') toggleGate(3);
+                }}
+                className="p-3 sm:p-3.5 cursor-pointer select-none active:scale-[0.99] transition-transform flex flex-col gap-1.5"
+              >
+                {/* Header row: Title + Status Badge + Chevron */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <Coins className={`w-4 h-4 shrink-0 ${isTipPassed ? 'text-emerald-400' : 'text-amber-400'}`} />
+                    <span className="font-bold text-xs sm:text-sm text-slate-100 truncate">
+                      3. Tip &gt; {(minTipRatioAboveShop * 100).toFixed(0)}% TB Shop
                     </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold text-[11px]">
-                      <AlertCircle className="w-3.5 h-3.5" /> CẦN THÊM
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-baseline justify-between mt-1">
-                  <div className="text-lg font-black text-slate-800 dark:text-slate-100 tabular-nums">
-                    {staffTipRatePercent}%{' '}
-                    <span className="text-xs font-normal text-slate-400">(mục tiêu ≥ {targetTipRatePercent}%)</span>
                   </div>
-                  <span className="text-[10px] font-bold text-slate-500 tabular-nums">
-                    {metrics.tippedOrdersCount || Math.round((metrics.ordersCount || 0) * (staffTipRate || 0))}/
-                    {metrics.ordersCount || 0} ca có tip
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {isTipPassed ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> ĐẠT CHUẨN
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" /> CẦN THÊM
+                      </span>
+                    )}
+                    <div
+                      className={`p-1 rounded-lg bg-white/5 transition-transform duration-200 ${
+                        expandedGates.includes(3) ? 'rotate-180 text-rose-400' : 'text-slate-400'
+                      }`}
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Metric row */}
+                <div className="flex items-baseline justify-between gap-2 mt-0.5">
+                  <div className="text-base sm:text-lg font-black text-white tabular-nums">
+                    {staffTipRatePercent}%{' '}
+                    <span className="text-xs font-normal text-slate-400">(chuẩn ≥ {targetTipRatePercent}%)</span>
+                  </div>
+                  <span
+                    className={`text-[11px] font-bold tabular-nums ${
+                      isTipPassed ? 'text-emerald-400' : 'text-amber-400'
+                    }`}
+                  >
+                    {tipProgressPercent}%
                   </span>
                 </div>
 
+                {/* Progress bar */}
                 <Progress
                   percent={tipProgressPercent}
                   size="small"
                   showInfo={false}
                   status={isTipPassed ? 'success' : 'normal'}
-                  className="m-0 mt-1.5"
+                  className="m-0 mt-0.5"
                 />
 
-                {/* HỘP CÔNG THỨC RÕ RÀNG */}
-                <div className="mt-2.5 p-2 rounded-xl bg-white/80 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 text-[10px] leading-tight space-y-1 shadow-2xs">
-                  <div className="flex items-center justify-between font-bold text-slate-700 dark:text-slate-200">
-                    <span className="flex items-center gap-1 text-rose-500">💡 TB Shop + 10% của Shop</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 font-extrabold">
-                      ≥ {targetTipRatePercent}%
+                {/* Collapsed quick hint */}
+                {!expandedGates.includes(3) && (
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium pt-0.5">
+                    <span className="truncate">
+                      {isTipPassed ? `+${tipExcessPercent}% so với chuẩn` : `Thiếu ${tipGapPercent}%`} (
+                      {metrics.tippedOrdersCount || 0}/{metrics.ordersCount || 0} ca)
+                    </span>
+                    <span className="text-rose-400/80 hover:text-rose-300 text-[10px] font-semibold shrink-0">
+                      Chi tiết ▾
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 tabular-nums">
+                )}
+              </div>
+
+              {/* Expanded details */}
+              {expandedGates.includes(3) && (
+                <div className="px-3 pb-3 sm:px-3.5 sm:pb-3.5 border-t border-white/10 text-[11px] space-y-2 pt-2.5">
+                  {/* Hộp công thức 3 cột tối ưu cho iPhone 12 */}
+                  <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-[10px] space-y-1.5 shadow-2xs">
+                    <div className="flex items-center justify-between font-bold text-slate-200">
+                      <span className="flex items-center gap-1 text-rose-400">💡 TB Shop + 10% của Shop</span>
+                      <span className="text-emerald-400 font-extrabold tabular-nums">≥ {targetTipRatePercent}%</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1 text-center py-1 border-t border-slate-700/50">
+                      <div className="bg-slate-900/60 p-1 rounded-lg">
+                        <div className="text-slate-400 text-[9px]">TB Shop</div>
+                        <div className="text-slate-200 font-black tabular-nums">{shopTipRatePercent}%</div>
+                      </div>
+                      <div className="bg-slate-900/60 p-1 rounded-lg">
+                        <div className="text-slate-400 text-[9px]">+10% Shop</div>
+                        <div className="text-amber-400 font-black tabular-nums">+{shopBonusPercent}%</div>
+                      </div>
+                      <div className="bg-slate-900/60 p-1 rounded-lg border border-emerald-500/30">
+                        <div className="text-emerald-400 text-[9px]">Mục tiêu</div>
+                        <div className="text-emerald-300 font-black tabular-nums">≥ {targetTipRatePercent}%</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-[10px] p-2 rounded-xl bg-slate-800/80 border border-slate-700/60">
+                    <div>
+                      <div className="text-slate-400">Ca nhận tip</div>
+                      <div className="text-white font-bold text-xs tabular-nums mt-0.5">
+                        {metrics.tippedOrdersCount || Math.round((metrics.ordersCount || 0) * (staffTipRate || 0))}/
+                        {metrics.ordersCount || 0} ca
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-slate-400">Tổng tiền tip</div>
+                      <div className="text-emerald-400 font-bold text-xs tabular-nums mt-0.5">
+                        {formatVnd(metrics.totalTip)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">
                     <span>
-                      Shop: <strong className="text-slate-700 dark:text-slate-200">{shopTipRatePercent}%</strong>
+                      {isTipPassed ? `✓ Vượt chuẩn (+${tipExcessPercent}%)` : `⚡ Thiếu ${tipGapPercent}% để đạt chuẩn`}
                     </span>
-                    <span>
-                      +10%: <strong className="text-amber-600 dark:text-amber-400">+{shopBonusPercent}%</strong>
-                    </span>
-                    <span>
-                      Chuẩn:{' '}
-                      <strong className="text-emerald-600 dark:text-emerald-400 font-black">
-                        ≥ {targetTipRatePercent}%
-                      </strong>
-                    </span>
+                    <span className="tabular-nums font-semibold text-slate-300">TB Shop: {shopTipRatePercent}%</span>
                   </div>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-2 font-medium">
-                <span>
-                  {isTipPassed ? `✓ Vượt chuẩn (+${tipExcessPercent}%)` : `⚡ Thiếu ${tipGapPercent}% để đạt chuẩn`}
-                </span>
-                <span className="tabular-nums">Tổng tip: {formatVnd(metrics.totalTip)}</span>
-              </div>
+              )}
             </div>
+          )}
 
-            {/* Quest 4: QA AC >= 1 lần/tuần */}
+          {/* Card 4: QA/QC Định Kỳ */}
+          {(gateFilter === 'ALL' ||
+            (gateFilter === 'PASSED' && isQaPassed) ||
+            (gateFilter === 'UNPASSED' && !isQaPassed)) && (
             <div
-              className={`min-w-0 p-3.5 rounded-xl border transition-all flex flex-col justify-between ${
+              id="gate-card-4"
+              className={`rounded-2xl border transition-all duration-200 overflow-hidden flex flex-col justify-between ${
                 hasFailedQa
-                  ? 'bg-rose-50/80 dark:bg-rose-950/30 border-rose-300 dark:border-rose-800 shadow-xs'
+                  ? 'bg-rose-950/30 border-rose-500/40 text-rose-300'
                   : !isQaPassed
-                    ? 'bg-amber-50/80 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800 shadow-xs'
-                    : 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40 shadow-xs'
+                    ? 'bg-amber-950/20 border-amber-500/30 text-amber-300'
+                    : 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
               }`}
             >
-              <div>
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
-                    📋 4. QA/QC ≥ {requiredQaAudits} lần / 3 tháng
-                  </span>
-                  {hasFailedQa ? (
-                    <span className="flex items-center gap-1 text-rose-600 dark:text-rose-400 font-black text-[11px] animate-pulse">
-                      <XCircle className="w-3.5 h-3.5" /> FAILED
-                    </span>
-                  ) : !isQaPassed ? (
-                    <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold text-[11px]">
-                      <AlertCircle className="w-3.5 h-3.5" /> {totalQaAudits === 0 ? 'CHƯA KIỂM ĐỊNH' : 'THIẾU LƯỢT'}
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> ĐẠT CHUẨN
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-baseline justify-between mt-1">
-                  <div className="text-lg font-black text-slate-800 dark:text-slate-100 tabular-nums">
-                    {totalQaAudits}{' '}
-                    <span className="text-xs font-normal text-slate-400">
-                      / {requiredQaAudits} lần (chuẩn ≥ {requiredQaAudits} lần/3T)
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => toggleGate(4)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') toggleGate(4);
+                }}
+                className="p-3 sm:p-3.5 cursor-pointer select-none active:scale-[0.99] transition-transform flex flex-col gap-1.5"
+              >
+                {/* Header row: Title + Status Badge + Chevron */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <ShieldCheck
+                      className={`w-4 h-4 shrink-0 ${
+                        isQaPassed ? 'text-emerald-400' : hasFailedQa ? 'text-rose-400' : 'text-amber-400'
+                      }`}
+                    />
+                    <span className="font-bold text-xs sm:text-sm text-slate-100 truncate">
+                      4. QA/QC ≥ {requiredQaAudits} lần / 3T
                     </span>
                   </div>
-                  <span className="text-[10px] font-bold text-slate-500 tabular-nums">
-                    {totalQaAudits}/{requiredQaAudits} bài
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {hasFailedQa ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1 animate-pulse">
+                        <XCircle className="w-3 h-3" /> FAILED
+                      </span>
+                    ) : !isQaPassed ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" /> {totalQaAudits === 0 ? 'CHƯA KIỂM ĐỊNH' : 'THIẾU LƯỢT'}
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> ĐẠT CHUẨN
+                      </span>
+                    )}
+                    <div
+                      className={`p-1 rounded-lg bg-white/5 transition-transform duration-200 ${
+                        expandedGates.includes(4) ? 'rotate-180 text-rose-400' : 'text-slate-400'
+                      }`}
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Metric row */}
+                <div className="flex items-baseline justify-between gap-2 mt-0.5">
+                  <div className="text-base sm:text-lg font-black text-white tabular-nums">
+                    {totalQaAudits}{' '}
+                    <span className="text-xs font-normal text-slate-400">
+                      / {requiredQaAudits} lần (chuẩn ≥ {requiredQaAudits}L/3T)
+                    </span>
+                  </div>
+                  <span
+                    className={`text-[11px] font-bold tabular-nums ${
+                      isQaPassed ? 'text-emerald-400' : hasFailedQa ? 'text-rose-400' : 'text-amber-400'
+                    }`}
+                  >
+                    {qaProgressPercent}%
                   </span>
                 </div>
 
+                {/* Progress bar */}
                 <Progress
                   percent={qaProgressPercent}
                   size="small"
                   showInfo={false}
-                  status={isQaPassed ? 'success' : 'exception'}
-                  className="m-0 mt-1.5"
+                  status={isQaPassed ? 'success' : hasFailedQa ? 'exception' : 'normal'}
+                  className="m-0 mt-0.5"
                 />
 
-                <div className="mt-2.5 p-2 rounded-xl bg-white/80 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 text-[10px] leading-tight space-y-1 shadow-2xs">
-                  <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
-                    <span>
-                      Tác phong:{' '}
-                      {(qaAudit?.totalAudits || 0) === 0 ? (
-                        <strong className="text-slate-400">Chưa kiểm định</strong>
-                      ) : !hasFailedQa ? (
-                        <strong className="text-emerald-600">✓ Đạt chuẩn 5S</strong>
-                      ) : (
-                        <strong className="text-rose-500">Vi phạm</strong>
-                      )}
+                {/* Collapsed quick hint */}
+                {!expandedGates.includes(4) && (
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium pt-0.5">
+                    <span className="truncate">
+                      {isQaPassed
+                        ? '✓ Đạt định kỳ tác phong & phòng mi'
+                        : totalQaAudits === 0
+                          ? 'Chưa ghi nhận bài kiểm định (0 lần/tuần)'
+                          : `Đã kiểm định ${totalQaAudits}/${requiredQaAudits} lần`}
                     </span>
+                    <span className="text-rose-400/80 hover:text-rose-300 text-[10px] font-semibold shrink-0">
+                      Chi tiết ▾
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Expanded details */}
+              {expandedGates.includes(4) && (
+                <div className="px-3 pb-3 sm:px-3.5 sm:pb-3.5 border-t border-white/10 text-[11px] space-y-2 pt-2.5">
+                  <div className="grid grid-cols-2 gap-2 text-[10px] p-2 rounded-xl bg-slate-800/80 border border-slate-700/60">
+                    <div>
+                      <div className="text-slate-400">Tác phong 5S</div>
+                      <div className="font-bold text-xs mt-0.5">
+                        {(qaAudit?.totalAudits || 0) === 0 ? (
+                          <span className="text-slate-400">Chưa kiểm định</span>
+                        ) : !hasFailedQa ? (
+                          <span className="text-emerald-400">✓ Đạt chuẩn 5S</span>
+                        ) : (
+                          <span className="text-rose-400">Vi phạm</span>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-slate-400">Vệ sinh phòng mi</div>
+                      <div className="font-bold text-xs mt-0.5">
+                        {(qaAudit?.totalAudits || 0) === 0 ? (
+                          <span className="text-slate-400">Chưa kiểm định</span>
+                        ) : !hasFailedQa ? (
+                          <span className="text-emerald-400">✓ Sạch sẽ</span>
+                        ) : (
+                          <span className="text-rose-400">Chưa đạt</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">
                     <span>
-                      Phòng mi:{' '}
-                      {(qaAudit?.totalAudits || 0) === 0 ? (
-                        <strong className="text-slate-400">Chưa kiểm định</strong>
-                      ) : !hasFailedQa ? (
-                        <strong className="text-emerald-600">✓ Sạch sẽ</strong>
-                      ) : (
-                        <strong className="text-rose-500">Chưa đạt</strong>
-                      )}
+                      {hasFailedQa
+                        ? 'Bị khóa do có bài FAILED'
+                        : isQaPassed
+                          ? '✓ Đạt kiểm định định kỳ tác phong & phòng mi'
+                          : (qaAudit?.totalAudits || 0) === 0
+                            ? 'Hệ thống chưa ghi nhận biên bản QA/QC (Định mức 1 lần/tuần)'
+                            : 'Chưa đủ tối thiểu 1 lần/tuần'}
+                    </span>
+                    <span className="tabular-nums font-semibold text-slate-300">
+                      {(qaAudit?.totalAudits || 0) === 0
+                        ? '0 bài kiểm định'
+                        : `${qaAudit?.failedAudits ?? 0} bài Failed`}
                     </span>
                   </div>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-2 font-medium">
-                <span>
-                  {hasFailedQa
-                    ? 'Bị khóa do có bài FAILED'
-                    : isQaPassed
-                      ? '✓ Đạt định kỳ tác phong & phòng mi'
-                      : (qaAudit?.totalAudits || 0) === 0
-                        ? 'Hệ thống chưa ghi nhận biên bản QA/QC (0 lần/tuần)'
-                        : 'Chưa đủ tối thiểu 1 lần/tuần'}
-                </span>
-                <span>
-                  {(qaAudit?.totalAudits || 0) === 0 ? '0 bài kiểm định' : `${qaAudit?.failedAudits ?? 0} bài Failed`}
-                </span>
-              </div>
+              )}
             </div>
+          )}
 
-            {/* Quest 5: HI > 70% */}
+          {/* Card 5: Chỉ Số HI (Teamwork) */}
+          {(gateFilter === 'ALL' ||
+            (gateFilter === 'PASSED' && isHiPassed) ||
+            (gateFilter === 'UNPASSED' && !isHiPassed)) && (
             <div
-              className={`min-w-0 p-3.5 rounded-xl border transition-all flex flex-col justify-between ${
+              id="gate-card-5"
+              className={`rounded-2xl border transition-all duration-200 overflow-hidden flex flex-col justify-between ${
                 isHiPassed
-                  ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40 shadow-xs'
-                  : 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/40 shadow-xs'
+                  ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
+                  : 'bg-amber-950/20 border-amber-500/30 text-amber-300'
               }`}
             >
-              <div>
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
-                    😊 5. Chỉ số HI &gt; 70%
-                  </span>
-                  {isHiPassed ? (
-                    <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> YÊU QUÝ
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold text-[11px]">
-                      <AlertCircle className="w-3.5 h-3.5" /> CẦN NÂNG CAO
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-baseline justify-between mt-1">
-                  <div className="text-lg font-black text-slate-800 dark:text-slate-100 tabular-nums">
-                    {hiPercent}%{' '}
-                    <span className="text-xs font-normal text-slate-400">
-                      (chuẩn &gt; {((cvReq.minHappinessIndex || 0.7) * 100).toFixed(0)}%)
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => toggleGate(5)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') toggleGate(5);
+                }}
+                className="p-3 sm:p-3.5 cursor-pointer select-none active:scale-[0.99] transition-transform flex flex-col gap-1.5"
+              >
+                {/* Header row: Title + Status Badge + Chevron */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <Heart
+                      className={`w-4 h-4 shrink-0 ${
+                        isHiPassed ? 'text-emerald-400 fill-emerald-400/20' : 'text-amber-400 fill-amber-400/20'
+                      }`}
+                    />
+                    <span className="font-bold text-xs sm:text-sm text-slate-100 truncate">
+                      5. Chỉ số HI &gt; {((cvReq.minHappinessIndex || minHappinessIndex) * 100).toFixed(0)}%
                     </span>
                   </div>
-                  <span className="text-[10px] font-bold text-pink-500 tabular-nums">Khách thả tim</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {isHiPassed ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> TIN YÊU
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" /> CẦN GẮN KẾT
+                      </span>
+                    )}
+                    <div
+                      className={`p-1 rounded-lg bg-white/5 transition-transform duration-200 ${
+                        expandedGates.includes(5) ? 'rotate-180 text-rose-400' : 'text-slate-400'
+                      }`}
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
                 </div>
 
+                {/* Metric row */}
+                <div className="flex items-baseline justify-between gap-2 mt-0.5">
+                  <div className="text-base sm:text-lg font-black text-white tabular-nums">
+                    {hiPercent}%{' '}
+                    <span className="text-xs font-normal text-slate-400">
+                      (chuẩn &gt; {((cvReq.minHappinessIndex || minHappinessIndex) * 100).toFixed(0)}%)
+                    </span>
+                  </div>
+                  <span
+                    className={`text-[11px] font-bold tabular-nums ${
+                      isHiPassed ? 'text-emerald-400' : 'text-pink-400'
+                    }`}
+                  >
+                    {hiProgressPercent}%
+                  </span>
+                </div>
+
+                {/* Progress bar */}
                 <Progress
-                  percent={Math.min(100, Math.round((happinessIndex / (cvReq.minHappinessIndex || 0.7)) * 100))}
+                  percent={hiProgressPercent}
                   size="small"
                   showInfo={false}
                   status={isHiPassed ? 'success' : 'normal'}
-                  className="m-0 mt-1.5"
+                  className="m-0 mt-0.5"
                 />
 
-                <div className="mt-2.5 p-2 rounded-xl bg-white/80 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 text-[10px] leading-tight space-y-1 shadow-2xs">
-                  <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
-                    <span>
-                      Đánh giá tại chỗ: <strong className="text-emerald-600 font-bold">Rất hài lòng</strong>
+                {/* Collapsed quick hint */}
+                {!expandedGates.includes(5) && (
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium pt-0.5">
+                    <span className="truncate">
+                      {metrics.totalHi
+                        ? `Thả tim: ${metrics.happyCount ?? 0}/${metrics.totalHi} (${hiPercent}%)`
+                        : `Chỉ số: ${hiPercent}%`}
                     </span>
-                    <span>
-                      Thả tim: <strong className="text-pink-500 font-bold">{hiPercent}%</strong>
+                    <span className="text-rose-400/80 hover:text-rose-300 text-[10px] font-semibold shrink-0">
+                      Chi tiết ▾
                     </span>
                   </div>
+                )}
+              </div>
+
+              {/* Expanded details */}
+              {expandedGates.includes(5) && (
+                <div className="px-3 pb-3 sm:px-3.5 sm:pb-3.5 border-t border-white/10 text-[11px] space-y-2 pt-2.5">
+                  <div className="grid grid-cols-2 gap-2 text-[10px] p-2 rounded-xl bg-slate-800/80 border border-slate-700/60">
+                    <div>
+                      <div className="text-slate-400">Teamwork Check-in/out</div>
+                      <div className="font-bold text-xs mt-0.5">
+                        <span className={isHiPassed ? 'text-emerald-400' : 'text-amber-400'}>
+                          {isHiPassed ? '✓ Rất gắn kết' : 'Cần tương trợ'}
+                        </span>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-slate-400">Đồng đội thả tim</div>
+                      <div className="text-pink-400 font-bold text-xs mt-0.5 tabular-nums">
+                        {metrics.totalHi
+                          ? `${metrics.happyCount ?? 0}/${metrics.totalHi} (${hiPercent}%)`
+                          : `${hiPercent}%`}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-slate-400 leading-tight">
+                    {isHiPassed
+                      ? '✓ Đồng đội yêu quý, tinh thần tương trợ tuyệt vời khi check-in/out.'
+                      : '⚡ Nhân viên đồng đội tự thả tim cho nhau mỗi khi check-in/out ca làm việc để ghi nhận tinh thần tương trợ.'}
+                  </div>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-2 font-medium">
-                <span>
-                  {isHiPassed ? '✓ Đạt ngưỡng tín nhiệm yêu quý' : '⚡ Cần chăm sóc trải nghiệm khách kỹ hơn'}
-                </span>
-                <span>Mục tiêu: &gt; {((cvReq.minHappinessIndex || 0.7) * 100).toFixed(0)}%</span>
-              </div>
+              )}
             </div>
+          )}
 
-            {/* Quest 6: Chuối Yêu Thương (Check-in) >= 45 (15 * 3 = 45 / 90 ngày) */}
+          {/* Card 6: Chuối Yêu Thương */}
+          {(gateFilter === 'ALL' ||
+            (gateFilter === 'PASSED' && isBananaPassed) ||
+            (gateFilter === 'UNPASSED' && !isBananaPassed)) && (
             <div
-              className={`min-w-0 p-3.5 rounded-xl border transition-all flex flex-col justify-between ${
+              id="gate-card-6"
+              className={`rounded-2xl border transition-all duration-200 overflow-hidden flex flex-col justify-between ${
                 isBananaPassed
-                  ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40 shadow-xs'
-                  : 'bg-amber-50/70 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/40 shadow-xs'
+                  ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
+                  : 'bg-amber-950/20 border-amber-500/30 text-amber-300'
               }`}
             >
-              <div>
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1">
-                    🍌 6. Chuối Yêu Thương ≥ {minBananaCount}
-                  </span>
-                  {isBananaPassed ? (
-                    <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> ĐẠT CHUẨN
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold text-[11px]">
-                      <AlertCircle className="w-3.5 h-3.5" /> CHƯA ĐỦ CHUỐI
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-baseline justify-between mt-1">
-                  <div className="text-lg font-black text-amber-500 dark:text-amber-400 tabular-nums">
-                    {bananaCount} 🍌{' '}
-                    <span className="text-xs font-normal text-slate-400">
-                      (chuẩn ≥ {minBananaCount} Chuối / 90 ngày)
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => toggleGate(6)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') toggleGate(6);
+                }}
+                className="p-3 sm:p-3.5 cursor-pointer select-none active:scale-[0.99] transition-transform flex flex-col gap-1.5"
+              >
+                {/* Header row: Title + Status Badge + Chevron */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-base shrink-0">🍌</span>
+                    <span className="font-bold text-xs sm:text-sm text-slate-100 truncate">
+                      6. Chuối Yêu Thương ≥ {minBananaCount}
                     </span>
                   </div>
-                  <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 tabular-nums">
-                    15 Chuối / Tháng
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {isBananaPassed ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> ĐẠT CHUẨN
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" /> CHƯA ĐỦ
+                      </span>
+                    )}
+                    <div
+                      className={`p-1 rounded-lg bg-white/5 transition-transform duration-200 ${
+                        expandedGates.includes(6) ? 'rotate-180 text-rose-400' : 'text-slate-400'
+                      }`}
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Metric row */}
+                <div className="flex items-baseline justify-between gap-2 mt-0.5">
+                  <div className="text-base sm:text-lg font-black text-amber-400 tabular-nums">
+                    {bananaCount} 🍌{' '}
+                    <span className="text-xs font-normal text-slate-400">(chuẩn ≥ {minBananaCount} Chuối / 90N)</span>
+                  </div>
+                  <span
+                    className={`text-[11px] font-bold tabular-nums ${
+                      isBananaPassed ? 'text-emerald-400' : 'text-amber-400'
+                    }`}
+                  >
+                    {bananaProgressPercent}%
                   </span>
                 </div>
 
+                {/* Progress bar */}
                 <Progress
                   percent={bananaProgressPercent}
                   size="small"
                   showInfo={false}
                   status={isBananaPassed ? 'success' : 'normal'}
-                  className="m-0 mt-1.5"
+                  className="m-0 mt-0.5"
                 />
 
-                <div className="mt-2.5 p-2 rounded-xl bg-white/80 dark:bg-slate-900/70 border border-slate-200/80 dark:border-slate-800 text-[10px] leading-tight space-y-1 shadow-2xs">
-                  <div className="flex items-center justify-between text-slate-600 dark:text-slate-300">
-                    <span>
-                      Thiên thần khác tặng: <strong className="text-amber-600 font-bold">{bananaCount} Chuối</strong>
+                {/* Collapsed quick hint */}
+                {!expandedGates.includes(6) && (
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium pt-0.5">
+                    <span className="truncate">
+                      {isBananaPassed
+                        ? '✓ Đạt chuẩn yêu thương'
+                        : `⚡ Thiếu ${Math.max(0, minBananaCount - bananaCount)} chuối`}{' '}
+                      (~15 chuối/tháng)
                     </span>
-                    <span>
-                      Đồng đội quý mến:{' '}
-                      <strong className="text-emerald-600 font-bold">
-                        {bananaCount >= minBananaCount
-                          ? 'Rất cao (≥ 45)'
-                          : bananaCount >= 15
-                            ? 'Đang tích cực'
-                            : 'Cần gắn kết'}
-                      </strong>
+                    <span className="text-rose-400/80 hover:text-rose-300 text-[10px] font-semibold shrink-0">
+                      Chi tiết ▾
                     </span>
                   </div>
-                  <div className="text-[9px] text-slate-400 dark:text-slate-500 italic">
-                    * Chỉ đếm chuối từ thiên thần khác tặng lúc check-in (loại trừ tự tặng &amp; checkout)
+                )}
+              </div>
+
+              {/* Expanded details */}
+              {expandedGates.includes(6) && (
+                <div className="px-3 pb-3 sm:px-3.5 sm:pb-3.5 border-t border-white/10 text-[11px] space-y-2 pt-2.5">
+                  <div className="grid grid-cols-2 gap-2 text-[10px] p-2 rounded-xl bg-slate-800/80 border border-slate-700/60">
+                    <div>
+                      <div className="text-slate-400">Thiên thần khác tặng</div>
+                      <div className="text-amber-400 font-bold text-xs mt-0.5 tabular-nums">{bananaCount} Chuối</div>
+                    </div>
+                    <div>
+                      <div className="text-slate-400">Đồng đội quý mến</div>
+                      <div className="font-bold text-xs mt-0.5">
+                        <span className={bananaCount >= minBananaCount ? 'text-emerald-400' : 'text-amber-400'}>
+                          {bananaCount >= minBananaCount
+                            ? 'Rất cao (≥ 45)'
+                            : bananaCount >= 15
+                              ? 'Đang tích cực'
+                              : 'Cần gắn kết'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-[9px] text-slate-400 italic">
+                    * Chỉ đếm chuối từ thiên thần khác tặng lúc check-in (loại trừ tự tặng &amp; checkout). Định mức ~15
+                    chuối/tháng.
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">
+                    <span className="truncate">
+                      {isBananaPassed
+                        ? `✓ Đạt chuẩn ≥ ${minBananaCount} chuối trong 90 ngày`
+                        : `⚡ Còn thiếu ${Math.max(0, minBananaCount - bananaCount)} chuối trong 90 ngày`}
+                    </span>
+                    <span className="shrink-0 font-semibold tabular-nums text-slate-300">90N ≥ {minBananaCount}</span>
                   </div>
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between gap-2 text-[10px] text-slate-500 dark:text-slate-400 mt-2 font-medium">
-                <span className="truncate">
-                  {isBananaPassed
-                    ? `✓ Đạt chuẩn ≥ ${minBananaCount} chuối trong 90 ngày`
-                    : `⚡ Còn thiếu ${Math.max(0, minBananaCount - bananaCount)} chuối trong 90 ngày`}
-                </span>
-                <span className="shrink-0 font-semibold">90N ≥ {minBananaCount}</span>
-              </div>
+              )}
             </div>
-          </div>
+          )}
+        </div>
+      </div>
 
-          {/* Interactive RPG Stat Radar Chart & What-If Simulation Section */}
-          <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
-            <div className="flex items-center justify-between mb-2.5">
-              <div className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-amber-500" />
-                Mô Phỏng Tăng Tốc Kéo Số & Radar Kỹ Năng RPG
+      {/* Main Grid: Square Interactive Radar & Node Controller (7 cols) vs Live Earnings Impact (5 cols) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-4">
+        {/* Left column (7 cols): Full-width Interactive Radar & Dynamic Node Slider */}
+        <div className="lg:col-span-7 bg-white/90 dark:bg-slate-900/90 rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4">
+          <div>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-600 dark:text-amber-400 font-bold shadow-2xs">
+                  <Zap className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-800 dark:text-slate-100 m-0 leading-tight">
+                    Radar Kỹ Năng RPG &amp; Mô Phỏng Thăng Cấp
+                  </h4>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                    Chạm trực tiếp vào các đỉnh radar để kéo slider tinh chỉnh từng tiêu chí
+                  </span>
+                </div>
               </div>
-              <span className="text-[10px] text-slate-400 italic">
-                Kéo thanh trượt để xem biểu đồ và điều kiện thăng hạng cập nhật tức thì
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-amber-500/10 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 font-bold border border-amber-500/20">
+                What-If Live
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-center p-3.5 rounded-2xl bg-slate-50/60 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800">
-              {/* Sliders (7 cols) */}
-              <div className="md:col-span-7 space-y-3">
-                <div>
-                  <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300 mb-1">
-                    <span className="font-medium">Mục tiêu số bộ mi:</span>
-                    <span className="font-bold tabular-nums text-rose-600 dark:text-rose-400">
-                      {sliderOrders} bộ mi / 3 tháng{' '}
-                      {sliderOrders >= targetOrders ? (
-                        <span className="text-emerald-500 font-bold text-[10px]">(Đủ Ải ✓)</span>
+            {/* 1. SQUARE RADAR CHART (FULL-WIDTH ON MOBILE IPHONE 12) */}
+            <div className="bg-slate-50/70 dark:bg-slate-800/40 rounded-2xl p-3 sm:p-4 border border-slate-200/70 dark:border-slate-800 flex flex-col items-center">
+              <StatRadarChart
+                actualScores={radarActualScores}
+                targetScores={radarTargetScores}
+                simulatedScores={radarSimulatedScores}
+                qaLabel={requiredQaAudits > 0 ? `QA ≥ ${requiredQaAudits}L/3T` : 'QA (Miễn)'}
+                customAxes={customRadarAxes}
+                passedAxes={[
+                  isSimOrdersPassed,
+                  isSimFixPassed,
+                  isSimTipPassed,
+                  isSimQaPassed,
+                  isSimHiPassed,
+                  isSimBananaPassed,
+                ]}
+                activeNodeIndex={selectedRadarNode}
+                onSelectNode={(idx) => setSelectedRadarNode(idx)}
+              />
+
+              {/* QUICK 6-NODE SWITCHER PILLS (Chuyển nhanh đỉnh bằng ngón tay trên mobile) */}
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 w-full mt-3 pt-3 border-t border-slate-200/70 dark:border-slate-700/60">
+                {radarNodeMeta.map((node, idx) => {
+                  const isSelected = selectedRadarNode === idx;
+                  const isPassed = node.isPassed;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setSelectedRadarNode(idx)}
+                      className={`px-2 py-1.5 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all flex items-center justify-center gap-1 border select-none active:scale-95 ${
+                        isSelected
+                          ? isPassed
+                            ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm shadow-emerald-500/25 ring-2 ring-emerald-500/30'
+                            : 'bg-rose-500 text-white border-rose-600 shadow-sm shadow-rose-500/25 ring-2 ring-rose-500/30'
+                          : isPassed
+                            ? 'bg-emerald-500/10 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:border-emerald-400'
+                            : 'bg-white/80 dark:bg-slate-900/70 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-rose-300'
+                      }`}
+                    >
+                      {renderCareerNodeIcon(
+                        idx,
+                        `w-3.5 h-3.5 shrink-0 ${
+                          isSelected
+                            ? 'text-white'
+                            : isPassed
+                              ? 'text-emerald-700 dark:text-emerald-300'
+                              : 'text-slate-600 dark:text-slate-300'
+                        }`
+                      )}
+                      <span className="truncate">{node.shortName}</span>
+                      {isPassed ? (
+                        <Check
+                          className={`w-3.5 h-3.5 shrink-0 stroke-[3] ${
+                            isSelected ? 'text-white' : 'text-emerald-600 dark:text-emerald-400'
+                          }`}
+                        />
                       ) : (
-                        <span className="text-amber-500 font-bold text-[10px]">
-                          (Thiếu {targetOrders - sliderOrders} bộ)
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                            isSelected ? 'bg-amber-300' : 'bg-amber-400'
+                          }`}
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 2. DYNAMIC ACTIVE NODE SLIDER CONTROLLER PANEL */}
+            {(() => {
+              const activeNode = radarNodeMeta[selectedRadarNode] || radarNodeMeta[0];
+              const isPassed = activeNode.isPassed;
+              return (
+                <div
+                  className={`mt-3.5 p-3.5 sm:p-4 rounded-2xl border-2 transition-all duration-300 shadow-sm ${
+                    isPassed
+                      ? 'bg-gradient-to-br from-emerald-500/10 via-slate-50/90 to-teal-500/5 dark:from-emerald-950/40 dark:via-slate-800/80 dark:to-slate-900/90 border-emerald-500/60 dark:border-emerald-500/60 shadow-emerald-500/10'
+                      : 'bg-gradient-to-br from-rose-500/5 via-slate-50/80 to-purple-500/5 dark:from-slate-800/80 dark:via-slate-800/60 dark:to-slate-900/80 border-rose-500/30 dark:border-rose-500/30'
+                  }`}
+                >
+                  {/* Header row: Icon + Title + Target comparison + Status Badge */}
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span
+                        className={`shrink-0 p-2 rounded-xl shadow-2xs border transition-colors flex items-center justify-center ${
+                          isPassed
+                            ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400'
+                            : 'bg-white dark:bg-slate-900 border-slate-200/60 dark:border-slate-700 text-rose-500 dark:text-rose-400'
+                        }`}
+                      >
+                        {renderCareerNodeIcon(
+                          activeNode.index,
+                          `w-5 h-5 shrink-0 ${
+                            isPassed ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'
+                          }`,
+                          'text-xl'
+                        )}
+                      </span>
+                      <div className="min-w-0">
+                        <h5 className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100 m-0 truncate">
+                          {activeNode.title}
+                        </h5>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                          Chuẩn: <strong className="text-slate-700 dark:text-slate-200">{activeNode.targetText}</strong>
+                          {' · '}Thực tế:{' '}
+                          <span
+                            className={`font-bold ${isPassed ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}
+                          >
+                            {activeNode.actualText}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Badge */}
+                    <div className="shrink-0">
+                      {isPassed ? (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> ĐẠT ẢI
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" /> CẦN THÊM
                         </span>
                       )}
+                    </div>
+                  </div>
+
+                  {/* Current Simulation Value Display */}
+                  <div className="flex items-baseline justify-between gap-2 mt-2 px-1">
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">
+                      Giá trị mô phỏng dự phóng:
+                    </span>
+                    <span
+                      className={`text-base sm:text-lg font-black tabular-nums transition-colors ${
+                        isPassed ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                      }`}
+                    >
+                      {activeNode.currentValText}
                     </span>
                   </div>
-                  <Slider min={50} max={500} value={sliderOrders} onChange={setSliderOrders} className="m-0" />
-                </div>
 
-                <div>
-                  <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300 mb-1">
-                    <span className="font-medium">Mục tiêu chốt combo (khách tiềm năng ~40%):</span>
-                    <span className="font-bold tabular-nums text-purple-600 dark:text-purple-400">
-                      {Math.round((sliderOrders / 3) * 0.4 * (sliderCombo / 100))} combo / tháng ({sliderCombo}%){' '}
-                      {sliderCombo >= minSelfComboRate * 100 ? (
-                        <span className="text-emerald-500 font-bold text-[10px]">
-                          (Đủ Ải Duy Trì {isTargetCvPlusPlus ? 'CV++' : 'CV+'} ✓)
-                        </span>
-                      ) : (
-                        <span className="text-amber-500 font-bold text-[10px]">
-                          (Cần ≥ {(minSelfComboRate * 100).toFixed(0)}% để duy trì {isTargetCvPlusPlus ? 'CV++' : 'CV+'}
-                          )
-                        </span>
-                      )}
-                    </span>
+                  {/* Ant Design Slider Styled Dynamically */}
+                  <ConfigProvider
+                    theme={{
+                      token: {
+                        colorPrimary: isPassed ? 'rgb(16, 185, 129)' : 'rgb(244, 63, 94)',
+                        colorPrimaryBorder: isPassed ? 'rgb(16, 185, 129)' : 'rgb(244, 63, 94)',
+                        colorPrimaryBorderHover: isPassed ? 'rgb(5, 150, 105)' : 'rgb(225, 29, 72)',
+                      },
+                    }}
+                  >
+                    <div
+                      className={`px-1 py-1 transition-all duration-300 ${
+                        isPassed
+                          ? '[&_.ant-slider-track]:bg-emerald-500 [&_.ant-slider-handle]:border-emerald-500 [&_.ant-slider-handle]:shadow-emerald-500/25'
+                          : '[&_.ant-slider-track]:bg-rose-500 [&_.ant-slider-handle]:border-rose-500'
+                      }`}
+                    >
+                      <Slider
+                        min={activeNode.min}
+                        max={activeNode.max}
+                        step={activeNode.step}
+                        value={activeNode.value}
+                        onChange={activeNode.onChange}
+                        className="m-0 my-1"
+                      />
+                    </div>
+                  </ConfigProvider>
+
+                  {/* Quick Preset Buttons */}
+                  <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                    <span className="text-[10px] text-slate-400 font-bold mr-1">Chỉnh nhanh:</span>
+                    {activeNode.presets.map((preset, pIdx) => {
+                      const isPresetMatch = preset.val === activeNode.value;
+                      return (
+                        <button
+                          key={pIdx}
+                          type="button"
+                          onClick={() => activeNode.onChange(preset.val)}
+                          className={`px-2 py-0.5 rounded-lg text-[10.5px] font-bold border transition-all active:scale-95 shadow-2xs ${
+                            isPresetMatch
+                              ? isPassed
+                                ? 'bg-emerald-500 text-white border-emerald-600 shadow-emerald-500/20'
+                                : 'bg-rose-500 text-white border-rose-600 shadow-rose-500/20'
+                              : isPassed
+                                ? 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-emerald-400 text-slate-700 dark:text-slate-300'
+                                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-rose-400 text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <Slider min={0} max={60} value={sliderCombo} onChange={setSliderCombo} className="m-0" />
-                </div>
 
-                <div>
-                  <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300 mb-1">
-                    <span className="font-medium">
-                      Mục tiêu bán dưỡng mi (Dự kiến {cvReq.expectedSerumsPerWeek ?? 4} cây/tuần - Thưởng 10%):
-                    </span>
-                    <span className="font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-                      {sliderSerums} cây / tuần{' '}
-                      <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
-                        (+{formatVnd(monthlySerumBonus)}/tháng)
-                      </span>
-                    </span>
-                  </div>
-                  <Slider min={0} max={20} value={sliderSerums} onChange={setSliderSerums} className="m-0" />
+                  {/* Explanatory description */}
+                  <p className="text-[10.5px] text-slate-500 dark:text-slate-400 m-0 mt-2.5 pt-2 border-t border-slate-200/50 dark:border-slate-700/50 leading-relaxed">
+                    💡 {activeNode.desc}
+                  </p>
                 </div>
+              );
+            })()}
 
-                {isTargetCvPlusPlus && (
-                  <div>
-                    <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300 mb-1">
-                      <span className="font-medium">
-                        Mục tiêu số ca bán chéo / tư vấn chéo hộ CV khác (Lên đến 300 ca/tháng):
+            {/* 3. LIVE WHAT-IF ACHIEVEMENT BANNER */}
+            <div
+              className={`mt-3.5 p-3 rounded-xl border text-xs transition-all ${
+                isSimAllPassed
+                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-200'
+                  : 'bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-200'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 font-bold min-w-0">
+                  {isSimAllPassed ? (
+                    <>
+                      <Sparkles className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <span className="truncate">🎉 Mục tiêu đạt 6/6 ải: Mở khóa thăng cấp ngay lập tức!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Target className="w-4 h-4 text-amber-500 shrink-0" />
+                      <span className="truncate">
+                        Mục tiêu đạt {simPassedCount}/6 ải (cần thêm {6 - simPassedCount} ải nữa để mở khóa)
                       </span>
-                      <span className="font-bold tabular-nums text-amber-600 dark:text-amber-400">
-                        {sliderCrossOrders} ca / tháng{' '}
-                        <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold">
-                          (+{formatVnd(simulatedCrossTipAmount)}/tháng 20% tip)
+                    </>
+                  )}
+                </div>
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-white/70 dark:bg-slate-900/70 border border-current shrink-0">
+                  {simPassedCount}/6 ải
+                </span>
+              </div>
+            </div>
+
+            {/* 4. EXTRA REVENUE BOOSTERS (COMBO, DƯỠNG MI YEPPEUM, CHỐT HỘ) IN ACCORDION */}
+            <div className="mt-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/70 dark:bg-slate-900/60 overflow-hidden shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setIsExtraPerksExpanded(!isExtraPerksExpanded)}
+                className="w-full p-2.5 sm:p-3 flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+              >
+                <span className="flex items-center gap-2 min-w-0">
+                  <span className="shrink-0">💎</span>
+                  <span className="truncate">Đòn bẩy doanh thu thưởng thêm</span>
+                  <span className="px-1.5 py-0.5 rounded-md text-[9px] bg-purple-500/15 text-purple-600 dark:text-purple-300 font-bold shrink-0">
+                    {sliderCombos} combo · {sliderSerums} cây/tuần
+                  </span>
+                </span>
+                <ChevronDown
+                  className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                    isExtraPerksExpanded ? 'rotate-180 text-rose-500' : ''
+                  }`}
+                />
+              </button>
+
+              {isExtraPerksExpanded && (
+                <div className="p-3 pt-2 border-t border-slate-100 dark:border-slate-800/80 space-y-2.5 bg-slate-50/40 dark:bg-slate-900/40">
+                  {/* Slider: Chốt combo */}
+                  <div className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/60 dark:border-slate-800 shadow-2xs">
+                    <div className="flex items-center justify-between text-xs mb-1 gap-1.5">
+                      <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1 shrink-0">
+                        <span>📦</span> Chốt combo nối mi:
+                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0 text-right">
+                        <span className="font-black tabular-nums text-purple-600 dark:text-purple-400 text-xs">
+                          {sliderCombos} combo{' '}
+                          <span className="font-medium text-[11px] opacity-80">
+                            (~{potentialCustomers > 0 ? Math.round((sliderCombos / potentialCustomers) * 100) : 0}%)
+                          </span>
                         </span>
-                      </span>
+                        {sliderCombos >= minComboRequired ? (
+                          <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold text-[9px] whitespace-nowrap">
+                            ✓ Đủ ải
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold text-[9px] whitespace-nowrap">
+                            Cần ≥{minComboRequired}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <Slider
                       min={0}
-                      max={300}
-                      step={5}
-                      value={sliderCrossOrders}
-                      onChange={setSliderCrossOrders}
-                      className="m-0"
+                      max={30}
+                      value={sliderCombos}
+                      onChange={(val) => {
+                        setSliderCombos(val);
+                        if (potentialCustomers > 0) {
+                          setSliderCombo(Math.round((val / potentialCustomers) * 100));
+                        }
+                      }}
+                      className="m-0 my-1"
                     />
+                    <div className="flex justify-between text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-medium">
+                      <span>
+                        Thưởng:{' '}
+                        <strong className="text-purple-600 dark:text-purple-400 font-bold">
+                          {formatVnd(singleComboBonus)}/combo
+                        </strong>{' '}
+                        (Gói TB 4.5M)
+                      </span>
+                      <span>Dự kiến: {cvReq.expectedCombosPerMonth ?? (isTargetCvPlusPlus ? 10 : 8)} combo/tháng</span>
+                    </div>
                   </div>
-                )}
 
-                {/* Live What-If Achievement Banner */}
-                <div
-                  className={`p-2.5 rounded-xl border text-xs transition-all ${
-                    isSimAllPassed
-                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-800 dark:text-emerald-200'
-                      : 'bg-amber-500/10 border-amber-500/20 text-amber-800 dark:text-amber-200'
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 font-bold">
-                    {isSimAllPassed ? (
-                      <>
-                        <Sparkles className="w-4 h-4 text-emerald-500" />
-                        <span>🎉 Mục tiêu đạt 6/6 ải: Mở khóa thăng cấp ngay lập tức!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Target className="w-4 h-4 text-amber-500" />
-                        <span>
-                          Mục tiêu đạt {simPassedCount}/6 ải (cần thêm {6 - simPassedCount} ải nữa để mở khóa)
+                  {/* Slider: Dưỡng mi Yeppeum */}
+                  <div className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/60 dark:border-slate-800 shadow-2xs">
+                    <div className="flex items-center justify-between text-xs mb-1 gap-1.5">
+                      <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1 shrink-0">
+                        <span>🌿</span> Bán dưỡng mi Yeppeum:
+                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0 text-right">
+                        <span className="font-black tabular-nums text-emerald-600 dark:text-emerald-400 text-xs">
+                          {sliderSerums} cây / tuần
                         </span>
-                      </>
-                    )}
+                        <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold text-[9px] whitespace-nowrap">
+                          +{formatVnd(monthlySerumBonus)}/th
+                        </span>
+                      </div>
+                    </div>
+                    <Slider min={0} max={20} value={sliderSerums} onChange={setSliderSerums} className="m-0 my-1" />
+                    <div className="flex justify-between text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-medium">
+                      <span>
+                        Thưởng:{' '}
+                        <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
+                          {formatVnd(serumOrigBonus)}/cây
+                        </strong>{' '}
+                        (giá gốc 1.1M)
+                      </span>
+                      <span>
+                        Dự kiến: {cvReq.expectedSerumsPerWeek ?? 4} cây/tuần (~{sliderSerums * 4} cây/tháng)
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              {/* RPG Stat Radar Chart (5 cols) */}
-              <div className="md:col-span-5 flex justify-center bg-white/70 dark:bg-slate-900/60 rounded-xl p-2 border border-slate-100 dark:border-slate-800/80 shadow-inner">
-                <StatRadarChart
-                  actualScores={radarActualScores}
-                  targetScores={radarTargetScores}
-                  simulatedScores={radarSimulatedScores}
-                  qaLabel={requiredQaAudits > 0 ? `QA ≥ ${requiredQaAudits}L/3T` : 'QA (Miễn)'}
-                  customAxes={customRadarAxes}
-                />
-              </div>
+                  {/* Slider: Tư vấn chốt hộ CV khác (nếu CV++) */}
+                  {isTargetCvPlusPlus && (
+                    <div className="p-2.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200/60 dark:border-slate-800 shadow-2xs">
+                      <div className="flex items-center justify-between text-xs mb-1 gap-1.5">
+                        <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1 shrink-0">
+                          <span>🤝</span> Tư vấn chốt hộ CV khác:
+                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0 text-right">
+                          <span className="font-black tabular-nums text-amber-600 dark:text-amber-400 text-xs">
+                            {sliderCrossOrders} ca / tháng
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-bold text-[9px] whitespace-nowrap">
+                            +{formatVnd(simulatedCrossTipAmount)}
+                          </span>
+                        </div>
+                      </div>
+                      <Slider
+                        min={0}
+                        max={300}
+                        step={5}
+                        value={sliderCrossOrders}
+                        onChange={setSliderCrossOrders}
+                        className="m-0 my-1"
+                      />
+                      <div className="flex justify-between text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-medium">
+                        <span>Được hưởng 20% tip ca tư vấn hộ</span>
+                        <span>Mô phỏng tối đa 300 ca/tháng</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Right column (5 cols): Live Earnings Impact Simulation (Loot & Rewards) */}
-        <div className="lg:col-span-5 bg-gradient-to-br from-rose-50 to-amber-50/50 dark:from-slate-800/90 dark:to-slate-800/50 rounded-2xl p-4 sm:p-5 border border-rose-100 dark:border-slate-700/60 flex flex-col justify-between shadow-sm">
+        <div className="lg:col-span-5 bg-gradient-to-br from-white via-rose-50/30 to-amber-50/30 dark:from-slate-900 dark:via-slate-900/90 dark:to-slate-800/80 rounded-2xl p-4 sm:p-5 border border-rose-100/80 dark:border-slate-800 flex flex-col justify-between shadow-sm">
           <div>
+            {/* Header */}
             <div className="flex items-center justify-between mb-3.5">
-              <h4 className="text-xs font-black uppercase tracking-wider text-rose-700 dark:text-rose-300 m-0 flex items-center gap-1.5">
-                <DollarSign className="w-4 h-4 text-emerald-500" />
-                Mô Phỏng Thu Nhập Thực Tế
-              </h4>
-              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-rose-200/70 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 font-extrabold shadow-2xs">
-                Ước tính hàng tháng
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold shadow-2xs">
+                  <DollarSign className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-100 m-0 leading-tight">
+                    Mô Phỏng Thu Nhập Thực Tế
+                  </h4>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                    Ước tính theo giờ công &amp; doanh số thực
+                  </span>
+                </div>
+              </div>
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-500/20">
+                Tháng này
               </span>
             </div>
 
             {earnings && (
               <div className="space-y-3.5">
-                {/* Visual Comparative Income Bars */}
-                <div className="space-y-2.5 p-3 rounded-xl bg-white/80 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800">
-                  {/* Current Bar */}
-                  <div>
-                    <div className="flex justify-between text-[11px] mb-1">
-                      <span className="text-slate-500 dark:text-slate-400 font-medium">
-                        Hiện tại ({formatCareerRoleName(status.currentRole)}):
-                      </span>
-                      <span className="font-extrabold text-slate-800 dark:text-slate-100 tabular-nums">
-                        {formatVnd(earnings.currentEstimatedIncome)}
-                      </span>
+                {/* Visual Comparative Income Hero Card */}
+                <div className="p-3.5 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-2.5">
+                  {/* Side-by-side Comparison */}
+                  <div className="grid grid-cols-2 gap-2.5 items-stretch">
+                    {/* Current Tier */}
+                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 flex flex-col justify-between">
+                      <div className="text-[10px] font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">
+                        Hiện tại ({formatCareerRoleName(status.currentRole)})
+                      </div>
+                      <div className="mt-1">
+                        <div className="text-sm sm:text-base font-black text-slate-700 dark:text-slate-200 tabular-nums">
+                          {formatVnd(earnings.currentEstimatedIncome)}
+                        </div>
+                        <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Lương giờ + 70% Tip</div>
+                      </div>
                     </div>
-                    <Progress
-                      percent={Math.min(
-                        100,
-                        Math.round((earnings.currentEstimatedIncome / (simulatedNextTierIncome || 1)) * 100)
-                      )}
-                      size="small"
-                      showInfo={false}
-                      status="normal"
-                      className="m-0"
-                    />
+
+                    {/* Promoted Target Tier */}
+                    <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-500/10 via-teal-500/10 to-emerald-500/5 dark:from-emerald-950/40 dark:to-slate-800/80 border border-emerald-500/30 flex flex-col justify-between relative overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <div className="text-[10px] font-extrabold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1">
+                          <Crown className="w-3 h-3 text-amber-500" />
+                          <span>Lên {formatCareerRoleName(status.targetRole)}</span>
+                        </div>
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500 text-white font-black leading-none">
+                          +{Math.round((totalSimulatedGain / (earnings.currentEstimatedIncome || 1)) * 100)}%
+                        </span>
+                      </div>
+                      <div className="mt-1">
+                        <div className="text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
+                          {formatVnd(simulatedNextTierIncome)}
+                        </div>
+                        <div className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 font-medium mt-0.5">
+                          Trọn vẹn 4 nguồn thu
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Promoted Bar */}
-                  <div>
-                    <div className="flex justify-between text-[11px] mb-1">
-                      <span className="text-emerald-700 dark:text-emerald-300 font-bold flex items-center gap-1">
-                        <TrendingUp className="w-3.5 h-3.5" /> Khi thăng cấp ({formatCareerRoleName(status.targetRole)}
-                        ):
-                      </span>
-                      <span className="font-black text-emerald-600 dark:text-emerald-400 tabular-nums text-sm">
-                        {formatVnd(simulatedNextTierIncome)}
-                      </span>
-                    </div>
-                    <Progress percent={100} size="small" showInfo={false} status="success" className="m-0" />
-                  </div>
-
-                  {/* Gain Callout Badge */}
-                  <div className="pt-1 flex items-center justify-between text-xs">
-                    <span className="text-slate-500 dark:text-slate-400 font-medium">Tăng thêm thực nhận:</span>
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-black tabular-nums">
-                      + Thêm {formatVnd(totalSimulatedGain)}/tháng (
-                      {Math.round((totalSimulatedGain / (earnings.currentEstimatedIncome || 1)) * 100)}%)
+                  {/* Delta Callout Banner */}
+                  <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500/25">
+                    <span className="text-xs font-bold text-emerald-800 dark:text-emerald-200 flex items-center gap-1.5">
+                      <TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>Tăng thêm thực nhận:</span>
+                    </span>
+                    <span className="text-sm font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
+                      +{formatVnd(totalSimulatedGain)}
+                      <span className="text-[10px] font-normal text-slate-400">/tháng</span>
                     </span>
                   </div>
                 </div>
 
-                {/* Level Up Perk Tiers - Chi tiết số tiền tăng thêm mỗi tháng */}
-                <div className="p-3.5 rounded-xl bg-white/80 dark:bg-slate-900/70 border border-slate-200/70 dark:border-slate-800 space-y-2.5 text-xs shadow-2xs">
+                {/* Level Up Perk Tiers - 4 Trụ Cột Thu Nhập Rõ Ràng */}
+                <div className="p-3.5 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 space-y-2.5 text-xs shadow-xs">
                   <div className="flex items-center justify-between pb-1.5 border-b border-slate-100 dark:border-slate-800">
                     <div className="font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5 text-purple-600 dark:text-purple-400">
-                      <Award className="w-3.5 h-3.5" /> Đặc quyền đãi ngộ khi lên{' '}
-                      {formatCareerRoleName(status.targetRole)}:
+                      <Award className="w-3.5 h-3.5" /> Chi tiết 4 nguồn thu nhập tăng thêm:
                     </div>
                     <span className="text-[10px] text-slate-400 dark:text-slate-500 italic">Nhận thêm mỗi tháng</span>
                   </div>
 
-                  {/* 1. Lương theo giờ */}
-                  <div className="p-2 rounded-lg bg-slate-50/80 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80">
-                    <div className="flex justify-between items-center text-[11px]">
-                      <div className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-200">
-                        <span>🕒 Lương theo giờ:</span>
-                        <span className="font-normal text-slate-500 dark:text-slate-400 tabular-nums">
-                          {formatVnd(earnings.details.hourlyWageCurrent)} ➔{' '}
-                          <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
-                            {formatVnd(earnings.details.hourlyWageNext)}
-                          </strong>{' '}
-                          <span className="text-[10px] text-emerald-600 font-normal">
-                            (+
-                            {formatVnd(
-                              Math.max(
-                                0,
-                                (earnings.details.hourlyWageNext || 27500) -
-                                  (earnings.details.hourlyWageCurrent || 25500)
-                              )
-                            )}
-                            /h)
-                          </span>
-                        </span>
+                  {/* Cảnh báo chế tài nếu dưới 20% combo */}
+                  {isPenaltyActive && (
+                    <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-2.5 text-rose-700 dark:text-rose-300 text-xs">
+                      <ShieldAlert className="w-4 h-4 shrink-0 text-rose-500 mt-0.5" />
+                      <div>
+                        <strong>Chế tài Doanh nghiệp đang áp dụng:</strong> Do mục tiêu combo ({simulatedComboCount}{' '}
+                        combo ~ {simulatedComboPct}%) chưa đạt mức tối thiểu 20% (~{minComboRequired} combo), hệ thống
+                        tạm khóa phần lương giờ tăng thêm (+{formatVnd(hourlyWageNext - hourlyWageCurrent)}/h) và thưởng
+                        bán hàng. Nhân viên chỉ được giữ 20% tip tư vấn!
                       </div>
-                      <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-black tabular-nums text-xs">
-                        +{formatVnd(wageGain)}/tháng
-                      </span>
                     </div>
-                    <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+                  )}
+
+                  {/* 1. Lương theo giờ */}
+                  <div className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80 hover:border-slate-200 dark:hover:border-slate-700 transition-colors">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-6 h-6 rounded-md bg-blue-500/10 dark:bg-blue-950/40 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                          <Clock className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-[11px] text-slate-700 dark:text-slate-200 truncate">
+                            Lương theo giờ
+                          </div>
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                            {formatVnd(hourlyWageCurrent)} ➔{' '}
+                            <strong className="text-emerald-600 dark:text-emerald-400">
+                              {formatVnd(hourlyWageNext)}
+                            </strong>{' '}
+                            <span className="text-emerald-600 font-semibold">
+                              (+{formatVnd(hourlyWageNext - hourlyWageCurrent)}/h)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      {isPenaltyActive ? (
+                        <span className="shrink-0 px-2 py-0.5 rounded-md bg-rose-500/15 border border-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-xs whitespace-nowrap">
+                          0đ (Tạm khóa)
+                        </span>
+                      ) : (
+                        <span className="shrink-0 px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-black tabular-nums text-xs whitespace-nowrap">
+                          +{formatVnd(effectiveWageGain)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 pl-8">
                       * Dựa trên {earnings.details.actualWorkingHours || earnings.details.monthlyEstimatedHours || 260}h
-                      công thực tế tháng qua của {status.staffName} (+
-                      {formatVnd(
-                        Math.max(
-                          0,
-                          (earnings.details.hourlyWageNext || 27500) - (earnings.details.hourlyWageCurrent || 25500)
-                        )
-                      )}{' '}
-                      × {earnings.details.actualWorkingHours || earnings.details.monthlyEstimatedHours || 260}h)
+                      công thực tế tháng qua của {status.staffName}
                     </div>
                   </div>
 
                   {/* 2. Tiền tip khách */}
-                  <div className="p-2 rounded-lg bg-slate-50/80 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80">
-                    <div className="flex justify-between items-center text-[11px]">
-                      <div className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-200">
-                        <span>💎 Chia tiền tip khách:</span>
-                        <span className="font-normal text-slate-500 dark:text-slate-400">
-                          {isTargetCvPlusPlus ? (
-                            <>
-                              Hưởng trọn{' '}
-                              <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
-                                90% tip khách mình
-                              </strong>{' '}
-                              +{' '}
-                              <strong className="text-amber-600 dark:text-amber-400 font-bold">
-                                20% tip khi tư vấn cho CV khác
-                              </strong>
-                            </>
-                          ) : status.currentRole === 'CV' ? (
-                            <>
-                              70% ➔ <strong className="text-emerald-600 dark:text-emerald-400 font-bold">90%</strong>{' '}
-                              <span className="text-[10px] text-emerald-600 font-normal">(Hưởng trọn)</span>
-                            </>
-                          ) : (
-                            '90% + Tip tư vấn sảnh'
-                          )}
-                        </span>
+                  <div className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80 hover:border-slate-200 dark:hover:border-slate-700 transition-colors">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-6 h-6 rounded-md bg-amber-500/10 dark:bg-amber-950/40 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0">
+                          <Gem className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-[11px] text-slate-700 dark:text-slate-200 truncate">
+                            Chia tiền tip khách
+                          </div>
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                            {isTargetCvPlusPlus ? (
+                              <>
+                                Hưởng {((cvReq.tipShareRatio ?? 0.9) * 100).toFixed(0)}% tip mình + 20% tip tư vấn hộ CV
+                                khác
+                              </>
+                            ) : (
+                              <>
+                                70% ➔{' '}
+                                <strong className="text-emerald-600 dark:text-emerald-400">
+                                  {(targetTipRatio * 100).toFixed(0)}%
+                                </strong>{' '}
+                                (Hưởng trọn cả mi + tự tư vấn)
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-black tabular-nums text-xs">
-                        +{formatVnd(tipGain + dynamicCrossTipDelta)}/tháng
+                      <span className="shrink-0 px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-black tabular-nums text-xs whitespace-nowrap">
+                        +{formatVnd(effectiveTipGain + dynamicCrossTipDelta)}
                       </span>
                     </div>
-                    <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+                    <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 pl-8">
                       {isTargetCvPlusPlus
-                        ? `* Hưởng trọn 90% tip khách mình + nhận 20% tip trên các ca bán chéo / tư vấn chéo cho CV khác (+${formatVnd(
-                            simulatedCrossTipAmount || earnings.details.crossConsultTipAmount || 300000
-                          )}/tháng)`
-                        : `* Hưởng trọn 90% tip (tăng thêm +20% trên tổng tip ${formatVnd(
+                        ? `* Nhận trọn ${((cvReq.tipShareRatio ?? 0.9) * 100).toFixed(0)}% tip khách mình + 20% tip trên ${sliderCrossOrders} ca tư vấn chéo`
+                        : `* Nhận thêm +20% trên tổng tip ${formatVnd(
                             earnings.details.customerTotalTip ||
                               Math.round(
                                 (earnings.details.actualTipReceived || earnings.details.monthlyTipAvg || 0) / 0.7
                               )
-                          )}/tháng của khách)`}
+                          )} của khách`}
                     </div>
                   </div>
 
-                  {/* 3. Hoa hồng combo & Dưỡng mi */}
-                  <div className="p-2.5 rounded-lg bg-slate-50/80 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80 space-y-1.5">
-                    <div className="flex justify-between items-center text-[11px]">
-                      <div className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-200">
-                        <span>🏹 Hoa hồng combo &amp; Dưỡng mi:</span>
-                        <span className="font-normal text-slate-500 dark:text-slate-400">
-                          {isTargetCvPlusPlus ? (
-                            <>
-                              2.5% combo cá nhân +{' '}
-                              <strong className="text-purple-600 dark:text-purple-400 font-bold">
-                                Thêm tiền bán combo khi tư vấn cho CV khác
-                              </strong>{' '}
-                              + 10% Dưỡng mi
-                            </>
-                          ) : status.currentRole === 'CV' ? (
-                            <>
-                              0% ➔ <strong className="text-emerald-600 dark:text-emerald-400 font-bold">2.5%</strong>{' '}
-                              <span className="text-[10px] text-emerald-600 font-normal">
-                                (Doanh thu combo) + 10% Dưỡng mi
-                              </span>
-                            </>
-                          ) : (
-                            '2.5% combo + 10% Dưỡng mi'
-                          )}
+                  {/* 3. Thưởng bán dưỡng mi Yeppeum */}
+                  <div className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80 hover:border-slate-200 dark:hover:border-slate-700 transition-colors">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-6 h-6 rounded-md bg-teal-500/10 dark:bg-teal-950/40 flex items-center justify-center text-teal-600 dark:text-teal-400 shrink-0">
+                          <Sparkles className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-[11px] text-slate-700 dark:text-slate-200 truncate">
+                            Thưởng bán dưỡng mi Yeppeum
+                          </div>
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                            Bán {sliderSerums} cây/tuần ({sliderSerums * 4} cây/tháng) ×{' '}
+                            <strong className="text-teal-600 dark:text-teal-400">
+                              {formatVnd(serumOrigBonus)}/cây
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+                      {isPenaltyActive ? (
+                        <span className="shrink-0 px-2 py-0.5 rounded-md bg-rose-500/15 border border-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-xs whitespace-nowrap">
+                          0đ (Tạm khóa)
+                        </span>
+                      ) : (
+                        <span className="shrink-0 px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-black tabular-nums text-xs whitespace-nowrap">
+                          +{formatVnd(effectiveSerumGain)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 pl-8">
+                      * Tiền tươi: Giá gốc {formatVnd(serumOrigBonus)} | Khuyến mãi {formatVnd(serumDiscountBonus)} |
+                      Quà tặng 0đ
+                    </div>
+                  </div>
+
+                  {/* 4. Thưởng hoa hồng combo nối mi */}
+                  <div className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800/80 hover:border-slate-200 dark:hover:border-slate-700 transition-colors">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-6 h-6 rounded-md bg-purple-500/10 dark:bg-purple-950/40 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
+                          <Target className="w-3.5 h-3.5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-[11px] text-slate-700 dark:text-slate-200 truncate">
+                            Thưởng hoa hồng combo
+                          </div>
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                            {simulatedComboCount > 0 ? (
+                              <>
+                                ~{simulatedComboCount} combo/tháng (~{simulatedComboPct}%) ×{' '}
+                                <strong className="text-purple-600 dark:text-purple-400">
+                                  {formatVnd(singleComboBonus)}/combo
+                                </strong>
+                              </>
+                            ) : (
+                              <>0 combo (Kéo thanh trượt để thử)</>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      {isPenaltyActive ? (
+                        <span className="shrink-0 px-2 py-0.5 rounded-md bg-rose-500/15 border border-rose-500/20 text-rose-600 dark:text-rose-400 font-bold text-xs whitespace-nowrap">
+                          0đ (Tạm khóa)
+                        </span>
+                      ) : (
+                        <span className="shrink-0 px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-black tabular-nums text-xs whitespace-nowrap">
+                          +{formatVnd(effectiveComboGain)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 pl-8 flex items-center justify-between gap-1 flex-wrap">
+                      <span>* Gói TB 4.5M (+50K/1M trên 4M)</span>
+                      <span className="text-purple-600 dark:text-purple-400 font-medium whitespace-nowrap">
+                        Chuẩn CV+: ≥{(minSelfComboRate * 100).toFixed(0)}% (~{minComboRequired} combo)
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 5. Nếu là CV++: Tư vấn combo chốt hộ cho CV khác */}
+                  {isTargetCvPlusPlus && (
+                    <div className="p-2.5 rounded-xl bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200/60 dark:border-purple-800/60 hover:border-purple-300 transition-colors">
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-6 h-6 rounded-md bg-purple-500/20 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
+                            <Users className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-bold text-[11px] text-purple-900 dark:text-purple-200 truncate">
+                              Chốt combo hộ cho CV khác
+                            </div>
+                            <div className="text-[10px] text-purple-700 dark:text-purple-300 truncate">
+                              Chốt ~{crossConsultCombos} combo hộ/tháng × {formatVnd(crossComboBonusPerItem)}
+                            </div>
+                          </div>
+                        </div>
+                        <span className="shrink-0 px-2 py-0.5 rounded-md bg-purple-500/20 border border-purple-500/30 text-purple-700 dark:text-purple-300 font-black tabular-nums text-xs whitespace-nowrap">
+                          +{formatVnd(crossConsultComboBonus)}
                         </span>
                       </div>
-                      <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 border border-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-black tabular-nums text-xs">
-                        +{formatVnd(comboGain + monthlySerumBonus)}/tháng
-                      </span>
-                    </div>
-
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400 space-y-1.5 leading-relaxed">
-                      {/* Thêm tiền bán combo khi tư vấn cho CV khác (theo yêu cầu của Danny) */}
-                      {isTargetCvPlusPlus && (
-                        <div className="p-2 rounded-lg bg-purple-500/10 dark:bg-purple-950/30 border border-purple-500/20 text-purple-800 dark:text-purple-200">
-                          <div className="flex items-center justify-between font-bold">
-                            <span>🤝 Tư vấn cho CV khác - Thêm tiền bán combo:</span>
-                            <span className="text-xs text-purple-600 dark:text-purple-400 font-black tabular-nums">
-                              +{formatVnd(earnings.details.crossConsultComboAmount || 450000)}/tháng
-                            </span>
-                          </div>
-                          <div className="text-[10px] text-purple-700 dark:text-purple-300 mt-0.5">
-                            • Nhận {((earnings.details.crossConsultCommissionRate || 0.025) * 100).toFixed(1)}% doanh
-                            thu combo khi tư vấn chốt hộ khách của CV khác (~
-                            {earnings.details.expectedCrossConsultCombosPerMonth || 4} combo chéo × 4.5M × 2.5% = +
-                            {formatVnd(earnings.details.crossConsultComboAmount || 450000)}/tháng).
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Cây dưỡng mi theo chỉ tiêu 4 cây/tuần của Danny */}
-                      <div className="p-2 rounded-lg bg-emerald-500/10 dark:bg-emerald-950/30 border border-emerald-500/20 text-emerald-800 dark:text-emerald-200">
-                        <div className="flex items-center justify-between font-bold">
-                          <span>✨ Dự kiến bán {sliderSerums} cây dưỡng mi / tuần:</span>
-                          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-black tabular-nums">
-                            +{formatVnd(monthlySerumBonus)}/tháng
-                          </span>
-                        </div>
-                        <div className="text-[10px] text-emerald-700 dark:text-emerald-300 mt-0.5">
-                          • Thưởng 10% (110.000đ/cây 1.100.000đ) ➔ <strong>+{formatVnd(weeklySerumBonus)}/tuần</strong>{' '}
-                          ({sliderSerums * 4} cây/tháng).
-                        </div>
+                      <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-1 pl-8">
+                        💖 Thợ CV làm mi được chia {(crossConsultCvShareRate * 100).toFixed(0)}% (+
+                        {formatVnd(crossConsultCvSharedAmount)}) + nhận đủ 70% tip
                       </div>
-
-                      <div>
-                        • <strong>Bán combo nối mi cá nhân (2.5% DT):</strong> ~
-                        {earnings.details.expectedCombosPerMonth ??
-                          earnings.details.predictedComboCount ??
-                          cvReq.expectedCombosPerMonth ??
-                          10}{' '}
-                        combo/tháng (chốt trên khách tiềm năng của mình, TB 4.5M/combo) ➔{' '}
-                        <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
-                          +{formatVnd(Math.round((earnings.details.expectedCombosPerMonth ?? 10) * 4500000 * 0.025))}
-                          /tháng
-                        </strong>
-                      </div>
-                      {sliderCombo > 0 && (
-                        <div className="pt-0.5 text-purple-600 dark:text-purple-400 font-medium">
-                          (Kéo test {sliderCombo}% combo trên ~{Math.round((sliderOrders / 3) * 0.4)} khách tiềm năng: ~
-                          {Math.round((sliderOrders / 3) * 0.4 * (sliderCombo / 100))} combo ➔ +
-                          {formatVnd(
-                            Math.round(
-                              (sliderOrders / 3) *
-                                0.4 *
-                                (sliderCombo / 100) *
-                                (earnings.details.avgComboPrice || 4500000) *
-                                0.025
-                            )
-                          )}
-                          /tháng)
-                        </div>
-                      )}
                     </div>
-                  </div>
+                  )}
 
                   {/* Summary Total Gain */}
-                  <div className="p-2.5 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                      <span className="font-extrabold text-emerald-800 dark:text-emerald-200 uppercase tracking-tight text-[11px]">
-                        Tổng cộng nhận thêm:
-                      </span>
+                  <div className="p-3 rounded-xl bg-gradient-to-r from-emerald-500/15 via-teal-500/15 to-emerald-500/10 border border-emerald-500/30 flex items-center justify-between text-xs shadow-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold shrink-0">
+                        <Sparkles className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="font-black text-emerald-800 dark:text-emerald-200 uppercase tracking-tight text-[11px]">
+                          Tổng cộng nhận thêm:
+                        </div>
+                        <div className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80">
+                          Khớp trọn vẹn từng nguồn thu nhập
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-base font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
-                        +{formatVnd(totalSimulatedGain)}/tháng
-                      </span>
-                      <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
-                        (+{Math.round((totalSimulatedGain / (earnings.currentEstimatedIncome || 1)) * 100)}%)
+                    <div className="text-right">
+                      <div className="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400 tabular-nums leading-tight">
+                        +{formatVnd(totalSimulatedGain)}
+                        <span className="text-xs font-semibold">/tháng</span>
+                      </div>
+                      <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
+                        (+{Math.round((totalSimulatedGain / (earnings.currentEstimatedIncome || 1)) * 100)}% so với hiện
+                        tại)
                       </span>
                     </div>
                   </div>

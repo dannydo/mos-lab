@@ -238,4 +238,37 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       }
     }
   );
+
+  /**
+   * Lấy lịch sử biến động và sao kê chi tiết Chuối của nhân sự
+   * GET /api/career/staff/:staffId/banana-transactions
+   */
+  fastify.get<{
+    Params: { staffId: string };
+    Querystring: { category?: string; timeRange?: string; search?: string; limit?: string };
+  }>(
+    '/career/staff/:staffId/banana-transactions',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      const staffId = Number(request.params.staffId);
+      if (isNaN(staffId) || staffId <= 0) {
+        return reply.status(400).send({ success: false, message: 'ID nhân viên không hợp lệ' });
+      }
+
+      try {
+        const result = await CareerProgressionService.getBananaTransactions(fastify, staffId, {
+          category: request.query?.category,
+          timeRange: request.query?.timeRange,
+          search: request.query?.search,
+          limit: request.query?.limit ? Number(request.query.limit) : undefined,
+        });
+        return reply.send({ success: true, data: result });
+      } catch (err: any) {
+        fastify.log.error({ err, staffId }, 'Failed to get banana transactions');
+        return reply.status(500).send({ success: false, message: 'Lỗi truy xuất lịch sử giao dịch chuối' });
+      }
+    }
+  );
 };

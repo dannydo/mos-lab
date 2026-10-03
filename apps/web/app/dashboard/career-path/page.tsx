@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, Slider, message, Tooltip, Switch, Avatar } from 'antd';
-import { Settings, Zap, Award } from 'lucide-react';
+import { Settings, Zap, Award, Eye, Bug, Coins, ShieldCheck, Heart } from 'lucide-react';
 import type { CareerProgressionConfig, StaffCareerStatus, CareerStaffSummary } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
 import { useTheme } from '../../../context/ThemeContext';
 import { CareerConfigDrawer } from './components/CareerConfigDrawer';
+import { BananaTransactionDrawer } from './components/BananaTransactionDrawer';
 import { StaffCareerSelector } from './components/StaffCareerSelector';
 import { RealStaffSimulationCard } from './components/RealStaffSimulationCard';
 import { FALLBACK_CAREER_PROGRESSION_CONFIG, getCareerIslands, formatCareerRoleName } from './career-path.constants';
@@ -46,6 +47,7 @@ export default function CareerPathPage() {
 
   const [loading, setLoading] = useState<boolean>(true);
   const [isConfigDrawerOpen, setIsConfigDrawerOpen] = useState<boolean>(false);
+  const [isBananaDrawerOpen, setIsBananaDrawerOpen] = useState<boolean>(false);
   const [savingConfig, setSavingConfig] = useState<boolean>(false);
 
   // Sliders for interactive simulation
@@ -390,6 +392,107 @@ export default function CareerPathPage() {
 
   const currentIslandData = islands.find((i) => i.id === activeIsland) || islands[0];
   const expProgressStyle = { width: `${Math.min(100, Math.round((sliderOrders / cvToCc.minOrders) * 100))}%` };
+  const scrollToGate = useCallback((gateIndex: number) => {
+    playSound('pop');
+    const el = document.getElementById(`gate-card-${gateIndex}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('ring-2', 'ring-pink-500', 'ring-offset-2', 'transition-all');
+      setTimeout(() => {
+        el.classList.remove('ring-2', 'ring-pink-500', 'ring-offset-2', 'transition-all');
+      }, 1500);
+    }
+  }, []);
+
+  const hudMetrics = useMemo(() => {
+    if (!selectedStaffStatus?.metrics) return null;
+    const m = selectedStaffStatus.metrics;
+    const targetReq =
+      simulationTarget === 'CV_PLUS_PLUS' ? safeConfig.cvPlusToCvPlusPlus : safeConfig.cvToCvPlus || safeConfig.cvToCc;
+
+    const targetOrders = targetReq?.minOrders ?? (simulationTarget === 'CV_PLUS_PLUS' ? 350 : 300);
+    const targetMaxFix = targetReq?.maxFixRate ?? (simulationTarget === 'CV_PLUS_PLUS' ? 0.015 : 0.02);
+    const minTipRatioAboveShop = targetReq?.minTipRatioAboveShop ?? (simulationTarget === 'CV_PLUS_PLUS' ? 0.15 : 0.1);
+    const minBananaCount = targetReq?.minBananaCount ?? (simulationTarget === 'CV_PLUS_PLUS' ? 60 : 45);
+    const minHappinessIndex = targetReq?.minHappinessIndex ?? (simulationTarget === 'CV_PLUS_PLUS' ? 0.8 : 0.7);
+    const requiredQaAudits =
+      targetReq?.minQaAudits ?? (targetReq?.minWeeklyQaAudits ? Math.round(targetReq.minWeeklyQaAudits * 12) : 12);
+
+    const isOrdersPassed = (m.ordersCount || 0) >= targetOrders;
+    const isFixPassed = (m.fixRate || 0) <= targetMaxFix;
+
+    const staffTipRate =
+      m.staffTipRate ??
+      (m.ordersCount ? Math.min(0.65, Math.max(0.2, ((m.totalTip || 0) / (m.ordersCount * 38000)) * 0.45)) : 0.314);
+    const shopTipRate = m.shopTipRate ?? 0.45;
+    const targetTipRate = m.targetTipRate ?? Number((shopTipRate * (1 + minTipRatioAboveShop)).toFixed(3));
+    const isTipPassed = staffTipRate >= targetTipRate || (m.tipRatioAboveShop || 0) >= minTipRatioAboveShop;
+    const staffTipRatePercent = Number((staffTipRate * 100).toFixed(1));
+
+    const totalQaAudits = m.qaAudit?.totalAudits ?? 0;
+    const hasFailedQa = Boolean(m.qaAudit?.hasFailedAudit);
+    const isQaPassed =
+      requiredQaAudits === 0 || Boolean(m.qaAudit?.isPassed ?? (totalQaAudits >= requiredQaAudits && !hasFailedQa));
+
+    const happinessIndex = m.happinessIndex ?? 0;
+    const isHiPassed = happinessIndex >= minHappinessIndex;
+    const hiPercent = Math.round(happinessIndex * 100);
+
+    const bananaCount = m.bananaCount ?? 0;
+    const isBananaPassed = bananaCount >= minBananaCount;
+
+    return [
+      {
+        id: 1,
+        name: 'Bộ mi',
+        value: `${m.ordersCount || 0}`,
+        iconType: 'eye',
+        isPassed: isOrdersPassed,
+        tooltip: `Bộ mi hoàn thành: ${m.ordersCount || 0}/${targetOrders} bộ · ${isOrdersPassed ? '✓ Đạt chuẩn' : '⚡ Còn thiếu'} (Bấm để xem)`,
+      },
+      {
+        id: 2,
+        name: 'Fix mi',
+        value: `${((m.fixRate || 0) * 100).toFixed(1)}%`,
+        iconType: 'bug',
+        isPassed: isFixPassed,
+        tooltip: `Tỷ lệ bảo hành / sửa: ${((m.fixRate || 0) * 100).toFixed(1)}% (chuẩn < ${(targetMaxFix * 100).toFixed(1)}%) · ${isFixPassed ? '✓ Xuất sắc' : '⚡ Vượt mức'} (Bấm để xem)`,
+      },
+      {
+        id: 3,
+        name: 'Tỷ lệ Tip',
+        value: `${staffTipRatePercent}%`,
+        iconType: 'coins',
+        isPassed: isTipPassed,
+        tooltip: `Tỷ lệ khách tip: ${staffTipRatePercent}% (chuẩn ≥ ${(targetTipRate * 100).toFixed(1)}%) · ${isTipPassed ? '✓ Đạt chuẩn' : '⚡ Cần thêm'} (Bấm để xem)`,
+      },
+      {
+        id: 4,
+        name: 'QA/QC',
+        value: `${totalQaAudits}/${requiredQaAudits}`,
+        iconType: 'shieldCheck',
+        isPassed: isQaPassed,
+        hasFailed: hasFailedQa,
+        tooltip: `Kiểm định QA/QC: ${totalQaAudits}/${requiredQaAudits} lần · ${hasFailedQa ? 'Bị lỗi FAILED' : isQaPassed ? '✓ Đạt chuẩn' : totalQaAudits === 0 ? 'Chưa kiểm định' : 'Thiếu lượt'} (Bấm để xem)`,
+      },
+      {
+        id: 5,
+        name: 'Teamwork HI',
+        value: `${hiPercent}%`,
+        iconType: 'heart',
+        isPassed: isHiPassed,
+        tooltip: `Chỉ số HI Thả tim: ${hiPercent}% (chuẩn > ${Math.round(minHappinessIndex * 100)}%) · ${isHiPassed ? '✓ Tin yêu' : '⚡ Cần gắn kết'} (Bấm để xem)`,
+      },
+      {
+        id: 6,
+        name: 'Chuối',
+        value: `${bananaCount}`,
+        iconType: 'banana',
+        isPassed: isBananaPassed,
+        tooltip: `Chuối yêu thương: ${bananaCount}/${minBananaCount} chuối · ${isBananaPassed ? '✓ Đạt chuẩn' : '⚡ Chưa đủ'} (Bấm để xem)`,
+      },
+    ];
+  }, [selectedStaffStatus?.metrics, simulationTarget, safeConfig]);
 
   return (
     <div className="min-h-screen bg-rose-50/40 dark:bg-slate-950 text-slate-800 dark:text-slate-100 pb-36 transition-colors duration-200">
@@ -442,11 +545,32 @@ export default function CareerPathPage() {
 
           {/* Currencies & Admin Setting Button */}
           <div className="flex items-center gap-2">
-            {/* Chuối (Banana Coin) */}
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 text-xs font-bold font-mono shadow-xs">
-              <span>🍌</span>
-              <span className="tabular-nums">{safeConfig.rewardRates.fmMonthlyBananaGrant} Chuối</span>
-            </div>
+            {/* Tổng số chuối dư (Banana Balance) */}
+            {(() => {
+              const realBalance =
+                selectedStaffStatus?.metrics?.bananaBalance !== undefined
+                  ? selectedStaffStatus.metrics.bananaBalance
+                  : selectedStaffStatus?.metrics?.bananaCount || 0;
+              const isNegative = realBalance < 0;
+
+              return (
+                <div
+                  onClick={() => {
+                    playSound('pop');
+                    setIsBananaDrawerOpen(true);
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold font-mono shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer ${
+                    isNegative
+                      ? 'bg-rose-50 dark:bg-rose-500/15 border-rose-300 dark:border-rose-500/30 text-rose-700 dark:text-rose-300 hover:border-rose-400'
+                      : 'bg-amber-50 dark:bg-amber-500/15 border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 hover:border-amber-400'
+                  }`}
+                  title={`Số dư chuối của ${selectedStaffStatus?.staffName || 'nhân sự'}: ${realBalance.toLocaleString('vi-VN')} · Nhấn để xem sao kê lịch sử chuối`}
+                >
+                  <span>🍌</span>
+                  <span className="tabular-nums">{realBalance.toLocaleString('vi-VN')}</span>
+                </div>
+              );
+            })()}
 
             {/* Admin Config Button */}
             {['admin', 'super_admin'].includes(currentUser?.role?.toLowerCase() || '') && (
@@ -463,6 +587,45 @@ export default function CareerPathPage() {
             )}
           </div>
         </div>
+
+        {/* 6 GAME RPG HUD METRICS BAR */}
+        {hudMetrics && (
+          <div className="max-w-5xl mx-auto mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 overflow-x-auto sm:overflow-x-visible no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth">
+            {hudMetrics.map((item) => {
+              const pillClass = item.hasFailed
+                ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-300 dark:border-rose-500/40 text-rose-800 dark:text-rose-300 hover:border-rose-400'
+                : item.isPassed
+                  ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-300 hover:border-emerald-400'
+                  : 'bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-500/40 text-amber-900 dark:text-amber-300 hover:border-amber-400';
+
+              const iconClass = item.hasFailed
+                ? 'text-rose-500 animate-pulse'
+                : item.isPassed
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : 'text-amber-600 dark:text-amber-400';
+
+              return (
+                <Tooltip key={item.id} title={item.tooltip} placement="bottom">
+                  <button
+                    type="button"
+                    onClick={() => scrollToGate(item.id)}
+                    className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full border text-[11px] sm:text-xs font-mono font-black tabular-nums shadow-2xs transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 select-none ${pillClass}`}
+                  >
+                    {item.iconType === 'eye' && <Eye className={`w-3.5 h-3.5 shrink-0 ${iconClass}`} />}
+                    {item.iconType === 'bug' && <Bug className={`w-3.5 h-3.5 shrink-0 ${iconClass}`} />}
+                    {item.iconType === 'coins' && <Coins className={`w-3.5 h-3.5 shrink-0 ${iconClass}`} />}
+                    {item.iconType === 'shieldCheck' && <ShieldCheck className={`w-3.5 h-3.5 shrink-0 ${iconClass}`} />}
+                    {item.iconType === 'heart' && (
+                      <Heart className={`w-3.5 h-3.5 shrink-0 ${iconClass} fill-current/20`} />
+                    )}
+                    {item.iconType === 'banana' && <span className="text-xs shrink-0 select-none">🍌</span>}
+                    <span className="leading-none">{item.value}</span>
+                  </button>
+                </Tooltip>
+              );
+            })}
+          </div>
+        )}
       </header>
 
       {/* MAIN CONTAINER */}
@@ -686,6 +849,15 @@ export default function CareerPathPage() {
         onSave={handleSaveConfig}
         saving={savingConfig}
         themeMode={themeMode}
+      />
+
+      {/* BANANA TRANSACTION & GIVE AWAY DRAWER */}
+      <BananaTransactionDrawer
+        open={isBananaDrawerOpen}
+        onClose={() => setIsBananaDrawerOpen(false)}
+        staffId={selectedStaffId}
+        staffName={selectedStaffStatus?.staffName}
+        avatarUrl={selectedStaffStatus?.avatarUrl}
       />
     </div>
   );

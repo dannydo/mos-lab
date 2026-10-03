@@ -5,6 +5,10 @@ import {
   StaffCareerStatus,
   CareerRole,
   CareerProgressionStatus,
+  calculateComboBonus,
+  BananaTransactionResponse,
+  BananaTransactionCategory,
+  BananaTransactionItem,
 } from '@mos-lab/shared';
 import { qaShopService } from '../qa-shop/qa-shop.service.js';
 import { TeamService } from '../teams/team.service.js';
@@ -56,11 +60,18 @@ export class CareerProgressionService {
           normalizedCvReq.minBananaCount = 45;
         }
 
+        const normalizedCvPlusReq = {
+          ...DEFAULT_CAREER_PROGRESSION_CONFIG.cvPlusToCvPlusPlus,
+          ...(parsed.cvPlusToCvPlusPlus || {}),
+        };
+
         cachedConfig = {
           ...DEFAULT_CAREER_PROGRESSION_CONFIG,
           ...parsed,
           cvToCc: normalizedCvReq,
           cvToCvPlus: normalizedCvReq,
+          cvPlusToCvPlusPlus: normalizedCvPlusReq,
+          cvPlusPlusToFm: { ...DEFAULT_CAREER_PROGRESSION_CONFIG.cvPlusPlusToFm, ...(parsed.cvPlusPlusToFm || {}) },
           ccToFm: { ...DEFAULT_CAREER_PROGRESSION_CONFIG.ccToFm, ...(parsed.ccToFm || {}) },
           fmToCho: { ...DEFAULT_CAREER_PROGRESSION_CONFIG.fmToCho, ...(parsed.fmToCho || {}) },
           choToBoss: { ...DEFAULT_CAREER_PROGRESSION_CONFIG.choToBoss, ...(parsed.choToBoss || {}) },
@@ -203,14 +214,24 @@ export class CareerProgressionService {
     const combosMap: Record<number, number> = {};
     const bonusesMap: Record<number, { points: number; cash: number; banana: number }> = {};
     const bananasMap: Record<number, number> = {};
+    const bananaBalancesMap: Record<number, number> = {};
     const hiMap: Record<number, number> = {};
     let shopAvgTip = 38000;
     const shopTipRate = 0.45;
 
     try {
-      const [orderRows, tipRows, comboRows, bonusRows, shopTipRows, legacyProfileRows, bananaRows, hiRows] =
-        await Promise.all([
-          fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+      const [
+        orderRows,
+        tipRows,
+        comboRows,
+        bonusRows,
+        shopTipRows,
+        legacyProfileRows,
+        bananaRows,
+        hiRows,
+        balanceRows,
+      ] = await Promise.all([
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
             os.assigned_staff_id,
             COUNT(os.id) as total_orders,
@@ -221,7 +242,7 @@ export class CareerProgressionService {
             AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
           GROUP BY os.assigned_staff_id
         `),
-          fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
             st.user_id,
             COALESCE(SUM(st.tip_amount), 0) as total_tip,
@@ -233,7 +254,7 @@ export class CareerProgressionService {
             AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
           GROUP BY st.user_id
         `),
-          fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
             os.assigned_staff_id,
             COUNT(DISTINCT osc.order_id) as combo_orders
@@ -244,7 +265,7 @@ export class CareerProgressionService {
             AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
           GROUP BY os.assigned_staff_id
         `),
-          fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
             sb.user_id,
             COALESCE(SUM(CASE WHEN sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END), 0) as monthly_points,
@@ -254,7 +275,7 @@ export class CareerProgressionService {
           WHERE sb.date_created >= DATE_SUB(NOW(), INTERVAL 90 DAY)
           GROUP BY sb.user_id
         `),
-          fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
             COALESCE(SUM(st.tip_amount), 0) as shop_total_tip,
             COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as shop_valid_tip_orders,
@@ -264,13 +285,13 @@ export class CareerProgressionService {
           WHERE o.order_state = 'Completed'
             AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
         `),
-          legacyIds.length > 0
-            ? fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-                `SELECT user_id, avatar FROM user_profile WHERE user_id IN (${legacyIds.join(',')}) AND avatar IS NOT NULL AND avatar != ''`
-              )
-            : Promise.resolve([]),
-          legacyIds.length > 0
-            ? fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+        legacyIds.length > 0
+          ? fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+              `SELECT user_id, avatar FROM user_profile WHERE user_id IN (${legacyIds.join(',')}) AND avatar IS NOT NULL AND avatar != ''`
+            )
+          : Promise.resolve([]),
+        legacyIds.length > 0
+          ? fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
               SELECT 
                 g.to_user_id as user_id,
                 COALESCE(SUM(g.give_away_amount), 0) as banana_count
@@ -283,9 +304,9 @@ export class CareerProgressionService {
                 AND g.to_user_id IN (${legacyIds.join(',')})
               GROUP BY g.to_user_id
             `)
-            : Promise.resolve([]),
-          legacyIds.length > 0
-            ? fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+          : Promise.resolve([]),
+        legacyIds.length > 0
+          ? fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
               SELECT 
                 user_id,
                 COALESCE(SUM(relationship_happy_count), 0) as happy_count,
@@ -295,8 +316,26 @@ export class CareerProgressionService {
                 AND date >= DATE_SUB(NOW(), INTERVAL 90 DAY)
               GROUP BY user_id
             `)
-            : Promise.resolve([]),
-        ]);
+          : Promise.resolve([]),
+        legacyIds.length > 0
+          ? fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+              SELECT 
+                user_id,
+                amount
+              FROM user_balance
+              WHERE currency_id = 3
+                AND user_id IN (${legacyIds.join(',')})
+            `)
+          : Promise.resolve([]),
+      ]);
+
+      if (Array.isArray(balanceRows)) {
+        balanceRows.forEach((r: any) => {
+          if (r.user_id) {
+            bananaBalancesMap[Number(r.user_id)] = Number(r.amount) || 0;
+          }
+        });
+      }
 
       if (Array.isArray(legacyProfileRows)) {
         legacyProfileRows.forEach((r: any) => {
@@ -434,6 +473,7 @@ export class CareerProgressionService {
         selfComboRate,
         happinessIndex: hiMap[legacyId] ?? 0.75,
         bananaCount: bananasMap[legacyId] ?? 0,
+        bananaBalance: legacyId ? (bananaBalancesMap[legacyId] ?? bananasMap[legacyId] ?? 0) : 0,
         isBananaPassed: (bananasMap[legacyId] ?? 0) >= (config.cvToCvPlus?.minBananaCount ?? 45),
         ccLevel: ['CC', 'FM'].includes(careerRole) ? ccLevel : null,
         monthlyPoints: ['CC', 'FM'].includes(careerRole) ? monthlyPoints : null,
@@ -532,7 +572,10 @@ export class CareerProgressionService {
     let selfComboCount = 0;
     let selfComboRate = 0;
     let happinessIndex = 0.7;
+    let happyCount = 0;
+    let totalHi = 0;
     let bananaCount = 0;
+    let bananaBalance = 0;
     let monthlyPoints = 0;
     let ccLevel = 1;
     let ccBonusCash = 0;
@@ -544,10 +587,20 @@ export class CareerProgressionService {
     let avg90dWorkingHours = 0;
 
     try {
-      const [orderRes, fixRes, tipRes, comboRes, bonusRes, shopTipRes, hiRes, bananaRes, workingHoursRes] =
-        await Promise.all([
-          fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-            `
+      const [
+        orderRes,
+        fixRes,
+        tipRes,
+        comboRes,
+        bonusRes,
+        shopTipRes,
+        hiRes,
+        bananaRes,
+        workingHoursRes,
+        bananaBalanceRes,
+      ] = await Promise.all([
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `
           SELECT 
             COUNT(os.id) as total_orders,
             COUNT(CASE 
@@ -560,10 +613,10 @@ export class CareerProgressionService {
             AND o.order_state = 'Completed'
             AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
         `,
-            targetLegacyStaffId
-          ),
-          fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-            `
+          targetLegacyStaffId
+        ),
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `
           SELECT COUNT(os.id) as fix_count
           FROM order_service os
           JOIN \`order\` o ON o.id = os.order_id
@@ -572,10 +625,10 @@ export class CareerProgressionService {
             AND o.order_state = 'Completed'
             AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
         `,
-            targetLegacyStaffId
-          ),
-          fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-            `
+          targetLegacyStaffId
+        ),
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `
           SELECT 
             COALESCE(SUM(st.tip_amount), 0) as total_tip,
             COALESCE(SUM(CASE 
@@ -590,10 +643,10 @@ export class CareerProgressionService {
             AND o.order_state = 'Completed'
             AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
         `,
-            targetLegacyStaffId
-          ),
-          fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-            `
+          targetLegacyStaffId
+        ),
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `
           SELECT COUNT(DISTINCT osc.order_id) as combo_orders
           FROM order_service os
           JOIN \`order\` o ON o.id = os.order_id
@@ -602,10 +655,10 @@ export class CareerProgressionService {
             AND o.order_state = 'Completed'
             AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
         `,
-            targetLegacyStaffId
-          ),
-          fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-            `
+          targetLegacyStaffId
+        ),
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `
           SELECT 
             COALESCE(SUM(CASE WHEN sb.bonus_type = 'BonusPoint' THEN sb.bonus_amount ELSE 0 END), 0) as monthly_points,
             COALESCE(SUM(CASE WHEN sb.bonus_type = 'Cash' THEN sb.bonus_amount ELSE 0 END), 0) as cc_cash,
@@ -614,9 +667,9 @@ export class CareerProgressionService {
           WHERE sb.user_id = ?
             AND sb.date_created >= DATE_SUB(NOW(), INTERVAL 90 DAY)
         `,
-            targetLegacyStaffId
-          ),
-          fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+          targetLegacyStaffId
+        ),
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
             COALESCE(SUM(st.tip_amount), 0) as shop_total_tip,
             COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as shop_valid_tip_orders,
@@ -626,8 +679,8 @@ export class CareerProgressionService {
           WHERE o.order_state = 'Completed'
             AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
         `),
-          fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-            `
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `
           SELECT 
             COALESCE(SUM(relationship_happy_count), 0) as happy_count,
             COALESCE(SUM(relationship_neutral_count), 0) as neutral_count,
@@ -637,10 +690,10 @@ export class CareerProgressionService {
           WHERE user_id = ?
             AND date >= DATE_SUB(NOW(), INTERVAL 90 DAY)
         `,
-            targetLegacyStaffId
-          ),
-          fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-            `
+          targetLegacyStaffId
+        ),
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `
           SELECT 
             COALESCE(SUM(g.give_away_amount), 0) as checkin_banana_count
           FROM staff_give_away g
@@ -651,10 +704,10 @@ export class CareerProgressionService {
             AND (g.created_staff_id IS NULL OR g.created_staff_id != g.to_user_id)
             AND g.date_created >= DATE_SUB(NOW(), INTERVAL 90 DAY)
         `,
-            targetLegacyStaffId
-          ),
-          fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-            `
+          targetLegacyStaffId
+        ),
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `
           SELECT 
             ROUND(COALESCE(SUM(CASE 
               WHEN date >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01')
@@ -665,12 +718,20 @@ export class CareerProgressionService {
           WHERE user_id = ?
             AND date >= DATE_SUB(NOW(), INTERVAL 90 DAY)
         `,
-            targetLegacyStaffId
-          ),
-        ]);
+          targetLegacyStaffId
+        ),
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `
+          SELECT amount
+          FROM user_balance
+          WHERE user_id = ? AND currency_id = 3
+        `,
+          targetLegacyStaffId
+        ),
+      ]);
 
-      const totalHi = Number(hiRes?.[0]?.total_evaluations || 0);
-      const happyCount = Number(hiRes?.[0]?.happy_count || 0);
+      totalHi = Number(hiRes?.[0]?.total_evaluations || 0);
+      happyCount = Number(hiRes?.[0]?.happy_count || 0);
       if (totalHi > 0) {
         happinessIndex = Number((happyCount / totalHi).toFixed(3));
       } else {
@@ -687,7 +748,9 @@ export class CareerProgressionService {
           );
           const totalAllTime = Number(allTimeHi?.[0]?.total_evaluations || 0);
           if (totalAllTime > 0) {
-            happinessIndex = Number((Number(allTimeHi?.[0]?.happy_count || 0) / totalAllTime).toFixed(3));
+            totalHi = totalAllTime;
+            happyCount = Number(allTimeHi?.[0]?.happy_count || 0);
+            happinessIndex = Number((happyCount / totalHi).toFixed(3));
           }
         } catch (_hiErr) {
           // Safe fallback
@@ -740,6 +803,10 @@ export class CareerProgressionService {
       monthlyPoints = Number(bonusRes?.[0]?.monthly_points || 0);
       ccBonusCash = Number(bonusRes?.[0]?.cc_cash || 0);
       bananaCount = Number(bananaRes?.[0]?.checkin_banana_count || 0);
+      bananaBalance =
+        bananaBalanceRes?.[0]?.amount !== undefined && bananaBalanceRes?.[0]?.amount !== null
+          ? Number(bananaBalanceRes[0].amount)
+          : bananaCount;
       ccLevel = monthlyPoints > 0 ? Math.floor(monthlyPoints / 100) + 1 : 1;
       ccTipShare = totalTip;
     } catch (err) {
@@ -800,14 +867,12 @@ export class CareerProgressionService {
     const expectedCombosPerMonth = activeReq.expectedCombosPerMonth ?? (isCvPlusPlusTarget ? 10 : 6);
     const crossConsultCommissionRate = (activeReq as any).crossConsultCommissionRate ?? 0.025;
     const crossConsultTipRate = (activeReq as any).crossConsultTipRate ?? 0.2;
+    const crossConsultCvShareRate = (activeReq as any).crossConsultCvShareRate ?? 0.2;
     const expectedCrossConsultOrdersPerMonth = (activeReq as any).expectedCrossConsultOrdersPerMonth ?? 20;
     const expectedCrossConsultCombosPerMonth = (activeReq as any).expectedCrossConsultCombosPerMonth ?? 4;
     const crossConsultAvgTipPerOrder = shopAvgTip > 15000 ? shopAvgTip : 40000;
     const crossConsultTipAmount = Math.round(
       expectedCrossConsultOrdersPerMonth * crossConsultAvgTipPerOrder * crossConsultTipRate
-    );
-    const crossConsultComboAmount = Math.round(
-      expectedCrossConsultCombosPerMonth * 4500000 * crossConsultCommissionRate
     );
 
     // Quest gates evaluation against dynamic config
@@ -930,32 +995,43 @@ export class CareerProgressionService {
 
     // Chỉ tiêu dự kiến: Mỗi tuần bán được dưỡng mi (mặc định 4 cây/tuần)
     const expectedSerumsPerMonth = expectedSerumsPerWeek * 4; // 16 cây / tháng
-    const lashSerumPrice = 1100000; // Giá bán lẻ Cây dưỡng mi Yeppeum 6ml (1.100.000đ)
-    const serumCommissionAmount = Math.round(lashSerumPrice * 0.1); // Thưởng 10% = 110.000đ/cây
+    // Thưởng tiền tươi dưỡng mi: giá gốc 100K, giảm giá 50K (theo config của Danny)
+    const serumOriginalPriceBonus = (activeReq as any).serumOriginalPriceBonus ?? 100000;
+    const serumDiscountedPriceBonus = (activeReq as any).serumDiscountedPriceBonus ?? 50000;
+    const serumCommissionAmount = serumOriginalPriceBonus; // Tính theo giá gốc cho kịch bản chuẩn
     const monthlySerumIncome = expectedSerumsPerMonth * serumCommissionAmount;
+
+    // Hoa hồng combo bậc thang tiền tươi theo cấu hình của Danny (<2M: 50K, <3M: 100K, <4M: 150K, +50K/1M)
+    const singleComboBonus = calculateComboBonus(avgComboPrice, activeReq as any);
+    const crossConsultComboAmount = isCvPlusPlusTarget
+      ? Math.round(expectedCrossConsultCombosPerMonth * singleComboBonus)
+      : 0;
+    const crossConsultCvSharedAmount = isCvPlusPlusTarget
+      ? Math.round(crossConsultComboAmount * crossConsultCvShareRate)
+      : 0;
 
     let wageCurrent = hourlyWages.cv;
     let wageNext = hourlyWages.cvPlus;
     let tipShareCurrent = actualTipReceived; // Hiện tại nhận 70%
     let tipShareNext = Math.round(customerTotalTip * 0.9); // Khi lên CV+ nhận 90%
     let comboCommCurrent = 0;
-    let comboCommNext = Math.round(monthlySelfComboRev * 0.025); // 2.5% hoa hồng tự tư vấn combo
+    let comboCommNext = Math.round(predictedComboCount * singleComboBonus); // Tiền tươi theo bậc thang combo
 
     if (isCvPlusPlusTarget) {
       wageCurrent = currentRole === 'CV_PLUS' ? hourlyWages.cvPlus : hourlyWages.cv;
       wageNext = hourlyWages.cvPlusPlus; // 29.500đ/h
       tipShareCurrent = currentRole === 'CV_PLUS' ? Math.round(customerTotalTip * 0.9) : actualTipReceived;
       tipShareNext = Math.round(customerTotalTip * 0.9 + crossConsultTipAmount); // 90% tip cá nhân + 20% tip khi tư vấn cho CV khác
-      comboCommCurrent = currentRole === 'CV_PLUS' ? Math.round(6 * avgComboPrice * 0.025) : 0;
+      comboCommCurrent = currentRole === 'CV_PLUS' ? Math.round(6 * singleComboBonus) : 0;
       // CV++: combo cá nhân + combo tư vấn chéo hộ CV khác khi FM vắng
-      comboCommNext = Math.round(expectedCombosPerMonth * avgComboPrice * 0.025 + crossConsultComboAmount);
+      comboCommNext = Math.round(expectedCombosPerMonth * singleComboBonus + crossConsultComboAmount);
     } else if (currentRole === 'CV_PLUS') {
       wageCurrent = hourlyWages.cvPlus;
       wageNext = hourlyWages.cvPlusPlus;
       tipShareCurrent = Math.round(customerTotalTip * 0.9);
       tipShareNext = Math.round(customerTotalTip * 0.9 + 500000); // Cross-consult
-      comboCommCurrent = Math.round(monthlySelfComboRev * 0.025);
-      comboCommNext = Math.round(monthlySelfComboRev * 0.03 + 800000);
+      comboCommCurrent = Math.round(predictedComboCount * singleComboBonus);
+      comboCommNext = Math.round(predictedComboCount * singleComboBonus + 800000);
     } else if (currentRole === 'CV_PLUS_PLUS') {
       wageCurrent = hourlyWages.cvPlusPlus;
       wageNext = 0;
@@ -1013,7 +1089,10 @@ export class CareerProgressionService {
         targetTipRate,
         tippedOrdersCount,
         happinessIndex,
+        happyCount,
+        totalHi,
         bananaCount,
+        bananaBalance,
         isBananaPassed,
         selfComboCount,
         selfComboRate,
@@ -1071,6 +1150,11 @@ export class CareerProgressionService {
           crossConsultCommissionRate,
           crossConsultComboAmount,
           expectedCrossConsultCombosPerMonth,
+          singleComboBonus,
+          serumOriginalPriceBonus,
+          serumDiscountedPriceBonus,
+          crossConsultCvShareRate,
+          crossConsultCvSharedAmount,
         },
       },
       lastSyncedAt: new Date().toISOString(),
@@ -1194,5 +1278,304 @@ export class CareerProgressionService {
     });
 
     return this.getStaffProgression(fastify, staffId);
+  }
+
+  /**
+   * Lấy lịch sử biến động và sao kê chi tiết Chuối của nhân sự
+   */
+  static async getBananaTransactions(
+    fastify: FastifyInstance,
+    staffId: number,
+    query?: { category?: string; timeRange?: string; search?: string; limit?: number }
+  ): Promise<BananaTransactionResponse> {
+    // 1. Tìm thông tin nhân sự
+    let staff = await fastify.prisma.crm.crmStaff.findUnique({
+      where: { id: staffId },
+    });
+
+    if (!staff) {
+      staff = await fastify.prisma.crm.crmStaff.findFirst({
+        where: { legacyStaffId: staffId },
+      });
+    }
+
+    const targetLegacyStaffId = staff?.legacyStaffId || staffId;
+
+    // 2. Lấy số dư thực tế từ user_balance (bao gồm cả số âm!)
+    let currentBalance = 0;
+    try {
+      const balanceRow = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT amount FROM user_balance WHERE user_id = ? AND currency_id = 3 LIMIT 1`,
+        targetLegacyStaffId
+      );
+      if (balanceRow && balanceRow.length > 0) {
+        currentBalance = Number(balanceRow[0].amount) || 0;
+      }
+    } catch (_err) {
+      // Safe fallback
+    }
+
+    // 3. Thống kê tổng số Chuối Yêu Thương (Nhận & Tặng) từ staff_give_away
+    let totalReceivedGiveAway = 0;
+    let totalSentGiveAway = 0;
+    let countReceivedGiveAway = 0;
+    let countSentGiveAway = 0;
+
+    try {
+      const stats = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `
+        SELECT 
+          (SELECT COALESCE(SUM(give_away_amount), 0) FROM staff_give_away WHERE to_user_id = ?) as total_received,
+          (SELECT COUNT(*) FROM staff_give_away WHERE to_user_id = ?) as count_received,
+          (SELECT COALESCE(SUM(give_away_amount), 0) FROM staff_give_away WHERE from_user_id = ?) as total_sent,
+          (SELECT COUNT(*) FROM staff_give_away WHERE from_user_id = ?) as count_sent
+        `,
+        targetLegacyStaffId,
+        targetLegacyStaffId,
+        targetLegacyStaffId,
+        targetLegacyStaffId
+      );
+      if (stats && stats.length > 0) {
+        totalReceivedGiveAway = Number(stats[0].total_received) || 0;
+        countReceivedGiveAway = Number(stats[0].count_received) || 0;
+        totalSentGiveAway = Number(stats[0].total_sent) || 0;
+        countSentGiveAway = Number(stats[0].count_sent) || 0;
+      }
+    } catch (_err) {
+      // Safe fallback
+    }
+
+    // 4. Map tên thân thiện của các nhân sự liên quan từ crmStaff
+    const crmStaffMap = new Map<number, { displayName: string }>();
+    try {
+      const allStaff = await fastify.prisma.crm.crmStaff.findMany({
+        where: { legacyStaffId: { not: null } },
+        select: { legacyStaffId: true, displayName: true, username: true },
+      });
+      allStaff.forEach((s) => {
+        if (s.legacyStaffId) {
+          crmStaffMap.set(s.legacyStaffId, {
+            displayName: s.displayName || s.username?.split('@')[0] || `Staff #${s.legacyStaffId}`,
+          });
+        }
+      });
+    } catch (_err) {
+      // Safe fallback
+    }
+
+    // 5. Query các giao dịch Chuối
+    const category = query?.category || 'ALL';
+    const timeRange = query?.timeRange || '90d';
+    const search = query?.search?.trim()?.toLowerCase();
+    const limit = query?.limit && query.limit > 0 ? Math.min(query.limit, 300) : 150;
+
+    let timeFilterSql = '';
+    if (timeRange === '30d') {
+      timeFilterSql = 'AND ubt.date_created >= DATE_SUB(NOW(), INTERVAL 30 DAY)';
+    } else if (timeRange === '90d') {
+      timeFilterSql = 'AND ubt.date_created >= DATE_SUB(NOW(), INTERVAL 90 DAY)';
+    }
+
+    // Query từ user_balance_transaction kết hợp staff_give_away
+    let rawTransactions: any[] = [];
+    try {
+      rawTransactions = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `
+        SELECT 
+          ubt.id,
+          ubt.user_id,
+          ubt.amount,
+          ubt.balance,
+          ubt.type,
+          ubt.description as ubt_description,
+          ubt.date_created,
+          sga.id as give_away_id,
+          sga.from_user_id,
+          sga.to_user_id,
+          sga.give_away_amount,
+          sga.description as give_away_message,
+          p_from.username as from_username,
+          CONCAT(COALESCE(p_from.first_name, ''), ' ', COALESCE(p_from.last_name, '')) as from_fullname,
+          p_to.username as to_username,
+          CONCAT(COALESCE(p_to.first_name, ''), ' ', COALESCE(p_to.last_name, '')) as to_fullname
+        FROM user_balance_transaction ubt
+        LEFT JOIN staff_give_away sga ON ubt.item_id = sga.id
+        LEFT JOIN user_profile p_from ON sga.from_user_id = p_from.user_id
+        LEFT JOIN user_profile p_to ON sga.to_user_id = p_to.user_id
+        WHERE ubt.currency_id = 3
+          AND ubt.user_id = ?
+          ${timeFilterSql}
+        ORDER BY ubt.date_created DESC
+        LIMIT ?
+        `,
+        targetLegacyStaffId,
+        limit
+      );
+    } catch (_err) {
+      rawTransactions = [];
+    }
+
+    const transactions: BananaTransactionItem[] = [];
+
+    // Query thêm các lượt đã gửi tặng từ staff_give_away nếu lọc ALL hoặc GIVE_AWAY_SENT
+    let sentGiveAways: any[] = [];
+    if (category === 'ALL' || category === 'GIVE_AWAY_SENT') {
+      let sgaTimeFilter = '';
+      if (timeRange === '30d') {
+        sgaTimeFilter = 'AND sga.date_created >= DATE_SUB(NOW(), INTERVAL 30 DAY)';
+      } else if (timeRange === '90d') {
+        sgaTimeFilter = 'AND sga.date_created >= DATE_SUB(NOW(), INTERVAL 90 DAY)';
+      }
+      try {
+        sentGiveAways = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `
+          SELECT 
+            sga.id,
+            sga.from_user_id,
+            sga.to_user_id,
+            sga.give_away_amount,
+            sga.description as give_away_message,
+            sga.date_created,
+            p_to.username as to_username,
+            CONCAT(COALESCE(p_to.first_name, ''), ' ', COALESCE(p_to.last_name, '')) as to_fullname
+          FROM staff_give_away sga
+          LEFT JOIN user_profile p_to ON sga.to_user_id = p_to.user_id
+          WHERE sga.from_user_id = ?
+            ${sgaTimeFilter}
+          ORDER BY sga.date_created DESC
+          LIMIT ?
+          `,
+          targetLegacyStaffId,
+          limit
+        );
+      } catch (_err) {
+        sentGiveAways = [];
+      }
+    }
+
+    // Process raw balance transactions
+    for (const row of rawTransactions) {
+      const type = (row.type || 'other').toString().toLowerCase();
+      const amount = Number(row.amount) || 0;
+      const balance = Number(row.balance) || 0;
+      const dateCreated = row.date_created instanceof Date ? row.date_created.toISOString() : String(row.date_created);
+
+      let itemCategory: BananaTransactionCategory = 'OTHER';
+      let title = 'Biến động số dư chuối';
+      let giveAway: BananaTransactionItem['giveAway'] = null;
+
+      if (type === 'staff_give_away' || row.give_away_id) {
+        const fromUserId = Number(row.from_user_id);
+        const toUserId = Number(row.to_user_id);
+        const isReceived = toUserId === Number(targetLegacyStaffId) || amount > 0;
+        itemCategory = isReceived ? 'GIVE_AWAY_RECEIVED' : 'GIVE_AWAY_SENT';
+
+        const otherUserId = isReceived ? fromUserId : toUserId;
+        const otherStaff = crmStaffMap.get(otherUserId);
+        const otherName =
+          otherStaff?.displayName ||
+          (isReceived ? row.from_fullname?.trim() || row.from_username : row.to_fullname?.trim() || row.to_username) ||
+          `Đồng nghiệp #${otherUserId || ''}`;
+
+        title = isReceived ? `Nhận Chuối yêu thương từ ${otherName}` : `Gửi tặng Chuối yêu thương cho ${otherName}`;
+        giveAway = {
+          id: Number(row.give_away_id) || Number(row.id),
+          direction: isReceived ? 'RECEIVED' : 'SENT',
+          otherUserId,
+          otherStaffName: otherName,
+          message: row.give_away_message || row.ubt_description || null,
+        };
+      } else if (type === 'staff_working_shift') {
+        itemCategory = 'SHIFT';
+        title = 'Trừ Chuối ca làm việc';
+      } else if (type === 'staff_bonus' || type === 'staff_task' || type === 'staff_activity') {
+        itemCategory = 'REWARD';
+        title =
+          type === 'staff_bonus'
+            ? 'Thưởng Chuối thành tích'
+            : type === 'staff_task'
+              ? 'Thưởng Chuối nhiệm vụ'
+              : 'Thưởng Chuối hoạt động';
+      }
+
+      transactions.push({
+        id: `ubt-${row.id}`,
+        dateCreated,
+        amount,
+        balance,
+        type,
+        category: itemCategory,
+        title,
+        description: row.ubt_description || row.give_away_message || null,
+        giveAway,
+      });
+    }
+
+    // Process sent give aways (merge from staff_give_away if not captured in ubt)
+    const existingGiveAwayIds = new Set(
+      transactions
+        .filter((t) => t.giveAway)
+        .map((t) => t.giveAway?.id)
+        .filter(Boolean)
+    );
+
+    for (const sga of sentGiveAways) {
+      const sgaId = Number(sga.id);
+      if (existingGiveAwayIds.has(sgaId)) continue;
+
+      const toUserId = Number(sga.to_user_id);
+      const otherStaff = crmStaffMap.get(toUserId);
+      const otherName =
+        otherStaff?.displayName || sga.to_fullname?.trim() || sga.to_username || `Đồng nghiệp #${toUserId}`;
+      const amount = -Math.abs(Number(sga.give_away_amount) || 1);
+      const dateCreated = sga.date_created instanceof Date ? sga.date_created.toISOString() : String(sga.date_created);
+
+      transactions.push({
+        id: `sga-${sgaId}`,
+        dateCreated,
+        amount,
+        balance: currentBalance,
+        type: 'staff_give_away',
+        category: 'GIVE_AWAY_SENT',
+        title: `Gửi tặng Chuối yêu thương cho ${otherName}`,
+        description: sga.give_away_message || null,
+        giveAway: {
+          id: sgaId,
+          direction: 'SENT',
+          otherUserId: toUserId,
+          otherStaffName: otherName,
+          message: sga.give_away_message || null,
+        },
+      });
+    }
+
+    // Sort by date_created DESC
+    transactions.sort((a, b) => new Date(b.dateCreated).getTime() - new Date(a.dateCreated).getTime());
+
+    // Filter by Category
+    let filteredTransactions = transactions;
+    if (category !== 'ALL') {
+      filteredTransactions = filteredTransactions.filter((t) => t.category === category);
+    }
+
+    // Filter by Search text (tên bạn bè, lời chúc, tiêu đề)
+    if (search) {
+      filteredTransactions = filteredTransactions.filter((t) => {
+        const titleMatch = t.title.toLowerCase().includes(search);
+        const descMatch = t.description?.toLowerCase().includes(search);
+        const nameMatch = t.giveAway?.otherStaffName.toLowerCase().includes(search);
+        const msgMatch = t.giveAway?.message?.toLowerCase().includes(search);
+        return titleMatch || descMatch || nameMatch || msgMatch;
+      });
+    }
+
+    return {
+      currentBalance,
+      totalReceivedGiveAway,
+      totalSentGiveAway,
+      countReceivedGiveAway,
+      countSentGiveAway,
+      transactions: filteredTransactions,
+    };
   }
 }
