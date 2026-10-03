@@ -3,13 +3,14 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, Slider, message, Tooltip, Switch, Avatar } from 'antd';
 import { Settings, Zap, Award, Eye, Bug, Coins, ShieldCheck, Heart } from 'lucide-react';
-import type { CareerProgressionConfig, StaffCareerStatus, CareerStaffSummary } from '@mos-lab/shared';
+import type { CareerProgressionConfig, StaffCareerStatus, CareerStaffSummary, CareerRole } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
 import { useTheme } from '../../../context/ThemeContext';
 import { CareerConfigDrawer } from './components/CareerConfigDrawer';
 import { BananaTransactionDrawer } from './components/BananaTransactionDrawer';
 import { StaffCareerSelector } from './components/StaffCareerSelector';
 import { RealStaffSimulationCard } from './components/RealStaffSimulationCard';
+import { CareerRealmEncyclopedia } from './components/CareerRealmEncyclopedia';
 import { FALLBACK_CAREER_PROGRESSION_CONFIG, getCareerIslands, formatCareerRoleName } from './career-path.constants';
 
 export default function CareerPathPage() {
@@ -353,6 +354,49 @@ export default function CareerPathPage() {
     }
   };
 
+  const handleSetRole = async (staffId: number, newRole: CareerRole) => {
+    try {
+      setActionLoading(true);
+      const res = await apiClient.career.setStaffRole(staffId, newRole);
+      playSound('fanfare');
+      triggerConfetti();
+      message.success(`🎉 Đã cập nhật chức danh thành công lên ${formatCareerRoleName(newRole)}!`);
+      setStaffList((prev) => prev.map((s) => (s.id === staffId ? { ...s, careerRole: newRole } : s)));
+      if (selectedStaffId === staffId) {
+        setSelectedStaffStatus(res);
+        const nextTarget = newRole === 'CV_PLUS' ? 'CV_PLUS_PLUS' : 'CV_PLUS';
+        setSimulationTarget(nextTarget);
+        fetchStaffProgression(staffId, true, nextTarget);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Lỗi cập nhật chức danh';
+      message.error(msg);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDemote = async (staffId: number, targetRole: CareerRole) => {
+    try {
+      setActionLoading(true);
+      const res = await apiClient.career.demoteStaff(staffId, targetRole);
+      playSound('pop');
+      message.info(`Đã điều chỉnh chức danh về ${formatCareerRoleName(targetRole)}.`);
+      setStaffList((prev) => prev.map((s) => (s.id === staffId ? { ...s, careerRole: targetRole } : s)));
+      if (selectedStaffId === staffId) {
+        setSelectedStaffStatus(res);
+        const nextTarget = targetRole === 'CV_PLUS' ? 'CV_PLUS_PLUS' : 'CV_PLUS';
+        setSimulationTarget(nextTarget);
+        fetchStaffProgression(staffId, true, nextTarget);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Lỗi hạ cấp';
+      message.error(msg);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // Condition checks against dynamic config
   const activeReq =
     simulationTarget === 'CV_PLUS_PLUS' ? safeConfig.cvPlusToCvPlusPlus : safeConfig.cvToCvPlus || cvToCc;
@@ -466,7 +510,7 @@ export default function CareerPathPage() {
         value: `${staffTipRatePercent}%`,
         iconType: 'coins',
         isPassed: isTipPassed,
-        tooltip: `Tỷ lệ khách tip: ${staffTipRatePercent}% (chuẩn ≥ ${(targetTipRate * 100).toFixed(1)}%) · ${isTipPassed ? '✓ Đạt chuẩn' : '⚡ Cần thêm'} (Bấm để xem)`,
+        tooltip: `Tỷ lệ khách tip: ${staffTipRatePercent}% (chuẩn ≥ ${(targetTipRate * 100).toFixed(1)}% · TB ${m.branchName || 'chi nhánh'}: ${((m.branchTipRate || shopTipRate) * 100).toFixed(1)}%) · ${isTipPassed ? '✓ Đạt chuẩn' : '⚡ Cần thêm'} (Bấm để xem)`,
       },
       {
         id: 4,
@@ -648,8 +692,8 @@ export default function CareerPathPage() {
             <span className="text-sm">✨</span>
           </h1>
           <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-snug mt-1">
-            Vượt ải Thợ Kỹ Thuật ➔ Thợ Tự Chủ ➔ Đàn Chị Sảnh ➔ Nhạc Trưởng Sàn ➔ Nữ Thần Hạnh Phúc ➔ Nữ Hoàng Đồng Sáng
-            Lập!
+            Vượt ải Chuyên Viên Kỹ Thuật ➔ Chuyên Viên Tự Chủ ➔ Đàn Chị Sảnh ➔ Nhạc Trưởng Sàn ➔ Nữ Thần Hạnh Phúc ➔ Nữ
+            Hoàng Đồng Sáng Lập!
           </p>
 
           {/* 6 ISLANDS INTERACTIVE TRACK */}
@@ -706,6 +750,9 @@ export default function CareerPathPage() {
           lastSyncedAt={lastSyncedAt}
           activeRoleFilter={activeRoleFilter}
           onRoleFilterChange={setActiveRoleFilter}
+          onSetRole={handleSetRole}
+          onDemote={handleDemote}
+          actionLoading={actionLoading}
         />
 
         {/* REAL STAFF SIMULATION CARD (FULL-WIDTH CENTERPIECE) */}
@@ -718,6 +765,13 @@ export default function CareerPathPage() {
           setSliderCombo={setSliderCombo}
           onActivateTrial={handleActivateTrial}
           onPromote={handlePromote}
+          onDemote={
+            selectedStaffStatus?.currentRole && selectedStaffStatus.currentRole !== 'CV'
+              ? () =>
+                  handleDemote(selectedStaffId!, selectedStaffStatus.currentRole === 'CV_PLUS_PLUS' ? 'CV_PLUS' : 'CV')
+              : undefined
+          }
+          onSetRole={selectedStaffId ? (role) => handleSetRole(selectedStaffId, role) : undefined}
           onSwitchSpecialist={handleSwitchSpecialist}
           loadingAction={actionLoading}
           simulationTarget={simulationTarget}
@@ -725,74 +779,7 @@ export default function CareerPathPage() {
         />
 
         {/* ACTIVE REALM LORE & SKILL ENCYCLOPEDIA */}
-        <div className="rounded-3xl p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="space-y-1">
-              <span className="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-pink-100 dark:bg-pink-500/20 text-pink-700 dark:text-pink-300">
-                {currentIslandData.badge}: {currentIslandData.name}
-              </span>
-              <h2 className="text-base font-black text-slate-900 dark:text-white mt-1">{currentIslandData.title}</h2>
-              <p className="text-xs text-slate-600 dark:text-slate-300 italic">
-                &ldquo;{currentIslandData.desc}&rdquo;
-              </p>
-            </div>
-            <span className="text-3xl p-2.5 rounded-2xl bg-pink-50 dark:bg-slate-800 border border-pink-100 dark:border-slate-700 shrink-0 self-start sm:self-auto">
-              {currentIslandData.icon}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-slate-100 dark:border-slate-800">
-            {/* Sứ mệnh */}
-            <div className="space-y-2">
-              <div className="text-xs font-bold text-slate-800 dark:text-slate-200">🎯 Trọng tâm sứ mệnh</div>
-              <div className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                {currentIslandData.focus}
-              </div>
-              <div className="pt-1">
-                <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 text-[11px] text-purple-900 dark:text-purple-300">
-                  🎯 <strong>Cổng thăng cấp:</strong> {currentIslandData.gateText}
-                </div>
-              </div>
-            </div>
-
-            {/* Skills */}
-            <div className="space-y-2">
-              <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-amber-500" />
-                <span>Bộ kỹ năng cần luyện</span>
-              </div>
-              <div className="space-y-1.5">
-                {currentIslandData.skills.map((skill, idx) => (
-                  <div
-                    key={idx}
-                    className="p-2 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between"
-                  >
-                    <div className="min-w-0 pr-2">
-                      <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{skill.name}</div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{skill.desc}</div>
-                    </div>
-                    <span className="text-[9px] font-black text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-500/10 px-1.5 py-0.5 rounded-md font-mono border border-pink-200 dark:border-pink-800 shrink-0">
-                      Lv.Max
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Perks */}
-            <div className="p-3.5 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-500/30 space-y-2">
-              <div className="text-xs font-black text-amber-900 dark:text-amber-300 flex items-center gap-1">
-                <Award className="w-3.5 h-3.5 text-amber-500" />
-                <span>Quyền lợi & Thu nhập mở khóa</span>
-              </div>
-              <ul className="text-[11px] text-amber-800 dark:text-amber-200 space-y-1.5 pl-4 list-disc">
-                {currentIslandData.perks.map((perk, idx) => (
-                  <li key={idx}>{perk}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
+        <CareerRealmEncyclopedia currentIslandData={currentIslandData} />
       </main>
 
       {/* BOTTOM ACTION BAR */}

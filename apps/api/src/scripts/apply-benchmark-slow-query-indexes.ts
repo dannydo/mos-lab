@@ -21,6 +21,11 @@ const benchmarkOptimizationIndexes = [
     columns: ['user_id', 'bonus_type', 'order_service_id', 'bonus_amount'],
   },
   {
+    name: 'idx_staff_bonus_date_user_type_amt',
+    table: 'staff_bonus',
+    columns: ['date_created', 'user_id', 'bonus_type', 'bonus_amount'],
+  },
+  {
     name: 'idx_order_user_state_total',
     table: 'order',
     columns: ['user_id', 'order_state', 'total_price', 'id'],

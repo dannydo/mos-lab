@@ -98,11 +98,11 @@ export default function OptimizationPage() {
     return {
       rank: 'Thiên thần bóng tối (Dark Angel) 👼',
       scholarship: 'Học bổng 20% + Cam kết việc làm',
-      status: 'Mời hợp tác làm thợ chuỗi Wings',
+      status: 'Mời hợp tác làm Chuyên Viên chuỗi Wings',
       teacherText:
         'Nối trên 20 sợi! Em có năng khiếu thiên bẩm rồi, đặt mi 1D cực kỳ nhanh và thẳng hàng. Quá tuyệt vời!',
       salesText:
-        'Chúc mừng em đạt mốc Dark Angel! Wings trân trọng mời em tham gia khóa Pro Masterclass với học bổng 20% và cam kết tiếp nhận làm thợ chính thức tại Salon.',
+        'Chúc mừng em đạt mốc Dark Angel! Wings trân trọng mời em tham gia khóa Pro Masterclass với học bổng 20% và cam kết tiếp nhận làm Chuyên Viên chính thức tại Salon.',
       activeNode: 'staff',
     };
   };

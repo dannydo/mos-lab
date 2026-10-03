@@ -78,7 +78,7 @@ test('CS Tip 3% bonus calculation and response formatting', async () => {
               storeKey: 'DT',
               isLoCa: 1,
               totalCustomerTip: 100000,
-              technicianName: 'Thợ A',
+              technicianName: 'Chuyên Viên A',
               ccName: 'Tư vấn B',
             },
           ];

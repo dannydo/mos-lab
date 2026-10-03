@@ -21,7 +21,7 @@ export default function CcGameTab() {
     },
     {
       id: 2,
-      title: '⚡ Thợ Nối Siêu Tốc & Tư Vấn Thần Tốc',
+      title: '⚡ Chuyên Viên Siêu Tốc & Tư Vấn Thần Tốc',
       period: 'Tháng 07/2026',
       target: '200 bộ mi Flawless',
       current: 168,

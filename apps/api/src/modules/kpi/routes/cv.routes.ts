@@ -276,7 +276,7 @@ export async function registerCvRoutes(fastify: FastifyInstance) {
               ugl.user_group_name LIKE '%Technician%' 
               OR ugl.user_group_name LIKE '%Chuyên viên%' 
               OR ugl.user_group_name LIKE '%Kỹ thuật%'
-              OR ugl.user_group_name LIKE '%Thợ%'
+              OR ugl.user_group_name LIKE '%Thợ%' -- Lưu ý: Khớp tên nhóm dữ liệu cũ trong MySQL legacy, tuyệt đối không hiển thị ra UI
               OR up.user_id IN (SELECT DISTINCT assigned_staff_id FROM order_service WHERE assigned_staff_id > 0)
             )
             AND NOT (

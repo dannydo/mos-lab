@@ -159,7 +159,7 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
   return [
     {
       id: 'cv',
-      name: 'CV · Thợ Lash',
+      name: 'CV · Chuyên Viên Mi',
       badge: 'Ải 1',
       icon: '👁️',
       sub: '70% Tip + Thâm Niên',
@@ -177,7 +177,7 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
         'Thưởng giữ chân khách quen (Retention Bonus)',
         'Thưởng Thâm Niên: +5% đến +20% trên Thưởng CV Xoay hàng tháng',
       ],
-      gateText: `Đạt ${cvToCc.minOrders} ca mi (3 tháng liên tiếp) + Tip cao hơn TB shop ≥ ${(cvToCc.minTipRatioAboveShop * 100).toFixed(0)}% + Fix ≤ ${(cvToCc.maxFixRate * 100).toFixed(1)}% + HI ≥ ${(cvToCc.minHappinessIndex * 100).toFixed(0)}% (0 biên bản QA/QC) ➔ Mở khóa ải Trùm Cuối Tự Bán Combo (≥ ${(cvToCc.minSelfComboRate * 100).toFixed(0)}% khách của mình) để thăng cấp CV+!`,
+      gateText: `Đạt ${cvToCc.minOrders} ca mi (3 tháng liên tiếp) + Tip cao hơn TB chi nhánh ≥ ${(cvToCc.minTipRatioAboveShop * 100).toFixed(0)}% + Fix ≤ ${(cvToCc.maxFixRate * 100).toFixed(1)}% + HI ≥ ${(cvToCc.minHappinessIndex * 100).toFixed(0)}% (0 biên bản QA/QC) ➔ Mở khóa ải Trùm Cuối Tự Bán Combo (≥ ${(cvToCc.minSelfComboRate * 100).toFixed(0)}% khách của mình) để thăng cấp CV+!`,
     },
     {
       id: 'cv_plus',
@@ -185,7 +185,7 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
       badge: 'Ải 2',
       icon: '🌸',
       sub: 'Tự Vấn + 90% Tip',
-      title: 'Thợ Mi Tự Chủ · Self-Consulting Artist',
+      title: 'Chuyên Viên Tự Chủ · Self-Consulting Artist',
       desc: 'Độc lập tác chiến tại giường. Tự hiểu dáng mắt, tự tư vấn dáng mi & combo dưỡng mi cho khách của chính mình.',
       focus: 'Tự chủ tư vấn trọn gói cho khách mình, chốt combo ≥ 25%, chăm sóc khách ruột',
       skills: [
@@ -194,7 +194,7 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
         { name: 'Đại Sứ Google 5★', desc: 'Đạt tối thiểu 20 Google Review 5 sao/tháng từ khách hài lòng' },
       ],
       perks: [
-        'Lương giờ thợ bậc cao: 27.5K/h (+2K/h so với CV)',
+        'Lương giờ bậc cao: 27.5K/h (+2K/h so với CV)',
         'Hưởng trọn 90% Tiền Tip: 70% Tip nối mi (CV) + 20% Tip tư vấn (CC) khi tự phục vụ khách mình',
         'Hoa hồng Combo tự chốt (2% - 3%) trên doanh thu combo khách của chính mình',
         'Thưởng Thâm Niên: +5% đến +20% trên Thưởng CV Xoay',
@@ -210,7 +210,7 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
       icon: '🌺',
       sub: 'Sảnh + Hộ 20%',
       title: 'Đàn Chị Sảnh · Senior Floor Consultant',
-      desc: 'Bản lĩnh vững vàng. Vừa tự làm khách ruột, vừa đứng sảnh đón tiếp & tư vấn giùm cho khách của thợ CV khi FM vắng.',
+      desc: 'Bản lĩnh vững vàng. Vừa tự làm khách ruột, vừa đứng sảnh đón tiếp & tư vấn giùm cho khách của Chuyên Viên CV khi FM vắng.',
       focus: 'Tư vấn chốt combo toàn sàn khi FM vắng, làm chủ ca trực ngày lễ, nâng đỡ đàn em',
       skills: [
         { name: 'Đàn Chị Sảnh', desc: 'Đón tiếp và tư vấn giùm cho khách của CV khác khi FM không có mặt' },
@@ -224,9 +224,9 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
         },
       ],
       perks: [
-        'Lương giờ thợ bậc cao nhất: 29.5K - 30K/h (+4K/h so với CV)',
+        'Lương giờ chuyên viên bậc cao nhất: 29.5K - 30K/h (+4K/h so với CV)',
         'Hưởng trọn 90% Tiền Tip khách mình (70% CV + 20% CC)',
-        'Hưởng 20% Tiền Tip Tư Vấn (CC Tip) khi tư vấn hộ cho khách của thợ CV (khi FM vắng)',
+        'Hưởng 20% Tiền Tip Tư Vấn (CC Tip) khi tư vấn hộ cho khách của Chuyên Viên CV (khi FM vắng)',
         'Hoa hồng 2.5% tư vấn giùm cho khách của các CV khác khi FM vắng',
         'Đặc quyền làm Trưởng Ca Trực Ngày Lễ: Hưởng lương lễ x3-x4 + 90% Tip ca mình làm',
         'Thưởng Thâm Niên: +5% đến +20% trên Thưởng CV Xoay',
@@ -241,13 +241,13 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
       icon: '🏰',
       sub: 'Tư Vấn + Vận Hành',
       title: 'Nhạc Trưởng Vận Hành · Floor Manager',
-      desc: 'Giữ cho cả tiệm vận hành chuẩn xác như đồng hồ Thụy Sĩ. Tư vấn trưởng phụ trách khách cho thợ CV, kiểm soát CSVC & kho bãi.',
+      desc: 'Giữ cho cả tiệm vận hành chuẩn xác như đồng hồ Thụy Sĩ. Tư vấn trưởng phụ trách khách cho Chuyên Viên CV, kiểm soát CSVC & kho bãi.',
       focus:
         'Tư vấn chính cho khách của CV, quản trị kho hàng hàng tuần, kiểm soát 5 giác quan CSVC & nâng đỡ đồng đội',
       skills: [
         {
           name: 'Tư Vấn Trưởng Sàn',
-          desc: 'Trực tiếp đón tiếp & tư vấn chuyên sâu cho khách của các thợ CV (chưa lên CV+)',
+          desc: 'Trực tiếp đón tiếp & tư vấn chuyên sâu cho khách của các Chuyên Viên CV (chưa lên CV+)',
         },
         { name: 'Mắt Thần Kho Bãi', desc: 'Kiểm kê kho & CSVC hàng tuần, chống thất thoát ≤ 0.5%' },
         { name: 'Nâng Tầm Đồng Đội', desc: 'Chăm sóc và kèm cặp giúp nhân sự có điểm HI thấp tiến bộ hơn' },
@@ -255,7 +255,7 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
       perks: [
         'Gói thu nhập an toàn: Lương cứng 6.5M + Phụ cấp sàn 1.5M (Cố định 8.0M)',
         'Vẫn nhận Thưởng Vòng Xoay tư vấn (CC Cash / Vòng xoay CC) theo Level CC tích lũy như cũ',
-        'Vẫn nhận 20% Tiền Tip Tư Vấn khi tư vấn cho khách của thợ CV (không nối mi, bảo đảm 70% tip cho thợ)',
+        'Vẫn nhận 20% Tiền Tip Tư Vấn khi tư vấn cho khách của Chuyên Viên CV (không nối mi, bảo đảm 70% tip cho Chuyên Viên làm mi)',
         'Thưởng Cán Mốc Hòa Vốn (2.0M) + Thưởng 2.0% phần doanh thu vượt mốc (DT ≥ 450M, EP ≥ 350M)',
         'Thưởng Đánh Giá Sàn (1.0M - 1.5M): Đạt chuẩn CSVC ≥ 95 điểm & shop đạt ≥ 30 Google Review 5★/tháng',
         'Thưởng Tiết Kiệm: Nhận 10% số tiền chi phí vận hành tiết kiệm được (khi kho hao hụt ≤ 0.5% & vật tư ≤ 5%)',
@@ -284,7 +284,7 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
       perks: [
         'Gói đãi ngộ Executive cấp Trưởng Ban (Lương cứng 11M)',
         'Thưởng Cán Mốc Hòa Vốn (3.0M) + Thưởng 3.0% phần doanh thu vượt mốc (DT ≥ 450M, EP ≥ 350M)',
-        'Thưởng Phát Triển Thiên Thần (1.5M - 4.5M): Khoán theo số lượng thợ đạt chuẩn CV+ & CV++ duy trì tại shop (kèm cơ chế tụt cấp)',
+        'Thưởng Phát Triển Thiên Thần (1.5M - 4.5M): Khoán theo số lượng Chuyên Viên đạt chuẩn CV+ & CV++ duy trì tại shop (kèm cơ chế tụt cấp)',
         `Thưởng trực tiếp theo số lượng khách mới đến shop (Đạt ≥ ${choToBoss.minMonthlyNewCustomers || 60} khách mới/tháng hoặc 50K/khách)`,
         'Thưởng Tiết Kiệm: Đồng hưởng 10% chi phí vận hành tiết kiệm được cùng FM',
         'Nghỉ lễ trọn vẹn hưởng nguyên gói 11M (không tính thưởng giờ x3-x4); chịu trách nhiệm tối hậu về kết quả và vận hành chi nhánh',

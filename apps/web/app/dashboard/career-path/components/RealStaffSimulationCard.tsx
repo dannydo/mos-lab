@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Slider, Progress, Tooltip, Avatar, Segmented, ConfigProvider } from 'antd';
+import { Slider, Progress, Tooltip, Avatar, Segmented, ConfigProvider, Popconfirm } from 'antd';
 import {
   Sparkles,
   Trophy,
@@ -31,6 +31,7 @@ import {
   Bug,
   Coins,
   Heart,
+  ArrowDownCircle,
 } from 'lucide-react';
 import { StatusTag } from '../../../../components/ui';
 import { type StaffCareerStatus, type CareerProgressionConfig } from '@mos-lab/shared';
@@ -45,6 +46,8 @@ interface RealStaffSimulationCardProps {
   setSliderCombo: (val: number) => void;
   onActivateTrial?: () => void;
   onPromote?: () => void;
+  onDemote?: () => void;
+  onSetRole?: (newRole: 'CV' | 'CV_PLUS' | 'CV_PLUS_PLUS') => void;
   onSwitchSpecialist?: () => void;
   loadingAction?: boolean;
   simulationTarget?: 'CV_PLUS' | 'CV_PLUS_PLUS';
@@ -489,6 +492,8 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
   setSliderCombo,
   onActivateTrial,
   onPromote,
+  onDemote,
+  onSetRole,
   onSwitchSpecialist,
   loadingAction,
   simulationTarget,
@@ -659,6 +664,8 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
     (metrics.ordersCount
       ? Math.min(0.65, Math.max(0.2, ((metrics.totalTip || 0) / (metrics.ordersCount * 38000)) * 0.45))
       : 0.314);
+  const branchName = metrics.branchName || 'Chi Nhánh';
+  const branchShortName = metrics.branchCode || metrics.branchName || 'CN';
   const shopTipRate = metrics.shopTipRate ?? 0.45; // 45.0%
   const shopBonusPercent = Number((shopTipRate * minTipRatioAboveShop * 100).toFixed(1));
   const targetTipRate = metrics.targetTipRate ?? Number((shopTipRate * (1 + minTipRatioAboveShop)).toFixed(3));
@@ -851,9 +858,9 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
       index: 2,
       icon: '🪙',
       shortName: 'Tỷ lệ Tip',
-      title: '3. Tỷ Lệ Khách Tip (Vượt Shop)',
+      title: `3. Tỷ Lệ Khách Tip (Vượt ${branchName})`,
       currentValText: `${sliderTipRate.toFixed(1)}% tip`,
-      targetText: `≥ ${targetTipRatePercent}% (vượt ${(minTipRatioAboveShop * 100).toFixed(0)}% TB Shop)`,
+      targetText: `≥ ${targetTipRatePercent}% (vượt ${(minTipRatioAboveShop * 100).toFixed(0)}% TB ${branchName})`,
       actualText: `${staffTipRatePercent}%`,
       isPassed: isSimTipPassed,
       min: 10,
@@ -1126,7 +1133,85 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
           )}
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Manual Quick Override Promotion / Demotion */}
+            {status.currentRole === 'CV' && onSetRole && (
+              <Popconfirm
+                title="Đưa nhân sự này lên CV+?"
+                description={`Thăng cấp thủ công cho ${status.staffName} lên CV+ (Chuyên Viên Tự Chủ) ngay lập tức.`}
+                okText="Lên CV+"
+                cancelText="Hủy"
+                onConfirm={() => onSetRole('CV_PLUS')}
+              >
+                <button
+                  disabled={loadingAction}
+                  className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs transition-all shadow-sm active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>⚡ Lên CV+</span>
+                </button>
+              </Popconfirm>
+            )}
+
+            {status.currentRole === 'CV_PLUS' && (
+              <>
+                {onSetRole && (
+                  <Popconfirm
+                    title="Đưa nhân sự này lên CV++?"
+                    description={`Thăng cấp thủ công cho ${status.staffName} lên CV++ (Đàn Chị Sảnh) ngay lập tức.`}
+                    okText="Lên CV++"
+                    cancelText="Hủy"
+                    onConfirm={() => onSetRole('CV_PLUS_PLUS')}
+                  >
+                    <button
+                      disabled={loadingAction}
+                      className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs transition-all shadow-sm active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>⚡ Lên CV++</span>
+                    </button>
+                  </Popconfirm>
+                )}
+                {onDemote && (
+                  <Popconfirm
+                    title="Hạ cấp nhân sự về CV?"
+                    description={`Chuyển cấp bậc của ${status.staffName} về CV (Chuyên Viên).`}
+                    okText="Hạ về CV"
+                    cancelText="Hủy"
+                    okType="danger"
+                    onConfirm={onDemote}
+                  >
+                    <button
+                      disabled={loadingAction}
+                      className="px-3.5 py-1.5 rounded-xl text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 font-bold text-xs transition-all shadow-sm active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      <ArrowDownCircle className="w-3.5 h-3.5" />
+                      <span>🔻 Hạ về CV</span>
+                    </button>
+                  </Popconfirm>
+                )}
+              </>
+            )}
+
+            {status.currentRole === 'CV_PLUS_PLUS' && onDemote && (
+              <Popconfirm
+                title="Hạ cấp nhân sự về CV+?"
+                description={`Chuyển cấp bậc của ${status.staffName} về CV+ (Chuyên Viên Tự Chủ).`}
+                okText="Hạ về CV+"
+                cancelText="Hủy"
+                okType="danger"
+                onConfirm={onDemote}
+              >
+                <button
+                  disabled={loadingAction}
+                  className="px-3.5 py-1.5 rounded-xl text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 font-bold text-xs transition-all shadow-sm active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  <ArrowDownCircle className="w-3.5 h-3.5" />
+                  <span>🔻 Hạ về CV+</span>
+                </button>
+              </Popconfirm>
+            )}
+
             {status.status !== 'TRIAL_GATE' && !status.qualifiedQuests.allPassed && (
               <Tooltip
                 title={
@@ -1586,7 +1671,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   <div className="flex items-center gap-1.5 min-w-0">
                     <Coins className={`w-4 h-4 shrink-0 ${isTipPassed ? 'text-emerald-400' : 'text-amber-400'}`} />
                     <span className="font-bold text-xs sm:text-sm text-slate-100 truncate">
-                      3. Tip &gt; {(minTipRatioAboveShop * 100).toFixed(0)}% TB Shop
+                      3. Tip &gt; {(minTipRatioAboveShop * 100).toFixed(0)}% TB {branchName}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
@@ -1653,16 +1738,18 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   {/* Hộp công thức 3 cột tối ưu cho iPhone 12 */}
                   <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-[10px] space-y-1.5 shadow-2xs">
                     <div className="flex items-center justify-between font-bold text-slate-200">
-                      <span className="flex items-center gap-1 text-rose-400">💡 TB Shop + 10% của Shop</span>
+                      <span className="flex items-center gap-1 text-rose-400">
+                        💡 TB {branchName} + 10% của {branchName}
+                      </span>
                       <span className="text-emerald-400 font-extrabold tabular-nums">≥ {targetTipRatePercent}%</span>
                     </div>
                     <div className="grid grid-cols-3 gap-1 text-center py-1 border-t border-slate-700/50">
                       <div className="bg-slate-900/60 p-1 rounded-lg">
-                        <div className="text-slate-400 text-[9px]">TB Shop</div>
+                        <div className="text-slate-400 text-[9px] truncate">TB {branchShortName}</div>
                         <div className="text-slate-200 font-black tabular-nums">{shopTipRatePercent}%</div>
                       </div>
                       <div className="bg-slate-900/60 p-1 rounded-lg">
-                        <div className="text-slate-400 text-[9px]">+10% Shop</div>
+                        <div className="text-slate-400 text-[9px] truncate">+10% {branchShortName}</div>
                         <div className="text-amber-400 font-black tabular-nums">+{shopBonusPercent}%</div>
                       </div>
                       <div className="bg-slate-900/60 p-1 rounded-lg border border-emerald-500/30">
@@ -1692,7 +1779,9 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     <span>
                       {isTipPassed ? `✓ Vượt chuẩn (+${tipExcessPercent}%)` : `⚡ Thiếu ${tipGapPercent}% để đạt chuẩn`}
                     </span>
-                    <span className="tabular-nums font-semibold text-slate-300">TB Shop: {shopTipRatePercent}%</span>
+                    <span className="tabular-nums font-semibold text-slate-300">
+                      TB {branchName}: {shopTipRatePercent}%
+                    </span>
                   </div>
                 </div>
               )}
@@ -2786,7 +2875,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                         </span>
                       </div>
                       <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium mt-1 pl-8">
-                        💖 Thợ CV làm mi được chia {(crossConsultCvShareRate * 100).toFixed(0)}% (+
+                        💖 Chuyên Viên làm mi được chia {(crossConsultCvShareRate * 100).toFixed(0)}% (+
                         {formatVnd(crossConsultCvSharedAmount)}) + nhận đủ 70% tip
                       </div>
                     </div>

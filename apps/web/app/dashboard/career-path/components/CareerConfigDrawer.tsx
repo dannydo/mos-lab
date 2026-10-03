@@ -148,7 +148,7 @@ export function CareerConfigDrawer({
                 label: (
                   <span className="flex items-center justify-center gap-1.5 py-1 text-xs font-bold">
                     <span>🎯</span>
-                    <span>Ải 1: CV ➔ CV+ (Thợ Tự Chủ)</span>
+                    <span>Ải 1: CV ➔ CV+ (Chuyên Viên Tự Chủ)</span>
                   </span>
                 ),
                 value: 'CV_TO_CV_PLUS',
@@ -168,12 +168,12 @@ export function CareerConfigDrawer({
 
         {activeTab === 'CV_TO_CV_PLUS' ? (
           /* ========================================================================= */
-          /* TAB 1: CV ➔ CV+ (THỢ TỰ CHỦ) */
+          /* TAB 1: CV ➔ CV+ (CHUYÊN VIÊN TỰ CHỦ) */
           /* ========================================================================= */
           <div className="space-y-4">
             <p className="text-xs text-slate-500 dark:text-slate-400 m-0">
-              Điều chỉnh trực tiếp các tiêu chuẩn thăng cấp <strong>Ải 1: CV ➔ CV+ (Thợ Tự Chủ)</strong>. Sau khi lưu,
-              toàn bộ hệ thống web và mobile sẽ áp dụng tức thì.
+              Điều chỉnh trực tiếp các tiêu chuẩn thăng cấp <strong>Ải 1: CV ➔ CV+ (Chuyên Viên Tự Chủ)</strong>. Sau
+              khi lưu, toàn bộ hệ thống web và mobile sẽ áp dụng tức thì.
             </p>
 
             {/* NHÓM 1: NĂNG SUẤT & KỸ THUẬT CỐT LÕI */}
@@ -510,8 +510,8 @@ export function CareerConfigDrawer({
                     }
                   />
                   <p className="text-[10px] text-slate-500 dark:text-slate-400 m-0 mt-0.5 italic">
-                    * Chuẩn tỷ lệ chốt combo tối thiểu trên tệp khách tiềm năng. Nếu thợ đạt dưới mức này, chế tài doanh
-                    nghiệp sẽ tạm khóa phần lương giờ tăng thêm (+2.000đ/h) và thưởng bán hàng.
+                    * Chuẩn tỷ lệ chốt combo tối thiểu trên tệp khách tiềm năng. Nếu Chuyên Viên đạt dưới mức này, chế
+                    tài doanh nghiệp sẽ tạm khóa phần lương giờ tăng thêm (+2.000đ/h) và thưởng bán hàng.
                   </p>
                 </div>
               </div>
@@ -1063,8 +1063,8 @@ export function CareerConfigDrawer({
                   <p className="text-[10px] text-slate-500 dark:text-slate-400 m-0 mt-0.5 italic">
                     * Đàn Chị Sảnh tư vấn/bán chéo cho khách của CV khác được nhận{' '}
                     {(cvPlusCrossTipRate * 100).toFixed(0)}% tiền tip ({cvPlusCrossOrders} ca × ~40K tip ×{' '}
-                    {(cvPlusCrossTipRate * 100).toFixed(0)}% = +{formatVnd(cvPlusCrossTipAmount)}/tháng). Thợ CV làm mi
-                    vẫn nhận đủ 70% tiền tip!
+                    {(cvPlusCrossTipRate * 100).toFixed(0)}% = +{formatVnd(cvPlusCrossTipAmount)}/tháng). Chuyên Viên
+                    làm mi vẫn nhận đủ 70% tiền tip!
                   </p>
                 </div>
               </div>
@@ -1102,7 +1102,7 @@ export function CareerConfigDrawer({
                   />
                 </div>
 
-                {/* TỶ LỆ CHIA HOA HỒNG CHO THỢ CV LÀM MI */}
+                {/* TỶ LỆ CHIA HOA HỒNG CHO CHUYÊN VIÊN LÀM MI */}
                 <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 space-y-1.5">
                   <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
                     <span className="text-emerald-700 dark:text-emerald-300">
@@ -1126,8 +1126,8 @@ export function CareerConfigDrawer({
                   />
                   <div className="text-[10px] text-emerald-800 dark:text-emerald-200 space-y-0.5 leading-relaxed">
                     <div>
-                      • <strong>Thợ CV làm mi được hưởng:</strong> {(cvPlusCrossCvShare * 100).toFixed(0)}% hoa hồng bán
-                      combo (+{formatVnd(cvPlusCrossCvSharedAmount)}/tháng) và dưỡng mi (+
+                      • <strong>Chuyên Viên làm mi được hưởng:</strong> {(cvPlusCrossCvShare * 100).toFixed(0)}% hoa
+                      hồng bán combo (+{formatVnd(cvPlusCrossCvSharedAmount)}/tháng) và dưỡng mi (+
                       {formatVnd(Math.round(serumOrigBonus * cvPlusCrossCvShare))}/cây gốc).
                     </div>
                     <div>

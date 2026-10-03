@@ -204,7 +204,7 @@ export interface CompensationPackageConfig {
     newCustomerTarget: number; // 60
     gainSharingRatio: number; // 0.10 (10%)
     angelGrowthTiers: Array<{
-      minQualifiedCount: number; // Số lượng thợ đạt CV+/CV++
+      minQualifiedCount: number; // Số lượng Chuyên Viên đạt CV+/CV++
       bonus: number;
     }>;
   };
@@ -315,7 +315,7 @@ const DEFAULT_CV_PLUS_TO_CV_PLUS_PLUS: CvPlusToCvPlusPlusRequirements = {
   comboUnder3mBonus: 100000, // 100K cho combo < 3M
   comboUnder4mBonus: 150000, // 150K cho combo < 4M
   comboStepPerMillionBonus: 50000, // +50K/1M từ 4M trở lên
-  crossConsultCvShareRate: 0.2, // Chia 20% cho thợ CV làm mi khi CV++ chốt hộ
+  crossConsultCvShareRate: 0.2, // Chia 20% cho Chuyên Viên CV làm mi khi CV++ chốt hộ
   hourlyWage: 29500, // 29.500đ/h (+4.000đ/h so với CV 25.500đ/h)
   tipShareRatio: 0.9, // 90% trên khách của mình
 };
@@ -444,6 +444,12 @@ export interface CareerStaffSummary {
   qaAuditPassed?: boolean;
   hasFailedQaAudit?: boolean;
   weeklyQaAuditRate?: number;
+  qaAuditsCount?: number;
+  storeId?: number;
+  branchName?: string;
+  branchCode?: string;
+  branchTipRate?: number;
+  branchAvgTip?: number;
 }
 
 export interface StaffCareerStatus {
@@ -465,6 +471,11 @@ export interface StaffCareerStatus {
     staffAvgTip?: number;
     staffTipRate?: number;
     shopTipRate?: number;
+    storeId?: number;
+    branchName?: string;
+    branchCode?: string;
+    branchTipRate?: number;
+    branchAvgTip?: number;
     targetTipRate?: number;
     tippedOrdersCount?: number;
     happinessIndex: number;

@@ -633,6 +633,7 @@ model CrmTeamMember {
   team CrmTeam @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   @@unique([teamId, legacyStaffId], name: "teamId_legacyStaffId")
+  @@index([teamId, isActive])
   @@index([legacyStaffId])
   @@index([crmStaffId])
   @@index([isActive])

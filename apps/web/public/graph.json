@@ -12444,7 +12444,7 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "metadata": {
         "routePath": "/dashboard/career-path",
-        "apiCallsCount": 8,
+        "apiCallsCount": 10,
         "apiCalls": [
           "career.getStaffProgression",
           "career.getConfig",
@@ -12453,6 +12453,8 @@
           "career.activateTrial",
           "career.promoteStaff",
           "career.switchToSpecialist",
+          "career.setStaffRole",
+          "career.demoteStaff",
           "career.updateConfig"
         ]
       }
@@ -30380,8 +30382,8 @@
       "filePath": "apps/api/src/modules/campaigns/campaign-shared-pool.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13485,
-        "lineCount": 354,
+        "sizeBytes": 13484,
+        "lineCount": 353,
         "ext": ".ts"
       }
     },
@@ -30393,8 +30395,8 @@
       "filePath": "apps/api/src/modules/campaigns/campaign.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 146107,
-        "lineCount": 4199,
+        "sizeBytes": 145986,
+        "lineCount": 4186,
         "ext": ".ts"
       }
     },
@@ -30432,8 +30434,8 @@
       "filePath": "apps/api/src/modules/career/career.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10005,
-        "lineCount": 275,
+        "sizeBytes": 12412,
+        "lineCount": 342,
         "ext": ".ts"
       }
     },
@@ -30458,8 +30460,8 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 63018,
-        "lineCount": 1582,
+        "sizeBytes": 73084,
+        "lineCount": 1872,
         "ext": ".ts"
       }
     },
@@ -31329,7 +31331,7 @@
       "filePath": "apps/api/src/modules/kpi/routes/cs-tip.routes.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5110,
+        "sizeBytes": 5118,
         "lineCount": 153,
         "ext": ".ts"
       }
@@ -31394,7 +31396,7 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17727,
+        "sizeBytes": 17834,
         "lineCount": 378,
         "ext": ".ts"
       }
@@ -32928,8 +32930,8 @@
       "filePath": "apps/api/src/scripts/apply-benchmark-slow-query-indexes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2693,
-        "lineCount": 82,
+        "sizeBytes": 2848,
+        "lineCount": 87,
         "ext": ".ts"
       }
     },
@@ -35905,7 +35907,7 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path.constants.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17176,
+        "sizeBytes": 17259,
         "lineCount": 371,
         "ext": ".ts"
       }
@@ -35931,8 +35933,21 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 74481,
+        "sizeBytes": 74528,
         "lineCount": 1478,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/CareerRealmEncyclopedia.tsx",
+      "type": "File",
+      "label": "CareerRealmEncyclopedia.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/CareerRealmEncyclopedia.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4238,
+        "lineCount": 96,
         "ext": ".tsx"
       }
     },
@@ -35944,8 +35959,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 143423,
-        "lineCount": 2836,
+        "sizeBytes": 147753,
+        "lineCount": 2921,
         "ext": ".tsx"
       }
     },
@@ -35957,8 +35972,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12965,
-        "lineCount": 313,
+        "sizeBytes": 45432,
+        "lineCount": 1057,
         "ext": ".tsx"
       }
     },
@@ -35970,8 +35985,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 39655,
-        "lineCount": 867,
+        "sizeBytes": 38424,
+        "lineCount": 865,
         "ext": ".tsx"
       }
     },
@@ -36152,7 +36167,7 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcGameTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6105,
+        "sizeBytes": 6107,
         "lineCount": 152,
         "ext": ".tsx"
       }
@@ -38843,8 +38858,8 @@
       "filePath": "apps/web/lib/api/career.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4067,
-        "lineCount": 114,
+        "sizeBytes": 4785,
+        "lineCount": 131,
         "ext": ".ts"
       }
     },
@@ -39532,8 +39547,8 @@
       "filePath": "packages/shared/src/types/campaign.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 13854,
-        "lineCount": 547,
+        "sizeBytes": 13841,
+        "lineCount": 541,
         "ext": ".ts"
       }
     },
@@ -39545,8 +39560,8 @@
       "filePath": "packages/shared/src/types/career-progression.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 26748,
-        "lineCount": 623,
+        "sizeBytes": 27034,
+        "lineCount": 634,
         "ext": ".ts"
       }
     },
@@ -87076,7 +87091,7 @@
     }
   ],
   "stats": {
-    "totalNodes": 3071,
+    "totalNodes": 3072,
     "totalEdges": 6709,
     "nodeTypeCounts": {
       "Workspace": 3,
@@ -87086,7 +87101,7 @@
       "SharedType": 1127,
       "DesignToken": 12,
       "UIComponent": 211,
-      "File": 843
+      "File": 844
     },
     "edgeTypeCounts": {
       "EXPORTS": 1301,

@@ -32,6 +32,13 @@ function normalizeAvatarUrl(url?: string | null): string | null {
   return trimmed;
 }
 
+export function resolveBranchInfo(storeId?: number | null) {
+  const id = Number(storeId);
+  if (id === 16) return { storeId: 16, branchName: 'Estella Place', branchCode: 'EP' };
+  if (id === 2) return { storeId: 2, branchName: 'PXL', branchCode: 'PXL' };
+  return { storeId: 6, branchName: 'Đề Thám', branchCode: 'DT' };
+}
+
 export class CareerProgressionService {
   /**
    * Lấy cấu hình lộ trình thăng tiến hiện hành từ DB.
@@ -156,7 +163,7 @@ export class CareerProgressionService {
    * Danh sách toàn bộ nhân viên tham gia lộ trình kèm chỉ số thực tế từ DB
    */
   static async listStaff(fastify: FastifyInstance, query?: { role?: string; search?: string }): Promise<any[]> {
-    // 1. Lấy danh sách ID thợ mi hoạt động từ cấu hình Báo Cáo CV (ACTIVE_CV_STAFF_CONFIG / CrmTeam 'CV')
+    // 1. Lấy danh sách ID Chuyên Viên hoạt động từ cấu hình Báo Cáo CV (ACTIVE_CV_STAFF_CONFIG / CrmTeam 'CV')
     let activeCvLegacyIds: number[] = [];
     try {
       if ((fastify.prisma.crm as any)?.crmTeam) {
@@ -216,8 +223,23 @@ export class CareerProgressionService {
     const bananasMap: Record<number, number> = {};
     const bananaBalancesMap: Record<number, number> = {};
     const hiMap: Record<number, number> = {};
-    let shopAvgTip = 38000;
-    const shopTipRate = 0.45;
+    const staffPrimaryStoreMap: Record<number, number> = {};
+    const profileStoreMap: Record<number, number> = {};
+    const branchTipStatsMap: Record<
+      number,
+      {
+        storeId: number;
+        branchName: string;
+        branchCode: string;
+        totalTip: number;
+        validTipOrders: number;
+        totalOrders: number;
+        tipRate: number;
+        avgTip: number;
+      }
+    > = {};
+    let defaultShopAvgTip = 38000;
+    let defaultShopTipRate = 0.45;
 
     try {
       const [
@@ -230,6 +252,7 @@ export class CareerProgressionService {
         bananaRows,
         hiRows,
         balanceRows,
+        staffStoreRows,
       ] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
@@ -277,17 +300,22 @@ export class CareerProgressionService {
         `),
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
+            o.client_store_id,
+            COALESCE(SUM(st.tip_amount), 0) as branch_total_tip,
+            COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as branch_valid_tip_orders,
+            (SELECT COUNT(o2.id) FROM \`order\` o2 WHERE o2.order_state = 'Completed' AND o2.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY) AND o2.client_store_id = o.client_store_id) as branch_orders,
             COALESCE(SUM(st.tip_amount), 0) as shop_total_tip,
             COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as shop_valid_tip_orders,
             (SELECT COUNT(id) FROM \`order\` WHERE order_state = 'Completed' AND booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)) as shop_orders
-          FROM staff_tip st
-          JOIN \`order\` o ON o.id = st.order_id
+          FROM \`order\` o
+          LEFT JOIN staff_tip st ON st.order_id = o.id
           WHERE o.order_state = 'Completed'
             AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+          GROUP BY o.client_store_id
         `),
         legacyIds.length > 0
           ? fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-              `SELECT user_id, avatar FROM user_profile WHERE user_id IN (${legacyIds.join(',')}) AND avatar IS NOT NULL AND avatar != ''`
+              `SELECT user_id, avatar, client_store_id FROM user_profile WHERE user_id IN (${legacyIds.join(',')})`
             )
           : Promise.resolve([]),
         legacyIds.length > 0
@@ -327,6 +355,18 @@ export class CareerProgressionService {
                 AND user_id IN (${legacyIds.join(',')})
             `)
           : Promise.resolve([]),
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
+          SELECT 
+            os.assigned_staff_id,
+            o.client_store_id,
+            COUNT(os.id) as store_order_count
+          FROM order_service os
+          JOIN \`order\` o ON o.id = os.order_id
+          WHERE o.order_state = 'Completed'
+            AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+          GROUP BY os.assigned_staff_id, o.client_store_id
+          ORDER BY os.assigned_staff_id, store_order_count DESC
+        `),
       ]);
 
       if (Array.isArray(balanceRows)) {
@@ -337,10 +377,22 @@ export class CareerProgressionService {
         });
       }
 
+      if (Array.isArray(staffStoreRows)) {
+        staffStoreRows.forEach((r: any) => {
+          const staffId = Number(r.assigned_staff_id);
+          if (staffId && !staffPrimaryStoreMap[staffId]) {
+            staffPrimaryStoreMap[staffId] = Number(r.client_store_id);
+          }
+        });
+      }
+
       if (Array.isArray(legacyProfileRows)) {
         legacyProfileRows.forEach((r: any) => {
           if (r.user_id && r.avatar) {
             legacyAvatarMap.set(Number(r.user_id), String(r.avatar));
+          }
+          if (r.user_id && r.client_store_id) {
+            profileStoreMap[Number(r.user_id)] = Number(r.client_store_id);
           }
         });
       }
@@ -398,17 +450,42 @@ export class CareerProgressionService {
         });
       }
 
-      let shopTipRate = 0.45;
-      if (shopTipRows && shopTipRows.length > 0) {
-        const totalShopTip = Number(shopTipRows[0].shop_total_tip) || 0;
-        const totalShopOrders = Number(shopTipRows[0].shop_orders) || 1;
-        shopAvgTip = totalShopOrders > 0 ? Math.round(totalShopTip / totalShopOrders) : 38000;
-        const shopValidTips = Number(shopTipRows[0].shop_valid_tip_orders) || 0;
-        if (totalShopOrders > 0 && shopValidTips > 0) {
-          const rawRate = shopValidTips / totalShopOrders;
-          shopTipRate = rawRate > 0.1 && rawRate < 0.9 ? Number(rawRate.toFixed(3)) : 0.45;
-        }
+      let overallShopTotalTip = 0;
+      let overallShopOrders = 0;
+      let overallShopValidTips = 0;
+
+      if (shopTipRows && Array.isArray(shopTipRows)) {
+        shopTipRows.forEach((r) => {
+          const sId = Number(r.client_store_id);
+          const bOrders = Number(r.branch_orders ?? r.shop_orders ?? 0);
+          const bTotalTip = Number(r.branch_total_tip ?? r.shop_total_tip ?? 0);
+          const bValidTips = Number(r.branch_valid_tip_orders ?? r.shop_valid_tip_orders ?? 0);
+          const bRate = bOrders > 0 ? Number((bValidTips / bOrders).toFixed(3)) : 0.45;
+          const bAvg = bOrders > 0 ? Math.round(bTotalTip / bOrders) : 38000;
+          const bInfo = resolveBranchInfo(sId);
+
+          branchTipStatsMap[sId] = {
+            storeId: bInfo.storeId,
+            branchName: bInfo.branchName,
+            branchCode: bInfo.branchCode,
+            totalTip: bTotalTip,
+            validTipOrders: bValidTips,
+            totalOrders: bOrders,
+            tipRate: bRate > 0.05 && bRate < 0.95 ? bRate : 0.45,
+            avgTip: bAvg > 10000 ? bAvg : 38000,
+          };
+
+          overallShopTotalTip += bTotalTip;
+          overallShopOrders += bOrders;
+          overallShopValidTips += bValidTips;
+        });
       }
+
+      defaultShopTipRate =
+        overallShopOrders > 0 && overallShopValidTips > 0
+          ? Number((overallShopValidTips / overallShopOrders).toFixed(3))
+          : 0.45;
+      defaultShopAvgTip = overallShopOrders > 0 ? Math.round(overallShopTotalTip / overallShopOrders) : 38000;
     } catch (err) {
       fastify.log.warn({ err }, 'Could not run bulk legacy queries for staff career list');
     }
@@ -425,6 +502,25 @@ export class CareerProgressionService {
       if (staffTipRate === 0 && totalTip > 0 && staffOrders > 0) {
         staffTipRate = Number(Math.min(0.65, Math.max(0.2, (totalTip / (staffOrders * 38000)) * 0.45)).toFixed(3));
       }
+
+      // Xác định chi nhánh của nhân sự: ưu tiên store có nhiều ca làm nhất trong 90 ngày, fallback profile store
+      const staffStoreId = staffPrimaryStoreMap[legacyId] || profileStoreMap[legacyId] || 6;
+      const branchInfo = resolveBranchInfo(staffStoreId);
+      const staffBranch = branchTipStatsMap[staffStoreId] || {
+        storeId: branchInfo.storeId,
+        branchName: branchInfo.branchName,
+        branchCode: branchInfo.branchCode,
+        totalTip: 0,
+        validTipOrders: 0,
+        totalOrders: 0,
+        tipRate: defaultShopTipRate,
+        avgTip: defaultShopAvgTip,
+      };
+
+      // Tỷ lệ tip và tiền tip trung bình được tính theo chuẩn chi nhánh của chính nhân sự đó
+      const shopTipRate = staffBranch.tipRate;
+      const shopAvgTip = staffBranch.avgTip;
+
       const tipRatioAboveShop =
         shopTipRate > 0 && staffTipRate > 0
           ? Number(((staffTipRate - shopTipRate) / shopTipRate).toFixed(3))
@@ -436,7 +532,7 @@ export class CareerProgressionService {
       const monthlyPoints = bonusesMap[legacyId]?.points || 0;
       const ccLevel = monthlyPoints > 0 ? Math.floor(monthlyPoints / 100) + 1 : 1;
 
-      // Determine Career Role (Chuyên viên Thợ Mi: CV, CV+, CV++)
+      // Determine Career Role (Chuyên Viên Mi: CV, CV+, CV++)
       let careerRole: CareerRole = 'CV';
       if (
         staff.careerProgression?.currentRole &&
@@ -470,6 +566,11 @@ export class CareerProgressionService {
         tipRatioAboveShop,
         staffTipRate,
         shopTipRate,
+        storeId: staffBranch.storeId,
+        branchName: staffBranch.branchName,
+        branchCode: staffBranch.branchCode,
+        branchTipRate: staffBranch.tipRate,
+        branchAvgTip: staffBranch.avgTip,
         selfComboRate,
         happinessIndex: hiMap[legacyId] ?? 0.75,
         bananaCount: bananasMap[legacyId] ?? 0,
@@ -505,6 +606,12 @@ export class CareerProgressionService {
             return Number((realAudits.length / 12).toFixed(2));
           }
           return 0;
+        })(),
+        qaAuditsCount: (() => {
+          const realAudits = qaShopService
+            .getStaffAudits(staff.id)
+            .concat(legacyId !== staff.id ? qaShopService.getStaffAudits(legacyId) : []);
+          return realAudits.length;
         })(),
       };
     });
@@ -569,6 +676,13 @@ export class CareerProgressionService {
     let shopTipRate = 0.45;
     let targetTipRate = 0.495;
     let tippedOrdersCount = 0;
+    let staffBranch = {
+      storeId: 6,
+      branchName: 'Đề Thám',
+      branchCode: 'DT',
+      tipRate: 0.45,
+      avgTip: 38000,
+    };
     let selfComboCount = 0;
     let selfComboRate = 0;
     let happinessIndex = 0.7;
@@ -598,6 +712,8 @@ export class CareerProgressionService {
         bananaRes,
         workingHoursRes,
         bananaBalanceRes,
+        staffStoreRes,
+        staffProfileStoreRes,
       ] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(
           `
@@ -671,13 +787,18 @@ export class CareerProgressionService {
         ),
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
+            o.client_store_id,
+            COALESCE(SUM(st.tip_amount), 0) as branch_total_tip,
+            COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as branch_valid_tip_orders,
+            (SELECT COUNT(o2.id) FROM \`order\` o2 WHERE o2.order_state = 'Completed' AND o2.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY) AND o2.client_store_id = o.client_store_id) as branch_orders,
             COALESCE(SUM(st.tip_amount), 0) as shop_total_tip,
             COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as shop_valid_tip_orders,
             (SELECT COUNT(id) FROM \`order\` WHERE order_state = 'Completed' AND booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)) as shop_orders
-          FROM staff_tip st
-          JOIN \`order\` o ON o.id = st.order_id
+          FROM \`order\` o
+          LEFT JOIN staff_tip st ON st.order_id = o.id
           WHERE o.order_state = 'Completed'
             AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+          GROUP BY o.client_store_id
         `),
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(
           `
@@ -728,6 +849,30 @@ export class CareerProgressionService {
         `,
           targetLegacyStaffId
         ),
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `
+          SELECT 
+            o.client_store_id,
+            COUNT(os.id) as store_order_count
+          FROM order_service os
+          JOIN \`order\` o ON o.id = os.order_id
+          WHERE os.assigned_staff_id = ?
+            AND o.order_state = 'Completed'
+            AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+          GROUP BY o.client_store_id
+          ORDER BY store_order_count DESC
+          LIMIT 1
+        `,
+          targetLegacyStaffId
+        ),
+        fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `
+          SELECT client_store_id
+          FROM user_profile
+          WHERE user_id = ?
+        `,
+          targetLegacyStaffId
+        ),
       ]);
 
       totalHi = Number(hiRes?.[0]?.total_evaluations || 0);
@@ -775,15 +920,79 @@ export class CareerProgressionService {
         tippedOrdersCount = Math.round(ordersCount * staffTipRate);
       }
 
-      const shopTotalTip = Number(shopTipRes?.[0]?.shop_total_tip || 0);
-      const shopOrders = Number(shopTipRes?.[0]?.shop_orders || 0);
-      shopAvgTip = shopTotalTip > 0 && shopOrders > 0 ? Math.round(shopTotalTip / shopOrders) : 38000;
-      shopTipRate = 0.45;
-      const shopValidTips = Number(shopTipRes?.[0]?.shop_valid_tip_orders || 0);
-      if (shopOrders > 0 && shopValidTips > 0) {
-        const rawRate = shopValidTips / shopOrders;
-        shopTipRate = rawRate > 0.1 && rawRate < 0.9 ? Number(rawRate.toFixed(3)) : 0.45;
+      let staffStoreId = 6;
+      if (staffStoreRes?.[0]?.client_store_id) {
+        staffStoreId = Number(staffStoreRes[0].client_store_id);
+      } else if (staffProfileStoreRes?.[0]?.client_store_id) {
+        staffStoreId = Number(staffProfileStoreRes[0].client_store_id);
       }
+      const branchInfo = resolveBranchInfo(staffStoreId);
+
+      const branchTipStatsMap: Record<
+        number,
+        {
+          storeId: number;
+          branchName: string;
+          branchCode: string;
+          totalTip: number;
+          validTipOrders: number;
+          totalOrders: number;
+          tipRate: number;
+          avgTip: number;
+        }
+      > = {};
+
+      let overallShopTotalTip = 0;
+      let overallShopOrders = 0;
+      let overallShopValidTips = 0;
+
+      if (shopTipRes && Array.isArray(shopTipRes)) {
+        shopTipRes.forEach((r) => {
+          const sId = Number(r.client_store_id);
+          const bOrders = Number(r.branch_orders ?? r.shop_orders ?? 0);
+          const bTotalTip = Number(r.branch_total_tip ?? r.shop_total_tip ?? 0);
+          const bValidTips = Number(r.branch_valid_tip_orders ?? r.shop_valid_tip_orders ?? 0);
+          const bRate = bOrders > 0 ? Number((bValidTips / bOrders).toFixed(3)) : 0.45;
+          const bAvg = bOrders > 0 ? Math.round(bTotalTip / bOrders) : 38000;
+          const bInfo = resolveBranchInfo(sId);
+
+          branchTipStatsMap[sId] = {
+            storeId: bInfo.storeId,
+            branchName: bInfo.branchName,
+            branchCode: bInfo.branchCode,
+            totalTip: bTotalTip,
+            validTipOrders: bValidTips,
+            totalOrders: bOrders,
+            tipRate: bRate > 0.05 && bRate < 0.95 ? bRate : 0.45,
+            avgTip: bAvg > 10000 ? bAvg : 38000,
+          };
+
+          overallShopTotalTip += bTotalTip;
+          overallShopOrders += bOrders;
+          overallShopValidTips += bValidTips;
+        });
+      }
+
+      const defaultShopTipRate =
+        overallShopOrders > 0 && overallShopValidTips > 0
+          ? Number((overallShopValidTips / overallShopOrders).toFixed(3))
+          : 0.45;
+      const defaultShopAvgTip = overallShopOrders > 0 ? Math.round(overallShopTotalTip / overallShopOrders) : 38000;
+
+      staffBranch = branchTipStatsMap[staffStoreId] || {
+        storeId: branchInfo.storeId,
+        branchName: branchInfo.branchName,
+        branchCode: branchInfo.branchCode,
+        totalTip: 0,
+        validTipOrders: 0,
+        totalOrders: 0,
+        tipRate: defaultShopTipRate,
+        avgTip: defaultShopAvgTip,
+      };
+
+      // Tỷ lệ tip và tiền tip trung bình được tính theo chuẩn chi nhánh của chính nhân sự đó
+      shopTipRate = staffBranch.tipRate;
+      shopAvgTip = staffBranch.avgTip;
 
       const minTipRatioAboveShop = cvReq.minTipRatioAboveShop ?? 0.1;
       targetTipRate = Number((shopTipRate * (1 + minTipRatioAboveShop)).toFixed(3));
@@ -1086,6 +1295,11 @@ export class CareerProgressionService {
         staffAvgTip,
         staffTipRate,
         shopTipRate,
+        storeId: staffBranch.storeId,
+        branchName: staffBranch.branchName,
+        branchCode: staffBranch.branchCode,
+        branchTipRate: staffBranch.tipRate,
+        branchAvgTip: staffBranch.avgTip,
         targetTipRate,
         tippedOrdersCount,
         happinessIndex,
@@ -1210,10 +1424,11 @@ export class CareerProgressionService {
     fastify: FastifyInstance,
     staffId: number,
     newRole: CareerRole,
-    actorId: number
+    actorId: number,
+    force = false
   ): Promise<StaffCareerStatus> {
     const status = await this.getStaffProgression(fastify, staffId);
-    if (!status.qualifiedQuests.qaAuditCompleted) {
+    if (!force && !status.qualifiedQuests.qaAuditCompleted) {
       const reason = status.metrics.qaAudit?.hasFailedAudit
         ? 'Không thể duyệt thăng cấp do có bài kiểm tra QA/QC tác phong hoặc phòng nối mi bị FAILED'
         : 'Không thể duyệt thăng cấp do chưa đạt tần suất kiểm tra QA/QC tác phong & phòng mi định kỳ (tối thiểu 1 lần/tuần)';
@@ -1221,6 +1436,18 @@ export class CareerProgressionService {
     }
 
     const now = new Date();
+    const targetRole: CareerRole =
+      newRole === 'CV'
+        ? 'CV_PLUS'
+        : newRole === 'CV_PLUS'
+          ? 'CV_PLUS_PLUS'
+          : newRole === 'CV_PLUS_PLUS'
+            ? 'FM'
+            : newRole === 'CC'
+              ? 'FM'
+              : newRole === 'FM'
+                ? 'CHO'
+                : 'BOSS';
 
     // 1. Update Career Progression record
     await fastify.prisma.crm.crmCareerProgression.upsert({
@@ -1228,14 +1455,14 @@ export class CareerProgressionService {
       create: {
         staffId,
         currentRole: newRole,
-        targetRole: newRole === 'CC' ? 'FM' : newRole === 'FM' ? 'CHO' : 'BOSS',
+        targetRole,
         status: 'PROMOTED',
         promotedAt: now,
         promotedBy: actorId,
       },
       update: {
         currentRole: newRole,
-        targetRole: newRole === 'CC' ? 'FM' : newRole === 'FM' ? 'CHO' : 'BOSS',
+        targetRole,
         status: 'PROMOTED',
         promotedAt: now,
         promotedBy: actorId,
@@ -1250,6 +1477,73 @@ export class CareerProgressionService {
     });
 
     return this.getStaffProgression(fastify, staffId);
+  }
+
+  /**
+   * Quản lý trực tiếp thiết lập chức danh cho nhân sự (Thăng cấp / Hạ cấp tùy ý)
+   */
+  static async setStaffRole(
+    fastify: FastifyInstance,
+    staffId: number,
+    newRole: CareerRole,
+    actorId: number,
+    _reason?: string
+  ): Promise<StaffCareerStatus> {
+    const now = new Date();
+    const targetRole: CareerRole =
+      newRole === 'CV'
+        ? 'CV_PLUS'
+        : newRole === 'CV_PLUS'
+          ? 'CV_PLUS_PLUS'
+          : newRole === 'CV_PLUS_PLUS'
+            ? 'FM'
+            : newRole === 'CC'
+              ? 'FM'
+              : newRole === 'FM'
+                ? 'CHO'
+                : 'BOSS';
+
+    const statusValue = newRole === 'CV' ? 'IN_PROGRESS' : 'PROMOTED';
+
+    await fastify.prisma.crm.crmCareerProgression.upsert({
+      where: { staffId },
+      create: {
+        staffId,
+        currentRole: newRole,
+        targetRole,
+        status: statusValue,
+        promotedAt: now,
+        promotedBy: actorId,
+      },
+      update: {
+        currentRole: newRole,
+        targetRole,
+        status: statusValue,
+        promotedAt: now,
+        promotedBy: actorId,
+      },
+    });
+
+    const roleKey = newRole.toLowerCase();
+    await fastify.prisma.crm.crmStaff.update({
+      where: { id: staffId },
+      data: { role: roleKey },
+    });
+
+    return this.getStaffProgression(fastify, staffId);
+  }
+
+  /**
+   * Hạ cấp nhân sự
+   */
+  static async demoteStaff(
+    fastify: FastifyInstance,
+    staffId: number,
+    newRole: CareerRole,
+    actorId: number,
+    reason?: string
+  ): Promise<StaffCareerStatus> {
+    return this.setStaffRole(fastify, staffId, newRole, actorId, reason);
   }
 
   /**

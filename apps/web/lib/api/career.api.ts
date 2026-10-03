@@ -82,9 +82,26 @@ export const careerApi = {
       invalidateApiGetCache(['/career/']);
       return res.data.data;
     },
-    promoteStaff: async (staffId: number, newRole: string): Promise<StaffCareerStatus> => {
+    promoteStaff: async (staffId: number, newRole: string, force = true): Promise<StaffCareerStatus> => {
       const res = await api.post<{ success: boolean; data: StaffCareerStatus }>(`/career/staff/${staffId}/promote`, {
         newRole,
+        force,
+      });
+      invalidateApiGetCache(['/career/']);
+      return res.data.data;
+    },
+    setStaffRole: async (staffId: number, role: string, reason?: string): Promise<StaffCareerStatus> => {
+      const res = await api.post<{ success: boolean; data: StaffCareerStatus }>(`/career/staff/${staffId}/set-role`, {
+        role,
+        reason,
+      });
+      invalidateApiGetCache(['/career/']);
+      return res.data.data;
+    },
+    demoteStaff: async (staffId: number, newRole: string, reason?: string): Promise<StaffCareerStatus> => {
+      const res = await api.post<{ success: boolean; data: StaffCareerStatus }>(`/career/staff/${staffId}/demote`, {
+        newRole,
+        reason,
       });
       invalidateApiGetCache(['/career/']);
       return res.data.data;

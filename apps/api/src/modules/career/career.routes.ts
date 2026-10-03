@@ -184,7 +184,7 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
    * Xác nhận thăng cấp chính thức
    * POST /api/career/staff/:staffId/promote
    */
-  fastify.post<{ Params: { staffId: string }; Body: { newRole: any } }>(
+  fastify.post<{ Params: { staffId: string }; Body: { newRole: any; force?: boolean } }>(
     '/career/staff/:staffId/promote',
     {
       preHandler: [requireAuth],
@@ -193,13 +193,14 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       const user = (request as any).user;
       const staffId = Number(request.params.staffId);
       const newRole = request.body?.newRole;
+      const force = request.body?.force === true;
 
       if (!newRole) {
         return reply.status(400).send({ success: false, message: 'Vui lòng chỉ định chức danh thăng cấp mới' });
       }
 
       try {
-        const result = await CareerProgressionService.promoteStaff(fastify, staffId, newRole, user?.id || 1);
+        const result = await CareerProgressionService.promoteStaff(fastify, staffId, newRole, user?.id || 1, force);
         return reply.send({
           success: true,
           message: `Chúc mừng! Nhân sự đã thăng cấp thành công lên ${newRole}`,
@@ -208,6 +209,72 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       } catch (err: any) {
         fastify.log.error({ err, staffId }, 'Failed to promote staff');
         return reply.status(400).send({ success: false, message: err.message || 'Lỗi phê duyệt thăng cấp' });
+      }
+    }
+  );
+
+  /**
+   * Thiết lập chức danh cho nhân sự (Thăng cấp / Hạ cấp tùy ý)
+   * POST /api/career/staff/:staffId/set-role
+   */
+  fastify.post<{ Params: { staffId: string }; Body: { role: any; reason?: string } }>(
+    '/career/staff/:staffId/set-role',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      const user = (request as any).user;
+      const staffId = Number(request.params.staffId);
+      const role = request.body?.role;
+      const reason = request.body?.reason;
+
+      if (!role) {
+        return reply.status(400).send({ success: false, message: 'Vui lòng chỉ định chức danh mới' });
+      }
+
+      try {
+        const result = await CareerProgressionService.setStaffRole(fastify, staffId, role, user?.id || 1, reason);
+        return reply.send({
+          success: true,
+          message: `Đã cập nhật chức danh thành công sang ${role}`,
+          data: result,
+        });
+      } catch (err: any) {
+        fastify.log.error({ err, staffId }, 'Failed to set staff role');
+        return reply.status(400).send({ success: false, message: err.message || 'Lỗi cập nhật chức danh' });
+      }
+    }
+  );
+
+  /**
+   * Hạ cấp nhân sự
+   * POST /api/career/staff/:staffId/demote
+   */
+  fastify.post<{ Params: { staffId: string }; Body: { newRole: any; reason?: string } }>(
+    '/career/staff/:staffId/demote',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      const user = (request as any).user;
+      const staffId = Number(request.params.staffId);
+      const newRole = request.body?.newRole;
+      const reason = request.body?.reason;
+
+      if (!newRole) {
+        return reply.status(400).send({ success: false, message: 'Vui lòng chỉ định chức danh hạ cấp' });
+      }
+
+      try {
+        const result = await CareerProgressionService.demoteStaff(fastify, staffId, newRole, user?.id || 1, reason);
+        return reply.send({
+          success: true,
+          message: `Đã hạ cấp nhân sự về ${newRole}`,
+          data: result,
+        });
+      } catch (err: any) {
+        fastify.log.error({ err, staffId }, 'Failed to demote staff');
+        return reply.status(400).send({ success: false, message: err.message || 'Lỗi hạ cấp nhân sự' });
       }
     }
   );

@@ -68,7 +68,7 @@ const DEFAULT_PLAYBOOKS: Playbook[] = [
     category: 'Xử lý từ chối',
     description: 'Giải thích giá trị của kỹ năng đặt mi 1D độc quyền, học nhanh kiếm tiền ngay từ khóa cơ bản.',
     content: `💬 KỊCH BẢN CHI TIẾT:
-"Dạ em hiểu học phí là khoản đầu tư lớn ban đầu mình cần cân nhắc kỹ. Tuy nhiên, khóa học Basic của Wings đào tạo trực tiếp kỹ thuật đặt mi 1D chuẩn quốc tế, giúp học viên nối được ngay các dòng mi cao cấp như Classic 1D, mi Clover hay mi chập sợi ngay từ khi tốt nghiệp. Thu nhập thợ mi cứng từ 15-20 triệu/tháng chỉ sau 1-2 tháng ra nghề là hoàn toàn bình thường. Đầu tư một lần vững tay nghề cả đời, còn hơn học rẻ nhưng tay run, không dám nhận mẫu đó ạ."`,
+"Dạ em hiểu học phí là khoản đầu tư lớn ban đầu mình cần cân nhắc kỹ. Tuy nhiên, khóa học Basic của Wings đào tạo trực tiếp kỹ thuật đặt mi 1D chuẩn quốc tế, giúp học viên nối được ngay các dòng mi cao cấp như Classic 1D, mi Clover hay mi chập sợi ngay từ khi tốt nghiệp. Thu nhập Chuyên Viên Mi cứng từ 15-20 triệu/tháng chỉ sau 1-2 tháng ra nghề là hoàn toàn bình thường. Đầu tư một lần vững tay nghề cả đời, còn hơn học rẻ nhưng tay run, không dám nhận mẫu đó ạ."`,
   },
 ];
 

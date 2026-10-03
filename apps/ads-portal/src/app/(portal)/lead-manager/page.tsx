@@ -331,7 +331,7 @@ function genScripts(l: Lead) {
     sc.unshift({
       icon: '🛫',
       title: `GẤP — Còn ${daysTo(l.flight)} ngày trước bay`,
-      text: `Chị ${fn} ơi, tới ${fmtDate(l.flight)} bay là chỉ còn ${daysTo(l.flight)} ngày. Bên đó thợ nối mi kiếm 80-150 USD/bộ 🤩 Khoá Nền Tảng 6 buổi, tranh thủ trước khi bay! Hôm nay chị rảnh lúc nào? 🔥`,
+      text: `Chị ${fn} ơi, tới ${fmtDate(l.flight)} bay là chỉ còn ${daysTo(l.flight)} ngày. Bên đó Chuyên Viên Nối Mi kiếm 80-150 USD/bộ 🤩 Khoá Nền Tảng 6 buổi, tranh thủ trước khi bay! Hôm nay chị rảnh lúc nào? 🔥`,
     });
   }
   return sc;
