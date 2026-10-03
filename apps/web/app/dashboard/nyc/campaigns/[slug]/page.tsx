@@ -103,6 +103,7 @@ import {
 import { SharedPoolOverviewBanner } from '../../../../../components/campaign/SharedPoolOverviewBanner';
 import { SharedPoolWrapupModal } from '../../../../../components/campaign/SharedPoolWrapupModal';
 import { SharedPoolAuditDrawer } from '../../../../../components/campaign/SharedPoolAuditDrawer';
+import { SharedPoolHistoryRecoveryDrawer } from '../../../../../components/campaign/SharedPoolHistoryRecoveryDrawer';
 
 const KissIcon: React.FC<{ size?: number; style?: React.CSSProperties; className?: string }> = ({
   size = 16,
@@ -306,6 +307,7 @@ export default function CampaignDetailPage() {
   const [wrapupModalOpen, setWrapupModalOpen] = useState<boolean>(false);
   const [wrapupCustomer, setWrapupCustomer] = useState<any | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
+  const [historyRecoveryOpen, setHistoryRecoveryOpen] = useState<boolean>(false);
 
   // Customer table state
   const [customersLoading, setCustomersLoading] = useState<boolean>(true);
@@ -2030,6 +2032,7 @@ export default function CampaignDetailPage() {
           onAdvanceBatch={handleAdvanceBatch}
           onTogglePause={handleTogglePause}
           onAddCustomers={handleOpenAddCustomersDrawer}
+          onOpenHistoryRecovery={() => setHistoryRecoveryOpen(true)}
           selectedBatch={selectedBatch}
           onSelectBatch={(batch) => {
             setSelectedBatch(batch);
@@ -2951,6 +2954,18 @@ export default function CampaignDetailPage() {
           if (auditCustomer) {
             handleOpenAuditLogs(auditCustomer);
           }
+        }}
+      />
+
+      {/* Shared Pool History & Safe Recovery Drawer (MOS-FEAT-94) */}
+      <SharedPoolHistoryRecoveryDrawer
+        open={historyRecoveryOpen}
+        onClose={() => setHistoryRecoveryOpen(false)}
+        campaignId={campaign?.id || 0}
+        isAdmin={isAdmin}
+        onDataChanged={() => {
+          fetchCampaignCustomers();
+          fetchSharedPoolOverview();
         }}
       />
     </div>

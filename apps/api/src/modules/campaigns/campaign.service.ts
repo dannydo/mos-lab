@@ -25,6 +25,11 @@ import {
   ToggleCampaignTouchpointLogDto,
   UpdateCampaignDto,
   UpdateSharedPoolStatusDto,
+  CampaignSharedPoolDetailedLog,
+  SharedPoolHistoryQueryParams,
+  SharedPoolHistoryResponse,
+  SharedPoolRecoveryDto,
+  SharedPoolRecoveryResponse,
 } from '@mos-lab/shared';
 import { CampaignPromotionSyncService } from './campaign-promotion-sync.service.js';
 import { AllocationLedgerService } from '../allocation/allocation-ledger.service.js';
@@ -2569,6 +2574,13 @@ export class CampaignService {
           staffName: c.claimedByStaffName,
           action: 'RELEASE_EXPIRED',
           note: 'Hết thời gian giữ khách (Claim TTL expired), tự động nhả về Pool.',
+          metadata: JSON.stringify({
+            previousPoolStatus: 'CLAIMED',
+            nextPoolStatus: 'AVAILABLE',
+            previousClaimedByStaffId: c.claimedByStaffId,
+            previousClaimedByStaffName: c.claimedByStaffName,
+            result: 'SUCCESS',
+          }),
           createdAt: now,
         })),
       });
@@ -3164,6 +3176,13 @@ export class CampaignService {
         staffName: staffDisplayName,
         action: 'CLAIM',
         note: `Nhân viên nhận khách vào xử lý (hạn giữ: ${config.claimTtlMinutes || 15} phút).`,
+        metadata: JSON.stringify({
+          previousPoolStatus: customer.poolStatus,
+          nextPoolStatus: 'CLAIMED',
+          nextClaimedByStaffId: staffId,
+          nextClaimedByStaffName: staffDisplayName,
+          result: 'SUCCESS',
+        }),
         createdAt: now,
       },
     });
@@ -3234,6 +3253,13 @@ export class CampaignService {
         note: isManager
           ? `Quản lý giải phóng claim của ${customer.claimedByStaffName || 'nhân viên'}.`
           : 'Nhân viên chủ động nhả khách về Shared Pool.',
+        metadata: JSON.stringify({
+          previousPoolStatus: 'CLAIMED',
+          nextPoolStatus: 'AVAILABLE',
+          previousClaimedByStaffId: customer.claimedByStaffId,
+          previousClaimedByStaffName: customer.claimedByStaffName,
+          result: 'SUCCESS',
+        }),
         createdAt: now,
       },
     });
@@ -3570,6 +3596,12 @@ export class CampaignService {
           staffName: staffDisplayName,
           action: 'RETURN_TO_POOL',
           note: `Quản lý đưa khách hàng trở lại Pool. Lý do: ${reason || 'Không có'}`,
+          metadata: JSON.stringify({
+            previousPoolStatus: customer.poolStatus,
+            nextPoolStatus: 'AVAILABLE',
+            reason: reason || null,
+            result: 'SUCCESS',
+          }),
           createdAt: now,
         },
       });
@@ -3598,6 +3630,12 @@ export class CampaignService {
           staffName: staffDisplayName,
           action: 'EXCLUDE',
           note: `Quản lý loại khách khỏi Pool. Lý do: ${reason || 'Không có'}`,
+          metadata: JSON.stringify({
+            previousPoolStatus: customer.poolStatus,
+            nextPoolStatus: 'EXCLUDED',
+            reason: reason || null,
+            result: 'SUCCESS',
+          }),
           createdAt: now,
         },
       });
@@ -3633,5 +3671,515 @@ export class CampaignService {
       metadata: l.metadata,
       createdAt: l.createdAt.toISOString(),
     }));
+  }
+
+  /**
+   * Get detailed real-time history and audit trail for Campaign Shared Pool
+   */
+  static async getCampaignSharedPoolHistory(
+    fastify: FastifyInstance,
+    campaignId: number,
+    params: SharedPoolHistoryQueryParams = {}
+  ): Promise<SharedPoolHistoryResponse> {
+    const pageNum = Math.max(1, Math.floor(Number(params.page) || 1));
+    const limitNum = Math.min(200, Math.max(1, Math.floor(Number(params.pageSize) || 20)));
+    const skip = (pageNum - 1) * limitNum;
+
+    const campaign = await fastify.prisma.crm.crmCustomCampaign.findUnique({
+      where: { id: campaignId },
+      select: { id: true, operationMode: true },
+    });
+    if (!campaign) {
+      throw new Error(`Chiến dịch ID ${campaignId} không tồn tại.`);
+    }
+
+    const where: any = {
+      campaignId,
+    };
+
+    // Filter by action group
+    if (params.action && params.action !== 'ALL') {
+      const act = params.action.toUpperCase();
+      if (act === 'CLAIM') {
+        where.action = 'CLAIM';
+      } else if (act === 'RELEASE') {
+        where.action = { in: ['RELEASE_MANUAL', 'RELEASE_MANAGER', 'RELEASE_EXPIRED'] };
+      } else if (act === 'CALL' || act === 'STATUS_UPDATE') {
+        where.action = { in: ['CALL', 'STATUS_UPDATE'] };
+      } else if (act === 'RECYCLE') {
+        where.action = { in: ['RECYCLE', 'RECYCLE_RETURN'] };
+      } else if (act === 'EXCLUDE') {
+        where.action = 'EXCLUDE';
+      } else if (act === 'BOOKING') {
+        where.action = { in: ['BOOK', 'BOOKING'] };
+      } else if (act === 'MANAGER') {
+        where.action = {
+          in: [
+            'RELEASE_MANAGER',
+            'RETURN_TO_POOL',
+            'EXCLUDE',
+            'RECOVERY_OVERRIDE',
+            'PAUSE_POOL',
+            'RESUME_POOL',
+            'MANUAL_ADVANCE_BATCH',
+          ],
+        };
+      } else if (act === 'RECOVERY') {
+        where.action = 'RECOVERY_OVERRIDE';
+      } else {
+        where.action = params.action;
+      }
+    }
+
+    // Filter by specific customer
+    if (params.customerId) {
+      const cid = Number(params.customerId);
+      if (!isNaN(cid) && cid > 0) {
+        where.OR = [{ campaignCustomerId: cid }, { legacyUserId: cid }];
+      }
+    }
+
+    // Filter by staff
+    if (params.staffId) {
+      const sid = Number(params.staffId);
+      if (!isNaN(sid) && sid > 0) {
+        where.staffId = sid;
+      }
+    }
+
+    // Filter by date range
+    if (params.dateFrom || params.dateTo) {
+      const dateFilter: any = {};
+      if (params.dateFrom) dateFilter.gte = new Date(params.dateFrom);
+      if (params.dateTo) dateFilter.lte = new Date(params.dateTo);
+      where.createdAt = dateFilter;
+    }
+
+    // Search query: matching customer name / phone or staff name
+    if (params.search && params.search.trim()) {
+      const q = params.search.trim();
+      const numMatch = parseInt(q, 10);
+      const isNum = !isNaN(numMatch) && String(numMatch) === q;
+
+      const [matchedUserProfiles, matchedUserContacts] = await Promise.all([
+        fastify.prisma.legacy.user_profile.findMany({
+          where: {
+            OR: [{ full_name: { contains: q } }, ...(isNum ? [{ user_id: numMatch }] : [])],
+          },
+          select: { user_id: true },
+          take: 100,
+        }),
+        fastify.prisma.legacy.user_contact.findMany({
+          where: {
+            phone_number: { contains: q },
+          },
+          select: { user_id: true },
+          take: 100,
+        }),
+      ]);
+
+      const matchedUserIds = Array.from(
+        new Set([
+          ...matchedUserProfiles.map((p) => p.user_id),
+          ...matchedUserContacts.map((c) => c.user_id),
+          ...(isNum ? [numMatch] : []),
+        ])
+      );
+
+      where.AND = [
+        {
+          OR: [
+            ...(matchedUserIds.length > 0 ? [{ legacyUserId: { in: matchedUserIds } }] : []),
+            { staffName: { contains: q } },
+            { note: { contains: q } },
+          ],
+        },
+      ];
+    }
+
+    const [total, rawLogs] = await Promise.all([
+      fastify.prisma.crm.crmCampaignSharedPoolLog.count({ where }),
+      fastify.prisma.crm.crmCampaignSharedPoolLog.findMany({
+        where,
+        orderBy: { id: 'desc' },
+        skip,
+        take: limitNum,
+      }),
+    ]);
+
+    const legacyUserIds = Array.from(new Set(rawLogs.map((l) => l.legacyUserId).filter((id) => id > 0)));
+    const campaignCustomerIds = Array.from(new Set(rawLogs.map((l) => l.campaignCustomerId).filter((id) => id > 0)));
+
+    const [profiles, contacts, currentCustomers] = await Promise.all([
+      legacyUserIds.length > 0
+        ? fastify.prisma.legacy.user_profile.findMany({
+            where: { user_id: { in: legacyUserIds } },
+            select: { user_id: true, full_name: true },
+          })
+        : [],
+      legacyUserIds.length > 0
+        ? fastify.prisma.legacy.user_contact.findMany({
+            where: { user_id: { in: legacyUserIds }, is_disabled: false },
+            select: { user_id: true, phone_number: true },
+          })
+        : [],
+      campaignCustomerIds.length > 0
+        ? fastify.prisma.crm.crmCampaignCustomer.findMany({
+            where: { id: { in: campaignCustomerIds }, campaignId },
+            select: {
+              id: true,
+              legacyUserId: true,
+              poolStatus: true,
+              claimedByStaffId: true,
+              claimedByStaffName: true,
+              removedAt: true,
+            },
+          })
+        : [],
+    ]);
+
+    const profileMap = new Map<number, string>();
+    profiles.forEach((p) => profileMap.set(p.user_id, p.full_name || ''));
+
+    const contactMap = new Map<number, string>();
+    contacts.forEach((c) => {
+      if (!contactMap.has(c.user_id)) {
+        contactMap.set(c.user_id, c.phone_number || '');
+      }
+    });
+
+    const currentCustomerMap = new Map<number, any>();
+    currentCustomers.forEach((cc) => currentCustomerMap.set(cc.id, cc));
+
+    const items: CampaignSharedPoolDetailedLog[] = rawLogs.map((l) => {
+      let parsedMeta: any = null;
+      if (l.metadata) {
+        try {
+          parsedMeta = JSON.parse(l.metadata);
+        } catch {
+          parsedMeta = { raw: l.metadata };
+        }
+      }
+
+      let actionLabel = l.action;
+      switch (l.action) {
+        case 'CLAIM':
+          actionLabel = 'Lock / Giữ Data';
+          break;
+        case 'RELEASE_MANUAL':
+          actionLabel = 'Nhả Claim';
+          break;
+        case 'RELEASE_MANAGER':
+          actionLabel = 'Quản lý nhả Claim';
+          break;
+        case 'RELEASE_EXPIRED':
+          actionLabel = 'Hết hạn Lock (TTL)';
+          break;
+        case 'CALL':
+        case 'STATUS_UPDATE':
+          actionLabel = 'Báo cáo gọi / Trạng thái';
+          break;
+        case 'RECYCLE':
+        case 'RECYCLE_RETURN':
+          actionLabel = 'Chờ quay lại (Recycle)';
+          break;
+        case 'EXCLUDE':
+          actionLabel = 'Đã loại khỏi Pool';
+          break;
+        case 'RETURN_TO_POOL':
+          actionLabel = 'Về lại Pool';
+          break;
+        case 'BOOK':
+        case 'BOOKING':
+          actionLabel = 'Chốt Booking';
+          break;
+        case 'RECOVERY_OVERRIDE':
+          actionLabel = 'Quản lý Khôi phục';
+          break;
+        case 'PAUSE_POOL':
+          actionLabel = 'Tạm dừng Pool';
+          break;
+        case 'RESUME_POOL':
+          actionLabel = 'Tiếp tục Pool';
+          break;
+        case 'MANUAL_ADVANCE_BATCH':
+        case 'AUTO_ADVANCE_BATCH':
+          actionLabel = 'Mở Batch mới';
+          break;
+      }
+
+      let previousPoolStatus: string | null =
+        parsedMeta?.previousPoolStatus || parsedMeta?.previousState?.poolStatus || null;
+      let nextPoolStatus: string | null = parsedMeta?.nextPoolStatus || parsedMeta?.nextState?.poolStatus || null;
+
+      if (!previousPoolStatus || !nextPoolStatus) {
+        if (l.action === 'CLAIM') {
+          previousPoolStatus = previousPoolStatus || 'AVAILABLE';
+          nextPoolStatus = nextPoolStatus || 'CLAIMED';
+        } else if (l.action === 'RELEASE_MANUAL' || l.action === 'RELEASE_MANAGER' || l.action === 'RELEASE_EXPIRED') {
+          previousPoolStatus = previousPoolStatus || 'CLAIMED';
+          nextPoolStatus = nextPoolStatus || 'AVAILABLE';
+        } else if (l.action === 'RETURN_TO_POOL') {
+          nextPoolStatus = nextPoolStatus || 'AVAILABLE';
+        } else if (l.action === 'EXCLUDE') {
+          nextPoolStatus = nextPoolStatus || 'EXCLUDED';
+        } else if (l.action === 'STATUS_UPDATE' || l.action === 'CALL') {
+          nextPoolStatus = nextPoolStatus || parsedMeta?.nextPoolStatus || null;
+        }
+      }
+
+      const currentCust = currentCustomerMap.get(l.campaignCustomerId);
+      const currentPoolStatus = currentCust?.poolStatus || null;
+      const isDrifted = Boolean(currentCust && nextPoolStatus && currentPoolStatus !== nextPoolStatus);
+
+      const canRestore = Boolean(
+        currentCust &&
+        !currentCust.removedAt &&
+        l.campaignCustomerId > 0 &&
+        [
+          'CLAIM',
+          'RELEASE_MANUAL',
+          'RELEASE_MANAGER',
+          'RELEASE_EXPIRED',
+          'STATUS_UPDATE',
+          'CALL',
+          'EXCLUDE',
+          'RETURN_TO_POOL',
+          'RECOVERY_OVERRIDE',
+        ].includes(l.action)
+      );
+
+      let resultText: string | null = parsedMeta?.result || null;
+      if (!resultText) {
+        if (parsedMeta?.callResult) {
+          resultText = `Kết quả gọi: ${parsedMeta.callResult}`;
+        } else if (l.action === 'RECOVERY_OVERRIDE') {
+          resultText = 'Đã khôi phục thành công';
+        } else {
+          resultText = 'Thành công';
+        }
+      }
+
+      return {
+        id: l.id,
+        campaignId: l.campaignId,
+        campaignCustomerId: l.campaignCustomerId,
+        legacyUserId: l.legacyUserId,
+        customerName: profileMap.get(l.legacyUserId) || null,
+        customerPhone: contactMap.get(l.legacyUserId) || null,
+        currentPoolStatus,
+        currentClaimedByStaffId: currentCust?.claimedByStaffId || null,
+        currentClaimedByStaffName: currentCust?.claimedByStaffName || null,
+        staffId: l.staffId,
+        staffName: l.staffName,
+        action: l.action,
+        actionLabel,
+        previousPoolStatus,
+        nextPoolStatus,
+        previousClaimedByStaffName: parsedMeta?.previousClaimedByStaffName || null,
+        nextClaimedByStaffName: parsedMeta?.nextClaimedByStaffName || null,
+        note: l.note,
+        metadata: parsedMeta,
+        result: resultText,
+        isDrifted,
+        canRestore,
+        createdAt: l.createdAt.toISOString(),
+      };
+    });
+
+    return {
+      items,
+      total,
+      page: pageNum,
+      pageSize: limitNum,
+      pages: Math.ceil(total / limitNum) || 0,
+    };
+  }
+
+  /**
+   * Safely recover/rollback customer state in Campaign Shared Pool (Manager / Admin).
+   * Invariants:
+   * 1. Never delete old history (Append-only).
+   * 2. Append a new audit log for every recovery.
+   * 3. Mandatory reason input.
+   * 4. Record acting staff and timestamp.
+   * 5. Verify current customer state.
+   * 6. Warn if data drifted since the target log entry.
+   */
+  static async recoverCustomerState(
+    fastify: FastifyInstance,
+    campaignId: number,
+    staffId: number,
+    dto: SharedPoolRecoveryDto
+  ): Promise<SharedPoolRecoveryResponse> {
+    const trimmedReason = (dto.reason || '').trim();
+    if (!trimmedReason) {
+      throw new Error('Bắt buộc nhập lý do khi thực hiện khôi phục.');
+    }
+
+    const customer = await fastify.prisma.crm.crmCampaignCustomer.findFirst({
+      where: {
+        campaignId,
+        OR: [{ id: dto.customerId }, { legacyUserId: dto.customerId }],
+        removedAt: null,
+      },
+    });
+    if (!customer) {
+      throw new Error('Khách hàng không tồn tại trong chiến dịch.');
+    }
+
+    const staff = await fastify.prisma.crm.crmStaff.findUnique({
+      where: { id: staffId },
+      select: { displayName: true, username: true },
+    });
+    const staffDisplayName = staff?.displayName || staff?.username || `Quản lý #${staffId}`;
+    const now = new Date();
+
+    const previousState = {
+      poolStatus: customer.poolStatus,
+      claimedByStaffId: customer.claimedByStaffId,
+      claimedByStaffName: customer.claimedByStaffName,
+      claimedAt: customer.claimedAt,
+      claimExpiresAt: customer.claimExpiresAt,
+      cooldownUntil: customer.cooldownUntil,
+      availableAt: customer.availableAt,
+      lastCallResult: customer.lastCallResult,
+    };
+
+    let targetNextStatus = 'AVAILABLE';
+    const nextClaimedByStaffId: number | null = null;
+    const nextClaimedByStaffName: string | null = null;
+    const nextClaimedAt: Date | null = null;
+    const nextClaimExpiresAt: Date | null = null;
+    let nextCooldownUntil: Date | null = null;
+    let nextAvailableAt: Date | null = null;
+    let actionDesc = '';
+
+    if (dto.action === 'ROLLBACK_TO_LOG') {
+      if (!dto.logId) {
+        throw new Error('Thiếu ID bản ghi lịch sử cần khôi phục.');
+      }
+      const targetLog = await fastify.prisma.crm.crmCampaignSharedPoolLog.findUnique({
+        where: { id: dto.logId },
+      });
+      if (!targetLog || targetLog.campaignId !== campaignId || targetLog.campaignCustomerId !== customer.id) {
+        throw new Error('Bản ghi lịch sử không hợp lệ hoặc không thuộc về khách hàng này.');
+      }
+
+      const subsequentLogsCount = await fastify.prisma.crm.crmCampaignSharedPoolLog.count({
+        where: {
+          campaignCustomerId: customer.id,
+          id: { gt: targetLog.id },
+        },
+      });
+
+      let targetMeta: any = null;
+      if (targetLog.metadata) {
+        try {
+          targetMeta = JSON.parse(targetLog.metadata);
+        } catch {}
+      }
+
+      let intendedPrevStatus = targetMeta?.previousPoolStatus || targetMeta?.previousState?.poolStatus || null;
+
+      if (!intendedPrevStatus) {
+        if (targetLog.action === 'CLAIM') {
+          intendedPrevStatus = 'AVAILABLE';
+        } else if (targetLog.action === 'EXCLUDE') {
+          intendedPrevStatus = 'AVAILABLE';
+        } else if (targetLog.action === 'STATUS_UPDATE' || targetLog.action === 'CALL') {
+          intendedPrevStatus = 'AVAILABLE';
+        } else {
+          intendedPrevStatus = 'AVAILABLE';
+        }
+      }
+
+      const isDrifted =
+        subsequentLogsCount > 0 ||
+        customer.poolStatus !==
+          (targetMeta?.nextPoolStatus || (targetLog.action === 'CLAIM' ? 'CLAIMED' : customer.poolStatus));
+
+      if (isDrifted && !dto.forceOverride) {
+        return {
+          success: false,
+          requiresConfirmation: true,
+          driftDetected: true,
+          message: `Dữ liệu khách hàng đã phát sinh thêm ${subsequentLogsCount} thao tác sau bản ghi này. Trạng thái hiện tại: "${customer.poolStatus}". Bạn có chắc chắn muốn ghi đè khôi phục về trạng thái trước (${intendedPrevStatus}) không?`,
+          currentStatus: customer.poolStatus,
+          targetPreviousStatus: intendedPrevStatus,
+        };
+      }
+
+      targetNextStatus = intendedPrevStatus;
+      actionDesc = `Hoàn tác về trạng thái trước bản ghi #${targetLog.id} (${targetLog.action})`;
+    } else if (dto.action === 'RELEASE_CLAIM' || dto.action === 'FORCE_UNLOCK') {
+      targetNextStatus = 'AVAILABLE';
+      actionDesc = 'Cưỡng chế giải phóng Lock/Claim (Force Unlock)';
+    } else if (dto.action === 'RESTORE_EXCLUDED') {
+      targetNextStatus = 'AVAILABLE';
+      actionDesc = 'Khôi phục khách hàng từ ĐÃ LOẠI (EXCLUDED) sang SẴN SÀNG (AVAILABLE)';
+    } else if (dto.action === 'RESET_RECYCLE') {
+      targetNextStatus = 'AVAILABLE';
+      nextCooldownUntil = null;
+      nextAvailableAt = null;
+      actionDesc = 'Reset trạng thái Recycle, đưa ngay về Pool sẵn sàng';
+    } else if (dto.action === 'RESET_POOL_STATUS') {
+      targetNextStatus = dto.targetPoolStatus || 'AVAILABLE';
+      actionDesc = `Reset trạng thái Pool sang "${targetNextStatus}"`;
+    } else {
+      throw new Error(`Hành động khôi phục không hợp lệ: ${dto.action}`);
+    }
+
+    const updatedCustomer = await fastify.prisma.crm.crmCampaignCustomer.update({
+      where: { id: customer.id },
+      data: {
+        poolStatus: targetNextStatus,
+        claimedByStaffId: nextClaimedByStaffId,
+        claimedByStaffName: nextClaimedByStaffName,
+        claimedAt: nextClaimedAt,
+        claimExpiresAt: nextClaimExpiresAt,
+        cooldownUntil: nextCooldownUntil,
+        availableAt: nextAvailableAt,
+      },
+    });
+
+    const nextState = {
+      poolStatus: targetNextStatus,
+      claimedByStaffId: nextClaimedByStaffId,
+      claimedByStaffName: nextClaimedByStaffName,
+      cooldownUntil: nextCooldownUntil,
+      availableAt: nextAvailableAt,
+    };
+
+    await fastify.prisma.crm.crmCampaignSharedPoolLog.create({
+      data: {
+        campaignId,
+        campaignCustomerId: customer.id,
+        legacyUserId: customer.legacyUserId,
+        staffId,
+        staffName: staffDisplayName,
+        action: 'RECOVERY_OVERRIDE',
+        note: `[KHÔI PHỤC] ${actionDesc}. Lý do: ${trimmedReason}`,
+        metadata: JSON.stringify({
+          recoveryAction: dto.action,
+          reason: trimmedReason,
+          rolledBackFromLogId: dto.logId || null,
+          targetPoolStatus: dto.targetPoolStatus || null,
+          forceOverride: Boolean(dto.forceOverride),
+          previousState,
+          nextState,
+          previousPoolStatus: customer.poolStatus,
+          nextPoolStatus: targetNextStatus,
+          result: 'SUCCESS',
+        }),
+        createdAt: now,
+      },
+    });
+
+    return {
+      success: true,
+      message: `Đã khôi phục thành công khách hàng sang trạng thái "${targetNextStatus}".`,
+      customer: updatedCustomer,
+    };
   }
 }

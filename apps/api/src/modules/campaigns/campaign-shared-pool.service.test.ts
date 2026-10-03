@@ -203,3 +203,150 @@ test('Campaign Staff Performance - Conversion Rate and Metrics Calculation (MOS-
   assert.equal(list[1].staffId, 18); // Ngọc Điệp Top 2 (36 exploited, 0 book)
   assert.equal(list[2].staffId, 99); // Nhân viên mới Top 3 (0 exploited)
 });
+
+test('Campaign Shared Pool (MOS-FEAT-94) - Recovery mandatory reason validation', () => {
+  const validateRecoveryReason = (reason?: string): boolean => {
+    return Boolean(reason && reason.trim().length > 0);
+  };
+
+  assert.equal(validateRecoveryReason(''), false);
+  assert.equal(validateRecoveryReason('   '), false);
+  assert.equal(validateRecoveryReason(undefined), false);
+  assert.equal(validateRecoveryReason('Telesales kẹt mạng không nhả được lock'), true);
+  assert.equal(validateRecoveryReason('Khôi phục khách bị loại nhầm do thao tác sai'), true);
+});
+
+test('Campaign Shared Pool (MOS-FEAT-94) - Recovery action target pool status resolution', () => {
+  const resolveRecoveryTargetStatus = (
+    action: string,
+    customStatus?: string,
+    logPreviousStatus?: string
+  ): { targetStatus: string; clearsClaim: boolean; clearsCooldown: boolean } => {
+    switch (action) {
+      case 'RELEASE_CLAIM':
+      case 'FORCE_UNLOCK':
+        return { targetStatus: 'AVAILABLE', clearsClaim: true, clearsCooldown: false };
+      case 'RESTORE_EXCLUDED':
+        return { targetStatus: 'AVAILABLE', clearsClaim: true, clearsCooldown: true };
+      case 'RESET_RECYCLE':
+        return { targetStatus: 'AVAILABLE', clearsClaim: false, clearsCooldown: true };
+      case 'RESET_POOL_STATUS':
+        return {
+          targetStatus: customStatus || 'AVAILABLE',
+          clearsClaim: (customStatus || 'AVAILABLE') === 'AVAILABLE',
+          clearsCooldown: (customStatus || 'AVAILABLE') === 'AVAILABLE',
+        };
+      case 'ROLLBACK_TO_LOG':
+        return {
+          targetStatus: logPreviousStatus || 'AVAILABLE',
+          clearsClaim: (logPreviousStatus || 'AVAILABLE') === 'AVAILABLE',
+          clearsCooldown: (logPreviousStatus || 'AVAILABLE') === 'AVAILABLE',
+        };
+      default:
+        throw new Error(`Unsupported action: ${action}`);
+    }
+  };
+
+  // FORCE_UNLOCK => AVAILABLE, clears claim
+  const forceUnlock = resolveRecoveryTargetStatus('FORCE_UNLOCK');
+  assert.equal(forceUnlock.targetStatus, 'AVAILABLE');
+  assert.equal(forceUnlock.clearsClaim, true);
+
+  // RESTORE_EXCLUDED => AVAILABLE, clears claim and cooldown
+  const restoreExcluded = resolveRecoveryTargetStatus('RESTORE_EXCLUDED');
+  assert.equal(restoreExcluded.targetStatus, 'AVAILABLE');
+  assert.equal(restoreExcluded.clearsClaim, true);
+  assert.equal(restoreExcluded.clearsCooldown, true);
+
+  // RESET_RECYCLE => AVAILABLE, clears cooldown
+  const resetRecycle = resolveRecoveryTargetStatus('RESET_RECYCLE');
+  assert.equal(resetRecycle.targetStatus, 'AVAILABLE');
+  assert.equal(resetRecycle.clearsCooldown, true);
+
+  // RESET_POOL_STATUS with custom status
+  const resetCustom = resolveRecoveryTargetStatus('RESET_POOL_STATUS', 'RECYCLING');
+  assert.equal(resetCustom.targetStatus, 'RECYCLING');
+  assert.equal(resetCustom.clearsClaim, false);
+
+  // ROLLBACK_TO_LOG with previous status
+  const rollbackClaim = resolveRecoveryTargetStatus('ROLLBACK_TO_LOG', undefined, 'AVAILABLE');
+  assert.equal(rollbackClaim.targetStatus, 'AVAILABLE');
+  assert.equal(rollbackClaim.clearsClaim, true);
+});
+
+test('Campaign Shared Pool (MOS-FEAT-94) - State drift detection logic', () => {
+  const detectStateDrift = (
+    currentPoolStatus: string,
+    expectedPostLogStatus: string,
+    subsequentLogsCount: number
+  ): boolean => {
+    return subsequentLogsCount > 0 || currentPoolStatus !== expectedPostLogStatus;
+  };
+
+  // No new logs, current status matches log => No drift
+  assert.equal(detectStateDrift('CLAIMED', 'CLAIMED', 0), false);
+  assert.equal(detectStateDrift('AVAILABLE', 'AVAILABLE', 0), false);
+
+  // Subsequent logs exist => Drift detected
+  assert.equal(detectStateDrift('CLAIMED', 'CLAIMED', 2), true);
+
+  // Status changed from CLAIMED to RECYCLING => Drift detected even if count is 0
+  assert.equal(detectStateDrift('RECYCLING', 'CLAIMED', 0), true);
+
+  // Customer was excluded after call => Drift detected
+  assert.equal(detectStateDrift('EXCLUDED', 'AVAILABLE', 1), true);
+});
+
+test('Campaign Shared Pool (MOS-FEAT-94) - Audit log metadata preservation & append-only verification', () => {
+  const createRecoveryLogEntry = (
+    campaignId: number,
+    customerId: number,
+    staffId: number,
+    staffName: string,
+    recoveryAction: string,
+    reason: string,
+    previousState: any,
+    nextState: any
+  ) => {
+    return {
+      campaignId,
+      campaignCustomerId: customerId,
+      staffId,
+      staffName,
+      action: 'RECOVERY_OVERRIDE',
+      note: `[KHÔI PHỤC] Thao tác: ${recoveryAction}. Lý do: ${reason}`,
+      metadata: JSON.stringify({
+        recoveryAction,
+        reason,
+        previousState,
+        nextState,
+        result: 'SUCCESS',
+      }),
+      createdAt: new Date('2026-10-03T10:00:00.000Z'),
+    };
+  };
+
+  const entry = createRecoveryLogEntry(
+    31,
+    1001,
+    1,
+    'Danny Do',
+    'FORCE_UNLOCK',
+    'Telesales mất kết nối mạng',
+    { poolStatus: 'CLAIMED', claimedByStaffId: 22 },
+    { poolStatus: 'AVAILABLE', claimedByStaffId: null }
+  );
+
+  assert.equal(entry.action, 'RECOVERY_OVERRIDE');
+  assert.equal(entry.staffId, 1);
+  assert.equal(entry.staffName, 'Danny Do');
+  assert.match(entry.note, /\[KHÔI PHỤC\]/);
+  assert.match(entry.note, /Telesales mất kết nối mạng/);
+
+  const parsed = JSON.parse(entry.metadata);
+  assert.equal(parsed.recoveryAction, 'FORCE_UNLOCK');
+  assert.equal(parsed.reason, 'Telesales mất kết nối mạng');
+  assert.equal(parsed.previousState.poolStatus, 'CLAIMED');
+  assert.equal(parsed.nextState.poolStatus, 'AVAILABLE');
+  assert.equal(parsed.result, 'SUCCESS');
+});

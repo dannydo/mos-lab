@@ -20,6 +20,8 @@ import {
   AdvanceSharedPoolBatchDto,
   ToggleSharedPoolPauseDto,
   ManagerPoolActionDto,
+  SharedPoolHistoryQueryParams,
+  SharedPoolRecoveryDto,
 } from '@mos-lab/shared';
 
 export async function campaignRoutes(fastify: FastifyInstance) {
@@ -831,6 +833,59 @@ export async function campaignRoutes(fastify: FastifyInstance) {
         return reply.send(logs);
       } catch (err: any) {
         request.log.error('Failed to get customer shared pool logs:', err);
+        return reply.status(err.statusCode || 400).send({ error: 'Bad Request', message: err.message });
+      }
+    }
+  );
+
+  // 25. Shared Pool: Get Detailed Real-time History (Manager & Telesales)
+  fastify.get(
+    '/campaigns/:id/shared-pool/history',
+    { preHandler: [requireAuth] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const params = request.params as { id: string };
+        const id = parseInt(params.id, 10);
+        if (isNaN(id)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
+        }
+        const query = (request.query || {}) as SharedPoolHistoryQueryParams;
+        const history = await CampaignService.getCampaignSharedPoolHistory(fastify, id, query);
+        return reply.send(history);
+      } catch (err: any) {
+        request.log.error('Failed to get campaign shared pool history:', err);
+        return reply.status(err.statusCode || 400).send({ error: 'Bad Request', message: err.message });
+      }
+    }
+  );
+
+  // 26. Shared Pool: Manager / Admin Safe Recovery & Rollback
+  fastify.post(
+    '/campaigns/:id/shared-pool/recovery',
+    { preHandler: [requireAuth, requireCampaignAdmin] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const params = request.params as { id: string };
+        const id = parseInt(params.id, 10);
+        if (isNaN(id)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
+        }
+        const user = request.user;
+        const dto = request.body as SharedPoolRecoveryDto;
+        if (!dto || !dto.customerId || !dto.action) {
+          return reply
+            .status(400)
+            .send({ error: 'Bad Request', message: 'Thiếu thông tin khách hàng hoặc hành động khôi phục' });
+        }
+        if (!dto.reason || !dto.reason.trim()) {
+          return reply
+            .status(400)
+            .send({ error: 'Bad Request', message: 'Bắt buộc nhập lý do khi thực hiện khôi phục' });
+        }
+        const result = await CampaignService.recoverCustomerState(fastify, id, user.id, dto);
+        return reply.send(result);
+      } catch (err: any) {
+        request.log.error('Failed to recover customer state in shared pool:', err);
         return reply.status(err.statusCode || 400).send({ error: 'Bad Request', message: err.message });
       }
     }

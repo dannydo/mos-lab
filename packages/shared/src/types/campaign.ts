@@ -115,6 +115,73 @@ export interface CampaignSharedPoolLog {
   createdAt: string;
 }
 
+export interface CampaignSharedPoolDetailedLog {
+  id: number;
+  campaignId: number;
+  campaignCustomerId: number;
+  legacyUserId: number;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  currentPoolStatus?: string | null;
+  currentClaimedByStaffId?: number | null;
+  currentClaimedByStaffName?: string | null;
+  staffId: number | null;
+  staffName: string | null;
+  action: string;
+  actionLabel: string;
+  previousPoolStatus?: string | null;
+  nextPoolStatus?: string | null;
+  previousClaimedByStaffName?: string | null;
+  nextClaimedByStaffName?: string | null;
+  note: string | null;
+  metadata?: any;
+  result?: string | null;
+  isDrifted?: boolean;
+  canRestore?: boolean;
+  createdAt: string;
+}
+
+export interface SharedPoolHistoryQueryParams {
+  page?: number;
+  pageSize?: number;
+  action?: string;
+  search?: string;
+  customerId?: number;
+  staffId?: number;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export interface SharedPoolHistoryResponse {
+  items: CampaignSharedPoolDetailedLog[];
+  total: number;
+  page: number;
+  pageSize: number;
+  pages: number;
+}
+
+export type SharedPoolRecoveryAction =
+  'RELEASE_CLAIM' | 'FORCE_UNLOCK' | 'RESTORE_EXCLUDED' | 'RESET_POOL_STATUS' | 'RESET_RECYCLE' | 'ROLLBACK_TO_LOG';
+
+export interface SharedPoolRecoveryDto {
+  customerId: number;
+  action: SharedPoolRecoveryAction;
+  targetPoolStatus?: string;
+  logId?: number;
+  reason: string;
+  forceOverride?: boolean;
+}
+
+export interface SharedPoolRecoveryResponse {
+  success: boolean;
+  message: string;
+  requiresConfirmation?: boolean;
+  driftDetected?: boolean;
+  currentStatus?: string;
+  targetPreviousStatus?: string;
+  customer?: any;
+}
+
 export type CampaignPromotionType =
   'PERCENT_DISCOUNT' | 'FIXED_DISCOUNT' | 'FIXED_FINAL_PRICE' | 'FREE_SERVICE' | 'FREE_PRODUCT';
 

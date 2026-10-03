@@ -15,6 +15,7 @@ import {
   ClockCircleOutlined,
   ThunderboltOutlined,
   DatabaseOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons';
 import { SharedPoolOverviewStats } from '@mos-lab/shared';
 import { useTheme } from '../../context/ThemeContext';
@@ -27,6 +28,7 @@ interface SharedPoolOverviewBannerProps {
   onAdvanceBatch: () => Promise<void>;
   onTogglePause: (isPaused: boolean) => Promise<void>;
   onAddCustomers: () => void;
+  onOpenHistoryRecovery?: () => void;
   selectedBatch: number | 'ALL';
   onSelectBatch: (batch: number | 'ALL') => void;
   selectedPoolStatus: string;
@@ -42,6 +44,7 @@ export const SharedPoolOverviewBanner: React.FC<SharedPoolOverviewBannerProps> =
   onAdvanceBatch,
   onTogglePause,
   onAddCustomers,
+  onOpenHistoryRecovery,
   selectedBatch,
   onSelectBatch,
   selectedPoolStatus,
@@ -227,6 +230,15 @@ export const SharedPoolOverviewBanner: React.FC<SharedPoolOverviewBannerProps> =
           {/* Manager Action Buttons */}
           {isAdmin && (
             <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                size="small"
+                icon={<HistoryOutlined />}
+                onClick={onOpenHistoryRecovery}
+                className="bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800 hover:border-purple-400 font-semibold shadow-xs"
+              >
+                Lịch sử & Khôi phục
+              </Button>
+
               <Popconfirm
                 title={isPaused ? 'Tiếp tục khai thác Pool?' : 'Tạm dừng khai thác Pool?'}
                 description={

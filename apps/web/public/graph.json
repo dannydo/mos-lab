@@ -6712,7 +6712,7 @@
         "path": "/api/campaigns",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 27
+        "line": 29
       }
     },
     {
@@ -6726,7 +6726,7 @@
         "path": "/api/campaigns",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 41
+        "line": 43
       }
     },
     {
@@ -6740,7 +6740,7 @@
         "path": "/api/campaigns/:id",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 58
+        "line": 60
       }
     },
     {
@@ -6754,7 +6754,7 @@
         "path": "/api/campaigns/slug/:slug",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 76
+        "line": 78
       }
     },
     {
@@ -6768,7 +6768,7 @@
         "path": "/api/campaigns/:id",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 94
+        "line": 96
       }
     },
     {
@@ -6782,7 +6782,7 @@
         "path": "/api/campaigns/:id",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 115
+        "line": 117
       }
     },
     {
@@ -6796,7 +6796,7 @@
         "path": "/api/campaigns/:id/end",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 135
+        "line": 137
       }
     },
     {
@@ -6810,7 +6810,7 @@
         "path": "/api/campaigns/:id/complete",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 154
+        "line": 156
       }
     },
     {
@@ -6824,7 +6824,7 @@
         "path": "/api/campaigns/:id/pause",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 174
+        "line": 176
       }
     },
     {
@@ -6838,7 +6838,7 @@
         "path": "/api/campaigns/:id/resume",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 194
+        "line": 196
       }
     },
     {
@@ -6852,7 +6852,7 @@
         "path": "/api/campaigns/:id/archive",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 214
+        "line": 216
       }
     },
     {
@@ -6866,7 +6866,7 @@
         "path": "/api/campaigns/:id/unarchive",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 234
+        "line": 236
       }
     },
     {
@@ -6880,7 +6880,7 @@
         "path": "/api/campaigns/:id/reopen",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 254
+        "line": 256
       }
     },
     {
@@ -6894,7 +6894,7 @@
         "path": "/api/campaigns/:id/restore",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 275
+        "line": 277
       }
     },
     {
@@ -6908,7 +6908,7 @@
         "path": "/api/campaigns/:id/clone",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 295
+        "line": 297
       }
     },
     {
@@ -6922,7 +6922,7 @@
         "path": "/api/campaigns/:id/customers",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 317
+        "line": 319
       }
     },
     {
@@ -6936,7 +6936,7 @@
         "path": "/api/campaigns/:id/customers",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 371
+        "line": 373
       }
     },
     {
@@ -6950,7 +6950,7 @@
         "path": "/api/campaigns/:id/transfer-customers",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 393
+        "line": 395
       }
     },
     {
@@ -6964,7 +6964,7 @@
         "path": "/api/campaigns/:id/customers/:customerId",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 421
+        "line": 423
       }
     },
     {
@@ -6978,7 +6978,7 @@
         "path": "/api/campaigns/:id/customers/batch-remove",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 450
+        "line": 452
       }
     },
     {
@@ -6992,7 +6992,7 @@
         "path": "/api/campaigns/:id/customers/:customerId/touchpoints/:touchpointId",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 478
+        "line": 480
       }
     },
     {
@@ -7006,7 +7006,7 @@
         "path": "/api/campaigns/:id/promotions",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 511
+        "line": 513
       }
     },
     {
@@ -7020,7 +7020,7 @@
         "path": "/api/campaigns/:id/promotions",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 531
+        "line": 533
       }
     },
     {
@@ -7034,7 +7034,7 @@
         "path": "/api/campaigns/:id/promotions/:promotionId",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 552
+        "line": 554
       }
     },
     {
@@ -7048,7 +7048,7 @@
         "path": "/api/campaigns/:id/stats",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 573
+        "line": 575
       }
     },
     {
@@ -7062,7 +7062,7 @@
         "path": "/api/campaigns/customer/:customerId/active-promotions",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 598
+        "line": 600
       }
     },
     {
@@ -7076,7 +7076,7 @@
         "path": "/api/campaigns/:id/shared-pool/overview",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 625
+        "line": 627
       }
     },
     {
@@ -7090,7 +7090,7 @@
         "path": "/api/campaigns/:id/staff-performance",
         "module": "campaigns",
         "handler": "preHandler",
-        "line": 660
+        "line": 662
       }
     },
     {
@@ -7104,7 +7104,7 @@
         "path": "/api/campaigns/:id/shared-pool/staff-performance",
         "module": "campaigns",
         "handler": "preHandler",
-        "line": 661
+        "line": 663
       }
     },
     {
@@ -7118,7 +7118,7 @@
         "path": "/api/campaigns/:id/shared-pool/claim",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 664
+        "line": 666
       }
     },
     {
@@ -7132,7 +7132,7 @@
         "path": "/api/campaigns/:id/shared-pool/release",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 689
+        "line": 691
       }
     },
     {
@@ -7146,7 +7146,7 @@
         "path": "/api/campaigns/:id/shared-pool/status",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 715
+        "line": 717
       }
     },
     {
@@ -7160,7 +7160,7 @@
         "path": "/api/campaigns/:id/shared-pool/advance-batch",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 740
+        "line": 742
       }
     },
     {
@@ -7174,7 +7174,7 @@
         "path": "/api/campaigns/:id/shared-pool/toggle-pause",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 762
+        "line": 764
       }
     },
     {
@@ -7188,7 +7188,7 @@
         "path": "/api/campaigns/:id/shared-pool/manager-action",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 787
+        "line": 789
       }
     },
     {
@@ -7202,7 +7202,35 @@
         "path": "/api/campaigns/:id/shared-pool/customers/:customerId/logs",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 819
+        "line": 821
+      }
+    },
+    {
+      "id": "route:GET:/api/campaigns/:id/shared-pool/history",
+      "type": "FastifyRoute",
+      "label": "GET /api/campaigns/:id/shared-pool/history",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/campaigns/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/campaigns/:id/shared-pool/history",
+        "module": "campaigns",
+        "handler": "inlineHandler",
+        "line": 842
+      }
+    },
+    {
+      "id": "route:POST:/api/campaigns/:id/shared-pool/recovery",
+      "type": "FastifyRoute",
+      "label": "POST /api/campaigns/:id/shared-pool/recovery",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/campaigns/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/campaigns/:id/shared-pool/recovery",
+        "module": "campaigns",
+        "handler": "inlineHandler",
+        "line": 863
       }
     },
     {
@@ -19091,6 +19119,78 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:CampaignSharedPoolDetailedLog",
+      "type": "SharedType",
+      "label": "CampaignSharedPoolDetailedLog",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/campaign.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CampaignSharedPoolDetailedLog",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SharedPoolHistoryQueryParams",
+      "type": "SharedType",
+      "label": "SharedPoolHistoryQueryParams",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/campaign.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SharedPoolHistoryQueryParams",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SharedPoolHistoryResponse",
+      "type": "SharedType",
+      "label": "SharedPoolHistoryResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/campaign.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SharedPoolHistoryResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SharedPoolRecoveryAction",
+      "type": "SharedType",
+      "label": "SharedPoolRecoveryAction",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/campaign.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SharedPoolRecoveryAction",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SharedPoolRecoveryDto",
+      "type": "SharedType",
+      "label": "SharedPoolRecoveryDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/campaign.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SharedPoolRecoveryDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SharedPoolRecoveryResponse",
+      "type": "SharedType",
+      "label": "SharedPoolRecoveryResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/campaign.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SharedPoolRecoveryResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:CampaignPromotionType",
       "type": "SharedType",
       "label": "CampaignPromotionType",
@@ -27263,6 +27363,30 @@
       }
     },
     {
+      "id": "uicomp:SharedPoolHistoryRecoveryDrawer",
+      "type": "UIComponent",
+      "label": "<SharedPoolHistoryRecoveryDrawer />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/SharedPoolHistoryRecoveryDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SharedPoolHistoryRecoveryDrawer",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:SharedPoolOverviewBanner.test",
+      "type": "UIComponent",
+      "label": "<SharedPoolOverviewBanner.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/SharedPoolOverviewBanner.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SharedPoolOverviewBanner.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:SharedPoolOverviewBanner",
       "type": "UIComponent",
       "label": "<SharedPoolOverviewBanner />",
@@ -30256,8 +30380,8 @@
       "filePath": "apps/api/src/modules/campaigns/campaign-shared-pool.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7854,
-        "lineCount": 206,
+        "sizeBytes": 13485,
+        "lineCount": 354,
         "ext": ".ts"
       }
     },
@@ -30269,8 +30393,8 @@
       "filePath": "apps/api/src/modules/campaigns/campaign.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 126709,
-        "lineCount": 3638,
+        "sizeBytes": 146107,
+        "lineCount": 4199,
         "ext": ".ts"
       }
     },
@@ -30282,8 +30406,8 @@
       "filePath": "apps/api/src/modules/campaigns/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 34277,
-        "lineCount": 839,
+        "sizeBytes": 36686,
+        "lineCount": 894,
         "ext": ".ts"
       }
     },
@@ -35807,8 +35931,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 74318,
-        "lineCount": 1470,
+        "sizeBytes": 74481,
+        "lineCount": 1478,
         "ext": ".tsx"
       }
     },
@@ -35820,8 +35944,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 143397,
-        "lineCount": 2835,
+        "sizeBytes": 143423,
+        "lineCount": 2836,
         "ext": ".tsx"
       }
     },
@@ -37211,8 +37335,8 @@
       "filePath": "apps/web/app/dashboard/nyc/campaigns/[slug]/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 124116,
-        "lineCount": 2959,
+        "sizeBytes": 124774,
+        "lineCount": 2974,
         "ext": ".tsx"
       }
     },
@@ -38706,8 +38830,8 @@
       "filePath": "apps/web/lib/api/campaigns.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13428,
-        "lineCount": 346,
+        "sizeBytes": 14102,
+        "lineCount": 364,
         "ext": ".ts"
       }
     },
@@ -39408,8 +39532,8 @@
       "filePath": "packages/shared/src/types/campaign.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 12172,
-        "lineCount": 474,
+        "sizeBytes": 13854,
+        "lineCount": 547,
         "ext": ".ts"
       }
     },
@@ -43245,6 +43369,20 @@
     {
       "id": "edge:route:GET:/api/campaigns/:id/shared-pool/customers/:customerId/logs:ws:apps/api",
       "source": "route:GET:/api/campaigns/:id/shared-pool/customers/:customerId/logs",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/campaigns/:id/shared-pool/history:ws:apps/api",
+      "source": "route:GET:/api/campaigns/:id/shared-pool/history",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/campaigns/:id/shared-pool/recovery:ws:apps/api",
+      "source": "route:POST:/api/campaigns/:id/shared-pool/recovery",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -49690,6 +49828,48 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:CampaignSharedPoolDetailedLog:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CampaignSharedPoolDetailedLog",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SharedPoolHistoryQueryParams:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SharedPoolHistoryQueryParams",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SharedPoolHistoryResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SharedPoolHistoryResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SharedPoolRecoveryAction:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SharedPoolRecoveryAction",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SharedPoolRecoveryDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SharedPoolRecoveryDto",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SharedPoolRecoveryResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SharedPoolRecoveryResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:CampaignPromotionType:ws:packages/shared",
       "source": "type:@mos-lab/shared:CampaignPromotionType",
       "target": "ws:packages/shared",
@@ -54893,6 +55073,34 @@
     {
       "id": "edge:uicomp:SharedPoolAuditDrawer:token:color:primary",
       "source": "uicomp:SharedPoolAuditDrawer",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SharedPoolHistoryRecoveryDrawer:ws:apps/web",
+      "source": "uicomp:SharedPoolHistoryRecoveryDrawer",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SharedPoolHistoryRecoveryDrawer:token:color:primary",
+      "source": "uicomp:SharedPoolHistoryRecoveryDrawer",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SharedPoolOverviewBanner.test:ws:apps/web",
+      "source": "uicomp:SharedPoolOverviewBanner.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SharedPoolOverviewBanner.test:token:color:primary",
+      "source": "uicomp:SharedPoolOverviewBanner.test",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -63298,6 +63506,20 @@
       "label": "CALLS academySales.campaigns"
     },
     {
+      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/campaigns/:id/shared-pool/history",
+      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
+      "target": "route:GET:/api/campaigns/:id/shared-pool/history",
+      "type": "API_CALL",
+      "label": "CALLS academySales.campaigns"
+    },
+    {
+      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:POST:/api/campaigns/:id/shared-pool/recovery",
+      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
+      "target": "route:POST:/api/campaigns/:id/shared-pool/recovery",
+      "type": "API_CALL",
+      "label": "CALLS academySales.campaigns"
+    },
+    {
       "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/cs/campaigns",
       "source": "page:/dashboard/academy-leads/campaigns/[slug]",
       "target": "route:GET:/api/cs/campaigns",
@@ -63693,6 +63915,20 @@
       "id": "edge:page:/dashboard/academy-leads/campaigns:route:GET:/api/campaigns/:id/shared-pool/customers/:customerId/logs",
       "source": "page:/dashboard/academy-leads/campaigns",
       "target": "route:GET:/api/campaigns/:id/shared-pool/customers/:customerId/logs",
+      "type": "API_CALL",
+      "label": "CALLS academySales.campaigns"
+    },
+    {
+      "id": "edge:page:/dashboard/academy-leads/campaigns:route:GET:/api/campaigns/:id/shared-pool/history",
+      "source": "page:/dashboard/academy-leads/campaigns",
+      "target": "route:GET:/api/campaigns/:id/shared-pool/history",
+      "type": "API_CALL",
+      "label": "CALLS academySales.campaigns"
+    },
+    {
+      "id": "edge:page:/dashboard/academy-leads/campaigns:route:POST:/api/campaigns/:id/shared-pool/recovery",
+      "source": "page:/dashboard/academy-leads/campaigns",
+      "target": "route:POST:/api/campaigns/:id/shared-pool/recovery",
       "type": "API_CALL",
       "label": "CALLS academySales.campaigns"
     },
@@ -72055,6 +72291,20 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/campaigns/:id/shared-pool/history",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/campaigns/:id/shared-pool/history",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/campaigns/:id/shared-pool/recovery",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/campaigns/:id/shared-pool/recovery",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/career/config",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/career/config",
@@ -76631,6 +76881,20 @@
       "target": "route:GET:/api/campaigns/:id/shared-pool/customers/:customerId/logs",
       "type": "API_CALL",
       "label": "CALLS customers.getStaff"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/campaigns/:id/shared-pool/history",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/campaigns/:id/shared-pool/history",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.list"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/campaigns/:id/shared-pool/recovery",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/campaigns/:id/shared-pool/recovery",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.list"
     },
     {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/career/config",
@@ -84263,6 +84527,20 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/campaigns/:id/shared-pool/history",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/campaigns/:id/shared-pool/history",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/campaigns/:id/shared-pool/recovery",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/campaigns/:id/shared-pool/recovery",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/career/config",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/career/config",
@@ -86798,31 +87076,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3061,
-    "totalEdges": 6687,
+    "totalNodes": 3071,
+    "totalEdges": 6709,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 162,
-      "FastifyRoute": 654,
+      "FastifyRoute": 656,
       "Component": 57,
-      "SharedType": 1121,
+      "SharedType": 1127,
       "DesignToken": 12,
-      "UIComponent": 209,
+      "UIComponent": 211,
       "File": 843
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1295,
-      "HANDLES_ROUTE": 654,
-      "RENDERS": 266,
-      "USES_TOKEN": 211,
+      "EXPORTS": 1301,
+      "HANDLES_ROUTE": 656,
+      "RENDERS": 268,
+      "USES_TOKEN": 213,
       "IMPORTS": 468,
       "QUERIES_MODEL": 379,
-      "API_CALL": 3414
+      "API_CALL": 3424
     },
-    "fastifyRouteCount": 659,
+    "fastifyRouteCount": 661,
     "prismaModelCount": 162,
     "nextPageCount": 57,
-    "sharedTypeCount": 1121
+    "sharedTypeCount": 1127
   },
   "routes": [
     {
@@ -88949,6 +89227,20 @@
     {
       "method": "GET",
       "path": "/api/campaigns/:id/shared-pool/customers/:customerId/logs",
+      "filePath": "apps/api/src/modules/campaigns/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "campaigns"
+    },
+    {
+      "method": "GET",
+      "path": "/api/campaigns/:id/shared-pool/history",
+      "filePath": "apps/api/src/modules/campaigns/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "campaigns"
+    },
+    {
+      "method": "POST",
+      "path": "/api/campaigns/:id/shared-pool/recovery",
       "filePath": "apps/api/src/modules/campaigns/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "campaigns"

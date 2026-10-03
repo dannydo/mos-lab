@@ -39,6 +39,10 @@ import type {
   ManagerPoolActionDto,
   CampaignSharedPoolLog,
   CampaignStaffPerformanceResponse,
+  SharedPoolHistoryQueryParams,
+  SharedPoolHistoryResponse,
+  SharedPoolRecoveryDto,
+  SharedPoolRecoveryResponse,
 } from '@mos-lab/shared';
 
 import { api, dedupeApiGet } from './base';
@@ -335,6 +339,20 @@ export const campaignsApi = {
     },
     getSharedPoolLogs: async (campaignId: number, customerId: number): Promise<CampaignSharedPoolLog[]> => {
       const response = await api.get(`/campaigns/${campaignId}/shared-pool/customers/${customerId}/logs`);
+      return response.data;
+    },
+    getSharedPoolHistory: async (
+      campaignId: number,
+      params?: SharedPoolHistoryQueryParams
+    ): Promise<SharedPoolHistoryResponse> => {
+      const response = await api.get(`/campaigns/${campaignId}/shared-pool/history`, { params });
+      return response.data;
+    },
+    recoverSharedPoolCustomer: async (
+      campaignId: number,
+      dto: SharedPoolRecoveryDto
+    ): Promise<SharedPoolRecoveryResponse> => {
+      const response = await api.post(`/campaigns/${campaignId}/shared-pool/recovery`, dto);
       return response.data;
     },
     getStaffPerformance: async (campaignId: number): Promise<CampaignStaffPerformanceResponse> => {
