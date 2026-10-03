@@ -726,15 +726,20 @@ test('TelesaleTargetService.getTvJournal and recordTvJournalSync track Live Even
         $queryRawUnsafe: async (sql: string) => {
           if (sql.includes('staff_working_shift')) return [];
           if (sql.includes('doneCount')) return [{ bookerId: 50670, displayName: 'Bích Phượng', doneCount: 1 }];
-          if (sql.includes('totalCreatedBookings')) return [{ bookerId: 50670, displayName: 'Bích Phượng', totalCreatedBookings: 1 }];
+          if (sql.includes('totalCreatedBookings'))
+            return [{ bookerId: 50670, displayName: 'Bích Phượng', totalCreatedBookings: 1 }];
           if (sql.includes('SELECT \n          o.id,\n          o.created_staff_id as bookerId')) {
-            return [
-              { id: 101, bookerId: 50670, orderState: 'New', dateCreated: `${todayStr} 10:32:15` },
-            ];
+            return [{ id: 101, bookerId: 50670, orderState: 'New', dateCreated: `${todayStr} 10:32:15` }];
           }
           if (sql.includes('COALESCE(ro.actual_booking_date_end')) {
             return [
-              { id: 201, bookerId: 50670, orderState: 'Completed', totalPrice: 300000, doneDate: `${todayStr} 11:15:00` },
+              {
+                id: 201,
+                bookerId: 50670,
+                orderState: 'Completed',
+                totalPrice: 300000,
+                doneDate: `${todayStr} 11:15:00`,
+              },
             ];
           }
           return [];
@@ -1204,7 +1209,7 @@ test('TelesaleTargetService.getOverview (MOS-BUG-86) strictly requires Completed
   assert.equal(doneEv.type, 'DONE');
   assert.equal(doneEv.id, 'done-336827');
   assert.equal(doneEv.staffName, 'Bích Phượng');
-  assert.equal(new Date(doneEv.timestamp).toISOString(), new Date('2026-10-01 13:15:18').toISOString());
+  assert.equal(new Date(doneEv.timestamp).toISOString(), new Date('2026-10-01T13:15:18+07:00').toISOString());
 });
 
 test('TelesaleTargetService: resolves team members regardless of personal role (MOS-BUG-93)', async () => {
@@ -1336,4 +1341,3 @@ test('TelesaleTargetService.selectTeam updates teamCode and re-synchronizes staf
   assert.equal(refetched.teamName, 'Customer Service (CS)');
   assert.equal(refetched.staffTargets.length, 2);
 });
-
