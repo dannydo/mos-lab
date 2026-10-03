@@ -6,12 +6,16 @@ import {
   CareerRole,
   CareerProgressionStatus,
   calculateComboBonus,
+  CvPlusRewardSnapshot,
+  CvPlusComboDetail,
+  CvPlusSimulationSummaryResponse,
   BananaTransactionResponse,
   BananaTransactionCategory,
   BananaTransactionItem,
 } from '@mos-lab/shared';
 import { qaShopService } from '../qa-shop/qa-shop.service.js';
 import { TeamService } from '../teams/team.service.js';
+import { ComboRecognitionService } from '../customers/services/combo-recognition.service.js';
 
 const CAREER_CONFIG_KEY = 'CAREER_PROGRESSION_RULES';
 
@@ -1933,6 +1937,336 @@ export class CareerProgressionService {
       countReceivedGiveAway,
       countSentGiveAway,
       transactions: filteredTransactions,
+    };
+  }
+
+  /**
+   * Tính toán chi tiết quyền lợi CV+ (lương giờ tăng, 90% tip tự chủ, thưởng combo bậc thang)
+   * và áp dụng chế tài ngưỡng 20% NOT COMBO LIVE theo Kinh Thánh mOS.
+   */
+  static async calculateCvPlusRewardsForStaff(
+    fastify: FastifyInstance,
+    staffId: number,
+    targetMonth?: string,
+    persist = false
+  ): Promise<CvPlusRewardSnapshot> {
+    const config = await this.getConfig(fastify);
+    const cvReq = config.cvToCvPlus || config.cvToCc;
+
+    // Resolve month: default to previous month if not specified
+    let month = targetMonth;
+    if (!month) {
+      const now = new Date();
+      const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const y = prevDate.getFullYear();
+      const m = String(prevDate.getMonth() + 1).padStart(2, '0');
+      month = `${y}-${m}`;
+    }
+
+    const startStr = `${month}-01 00:00:00`;
+    const [yStr, mStr] = month.split('-');
+    const y = parseInt(yStr, 10);
+    const m = parseInt(mStr, 10);
+    const nextMonthDate = new Date(y, m, 1);
+    const nextY = nextMonthDate.getFullYear();
+    const nextM = String(nextMonthDate.getMonth() + 1).padStart(2, '0');
+    const endStr = `${nextY}-${nextM}-01 00:00:00`;
+
+    // 1. Resolve staff & legacy IDs
+    const crmStaff = await fastify.prisma.crm.crmStaff.findUnique({
+      where: { id: staffId },
+    });
+
+    const targetLegacyStaffId = crmStaff?.legacyStaffId || staffId;
+    let staffName = crmStaff?.displayName;
+    let staffPhone = crmStaff?.phone;
+    let branchId = 6;
+
+    try {
+      const legacyProfiles = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+        `SELECT up.full_name, up.client_store_id, uc.phone_number 
+         FROM user_profile up 
+         LEFT JOIN user_contact uc ON uc.user_id = up.user_id AND uc.is_disabled = 0
+         WHERE up.user_id = ? 
+         ORDER BY uc.id DESC 
+         LIMIT 1`,
+        targetLegacyStaffId
+      );
+      if (legacyProfiles && legacyProfiles.length > 0) {
+        if (!staffName) staffName = legacyProfiles[0].full_name;
+        if (!staffPhone) staffPhone = legacyProfiles[0].phone_number;
+        if (legacyProfiles[0].client_store_id) branchId = Number(legacyProfiles[0].client_store_id);
+      }
+    } catch (err) {
+      fastify.log.warn({ err, targetLegacyStaffId }, 'Could not fetch legacy profile for CV+ calculation');
+    }
+
+    const branchName = resolveBranchInfo(branchId).branchName;
+
+    // 2. Query completed orders for this staff
+    const orders = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      `
+      SELECT os.id as order_service_id, os.order_id, o.user_id as client_id, o.booking_date_start
+      FROM order_service os
+      JOIN \`order\` o ON o.id = os.order_id
+      WHERE os.assigned_staff_id = ?
+        AND o.order_state = 'Completed'
+        AND o.booking_date_start >= ?
+        AND o.booking_date_start < ?
+      `,
+      targetLegacyStaffId,
+      startStr,
+      endStr
+    );
+
+    const uniqueOrders = new Map<number, any>();
+    for (const o of orders) {
+      if (!uniqueOrders.has(Number(o.order_id))) {
+        uniqueOrders.set(Number(o.order_id), o);
+      }
+    }
+    const totalOrders = uniqueOrders.size;
+    const orderIds = Array.from(uniqueOrders.keys());
+
+    // 3. Classify COMBO_LIVE vs NOT_COMBO_LIVE at booking time
+    const liveMap = await ComboRecognitionService.getBookingComboLiveStatesByOrderIds(fastify, orderIds);
+    let comboLiveOrders = 0;
+    let notComboLiveOrders = 0;
+    for (const [, isLive] of liveMap.entries()) {
+      if (isLive) comboLiveOrders++;
+      else notComboLiveOrders++;
+    }
+
+    // 4. Query Combos sold by this staff
+    const combos = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      `
+      SELECT 
+        osc.id,
+        osc.order_id,
+        osc.total_price,
+        o.id as order_code,
+        o.booking_date_start,
+        up.full_name as client_name,
+        COALESCE(sl.service_name, s.service_key, 'Gói combo') AS combo_name
+      FROM order_service_combo osc
+      JOIN \`order\` o ON o.id = osc.order_id
+      JOIN order_service os ON os.order_id = osc.order_id AND os.assigned_staff_id = ?
+      LEFT JOIN user_profile up ON up.user_id = o.user_id
+      LEFT JOIN service s ON s.id = osc.service_id
+      LEFT JOIN service_language sl ON sl.service_id = osc.service_id AND sl.language_id = 1
+      WHERE o.order_state = 'Completed'
+        AND o.booking_date_start >= ?
+        AND o.booking_date_start < ?
+        AND osc.total_price > 0
+      GROUP BY osc.id
+      ORDER BY o.booking_date_start ASC
+      `,
+      targetLegacyStaffId,
+      startStr,
+      endStr
+    );
+
+    const comboDetails: CvPlusComboDetail[] = combos.map((c: any) => {
+      const price = Number(c.total_price);
+      const bonus = calculateComboBonus(price, cvReq);
+      return {
+        orderId: Number(c.order_id),
+        orderCode: String(c.order_code),
+        orderDate: String(c.booking_date_start),
+        customerName: c.client_name ? String(c.client_name) : undefined,
+        comboName: String(c.combo_name),
+        price,
+        bonus,
+      };
+    });
+
+    const rawComboBonusTotal = comboDetails.reduce((sum, c) => sum + c.bonus, 0);
+    const uniqueComboOrderIds = new Set(combos.map((c: any) => Number(c.order_id)));
+    const comboSoldCount = uniqueComboOrderIds.size;
+
+    // Self combo conversion rate on NOT_COMBO_LIVE customer segment
+    const selfComboRate = notComboLiveOrders > 0 ? comboSoldCount / notComboLiveOrders : 0;
+    const isTargetHit = selfComboRate >= 0.2;
+    const isPenalized = !isTargetHit;
+
+    // 5. Query Tips
+    const tipRes = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      `
+      SELECT COALESCE(SUM(st.tip_amount), 0) as total_tip
+      FROM staff_tip st
+      JOIN \`order\` o ON o.id = st.order_id
+      WHERE st.user_id = ?
+        AND o.order_state = 'Completed'
+        AND o.booking_date_start >= ?
+        AND o.booking_date_start < ?
+      `,
+      targetLegacyStaffId,
+      startStr,
+      endStr
+    );
+    const rawTip = Number(tipRes[0]?.total_tip) || 0;
+    const tipCv = rawTip;
+    // Standard CV receives 70% tip. CV+ receives 90% tip (70% base + 20% consultation tip share).
+    const tipCvPlus = Math.round(rawTip * (9 / 7));
+
+    // 6. Query Shifts & Working Hours
+    const shiftRes = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+      `
+      SELECT COUNT(DISTINCT DATE(o.booking_date_start)) as work_days
+      FROM \`order\` o
+      JOIN order_service os ON os.order_id = o.id
+      WHERE os.assigned_staff_id = ?
+        AND o.order_state = 'Completed'
+        AND o.booking_date_start >= ?
+        AND o.booking_date_start < ?
+      `,
+      targetLegacyStaffId,
+      startStr,
+      endStr
+    );
+    const workingDays = Number(shiftRes[0]?.work_days) || 0;
+    const workingHours = workingDays * 8;
+
+    // 7. Base Wages & Incomes
+    const cvBaseHourly = cvReq?.hourlyWage ? Math.max(0, cvReq.hourlyWage - 2000) : 25000;
+    const cvPlusBaseHourly = cvReq?.hourlyWage ?? 27000;
+    const baseWageCv = workingHours * cvBaseHourly;
+
+    // Penalty enforcement rule:
+    // If selfComboRate < 20%, maintain CV base hourly wage (no +2k increase) and forfeit combo bonus.
+    const baseWageCvPlus = isPenalized ? baseWageCv : workingHours * cvPlusBaseHourly;
+    const comboBonusTotal = isPenalized ? 0 : rawComboBonusTotal;
+    const productBonusTotal = 0;
+
+    const totalCvIncome = baseWageCv + tipCv;
+    const totalCvPlusIncome = baseWageCvPlus + tipCvPlus + comboBonusTotal + productBonusTotal;
+    const deltaGain = totalCvPlusIncome - totalCvIncome;
+    const deltaPercentage = totalCvIncome > 0 ? deltaGain / totalCvIncome : 0;
+
+    const snapshot: CvPlusRewardSnapshot = {
+      staffId: targetLegacyStaffId,
+      staffName: staffName || 'Chuyên Viên',
+      staffPhone: staffPhone || undefined,
+      branchId,
+      branchName,
+      month,
+      totalOrders,
+      workingDays,
+      workingHours,
+      comboLiveOrders,
+      notComboLiveOrders,
+      comboSoldCount,
+      selfComboRate: Math.round(selfComboRate * 1000) / 1000,
+      isTargetHit,
+      isPenalized,
+      baseWageCv,
+      baseWageCvPlus,
+      tipCv,
+      tipCvPlus,
+      comboBonusTotal,
+      productBonusTotal,
+      totalCvIncome,
+      totalCvPlusIncome,
+      deltaGain,
+      deltaPercentage: Math.round(deltaPercentage * 1000) / 1000,
+      comboDetails,
+    };
+
+    // 8. Persist if requested
+    if (persist) {
+      try {
+        await fastify.prisma.crm.crmStaffCvPlusRewardSnapshot.upsert({
+          where: {
+            staffId_month: {
+              staffId: targetLegacyStaffId,
+              month,
+            },
+          },
+          update: {
+            totalOrders,
+            workingDays,
+            workingHours,
+            comboLiveOrders,
+            notComboLiveOrders,
+            comboSoldCount,
+            selfComboRate: snapshot.selfComboRate,
+            isTargetHit,
+            isPenalized,
+            baseWageCv,
+            baseWageCvPlus,
+            tipCv,
+            tipCvPlus,
+            comboBonusTotal,
+            productBonusTotal,
+            totalCvIncome,
+            totalCvPlusIncome,
+            deltaGain,
+            deltaPercentage: snapshot.deltaPercentage,
+            breakdownJson: JSON.stringify(comboDetails),
+          },
+          create: {
+            staffId: targetLegacyStaffId,
+            month,
+            totalOrders,
+            workingDays,
+            workingHours,
+            comboLiveOrders,
+            notComboLiveOrders,
+            comboSoldCount,
+            selfComboRate: snapshot.selfComboRate,
+            isTargetHit,
+            isPenalized,
+            baseWageCv,
+            baseWageCvPlus,
+            tipCv,
+            tipCvPlus,
+            comboBonusTotal,
+            productBonusTotal,
+            totalCvIncome,
+            totalCvPlusIncome,
+            deltaGain,
+            deltaPercentage: snapshot.deltaPercentage,
+            breakdownJson: JSON.stringify(comboDetails),
+          },
+        });
+      } catch (err) {
+        fastify.log.error({ err, targetLegacyStaffId, month }, 'Failed to persist CV+ snapshot');
+      }
+    }
+
+    return snapshot;
+  }
+
+  /**
+   * Tổng hợp mô phỏng toàn salon cho tất cả Chuyên Viên trong tháng
+   */
+  static async getAllCvPlusSimulations(
+    fastify: FastifyInstance,
+    month?: string
+  ): Promise<CvPlusSimulationSummaryResponse> {
+    const staffList = await this.listStaff(fastify);
+    const activeCvs = staffList.filter((s) => s.currentRole === 'CV' || s.currentRole === 'CV_PLUS');
+    const items: CvPlusRewardSnapshot[] = [];
+
+    for (const staff of activeCvs) {
+      const snap = await this.calculateCvPlusRewardsForStaff(fastify, staff.id, month, false);
+      items.push(snap);
+    }
+
+    // Sort items by deltaGain descending
+    items.sort((a, b) => b.deltaGain - a.deltaGain);
+
+    const qualifiedCount = items.filter((i) => i.isTargetHit).length;
+    const penalizedCount = items.filter((i) => i.isPenalized).length;
+    const totalAdditionalPayout = items.reduce((sum, i) => sum + i.deltaGain, 0);
+
+    return {
+      month: items[0]?.month || month || '2026-09',
+      totalStaffCount: items.length,
+      qualifiedCount,
+      penalizedCount,
+      totalAdditionalPayout,
+      items,
     };
   }
 }

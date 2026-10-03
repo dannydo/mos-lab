@@ -2680,6 +2680,24 @@
       }
     },
     {
+      "id": "prisma:crm:CrmStaffCvPlusRewardSnapshot",
+      "type": "PrismaModel",
+      "label": "crm.CrmStaffCvPlusRewardSnapshot",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmStaffCvPlusRewardSnapshot",
+        "tableName": "crm_staff_cv_plus_reward_snapshots",
+        "fieldCount": 25,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
       "id": "prisma:legacy:client_store_language",
       "type": "PrismaModel",
       "label": "legacy.client_store_language",
@@ -19829,6 +19847,42 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:CvPlusComboDetail",
+      "type": "SharedType",
+      "label": "CvPlusComboDetail",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CvPlusComboDetail",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CvPlusRewardSnapshot",
+      "type": "SharedType",
+      "label": "CvPlusRewardSnapshot",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CvPlusRewardSnapshot",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CvPlusSimulationSummaryResponse",
+      "type": "SharedType",
+      "label": "CvPlusSimulationSummaryResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CvPlusSimulationSummaryResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:ServiceType",
       "type": "SharedType",
       "label": "ServiceType",
@@ -29225,8 +29279,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13408188,
-        "lineCount": 291478,
+        "sizeBytes": 13482480,
+        "lineCount": 293296,
         "ext": ".ts"
       }
     },
@@ -30434,8 +30488,8 @@
       "filePath": "apps/api/src/modules/career/career.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 12411,
-        "lineCount": 342,
+        "sizeBytes": 14301,
+        "lineCount": 397,
         "ext": ".ts"
       }
     },
@@ -30460,8 +30514,21 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 79332,
-        "lineCount": 1939,
+        "sizeBytes": 90816,
+        "lineCount": 2273,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/career/cv-plus-rewards.test.ts",
+      "type": "File",
+      "label": "cv-plus-rewards.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/career/cv-plus-rewards.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 2591,
+        "lineCount": 64,
         "ext": ".ts"
       }
     },
@@ -31513,8 +31580,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-leaderboard.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 18672,
-        "lineCount": 525,
+        "sizeBytes": 20505,
+        "lineCount": 565,
         "ext": ".ts"
       }
     },
@@ -31669,8 +31736,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 48056,
-        "lineCount": 1344,
+        "sizeBytes": 50417,
+        "lineCount": 1421,
         "ext": ".ts"
       }
     },
@@ -31682,8 +31749,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 79220,
-        "lineCount": 2059,
+        "sizeBytes": 80687,
+        "lineCount": 2079,
         "ext": ".ts"
       }
     },
@@ -35933,8 +36000,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 74665,
-        "lineCount": 1478,
+        "sizeBytes": 74731,
+        "lineCount": 1481,
         "ext": ".tsx"
       }
     },
@@ -35959,8 +36026,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 147974,
-        "lineCount": 2925,
+        "sizeBytes": 161825,
+        "lineCount": 3136,
         "ext": ".tsx"
       }
     },
@@ -35972,8 +36039,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 47181,
-        "lineCount": 1086,
+        "sizeBytes": 47227,
+        "lineCount": 1090,
         "ext": ".tsx"
       }
     },
@@ -38117,8 +38184,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5234,
-        "lineCount": 168,
+        "sizeBytes": 6250,
+        "lineCount": 191,
         "ext": ".tsx"
       }
     },
@@ -38130,8 +38197,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 31464,
-        "lineCount": 597,
+        "sizeBytes": 32136,
+        "lineCount": 610,
         "ext": ".tsx"
       }
     },
@@ -38156,8 +38223,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TargetConfigModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11708,
-        "lineCount": 291,
+        "sizeBytes": 11777,
+        "lineCount": 295,
         "ext": ".tsx"
       }
     },
@@ -38858,8 +38925,8 @@
       "filePath": "apps/web/lib/api/career.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4785,
-        "lineCount": 131,
+        "sizeBytes": 5906,
+        "lineCount": 164,
         "ext": ".ts"
       }
     },
@@ -39560,8 +39627,8 @@
       "filePath": "packages/shared/src/types/career-progression.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 27098,
-        "lineCount": 634,
+        "sizeBytes": 28564,
+        "lineCount": 691,
         "ext": ".ts"
       }
     },
@@ -40054,8 +40121,8 @@
       "filePath": "packages/shared/src/types/telesale-target.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 6125,
-        "lineCount": 245,
+        "sizeBytes": 6339,
+        "lineCount": 252,
         "ext": ".ts"
       }
     },
@@ -41151,6 +41218,13 @@
     {
       "id": "edge:prisma:crm:CrmTelesalesAttendanceExceptionLog:ws:apps/api",
       "source": "prisma:crm:CrmTelesalesAttendanceExceptionLog",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmStaffCvPlusRewardSnapshot:ws:apps/api",
+      "source": "prisma:crm:CrmStaffCvPlusRewardSnapshot",
       "target": "ws:apps/api",
       "type": "EXPORTS",
       "label": "DEFINED_IN"
@@ -50256,6 +50330,27 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:CvPlusComboDetail:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CvPlusComboDetail",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CvPlusRewardSnapshot:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CvPlusRewardSnapshot",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CvPlusSimulationSummaryResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CvPlusSimulationSummaryResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:ServiceType:ws:packages/shared",
       "source": "type:@mos-lab/shared:ServiceType",
       "target": "ws:packages/shared",
@@ -57564,6 +57659,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/career/cv-plus-rewards.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/career/cv-plus-rewards.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/catalog/routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/catalog/routes.ts",
       "target": "ws:packages/shared",
@@ -61354,6 +61456,13 @@
       "id": "edge:file:apps/api/src/modules/career/career.service.ts:prisma:crm:CrmCareerProgression",
       "source": "file:apps/api/src/modules/career/career.service.ts",
       "target": "prisma:crm:CrmCareerProgression",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/career/career.service.ts:prisma:crm:CrmStaffCvPlusRewardSnapshot",
+      "source": "file:apps/api/src/modules/career/career.service.ts",
+      "target": "prisma:crm:CrmStaffCvPlusRewardSnapshot",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -87091,31 +87200,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3072,
-    "totalEdges": 6709,
+    "totalNodes": 3077,
+    "totalEdges": 6715,
     "nodeTypeCounts": {
       "Workspace": 3,
-      "PrismaModel": 162,
+      "PrismaModel": 163,
       "FastifyRoute": 656,
       "Component": 57,
-      "SharedType": 1127,
+      "SharedType": 1130,
       "DesignToken": 12,
       "UIComponent": 211,
-      "File": 844
+      "File": 845
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1301,
+      "EXPORTS": 1305,
       "HANDLES_ROUTE": 656,
       "RENDERS": 268,
       "USES_TOKEN": 213,
-      "IMPORTS": 468,
-      "QUERIES_MODEL": 379,
+      "IMPORTS": 469,
+      "QUERIES_MODEL": 380,
       "API_CALL": 3424
     },
     "fastifyRouteCount": 661,
-    "prismaModelCount": 162,
+    "prismaModelCount": 163,
     "nextPageCount": 57,
-    "sharedTypeCount": 1127
+    "sharedTypeCount": 1130
   },
   "routes": [
     {
@@ -93066,6 +93175,15 @@
       "modelName": "CrmTelesalesAttendanceExceptionLog",
       "tableName": "crm_telesales_attendance_exception_logs",
       "fieldCount": 16,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmStaffCvPlusRewardSnapshot",
+      "tableName": "crm_staff_cv_plus_reward_snapshots",
+      "fieldCount": 25,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []

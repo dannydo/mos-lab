@@ -34,7 +34,8 @@ import {
   ArrowDownCircle,
 } from 'lucide-react';
 import { StatusTag } from '../../../../components/ui';
-import { type StaffCareerStatus, type CareerProgressionConfig } from '@mos-lab/shared';
+import { type StaffCareerStatus, type CareerProgressionConfig, type CvPlusRewardSnapshot } from '@mos-lab/shared';
+import { apiClient } from '../../../../lib/api-client';
 import { formatCareerRoleName, calculateComboBonus } from '../career-path.constants';
 
 interface RealStaffSimulationCardProps {
@@ -599,6 +600,37 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
   const [sliderQaAudits, setSliderQaAudits] = React.useState<number>(12);
   const [sliderHappinessIndex, setSliderHappinessIndex] = React.useState<number>(85);
   const [sliderBananaCount, setSliderBananaCount] = React.useState<number>(45);
+
+  // Dữ liệu đối soát thực tế CV+ từ Backend Fastify (Single Source of Truth)
+  const [cvPlusSnapshot, setCvPlusSnapshot] = React.useState<CvPlusRewardSnapshot | null>(null);
+  const [isLoadingCvPlus, setIsLoadingCvPlus] = React.useState<boolean>(false);
+  const [isComboDetailsExpanded, setIsComboDetailsExpanded] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    if (!status?.staffId) {
+      setCvPlusSnapshot(null);
+      return;
+    }
+    let isCancelled = false;
+    setIsLoadingCvPlus(true);
+    apiClient.career
+      .getCvPlusRewards(status.staffId)
+      .then((res) => {
+        if (!isCancelled && res) {
+          setCvPlusSnapshot(res);
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to fetch CV+ snapshot:', err);
+      })
+      .finally(() => {
+        if (!isCancelled) setIsLoadingCvPlus(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [status?.staffId]);
 
   const toggleGate = (idx: number) => {
     setExpandedGates((prev) => {
@@ -2617,6 +2649,206 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
 
             {earnings && (
               <div className="space-y-3.5">
+                {/* CV+ REAL SNAPSHOT & OPPORTUNITY SIMULATION CARD (DATA THẬT ĐỐI CHỨNG) */}
+                {cvPlusSnapshot && (
+                  <div className="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-emerald-500/5 dark:from-slate-900 dark:via-indigo-950/20 dark:to-emerald-950/20 border border-indigo-200/80 dark:border-indigo-800/60 shadow-xs space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-lg bg-indigo-500/15 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-black">
+                          <Crown className="w-3.5 h-3.5 text-amber-500" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                            <span>Đặc Quyền CV+ &amp; Đối Soát Data Thật</span>
+                            <span className="text-[10px] text-slate-400 font-normal">({cvPlusSnapshot.month})</span>
+                          </div>
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                            {cvPlusSnapshot.staffName} · {cvPlusSnapshot.branchName} · {cvPlusSnapshot.workingDays} ca (
+                            {cvPlusSnapshot.workingHours}h)
+                          </div>
+                        </div>
+                      </div>
+
+                      {cvPlusSnapshot.isTargetHit ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-black text-[10px]">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                          <span>ĐẠT CHUẨN XUẤT SẮC ({(cvPlusSnapshot.selfComboRate * 100).toFixed(1)}% ≥ 20%)</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-black text-[10px]">
+                          <ShieldAlert className="w-3 h-3 text-amber-500" />
+                          <span>CHẾ TÀI ÁP DỤNG ({(cvPlusSnapshot.selfComboRate * 100).toFixed(1)}% &lt; 20%)</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Customer Segmentation 3-Column Pill Grid */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="p-2 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60">
+                        <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                          Tổng Lượt Khách
+                        </div>
+                        <div className="text-sm font-black text-slate-800 dark:text-slate-100 tabular-nums">
+                          {cvPlusSnapshot.totalOrders}
+                        </div>
+                        <div className="text-[9px] text-slate-400">Hoàn thành</div>
+                      </div>
+
+                      <div className="p-2 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60">
+                        <div className="text-[9px] font-bold text-blue-500 uppercase tracking-wider">Combo Live</div>
+                        <div className="text-sm font-black text-blue-600 dark:text-blue-400 tabular-nums">
+                          {cvPlusSnapshot.comboLiveOrders}
+                        </div>
+                        <div className="text-[9px] text-slate-400">Khách dặm gói</div>
+                      </div>
+
+                      <div className="p-2 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-indigo-200/80 dark:border-indigo-800/60">
+                        <div className="text-[9px] font-bold text-indigo-500 uppercase tracking-wider">
+                          Not Combo Live
+                        </div>
+                        <div className="text-sm font-black text-indigo-600 dark:text-indigo-400 tabular-nums">
+                          {cvPlusSnapshot.notComboLiveOrders}
+                        </div>
+                        <div className="text-[9px] text-indigo-600/80 dark:text-indigo-400/80 font-bold">
+                          Chốt {cvPlusSnapshot.comboSoldCount} combo ({(cvPlusSnapshot.selfComboRate * 100).toFixed(1)}
+                          %)
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Opportunity & Motivation Callout */}
+                    {cvPlusSnapshot.isPenalized ? (
+                      <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-800 dark:text-amber-200 text-[11px] leading-relaxed">
+                        <div className="font-bold flex items-center gap-1.5">
+                          <Zap className="w-3.5 h-3.5 text-amber-500" />
+                          <span>Đòn bẩy động lực mở khóa thêm thu nhập:</span>
+                        </div>
+                        <div className="mt-1">
+                          Tỷ lệ chốt combo tháng này đạt {(cvPlusSnapshot.selfComboRate * 100).toFixed(1)}% (chưa chạm
+                          ngưỡng tối thiểu 20%). Hệ thống giữ nguyên lương giờ CV (25.000đ/h) và tạm khóa thưởng Combo.
+                          Nhân viên vẫn nhận đủ 20% Tip tự chủ (90% tip: +{formatVnd(cvPlusSnapshot.deltaGain)}).
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-800 dark:text-emerald-200 text-[11px] leading-relaxed">
+                        <div className="font-bold flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Xuất sắc vượt chuẩn! Đã mở khóa toàn bộ quyền lợi CV+:</span>
+                        </div>
+                        <div className="mt-1">
+                          Tỷ lệ chốt combo đạt {(cvPlusSnapshot.selfComboRate * 100).toFixed(1)}% (vượt mốc 20%). Nhân
+                          viên nhận đủ +2.000đ/h lương giờ, hưởng 90% tip tự chủ và toàn bộ thưởng Combo bậc thang!
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Side-by-side Table of CV vs CV+ */}
+                    <div className="p-2.5 rounded-xl bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 space-y-1.5 text-xs">
+                      <div className="grid grid-cols-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider pb-1 border-b border-slate-100 dark:border-slate-700">
+                        <div>Khoản mục</div>
+                        <div className="text-right">CV hiện tại</div>
+                        <div className="text-right text-emerald-600 dark:text-emerald-400 font-black">
+                          CV+ thực nhận
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 py-1 items-center">
+                        <div className="text-slate-600 dark:text-slate-300 font-medium">
+                          Lương giờ ({cvPlusSnapshot.workingHours}h)
+                        </div>
+                        <div className="text-right tabular-nums text-slate-500">
+                          {formatVnd(cvPlusSnapshot.baseWageCv)}
+                        </div>
+                        <div className="text-right tabular-nums font-bold text-slate-800 dark:text-slate-100">
+                          {formatVnd(cvPlusSnapshot.baseWageCvPlus)}
+                          {!cvPlusSnapshot.isPenalized && (
+                            <span className="text-[10px] text-emerald-500 ml-1">(+2k/h)</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 py-1 items-center">
+                        <div className="text-slate-600 dark:text-slate-300 font-medium">Tiền Tip (70% vs 90%)</div>
+                        <div className="text-right tabular-nums text-slate-500">{formatVnd(cvPlusSnapshot.tipCv)}</div>
+                        <div className="text-right tabular-nums font-bold text-emerald-600 dark:text-emerald-400">
+                          {formatVnd(cvPlusSnapshot.tipCvPlus)}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 py-1 items-center">
+                        <div className="text-slate-600 dark:text-slate-300 font-medium">
+                          Thưởng Combo ({cvPlusSnapshot.comboDetails.length} gói)
+                        </div>
+                        <div className="text-right tabular-nums text-slate-400">0 đ</div>
+                        <div className="text-right tabular-nums font-bold text-purple-600 dark:text-purple-400">
+                          {formatVnd(cvPlusSnapshot.comboBonusTotal)}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 pt-2 mt-1 border-t border-slate-200 dark:border-slate-700 font-black items-center">
+                        <div className="text-slate-800 dark:text-slate-100">TỔNG THU NHẬP</div>
+                        <div className="text-right tabular-nums text-slate-600 dark:text-slate-300">
+                          {formatVnd(cvPlusSnapshot.totalCvIncome)}
+                        </div>
+                        <div className="text-right tabular-nums text-emerald-600 dark:text-emerald-400 text-sm">
+                          {formatVnd(cvPlusSnapshot.totalCvPlusIncome)}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                        <span>Chênh lệch tăng ròng:</span>
+                        <span className="tabular-nums">
+                          +{formatVnd(cvPlusSnapshot.deltaGain)} (+{(cvPlusSnapshot.deltaPercentage * 100).toFixed(1)}%)
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Collapsible Combo Details */}
+                    {cvPlusSnapshot.comboDetails && cvPlusSnapshot.comboDetails.length > 0 && (
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => setIsComboDetailsExpanded(!isComboDetailsExpanded)}
+                          className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <Gem className="w-3 h-3 text-purple-500" />
+                            <span>Xem danh sách {cvPlusSnapshot.comboDetails.length} gói Combo chốt trong tháng</span>
+                          </span>
+                          {isComboDetailsExpanded ? (
+                            <ChevronUp className="w-3.5 h-3.5" />
+                          ) : (
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+
+                        {isComboDetailsExpanded && (
+                          <div className="mt-2 space-y-1 max-h-48 overflow-y-auto pr-1">
+                            {cvPlusSnapshot.comboDetails.map((c, i) => (
+                              <div
+                                key={i}
+                                className="flex items-center justify-between p-2 rounded-lg bg-white/70 dark:bg-slate-800/70 border border-slate-200/50 dark:border-slate-700/50 text-[11px]"
+                              >
+                                <div className="min-w-0 pr-2">
+                                  <div className="font-bold text-slate-700 dark:text-slate-200 truncate">
+                                    {c.comboName}
+                                  </div>
+                                  <div className="text-[10px] text-slate-400">
+                                    Đơn #{c.orderId} · {c.customerName || 'Khách'} · {formatVnd(c.price)}
+                                  </div>
+                                </div>
+                                <span className="font-black text-purple-600 dark:text-purple-400 tabular-nums shrink-0">
+                                  +{formatVnd(c.bonus)}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Visual Comparative Income Hero Card */}
                 <div className="p-3.5 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-2.5">
                   {/* Side-by-side Comparison */}

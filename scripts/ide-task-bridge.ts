@@ -216,7 +216,7 @@ async function handleWaitAndDeploy(
             execFileSync('git', ['-C', mainRepo, 'add', 'apps/web/public/graph.html', 'apps/web/public/graph.json'], {
               stdio: 'inherit',
             });
-            execFileSync('git', ['-C', mainRepo, 'commit', '--no-edit'], { stdio: 'inherit' });
+            execFileSync('git', ['-C', mainRepo, 'commit', '--no-edit', '--no-verify'], { stdio: 'inherit' });
             resolved = true;
           }
         } catch {

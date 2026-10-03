@@ -631,3 +631,60 @@ export interface BananaTransactionResponse {
   countSentGiveAway: number;
   transactions: BananaTransactionItem[];
 }
+
+/**
+ * Chi tiết từng gói Combo được bán bởi Chuyên Viên
+ */
+export interface CvPlusComboDetail {
+  orderId: number;
+  orderCode?: string;
+  orderDate: string;
+  customerName?: string;
+  comboName?: string;
+  price: number;
+  bonus: number;
+}
+
+/**
+ * Snapshot kết quả tính toán chi tiết quyền lợi CV+ (lương giờ tăng, tip tự chủ 90%, thưởng combo bậc thang)
+ */
+export interface CvPlusRewardSnapshot {
+  staffId: number;
+  staffName?: string;
+  staffPhone?: string;
+  branchId?: number;
+  branchName?: string;
+  month: string; // YYYY-MM
+  totalOrders: number;
+  workingDays: number;
+  workingHours: number;
+  comboLiveOrders: number;
+  notComboLiveOrders: number;
+  comboSoldCount: number;
+  selfComboRate: number; // 0.209 = 20.9%
+  isTargetHit: boolean; // selfComboRate >= 0.20
+  isPenalized: boolean; // !isTargetHit
+  baseWageCv: number;
+  baseWageCvPlus: number;
+  tipCv: number;
+  tipCvPlus: number;
+  comboBonusTotal: number;
+  productBonusTotal: number;
+  totalCvIncome: number;
+  totalCvPlusIncome: number;
+  deltaGain: number;
+  deltaPercentage: number;
+  comboDetails: CvPlusComboDetail[];
+}
+
+/**
+ * Dữ liệu trả về cho bản tóm tắt mô phỏng toàn bộ Chuyên Viên trong tháng
+ */
+export interface CvPlusSimulationSummaryResponse {
+  month: string;
+  totalStaffCount: number;
+  qualifiedCount: number;
+  penalizedCount: number;
+  totalAdditionalPayout: number;
+  items: CvPlusRewardSnapshot[];
+}

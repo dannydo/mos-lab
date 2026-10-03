@@ -3614,3 +3614,36 @@ model CrmTelesalesAttendanceExceptionLog {
   @@index([createdAt])
   @@map("crm_telesales_attendance_exception_logs")
 }
+
+/// Snapshot kết quả tính toán chi tiết quyền lợi CV+ (lương giờ tăng, tip tự chủ 90%, thưởng combo bậc thang)
+model CrmStaffCvPlusRewardSnapshot {
+  id                 Int      @id @default(autoincrement())
+  staffId            Int      @map("staff_id")
+  month              String   @map("month") @db.VarChar(7) // YYYY-MM
+  totalOrders        Int      @map("total_orders")
+  workingDays        Int      @map("working_days")
+  workingHours       Float    @map("working_hours")
+  comboLiveOrders    Int      @map("combo_live_orders")
+  notComboLiveOrders Int      @map("not_combo_live_orders")
+  comboSoldCount     Int      @map("combo_sold_count")
+  selfComboRate      Float    @map("self_combo_rate")
+  isTargetHit        Boolean  @map("is_target_hit")
+  isPenalized        Boolean  @map("is_penalized")
+  baseWageCv         Float    @map("base_wage_cv")
+  baseWageCvPlus     Float    @map("base_wage_cv_plus")
+  tipCv              Float    @map("tip_cv")
+  tipCvPlus          Float    @map("tip_cv_plus")
+  comboBonusTotal    Float    @map("combo_bonus_total")
+  productBonusTotal  Float    @map("product_bonus_total")
+  totalCvIncome      Float    @map("total_cv_income")
+  totalCvPlusIncome  Float    @map("total_cv_plus_income")
+  deltaGain          Float    @map("delta_gain")
+  deltaPercentage    Float    @map("delta_percentage")
+  breakdownJson      String?  @map("breakdown_json") @db.Text
+  createdAt          DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@unique([staffId, month])
+  @@index([month])
+  @@map("crm_staff_cv_plus_reward_snapshots")
+}

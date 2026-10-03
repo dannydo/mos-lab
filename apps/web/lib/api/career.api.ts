@@ -4,6 +4,8 @@ import {
   type StaffCareerStatus,
   type CareerStaffSummary,
   type BananaTransactionResponse,
+  type CvPlusRewardSnapshot,
+  type CvPlusSimulationSummaryResponse,
 } from '@mos-lab/shared';
 import { api, dedupeApiGet, invalidateApiGetCache, ApiRequestOptions } from './base';
 
@@ -121,6 +123,37 @@ export const careerApi = {
       const res = await dedupeApiGet<{ success: boolean; data: BananaTransactionResponse }>(
         `/career/staff/${staffId}/banana-transactions`,
         params as any,
+        3000,
+        options
+      );
+      return res.data;
+    },
+    getCvPlusRewards: async (
+      staffId: number,
+      month?: string,
+      persist = false,
+      options?: ApiRequestOptions
+    ): Promise<CvPlusRewardSnapshot> => {
+      const params: Record<string, string> = { staffId: String(staffId) };
+      if (month) params.month = month;
+      if (persist) params.persist = 'true';
+      const res = await dedupeApiGet<{ success: boolean; data: CvPlusRewardSnapshot }>(
+        '/career/cv-plus-rewards',
+        params,
+        3000,
+        options
+      );
+      return res.data;
+    },
+    getCvPlusSimulationSummary: async (
+      month?: string,
+      options?: ApiRequestOptions
+    ): Promise<CvPlusSimulationSummaryResponse> => {
+      const params: Record<string, string> = {};
+      if (month) params.month = month;
+      const res = await dedupeApiGet<{ success: boolean; data: CvPlusSimulationSummaryResponse }>(
+        '/career/cv-plus-simulation-summary',
+        Object.keys(params).length > 0 ? params : undefined,
         3000,
         options
       );

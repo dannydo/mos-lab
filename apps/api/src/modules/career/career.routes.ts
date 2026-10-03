@@ -338,4 +338,59 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       }
     }
   );
+
+  /**
+   * Tính toán chi tiết quyền lợi CV+ cho 1 Chuyên Viên theo tháng
+   * GET /api/career/cv-plus-rewards?staffId=...&month=YYYY-MM&persist=true|false
+   */
+  fastify.get<{
+    Querystring: { staffId: string; month?: string; persist?: string };
+  }>(
+    '/career/cv-plus-rewards',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      const staffId = Number(request.query?.staffId);
+      if (isNaN(staffId) || staffId <= 0) {
+        return reply.status(400).send({ success: false, message: 'ID nhân viên không hợp lệ' });
+      }
+
+      try {
+        const persist = request.query?.persist === 'true';
+        const result = await CareerProgressionService.calculateCvPlusRewardsForStaff(
+          fastify,
+          staffId,
+          request.query?.month,
+          persist
+        );
+        return reply.send({ success: true, data: result });
+      } catch (err: any) {
+        fastify.log.error({ err, staffId }, 'Failed to calculate CV+ rewards');
+        return reply.status(500).send({ success: false, message: 'Lỗi tính toán quyền lợi CV+' });
+      }
+    }
+  );
+
+  /**
+   * Tổng hợp mô phỏng toàn salon cho tất cả Chuyên Viên trong tháng
+   * GET /api/career/cv-plus-simulation-summary?month=YYYY-MM
+   */
+  fastify.get<{
+    Querystring: { month?: string };
+  }>(
+    '/career/cv-plus-simulation-summary',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const result = await CareerProgressionService.getAllCvPlusSimulations(fastify, request.query?.month);
+        return reply.send({ success: true, data: result });
+      } catch (err: any) {
+        fastify.log.error({ err }, 'Failed to get CV+ simulation summary');
+        return reply.status(500).send({ success: false, message: 'Lỗi lấy tổng hợp mô phỏng CV+' });
+      }
+    }
+  );
 };
