@@ -268,10 +268,10 @@ const DEFAULT_CV_TO_CV_PLUS: CvToCvPlusRequirements = {
   minTipRatioAboveShop: 0.1, // 10% cao hơn trung bình shop
   maxFixRate: 0.02,
   minHappinessIndex: 0.7, // Hệ thống HI tối thiểu 70% từ check-in thả tim
-  minBananaCount: 45, // Chuối yêu thương nhận từ thiên thần khác lúc check-in trong 90 ngày (15 * 3 = 45)
+  minBananaCount: 20, // Chuối yêu thương nhận từ thiên thần khác lúc check-in trong tháng gần nhất (chuẩn 20 chuối/tháng)
   maxDisciplinaryViolations: 0, // Bị 1 biên bản QA/QC là failed
   minWeeklyQaAudits: 1, // Tối thiểu 1 lần/tuần mời QA/QC kiểm tra tác phong & phòng mi
-  minQaAudits: 12, // Tối thiểu 12 lần trong 3 tháng qua (cho phép tự chỉnh)
+  minQaAudits: 4, // Tối thiểu 4 lần trong tháng gần nhất (1 lần/tuần * 4 tuần)
   requireZeroFailedAudits: true, // Nếu có bài kiểm tra failed -> KHÔNG được nâng cấp
   trialDurationDays: 30,
   minSelfComboRate: 0.2, // Tối thiểu 20% trên tệp khách tiềm năng chưa có gói combo (~8 combo/tháng)
@@ -294,7 +294,7 @@ const DEFAULT_CV_PLUS_TO_CV_PLUS_PLUS: CvPlusToCvPlusPlusRequirements = {
   minOrders: 350, // 350 ca / 3 tháng liền
   maxFixRate: 0.015, // Tỷ lệ lỗi Fix <= 1.5%
   minTipRatioAboveShop: 0.15, // Tip cao hơn 15% so với trung bình shop
-  minBananaCount: 60, // 60 chuối yêu thương / 90N (20 chuối/tháng)
+  minBananaCount: 25, // Chuối yêu thương nhận trong tháng gần nhất (chuẩn 25 chuối/tháng)
   minHappinessIndex: 0.8, // Đồng đội tin yêu HI >= 80%
   crossConsultCommissionRate: 0.025, // 2.5% hoa hồng tư vấn giùm khách của CV khác khi FM vắng
   crossConsultTipRate: 0.2, // Nhận 20% tip khi tư vấn cho khách của CV khác
@@ -302,7 +302,7 @@ const DEFAULT_CV_PLUS_TO_CV_PLUS_PLUS: CvPlusToCvPlusPlusRequirements = {
   expectedCrossConsultCombosPerMonth: 4, // Dự kiến chốt được 4 combo chéo / tháng (~450.000đ)
   maxDisciplinaryViolations: 0,
   minWeeklyQaAudits: 1,
-  minQaAudits: 12,
+  minQaAudits: 4,
   requireZeroFailedAudits: true,
   trialDurationDays: 30,
   allowSelfConsultTrial: true,

@@ -19,6 +19,8 @@ import {
   LayoutGrid,
   Sparkles,
   ArrowDownCircle,
+  Info,
+  X,
 } from 'lucide-react';
 import { StatusTag, DataTable } from '../../../../components/ui';
 import type { CareerStaffSummary, CareerRole } from '@mos-lab/shared';
@@ -38,10 +40,10 @@ interface StaffCareerSelectorProps {
 }
 
 const ROLE_TABS = [
-  { key: 'ALL', label: 'Tất cả Chuyên Viên' },
-  { key: 'CV', label: 'Chuyên Viên (CV)' },
-  { key: 'CV_PLUS', label: 'Chuyên Viên Tự Chủ (CV+)' },
-  { key: 'CV_PLUS_PLUS', label: 'Đàn Chị Sảnh (CV++)' },
+  { key: 'ALL', label: 'Tất cả', fullLabel: 'Tất cả Chuyên Viên' },
+  { key: 'CV', label: 'CV', fullLabel: 'Chuyên Viên (CV)' },
+  { key: 'CV_PLUS', label: 'CV+', fullLabel: 'Chuyên Viên Tự Chủ (CV+)' },
+  { key: 'CV_PLUS_PLUS', label: 'CV++', fullLabel: 'Đàn Chị Sảnh (CV++)' },
 ];
 
 export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
@@ -58,6 +60,8 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
   actionLoading = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchExpanded, setSearchExpanded] = useState(false);
+  const searchInputRef = React.useRef<any>(null);
   const [internalRoleFilter, setInternalRoleFilter] = useState('ALL');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
@@ -109,7 +113,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
       return staff.qaAuditsCount;
     }
     if (typeof staff.weeklyQaAuditRate === 'number') {
-      return Math.round(staff.weeklyQaAuditRate * 12);
+      return Math.round(staff.weeklyQaAuditRate * 4);
     }
     return 0;
   };
@@ -169,8 +173,8 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
   const getQaStatus = (staff: CareerStaffSummary): MetricStatus => {
     if (staff.hasFailedQaAudit) return 'failed';
     const audits = getQaAuditsCount(staff);
-    if (audits >= 12) return 'passed';
-    if (audits >= 8) return 'near';
+    if (audits >= 4) return 'passed';
+    if (audits >= 3) return 'near';
     return 'failed';
   };
 
@@ -182,8 +186,8 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
   };
 
   const getBananaCountStatus = (count: number): MetricStatus => {
-    if (count >= 60) return 'passed';
-    if (count >= 45) return 'near';
+    if (count >= 20) return 'passed';
+    if (count >= 15) return 'near';
     return 'failed';
   };
 
@@ -428,7 +432,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
-        <Tooltip title="Bộ mi: Số ca hoàn thành trong 90 ngày (Chuẩn ≥ 300 bộ)">
+        <Tooltip title="Bộ mi: Số ca hoàn thành trong 3 tháng (Chuẩn ≥ 300 bộ)">
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <Eye className="w-4 h-4 text-slate-600 dark:text-slate-300" />
           </span>
@@ -443,7 +447,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
         const count = ordersCount || 0;
         const status = getOrdersStatus(count);
         return (
-          <Tooltip title={`${count}/300 bộ mi (90 ngày) · ${getStatusLabel(status)}`}>
+          <Tooltip title={`${count}/300 bộ mi (3 tháng) · ${getStatusLabel(status)}`}>
             <span
               className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${getStatusBadgeClass(
                 status
@@ -457,7 +461,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
-        <Tooltip title="Fix: Tỷ lệ sửa mi / bảo hành trong 90 ngày (Chuẩn ≤ 2.0%)">
+        <Tooltip title="Fix: Tỷ lệ sửa mi / bảo hành trong tháng gần nhất (Chuẩn ≤ 2.0%)">
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <Bug className="w-4 h-4 text-slate-600 dark:text-slate-300" />
           </span>
@@ -472,7 +476,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
         const fixPct = Number(((fixRate || 0) * 100).toFixed(1));
         const status = getFixStatus(fixRate || 0);
         return (
-          <Tooltip title={`Tỷ lệ bảo hành / sửa: ${fixPct}% (chuẩn ≤ 2.0%) · ${getStatusLabel(status)}`}>
+          <Tooltip title={`Tỷ lệ bảo hành / sửa: ${fixPct}% tháng gần nhất (chuẩn ≤ 2.0%) · ${getStatusLabel(status)}`}>
             <span
               className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${getStatusBadgeClass(
                 status
@@ -486,7 +490,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
-        <Tooltip title="Tip: Tỷ lệ khách tip ≥ 20K (Chuẩn vượt 10% TB chi nhánh)">
+        <Tooltip title="Tip: Tỷ lệ khách tip ≥ 20K trong tháng gần nhất (Chuẩn vượt 10% TB chi nhánh)">
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <Coins className="w-4 h-4 text-slate-600 dark:text-slate-300" />
           </span>
@@ -505,7 +509,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
         const targetTipPct = Number(((staff.shopTipRate || staff.branchTipRate || 0.45) * 1.1 * 100).toFixed(1));
         return (
           <Tooltip
-            title={`Tip: ${tipPct}% (mục tiêu ≥ ${targetTipPct}% · TB ${branchLabel}: ${branchTipPct}%, ${
+            title={`Tip tháng gần nhất: ${tipPct}% (mục tiêu ≥ ${targetTipPct}% · TB ${branchLabel}: ${branchTipPct}%, ${
               diffShop >= 0 ? `+${diffShop}%` : `${diffShop}%`
             }) · ${getStatusLabel(status)}`}
           >
@@ -522,7 +526,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
-        <Tooltip title="QA & QC: Kiểm định định kỳ (Chuẩn ≥ 12 lần và không vi phạm FAILED)">
+        <Tooltip title="QA & QC: Kiểm định định kỳ trong tháng gần nhất (Chuẩn ≥ 4 lần/tháng và không vi phạm FAILED)">
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <ShieldCheck className="w-4 h-4 text-slate-600 dark:text-slate-300" />
           </span>
@@ -540,7 +544,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
             title={
               staff.hasFailedQaAudit
                 ? '✕ Có biên bản vi phạm QA'
-                : `${audits}/12 lần kiểm định tác phong & vệ sinh · ${getStatusLabel(status)}`
+                : `${audits}/4 lần kiểm định tác phong & vệ sinh tháng gần nhất · ${getStatusLabel(status)}`
             }
           >
             <span
@@ -548,7 +552,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
                 status
               )}`}
             >
-              {audits}/12
+              {audits}/4
             </span>
           </Tooltip>
         );
@@ -556,7 +560,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
-        <Tooltip title="HI: Chỉ số Hạnh Phúc khách hàng (Chuẩn ≥ 70%)">
+        <Tooltip title="HI: Chỉ số Hạnh Phúc trong tháng gần nhất (Chuẩn ≥ 70%)">
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <Heart className="w-4 h-4 text-slate-600 dark:text-slate-300" />
           </span>
@@ -571,7 +575,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
         const hiPct = Math.round((happinessIndex || 0.75) * 100);
         const status = getHiStatus(happinessIndex || 0.75);
         return (
-          <Tooltip title={`Chỉ số Hạnh Phúc HI: ${hiPct}% (chuẩn ≥ 70%) · ${getStatusLabel(status)}`}>
+          <Tooltip title={`Chỉ số Hạnh Phúc HI tháng gần nhất: ${hiPct}% (chuẩn ≥ 70%) · ${getStatusLabel(status)}`}>
             <span
               className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${getStatusBadgeClass(
                 status
@@ -585,7 +589,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
-        <Tooltip title="Chuối yêu thương: Check-in nhận từ đồng đội trong 90 ngày (Chuẩn ≥ 60 🍌)">
+        <Tooltip title="Chuối yêu thương: Check-in nhận từ đồng đội trong tháng gần nhất (Chuẩn ≥ 20 🍌)">
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <Banana className="w-4 h-4 text-amber-500" />
           </span>
@@ -600,7 +604,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
         const count = bananaCount || 0;
         const status = getBananaCountStatus(count);
         return (
-          <Tooltip title={`${count}/60 chuối yêu thương · ${getStatusLabel(status)}`}>
+          <Tooltip title={`${count}/20 chuối yêu thương tháng gần nhất · ${getStatusLabel(status)}`}>
             <span
               className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${getStatusBadgeClass(
                 status
@@ -644,98 +648,116 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
 
   return (
     <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-rose-100/60 dark:border-slate-800/80 p-4 shadow-sm mb-6 transition-all duration-200">
-      {/* Header bar: Title + Search + View Switcher + Refresh Prod Button */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-rose-500 to-amber-400 flex items-center justify-center text-white shadow-sm">
-            <UserCheck className="w-4 h-4" />
+      {/* Header bar: Title + Count + Info + Role Filters + Controls (Single Toggle View + Expandable Search) */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-rose-500 to-amber-400 flex items-center justify-center text-white shadow-xs shrink-0">
+            <UserCheck className="w-3.5 h-3.5" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm md:text-base font-bold text-slate-800 dark:text-slate-100 m-0">
-                Chọn Chuyên Viên (CV) Mô Phỏng Data Thật
-              </h3>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 font-semibold tabular-nums">
-                {filteredStaff.length} chuyên viên
+          <div className="flex items-center gap-1.5">
+            <h3 className="text-xs md:text-sm font-bold text-slate-800 dark:text-slate-100 m-0">
+              Chuyên Viên (CV) Mô Phỏng
+            </h3>
+            <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 font-semibold tabular-nums">
+              {filteredStaff.length}
+            </span>
+            <Tooltip
+              title="Dữ liệu đồng bộ trực tiếp từ danh sách Báo Cáo CV (Số bộ mi 3 tháng; Bug, Tip, QA/QC, HI, Chuối yêu thương tháng gần nhất)"
+              placement="bottomLeft"
+            >
+              <span className="cursor-help text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-0.5 inline-flex items-center">
+                <Info className="w-3.5 h-3.5" />
               </span>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 m-0">
-              Dữ liệu đồng bộ trực tiếp từ danh sách Báo Cáo CV (Số ca 90 ngày, Fix, Tip, Combo, Chuối Yêu Thương)
-            </p>
+            </Tooltip>
+          </div>
+
+          <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block" />
+
+          {/* Role Filter Chips */}
+          <div className="flex items-center gap-1">
+            {ROLE_TABS.map((tab) => {
+              const isActive = currentFilter === tab.key;
+              return (
+                <Tooltip key={tab.key} title={tab.fullLabel}>
+                  <button
+                    onClick={() => setFilter(tab.key)}
+                    className={`px-2 py-0.5 rounded-lg text-xs font-semibold transition-all duration-150 ${
+                      isActive
+                        ? 'bg-rose-500 text-white shadow-xs'
+                        : 'bg-slate-100/90 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 hover:bg-slate-200/90 dark:hover:bg-slate-700/80'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                </Tooltip>
+              );
+            })}
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* View Mode Switcher */}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-0.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
+        {/* Right side controls: Toggle View Mode + Expandable Search */}
+        <div className="flex items-center gap-1.5 ml-auto">
+          {/* Toggle View Mode Button */}
+          <Tooltip title={viewMode === 'table' ? 'Chuyển sang dạng Thẻ (Grid)' : 'Chuyển sang dạng Bảng (Table)'}>
             <button
-              onClick={() => setViewMode('table')}
-              title="Xem dạng Bảng chi tiết"
-              className={`p-1.5 rounded-lg text-xs transition-all ${
-                viewMode === 'table'
-                  ? 'bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-400 shadow-xs font-bold'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-              }`}
+              onClick={() => setViewMode(viewMode === 'table' ? 'grid' : 'table')}
+              className="p-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-all active:scale-95 flex items-center justify-center cursor-pointer"
             >
-              <TableIcon className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setViewMode('grid')}
-              title="Xem dạng Thẻ (Grid)"
-              className={`p-1.5 rounded-lg text-xs transition-all ${
-                viewMode === 'grid'
-                  ? 'bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-400 shadow-xs font-bold'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
-              }`}
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <Input
-            placeholder="Tìm tên nhân viên..."
-            prefix={<Search className="w-3.5 h-3.5 text-slate-400" />}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-44 text-xs rounded-xl"
-            allowClear
-          />
-
-          <Tooltip title="Làm mới dữ liệu mới nhất trực tiếp từ cơ sở dữ liệu Production">
-            <button
-              onClick={onSyncProd}
-              disabled={syncing}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                syncing
-                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
-                  : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 active:scale-95 border border-emerald-500/20'
-              }`}
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} />
-              <span>{syncing ? 'Đang sync...' : 'Refresh từ Prod'}</span>
+              {viewMode === 'table' ? (
+                <LayoutGrid className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+              ) : (
+                <TableIcon className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+              )}
             </button>
           </Tooltip>
-        </div>
-      </div>
 
-      {/* Role Tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 scrollbar-none mb-3">
-        {ROLE_TABS.map((tab) => {
-          const isActive = currentFilter === tab.key;
-          return (
-            <button
-              key={tab.key}
-              onClick={() => setFilter(tab.key)}
-              className={`px-3 py-1 rounded-xl text-xs whitespace-nowrap font-medium transition-all duration-150 ${
-                isActive
-                  ? 'bg-rose-500 text-white shadow-sm font-semibold'
-                  : 'bg-slate-100/80 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-700/60'
-              }`}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
+          {/* Expandable Search Button */}
+          {!searchExpanded && !searchTerm ? (
+            <Tooltip title="Tìm tên Chuyên Viên...">
+              <button
+                onClick={() => {
+                  setSearchExpanded(true);
+                  setTimeout(() => searchInputRef.current?.focus(), 50);
+                }}
+                className="p-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all active:scale-95 flex items-center justify-center cursor-pointer"
+              >
+                <Search className="w-4 h-4" />
+              </button>
+            </Tooltip>
+          ) : (
+            <div className="relative flex items-center transition-all duration-300 ease-in-out w-40 md:w-52">
+              <Input
+                ref={searchInputRef}
+                placeholder="Tìm tên Chuyên Viên..."
+                prefix={<Search className="w-3.5 h-3.5 text-slate-400" />}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onBlur={() => {
+                  if (!searchTerm) setSearchExpanded(false);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setSearchTerm('');
+                    setSearchExpanded(false);
+                  }
+                }}
+                suffix={
+                  searchTerm ? (
+                    <X
+                      className="w-3.5 h-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                      onClick={() => {
+                        setSearchTerm('');
+                        setSearchExpanded(false);
+                      }}
+                    />
+                  ) : null
+                }
+                className="text-xs rounded-xl"
+                autoFocus
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Primary View: Table with all metrics like Image 2 */}

@@ -30434,7 +30434,7 @@
       "filePath": "apps/api/src/modules/career/career.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 12412,
+        "sizeBytes": 12411,
         "lineCount": 342,
         "ext": ".ts"
       }
@@ -30460,8 +30460,8 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 73084,
-        "lineCount": 1872,
+        "sizeBytes": 75512,
+        "lineCount": 1914,
         "ext": ".ts"
       }
     },
@@ -35946,8 +35946,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerRealmEncyclopedia.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4238,
-        "lineCount": 96,
+        "sizeBytes": 4214,
+        "lineCount": 94,
         "ext": ".tsx"
       }
     },
@@ -35959,8 +35959,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 147753,
-        "lineCount": 2921,
+        "sizeBytes": 147845,
+        "lineCount": 2925,
         "ext": ".tsx"
       }
     },
@@ -35972,8 +35972,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 45432,
-        "lineCount": 1057,
+        "sizeBytes": 46982,
+        "lineCount": 1086,
         "ext": ".tsx"
       }
     },
@@ -35985,8 +35985,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38424,
-        "lineCount": 865,
+        "sizeBytes": 38282,
+        "lineCount": 854,
         "ext": ".tsx"
       }
     },
@@ -39560,7 +39560,7 @@
       "filePath": "packages/shared/src/types/career-progression.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 27034,
+        "sizeBytes": 27098,
         "lineCount": 634,
         "ext": ".ts"
       }

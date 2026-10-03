@@ -299,14 +299,32 @@ export async function prepareAgWorktree(request: InboxIdeTaskProvisioningRequest
   if (!worktreePath.startsWith(`${root}/`)) throw new Error('Provisioning worktree path escaped its root.');
   if (!existsSync(worktreePath)) {
     mkdirSync(root, { recursive: true, mode: 0o700 });
+    await execFile('git', ['-C', repository, 'worktree', 'prune'], { timeout: REQUEST_TIMEOUT_MS }).catch(() => {});
     await execFile('git', ['-C', repository, 'fetch', 'origin', 'main'], { timeout: REQUEST_TIMEOUT_MS });
-    await execFile(
-      'git',
-      ['-C', repository, 'worktree', 'add', '-b', request.branchName, worktreePath, 'origin/main'],
-      {
+
+    let branchExists = false;
+    try {
+      await execFile('git', ['-C', repository, 'rev-parse', '--verify', `refs/heads/${request.branchName}`], {
         timeout: REQUEST_TIMEOUT_MS,
-      }
-    );
+      });
+      branchExists = true;
+    } catch {
+      branchExists = false;
+    }
+
+    if (branchExists) {
+      await execFile('git', ['-C', repository, 'worktree', 'add', worktreePath, request.branchName], {
+        timeout: REQUEST_TIMEOUT_MS,
+      });
+    } else {
+      await execFile(
+        'git',
+        ['-C', repository, 'worktree', 'add', '-b', request.branchName, worktreePath, 'origin/main'],
+        {
+          timeout: REQUEST_TIMEOUT_MS,
+        }
+      );
+    }
   }
 
   // Link node_modules and shared dist so worktree is instantly functional
@@ -1503,10 +1521,11 @@ export async function main() {
   (async () => {
     while (true) {
       try {
-        await bridgeJson(fetch, `${config.apiUrl}/ag-task-bridge/provisioning/next`, {
+        await bridgeJson(fetch, `${config.apiUrl}/ag-task-bridge/deploy/next`, {
           headers: {
             ...bridgeHeaders(token, config.provisionerId),
             'x-execution-engine': 'AG',
+            'x-ag-provisioner-id': config.provisionerId,
           },
         });
       } catch {

@@ -215,8 +215,8 @@ export class CareerProgressionService {
       .filter((id): id is number => typeof id === 'number' && id > 0);
     const legacyAvatarMap = new Map<number, string>();
 
-    // 1. Bulk query performance from Legacy DB in last 90 days
-    const ordersMap: Record<number, { orders: number; fixes: number }> = {};
+    // 1. Bulk query performance: Số bộ mi lấy 3 tháng (90 ngày); Bug, Tip, HI, Chuối nhận lấy tháng gần nhất (30 ngày)
+    const ordersMap: Record<number, { orders90d: number; orders30d: number; fixes30d: number }> = {};
     const tipsMap: Record<number, { totalTip: number; tipCount: number; validTipOrders?: number }> = {};
     const combosMap: Record<number, number> = {};
     const bonusesMap: Record<number, { points: number; cash: number; banana: number }> = {};
@@ -257,8 +257,9 @@ export class CareerProgressionService {
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
             os.assigned_staff_id,
-            COUNT(os.id) as total_orders,
-            COUNT(CASE WHEN os.next_fix_order_service_id IS NOT NULL THEN 1 END) as fix_count
+            COUNT(os.id) as total_orders_90d,
+            COUNT(CASE WHEN o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN os.id END) as total_orders_30d,
+            COUNT(CASE WHEN os.next_fix_order_service_id IS NOT NULL AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 END) as fix_count_30d
           FROM order_service os
           JOIN \`order\` o ON o.id = os.order_id
           WHERE o.order_state = 'Completed'
@@ -274,7 +275,7 @@ export class CareerProgressionService {
           FROM staff_tip st
           JOIN \`order\` o ON o.id = st.order_id
           WHERE o.order_state = 'Completed'
-            AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+            AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 30 DAY)
           GROUP BY st.user_id
         `),
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
@@ -295,7 +296,7 @@ export class CareerProgressionService {
             COALESCE(SUM(CASE WHEN sb.bonus_type = 'Cash' THEN sb.bonus_amount ELSE 0 END), 0) as cc_cash,
             COALESCE(SUM(CASE WHEN sb.bonus_type IN ('Credit', 'Banana') THEN sb.bonus_amount ELSE 0 END), 0) as banana_count
           FROM staff_bonus sb
-          WHERE sb.date_created >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+          WHERE sb.date_created >= DATE_SUB(NOW(), INTERVAL 30 DAY)
           GROUP BY sb.user_id
         `),
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
@@ -303,14 +304,14 @@ export class CareerProgressionService {
             o.client_store_id,
             COALESCE(SUM(st.tip_amount), 0) as branch_total_tip,
             COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as branch_valid_tip_orders,
-            (SELECT COUNT(o2.id) FROM \`order\` o2 WHERE o2.order_state = 'Completed' AND o2.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY) AND o2.client_store_id = o.client_store_id) as branch_orders,
+            (SELECT COUNT(o2.id) FROM \`order\` o2 WHERE o2.order_state = 'Completed' AND o2.booking_date_start >= DATE_SUB(NOW(), INTERVAL 30 DAY) AND o2.client_store_id = o.client_store_id) as branch_orders,
             COALESCE(SUM(st.tip_amount), 0) as shop_total_tip,
             COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as shop_valid_tip_orders,
-            (SELECT COUNT(id) FROM \`order\` WHERE order_state = 'Completed' AND booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)) as shop_orders
+            (SELECT COUNT(id) FROM \`order\` WHERE order_state = 'Completed' AND booking_date_start >= DATE_SUB(NOW(), INTERVAL 30 DAY)) as shop_orders
           FROM \`order\` o
           LEFT JOIN staff_tip st ON st.order_id = o.id
           WHERE o.order_state = 'Completed'
-            AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+            AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 30 DAY)
           GROUP BY o.client_store_id
         `),
         legacyIds.length > 0
@@ -328,7 +329,7 @@ export class CareerProgressionService {
               WHERE r.type = 'CheckIn5MinuteEarly'
                 AND g.from_user_id != g.to_user_id
                 AND (g.created_staff_id IS NULL OR g.created_staff_id != g.to_user_id)
-                AND g.date_created >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+                AND g.date_created >= DATE_SUB(NOW(), INTERVAL 30 DAY)
                 AND g.to_user_id IN (${legacyIds.join(',')})
               GROUP BY g.to_user_id
             `)
@@ -341,7 +342,7 @@ export class CareerProgressionService {
                 COALESCE(SUM(relationship_happy_count + relationship_neutral_count + relationship_unhappy_count), 0) as total_evaluations
               FROM report_staff_relationship
               WHERE user_id IN (${legacyIds.join(',')})
-                AND date >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+                AND date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
               GROUP BY user_id
             `)
           : Promise.resolve([]),
@@ -400,8 +401,9 @@ export class CareerProgressionService {
       orderRows.forEach((r) => {
         if (r.assigned_staff_id) {
           ordersMap[Number(r.assigned_staff_id)] = {
-            orders: Number(r.total_orders) || 0,
-            fixes: Number(r.fix_count) || 0,
+            orders90d: Number(r.total_orders_90d) || 0,
+            orders30d: Number(r.total_orders_30d) || 0,
+            fixes30d: Number(r.fix_count_30d) || 0,
           };
         }
       });
@@ -490,17 +492,22 @@ export class CareerProgressionService {
       fastify.log.warn({ err }, 'Could not run bulk legacy queries for staff career list');
     }
 
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
+
     return crmStaffList.map((staff) => {
       const legacyId = staff.legacyStaffId || staff.id;
-      const staffOrders = ordersMap[legacyId]?.orders || 0;
-      const staffFixes = ordersMap[legacyId]?.fixes || 0;
-      const fixRate = staffOrders > 0 ? Number((staffFixes / staffOrders).toFixed(4)) : 0;
+      const staffOrders90d = ordersMap[legacyId]?.orders90d || 0;
+      const staffOrders30d = ordersMap[legacyId]?.orders30d || 0;
+      const staffFixes30d = ordersMap[legacyId]?.fixes30d || 0;
+      const fixRate = staffOrders30d > 0 ? Number((staffFixes30d / staffOrders30d).toFixed(4)) : 0;
       const totalTip = tipsMap[legacyId]?.totalTip || 0;
-      const staffAvgTip = staffOrders > 0 ? totalTip / staffOrders : 0;
+      const staffAvgTip = staffOrders30d > 0 ? totalTip / staffOrders30d : 0;
       const validTipOrders = tipsMap[legacyId]?.validTipOrders || 0;
-      let staffTipRate = staffOrders > 0 && validTipOrders > 0 ? Number((validTipOrders / staffOrders).toFixed(3)) : 0;
-      if (staffTipRate === 0 && totalTip > 0 && staffOrders > 0) {
-        staffTipRate = Number(Math.min(0.65, Math.max(0.2, (totalTip / (staffOrders * 38000)) * 0.45)).toFixed(3));
+      let staffTipRate =
+        staffOrders30d > 0 && validTipOrders > 0 ? Number((validTipOrders / staffOrders30d).toFixed(3)) : 0;
+      if (staffTipRate === 0 && totalTip > 0 && staffOrders30d > 0) {
+        staffTipRate = Number(Math.min(0.65, Math.max(0.2, (totalTip / (staffOrders30d * 38000)) * 0.45)).toFixed(3));
       }
 
       // Xác định chi nhánh của nhân sự: ưu tiên store có nhiều ca làm nhất trong 90 ngày, fallback profile store
@@ -517,18 +524,18 @@ export class CareerProgressionService {
         avgTip: defaultShopAvgTip,
       };
 
-      // Tỷ lệ tip và tiền tip trung bình được tính theo chuẩn chi nhánh của chính nhân sự đó
+      // Tỷ lệ tip và tiền tip trung bình được tính theo chuẩn chi nhánh của chính nhân sự đó (tháng gần nhất)
       const shopTipRate = staffBranch.tipRate;
       const shopAvgTip = staffBranch.avgTip;
 
       const tipRatioAboveShop =
         shopTipRate > 0 && staffTipRate > 0
           ? Number(((staffTipRate - shopTipRate) / shopTipRate).toFixed(3))
-          : shopAvgTip > 0 && staffOrders > 0
+          : shopAvgTip > 0 && staffOrders30d > 0
             ? Number(((staffAvgTip - shopAvgTip) / shopAvgTip).toFixed(3))
             : 0;
       const comboOrders = combosMap[legacyId] || 0;
-      const selfComboRate = staffOrders > 0 ? Number((comboOrders / staffOrders).toFixed(3)) : 0;
+      const selfComboRate = staffOrders90d > 0 ? Number((comboOrders / staffOrders90d).toFixed(3)) : 0;
       const monthlyPoints = bonusesMap[legacyId]?.points || 0;
       const ccLevel = monthlyPoints > 0 ? Math.floor(monthlyPoints / 100) + 1 : 1;
 
@@ -540,9 +547,9 @@ export class CareerProgressionService {
       ) {
         careerRole = staff.careerProgression.currentRole as CareerRole;
       } else {
-        if (selfComboRate >= 0.25 && staffOrders >= 250) {
+        if (selfComboRate >= 0.25 && staffOrders90d >= 250) {
           careerRole = 'CV_PLUS_PLUS';
-        } else if (selfComboRate >= 0.15 && staffOrders >= 150) {
+        } else if (selfComboRate >= 0.15 && staffOrders90d >= 150) {
           careerRole = 'CV_PLUS';
         } else {
           careerRole = 'CV';
@@ -560,11 +567,11 @@ export class CareerProgressionService {
         careerRole,
         avatarUrl,
         legacyStaffId: staff.legacyStaffId,
-        ordersCount: staffOrders,
-        fixRate,
+        ordersCount: staffOrders90d, // Riêng số bộ mi: 3 tháng
+        fixRate, // Bug: tháng gần nhất
         totalTip,
         tipRatioAboveShop,
-        staffTipRate,
+        staffTipRate, // % Tip: tháng gần nhất
         shopTipRate,
         storeId: staffBranch.storeId,
         branchName: staffBranch.branchName,
@@ -572,29 +579,37 @@ export class CareerProgressionService {
         branchTipRate: staffBranch.tipRate,
         branchAvgTip: staffBranch.avgTip,
         selfComboRate,
-        happinessIndex: hiMap[legacyId] ?? 0.75,
-        bananaCount: bananasMap[legacyId] ?? 0,
+        happinessIndex: hiMap[legacyId] ?? 0.75, // HI: tháng gần nhất
+        bananaCount: bananasMap[legacyId] ?? 0, // Chuối nhận: tháng gần nhất
         bananaBalance: legacyId ? (bananaBalancesMap[legacyId] ?? bananasMap[legacyId] ?? 0) : 0,
-        isBananaPassed: (bananasMap[legacyId] ?? 0) >= (config.cvToCvPlus?.minBananaCount ?? 45),
+        isBananaPassed: (bananasMap[legacyId] ?? 0) >= 20, // Chuẩn chuối tháng gần nhất: ≥ 20 chuối
         ccLevel: ['CC', 'FM'].includes(careerRole) ? ccLevel : null,
         monthlyPoints: ['CC', 'FM'].includes(careerRole) ? monthlyPoints : null,
         qaAuditPassed: (() => {
-          const reqAudits = config.cvToCvPlus?.minQaAudits ?? 12;
+          const reqAudits = 4; // QA&QC: tháng gần nhất (4 lần = 1 lần/tuần)
           const realAudits = qaShopService
             .getStaffAudits(staff.id)
             .concat(legacyId !== staff.id ? qaShopService.getStaffAudits(legacyId) : []);
-          if (realAudits.length > 0) {
-            const hasFail = realAudits.some((a) => a.auditEvaluationResult === 'FAILED');
-            return realAudits.length >= reqAudits && !hasFail;
+          const monthAudits = realAudits.filter((a) => {
+            const d = new Date(a.auditDate || a.createdAt);
+            return !isNaN(d.getTime()) && d >= oneMonthAgo;
+          });
+          if (monthAudits.length > 0) {
+            const hasFail = monthAudits.some((a) => a.auditEvaluationResult === 'FAILED');
+            return monthAudits.length >= reqAudits && !hasFail;
           }
-          return reqAudits === 0;
+          return false;
         })(),
         hasFailedQaAudit: (() => {
           const realAudits = qaShopService
             .getStaffAudits(staff.id)
             .concat(legacyId !== staff.id ? qaShopService.getStaffAudits(legacyId) : []);
-          if (realAudits.length > 0) {
-            return realAudits.some((a) => a.auditEvaluationResult === 'FAILED');
+          const monthAudits = realAudits.filter((a) => {
+            const d = new Date(a.auditDate || a.createdAt);
+            return !isNaN(d.getTime()) && d >= oneMonthAgo;
+          });
+          if (monthAudits.length > 0) {
+            return monthAudits.some((a) => a.auditEvaluationResult === 'FAILED');
           }
           return false;
         })(),
@@ -602,8 +617,12 @@ export class CareerProgressionService {
           const realAudits = qaShopService
             .getStaffAudits(staff.id)
             .concat(legacyId !== staff.id ? qaShopService.getStaffAudits(legacyId) : []);
-          if (realAudits.length > 0) {
-            return Number((realAudits.length / 12).toFixed(2));
+          const monthAudits = realAudits.filter((a) => {
+            const d = new Date(a.auditDate || a.createdAt);
+            return !isNaN(d.getTime()) && d >= oneMonthAgo;
+          });
+          if (monthAudits.length > 0) {
+            return Number((monthAudits.length / 4).toFixed(2));
           }
           return 0;
         })(),
@@ -611,7 +630,11 @@ export class CareerProgressionService {
           const realAudits = qaShopService
             .getStaffAudits(staff.id)
             .concat(legacyId !== staff.id ? qaShopService.getStaffAudits(legacyId) : []);
-          return realAudits.length;
+          const monthAudits = realAudits.filter((a) => {
+            const d = new Date(a.auditDate || a.createdAt);
+            return !isNaN(d.getTime()) && d >= oneMonthAgo;
+          });
+          return monthAudits.length;
         })(),
       };
     });
@@ -720,8 +743,7 @@ export class CareerProgressionService {
           SELECT 
             COUNT(os.id) as total_orders,
             COUNT(CASE 
-              WHEN o.booking_date_start >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00')
-               AND o.booking_date_start <= CONCAT(LAST_DAY(DATE_SUB(NOW(), INTERVAL 1 MONTH)), ' 23:59:59')
+              WHEN o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 30 DAY)
               THEN os.id END) as last_month_orders
           FROM order_service os
           JOIN \`order\` o ON o.id = os.order_id
@@ -733,7 +755,9 @@ export class CareerProgressionService {
         ),
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(
           `
-          SELECT COUNT(os.id) as fix_count
+          SELECT 
+            COUNT(CASE WHEN o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 30 DAY) AND os.next_fix_order_service_id IS NOT NULL THEN os.id END) as fix_count_30d,
+            COUNT(CASE WHEN os.next_fix_order_service_id IS NOT NULL THEN os.id END) as fix_count
           FROM order_service os
           JOIN \`order\` o ON o.id = os.order_id
           WHERE os.assigned_staff_id = ?
@@ -748,10 +772,10 @@ export class CareerProgressionService {
           SELECT 
             COALESCE(SUM(st.tip_amount), 0) as total_tip,
             COALESCE(SUM(CASE 
-              WHEN o.booking_date_start >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00')
-               AND o.booking_date_start <= CONCAT(LAST_DAY(DATE_SUB(NOW(), INTERVAL 1 MONTH)), ' 23:59:59')
+              WHEN o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 30 DAY)
               THEN st.tip_amount ELSE 0 END), 0) as last_month_tip,
             COUNT(st.id) as tip_count,
+            COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN st.order_id END) as valid_tip_orders_30d,
             COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as valid_tip_orders
           FROM staff_tip st
           JOIN \`order\` o ON o.id = st.order_id
@@ -781,7 +805,7 @@ export class CareerProgressionService {
             COALESCE(SUM(CASE WHEN sb.bonus_type IN ('Credit', 'Banana') THEN sb.bonus_amount ELSE 0 END), 0) as banana_count
           FROM staff_bonus sb
           WHERE sb.user_id = ?
-            AND sb.date_created >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+            AND sb.date_created >= DATE_SUB(NOW(), INTERVAL 30 DAY)
         `,
           targetLegacyStaffId
         ),
@@ -790,14 +814,14 @@ export class CareerProgressionService {
             o.client_store_id,
             COALESCE(SUM(st.tip_amount), 0) as branch_total_tip,
             COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as branch_valid_tip_orders,
-            (SELECT COUNT(o2.id) FROM \`order\` o2 WHERE o2.order_state = 'Completed' AND o2.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY) AND o2.client_store_id = o.client_store_id) as branch_orders,
+            (SELECT COUNT(o2.id) FROM \`order\` o2 WHERE o2.order_state = 'Completed' AND o2.booking_date_start >= DATE_SUB(NOW(), INTERVAL 30 DAY) AND o2.client_store_id = o.client_store_id) as branch_orders,
             COALESCE(SUM(st.tip_amount), 0) as shop_total_tip,
             COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as shop_valid_tip_orders,
-            (SELECT COUNT(id) FROM \`order\` WHERE order_state = 'Completed' AND booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)) as shop_orders
+            (SELECT COUNT(id) FROM \`order\` WHERE order_state = 'Completed' AND booking_date_start >= DATE_SUB(NOW(), INTERVAL 30 DAY)) as shop_orders
           FROM \`order\` o
           LEFT JOIN staff_tip st ON st.order_id = o.id
           WHERE o.order_state = 'Completed'
-            AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+            AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 30 DAY)
           GROUP BY o.client_store_id
         `),
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(
@@ -809,7 +833,7 @@ export class CareerProgressionService {
             COALESCE(SUM(relationship_happy_count + relationship_neutral_count + relationship_unhappy_count), 0) as total_evaluations
           FROM report_staff_relationship
           WHERE user_id = ?
-            AND date >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+            AND date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
         `,
           targetLegacyStaffId
         ),
@@ -823,7 +847,7 @@ export class CareerProgressionService {
             AND r.type = 'CheckIn5MinuteEarly'
             AND g.from_user_id != g.to_user_id
             AND (g.created_staff_id IS NULL OR g.created_staff_id != g.to_user_id)
-            AND g.date_created >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+            AND g.date_created >= DATE_SUB(NOW(), INTERVAL 30 DAY)
         `,
           targetLegacyStaffId
         ),
@@ -902,22 +926,22 @@ export class CareerProgressionService {
         }
       }
 
-      ordersCount = Number(orderRes?.[0]?.total_orders || 0);
-      lastMonthOrders = Number(orderRes?.[0]?.last_month_orders || 0);
-      fixCount = Number(fixRes?.[0]?.fix_count || 0);
-      fixRate = ordersCount > 0 ? Number((fixCount / ordersCount).toFixed(4)) : 0;
-      totalTip = Number(tipRes?.[0]?.total_tip ?? tipRes?.[0]?.staff_tip ?? 0);
+      ordersCount = Number(orderRes?.[0]?.total_orders || 0); // 3 tháng (90 ngày)
+      lastMonthOrders = Number(orderRes?.[0]?.last_month_orders || 0); // Tháng gần nhất (30 ngày)
+      fixCount = Number(fixRes?.[0]?.fix_count_30d ?? 0); // Lỗi bảo hành trong tháng gần nhất
+      fixRate = lastMonthOrders > 0 ? Number((fixCount / lastMonthOrders).toFixed(4)) : 0;
+      totalTip = Number(tipRes?.[0]?.last_month_tip ?? tipRes?.[0]?.total_tip ?? 0);
       lastMonthTip = Number(tipRes?.[0]?.last_month_tip || 0);
       lastMonthWorkingHours = Number(workingHoursRes?.[0]?.last_month_hours || 0);
       avg90dWorkingHours = Number(workingHoursRes?.[0]?.avg_90d_hours || 0);
-      staffAvgTip = ordersCount > 0 ? Math.round(totalTip / ordersCount) : 0;
+      staffAvgTip = lastMonthOrders > 0 ? Math.round(totalTip / lastMonthOrders) : 0;
 
-      tippedOrdersCount = Number(tipRes?.[0]?.valid_tip_orders || 0);
+      tippedOrdersCount = Number(tipRes?.[0]?.valid_tip_orders_30d ?? 0);
       staffTipRate =
-        ordersCount > 0 && tippedOrdersCount > 0 ? Number((tippedOrdersCount / ordersCount).toFixed(3)) : 0;
-      if (staffTipRate === 0 && totalTip > 0 && ordersCount > 0) {
-        staffTipRate = Number(Math.min(0.65, Math.max(0.25, (totalTip / (ordersCount * 38000)) * 0.45)).toFixed(3));
-        tippedOrdersCount = Math.round(ordersCount * staffTipRate);
+        lastMonthOrders > 0 && tippedOrdersCount > 0 ? Number((tippedOrdersCount / lastMonthOrders).toFixed(3)) : 0;
+      if (staffTipRate === 0 && totalTip > 0 && lastMonthOrders > 0) {
+        staffTipRate = Number(Math.min(0.65, Math.max(0.2, (totalTip / (lastMonthOrders * 38000)) * 0.45)).toFixed(3));
+        tippedOrdersCount = Math.round(lastMonthOrders * staffTipRate);
       }
 
       let staffStoreId = 6;
@@ -1000,7 +1024,7 @@ export class CareerProgressionService {
       tipRatioAboveShop =
         shopTipRate > 0 && staffTipRate > 0
           ? Number(((staffTipRate - shopTipRate) / shopTipRate).toFixed(3))
-          : shopAvgTip > 0 && ordersCount > 0 && totalTip > 0
+          : shopAvgTip > 0 && lastMonthOrders > 0 && totalTip > 0
             ? Number(((staffAvgTip - shopAvgTip) / shopAvgTip).toFixed(3))
             : totalTip > 0
               ? 0.15
@@ -1012,6 +1036,9 @@ export class CareerProgressionService {
       monthlyPoints = Number(bonusRes?.[0]?.monthly_points || 0);
       ccBonusCash = Number(bonusRes?.[0]?.cc_cash || 0);
       bananaCount = Number(bananaRes?.[0]?.checkin_banana_count || 0);
+      if (bananaCount === 0 && Number(bonusRes?.[0]?.banana_count || 0) > 0) {
+        bananaCount = Number(bonusRes[0].banana_count);
+      }
       bananaBalance =
         bananaBalanceRes?.[0]?.amount !== undefined && bananaBalanceRes?.[0]?.amount !== null
           ? Number(bananaBalanceRes[0].amount)
@@ -1067,10 +1094,15 @@ export class CareerProgressionService {
     const maxFixRate = activeReq.maxFixRate ?? (isCvPlusPlusTarget ? 0.015 : 0.02);
     const minTipRatioAboveShop = activeReq.minTipRatioAboveShop ?? (isCvPlusPlusTarget ? 0.15 : 0.1);
     targetTipRate = Number((shopTipRate * (1 + minTipRatioAboveShop)).toFixed(3));
-    const minBananaCount = activeReq.minBananaCount ?? (isCvPlusPlusTarget ? 60 : 45);
+    const minBananaCount =
+      activeReq.minBananaCount && activeReq.minBananaCount <= 30
+        ? activeReq.minBananaCount
+        : isCvPlusPlusTarget
+          ? 25
+          : 20;
     const minHappinessIndex = activeReq.minHappinessIndex ?? (isCvPlusPlusTarget ? 0.8 : 0.7);
     const minSelfComboRate = activeReq.minSelfComboRate ?? (isCvPlusPlusTarget ? 0.3 : 0.2);
-    const requiredAudits = activeReq.minQaAudits ?? 12;
+    const requiredAudits = activeReq.minQaAudits && activeReq.minQaAudits <= 4 ? activeReq.minQaAudits : 4;
     const requireZeroFailedAudits = activeReq.requireZeroFailedAudits !== false;
     const expectedSerumsPerWeek = activeReq.expectedSerumsPerWeek ?? 4;
     const expectedCombosPerMonth = activeReq.expectedCombosPerMonth ?? (isCvPlusPlusTarget ? 10 : 6);
@@ -1086,14 +1118,20 @@ export class CareerProgressionService {
 
     // Quest gates evaluation against dynamic config
 
-    // QA/QC Audit Quest Evaluation (Kinh Thánh mOS Điều răn CAREER-QA-001)
-    // Tối thiểu QA, QC 12 lần trong 3 tháng qua (cho phép Danny tự chỉnh qua config)
-    const evaluatedWeeks = 12; // 90 ngày tương đương 12 tuần làm việc
+    // QA/QC Audit Quest Evaluation: Tháng gần nhất (4 tuần, chuẩn >= 4 lần = 1 lần/tuần)
+    const evaluatedWeeks = 4; // Tháng gần nhất tương đương 4 tuần làm việc
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
 
-    // Truy vấn dữ liệu biên bản kiểm tra QA/QC tác phong & phòng mi thực tế từ QaShopService
-    const staffAuditRecords = qaShopService
+    // Truy vấn dữ liệu biên bản kiểm tra QA/QC tác phong & phòng mi thực tế từ QaShopService trong tháng gần nhất
+    const allStaffAuditRecords = qaShopService
       .getStaffAudits(staff.id)
       .concat(targetLegacyStaffId !== staff.id ? qaShopService.getStaffAudits(targetLegacyStaffId) : []);
+
+    const staffAuditRecords = allStaffAuditRecords.filter((a) => {
+      const d = new Date(a.auditDate || a.createdAt);
+      return !isNaN(d.getTime()) && d >= oneMonthAgo;
+    });
 
     let totalAudits = 0;
     let failedAudits = 0;
