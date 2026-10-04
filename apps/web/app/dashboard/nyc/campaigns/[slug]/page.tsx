@@ -322,6 +322,10 @@ export default function CampaignDetailPage() {
   const [historyRecoveryOpen, setHistoryRecoveryOpen] = useState<boolean>(false);
   const [excludedDrawerOpen, setExcludedDrawerOpen] = useState<boolean>(false);
   const hasInitializedBatchRef = useRef(false);
+  const selectedPoolStatusRef = useRef(selectedPoolStatus);
+  selectedPoolStatusRef.current = selectedPoolStatus;
+  const auditCustomerRef = useRef(auditCustomer);
+  auditCustomerRef.current = auditCustomer;
 
   // Customer table state
   const [customersLoading, setCustomersLoading] = useState<boolean>(true);
@@ -850,8 +854,9 @@ export default function CampaignDetailPage() {
                 })
               );
             } else if (data.type === 'CUSTOMER_STATUS_UPDATED') {
-              setCustomers((prev) =>
-                prev.map((c) => {
+              setCustomers((prev) => {
+                const currentFilter = selectedPoolStatusRef.current;
+                const updated = prev.map((c) => {
                   if (c.id === data.customerId || (data.legacyUserId && c.legacyUserId === data.legacyUserId)) {
                     return {
                       ...c,
@@ -864,9 +869,25 @@ export default function CampaignDetailPage() {
                     };
                   }
                   return c;
-                })
-              );
+                });
+                if (currentFilter && currentFilter !== 'ALL') {
+                  return updated.filter((c) => c.poolStatus === currentFilter);
+                }
+                return updated;
+              });
               fetchSharedPoolOverview(undefined, true);
+              if (
+                auditCustomerRef.current &&
+                (auditCustomerRef.current.id === data.customerId ||
+                  auditCustomerRef.current.legacyUserId === data.legacyUserId)
+              ) {
+                const targetId = auditCustomerRef.current.id || auditCustomerRef.current.legacyUserId;
+                if (campaign?.id && targetId) {
+                  apiClient.campaigns.getSharedPoolLogs(campaign.id, targetId).then((logs) => {
+                    setAuditLogs(logs);
+                  }).catch(() => {});
+                }
+              }
             } else if (['BATCH_ADVANCED', 'POOL_PAUSED', 'POOL_RESUMED', 'OVERVIEW_UPDATED'].includes(data.type)) {
               fetchSharedPoolOverview(undefined, true);
               fetchCampaignCustomers(true);

@@ -10,11 +10,11 @@ test('Campaign Shared Pool - Default configuration validation', () => {
   assert.equal(DEFAULT_SHARED_POOL_CONFIG.cooldownMinutes, 60);
   assert.equal(DEFAULT_SHARED_POOL_CONFIG.isPaused, false);
 
-  // Recycle rules
-  assert.equal(DEFAULT_SHARED_POOL_CONFIG.recycleRules?.THINKING, 3);
-  assert.equal(DEFAULT_SHARED_POOL_CONFIG.recycleRules?.NO_ANSWER, 1);
-  assert.equal(DEFAULT_SHARED_POOL_CONFIG.recycleRules?.BUSY, 1);
-  assert.equal(DEFAULT_SHARED_POOL_CONFIG.recycleRules?.ERROR, 2);
+  // Recycle rules (MOS-BUG-101)
+  assert.equal(DEFAULT_SHARED_POOL_CONFIG.recycleRules?.THINKING, 7);
+  assert.equal(DEFAULT_SHARED_POOL_CONFIG.recycleRules?.NO_ANSWER, 3);
+  assert.equal(DEFAULT_SHARED_POOL_CONFIG.recycleRules?.BUSY, 3);
+  assert.equal(DEFAULT_SHARED_POOL_CONFIG.recycleRules?.ERROR, 3);
 
   // Early warning thresholds
   assert.equal(DEFAULT_SHARED_POOL_CONFIG.warningThreshold, 30);
@@ -90,10 +90,10 @@ test('Campaign Shared Pool - Recycle Date Resolution', () => {
   };
 
   const thinkingDate = resolveAvailableDate('THINKING');
-  assert.equal(thinkingDate?.toISOString(), '2026-10-04T08:00:00.000Z');
+  assert.equal(thinkingDate?.toISOString(), '2026-10-08T08:00:00.000Z');
 
   const noAnswerDate = resolveAvailableDate('NO_ANSWER');
-  assert.equal(noAnswerDate?.toISOString(), '2026-10-02T08:00:00.000Z');
+  assert.equal(noAnswerDate?.toISOString(), '2026-10-04T08:00:00.000Z');
 
   const callbackCustom = new Date('2026-10-10T09:00:00.000Z');
   const callbackDate = resolveAvailableDate('CALLBACK', callbackCustom);
@@ -740,3 +740,153 @@ test('Campaign Shared Pool (MOS-BUG-98) - Audit Log Metadata completeness', () =
   assert.equal(releaseLog.releaseReason, 'STAFF_RELEASE');
   assert.equal(releaseLog.releasedByStaffId, 1);
 });
+
+test('Campaign Shared Pool (MOS-BUG-101) - Comprehensive Post-Call Auto Routing & Invariants', () => {
+  const config = DEFAULT_SHARED_POOL_CONFIG;
+  const now = Date.now();
+
+  // 1. Không bắt máy - NO_ANSWER (Gọi nhỡ) -> RECYCLING sau 3 ngày
+  const noAnswerRes = CampaignService.mapCallLogToSharedPool(
+    {
+      callResult: 'NO_ANSWER',
+      outcome: 'GỌI NHỠ KHÔNG BẮT MÁY',
+      durationSec: 0,
+    },
+    config
+  );
+  assert.equal(noAnswerRes.mappedCallResult, 'NO_ANSWER');
+  assert.equal(noAnswerRes.isPickup, false);
+  assert.equal(noAnswerRes.nextPoolStatus, 'RECYCLING');
+  assert.equal(noAnswerRes.isBooked, false);
+  assert.equal(noAnswerRes.isExcluded, false);
+  assert.notEqual(noAnswerRes.availableAt, null);
+  const diffDaysNoAnswer = (noAnswerRes.availableAt!.getTime() - now) / (24 * 3600 * 1000);
+  assert.ok(diffDaysNoAnswer >= 2.9 && diffDaysNoAnswer <= 3.1, 'NO_ANSWER must recycle after 3 days');
+
+  // 2. Không bắt máy - BUSY (Máy bận) -> RECYCLING sau 3 ngày
+  const busyRes = CampaignService.mapCallLogToSharedPool(
+    {
+      callResult: 'BUSY',
+      outcome: 'MÁY BẬN',
+      durationSec: 0,
+    },
+    config
+  );
+  assert.equal(busyRes.mappedCallResult, 'BUSY');
+  assert.equal(busyRes.isPickup, false);
+  assert.equal(busyRes.nextPoolStatus, 'RECYCLING');
+  assert.notEqual(busyRes.availableAt, null);
+  const diffDaysBusy = (busyRes.availableAt!.getTime() - now) / (24 * 3600 * 1000);
+  assert.ok(diffDaysBusy >= 2.9 && diffDaysBusy <= 3.1, 'BUSY must recycle after 3 days');
+
+  // 3. Không bắt máy - ERROR / FAILED (Lỗi cuộc gọi / Thuê bao) -> RECYCLING sau 3 ngày
+  const failedRes = CampaignService.mapCallLogToSharedPool(
+    {
+      callResult: 'FAILED',
+      outcome: 'THUÊ BAO KHÔNG LIÊN LẠC ĐƯỢC',
+      durationSec: 0,
+    },
+    config
+  );
+  assert.equal(failedRes.mappedCallResult, 'ERROR');
+  assert.equal(failedRes.isPickup, false);
+  assert.equal(failedRes.nextPoolStatus, 'RECYCLING');
+  assert.notEqual(failedRes.availableAt, null);
+  const diffDaysFailed = (failedRes.availableAt!.getTime() - now) / (24 * 3600 * 1000);
+  assert.ok(diffDaysFailed >= 2.9 && diffDaysFailed <= 3.1, 'FAILED/ERROR must recycle after 3 days');
+
+  // 4. Không bắt máy - WRONG_NUMBER (Sai số) -> EXCLUDED (Chờ kiểm tra), rời Active Pool ngay
+  const wrongNumRes = CampaignService.mapCallLogToSharedPool(
+    {
+      callResult: 'WRONG_NUMBER',
+      outcome: 'SAI SỐ ĐIỆN THOẠI',
+      durationSec: 0,
+    },
+    config
+  );
+  assert.equal(wrongNumRes.mappedCallResult, 'WRONG_NUMBER');
+  assert.equal(wrongNumRes.nextPoolStatus, 'EXCLUDED');
+  assert.equal(wrongNumRes.isExcluded, true);
+  assert.equal(wrongNumRes.availableAt, null, 'EXCLUDED must not have availableAt (leaves active pool)');
+  assert.equal(wrongNumRes.cooldownUntil, null, 'EXCLUDED must not have cooldownUntil');
+
+  // 5. Có bắt máy - BOOKED (Đã đặt lịch hẹn mới) -> BOOKED, rời Active Pool ngay
+  const bookedRes = CampaignService.mapCallLogToSharedPool(
+    {
+      callResult: 'ANSWERED',
+      outcome: 'BOOKED ĐẶT LỊCH HẸN MỚI',
+      durationSec: 120,
+    },
+    config
+  );
+  assert.equal(bookedRes.mappedCallResult, 'BOOKED');
+  assert.equal(bookedRes.isPickup, true);
+  assert.equal(bookedRes.nextPoolStatus, 'BOOKED');
+  assert.equal(bookedRes.isBooked, true);
+  assert.equal(bookedRes.availableAt, null, 'BOOKED must leave active pool (availableAt is null)');
+
+  // 6. Có bắt máy - CALLBACK (Hẹn gọi lại sau) -> RECYCLING theo callbackDate
+  const callbackDateTarget = new Date(now + 48 * 3600 * 1000); // 2 days later
+  const callbackRes = CampaignService.mapCallLogToSharedPool(
+    {
+      callResult: 'ANSWERED',
+      outcome: 'HẸN GỌI LẠI SAU',
+      durationSec: 45,
+      callbackDate: callbackDateTarget,
+    },
+    config
+  );
+  assert.equal(callbackRes.mappedCallResult, 'CALLBACK');
+  assert.equal(callbackRes.isPickup, true);
+  assert.equal(callbackRes.nextPoolStatus, 'RECYCLING');
+  assert.equal(callbackRes.availableAt?.toISOString(), callbackDateTarget.toISOString());
+
+  // 7. Có bắt máy - THINKING (Đang suy nghĩ / Chưa chốt) -> RECYCLING sau 7 ngày
+  const thinkingRes = CampaignService.mapCallLogToSharedPool(
+    {
+      callResult: 'ANSWERED',
+      outcome: 'CHƯA CHỐT ĐANG SUY NGHĨ',
+      durationSec: 90,
+    },
+    config
+  );
+  assert.equal(thinkingRes.mappedCallResult, 'THINKING');
+  assert.equal(thinkingRes.isPickup, true);
+  assert.equal(thinkingRes.nextPoolStatus, 'RECYCLING');
+  assert.notEqual(thinkingRes.availableAt, null);
+  const diffDaysThinking = (thinkingRes.availableAt!.getTime() - now) / (24 * 3600 * 1000);
+  assert.ok(diffDaysThinking >= 6.9 && diffDaysThinking <= 7.1, 'THINKING must recycle after 7 days');
+
+  // 8. Có bắt máy - NO_NEED (Không có nhu cầu) -> EXCLUDED (Chờ kiểm tra), rời Active Pool ngay
+  const noNeedRes = CampaignService.mapCallLogToSharedPool(
+    {
+      callResult: 'ANSWERED',
+      outcome: 'KHÔNG CÓ NHU CẦU',
+      durationSec: 30,
+    },
+    config
+  );
+  assert.equal(noNeedRes.mappedCallResult, 'NO_NEED');
+  assert.equal(noNeedRes.isPickup, true);
+  assert.equal(noNeedRes.nextPoolStatus, 'EXCLUDED');
+  assert.equal(noNeedRes.isExcluded, true);
+  assert.equal(noNeedRes.availableAt, null, 'NO_NEED leaves active pool');
+  assert.equal(noNeedRes.cooldownUntil, null);
+
+  // 9. Có bắt máy - REFUSED / REJECTED (Từ chối / Yêu cầu không gọi lại) -> EXCLUDED (Chờ kiểm tra)
+  const refusedRes = CampaignService.mapCallLogToSharedPool(
+    {
+      callResult: 'ANSWERED',
+      outcome: 'TỪ CHỐI KHÔNG GỌI NỮA',
+      durationSec: 25,
+    },
+    config
+  );
+  assert.equal(refusedRes.mappedCallResult, 'REJECTED');
+  assert.equal(refusedRes.isPickup, true);
+  assert.equal(refusedRes.nextPoolStatus, 'EXCLUDED');
+  assert.equal(refusedRes.isExcluded, true);
+  assert.equal(refusedRes.availableAt, null, 'REFUSED leaves active pool');
+  assert.equal(refusedRes.cooldownUntil, null);
+});
+

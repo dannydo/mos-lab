@@ -249,10 +249,10 @@ export default function CampaignManagementPage() {
         sharedPoolCooldown: 60,
         sharedPoolWarningThreshold: 30,
         sharedPoolCriticalThreshold: 10,
-        recycleThinking: 3,
-        recycleNoAnswer: 1,
-        recycleBusy: 1,
-        recycleError: 1,
+        recycleThinking: 7,
+        recycleNoAnswer: 3,
+        recycleBusy: 3,
+        recycleError: 3,
         touchpoints: [
           { label: 'Chạm D1', key: 'TP_D1', icon: 'Smile', daysMin: 1, daysMax: 1, color: '#34ff1a', sortOrder: 1 },
           { label: 'Chạm D3', key: 'TP_D3', icon: 'Handshake', daysMin: 3, daysMax: 3, color: '#2e1ac7', sortOrder: 2 },
@@ -317,10 +317,10 @@ export default function CampaignManagementPage() {
           sharedPoolCooldown: sharedPoolConfig.cooldownMinutes || 60,
           sharedPoolWarningThreshold: sharedPoolConfig.warningThreshold || 30,
           sharedPoolCriticalThreshold: sharedPoolConfig.criticalThreshold || 10,
-          recycleThinking: sharedPoolConfig.recycleRules?.THINKING ?? 3,
-          recycleNoAnswer: sharedPoolConfig.recycleRules?.NO_ANSWER ?? 1,
-          recycleBusy: sharedPoolConfig.recycleRules?.BUSY ?? 1,
-          recycleError: sharedPoolConfig.recycleRules?.ERROR ?? 1,
+          recycleThinking: sharedPoolConfig.recycleRules?.THINKING ?? 7,
+          recycleNoAnswer: sharedPoolConfig.recycleRules?.NO_ANSWER ?? 3,
+          recycleBusy: sharedPoolConfig.recycleRules?.BUSY ?? 3,
+          recycleError: sharedPoolConfig.recycleRules?.ERROR ?? 3,
           assignedStaffIds: details.assignedStaffIds || [],
           touchpoints: (details.touchpoints || details.CampaignTouchpoint || []).map((tp: any, idx: number) => ({
             label: tp.label,
@@ -541,10 +541,10 @@ export default function CampaignManagementPage() {
           criticalThreshold: Number(values.sharedPoolCriticalThreshold) || 10,
           isPaused: editingCampaign?.sharedPoolConfig?.isPaused ?? false,
           recycleRules: {
-            THINKING: Number(values.recycleThinking) || 3,
-            NO_ANSWER: Number(values.recycleNoAnswer) || 1,
-            BUSY: Number(values.recycleBusy) || 1,
-            ERROR: Number(values.recycleError) || 1,
+            THINKING: Number(values.recycleThinking) || 7,
+            NO_ANSWER: Number(values.recycleNoAnswer) || 3,
+            BUSY: Number(values.recycleBusy) || 3,
+            ERROR: Number(values.recycleError) || 3,
           },
         };
       }
@@ -1232,7 +1232,7 @@ export default function CampaignManagementPage() {
                                   <Form.Item
                                     name="recycleThinking"
                                     label="Suy nghĩ (ngày)"
-                                    initialValue={3}
+                                    initialValue={7}
                                     className="mb-0"
                                   >
                                     <InputNumber min={1} max={30} className="w-full" />
@@ -1242,7 +1242,7 @@ export default function CampaignManagementPage() {
                                   <Form.Item
                                     name="recycleNoAnswer"
                                     label="Không nghe (ngày)"
-                                    initialValue={1}
+                                    initialValue={3}
                                     className="mb-0"
                                   >
                                     <InputNumber min={1} max={14} className="w-full" />
@@ -1252,7 +1252,7 @@ export default function CampaignManagementPage() {
                                   <Form.Item
                                     name="recycleBusy"
                                     label="Bận máy (ngày)"
-                                    initialValue={1}
+                                    initialValue={3}
                                     className="mb-0"
                                   >
                                     <InputNumber min={1} max={14} className="w-full" />
@@ -1261,8 +1261,8 @@ export default function CampaignManagementPage() {
                                 <Col span={6}>
                                   <Form.Item
                                     name="recycleError"
-                                    label="Lỗi mạng (ngày)"
-                                    initialValue={1}
+                                    label="Lỗi cuộc gọi (ngày)"
+                                    initialValue={3}
                                     className="mb-0"
                                   >
                                     <InputNumber min={1} max={14} className="w-full" />
