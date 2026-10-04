@@ -16,6 +16,7 @@ import {
   ThunderboltOutlined,
   DatabaseOutlined,
   HistoryOutlined,
+  StopOutlined,
 } from '@ant-design/icons';
 import { SharedPoolOverviewStats } from '@mos-lab/shared';
 import { useTheme } from '../../context/ThemeContext';
@@ -29,6 +30,7 @@ interface SharedPoolOverviewBannerProps {
   onTogglePause: (isPaused: boolean) => Promise<void>;
   onAddCustomers: () => void;
   onOpenHistoryRecovery?: () => void;
+  onOpenExcludedDrawer?: () => void;
   selectedBatch: number | 'ALL';
   onSelectBatch: (batch: number | 'ALL') => void;
   selectedPoolStatus: string;
@@ -45,6 +47,7 @@ export const SharedPoolOverviewBanner: React.FC<SharedPoolOverviewBannerProps> =
   onTogglePause,
   onAddCustomers,
   onOpenHistoryRecovery,
+  onOpenExcludedDrawer,
   selectedBatch,
   onSelectBatch,
   selectedPoolStatus,
@@ -178,9 +181,9 @@ export const SharedPoolOverviewBanner: React.FC<SharedPoolOverviewBannerProps> =
     { label: '🟢 Sẵn sàng (Available)', value: 'AVAILABLE' },
     { label: '🟠 Đang giữ (Claimed)', value: 'CLAIMED' },
     { label: '🟣 Chờ quay lại (Recycling)', value: 'RECYCLING' },
-    { label: '⚪ Đã gọi (Exploited)', value: 'EXPLOITED' },
     { label: '🔵 Đã chốt Booked', value: 'BOOKED' },
-    { label: '🔴 Đã loại khỏi Pool', value: 'EXCLUDED' },
+    { label: '📦 Tổng dự phòng còn (Remaining)', value: 'REMAINING' },
+    { label: '🚫 Data loại trừ (Excluded)', value: 'EXCLUDED' },
   ];
 
   return (
@@ -225,11 +228,38 @@ export const SharedPoolOverviewBanner: React.FC<SharedPoolOverviewBannerProps> =
             )}
 
             <span className="text-xs text-gray-500 dark:text-gray-400">({batchSize} KH / batch)</span>
+
+            {burnRatePerHour > 0 ? (
+              <Tag
+                color="orange"
+                className="font-semibold text-xs inline-flex items-center gap-1.5 m-0 px-2 py-0.5 rounded-md"
+              >
+                <FireOutlined className="text-orange-500" />
+                <span className="tabular-nums">{burnRatePerHour} KH/h</span>
+                {estimatedHoursRemaining !== null && (
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400 font-normal">
+                    (còn ~{estimatedHoursRemaining}h)
+                  </span>
+                )}
+              </Tag>
+            ) : null}
           </div>
 
           {/* Manager Action Buttons */}
           {isAdmin && (
             <div className="flex items-center gap-2 flex-wrap">
+              {onOpenExcludedDrawer && (
+                <Button
+                  size="small"
+                  danger
+                  icon={<StopOutlined />}
+                  onClick={onOpenExcludedDrawer}
+                  className="bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800 hover:border-rose-400 font-semibold shadow-xs"
+                >
+                  Data loại trừ ({selectedBatch === 'ALL' ? (overview.totalExcluded ?? batchExcluded) : batchExcluded})
+                </Button>
+              )}
+
               <Button
                 size="small"
                 icon={<HistoryOutlined />}
@@ -283,10 +313,17 @@ export const SharedPoolOverviewBanner: React.FC<SharedPoolOverviewBannerProps> =
           )}
         </div>
 
-        {/* Middle Stats Grid */}
+        {/* Middle Stats Grid - 6 Clickable Filter Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-3 pb-3">
-          {/* Stat 1: Sẵn sàng nhận trong Batch */}
-          <div className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 flex flex-col justify-between">
+          {/* Card 1: Sẵn sàng nhận (AVAILABLE) */}
+          <div
+            onClick={() => onSelectPoolStatus(selectedPoolStatus === 'AVAILABLE' ? 'ALL' : 'AVAILABLE')}
+            className={`p-2.5 rounded-xl border cursor-pointer select-none transition-all duration-200 flex flex-col justify-between ${
+              selectedPoolStatus === 'AVAILABLE'
+                ? 'ring-2 ring-emerald-500 bg-emerald-500/15 border-emerald-500 shadow-md scale-[1.02]'
+                : 'border-emerald-500/20 bg-emerald-500/5 hover:border-emerald-500/50 hover:shadow-xs'
+            }`}
+          >
             <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 flex items-center justify-between">
               <span>SẴN SÀNG NHẬN</span>
               <span className="text-xs">🟢</span>
@@ -299,20 +336,36 @@ export const SharedPoolOverviewBanner: React.FC<SharedPoolOverviewBannerProps> =
             </div>
           </div>
 
-          {/* Stat 2: Đang giữ (Claimed) */}
-          <div className="p-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 flex flex-col justify-between">
+          {/* Card 2: Đang xử lý (CLAIMED) */}
+          <div
+            onClick={() => onSelectPoolStatus(selectedPoolStatus === 'CLAIMED' ? 'ALL' : 'CLAIMED')}
+            className={`p-2.5 rounded-xl border cursor-pointer select-none transition-all duration-200 flex flex-col justify-between ${
+              selectedPoolStatus === 'CLAIMED'
+                ? 'ring-2 ring-amber-500 bg-amber-500/15 border-amber-500 shadow-md scale-[1.02]'
+                : 'border-amber-500/20 bg-amber-500/5 hover:border-amber-500/50 hover:shadow-xs'
+            }`}
+          >
             <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-300 flex items-center justify-between">
               <span>ĐANG XỬ LÝ (CLAIM)</span>
               <span className="text-xs">🟠</span>
             </span>
             <div className="flex items-baseline gap-1 mt-1">
-              <span className="text-xl font-bold tabular-nums text-amber-600 dark:text-amber-400">{batchClaimed}</span>
+              <span className="text-xl font-bold tabular-nums text-amber-600 dark:text-amber-400">
+                {batchClaimed}
+              </span>
               <span className="text-[10px] text-gray-400 font-normal">KH</span>
             </div>
           </div>
 
-          {/* Stat 3: Chờ quay lại (Recycling) */}
-          <div className="p-2.5 rounded-xl border border-purple-500/20 bg-purple-500/5 flex flex-col justify-between">
+          {/* Card 3: Chờ tái sinh (RECYCLING) */}
+          <div
+            onClick={() => onSelectPoolStatus(selectedPoolStatus === 'RECYCLING' ? 'ALL' : 'RECYCLING')}
+            className={`p-2.5 rounded-xl border cursor-pointer select-none transition-all duration-200 flex flex-col justify-between ${
+              selectedPoolStatus === 'RECYCLING'
+                ? 'ring-2 ring-purple-500 bg-purple-500/15 border-purple-500 shadow-md scale-[1.02]'
+                : 'border-purple-500/20 bg-purple-500/5 hover:border-purple-500/50 hover:shadow-xs'
+            }`}
+          >
             <span className="text-[11px] font-semibold text-purple-700 dark:text-purple-300 flex items-center justify-between">
               <span>CHỜ TÁI SINH (POOL)</span>
               <span className="text-xs">🟣</span>
@@ -325,45 +378,82 @@ export const SharedPoolOverviewBanner: React.FC<SharedPoolOverviewBannerProps> =
             </div>
           </div>
 
-          {/* Stat 4: Đã chốt Booked */}
-          <div className="p-2.5 rounded-xl border border-sky-500/20 bg-sky-500/5 flex flex-col justify-between">
+          {/* Card 4: Đã Booking (BOOKED) */}
+          <div
+            onClick={() => onSelectPoolStatus(selectedPoolStatus === 'BOOKED' ? 'ALL' : 'BOOKED')}
+            className={`p-2.5 rounded-xl border cursor-pointer select-none transition-all duration-200 flex flex-col justify-between ${
+              selectedPoolStatus === 'BOOKED'
+                ? 'ring-2 ring-sky-500 bg-sky-500/15 border-sky-500 shadow-md scale-[1.02]'
+                : 'border-sky-500/20 bg-sky-500/5 hover:border-sky-500/50 hover:shadow-xs'
+            }`}
+          >
             <span className="text-[11px] font-semibold text-sky-700 dark:text-sky-300 flex items-center justify-between">
               <span>ĐÃ BOOKING</span>
               <span className="text-xs">🔵</span>
             </span>
             <div className="flex items-baseline gap-1 mt-1">
-              <span className="text-xl font-bold tabular-nums text-sky-600 dark:text-sky-400">{batchBooked}</span>
+              <span className="text-xl font-bold tabular-nums text-sky-600 dark:text-sky-400">
+                {batchBooked}
+              </span>
               <span className="text-[10px] text-gray-400 font-normal">đơn</span>
             </div>
           </div>
 
-          {/* Stat 5: Toàn Campaign Còn lại */}
-          <div className="p-2.5 rounded-xl border border-indigo-500/20 bg-indigo-500/5 flex flex-col justify-between">
+          {/* Card 5: Tổng dự phòng còn (REMAINING) */}
+          <div
+            onClick={() => onSelectPoolStatus(selectedPoolStatus === 'REMAINING' ? 'ALL' : 'REMAINING')}
+            className={`p-2.5 rounded-xl border cursor-pointer select-none transition-all duration-200 flex flex-col justify-between ${
+              selectedPoolStatus === 'REMAINING'
+                ? 'ring-2 ring-indigo-500 bg-indigo-500/15 border-indigo-500 shadow-md scale-[1.02]'
+                : 'border-indigo-500/20 bg-indigo-500/5 hover:border-indigo-500/50 hover:shadow-xs'
+            }`}
+          >
             <span className="text-[11px] font-semibold text-indigo-700 dark:text-indigo-300 flex items-center justify-between">
               <span>TỔNG DỰ PHÒNG CÒN</span>
               <DatabaseOutlined className="text-indigo-400" />
             </span>
             <div className="flex items-baseline gap-1 mt-1">
               <span className="text-xl font-bold tabular-nums text-indigo-600 dark:text-indigo-400">
-                {percentRemaining}%
+                {selectedBatch === 'ALL' ? totalRemaining : (batchAvailable + batchClaimed + batchRecycling)}
               </span>
-              <span className="text-[10px] text-gray-400 font-normal">({totalRemaining} KH)</span>
+              <span className="text-[10px] text-gray-400 font-normal">
+                {selectedBatch === 'ALL' ? `(${percentRemaining}%)` : `/ ${batchTotal} KH`}
+              </span>
             </div>
           </div>
 
-          {/* Stat 6: Burn Rate & Ước tính cạn Data */}
-          <div className="p-2.5 rounded-xl border border-orange-500/20 bg-orange-500/5 flex flex-col justify-between">
-            <span className="text-[11px] font-semibold text-orange-700 dark:text-orange-300 flex items-center justify-between">
-              <span>TỐC ĐỘ / CẠN DATA</span>
-              <FireOutlined className="text-orange-500" />
+          {/* Card 6: Data loại trừ (EXCLUDED) */}
+          <div
+            onClick={() => onSelectPoolStatus(selectedPoolStatus === 'EXCLUDED' ? 'ALL' : 'EXCLUDED')}
+            className={`p-2.5 rounded-xl border cursor-pointer select-none transition-all duration-200 flex flex-col justify-between ${
+              selectedPoolStatus === 'EXCLUDED'
+                ? 'ring-2 ring-rose-500 bg-rose-500/15 border-rose-500 shadow-md scale-[1.02]'
+                : 'border-rose-500/20 bg-rose-500/5 hover:border-rose-500/50 hover:shadow-xs'
+            }`}
+          >
+            <span className="text-[11px] font-semibold text-rose-700 dark:text-rose-300 flex items-center justify-between">
+              <span>DATA LOẠI TRỪ</span>
+              <span className="text-xs">🚫</span>
             </span>
-            <div className="flex items-baseline gap-1 mt-1">
-              <span className="text-base font-bold tabular-nums text-orange-600 dark:text-orange-400">
-                {burnRatePerHour} <span className="text-xs font-normal">KH/h</span>
-              </span>
-              <span className="text-[10px] text-gray-400 font-normal">
-                {estimatedHoursRemaining !== null ? `~${estimatedHoursRemaining}h` : 'N/A'}
-              </span>
+            <div className="flex items-center justify-between mt-1">
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl font-bold tabular-nums text-rose-600 dark:text-rose-400">
+                  {selectedBatch === 'ALL' ? (overview.totalExcluded ?? batchExcluded) : batchExcluded}
+                </span>
+                <span className="text-[10px] text-gray-400 font-normal">KH</span>
+              </div>
+              {onOpenExcludedDrawer && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenExcludedDrawer();
+                  }}
+                  className="text-[10px] text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 hover:underline flex items-center gap-0.5 font-semibold bg-rose-100/60 dark:bg-rose-900/40 px-1.5 py-0.5 rounded"
+                >
+                  Kiểm duyệt ↗
+                </button>
+              )}
             </div>
           </div>
         </div>

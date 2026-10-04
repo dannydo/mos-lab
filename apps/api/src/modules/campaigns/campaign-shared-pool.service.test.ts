@@ -350,3 +350,85 @@ test('Campaign Shared Pool (MOS-FEAT-94) - Audit log metadata preservation & app
   assert.equal(parsed.nextState.poolStatus, 'AVAILABLE');
   assert.equal(parsed.result, 'SUCCESS');
 });
+
+test('Campaign Shared Pool (MOS-BUG-97) - Pool Status normalization & claim invariants', () => {
+  const canCustomerBeClaimed = (poolStatus: string, cooldownUntil: Date | null, now: Date): { canClaim: boolean; reason?: string } => {
+    if (poolStatus !== 'AVAILABLE') {
+      if (poolStatus === 'CLAIMED') return { canClaim: false, reason: 'Đang được nhân viên khác xử lý' };
+      if (poolStatus === 'RECYCLING' || poolStatus === 'RECYCLE') return { canClaim: false, reason: 'Đang trong thời gian chờ tái sinh' };
+      if (poolStatus === 'EXCLUDED') return { canClaim: false, reason: 'Đã bị loại khỏi Shared Pool' };
+      if (poolStatus === 'BOOKED') return { canClaim: false, reason: 'Đã chốt Booking' };
+      return { canClaim: false, reason: 'Không ở trạng thái sẵn sàng' };
+    }
+    if (cooldownUntil && cooldownUntil > now) {
+      return { canClaim: false, reason: 'Đang trong thời gian Cooldown chống spam' };
+    }
+    return { canClaim: true };
+  };
+
+  const now = new Date('2026-10-04T10:00:00.000Z');
+  const pastCooldown = new Date('2026-10-04T09:00:00.000Z');
+  const futureCooldown = new Date('2026-10-04T10:30:00.000Z');
+
+  // AVAILABLE with no/past cooldown => CAN CLAIM
+  assert.equal(canCustomerBeClaimed('AVAILABLE', null, now).canClaim, true);
+  assert.equal(canCustomerBeClaimed('AVAILABLE', pastCooldown, now).canClaim, true);
+
+  // AVAILABLE with future cooldown => BLOCKED
+  assert.equal(canCustomerBeClaimed('AVAILABLE', futureCooldown, now).canClaim, false);
+
+  // RECYCLING => CANNOT CLAIM
+  assert.equal(canCustomerBeClaimed('RECYCLING', null, now).canClaim, false);
+  assert.equal(canCustomerBeClaimed('RECYCLING', null, now).reason, 'Đang trong thời gian chờ tái sinh');
+
+  // EXCLUDED => CANNOT CLAIM (never leaks back to active pool)
+  assert.equal(canCustomerBeClaimed('EXCLUDED', null, now).canClaim, false);
+  assert.equal(canCustomerBeClaimed('EXCLUDED', null, now).reason, 'Đã bị loại khỏi Shared Pool');
+
+  // BOOKED => CANNOT CLAIM
+  assert.equal(canCustomerBeClaimed('BOOKED', null, now).canClaim, false);
+  assert.equal(canCustomerBeClaimed('BOOKED', null, now).reason, 'Đã chốt Booking');
+});
+
+test('Campaign Shared Pool (MOS-BUG-97) - Call wrapup determines EXCLUDED and clears recycle dates', () => {
+  const EXCLUDED_RESULTS = new Set(['NO_NEED', 'REJECTED', 'WRONG_NUMBER', 'CLOSED', 'NOT_INTERESTED', 'DO_NOT_CALL']);
+
+  const resolveWrapupStatus = (callResult: string, callbackDate?: Date | null) => {
+    let nextPoolStatus: string = 'EXPLOITED';
+    let availableAt: Date | null = null;
+    let cooldownUntil: Date | null = new Date();
+
+    if (callResult === 'BOOKED') {
+      nextPoolStatus = 'BOOKED';
+    } else if (EXCLUDED_RESULTS.has(callResult)) {
+      nextPoolStatus = 'EXCLUDED';
+      availableAt = null;
+      cooldownUntil = null;
+    } else if (callResult === 'CALLBACK') {
+      nextPoolStatus = 'RECYCLING';
+      availableAt = callbackDate || new Date();
+    } else if (['THINKING', 'NO_ANSWER', 'BUSY', 'ERROR'].includes(callResult)) {
+      nextPoolStatus = 'RECYCLING';
+      availableAt = new Date();
+    }
+
+    return { nextPoolStatus, availableAt, cooldownUntil };
+  };
+
+  // NO_NEED, REJECTED, WRONG_NUMBER, CLOSED => EXCLUDED, availableAt=null, cooldownUntil=null
+  for (const res of ['NO_NEED', 'REJECTED', 'WRONG_NUMBER', 'CLOSED']) {
+    const wrapup = resolveWrapupStatus(res);
+    assert.equal(wrapup.nextPoolStatus, 'EXCLUDED');
+    assert.equal(wrapup.availableAt, null);
+    assert.equal(wrapup.cooldownUntil, null);
+  }
+
+  // THINKING => RECYCLING
+  const thinking = resolveWrapupStatus('THINKING');
+  assert.equal(thinking.nextPoolStatus, 'RECYCLING');
+  assert.notEqual(thinking.availableAt, null);
+
+  // BOOKED => BOOKED
+  const booked = resolveWrapupStatus('BOOKED');
+  assert.equal(booked.nextPoolStatus, 'BOOKED');
+});

@@ -66,6 +66,7 @@ export interface SharedPoolOverviewStats {
   totalCustomers: number;
   totalExploited: number;
   totalRemaining: number;
+  totalExcluded?: number;
   percentRemaining: number;
   // Early warning & forecasting
   warningLevel: 'NORMAL' | 'WARNING' | 'CRITICAL' | 'EXHAUSTED';
@@ -257,8 +258,8 @@ export interface CampaignCustomersQueryParams {
   search?: string;
   touchpointKey?: string;
   bookingStatus?: CampaignBookingStatusFilter;
-  batchNumber?: number;
-  poolStatus?: CampaignPoolStatus | 'ALL';
+  batchNumber?: number | 'ALL';
+  poolStatus?: CampaignPoolStatus | 'ALL' | 'REMAINING' | 'RECYCLE';
 }
 
 export interface CampaignTouchpoint {
@@ -405,7 +406,13 @@ export interface ToggleSharedPoolPauseDto {
 
 export interface ManagerPoolActionDto {
   customerId: number;
-  action: 'RELEASE_CLAIM' | 'RETURN_TO_POOL' | 'EXCLUDE';
+  action: 'RELEASE_CLAIM' | 'RETURN_TO_POOL' | 'EXCLUDE' | 'KEEP_EXCLUDED';
+  reason?: string;
+}
+
+export interface BatchManagerPoolActionDto {
+  customerIds: number[];
+  action: 'RETURN_TO_POOL' | 'EXCLUDE' | 'KEEP_EXCLUDED';
   reason?: string;
 }
 
