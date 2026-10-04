@@ -40,6 +40,7 @@ interface AddToCampaignModalProps {
   onClose: () => void;
   selectedCustomerIds: number[];
   customerName?: string;
+  initialCampaignId?: number;
   onSuccess: () => void;
 }
 
@@ -48,6 +49,7 @@ export function AddToCampaignModal({
   onClose,
   selectedCustomerIds,
   customerName,
+  initialCampaignId,
   onSuccess,
 }: AddToCampaignModalProps) {
   const { themeMode } = useTheme();
@@ -87,7 +89,9 @@ export function AddToCampaignModal({
       const list = Array.isArray(res) ? res : res?.items || res?.data || [];
       const selectable = list.filter((c: any) => !['COMPLETED', 'ENDED', 'ARCHIVED', 'DELETED'].includes(c.status));
       setCampaigns(selectable);
-      if (selectable.length > 0) {
+      if (initialCampaignId && selectable.some((c: any) => c.id === initialCampaignId)) {
+        setSelectedCampaignId(initialCampaignId);
+      } else if (selectable.length > 0) {
         setSelectedCampaignId(selectable[0].id);
       }
     } catch (err) {

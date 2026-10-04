@@ -59,6 +59,7 @@ interface CustomerBulkActionsProps {
   handleUnassignCustomers: () => Promise<void>;
   onRefresh?: () => void;
   randomBatchId?: string | null;
+  defaultCampaignId?: number;
 }
 
 const CustomerBulkActions = React.memo(function CustomerBulkActions({
@@ -80,6 +81,7 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
   handleUnassignCustomers,
   onRefresh,
   randomBatchId,
+  defaultCampaignId,
 }: CustomerBulkActionsProps) {
   const [revokeModalVisible, setRevokeModalVisible] = useState(false);
   const [addToCampaignModalVisible, setAddToCampaignModalVisible] = useState(false);
@@ -288,6 +290,7 @@ const CustomerBulkActions = React.memo(function CustomerBulkActions({
         visible={addToCampaignModalVisible}
         onClose={() => setAddToCampaignModalVisible(false)}
         selectedCustomerIds={selectedNumericIds}
+        initialCampaignId={defaultCampaignId}
         onSuccess={() => {
           setSelectedRowKeys([]);
           if (onRefresh) onRefresh();

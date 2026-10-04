@@ -30,7 +30,13 @@ export async function resolveCampaignFilter({
   }
 
   const campaignMembers = await findCampaignMembers(campaignId);
-  const campaignUserIds = campaignMembers.map((m) => m.legacyUserId);
+  const campaignUserIds = Array.from(
+    new Set(
+      campaignMembers
+        .map((m) => Number(m.legacyUserId))
+        .filter((id) => Number.isInteger(id) && id > 0)
+    )
+  );
 
   if (campaignFilterMode === 'IN') {
     if (campaignUserIds.length === 0) {
@@ -48,6 +54,13 @@ export async function resolveCampaignFilter({
   } else if (campaignFilterMode === 'NOT_IN') {
     if (campaignUserIds.length > 0) {
       excludedUserIds = Array.from(new Set([...excludedUserIds, ...campaignUserIds]));
+      if (allowedUserIds !== null) {
+        const campaignSet = new Set(campaignUserIds);
+        allowedUserIds = allowedUserIds.filter((id) => !campaignSet.has(id));
+        if (allowedUserIds.length === 0) {
+          return { allowedUserIds: [], excludedUserIds, isEarlyEmpty: true };
+        }
+      }
     }
   }
 
@@ -120,3 +133,50 @@ test('resolveCampaignFilter merges excludedUserIds when mode is NOT_IN', async (
   assert.equal(result.allowedUserIds, null);
   assert.deepEqual(result.excludedUserIds, [90, 101, 102]);
 });
+
+test('resolveCampaignFilter prunes allowedUserIds when mode is NOT_IN and allowedUserIds exists', async () => {
+  const result = await resolveCampaignFilter({
+    campaignId: 10,
+    campaignFilterMode: 'NOT_IN',
+    existingAllowedUserIds: [100, 101, 102, 103],
+    existingExcludedUserIds: [90],
+    findCampaignMembers: async () => [{ legacyUserId: 101 }, { legacyUserId: 102 }],
+  });
+
+  assert.equal(result.isEarlyEmpty, false);
+  assert.deepEqual(result.allowedUserIds, [100, 103]);
+  assert.deepEqual(result.excludedUserIds, [90, 101, 102]);
+});
+
+test('resolveCampaignFilter sets isEarlyEmpty when mode is NOT_IN and all allowedUserIds are excluded', async () => {
+  const result = await resolveCampaignFilter({
+    campaignId: 10,
+    campaignFilterMode: 'NOT_IN',
+    existingAllowedUserIds: [101, 102],
+    existingExcludedUserIds: [],
+    findCampaignMembers: async () => [{ legacyUserId: 101 }, { legacyUserId: 102 }],
+  });
+
+  assert.equal(result.isEarlyEmpty, true);
+  assert.deepEqual(result.allowedUserIds, []);
+  assert.deepEqual(result.excludedUserIds, [101, 102]);
+});
+
+test('resolveCampaignFilter sanitizes non-positive and invalid IDs from campaign members', async () => {
+  const result = await resolveCampaignFilter({
+    campaignId: 10,
+    campaignFilterMode: 'NOT_IN',
+    existingAllowedUserIds: null,
+    existingExcludedUserIds: [],
+    findCampaignMembers: async () => [
+      { legacyUserId: 101 },
+      { legacyUserId: 0 },
+      { legacyUserId: -5 },
+      { legacyUserId: 101 }, // duplicate
+    ],
+  });
+
+  assert.equal(result.isEarlyEmpty, false);
+  assert.deepEqual(result.excludedUserIds, [101]);
+});
+

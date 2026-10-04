@@ -295,7 +295,13 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
             where: { campaignId: cId },
             select: { legacyUserId: true },
           });
-          const campUserIds = Array.from(new Set(campaignCustomers.map((c) => c.legacyUserId)));
+          const campUserIds = Array.from(
+            new Set(
+              campaignCustomers
+                .map((c) => Number(c.legacyUserId))
+                .filter((id) => Number.isInteger(id) && id > 0)
+            )
+          );
 
           if (mode === 'IN') {
             if (allowedUserIds !== null) {
@@ -659,6 +665,22 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         innerWhereClauses.push('up.is_deleted = 1');
       } else {
         innerWhereClauses.push('COALESCE(up.is_deleted, 0) = 0');
+      }
+
+      if (allowedUserIds !== null && excludedUserIds !== null && excludedUserIds.length > 0) {
+        const exSet = new Set(excludedUserIds);
+        allowedUserIds = allowedUserIds.filter((id) => !exSet.has(id));
+        if (allowedUserIds.length === 0) {
+          return {
+            data: [],
+            pagination: {
+              total: 0,
+              page: pageNum,
+              limit: limitNum,
+              pages: 0,
+            },
+          };
+        }
       }
 
       if (allowedUserIds !== null) {
@@ -1842,7 +1864,13 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
             where: { campaignId: cId },
             select: { legacyUserId: true },
           });
-          const campUserIds = Array.from(new Set(campaignCustomers.map((c) => c.legacyUserId)));
+          const campUserIds = Array.from(
+            new Set(
+              campaignCustomers
+                .map((c) => Number(c.legacyUserId))
+                .filter((id) => Number.isInteger(id) && id > 0)
+            )
+          );
 
           if (mode === 'IN') {
             if (campUserIds.length === 0) {
