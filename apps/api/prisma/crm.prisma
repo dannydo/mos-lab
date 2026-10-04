@@ -930,8 +930,8 @@ model CrmCampaignCustomer {
 model CrmCampaignSharedPoolLog {
   id                 Int      @id @default(autoincrement())
   campaignId         Int      @map("campaign_id")
-  campaignCustomerId Int      @map("campaign_customer_id")
-  legacyUserId       Int      @map("legacy_user_id")
+  campaignCustomerId Int?     @map("campaign_customer_id")
+  legacyUserId       Int?     @map("legacy_user_id")
   staffId            Int?     @map("staff_id")
   staffName          String?  @map("staff_name") @db.VarChar(100)
   action             String   @db.VarChar(50) // CLAIM | RELEASE_EXPIRED | RELEASE_MANUAL | CALL | STATUS_UPDATE | RECYCLE | EXCLUDE | RETURN_TO_POOL | BOOKING | NEXT_BATCH
@@ -939,8 +939,8 @@ model CrmCampaignSharedPoolLog {
   metadata           String?  @map("metadata") @db.LongText
   createdAt          DateTime @default(now()) @map("created_at") @db.DateTime(0)
 
-  campaign         CrmCustomCampaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  campaignCustomer CrmCampaignCustomer @relation(fields: [campaignCustomerId], references: [id], onDelete: Cascade)
+  campaign         CrmCustomCampaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  campaignCustomer CrmCampaignCustomer? @relation(fields: [campaignCustomerId], references: [id], onDelete: Cascade)
 
   @@index([campaignId, createdAt])
   @@index([campaignCustomerId])

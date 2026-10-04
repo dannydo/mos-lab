@@ -134,10 +134,16 @@ export const SharedPoolHistoryRecoveryDrawer: React.FC<SharedPoolHistoryRecovery
       return;
     }
 
+    const targetCustomerId = selectedLog.campaignCustomerId || selectedLog.legacyUserId;
+    if (!targetCustomerId) {
+      message.error('Không tìm thấy thông tin khách hàng trong bản ghi log này.');
+      return;
+    }
+
     setRecoveryLoading(true);
     try {
       const dto: SharedPoolRecoveryDto = {
-        customerId: selectedLog.campaignCustomerId || selectedLog.legacyUserId,
+        customerId: targetCustomerId,
         action: recoveryAction,
         logId: selectedLog.id,
         targetPoolStatus: recoveryAction === 'RESET_POOL_STATUS' ? targetPoolStatus : undefined,

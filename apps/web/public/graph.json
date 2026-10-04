@@ -6730,7 +6730,7 @@
         "path": "/api/campaigns",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 31
+        "line": 32
       }
     },
     {
@@ -6744,7 +6744,7 @@
         "path": "/api/campaigns",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 45
+        "line": 46
       }
     },
     {
@@ -6758,7 +6758,7 @@
         "path": "/api/campaigns/:id",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 62
+        "line": 63
       }
     },
     {
@@ -6772,7 +6772,7 @@
         "path": "/api/campaigns/slug/:slug",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 80
+        "line": 81
       }
     },
     {
@@ -6786,7 +6786,7 @@
         "path": "/api/campaigns/:id",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 98
+        "line": 99
       }
     },
     {
@@ -6800,7 +6800,7 @@
         "path": "/api/campaigns/:id",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 119
+        "line": 120
       }
     },
     {
@@ -6814,7 +6814,7 @@
         "path": "/api/campaigns/:id/end",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 139
+        "line": 140
       }
     },
     {
@@ -6828,7 +6828,7 @@
         "path": "/api/campaigns/:id/complete",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 158
+        "line": 159
       }
     },
     {
@@ -6842,7 +6842,7 @@
         "path": "/api/campaigns/:id/pause",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 178
+        "line": 179
       }
     },
     {
@@ -6856,7 +6856,7 @@
         "path": "/api/campaigns/:id/resume",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 198
+        "line": 199
       }
     },
     {
@@ -6870,7 +6870,7 @@
         "path": "/api/campaigns/:id/archive",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 218
+        "line": 219
       }
     },
     {
@@ -6884,7 +6884,7 @@
         "path": "/api/campaigns/:id/unarchive",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 238
+        "line": 239
       }
     },
     {
@@ -6898,7 +6898,7 @@
         "path": "/api/campaigns/:id/reopen",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 258
+        "line": 259
       }
     },
     {
@@ -6912,7 +6912,7 @@
         "path": "/api/campaigns/:id/restore",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 279
+        "line": 280
       }
     },
     {
@@ -6926,7 +6926,7 @@
         "path": "/api/campaigns/:id/clone",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 299
+        "line": 300
       }
     },
     {
@@ -6940,7 +6940,7 @@
         "path": "/api/campaigns/:id/customers",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 321
+        "line": 322
       }
     },
     {
@@ -6954,7 +6954,7 @@
         "path": "/api/campaigns/:id/customers",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 375
+        "line": 377
       }
     },
     {
@@ -6968,7 +6968,7 @@
         "path": "/api/campaigns/:id/transfer-customers",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 397
+        "line": 399
       }
     },
     {
@@ -6982,7 +6982,7 @@
         "path": "/api/campaigns/:id/customers/:customerId",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 425
+        "line": 427
       }
     },
     {
@@ -6996,7 +6996,7 @@
         "path": "/api/campaigns/:id/customers/batch-remove",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 454
+        "line": 456
       }
     },
     {
@@ -7010,7 +7010,7 @@
         "path": "/api/campaigns/:id/customers/:customerId/touchpoints/:touchpointId",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 482
+        "line": 484
       }
     },
     {
@@ -7024,7 +7024,7 @@
         "path": "/api/campaigns/:id/promotions",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 515
+        "line": 517
       }
     },
     {
@@ -7038,7 +7038,7 @@
         "path": "/api/campaigns/:id/promotions",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 535
+        "line": 537
       }
     },
     {
@@ -7052,7 +7052,7 @@
         "path": "/api/campaigns/:id/promotions/:promotionId",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 556
+        "line": 558
       }
     },
     {
@@ -7066,7 +7066,7 @@
         "path": "/api/campaigns/:id/stats",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 577
+        "line": 579
       }
     },
     {
@@ -7080,7 +7080,7 @@
         "path": "/api/campaigns/customer/:customerId/active-promotions",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 602
+        "line": 604
       }
     },
     {
@@ -7094,7 +7094,7 @@
         "path": "/api/campaigns/:id/shared-pool/overview",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 629
+        "line": 631
       }
     },
     {
@@ -7108,7 +7108,7 @@
         "path": "/api/campaigns/:id/staff-performance",
         "module": "campaigns",
         "handler": "preHandler",
-        "line": 665
+        "line": 667
       }
     },
     {
@@ -7122,7 +7122,7 @@
         "path": "/api/campaigns/:id/shared-pool/staff-performance",
         "module": "campaigns",
         "handler": "preHandler",
-        "line": 666
+        "line": 668
       }
     },
     {
@@ -7136,7 +7136,7 @@
         "path": "/api/campaigns/:id/shared-pool/claim",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 669
+        "line": 671
       }
     },
     {
@@ -7150,7 +7150,7 @@
         "path": "/api/campaigns/:id/shared-pool/release",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 694
+        "line": 696
       }
     },
     {
@@ -7164,7 +7164,7 @@
         "path": "/api/campaigns/:id/shared-pool/status",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 720
+        "line": 722
       }
     },
     {
@@ -7178,7 +7178,7 @@
         "path": "/api/campaigns/:id/shared-pool/sync-call",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 745
+        "line": 747
       }
     },
     {
@@ -7192,7 +7192,7 @@
         "path": "/api/campaigns/:id/shared-pool/advance-batch",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 770
+        "line": 772
       }
     },
     {
@@ -7206,7 +7206,7 @@
         "path": "/api/campaigns/:id/shared-pool/toggle-pause",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 792
+        "line": 794
       }
     },
     {
@@ -7220,7 +7220,7 @@
         "path": "/api/campaigns/:id/shared-pool/manager-action",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 817
+        "line": 819
       }
     },
     {
@@ -7234,7 +7234,7 @@
         "path": "/api/campaigns/:id/shared-pool/batch-manager-action",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 849
+        "line": 851
       }
     },
     {
@@ -7248,7 +7248,7 @@
         "path": "/api/campaigns/:id/shared-pool/customers/:customerId/logs",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 884
+        "line": 886
       }
     },
     {
@@ -7262,7 +7262,7 @@
         "path": "/api/campaigns/:id/shared-pool/history",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 905
+        "line": 907
       }
     },
     {
@@ -7276,7 +7276,21 @@
         "path": "/api/campaigns/:id/shared-pool/recovery",
         "module": "campaigns",
         "handler": "inlineHandler",
-        "line": 926
+        "line": 928
+      }
+    },
+    {
+      "id": "route:GET:/api/campaigns/:id/shared-pool/stream",
+      "type": "FastifyRoute",
+      "label": "GET /api/campaigns/:id/shared-pool/stream",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/campaigns/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/campaigns/:id/shared-pool/stream",
+        "module": "campaigns",
+        "handler": "inlineHandler",
+        "line": 960
       }
     },
     {
@@ -8494,7 +8508,7 @@
         "path": "/api/customers/random-ids",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1619
+        "line": 1641
       }
     },
     {
@@ -8718,7 +8732,7 @@
         "path": "/api/customers/loca-stats",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 780
+        "line": 803
       }
     },
     {
@@ -8732,7 +8746,7 @@
         "path": "/api/customers/nyc-stats",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1060
+        "line": 1083
       }
     },
     {
@@ -29344,8 +29358,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13482480,
-        "lineCount": 293296,
+        "sizeBytes": 13483987,
+        "lineCount": 293322,
         "ext": ".ts"
       }
     },
@@ -30494,6 +30508,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/campaigns/campaign-shared-pool-broadcaster.ts",
+      "type": "File",
+      "label": "campaign-shared-pool-broadcaster.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/campaigns/campaign-shared-pool-broadcaster.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 1816,
+        "lineCount": 68,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/campaigns/campaign-shared-pool.service.test.ts",
       "type": "File",
       "label": "campaign-shared-pool.service.test.ts",
@@ -30501,8 +30528,8 @@
       "filePath": "apps/api/src/modules/campaigns/campaign-shared-pool.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 22756,
-        "lineCount": 597,
+        "sizeBytes": 27185,
+        "lineCount": 744,
         "ext": ".ts"
       }
     },
@@ -30514,8 +30541,8 @@
       "filePath": "apps/api/src/modules/campaigns/campaign.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 163862,
-        "lineCount": 4675,
+        "sizeBytes": 169796,
+        "lineCount": 4847,
         "ext": ".ts"
       }
     },
@@ -30527,8 +30554,8 @@
       "filePath": "apps/api/src/modules/campaigns/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 39338,
-        "lineCount": 957,
+        "sizeBytes": 40095,
+        "lineCount": 977,
         "ext": ".ts"
       }
     },
@@ -30722,8 +30749,8 @@
       "filePath": "apps/api/src/modules/customers/campaign-filter.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4297,
-        "lineCount": 123,
+        "sizeBytes": 6361,
+        "lineCount": 183,
         "ext": ".ts"
       }
     },
@@ -30839,8 +30866,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-list.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 83028,
-        "lineCount": 2023,
+        "sizeBytes": 83790,
+        "lineCount": 2051,
         "ext": ".ts"
       }
     },
@@ -30878,8 +30905,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-stats.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 51197,
-        "lineCount": 1254,
+        "sizeBytes": 51846,
+        "lineCount": 1277,
         "ext": ".ts"
       }
     },
@@ -33998,8 +34025,8 @@
       "filePath": "apps/api/src/server.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16176,
-        "lineCount": 410,
+        "sizeBytes": 16366,
+        "lineCount": 414,
         "ext": ".ts"
       }
     },
@@ -36663,8 +36690,8 @@
       "filePath": "apps/web/app/dashboard/customers/components/CustomerBulkActions.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13576,
-        "lineCount": 384,
+        "sizeBytes": 13673,
+        "lineCount": 387,
         "ext": ".tsx"
       }
     },
@@ -36838,6 +36865,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/customers/hooks/__tests__/useRandomSelector.test.ts",
+      "type": "File",
+      "label": "useRandomSelector.test.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/hooks/__tests__/useRandomSelector.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1991,
+        "lineCount": 73,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/customers/hooks/useAssignmentHistory.ts",
       "type": "File",
       "label": "useAssignmentHistory.ts",
@@ -36923,8 +36963,8 @@
       "filePath": "apps/web/app/dashboard/customers/hooks/useRandomSelector.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4407,
-        "lineCount": 99,
+        "sizeBytes": 5168,
+        "lineCount": 110,
         "ext": ".ts"
       }
     },
@@ -36936,8 +36976,8 @@
       "filePath": "apps/web/app/dashboard/customers/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22979,
-        "lineCount": 620,
+        "sizeBytes": 23023,
+        "lineCount": 621,
         "ext": ".tsx"
       }
     },
@@ -37508,8 +37548,8 @@
       "filePath": "apps/web/app/dashboard/nyc/campaigns/[slug]/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 126638,
-        "lineCount": 3009,
+        "sizeBytes": 133403,
+        "lineCount": 3192,
         "ext": ".tsx"
       }
     },
@@ -39705,7 +39745,7 @@
       "filePath": "packages/shared/src/types/campaign.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 14135,
+        "sizeBytes": 14167,
         "lineCount": 552,
         "ext": ".ts"
       }
@@ -43577,6 +43617,13 @@
     {
       "id": "edge:route:POST:/api/campaigns/:id/shared-pool/recovery:ws:apps/api",
       "source": "route:POST:/api/campaigns/:id/shared-pool/recovery",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/campaigns/:id/shared-pool/stream:ws:apps/api",
+      "source": "route:GET:/api/campaigns/:id/shared-pool/stream",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -63805,6 +63852,13 @@
       "label": "CALLS academySales.campaigns"
     },
     {
+      "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/campaigns/:id/shared-pool/stream",
+      "source": "page:/dashboard/academy-leads/campaigns/[slug]",
+      "target": "route:GET:/api/campaigns/:id/shared-pool/stream",
+      "type": "API_CALL",
+      "label": "CALLS academySales.campaigns"
+    },
+    {
       "id": "edge:page:/dashboard/academy-leads/campaigns/[slug]:route:GET:/api/cs/campaigns",
       "source": "page:/dashboard/academy-leads/campaigns/[slug]",
       "target": "route:GET:/api/cs/campaigns",
@@ -64228,6 +64282,13 @@
       "id": "edge:page:/dashboard/academy-leads/campaigns:route:POST:/api/campaigns/:id/shared-pool/recovery",
       "source": "page:/dashboard/academy-leads/campaigns",
       "target": "route:POST:/api/campaigns/:id/shared-pool/recovery",
+      "type": "API_CALL",
+      "label": "CALLS academySales.campaigns"
+    },
+    {
+      "id": "edge:page:/dashboard/academy-leads/campaigns:route:GET:/api/campaigns/:id/shared-pool/stream",
+      "source": "page:/dashboard/academy-leads/campaigns",
+      "target": "route:GET:/api/campaigns/:id/shared-pool/stream",
       "type": "API_CALL",
       "label": "CALLS academySales.campaigns"
     },
@@ -72618,6 +72679,13 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/campaigns/:id/shared-pool/stream",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/campaigns/:id/shared-pool/stream",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/career/config",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/career/config",
@@ -77220,6 +77288,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/campaigns/:id/shared-pool/recovery",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/campaigns/:id/shared-pool/recovery",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.list"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/campaigns/:id/shared-pool/stream",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/campaigns/:id/shared-pool/stream",
       "type": "API_CALL",
       "label": "CALLS campaigns.list"
     },
@@ -84882,6 +84957,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/campaigns/:id/shared-pool/stream",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/campaigns/:id/shared-pool/stream",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/career/config",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/career/config",
@@ -87417,28 +87499,28 @@
     }
   ],
   "stats": {
-    "totalNodes": 3084,
-    "totalEdges": 6733,
+    "totalNodes": 3087,
+    "totalEdges": 6739,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 163,
-      "FastifyRoute": 658,
+      "FastifyRoute": 659,
       "Component": 57,
       "SharedType": 1132,
       "DesignToken": 12,
       "UIComponent": 212,
-      "File": 847
+      "File": 849
     },
     "edgeTypeCounts": {
       "EXPORTS": 1307,
-      "HANDLES_ROUTE": 658,
+      "HANDLES_ROUTE": 659,
       "RENDERS": 269,
       "USES_TOKEN": 214,
       "IMPORTS": 469,
       "QUERIES_MODEL": 382,
-      "API_CALL": 3434
+      "API_CALL": 3439
     },
-    "fastifyRouteCount": 663,
+    "fastifyRouteCount": 664,
     "prismaModelCount": 163,
     "nextPageCount": 57,
     "sharedTypeCount": 1132
@@ -89596,6 +89678,13 @@
     {
       "method": "POST",
       "path": "/api/campaigns/:id/shared-pool/recovery",
+      "filePath": "apps/api/src/modules/campaigns/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "campaigns"
+    },
+    {
+      "method": "GET",
+      "path": "/api/campaigns/:id/shared-pool/stream",
       "filePath": "apps/api/src/modules/campaigns/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "campaigns"

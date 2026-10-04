@@ -3,6 +3,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { canManageCampaign, requireAuth, requireCampaignAdmin } from '../../middlewares/auth.js';
 import { CampaignService } from './campaign.service.js';
+import { SharedPoolBroadcaster } from './campaign-shared-pool-broadcaster.js';
 import { CustomerAccessService } from '../customers/services/customer-access.service.js';
 import {
   CreateCampaignDto,
@@ -355,6 +356,7 @@ export async function campaignRoutes(fastify: FastifyInstance) {
         const result = await CampaignService.getCampaignCustomers(fastify, id, {
           bookerId,
           restrictToAssignedStaffId: isTelesales ? user.id : undefined,
+          currentStaffId: user.id,
           search: query.search,
           touchpointKey: query.touchpointKey,
           bookingStatus,
@@ -953,4 +955,18 @@ export async function campaignRoutes(fastify: FastifyInstance) {
       }
     }
   );
+
+  // 27. Shared Pool: Realtime WebSocket Stream
+  fastify.get('/campaigns/:id/shared-pool/stream', { websocket: true }, (socket, request) => {
+    const params = request.params as { id: string };
+    const id = parseInt(params.id, 10);
+    if (isNaN(id)) {
+      socket.close(1008, 'Invalid Campaign ID');
+      return;
+    }
+    SharedPoolBroadcaster.register(id, socket);
+    socket.send(JSON.stringify({ type: 'CONNECTED', campaignId: id }));
+    socket.on('close', () => SharedPoolBroadcaster.unregister(id, socket));
+    socket.on('error', () => SharedPoolBroadcaster.unregister(id, socket));
+  });
 }

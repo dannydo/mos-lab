@@ -106,8 +106,8 @@ export interface CampaignStaffPerformanceResponse {
 export interface CampaignSharedPoolLog {
   id: number;
   campaignId: number;
-  campaignCustomerId: number;
-  legacyUserId: number;
+  campaignCustomerId?: number | null;
+  legacyUserId?: number | null;
   staffId: number | null;
   staffName: string | null;
   action: string;
@@ -119,8 +119,8 @@ export interface CampaignSharedPoolLog {
 export interface CampaignSharedPoolDetailedLog {
   id: number;
   campaignId: number;
-  campaignCustomerId: number;
-  legacyUserId: number;
+  campaignCustomerId?: number | null;
+  legacyUserId?: number | null;
   customerName?: string | null;
   customerPhone?: string | null;
   currentPoolStatus?: string | null;

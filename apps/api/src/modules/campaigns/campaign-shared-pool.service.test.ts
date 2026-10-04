@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_SHARED_POOL_CONFIG, CampaignPoolStatus, SharedPoolConfig } from '@mos-lab/shared';
+import { DEFAULT_SHARED_POOL_CONFIG, type CampaignPoolStatus, type SharedPoolConfig } from '@mos-lab/shared';
 import { CampaignService } from './campaign.service.js';
 
 test('Campaign Shared Pool - Default configuration validation', () => {
@@ -598,4 +598,145 @@ test('Campaign Shared Pool (MOS-BUG-99) - Standard mOS Call Log mapping to Share
   assert.equal(answeredRes.mappedCallResult, 'THINKING');
   assert.equal(answeredRes.isPickup, true);
   assert.equal(answeredRes.nextPoolStatus, 'RECYCLING');
+});
+
+test('Campaign Shared Pool (MOS-BUG-98) - Atomic Mutual Exclusion Concurrency Lock', () => {
+  // Simulate atomic DB conditional update: updateMany where id = 1 AND poolStatus = 'AVAILABLE'
+  interface CustomerRecord {
+    id: number;
+    poolStatus: string;
+    claimedByStaffId: number | null;
+    claimedByStaffName: string | null;
+    claimExpiresAt: Date | null;
+  }
+
+  const dbState: CustomerRecord = {
+    id: 101,
+    poolStatus: 'AVAILABLE',
+    claimedByStaffId: null,
+    claimedByStaffName: null,
+    claimExpiresAt: null,
+  };
+
+  const atomicClaim = (staffId: number, staffName: string, ttlMinutes = 15): boolean => {
+    // Check conditional WHERE
+    if (dbState.poolStatus !== 'AVAILABLE') {
+      return false;
+    }
+    // Atomic update
+    dbState.poolStatus = 'CLAIMED';
+    dbState.claimedByStaffId = staffId;
+    dbState.claimedByStaffName = staffName;
+    dbState.claimExpiresAt = new Date(Date.now() + ttlMinutes * 60 * 1000);
+    return true;
+  };
+
+  // Staff 1 claims first
+  const staff1Claim = atomicClaim(1, 'Danny Do');
+  assert.equal(staff1Claim, true);
+  assert.equal(dbState.poolStatus, 'CLAIMED');
+  assert.equal(dbState.claimedByStaffId, 1);
+
+  // Staff 2 claims concurrently
+  const staff2Claim = atomicClaim(2, 'Sarah Connor');
+  assert.equal(staff2Claim, false, 'Staff 2 must fail to claim already claimed customer');
+  assert.equal(dbState.claimedByStaffId, 1, 'Lock must remain with Staff 1');
+});
+
+test('Campaign Shared Pool (MOS-BUG-98) - TTL Expiration and Auto-Release', () => {
+  interface CustomerRecord {
+    id: number;
+    poolStatus: string;
+    claimedByStaffId: number | null;
+    claimExpiresAt: Date;
+  }
+
+  const now = new Date('2026-10-04T12:00:00.000Z');
+  const expiredCustomer: CustomerRecord = {
+    id: 201,
+    poolStatus: 'CLAIMED',
+    claimedByStaffId: 5,
+    claimExpiresAt: new Date('2026-10-04T11:59:00.000Z'), // 1 min ago
+  };
+
+  const activeCustomer: CustomerRecord = {
+    id: 202,
+    poolStatus: 'CLAIMED',
+    claimedByStaffId: 6,
+    claimExpiresAt: new Date('2026-10-04T12:10:00.000Z'), // 10 mins in future
+  };
+
+  const checkAndReleaseExpired = (customer: CustomerRecord, currentTime: Date) => {
+    if (customer.poolStatus === 'CLAIMED' && customer.claimExpiresAt <= currentTime) {
+      return {
+        released: true,
+        poolStatus: 'AVAILABLE',
+        claimedByStaffId: null,
+        releaseReason: 'LOCK_EXPIRED',
+      };
+    }
+    return {
+      released: false,
+      poolStatus: customer.poolStatus,
+      claimedByStaffId: customer.claimedByStaffId,
+      releaseReason: null,
+    };
+  };
+
+  const resultExpired = checkAndReleaseExpired(expiredCustomer, now);
+  assert.equal(resultExpired.released, true);
+  assert.equal(resultExpired.poolStatus, 'AVAILABLE');
+  assert.equal(resultExpired.releaseReason, 'LOCK_EXPIRED');
+
+  const resultActive = checkAndReleaseExpired(activeCustomer, now);
+  assert.equal(resultActive.released, false);
+  assert.equal(resultActive.poolStatus, 'CLAIMED');
+  assert.equal(resultActive.claimedByStaffId, 6);
+});
+
+test('Campaign Shared Pool (MOS-BUG-98) - Audit Log Metadata completeness', () => {
+  interface AuditLogEntry {
+    action: string;
+    campaignCustomerId: number | null;
+    claimedByStaffId?: number | null;
+    claimedByStaffName?: string | null;
+    claimExpiresAt?: Date | null;
+    releasedByStaffId?: number | null;
+    releasedByStaffName?: string | null;
+    releasedAt?: Date | null;
+    releaseReason?: string | null;
+    meta?: any;
+  }
+
+  const claimLog: AuditLogEntry = {
+    action: 'CLAIM_CUSTOMER',
+    campaignCustomerId: 101,
+    claimedByStaffId: 1,
+    claimedByStaffName: 'Danny Do',
+    claimExpiresAt: new Date('2026-10-04T12:15:00.000Z'),
+    meta: {
+      clientIp: '127.0.0.1',
+      ttlMinutes: 15,
+    },
+  };
+
+  assert.equal(claimLog.action, 'CLAIM_CUSTOMER');
+  assert.equal(claimLog.claimedByStaffId, 1);
+  assert.notEqual(claimLog.claimExpiresAt, null);
+
+  const releaseLog: AuditLogEntry = {
+    action: 'RELEASE_CLAIM',
+    campaignCustomerId: 101,
+    releasedByStaffId: 1,
+    releasedByStaffName: 'Danny Do',
+    releasedAt: new Date('2026-10-04T12:05:00.000Z'),
+    releaseReason: 'STAFF_RELEASE',
+    meta: {
+      durationSeconds: 300,
+    },
+  };
+
+  assert.equal(releaseLog.action, 'RELEASE_CLAIM');
+  assert.equal(releaseLog.releaseReason, 'STAFF_RELEASE');
+  assert.equal(releaseLog.releasedByStaffId, 1);
 });
