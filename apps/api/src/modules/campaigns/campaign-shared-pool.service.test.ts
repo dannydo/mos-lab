@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_SHARED_POOL_CONFIG, type CampaignPoolStatus, type SharedPoolConfig } from '@mos-lab/shared';
+<<<<<<< HEAD
 import { CampaignService } from './campaign.service.js';
+=======
+>>>>>>> 027ebbcfb4bed5f5c12f7e085e603110823ae33c
 
 test('Campaign Shared Pool - Default configuration validation', () => {
   assert.equal(DEFAULT_SHARED_POOL_CONFIG.batchSize, 100);
@@ -439,6 +442,7 @@ test('Campaign Shared Pool (MOS-BUG-97) - Call wrapup determines EXCLUDED and cl
   assert.equal(booked.nextPoolStatus, 'BOOKED');
 });
 
+<<<<<<< HEAD
 test('Campaign Shared Pool (MOS-BUG-99) - Standard mOS Call Log mapping to Shared Pool status and rules', () => {
   const config = DEFAULT_SHARED_POOL_CONFIG;
 
@@ -600,6 +604,8 @@ test('Campaign Shared Pool (MOS-BUG-99) - Standard mOS Call Log mapping to Share
   assert.equal(answeredRes.nextPoolStatus, 'RECYCLING');
 });
 
+=======
+>>>>>>> 027ebbcfb4bed5f5c12f7e085e603110823ae33c
 test('Campaign Shared Pool (MOS-BUG-98) - Atomic Mutual Exclusion Concurrency Lock', () => {
   // Simulate atomic DB conditional update: updateMany where id = 1 AND poolStatus = 'AVAILABLE'
   interface CustomerRecord {
@@ -740,3 +746,7 @@ test('Campaign Shared Pool (MOS-BUG-98) - Audit Log Metadata completeness', () =
   assert.equal(releaseLog.releaseReason, 'STAFF_RELEASE');
   assert.equal(releaseLog.releasedByStaffId, 1);
 });
+<<<<<<< HEAD
+=======
+
+>>>>>>> 027ebbcfb4bed5f5c12f7e085e603110823ae33c

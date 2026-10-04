@@ -957,6 +957,7 @@ export async function campaignRoutes(fastify: FastifyInstance) {
   );
 
   // 27. Shared Pool: Realtime WebSocket Stream
+<<<<<<< HEAD
   fastify.get('/campaigns/:id/shared-pool/stream', { websocket: true }, (socket, request) => {
     const params = request.params as { id: string };
     const id = parseInt(params.id, 10);
@@ -969,4 +970,22 @@ export async function campaignRoutes(fastify: FastifyInstance) {
     socket.on('close', () => SharedPoolBroadcaster.unregister(id, socket));
     socket.on('error', () => SharedPoolBroadcaster.unregister(id, socket));
   });
+=======
+  fastify.get(
+    '/campaigns/:id/shared-pool/stream',
+    { websocket: true },
+    (socket, request) => {
+      const params = request.params as { id: string };
+      const id = parseInt(params.id, 10);
+      if (isNaN(id)) {
+        socket.close(1008, 'Invalid Campaign ID');
+        return;
+      }
+      SharedPoolBroadcaster.register(id, socket);
+      socket.send(JSON.stringify({ type: 'CONNECTED', campaignId: id }));
+      socket.on('close', () => SharedPoolBroadcaster.unregister(id, socket));
+      socket.on('error', () => SharedPoolBroadcaster.unregister(id, socket));
+    }
+  );
+>>>>>>> 027ebbcfb4bed5f5c12f7e085e603110823ae33c
 }
