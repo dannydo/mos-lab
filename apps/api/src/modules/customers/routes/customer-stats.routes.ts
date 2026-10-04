@@ -346,7 +346,13 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
             where: { campaignId: cId },
             select: { legacyUserId: true },
           });
-          const campUserIds = Array.from(new Set(campaignCustomers.map((c) => c.legacyUserId)));
+          const campUserIds = Array.from(
+            new Set(
+              campaignCustomers
+                .map((c) => Number(c.legacyUserId))
+                .filter((id) => Number.isInteger(id) && id > 0)
+            )
+          );
 
           if (mode === 'IN') {
             if (allowedUserIds !== null) {
@@ -440,6 +446,23 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         innerWhereClauses.push('up.is_deleted = 1');
       } else {
         innerWhereClauses.push('COALESCE(up.is_deleted, 0) = 0');
+      }
+
+      if (allowedUserIds !== null && excludedUserIds !== null && excludedUserIds.length > 0) {
+        const exSet = new Set(excludedUserIds);
+        allowedUserIds = allowedUserIds.filter((id) => !exSet.has(id));
+        if (allowedUserIds.length === 0) {
+          return {
+            total: 0,
+            single: 0,
+            comboLive: 0,
+            comboDead: 0,
+            notComboLive: 0,
+            newLoca: 0,
+            allocation: 0,
+            trash: 0,
+          };
+        }
       }
 
       if (allowedUserIds !== null) {

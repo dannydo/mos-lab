@@ -405,6 +405,7 @@ function CustomersPageContent() {
         handleUnassignCustomers={data.handleUnassignCustomers}
         onRefresh={data.refreshListAndStats}
         randomBatchId={data.randomBatchId}
+        defaultCampaignId={data.campaignId}
       />
 
       <Tabs
