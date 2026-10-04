@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../middlewares/auth.js';
 import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { CustomerAccessService } from '../customers/services/customer-access.service.js';
+import { CampaignService } from '../campaigns/campaign.service.js';
 
 export async function callRoutes(fastify: FastifyInstance) {
   // POST /api/calls
@@ -207,6 +208,13 @@ export async function callRoutes(fastify: FastifyInstance) {
               })
               .catch(() => {});
           }
+        }
+
+        // 4. Auto-sync Shared Pool if customer was claimed by this staff in an active Shared Pool campaign (MOS-BUG-99)
+        try {
+          await CampaignService.syncCustomerClaimAfterCall(fastify, legacyUserId, user.id, callLog);
+        } catch (poolErr) {
+          fastify.log.warn({ err: poolErr, legacyUserId }, 'Failed to auto-sync Shared Pool for customer');
         }
 
         return callLog;

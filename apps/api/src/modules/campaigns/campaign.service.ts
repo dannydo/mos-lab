@@ -1503,9 +1503,12 @@ export class CampaignService {
           campaign.operationMode === 'SHARED_POOL'
             ? cc.poolStatus !== 'EXCLUDED' &&
               cc.poolStatus !== 'BOOKED' &&
-              ((cc.poolStatus === 'CLAIMED' && (restrictToAssignedStaffId ? cc.claimedByStaffId === restrictToAssignedStaffId : true)) ||
+              ((cc.poolStatus === 'CLAIMED' &&
+                (restrictToAssignedStaffId ? cc.claimedByStaffId === restrictToAssignedStaffId : true)) ||
                 (cc.poolStatus === 'AVAILABLE' && (!cc.cooldownUntil || cc.cooldownUntil <= now)))
-            : restrictToAssignedStaffId ? cc.claimedByStaffId === restrictToAssignedStaffId : true,
+            : restrictToAssignedStaffId
+              ? cc.claimedByStaffId === restrictToAssignedStaffId
+              : true,
         claimRemainingSeconds:
           cc.claimExpiresAt && cc.claimExpiresAt > now
             ? Math.round((cc.claimExpiresAt.getTime() - now.getTime()) / 1000)
@@ -3306,6 +3309,325 @@ export class CampaignService {
     return {
       success: true,
       message: 'Đã giải phóng khách hàng về Shared Pool thành công.',
+    };
+  }
+
+  /**
+   * Helper to map standard mOS call log (callResult, outcome, duration) to Shared Pool status,
+   * pickup classification, and recycling rules (Single Source of Truth - MOS-BUG-99).
+   */
+  static mapCallLogToSharedPool(
+    callLog: {
+      callResult?: string | null;
+      outcome?: string | null;
+      durationSec?: number | null;
+      callbackDate?: Date | string | null;
+      note?: string | null;
+    },
+    config?: SharedPoolConfig
+  ): {
+    mappedCallResult: string;
+    isPickup: boolean;
+    nextPoolStatus: CampaignPoolStatus;
+    availableAt: Date | null;
+    cooldownUntil: Date | null;
+    isBooked: boolean;
+    isExcluded: boolean;
+  } {
+    const rawResult = String(callLog.callResult || '').toUpperCase();
+    const rawOutcome = String(callLog.outcome || '').toUpperCase();
+    const durationSec = Number(callLog.durationSec) || 0;
+    const now = new Date();
+
+    let mappedCallResult = 'THINKING';
+    if (rawOutcome === 'BOOKED' || rawOutcome === 'RENEWED') {
+      mappedCallResult = 'BOOKED';
+    } else if (rawOutcome === 'CALL_BACK') {
+      mappedCallResult = 'CALLBACK';
+    } else if (rawOutcome === 'NO_NEED') {
+      mappedCallResult = 'NO_NEED';
+    } else if (rawOutcome === 'REFUSED') {
+      mappedCallResult = 'REJECTED';
+    } else if (rawResult === 'WRONG_NUMBER') {
+      mappedCallResult = 'WRONG_NUMBER';
+    } else if (rawResult === 'NO_ANSWER') {
+      mappedCallResult = 'NO_ANSWER';
+    } else if (rawResult === 'BUSY') {
+      mappedCallResult = 'BUSY';
+    } else if (rawResult === 'FAILED') {
+      mappedCallResult = 'ERROR';
+    } else if (rawResult === 'ANSWERED') {
+      mappedCallResult = 'THINKING';
+    }
+
+    const NON_PICKUP_RESULTS = new Set(['NO_ANSWER', 'BUSY', 'ERROR', 'FAILED', 'MISSED', 'UNANSWERED']);
+    const PICKUP_CALL_RESULTS = new Set([
+      'BOOKED',
+      'THINKING',
+      'CALLBACK',
+      'NO_NEED',
+      'REJECTED',
+      'WRONG_NUMBER',
+      'ANSWERED',
+      'ANSWER',
+      'CONNECTED',
+    ]);
+    const isPickup =
+      !NON_PICKUP_RESULTS.has(rawResult) &&
+      (PICKUP_CALL_RESULTS.has(mappedCallResult) || PICKUP_CALL_RESULTS.has(rawResult) || durationSec > 0);
+
+    const isBooked = mappedCallResult === 'BOOKED';
+    const isExcluded = ['NO_NEED', 'REJECTED', 'WRONG_NUMBER'].includes(mappedCallResult);
+
+    let nextPoolStatus: CampaignPoolStatus = 'EXPLOITED';
+    let availableAt: Date | null = null;
+    let cooldownUntil: Date | null = null;
+
+    if (isBooked) {
+      nextPoolStatus = 'BOOKED';
+      availableAt = null;
+      cooldownUntil = new Date(now.getTime() + (config?.cooldownMinutes || 60) * 60 * 1000);
+    } else if (isExcluded) {
+      nextPoolStatus = 'EXCLUDED';
+      availableAt = null;
+      cooldownUntil = null;
+    } else if (mappedCallResult === 'CALLBACK') {
+      nextPoolStatus = 'RECYCLING';
+      availableAt = callLog.callbackDate ? new Date(callLog.callbackDate) : new Date(now.getTime() + 24 * 3600 * 1000);
+      cooldownUntil = new Date(now.getTime() + (config?.cooldownMinutes || 60) * 60 * 1000);
+    } else if (['THINKING', 'NO_ANSWER', 'BUSY', 'ERROR'].includes(mappedCallResult)) {
+      const days =
+        config?.recycleRules?.[mappedCallResult as keyof typeof config.recycleRules] ??
+        (mappedCallResult === 'THINKING' ? 3 : 1);
+      nextPoolStatus = 'RECYCLING';
+      availableAt = new Date(now.getTime() + (Number(days) || 1) * 24 * 3600 * 1000);
+      cooldownUntil = new Date(now.getTime() + (config?.cooldownMinutes || 60) * 60 * 1000);
+    } else {
+      nextPoolStatus = 'EXPLOITED';
+      cooldownUntil = new Date(now.getTime() + (config?.cooldownMinutes || 60) * 60 * 1000);
+    }
+
+    return {
+      mappedCallResult,
+      isPickup,
+      nextPoolStatus,
+      availableAt,
+      cooldownUntil,
+      isBooked,
+      isExcluded,
+    };
+  }
+
+  /**
+   * Automatically synchronize Shared Pool claim when a standard mOS call log is recorded.
+   * Matches the exact customer, staff, and active claim session (MOS-BUG-99).
+   */
+  static async syncCustomerClaimAfterCall(
+    fastify: FastifyInstance,
+    legacyUserId: number,
+    staffId: number,
+    callLog?: any
+  ): Promise<{ syncedCount: number; results: Array<{ campaignId: number; customerId: number; poolStatus: string }> }> {
+    const claimedCustomers = await fastify.prisma.crm.crmCampaignCustomer.findMany({
+      where: {
+        legacyUserId,
+        claimedByStaffId: staffId,
+        poolStatus: 'CLAIMED',
+        removedAt: null,
+        campaign: {
+          operationMode: 'SHARED_POOL',
+          status: { in: ['ACTIVE', 'SCHEDULED'] },
+        },
+      },
+      include: {
+        campaign: {
+          select: {
+            id: true,
+            sharedPoolConfig: true,
+          },
+        },
+      },
+    });
+
+    if (!claimedCustomers || claimedCustomers.length === 0) {
+      return { syncedCount: 0, results: [] };
+    }
+
+    const resolvedCallLog =
+      callLog ||
+      (await fastify.prisma.crm.crmCallLog.findFirst({
+        where: {
+          legacyUserId,
+          staffId,
+        },
+        orderBy: { createdAt: 'desc' },
+      }));
+
+    if (!resolvedCallLog) {
+      return { syncedCount: 0, results: [] };
+    }
+
+    const staff = await fastify.prisma.crm.crmStaff.findUnique({
+      where: { id: staffId },
+      select: { id: true, displayName: true, username: true },
+    });
+    const staffDisplayName = staff?.displayName || staff?.username || `NV #${staffId}`;
+    const now = new Date();
+
+    const results: Array<{ campaignId: number; customerId: number; poolStatus: string }> = [];
+
+    for (const customer of claimedCustomers) {
+      let config: SharedPoolConfig = {
+        batchSize: 100,
+        claimTtlMinutes: 15,
+        maxClaimsPerStaff: 1,
+        cooldownMinutes: 60,
+        warningThreshold: 30,
+        criticalThreshold: 10,
+        isPaused: false,
+        recycleRules: {
+          THINKING: 3,
+          NO_ANSWER: 1,
+          BUSY: 1,
+          ERROR: 1,
+        },
+      };
+      if (customer.campaign?.sharedPoolConfig) {
+        try {
+          const parsed =
+            typeof customer.campaign.sharedPoolConfig === 'string'
+              ? JSON.parse(customer.campaign.sharedPoolConfig)
+              : customer.campaign.sharedPoolConfig;
+          config = { ...config, ...parsed };
+        } catch {}
+      }
+
+      const mapped = this.mapCallLogToSharedPool(resolvedCallLog, config);
+
+      const bookedAt = mapped.isBooked ? resolvedCallLog.createdAt || now : customer.bookedAt;
+      const bookedByStaffId = mapped.isBooked ? staffId : customer.bookedByStaffId;
+      const bookedByStaffName = mapped.isBooked ? staffDisplayName : customer.bookedByStaffName;
+
+      await fastify.prisma.crm.crmCampaignCustomer.update({
+        where: { id: customer.id },
+        data: {
+          poolStatus: mapped.nextPoolStatus,
+          claimedByStaffId: null,
+          claimedByStaffName: null,
+          claimedAt: null,
+          claimExpiresAt: null,
+          cooldownUntil: mapped.cooldownUntil,
+          availableAt: mapped.availableAt,
+          lastCallStaffId: staffId,
+          lastCallStaffName: staffDisplayName,
+          lastCallAt: resolvedCallLog.createdAt || now,
+          lastCallResult: mapped.mappedCallResult,
+          lastCallNote: resolvedCallLog.note || null,
+          bookedByStaffId,
+          bookedByStaffName,
+          bookedAt,
+          callCount: { increment: 1 },
+        },
+      });
+
+      await fastify.prisma.crm.crmCampaignSharedPoolLog.create({
+        data: {
+          campaignId: customer.campaignId,
+          campaignCustomerId: customer.id,
+          legacyUserId: customer.legacyUserId,
+          staffId,
+          staffName: staffDisplayName,
+          action: mapped.isExcluded ? 'EXCLUDE' : mapped.isBooked ? 'BOOKING' : 'STATUS_UPDATE',
+          note: mapped.isExcluded
+            ? `Khách hàng bị loại khỏi Shared Pool (Chờ kiểm tra) từ cuộc gọi chuẩn mOS: ${mapped.mappedCallResult}. Ghi chú: ${resolvedCallLog.note || 'Không'}.`
+            : `Tự động cập nhật từ cuộc gọi chuẩn mOS: ${mapped.mappedCallResult} (${resolvedCallLog.durationSec || 0}s). Ghi chú: ${resolvedCallLog.note || 'Không'}. Trạng thái pool: ${mapped.nextPoolStatus}.`,
+          metadata: JSON.stringify({
+            callResult: mapped.mappedCallResult,
+            rawCallResult: resolvedCallLog.callResult,
+            outcome: resolvedCallLog.outcome,
+            durationSec: resolvedCallLog.durationSec || 0,
+            pickup: mapped.isPickup,
+            callbackDate: resolvedCallLog.callbackDate,
+            nextPoolStatus: mapped.nextPoolStatus,
+            cooldownUntil: mapped.cooldownUntil ? mapped.cooldownUntil.toISOString() : null,
+            availableAt: mapped.availableAt ? mapped.availableAt.toISOString() : null,
+            callLogId: resolvedCallLog.id,
+            source: 'STANDARD_MOS_CALL',
+          }),
+          createdAt: now,
+        },
+      });
+
+      await this.maintainSharedPool(fastify, customer.campaignId);
+
+      results.push({
+        campaignId: customer.campaignId,
+        customerId: customer.id,
+        poolStatus: mapped.nextPoolStatus,
+      });
+    }
+
+    return {
+      syncedCount: results.length,
+      results,
+    };
+  }
+
+  /**
+   * Sync Shared Pool for a specific customer in a campaign from their latest standard call log (MOS-BUG-99).
+   */
+  static async syncSharedPoolFromLatestCall(
+    fastify: FastifyInstance,
+    campaignId: number,
+    customerId: number,
+    staffId: number
+  ): Promise<{ success: boolean; message: string; poolStatus: string }> {
+    const customer = await fastify.prisma.crm.crmCampaignCustomer.findFirst({
+      where: {
+        campaignId,
+        OR: [{ id: customerId }, { legacyUserId: customerId }],
+        removedAt: null,
+      },
+    });
+    if (!customer) throw new Error('Khách hàng không tồn tại trong chiến dịch.');
+
+    if (customer.poolStatus !== 'CLAIMED') {
+      return {
+        success: true,
+        message: `Khách hàng hiện đang ở trạng thái "${customer.poolStatus}".`,
+        poolStatus: customer.poolStatus,
+      };
+    }
+
+    if (customer.claimedByStaffId && customer.claimedByStaffId !== staffId) {
+      throw new Error(
+        `Khách hàng đang được giữ bởi nhân viên khác (${customer.claimedByStaffName || customer.claimedByStaffId}).`
+      );
+    }
+
+    const callLog = await fastify.prisma.crm.crmCallLog.findFirst({
+      where: {
+        legacyUserId: customer.legacyUserId,
+        staffId,
+        ...(customer.claimedAt ? { createdAt: { gte: new Date(customer.claimedAt.getTime() - 2 * 60 * 1000) } } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!callLog) {
+      throw new Error(
+        'Chưa tìm thấy nhật ký cuộc gọi chuẩn mOS của bạn cho khách hàng này. Vui lòng hoàn thành cuộc gọi trước.'
+      );
+    }
+
+    const syncRes = await this.syncCustomerClaimAfterCall(fastify, customer.legacyUserId, staffId, callLog);
+    const matching = syncRes.results.find((r) => r.customerId === customer.id || r.campaignId === campaignId);
+    const nextStatus = matching?.poolStatus || 'EXPLOITED';
+
+    return {
+      success: true,
+      message: `Đã tự động cập nhật kết quả cuộc gọi chuẩn mOS. Trạng thái chuyển sang "${nextStatus}".`,
+      poolStatus: nextStatus,
     };
   }
 

@@ -23,6 +23,7 @@ import {
   BatchManagerPoolActionDto,
   SharedPoolHistoryQueryParams,
   SharedPoolRecoveryDto,
+  SyncSharedPoolCallDto,
 } from '@mos-lab/shared';
 
 export async function campaignRoutes(fastify: FastifyInstance) {
@@ -735,6 +736,31 @@ export async function campaignRoutes(fastify: FastifyInstance) {
         return reply.send(result);
       } catch (err: any) {
         request.log.error('Failed to record shared pool status:', err);
+        return reply.status(err.statusCode || 400).send({ error: 'Bad Request', message: err.message });
+      }
+    }
+  );
+
+  // 20b. Shared Pool: Sync with latest standard mOS call log (MOS-BUG-99)
+  fastify.post(
+    '/campaigns/:id/shared-pool/sync-call',
+    { preHandler: [requireAuth] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const params = request.params as { id: string };
+        const id = parseInt(params.id, 10);
+        if (isNaN(id)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
+        }
+        const user = request.user;
+        const dto = (request.body || {}) as SyncSharedPoolCallDto;
+        if (!dto.customerId) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu ID khách hàng' });
+        }
+        const result = await CampaignService.syncSharedPoolFromLatestCall(fastify, id, dto.customerId, user.id);
+        return reply.send(result);
+      } catch (err: any) {
+        request.log.error('Failed to sync shared pool call:', err);
         return reply.status(err.statusCode || 400).send({ error: 'Bad Request', message: err.message });
       }
     }

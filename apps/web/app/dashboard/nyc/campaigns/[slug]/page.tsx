@@ -101,7 +101,6 @@ import {
   CampaignTouchpointItem,
 } from '../../../../../components/campaign/CampaignTouchpointCell';
 import { SharedPoolOverviewBanner } from '../../../../../components/campaign/SharedPoolOverviewBanner';
-import { SharedPoolWrapupModal } from '../../../../../components/campaign/SharedPoolWrapupModal';
 import { SharedPoolAuditDrawer } from '../../../../../components/campaign/SharedPoolAuditDrawer';
 import { SharedPoolHistoryRecoveryDrawer } from '../../../../../components/campaign/SharedPoolHistoryRecoveryDrawer';
 import { SharedPoolExcludedDrawer } from '../../../../../components/campaign/SharedPoolExcludedDrawer';
@@ -305,8 +304,6 @@ export default function CampaignDetailPage() {
   const [auditCustomer, setAuditCustomer] = useState<any | null>(null);
   const [auditLogs, setAuditLogs] = useState<CampaignSharedPoolLog[]>([]);
   const [auditLogsLoading, setAuditLogsLoading] = useState<boolean>(false);
-  const [wrapupModalOpen, setWrapupModalOpen] = useState<boolean>(false);
-  const [wrapupCustomer, setWrapupCustomer] = useState<any | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
   const [historyRecoveryOpen, setHistoryRecoveryOpen] = useState<boolean>(false);
   const [excludedDrawerOpen, setExcludedDrawerOpen] = useState<boolean>(false);
@@ -663,72 +660,78 @@ export default function CampaignDetailPage() {
   }, [slug]);
 
   // Fetch Shared Pool Overview
-  const fetchSharedPoolOverview = useCallback(async (batchToFetch?: number | 'ALL', isBackground = false) => {
-    const campId = campaign?.id;
-    if (!campId || campaign?.operationMode !== 'SHARED_POOL') return;
-    try {
-      if (!isBackground) setSharedPoolLoading(true);
-      const batchParam = batchToFetch !== undefined ? batchToFetch : selectedBatch;
-      const res = await apiClient.campaigns.getSharedPoolOverview(campId, batchParam);
-      setSharedPoolOverview(res);
-      if (!hasInitializedBatchRef.current && res?.activeBatchNumber) {
-        setSelectedBatch(res.activeBatchNumber);
-        hasInitializedBatchRef.current = true;
+  const fetchSharedPoolOverview = useCallback(
+    async (batchToFetch?: number | 'ALL', isBackground = false) => {
+      const campId = campaign?.id;
+      if (!campId || campaign?.operationMode !== 'SHARED_POOL') return;
+      try {
+        if (!isBackground) setSharedPoolLoading(true);
+        const batchParam = batchToFetch !== undefined ? batchToFetch : selectedBatch;
+        const res = await apiClient.campaigns.getSharedPoolOverview(campId, batchParam);
+        setSharedPoolOverview(res);
+        if (!hasInitializedBatchRef.current && res?.activeBatchNumber) {
+          setSelectedBatch(res.activeBatchNumber);
+          hasInitializedBatchRef.current = true;
+        }
+      } catch (err) {
+        console.error('Fetch shared pool overview error:', err);
+      } finally {
+        if (!isBackground) setSharedPoolLoading(false);
       }
-    } catch (err) {
-      console.error('Fetch shared pool overview error:', err);
-    } finally {
-      if (!isBackground) setSharedPoolLoading(false);
-    }
-  }, [campaign?.id, campaign?.operationMode, selectedBatch]);
+    },
+    [campaign?.id, campaign?.operationMode, selectedBatch]
+  );
 
   // Fetch Campaign Customers
-  const fetchCampaignCustomers = useCallback(async (isBackground = false) => {
-    const campId = campaign?.id;
-    if (!campId) return;
-    if (!isBackground) setCustomersLoading(true);
-    try {
-      const params: any = {
-        page: currentPage,
-        pageSize,
-      };
-      if (selectedBookerId !== 'ALL') {
-        params.assignedStaffId = selectedBookerId;
-      }
-      if (deferredSearchQuery.trim()) {
-        params.search = deferredSearchQuery.trim();
-      }
-      if (bookingStatusFilter !== 'ALL') {
-        params.bookingStatus = bookingStatusFilter;
-      }
-      if (campaign?.operationMode === 'SHARED_POOL') {
-        if (selectedBatch !== 'ALL') {
-          params.batchNumber = selectedBatch;
+  const fetchCampaignCustomers = useCallback(
+    async (isBackground = false) => {
+      const campId = campaign?.id;
+      if (!campId) return;
+      if (!isBackground) setCustomersLoading(true);
+      try {
+        const params: any = {
+          page: currentPage,
+          pageSize,
+        };
+        if (selectedBookerId !== 'ALL') {
+          params.assignedStaffId = selectedBookerId;
         }
-        if (selectedPoolStatus !== 'ALL') {
-          params.poolStatus = selectedPoolStatus;
+        if (deferredSearchQuery.trim()) {
+          params.search = deferredSearchQuery.trim();
         }
+        if (bookingStatusFilter !== 'ALL') {
+          params.bookingStatus = bookingStatusFilter;
+        }
+        if (campaign?.operationMode === 'SHARED_POOL') {
+          if (selectedBatch !== 'ALL') {
+            params.batchNumber = selectedBatch;
+          }
+          if (selectedPoolStatus !== 'ALL') {
+            params.poolStatus = selectedPoolStatus;
+          }
+        }
+        const res: any = await apiClient.campaigns.getCustomers(campId, params);
+        const list = Array.isArray(res) ? res : res?.items || res?.data || [];
+        setCustomers(list);
+        setCustomersTotal(Array.isArray(res) ? list.length : Number(res?.total ?? list.length));
+      } catch (err) {
+        console.error('Fetch campaign customers error:', err);
+        message.error('Không thể tải danh sách khách hàng');
+      } finally {
+        if (!isBackground) setCustomersLoading(false);
       }
-      const res: any = await apiClient.campaigns.getCustomers(campId, params);
-      const list = Array.isArray(res) ? res : res?.items || res?.data || [];
-      setCustomers(list);
-      setCustomersTotal(Array.isArray(res) ? list.length : Number(res?.total ?? list.length));
-    } catch (err) {
-      console.error('Fetch campaign customers error:', err);
-      message.error('Không thể tải danh sách khách hàng');
-    } finally {
-      if (!isBackground) setCustomersLoading(false);
-    }
-  }, [
-    bookingStatusFilter,
-    campaign,
-    currentPage,
-    deferredSearchQuery,
-    pageSize,
-    selectedBatch,
-    selectedBookerId,
-    selectedPoolStatus,
-  ]);
+    },
+    [
+      bookingStatusFilter,
+      campaign,
+      currentPage,
+      deferredSearchQuery,
+      pageSize,
+      selectedBatch,
+      selectedBookerId,
+      selectedPoolStatus,
+    ]
+  );
 
   // Polling for Shared Pool mode (15s interval)
   useEffect(() => {
@@ -755,6 +758,16 @@ export default function CampaignDetailPage() {
     } finally {
       setActionLoadingId(null);
     }
+  };
+
+  const handleCallClaimedCustomer = (record: any) => {
+    const phone = record.customerPhone || record.phone || record.phones?.[0]?.phone_number;
+    if (!phone) {
+      message.warning('Khách hàng không có số điện thoại để gọi.');
+      return;
+    }
+    const customerName = record.customerName || record.name || `Khách hàng #${record.legacyUserId}`;
+    makeCall(phone, customerName, record.legacyUserId);
   };
 
   const handleReleaseCustomer = async (record: any) => {
@@ -905,9 +918,21 @@ export default function CampaignDetailPage() {
 
   // Auto-refresh table & stats when call log, customer, booking, or call state updates
   useEffect(() => {
-    const handleDataRefresh = () => {
+    const handleDataRefresh = async (e?: Event) => {
       if (!isInitializedRef.current) return;
       if (campaign?.id) {
+        if (campaign.operationMode === 'SHARED_POOL') {
+          const detail = (e as CustomEvent)?.detail;
+          const customerId = detail?.customerId;
+          if (customerId) {
+            try {
+              await apiClient.campaigns.syncSharedPoolCall(campaign.id, customerId);
+            } catch {
+              // Handled by backend calls.create or non-claimed
+            }
+          }
+          fetchSharedPoolOverview(undefined, true);
+        }
         fetchCampaignCustomers();
         apiClient.campaigns.getStats(campaign.id).then(setStats).catch(console.error);
       }
@@ -924,18 +949,21 @@ export default function CampaignDetailPage() {
       window.removeEventListener('mos-booking-updated', handleDataRefresh);
       window.removeEventListener('mos-data-updated', handleDataRefresh);
     };
-  }, [campaign?.id, fetchCampaignCustomers]);
+  }, [campaign?.id, campaign?.operationMode, fetchCampaignCustomers, fetchSharedPoolOverview]);
 
   useEffect(() => {
     if (!isInitializedRef.current) return;
     if ((callState === 'idle' || callState === 'wrapup') && campaign?.id) {
       const timer = setTimeout(() => {
         fetchCampaignCustomers();
+        if (campaign.operationMode === 'SHARED_POOL') {
+          fetchSharedPoolOverview(undefined, true);
+        }
         apiClient.campaigns.getStats(campaign.id).then(setStats).catch(console.error);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [callState, campaign?.id]);
+  }, [callState, campaign?.id, campaign?.operationMode, fetchCampaignCustomers, fetchSharedPoolOverview]);
 
   // Search and Booker filtering are performed by the API before pagination so the
   // table only receives the records it can render. Keep selected rows locally so
@@ -1731,18 +1759,15 @@ export default function CampaignDetailPage() {
 
                 {record.isClaimedByMe && (
                   <>
-                    <Tooltip title="Báo cáo kết quả cuộc gọi & cập nhật Shared Pool">
+                    <Tooltip title="Gọi khách qua luồng chuẩn mOS">
                       <Button
                         size="small"
                         type="primary"
                         icon={<PhoneOutlined />}
-                        onClick={() => {
-                          setWrapupCustomer(record);
-                          setWrapupModalOpen(true);
-                        }}
+                        onClick={() => handleCallClaimedCustomer(record)}
                         className="bg-purple-600 hover:bg-purple-500 font-semibold text-white text-xs"
                       >
-                        Báo cáo
+                        Gọi khách
                       </Button>
                     </Tooltip>
 
@@ -2941,23 +2966,6 @@ export default function CampaignDetailPage() {
           </div>
         </div>
       </Modal>
-
-      {/* Shared Pool Call Wrapup Modal */}
-      <SharedPoolWrapupModal
-        open={wrapupModalOpen}
-        onCancel={() => {
-          setWrapupModalOpen(false);
-          setWrapupCustomer(null);
-        }}
-        onSuccess={() => {
-          setWrapupModalOpen(false);
-          setWrapupCustomer(null);
-          fetchCampaignCustomers();
-          fetchSharedPoolOverview();
-        }}
-        campaignId={campaign?.id || 0}
-        customer={wrapupCustomer}
-      />
 
       {/* Shared Pool Immutable Audit Logs Drawer */}
       <SharedPoolAuditDrawer

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_SHARED_POOL_CONFIG, CampaignPoolStatus, SharedPoolConfig } from '@mos-lab/shared';
+import { CampaignService } from './campaign.service.js';
 
 test('Campaign Shared Pool - Default configuration validation', () => {
   assert.equal(DEFAULT_SHARED_POOL_CONFIG.batchSize, 100);
@@ -352,10 +353,15 @@ test('Campaign Shared Pool (MOS-FEAT-94) - Audit log metadata preservation & app
 });
 
 test('Campaign Shared Pool (MOS-BUG-97) - Pool Status normalization & claim invariants', () => {
-  const canCustomerBeClaimed = (poolStatus: string, cooldownUntil: Date | null, now: Date): { canClaim: boolean; reason?: string } => {
+  const canCustomerBeClaimed = (
+    poolStatus: string,
+    cooldownUntil: Date | null,
+    now: Date
+  ): { canClaim: boolean; reason?: string } => {
     if (poolStatus !== 'AVAILABLE') {
       if (poolStatus === 'CLAIMED') return { canClaim: false, reason: 'Đang được nhân viên khác xử lý' };
-      if (poolStatus === 'RECYCLING' || poolStatus === 'RECYCLE') return { canClaim: false, reason: 'Đang trong thời gian chờ tái sinh' };
+      if (poolStatus === 'RECYCLING' || poolStatus === 'RECYCLE')
+        return { canClaim: false, reason: 'Đang trong thời gian chờ tái sinh' };
       if (poolStatus === 'EXCLUDED') return { canClaim: false, reason: 'Đã bị loại khỏi Shared Pool' };
       if (poolStatus === 'BOOKED') return { canClaim: false, reason: 'Đã chốt Booking' };
       return { canClaim: false, reason: 'Không ở trạng thái sẵn sàng' };
@@ -431,4 +437,165 @@ test('Campaign Shared Pool (MOS-BUG-97) - Call wrapup determines EXCLUDED and cl
   // BOOKED => BOOKED
   const booked = resolveWrapupStatus('BOOKED');
   assert.equal(booked.nextPoolStatus, 'BOOKED');
+});
+
+test('Campaign Shared Pool (MOS-BUG-99) - Standard mOS Call Log mapping to Shared Pool status and rules', () => {
+  const config = DEFAULT_SHARED_POOL_CONFIG;
+
+  // 1. Outcome BOOKED -> poolStatus BOOKED, isPickup true, isBooked true, cooldownUntil set, availableAt null
+  const bookedRes = CampaignService.mapCallLogToSharedPool(
+    {
+      callResult: 'ANSWERED',
+      outcome: 'BOOKED',
+      durationSec: 120,
+      note: 'Khách đồng ý đến vào thứ 7',
+    },
+    config
+  );
+  assert.equal(bookedRes.mappedCallResult, 'BOOKED');
+  assert.equal(bookedRes.isPickup, true);
+  assert.equal(bookedRes.isBooked, true);
+  assert.equal(bookedRes.isExcluded, false);
+  assert.equal(bookedRes.nextPoolStatus, 'BOOKED');
+  assert.equal(bookedRes.availableAt, null);
+  assert.notEqual(bookedRes.cooldownUntil, null);
+
+  // 2. Outcome RENEWED -> poolStatus BOOKED
+  const renewedRes = CampaignService.mapCallLogToSharedPool(
+    {
+      callResult: 'ANSWERED',
+      outcome: 'RENEWED',
+      durationSec: 85,
+      note: 'Gia hạn combo 10 buổi',
+    },
+    config
+  );
+  assert.equal(renewedRes.mappedCallResult, 'BOOKED');
+  assert.equal(renewedRes.isBooked, true);
+  assert.equal(renewedRes.nextPoolStatus, 'BOOKED');
+
+  // 3. Outcome CALL_BACK -> poolStatus RECYCLING, availableAt matches callbackDate
+  const callbackDate = new Date('2026-10-15T10:00:00.000Z');
+  const callbackRes = CampaignService.mapCallLogToSharedPool(
+    {
+      callResult: 'ANSWERED',
+      outcome: 'CALL_BACK',
+      durationSec: 45,
+      callbackDate,
+      note: 'Khách bận, gọi lại ngày 15/10',
+    },
+    config
+  );
+  assert.equal(callbackRes.mappedCallResult, 'CALLBACK');
+  assert.equal(callbackRes.isPickup, true);
+  assert.equal(callbackRes.isExcluded, false);
+  assert.equal(callbackRes.nextPoolStatus, 'RECYCLING');
+  assert.equal(callbackRes.availableAt?.toISOString(), callbackDate.toISOString());
+
+  // 4. Outcome NO_NEED -> poolStatus EXCLUDED
+  const noNeedRes = CampaignService.mapCallLogToSharedPool(
+    {
+      callResult: 'ANSWERED',
+      outcome: 'NO_NEED',
+      durationSec: 30,
+      note: 'Khách không có nhu cầu làm mi nữa',
+    },
+    config
+  );
+  assert.equal(noNeedRes.mappedCallResult, 'NO_NEED');
+  assert.equal(noNeedRes.isPickup, true);
+  assert.equal(noNeedRes.isExcluded, true);
+  assert.equal(noNeedRes.nextPoolStatus, 'EXCLUDED');
+  assert.equal(noNeedRes.availableAt, null);
+  assert.equal(noNeedRes.cooldownUntil, null);
+
+  // 5. Outcome REFUSED -> poolStatus EXCLUDED
+  const refusedRes = CampaignService.mapCallLogToSharedPool(
+    {
+      callResult: 'ANSWERED',
+      outcome: 'REFUSED',
+      durationSec: 15,
+      note: 'Yêu cầu không làm phiền',
+    },
+    config
+  );
+  assert.equal(refusedRes.mappedCallResult, 'REJECTED');
+  assert.equal(refusedRes.isPickup, true);
+  assert.equal(refusedRes.isExcluded, true);
+  assert.equal(refusedRes.nextPoolStatus, 'EXCLUDED');
+  assert.equal(refusedRes.availableAt, null);
+  assert.equal(refusedRes.cooldownUntil, null);
+
+  // 6. CallResult WRONG_NUMBER -> poolStatus EXCLUDED
+  const wrongNumRes = CampaignService.mapCallLogToSharedPool(
+    {
+      callResult: 'WRONG_NUMBER',
+      outcome: 'PENDING',
+      durationSec: 10,
+      note: 'Nhầm số',
+    },
+    config
+  );
+  assert.equal(wrongNumRes.mappedCallResult, 'WRONG_NUMBER');
+  assert.equal(wrongNumRes.isExcluded, true);
+  assert.equal(wrongNumRes.nextPoolStatus, 'EXCLUDED');
+  assert.equal(wrongNumRes.availableAt, null);
+  assert.equal(wrongNumRes.cooldownUntil, null);
+
+  // 7. CallResult NO_ANSWER -> poolStatus RECYCLING, isPickup false
+  const noAnswerRes = CampaignService.mapCallLogToSharedPool(
+    {
+      callResult: 'NO_ANSWER',
+      outcome: 'PENDING',
+      durationSec: 0,
+      note: 'Gọi nhỡ',
+    },
+    config
+  );
+  assert.equal(noAnswerRes.mappedCallResult, 'NO_ANSWER');
+  assert.equal(noAnswerRes.isPickup, false);
+  assert.equal(noAnswerRes.nextPoolStatus, 'RECYCLING');
+  assert.notEqual(noAnswerRes.availableAt, null);
+
+  // 8. CallResult BUSY -> poolStatus RECYCLING, isPickup false
+  const busyRes = CampaignService.mapCallLogToSharedPool(
+    {
+      callResult: 'BUSY',
+      outcome: 'PENDING',
+      durationSec: 0,
+      note: 'Máy bận',
+    },
+    config
+  );
+  assert.equal(busyRes.mappedCallResult, 'BUSY');
+  assert.equal(busyRes.isPickup, false);
+  assert.equal(busyRes.nextPoolStatus, 'RECYCLING');
+
+  // 9. CallResult FAILED -> poolStatus RECYCLING (maps to ERROR in recycleRules), isPickup false
+  const failedRes = CampaignService.mapCallLogToSharedPool(
+    {
+      callResult: 'FAILED',
+      outcome: 'PENDING',
+      durationSec: 0,
+      note: 'Thuê bao',
+    },
+    config
+  );
+  assert.equal(failedRes.mappedCallResult, 'ERROR');
+  assert.equal(failedRes.isPickup, false);
+  assert.equal(failedRes.nextPoolStatus, 'RECYCLING');
+
+  // 10. CallResult ANSWERED (PENDING) -> poolStatus RECYCLING (maps to THINKING in recycleRules), isPickup true
+  const answeredRes = CampaignService.mapCallLogToSharedPool(
+    {
+      callResult: 'ANSWERED',
+      outcome: 'PENDING',
+      durationSec: 60,
+      note: 'Đang suy nghĩ',
+    },
+    config
+  );
+  assert.equal(answeredRes.mappedCallResult, 'THINKING');
+  assert.equal(answeredRes.isPickup, true);
+  assert.equal(answeredRes.nextPoolStatus, 'RECYCLING');
 });

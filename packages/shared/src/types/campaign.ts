@@ -404,6 +404,10 @@ export interface ToggleSharedPoolPauseDto {
   isPaused: boolean;
 }
 
+export interface SyncSharedPoolCallDto {
+  customerId: number;
+}
+
 export interface ManagerPoolActionDto {
   customerId: number;
   action: 'RELEASE_CLAIM' | 'RETURN_TO_POOL' | 'EXCLUDE' | 'KEEP_EXCLUDED';

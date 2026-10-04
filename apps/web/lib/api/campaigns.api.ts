@@ -322,6 +322,13 @@ export const campaignsApi = {
       const response = await api.post(`/campaigns/${campaignId}/shared-pool/status`, dto);
       return response.data;
     },
+    syncSharedPoolCall: async (
+      campaignId: number,
+      customerId: number
+    ): Promise<{ success: boolean; message: string; poolStatus: string }> => {
+      const response = await api.post(`/campaigns/${campaignId}/shared-pool/sync-call`, { customerId });
+      return response.data;
+    },
     advanceSharedPoolBatch: async (
       campaignId: number,
       dto?: AdvanceSharedPoolBatchDto
