@@ -18,6 +18,7 @@ import {
   ListCampaignsParams,
   ReopenCampaignDto,
   removeVietnameseTones,
+  DEFAULT_SHARED_POOL_CONFIG,
   SharedPoolConfig,
   SharedPoolOverviewStats,
   CampaignStaffPerformance,
@@ -2734,15 +2735,7 @@ export class CampaignService {
     });
     if (!campaign) throw new Error(`Chiến dịch ID ${campaignId} không tồn tại`);
 
-    let config: SharedPoolConfig = {
-      batchSize: 100,
-      claimTtlMinutes: 15,
-      maxClaimsPerStaff: 1,
-      cooldownMinutes: 60,
-      warningThreshold: 30,
-      criticalThreshold: 10,
-      isPaused: false,
-    };
+    let config: SharedPoolConfig = { ...DEFAULT_SHARED_POOL_CONFIG };
     if (campaign.sharedPoolConfig) {
       try {
         const parsed =
@@ -3137,15 +3130,7 @@ export class CampaignService {
     });
     if (!campaign) throw new Error('Chiến dịch không tồn tại.');
 
-    let config: SharedPoolConfig = {
-      batchSize: 100,
-      claimTtlMinutes: 15,
-      maxClaimsPerStaff: 1,
-      cooldownMinutes: 60,
-      warningThreshold: 30,
-      criticalThreshold: 10,
-      isPaused: false,
-    };
+    let config: SharedPoolConfig = { ...DEFAULT_SHARED_POOL_CONFIG };
     if (campaign.sharedPoolConfig) {
       try {
         const parsed =
@@ -3425,29 +3410,79 @@ export class CampaignService {
     isBooked: boolean;
     isExcluded: boolean;
   } {
-    const rawResult = String(callLog.callResult || '').toUpperCase();
-    const rawOutcome = String(callLog.outcome || '').toUpperCase();
+    const rawResult = String(callLog.callResult || '').toUpperCase().trim();
+    const rawOutcome = String(callLog.outcome || '').toUpperCase().trim();
     const durationSec = Number(callLog.durationSec) || 0;
     const now = new Date();
 
     let mappedCallResult = 'THINKING';
-    if (rawOutcome === 'BOOKED' || rawOutcome === 'RENEWED') {
+    if (
+      rawOutcome === 'BOOKED' ||
+      rawOutcome === 'RENEWED' ||
+      rawOutcome.includes('ĐẶT LỊCH') ||
+      rawOutcome.includes('ĐẶT CỌC') ||
+      rawOutcome.includes('BOOKED') ||
+      rawResult === 'BOOKED'
+    ) {
       mappedCallResult = 'BOOKED';
-    } else if (rawOutcome === 'CALL_BACK') {
+    } else if (
+      rawOutcome === 'CALL_BACK' ||
+      rawOutcome === 'CALLBACK' ||
+      rawOutcome.includes('HẸN GỌI LẠI') ||
+      rawOutcome.includes('GỌI LẠI')
+    ) {
       mappedCallResult = 'CALLBACK';
-    } else if (rawOutcome === 'NO_NEED') {
+    } else if (
+      rawOutcome === 'NO_NEED' ||
+      rawOutcome.includes('KHÔNG CÓ NHU CẦU') ||
+      rawOutcome.includes('KHÔNG NHU CẦU') ||
+      rawResult === 'NO_NEED'
+    ) {
       mappedCallResult = 'NO_NEED';
-    } else if (rawOutcome === 'REFUSED') {
+    } else if (
+      rawOutcome === 'REFUSED' ||
+      rawOutcome === 'REJECTED' ||
+      rawOutcome.includes('TỪ CHỐI') ||
+      rawOutcome.includes('KHÔNG GỌI') ||
+      rawResult === 'REJECTED'
+    ) {
       mappedCallResult = 'REJECTED';
-    } else if (rawResult === 'WRONG_NUMBER') {
+    } else if (
+      rawResult === 'WRONG_NUMBER' ||
+      rawOutcome === 'WRONG_NUMBER' ||
+      rawOutcome.includes('SAI SỐ') ||
+      rawOutcome.includes('NHẦM SỐ')
+    ) {
       mappedCallResult = 'WRONG_NUMBER';
-    } else if (rawResult === 'NO_ANSWER') {
+    } else if (
+      rawResult === 'NO_ANSWER' ||
+      rawResult === 'MISSED' ||
+      rawResult === 'UNANSWERED' ||
+      rawOutcome.includes('GỌI NHỠ') ||
+      rawOutcome.includes('KHÔNG TRẢ LỜI')
+    ) {
       mappedCallResult = 'NO_ANSWER';
-    } else if (rawResult === 'BUSY') {
+    } else if (
+      rawResult === 'BUSY' ||
+      rawOutcome.includes('MÁY BẬN') ||
+      rawOutcome.includes('BẬN MÁY')
+    ) {
       mappedCallResult = 'BUSY';
-    } else if (rawResult === 'FAILED') {
+    } else if (
+      rawResult === 'FAILED' ||
+      rawResult === 'ERROR' ||
+      rawOutcome.includes('LỖI CUỘC GỌI') ||
+      rawOutcome.includes('KHÔNG LIÊN LẠC') ||
+      rawOutcome.includes('THUÊ BAO')
+    ) {
       mappedCallResult = 'ERROR';
-    } else if (rawResult === 'ANSWERED') {
+    } else if (
+      rawResult === 'ANSWERED' ||
+      durationSec > 0 ||
+      rawOutcome === 'PENDING' ||
+      rawOutcome.includes('SUY NGHĨ') ||
+      rawOutcome.includes('CHƯA CHỐT')
+    ) {
       mappedCallResult = 'THINKING';
     }
 
@@ -3487,11 +3522,11 @@ export class CampaignService {
       availableAt = callLog.callbackDate ? new Date(callLog.callbackDate) : new Date(now.getTime() + 24 * 3600 * 1000);
       cooldownUntil = new Date(now.getTime() + (config?.cooldownMinutes || 60) * 60 * 1000);
     } else if (['THINKING', 'NO_ANSWER', 'BUSY', 'ERROR'].includes(mappedCallResult)) {
+      const defaultDays = mappedCallResult === 'THINKING' ? 7 : 3;
       const days =
-        config?.recycleRules?.[mappedCallResult as keyof typeof config.recycleRules] ??
-        (mappedCallResult === 'THINKING' ? 3 : 1);
+        config?.recycleRules?.[mappedCallResult as keyof typeof config.recycleRules] ?? defaultDays;
       nextPoolStatus = 'RECYCLING';
-      availableAt = new Date(now.getTime() + (Number(days) || 1) * 24 * 3600 * 1000);
+      availableAt = new Date(now.getTime() + (Number(days) || defaultDays) * 24 * 3600 * 1000);
       cooldownUntil = new Date(now.getTime() + (config?.cooldownMinutes || 60) * 60 * 1000);
     } else {
       nextPoolStatus = 'EXPLOITED';
@@ -3519,7 +3554,7 @@ export class CampaignService {
     staffId: number,
     callLog?: any
   ): Promise<{ syncedCount: number; results: Array<{ campaignId: number; customerId: number; poolStatus: string }> }> {
-    const claimedCustomers = await fastify.prisma.crm.crmCampaignCustomer.findMany({
+    let claimedCustomers = await fastify.prisma.crm.crmCampaignCustomer.findMany({
       where: {
         legacyUserId,
         claimedByStaffId: staffId,
@@ -3539,6 +3574,31 @@ export class CampaignService {
         },
       },
     });
+
+    if (!claimedCustomers || claimedCustomers.length === 0) {
+      claimedCustomers = await fastify.prisma.crm.crmCampaignCustomer.findMany({
+        where: {
+          legacyUserId,
+          removedAt: null,
+          campaign: {
+            operationMode: 'SHARED_POOL',
+            status: { in: ['ACTIVE', 'SCHEDULED'] },
+          },
+          OR: [
+            { claimedByStaffId: staffId },
+            { poolStatus: { in: ['CLAIMED', 'AVAILABLE', 'RECYCLING'] } },
+          ],
+        },
+        include: {
+          campaign: {
+            select: {
+              id: true,
+              sharedPoolConfig: true,
+            },
+          },
+        },
+      });
+    }
 
     if (!claimedCustomers || claimedCustomers.length === 0) {
       return { syncedCount: 0, results: [] };
@@ -3569,19 +3629,7 @@ export class CampaignService {
 
     for (const customer of claimedCustomers) {
       let config: SharedPoolConfig = {
-        batchSize: 100,
-        claimTtlMinutes: 15,
-        maxClaimsPerStaff: 1,
-        cooldownMinutes: 60,
-        warningThreshold: 30,
-        criticalThreshold: 10,
-        isPaused: false,
-        recycleRules: {
-          THINKING: 3,
-          NO_ANSWER: 1,
-          BUSY: 1,
-          ERROR: 1,
-        },
+        ...DEFAULT_SHARED_POOL_CONFIG,
       };
       if (customer.campaign?.sharedPoolConfig) {
         try {
@@ -3631,7 +3679,9 @@ export class CampaignService {
           action: mapped.isExcluded ? 'EXCLUDE' : mapped.isBooked ? 'BOOKING' : 'STATUS_UPDATE',
           note: mapped.isExcluded
             ? `Khách hàng bị loại khỏi Shared Pool (Chờ kiểm tra) từ cuộc gọi chuẩn mOS: ${mapped.mappedCallResult}. Ghi chú: ${resolvedCallLog.note || 'Không'}.`
-            : `Tự động cập nhật từ cuộc gọi chuẩn mOS: ${mapped.mappedCallResult} (${resolvedCallLog.durationSec || 0}s). Ghi chú: ${resolvedCallLog.note || 'Không'}. Trạng thái pool: ${mapped.nextPoolStatus}.`,
+            : mapped.isBooked
+            ? `Khách hàng đã chốt Booking thành công từ cuộc gọi chuẩn mOS. Ghi chú: ${resolvedCallLog.note || 'Không'}.`
+            : `Tự động cập nhật từ cuộc gọi chuẩn mOS: ${mapped.mappedCallResult} (${resolvedCallLog.durationSec || 0}s). Trạng thái pool: ${mapped.nextPoolStatus}. Ghi chú: ${resolvedCallLog.note || 'Không'}.`,
           metadata: JSON.stringify({
             callResult: mapped.mappedCallResult,
             rawCallResult: resolvedCallLog.callResult,
@@ -3647,6 +3697,13 @@ export class CampaignService {
           }),
           createdAt: now,
         },
+      });
+
+      SharedPoolBroadcaster.broadcast(customer.campaignId, {
+        type: 'CUSTOMER_STATUS_UPDATED',
+        customerId: customer.id,
+        legacyUserId: customer.legacyUserId,
+        poolStatus: mapped.nextPoolStatus,
       });
 
       await this.maintainSharedPool(fastify, customer.campaignId);
@@ -3682,15 +3739,7 @@ export class CampaignService {
     });
     if (!customer) throw new Error('Khách hàng không tồn tại trong chiến dịch.');
 
-    if (customer.poolStatus !== 'CLAIMED') {
-      return {
-        success: true,
-        message: `Khách hàng hiện đang ở trạng thái "${customer.poolStatus}".`,
-        poolStatus: customer.poolStatus,
-      };
-    }
-
-    if (customer.claimedByStaffId && customer.claimedByStaffId !== staffId) {
+    if (customer.poolStatus === 'CLAIMED' && customer.claimedByStaffId && customer.claimedByStaffId !== staffId) {
       throw new Error(
         `Khách hàng đang được giữ bởi nhân viên khác (${customer.claimedByStaffName || customer.claimedByStaffId}).`
       );
@@ -3706,6 +3755,13 @@ export class CampaignService {
     });
 
     if (!callLog) {
+      if (customer.poolStatus !== 'CLAIMED') {
+        return {
+          success: true,
+          message: `Khách hàng hiện đang ở trạng thái "${customer.poolStatus}".`,
+          poolStatus: customer.poolStatus,
+        };
+      }
       throw new Error(
         'Chưa tìm thấy nhật ký cuộc gọi chuẩn mOS của bạn cho khách hàng này. Vui lòng hoàn thành cuộc gọi trước.'
       );
@@ -3713,7 +3769,7 @@ export class CampaignService {
 
     const syncRes = await this.syncCustomerClaimAfterCall(fastify, customer.legacyUserId, staffId, callLog);
     const matching = syncRes.results.find((r) => r.customerId === customer.id || r.campaignId === campaignId);
-    const nextStatus = matching?.poolStatus || 'EXPLOITED';
+    const nextStatus = matching?.poolStatus || customer.poolStatus || 'EXPLOITED';
 
     return {
       success: true,
@@ -3739,19 +3795,7 @@ export class CampaignService {
     if (!campaign) throw new Error('Chiến dịch không tồn tại.');
 
     let config: SharedPoolConfig = {
-      batchSize: 100,
-      claimTtlMinutes: 15,
-      maxClaimsPerStaff: 1,
-      cooldownMinutes: 60,
-      warningThreshold: 30,
-      criticalThreshold: 10,
-      isPaused: false,
-      recycleRules: {
-        THINKING: 3,
-        NO_ANSWER: 1,
-        BUSY: 1,
-        ERROR: 1,
-      },
+      ...DEFAULT_SHARED_POOL_CONFIG,
     };
     if (campaign.sharedPoolConfig) {
       try {
@@ -3759,7 +3803,14 @@ export class CampaignService {
           typeof campaign.sharedPoolConfig === 'string'
             ? JSON.parse(campaign.sharedPoolConfig)
             : campaign.sharedPoolConfig;
-        config = { ...config, ...parsed };
+        config = {
+          ...config,
+          ...parsed,
+          recycleRules: {
+            ...config.recycleRules,
+            ...(parsed?.recycleRules || {}),
+          },
+        };
       } catch {}
     }
 
@@ -3793,43 +3844,25 @@ export class CampaignService {
       },
     });
 
-    // 2. Cooldown calculation
-    const cooldownMinutes = config.cooldownMinutes || 60;
-    const cooldownUntil = new Date(now.getTime() + cooldownMinutes * 60 * 1000);
+    // 2. Map status using unified mapCallLogToSharedPool logic (MOS-BUG-101)
+    const mapped = this.mapCallLogToSharedPool(
+      {
+        callResult: dto.callResult,
+        outcome: dto.callResult,
+        durationSec: dto.durationSec || 0,
+        callbackDate: dto.callbackDate,
+      },
+      config
+    );
 
-    // 3. Determine next pool status and recycle date
-    let nextPoolStatus: CampaignPoolStatus = 'EXPLOITED';
-    let availableAt: Date | null = null;
-    let bookedAt: Date | null = null;
-    let bookedByStaffId: number | null = null;
-    let bookedByStaffName: string | null = null;
-
-    if (dto.isBooked || dto.callResult === 'BOOKED') {
-      nextPoolStatus = 'BOOKED';
-      bookedAt = now;
-      bookedByStaffId = staffId;
-      bookedByStaffName = staffDisplayName;
-    } else if (
-      ['NO_NEED', 'REJECTED', 'WRONG_NUMBER', 'CLOSED', 'NOT_INTERESTED', 'DO_NOT_CALL', 'CANCELLED'].includes(
-        dto.callResult
-      )
-    ) {
-      nextPoolStatus = 'EXCLUDED';
-      availableAt = null;
-    } else if (dto.callResult === 'CALLBACK') {
-      nextPoolStatus = 'RECYCLING';
-      availableAt = dto.callbackDate ? new Date(dto.callbackDate) : new Date(now.getTime() + 24 * 3600 * 1000);
-    } else if (['THINKING', 'NO_ANSWER', 'BUSY', 'ERROR'].includes(dto.callResult)) {
-      const days =
-        config.recycleRules?.[dto.callResult as keyof typeof config.recycleRules] ??
-        (dto.callResult === 'THINKING' ? 3 : 1);
-      nextPoolStatus = 'RECYCLING';
-      availableAt = new Date(now.getTime() + (Number(days) || 1) * 24 * 3600 * 1000);
-    } else {
-      nextPoolStatus = 'EXPLOITED';
-    }
-
+    const isBooked = dto.isBooked || mapped.isBooked;
+    const nextPoolStatus: CampaignPoolStatus = isBooked ? 'BOOKED' : mapped.nextPoolStatus;
     const isExcluded = nextPoolStatus === 'EXCLUDED';
+    const cooldownUntil = isExcluded ? null : mapped.cooldownUntil;
+    const availableAt = isExcluded ? null : isBooked ? null : mapped.availableAt;
+    const bookedAt = isBooked ? now : customer.bookedAt;
+    const bookedByStaffId = isBooked ? staffId : customer.bookedByStaffId;
+    const bookedByStaffName = isBooked ? staffDisplayName : customer.bookedByStaffName;
 
     await fastify.prisma.crm.crmCampaignCustomer.update({
       where: { id: customer.id },
@@ -3839,16 +3872,16 @@ export class CampaignService {
         claimedByStaffName: null,
         claimedAt: null,
         claimExpiresAt: null,
-        cooldownUntil: isExcluded ? null : cooldownUntil,
-        availableAt: isExcluded ? null : availableAt,
+        cooldownUntil,
+        availableAt,
         lastCallStaffId: staffId,
         lastCallStaffName: staffDisplayName,
         lastCallAt: now,
         lastCallResult: dto.callResult,
         lastCallNote: dto.note || null,
-        bookedByStaffId: bookedByStaffId || customer.bookedByStaffId,
-        bookedByStaffName: bookedByStaffName || customer.bookedByStaffName,
-        bookedAt: bookedAt || customer.bookedAt,
+        bookedByStaffId,
+        bookedByStaffName,
+        bookedAt,
         callCount: { increment: 1 },
       },
     });
@@ -3869,7 +3902,7 @@ export class CampaignService {
           durationSec: dto.durationSec,
           callbackDate: dto.callbackDate,
           nextPoolStatus,
-          cooldownUntil: isExcluded ? null : cooldownUntil.toISOString(),
+          cooldownUntil: isExcluded ? null : cooldownUntil ? cooldownUntil.toISOString() : null,
           availableAt: availableAt ? availableAt.toISOString() : null,
         }),
         createdAt: now,
