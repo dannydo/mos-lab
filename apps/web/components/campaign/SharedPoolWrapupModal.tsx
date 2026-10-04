@@ -62,6 +62,7 @@ export const SharedPoolWrapupModal: React.FC<SharedPoolWrapupModalProps> = ({
     { value: 'NO_NEED', label: '🚫 Không có nhu cầu (Loại khỏi Pool)' },
     { value: 'REJECTED', label: '❌ Từ chối thẳng thừng (Loại khỏi Pool)' },
     { value: 'WRONG_NUMBER', label: '⚠️ Sai số / Nhầm máy (Loại khỏi Pool)' },
+    { value: 'CLOSED', label: '🔒 Đóng hồ sơ / Không khai thác (Loại khỏi Pool)' },
   ];
 
   return (

@@ -104,6 +104,7 @@ import { SharedPoolOverviewBanner } from '../../../../../components/campaign/Sha
 import { SharedPoolWrapupModal } from '../../../../../components/campaign/SharedPoolWrapupModal';
 import { SharedPoolAuditDrawer } from '../../../../../components/campaign/SharedPoolAuditDrawer';
 import { SharedPoolHistoryRecoveryDrawer } from '../../../../../components/campaign/SharedPoolHistoryRecoveryDrawer';
+import { SharedPoolExcludedDrawer } from '../../../../../components/campaign/SharedPoolExcludedDrawer';
 
 const KissIcon: React.FC<{ size?: number; style?: React.CSSProperties; className?: string }> = ({
   size = 16,
@@ -308,6 +309,8 @@ export default function CampaignDetailPage() {
   const [wrapupCustomer, setWrapupCustomer] = useState<any | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
   const [historyRecoveryOpen, setHistoryRecoveryOpen] = useState<boolean>(false);
+  const [excludedDrawerOpen, setExcludedDrawerOpen] = useState<boolean>(false);
+  const hasInitializedBatchRef = useRef(false);
 
   // Customer table state
   const [customersLoading, setCustomersLoading] = useState<boolean>(true);
@@ -660,26 +663,30 @@ export default function CampaignDetailPage() {
   }, [slug]);
 
   // Fetch Shared Pool Overview
-  const fetchSharedPoolOverview = useCallback(async () => {
+  const fetchSharedPoolOverview = useCallback(async (batchToFetch?: number | 'ALL', isBackground = false) => {
     const campId = campaign?.id;
     if (!campId || campaign?.operationMode !== 'SHARED_POOL') return;
     try {
-      setSharedPoolLoading(true);
-      const res = await apiClient.campaigns.getSharedPoolOverview(campId);
+      if (!isBackground) setSharedPoolLoading(true);
+      const batchParam = batchToFetch !== undefined ? batchToFetch : selectedBatch;
+      const res = await apiClient.campaigns.getSharedPoolOverview(campId, batchParam);
       setSharedPoolOverview(res);
-      setSelectedBatch((curr) => (curr === 'ALL' && res?.activeBatchNumber ? res.activeBatchNumber : curr));
+      if (!hasInitializedBatchRef.current && res?.activeBatchNumber) {
+        setSelectedBatch(res.activeBatchNumber);
+        hasInitializedBatchRef.current = true;
+      }
     } catch (err) {
       console.error('Fetch shared pool overview error:', err);
     } finally {
-      setSharedPoolLoading(false);
+      if (!isBackground) setSharedPoolLoading(false);
     }
-  }, [campaign?.id, campaign?.operationMode]);
+  }, [campaign?.id, campaign?.operationMode, selectedBatch]);
 
   // Fetch Campaign Customers
-  const fetchCampaignCustomers = useCallback(async () => {
+  const fetchCampaignCustomers = useCallback(async (isBackground = false) => {
     const campId = campaign?.id;
     if (!campId) return;
-    setCustomersLoading(true);
+    if (!isBackground) setCustomersLoading(true);
     try {
       const params: any = {
         page: currentPage,
@@ -710,7 +717,7 @@ export default function CampaignDetailPage() {
       console.error('Fetch campaign customers error:', err);
       message.error('Không thể tải danh sách khách hàng');
     } finally {
-      setCustomersLoading(false);
+      if (!isBackground) setCustomersLoading(false);
     }
   }, [
     bookingStatusFilter,
@@ -722,6 +729,16 @@ export default function CampaignDetailPage() {
     selectedBookerId,
     selectedPoolStatus,
   ]);
+
+  // Polling for Shared Pool mode (15s interval)
+  useEffect(() => {
+    if (campaign?.operationMode !== 'SHARED_POOL') return;
+    const interval = setInterval(() => {
+      fetchSharedPoolOverview(undefined, true);
+      fetchCampaignCustomers(true);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [campaign?.operationMode, fetchSharedPoolOverview, fetchCampaignCustomers]);
 
   // Shared Pool Handlers
   const handleClaimCustomer = async (record: any) => {
@@ -2033,10 +2050,12 @@ export default function CampaignDetailPage() {
           onTogglePause={handleTogglePause}
           onAddCustomers={handleOpenAddCustomersDrawer}
           onOpenHistoryRecovery={() => setHistoryRecoveryOpen(true)}
+          onOpenExcludedDrawer={() => setExcludedDrawerOpen(true)}
           selectedBatch={selectedBatch}
           onSelectBatch={(batch) => {
             setSelectedBatch(batch);
             setCurrentPage(1);
+            fetchSharedPoolOverview(batch);
           }}
           selectedPoolStatus={selectedPoolStatus}
           onSelectPoolStatus={(status) => {
@@ -2962,6 +2981,20 @@ export default function CampaignDetailPage() {
         open={historyRecoveryOpen}
         onClose={() => setHistoryRecoveryOpen(false)}
         campaignId={campaign?.id || 0}
+        isAdmin={isAdmin}
+        onDataChanged={() => {
+          fetchCampaignCustomers();
+          fetchSharedPoolOverview();
+        }}
+      />
+
+      {/* Shared Pool Excluded Customers Drawer (MOS-BUG-97) */}
+      <SharedPoolExcludedDrawer
+        open={excludedDrawerOpen}
+        onClose={() => setExcludedDrawerOpen(false)}
+        campaignId={campaign?.id || 0}
+        totalBatches={sharedPoolOverview?.totalBatches}
+        activeBatchNumber={sharedPoolOverview?.activeBatchNumber}
         isAdmin={isAdmin}
         onDataChanged={() => {
           fetchCampaignCustomers();

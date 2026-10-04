@@ -20,6 +20,7 @@ import {
   AdvanceSharedPoolBatchDto,
   ToggleSharedPoolPauseDto,
   ManagerPoolActionDto,
+  BatchManagerPoolActionDto,
   SharedPoolHistoryQueryParams,
   SharedPoolRecoveryDto,
 } from '@mos-lab/shared';
@@ -630,11 +631,12 @@ export async function campaignRoutes(fastify: FastifyInstance) {
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const params = request.params as { id: string };
+        const query = (request.query || {}) as { batchNumber?: string };
         const id = parseInt(params.id, 10);
         if (isNaN(id)) {
           return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
         }
-        const overview = await CampaignService.getSharedPoolOverview(fastify, id);
+        const overview = await CampaignService.getSharedPoolOverview(fastify, id, query.batchNumber);
         return reply.send(overview);
       } catch (err: any) {
         request.log.error('Failed to get shared pool overview:', err);
@@ -812,6 +814,41 @@ export async function campaignRoutes(fastify: FastifyInstance) {
         return reply.send(result);
       } catch (err: any) {
         request.log.error('Failed to execute manager pool action:', err);
+        return reply.status(err.statusCode || 400).send({ error: 'Bad Request', message: err.message });
+      }
+    }
+  );
+
+  // 23b. Shared Pool: Batch Manager Action on Customers (Manager / Admin)
+  fastify.post(
+    '/campaigns/:id/shared-pool/batch-manager-action',
+    { preHandler: [requireAuth, requireCampaignAdmin] },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const params = request.params as { id: string };
+        const id = parseInt(params.id, 10);
+        if (isNaN(id)) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
+        }
+        const user = request.user;
+        const dto = request.body as BatchManagerPoolActionDto;
+        if (!dto.customerIds || !Array.isArray(dto.customerIds) || dto.customerIds.length === 0 || !dto.action) {
+          return reply.status(400).send({
+            error: 'Bad Request',
+            message: 'Thiếu thông tin danh sách khách hàng hoặc hành động',
+          });
+        }
+        const result = await CampaignService.batchManagerPoolAction(
+          fastify,
+          id,
+          user.id,
+          dto.action,
+          dto.customerIds,
+          dto.reason
+        );
+        return reply.send(result);
+      } catch (err: any) {
+        request.log.error('Failed to execute batch manager pool action:', err);
         return reply.status(err.statusCode || 400).send({ error: 'Bad Request', message: err.message });
       }
     }

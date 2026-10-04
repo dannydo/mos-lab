@@ -1120,7 +1120,7 @@ export class CampaignService {
       touchpointKey?: string;
       bookingStatus?: CampaignBookingStatusFilter;
       batchNumber?: number | 'ALL';
-      poolStatus?: CampaignPoolStatus | 'ALL';
+      poolStatus?: CampaignPoolStatus | 'ALL' | 'REMAINING' | 'RECYCLE';
       page?: number;
       pageSize?: number;
     } = {}
@@ -1183,11 +1183,15 @@ export class CampaignService {
 
       if (batchNumber !== undefined && batchNumber !== 'ALL') {
         where.batchNumber = Number(batchNumber);
-      } else if (batchNumber === undefined) {
+      } else if (batchNumber === undefined && poolStatus !== 'REMAINING') {
         where.batchNumber = campaign.currentBatchNumber || 1;
       }
 
-      if (poolStatus && poolStatus !== 'ALL') {
+      if (poolStatus === 'REMAINING') {
+        where.poolStatus = { in: ['AVAILABLE', 'CLAIMED', 'RECYCLING', 'RECYCLE'] };
+      } else if (poolStatus === 'RECYCLE') {
+        where.poolStatus = { in: ['RECYCLING', 'RECYCLE'] };
+      } else if (poolStatus && poolStatus !== 'ALL') {
         where.poolStatus = poolStatus;
       }
     }
@@ -1496,8 +1500,12 @@ export class CampaignService {
         isClaimedByMe: restrictToAssignedStaffId ? cc.claimedByStaffId === restrictToAssignedStaffId : false,
         canClaim: cc.poolStatus === 'AVAILABLE' && (!cc.cooldownUntil || cc.cooldownUntil <= now),
         canCall:
-          (restrictToAssignedStaffId ? cc.claimedByStaffId === restrictToAssignedStaffId : true) ||
-          (cc.poolStatus === 'AVAILABLE' && (!cc.cooldownUntil || cc.cooldownUntil <= now)),
+          campaign.operationMode === 'SHARED_POOL'
+            ? cc.poolStatus !== 'EXCLUDED' &&
+              cc.poolStatus !== 'BOOKED' &&
+              ((cc.poolStatus === 'CLAIMED' && (restrictToAssignedStaffId ? cc.claimedByStaffId === restrictToAssignedStaffId : true)) ||
+                (cc.poolStatus === 'AVAILABLE' && (!cc.cooldownUntil || cc.cooldownUntil <= now)))
+            : restrictToAssignedStaffId ? cc.claimedByStaffId === restrictToAssignedStaffId : true,
         claimRemainingSeconds:
           cc.claimExpiresAt && cc.claimExpiresAt > now
             ? Math.round((cc.claimExpiresAt.getTime() - now.getTime()) / 1000)
@@ -2669,7 +2677,11 @@ export class CampaignService {
   /**
    * Get Shared Pool Overview Stats: active batch metrics, campaign metrics, burn rate, and early warning levels.
    */
-  static async getSharedPoolOverview(fastify: FastifyInstance, campaignId: number): Promise<SharedPoolOverviewStats> {
+  static async getSharedPoolOverview(
+    fastify: FastifyInstance,
+    campaignId: number,
+    batchNumberParam?: number | string | 'ALL'
+  ): Promise<SharedPoolOverviewStats> {
     await this.maintainSharedPool(fastify, campaignId);
 
     const campaign = await fastify.prisma.crm.crmCustomCampaign.findUnique({
@@ -2697,15 +2709,25 @@ export class CampaignService {
     }
 
     const activeBatchNumber = campaign.currentBatchNumber || 1;
+    const isAllBatches = batchNumberParam === 'ALL';
+    const selectedBatch = isAllBatches
+      ? 'ALL'
+      : batchNumberParam !== undefined
+        ? Number(batchNumberParam)
+        : activeBatchNumber;
 
-    // Counts for active batch
+    const batchWhere: any = {
+      campaignId,
+      removedAt: null,
+    };
+    if (selectedBatch !== 'ALL') {
+      batchWhere.batchNumber = selectedBatch;
+    }
+
+    // Counts for selected batch (or all batches if ALL)
     const activeBatchCustomers = await fastify.prisma.crm.crmCampaignCustomer.groupBy({
       by: ['poolStatus'],
-      where: {
-        campaignId,
-        batchNumber: activeBatchNumber,
-        removedAt: null,
-      },
+      where: batchWhere,
       _count: { id: true },
     });
 
@@ -2713,7 +2735,7 @@ export class CampaignService {
     const batchAvailable = statusMap.get('AVAILABLE') || 0;
     const batchClaimed = statusMap.get('CLAIMED') || 0;
     const batchExploited = statusMap.get('EXPLOITED') || 0;
-    const batchRecycling = statusMap.get('RECYCLING') || 0;
+    const batchRecycling = (statusMap.get('RECYCLING') || 0) + (statusMap.get('RECYCLE') || 0);
     const batchExcluded = statusMap.get('EXCLUDED') || 0;
     const batchBooked = statusMap.get('BOOKED') || 0;
     const batchTotal = batchAvailable + batchClaimed + batchExploited + batchRecycling + batchExcluded + batchBooked;
@@ -2742,7 +2764,15 @@ export class CampaignService {
     const totalRemaining = await fastify.prisma.crm.crmCampaignCustomer.count({
       where: {
         campaignId,
-        poolStatus: { in: ['AVAILABLE', 'CLAIMED', 'RECYCLING'] },
+        poolStatus: { in: ['AVAILABLE', 'CLAIMED', 'RECYCLING', 'RECYCLE'] },
+        removedAt: null,
+      },
+    });
+
+    const totalExcluded = await fastify.prisma.crm.crmCampaignCustomer.count({
+      where: {
+        campaignId,
+        poolStatus: 'EXCLUDED',
         removedAt: null,
       },
     });
@@ -2795,6 +2825,7 @@ export class CampaignService {
       totalCustomers,
       totalExploited,
       totalRemaining,
+      totalExcluded,
       percentRemaining,
       warningLevel,
       warningMessage,
@@ -3137,19 +3168,27 @@ export class CampaignService {
     });
     if (!customer) throw new Error('Khách hàng không tồn tại trong chiến dịch này.');
 
-    if (customer.poolStatus === 'CLAIMED' && customer.claimedByStaffId !== staffId) {
-      if (customer.claimExpiresAt && customer.claimExpiresAt > now) {
-        throw new Error(`Khách hàng đang được xử lý bởi ${customer.claimedByStaffName || 'nhân viên khác'}.`);
+    if (customer.poolStatus !== 'AVAILABLE') {
+      if (customer.poolStatus === 'CLAIMED') {
+        if (customer.claimedByStaffId !== staffId) {
+          if (customer.claimExpiresAt && customer.claimExpiresAt > now) {
+            throw new Error(`Khách hàng đang được xử lý bởi ${customer.claimedByStaffName || 'nhân viên khác'}.`);
+          }
+        }
+      } else if (customer.poolStatus === 'RECYCLING' || customer.poolStatus === 'RECYCLE') {
+        throw new Error('Khách hàng đang trong thời gian chờ tái sinh, chưa thể nhận lại.');
+      } else if (customer.poolStatus === 'EXCLUDED') {
+        throw new Error('Khách hàng đã bị loại khỏi Shared Pool (Chờ kiểm tra) và không được phép nhận lại.');
+      } else if (customer.poolStatus === 'BOOKED') {
+        throw new Error('Khách hàng đã chốt Booking và rời khỏi Shared Pool.');
+      } else {
+        throw new Error(`Khách hàng hiện không ở trạng thái sẵn sàng để nhận (Pool Status: ${customer.poolStatus}).`);
       }
     }
 
     if (customer.cooldownUntil && customer.cooldownUntil > now) {
       const remainingMin = Math.ceil((customer.cooldownUntil.getTime() - now.getTime()) / (60 * 1000));
       throw new Error(`Khách hàng đang trong thời gian Cooldown chống spam (còn ${remainingMin} phút).`);
-    }
-
-    if (['EXCLUDED', 'BOOKED'].includes(customer.poolStatus)) {
-      throw new Error('Khách hàng này đã kết thúc xử lý hoặc rời khỏi Shared Pool.');
     }
 
     const ttlMs = (config.claimTtlMinutes || 15) * 60 * 1000;
@@ -3357,8 +3396,13 @@ export class CampaignService {
       bookedAt = now;
       bookedByStaffId = staffId;
       bookedByStaffName = staffDisplayName;
-    } else if (['NO_NEED', 'REJECTED', 'WRONG_NUMBER'].includes(dto.callResult)) {
+    } else if (
+      ['NO_NEED', 'REJECTED', 'WRONG_NUMBER', 'CLOSED', 'NOT_INTERESTED', 'DO_NOT_CALL', 'CANCELLED'].includes(
+        dto.callResult
+      )
+    ) {
       nextPoolStatus = 'EXCLUDED';
+      availableAt = null;
     } else if (dto.callResult === 'CALLBACK') {
       nextPoolStatus = 'RECYCLING';
       availableAt = dto.callbackDate ? new Date(dto.callbackDate) : new Date(now.getTime() + 24 * 3600 * 1000);
@@ -3372,6 +3416,8 @@ export class CampaignService {
       nextPoolStatus = 'EXPLOITED';
     }
 
+    const isExcluded = nextPoolStatus === 'EXCLUDED';
+
     await fastify.prisma.crm.crmCampaignCustomer.update({
       where: { id: customer.id },
       data: {
@@ -3380,8 +3426,8 @@ export class CampaignService {
         claimedByStaffName: null,
         claimedAt: null,
         claimExpiresAt: null,
-        cooldownUntil,
-        availableAt,
+        cooldownUntil: isExcluded ? null : cooldownUntil,
+        availableAt: isExcluded ? null : availableAt,
         lastCallStaffId: staffId,
         lastCallStaffName: staffDisplayName,
         lastCallAt: now,
@@ -3401,14 +3447,16 @@ export class CampaignService {
         legacyUserId: customer.legacyUserId,
         staffId,
         staffName: staffDisplayName,
-        action: 'STATUS_UPDATE',
-        note: `Cập nhật trạng thái: ${dto.callResult}. Ghi chú: ${dto.note || 'Không'}. Trạng thái pool: ${nextPoolStatus}.`,
+        action: isExcluded ? 'EXCLUDE' : 'STATUS_UPDATE',
+        note: isExcluded
+          ? `Khách hàng bị loại khỏi Shared Pool (Chờ kiểm tra): ${dto.callResult}. Ghi chú: ${dto.note || 'Không'}.`
+          : `Cập nhật trạng thái: ${dto.callResult}. Ghi chú: ${dto.note || 'Không'}. Trạng thái pool: ${nextPoolStatus}.`,
         metadata: JSON.stringify({
           callResult: dto.callResult,
           durationSec: dto.durationSec,
           callbackDate: dto.callbackDate,
           nextPoolStatus,
-          cooldownUntil: cooldownUntil.toISOString(),
+          cooldownUntil: isExcluded ? null : cooldownUntil.toISOString(),
           availableAt: availableAt ? availableAt.toISOString() : null,
         }),
         createdAt: now,
@@ -3550,7 +3598,7 @@ export class CampaignService {
     campaignId: number,
     customerId: number,
     staffId: number,
-    action: 'RELEASE_CLAIM' | 'RETURN_TO_POOL' | 'EXCLUDE',
+    action: 'RELEASE_CLAIM' | 'RETURN_TO_POOL' | 'EXCLUDE' | 'KEEP_EXCLUDED',
     reason?: string
   ): Promise<{ success: boolean; message: string }> {
     const customer = await fastify.prisma.crm.crmCampaignCustomer.findFirst({
@@ -3618,6 +3666,8 @@ export class CampaignService {
           claimedByStaffName: null,
           claimedAt: null,
           claimExpiresAt: null,
+          cooldownUntil: null,
+          availableAt: null,
         },
       });
 
@@ -3643,7 +3693,131 @@ export class CampaignService {
       return { success: true, message: 'Đã loại khách hàng khỏi Shared Pool.' };
     }
 
+    if (action === 'KEEP_EXCLUDED') {
+      await fastify.prisma.crm.crmCampaignCustomer.update({
+        where: { id: customer.id },
+        data: {
+          poolStatus: 'EXCLUDED',
+          claimedByStaffId: null,
+          claimedByStaffName: null,
+          claimedAt: null,
+          claimExpiresAt: null,
+          cooldownUntil: null,
+          availableAt: null,
+        },
+      });
+
+      await fastify.prisma.crm.crmCampaignSharedPoolLog.create({
+        data: {
+          campaignId,
+          campaignCustomerId: customer.id,
+          legacyUserId: customer.legacyUserId,
+          staffId,
+          staffName: staffDisplayName,
+          action: 'CONFIRM_EXCLUDE',
+          note: `Quản lý kiểm tra và xác nhận giữ trạng thái loại trừ. Lý do: ${reason || 'Đã kiểm tra'}`,
+          metadata: JSON.stringify({
+            previousPoolStatus: customer.poolStatus,
+            nextPoolStatus: 'EXCLUDED',
+            reason: reason || null,
+            result: 'SUCCESS',
+          }),
+          createdAt: now,
+        },
+      });
+
+      return { success: true, message: 'Đã xác nhận giữ trạng thái loại trừ cho khách hàng.' };
+    }
+
     throw new Error('Hành động quản lý không hợp lệ.');
+  }
+
+  /**
+   * Batch Manager Action on multiple customers (RETURN_TO_POOL, EXCLUDE, KEEP_EXCLUDED)
+   */
+  static async batchManagerPoolAction(
+    fastify: FastifyInstance,
+    campaignId: number,
+    staffId: number,
+    action: 'RETURN_TO_POOL' | 'EXCLUDE' | 'KEEP_EXCLUDED',
+    customerIds: number[],
+    reason?: string
+  ): Promise<{ success: boolean; affectedCount: number; message: string }> {
+    if (!Array.isArray(customerIds) || customerIds.length === 0) {
+      throw new Error('Danh sách ID khách hàng không được để trống.');
+    }
+
+    const customers = await fastify.prisma.crm.crmCampaignCustomer.findMany({
+      where: {
+        campaignId,
+        OR: [{ id: { in: customerIds } }, { legacyUserId: { in: customerIds } }],
+        removedAt: null,
+      },
+    });
+
+    if (customers.length === 0) {
+      return { success: true, affectedCount: 0, message: 'Không tìm thấy khách hàng hợp lệ.' };
+    }
+
+    const staff = await fastify.prisma.crm.crmStaff.findUnique({
+      where: { id: staffId },
+      select: { displayName: true, username: true },
+    });
+    const staffDisplayName = staff?.displayName || staff?.username || `Quản lý #${staffId}`;
+    const now = new Date();
+
+    const targetPoolStatus = action === 'RETURN_TO_POOL' ? 'AVAILABLE' : 'EXCLUDED';
+    const targetActionLog =
+      action === 'RETURN_TO_POOL' ? 'RETURN_TO_POOL' : action === 'KEEP_EXCLUDED' ? 'CONFIRM_EXCLUDE' : 'EXCLUDE';
+    const actionLabel =
+      action === 'RETURN_TO_POOL'
+        ? 'đưa trở lại Pool'
+        : action === 'KEEP_EXCLUDED'
+          ? 'xác nhận giữ loại trừ'
+          : 'loại khỏi Pool';
+
+    const ids = customers.map((c) => c.id);
+
+    await fastify.prisma.crm.$transaction(async (tx) => {
+      await tx.crmCampaignCustomer.updateMany({
+        where: { id: { in: ids } },
+        data: {
+          poolStatus: targetPoolStatus,
+          claimedByStaffId: null,
+          claimedByStaffName: null,
+          claimedAt: null,
+          claimExpiresAt: null,
+          cooldownUntil: null,
+          availableAt: null,
+        },
+      });
+
+      await tx.crmCampaignSharedPoolLog.createMany({
+        data: customers.map((c) => ({
+          campaignId,
+          campaignCustomerId: c.id,
+          legacyUserId: c.legacyUserId,
+          staffId,
+          staffName: staffDisplayName,
+          action: targetActionLog,
+          note: `Quản lý ${actionLabel} hàng loạt (${customers.length} KH). Lý do: ${reason || 'Không có'}`,
+          metadata: JSON.stringify({
+            previousPoolStatus: c.poolStatus,
+            nextPoolStatus: targetPoolStatus,
+            batchAction: action,
+            reason: reason || null,
+            result: 'SUCCESS',
+          }),
+          createdAt: now,
+        })),
+      });
+    });
+
+    return {
+      success: true,
+      affectedCount: customers.length,
+      message: `Đã ${actionLabel} thành công cho ${customers.length} khách hàng.`,
+    };
   }
 
   /**

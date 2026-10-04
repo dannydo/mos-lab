@@ -37,6 +37,7 @@ import type {
   AdvanceSharedPoolBatchDto,
   ToggleSharedPoolPauseDto,
   ManagerPoolActionDto,
+  BatchManagerPoolActionDto,
   CampaignSharedPoolLog,
   CampaignStaffPerformanceResponse,
   SharedPoolHistoryQueryParams,
@@ -291,8 +292,13 @@ export const campaignsApi = {
       const response = await api.get(`/campaigns/customer/${customerId}/active-promotions`);
       return response.data;
     },
-    getSharedPoolOverview: async (campaignId: number): Promise<SharedPoolOverviewStats> => {
-      const response = await api.get(`/campaigns/${campaignId}/shared-pool/overview`);
+    getSharedPoolOverview: async (
+      campaignId: number,
+      batchNumber?: number | 'ALL'
+    ): Promise<SharedPoolOverviewStats> => {
+      const response = await api.get(`/campaigns/${campaignId}/shared-pool/overview`, {
+        params: batchNumber !== undefined ? { batchNumber } : undefined,
+      });
       return response.data;
     },
     claimSharedCustomer: async (
@@ -335,6 +341,13 @@ export const campaignsApi = {
       dto: ManagerPoolActionDto
     ): Promise<{ success: boolean; message: string }> => {
       const response = await api.post(`/campaigns/${campaignId}/shared-pool/manager-action`, dto);
+      return response.data;
+    },
+    batchManagerSharedPoolAction: async (
+      campaignId: number,
+      dto: BatchManagerPoolActionDto
+    ): Promise<{ success: boolean; affectedCount: number; message: string }> => {
+      const response = await api.post(`/campaigns/${campaignId}/shared-pool/batch-manager-action`, dto);
       return response.data;
     },
     getSharedPoolLogs: async (campaignId: number, customerId: number): Promise<CampaignSharedPoolLog[]> => {
