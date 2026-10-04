@@ -55,6 +55,7 @@ import { startRecordingAnalyzer } from './modules/omicall/analyzer.js';
 import { startProjectionWorker } from './modules/projections/projection-worker.service.js';
 
 import { CampaignPromotionSyncService } from './modules/campaigns/campaign-promotion-sync.service.js';
+import { CampaignService } from './modules/campaigns/campaign.service.js';
 import { assertSafeDevConfiguration, isSafeDev, runtimeListenHost } from './safe-dev/runtime.js';
 import { safeDevRoutes } from './safe-dev/routes.js';
 
@@ -394,6 +395,9 @@ const start = async () => {
       CampaignPromotionSyncService.backfillExistingPromotions(server).catch((err) => {
         server.log.warn('Backfill campaign promotions error:', err);
       });
+
+      // Start shared pool claim TTL and maintenance worker
+      CampaignService.startMaintenanceWorker(server);
     }
 
     const port = Number(process.env.PORT) || 3001;

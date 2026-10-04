@@ -250,18 +250,32 @@ const CAMPAIGN_BOOKING_STATUS_OPTIONS: Array<{
   },
 ];
 
-const ClaimCountdown: React.FC<{ expiresAt: string | null }> = ({ expiresAt }) => {
+const ClaimCountdown: React.FC<{ expiresAt: string | null; onExpire?: () => void }> = ({ expiresAt, onExpire }) => {
   const [secondsLeft, setSecondsLeft] = useState<number>(() => {
     if (!expiresAt) return 0;
     const diff = Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000);
     return Math.max(0, diff);
   });
 
+  const onExpireRef = useRef(onExpire);
+  onExpireRef.current = onExpire;
+
   useEffect(() => {
     if (!expiresAt) return;
+    const initialDiff = Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000);
+    setSecondsLeft(Math.max(0, initialDiff));
+    if (initialDiff <= 0) {
+      onExpireRef.current?.();
+      return;
+    }
     const interval = setInterval(() => {
       const diff = Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000);
-      setSecondsLeft(Math.max(0, diff));
+      const remaining = Math.max(0, diff);
+      setSecondsLeft(remaining);
+      if (remaining <= 0) {
+        clearInterval(interval);
+        onExpireRef.current?.();
+      }
     }, 1000);
     return () => clearInterval(interval);
   }, [expiresAt]);
@@ -730,15 +744,164 @@ export default function CampaignDetailPage() {
     selectedPoolStatus,
   ]);
 
-  // Polling for Shared Pool mode (15s interval)
+  // Local expiry handler when ClaimCountdown finishes
+  const handleClaimExpiredLocally = useCallback((record: any) => {
+    setCustomers((prev) =>
+      prev.map((c) => {
+        if (c.id === record.id || (record.legacyUserId && c.legacyUserId === record.legacyUserId)) {
+          return {
+            ...c,
+            poolStatus: 'AVAILABLE',
+            claimedByStaffId: null,
+            claimedByStaffName: null,
+            claimExpiresAt: null,
+            canClaim: true,
+            isClaimedByMe: false,
+          };
+        }
+        return c;
+      })
+    );
+  }, []);
+
+  // Realtime WebSocket for Shared Pool events with fallback polling
   useEffect(() => {
-    if (campaign?.operationMode !== 'SHARED_POOL') return;
+    if (campaign?.operationMode !== 'SHARED_POOL' || !campaign?.id) return;
+    let ws: WebSocket | null = null;
+    let reconnectTimeout: any = null;
+    let isDisposed = false;
+
+    const connectWs = () => {
+      if (isDisposed) return;
+      try {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.hostname;
+        const configured = process.env.NEXT_PUBLIC_API_URL;
+        let wsUrl = `${protocol}//${host}:4001/api/campaigns/${campaign.id}/shared-pool/stream`;
+        if (configured && !configured.startsWith('/')) {
+          try {
+            const url = new URL(configured, window.location.origin);
+            const wsProto = url.protocol === 'https:' ? 'wss:' : 'ws:';
+            wsUrl = `${wsProto}//${url.host}${url.pathname.replace(/\/$/, '')}/campaigns/${campaign.id}/shared-pool/stream`;
+          } catch {
+            // fallback
+          }
+        }
+
+        ws = new WebSocket(wsUrl);
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'CUSTOMER_CLAIMED') {
+              setCustomers((prev) =>
+                prev.map((c) => {
+                  if (c.id === data.customerId || (data.legacyUserId && c.legacyUserId === data.legacyUserId)) {
+                    const isMe = currentUser?.id && data.claimedByStaffId === currentUser.id;
+                    return {
+                      ...c,
+                      poolStatus: 'CLAIMED',
+                      claimedByStaffId: data.claimedByStaffId,
+                      claimedByStaffName: data.claimedByStaffName,
+                      claimExpiresAt: data.claimExpiresAt,
+                      canClaim: false,
+                      isClaimedByMe: !!isMe,
+                    };
+                  }
+                  return c;
+                })
+              );
+            } else if (data.type === 'CUSTOMER_RELEASED') {
+              setCustomers((prev) =>
+                prev.map((c) => {
+                  if (c.id === data.customerId || (data.legacyUserId && c.legacyUserId === data.legacyUserId)) {
+                    return {
+                      ...c,
+                      poolStatus: 'AVAILABLE',
+                      claimedByStaffId: null,
+                      claimedByStaffName: null,
+                      claimExpiresAt: null,
+                      canClaim: true,
+                      isClaimedByMe: false,
+                    };
+                  }
+                  return c;
+                })
+              );
+            } else if (data.type === 'CUSTOMERS_RELEASED') {
+              const releasedIds: number[] = data.customerIds || [];
+              setCustomers((prev) =>
+                prev.map((c) => {
+                  if (releasedIds.includes(c.id)) {
+                    return {
+                      ...c,
+                      poolStatus: 'AVAILABLE',
+                      claimedByStaffId: null,
+                      claimedByStaffName: null,
+                      claimExpiresAt: null,
+                      canClaim: true,
+                      isClaimedByMe: false,
+                    };
+                  }
+                  return c;
+                })
+              );
+            } else if (data.type === 'CUSTOMER_STATUS_UPDATED') {
+              setCustomers((prev) =>
+                prev.map((c) => {
+                  if (c.id === data.customerId || (data.legacyUserId && c.legacyUserId === data.legacyUserId)) {
+                    return {
+                      ...c,
+                      poolStatus: data.poolStatus,
+                      claimedByStaffId: null,
+                      claimedByStaffName: null,
+                      claimExpiresAt: null,
+                      canClaim: false,
+                      isClaimedByMe: false,
+                    };
+                  }
+                  return c;
+                })
+              );
+              fetchSharedPoolOverview(undefined, true);
+            } else if (['BATCH_ADVANCED', 'POOL_PAUSED', 'POOL_RESUMED', 'OVERVIEW_UPDATED'].includes(data.type)) {
+              fetchSharedPoolOverview(undefined, true);
+              fetchCampaignCustomers(true);
+            }
+          } catch (e) {
+            console.error('Failed to parse shared pool ws message:', e);
+          }
+        };
+
+        ws.onclose = () => {
+          if (!isDisposed) {
+            reconnectTimeout = setTimeout(connectWs, 3000);
+          }
+        };
+
+        ws.onerror = () => {
+          ws?.close();
+        };
+      } catch (err) {
+        console.error('Failed to create shared pool ws:', err);
+      }
+    };
+
+    connectWs();
+
+    // Safety fallback polling (15s interval)
     const interval = setInterval(() => {
       fetchSharedPoolOverview(undefined, true);
       fetchCampaignCustomers(true);
     }, 15000);
-    return () => clearInterval(interval);
-  }, [campaign?.operationMode, fetchSharedPoolOverview, fetchCampaignCustomers]);
+
+    return () => {
+      isDisposed = true;
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (ws) ws.close();
+      clearInterval(interval);
+    };
+  }, [campaign?.id, campaign?.operationMode, currentUser?.id, fetchCampaignCustomers, fetchSharedPoolOverview]);
 
   // Shared Pool Handlers
   const handleClaimCustomer = async (record: any) => {
@@ -1641,9 +1804,14 @@ export default function CampaignDetailPage() {
             key: 'poolStatus',
             width: 170,
             render: (_: any, record: any) => {
-              const status = record.poolStatus || 'AVAILABLE';
+              const rawStatus = record.poolStatus || 'AVAILABLE';
+              const isClaimExpired =
+                rawStatus === 'CLAIMED' &&
+                record.claimExpiresAt &&
+                new Date(record.claimExpiresAt).getTime() <= Date.now();
+              const status = isClaimExpired ? 'AVAILABLE' : rawStatus;
               const isClaimed = status === 'CLAIMED';
-              const isMe = record.isClaimedByMe;
+              const isMe = isClaimed && record.isClaimedByMe;
               const hasCooldown = record.cooldownUntil && new Date(record.cooldownUntil) > new Date();
               const cooldownMinutes = hasCooldown
                 ? Math.ceil((new Date(record.cooldownUntil).getTime() - Date.now()) / (60 * 1000))
@@ -1664,7 +1832,10 @@ export default function CampaignDetailPage() {
                       >
                         <LockOutlined />
                         <span>{isMe ? 'BẠN ĐANG GIỮ' : `ĐANG GIỮ: ${record.claimedByStaffName || 'NV'}`}</span>
-                        <ClaimCountdown expiresAt={record.claimExpiresAt} />
+                        <ClaimCountdown
+                          expiresAt={record.claimExpiresAt}
+                          onExpire={() => handleClaimExpiredLocally(record)}
+                        />
                       </Tag>
                     )}
                     {status === 'RECYCLING' && (
@@ -1709,12 +1880,18 @@ export default function CampaignDetailPage() {
         const phone = record.customerPhone || record.phone || record.phones?.[0]?.phone_number;
         const isSharedPool = campaign?.operationMode === 'SHARED_POOL';
         const isLoadingThis = actionLoadingId === (record.id || record.legacyUserId);
+        const isClaimExpired =
+          record.poolStatus === 'CLAIMED' &&
+          record.claimExpiresAt &&
+          new Date(record.claimExpiresAt).getTime() <= Date.now();
+        const effectiveCanClaim = record.canClaim || isClaimExpired;
+        const effectiveIsClaimedByMe = record.isClaimedByMe && !isClaimExpired;
 
         return (
           <Space size="small" wrap>
             {isSharedPool && (
               <>
-                {record.canClaim && (
+                {effectiveCanClaim && (
                   <Tooltip title="Nhận khách này vào xử lý (Claim)">
                     <Button
                       size="small"
@@ -1729,7 +1906,7 @@ export default function CampaignDetailPage() {
                   </Tooltip>
                 )}
 
-                {record.isClaimedByMe && (
+                {effectiveIsClaimedByMe && (
                   <>
                     <Tooltip title="Báo cáo kết quả cuộc gọi & cập nhật Shared Pool">
                       <Button
