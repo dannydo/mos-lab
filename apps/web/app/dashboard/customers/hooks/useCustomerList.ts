@@ -124,6 +124,12 @@ export const useCustomerList = (
           params.lastCallDaysMin = filterParams.lastCallDaysMin.toString();
         if (filterParams.lastCallDaysMax !== undefined)
           params.lastCallDaysMax = filterParams.lastCallDaysMax.toString();
+        if (filterParams.campaignId !== undefined) {
+          params.campaignId = filterParams.campaignId.toString();
+          if (filterParams.campaignFilterMode) {
+            params.campaignFilterMode = filterParams.campaignFilterMode;
+          }
+        }
 
         const cacheKey = JSON.stringify(params);
         const cached = statsCacheRef.current.get(cacheKey);
@@ -244,6 +250,12 @@ export const useCustomerList = (
           params.lastCallDaysMin = filterParams.lastCallDaysMin.toString();
         if (filterParams.lastCallDaysMax !== undefined)
           params.lastCallDaysMax = filterParams.lastCallDaysMax.toString();
+        if (filterParams.campaignId !== undefined) {
+          params.campaignId = filterParams.campaignId.toString();
+          if (filterParams.campaignFilterMode) {
+            params.campaignFilterMode = filterParams.campaignFilterMode;
+          }
+        }
 
         const cacheKey = JSON.stringify({ ...params, idsToUse });
         const cached = listCacheRef.current.get(cacheKey);

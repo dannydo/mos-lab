@@ -194,6 +194,23 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     }
   }, [currentUser]);
 
+  // Campaign list for campaign filter
+  const [campaignList, setCampaignList] = useState<SafeAny[]>([]);
+  useEffect(() => {
+    const loadCampaigns = async () => {
+      try {
+        const res: any = await apiClient.campaigns.list({ pageSize: 200 });
+        const list = Array.isArray(res) ? res : res?.items || res?.data || [];
+        setCampaignList(list);
+      } catch (err) {
+        console.error('Failed to load campaigns list:', err);
+      }
+    };
+    if (currentUser) {
+      loadCampaigns();
+    }
+  }, [currentUser]);
+
   // Booker Allocation Batches state & auto-select latest batch
   const [myBatches, setMyBatches] = useState<BookerAllocationBatchSummary[]>([]);
   const [myBatchesLoading, setMyBatchesLoading] = useState(false);
@@ -277,6 +294,7 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     filterParams.birthdayPreset !== undefined ||
     filterParams.ageMin !== undefined ||
     filterParams.ageMax !== undefined ||
+    filterParams.campaignId !== undefined ||
     filtersHook.activeFilterId !== null;
 
   return {
@@ -331,6 +349,11 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
     lastCallDaysMin: filtersHook.lastCallDaysMin,
     lastCallDaysMax: filtersHook.lastCallDaysMax,
     staffList,
+    campaignId: filtersHook.campaignId,
+    setCampaignId: filtersHook.setCampaignId,
+    campaignFilterMode: filtersHook.campaignFilterMode,
+    setCampaignFilterMode: filtersHook.setCampaignFilterMode,
+    campaignList,
     selectedRowKeys: assignmentHook.selectedRowKeys,
     assignModalVisible: assignmentHook.assignModalVisible,
     targetStaffId: assignmentHook.targetStaffId,

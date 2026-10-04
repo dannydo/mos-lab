@@ -213,6 +213,10 @@ export interface ListCustomersParams {
   retainedOnly?: string | boolean;
   allocationBatchId?: string;
   isForeign?: 'all' | 'foreign' | 'local' | boolean | string;
+  /** Filter by NYC campaign participation history */
+  campaignId?: number | string;
+  /** Campaign filter mode: 'ALL' (no filter) | 'IN' (participated) | 'NOT_IN' (never participated) */
+  campaignFilterMode?: 'ALL' | 'IN' | 'NOT_IN' | 'all' | 'in' | 'not_in';
 }
 
 /** An active catalog service available for customer segmentation. */

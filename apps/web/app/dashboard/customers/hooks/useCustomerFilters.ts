@@ -95,6 +95,10 @@ export const useCustomerFilters = (
   // Foreign customer filter state ('all' | 'foreign' | 'local')
   const [isForeignFilter, setIsForeignFilter] = useState<'all' | 'foreign' | 'local'>('all');
 
+  // Campaign filter state
+  const [campaignId, setCampaignId] = useState<number | undefined>(undefined);
+  const [campaignFilterMode, setCampaignFilterMode] = useState<'ALL' | 'IN' | 'NOT_IN'>('ALL');
+
   const prevScopeRef = useRef<string | null>(scopeParam);
   const prevUserRoleRef = useRef<string | undefined>(currentUser?.role);
 
@@ -208,6 +212,13 @@ export const useCustomerFilters = (
       setAssignedStaffId(criteria.assignedStaffId || (currentUser?.role === 'telesales' ? 'me' : 'all'));
       setAssignedDaysMin(criteria.assignedDaysMin);
       setAssignedDaysMax(criteria.assignedDaysMax);
+      if (criteria.campaignId !== undefined) {
+        setCampaignId(criteria.campaignId);
+        setCampaignFilterMode(criteria.campaignFilterMode || 'IN');
+      } else {
+        setCampaignId(undefined);
+        setCampaignFilterMode('ALL');
+      }
 
       optionsRef.current?.onSuccess?.(`Đã áp dụng bộ lọc "${filter.name}"`);
     },
@@ -245,6 +256,13 @@ export const useCustomerFilters = (
         setAssignedStaffId(criteria.assignedStaffId || 'all');
         setAssignedDaysMin(criteria.assignedDaysMin);
         setAssignedDaysMax(criteria.assignedDaysMax);
+        if (criteria.campaignId !== undefined) {
+          setCampaignId(criteria.campaignId);
+          setCampaignFilterMode(criteria.campaignFilterMode || 'IN');
+        } else {
+          setCampaignId(undefined);
+          setCampaignFilterMode('ALL');
+        }
 
         let countText = '';
         if (batchId && onSelectCustomerIds) {
@@ -308,6 +326,8 @@ export const useCustomerFilters = (
       assignedStaffId,
       assignedDaysMin,
       assignedDaysMax,
+      campaignId,
+      campaignFilterMode,
     };
   }, [
     activeTab,
@@ -331,6 +351,8 @@ export const useCustomerFilters = (
     assignedStaffId,
     assignedDaysMin,
     assignedDaysMax,
+    campaignId,
+    campaignFilterMode,
   ]);
 
   const buildFilterSummary = useCallback(
@@ -456,6 +478,8 @@ export const useCustomerFilters = (
     setIsForeignFilter('all');
     setRetainedOnly(false);
     setFilterCustomerIds(undefined);
+    setCampaignId(undefined);
+    setCampaignFilterMode('ALL');
 
     if (onFiltersReset) {
       onFiltersReset();
@@ -490,6 +514,8 @@ export const useCustomerFilters = (
       assignedStaffId,
       assignedDaysMin,
       assignedDaysMax,
+      campaignId,
+      campaignFilterMode,
     };
 
     try {
@@ -528,6 +554,8 @@ export const useCustomerFilters = (
     assignedStaffId,
     assignedDaysMin,
     assignedDaysMax,
+    campaignId,
+    campaignFilterMode,
     fetchSavedFilters,
   ]);
 
@@ -585,6 +613,8 @@ export const useCustomerFilters = (
       lastCallDaysMin,
       lastCallDaysMax,
       isForeign: isForeignFilter !== 'all' ? isForeignFilter : undefined,
+      campaignId: campaignId ? campaignId.toString() : undefined,
+      campaignFilterMode: campaignId && campaignFilterMode !== 'ALL' ? campaignFilterMode : undefined,
     }),
     [
       activeTab,
@@ -621,6 +651,8 @@ export const useCustomerFilters = (
       lastCallDaysMin,
       lastCallDaysMax,
       isForeignFilter,
+      campaignId,
+      campaignFilterMode,
     ]
   );
 
@@ -698,6 +730,12 @@ export const useCustomerFilters = (
     // Foreign Filter State
     isForeignFilter,
     setIsForeignFilter,
+
+    // Campaign Filter State
+    campaignId,
+    setCampaignId,
+    campaignFilterMode,
+    setCampaignFilterMode,
 
     // UI Drawer state
     filterDrawerVisible,

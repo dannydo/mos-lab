@@ -8466,7 +8466,7 @@
         "path": "/api/customers/random-ids",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1582
+        "line": 1619
       }
     },
     {
@@ -8690,7 +8690,7 @@
         "path": "/api/customers/loca-stats",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 742
+        "line": 780
       }
     },
     {
@@ -8704,7 +8704,7 @@
         "path": "/api/customers/nyc-stats",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1022
+        "line": 1060
       }
     },
     {
@@ -30514,7 +30514,7 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 90816,
+        "sizeBytes": 90811,
         "lineCount": 2273,
         "ext": ".ts"
       }
@@ -30527,7 +30527,7 @@
       "filePath": "apps/api/src/modules/career/cv-plus-rewards.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2591,
+        "sizeBytes": 2589,
         "lineCount": 64,
         "ext": ".ts"
       }
@@ -30650,6 +30650,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/customers/campaign-filter.test.ts",
+      "type": "File",
+      "label": "campaign-filter.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/campaign-filter.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 4297,
+        "lineCount": 123,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/customers/customer-list-sort.test.ts",
       "type": "File",
       "label": "customer-list-sort.test.ts",
@@ -30761,8 +30774,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-list.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 80552,
-        "lineCount": 1961,
+        "sizeBytes": 83028,
+        "lineCount": 2023,
         "ext": ".ts"
       }
     },
@@ -30800,8 +30813,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-stats.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 49602,
-        "lineCount": 1216,
+        "sizeBytes": 51197,
+        "lineCount": 1254,
         "ext": ".ts"
       }
     },
@@ -36026,8 +36039,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 161825,
-        "lineCount": 3136,
+        "sizeBytes": 162387,
+        "lineCount": 3157,
         "ext": ".tsx"
       }
     },
@@ -36598,8 +36611,8 @@
       "filePath": "apps/web/app/dashboard/customers/components/CustomerFilters.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 53288,
-        "lineCount": 1385,
+        "sizeBytes": 57412,
+        "lineCount": 1484,
         "ext": ".tsx"
       }
     },
@@ -36682,6 +36695,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/customers/components/__tests__/ActiveFilterTags.test.tsx",
+      "type": "File",
+      "label": "ActiveFilterTags.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/customers/components/__tests__/ActiveFilterTags.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2182,
+        "lineCount": 72,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/customers/components/__tests__/AssignmentHistoryDrawer.test.tsx",
       "type": "File",
       "label": "AssignmentHistoryDrawer.test.tsx",
@@ -36715,8 +36741,8 @@
       "filePath": "apps/web/app/dashboard/customers/components/filters/ActiveFilterTags.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9665,
-        "lineCount": 290,
+        "sizeBytes": 10127,
+        "lineCount": 302,
         "ext": ".tsx"
       }
     },
@@ -36780,8 +36806,8 @@
       "filePath": "apps/web/app/dashboard/customers/hooks/useCustomerData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18382,
-        "lineCount": 460,
+        "sizeBytes": 19186,
+        "lineCount": 483,
         "ext": ".ts"
       }
     },
@@ -36793,8 +36819,8 @@
       "filePath": "apps/web/app/dashboard/customers/hooks/useCustomerFilters.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23920,
-        "lineCount": 727,
+        "sizeBytes": 25206,
+        "lineCount": 765,
         "ext": ".ts"
       }
     },
@@ -36806,8 +36832,8 @@
       "filePath": "apps/web/app/dashboard/customers/hooks/useCustomerList.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16484,
-        "lineCount": 401,
+        "sizeBytes": 17010,
+        "lineCount": 413,
         "ext": ".ts"
       }
     },
@@ -36845,8 +36871,8 @@
       "filePath": "apps/web/app/dashboard/customers/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22719,
-        "lineCount": 616,
+        "sizeBytes": 22982,
+        "lineCount": 621,
         "ext": ".tsx"
       }
     },
@@ -39731,8 +39757,8 @@
       "filePath": "packages/shared/src/types/customer.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 19834,
-        "lineCount": 755,
+        "sizeBytes": 20097,
+        "lineCount": 759,
         "ext": ".ts"
       }
     },
@@ -61922,6 +61948,13 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
+      "id": "edge:file:apps/api/src/modules/customers/routes/customer-list.routes.ts:prisma:crm:CrmCampaignCustomer",
+      "source": "file:apps/api/src/modules/customers/routes/customer-list.routes.ts",
+      "target": "prisma:crm:CrmCampaignCustomer",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/customers/routes/customer-meta.routes.ts:prisma:crm:CrmStaff",
       "source": "file:apps/api/src/modules/customers/routes/customer-meta.routes.ts",
       "target": "prisma:crm:CrmStaff",
@@ -61981,6 +62014,13 @@
       "id": "edge:file:apps/api/src/modules/customers/routes/customer-stats.routes.ts:prisma:crm:CrmAllocationBatchItem",
       "source": "file:apps/api/src/modules/customers/routes/customer-stats.routes.ts",
       "target": "prisma:crm:CrmAllocationBatchItem",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/customer-stats.routes.ts:prisma:crm:CrmCampaignCustomer",
+      "source": "file:apps/api/src/modules/customers/routes/customer-stats.routes.ts",
+      "target": "prisma:crm:CrmCampaignCustomer",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -87200,8 +87240,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 3077,
-    "totalEdges": 6715,
+    "totalNodes": 3079,
+    "totalEdges": 6717,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 163,
@@ -87210,7 +87250,7 @@
       "SharedType": 1130,
       "DesignToken": 12,
       "UIComponent": 211,
-      "File": 845
+      "File": 847
     },
     "edgeTypeCounts": {
       "EXPORTS": 1305,
@@ -87218,7 +87258,7 @@
       "RENDERS": 268,
       "USES_TOKEN": 213,
       "IMPORTS": 469,
-      "QUERIES_MODEL": 380,
+      "QUERIES_MODEL": 382,
       "API_CALL": 3424
     },
     "fastifyRouteCount": 661,

@@ -15,6 +15,7 @@ import {
   AimOutlined,
   PhoneOutlined,
   AppstoreOutlined,
+  RocketOutlined,
 } from '@ant-design/icons';
 import {
   canManageCustomerAllocation,
@@ -103,6 +104,11 @@ interface CustomerFiltersProps {
   setIsForeignFilter?: (val: 'all' | 'foreign' | 'local') => void;
   setActiveFilterId: (id: string | null) => void;
   staffList: SafeAny[];
+  campaignId?: number | undefined;
+  setCampaignId?: (val: number | undefined) => void;
+  campaignFilterMode?: 'ALL' | 'IN' | 'NOT_IN';
+  setCampaignFilterMode?: (val: 'ALL' | 'IN' | 'NOT_IN') => void;
+  campaignList?: SafeAny[];
   saveFilterModalVisible: boolean;
   setSaveFilterModalVisible: (visible: boolean) => void;
   newFilterName: string;
@@ -181,6 +187,11 @@ const CustomerFilters = React.memo(function CustomerFilters({
   setAgeMax,
   isForeignFilter,
   setIsForeignFilter,
+  campaignId,
+  setCampaignId,
+  campaignFilterMode = 'ALL',
+  setCampaignFilterMode,
+  campaignList = [],
   setActiveFilterId,
   staffList,
   saveFilterModalVisible,
@@ -224,10 +235,16 @@ const CustomerFilters = React.memo(function CustomerFilters({
     birthdayPreset,
     ageMin,
     ageMax,
+    campaignId,
+    campaignFilterMode,
   };
 
   const onClearFilter = (key: string) => {
     switch (key) {
+      case 'campaignId':
+        setCampaignId?.(undefined);
+        setCampaignFilterMode?.('ALL');
+        break;
       case 'daysSinceLastVisitMin':
         setDaysSinceLastVisitMin(undefined);
         break;
@@ -320,6 +337,10 @@ const CustomerFilters = React.memo(function CustomerFilters({
         break;
       case 'lastCallDaysMax':
         if (setLastCallDaysMax) setLastCallDaysMax(undefined);
+        break;
+      case 'campaignId':
+        if (setCampaignId) setCampaignId(undefined);
+        if (setCampaignFilterMode) setCampaignFilterMode('ALL');
         break;
     }
     setActiveFilterId(null);
@@ -502,6 +523,7 @@ const CustomerFilters = React.memo(function CustomerFilters({
           staffList={staffList}
           serviceFilterOptions={serviceFilterOptions}
           serviceFilterCategories={serviceFilterCategories}
+          campaignList={campaignList}
         />
       </div>
 
@@ -1365,6 +1387,76 @@ const CustomerFilters = React.memo(function CustomerFilters({
                   themeMode={themeMode}
                 />
               </div>
+            </div>
+          </div>
+
+          {/* CARD 7: CHIẾN DỊCH (CAMPAIGN) */}
+          <div className="rounded-xl p-[18px] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+            <FilterSectionHeader
+              icon={<RocketOutlined className="text-sm text-purple-500" />}
+              title="Chiến dịch (Campaign)"
+              themeMode={themeMode}
+            />
+
+            <div className="grid grid-cols-2 gap-5">
+              <div>
+                <Form.Item
+                  label={<span className="text-xs text-slate-500 dark:text-slate-400">Chọn Chiến dịch NYC</span>}
+                  className="!mb-0"
+                >
+                  <Select
+                    aria-label="Lọc theo chiến dịch"
+                    showSearch
+                    allowClear
+                    filterOption={vietnameseSearchFilter}
+                    placeholder="Chọn chiến dịch cần lọc..."
+                    value={campaignId || undefined}
+                    onChange={(val) => {
+                      const nextId = val ? Number(val) : undefined;
+                      setCampaignId?.(nextId);
+                      if (!nextId) {
+                        setCampaignFilterMode?.('ALL');
+                      } else if (!campaignFilterMode || campaignFilterMode === 'ALL') {
+                        setCampaignFilterMode?.('IN');
+                      }
+                      setActiveFilterId(null);
+                    }}
+                    className="w-full"
+                    options={(campaignList || []).map((c: SafeAny) => ({
+                      value: c.id,
+                      label: `${c.name || `Chiến dịch #${c.id}`}${c._count?.customers ? ` (${c._count.customers} KH)` : ''}`,
+                    }))}
+                  />
+                </Form.Item>
+              </div>
+
+              <div>
+                <Form.Item
+                  label={<span className="text-xs text-slate-500 dark:text-slate-400">Lịch sử tham gia Campaign</span>}
+                  className="!mb-0"
+                >
+                  <Select
+                    aria-label="Lọc theo lịch sử tham gia chiến dịch"
+                    value={campaignFilterMode || 'ALL'}
+                    disabled={!campaignId}
+                    onChange={(val) => {
+                      setCampaignFilterMode?.(val as 'ALL' | 'IN' | 'NOT_IN');
+                      setActiveFilterId(null);
+                    }}
+                    className="w-full"
+                    options={[
+                      { value: 'ALL', label: 'Tất cả (Không phân biệt)' },
+                      { value: 'IN', label: '🎯 Thuộc Campaign đã chọn' },
+                      { value: 'NOT_IN', label: '🛡️ Chưa từng thuộc Campaign này (Loại trừ)' },
+                    ]}
+                  />
+                </Form.Item>
+              </div>
+            </div>
+
+            <div className="mt-2.5 text-xs text-slate-500 dark:text-slate-400">
+              Chọn <strong>Chưa từng thuộc Campaign này</strong> để lọc tệp khách mới chưa từng được đưa vào chiến dịch
+              đã chọn, tránh chia trùng dữ liệu.
             </div>
           </div>
         </Form>

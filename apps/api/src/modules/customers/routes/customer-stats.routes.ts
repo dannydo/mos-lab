@@ -61,6 +61,8 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
       lastCallDaysMin,
       lastCallDaysMax,
       isForeign,
+      campaignId,
+      campaignFilterMode,
     } = request.query as {
       bucket?: BucketType | 'ALL' | 'NOT_COMBO_LIVE' | 'NEW_LOCA';
       search?: string;
@@ -103,6 +105,8 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
       lastCallDaysMin?: string;
       lastCallDaysMax?: string;
       isForeign?: 'all' | 'foreign' | 'local' | string | boolean;
+      campaignId?: string;
+      campaignFilterMode?: 'ALL' | 'IN' | 'NOT_IN' | 'all' | 'in' | 'not_in' | string;
     };
 
     const adminUser = request.user as { id: number; role: string };
@@ -174,7 +178,8 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         (!isForeign || isForeign === 'all') &&
         retainedOnly !== 'true' &&
         (!allocationBatchId || allocationBatchId.trim() === '') &&
-        (!ids || ids.trim() === '');
+        (!ids || ids.trim() === '') &&
+        (!campaignId || campaignId.trim() === '' || (campaignFilterMode || '').toUpperCase() === 'ALL');
 
       if (isDefaultView) {
         const isTrash = trash === 'true';
@@ -329,6 +334,39 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
             allowedUserIds = allowedUserIds.filter((id) => bSet.has(id));
           } else {
             allowedUserIds = batchUserIds;
+          }
+        }
+      }
+
+      if (campaignId && campaignId.trim() !== '') {
+        const cId = parseInt(campaignId, 10);
+        const mode = (campaignFilterMode || 'IN').toUpperCase();
+        if (!isNaN(cId) && cId > 0 && mode !== 'ALL') {
+          const campaignCustomers = await fastify.prisma.crm.crmCampaignCustomer.findMany({
+            where: { campaignId: cId },
+            select: { legacyUserId: true },
+          });
+          const campUserIds = Array.from(new Set(campaignCustomers.map((c) => c.legacyUserId)));
+
+          if (mode === 'IN') {
+            if (allowedUserIds !== null) {
+              const cSet = new Set(campUserIds);
+              allowedUserIds = allowedUserIds.filter((id) => cSet.has(id));
+            } else {
+              allowedUserIds = campUserIds;
+            }
+          } else if (mode === 'NOT_IN') {
+            if (campUserIds.length > 0) {
+              if (excludedUserIds === null) {
+                excludedUserIds = campUserIds;
+              } else {
+                excludedUserIds = Array.from(new Set([...excludedUserIds, ...campUserIds]));
+              }
+              if (allowedUserIds !== null) {
+                const cSet = new Set(campUserIds);
+                allowedUserIds = allowedUserIds.filter((id) => !cSet.has(id));
+              }
+            }
           }
         }
       }

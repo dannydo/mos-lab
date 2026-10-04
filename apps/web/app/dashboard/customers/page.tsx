@@ -38,10 +38,9 @@ const AssignmentHistoryDrawer = dynamic(
   () => import('./components/AssignmentHistoryDrawer').then((m) => m.AssignmentHistoryDrawer),
   { ssr: false }
 );
-const AIAssistantWidget = dynamic(
-  () => import('./components/AIAssistantWidget').then((m) => m.AIAssistantWidget),
-  { ssr: false }
-);
+const AIAssistantWidget = dynamic(() => import('./components/AIAssistantWidget').then((m) => m.AIAssistantWidget), {
+  ssr: false,
+});
 
 const PRESET_FILTERS = [
   {
@@ -283,6 +282,11 @@ function CustomersPageContent() {
               setAgeMax={data.setAgeMax}
               setActiveFilterId={data.setActiveFilterId}
               staffList={data.staffList}
+              campaignId={data.campaignId}
+              setCampaignId={data.setCampaignId}
+              campaignFilterMode={data.campaignFilterMode}
+              setCampaignFilterMode={data.setCampaignFilterMode}
+              campaignList={data.campaignList}
               saveFilterModalVisible={data.saveFilterModalVisible}
               setSaveFilterModalVisible={data.setSaveFilterModalVisible}
               newFilterName={data.newFilterName}

@@ -12,6 +12,7 @@ interface ActiveFilterTagsProps {
   staffList?: SafeAny[];
   serviceFilterOptions?: Array<{ id: number; name: string }>;
   serviceFilterCategories?: CustomerServiceFilterCategory[];
+  campaignList?: SafeAny[];
   /** Keeps filter context compact when it belongs in a one-line toolbar. */
   inline?: boolean;
 }
@@ -23,6 +24,7 @@ export const ActiveFilterTags: React.FC<ActiveFilterTagsProps> = ({
   staffList = [],
   serviceFilterOptions = [],
   serviceFilterCategories = [],
+  campaignList = [],
   inline = false,
 }) => {
   const { token } = theme.useToken();
@@ -54,6 +56,8 @@ export const ActiveFilterTags: React.FC<ActiveFilterTagsProps> = ({
     callStatuses,
     lastCallDaysMin,
     lastCallDaysMax,
+    campaignId,
+    campaignFilterMode,
   } = filterParams;
 
   const isAnyActive =
@@ -64,7 +68,8 @@ export const ActiveFilterTags: React.FC<ActiveFilterTagsProps> = ({
     ageMax !== undefined ||
     (callStatuses && callStatuses.length > 0) ||
     lastCallDaysMin !== undefined ||
-    lastCallDaysMax !== undefined;
+    lastCallDaysMax !== undefined ||
+    campaignId !== undefined;
 
   if (!isAnyActive) return null;
 
@@ -280,6 +285,13 @@ export const ActiveFilterTags: React.FC<ActiveFilterTagsProps> = ({
         {lastCallDaysMax !== undefined && (
           <Tag color="volcano" closable onClose={() => onClearFilter('lastCallDaysMax')}>
             Gọi gần nhất &lt;= {lastCallDaysMax} ngày
+          </Tag>
+        )}
+
+        {campaignId !== undefined && (
+          <Tag color="purple" closable onClose={() => onClearFilter('campaignId')}>
+            Chiến dịch: {campaignList?.find((c) => c.id === campaignId)?.name || `#${campaignId}`} (
+            {campaignFilterMode === 'NOT_IN' ? 'Chưa từng thuộc' : 'Thuộc'})
           </Tag>
         )}
       </Space>
