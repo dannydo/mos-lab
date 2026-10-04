@@ -35,8 +35,21 @@ export function Screen02CheckInProfile({ booking, onBack, onCheckIn }: Screen02C
       <div className="flex-1 px-4 py-3 space-y-3.5 overflow-y-auto pb-6">
         {/* Card 1: Customer Profile Header */}
         <div className="bg-white rounded-2xl p-4 flex items-center gap-3.5 shadow-sm border border-neutral-100">
-          <div className="w-14 h-14 rounded-full bg-[#FFB400] border-2 border-[#34C759] p-0.5 flex items-center justify-center text-black font-extrabold text-2xl shrink-0 shadow-sm">
-            {customerName.charAt(0) || 'Q'}
+          <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[#34C759] p-0.5 flex items-center justify-center bg-neutral-100 shrink-0 shadow-sm">
+            {booking?.customerAvatar ? (
+              <img
+                src={booking.customerAvatar}
+                alt={customerName}
+                className="w-full h-full object-cover rounded-full"
+                onError={(e) => {
+                  (e.currentTarget as HTMLElement).style.display = 'none';
+                }}
+              />
+            ) : (
+              <div className="w-full h-full bg-[#FFB400] rounded-full flex items-center justify-center text-black font-extrabold text-2xl">
+                {customerName.charAt(0) || 'Q'}
+              </div>
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">

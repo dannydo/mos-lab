@@ -18,6 +18,33 @@ function getPool(): mysql.Pool {
   return pool;
 }
 
+// Curated high quality beauty portraits for lash clients without uploaded photos
+const FALLBACK_AVATARS = [
+  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=256',
+  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256',
+  'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=256',
+  'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=256',
+  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=256',
+  'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&q=80&w=256',
+  'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&q=80&w=256',
+  'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&q=80&w=256',
+  'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&q=80&w=256',
+];
+
+function resolveCustomerAvatar(dbAvatar: string | null | undefined, customerId: number): string {
+  if (dbAvatar && typeof dbAvatar === 'string' && dbAvatar.trim().startsWith('http')) {
+    return dbAvatar.trim();
+  }
+  return FALLBACK_AVATARS[customerId % FALLBACK_AVATARS.length];
+}
+
+function resolveStaffAvatar(dbAvatar: string | null | undefined): string {
+  if (dbAvatar && typeof dbAvatar === 'string' && dbAvatar.trim().startsWith('http')) {
+    return dbAvatar.trim();
+  }
+  return 'https://cdn.wingslashes.com/uploads/user/avatar/744/thumbnail/3744.jpg';
+}
+
 function formatTimeSlot(dateStart: Date | string | null, durationMinutes: number): string {
   if (!dateStart) return '09:00 - 10:30';
   const start = new Date(dateStart);
@@ -95,8 +122,10 @@ export async function GET(request: NextRequest) {
         o.user_id,
         COALESCE(up.full_name, 'Khách Vãng Lai') AS customer_name,
         COALESCE(uc.phone_number, '0901.xxx.xxx') AS customer_phone,
+        up.avatar AS customer_avatar,
         COALESCE(sl.service_name, s.service_key, 'Nối mi Design Wings') AS service_name,
         COALESCE(sp.full_name, 'Chưa phân công') AS staff_name,
+        sp.avatar AS staff_avatar,
         os.assigned_staff_id,
         (SELECT COUNT(*) FROM \`order\` o2 WHERE o2.user_id = o.user_id AND o2.order_state = 'Completed') AS total_visits
       FROM \`order\` o
@@ -137,6 +166,8 @@ export async function GET(request: NextRequest) {
         customerName: r.customer_name,
         customerPhone: r.customer_phone,
         customerId: r.user_id,
+        customerAvatar: resolveCustomerAvatar(r.customer_avatar, r.user_id),
+        assignedStaffAvatar: resolveStaffAvatar(r.staff_avatar),
         customerVisits: Number(r.total_visits) || 1,
         customerNote: r.booking_note || '',
         timeSlot: formatTimeSlot(r.booking_date_start, duration),

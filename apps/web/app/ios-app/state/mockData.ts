@@ -12,6 +12,8 @@ export interface BookingItem {
   serviceDuration: number; // minutes
   assignedStaffName?: string;
   assignedStaffId?: number;
+  assignedStaffAvatar?: string;
+  customerAvatar?: string;
   assignedBed?: string;
   status: 'INCOMING' | 'CHECKED_IN' | 'SERVICING' | 'DONE' | 'CANCELLED';
   attributes?: {
