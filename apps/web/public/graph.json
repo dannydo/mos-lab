@@ -8466,7 +8466,7 @@
         "path": "/api/customers/:id/bookings",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1752
+        "line": 1785
       }
     },
     {
@@ -8480,7 +8480,7 @@
         "path": "/api/customers/:id/calls",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1974
+        "line": 2007
       }
     },
     {
@@ -8508,7 +8508,7 @@
         "path": "/api/customers/random-ids",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1641
+        "line": 1658
       }
     },
     {
@@ -8732,7 +8732,7 @@
         "path": "/api/customers/loca-stats",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 803
+        "line": 820
       }
     },
     {
@@ -8746,7 +8746,7 @@
         "path": "/api/customers/nyc-stats",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1083
+        "line": 1100
       }
     },
     {
@@ -30767,6 +30767,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/customers/customer-history-invariant.test.ts",
+      "type": "File",
+      "label": "customer-history-invariant.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/customer-history-invariant.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3074,
+        "lineCount": 95,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/customers/customer-list-sort.test.ts",
       "type": "File",
       "label": "customer-list-sort.test.ts",
@@ -30865,8 +30878,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-detail.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 86502,
-        "lineCount": 2040,
+        "sizeBytes": 87788,
+        "lineCount": 2073,
         "ext": ".ts"
       }
     },
@@ -30878,8 +30891,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-list.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 83790,
-        "lineCount": 2051,
+        "sizeBytes": 85263,
+        "lineCount": 2088,
         "ext": ".ts"
       }
     },
@@ -30917,8 +30930,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-stats.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 51846,
-        "lineCount": 1277,
+        "sizeBytes": 52882,
+        "lineCount": 1303,
         "ext": ".ts"
       }
     },
@@ -33770,6 +33783,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/scripts/data-migrations/20261005110000_repair_lost_history_customer_profiles.ts",
+      "type": "File",
+      "label": "20261005110000_repair_lost_history_customer_profiles.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/scripts/data-migrations/20261005110000_repair_lost_history_customer_profiles.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 1937,
+        "lineCount": 49,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/scripts/data-migrations/types.ts",
       "type": "File",
       "label": "types.ts",
@@ -34219,8 +34245,8 @@
       "filePath": "apps/web/app/api/ios/bookings/route.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15891,
-        "lineCount": 432,
+        "sizeBytes": 15900,
+        "lineCount": 429,
         "ext": ".ts"
       }
     },
@@ -38314,8 +38340,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DailyActionSchedule.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19700,
-        "lineCount": 421,
+        "sizeBytes": 13267,
+        "lineCount": 286,
         "ext": ".tsx"
       }
     },
@@ -38327,8 +38353,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DataPipelineStages.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7402,
-        "lineCount": 153,
+        "sizeBytes": 7116,
+        "lineCount": 148,
         "ext": ".tsx"
       }
     },
@@ -38353,8 +38379,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 32123,
-        "lineCount": 616,
+        "sizeBytes": 23491,
+        "lineCount": 447,
         "ext": ".tsx"
       }
     },
@@ -38368,6 +38394,19 @@
       "metadata": {
         "sizeBytes": 9928,
         "lineCount": 248,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/SemicircleGauge.tsx",
+      "type": "File",
+      "label": "SemicircleGauge.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/SemicircleGauge.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5874,
+        "lineCount": 185,
         "ext": ".tsx"
       }
     },
@@ -38431,8 +38470,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15503,
-        "lineCount": 336,
+        "sizeBytes": 12363,
+        "lineCount": 275,
         "ext": ".tsx"
       }
     },
@@ -38574,8 +38613,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22105,
-        "lineCount": 522,
+        "sizeBytes": 21324,
+        "lineCount": 509,
         "ext": ".tsx"
       }
     },
@@ -38808,8 +38847,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen01IncomingBookings.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9801,
-        "lineCount": 234,
+        "sizeBytes": 9579,
+        "lineCount": 224,
         "ext": ".tsx"
       }
     },
@@ -38821,8 +38860,8 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen02CheckInProfile.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7125,
-        "lineCount": 153,
+        "sizeBytes": 7063,
+        "lineCount": 149,
         "ext": ".tsx"
       }
     },
@@ -87960,7 +87999,7 @@
     }
   ],
   "stats": {
-    "totalNodes": 3122,
+    "totalNodes": 3125,
     "totalEdges": 6740,
     "nodeTypeCounts": {
       "Workspace": 3,
@@ -87970,7 +88009,7 @@
       "SharedType": 1132,
       "DesignToken": 12,
       "UIComponent": 212,
-      "File": 883
+      "File": 886
     },
     "edgeTypeCounts": {
       "EXPORTS": 1307,
