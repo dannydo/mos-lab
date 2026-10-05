@@ -2,7 +2,7 @@
 
 import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import dayjs from 'dayjs';
-import { Spin, Avatar, Tabs, theme, Space, Button, Popconfirm, Tooltip, Form, message, Tag, Modal } from 'antd';
+import { Spin, Avatar, Tabs, theme, Space, Button, Popconfirm, Tooltip, Form, message, Tag, Modal, Alert } from 'antd';
 import {
   PhoneOutlined,
   UserOutlined,
@@ -90,6 +90,11 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   const responsiveTier = useResponsiveTier();
   const isCompactTier = responsiveTier === 'mobile' || responsiveTier === 'tablet';
 
+  const [currentCustomerId, setCurrentCustomerId] = useState<number | null>(customerId);
+  useEffect(() => {
+    setCurrentCustomerId(customerId);
+  }, [customerId]);
+
   const [editForm] = Form.useForm();
 
   const {
@@ -167,7 +172,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     getRecentVisitTime,
   } = useCustomerDetail({
     open,
-    customerId,
+    customerId: currentCustomerId,
     onClose,
     onDeleteSuccess,
     onUpdate,
@@ -717,10 +722,55 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
           </div>
         ) : (
           customer && (
-            <div
-              className="customer-detail-layout"
-              style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '20px' }}
-            >
+            <div>
+              {data?.duplicateNotice && (
+                <Alert
+                  type="info"
+                  showIcon
+                  message="Phát hiện hồ sơ gốc có đầy đủ lịch sử"
+                  description={
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: '8px',
+                        marginTop: '4px',
+                      }}
+                    >
+                      <span>
+                        Hồ sơ hiện tại có thể là bản trùng chưa có lịch sử. Tìm thấy hồ sơ gốc{' '}
+                        <b>
+                          {data.duplicateNotice.originalCustomerName} (ID: #{data.duplicateNotice.originalCustomerId})
+                        </b>{' '}
+                        với <b>{data.duplicateNotice.bookingCount}</b> lượt đặt lịch.
+                      </span>
+                      <Button
+                        type="primary"
+                        size="small"
+                        onClick={() => setCurrentCustomerId(data.duplicateNotice.originalCustomerId)}
+                        style={{ background: '#D4A84B', borderColor: '#D4A84B', fontWeight: 600, color: '#fff' }}
+                      >
+                        Mở hồ sơ #{data.duplicateNotice.originalCustomerId}
+                      </Button>
+                    </div>
+                  }
+                  style={{ marginBottom: '16px', borderRadius: '8px' }}
+                />
+              )}
+              {customer?.isDeleted ? (
+                <Alert
+                  type="warning"
+                  showIcon
+                  message="Hồ sơ này đã bị xóa hoặc đã được gộp vào hồ sơ chính"
+                  style={{ marginBottom: '16px', borderRadius: '8px' }}
+                />
+              ) : null}
+              <div
+                className="customer-detail-layout"
+                style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '20px' }}
+              >
               {/* SIDEBAR: Info & Stats */}
               <div
                 className="customer-detail-sidebar"
@@ -954,8 +1004,9 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                 })()}
               </div>
             </div>
-          )
-        )}
+          </div>
+        )
+      )}
       </Spin>
 
       {rescheduleModalVisible && (

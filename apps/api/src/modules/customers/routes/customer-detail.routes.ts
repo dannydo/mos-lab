@@ -1659,6 +1659,38 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
       const bookingCount = Number(bookingCountResult[0]?.cnt || 0);
       const noteCount = Number(noteCountResult[0]?.cnt || 0);
 
+      let duplicateNotice: {
+        originalCustomerId: number;
+        originalCustomerName: string;
+        bookingCount: number;
+      } | null = null;
+
+      // Duplicate / Ghost profile auto-detection
+      if (bookingCount === 0 && userContacts.length === 0 && row.name && row.name !== 'No Name') {
+        const potentialDuplicates = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT u.id, up.full_name as name, COUNT(o.id) as bookingCount
+           FROM user u
+           JOIN user_profile up ON u.id = up.user_id
+           JOIN \`order\` o ON u.id = o.user_id
+           WHERE u.id != ?
+             AND up.is_deleted = 0
+             AND (up.full_name = ? OR up.full_name LIKE ?)
+           GROUP BY u.id, up.full_name
+           ORDER BY bookingCount DESC
+           LIMIT 1`,
+          customerId,
+          row.name,
+          `${row.name}%`
+        );
+        if (potentialDuplicates.length > 0 && Number(potentialDuplicates[0].bookingCount) > 0) {
+          duplicateNotice = {
+            originalCustomerId: Number(potentialDuplicates[0].id),
+            originalCustomerName: String(potentialDuplicates[0].name),
+            bookingCount: Number(potentialDuplicates[0].bookingCount),
+          };
+        }
+      }
+
       const referrer =
         referrerRow.length > 0
           ? {
@@ -1726,6 +1758,7 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
           callCount,
           timelineCount,
         },
+        duplicateNotice,
         comboBalances: activeComboBalances.map((combo) => ({
           ...combo,
           normalCount: Number(combo.normalCount || 0),

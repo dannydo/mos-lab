@@ -495,6 +495,14 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
           innerWhereClauses.push('usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0');
         } else if (bStrStats === 'NOT_COMBO_LIVE') {
           innerWhereClauses.push('(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
+          innerWhereClauses.push(`EXISTS (
+            SELECT 1 FROM user_contact uc_v
+            WHERE uc_v.user_id = u.id AND uc_v.is_disabled = 0 AND uc_v.phone_number IS NOT NULL AND TRIM(uc_v.phone_number) != ''
+          )`);
+          innerWhereClauses.push(`EXISTS (
+            SELECT 1 FROM \`order\` o_v
+            WHERE o_v.user_id = u.id
+          )`);
         } else if (bStrStats === 'NEW_LOCA') {
           const newLocaUserIds = await getNewLocaUserIds(dateFrom, dateTo);
           if (newLocaUserIds.length === 0) {
@@ -517,6 +525,15 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
           "up.last_order_booking IS NOT NULL AND up.last_order_booking >= CONCAT(DATE_SUB(CURDATE(), INTERVAL ? DAY), ' 00:00:00')"
         );
         innerParams.push(parseInt(daysSinceLastVisitMax, 10));
+      }
+      if (
+        (daysSinceLastVisitMin !== undefined && daysSinceLastVisitMin !== '') ||
+        (daysSinceLastVisitMax !== undefined && daysSinceLastVisitMax !== '')
+      ) {
+        innerWhereClauses.push(`EXISTS (
+          SELECT 1 FROM \`order\` o_visit_stats
+          WHERE o_visit_stats.user_id = u.id
+        )`);
       }
 
       // 4. totalSpent & totalVisits Filters (using pre-aggregated joins)
@@ -1144,7 +1161,16 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
 
       const innerWhereClauses: string[] = [
         'COALESCE(up.is_deleted, 0) = 0',
+        'COALESCE(up.is_disabled, 0) = 0',
         'up.last_order_booking IS NOT NULL',
+        `EXISTS (
+          SELECT 1 FROM user_contact uc
+          WHERE uc.user_id = u.id AND uc.is_disabled = 0 AND uc.phone_number IS NOT NULL AND TRIM(uc.phone_number) != ''
+        )`,
+        `EXISTS (
+          SELECT 1 FROM \`order\` o
+          WHERE o.user_id = u.id
+        )`,
         `NOT EXISTS (
           SELECT 1 FROM user_service_balance usb
           WHERE usb.user_id = u.id

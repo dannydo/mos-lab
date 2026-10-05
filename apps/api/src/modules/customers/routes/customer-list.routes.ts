@@ -713,6 +713,14 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
           innerWhereClauses.push('usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0');
         } else if (bStr === 'NOT_COMBO_LIVE') {
           innerWhereClauses.push('(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
+          innerWhereClauses.push(`EXISTS (
+            SELECT 1 FROM user_contact uc_v
+            WHERE uc_v.user_id = u.id AND uc_v.is_disabled = 0 AND uc_v.phone_number IS NOT NULL AND TRIM(uc_v.phone_number) != ''
+          )`);
+          innerWhereClauses.push(`EXISTS (
+            SELECT 1 FROM \`order\` o_v
+            WHERE o_v.user_id = u.id
+          )`);
         } else if (bStr === 'NEW_LOCA') {
           const newLocaUserIds = await resolveNewLocaUserIds();
           if (newLocaUserIds.length === 0) {
@@ -735,6 +743,15 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
           "up.last_order_booking IS NOT NULL AND up.last_order_booking >= CONCAT(DATE_SUB(CURDATE(), INTERVAL ? DAY), ' 00:00:00')"
         );
         innerParams.push(parseInt(daysSinceLastVisitMax, 10));
+      }
+      if (
+        (daysSinceLastVisitMin !== undefined && daysSinceLastVisitMin !== '') ||
+        (daysSinceLastVisitMax !== undefined && daysSinceLastVisitMax !== '')
+      ) {
+        innerWhereClauses.push(`EXISTS (
+          SELECT 1 FROM \`order\` o_visit
+          WHERE o_visit.user_id = u.id
+        )`);
       }
 
       // 4. totalSpent & totalVisits Filters (using pre-aggregated joins)
@@ -1747,7 +1764,14 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         ) as ref_counts ON u.id = ref_counts.referrer_user_id`;
       }
 
-      const innerWhereClauses: string[] = [];
+      const innerWhereClauses: string[] = [
+        'COALESCE(up.is_deleted, 0) = 0',
+        'COALESCE(up.is_disabled, 0) = 0',
+        `EXISTS (
+          SELECT 1 FROM user_contact uc_rand
+          WHERE uc_rand.user_id = u.id AND uc_rand.is_disabled = 0 AND uc_rand.phone_number IS NOT NULL AND TRIM(uc_rand.phone_number) != ''
+        )`,
+      ];
       const innerParams: SafeAny[] = [];
 
       const currentUser = (request as SafeAny).user;
@@ -1913,6 +1937,10 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
           innerWhereClauses.push('usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0');
         } else if (bucket === 'NOT_COMBO_LIVE') {
           innerWhereClauses.push('(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
+          innerWhereClauses.push(`EXISTS (
+            SELECT 1 FROM \`order\` o_rand
+            WHERE o_rand.user_id = u.id
+          )`);
         }
       }
 
@@ -1927,6 +1955,15 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
           "up.last_order_booking IS NOT NULL AND up.last_order_booking >= CONCAT(DATE_SUB(CURDATE(), INTERVAL ? DAY), ' 00:00:00')"
         );
         innerParams.push(parseInt(daysSinceLastVisitMax, 10));
+      }
+      if (
+        (daysSinceLastVisitMin !== undefined && daysSinceLastVisitMin !== '') ||
+        (daysSinceLastVisitMax !== undefined && daysSinceLastVisitMax !== '')
+      ) {
+        innerWhereClauses.push(`EXISTS (
+          SELECT 1 FROM \`order\` o_visit_rand
+          WHERE o_visit_rand.user_id = u.id
+        )`);
       }
       if (totalSpentMin !== undefined && totalSpentMin !== '') {
         innerWhereClauses.push('COALESCE(order_counts.totalSpent, 0) >= ?');
