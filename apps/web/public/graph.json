@@ -38340,8 +38340,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DailyActionSchedule.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13267,
-        "lineCount": 286,
+        "sizeBytes": 13467,
+        "lineCount": 291,
         "ext": ".tsx"
       }
     },
@@ -38353,8 +38353,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DataPipelineStages.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7116,
-        "lineCount": 148,
+        "sizeBytes": 8219,
+        "lineCount": 190,
         "ext": ".tsx"
       }
     },
@@ -38379,8 +38379,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23491,
-        "lineCount": 447,
+        "sizeBytes": 25081,
+        "lineCount": 509,
         "ext": ".tsx"
       }
     },
@@ -38405,8 +38405,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/SemicircleGauge.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5874,
-        "lineCount": 185,
+        "sizeBytes": 6331,
+        "lineCount": 194,
         "ext": ".tsx"
       }
     },
@@ -38470,8 +38470,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12363,
-        "lineCount": 275,
+        "sizeBytes": 12511,
+        "lineCount": 276,
         "ext": ".tsx"
       }
     },
@@ -38613,8 +38613,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21324,
-        "lineCount": 509,
+        "sizeBytes": 22018,
+        "lineCount": 523,
         "ext": ".tsx"
       }
     },

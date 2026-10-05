@@ -22,7 +22,8 @@ import {
 import dayjs, { Dayjs } from 'dayjs';
 import { TelesaleTargetOverview, TelesalePipelineStage } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
-import { KpiOverviewCards } from './components/KpiOverviewCards';
+import { KpiTeamMonthCard, KpiStaffLeaderboardCard } from './components/KpiOverviewCards';
+import { TelesaleTodayTvMonitorCard } from './components/TelesaleTodayTvMonitorCard';
 import { DailyActionSchedule } from './components/DailyActionSchedule';
 import { DataPipelineStages } from './components/DataPipelineStages';
 import { CustomerPoolDrawer } from './components/CustomerPoolDrawer';
@@ -413,26 +414,39 @@ function TelesaleTargetContent() {
       )}
 
       {/* ============================================================ */}
-      {/* 2. ZERO-SCROLL BODY (ROW 1: 54% | ROW 2: 42%)                */}
+      {/* 2. ZERO-SCROLL BODY (3-COLUMN EXECUTIVE MATRIX)              */}
       {/* ============================================================ */}
       {overview && (
-        <div className="flex-1 flex flex-col justify-between gap-2.5 overflow-hidden">
-          {/* ROW 1: 3 KPI OVERVIEW CARDS (54% Height) */}
-          <div className="xl:h-[54%] w-full overflow-hidden">
-            <KpiOverviewCards overview={overview} onOpenTvFullscreen={() => setTvModeOpen(true)} />
-          </div>
-
-          {/* ROW 2: ACTION SCHEDULE 33% + DATA PIPELINE STAGES 67% (42% Height) */}
-          <div className="xl:h-[42%] grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-stretch overflow-hidden">
-            {/* Left Column (4 cols = 33%): HÀNH ĐỘNG MỖI NGÀY - UPGRADE 1A */}
-            <div className="lg:col-span-4 h-full overflow-hidden">
-              <DailyActionSchedule overview={overview} />
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 overflow-hidden min-h-0">
+          {/* CỘT 1 (33% Width = col-span-4): VĨ MÔ & NGUỒN DATA CHU KỲ */}
+          <div className="lg:col-span-4 flex flex-col justify-between gap-3 h-full overflow-hidden">
+            {/* Box 1: KPI Team Tháng X (Top 53%) */}
+            <div className="h-[53%] overflow-hidden">
+              <KpiTeamMonthCard overview={overview} />
             </div>
 
-            {/* Right Column (8 cols = 67%): 4 PHỄU DATA PIPELINE KHÁCH HÀNG */}
-            <div className="lg:col-span-8 h-full overflow-hidden">
+            {/* Box 5: 4 Phễu Data Pipeline (Bottom 45%) */}
+            <div className="h-[45%] overflow-hidden">
               <DataPipelineStages stages={overview.pipelineStages} onSelectStage={handleStageSelect} />
             </div>
+          </div>
+
+          {/* CỘT 2 (42% Width = col-span-5): CHIẾN TRƯỜNG & TÁC CHIẾN HÔM NAY */}
+          <div className="lg:col-span-5 flex flex-col justify-between gap-3 h-full overflow-hidden">
+            {/* Box 2: TV Monitor Hôm Nay (Top 44%) */}
+            <div className="h-[44%] overflow-hidden">
+              <TelesaleTodayTvMonitorCard overview={overview} onOpenFullscreen={() => setTvModeOpen(true)} />
+            </div>
+
+            {/* Box 4: Hành Động Mỗi Ngày (Bottom 54%) */}
+            <div className="h-[54%] overflow-hidden">
+              <DailyActionSchedule overview={overview} />
+            </div>
+          </div>
+
+          {/* CỘT 3 (25% Width = col-span-3): LEADERBOARD 5 CHUYÊN VIÊN TELESALES */}
+          <div className="lg:col-span-3 h-full overflow-hidden">
+            <KpiStaffLeaderboardCard overview={overview} isFullVertical={true} />
           </div>
         </div>
       )}

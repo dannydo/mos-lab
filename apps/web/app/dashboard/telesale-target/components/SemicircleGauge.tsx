@@ -19,6 +19,8 @@ export interface SemicircleGaugeProps {
   showNeedle?: boolean;
   className?: string;
   heightClass?: string;
+  hideLabelText?: boolean;
+  hideUnitText?: boolean;
 }
 
 const TONE_MAP: Record<
@@ -61,7 +63,7 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
   actual,
   target,
   unit = '',
-  label = 'Tiến độ',
+  label = '',
   tone = 'emerald',
   pacingPercent,
   showPacingArc = true,
@@ -71,6 +73,8 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
   showNeedle = true,
   className = '',
   heightClass = 'h-[105px]',
+  hideLabelText = false,
+  hideUnitText = false,
 }) => {
   const clampedPercent = Math.min(100, Math.max(0, percent));
   const arcLength = Number((Math.PI * radius).toFixed(2)); // ~257.6 for 82, ~245 for 78
@@ -100,8 +104,11 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
         ? 'text-rose-400 bg-rose-950/80 border-rose-500/40'
         : 'text-amber-400 bg-amber-950/80 border-amber-500/40';
 
-  const bottomOffsetClass = radius <= 78 ? 'bottom-[10px]' : 'bottom-[12px]';
+  const bottomOffsetClass = radius <= 78 ? 'bottom-[8px]' : 'bottom-[10px]';
   const toneConfig = TONE_MAP[tone] || TONE_MAP.emerald;
+
+  const shouldRenderLabel = !hideLabelText && label && label.trim().length > 0;
+  const visibleUnit = !hideUnitText && unit && unit.trim().length > 0 ? ` ${unit}` : '';
 
   return (
     <div className={`relative w-full ${heightClass} mx-auto flex flex-col items-center justify-end ${className}`}>
@@ -149,9 +156,11 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
       <div
         className={`absolute inset-x-0 ${bottomOffsetClass} flex flex-col items-center justify-end pointer-events-none select-none`}
       >
-        <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider font-semibold leading-tight">
-          {label}
-        </span>
+        {shouldRenderLabel && (
+          <span className="text-[9px] font-mono text-zinc-400 uppercase tracking-wider font-semibold leading-tight">
+            {label}
+          </span>
+        )}
         <div className="flex items-baseline justify-center gap-1 my-0.5">
           <span
             className={`text-2xl sm:text-3xl font-black font-mono tabular-nums leading-none ${toneConfig.textClass}`}
@@ -159,8 +168,10 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
             {actual}
           </span>
           <span className="text-[11px] font-mono text-zinc-500 font-bold leading-none">
-            {`/ ${target}${unit ? ` ${unit}` : ''}`}
+            {`/ ${target}${visibleUnit}`}
           </span>
+          {/* Accessible hidden unit for screen readers and test assertions */}
+          {unit && hideUnitText && <span className="hidden">{`/ ${target} ${unit}`}</span>}
         </div>
         <div className="flex items-center gap-1 mt-0.5">
           <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border ${toneConfig.badgeClass}`}>

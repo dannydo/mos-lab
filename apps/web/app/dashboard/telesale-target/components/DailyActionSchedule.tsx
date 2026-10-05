@@ -95,7 +95,9 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
               percent={teamCallPercent}
               actual={teamCallActual}
               target={teamCallTarget}
-              label="Đã gọi"
+              label=""
+              hideLabelText={true}
+              hideUnitText={true}
               tone="blue"
               pacingPercent={75}
               gapText={`GAP: ${teamCallGap >= 0 ? '+' : ''}${teamCallGap}`}
@@ -145,7 +147,9 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
               percent={teamPickupPercent}
               actual={teamPickupActual}
               target={teamPickupTarget}
-              label="Đã nghe"
+              label=""
+              hideLabelText={true}
+              hideUnitText={true}
               tone="emerald"
               pacingPercent={75}
               gapText={`GAP: ${teamPickupGap >= 0 ? '+' : ''}${teamPickupGap}`}
@@ -180,9 +184,9 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
           </div>
         </div>
 
-        {/* 3. Bottom: Clean Metric Matrix Table */}
+        {/* 3. Bottom: Clean Metric Matrix Table (Zero white underlines) */}
         <div className="bg-black/50 border border-zinc-800/90 rounded-2xl p-2 font-mono text-[10px]">
-          <div className="grid grid-cols-12 text-zinc-400 font-semibold border-b border-zinc-800/90 pb-1 mb-1 text-[9px]">
+          <div className="grid grid-cols-12 text-zinc-400 font-semibold pb-1 mb-1 text-[9px]">
             <span className="col-span-3">Chuyên Viên</span>
             <span className="col-span-2 text-center">Ca Trực</span>
             <span className="col-span-3 text-center">Tiến độ Gọi</span>
@@ -213,7 +217,7 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
               return (
                 <div
                   key={s.legacyStaffId}
-                  className="grid grid-cols-12 items-center text-[10px] hover:bg-zinc-900/40 p-0.5 rounded transition-colors"
+                  className="grid grid-cols-12 items-center text-[10px] hover:bg-zinc-800/40 p-1 rounded-lg transition-colors"
                 >
                   <span className="col-span-3 font-bold text-zinc-100 flex items-center gap-1 truncate">
                     <span
