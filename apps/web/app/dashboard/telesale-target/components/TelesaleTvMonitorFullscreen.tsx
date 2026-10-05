@@ -15,6 +15,10 @@ import {
   Volume2,
   VolumeX,
   ClipboardList,
+  Rocket,
+  Crown,
+  Settings,
+  User,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
@@ -139,15 +143,42 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
     }
   }, [open, metrics.teamState]);
 
-  if (!open) return null;
-
   const isDoneOver100 = metrics.donePercent >= 100;
   const isBookOver100 = metrics.bookPercent >= 100;
 
   const dateFormatted = dayjs(now).locale('vi').format('dddd, [ngày] DD/MM/YYYY');
   // Capitalize first letter of day of week
   const dateDisplay = dateFormatted.charAt(0).toUpperCase() + dateFormatted.slice(1);
+  const dayOfWeek = dayjs(now).locale('vi').format('dddd');
+  const dayOfWeekCap = dayOfWeek.charAt(0).toUpperCase() + dayOfWeek.slice(1);
+  const dateOnly = dayjs(now).format('DD/MM/YYYY');
   const timeDisplay = dayjs(now).format('HH:mm:ss');
+
+  const topStaff = useMemo(() => {
+    if (!overview.staffTargets || overview.staffTargets.length === 0) return null;
+    return [...overview.staffTargets].sort((a, b) => (b.bookToday ?? 0) - (a.bookToday ?? 0))[0];
+  }, [overview.staffTargets]);
+
+  const shiftNodes = useMemo(() => {
+    const currentHour = now.getHours();
+    if (currentHour < 12) {
+      return ['[8h]', '[9h]', '[10h]', '[11h]', '[12h]'];
+    }
+    return ['[13h]', '[14h]', '[15h]', '[16h]', '[17h]'];
+  }, [now]);
+
+  const shiftProgress = useMemo(() => {
+    const currentMinutesOfDay = now.getHours() * 60 + now.getMinutes();
+    const currentHour = now.getHours();
+    const isMorning = currentHour < 12;
+    const shiftStart = isMorning ? 8 * 60 : 13 * 60;
+    const shiftEnd = isMorning ? 12 * 60 : 17 * 60;
+    const duration = shiftEnd - shiftStart;
+    const elapsed = currentMinutesOfDay - shiftStart;
+    const percent = Math.min(100, Math.max(0, (elapsed / duration) * 100));
+    const timeFormatted = dayjs(now).format('HH:mm');
+    return { percent, timeFormatted, isMorning };
+  }, [now]);
 
   const getGapBadgeClass = (gap: number) => {
     if (gap >= 0) return 'text-emerald-300 bg-emerald-950/80 border-emerald-500/50';
@@ -270,8 +301,10 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
     </div>
   );
 
+  if (!open) return null;
+
   return (
-    <div className="fixed inset-0 z-[100] bg-zinc-950 text-zinc-100 flex flex-col justify-between p-4 sm:p-8 lg:p-10 select-none overflow-y-auto font-sans">
+    <div className="fixed inset-0 z-[99999] bg-zinc-950 text-zinc-100 flex flex-col justify-between p-3 sm:p-4 select-none overflow-hidden font-sans h-screen max-h-screen">
       <TelesaleTvCelebration active={showCelebration} onComplete={() => setShowCelebration(false)} />
       <TelesaleTvLiveCelebrationBanner
         celebration={activeCelebration}
@@ -283,143 +316,275 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
       <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[140px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[140px] pointer-events-none" />
 
-      {/* 1. TOP BAR */}
-      <header className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4 border-b border-zinc-800/80 pb-4">
-        {/* Brand & Subtitle */}
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-700 p-0.5 shadow-lg shadow-amber-500/20 flex items-center justify-center shrink-0">
-            <div className="w-full h-full bg-zinc-950 rounded-[14px] flex items-center justify-center">
-              <Flame className="w-6 h-6 text-amber-400" />
+      {/* 1. TOP BAR (MOCKUP 3: WALL STREET FINANCIAL WAR ROOM) */}
+      {/* 1. TOP BAR (MOCKUP 3: WALL STREET FINANCIAL WAR ROOM) */}
+      <header className="relative z-10 w-full shrink-0 flex flex-col items-center">
+        {/* ROW 1: THE UNIFIED HORIZONTAL TOP CAPSULE BAR */}
+        <div className="relative w-full h-14 rounded-2xl bg-zinc-900/95 border border-zinc-800/80 shadow-[0_4px_24px_rgba(0,0,0,0.5)] flex items-center justify-between px-3 overflow-hidden backdrop-blur-md">
+          {/* Subtle horizontal gradient highlight across top bar */}
+          <div className="absolute inset-0 bg-gradient-to-r from-amber-500/[0.04] via-transparent to-zinc-500/[0.03] pointer-events-none" />
+
+          {/* Left: Brand Plate with Chamfered Metallic Gold Slice */}
+          <div className="relative flex items-center h-full -ml-3 pl-3 pr-8 shrink-0">
+            {/* SVG Background for Brand Plate + Diagonal Slanted Gold Slice */}
+            <svg
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              preserveAspectRatio="none"
+              viewBox="0 0 350 56"
+            >
+              <defs>
+                {/* Metallic Gold Gradient for the angled slice */}
+                <linearGradient id="goldSliceGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="rgb(254, 240, 138)" />
+                  <stop offset="35%" stopColor="rgb(245, 158, 11)" />
+                  <stop offset="70%" stopColor="rgb(217, 119, 6)" />
+                  <stop offset="100%" stopColor="rgb(146, 64, 14)" />
+                </linearGradient>
+                {/* Brand Plate Warm Cognac/Bronze fill */}
+                <linearGradient id="brandCognacGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="rgb(55, 28, 8)" stopOpacity="0.95" />
+                  <stop offset="50%" stopColor="rgb(36, 18, 5)" stopOpacity="0.95" />
+                  <stop offset="100%" stopColor="rgb(18, 11, 4)" stopOpacity="0.98" />
+                </linearGradient>
+                {/* Gold outline */}
+                <linearGradient id="brandOuterBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="rgb(245, 158, 11)" stopOpacity="0.8" />
+                  <stop offset="100%" stopColor="rgb(180, 83, 9)" stopOpacity="0.4" />
+                </linearGradient>
+              </defs>
+
+              {/* Main Cognac Body with rounded left and slanted right (top=318, bottom=304) */}
+              <path
+                d="M 15 1 L 318 1 L 304 55 L 15 55 A 14 14 0 0 1 1 41 L 1 15 A 14 14 0 0 1 15 1 Z"
+                fill="url(#brandCognacGrad)"
+                stroke="url(#brandOuterBorder)"
+                strokeWidth="1.2"
+              />
+
+              {/* Angled Metallic Gold Slice (chamfered accent band, width ~18px) */}
+              <polygon
+                points="318,1 338,1 324,55 304,55"
+                fill="url(#goldSliceGrad)"
+                filter="drop-shadow(0 0 4px rgba(245,158,11,0.5))"
+              />
+            </svg>
+
+            {/* Brand Content */}
+            <div className="relative z-10 flex items-center gap-3 pl-2 pr-10">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(245,158,11,0.35)]">
+                <Flame className="w-5 h-5 text-amber-400 fill-amber-400/20" />
+              </div>
+              <div>
+                <div className="text-amber-300 font-serif tracking-[0.26em] text-[11px] font-bold uppercase leading-none">
+                  WINGS LASHES
+                </div>
+                <div className="text-xs sm:text-sm font-black text-zinc-100 tracking-wider m-0 uppercase font-sans mt-1 leading-tight drop-shadow-[0_0_6px_rgba(255,255,255,0.2)]">
+                  TELESALES WAR ROOM
+                  <span className="sr-only">TELESALES TV MONITOR · WAR ROOM</span>
+                </div>
+              </div>
             </div>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-amber-400 font-serif tracking-[0.25em] text-xs font-bold uppercase">
-                WINGS LASHES
-              </span>
-              <span className="text-zinc-600">•</span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-emerald-950/90 text-emerald-400 border border-emerald-600/60">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                REALTIME
-              </span>
-            </div>
-            <h1 className="text-lg sm:text-xl lg:text-2xl font-black text-zinc-100 tracking-tight m-0">
-              TELESALES TV MONITOR · WAR ROOM
-            </h1>
-          </div>
-        </div>
 
-        {/* Center: Big Digital Clock & Date */}
-        <div className="flex flex-col items-center justify-center text-center">
-          <div className="text-4xl sm:text-5xl lg:text-6xl font-black font-mono tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-100 tabular-nums drop-shadow-[0_0_20px_rgba(245,158,11,0.3)]">
-            {timeDisplay}
+          {/* Center: Large Clean Sans-Serif Master Clock - Proportional Size & Perfect Optical Center */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <span className="text-3xl sm:text-[36px] font-black font-sans tracking-[0.02em] text-white tabular-nums drop-shadow-[0_0_20px_rgba(255,255,255,0.25)] leading-none select-none">
+              {timeDisplay}
+            </span>
           </div>
-          <div className="text-xs sm:text-sm text-zinc-400 font-mono mt-0.5 font-medium">
-            {dateDisplay} · <span className="text-amber-300 font-semibold">{pacing.shiftStatusLabel}</span>
-          </div>
-        </div>
 
-        {/* Right Toolbar Controls */}
-        <div className="flex items-center gap-2">
-          {/* TV Journal Modal Trigger (MOS-BUG-90) */}
-          {isManagerOrAdmin && (
+          {/* Right Toolbar Controls: 5 dark rounded buttons */}
+          <div className="flex items-center gap-2 shrink-0 relative z-10">
+            {/* Settings */}
+            <Popover
+              content={soundSettingsContent}
+              trigger="click"
+              placement="bottomRight"
+              overlayClassName="tv-sound-settings-popover"
+            >
+              <Tooltip title="Cài đặt TV Monitor">
+                <Button
+                  type="text"
+                  icon={<Settings className="w-4 h-4 text-zinc-300" />}
+                  className="!rounded-xl !h-10 !w-10 !p-0 flex items-center justify-center border border-zinc-700/60 bg-zinc-800/90 hover:bg-zinc-700/80 text-zinc-300"
+                />
+              </Tooltip>
+            </Popover>
+
+            {/* Sound & Voice Celebration Settings Popover */}
+            <Popover
+              content={soundSettingsContent}
+              trigger="click"
+              placement="bottomRight"
+              overlayClassName="tv-sound-settings-popover"
+            >
+              <Tooltip title="Cài đặt âm thanh & Live Voice Celebration">
+                <Button
+                  type="text"
+                  data-testid="tv-sound-settings-button"
+                  icon={
+                    !voiceSettings.soundEnabled || isQuietHours ? (
+                      <VolumeX className="w-4 h-4 text-zinc-400" />
+                    ) : (
+                      <Volume2 className="w-4 h-4 text-amber-400 animate-pulse" />
+                    )
+                  }
+                  className={`!rounded-xl !h-10 !w-10 !p-0 flex items-center justify-center border ${
+                    voiceSettings.soundEnabled && !isQuietHours
+                      ? '!text-amber-400 border-amber-500/50 bg-zinc-800/90 hover:!bg-amber-500/20'
+                      : '!text-zinc-400 border-zinc-700/60 bg-zinc-800/90 hover:!bg-zinc-700/80'
+                  }`}
+                />
+              </Tooltip>
+            </Popover>
+
+            {/* TV Journal Modal Trigger (MOS-BUG-90) */}
             <Tooltip title="Nhật ký giám sát Live TV Monitor">
               <Button
                 type="text"
                 data-testid="tv-journal-button"
-                icon={<ClipboardList className="w-4 h-4 text-amber-300" />}
+                icon={<User className="w-4 h-4 text-zinc-300" />}
                 onClick={handleOpenJournal}
-                className="!text-amber-300 hover:!bg-amber-500/20 !rounded-xl !h-10 px-3 flex items-center gap-1.5 border border-amber-500/40 font-medium text-xs"
-              >
-                <span className="hidden sm:inline">Nhật ký TV</span>
-              </Button>
+                className="!rounded-xl !h-10 !w-10 !p-0 flex items-center justify-center border border-zinc-700/60 bg-zinc-800/90 hover:bg-zinc-700/80 text-zinc-300"
+              />
             </Tooltip>
-          )}
 
-          {/* Sound & Voice Celebration Settings Popover */}
-          <Popover
-            content={soundSettingsContent}
-            trigger="click"
-            placement="bottomRight"
-            overlayClassName="tv-sound-settings-popover"
-          >
-            <Tooltip title="Cài đặt âm thanh & Live Voice Celebration">
+            {/* Browser Fullscreen toggle */}
+            <Tooltip title={isBrowserFullscreen ? 'Thoát toàn màn hình trình duyệt' : 'Toàn màn hình trình duyệt'}>
               <Button
                 type="text"
-                data-testid="tv-sound-settings-button"
                 icon={
-                  !voiceSettings.soundEnabled || isQuietHours ? (
-                    <VolumeX className="w-4 h-4 text-zinc-400" />
+                  isBrowserFullscreen ? (
+                    <Minimize2 className="w-4 h-4 text-zinc-300" />
                   ) : (
-                    <Volume2 className="w-4 h-4 text-amber-400 animate-pulse" />
+                    <Maximize2 className="w-4 h-4 text-zinc-300" />
                   )
                 }
-                className={`!rounded-xl !h-10 !w-10 !p-0 flex items-center justify-center border ${
-                  voiceSettings.soundEnabled && !isQuietHours
-                    ? '!text-amber-400 border-amber-500/40 hover:!bg-amber-500/20'
-                    : '!text-zinc-400 border-zinc-700 hover:!bg-zinc-800'
-                }`}
+                onClick={toggleBrowserFullscreen}
+                className="!rounded-xl !h-10 !w-10 !p-0 flex items-center justify-center border border-zinc-700/60 bg-zinc-800/90 hover:bg-zinc-700/80 text-zinc-300"
               />
             </Tooltip>
-          </Popover>
 
-          {/* Confetti celebration manual trigger */}
-          <Tooltip title="Bắn pháo hoa ăn mừng thành tích">
-            <Button
-              type="text"
-              icon={<Sparkles className="w-4 h-4 text-amber-400" />}
-              onClick={() => setShowCelebration(true)}
-              className="!text-amber-400 hover:!bg-amber-500/20 !rounded-xl !h-10 !w-10 !p-0 flex items-center justify-center border border-amber-500/30"
-            />
-          </Tooltip>
-
-          {/* Refresh Data */}
-          {onRefresh && (
-            <Tooltip title="Làm mới số liệu ngay lập tức">
+            {/* Close TV View */}
+            <Tooltip title="Thoát chế độ TV Monitor (Phím Esc)">
               <Button
                 type="text"
-                icon={<RotateCw className={`w-4 h-4 text-zinc-300 ${refreshing ? 'animate-spin' : ''}`} />}
-                onClick={onRefresh}
-                className="!text-zinc-300 hover:!bg-zinc-800 !rounded-xl !h-10 !w-10 !p-0 flex items-center justify-center border border-zinc-700"
-              />
+                icon={<X className="w-4 h-4 text-zinc-300" />}
+                onClick={onClose}
+                className="!bg-zinc-800/90 hover:!bg-zinc-700/80 !text-zinc-200 !font-semibold !border !border-zinc-700/60 !rounded-xl !h-10 px-3.5 flex items-center gap-1.5 text-xs shadow-md"
+              >
+                <span>Đóng TV</span>
+              </Button>
             </Tooltip>
-          )}
+          </div>
+        </div>
 
-          {/* Browser Fullscreen toggle */}
-          <Tooltip title={isBrowserFullscreen ? 'Thoát toàn màn hình trình duyệt' : 'Toàn màn hình trình duyệt'}>
-            <Button
-              type="text"
-              icon={
-                isBrowserFullscreen ? (
-                  <Minimize2 className="w-4 h-4 text-zinc-300" />
-                ) : (
-                  <Maximize2 className="w-4 h-4 text-zinc-300" />
-                )
-              }
-              onClick={toggleBrowserFullscreen}
-              className="!text-zinc-300 hover:!bg-zinc-800 !rounded-xl !h-10 !w-10 !p-0 flex items-center justify-center border border-zinc-700"
+        {/* ROW 2: EXPANSIVE SHIFT TIMELINE BAR (WIDTH ~1160px, CENTERED, MATCHING MOCKUP 3) */}
+        <div className="w-full max-w-[1160px] mx-auto relative flex items-center justify-between h-10 mt-3 mb-2 sm:mt-4 sm:mb-3 px-4">
+          {/* Layer 1: Background & Active Track SVG (z-0, sits behind hour node pills) */}
+          <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none z-0">
+            <defs>
+              {/* Trailing Fading Beam Gradient (from subtle amber to brilliant white/gold core) */}
+              <linearGradient id="activeTrailingGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="rgba(245, 158, 11, 0)" />
+                <stop offset="25%" stopColor="rgba(245, 158, 11, 0.2)" />
+                <stop offset="65%" stopColor="rgba(186, 230, 253, 0.6)" />
+                <stop offset="90%" stopColor="rgba(255, 255, 255, 0.9)" />
+                <stop offset="100%" stopColor="rgba(255, 255, 255, 1)" />
+              </linearGradient>
+            </defs>
+
+            {/* Background dashed line (full future track between first and last node) */}
+            <line x1="2%" y1="20" x2="98%" y2="20" stroke="rgb(63, 63, 70)" strokeWidth="1.8" strokeDasharray="4 4" />
+
+            {/* Glowing Trailing Diffuse Beam (Behind the orb, fading trail) */}
+            <rect
+              x="2%"
+              y="16"
+              width={`${Math.max(0, shiftProgress.percent - 2)}%`}
+              height="8"
+              rx="4"
+              fill="url(#activeTrailingGrad)"
+              opacity="0.7"
+              filter="blur(3px)"
             />
-          </Tooltip>
 
-          {/* Close TV View */}
-          <Tooltip title="Thoát chế độ TV Monitor (Phím Esc)">
-            <Button
-              type="primary"
-              icon={<X className="w-4 h-4" />}
-              onClick={onClose}
-              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 font-bold border border-zinc-600 rounded-xl h-10 px-4 flex items-center gap-1.5"
-            >
-              <span>Đóng TV</span>
-            </Button>
-          </Tooltip>
+            {/* Glowing Active Trailing Beam (Solid crisp bar with trail fade) */}
+            <rect
+              x="2%"
+              y="18.5"
+              width={`${Math.max(0, shiftProgress.percent - 2)}%`}
+              height="3"
+              rx="1.5"
+              fill="url(#activeTrailingGrad)"
+              filter="drop-shadow(0 0 5px rgba(255,255,255,0.95)) drop-shadow(0 0 12px rgba(245,158,11,0.8))"
+            />
+          </svg>
+
+          {/* Layer 2: Shift Hour Nodes (z-10, sits ON TOP of trailing beam, so [15h] text is on top of beam) */}
+          <div className="relative w-full flex items-center justify-between z-10 pointer-events-none">
+            {shiftNodes.map((node, idx) => {
+              const nodePercent = (idx / (shiftNodes.length - 1)) * 100;
+              const isPast = nodePercent <= shiftProgress.percent;
+              return (
+                <span
+                  key={node}
+                  className={`px-1.5 py-0.5 rounded font-mono text-xs sm:text-sm font-bold bg-zinc-950 transition-colors ${
+                    isPast ? 'text-amber-400' : 'text-zinc-500'
+                  }`}
+                >
+                  {node}
+                </span>
+              );
+            })}
+          </div>
+
+          {/* Layer 3: Current Time Indicator (z-20, sits ON TOP of hour nodes so glowing orb is on top of [16h]) */}
+          <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none z-20">
+            <svg x={`${shiftProgress.percent}%`} y="20" overflow="visible">
+              {/* Floating Time Label above Orb */}
+              <text
+                x="0"
+                y="-15"
+                textAnchor="middle"
+                fill="rgb(251, 191, 36)"
+                fontSize="13"
+                fontFamily="monospace"
+                fontWeight="bold"
+                filter="drop-shadow(0 0 6px rgba(245,158,11,0.9))"
+              >
+                {shiftProgress.timeFormatted}
+              </text>
+
+              {/* Glowing Orb Halo */}
+              <circle
+                cx="0"
+                cy="0"
+                r="11"
+                fill="rgba(245, 158, 11, 0.4)"
+                filter="drop-shadow(0 0 12px rgb(245,158,11))"
+              />
+
+              {/* Glowing Orb Ring */}
+              <circle
+                cx="0"
+                cy="0"
+                r="6.5"
+                fill="white"
+                stroke="rgb(245, 158, 11)"
+                strokeWidth="2.5"
+                filter="drop-shadow(0 0 10px rgb(255,255,255))"
+              />
+            </svg>
+          </svg>
         </div>
       </header>
 
       {/* 2. MAIN TV MONITOR BODY: DUAL SEMICIRCLE COCKPIT (OPTION 1) */}
-      <main className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 my-3 flex-1 items-stretch">
+      <main className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-3.5 lg:gap-5 my-1 flex-1 items-stretch min-h-0">
         {/* COLUMN 1: BOOK HÔM NAY (TẠO LỊCH - HÀNH ĐỘNG DẪN DẮT) */}
         <div
-          className={`rounded-3xl p-5 sm:p-6 lg:p-7 flex flex-col justify-between border backdrop-blur-xl transition-all shadow-2xl relative overflow-hidden ${
+          className={`rounded-3xl p-4 sm:p-5 lg:p-6 flex flex-col justify-between border backdrop-blur-xl transition-all shadow-2xl relative overflow-hidden ${
             isBookOver100
               ? 'bg-gradient-to-b from-amber-950/40 via-zinc-900 to-zinc-950 border-amber-400/90 shadow-[0_0_40px_rgba(245,158,11,0.2)]'
               : 'bg-gradient-to-b from-blue-950/30 via-zinc-900/90 to-zinc-950/90 border-blue-500/40 hover:border-blue-400/60 shadow-[0_0_25px_rgba(59,130,246,0.15)]'
@@ -428,68 +593,58 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
           {/* Ambient inner glow */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
-          <div>
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-sky-500/20 border border-sky-500/40 flex items-center justify-center">
-                  <Calendar className="w-4 h-4 text-sky-400" />
-                </div>
-                <div>
-                  <span className="text-sky-300 font-extrabold text-xs uppercase tracking-wider font-mono">
-                    HÀNH ĐỘNG DẪN DẮT
-                  </span>
-                  <h2 className="text-xl sm:text-2xl font-black text-zinc-100 tracking-tight m-0">
-                    BOOK HÔM NAY · TẠO LỊCH
-                  </h2>
-                </div>
+          {/* Header */}
+          <div className="flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-sky-500/20 border border-sky-500/40 flex items-center justify-center">
+                <Calendar className="w-4 h-4 text-sky-400" />
               </div>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded-xl font-mono text-xs font-bold bg-blue-950/80 text-blue-300 border border-blue-500/40">
-                  Chỉ tiêu: ≥ {metrics.bookTarget} Book
-                </span>
-                <span
-                  className={`px-3 py-1 rounded-xl font-mono text-xs font-black border ${
-                    metrics.gapBook >= 0
-                      ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
-                      : metrics.gapBook === -1
-                        ? 'bg-amber-950 text-amber-300 border-amber-500/40'
-                        : 'bg-rose-950 text-rose-300 border-rose-500/40'
-                  }`}
-                >
-                  {metrics.gapBook >= 0 ? `+${metrics.gapBook} ĐÚNG NHỊP` : `${metrics.gapBook} CHẬM NHỊP`}
-                </span>
-              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-zinc-100 tracking-tight m-0">
+                BOOK HÔM NAY · TẠO LỊCH
+              </h2>
             </div>
-
-            {/* Semicircle Gauge (Option 1) */}
-            <div className="my-2">
-              <SemicircleGauge
-                percent={metrics.bookPercent}
-                actual={metrics.bookActual}
-                target={metrics.bookTarget}
-                unit="Book"
-                label=""
-                hideLabelText={true}
-                hideUnitText={true}
-                tone="blue"
-                sizeVariant="tv"
-                actualDataTestId="tv-monitor-fullscreen-book-actual"
-                heightClass="h-[180px] sm:h-[220px] lg:h-[250px]"
-                pacingPercent={Math.min(
-                  100,
-                  Math.round(((metrics.expectedBook || 0) / (metrics.bookTarget || 1)) * 100)
-                )}
-                gapText={
-                  metrics.gapBook >= 0 ? `GAP: +${metrics.gapBook} VƯỢT NHỊP` : `GAP: ${metrics.gapBook} CHẬM NHỊP`
-                }
-                gapType={metrics.gapBook >= 0 ? 'positive' : 'negative'}
-              />
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 rounded-xl font-mono text-xs font-bold bg-blue-950/80 text-blue-300 border border-blue-500/40">
+                Chỉ tiêu: ≥ {metrics.bookTarget} Book
+              </span>
+              <span
+                className={`px-3 py-1 rounded-xl font-mono text-xs font-black border ${
+                  metrics.gapBook >= 0
+                    ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
+                    : metrics.gapBook === -1
+                      ? 'bg-amber-950 text-amber-300 border-amber-500/40'
+                      : 'bg-rose-950 text-rose-300 border-rose-500/40'
+                }`}
+              >
+                {metrics.gapBook >= 0 ? `+${metrics.gapBook} ĐÚNG NHỊP` : `${metrics.gapBook} CHẬM NHỊP`}
+              </span>
             </div>
           </div>
 
+          {/* Semicircle Gauge (Option 1) - Hero Centered */}
+          <div className="flex-1 flex flex-col items-center justify-center my-auto min-h-0 py-1 w-full max-w-[720px] mx-auto">
+            <SemicircleGauge
+              percent={metrics.bookPercent}
+              actual={metrics.bookActual}
+              target={metrics.bookTarget}
+              unit="Book"
+              label=""
+              hideLabelText={true}
+              hideUnitText={true}
+              tone="blue"
+              sizeVariant="tv"
+              actualDataTestId="tv-monitor-fullscreen-book-actual"
+              heightClass="h-[290px] sm:h-[315px] lg:h-[330px]"
+              showPacingArc={false}
+              gapText={
+                metrics.gapBook >= 0 ? `GAP: +${metrics.gapBook} VƯỢT NHỊP` : `GAP: ${metrics.gapBook} CHẬM NHỊP`
+              }
+              gapType={metrics.gapBook >= 0 ? 'positive' : 'negative'}
+            />
+          </div>
+
           {/* 4-Stat Horizontal Ribbon (Option 1) */}
-          <div className="mt-3 pt-3 border-t border-blue-900/40 bg-black/50 rounded-2xl p-3 sm:p-4 border border-blue-500/20">
+          <div className="mt-auto shrink-0 border-t border-blue-900/40 bg-black/50 rounded-2xl p-3 sm:p-4 border border-blue-500/20">
             <div className="grid grid-cols-4 gap-2 text-center font-mono divide-x divide-zinc-800">
               <div>
                 <span className="text-[11px] sm:text-xs text-zinc-400 block mb-1">Đã đạt</span>
@@ -536,7 +691,7 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
 
         {/* COLUMN 2: DONE HÔM NAY (KHÁCH LẺ - KẾT QUẢ THEO SAU) */}
         <div
-          className={`rounded-3xl p-5 sm:p-6 lg:p-7 flex flex-col justify-between border backdrop-blur-xl transition-all shadow-2xl relative overflow-hidden ${
+          className={`rounded-3xl p-4 sm:p-5 lg:p-6 flex flex-col justify-between border backdrop-blur-xl transition-all shadow-2xl relative overflow-hidden ${
             isDoneOver100
               ? 'bg-gradient-to-b from-amber-950/40 via-zinc-900 to-zinc-950 border-amber-400/90 shadow-[0_0_40px_rgba(245,158,11,0.2)]'
               : 'bg-gradient-to-b from-emerald-950/30 via-zinc-900/90 to-zinc-950/90 border-emerald-500/40 hover:border-emerald-400/60 shadow-[0_0_25px_rgba(16,185,129,0.15)]'
@@ -545,66 +700,56 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
           {/* Ambient inner glow */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-          <div>
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                </div>
-                <div>
-                  <span className="text-emerald-300 font-extrabold text-xs uppercase tracking-wider font-mono">
-                    KẾT QUẢ CUỐI CÙNG
-                  </span>
-                  <h2 className="text-xl sm:text-2xl font-black text-zinc-100 tracking-tight m-0">DONE HÔM NAY</h2>
-                </div>
+          {/* Header */}
+          <div className="flex items-center justify-between shrink-0">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               </div>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded-xl font-mono text-xs font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
-                  Chỉ tiêu: {metrics.doneTarget} Done
-                </span>
-                <span
-                  className={`px-3 py-1 rounded-xl font-mono text-xs font-black border ${
-                    metrics.gapDone >= 0
-                      ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
-                      : metrics.gapDone === -1
-                        ? 'bg-amber-950 text-amber-300 border-amber-500/40'
-                        : 'bg-rose-950 text-rose-300 border-rose-500/40'
-                  }`}
-                >
-                  {metrics.gapDone >= 0 ? `+${metrics.gapDone} ĐÚNG NHỊP` : `${metrics.gapDone} CHẬM NHỊP`}
-                </span>
-              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-zinc-100 tracking-tight m-0">DONE HÔM NAY</h2>
             </div>
-
-            {/* Semicircle Gauge (Option 1) */}
-            <div className="my-2">
-              <SemicircleGauge
-                percent={metrics.donePercent}
-                actual={metrics.doneActual}
-                target={metrics.doneTarget}
-                unit="Done"
-                label=""
-                hideLabelText={true}
-                hideUnitText={true}
-                tone="emerald"
-                sizeVariant="tv"
-                actualDataTestId="tv-monitor-fullscreen-done-actual"
-                heightClass="h-[180px] sm:h-[220px] lg:h-[250px]"
-                pacingPercent={Math.min(
-                  100,
-                  Math.round(((metrics.expectedDone || 0) / (metrics.doneTarget || 1)) * 100)
-                )}
-                gapText={
-                  metrics.gapDone >= 0 ? `GAP: +${metrics.gapDone} VƯỢT NHỊP` : `GAP: ${metrics.gapDone} CHẬM NHỊP`
-                }
-                gapType={metrics.gapDone >= 0 ? 'positive' : 'negative'}
-              />
+            <div className="flex items-center gap-2">
+              <span className="px-3 py-1 rounded-xl font-mono text-xs font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
+                Chỉ tiêu: {metrics.doneTarget} Done
+              </span>
+              <span
+                className={`px-3 py-1 rounded-xl font-mono text-xs font-black border ${
+                  metrics.gapDone >= 0
+                    ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
+                    : metrics.gapDone === -1
+                      ? 'bg-amber-950 text-amber-300 border-amber-500/40'
+                      : 'bg-rose-950 text-rose-300 border-rose-500/40'
+                }`}
+              >
+                {metrics.gapDone >= 0 ? `+${metrics.gapDone} ĐÚNG NHỊP` : `${metrics.gapDone} CHẬM NHỊP`}
+              </span>
             </div>
           </div>
 
+          {/* Semicircle Gauge (Option 1) - Hero Centered */}
+          <div className="flex-1 flex flex-col items-center justify-center my-auto min-h-0 py-1 w-full max-w-[720px] mx-auto">
+            <SemicircleGauge
+              percent={metrics.donePercent}
+              actual={metrics.doneActual}
+              target={metrics.doneTarget}
+              unit="Done"
+              label=""
+              hideLabelText={true}
+              hideUnitText={true}
+              tone="emerald"
+              sizeVariant="tv"
+              actualDataTestId="tv-monitor-fullscreen-done-actual"
+              heightClass="h-[290px] sm:h-[315px] lg:h-[330px]"
+              showPacingArc={false}
+              gapText={
+                metrics.gapDone >= 0 ? `GAP: +${metrics.gapDone} VƯỢT NHỊP` : `GAP: ${metrics.gapDone} CHẬM NHỊP`
+              }
+              gapType={metrics.gapDone >= 0 ? 'positive' : 'negative'}
+            />
+          </div>
+
           {/* 4-Stat Horizontal Ribbon (Option 1) */}
-          <div className="mt-3 pt-3 border-t border-zinc-800/80 bg-black/50 rounded-2xl p-3 sm:p-4 border border-zinc-800/60">
+          <div className="mt-auto shrink-0 border-t border-zinc-800/80 bg-black/50 rounded-2xl p-3 sm:p-4 border border-zinc-800/60">
             <div className="grid grid-cols-4 gap-2 text-center font-mono divide-x divide-zinc-800">
               <div>
                 <span className="text-[11px] sm:text-xs text-zinc-400 block mb-1">Đã đạt</span>
@@ -659,38 +804,61 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
       {/* 2.5 INDIVIDUAL STAFF CONTRIBUTIONS TODAY (MOS-FEAT-83) */}
       <TelesaleTvStaffContributionGrid staffTargets={overview.staffTargets} totalTeamBookToday={metrics.bookActual} />
 
-      {/* 3. BOTTOM SECTION: COUNTDOWN & ACTIONABLE MESSAGE & TEAM STATUS */}
-      <footer className="relative z-10 border-t border-zinc-800/80 pt-4 flex flex-col lg:flex-row items-center justify-between gap-4">
-        {/* Countdown */}
-        <div className="flex items-center gap-3 bg-black/60 border border-zinc-800 rounded-2xl px-5 py-3">
-          <Clock className="w-6 h-6 text-amber-400 animate-pulse shrink-0" />
-          <div>
-            <div className="text-[10px] sm:text-xs uppercase font-mono text-zinc-400 tracking-wider">
-              Thời gian làm việc ca ngày
-            </div>
-            <div className="text-xl sm:text-2xl lg:text-3xl font-black font-mono text-amber-300 tabular-nums">
-              {pacing.countdownText}
-            </div>
-          </div>
+      {/* 3. BOTTOM SECTION: WALL STREET TICKER TAPE (MOCKUP 3) */}
+      <footer className="relative z-10 w-full h-14 bg-zinc-950/98 border-t border-zinc-800/90 shadow-[0_-4px_24px_rgba(0,0,0,0.5)] px-8 flex items-center justify-between text-sm sm:text-base font-sans shrink-0 -mx-3 sm:-mx-4 -mb-3 sm:-mb-4 backdrop-blur-md">
+        <div className="flex items-center gap-2.5 leading-none">
+          <Clock className="w-5 h-5 text-amber-400 animate-pulse shrink-0" />
+          <span className="text-zinc-400 font-semibold leading-none">Ca chiều:</span>
+          <span className="text-amber-300 font-black tabular-nums text-base sm:text-lg leading-none">
+            {pacing.hoursRemaining !== undefined && pacing.minsRemaining !== undefined
+              ? `Còn ${pacing.hoursRemaining}h ${pacing.minsRemaining < 10 ? '0' : ''}${pacing.minsRemaining}m`
+              : pacing.countdownText}
+          </span>
         </div>
 
-        {/* Actionable Message Banner */}
-        <div className="flex-1 text-center px-4">
-          <div className="inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-amber-950/70 via-zinc-900/90 to-amber-950/70 border border-amber-500/40 rounded-2xl px-6 py-3 shadow-lg max-w-3xl">
-            <Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
-            <span className="text-base sm:text-lg lg:text-xl font-bold text-amber-100 font-mono tracking-wide">
-              {metrics.actionableMessage}
-            </span>
-          </div>
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)] mx-2 shrink-0" />
+
+        <div className="flex items-center gap-2.5 leading-none">
+          <span className="text-lg leading-none">🎯</span>
+          <span className="text-zinc-400 font-semibold leading-none">Tiến độ:</span>
+          <span className="text-blue-300 font-black tabular-nums text-base sm:text-lg leading-none">
+            {metrics.bookActual}/{metrics.bookTarget} Book ({metrics.bookPercent}%)
+          </span>
         </div>
 
-        {/* Team Status Badge */}
-        <div className="flex items-center gap-2">
-          <div
-            className={`inline-flex items-center justify-center px-5 py-3 rounded-2xl text-sm sm:text-base lg:text-lg font-black tracking-wider uppercase border shadow-lg ${getTeamStateBannerClass()}`}
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)] mx-2 shrink-0" />
+
+        <div className="flex items-center gap-2.5 leading-none">
+          <Sparkles className="w-5 h-5 text-amber-400 shrink-0" />
+          <span className="text-zinc-400 font-semibold leading-none">Cần</span>
+          <span className="text-amber-300 font-black tabular-nums text-base sm:text-lg leading-none">
+            {metrics.remainingBook} Book
+          </span>
+          <span className="text-zinc-400 font-semibold leading-none">nữa</span>
+        </div>
+
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)] mx-2 shrink-0" />
+
+        <div className="flex items-center gap-2.5 leading-none">
+          <Rocket className="w-5 h-5 text-emerald-400 shrink-0" />
+          <span className="text-zinc-400 font-semibold leading-none">Vượt nhịp:</span>
+          <span
+            className={`font-black tabular-nums text-base sm:text-lg leading-none ${
+              metrics.gapBook >= 0 ? 'text-emerald-400' : 'text-rose-400'
+            }`}
           >
-            {metrics.teamStateBadge}
-          </div>
+            {metrics.gapBook >= 0 ? `+${metrics.gapBook}` : metrics.gapBook}
+          </span>
+        </div>
+
+        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.8)] mx-2 shrink-0" />
+
+        <div className="flex items-center gap-2.5 leading-none">
+          <Crown className="w-5 h-5 text-amber-400 shrink-0" />
+          <span className="text-zinc-400 font-semibold leading-none">Dẫn đầu:</span>
+          <span className="text-amber-200 font-black text-base sm:text-lg leading-none">
+            {topStaff && (topStaff.bookToday ?? 0) > 0 ? `${topStaff.name} (${topStaff.bookToday} Book)` : 'Chưa có'}
+          </span>
         </div>
       </footer>
 

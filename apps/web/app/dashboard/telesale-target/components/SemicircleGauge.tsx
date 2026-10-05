@@ -23,6 +23,7 @@ export interface SemicircleGaugeProps {
   hideUnitText?: boolean;
   sizeVariant?: 'default' | 'tv';
   actualDataTestId?: string;
+  subtitle?: string;
 }
 
 const TONE_MAP: Record<
@@ -79,15 +80,21 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
   hideUnitText = false,
   sizeVariant = 'default',
   actualDataTestId,
+  subtitle,
 }) => {
+  const isTv = sizeVariant === 'tv';
+  const effectiveRadius = isTv ? (radius === 82 ? 155 : radius) : radius;
   const clampedPercent = Math.min(100, Math.max(0, percent));
-  const arcLength = Number((Math.PI * radius).toFixed(2)); // ~257.6 for 82, ~245 for 78
-  const startX = 100 - radius;
-  const endX = 100 + radius;
-  const baselineY = 105;
+  const arcLength = Number((Math.PI * effectiveRadius).toFixed(2));
+  const centerCoordX = isTv ? 180 : 100;
+  const baselineY = isTv ? 175 : 105;
+  const startX = centerCoordX - effectiveRadius;
+  const endX = centerCoordX + effectiveRadius;
+  const viewBoxStr = isTv ? '0 0 360 190' : '0 0 200 115';
+  const strokeWidthVal = isTv ? 26 : 12;
 
   // SVG Path definition for semicircle
-  const pathD = `M ${startX} ${baselineY} A ${radius} ${radius} 0 0 1 ${endX} ${baselineY}`;
+  const pathD = `M ${startX} ${baselineY} A ${effectiveRadius} ${effectiveRadius} 0 0 1 ${endX} ${baselineY}`;
 
   // Actual progress stroke offset
   const actualOffset = arcLength * (1 - clampedPercent / 100);
@@ -98,8 +105,8 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
 
   // Needle position (circle on the arc)
   const angle = (clampedPercent / 100) * Math.PI;
-  const needleX = Number((100 - radius * Math.cos(angle)).toFixed(1));
-  const needleY = Number((baselineY - radius * Math.sin(angle)).toFixed(1));
+  const needleX = Number((centerCoordX - effectiveRadius * Math.cos(angle)).toFixed(1));
+  const needleY = Number((baselineY - effectiveRadius * Math.sin(angle)).toFixed(1));
 
   const gapColorClasses =
     gapType === 'positive'
@@ -108,38 +115,37 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
         ? 'text-rose-400 bg-rose-950/80 border-rose-500/40'
         : 'text-amber-400 bg-amber-950/80 border-amber-500/40';
 
-  const isTv = sizeVariant === 'tv';
-  const bottomOffsetClass = isTv ? 'bottom-[12px] sm:bottom-[16px]' : radius <= 78 ? 'bottom-[8px]' : 'bottom-[10px]';
+  const bottomOffsetClass = isTv ? 'bottom-[16px] sm:bottom-[20px]' : radius <= 78 ? 'bottom-[8px]' : 'bottom-[10px]';
   const toneConfig = TONE_MAP[tone] || TONE_MAP.emerald;
 
   const shouldRenderLabel = !hideLabelText && label && label.trim().length > 0;
   const visibleUnit = !hideUnitText && unit && unit.trim().length > 0 ? ` ${unit}` : '';
 
   const actualTextClass = isTv
-    ? `text-5xl sm:text-6xl lg:text-7xl font-black font-mono tabular-nums leading-none ${toneConfig.textClass}`
+    ? `text-7xl sm:text-8xl lg:text-9xl font-black font-mono tabular-nums leading-none ${toneConfig.textClass}`
     : `text-2xl sm:text-3xl font-black font-mono tabular-nums leading-none ${toneConfig.textClass}`;
   const targetTextClass = isTv
-    ? 'text-lg sm:text-xl lg:text-2xl font-mono text-zinc-500 font-bold leading-none'
+    ? 'text-2xl sm:text-3xl lg:text-4xl font-mono text-zinc-500 font-bold leading-none'
     : 'text-[11px] font-mono text-zinc-500 font-bold leading-none';
   const badgeClass = isTv
-    ? `text-xs sm:text-sm font-mono font-bold px-2 py-0.5 rounded border ${toneConfig.badgeClass}`
+    ? `text-xs sm:text-sm font-mono font-bold px-3 py-1 rounded-md border ${toneConfig.badgeClass}`
     : `text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border ${toneConfig.badgeClass}`;
   const gapBadgeClass = isTv
-    ? `text-xs sm:text-sm font-mono font-black px-2 py-0.5 rounded border ${gapColorClasses}`
+    ? `text-xs sm:text-sm font-mono font-black px-3 py-1 rounded-md border ${gapColorClasses}`
     : `text-[9px] font-mono font-black px-1.5 py-0.2 rounded border ${gapColorClasses}`;
 
   return (
     <div className={`relative w-full ${heightClass} mx-auto flex flex-col items-center justify-end ${className}`}>
-      <svg className="w-full h-full overflow-visible" viewBox="0 0 200 115">
+      <svg className="w-full h-full overflow-visible" viewBox={viewBoxStr}>
         {/* Background Track Arc */}
-        <path d={pathD} fill="none" strokeWidth="12" strokeLinecap="round" className="stroke-zinc-800" />
+        <path d={pathD} fill="none" strokeWidth={strokeWidthVal} strokeLinecap="round" className="stroke-zinc-800" />
 
         {/* Target / Pacing Arc (e.g. Red Gap or Pacing target) */}
         {showPacingArc && pacingOffset !== undefined && (
           <path
             d={pathD}
             fill="none"
-            strokeWidth="12"
+            strokeWidth={strokeWidthVal}
             strokeLinecap="round"
             strokeDasharray={arcLength}
             strokeDashoffset={pacingOffset}
@@ -151,7 +157,7 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
         <path
           d={pathD}
           fill="none"
-          strokeWidth="12"
+          strokeWidth={strokeWidthVal}
           strokeLinecap="round"
           strokeDasharray={arcLength}
           strokeDashoffset={actualOffset}
@@ -163,9 +169,9 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
           <circle
             cx={needleX}
             cy={needleY}
-            r="4.5"
-            strokeWidth="1.5"
-            className="fill-amber-400 stroke-zinc-900 transition-all duration-500 drop-shadow"
+            r={isTv ? 11 : 4.5}
+            strokeWidth={isTv ? 3 : 1.5}
+            className="fill-amber-300 stroke-zinc-950 transition-all duration-500 drop-shadow-[0_0_12px_rgba(245,158,11,0.95)]"
           />
         )}
       </svg>
@@ -191,6 +197,11 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
           <span className={badgeClass}>{percent}% ĐẠT</span>
           {gapText && <span className={gapBadgeClass}>{gapText}</span>}
         </div>
+        {subtitle ? (
+          <div className="text-zinc-400 text-xs font-mono font-medium mt-1">{subtitle}</div>
+        ) : isTv ? (
+          <div className="text-zinc-400 text-xs font-mono font-medium mt-1">Ca chiều: 13:00 - 17:00</div>
+        ) : null}
       </div>
     </div>
   );

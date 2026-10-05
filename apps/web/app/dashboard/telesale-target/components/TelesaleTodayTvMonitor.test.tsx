@@ -156,8 +156,8 @@ describe('TelesaleTvMonitorFullscreen', () => {
     );
 
     expect(screen.getByText(/TELESALES TV MONITOR · WAR ROOM/i)).toBeInTheDocument();
-    expect(screen.getByText('DONE HÔM NAY')).toBeInTheDocument();
-    expect(screen.getByText(/BOOK HÔM NAY · TẠO LỊCH/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'DONE HÔM NAY' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /BOOK HÔM NAY · TẠO LỊCH/i })).toBeInTheDocument();
 
     // Individual Staff Contribution section
     expect(screen.getByText(/ĐÓNG GÓP CÁ NHÂN HÔM NAY · TELESALES EXECUTIVES/i)).toBeInTheDocument();
@@ -191,4 +191,3 @@ describe('TelesaleTvMonitorFullscreen', () => {
     expect(container.firstChild).toBeNull();
   });
 });
-
