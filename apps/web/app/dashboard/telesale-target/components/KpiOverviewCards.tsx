@@ -5,6 +5,7 @@ import { Row, Col, Progress, theme } from 'antd';
 import { Calendar, CheckCircle2, User, Trophy, Flame, Sparkles } from 'lucide-react';
 import { TelesaleTargetOverview } from '@mos-lab/shared';
 import { TelesaleTodayTvMonitorCard } from './TelesaleTodayTvMonitorCard';
+import { getKpiColorClasses, getKpiProgressStroke } from '../utils/kpi-color-utils';
 
 interface KpiOverviewCardsProps {
   overview: TelesaleTargetOverview;
@@ -52,13 +53,9 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
           ? 'Đúng nhịp'
           : 'Chậm nhịp');
 
-  // Status-aware colors for Progress bar using semantic tokens (Requirement 5 & UI Contract)
+  // Status-aware colors for Progress bar adhering to 3-tier standard: Green (>=100%), Yellow (80-99%), Red (<80%)
   const getProgressStroke = (percent: number) => {
-    if (isPeriodNotStarted) return token.colorTextQuaternary;
-    if (percent >= 100) return token.colorWarning;
-    if (pacingStatus === 'AHEAD') return token.colorSuccess;
-    if (pacingStatus === 'ON_TRACK') return token.colorInfo;
-    return token.colorWarning;
+    return getKpiProgressStroke(percent, token, isPeriodNotStarted);
   };
 
   // 2. Team Daily Calculations
@@ -104,17 +101,21 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
                 ) : (
                   <span
                     className={`text-xs px-2.5 py-0.5 rounded font-mono font-semibold ${
-                      pacingStatus === 'AHEAD'
+                      pacingStatus === 'AHEAD' || pacingStatus === 'ON_TRACK'
                         ? 'bg-emerald-950 text-emerald-300 border border-emerald-600/50'
-                        : pacingStatus === 'ON_TRACK'
-                          ? 'bg-blue-950 text-blue-300 border border-blue-600/50'
-                          : 'bg-amber-950 text-amber-300 border border-amber-600/50'
+                        : (teamMonth.pacingRatio ?? 0) >= 0.8
+                          ? 'bg-amber-950 text-amber-300 border border-amber-600/50'
+                          : 'bg-rose-950 text-rose-300 border border-rose-600/50'
                     }`}
                   >
                     {pacingStatus === 'AHEAD' && '🚀 Vượt nhịp'}
                     {pacingStatus === 'ON_TRACK' && '✓ Đúng nhịp'}
                     {pacingStatus === 'BEHIND' &&
-                      ((teamMonth.gapBook ?? 0) >= 0 ? '⚡ Chậm nhịp · Pipeline tốt' : '⚡ Chậm nhịp')}
+                      ((teamMonth.pacingRatio ?? 0) >= 0.8
+                        ? '⚡ Gần đạt nhịp'
+                        : (teamMonth.gapBook ?? 0) >= 0
+                          ? '⚡ Chậm nhịp · Pipeline tốt'
+                          : '⚡ Chưa đạt nhịp')}
                   </span>
                 )}
               </div>
@@ -363,11 +364,11 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
               ) : (
                 <strong
                   className={
-                    pacingStatus === 'AHEAD'
+                    pacingStatus === 'AHEAD' || pacingStatus === 'ON_TRACK'
                       ? 'text-emerald-400'
-                      : pacingStatus === 'ON_TRACK'
-                        ? 'text-blue-400'
-                        : 'text-amber-400'
+                      : (teamMonth.pacingRatio ?? 0) >= 0.8
+                        ? 'text-amber-400'
+                        : 'text-rose-400'
                   }
                 >
                   {(teamMonth.pacingRatio * 100).toFixed(0)}% · {pacingStatusLabel}
@@ -450,41 +451,44 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
 
                 const revenueVnd = staff.revenueActual || 0;
 
-                // 5-color 1s recognition style
-                const cardStyleClass = isOver100
-                  ? 'bg-gradient-to-b from-amber-950/40 via-zinc-950 to-black border-amber-400 supercharged-aura shadow-[0_0_15px_rgba(245,158,11,0.2)]'
-                  : progressStatus === 'NOT_STARTED'
-                    ? 'bg-zinc-900/40 border-zinc-800 text-zinc-300 hover:border-zinc-700'
-                    : progressStatus === 'AHEAD'
-                      ? 'bg-emerald-950/20 border-emerald-500/40 hover:border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.12)]'
-                      : progressStatus === 'ON_TRACK'
-                        ? 'bg-blue-950/20 border-blue-500/35 hover:border-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.1)]'
-                        : progressStatus === 'CRITICAL'
-                          ? 'bg-rose-950/25 border-rose-500/70 hover:border-rose-400 shadow-[0_0_16px_rgba(244,63,94,0.25)] ring-1 ring-rose-500/30'
-                          : 'bg-amber-950/20 border-amber-500/40 hover:border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.12)]';
+                const staffPacingRatio =
+                  expectedDone > 0 ? staff.doneActual / expectedDone : staff.doneActual >= staff.doneTarget ? 1 : 0;
+                const isStaffAchieved = isOver100 || gapDone >= 0 || staffPacingRatio >= 1.0;
+                const isStaffApproaching = !isStaffAchieved && (staffPacingRatio >= 0.8 || gapDone >= -2);
 
-                const badgeStyleClass =
-                  progressStatus === 'NOT_STARTED'
-                    ? 'bg-zinc-800/80 text-zinc-400 border border-zinc-700/80'
-                    : progressStatus === 'AHEAD'
-                      ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/40'
-                      : progressStatus === 'ON_TRACK'
-                        ? 'bg-blue-950/80 text-blue-300 border border-blue-500/40'
-                        : progressStatus === 'CRITICAL'
-                          ? 'bg-rose-950 text-rose-300 border border-rose-500/60 font-black'
-                          : 'bg-amber-950/80 text-amber-300 border border-amber-500/40';
+                const badgeLabel = isPeriodNotStarted
+                  ? 'Chưa bắt đầu'
+                  : isOver100
+                    ? `🔥 ${percent}% VƯỢT`
+                    : isStaffAchieved
+                      ? 'Đạt'
+                      : isStaffApproaching
+                        ? 'Gần đạt'
+                        : 'Chưa đạt';
+
+                const cardStyleClass = isPeriodNotStarted
+                  ? 'bg-zinc-900/40 border-zinc-800 text-zinc-300 hover:border-zinc-700'
+                  : isStaffAchieved
+                    ? 'bg-emerald-950/20 border-emerald-500/40 hover:border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.12)]'
+                    : isStaffApproaching
+                      ? 'bg-amber-950/20 border-amber-500/40 hover:border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.12)]'
+                      : 'bg-rose-950/25 border-rose-500/70 hover:border-rose-400 shadow-[0_0_16px_rgba(244,63,94,0.25)] ring-1 ring-rose-500/30';
+
+                const badgeStyleClass = isPeriodNotStarted
+                  ? 'bg-zinc-800/80 text-zinc-400 border border-zinc-700/80'
+                  : isStaffAchieved
+                    ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/40'
+                    : isStaffApproaching
+                      ? 'bg-amber-950/80 text-amber-300 border border-amber-500/40'
+                      : 'bg-rose-950 text-rose-300 border border-rose-500/60 font-semibold';
 
                 const progressStroke = isPeriodNotStarted
                   ? token.colorTextQuaternary
-                  : isOver100
-                    ? token.colorWarning
-                    : progressStatus === 'AHEAD'
-                      ? token.colorSuccess
-                      : progressStatus === 'ON_TRACK'
-                        ? token.colorInfo
-                        : progressStatus === 'CRITICAL'
-                          ? token.colorError
-                          : token.colorWarning;
+                  : isStaffAchieved
+                    ? token.colorSuccess
+                    : isStaffApproaching
+                      ? token.colorWarning
+                      : token.colorError;
 
                 return (
                   <div
@@ -497,17 +501,13 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
                         <span className="font-bold text-zinc-100 text-sm flex items-center gap-1.5 truncate">
                           <span
                             className={`w-2 h-2 rounded-full shrink-0 ${
-                              isOver100
-                                ? 'bg-amber-400 animate-ping'
-                                : progressStatus === 'NOT_STARTED'
-                                  ? 'bg-zinc-600'
-                                  : progressStatus === 'AHEAD'
-                                    ? 'bg-emerald-400'
-                                    : progressStatus === 'ON_TRACK'
-                                      ? 'bg-blue-400'
-                                      : progressStatus === 'CRITICAL'
-                                        ? 'bg-rose-500'
-                                        : 'bg-amber-400'
+                              isPeriodNotStarted
+                                ? 'bg-zinc-600'
+                                : isStaffAchieved
+                                  ? 'bg-emerald-400 animate-ping'
+                                  : isStaffApproaching
+                                    ? 'bg-amber-400'
+                                    : 'bg-rose-500'
                             }`}
                           />
                           <span className="truncate">{staff.name}</span>
@@ -528,7 +528,13 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
                           </div>
                           <span
                             className={`text-[10px] font-mono font-bold tabular-nums ${
-                              isPeriodNotStarted ? 'text-zinc-500' : isOver100 ? 'text-amber-400' : 'text-zinc-400'
+                              isPeriodNotStarted
+                                ? 'text-zinc-500'
+                                : isStaffAchieved
+                                  ? 'text-emerald-400'
+                                  : isStaffApproaching
+                                    ? 'text-amber-400'
+                                    : 'text-rose-400'
                             }`}
                           >
                             {isPeriodNotStarted ? '0%' : isOver100 ? `🔥 ${percent}% VƯỢT` : `Đạt ${percent}%`}
@@ -549,7 +555,7 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
                         <span
                           className={`inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-bold leading-none shrink-0 ${badgeStyleClass}`}
                         >
-                          {progressStatusLabel}
+                          {badgeLabel}
                         </span>
                         <span className="text-[10px] font-mono tabular-nums">
                           {isPeriodNotStarted ? (
@@ -557,11 +563,11 @@ export const KpiOverviewCards: React.FC<KpiOverviewCardsProps> = ({ overview, on
                           ) : gapDone > 0 ? (
                             <span className="text-emerald-400 font-bold">Gap: +{gapDone} Done</span>
                           ) : gapDone === 0 ? (
-                            <span className="text-blue-400 font-bold">Gap: 0 Done</span>
-                          ) : progressStatus === 'CRITICAL' ? (
-                            <span className="text-rose-400 font-black">Gap: {gapDone} Done</span>
-                          ) : (
+                            <span className="text-emerald-400 font-bold">Gap: 0 Done</span>
+                          ) : isStaffApproaching ? (
                             <span className="text-amber-400 font-bold">Gap: {gapDone} Done</span>
+                          ) : (
+                            <span className="text-rose-400 font-semibold">Gap: {gapDone} Done</span>
                           )}
                         </span>
                       </div>

@@ -59,7 +59,7 @@ export function IosTabBar({
             >
               <div className="relative">
                 <CalendarCheck className="w-5 h-5 mb-0.5 stroke-[2.2]" />
-                {renderBadge(badgeCounts.booking || 3)}
+                {renderBadge(badgeCounts.booking)}
               </div>
               <span className="text-[10px] font-semibold leading-none">Booking</span>
             </button>
@@ -86,15 +86,19 @@ export function IosTabBar({
               </button>
             </div>
 
-            {/* Tab 4: Report */}
+            {/* Tab 4: Target (iOS Swift ConfigTabBar.clientConsultantHomeVC) */}
             <button
-              onClick={() => onTabChange('report')}
+              onClick={() => onTabChange('target')}
               className={`flex-1 flex flex-col items-center justify-center py-1 transition-colors ${
-                activeTab === 'report' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
+                activeTab === 'target' ? 'text-[#FF9500]' : 'text-[#8E8E93] hover:text-black'
               }`}
             >
-              <TrendingUp className="w-5 h-5 mb-0.5 stroke-[2]" />
-              <span className="text-[10px] font-medium leading-none">Report</span>
+              <img
+                src="/ios-assets/credit-icon.png"
+                alt="Target"
+                className={`w-5 h-5 mb-0.5 object-contain ${activeTab === 'target' ? '' : 'grayscale opacity-60'}`}
+              />
+              <span className="text-[10px] font-medium leading-none">Target</span>
             </button>
 
             {/* Tab 5: More */}

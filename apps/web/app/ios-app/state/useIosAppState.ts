@@ -14,7 +14,7 @@ export interface SegmentCounts {
 
 export function useIosAppState(initialStep: number = 1) {
   const [bookings, setBookings] = useState<BookingItem[]>(INITIAL_BOOKINGS);
-  const [activeBookingId, setActiveBookingId] = useState<number>(103);
+  const [activeBookingId, setActiveBookingId] = useState<number>(336695);
   const [currentStep, setCurrentStep] = useState<number>(initialStep);
   const [role, setRole] = useState<IosUserRole>('CC');
   const [deviceMode, setDeviceMode] = useState<'iphone' | 'ipad' | 'fullscreen'>('iphone');
@@ -24,10 +24,10 @@ export function useIosAppState(initialStep: number = 1) {
 
   // Real Database state
   const [counts, setCounts] = useState<SegmentCounts>({
-    incoming: 431,
-    servicing: 1,
-    done: 4612,
-    cancel: 239,
+    incoming: 4,
+    servicing: 0,
+    done: 0,
+    cancel: 0,
   });
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
@@ -43,7 +43,7 @@ export function useIosAppState(initialStep: number = 1) {
 
       setIsRefreshing(true);
       try {
-        const res = await fetch(`/api/ios/bookings?storeId=${storeId}&segment=${seg}&limit=30`, {
+        const res = await fetch(`/api/ios/bookings?storeId=${storeId}&segment=${seg}&date=2026-10-04&limit=30`, {
           cache: 'no-store',
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -80,6 +80,7 @@ export function useIosAppState(initialStep: number = 1) {
 
   // Auto fetch live data on mount and segment change
   useEffect(() => {
+    console.log('[useIosAppState] Auto-fetching live bookings for segment:', bookingSegment);
     refreshDb();
   }, [bookingSegment]);
 

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { BookingItem } from '../../state/mockData';
-import { Calendar, Phone, ShoppingCart, RotateCw, CheckCircle2 } from 'lucide-react';
+import { Calendar, Phone, ShoppingCart, RotateCw, CheckCircle2, Camera } from 'lucide-react';
 
 interface SegmentCounts {
   incoming: number;
@@ -47,31 +47,22 @@ export function Screen01IncomingBookings({
     <div className="flex-1 flex flex-col bg-white overflow-hidden select-none">
       {/* 1. Header Navigation Bar (Black background, Gold icons & title) */}
       <div className="bg-black h-11 px-4 flex items-center justify-between z-10 flex-shrink-0">
-        <button className="text-[#FFB400] active:opacity-70 transition-opacity">
+        <button
+          onClick={onRefreshDb}
+          className="text-[#FFB400] active:opacity-70 transition-opacity"
+          title="Làm mới dữ liệu từ MySQL"
+        >
           <Calendar className="w-5 h-5" />
         </button>
-        <div className="flex items-center space-x-1.5 text-[#FFB400] font-bold text-base tracking-wide">
+        <div className="text-[#FFB400] font-bold text-base tracking-wide">
           <span>De Tham</span>
-          {isLiveDb && (
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block" title="MySQL Live" />
-          )}
         </div>
         <div className="flex items-center space-x-3.5">
-          {/* Refresh DB Button */}
           <button
             onClick={onRefreshDb}
-            disabled={isRefreshing}
-            className={`text-[#FFB400] active:opacity-70 transition-all p-0.5 rounded-full ${
-              isRefreshing ? 'opacity-80' : 'hover:bg-neutral-800'
-            }`}
+            className="text-[#FFB400] active:opacity-70 transition-opacity"
             title="Làm mới dữ liệu từ MySQL"
           >
-            <RotateCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-          </button>
-          <button className="text-[#FFB400] active:opacity-70 transition-opacity">
-            <Phone className="w-5 h-5" />
-          </button>
-          <button className="text-[#FFB400] active:opacity-70 transition-opacity">
             <ShoppingCart className="w-5 h-5" />
           </button>
         </div>
@@ -109,7 +100,7 @@ export function Screen01IncomingBookings({
         </button>
       </div>
 
-      {/* 3. Sub-navbar Row 2 (INCOMING | SERVICING | DONE) - Amber Header Bar with dynamic counts */}
+      {/* 3. Sub-navbar Row 2 (INCOMING | SERVICING | DONE) - Amber Header Bar without count clutter */}
       <div className="bg-[#FFA000] h-9 grid grid-cols-3 items-center text-center font-bold text-[12px] tracking-wider flex-shrink-0 shadow-sm">
         <button
           onClick={() => setBookingSegment('INCOMING')}
@@ -117,7 +108,7 @@ export function Screen01IncomingBookings({
             bookingSegment === 'INCOMING' ? 'bg-[#FF9500] text-white font-black' : 'text-[#7C2D12] hover:text-white/80'
           }`}
         >
-          INCOMING {counts?.incoming !== undefined ? `(${counts.incoming})` : ''}
+          INCOMING
         </button>
         <button
           onClick={() => setBookingSegment('SERVICING')}
@@ -125,7 +116,7 @@ export function Screen01IncomingBookings({
             bookingSegment === 'SERVICING' ? 'bg-[#FF9500] text-white font-black' : 'text-[#7C2D12] hover:text-white/80'
           }`}
         >
-          SERVICING {counts?.servicing !== undefined ? `(${counts.servicing})` : ''}
+          SERVICING
         </button>
         <button
           onClick={() => setBookingSegment('DONE')}
@@ -133,31 +124,8 @@ export function Screen01IncomingBookings({
             bookingSegment === 'DONE' ? 'bg-[#FF9500] text-white font-black' : 'text-[#7C2D12] hover:text-white/80'
           }`}
         >
-          DONE {counts?.done !== undefined ? `(${counts.done})` : ''}
+          DONE
         </button>
-      </div>
-
-      {/* 3.1 Live DB Freshness Status Bar */}
-      <div className="bg-[#F8F9FA] border-b border-[#E5E5EA] px-3 py-1 flex items-center justify-between text-[11px] text-[#636366]">
-        <div className="flex items-center space-x-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-          <span className="font-semibold text-[#1C1C1E]">Live MySQL</span>
-          <span>•</span>
-          <span className="truncate">Chi nhánh Đề Thám</span>
-        </div>
-        <div className="flex items-center space-x-1 text-[10px] text-[#8E8E93]">
-          {isRefreshing ? (
-            <span className="text-[#FF9500] font-medium flex items-center gap-1">
-              <RotateCw className="w-2.5 h-2.5 animate-spin" />
-              Đang làm mới...
-            </span>
-          ) : lastRefreshedAt ? (
-            <span className="flex items-center gap-1">
-              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />
-              Làm mới lúc {lastRefreshedAt}
-            </span>
-          ) : null}
-        </div>
       </div>
 
       {/* 4. Booking List (Pure White background, hair-line dividers) */}
@@ -172,16 +140,27 @@ export function Screen01IncomingBookings({
               <div
                 key={b.id}
                 onClick={() => onSelectBooking(b.id)}
-                className="flex items-center px-3 py-2.5 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer"
+                className="flex items-start px-3 py-3 hover:bg-neutral-50 active:bg-neutral-100 transition-colors cursor-pointer border-b border-[#E5E5EA]"
               >
-                {/* 4.1 Index Number */}
-                <span className="text-[#C7C7CC] text-[18px] font-light w-5 text-center flex-shrink-0 tabular-nums">
+                {/* 4.1 Index Number (iOS light thin font) */}
+                <span className="text-[#C7C7CC] text-[18px] font-light w-4 pt-3 text-center flex-shrink-0 tabular-nums">
                   {idx + 1}
                 </span>
 
-                {/* 4.2 Avatar with Green Border and Badges */}
+                {/* 4.2 Avatar with Green Border, Discount Tag & Camera Overlay */}
                 <div className="relative w-14 h-14 flex-shrink-0 mx-2">
-                  <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center border-2 border-[#34C759] bg-neutral-100 shadow-xs">
+                  {/* Yellow Discount Tag top-left */}
+                  {b.hasDiscountTag && (
+                    <div className="absolute -top-1.5 -left-1.5 z-10 select-none text-[15px] leading-none drop-shadow-xs">
+                      🏷️
+                    </div>
+                  )}
+
+                  <div
+                    className={`w-14 h-14 rounded-full overflow-hidden flex items-center justify-center bg-white shadow-xs ${
+                      (b as any).customerAvatar ? 'border-2 border-[#34C759]' : 'border border-[#D1D1D6]'
+                    }`}
+                  >
                     {(b as any).customerAvatar ? (
                       <img
                         src={(b as any).customerAvatar}
@@ -192,59 +171,46 @@ export function Screen01IncomingBookings({
                         }}
                       />
                     ) : (
-                      <div className="w-full h-full bg-[#f4ece1] flex items-center justify-center text-[#78350f] font-bold text-base">
-                        {b.customerName ? b.customerName.charAt(0) : 'K'}
-                      </div>
+                      <img src="/ios-assets/no-image.png" alt="No Image" className="w-full h-full object-cover" />
                     )}
                   </div>
 
-                  {/* Visit count badge top-right */}
-                  {b.customerVisits > 1 && (
-                    <span className="absolute -top-1 -right-1 bg-white border border-neutral-300 rounded-full px-1.5 text-[9px] font-bold text-black shadow-xs leading-tight">
-                      {b.customerVisits}
-                    </span>
-                  )}
-
-                  {/* Corner overlapping badge bottom-left */}
-                  <div className="absolute -bottom-1 -left-1 w-5 h-5 rounded-full overflow-hidden border border-white bg-neutral-700 flex items-center justify-center text-[10px] text-white shadow-xs">
-                    {(b as any).assignedStaffAvatar ? (
-                      <img src={(b as any).assignedStaffAvatar} alt="staff" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-[10px]">📷</span>
-                    )}
+                  {/* Corner Camera Badge bottom-left */}
+                  <div className="absolute -bottom-1 -left-1 w-4.5 h-4.5 rounded-full border border-[#D1D1D6] bg-white flex items-center justify-center shadow-xs">
+                    <Camera className="w-2.5 h-2.5 text-[#3A3A3C]" />
                   </div>
                 </div>
 
-                {/* 4.3 Center Info (Customer Name, Phone, Notes) */}
-                <div className="flex-1 min-w-0 pr-2 flex flex-col justify-center">
+                {/* 4.3 Center Info (Customer Name with Emoji, Phone, Multi-line Notes) */}
+                <div className="flex-1 min-w-0 pr-2 flex flex-col justify-start">
                   <div className="flex items-center space-x-1">
-                    <span className="text-xs flex-shrink-0">{(b as any).customerEmoji || '🔄'}</span>
-                    <span className="text-[14px] font-bold text-black truncate tracking-tight">{b.customerName}</span>
+                    <span className="text-[13px] flex-shrink-0 select-none">{b.customerTypeIcon || '🔄'}</span>
+                    <span className="text-[15px] font-bold text-black truncate tracking-tight">{b.customerName}</span>
                   </div>
-                  <div className="text-[12px] text-[#8E8E93] font-medium leading-tight mt-0.5 tabular-nums">
+                  <div className="text-[13px] text-[#636366] font-normal leading-tight mt-0.5 tabular-nums">
                     {b.customerPhone}
                   </div>
                   {b.customerNote && (
-                    <div className="text-[10px] text-[#8E8E93] leading-[13px] mt-0.5 line-clamp-3 whitespace-pre-line">
+                    <div className="text-[11px] text-[#8E8E93] leading-[15px] mt-1 line-clamp-3 whitespace-pre-line font-normal">
                       {b.customerNote}
                     </div>
                   )}
                 </div>
 
                 {/* 4.4 Right Column (Red Line, Red Time, Red Service, Normal, Booker) */}
-                <div className="w-[110px] flex-shrink-0 border-l border-[#FF3B30] pl-2 flex flex-col justify-center text-left">
-                  <span className="text-[#FF3B30] text-[12px] font-normal tabular-nums leading-tight">
-                    {b.timeSlot}
+                <div className="w-[125px] flex-shrink-0 border-l border-[#FF3B30]/35 pl-2.5 flex flex-col justify-start text-left">
+                  <span className="text-[#FF3B30] text-[14px] font-medium tabular-nums leading-tight">
+                    {b.time12h || b.timeSlot}
                   </span>
                   <span
-                    className="text-[#FF3B30] text-[11px] font-normal truncate leading-tight mt-0.5"
+                    className="text-[#FF3B30] text-[12px] font-normal truncate leading-tight mt-1"
                     title={b.serviceName}
                   >
                     {b.serviceName}
                   </span>
-                  <span className="text-[#8E8E93] text-[10px] leading-tight mt-0.5">Normal</span>
-                  <span className="text-[#FF9500] text-[10px] font-medium truncate leading-tight mt-0.5">
-                    {(b as any).bookerName || 'Thuỳ Trang 🌸'}
+                  <span className="text-[#8E8E93] text-[10px] leading-tight mt-0.5">{b.serviceType || 'Normal'}</span>
+                  <span className="text-[#FFA000] text-[11px] font-medium truncate leading-tight mt-0.5">
+                    {b.bookerName || 'Tư vấn'}
                   </span>
                 </div>
               </div>

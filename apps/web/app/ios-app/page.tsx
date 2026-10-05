@@ -193,24 +193,6 @@ function IosAppInner() {
   return (
     <div className="w-full min-h-[100dvh] bg-black flex justify-center text-neutral-100 font-sans select-none overflow-x-hidden">
       <div className="w-full max-w-[430px] min-h-[100dvh] flex flex-col bg-black relative">
-        {/* Floating Quick Role Switcher Pill - Chạm để đổi vai trò nhanh */}
-        <div className="fixed bottom-[68px] right-3 z-40 pointer-events-auto">
-          <button
-            onClick={() => state.setIsSettingsOpen(true)}
-            className="px-2.5 py-1.5 rounded-full bg-black/85 hover:bg-black text-[#FFB400] text-[10px] font-bold tracking-tight shadow-lg border border-[#FFB400]/40 backdrop-blur-md flex items-center gap-1.5 active:scale-95 transition-all"
-            title="Chạm để chuyển đổi vai trò hoặc cấu hình máy in"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-[#FF9500] animate-pulse"></span>
-            {state.role === 'CC'
-              ? 'Tư Vấn (CC)'
-              : state.role === 'CV'
-                ? 'Chuyên Viên (CV)'
-                : state.role === 'STORE'
-                  ? 'Quản Lý (Store)'
-                  : 'Kho (Inventory)'}
-          </button>
-        </div>
-
         {/* Screen Body */}
         <div className="flex-1 flex flex-col min-h-0 relative overflow-hidden bg-black">{renderActiveScreen()}</div>
 
@@ -225,10 +207,10 @@ function IosAppInner() {
               state.setCurrentStep(1);
             }}
             badgeCounts={{
-              booking: 3,
-              task: 1,
-              staff: 2,
-              dispense: 1,
+              booking: 0,
+              task: 0,
+              staff: 0,
+              dispense: 0,
             }}
           />
         )}

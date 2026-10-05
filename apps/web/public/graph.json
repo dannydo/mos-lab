@@ -12710,9 +12710,9 @@
           "campaigns.getStats",
           "campaigns.getSharedPoolOverview",
           "campaigns.getCustomers",
+          "campaigns.getSharedPoolLogs",
           "campaigns.claimSharedCustomer",
           "campaigns.releaseSharedCustomer",
-          "campaigns.getSharedPoolLogs",
           "campaigns.advanceSharedPoolBatch",
           "campaigns.toggleSharedPoolPause",
           "campaigns.managerSharedPoolAction",
@@ -12956,6 +12956,18 @@
       "filePath": "apps/web/app/dashboard/today/page.tsx",
       "metadata": {
         "routePath": "/dashboard/today",
+        "apiCallsCount": 0,
+        "apiCalls": []
+      }
+    },
+    {
+      "id": "page:/ios-app",
+      "type": "Component",
+      "label": "App Page: /ios-app",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/ios-app/page.tsx",
+      "metadata": {
+        "routePath": "/ios-app",
         "apiCallsCount": 0,
         "apiCalls": []
       }
@@ -30528,8 +30540,8 @@
       "filePath": "apps/api/src/modules/campaigns/campaign-shared-pool.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 27185,
-        "lineCount": 744,
+        "sizeBytes": 33254,
+        "lineCount": 893,
         "ext": ".ts"
       }
     },
@@ -30541,8 +30553,8 @@
       "filePath": "apps/api/src/modules/campaigns/campaign.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 169796,
-        "lineCount": 4847,
+        "sizeBytes": 170898,
+        "lineCount": 4880,
         "ext": ".ts"
       }
     },
@@ -30554,8 +30566,8 @@
       "filePath": "apps/api/src/modules/campaigns/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 40095,
-        "lineCount": 977,
+        "sizeBytes": 40057,
+        "lineCount": 973,
         "ext": ".ts"
       }
     },
@@ -34200,6 +34212,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/api/ios/bookings/route.ts",
+      "type": "File",
+      "label": "route.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/api/ios/bookings/route.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 15891,
+        "lineCount": 432,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/api/release-version/route.ts",
       "type": "File",
       "label": "route.ts",
@@ -37548,8 +37573,8 @@
       "filePath": "apps/web/app/dashboard/nyc/campaigns/[slug]/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 133403,
-        "lineCount": 3192,
+        "sizeBytes": 134481,
+        "lineCount": 3213,
         "ext": ".tsx"
       }
     },
@@ -37561,7 +37586,7 @@
       "filePath": "apps/web/app/dashboard/nyc/campaigns/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 69956,
+        "sizeBytes": 69962,
         "lineCount": 1572,
         "ext": ".tsx"
       }
@@ -38289,8 +38314,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DailyActionSchedule.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18676,
-        "lineCount": 397,
+        "sizeBytes": 19700,
+        "lineCount": 421,
         "ext": ".tsx"
       }
     },
@@ -38302,8 +38327,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DataPipelineStages.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8000,
-        "lineCount": 168,
+        "sizeBytes": 7402,
+        "lineCount": 153,
         "ext": ".tsx"
       }
     },
@@ -38315,8 +38340,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6250,
-        "lineCount": 191,
+        "sizeBytes": 6209,
+        "lineCount": 190,
         "ext": ".tsx"
       }
     },
@@ -38328,8 +38353,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 32136,
-        "lineCount": 610,
+        "sizeBytes": 32123,
+        "lineCount": 616,
         "ext": ".tsx"
       }
     },
@@ -38406,8 +38431,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15474,
-        "lineCount": 335,
+        "sizeBytes": 15503,
+        "lineCount": 336,
         "ext": ".tsx"
       }
     },
@@ -38484,8 +38509,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30914,
-        "lineCount": 679,
+        "sizeBytes": 30837,
+        "lineCount": 676,
         "ext": ".tsx"
       }
     },
@@ -38552,6 +38577,19 @@
         "sizeBytes": 22105,
         "lineCount": 522,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/utils/kpi-color-utils.ts",
+      "type": "File",
+      "label": "kpi-color-utils.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/utils/kpi-color-utils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2853,
+        "lineCount": 84,
+        "ext": ".ts"
       }
     },
     {
@@ -38760,6 +38798,409 @@
         "sizeBytes": 21867,
         "lineCount": 553,
         "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/Screen01IncomingBookings.tsx",
+      "type": "File",
+      "label": "Screen01IncomingBookings.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/Screen01IncomingBookings.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9801,
+        "lineCount": 234,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/Screen02CheckInProfile.tsx",
+      "type": "File",
+      "label": "Screen02CheckInProfile.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/Screen02CheckInProfile.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7125,
+        "lineCount": 153,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/Screen03ConsultationMatrix.tsx",
+      "type": "File",
+      "label": "Screen03ConsultationMatrix.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/Screen03ConsultationMatrix.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10693,
+        "lineCount": 251,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/Screen04StaffQueueAssign.tsx",
+      "type": "File",
+      "label": "Screen04StaffQueueAssign.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/Screen04StaffQueueAssign.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6272,
+        "lineCount": 146,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/Screen05ServicingTransfer.tsx",
+      "type": "File",
+      "label": "Screen05ServicingTransfer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/Screen05ServicingTransfer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6474,
+        "lineCount": 123,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/Screen06CvDashboardReceive.tsx",
+      "type": "File",
+      "label": "Screen06CvDashboardReceive.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/Screen06CvDashboardReceive.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4842,
+        "lineCount": 102,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/Screen07LashProgressBefore.tsx",
+      "type": "File",
+      "label": "Screen07LashProgressBefore.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/Screen07LashProgressBefore.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4048,
+        "lineCount": 90,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/Screen08LashProgressTimer.tsx",
+      "type": "File",
+      "label": "Screen08LashProgressTimer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/Screen08LashProgressTimer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4278,
+        "lineCount": 100,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/Screen09LashProgressAfter.tsx",
+      "type": "File",
+      "label": "Screen09LashProgressAfter.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/Screen09LashProgressAfter.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5152,
+        "lineCount": 107,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/Screen10CustomerSurvey.tsx",
+      "type": "File",
+      "label": "Screen10CustomerSurvey.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/Screen10CustomerSurvey.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6450,
+        "lineCount": 157,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx",
+      "type": "File",
+      "label": "Screen11ProductUpsell.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/Screen11ProductUpsell.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6490,
+        "lineCount": 140,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/Screen12CheckoutBilling.tsx",
+      "type": "File",
+      "label": "Screen12CheckoutBilling.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/Screen12CheckoutBilling.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6729,
+        "lineCount": 159,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/Screen13CheckoutTip.tsx",
+      "type": "File",
+      "label": "Screen13CheckoutTip.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/Screen13CheckoutTip.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4900,
+        "lineCount": 113,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/Screen14ThermalReceiptDone.tsx",
+      "type": "File",
+      "label": "Screen14ThermalReceiptDone.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/Screen14ThermalReceiptDone.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4727,
+        "lineCount": 110,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/ScreenCvPaystub.tsx",
+      "type": "File",
+      "label": "ScreenCvPaystub.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/ScreenCvPaystub.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6761,
+        "lineCount": 168,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/ScreenInventoryStock.tsx",
+      "type": "File",
+      "label": "ScreenInventoryStock.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/ScreenInventoryStock.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6444,
+        "lineCount": 189,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/ScreenLogin.tsx",
+      "type": "File",
+      "label": "ScreenLogin.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/ScreenLogin.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9986,
+        "lineCount": 247,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/ScreenSettingsRoleSwitch.tsx",
+      "type": "File",
+      "label": "ScreenSettingsRoleSwitch.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/ScreenSettingsRoleSwitch.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10291,
+        "lineCount": 258,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/screens/ScreenStoreDashboard.tsx",
+      "type": "File",
+      "label": "ScreenStoreDashboard.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/screens/ScreenStoreDashboard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8385,
+        "lineCount": 205,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/ui-kit/IosActionSheet.tsx",
+      "type": "File",
+      "label": "IosActionSheet.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/ui-kit/IosActionSheet.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2292,
+        "lineCount": 66,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/ui-kit/IosCircularTimer.tsx",
+      "type": "File",
+      "label": "IosCircularTimer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/ui-kit/IosCircularTimer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3614,
+        "lineCount": 101,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/ui-kit/IosDeviceFrame.tsx",
+      "type": "File",
+      "label": "IosDeviceFrame.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/ui-kit/IosDeviceFrame.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7101,
+        "lineCount": 177,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/ui-kit/IosGroupedTable.tsx",
+      "type": "File",
+      "label": "IosGroupedTable.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/ui-kit/IosGroupedTable.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2583,
+        "lineCount": 85,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/ui-kit/IosNavigationBar.tsx",
+      "type": "File",
+      "label": "IosNavigationBar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/ui-kit/IosNavigationBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2563,
+        "lineCount": 81,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/ui-kit/IosSegmentedControl.tsx",
+      "type": "File",
+      "label": "IosSegmentedControl.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/ui-kit/IosSegmentedControl.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1462,
+        "lineCount": 46,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/ui-kit/IosStatusBar.tsx",
+      "type": "File",
+      "label": "IosStatusBar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/ui-kit/IosStatusBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2061,
+        "lineCount": 56,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/components/ui-kit/IosTabBar.tsx",
+      "type": "File",
+      "label": "IosTabBar.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/components/ui-kit/IosTabBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11487,
+        "lineCount": 279,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8445,
+        "lineCount": 235,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/services/thermalPrinterService.ts",
+      "type": "File",
+      "label": "thermalPrinterService.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/services/thermalPrinterService.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6567,
+        "lineCount": 228,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/state/mockData.ts",
+      "type": "File",
+      "label": "mockData.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/state/mockData.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5963,
+        "lineCount": 208,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/app/ios-app/state/useIosAppState.ts",
+      "type": "File",
+      "label": "useIosAppState.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/ios-app/state/useIosAppState.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10748,
+        "lineCount": 361,
+        "ext": ".ts"
       }
     },
     {
@@ -39474,6 +39915,19 @@
       "metadata": {
         "sizeBytes": 1911,
         "lineCount": 54,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/lib/wings-ios-api.ts",
+      "type": "File",
+      "label": "wings-ios-api.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/wings-ios-api.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6296,
+        "lineCount": 228,
         "ext": ".ts"
       }
     },
@@ -46445,6 +46899,13 @@
     {
       "id": "edge:page:/dashboard/today:ws:apps/web",
       "source": "page:/dashboard/today",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
+      "id": "edge:page:/ios-app:ws:apps/web",
+      "source": "page:/ios-app",
       "target": "ws:apps/web",
       "type": "RENDERS",
       "label": "PAGE_OF"
@@ -87499,22 +87960,22 @@
     }
   ],
   "stats": {
-    "totalNodes": 3087,
-    "totalEdges": 6739,
+    "totalNodes": 3122,
+    "totalEdges": 6740,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 163,
       "FastifyRoute": 659,
-      "Component": 57,
+      "Component": 58,
       "SharedType": 1132,
       "DesignToken": 12,
       "UIComponent": 212,
-      "File": 849
+      "File": 883
     },
     "edgeTypeCounts": {
       "EXPORTS": 1307,
       "HANDLES_ROUTE": 659,
-      "RENDERS": 269,
+      "RENDERS": 270,
       "USES_TOKEN": 214,
       "IMPORTS": 469,
       "QUERIES_MODEL": 382,
@@ -87522,7 +87983,7 @@
     },
     "fastifyRouteCount": 664,
     "prismaModelCount": 163,
-    "nextPageCount": 57,
+    "nextPageCount": 58,
     "sharedTypeCount": 1132
   },
   "routes": [

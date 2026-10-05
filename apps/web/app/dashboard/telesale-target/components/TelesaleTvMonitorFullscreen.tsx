@@ -20,6 +20,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
 import { TelesaleTargetOverview, isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { calculateShiftPacing, calculateTvMonitorMetrics } from '../utils/tv-monitor-pacing';
+import { getKpiProgressStroke } from '../utils/kpi-color-utils';
 import { TelesaleTvCelebration } from './TelesaleTvCelebration';
 import { useTelesaleTvLiveCelebration } from '../hooks/useTelesaleTvLiveCelebration';
 import { TelesaleTvLiveCelebrationBanner } from './TelesaleTvLiveCelebrationBanner';
@@ -456,9 +457,7 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
             <div className="mt-4 lg:mt-6">
               <Progress
                 percent={Math.min(100, metrics.bookPercent)}
-                strokeColor={
-                  isBookOver100 ? token.colorWarning : metrics.gapBook >= 0 ? token.colorInfo : token.colorWarning
-                }
+                strokeColor={getKpiProgressStroke(metrics.bookPercent, token)}
                 size={['100%', 28]}
                 showInfo={false}
                 className="rounded-2xl"
@@ -467,11 +466,11 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
                 <span className="text-zinc-400">Tiến độ hoàn thành</span>
                 <span
                   className={`text-lg sm:text-xl font-black ${
-                    isBookOver100
-                      ? 'text-amber-400 animate-pulse'
-                      : metrics.bookPercent >= 75
-                        ? 'text-blue-300'
-                        : 'text-zinc-200'
+                    metrics.bookPercent >= 100
+                      ? 'text-emerald-400 animate-pulse'
+                      : metrics.bookPercent >= 80
+                        ? 'text-amber-400'
+                        : 'text-rose-400'
                   }`}
                 >
                   {isBookOver100 ? `✨ ${metrics.bookPercent}% VƯỢT CHỈ TIÊU` : `${metrics.bookPercent}%`}
@@ -559,9 +558,7 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
             <div className="mt-4 lg:mt-6">
               <Progress
                 percent={Math.min(100, metrics.donePercent)}
-                strokeColor={
-                  isDoneOver100 ? token.colorWarning : metrics.gapDone >= 0 ? token.colorSuccess : token.colorWarning
-                }
+                strokeColor={getKpiProgressStroke(metrics.donePercent, token)}
                 size={['100%', 28]}
                 showInfo={false}
                 className="rounded-2xl"
@@ -570,11 +567,11 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
                 <span className="text-zinc-400">Tiến độ hoàn thành</span>
                 <span
                   className={`text-lg sm:text-xl font-black ${
-                    isDoneOver100
-                      ? 'text-amber-400 animate-pulse'
-                      : metrics.donePercent >= 75
-                        ? 'text-emerald-300'
-                        : 'text-zinc-200'
+                    metrics.donePercent >= 100
+                      ? 'text-emerald-400 animate-pulse'
+                      : metrics.donePercent >= 80
+                        ? 'text-amber-400'
+                        : 'text-rose-400'
                   }`}
                 >
                   {isDoneOver100 ? `✨ ${metrics.donePercent}% VƯỢT CHỈ TIÊU` : `${metrics.donePercent}%`}

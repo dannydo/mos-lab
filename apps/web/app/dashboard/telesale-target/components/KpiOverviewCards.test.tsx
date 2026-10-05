@@ -130,10 +130,9 @@ describe('KpiOverviewCards - MOS-BUG-72 Individual KPI (Done)', () => {
     expect(screen.getByText('Điệp')).toBeInTheDocument();
     expect(screen.getByText('+1 hôm nay')).toBeInTheDocument();
 
-    // 3. Status Badges
-    expect(screen.getByText('Vượt tiến độ')).toBeInTheDocument();
-    expect(screen.getByText('Đúng tiến độ')).toBeInTheDocument();
-    expect(screen.getByText('Chậm tiến độ')).toBeInTheDocument();
+    // 3. Status Badges (3-tier standard: Đạt, Gần đạt, Chưa đạt)
+    expect(screen.getAllByText('Đạt')).toHaveLength(2);
+    expect(screen.getByText('Chưa đạt')).toBeInTheDocument();
 
     // 4. Gap KPI
     expect(screen.getByText('Gap: +12 Done')).toBeInTheDocument();

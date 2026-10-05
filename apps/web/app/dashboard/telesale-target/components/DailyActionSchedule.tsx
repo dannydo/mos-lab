@@ -16,6 +16,7 @@ import {
   MinusCircle,
 } from 'lucide-react';
 import { TelesaleTargetOverview, TelesaleStaffDailyAction, TelesaleDailyActionStatus } from '@mos-lab/shared';
+import { getKpiProgressStroke } from '../utils/kpi-color-utils';
 
 interface DailyActionScheduleProps {
   overview: TelesaleTargetOverview;
@@ -72,52 +73,46 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
 
   const workingStaffCount = staffActions.filter((s) => s.isWorkingToday).length;
 
-  const getStatusBadge = (status: TelesaleDailyActionStatus, label: string) => {
-    switch (status) {
-      case 'EXCEEDED':
-        return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-            <Sparkles className="w-2.5 h-2.5" />
-            {label || 'Vượt'}
-          </span>
-        );
-      case 'ACHIEVED':
-        return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
-            <CheckCircle2 className="w-2.5 h-2.5" />
-            {label || 'Đạt'}
-          </span>
-        );
-      case 'BEHIND':
-        return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
-            <AlertTriangle className="w-2.5 h-2.5" />
-            {label || 'Chậm'}
-          </span>
-        );
-      case 'ALARM':
-        return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
-            <AlertCircle className="w-2.5 h-2.5" />
-            {label || 'Báo động'}
-          </span>
-        );
-      case 'OFF':
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-zinc-800 text-zinc-400 border border-zinc-700">
-            <MinusCircle className="w-2.5 h-2.5" />
-            {label || 'Nghỉ'}
-          </span>
-        );
+  const getStatusBadge = (
+    percent: number,
+    isWorking: boolean,
+    legacyStatus?: TelesaleDailyActionStatus,
+    label?: string
+  ) => {
+    if (!isWorking) {
+      return (
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-zinc-800 text-zinc-400 border border-zinc-700">
+          <MinusCircle className="w-2.5 h-2.5" />
+          Nghỉ
+        </span>
+      );
     }
+    if (percent >= 100) {
+      return (
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+          <Sparkles className="w-2.5 h-2.5" />
+          {percent > 100 ? `Vượt ${percent}%` : 'Đạt'}
+        </span>
+      );
+    }
+    if (percent >= 80) {
+      return (
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+          <AlertTriangle className="w-2.5 h-2.5" />
+          Gần đạt
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">
+        <AlertCircle className="w-2.5 h-2.5" />
+        Chưa đạt
+      </span>
+    );
   };
 
   const getProgressStrokeColor = (percent: number) => {
-    if (percent >= 100) return token.colorSuccess;
-    if (percent >= 80) return token.colorInfo;
-    if (percent >= 50) return token.colorWarning;
-    return token.colorError;
+    return getKpiProgressStroke(percent, token);
   };
 
   return (
@@ -149,7 +144,15 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
                   <span className="text-2xl font-black font-mono text-zinc-100 tabular-nums">{teamCallActual}</span>
                   <span className="text-xs text-zinc-400 font-mono">/ {teamCallTarget}</span>
                 </div>
-                <div className="flex items-center gap-1 font-mono text-xs font-bold text-emerald-400 tabular-nums">
+                <div
+                  className={`flex items-center gap-1 font-mono text-xs font-bold tabular-nums ${
+                    teamCallPercent >= 100
+                      ? 'text-emerald-400'
+                      : teamCallPercent >= 80
+                        ? 'text-amber-400'
+                        : 'text-rose-400'
+                  }`}
+                >
                   <TrendingUp className="w-3 h-3" />
                   {teamCallPercent}%
                 </div>
@@ -159,7 +162,7 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
               <div className="mt-2.5">
                 <Progress
                   percent={Math.min(100, Math.max(0, teamCallPercent))}
-                  strokeColor={token.colorSuccess}
+                  strokeColor={getProgressStrokeColor(teamCallPercent)}
                   strokeWidth={6}
                   size="small"
                   showInfo={false}
@@ -172,8 +175,12 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
               <span className="text-zinc-500">Chênh lệch mục tiêu:</span>
               {teamCallGap >= 0 ? (
                 <span className="font-mono font-bold text-emerald-400 tabular-nums">+{teamCallGap} vượt chỉ tiêu</span>
-              ) : (
+              ) : teamCallPercent >= 80 ? (
                 <span className="font-mono font-bold text-amber-400 tabular-nums">
+                  Thiếu {Math.abs(teamCallGap)} cuộc (Gần đạt)
+                </span>
+              ) : (
+                <span className="font-mono font-bold text-rose-400 tabular-nums">
                   Thiếu {Math.abs(teamCallGap)} cuộc
                 </span>
               )}
@@ -181,11 +188,11 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
           </div>
 
           {/* Cấp Team: Nghe máy (Pickup) */}
-          <div className="bg-black/40 border border-zinc-800/80 hover:border-cyan-500/40 transition-colors p-3.5 rounded-xl flex flex-col justify-between">
+          <div className="bg-black/40 border border-zinc-800/80 hover:border-emerald-500/40 transition-colors p-3.5 rounded-xl flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between text-xs mb-1.5">
-                <span className="flex items-center gap-1.5 text-cyan-400 font-semibold">
-                  <PhoneIncoming className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+                  <PhoneIncoming className="w-3.5 h-3.5 text-emerald-400" />
                   Nghe máy (Pickup)
                 </span>
                 <span className="text-[11px] text-zinc-400 font-mono">≥ {pickupTargetPerStaff} Pickup/NV</span>
@@ -196,7 +203,15 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
                   <span className="text-2xl font-black font-mono text-zinc-100 tabular-nums">{teamPickupActual}</span>
                   <span className="text-xs text-zinc-400 font-mono">/ {teamPickupTarget}</span>
                 </div>
-                <div className="flex items-center gap-1 font-mono text-xs font-bold text-cyan-400 tabular-nums">
+                <div
+                  className={`flex items-center gap-1 font-mono text-xs font-bold tabular-nums ${
+                    teamPickupPercent >= 100
+                      ? 'text-emerald-400'
+                      : teamPickupPercent >= 80
+                        ? 'text-amber-400'
+                        : 'text-rose-400'
+                  }`}
+                >
                   <TrendingUp className="w-3 h-3" />
                   {teamPickupPercent}%
                 </div>
@@ -206,7 +221,7 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
               <div className="mt-2.5">
                 <Progress
                   percent={Math.min(100, Math.max(0, teamPickupPercent))}
-                  strokeColor={token.colorInfo}
+                  strokeColor={getProgressStrokeColor(teamPickupPercent)}
                   strokeWidth={6}
                   size="small"
                   showInfo={false}
@@ -218,9 +233,15 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
             <div className="mt-3 pt-2.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
               <span className="text-zinc-500">Chênh lệch mục tiêu:</span>
               {teamPickupGap >= 0 ? (
-                <span className="font-mono font-bold text-cyan-400 tabular-nums">+{teamPickupGap} vượt chỉ tiêu</span>
-              ) : (
+                <span className="font-mono font-bold text-emerald-400 tabular-nums">
+                  +{teamPickupGap} vượt chỉ tiêu
+                </span>
+              ) : teamPickupPercent >= 80 ? (
                 <span className="font-mono font-bold text-amber-400 tabular-nums">
+                  Thiếu {Math.abs(teamPickupGap)} cuộc (Gần đạt)
+                </span>
+              ) : (
+                <span className="font-mono font-bold text-rose-400 tabular-nums">
                   Thiếu {Math.abs(teamPickupGap)} cuộc
                 </span>
               )}
@@ -248,7 +269,7 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
                 {/* Header: Tên & Badge trạng thái */}
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-zinc-200 font-bold truncate">{s.name}</span>
-                  {getStatusBadge(s.status, s.statusLabel)}
+                  {getStatusBadge(s.overallPercent, s.isWorkingToday, s.status, s.statusLabel)}
                 </div>
 
                 {s.isWorkingToday ? (
@@ -266,8 +287,8 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
                             s.callPercent >= 100
                               ? 'text-emerald-400'
                               : s.callPercent >= 80
-                                ? 'text-blue-400'
-                                : 'text-amber-400'
+                                ? 'text-amber-400'
+                                : 'text-rose-400'
                           }`}
                         >
                           ({s.callPercent}%)
@@ -278,7 +299,7 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
                     {/* Pickup row */}
                     <div className="flex items-center justify-between text-zinc-400">
                       <span className="flex items-center gap-1 text-zinc-400">
-                        <PhoneIncoming className="w-3 h-3 text-cyan-400" /> Nghe:
+                        <PhoneIncoming className="w-3 h-3 text-emerald-400" /> Nghe:
                       </span>
                       <span className="font-mono tabular-nums font-semibold text-zinc-200">
                         {s.pickupActual}
@@ -286,10 +307,10 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
                         <span
                           className={`text-[10px] font-bold ${
                             s.pickupPercent >= 100
-                              ? 'text-cyan-400'
+                              ? 'text-emerald-400'
                               : s.pickupPercent >= 80
-                                ? 'text-blue-400'
-                                : 'text-amber-400'
+                                ? 'text-amber-400'
+                                : 'text-rose-400'
                           }`}
                         >
                           ({s.pickupPercent}%)
@@ -308,7 +329,17 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
                       />
                       <div className="text-[10px] text-zinc-500 mt-0.5 flex justify-between font-mono">
                         <span>Tổng hợp</span>
-                        <span className="font-bold text-zinc-300 tabular-nums">{s.overallPercent}%</span>
+                        <span
+                          className={`font-bold tabular-nums ${
+                            s.overallPercent >= 100
+                              ? 'text-emerald-400'
+                              : s.overallPercent >= 80
+                                ? 'text-amber-400'
+                                : 'text-rose-400'
+                          }`}
+                        >
+                          {s.overallPercent}%
+                        </span>
                       </div>
                     </div>
                   </div>

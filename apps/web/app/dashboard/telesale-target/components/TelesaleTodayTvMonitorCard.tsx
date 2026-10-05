@@ -2,9 +2,20 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Progress, Tooltip, Button, theme } from 'antd';
-import { Tv, CheckCircle2, Calendar, Maximize2, Sparkles, Clock, AlertCircle, Volume2, ClipboardList } from 'lucide-react';
+import {
+  Tv,
+  CheckCircle2,
+  Calendar,
+  Maximize2,
+  Sparkles,
+  Clock,
+  AlertCircle,
+  Volume2,
+  ClipboardList,
+} from 'lucide-react';
 import { TelesaleTargetOverview, isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { calculateShiftPacing, calculateTvMonitorMetrics } from '../utils/tv-monitor-pacing';
+import { getKpiProgressStroke } from '../utils/kpi-color-utils';
 import { TelesaleTvCelebration } from './TelesaleTvCelebration';
 import { TelesaleTvJournalModal } from './TelesaleTvJournalModal';
 
@@ -178,9 +189,7 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
               {/* Dominant Thick Progress Bar */}
               <Progress
                 percent={Math.min(100, metrics.bookPercent)}
-                strokeColor={
-                  isBookOver100 ? token.colorWarning : metrics.gapBook >= 0 ? token.colorInfo : token.colorWarning
-                }
+                strokeColor={getKpiProgressStroke(metrics.bookPercent, token)}
                 strokeWidth={8}
                 size="small"
                 showInfo={false}
@@ -192,11 +201,11 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
                 <span className="text-zinc-400">Tiến độ</span>
                 <span
                   className={`font-black ${
-                    isBookOver100
-                      ? 'text-amber-400 animate-pulse'
-                      : metrics.bookPercent >= 75
-                        ? 'text-blue-300'
-                        : 'text-zinc-200'
+                    metrics.bookPercent >= 100
+                      ? 'text-emerald-400 animate-pulse'
+                      : metrics.bookPercent >= 80
+                        ? 'text-amber-400'
+                        : 'text-rose-400'
                   }`}
                 >
                   {isBookOver100 ? `✨ ${metrics.bookPercent}% VƯỢT` : `${metrics.bookPercent}%`}
@@ -257,9 +266,7 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
               {/* Progress Bar */}
               <Progress
                 percent={Math.min(100, metrics.donePercent)}
-                strokeColor={
-                  isDoneOver100 ? token.colorWarning : metrics.gapDone >= 0 ? token.colorSuccess : token.colorWarning
-                }
+                strokeColor={getKpiProgressStroke(metrics.donePercent, token)}
                 strokeWidth={5}
                 size="small"
                 showInfo={false}
@@ -271,7 +278,11 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
                 <span className="text-zinc-400">Tiến độ</span>
                 <span
                   className={`font-black ${
-                    isDoneOver100 ? 'text-amber-400' : metrics.donePercent >= 75 ? 'text-emerald-300' : 'text-zinc-200'
+                    metrics.donePercent >= 100
+                      ? 'text-emerald-400 animate-pulse'
+                      : metrics.donePercent >= 80
+                        ? 'text-amber-400'
+                        : 'text-rose-400'
                   }`}
                 >
                   {isDoneOver100 ? `✨ ${metrics.donePercent}% VƯỢT` : `${metrics.donePercent}%`}

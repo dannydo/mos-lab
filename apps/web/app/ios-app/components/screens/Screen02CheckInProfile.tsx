@@ -12,12 +12,15 @@ interface Screen02CheckInProfileProps {
 }
 
 export function Screen02CheckInProfile({ booking, onBack, onCheckIn }: Screen02CheckInProfileProps) {
-  const customerName = booking?.customerName || 'Chị Quyên';
-  const customerPhone = booking?.customerPhone || '0937.554.430';
-  const serviceName = booking?.serviceName || 'New Flawless 550';
+  const customerName = booking?.customerName || 'Khách Hàng';
+  const customerPhone = booking?.customerPhone || '0901.xxx.xxx';
+  const serviceName = booking?.serviceName || 'Dịch vụ';
   const servicePrice = booking?.servicePrice ? `${booking.servicePrice.toLocaleString('vi-VN')} đ` : '550.000 đ';
-  const bookingTime = (booking as any)?.bookingTime || booking?.timeSlot || '10:30 am';
-  const assignedStaff = booking?.assignedStaffName || 'Thảo Ly';
+  const bookingTime = booking?.time12h || booking?.timeSlot || '09:00 am';
+  const assignedStaff = booking?.assignedStaffName || 'Chưa phân công';
+  const bookerName = booking?.bookerName || 'Hệ thống';
+  const visits = booking?.customerVisits || 1;
+  const customerNote = booking?.customerNote || 'Không có ghi chú đặc biệt';
 
   return (
     <div className="flex-1 flex flex-col bg-[#F2F2F7] overflow-y-auto select-none">
@@ -46,26 +49,24 @@ export function Screen02CheckInProfile({ booking, onBack, onCheckIn }: Screen02C
                 }}
               />
             ) : (
-              <div className="w-full h-full bg-[#FFB400] rounded-full flex items-center justify-center text-black font-extrabold text-2xl">
-                {customerName.charAt(0) || 'Q'}
-              </div>
+              <img src="/ios-assets/no-image.png" alt="No Image" className="w-full h-full object-cover rounded-full" />
             )}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <h2 className="text-[17px] font-bold text-black tracking-tight truncate">{customerName}</h2>
               <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#D97706] font-bold tracking-tight">
-                GOLD VIP
+                {visits >= 5 ? 'GOLD VIP' : visits > 1 ? 'REGULAR' : 'NEW'}
               </span>
             </div>
             <div className="text-[13px] text-gray-500 font-normal mt-0.5">{customerPhone}</div>
             <div className="text-[13px] text-gray-800 font-medium mt-0.5">
               <span>
-                Lần ghé: <strong className="font-bold">15</strong>
+                Lần ghé: <strong className="font-bold">{visits}</strong>
               </span>
               <span className="mx-2 text-gray-300">·</span>
               <span>
-                Ví: <strong className="font-bold">0 đ</strong>
+                Booker: <strong className="font-bold text-[#FFA000]">{bookerName}</strong>
               </span>
             </div>
           </div>
@@ -77,9 +78,8 @@ export function Screen02CheckInProfile({ booking, onBack, onCheckIn }: Screen02C
             DẶN DÒ & LƯU Ý KỸ THUẬT
           </div>
           <div className="bg-[#FFF5F5] border border-red-200 rounded-2xl p-3.5 shadow-sm">
-            <p className="text-[13px] text-red-500 font-medium leading-relaxed">
-              ⚠️ 19/01 Chị book {assignedStaff} , nối mới, 50% ngày vàng. Mắt nhạy cảm, thích nối form tự nhiên mỏng
-              nhẹ, dán gel pad êm.
+            <p className="text-[13px] text-red-500 font-medium leading-relaxed whitespace-pre-line">
+              ⚠️ {customerNote}
             </p>
           </div>
         </div>
@@ -103,8 +103,8 @@ export function Screen02CheckInProfile({ booking, onBack, onCheckIn }: Screen02C
               <span className="text-gray-500 font-medium">{bookingTime} (Hôm nay)</span>
             </div>
             <div className="p-3.5 flex items-center justify-between text-[14px]">
-              <span className="text-black font-medium">Chuyên viên yêu cầu</span>
-              <span className="text-[#FF9500] font-semibold">{assignedStaff} (Đích danh)</span>
+              <span className="text-black font-medium">Chuyên viên phụ trách</span>
+              <span className="text-[#FF9500] font-semibold">{assignedStaff}</span>
             </div>
           </div>
         </div>

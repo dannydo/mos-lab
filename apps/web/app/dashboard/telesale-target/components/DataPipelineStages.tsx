@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Progress, Button } from 'antd';
+import { Progress, Button, theme } from 'antd';
 import { CheckCircle2, Heart, Gift, Bell, Phone } from 'lucide-react';
 import { TelesalePipelineStage, TelesalePipelineStageKey } from '@mos-lab/shared';
+import { getKpiColorClasses, getKpiProgressStroke } from '../utils/kpi-color-utils';
 
 interface DataPipelineStagesProps {
   stages: TelesalePipelineStage[];
@@ -11,18 +12,7 @@ interface DataPipelineStagesProps {
 }
 
 export const DataPipelineStages: React.FC<DataPipelineStagesProps> = ({ stages, onSelectStage }) => {
-  const getStageHeaderBg = (key: TelesalePipelineStageKey) => {
-    switch (key) {
-      case '0_30':
-        return 'from-emerald-950/40 to-zinc-950 border-emerald-500/30 hover:border-emerald-400';
-      case '31_60':
-        return 'from-blue-950/40 to-zinc-950 border-blue-500/30 hover:border-blue-400';
-      case '61_120':
-        return 'from-amber-950/40 to-zinc-950 border-amber-500/30 hover:border-amber-400';
-      case 'gt_120':
-        return 'from-purple-950/50 to-zinc-950 border-pink-500/40 hover:border-pink-400';
-    }
-  };
+  const { token } = theme.useToken();
 
   const getStageIcon = (key: TelesalePipelineStageKey) => {
     switch (key) {
@@ -61,15 +51,15 @@ export const DataPipelineStages: React.FC<DataPipelineStagesProps> = ({ stages, 
           const isOver100 = percent > 100;
           const comboLiveActual = stage.comboLiveDoneActual || 0;
           const totalStageDone = stage.doneActual + comboLiveActual;
+          const kpiColors = getKpiColorClasses(percent);
+          const progressStroke = getKpiProgressStroke(percent, token);
 
           return (
             <div
               key={stage.key}
               onClick={() => onSelectStage(stage)}
-              className={`cursor-pointer rounded-xl bg-gradient-to-b ${getStageHeaderBg(
-                stage.key
-              )} border p-4 flex flex-col justify-between transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl group relative overflow-hidden ${
-                isOver100 ? 'border-amber-400 supercharged-aura' : ''
+              className={`cursor-pointer rounded-xl bg-gradient-to-b ${kpiColors.bgClass} ${kpiColors.borderClass} ${kpiColors.hoverBorderClass} p-4 flex flex-col justify-between transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl group relative overflow-hidden ${
+                isOver100 ? 'supercharged-aura' : ''
               }`}
             >
               {/* Top Accent Icon & Badges */}
@@ -82,15 +72,9 @@ export const DataPipelineStages: React.FC<DataPipelineStagesProps> = ({ stages, 
                       <div className="text-xs font-black uppercase text-amber-300 tracking-wide">{stage.subLabel}</div>
                     </div>
                   </div>
-                  {isOver100 ? (
-                    <span className="px-2 py-0.5 text-[10px] font-black rounded bg-gradient-to-r from-amber-500 to-orange-500 text-black border-0 shadow">
-                      🔥 VƯỢT {percent}%
-                    </span>
-                  ) : stage.badge ? (
-                    <span className="px-2 py-0.5 text-[10px] font-black rounded bg-amber-500/20 text-amber-300 border border-amber-400/30">
-                      {stage.badge}
-                    </span>
-                  ) : null}
+                  <span className={`px-2 py-0.5 text-[10px] font-bold rounded ${kpiColors.badgeClass}`}>
+                    {kpiColors.badgeLabel}
+                  </span>
                 </div>
 
                 {/* Target & Done Realtime Metric */}
@@ -107,13 +91,14 @@ export const DataPipelineStages: React.FC<DataPipelineStagesProps> = ({ stages, 
                       <span className="text-xs text-zinc-500 font-mono">/ {stage.doneTarget} Done</span>
                     </div>
                     <span
-                      className={`text-xs font-mono font-bold ${isOver100 ? 'text-amber-400 animate-pulse font-black' : 'text-emerald-400'}`}
+                      className={`text-xs font-mono font-bold tabular-nums ${kpiColors.textClass} ${isOver100 ? 'animate-pulse font-black' : ''}`}
                     >
                       {isOver100 ? `🔥 ${percent}% VƯỢT` : `${percent}%`}
                     </span>
                   </div>
                   <Progress
                     percent={Math.min(100, percent)}
+                    strokeColor={progressStroke}
                     size="small"
                     showInfo={false}
                     className={`mt-1.5 ${isOver100 ? 'supercharged-bar' : ''}`}
