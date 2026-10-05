@@ -435,12 +435,16 @@ function TelesaleTargetContent() {
           <div className="lg:col-span-5 flex flex-col justify-between gap-3 h-full overflow-hidden">
             {/* Box 2: TV Monitor Hôm Nay (Top 44%) */}
             <div className="h-[44%] overflow-hidden">
-              <TelesaleTodayTvMonitorCard overview={overview} onOpenFullscreen={() => setTvModeOpen(true)} />
+              <TelesaleTodayTvMonitorCard
+                overview={overview}
+                isTvOpen={tvModeOpen}
+                onOpenFullscreen={() => setTvModeOpen(true)}
+              />
             </div>
 
             {/* Box 4: Hành Động Mỗi Ngày (Bottom 54%) */}
             <div className="h-[54%] overflow-hidden">
-              <DailyActionSchedule overview={overview} />
+              <DailyActionSchedule overview={overview} isTvOpen={tvModeOpen} />
             </div>
           </div>
 

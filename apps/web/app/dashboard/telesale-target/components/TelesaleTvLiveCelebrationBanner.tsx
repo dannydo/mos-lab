@@ -117,7 +117,7 @@ const CelebrationCanvas: React.FC<{ active: boolean; isMilestone: boolean; color
         const sparkCount = 45;
         for (let i = 0; i < sparkCount; i++) {
           const angle = Math.random() * Math.PI * 2;
-          const speed = Math.pow(Math.random(), 0.5) * 11 + 3.5;
+          const speed = (Math.pow(Math.random(), 0.5) * 11 + 3.5) * 0.3; // 30% speed
           particles.push({
             x: b.x,
             y: b.y,
@@ -128,7 +128,7 @@ const CelebrationCanvas: React.FC<{ active: boolean; isMilestone: boolean; color
             rotation: Math.random() * 360,
             spin: (Math.random() - 0.5) * 8,
             life: -b.delay, // staggered launch
-            maxLife: Math.random() * 40 + 50,
+            maxLife: Math.random() * 40 + 75,
             isSpark: true,
           });
         }
@@ -144,7 +144,7 @@ const CelebrationCanvas: React.FC<{ active: boolean; isMilestone: boolean; color
         const sparkCount = 38;
         for (let i = 0; i < sparkCount; i++) {
           const angle = Math.random() * Math.PI * 2;
-          const speed = Math.pow(Math.random(), 0.45) * 10 + 3;
+          const speed = (Math.pow(Math.random(), 0.45) * 10 + 3) * 0.3; // 30% speed
           particles.push({
             x: b.x,
             y: b.y,
@@ -155,7 +155,7 @@ const CelebrationCanvas: React.FC<{ active: boolean; isMilestone: boolean; color
             rotation: Math.random() * 360,
             spin: (Math.random() - 0.5) * 6,
             life: -b.delay,
-            maxLife: Math.random() * 35 + 40,
+            maxLife: Math.random() * 35 + 65,
             isSpark: true,
           });
         }
@@ -166,14 +166,14 @@ const CelebrationCanvas: React.FC<{ active: boolean; isMilestone: boolean; color
         particles.push({
           x: Math.random() * width,
           y: Math.random() * height * 0.6,
-          vx: (Math.random() - 0.5) * 0.6,
-          vy: -Math.random() * 0.6 - 0.2,
+          vx: (Math.random() - 0.5) * 0.6 * 0.3,
+          vy: (-Math.random() * 0.6 - 0.2) * 0.3,
           size: Math.random() * 2.5 + 1.2,
           color: colors[Math.floor(Math.random() * colors.length)],
           rotation: Math.random() * 360,
           spin: (Math.random() - 0.5) * 4,
           life: 0,
-          maxLife: 100,
+          maxLife: 120,
           isSpark: true,
         });
       }
@@ -182,7 +182,8 @@ const CelebrationCanvas: React.FC<{ active: boolean; isMilestone: boolean; color
     let animationId: number;
 
     const render = () => {
-      ctx.clearRect(0, 0, width, height);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       let aliveCount = 0;
       ctx.save();
@@ -200,9 +201,9 @@ const CelebrationCanvas: React.FC<{ active: boolean; isMilestone: boolean; color
           // Snappy spark physics
           p.x += p.vx;
           p.y += p.vy;
-          p.vx *= 0.955; // drag
-          p.vy *= 0.955;
-          p.vy += 0.2; // natural gravity
+          p.vx *= 0.97; // drag
+          p.vy *= 0.97;
+          p.vy += 0.066; // natural gravity at 30% speed
           p.rotation += p.spin;
 
           const alpha = Math.max(0, 1 - p.life / p.maxLife) * (0.7 + Math.random() * 0.3);

@@ -25,7 +25,6 @@ import 'dayjs/locale/vi';
 import { TelesaleTargetOverview, isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { calculateShiftPacing, calculateTvMonitorMetrics } from '../utils/tv-monitor-pacing';
 import { getKpiProgressStroke } from '../utils/kpi-color-utils';
-import { TelesaleTvCelebration } from './TelesaleTvCelebration';
 import { useTelesaleTvLiveCelebration } from '../hooks/useTelesaleTvLiveCelebration';
 import { TelesaleTvLiveCelebrationBanner } from './TelesaleTvLiveCelebrationBanner';
 import { TelesaleTvStaffContributionGrid } from './TelesaleTvStaffContributionGrid';
@@ -53,7 +52,6 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
   const { token } = theme.useToken();
   const [now, setNow] = useState<Date>(new Date());
   const [isBrowserFullscreen, setIsBrowserFullscreen] = useState<boolean>(false);
-  const [showCelebration, setShowCelebration] = useState<boolean>(false);
   const [journalOpen, setJournalOpen] = useState<boolean>(false);
 
   const isManagerOrAdmin = useMemo(() => {
@@ -136,13 +134,6 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
     }
     checkMilestones(overview.teamDaily.date, metrics.bookActual, metrics.doneActual);
   }, [open, overview, ingestLiveEvents, checkMilestones, metrics.bookActual, metrics.doneActual]);
-
-  // Trigger celebration when completed
-  useEffect(() => {
-    if (open && metrics.teamState === 'COMPLETED') {
-      setShowCelebration(true);
-    }
-  }, [open, metrics.teamState]);
 
   const isDoneOver100 = metrics.donePercent >= 100;
   const isBookOver100 = metrics.bookPercent >= 100;
@@ -411,7 +402,6 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
 
   return (
     <div className="fixed inset-0 z-[99999] bg-zinc-950 text-zinc-100 flex flex-col justify-between p-3 sm:p-4 select-none overflow-hidden font-sans h-screen max-h-screen">
-      <TelesaleTvCelebration active={showCelebration} onComplete={() => setShowCelebration(false)} />
       <TelesaleTvLiveCelebrationBanner
         celebration={activeCelebration}
         isSpeaking={isSpeaking}
@@ -800,9 +790,13 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
 
             <div className="mt-3 pt-2 border-t border-zinc-800/60 flex items-center justify-between text-xs font-mono text-zinc-400">
               <span>
-                Định mức tối thiểu mỗi ngày: <strong className="text-zinc-200">25 Cuộc hẹn thành công</strong>
+                Định mức tối thiểu mỗi ngày:{' '}
+                <strong className="text-zinc-200">{metrics.bookTarget} Cuộc hẹn thành công</strong>
               </span>
-              <span className="text-zinc-400 font-medium">Hành động chính dẫn dắt</span>
+              <span className="text-purple-300 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                Combo: +{metrics.comboLiveBookActual || 0} Book
+              </span>
             </div>
           </div>
         </div>
@@ -832,7 +826,17 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
               <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${doneStyles.iconBox}`}>
                 <CheckCircle2 className="w-4 h-4" />
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-zinc-100 tracking-tight m-0">DONE HÔM NAY</h2>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl sm:text-2xl font-black text-zinc-100 tracking-tight m-0">DONE KHÁCH LẺ</h2>
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-mono font-bold">
+                    KPI CHÍNH
+                  </span>
+                </div>
+                <span className="text-[11px] font-mono text-zinc-400 block mt-0.5">
+                  Khách lẻ đơn hoàn tất hôm nay (Single)
+                </span>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <span
@@ -917,15 +921,12 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
 
             <div className="mt-3 pt-2 border-t border-zinc-800/60 flex items-center justify-between text-xs font-mono text-zinc-400">
               <span>
-                Chỉ tiêu phân bổ ca: <strong className="text-zinc-200">{metrics.doneTarget} Lượt hoàn tất</strong>
+                Chỉ tiêu phân bổ ca: <strong className="text-zinc-200">{metrics.doneTarget} Khách lẻ</strong>
               </span>
-              {metrics.comboLiveDoneActual > 0 ? (
-                <span className="text-purple-300 font-bold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />+{metrics.comboLiveDoneActual} Combo Live
-                </span>
-              ) : (
-                <span className="text-zinc-400 font-medium">Kết quả theo sau</span>
-              )}
+              <span className="text-purple-300 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                Combo: +{metrics.comboLiveDoneActual || 0} Done
+              </span>
             </div>
           </div>
         </div>

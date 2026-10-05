@@ -46,9 +46,10 @@ const getActionTierStyles = (tier: 'rose' | 'amber' | 'emerald') => {
 
 interface DailyActionScheduleProps {
   overview: TelesaleTargetOverview;
+  isTvOpen?: boolean;
 }
 
-export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overview }) => {
+export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overview, isTvOpen = false }) => {
   const { dailyAction, staffTargets } = overview;
 
   const callTargetPerStaff = dailyAction.callTargetPerStaff || 83;
@@ -126,8 +127,13 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
         <div className="grid grid-cols-2 gap-2.5 mb-2">
           {/* Semicircle 1: Cuộc Gọi */}
           <div className={callStyles.container}>
-            {/* Pháo bông thực tế khi đạt mốc >= 100% */}
-            <RealisticCardFireworks active={isCallOver100} theme="emerald" cardLabel="CALLS" />
+            {/* Pháo bông thực tế khi đạt mốc >= 100% (tắt khi mở TV fullscreen) */}
+            <RealisticCardFireworks
+              active={!isTvOpen && isCallOver100}
+              soundEnabled={!isTvOpen}
+              theme="emerald"
+              cardLabel="CALLS"
+            />
             <div>
               <div className="flex items-center justify-between text-xs mb-0.5 relative z-10">
                 <span className={`flex items-center gap-1 ${callStyles.title}`}>
@@ -182,8 +188,13 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
 
           {/* Semicircle 2: Pickup */}
           <div className={pickupStyles.container}>
-            {/* Pháo bông thực tế khi đạt mốc >= 100% */}
-            <RealisticCardFireworks active={isPickupOver100} theme="emerald" cardLabel="PICKUP" />
+            {/* Pháo bông thực tế khi đạt mốc >= 100% (tắt khi mở TV fullscreen) */}
+            <RealisticCardFireworks
+              active={!isTvOpen && isPickupOver100}
+              soundEnabled={!isTvOpen}
+              theme="emerald"
+              cardLabel="PICKUP"
+            />
             <div>
               <div className="flex items-center justify-between text-xs mb-0.5 relative z-10">
                 <span className={`flex items-center gap-1 ${pickupStyles.title}`}>

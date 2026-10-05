@@ -160,8 +160,8 @@ describe('KpiOverviewCards - MOS-BUG-72 Individual KPI (Done)', () => {
     // 9. Staff Call and Staff Tổng must NOT be present in card body
     expect(screen.queryByText(/Call:/i)).toBeNull();
     expect(screen.queryByText(/^Tổng:\s*\d+$/i)).not.toBeInTheDocument();
-    // 10. Combo must be present for all 3 staff
-    expect(screen.getAllByText(/Combo:/i).length).toBe(3);
+    // 10. Combo must be present across cards (team month, TV monitor, and all 3 staff = 6)
+    expect(screen.getAllByText(/Combo:/i).length).toBe(6);
   });
 
   it('MOS-BUG-95: renders Incoming Tháng card with 6 management metrics and excludes Book Tháng', () => {

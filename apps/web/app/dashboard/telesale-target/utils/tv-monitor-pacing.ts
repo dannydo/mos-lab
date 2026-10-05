@@ -136,6 +136,7 @@ export interface TvMonitorKpiMetrics {
   doneActual: number;
   bookActual: number;
   comboLiveDoneActual: number;
+  comboLiveBookActual: number;
   donePercent: number;
   bookPercent: number;
   expectedDone: number;
@@ -158,6 +159,7 @@ export function calculateTvMonitorMetrics(
     doneActual?: number | null;
     bookActual?: number | null;
     comboLiveDoneActual?: number | null;
+    comboLiveBookActual?: number | null;
   },
   pacing: ShiftPacingResult
 ): TvMonitorKpiMetrics {
@@ -166,6 +168,7 @@ export function calculateTvMonitorMetrics(
   const doneActual = teamDaily.doneActual || 0;
   const bookActual = teamDaily.bookActual || 0;
   const comboLiveDoneActual = teamDaily.comboLiveDoneActual || 0;
+  const comboLiveBookActual = teamDaily.comboLiveBookActual || 0;
 
   const donePercent = Math.round((doneActual / doneTarget) * 100);
   const bookPercent = Math.round((bookActual / bookTarget) * 100);
@@ -242,6 +245,7 @@ export function calculateTvMonitorMetrics(
     doneActual,
     bookActual,
     comboLiveDoneActual,
+    comboLiveBookActual,
     donePercent,
     bookPercent,
     expectedDone,

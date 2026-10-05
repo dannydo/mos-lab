@@ -21,11 +21,15 @@ export const KpiTeamMonthCard: React.FC<KpiCardProps> = ({ overview, className =
   const { token } = theme.useToken();
   const monthNumStr = month.split('-')[1] || '10';
 
-  const donePercent = Math.round((teamMonth.doneActual / (teamMonth.doneTarget || 1)) * 100);
+  const comboLiveMonthActual = teamMonth.comboLiveDoneActual || 0;
+  // Retail Done (Single Done thuần túy không gồm Combo, e.g. 44 ở T10, 313 ở T9)
+  const retailDoneActual = teamMonth.retailDoneActual ?? teamMonth.doneActual;
+  // Total Done in month across all orders (e.g. 44 + 12 = 56 ở T10, 313 + 125 = 438 ở T9)
+  const totalMonthDone = retailDoneActual + comboLiveMonthActual;
+
+  const donePercent = Math.round((retailDoneActual / (teamMonth.doneTarget || 1)) * 100);
   const isDoneOver100 = donePercent > 100;
 
-  const comboLiveMonthActual = teamMonth.comboLiveDoneActual || 0;
-  const totalMonthDone = teamMonth.doneActual + comboLiveMonthActual;
   const comboLiveMonthShare = totalMonthDone > 0 ? Math.round((comboLiveMonthActual / totalMonthDone) * 100) : 0;
 
   const incomingTarget = teamMonth.incomingTarget ?? teamMonth.bookTarget ?? 1;
@@ -54,9 +58,16 @@ export const KpiTeamMonthCard: React.FC<KpiCardProps> = ({ overview, className =
     ? '-'
     : (teamMonth.expectedDone ?? Math.round(teamMonth.doneTarget * (workDaysElapsed / (workDaysTotal || 1))));
 
-  const gapDone = isPeriodNotStarted ? '-' : (teamMonth.gapDone ?? 0);
-  const remainingDone = teamMonth.remainingDone ?? Math.max(0, teamMonth.doneTarget - teamMonth.doneActual);
-  const dailyRequiredDone = isPeriodCompleted ? '-' : `${teamMonth.dailyRequiredDone ?? 0}/ngày`;
+  const gapDone = isPeriodNotStarted
+    ? '-'
+    : typeof expectedDone === 'number'
+      ? retailDoneActual - expectedDone
+      : (teamMonth.gapDone ?? 0);
+  const remainingDone = Math.max(0, teamMonth.doneTarget - retailDoneActual);
+  const workDaysRemaining = teamMonth.workDaysRemaining ?? Math.max(0, workDaysTotal - workDaysElapsed);
+  const dailyRequiredDone = isPeriodCompleted
+    ? '-'
+    : `${workDaysRemaining > 0 ? Number((remainingDone / workDaysRemaining).toFixed(1)) : 0}/ngày`;
 
   const expectedIncoming = isPeriodNotStarted
     ? '-'
@@ -136,7 +147,7 @@ export const KpiTeamMonthCard: React.FC<KpiCardProps> = ({ overview, className =
               {/* Semicircle Gauge (Done Khách Lẻ) - NO OVERLAP */}
               <SemicircleGauge
                 percent={isPeriodNotStarted ? 0 : donePercent}
-                actual={teamMonth.doneActual}
+                actual={retailDoneActual}
                 target={teamMonth.doneTarget}
                 unit="Done"
                 label=""
@@ -180,8 +191,13 @@ export const KpiTeamMonthCard: React.FC<KpiCardProps> = ({ overview, className =
 
             {/* Done Footer */}
             <div className="mt-2 pt-1.5 border-t border-zinc-800/80 text-[10px] text-zinc-400 font-mono flex items-center justify-between">
-              <span>Chỉ tiêu Done</span>
-              <span className="text-zinc-200 font-bold">{teamMonth.doneTarget} Done</span>
+              <span>
+                Chỉ tiêu: <strong className="text-zinc-200 font-bold">{teamMonth.doneTarget} Done</strong>
+              </span>
+              <span className="text-purple-300 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                Combo: +{comboLiveMonthActual} Done
+              </span>
             </div>
           </div>
 
@@ -253,11 +269,11 @@ export const KpiTeamMonthCard: React.FC<KpiCardProps> = ({ overview, className =
           </div>
         </div>
 
-        {/* Combo Live Progress Bar */}
+        {/* Combo Progress Bar */}
         <div className="p-2 rounded-xl bg-purple-950/30 border border-purple-500/30 my-1.5">
           <div className="flex items-center justify-between text-xs font-mono mb-1">
             <span className="text-purple-300 font-bold flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-purple-400" /> Combo Live
+              <span className="w-2 h-2 rounded-full bg-purple-400" /> Combo
             </span>
             <span className="text-purple-200 font-black tabular-nums">{comboLiveMonthActual} Done</span>
           </div>

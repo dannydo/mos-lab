@@ -22,7 +22,6 @@ import {
   SafeAny,
   TELESALES_EXECUTIVE_STANDARDS,
 } from '@mos-lab/shared';
-import { getBkCallMetricsByLegacyStaffIds } from './bk-salary.service.js';
 import { BkLeaderboardService } from './bk-leaderboard.service.js';
 import { buildComboLiveAtBookingSql } from '../../customers/services/combo-recognition.service.js';
 
@@ -710,7 +709,7 @@ export class TelesaleTargetService {
   static async getOverview(
     fastify: FastifyInstance,
     month = '2026-10',
-    currentStaffId?: number
+    _currentStaffId?: number
   ): Promise<TelesaleTargetOverview> {
     const config = await this.getConfig(fastify, month);
     const [yearStr, monthNumStr] = month.split('-');
@@ -733,68 +732,109 @@ export class TelesaleTargetService {
 
     // Active staff IDs strictly reconciled from HR Active Telesales (crmStaff)
     const targetStaffIds = config.staffTargets.map((s) => s.legacyStaffId);
-    const bkIdsStr = targetStaffIds.length > 0 ? targetStaffIds.join(',') : '0';
     const combinedStaffIds = targetStaffIds;
+    const candidateIdsStr = combinedStaffIds.length > 0 ? combinedStaffIds.join(',') : '50670,52648,32268,52598';
 
-    // 1. Fetch Month and Today metrics directly from BkLeaderboardService (Single Source of Truth)
-    const [monthBookingRes, todayBookingRes, monthDoneRes, todayDoneRes, monthRevenueRes, teamMonthIncomingActual] =
-      await Promise.all([
-        BkLeaderboardService.getBookingLeaderboard(fastify, {
-          dateFrom: startDateStr,
-          dateTo: endDateStr,
-          targetStaffIds: combinedStaffIds,
-          skipCache: true,
-        }),
-        BkLeaderboardService.getBookingLeaderboard(fastify, {
-          dateFrom: todayStr,
-          dateTo: todayStr,
-          targetStaffIds: combinedStaffIds,
-          skipCache: true,
-        }),
-        BkLeaderboardService.getDoneLeaderboard(fastify, {
-          dateFrom: startDateStr,
-          dateTo: endDateStr,
-          targetStaffIds: combinedStaffIds,
-          skipCache: true,
-        }),
-        BkLeaderboardService.getDoneLeaderboard(fastify, {
-          dateFrom: todayStr,
-          dateTo: todayStr,
-          targetStaffIds: combinedStaffIds,
-          skipCache: true,
-        }),
-        BkLeaderboardService.getRevenueLeaderboard(fastify, {
-          dateFrom: startDateStr,
-          dateTo: endDateStr,
-          targetStaffIds: combinedStaffIds,
-          skipCache: true,
-        }),
-        BkLeaderboardService.getIncomingBookingsCount(fastify, {
-          dateFrom: startDateStr,
-          dateTo: endDateStr,
-          targetStaffIds: combinedStaffIds,
-        }),
-      ]);
+    const monthOrdersSql = `
+      SELECT 
+        o.id,
+        o.created_staff_id as bookerId,
+        o.order_state as orderState,
+        o.date_created as dateCreated,
+        o.booking_date_start as bookingDateStart,
+        ro.actual_booking_date_start as actualBookingDateStart,
+        o.user_id as customerId,
+        COALESCE(o.total_price, 0) as totalPrice,
+        COALESCE(
+          (
+            SELECT DATEDIFF(o.date_created, prev_o.booking_date_start)
+            FROM \`order\` prev_o
+            WHERE prev_o.user_id = o.user_id
+              AND prev_o.order_state = 'Completed'
+              AND prev_o.date_created < o.date_created
+            ORDER BY prev_o.date_created DESC
+            LIMIT 1
+          ),
+          999
+        ) as daysSinceLastVisit,
+        CASE WHEN ${buildComboLiveAtBookingSql('o')} THEN 1 ELSE 0 END as isComboLive
+      FROM \`order\` o
+      LEFT JOIN report_order ro ON ro.order_id = o.id
+      WHERE (
+        (ro.actual_booking_date_start >= '${startDateTimeStr}' AND ro.actual_booking_date_start <= '${endDateTimeStr}')
+        OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${startDateTimeStr}' AND o.booking_date_start <= '${endDateTimeStr}')
+      )
+        AND o.created_staff_id IN (${candidateIdsStr})
+        AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)
+    `;
 
-    // Team Month actuals: 100% unified with BK Leaderboard
-    const teamMonthBookActual = monthBookingRes.summary.totalBookings;
-    const teamMonthDoneActual = monthDoneRes.summary.totalDone;
-    let teamMonthComboLiveDoneActual = 0;
+    // 1. Fetch Month, Today metrics, and month orders in parallel (Single Source of Truth)
+    const [
+      _monthBookingRes,
+      todayBookingRes,
+      monthDoneRes,
+      _todayDoneRes,
+      monthRevenueRes,
+      teamMonthIncomingActual,
+      rawMonthOrders,
+    ] = await Promise.all([
+      BkLeaderboardService.getBookingLeaderboard(fastify, {
+        dateFrom: startDateStr,
+        dateTo: endDateStr,
+        targetStaffIds: combinedStaffIds,
+        skipCache: true,
+      }),
+      BkLeaderboardService.getBookingLeaderboard(fastify, {
+        dateFrom: todayStr,
+        dateTo: todayStr,
+        targetStaffIds: combinedStaffIds,
+        skipCache: true,
+      }),
+      BkLeaderboardService.getDoneLeaderboard(fastify, {
+        dateFrom: startDateStr,
+        dateTo: endDateStr,
+        targetStaffIds: combinedStaffIds,
+        skipCache: true,
+      }),
+      BkLeaderboardService.getDoneLeaderboard(fastify, {
+        dateFrom: todayStr,
+        dateTo: todayStr,
+        targetStaffIds: combinedStaffIds,
+        skipCache: true,
+      }),
+      BkLeaderboardService.getRevenueLeaderboard(fastify, {
+        dateFrom: startDateStr,
+        dateTo: endDateStr,
+        targetStaffIds: combinedStaffIds,
+        skipCache: true,
+      }),
+      BkLeaderboardService.getIncomingBookingsCount(fastify, {
+        dateFrom: startDateStr,
+        dateTo: endDateStr,
+        targetStaffIds: combinedStaffIds,
+      }),
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(monthOrdersSql).catch(() => []),
+    ]);
+
+    const monthOrders: SafeAny[] = rawMonthOrders || [];
+    const teamMonthComboLiveDoneActual = monthOrders.filter((o) => Number(o.isComboLive) === 1).length;
+    const rawTotalMonthDone = monthDoneRes.summary.totalDone;
+    // KPI is STRICTLY Single Done (Done Khách Lẻ). Combo Live is kept completely separate!
+    const teamMonthSingleDoneActual = Math.max(0, rawTotalMonthDone - teamMonthComboLiveDoneActual);
+
     const incomingTarget = config.teamIncomingTarget ?? config.teamBookTarget;
 
     // Team Daily actuals: 100% unified with BK Leaderboard
     const teamDailyBookActual = todayBookingRes.summary.totalBookings;
-    const teamDailyDoneActual = todayDoneRes.summary.totalDone;
-    const teamDailyComboLiveDoneActual = 0;
 
-    // Pacing & Management metrics calculation (MOS-BUG-67, MOS-BUG-95: Incoming replaces created Bookings in Ô 1)
+    // Pacing & Management metrics calculation: Done KPI strictly uses Single Done!
     const pacing = await this.calculateTeamWorkDaysPacing(
       fastify,
       month,
       targetStaffIds,
       nowIct,
       config.teamDoneTarget,
-      teamMonthDoneActual,
+      teamMonthSingleDoneActual,
       config.teamBookTarget,
       teamMonthIncomingActual,
       incomingTarget,
@@ -912,74 +952,92 @@ export class TelesaleTargetService {
       }
     }
 
-    const candidateIdsStr = allCandidateIds.length > 0 ? allCandidateIds.join(',') : '50670,52648,32268,52598';
-
-    // Query month orders to determine Combo Live Done for staff targets, pipeline stages, and team totals
-    let monthOrders: SafeAny[] = [];
-    try {
-      const monthOrdersSql = `
+    // Query today's completed and booked orders with isComboLive recognition
+    const [todayBookOrders, todayDoneOrders] = await Promise.all([
+      fastify.prisma.legacy
+        .$queryRawUnsafe<SafeAny[]>(
+          `
         SELECT 
           o.id,
           o.created_staff_id as bookerId,
           o.order_state as orderState,
-          o.date_created as dateCreated,
-          o.booking_date_start as bookingDateStart,
-          ro.actual_booking_date_start as actualBookingDateStart,
-          o.user_id as customerId,
-          COALESCE(o.total_price, 0) as totalPrice,
-          COALESCE(
-            (
-              SELECT DATEDIFF(o.date_created, prev_o.booking_date_start)
-              FROM \`order\` prev_o
-              WHERE prev_o.user_id = o.user_id
-                AND prev_o.order_state = 'Completed'
-                AND prev_o.date_created < o.date_created
-              ORDER BY prev_o.date_created DESC
-              LIMIT 1
-            ),
-            999
-          ) as daysSinceLastVisit,
+          DATE_FORMAT(o.date_created, '%Y-%m-%dT%H:%i:%s+07:00') as dateCreated,
+          CASE WHEN ${buildComboLiveAtBookingSql('o')} THEN 1 ELSE 0 END as isComboLive
+        FROM \`order\` o
+        WHERE o.date_created >= '${todayStartStr}' 
+          AND o.date_created <= '${todayEndStr}'
+          AND o.created_staff_id IN (${candidateIdsStr})
+      `
+        )
+        .catch(() => []),
+      fastify.prisma.legacy
+        .$queryRawUnsafe<SafeAny[]>(
+          `
+        SELECT 
+          o.id as id,
+          o.created_staff_id as bookerId,
+          o.order_state as orderState,
+          o.total_price as totalPrice,
+          DATE_FORMAT(o.booking_date_start, '%Y-%m-%dT%H:%i:%s+07:00') as bookingDateStart,
+          DATE_FORMAT(ro.actual_booking_date_start, '%Y-%m-%dT%H:%i:%s+07:00') as actualBookingDateStart,
+          DATE_FORMAT(ro.actual_booking_date_end, '%Y-%m-%dT%H:%i:%s+07:00') as actualBookingDateEnd,
+          DATE_FORMAT(o.date_updated, '%Y-%m-%dT%H:%i:%s+07:00') as dateUpdated,
+          DATE_FORMAT(COALESCE(ro.actual_booking_date_end, o.date_updated, ro.actual_booking_date_start, o.date_created), '%Y-%m-%dT%H:%i:%s+07:00') as doneDate,
           CASE WHEN ${buildComboLiveAtBookingSql('o')} THEN 1 ELSE 0 END as isComboLive
         FROM \`order\` o
         LEFT JOIN report_order ro ON ro.order_id = o.id
-        WHERE (
-          (ro.actual_booking_date_start >= '${startDateTimeStr}' AND ro.actual_booking_date_start <= '${endDateTimeStr}')
-          OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${startDateTimeStr}' AND o.booking_date_start <= '${endDateTimeStr}')
+        WHERE o.created_staff_id IN (${candidateIdsStr})
+          AND (
+            (ro.actual_booking_date_start >= '${todayStartStr}' AND ro.actual_booking_date_start <= '${todayEndStr}')
+            OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${todayStartStr}' AND o.booking_date_start <= '${todayEndStr}')
+          )
+          AND o.order_state = 'Completed'
+      `
         )
-          AND o.created_staff_id IN (${candidateIdsStr})
-          AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)
-      `;
-      monthOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(monthOrdersSql).catch(() => []);
-      teamMonthComboLiveDoneActual = monthOrders.filter((o) => Number(o.isComboLive) === 1).length;
-    } catch (err) {
-      fastify.log.warn(`Failed to query month orders for telesale target: ${err}`);
-    }
+        .catch(() => []),
+    ]);
+
+    const teamDailyComboLiveDoneActual = todayDoneOrders.filter((o) => Number(o.isComboLive || 0) === 1).length;
+    const teamDailySingleDoneActual = todayDoneOrders.filter((o) => Number(o.isComboLive || 0) === 0).length;
+    const teamDailyComboLiveBookActual = todayBookOrders.filter((o) => Number(o.isComboLive || 0) === 1).length;
 
     // 4. Map staffTargets directly from BK Leaderboard results (Single Source of Truth)
     const staffTargets: TelesaleStaffTarget[] = allStaffCandidates.map((st) => {
       const staffMonthDone = monthDoneRes.leaderboard.find((l) => Number(l.bookerId) === Number(st.legacyStaffId));
-      const staffTodayDone = todayDoneRes.leaderboard.find((l) => Number(l.bookerId) === Number(st.legacyStaffId));
       const staffTodayBooking = todayBookingRes.leaderboard.find(
         (l) => Number(l.bookerId) === Number(st.legacyStaffId)
       );
       const staffMonthRev = monthRevenueRes.leaderboard.find((l) => Number(l.bookerId) === Number(st.legacyStaffId));
 
-      const staffDoneActual = staffMonthDone?.doneCount || 0;
-      const staffDoneToday = staffTodayDone?.doneCount || 0;
+      const rawStaffDone = staffMonthDone?.doneCount || 0;
       const staffBookToday = staffTodayBooking?.totalCreatedBookings || 0;
       const staffCallActualToday = staffTodayBooking?.callCount || 0;
       const staffPickupActualToday = staffTodayBooking?.pickupCount || 0;
       const staffRevenueActual = staffMonthRev?.totalRevenue || 0;
 
       const staffComboOrders = monthOrders.filter(
-        (o) => Number(o.bookerId) === Number(st.legacyStaffId) && Number(o.isComboLive) === 1
+        (o) => Number(o.bookerId) === Number(st.legacyStaffId) && Number(o.isComboLive || 0) === 1
       );
       const staffComboLiveDoneActual = staffComboOrders.length;
+      // Individual Done KPI is 100% Single Done (Done Khách Lẻ)
+      const staffSingleDoneActual = Math.max(0, rawStaffDone - staffComboLiveDoneActual);
+
+      // Today Done: strictly Single Done as primary KPI, Combo Live as secondary
+      const staffTodayComboCount = todayDoneOrders.filter(
+        (o) => Number(o.bookerId) === Number(st.legacyStaffId) && Number(o.isComboLive || 0) === 1
+      ).length;
+      const staffSingleDoneToday = todayDoneOrders.filter(
+        (o) => Number(o.bookerId) === Number(st.legacyStaffId) && Number(o.isComboLive || 0) === 0
+      ).length;
+
+      const staffTodayComboBookCount = todayBookOrders.filter(
+        (o) => Number(o.bookerId) === Number(st.legacyStaffId) && Number(o.isComboLive || 0) === 1
+      ).length;
 
       const bookContributionPercent =
         teamDailyBookActual > 0 ? Math.round((staffBookToday / teamDailyBookActual) * 100) : 0;
 
-      // Metrics for individual KPI (Done)
+      // Metrics for individual KPI (Done) - strictly based on staffSingleDoneActual
       let staffExpectedDone: number;
       let staffGapDone: number;
       let staffRemainingDone: number;
@@ -997,8 +1055,8 @@ export class TelesaleTargetService {
         progressStatusLabel = 'Chưa bắt đầu';
       } else {
         staffExpectedDone = Math.round(st.doneTarget * pacing.expectedProgressRate);
-        staffGapDone = staffDoneActual - staffExpectedDone;
-        staffRemainingDone = Math.max(0, st.doneTarget - staffDoneActual);
+        staffGapDone = staffSingleDoneActual - staffExpectedDone;
+        staffRemainingDone = Math.max(0, st.doneTarget - staffSingleDoneActual);
 
         if (pacing.periodStatus === 'IN_PROGRESS') {
           staffDailyRequiredDone =
@@ -1013,7 +1071,7 @@ export class TelesaleTargetService {
         } else if (staffGapDone >= -1) {
           progressStatus = 'ON_TRACK';
           progressStatusLabel = 'Đúng tiến độ';
-        } else if (staffGapDone <= -5 || (staffExpectedDone > 0 && staffDoneActual / staffExpectedDone < 0.7)) {
+        } else if (staffGapDone <= -5 || (staffExpectedDone > 0 && staffSingleDoneActual / staffExpectedDone < 0.7)) {
           progressStatus = 'CRITICAL';
           progressStatusLabel = 'Báo động';
         } else {
@@ -1030,12 +1088,14 @@ export class TelesaleTargetService {
         name: resolvedName,
         avatarUrl: resolvedAvatar,
         doneTarget: st.doneTarget,
-        doneActual: staffDoneActual,
+        doneActual: staffSingleDoneActual,
         comboLiveDoneActual: staffComboLiveDoneActual,
-        doneToday: staffDoneToday,
+        retailDoneActual: staffSingleDoneActual,
+        doneToday: staffSingleDoneToday,
         bookToday: staffBookToday,
         bookContributionPercent,
-        comboLiveDoneToday: 0,
+        comboLiveDoneToday: staffTodayComboCount,
+        comboLiveBookToday: staffTodayComboBookCount,
         callTargetDaily: config.dailyCallPerStaff || 83,
         callActualToday: staffCallActualToday,
         pickupTargetDaily: config.dailyPickupPerStaff || 25,
@@ -1057,48 +1117,6 @@ export class TelesaleTargetService {
     }
 
     // 5. Build today's live events feed for TV Celebration
-
-    const [todayBookOrders, todayDoneOrders] = await Promise.all([
-      fastify.prisma.legacy
-        .$queryRawUnsafe<SafeAny[]>(
-          `
-        SELECT 
-          o.id,
-          o.created_staff_id as bookerId,
-          o.order_state as orderState,
-          DATE_FORMAT(o.date_created, '%Y-%m-%dT%H:%i:%s+07:00') as dateCreated
-        FROM \`order\` o
-        WHERE o.date_created >= '${todayStartStr}' 
-          AND o.date_created <= '${todayEndStr}'
-          AND o.created_staff_id IN (${candidateIdsStr})
-      `
-        )
-        .catch(() => []),
-      fastify.prisma.legacy
-        .$queryRawUnsafe<SafeAny[]>(
-          `
-        SELECT 
-          o.id as id,
-          o.created_staff_id as bookerId,
-          o.order_state as orderState,
-          o.total_price as totalPrice,
-          DATE_FORMAT(o.booking_date_start, '%Y-%m-%dT%H:%i:%s+07:00') as bookingDateStart,
-          DATE_FORMAT(ro.actual_booking_date_start, '%Y-%m-%dT%H:%i:%s+07:00') as actualBookingDateStart,
-          DATE_FORMAT(ro.actual_booking_date_end, '%Y-%m-%dT%H:%i:%s+07:00') as actualBookingDateEnd,
-          DATE_FORMAT(o.date_updated, '%Y-%m-%dT%H:%i:%s+07:00') as dateUpdated,
-          DATE_FORMAT(COALESCE(ro.actual_booking_date_end, o.date_updated, ro.actual_booking_date_start, o.date_created), '%Y-%m-%dT%H:%i:%s+07:00') as doneDate
-        FROM \`order\` o
-        LEFT JOIN report_order ro ON ro.order_id = o.id
-        WHERE o.created_staff_id IN (${candidateIdsStr})
-          AND (
-            (ro.actual_booking_date_start >= '${todayStartStr}' AND ro.actual_booking_date_start <= '${todayEndStr}')
-            OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${todayStartStr}' AND o.booking_date_start <= '${todayEndStr}')
-          )
-          AND o.order_state = 'Completed'
-      `
-        )
-        .catch(() => []),
-    ]);
 
     const sortedTodayBookOrders = [...todayBookOrders]
       .filter((o) => o && o.id)
@@ -1435,8 +1453,9 @@ export class TelesaleTargetService {
       updatedAt: nowIct.toISOString(),
       teamMonth: {
         doneTarget: config.teamDoneTarget,
-        doneActual: teamMonthDoneActual,
+        doneActual: teamMonthSingleDoneActual,
         comboLiveDoneActual: teamMonthComboLiveDoneActual,
+        retailDoneActual: teamMonthSingleDoneActual,
         incomingTarget,
         incomingActual: teamMonthIncomingActual,
         bookTarget: config.teamBookTarget,
@@ -1466,10 +1485,12 @@ export class TelesaleTargetService {
       teamDaily: {
         date: todayStr,
         doneTarget: config.dailyDoneTarget,
-        doneActual: teamDailyDoneActual,
+        doneActual: teamDailySingleDoneActual,
         comboLiveDoneActual: teamDailyComboLiveDoneActual,
+        retailDoneActual: teamDailySingleDoneActual,
         bookTarget: config.dailyBookTarget,
         bookActual: teamDailyBookActual,
+        comboLiveBookActual: teamDailyComboLiveBookActual,
       },
       staffTargets,
       dailyAction,

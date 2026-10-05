@@ -118,7 +118,7 @@ describe('TelesaleTodayTvMonitorCard', () => {
     render(<TelesaleTodayTvMonitorCard overview={mockOverview} onOpenFullscreen={handleOpenFullscreen} />);
 
     expect(screen.getByText('TV MONITOR HÔM NAY')).toBeInTheDocument();
-    expect(screen.getByText('DONE HÔM NAY')).toBeInTheDocument();
+    expect(screen.getByText('DONE KHÁCH LẺ')).toBeInTheDocument();
     expect(screen.getByText('BOOK HÔM NAY')).toBeInTheDocument();
 
     // Actual numbers
@@ -156,7 +156,7 @@ describe('TelesaleTvMonitorFullscreen', () => {
     );
 
     expect(screen.getByText(/TELESALES TV MONITOR · WAR ROOM/i)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'DONE HÔM NAY' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /DONE KHÁCH LẺ/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /BOOK HÔM NAY · TẠO LỊCH/i })).toBeInTheDocument();
 
     // Individual Staff Contribution section

@@ -101,9 +101,9 @@ function playLaunchSound(volume = 0.8) {
     const filter = ctx.createBiquadFilter();
 
     osc.type = 'sine';
-    // Frequency ramps up like a rocket whistling upward
+    // Frequency ramps up like a rocket whistling upward (extended for graceful flight)
     osc.frequency.setValueAtTime(260 + Math.random() * 80, now);
-    osc.frequency.exponentialRampToValueAtTime(800 + Math.random() * 200, now + 0.35);
+    osc.frequency.exponentialRampToValueAtTime(800 + Math.random() * 200, now + 0.65);
 
     filter.type = 'bandpass';
     filter.frequency.setValueAtTime(600, now);
@@ -111,15 +111,15 @@ function playLaunchSound(volume = 0.8) {
 
     const masterVol = Math.min(1, Math.max(0, volume)) * 0.15;
     gain.gain.setValueAtTime(0.001, now);
-    gain.gain.linearRampToValueAtTime(masterVol, now + 0.08);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
+    gain.gain.linearRampToValueAtTime(masterVol, now + 0.12);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
 
     osc.connect(filter);
     filter.connect(gain);
     gain.connect(ctx.destination);
 
     osc.start(now);
-    osc.stop(now + 0.42);
+    osc.stop(now + 0.75);
   } catch {}
 }
 
@@ -205,9 +205,9 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
       const x = width * (0.2 + Math.random() * 0.6);
       const targetY = height * (0.15 + Math.random() * 0.35); // Explode in top 15-50% of card
       const distance = height - targetY;
-      // Fast, energetic launch: reaches target in ~0.25s
-      const vy = -Math.sqrt(distance * 0.95) - 5.5;
-      const vx = (Math.random() - 0.5) * 1.8;
+      // Majestic, graceful launch at 30% speed of previous (flies steadily upward)
+      const vy = (-Math.sqrt(distance * 0.95) - 5.5) * 0.3;
+      const vx = (Math.random() - 0.5) * 1.8 * 0.3;
       const color = themeColors[Math.floor(Math.random() * themeColors.length)];
 
       if (soundSettingsRef.current.soundEnabled) {
@@ -235,16 +235,16 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
       }
 
       const particles: Particle[] = [];
-      const particleCount = 48 + Math.floor(Math.random() * 22); // 48-70 crisp, punchy sparks
+      const particleCount = 36 + Math.floor(Math.random() * 16); // 36-52 crisp sparks
 
       for (let i = 0; i < particleCount; i++) {
         const angle = Math.random() * Math.PI * 2;
-        // High-velocity explosion burst (fast & expansive)
-        const speed = Math.pow(Math.random(), 0.45) * 11 + 3.2;
+        // Gentle slow explosion burst at 30% speed
+        const speed = (Math.pow(Math.random(), 0.45) * 8 + 2.5) * 0.3;
         const vx = Math.cos(angle) * speed;
         const vy = Math.sin(angle) * speed;
         const color = themeColors[Math.floor(Math.random() * themeColors.length)];
-        const maxLife = 32 + Math.floor(Math.random() * 24); // Snappy life: ~0.55s - 0.9s
+        const maxLife = 38 + Math.floor(Math.random() * 20); // Fades away completely in ~0.65s - 1.0s
 
         particles.push({
           x,
@@ -257,7 +257,7 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
           maxLife,
           decay: 1 / maxLife,
           history: [{ x, y }],
-          size: Math.random() * 2.2 + 1.2,
+          size: Math.random() * 1.8 + 1.0,
           flicker: Math.random() > 0.35,
         });
       }
@@ -274,23 +274,16 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let width = 0;
-    let height = 0;
-
     const getDimensions = () => {
       const rect = container.getBoundingClientRect();
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const w = Math.round(rect.width) || container.clientWidth || 360;
-      const h = Math.round(rect.height) || container.clientHeight || 360;
-      if (w > 0 && h > 0 && (canvas.width !== w * dpr || canvas.height !== h * dpr)) {
-        width = w;
-        height = h;
+      const h = Math.round(rect.height) || container.clientHeight || 180;
+      if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
         canvas.width = w * dpr;
         canvas.height = h * dpr;
-        ctx.resetTransform?.();
-        ctx.scale(dpr, dpr);
       }
-      return { w: width || w, h: height || h };
+      return { w, h, dpr };
     };
 
     const updateSize = () => {
@@ -316,58 +309,64 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
       return false;
     };
 
-    // Launcher cadence (faster, punchier)
+    let initialTimer: NodeJS.Timeout | null = null;
+    let frenzyBurstTimer: NodeJS.Timeout | null = null;
+
+    // Launcher cadence with breathing room between rockets
     const scheduleNextLaunch = () => {
       if (!active) return;
       const delay = isFrenzy
-        ? 220 + Math.random() * 320 // Frenzy burst: launches every 0.22s - 0.54s
-        : 1800 + Math.random() * 1600; // Ambient mode: launches every 1.8s - 3.4s (snappy)
+        ? 800 + Math.random() * 600 // Frenzy burst: launches every 0.8s - 1.4s
+        : 3500 + Math.random() * 2500; // Ambient mode: launches every 3.5s - 6.0s (clear & calm)
 
       launchTimerRef.current = setTimeout(() => {
         launchSafely();
-        // Frequently spawn a rapid twin/triple salvo in frenzy mode
-        if (isFrenzy && Math.random() > 0.35) {
-          setTimeout(() => {
+        if (isFrenzy && Math.random() > 0.4) {
+          frenzyBurstTimer = setTimeout(() => {
             launchSafely();
-          }, 120);
+          }, 240);
         }
         scheduleNextLaunch();
       }, delay);
     };
 
     if (active) {
-      // Immediate first volley after brief layout tick
-      setTimeout(() => {
+      initialTimer = setTimeout(() => {
         launchSafely();
-      }, 40);
+      }, 50);
       scheduleNextLaunch();
     }
 
     const render = () => {
-      ctx.clearRect(0, 0, width, height);
+      const { w, h, dpr } = getDimensions();
 
-      // 1. UPDATE & DRAW ROCKETS (Zero-blur hardware blending)
+      // 100% Guaranteed Full Bitmap Clear on every frame (zero trail accumulation)
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      // 1. UPDATE & DRAW ROCKETS
       for (let i = rockets.length - 1; i >= 0; i--) {
         const r = rockets[i];
         r.trail.push({ x: r.x, y: r.y, alpha: 1 });
-        if (r.trail.length > 6) r.trail.shift();
+        if (r.trail.length > 5) r.trail.shift();
 
         // Draw rocket trail (fast additive rendering without shadowBlur)
         ctx.save();
         ctx.globalCompositeOperation = 'lighter';
         for (let t = 0; t < r.trail.length; t++) {
           const pt = r.trail[t];
-          pt.alpha *= 0.78;
+          pt.alpha *= 0.72;
           ctx.beginPath();
-          ctx.arc(pt.x, pt.y, 1.8 * (t / r.trail.length) + 0.5, 0, Math.PI * 2);
+          ctx.arc(pt.x, pt.y, 1.5 * (t / r.trail.length) + 0.4, 0, Math.PI * 2);
           ctx.fillStyle = r.color;
-          ctx.globalAlpha = pt.alpha * 0.9;
+          ctx.globalAlpha = Math.max(0, pt.alpha * 0.85);
           ctx.fill();
         }
 
         // Draw glowing rocket spark head
         ctx.beginPath();
-        ctx.arc(r.x, r.y, 2.8, 0, Math.PI * 2);
+        ctx.arc(r.x, r.y, 2.2, 0, Math.PI * 2);
         ctx.fillStyle = 'rgb(255, 255, 255)';
         ctx.globalAlpha = 1;
         ctx.fill();
@@ -376,19 +375,19 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
         // Move rocket
         r.x += r.vx;
         r.y += r.vy;
-        r.vy += 0.22; // rocket gravity deceleration
+        r.vy += 0.066; // 30% of 0.22 rocket gravity deceleration
 
         // Check if rocket reached apogee / detonation point
-        if (r.y <= r.targetY || r.vy >= -1.0) {
+        if (r.y <= r.targetY || r.vy >= -0.3 || r.y < -20) {
           const newSparks = explodeRocket(r.x, r.y);
           particles = particles.concat(newSparks);
           rockets.splice(i, 1);
         }
       }
 
-      // 2. UPDATE & DRAW PARTICLES WITH LIGHT STREAKS (Ultra-fast 60fps GPU blending)
+      // 2. UPDATE & DRAW PARTICLES WITH LIGHT STREAKS
       ctx.save();
-      ctx.globalCompositeOperation = 'lighter'; // Native hardware luminous blending
+      ctx.globalCompositeOperation = 'lighter';
 
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
@@ -398,10 +397,10 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
         p.history.push({ x: p.x, y: p.y });
         if (p.history.length > 4) p.history.shift();
 
-        // Snappy physics
-        p.vx *= 0.955; // Air drag
-        p.vy *= 0.955;
-        p.vy += 0.22; // Gravity
+        // Floaty physics (scaled to 30% velocity & gravity)
+        p.vx *= 0.97;
+        p.vy *= 0.97;
+        p.vy += 0.066;
         p.x += p.vx;
         p.y += p.vy;
         p.alpha -= p.decay;
@@ -412,14 +411,14 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
         }
 
         // Sparkling twinkle decay
-        let drawAlpha = Math.max(0, p.alpha);
+        let drawAlpha = Math.max(0, Math.min(1, p.alpha));
         if (p.flicker && p.life > p.maxLife * 0.25) {
-          if (Math.random() < 0.28) drawAlpha *= 0.25;
+          if (Math.random() < 0.25) drawAlpha *= 0.3;
         }
 
-        const sizeProgress = 1 - p.life / p.maxLife;
+        const sizeProgress = Math.max(0, 1 - p.life / p.maxLife);
 
-        // Draw streak tail (clean lines, zero shadowBlur lag)
+        // Draw streak tail
         if (p.history.length >= 2) {
           ctx.beginPath();
           ctx.moveTo(p.history[0].x, p.history[0].y);
@@ -427,16 +426,16 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
             ctx.lineTo(p.history[h].x, p.history[h].y);
           }
           ctx.strokeStyle = p.color;
-          ctx.lineWidth = Math.max(0.8, p.size * sizeProgress * 0.9);
-          ctx.globalAlpha = drawAlpha * 0.85;
+          ctx.lineWidth = Math.max(0.6, p.size * sizeProgress * 0.8);
+          ctx.globalAlpha = Math.max(0, drawAlpha * 0.8);
           ctx.stroke();
         }
 
         // Draw particle head (bright luminous spark)
         ctx.beginPath();
-        ctx.arc(p.x, p.y, Math.max(0.6, p.size * 0.7 * sizeProgress), 0, Math.PI * 2);
-        ctx.fillStyle = p.life < 7 ? 'rgb(255, 255, 255)' : p.color;
-        ctx.globalAlpha = drawAlpha;
+        ctx.arc(p.x, p.y, Math.max(0.5, p.size * 0.6 * sizeProgress), 0, Math.PI * 2);
+        ctx.fillStyle = p.life < 5 ? 'rgb(255, 255, 255)' : p.color;
+        ctx.globalAlpha = Math.max(0, drawAlpha);
         ctx.fill();
       }
 
@@ -451,6 +450,8 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
     animFrameRef.current = requestAnimationFrame(render);
 
     return () => {
+      if (initialTimer) clearTimeout(initialTimer);
+      if (frenzyBurstTimer) clearTimeout(frenzyBurstTimer);
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       if (launchTimerRef.current) clearTimeout(launchTimerRef.current);
       resizeObserver.disconnect();

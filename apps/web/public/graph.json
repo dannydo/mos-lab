@@ -31866,8 +31866,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 50417,
-        "lineCount": 1421,
+        "sizeBytes": 50536,
+        "lineCount": 1422,
         "ext": ".ts"
       }
     },
@@ -31879,8 +31879,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 80687,
-        "lineCount": 2079,
+        "sizeBytes": 81672,
+        "lineCount": 2100,
         "ext": ".ts"
       }
     },
@@ -38340,8 +38340,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DailyActionSchedule.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16008,
-        "lineCount": 344,
+        "sizeBytes": 16322,
+        "lineCount": 355,
         "ext": ".tsx"
       }
     },
@@ -38366,7 +38366,7 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6209,
+        "sizeBytes": 6252,
         "lineCount": 190,
         "ext": ".tsx"
       }
@@ -38379,8 +38379,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25249,
-        "lineCount": 517,
+        "sizeBytes": 25966,
+        "lineCount": 533,
         "ext": ".tsx"
       }
     },
@@ -38405,8 +38405,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/RealisticCardFireworks.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14272,
-        "lineCount": 470,
+        "sizeBytes": 14515,
+        "lineCount": 471,
         "ext": ".tsx"
       }
     },
@@ -38470,7 +38470,7 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitor.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6237,
+        "sizeBytes": 6244,
         "lineCount": 194,
         "ext": ".tsx"
       }
@@ -38483,8 +38483,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15670,
-        "lineCount": 345,
+        "sizeBytes": 16184,
+        "lineCount": 357,
         "ext": ".tsx"
       }
     },
@@ -38496,8 +38496,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvCelebration.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4311,
-        "lineCount": 156,
+        "sizeBytes": 299,
+        "lineCount": 17,
         "ext": ".tsx"
       }
     },
@@ -38548,8 +38548,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvLiveCelebrationBanner.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16398,
-        "lineCount": 421,
+        "sizeBytes": 16533,
+        "lineCount": 423,
         "ext": ".tsx"
       }
     },
@@ -38561,8 +38561,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 44952,
-        "lineCount": 1004,
+        "sizeBytes": 45041,
+        "lineCount": 1005,
         "ext": ".tsx"
       }
     },
@@ -38587,8 +38587,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7726,
-        "lineCount": 185,
+        "sizeBytes": 8635,
+        "lineCount": 201,
         "ext": ".tsx"
       }
     },
@@ -38626,8 +38626,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22018,
-        "lineCount": 523,
+        "sizeBytes": 22124,
+        "lineCount": 527,
         "ext": ".tsx"
       }
     },
@@ -38665,8 +38665,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/utils/tv-monitor-pacing.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8559,
-        "lineCount": 260,
+        "sizeBytes": 8722,
+        "lineCount": 264,
         "ext": ".ts"
       }
     },
@@ -40758,8 +40758,8 @@
       "filePath": "packages/shared/src/types/telesale-target.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 6339,
-        "lineCount": 252,
+        "sizeBytes": 6523,
+        "lineCount": 258,
         "ext": ".ts"
       }
     },

@@ -107,6 +107,7 @@ export const TelesaleTvStaffContributionGrid: React.FC<TelesaleTvStaffContributi
         {staffTargets.map((staff, idx) => {
           const bookToday = staff.bookToday ?? 0;
           const doneToday = staff.doneToday ?? 0;
+          const comboLiveDoneToday = staff.comboLiveDoneToday ?? 0;
           const contributionPercent = totalTeamBookToday > 0 ? Math.round((bookToday / totalTeamBookToday) * 100) : 0;
           const isTop = staff.legacyStaffId === topStaff?.legacyStaffId;
           const colorClass = AVATAR_BG_COLORS[idx % AVATAR_BG_COLORS.length];
@@ -115,7 +116,7 @@ export const TelesaleTvStaffContributionGrid: React.FC<TelesaleTvStaffContributi
             <div
               key={staff.legacyStaffId}
               data-testid={`tv-staff-card-${staff.legacyStaffId}`}
-              className={`relative rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between backdrop-blur-xl border transition-all duration-300 min-h-[140px] sm:min-h-[148px] ${
+              className={`relative rounded-2xl p-3.5 sm:p-4 flex flex-col justify-between backdrop-blur-xl border transition-all duration-300 min-h-[160px] sm:min-h-[168px] ${
                 isTop
                   ? 'bg-gradient-to-b from-amber-950/40 via-zinc-900 to-zinc-950 border-amber-400/90 shadow-[0_0_30px_rgba(245,158,11,0.25)]'
                   : 'bg-zinc-900/85 hover:bg-zinc-900 border-zinc-800/90 hover:border-zinc-700 shadow-lg'
@@ -148,7 +149,7 @@ export const TelesaleTvStaffContributionGrid: React.FC<TelesaleTvStaffContributi
                 </div>
               </div>
 
-              {/* Today Metrics: 2 Big Numbers Side-by-side */}
+              {/* Today Metrics: 2 Big Numbers Side-by-side (KPI Chính: Book & Khách Lẻ) */}
               <div className="grid grid-cols-2 gap-2 mt-auto bg-black/60 rounded-xl p-2.5 sm:p-3 border border-zinc-800/80">
                 {/* Book Today */}
                 <div className="text-center">
@@ -161,16 +162,29 @@ export const TelesaleTvStaffContributionGrid: React.FC<TelesaleTvStaffContributi
                   </div>
                 </div>
 
-                {/* Done Today */}
+                {/* Single Done Today (Khách Lẻ - KPI Chính) */}
                 <div className="text-center border-l border-zinc-800">
                   <div className="flex items-center justify-center gap-1 text-[10px] sm:text-[11px] text-emerald-400 uppercase font-mono font-bold tracking-wider">
                     <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                    <span>DONE HÔM NAY</span>
+                    <span>DONE KHÁCH LẺ</span>
                   </div>
                   <div className="text-2xl sm:text-3xl lg:text-4xl font-black font-mono text-emerald-300 tabular-nums mt-1 leading-none">
                     {doneToday}
                   </div>
                 </div>
+              </div>
+
+              {/* Combo */}
+              <div className="mt-2 pt-1.5 border-t border-zinc-800/80 flex items-center justify-between text-[11px] font-mono px-0.5">
+                <span className="text-zinc-400 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shadow-[0_0_6px_rgba(168,85,247,0.8)]" />
+                  <span className="text-zinc-300">Combo:</span>
+                </span>
+                <span
+                  className={`font-black tabular-nums ${comboLiveDoneToday > 0 ? 'text-purple-300' : 'text-zinc-500'}`}
+                >
+                  {comboLiveDoneToday > 0 ? `+${comboLiveDoneToday}` : '0'} Done
+                </span>
               </div>
 
               {/* Accessible hidden text for test assertions */}

@@ -11,7 +11,10 @@ export interface TelesaleStaffTarget {
   bookContributionPercent?: number;
   isTopBookToday?: boolean;
   comboLiveDoneActual?: number;
+  retailDoneActual?: number;
   comboLiveDoneToday?: number;
+  retailDoneToday?: number;
+  comboLiveBookToday?: number;
   callTargetDaily: number;
   callActualToday: number;
   pickupTargetDaily?: number;
@@ -91,6 +94,7 @@ export interface TelesaleTargetOverview {
     doneTarget: number;
     doneActual: number;
     comboLiveDoneActual?: number;
+    retailDoneActual?: number;
     incomingTarget?: number;
     incomingActual?: number;
     bookTarget: number;
@@ -125,8 +129,10 @@ export interface TelesaleTargetOverview {
     doneTarget: number;
     doneActual: number;
     comboLiveDoneActual?: number;
+    retailDoneActual?: number;
     bookTarget: number;
     bookActual: number;
+    comboLiveBookActual?: number;
   };
   staffTargets: TelesaleStaffTarget[];
   dailyAction: TelesaleDailyActionOverview;

@@ -5,7 +5,6 @@ import { Tooltip, Button, theme } from 'antd';
 import { Tv, Calendar, Maximize2, Volume2, ClipboardList } from 'lucide-react';
 import { TelesaleTargetOverview, isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { calculateShiftPacing, calculateTvMonitorMetrics } from '../utils/tv-monitor-pacing';
-import { TelesaleTvCelebration } from './TelesaleTvCelebration';
 import { TelesaleTvJournalModal } from './TelesaleTvJournalModal';
 import { SemicircleGauge } from './SemicircleGauge';
 import { RealisticCardFireworks } from './RealisticCardFireworks';
@@ -62,15 +61,16 @@ const getCardTierStyles = (tier: 'rose' | 'amber' | 'emerald') => {
 interface TelesaleTodayTvMonitorCardProps {
   overview: TelesaleTargetOverview;
   onOpenFullscreen?: () => void;
+  isTvOpen?: boolean;
 }
 
 export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProps> = ({
   overview,
   onOpenFullscreen,
+  isTvOpen = false,
 }) => {
   const { teamDaily } = overview;
   const [now, setNow] = useState<Date>(new Date());
-  const [showCelebration, setShowCelebration] = useState<boolean>(false);
   const [journalOpen, setJournalOpen] = useState<boolean>(false);
 
   const isManagerOrAdmin = useMemo(() => {
@@ -94,13 +94,6 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
 
   const pacing = calculateShiftPacing(now);
   const metrics = calculateTvMonitorMetrics(teamDaily, pacing);
-
-  // Trigger celebration on initial mount if 100% achieved
-  useEffect(() => {
-    if (metrics.teamState === 'COMPLETED') {
-      setShowCelebration(true);
-    }
-  }, [metrics.teamState]);
 
   const isDoneOver100 = metrics.donePercent >= 100;
   const isBookOver100 = metrics.bookPercent >= 100;
@@ -128,7 +121,6 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
           : 'border-amber-500/35 hover:border-amber-400/70'
       }`}
     >
-      <TelesaleTvCelebration active={showCelebration} onComplete={() => setShowCelebration(false)} />
       <TelesaleTvJournalModal open={journalOpen} onClose={() => setJournalOpen(false)} />
 
       {/* 1. Header Bar */}
@@ -194,8 +186,13 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
         <div className="grid grid-cols-2 gap-2.5">
           {/* Card 2.1: Book Hôm Nay (Hành động chính) */}
           <div className={bookStyles.container}>
-            {/* Pháo bông thực tế khi đạt mốc >= 100% */}
-            <RealisticCardFireworks active={isBookOver100} theme="emerald" cardLabel="BOOK" />
+            {/* Pháo bông thực tế khi đạt mốc >= 100% (tắt khi mở TV fullscreen) */}
+            <RealisticCardFireworks
+              active={!isTvOpen && isBookOver100}
+              soundEnabled={!isTvOpen}
+              theme="emerald"
+              cardLabel="BOOK"
+            />
             <div>
               <div className="flex items-center justify-between text-zinc-400 text-xs mb-0.5 relative z-10">
                 <span className="flex items-center gap-1">
@@ -252,24 +249,34 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
             </div>
 
             <div
-              className={`mt-2 pt-1.5 border-t ${bookStyles.bottomBorder} text-[10px] text-zinc-400 font-mono flex items-center justify-between relative z-10`}
+              className={`mt-2 pt-1.5 border-t ${bookStyles.bottomBorder} text-[9px] sm:text-[9.5px] text-zinc-400 font-mono flex items-center justify-between gap-1 whitespace-nowrap relative z-10`}
             >
-              <span>Mục tiêu ngày</span>
-              <span className={bookStyles.bottomText}>≥ {metrics.bookTarget} Book</span>
+              <span>
+                Mục tiêu: <strong className={bookStyles.bottomText}>≥{metrics.bookTarget} Book</strong>
+              </span>
+              <span className="text-purple-300 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
+                Combo: +{metrics.comboLiveBookActual || 0} Book
+              </span>
             </div>
           </div>
 
           {/* Card 2.2: Done Hôm Nay */}
           <div className={doneStyles.container}>
-            {/* Pháo bông thực tế khi đạt mốc >= 100% */}
-            <RealisticCardFireworks active={isDoneOver100} theme="emerald" cardLabel="DONE" />
+            {/* Pháo bông thực tế khi đạt mốc >= 100% (tắt khi mở TV fullscreen) */}
+            <RealisticCardFireworks
+              active={!isTvOpen && isDoneOver100}
+              soundEnabled={!isTvOpen}
+              theme="emerald"
+              cardLabel="DONE"
+            />
             <div>
               <div className="flex items-center justify-between text-zinc-400 text-xs mb-0.5 relative z-10">
                 <span className="flex items-center gap-1">
                   <span
                     className={`w-1.5 h-1.5 rounded-full ${doneTier === 'emerald' ? 'bg-emerald-400' : doneTier === 'amber' ? 'bg-amber-400' : 'bg-rose-400'}`}
                   />
-                  <strong className={doneStyles.title}>DONE HÔM NAY</strong>
+                  <strong className={doneStyles.title}>DONE KHÁCH LẺ</strong>
                 </span>
                 <span className={doneStyles.targetBadge}>Chỉ tiêu: {metrics.doneTarget}</span>
               </div>
@@ -321,10 +328,15 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
             </div>
 
             <div
-              className={`mt-2 pt-1.5 border-t ${doneStyles.bottomBorder} text-[10px] text-zinc-400 font-mono flex items-center justify-between relative z-10`}
+              className={`mt-2 pt-1.5 border-t ${doneStyles.bottomBorder} text-[9px] sm:text-[9.5px] text-zinc-400 font-mono flex items-center justify-between gap-1 whitespace-nowrap relative z-10`}
             >
-              <span>Mục tiêu ngày</span>
-              <span className={doneStyles.bottomText}>{metrics.doneTarget} Done</span>
+              <span>
+                Chỉ tiêu: <strong className={doneStyles.bottomText}>{metrics.doneTarget} Khách lẻ</strong>
+              </span>
+              <span className="text-purple-300 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
+                Combo: +{metrics.comboLiveDoneActual || 0} Done
+              </span>
             </div>
           </div>
         </div>

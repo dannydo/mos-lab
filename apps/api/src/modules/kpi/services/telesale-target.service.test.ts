@@ -323,7 +323,8 @@ test('TelesaleTargetService.getOverview computes MOS-BUG-72 staff KPI metrics co
 
   const staffA = overview.staffTargets.find((s) => s.legacyStaffId === 101);
   assert.ok(staffA);
-  assert.equal(staffA.doneActual, 2);
+  assert.equal(staffA.doneActual, 1); // 2 total done - 1 combo live = 1 single done (Single-only KPI invariant)
+  assert.equal(staffA.retailDoneActual, 1);
   assert.equal(staffA.comboLiveDoneActual, 1);
   // Revenue must sum completed orders of staff 101: 500k + 300k + 1200k = 2,000,000đ
   assert.equal(staffA.revenueActual, 2000000);
