@@ -890,3 +890,213 @@ test('Campaign Shared Pool (MOS-BUG-101) - Comprehensive Post-Call Auto Routing 
   assert.equal(refusedRes.cooldownUntil, null);
 });
 
+test('Campaign Shared Pool (MOS-BUG-103) - Recycle Return clears all claim locks and assigns current batch', () => {
+  interface CustomerRecord {
+    id: number;
+    campaignId: number;
+    batchNumber: number;
+    poolStatus: string;
+    availableAt: Date | null;
+    claimedByStaffId: number | null;
+    claimedByStaffName: string | null;
+    claimedAt: Date | null;
+    claimExpiresAt: Date | null;
+    cooldownUntil: Date | null;
+  }
+
+  const now = new Date('2026-10-05T10:00:00.000Z');
+  const currentBatchNumber = 11;
+
+  // Khách hàng hoàn tất recycle từ batch 3 với tàn dư lock/cooldown từ phiên làm việc trước
+  const recyclingCustomer: CustomerRecord = {
+    id: 301,
+    campaignId: 1,
+    batchNumber: 3,
+    poolStatus: 'RECYCLING',
+    availableAt: new Date('2026-10-05T09:00:00.000Z'), // 1 tiếng trước (đã đến hạn quay lại)
+    claimedByStaffId: 42,
+    claimedByStaffName: 'Nhân viên cũ',
+    claimedAt: new Date('2026-10-01T10:00:00.000Z'),
+    claimExpiresAt: new Date('2026-10-01T10:15:00.000Z'),
+    cooldownUntil: new Date('2026-10-05T12:00:00.000Z'), // cooldown cũ còn sót
+  };
+
+  const processRecycleReturn = (customer: CustomerRecord, currentTime: Date, activeBatch: number) => {
+    const isRecycleStatus = customer.poolStatus === 'RECYCLING' || customer.poolStatus === 'RECYCLE';
+    const isReady = customer.availableAt && customer.availableAt <= currentTime;
+
+    if (isRecycleStatus && isReady) {
+      return {
+        ...customer,
+        poolStatus: 'AVAILABLE',
+        availableAt: null,
+        claimedByStaffId: null,
+        claimedByStaffName: null,
+        claimedAt: null,
+        claimExpiresAt: null,
+        cooldownUntil: null,
+        batchNumber: activeBatch,
+      };
+    }
+    return customer;
+  };
+
+  const refreshed = processRecycleReturn(recyclingCustomer, now, currentBatchNumber);
+
+  assert.equal(refreshed.poolStatus, 'AVAILABLE', 'Khách hết hạn recycle phải chuyển sang AVAILABLE');
+  assert.equal(refreshed.availableAt, null, 'availableAt phải được clear về null');
+  assert.equal(refreshed.claimedByStaffId, null, 'claimedByStaffId phải được reset về null');
+  assert.equal(refreshed.claimedByStaffName, null, 'claimedByStaffName phải được reset về null');
+  assert.equal(refreshed.claimedAt, null, 'claimedAt phải được reset về null');
+  assert.equal(refreshed.claimExpiresAt, null, 'claimExpiresAt phải được reset về null');
+  assert.equal(refreshed.cooldownUntil, null, 'cooldownUntil phải được reset về null');
+  assert.equal(refreshed.batchNumber, 11, 'batchNumber phải cập nhật sang currentBatchNumber đang hoạt động');
+});
+
+test('Campaign Shared Pool (MOS-BUG-103) - Auto-heal claim for expired recycling customers', () => {
+  interface CustomerRecord {
+    id: number;
+    campaignId: number;
+    batchNumber: number;
+    poolStatus: string;
+    availableAt: Date | null;
+    claimedByStaffId: number | null;
+    claimedByStaffName: string | null;
+    claimedAt: Date | null;
+    claimExpiresAt: Date | null;
+    cooldownUntil: Date | null;
+  }
+
+  const now = new Date('2026-10-05T10:00:00.000Z');
+  const currentBatch = 5;
+
+  const claimCustomerLogic = (
+    customer: CustomerRecord,
+    staffId: number,
+    staffName: string,
+    currentTime: Date,
+    activeBatch: number
+  ) => {
+    // Auto-heal nếu khách đang RECYCLING nhưng đã tới hạn availableAt <= currentTime
+    if ((customer.poolStatus === 'RECYCLING' || customer.poolStatus === 'RECYCLE') && customer.availableAt && customer.availableAt <= currentTime) {
+      customer.poolStatus = 'AVAILABLE';
+      customer.availableAt = null;
+      customer.claimedByStaffId = null;
+      customer.claimedByStaffName = null;
+      customer.claimedAt = null;
+      customer.claimExpiresAt = null;
+      customer.cooldownUntil = null;
+      customer.batchNumber = activeBatch;
+    }
+
+    if (customer.poolStatus === 'RECYCLING' || customer.poolStatus === 'RECYCLE') {
+      throw new Error('Khách hàng đang trong thời gian chờ tái sinh, chưa thể nhận lại');
+    }
+
+    if (customer.poolStatus !== 'AVAILABLE') {
+      throw new Error('Khách hàng đã được nhân viên khác nhận');
+    }
+
+    // Atomic claim
+    customer.poolStatus = 'CLAIMED';
+    customer.claimedByStaffId = staffId;
+    customer.claimedByStaffName = staffName;
+    customer.claimExpiresAt = new Date(currentTime.getTime() + 15 * 60 * 1000);
+    return customer;
+  };
+
+  // Case 1: Khách hàng hết hạn RECYCLING -> Auto-heal và claim thành công ngay lập tức
+  const expiredRecyclingCustomer: CustomerRecord = {
+    id: 401,
+    campaignId: 2,
+    batchNumber: 2,
+    poolStatus: 'RECYCLING',
+    availableAt: new Date('2026-10-05T09:30:00.000Z'),
+    claimedByStaffId: 10,
+    claimedByStaffName: 'Nhân viên cũ',
+    claimedAt: new Date('2026-10-01T10:00:00.000Z'),
+    claimExpiresAt: null,
+    cooldownUntil: null,
+  };
+
+  const claimedResult = claimCustomerLogic(expiredRecyclingCustomer, 99, 'Thanh Vũ', now, currentBatch);
+  assert.equal(claimedResult.poolStatus, 'CLAIMED');
+  assert.equal(claimedResult.claimedByStaffId, 99);
+  assert.equal(claimedResult.claimedByStaffName, 'Thanh Vũ');
+  assert.equal(claimedResult.batchNumber, 5);
+
+  // Case 2: Khách hàng chưa hết hạn RECYCLING -> Phải ném lỗi chính xác
+  const stillRecyclingCustomer: CustomerRecord = {
+    id: 402,
+    campaignId: 2,
+    batchNumber: 2,
+    poolStatus: 'RECYCLING',
+    availableAt: new Date('2026-10-05T15:00:00.000Z'), // Còn 5 tiếng nữa
+    claimedByStaffId: null,
+    claimedByStaffName: null,
+    claimedAt: null,
+    claimExpiresAt: null,
+    cooldownUntil: null,
+  };
+
+  assert.throws(
+    () => claimCustomerLogic(stillRecyclingCustomer, 99, 'Thanh Vũ', now, currentBatch),
+    /Khách hàng đang trong thời gian chờ tái sinh, chưa thể nhận lại/
+  );
+});
+
+test('Campaign Shared Pool (MOS-BUG-103) - View mapping exposes expired recycling as AVAILABLE and canClaim=true', () => {
+  const now = new Date('2026-10-05T10:00:00.000Z');
+  const staffId = 88;
+
+  const mapCustomerView = (rawCustomer: Record<string, unknown>, currentTime: Date, currentStaffId: number) => {
+    let poolStatus = rawCustomer.poolStatus as string;
+    let claimedByStaffId = rawCustomer.claimedByStaffId as number | null;
+    let claimExpiresAt = rawCustomer.claimExpiresAt as string | null;
+    let cooldownUntil = rawCustomer.cooldownUntil as string | null;
+
+    const isRecycleEnded =
+      (poolStatus === 'RECYCLING' || poolStatus === 'RECYCLE') &&
+      Boolean(rawCustomer.availableAt) &&
+      new Date(rawCustomer.availableAt as string) <= currentTime;
+
+    if (isRecycleEnded) {
+      poolStatus = 'AVAILABLE';
+      claimedByStaffId = null;
+      claimExpiresAt = null;
+      cooldownUntil = null;
+    }
+
+    const isClaimExpired =
+      poolStatus === 'CLAIMED' && claimExpiresAt && new Date(claimExpiresAt) < currentTime;
+    const isCooldownActive = cooldownUntil && new Date(cooldownUntil) > currentTime;
+    const isClaimedByMe = poolStatus === 'CLAIMED' && claimedByStaffId === currentStaffId && !isClaimExpired;
+
+    const canClaim =
+      (poolStatus === 'AVAILABLE' || isClaimExpired || isRecycleEnded) &&
+      !isCooldownActive &&
+      !isClaimedByMe;
+
+    return {
+      poolStatus,
+      isClaimedByMe,
+      canClaim,
+    };
+  };
+
+  // Khách hết hạn recycle
+  const customerExpired = {
+    poolStatus: 'RECYCLING',
+    availableAt: '2026-10-05T08:00:00.000Z',
+    claimedByStaffId: 12,
+    claimedByStaffName: 'Trần Lan',
+    claimExpiresAt: '2026-10-01T12:00:00.000Z',
+    cooldownUntil: null,
+  };
+
+  const viewResult = mapCustomerView(customerExpired, now, staffId);
+  assert.equal(viewResult.poolStatus, 'AVAILABLE');
+  assert.equal(viewResult.canClaim, true);
+  assert.equal(viewResult.isClaimedByMe, false);
+});
+

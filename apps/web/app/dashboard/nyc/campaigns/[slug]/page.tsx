@@ -935,7 +935,26 @@ export default function CampaignDetailPage() {
     try {
       const res = await apiClient.campaigns.claimSharedCustomer(campaign.id, { customerId: targetId });
       message.success(res.message || 'Đã nhận khách vào xử lý!');
-      await Promise.all([fetchCampaignCustomers(), fetchSharedPoolOverview()]);
+      // Optimistically update local customer state so CLAIMED status and "Gọi khách" button immediately appear
+      setCustomers((prev) =>
+        prev.map((c) => {
+          if (c.id === targetId || (record.legacyUserId && c.legacyUserId === record.legacyUserId)) {
+            return {
+              ...c,
+              poolStatus: 'CLAIMED',
+              claimedByStaffId: currentUser?.id,
+              claimedByStaffName: currentUser?.displayName || currentUser?.username,
+              claimedAt: new Date().toISOString(),
+              claimExpiresAt: (res as any)?.customer?.claimExpiresAt || new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+              isClaimedByMe: true,
+              canClaim: false,
+              canCall: true,
+            };
+          }
+          return c;
+        })
+      );
+      await Promise.all([fetchCampaignCustomers(true), fetchSharedPoolOverview(undefined, true)]);
     } catch (err: any) {
       console.error('Claim customer error:', err);
       message.error(err?.response?.data?.message || 'Không thể nhận khách hàng');
@@ -1858,7 +1877,11 @@ export default function CampaignDetailPage() {
                 rawStatus === 'CLAIMED' &&
                 record.claimExpiresAt &&
                 new Date(record.claimExpiresAt).getTime() <= Date.now();
-              const status = isClaimExpired ? 'AVAILABLE' : rawStatus;
+              const isRecycleExpired =
+                (rawStatus === 'RECYCLING' || rawStatus === 'RECYCLE') &&
+                record.availableAt &&
+                new Date(record.availableAt).getTime() <= Date.now();
+              const status = isClaimExpired || isRecycleExpired ? 'AVAILABLE' : rawStatus;
               const isClaimed = status === 'CLAIMED';
               const isMe = isClaimed && record.isClaimedByMe;
               const hasCooldown = record.cooldownUntil && new Date(record.cooldownUntil) > new Date();
@@ -1887,9 +1910,9 @@ export default function CampaignDetailPage() {
                         />
                       </Tag>
                     )}
-                    {status === 'RECYCLING' && (
+                    {(status === 'RECYCLING' || status === 'RECYCLE') && (
                       <Tag color="magenta" className="font-semibold text-[11px] m-0">
-                        🟣 CHỜ QUAY LẠI {record.availableAt ? `(${dayjs(record.availableAt).format('DD/MM')})` : ''}
+                        🟣 CHỜ QUAY LẠI {record.availableAt ? `(${dayjs(record.availableAt).format('DD/MM HH:mm')})` : ''}
                       </Tag>
                     )}
                     {status === 'EXPLOITED' && (
@@ -1933,7 +1956,11 @@ export default function CampaignDetailPage() {
           record.poolStatus === 'CLAIMED' &&
           record.claimExpiresAt &&
           new Date(record.claimExpiresAt).getTime() <= Date.now();
-        const effectiveCanClaim = record.canClaim || isClaimExpired;
+        const isRecycleExpired =
+          (record.poolStatus === 'RECYCLING' || record.poolStatus === 'RECYCLE') &&
+          record.availableAt &&
+          new Date(record.availableAt).getTime() <= Date.now();
+        const effectiveCanClaim = record.canClaim || isClaimExpired || isRecycleExpired;
         const effectiveIsClaimedByMe = record.isClaimedByMe && !isClaimExpired;
 
         return (
