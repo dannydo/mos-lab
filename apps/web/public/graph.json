@@ -38340,8 +38340,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DailyActionSchedule.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16188,
-        "lineCount": 356,
+        "sizeBytes": 16008,
+        "lineCount": 344,
         "ext": ".tsx"
       }
     },
@@ -38405,8 +38405,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/RealisticCardFireworks.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14084,
-        "lineCount": 476,
+        "sizeBytes": 14272,
+        "lineCount": 470,
         "ext": ".tsx"
       }
     },
@@ -38483,8 +38483,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15692,
-        "lineCount": 346,
+        "sizeBytes": 15670,
+        "lineCount": 345,
         "ext": ".tsx"
       }
     },
@@ -38496,8 +38496,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvCelebration.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2693,
-        "lineCount": 114,
+        "sizeBytes": 4311,
+        "lineCount": 156,
         "ext": ".tsx"
       }
     },
@@ -38548,8 +38548,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvLiveCelebrationBanner.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16734,
-        "lineCount": 429,
+        "sizeBytes": 16398,
+        "lineCount": 421,
         "ext": ".tsx"
       }
     },
@@ -38561,8 +38561,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 44844,
-        "lineCount": 996,
+        "sizeBytes": 44952,
+        "lineCount": 1004,
         "ext": ".tsx"
       }
     },

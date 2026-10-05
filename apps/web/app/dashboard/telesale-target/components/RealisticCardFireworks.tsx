@@ -202,11 +202,12 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
   // Launch rocket helper
   const createRocket = useCallback(
     (width: number, height: number): Rocket => {
-      const x = width * (0.25 + Math.random() * 0.5);
-      const targetY = height * (0.2 + Math.random() * 0.35); // Explode in top 20-55% of card
+      const x = width * (0.2 + Math.random() * 0.6);
+      const targetY = height * (0.15 + Math.random() * 0.35); // Explode in top 15-50% of card
       const distance = height - targetY;
-      const vy = -Math.sqrt(distance * 0.42) - 3;
-      const vx = (Math.random() - 0.5) * 2.2;
+      // Fast, energetic launch: reaches target in ~0.25s
+      const vy = -Math.sqrt(distance * 0.95) - 5.5;
+      const vx = (Math.random() - 0.5) * 1.8;
       const color = themeColors[Math.floor(Math.random() * themeColors.length)];
 
       if (soundSettingsRef.current.soundEnabled) {
@@ -234,16 +235,16 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
       }
 
       const particles: Particle[] = [];
-      const particleCount = 75 + Math.floor(Math.random() * 35); // 75-110 particles per burst
+      const particleCount = 48 + Math.floor(Math.random() * 22); // 48-70 crisp, punchy sparks
 
       for (let i = 0; i < particleCount; i++) {
         const angle = Math.random() * Math.PI * 2;
-        // Gaussian-style speed distribution for spherical volume
-        const speed = Math.pow(Math.random(), 0.6) * 6.5 + 1.2;
+        // High-velocity explosion burst (fast & expansive)
+        const speed = Math.pow(Math.random(), 0.45) * 11 + 3.2;
         const vx = Math.cos(angle) * speed;
         const vy = Math.sin(angle) * speed;
         const color = themeColors[Math.floor(Math.random() * themeColors.length)];
-        const maxLife = 50 + Math.floor(Math.random() * 35);
+        const maxLife = 32 + Math.floor(Math.random() * 24); // Snappy life: ~0.55s - 0.9s
 
         particles.push({
           x,
@@ -256,8 +257,8 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
           maxLife,
           decay: 1 / maxLife,
           history: [{ x, y }],
-          size: Math.random() * 2.2 + 1.4,
-          flicker: Math.random() > 0.4,
+          size: Math.random() * 2.2 + 1.2,
+          flicker: Math.random() > 0.35,
         });
       }
       return particles;
@@ -315,20 +316,20 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
       return false;
     };
 
-    // Launcher cadence
+    // Launcher cadence (faster, punchier)
     const scheduleNextLaunch = () => {
       if (!active) return;
       const delay = isFrenzy
-        ? 350 + Math.random() * 450 // Frenzy burst: launches every 0.35s - 0.8s
-        : 3800 + Math.random() * 2500; // Ambient mode: launches every 3.8s - 6.3s
+        ? 220 + Math.random() * 320 // Frenzy burst: launches every 0.22s - 0.54s
+        : 1800 + Math.random() * 1600; // Ambient mode: launches every 1.8s - 3.4s (snappy)
 
       launchTimerRef.current = setTimeout(() => {
         launchSafely();
-        // Occasionally spawn a twin rocket in frenzy mode
-        if (isFrenzy && Math.random() > 0.45) {
+        // Frequently spawn a rapid twin/triple salvo in frenzy mode
+        if (isFrenzy && Math.random() > 0.35) {
           setTimeout(() => {
             launchSafely();
-          }, 160);
+          }, 120);
         }
         scheduleNextLaunch();
       }, delay);
@@ -338,48 +339,44 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
       // Immediate first volley after brief layout tick
       setTimeout(() => {
         launchSafely();
-      }, 50);
+      }, 40);
       scheduleNextLaunch();
     }
 
     const render = () => {
       ctx.clearRect(0, 0, width, height);
 
-      // 1. UPDATE & DRAW ROCKETS
+      // 1. UPDATE & DRAW ROCKETS (Zero-blur hardware blending)
       for (let i = rockets.length - 1; i >= 0; i--) {
         const r = rockets[i];
         r.trail.push({ x: r.x, y: r.y, alpha: 1 });
-        if (r.trail.length > 7) r.trail.shift();
+        if (r.trail.length > 6) r.trail.shift();
 
-        // Draw rocket trail
+        // Draw rocket trail (fast additive rendering without shadowBlur)
         ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
         for (let t = 0; t < r.trail.length; t++) {
           const pt = r.trail[t];
-          pt.alpha *= 0.82;
+          pt.alpha *= 0.78;
           ctx.beginPath();
-          ctx.arc(pt.x, pt.y, 1.6 * (t / r.trail.length), 0, Math.PI * 2);
+          ctx.arc(pt.x, pt.y, 1.8 * (t / r.trail.length) + 0.5, 0, Math.PI * 2);
           ctx.fillStyle = r.color;
-          ctx.globalAlpha = pt.alpha * 0.8;
-          ctx.shadowBlur = 8;
-          ctx.shadowColor = r.color;
+          ctx.globalAlpha = pt.alpha * 0.9;
           ctx.fill();
         }
+
+        // Draw glowing rocket spark head
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, 2.8, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgb(255, 255, 255)';
+        ctx.globalAlpha = 1;
+        ctx.fill();
         ctx.restore();
 
         // Move rocket
         r.x += r.vx;
         r.y += r.vy;
-        r.vy += 0.12; // rocket gravity deceleration
-
-        // Draw rocket head
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(r.x, r.y, 2.4, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgb(255, 255, 255)';
-        ctx.shadowBlur = 12;
-        ctx.shadowColor = r.color;
-        ctx.fill();
-        ctx.restore();
+        r.vy += 0.22; // rocket gravity deceleration
 
         // Check if rocket reached apogee / detonation point
         if (r.y <= r.targetY || r.vy >= -1.0) {
@@ -389,9 +386,9 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
         }
       }
 
-      // 2. UPDATE & DRAW PARTICLES WITH LIGHT STREAKS
+      // 2. UPDATE & DRAW PARTICLES WITH LIGHT STREAKS (Ultra-fast 60fps GPU blending)
       ctx.save();
-      ctx.globalCompositeOperation = 'lighter'; // Luminous glowing blending
+      ctx.globalCompositeOperation = 'lighter'; // Native hardware luminous blending
 
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
@@ -401,10 +398,10 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
         p.history.push({ x: p.x, y: p.y });
         if (p.history.length > 4) p.history.shift();
 
-        // Physics
-        p.vx *= 0.965; // Air drag
-        p.vy *= 0.965;
-        p.vy += 0.17; // Gravity
+        // Snappy physics
+        p.vx *= 0.955; // Air drag
+        p.vy *= 0.955;
+        p.vy += 0.22; // Gravity
         p.x += p.vx;
         p.y += p.vy;
         p.alpha -= p.decay;
@@ -416,11 +413,13 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
 
         // Sparkling twinkle decay
         let drawAlpha = Math.max(0, p.alpha);
-        if (p.flicker && p.life > p.maxLife * 0.35) {
-          if (Math.random() < 0.25) drawAlpha *= 0.35;
+        if (p.flicker && p.life > p.maxLife * 0.25) {
+          if (Math.random() < 0.28) drawAlpha *= 0.25;
         }
 
-        // Draw streak tail
+        const sizeProgress = 1 - p.life / p.maxLife;
+
+        // Draw streak tail (clean lines, zero shadowBlur lag)
         if (p.history.length >= 2) {
           ctx.beginPath();
           ctx.moveTo(p.history[0].x, p.history[0].y);
@@ -428,20 +427,16 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
             ctx.lineTo(p.history[h].x, p.history[h].y);
           }
           ctx.strokeStyle = p.color;
-          ctx.lineWidth = p.size * (1 - p.life / p.maxLife);
-          ctx.globalAlpha = drawAlpha * 0.9;
-          ctx.shadowBlur = 6;
-          ctx.shadowColor = p.color;
+          ctx.lineWidth = Math.max(0.8, p.size * sizeProgress * 0.9);
+          ctx.globalAlpha = drawAlpha * 0.85;
           ctx.stroke();
         }
 
-        // Draw particle head
+        // Draw particle head (bright luminous spark)
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * 0.7, 0, Math.PI * 2);
-        ctx.fillStyle = p.life < 8 ? 'rgb(255, 255, 255)' : p.color;
+        ctx.arc(p.x, p.y, Math.max(0.6, p.size * 0.7 * sizeProgress), 0, Math.PI * 2);
+        ctx.fillStyle = p.life < 7 ? 'rgb(255, 255, 255)' : p.color;
         ctx.globalAlpha = drawAlpha;
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = p.color;
         ctx.fill();
       }
 

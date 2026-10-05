@@ -114,59 +114,66 @@ const CelebrationCanvas: React.FC<{ active: boolean; isMilestone: boolean; color
       }
 
       burstCenters.forEach((b) => {
-        const sparkCount = 65;
+        const sparkCount = 45;
         for (let i = 0; i < sparkCount; i++) {
           const angle = Math.random() * Math.PI * 2;
-          const speed = Math.random() * 11 + 3;
+          const speed = Math.pow(Math.random(), 0.5) * 11 + 3.5;
           particles.push({
             x: b.x,
             y: b.y,
             vx: Math.cos(angle) * speed,
             vy: Math.sin(angle) * speed,
-            size: Math.random() * 3.5 + 2,
+            size: Math.random() * 3 + 1.2,
             color: colors[Math.floor(Math.random() * colors.length)],
             rotation: Math.random() * 360,
             spin: (Math.random() - 0.5) * 8,
             life: -b.delay, // staggered launch
-            maxLife: Math.random() * 60 + 90,
+            maxLife: Math.random() * 40 + 50,
             isSpark: true,
           });
         }
       });
     } else {
-      // CONFETTI MODE: Gentle celebratory shower fluttering down
-      const count = 130;
-      for (let i = 0; i < count; i++) {
-        particles.push({
-          x: width * (0.15 + Math.random() * 0.7),
-          y: height * (0.1 + Math.random() * 0.35),
-          vx: (Math.random() - 0.5) * 14,
-          vy: -Math.random() * 10 - 2,
-          size: Math.random() * 8 + 5,
-          color: colors[Math.floor(Math.random() * colors.length)],
-          rotation: Math.random() * 360,
-          spin: (Math.random() - 0.5) * 10,
-          life: 0,
-          maxLife: Math.random() * 80 + 130,
-          wobble: Math.random() * 10,
-          wobbleSpeed: Math.random() * 0.08 + 0.04,
-          isSpark: false,
-        });
-      }
+      // STANDARD CELEBRATION MODE: Twin Radiant Firework Bursts (NO Confetti)
+      const burstCenters = [
+        { x: width * 0.35, y: height * 0.35, delay: 0 },
+        { x: width * 0.65, y: height * 0.35, delay: 8 },
+      ];
 
-      // Soft ambient sparkles
-      for (let i = 0; i < 25; i++) {
+      burstCenters.forEach((b) => {
+        const sparkCount = 38;
+        for (let i = 0; i < sparkCount; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = Math.pow(Math.random(), 0.45) * 10 + 3;
+          particles.push({
+            x: b.x,
+            y: b.y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            size: Math.random() * 2.8 + 1.2,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            rotation: Math.random() * 360,
+            spin: (Math.random() - 0.5) * 6,
+            life: -b.delay,
+            maxLife: Math.random() * 35 + 40,
+            isSpark: true,
+          });
+        }
+      });
+
+      // Soft ambient sparkle trail
+      for (let i = 0; i < 20; i++) {
         particles.push({
           x: Math.random() * width,
-          y: Math.random() * height * 0.7,
-          vx: (Math.random() - 0.5) * 0.5,
+          y: Math.random() * height * 0.6,
+          vx: (Math.random() - 0.5) * 0.6,
           vy: -Math.random() * 0.6 - 0.2,
-          size: Math.random() * 3 + 2,
+          size: Math.random() * 2.5 + 1.2,
           color: colors[Math.floor(Math.random() * colors.length)],
           rotation: Math.random() * 360,
           spin: (Math.random() - 0.5) * 4,
           life: 0,
-          maxLife: 180,
+          maxLife: 100,
           isSpark: true,
         });
       }
@@ -178,6 +185,9 @@ const CelebrationCanvas: React.FC<{ active: boolean; isMilestone: boolean; color
       ctx.clearRect(0, 0, width, height);
 
       let aliveCount = 0;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter'; // GPU hardware blending
+
       for (const p of particles) {
         p.life++;
         if (p.life < 0) {
@@ -187,47 +197,29 @@ const CelebrationCanvas: React.FC<{ active: boolean; isMilestone: boolean; color
 
         if (p.life < p.maxLife) {
           aliveCount++;
-          if (p.isSpark) {
-            // Spark physics
-            p.x += p.vx;
-            p.y += p.vy;
-            p.vx *= 0.96; // drag
-            p.vy *= 0.96;
-            p.vy += 0.08; // gentle gravity
-            p.rotation += p.spin;
+          // Snappy spark physics
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vx *= 0.955; // drag
+          p.vy *= 0.955;
+          p.vy += 0.2; // natural gravity
+          p.rotation += p.spin;
 
-            const alpha = Math.max(0, 1 - p.life / p.maxLife) * (0.6 + Math.random() * 0.4);
-            ctx.save();
-            ctx.translate(p.x, p.y);
-            ctx.fillStyle = p.color;
-            ctx.globalAlpha = alpha;
-            ctx.beginPath();
-            ctx.arc(0, 0, p.size, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-          } else {
-            // Confetti rectangle physics
-            if (p.wobble !== undefined && p.wobbleSpeed !== undefined) {
-              p.wobble += p.wobbleSpeed;
-              p.x += Math.sin(p.wobble) * 2;
-            }
-            p.x += p.vx;
-            p.y += p.vy;
-            p.vy += 0.28; // gravity
-            p.vx *= 0.98; // air resistance
-            p.rotation += p.spin;
+          const alpha = Math.max(0, 1 - p.life / p.maxLife) * (0.7 + Math.random() * 0.3);
+          const sizeProgress = 1 - p.life / p.maxLife;
 
-            const alpha = Math.max(0, 1 - p.life / p.maxLife);
-            ctx.save();
-            ctx.translate(p.x, p.y);
-            ctx.rotate((p.rotation * Math.PI) / 180);
-            ctx.fillStyle = p.color;
-            ctx.globalAlpha = alpha;
-            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.55);
-            ctx.restore();
-          }
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.fillStyle = p.life < 6 ? 'rgb(255, 255, 255)' : p.color;
+          ctx.globalAlpha = alpha;
+          ctx.beginPath();
+          ctx.arc(0, 0, Math.max(0.6, p.size * sizeProgress), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
         }
       }
+
+      ctx.restore();
 
       if (aliveCount > 0) {
         animationId = requestAnimationFrame(render);
@@ -259,7 +251,8 @@ export const TelesaleTvLiveCelebrationBanner: React.FC<TelesaleTvLiveCelebration
     ? {
         cardBorder: 'border-amber-400/90 shadow-[0_0_100px_rgba(251,191,36,0.55)]',
         cardBg: 'bg-gradient-to-b from-amber-950/90 via-zinc-900/95 to-zinc-950/95',
-        badgeBg: 'bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-zinc-950 font-black shadow-amber-500/40',
+        badgeBg:
+          'bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-zinc-950 font-black shadow-amber-500/40',
         glowBg: 'bg-amber-500/25',
         radialRays: 'text-amber-400/20',
         ringColor: 'ring-amber-400 shadow-[0_0_60px_rgba(251,191,36,0.65)]',
