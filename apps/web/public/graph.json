@@ -38353,8 +38353,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DataPipelineStages.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8219,
-        "lineCount": 190,
+        "sizeBytes": 8269,
+        "lineCount": 193,
         "ext": ".tsx"
       }
     },
@@ -38379,8 +38379,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25081,
-        "lineCount": 509,
+        "sizeBytes": 25249,
+        "lineCount": 517,
         "ext": ".tsx"
       }
     },
@@ -38405,8 +38405,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/SemicircleGauge.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6331,
-        "lineCount": 194,
+        "sizeBytes": 7125,
+        "lineCount": 213,
         "ext": ".tsx"
       }
     },
@@ -38548,8 +38548,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30837,
-        "lineCount": 676,
+        "sizeBytes": 31483,
+        "lineCount": 713,
         "ext": ".tsx"
       }
     },
@@ -38574,8 +38574,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7987,
-        "lineCount": 184,
+        "sizeBytes": 7778,
+        "lineCount": 176,
         "ext": ".tsx"
       }
     },

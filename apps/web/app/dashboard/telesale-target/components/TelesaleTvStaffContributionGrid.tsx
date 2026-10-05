@@ -64,19 +64,12 @@ export const TelesaleTvStaffContributionGrid: React.FC<TelesaleTvStaffContributi
         </div>
       </div>
 
-      {/* Cards Container */}
-      <div
-        className={
-          isSmallTeam
-            ? 'grid grid-cols-2 md:grid-cols-4 gap-4'
-            : 'flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900/50'
-        }
-      >
+      {/* Cards Container (Option 1: 5-column layout on Fullscreen TV) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 my-auto">
         {staffTargets.map((staff) => {
           const bookToday = staff.bookToday ?? 0;
           const doneToday = staff.doneToday ?? 0;
-          const contributionPercent =
-            totalTeamBookToday > 0 ? Math.round((bookToday / totalTeamBookToday) * 100) : 0;
+          const contributionPercent = totalTeamBookToday > 0 ? Math.round((bookToday / totalTeamBookToday) * 100) : 0;
           const isTop = staff.isTopBookToday && bookToday > 0;
 
           return (
@@ -84,8 +77,6 @@ export const TelesaleTvStaffContributionGrid: React.FC<TelesaleTvStaffContributi
               key={staff.legacyStaffId}
               data-testid={`tv-staff-card-${staff.legacyStaffId}`}
               className={`relative rounded-2xl p-4 sm:p-5 flex flex-col justify-between backdrop-blur-xl border transition-all duration-300 ${
-                isSmallTeam ? 'w-full' : 'min-w-[260px] sm:min-w-[280px] flex-1'
-              } ${
                 isTop
                   ? 'bg-gradient-to-b from-amber-950/40 via-zinc-900 to-zinc-950 border-amber-400/90 shadow-[0_0_30px_rgba(245,158,11,0.25)]'
                   : 'bg-zinc-900/80 hover:bg-zinc-900 border-zinc-800/90 hover:border-zinc-700 shadow-lg'
@@ -127,9 +118,7 @@ export const TelesaleTvStaffContributionGrid: React.FC<TelesaleTvStaffContributi
                   <h3 className="text-base sm:text-lg font-black text-zinc-100 tracking-tight truncate m-0">
                     {staff.name}
                   </h3>
-                  <span className="text-[11px] font-mono text-zinc-400 block truncate">
-                    Telesales Executive
-                  </span>
+                  <span className="text-[11px] font-mono text-zinc-400 block truncate">Telesales Executive</span>
                 </div>
               </div>
 

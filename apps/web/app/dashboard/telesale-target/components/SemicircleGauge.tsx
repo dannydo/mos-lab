@@ -21,6 +21,8 @@ export interface SemicircleGaugeProps {
   heightClass?: string;
   hideLabelText?: boolean;
   hideUnitText?: boolean;
+  sizeVariant?: 'default' | 'tv';
+  actualDataTestId?: string;
 }
 
 const TONE_MAP: Record<
@@ -75,6 +77,8 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
   heightClass = 'h-[105px]',
   hideLabelText = false,
   hideUnitText = false,
+  sizeVariant = 'default',
+  actualDataTestId,
 }) => {
   const clampedPercent = Math.min(100, Math.max(0, percent));
   const arcLength = Number((Math.PI * radius).toFixed(2)); // ~257.6 for 82, ~245 for 78
@@ -104,11 +108,25 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
         ? 'text-rose-400 bg-rose-950/80 border-rose-500/40'
         : 'text-amber-400 bg-amber-950/80 border-amber-500/40';
 
-  const bottomOffsetClass = radius <= 78 ? 'bottom-[8px]' : 'bottom-[10px]';
+  const isTv = sizeVariant === 'tv';
+  const bottomOffsetClass = isTv ? 'bottom-[12px] sm:bottom-[16px]' : radius <= 78 ? 'bottom-[8px]' : 'bottom-[10px]';
   const toneConfig = TONE_MAP[tone] || TONE_MAP.emerald;
 
   const shouldRenderLabel = !hideLabelText && label && label.trim().length > 0;
   const visibleUnit = !hideUnitText && unit && unit.trim().length > 0 ? ` ${unit}` : '';
+
+  const actualTextClass = isTv
+    ? `text-5xl sm:text-6xl lg:text-7xl font-black font-mono tabular-nums leading-none ${toneConfig.textClass}`
+    : `text-2xl sm:text-3xl font-black font-mono tabular-nums leading-none ${toneConfig.textClass}`;
+  const targetTextClass = isTv
+    ? 'text-lg sm:text-xl lg:text-2xl font-mono text-zinc-500 font-bold leading-none'
+    : 'text-[11px] font-mono text-zinc-500 font-bold leading-none';
+  const badgeClass = isTv
+    ? `text-xs sm:text-sm font-mono font-bold px-2 py-0.5 rounded border ${toneConfig.badgeClass}`
+    : `text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border ${toneConfig.badgeClass}`;
+  const gapBadgeClass = isTv
+    ? `text-xs sm:text-sm font-mono font-black px-2 py-0.5 rounded border ${gapColorClasses}`
+    : `text-[9px] font-mono font-black px-1.5 py-0.2 rounded border ${gapColorClasses}`;
 
   return (
     <div className={`relative w-full ${heightClass} mx-auto flex flex-col items-center justify-end ${className}`}>
@@ -162,26 +180,16 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
           </span>
         )}
         <div className="flex items-baseline justify-center gap-1 my-0.5">
-          <span
-            className={`text-2xl sm:text-3xl font-black font-mono tabular-nums leading-none ${toneConfig.textClass}`}
-          >
+          <span data-testid={actualDataTestId} className={actualTextClass}>
             {actual}
           </span>
-          <span className="text-[11px] font-mono text-zinc-500 font-bold leading-none">
-            {`/ ${target}${visibleUnit}`}
-          </span>
+          <span className={targetTextClass}>{`/ ${target}${visibleUnit}`}</span>
           {/* Accessible hidden unit for screen readers and test assertions */}
           {unit && hideUnitText && <span className="hidden">{`/ ${target} ${unit}`}</span>}
         </div>
         <div className="flex items-center gap-1 mt-0.5">
-          <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border ${toneConfig.badgeClass}`}>
-            {percent}% ĐẠT
-          </span>
-          {gapText && (
-            <span className={`text-[9px] font-mono font-black px-1.5 py-0.2 rounded border ${gapColorClasses}`}>
-              {gapText}
-            </span>
-          )}
+          <span className={badgeClass}>{percent}% ĐẠT</span>
+          {gapText && <span className={gapBadgeClass}>{gapText}</span>}
         </div>
       </div>
     </div>

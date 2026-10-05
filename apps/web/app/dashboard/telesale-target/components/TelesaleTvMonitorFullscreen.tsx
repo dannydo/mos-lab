@@ -26,6 +26,7 @@ import { useTelesaleTvLiveCelebration } from '../hooks/useTelesaleTvLiveCelebrat
 import { TelesaleTvLiveCelebrationBanner } from './TelesaleTvLiveCelebrationBanner';
 import { TelesaleTvStaffContributionGrid } from './TelesaleTvStaffContributionGrid';
 import { TelesaleTvJournalModal } from './TelesaleTvJournalModal';
+import { SemicircleGauge } from './SemicircleGauge';
 
 interface TelesaleTvMonitorFullscreenProps {
   overview: TelesaleTargetOverview;
@@ -414,86 +415,98 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
         </div>
       </header>
 
-      {/* 2. MAIN TV MONITOR BODY: 2 GIANT HIGH-CONTRAST COLUMNS (MOS-BUG-75: Book dẫn dắt -> Done theo sau) */}
-      <main className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 my-4 flex-1 items-stretch">
-        {/* COLUMN 1: BOOK HÔM NAY (TẠO LỊCH - HÀNH ĐỘNG CHÍNH DẪN DẮT) */}
+      {/* 2. MAIN TV MONITOR BODY: DUAL SEMICIRCLE COCKPIT (OPTION 1) */}
+      <main className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 my-3 flex-1 items-stretch">
+        {/* COLUMN 1: BOOK HÔM NAY (TẠO LỊCH - HÀNH ĐỘNG DẪN DẮT) */}
         <div
-          className={`rounded-3xl p-6 sm:p-8 lg:p-10 flex flex-col justify-between border backdrop-blur-xl transition-all shadow-2xl relative overflow-hidden ${
+          className={`rounded-3xl p-5 sm:p-6 lg:p-7 flex flex-col justify-between border backdrop-blur-xl transition-all shadow-2xl relative overflow-hidden ${
             isBookOver100
               ? 'bg-gradient-to-b from-amber-950/40 via-zinc-900 to-zinc-950 border-amber-400/90 shadow-[0_0_40px_rgba(245,158,11,0.2)]'
-              : 'bg-gradient-to-b from-blue-950/30 via-zinc-900/90 to-zinc-950/90 border-blue-500/40 hover:border-blue-400/60 shadow-[0_0_20px_rgba(59,130,246,0.15)]'
+              : 'bg-gradient-to-b from-blue-950/30 via-zinc-900/90 to-zinc-950/90 border-blue-500/40 hover:border-blue-400/60 shadow-[0_0_25px_rgba(59,130,246,0.15)]'
           }`}
         >
           {/* Ambient inner glow */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
-          {/* Card Title */}
           <div>
+            {/* Header */}
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-2.5 text-zinc-300 font-bold text-sm sm:text-base lg:text-lg uppercase tracking-wider">
-                <Calendar className="w-6 h-6 text-blue-400" />
-                <span className="text-blue-200">BOOK HÔM NAY · TẠO LỊCH</span>
-              </span>
-              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-blue-950/80 text-blue-300 border border-blue-500/40">
-                HÀNH ĐỘNG DẪN DẮT · Chỉ tiêu: ≥ {metrics.bookTarget} Book
-              </span>
-            </div>
-
-            {/* Giant Big Numbers (Readable from 5-10 meters) */}
-            <div className="mt-4 lg:mt-6 flex items-baseline justify-center sm:justify-start gap-3">
-              <span
-                data-testid="tv-monitor-fullscreen-book-actual"
-                className="text-7xl sm:text-8xl lg:text-9xl font-black font-mono text-blue-300 tabular-nums tracking-tighter drop-shadow-lg"
-              >
-                {metrics.bookActual}
-              </span>
-              <span className="text-3xl sm:text-4xl lg:text-5xl font-bold font-mono text-zinc-500 tabular-nums">
-                / {metrics.bookTarget}
-              </span>
-              <span className="text-base sm:text-xl font-bold text-blue-400 font-mono ml-2">Book</span>
-            </div>
-
-            {/* Massive Thick Progress Bar */}
-            <div className="mt-4 lg:mt-6">
-              <Progress
-                percent={Math.min(100, metrics.bookPercent)}
-                strokeColor={getKpiProgressStroke(metrics.bookPercent, token)}
-                size={['100%', 28]}
-                showInfo={false}
-                className="rounded-2xl"
-              />
-              <div className="flex justify-between items-center text-sm sm:text-base font-mono mt-2.5 font-bold">
-                <span className="text-zinc-400">Tiến độ hoàn thành</span>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-sky-500/20 border border-sky-500/40 flex items-center justify-center">
+                  <Calendar className="w-4 h-4 text-sky-400" />
+                </div>
+                <div>
+                  <span className="text-sky-300 font-extrabold text-xs uppercase tracking-wider font-mono">
+                    HÀNH ĐỘNG DẪN DẮT
+                  </span>
+                  <h2 className="text-xl sm:text-2xl font-black text-zinc-100 tracking-tight m-0">
+                    BOOK HÔM NAY · TẠO LỊCH
+                  </h2>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 rounded-xl font-mono text-xs font-bold bg-blue-950/80 text-blue-300 border border-blue-500/40">
+                  Chỉ tiêu: ≥ {metrics.bookTarget} Book
+                </span>
                 <span
-                  className={`text-lg sm:text-xl font-black ${
-                    metrics.bookPercent >= 100
-                      ? 'text-emerald-400 animate-pulse'
-                      : metrics.bookPercent >= 80
-                        ? 'text-amber-400'
-                        : 'text-rose-400'
+                  className={`px-3 py-1 rounded-xl font-mono text-xs font-black border ${
+                    metrics.gapBook >= 0
+                      ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
+                      : metrics.gapBook === -1
+                        ? 'bg-amber-950 text-amber-300 border-amber-500/40'
+                        : 'bg-rose-950 text-rose-300 border-rose-500/40'
                   }`}
                 >
-                  {isBookOver100 ? `✨ ${metrics.bookPercent}% VƯỢT CHỈ TIÊU` : `${metrics.bookPercent}%`}
+                  {metrics.gapBook >= 0 ? `+${metrics.gapBook} ĐÚNG NHỊP` : `${metrics.gapBook} CHẬM NHỊP`}
                 </span>
               </div>
             </div>
+
+            {/* Semicircle Gauge (Option 1) */}
+            <div className="my-2">
+              <SemicircleGauge
+                percent={metrics.bookPercent}
+                actual={metrics.bookActual}
+                target={metrics.bookTarget}
+                unit="Book"
+                label=""
+                hideLabelText={true}
+                hideUnitText={true}
+                tone="blue"
+                sizeVariant="tv"
+                actualDataTestId="tv-monitor-fullscreen-book-actual"
+                heightClass="h-[180px] sm:h-[220px] lg:h-[250px]"
+                pacingPercent={Math.min(
+                  100,
+                  Math.round(((metrics.expectedBook || 0) / (metrics.bookTarget || 1)) * 100)
+                )}
+                gapText={
+                  metrics.gapBook >= 0 ? `GAP: +${metrics.gapBook} VƯỢT NHỊP` : `GAP: ${metrics.gapBook} CHẬM NHỊP`
+                }
+                gapType={metrics.gapBook >= 0 ? 'positive' : 'negative'}
+              />
+            </div>
           </div>
 
-          {/* High-Visibility Pacing Breakdown Line */}
-          <div className="mt-6 pt-5 border-t border-blue-900/40 bg-black/40 rounded-2xl p-4 sm:p-5 border border-blue-500/20">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center font-mono">
-              <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-800">
-                <div className="text-[11px] sm:text-xs text-zinc-400 uppercase">Đã đạt</div>
-                <div className="text-xl sm:text-2xl font-black text-blue-200 tabular-nums">{metrics.bookActual}</div>
+          {/* 4-Stat Horizontal Ribbon (Option 1) */}
+          <div className="mt-3 pt-3 border-t border-blue-900/40 bg-black/50 rounded-2xl p-3 sm:p-4 border border-blue-500/20">
+            <div className="grid grid-cols-4 gap-2 text-center font-mono divide-x divide-zinc-800">
+              <div>
+                <span className="text-[11px] sm:text-xs text-zinc-400 block mb-1">Đã đạt</span>
+                <span className="text-xl sm:text-2xl font-black text-blue-200 block tabular-nums">
+                  {metrics.bookActual}
+                </span>
               </div>
-              <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-800">
-                <div className="text-[11px] sm:text-xs text-zinc-400 uppercase">Kỳ vọng giờ này</div>
-                <div className="text-xl sm:text-2xl font-black text-zinc-300 tabular-nums">{metrics.expectedBook}</div>
+              <div>
+                <span className="text-[11px] sm:text-xs text-zinc-400 block mb-1">Kỳ vọng giờ này</span>
+                <span className="text-xl sm:text-2xl font-black text-zinc-300 block tabular-nums">
+                  {metrics.expectedBook}
+                </span>
               </div>
-              <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-800">
-                <div className="text-[11px] sm:text-xs text-zinc-400 uppercase">Nhịp (Gap)</div>
-                <div
-                  className={`text-xl sm:text-2xl font-black tabular-nums ${
+              <div>
+                <span className="text-[11px] sm:text-xs text-zinc-400 block mb-1">Nhịp (Gap)</span>
+                <span
+                  className={`text-xl sm:text-2xl font-black block tabular-nums ${
                     metrics.gapBook >= 0
                       ? 'text-emerald-400'
                       : metrics.gapBook === -1
@@ -502,99 +515,113 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
                   }`}
                 >
                   {metrics.gapBook >= 0 ? `+${metrics.gapBook}` : metrics.gapBook}
-                </div>
+                </span>
               </div>
-              <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-800">
-                <div className="text-[11px] sm:text-xs text-zinc-400 uppercase">Còn thiếu</div>
-                <div className="text-xl sm:text-2xl font-black text-blue-300 tabular-nums">{metrics.remainingBook}</div>
+              <div>
+                <span className="text-[11px] sm:text-xs text-zinc-400 block mb-1">Còn thiếu</span>
+                <span className="text-xl sm:text-2xl font-black text-amber-300 block tabular-nums">
+                  {metrics.remainingBook}
+                </span>
               </div>
             </div>
 
-            <div className="mt-3 pt-2 border-t border-blue-900/40 flex items-center justify-between text-xs sm:text-sm font-mono text-zinc-400">
-              <span>Định mức tối thiểu mỗi ngày:</span>
-              <span className="text-blue-300 font-bold tabular-nums">25 Cuộc hẹn thành công</span>
+            <div className="mt-3 pt-2 border-t border-blue-900/40 flex items-center justify-between text-xs font-mono text-zinc-400">
+              <span>
+                Định mức tối thiểu mỗi ngày: <strong className="text-zinc-200">25 Cuộc hẹn thành công</strong>
+              </span>
+              <span className="text-sky-300 font-semibold">Hành động chính dẫn dắt</span>
             </div>
           </div>
         </div>
 
         {/* COLUMN 2: DONE HÔM NAY (KHÁCH LẺ - KẾT QUẢ THEO SAU) */}
         <div
-          className={`rounded-3xl p-6 sm:p-8 lg:p-10 flex flex-col justify-between border backdrop-blur-xl transition-all shadow-2xl relative overflow-hidden ${
+          className={`rounded-3xl p-5 sm:p-6 lg:p-7 flex flex-col justify-between border backdrop-blur-xl transition-all shadow-2xl relative overflow-hidden ${
             isDoneOver100
               ? 'bg-gradient-to-b from-amber-950/40 via-zinc-900 to-zinc-950 border-amber-400/90 shadow-[0_0_40px_rgba(245,158,11,0.2)]'
-              : 'bg-gradient-to-b from-zinc-900/90 to-zinc-950/90 border-zinc-800 hover:border-amber-500/50'
+              : 'bg-gradient-to-b from-emerald-950/30 via-zinc-900/90 to-zinc-950/90 border-emerald-500/40 hover:border-emerald-400/60 shadow-[0_0_25px_rgba(16,185,129,0.15)]'
           }`}
         >
           {/* Ambient inner glow */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-          {/* Card Title */}
           <div>
+            {/* Header */}
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-2.5 text-zinc-300 font-bold text-sm sm:text-base lg:text-lg uppercase tracking-wider">
-                <CheckCircle2 className="w-6 h-6 text-emerald-400" />
-                <span>DONE HÔM NAY</span>
-              </span>
-              <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-zinc-800 text-zinc-400 border border-zinc-700">
-                Chỉ tiêu: {metrics.doneTarget} Done
-              </span>
-            </div>
-
-            {/* Giant Big Numbers (Readable from 5-10 meters) */}
-            <div className="mt-4 lg:mt-6 flex items-baseline justify-center sm:justify-start gap-3">
-              <span
-                data-testid="tv-monitor-fullscreen-done-actual"
-                className="text-7xl sm:text-8xl lg:text-9xl font-black font-mono text-zinc-100 tabular-nums tracking-tighter drop-shadow-lg"
-              >
-                {metrics.doneActual}
-              </span>
-              <span className="text-3xl sm:text-4xl lg:text-5xl font-bold font-mono text-zinc-500 tabular-nums">
-                / {metrics.doneTarget}
-              </span>
-              <span className="text-base sm:text-xl font-bold text-zinc-400 font-mono ml-2">Done</span>
-            </div>
-
-            {/* Massive Thick Progress Bar */}
-            <div className="mt-4 lg:mt-6">
-              <Progress
-                percent={Math.min(100, metrics.donePercent)}
-                strokeColor={getKpiProgressStroke(metrics.donePercent, token)}
-                size={['100%', 28]}
-                showInfo={false}
-                className="rounded-2xl"
-              />
-              <div className="flex justify-between items-center text-sm sm:text-base font-mono mt-2.5 font-bold">
-                <span className="text-zinc-400">Tiến độ hoàn thành</span>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div>
+                  <span className="text-emerald-300 font-extrabold text-xs uppercase tracking-wider font-mono">
+                    KẾT QUẢ CUỐI CÙNG
+                  </span>
+                  <h2 className="text-xl sm:text-2xl font-black text-zinc-100 tracking-tight m-0">DONE HÔM NAY</h2>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 rounded-xl font-mono text-xs font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
+                  Chỉ tiêu: {metrics.doneTarget} Done
+                </span>
                 <span
-                  className={`text-lg sm:text-xl font-black ${
-                    metrics.donePercent >= 100
-                      ? 'text-emerald-400 animate-pulse'
-                      : metrics.donePercent >= 80
-                        ? 'text-amber-400'
-                        : 'text-rose-400'
+                  className={`px-3 py-1 rounded-xl font-mono text-xs font-black border ${
+                    metrics.gapDone >= 0
+                      ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
+                      : metrics.gapDone === -1
+                        ? 'bg-amber-950 text-amber-300 border-amber-500/40'
+                        : 'bg-rose-950 text-rose-300 border-rose-500/40'
                   }`}
                 >
-                  {isDoneOver100 ? `✨ ${metrics.donePercent}% VƯỢT CHỈ TIÊU` : `${metrics.donePercent}%`}
+                  {metrics.gapDone >= 0 ? `+${metrics.gapDone} ĐÚNG NHỊP` : `${metrics.gapDone} CHẬM NHỊP`}
                 </span>
               </div>
             </div>
+
+            {/* Semicircle Gauge (Option 1) */}
+            <div className="my-2">
+              <SemicircleGauge
+                percent={metrics.donePercent}
+                actual={metrics.doneActual}
+                target={metrics.doneTarget}
+                unit="Done"
+                label=""
+                hideLabelText={true}
+                hideUnitText={true}
+                tone="emerald"
+                sizeVariant="tv"
+                actualDataTestId="tv-monitor-fullscreen-done-actual"
+                heightClass="h-[180px] sm:h-[220px] lg:h-[250px]"
+                pacingPercent={Math.min(
+                  100,
+                  Math.round(((metrics.expectedDone || 0) / (metrics.doneTarget || 1)) * 100)
+                )}
+                gapText={
+                  metrics.gapDone >= 0 ? `GAP: +${metrics.gapDone} VƯỢT NHỊP` : `GAP: ${metrics.gapDone} CHẬM NHỊP`
+                }
+                gapType={metrics.gapDone >= 0 ? 'positive' : 'negative'}
+              />
+            </div>
           </div>
 
-          {/* High-Visibility Pacing Breakdown Line */}
-          <div className="mt-6 pt-5 border-t border-zinc-800/80 bg-black/40 rounded-2xl p-4 sm:p-5 border border-zinc-800/60">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center font-mono">
-              <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-800">
-                <div className="text-[11px] sm:text-xs text-zinc-400 uppercase">Đã đạt</div>
-                <div className="text-xl sm:text-2xl font-black text-zinc-100 tabular-nums">{metrics.doneActual}</div>
+          {/* 4-Stat Horizontal Ribbon (Option 1) */}
+          <div className="mt-3 pt-3 border-t border-zinc-800/80 bg-black/50 rounded-2xl p-3 sm:p-4 border border-zinc-800/60">
+            <div className="grid grid-cols-4 gap-2 text-center font-mono divide-x divide-zinc-800">
+              <div>
+                <span className="text-[11px] sm:text-xs text-zinc-400 block mb-1">Đã đạt</span>
+                <span className="text-xl sm:text-2xl font-black text-zinc-100 block tabular-nums">
+                  {metrics.doneActual}
+                </span>
               </div>
-              <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-800">
-                <div className="text-[11px] sm:text-xs text-zinc-400 uppercase">Kỳ vọng giờ này</div>
-                <div className="text-xl sm:text-2xl font-black text-zinc-300 tabular-nums">{metrics.expectedDone}</div>
+              <div>
+                <span className="text-[11px] sm:text-xs text-zinc-400 block mb-1">Kỳ vọng giờ này</span>
+                <span className="text-xl sm:text-2xl font-black text-zinc-300 block tabular-nums">
+                  {metrics.expectedDone}
+                </span>
               </div>
-              <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-800">
-                <div className="text-[11px] sm:text-xs text-zinc-400 uppercase">Nhịp (Gap)</div>
-                <div
-                  className={`text-xl sm:text-2xl font-black tabular-nums ${
+              <div>
+                <span className="text-[11px] sm:text-xs text-zinc-400 block mb-1">Nhịp (Gap)</span>
+                <span
+                  className={`text-xl sm:text-2xl font-black block tabular-nums ${
                     metrics.gapDone >= 0
                       ? 'text-emerald-400'
                       : metrics.gapDone === -1
@@ -603,25 +630,28 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
                   }`}
                 >
                   {metrics.gapDone >= 0 ? `+${metrics.gapDone}` : metrics.gapDone}
-                </div>
+                </span>
               </div>
-              <div className="p-2 rounded-xl bg-zinc-900/60 border border-zinc-800">
-                <div className="text-[11px] sm:text-xs text-zinc-400 uppercase">Còn thiếu</div>
-                <div className="text-xl sm:text-2xl font-black text-amber-300 tabular-nums">
+              <div>
+                <span className="text-[11px] sm:text-xs text-zinc-400 block mb-1">Còn thiếu</span>
+                <span className="text-xl sm:text-2xl font-black text-amber-300 block tabular-nums">
                   {metrics.remainingDone}
-                </div>
+                </span>
               </div>
             </div>
 
-            {metrics.comboLiveDoneActual > 0 && (
-              <div className="mt-3 pt-2 border-t border-zinc-800/60 flex items-center justify-between text-xs sm:text-sm font-mono text-purple-300">
-                <span className="flex items-center gap-1.5 font-medium">
-                  <span className="w-2 h-2 rounded-full bg-purple-400" />
-                  Đơn Combo Live hôm nay:
+            <div className="mt-3 pt-2 border-t border-zinc-800/60 flex items-center justify-between text-xs font-mono text-zinc-400">
+              <span>
+                Chỉ tiêu phân bổ ca: <strong className="text-zinc-200">{metrics.doneTarget} Lượt hoàn tất</strong>
+              </span>
+              {metrics.comboLiveDoneActual > 0 ? (
+                <span className="text-purple-300 font-bold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />+{metrics.comboLiveDoneActual} Combo Live
                 </span>
-                <span className="font-bold tabular-nums">+{metrics.comboLiveDoneActual} Done</span>
-              </div>
-            )}
+              ) : (
+                <span className="text-emerald-400 font-semibold">Kết quả theo sau</span>
+              )}
+            </div>
           </div>
         </div>
       </main>
