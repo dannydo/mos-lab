@@ -12,7 +12,7 @@ interface TelesaleTvStaffContributionGridProps {
 
 const StaffAvatarItem: React.FC<{
   name: string;
-  avatarUrl?: string;
+  avatarUrl?: string | null;
   isTop?: boolean;
   colorClass: string;
 }> = ({ name, avatarUrl, isTop, colorClass }) => {

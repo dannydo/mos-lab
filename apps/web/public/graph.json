@@ -38405,8 +38405,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/SemicircleGauge.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7694,
-        "lineCount": 213,
+        "sizeBytes": 7646,
+        "lineCount": 209,
         "ext": ".tsx"
       }
     },
@@ -38457,8 +38457,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitor.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6238,
-        "lineCount": 195,
+        "sizeBytes": 6237,
+        "lineCount": 194,
         "ext": ".tsx"
       }
     },
@@ -38548,8 +38548,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 40090,
-        "lineCount": 884,
+        "sizeBytes": 39952,
+        "lineCount": 874,
         "ext": ".tsx"
       }
     },
@@ -38574,7 +38574,7 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7719,
+        "sizeBytes": 7726,
         "lineCount": 185,
         "ext": ".tsx"
       }
