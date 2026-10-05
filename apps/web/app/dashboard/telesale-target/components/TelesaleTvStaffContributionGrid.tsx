@@ -77,7 +77,7 @@ export const TelesaleTvStaffContributionGrid: React.FC<TelesaleTvStaffContributi
   ];
 
   return (
-    <section className="relative z-10 mt-2 sm:mt-2.5 mb-0.5 flex flex-col gap-1.5 shrink-0">
+    <section className="relative z-10 pt-3.5 sm:pt-4.5 pb-0.5 flex flex-col gap-2 shrink-0">
       {/* Section Header */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2.5">

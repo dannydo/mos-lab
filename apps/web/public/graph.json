@@ -38340,8 +38340,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DailyActionSchedule.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13467,
-        "lineCount": 291,
+        "sizeBytes": 16188,
+        "lineCount": 356,
         "ext": ".tsx"
       }
     },
@@ -38398,6 +38398,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/RealisticCardFireworks.tsx",
+      "type": "File",
+      "label": "RealisticCardFireworks.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/RealisticCardFireworks.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 14084,
+        "lineCount": 476,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/telesale-target/components/SemicircleGauge.tsx",
       "type": "File",
       "label": "SemicircleGauge.tsx",
@@ -38405,7 +38418,7 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/SemicircleGauge.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7646,
+        "sizeBytes": 7630,
         "lineCount": 209,
         "ext": ".tsx"
       }
@@ -38470,8 +38483,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12511,
-        "lineCount": 276,
+        "sizeBytes": 15692,
+        "lineCount": 346,
         "ext": ".tsx"
       }
     },
@@ -38548,8 +38561,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 39952,
-        "lineCount": 874,
+        "sizeBytes": 44844,
+        "lineCount": 996,
         "ext": ".tsx"
       }
     },
@@ -87999,7 +88012,7 @@
     }
   ],
   "stats": {
-    "totalNodes": 3125,
+    "totalNodes": 3126,
     "totalEdges": 6740,
     "nodeTypeCounts": {
       "Workspace": 3,
@@ -88009,7 +88022,7 @@
       "SharedType": 1132,
       "DesignToken": 12,
       "UIComponent": 212,
-      "File": 886
+      "File": 887
     },
     "edgeTypeCounts": {
       "EXPORTS": 1307,

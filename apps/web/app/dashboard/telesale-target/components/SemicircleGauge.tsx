@@ -72,7 +72,7 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
   showPacingArc = true,
   gapText,
   gapType = 'neutral',
-  radius = 82,
+  radius = 90,
   showNeedle = true,
   className = '',
   heightClass = 'h-[105px]',
@@ -83,14 +83,14 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
   subtitle,
 }) => {
   const isTv = sizeVariant === 'tv';
-  const effectiveRadius = isTv ? (radius === 82 ? 155 : radius) : radius;
+  const effectiveRadius = isTv ? (radius === 82 || radius === 90 ? 155 : radius) : radius;
   const clampedPercent = Math.min(100, Math.max(0, percent));
   const arcLength = Number((Math.PI * effectiveRadius).toFixed(2));
   const centerCoordX = isTv ? 180 : 100;
-  const baselineY = isTv ? 175 : 105;
+  const baselineY = isTv ? 175 : 102;
   const startX = centerCoordX - effectiveRadius;
   const endX = centerCoordX + effectiveRadius;
-  const viewBoxStr = isTv ? '0 0 360 190' : '0 0 200 115';
+  const viewBoxStr = isTv ? '0 0 360 190' : '0 0 200 112';
   const strokeWidthVal = isTv ? 26 : 12;
 
   // SVG Path definition for semicircle
@@ -115,7 +115,7 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
         ? 'text-rose-400 bg-rose-950/80 border-rose-500/40'
         : 'text-amber-400 bg-amber-950/80 border-amber-500/40';
 
-  const bottomOffsetClass = isTv ? 'bottom-[16px] sm:bottom-[20px]' : radius <= 78 ? 'bottom-[8px]' : 'bottom-[10px]';
+  const bottomOffsetClass = isTv ? 'bottom-[16px] sm:bottom-[20px]' : 'bottom-[8px]';
   const toneConfig = TONE_MAP[tone] || TONE_MAP.emerald;
 
   const shouldRenderLabel = !hideLabelText && label && label.trim().length > 0;

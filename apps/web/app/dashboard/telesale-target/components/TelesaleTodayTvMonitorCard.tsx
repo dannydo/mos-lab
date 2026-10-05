@@ -8,6 +8,56 @@ import { calculateShiftPacing, calculateTvMonitorMetrics } from '../utils/tv-mon
 import { TelesaleTvCelebration } from './TelesaleTvCelebration';
 import { TelesaleTvJournalModal } from './TelesaleTvJournalModal';
 import { SemicircleGauge } from './SemicircleGauge';
+import { RealisticCardFireworks } from './RealisticCardFireworks';
+
+// Tiến độ thực tế: đỏ < 80%, vàng 80-99%, xanh >= 100%
+const getProgressTier = (percent: number): 'rose' | 'amber' | 'emerald' => {
+  if (percent < 80) return 'rose';
+  if (percent < 100) return 'amber';
+  return 'emerald';
+};
+
+const getCardTierStyles = (tier: 'rose' | 'amber' | 'emerald') => {
+  switch (tier) {
+    case 'emerald':
+      return {
+        container:
+          'bg-gradient-to-b from-emerald-950/30 to-zinc-950/80 rounded-2xl p-2.5 border border-emerald-500/40 flex flex-col justify-between shadow-inner shadow-[0_0_20px_rgba(16,185,129,0.15)] relative overflow-hidden',
+        badge:
+          'text-emerald-400 bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-500/40 font-mono font-bold text-[9px]',
+        title: 'text-emerald-200 text-xs font-bold',
+        icon: 'text-emerald-400',
+        bottomBorder: 'border-emerald-900/40',
+        bottomText: 'text-emerald-300 font-bold',
+        targetBadge: 'text-[9px] text-emerald-400 font-mono',
+      };
+    case 'amber':
+      return {
+        container:
+          'bg-gradient-to-b from-amber-950/30 to-zinc-950/80 rounded-2xl p-2.5 border border-amber-500/40 flex flex-col justify-between shadow-inner shadow-[0_0_20px_rgba(245,158,11,0.15)] relative overflow-hidden',
+        badge:
+          'text-amber-400 bg-amber-950 px-1.5 py-0.5 rounded border border-amber-500/40 font-mono font-bold text-[9px]',
+        title: 'text-amber-200 text-xs font-bold',
+        icon: 'text-amber-400',
+        bottomBorder: 'border-amber-900/40',
+        bottomText: 'text-amber-300 font-bold',
+        targetBadge: 'text-[9px] text-amber-400 font-mono',
+      };
+    case 'rose':
+    default:
+      return {
+        container:
+          'bg-gradient-to-b from-rose-950/30 to-zinc-950/80 rounded-2xl p-2.5 border border-rose-500/40 flex flex-col justify-between shadow-inner shadow-[0_0_20px_rgba(244,63,94,0.15)] relative overflow-hidden',
+        badge:
+          'text-rose-400 bg-rose-950 px-1.5 py-0.5 rounded border border-rose-500/40 font-mono font-bold text-[9px]',
+        title: 'text-rose-200 text-xs font-bold',
+        icon: 'text-rose-400',
+        bottomBorder: 'border-rose-900/40',
+        bottomText: 'text-rose-300 font-bold',
+        targetBadge: 'text-[9px] text-rose-400 font-mono',
+      };
+  }
+};
 
 interface TelesaleTodayTvMonitorCardProps {
   overview: TelesaleTargetOverview;
@@ -64,6 +114,11 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
     100,
     Math.round(((metrics.expectedDone || 0) / (metrics.doneTarget || 1)) * 100)
   );
+
+  const bookTier = getProgressTier(metrics.bookPercent);
+  const doneTier = getProgressTier(metrics.donePercent);
+  const bookStyles = getCardTierStyles(bookTier);
+  const doneStyles = getCardTierStyles(doneTier);
 
   return (
     <section
@@ -138,32 +193,35 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
         {/* 2 Semicircle Arcs (Book Hôm Nay & Done Hôm Nay) */}
         <div className="grid grid-cols-2 gap-2.5">
           {/* Card 2.1: Book Hôm Nay (Hành động chính) */}
-          <div className="bg-blue-950/20 rounded-2xl p-2.5 border border-blue-500/35 flex flex-col justify-between shadow-inner">
+          <div className={bookStyles.container}>
+            {/* Pháo bông thực tế khi đạt mốc >= 100% */}
+            <RealisticCardFireworks active={isBookOver100} theme="emerald" cardLabel="BOOK" />
             <div>
-              <div className="flex items-center justify-between text-zinc-400 text-xs mb-0.5">
+              <div className="flex items-center justify-between text-zinc-400 text-xs mb-0.5 relative z-10">
                 <span className="flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-blue-400" />
-                  <strong className="text-blue-200 text-xs">BOOK HÔM NAY</strong>
+                  <Calendar className={`w-3.5 h-3.5 ${bookStyles.icon}`} />
+                  <strong className={bookStyles.title}>BOOK HÔM NAY</strong>
                 </span>
-                <span className="text-[9px] text-blue-400 font-mono font-bold bg-blue-950 px-1.5 py-0.5 rounded border border-blue-500/40">
-                  HÀNH ĐỘNG
-                </span>
+                <span className={bookStyles.badge}>HÀNH ĐỘNG</span>
               </div>
 
               {/* Semicircle Gauge (Book Hôm Nay) */}
-              <SemicircleGauge
-                percent={metrics.bookPercent}
-                actual={metrics.bookActual}
-                target={metrics.bookTarget}
-                label="Tiến độ"
-                tone="blue"
-                pacingPercent={expectedBookPacingPercent}
-                gapText={`GAP: ${metrics.gapBook >= 0 ? '+' : ''}${metrics.gapBook}`}
-                gapType={metrics.gapBook >= 0 ? 'positive' : 'negative'}
-              />
+              <div className="relative z-10">
+                <SemicircleGauge
+                  percent={metrics.bookPercent}
+                  actual={metrics.bookActual}
+                  target={metrics.bookTarget}
+                  label=""
+                  hideLabelText={true}
+                  tone={bookTier}
+                  pacingPercent={expectedBookPacingPercent}
+                  gapText={`GAP: ${metrics.gapBook >= 0 ? '+' : ''}${metrics.gapBook}`}
+                  gapType={metrics.gapBook >= 0 ? 'positive' : 'negative'}
+                />
+              </div>
 
               {/* Horizontal Ribbon 4 Cột */}
-              <div className="mt-2 bg-black/60 border border-zinc-800/90 rounded-xl p-1.5 grid grid-cols-4 gap-0.5 text-center font-mono divide-x divide-zinc-800 text-[9px]">
+              <div className="mt-2 bg-black/60 border border-zinc-800/90 rounded-xl p-1.5 grid grid-cols-4 gap-0.5 text-center font-mono divide-x divide-zinc-800 text-[9px] relative z-10">
                 <div>
                   <span className="text-zinc-500 block">Kỳ vọng</span>
                   <span className="text-xs font-black text-zinc-200 block tabular-nums">
@@ -182,7 +240,7 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
                 </div>
                 <div>
                   <span className="text-zinc-500 block">Còn thiếu</span>
-                  <span className="text-xs font-black text-blue-300 block tabular-nums">
+                  <span className={`text-xs font-black block tabular-nums ${bookStyles.bottomText}`}>
                     {metrics.remainingBook} Book
                   </span>
                 </div>
@@ -193,37 +251,46 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
               </div>
             </div>
 
-            <div className="mt-2 pt-1.5 border-t border-blue-900/40 text-[10px] text-zinc-400 font-mono flex items-center justify-between">
+            <div
+              className={`mt-2 pt-1.5 border-t ${bookStyles.bottomBorder} text-[10px] text-zinc-400 font-mono flex items-center justify-between relative z-10`}
+            >
               <span>Mục tiêu ngày</span>
-              <span className="text-blue-300 font-bold">≥ {metrics.bookTarget} Book</span>
+              <span className={bookStyles.bottomText}>≥ {metrics.bookTarget} Book</span>
             </div>
           </div>
 
           {/* Card 2.2: Done Hôm Nay */}
-          <div className="bg-black/50 rounded-2xl p-2.5 border border-zinc-800 flex flex-col justify-between shadow-inner">
+          <div className={doneStyles.container}>
+            {/* Pháo bông thực tế khi đạt mốc >= 100% */}
+            <RealisticCardFireworks active={isDoneOver100} theme="emerald" cardLabel="DONE" />
             <div>
-              <div className="flex items-center justify-between text-zinc-400 text-xs mb-0.5">
+              <div className="flex items-center justify-between text-zinc-400 text-xs mb-0.5 relative z-10">
                 <span className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  <strong className="text-zinc-200 text-xs">DONE HÔM NAY</strong>
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${doneTier === 'emerald' ? 'bg-emerald-400' : doneTier === 'amber' ? 'bg-amber-400' : 'bg-rose-400'}`}
+                  />
+                  <strong className={doneStyles.title}>DONE HÔM NAY</strong>
                 </span>
-                <span className="text-[9px] text-zinc-400 font-mono">Chỉ tiêu: {metrics.doneTarget}</span>
+                <span className={doneStyles.targetBadge}>Chỉ tiêu: {metrics.doneTarget}</span>
               </div>
 
               {/* Semicircle Gauge (Done Hôm Nay) */}
-              <SemicircleGauge
-                percent={metrics.donePercent}
-                actual={metrics.doneActual}
-                target={metrics.doneTarget}
-                label="Tiến độ"
-                tone="emerald"
-                pacingPercent={expectedDonePacingPercent}
-                gapText={`GAP: ${metrics.gapDone >= 0 ? '+' : ''}${metrics.gapDone}`}
-                gapType={metrics.gapDone >= 0 ? 'positive' : 'negative'}
-              />
+              <div className="relative z-10">
+                <SemicircleGauge
+                  percent={metrics.donePercent}
+                  actual={metrics.doneActual}
+                  target={metrics.doneTarget}
+                  label=""
+                  hideLabelText={true}
+                  tone={doneTier}
+                  pacingPercent={expectedDonePacingPercent}
+                  gapText={`GAP: ${metrics.gapDone >= 0 ? '+' : ''}${metrics.gapDone}`}
+                  gapType={metrics.gapDone >= 0 ? 'positive' : 'negative'}
+                />
+              </div>
 
               {/* Horizontal Ribbon 4 Cột */}
-              <div className="mt-2 bg-black/60 border border-zinc-800/90 rounded-xl p-1.5 grid grid-cols-4 gap-0.5 text-center font-mono divide-x divide-zinc-800 text-[9px]">
+              <div className="mt-2 bg-black/60 border border-zinc-800/90 rounded-xl p-1.5 grid grid-cols-4 gap-0.5 text-center font-mono divide-x divide-zinc-800 text-[9px] relative z-10">
                 <div>
                   <span className="text-zinc-500 block">Kỳ vọng</span>
                   <span className="text-xs font-black text-zinc-200 block tabular-nums">
@@ -242,7 +309,7 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
                 </div>
                 <div>
                   <span className="text-zinc-500 block">Còn thiếu</span>
-                  <span className="text-xs font-black text-amber-300 block tabular-nums">
+                  <span className={`text-xs font-black block tabular-nums ${doneStyles.bottomText}`}>
                     {metrics.remainingDone} Done
                   </span>
                 </div>
@@ -253,9 +320,11 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
               </div>
             </div>
 
-            <div className="mt-2 pt-1.5 border-t border-zinc-800/60 text-[10px] text-zinc-400 font-mono flex items-center justify-between">
+            <div
+              className={`mt-2 pt-1.5 border-t ${doneStyles.bottomBorder} text-[10px] text-zinc-400 font-mono flex items-center justify-between relative z-10`}
+            >
               <span>Mục tiêu ngày</span>
-              <span className="text-zinc-200 font-bold">{metrics.doneTarget} Done</span>
+              <span className={doneStyles.bottomText}>{metrics.doneTarget} Done</span>
             </div>
           </div>
         </div>

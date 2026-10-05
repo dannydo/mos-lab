@@ -5,6 +5,44 @@ import { Progress } from 'antd';
 import { PhoneCall } from 'lucide-react';
 import { TelesaleTargetOverview, TelesaleStaffDailyAction, TelesaleDailyActionStatus } from '@mos-lab/shared';
 import { SemicircleGauge } from './SemicircleGauge';
+import { RealisticCardFireworks } from './RealisticCardFireworks';
+
+// Tiến độ thực tế: đỏ < 80%, vàng 80-99%, xanh >= 100%
+const getProgressTier = (percent: number): 'rose' | 'amber' | 'emerald' => {
+  if (percent < 80) return 'rose';
+  if (percent < 100) return 'amber';
+  return 'emerald';
+};
+
+const getActionTierStyles = (tier: 'rose' | 'amber' | 'emerald') => {
+  switch (tier) {
+    case 'emerald':
+      return {
+        container:
+          'bg-gradient-to-b from-emerald-950/30 to-zinc-950/80 border border-emerald-500/40 rounded-2xl p-2 flex flex-col justify-between shadow-inner shadow-[0_0_20px_rgba(16,185,129,0.15)] relative overflow-hidden',
+        title: 'text-emerald-300 font-bold text-[11px]',
+        badge:
+          'text-[9px] text-emerald-300 font-mono font-bold bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-500/40',
+      };
+    case 'amber':
+      return {
+        container:
+          'bg-gradient-to-b from-amber-950/30 to-zinc-950/80 border border-amber-500/40 rounded-2xl p-2 flex flex-col justify-between shadow-inner shadow-[0_0_20px_rgba(245,158,11,0.15)] relative overflow-hidden',
+        title: 'text-amber-300 font-bold text-[11px]',
+        badge:
+          'text-[9px] text-amber-300 font-mono font-bold bg-amber-950 px-1.5 py-0.5 rounded border border-amber-500/40',
+      };
+    case 'rose':
+    default:
+      return {
+        container:
+          'bg-gradient-to-b from-rose-950/30 to-zinc-950/80 border border-rose-500/40 rounded-2xl p-2 flex flex-col justify-between shadow-inner shadow-[0_0_20px_rgba(244,63,94,0.15)] relative overflow-hidden',
+        title: 'text-rose-300 font-bold text-[11px]',
+        badge:
+          'text-[9px] text-rose-300 font-mono font-bold bg-rose-950 px-1.5 py-0.5 rounded border border-rose-500/40',
+      };
+  }
+};
 
 interface DailyActionScheduleProps {
   overview: TelesaleTargetOverview;
@@ -63,6 +101,13 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
 
   const pickRate = teamCallActual > 0 ? Number(((teamPickupActual / teamCallActual) * 100).toFixed(1)) : 0;
 
+  const callTier = getProgressTier(teamCallPercent);
+  const pickupTier = getProgressTier(teamPickupPercent);
+  const callStyles = getActionTierStyles(callTier);
+  const pickupStyles = getActionTierStyles(pickupTier);
+  const isCallOver100 = teamCallPercent >= 100;
+  const isPickupOver100 = teamPickupPercent >= 100;
+
   return (
     <section className="rounded-3xl bg-gradient-to-b from-amber-950/20 via-zinc-950/95 to-zinc-950 border border-amber-500/35 p-3.5 glass-card shadow-2xl relative overflow-hidden flex flex-col justify-between h-full">
       {/* 1. Card Header */}
@@ -80,105 +125,113 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
         {/* 2. Top: 2 Semicircle Arcs (Calls & Pickup) */}
         <div className="grid grid-cols-2 gap-2.5 mb-2">
           {/* Semicircle 1: Cuộc Gọi */}
-          <div className="bg-blue-950/20 border border-blue-500/30 rounded-2xl p-2 flex flex-col justify-between shadow-inner">
-            <div className="flex items-center justify-between text-xs mb-0.5">
-              <span className="flex items-center gap-1 text-blue-300 font-bold text-[11px]">
-                <span>📱</span> Cuộc Gọi
-              </span>
-              <span className="text-[9px] text-blue-300 font-mono font-bold bg-blue-950 px-1.5 py-0.5 rounded border border-blue-500/30">
-                TARGET: {teamCallTarget}
-              </span>
-            </div>
-
-            {/* Semicircle Gauge (Calls) */}
-            <SemicircleGauge
-              percent={teamCallPercent}
-              actual={teamCallActual}
-              target={teamCallTarget}
-              label=""
-              hideLabelText={true}
-              hideUnitText={true}
-              tone="blue"
-              pacingPercent={75}
-              gapText={`GAP: ${teamCallGap >= 0 ? '+' : ''}${teamCallGap}`}
-              gapType={teamCallGap >= 0 ? 'positive' : 'negative'}
-              radius={78}
-              heightClass="h-[90px]"
-            />
-
-            {/* Mini Ribbon 3 Cột */}
-            <div className="mt-1.5 bg-black/60 border border-zinc-800/90 rounded-lg p-1 grid grid-cols-3 gap-0.5 text-center font-mono divide-x divide-zinc-800 text-[8px]">
-              <div>
-                <span className="text-zinc-500 block">Kỳ vọng</span>
-                <span className="text-[11px] font-black text-zinc-200 block tabular-nums">
-                  {Math.round(teamCallTarget * 0.75)}
+          <div className={callStyles.container}>
+            {/* Pháo bông thực tế khi đạt mốc >= 100% */}
+            <RealisticCardFireworks active={isCallOver100} theme="emerald" cardLabel="CALLS" />
+            <div>
+              <div className="flex items-center justify-between text-xs mb-0.5 relative z-10">
+                <span className={`flex items-center gap-1 ${callStyles.title}`}>
+                  <span>📱</span> Cuộc Gọi
                 </span>
+                <span className={callStyles.badge}>TARGET: {teamCallTarget}</span>
               </div>
-              <div>
-                <span className="text-zinc-500 block">Gap</span>
-                <span
-                  className={`text-[11px] font-black block tabular-nums ${
-                    teamCallGap >= 0 ? 'text-emerald-400' : 'text-rose-400'
-                  }`}
-                >
-                  {teamCallGap >= 0 ? `+${teamCallGap}` : teamCallGap}
-                </span>
+
+              {/* Semicircle Gauge (Calls) */}
+              <div className="relative z-10">
+                <SemicircleGauge
+                  percent={teamCallPercent}
+                  actual={teamCallActual}
+                  target={teamCallTarget}
+                  label=""
+                  hideLabelText={true}
+                  hideUnitText={true}
+                  tone={callTier}
+                  pacingPercent={75}
+                  gapText={`GAP: ${teamCallGap >= 0 ? '+' : ''}${teamCallGap}`}
+                  gapType={teamCallGap >= 0 ? 'positive' : 'negative'}
+                  radius={90}
+                  heightClass="h-[105px]"
+                />
               </div>
-              <div>
-                <span className="text-zinc-500 block">Cần TB</span>
-                <span className="text-[11px] font-black text-amber-300 block tabular-nums">29/h</span>
+
+              {/* Mini Ribbon 3 Cột */}
+              <div className="mt-1.5 bg-black/60 border border-zinc-800/90 rounded-lg p-1 grid grid-cols-3 gap-0.5 text-center font-mono divide-x divide-zinc-800 text-[8px] relative z-10">
+                <div>
+                  <span className="text-zinc-500 block">Kỳ vọng</span>
+                  <span className="text-[11px] font-black text-zinc-200 block tabular-nums">
+                    {Math.round(teamCallTarget * 0.75)}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block">Gap</span>
+                  <span
+                    className={`text-[11px] font-black block tabular-nums ${
+                      teamCallGap >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                    }`}
+                  >
+                    {teamCallGap >= 0 ? `+${teamCallGap}` : teamCallGap}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block">Cần TB</span>
+                  <span className="text-[11px] font-black text-amber-300 block tabular-nums">29/h</span>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Semicircle 2: Pickup */}
-          <div className="bg-emerald-950/20 border border-emerald-500/30 rounded-2xl p-2 flex flex-col justify-between shadow-inner">
-            <div className="flex items-center justify-between text-xs mb-0.5">
-              <span className="flex items-center gap-1 text-emerald-300 font-bold text-[11px]">
-                <span>🎧</span> Pickup
-              </span>
-              <span className="text-[9px] text-emerald-300 font-mono font-bold bg-emerald-950 px-1.5 py-0.5 rounded border border-emerald-500/30">
-                TARGET: {teamPickupTarget}
-              </span>
-            </div>
-
-            {/* Semicircle Gauge (Pickup) */}
-            <SemicircleGauge
-              percent={teamPickupPercent}
-              actual={teamPickupActual}
-              target={teamPickupTarget}
-              label=""
-              hideLabelText={true}
-              hideUnitText={true}
-              tone="emerald"
-              pacingPercent={75}
-              gapText={`GAP: ${teamPickupGap >= 0 ? '+' : ''}${teamPickupGap}`}
-              gapType={teamPickupGap >= 0 ? 'positive' : 'negative'}
-              radius={78}
-              heightClass="h-[90px]"
-            />
-
-            {/* Mini Ribbon 3 Cột */}
-            <div className="mt-1.5 bg-black/60 border border-zinc-800/90 rounded-lg p-1 grid grid-cols-3 gap-0.5 text-center font-mono divide-x divide-zinc-800 text-[8px]">
-              <div>
-                <span className="text-zinc-500 block">Kỳ vọng</span>
-                <span className="text-[11px] font-black text-zinc-200 block tabular-nums">
-                  {Math.round(teamPickupTarget * 0.75)}
+          <div className={pickupStyles.container}>
+            {/* Pháo bông thực tế khi đạt mốc >= 100% */}
+            <RealisticCardFireworks active={isPickupOver100} theme="emerald" cardLabel="PICKUP" />
+            <div>
+              <div className="flex items-center justify-between text-xs mb-0.5 relative z-10">
+                <span className={`flex items-center gap-1 ${pickupStyles.title}`}>
+                  <span>🎧</span> Pickup
                 </span>
+                <span className={pickupStyles.badge}>TARGET: {teamPickupTarget}</span>
               </div>
-              <div>
-                <span className="text-zinc-500 block">Gap</span>
-                <span
-                  className={`text-[11px] font-black block tabular-nums ${
-                    teamPickupGap >= 0 ? 'text-emerald-400' : 'text-rose-400'
-                  }`}
-                >
-                  {teamPickupGap >= 0 ? `+${teamPickupGap}` : teamPickupGap}
-                </span>
+
+              {/* Semicircle Gauge (Pickup) */}
+              <div className="relative z-10">
+                <SemicircleGauge
+                  percent={teamPickupPercent}
+                  actual={teamPickupActual}
+                  target={teamPickupTarget}
+                  label=""
+                  hideLabelText={true}
+                  hideUnitText={true}
+                  tone={pickupTier}
+                  pacingPercent={75}
+                  gapText={`GAP: ${teamPickupGap >= 0 ? '+' : ''}${teamPickupGap}`}
+                  gapType={teamPickupGap >= 0 ? 'positive' : 'negative'}
+                  radius={90}
+                  heightClass="h-[105px]"
+                />
               </div>
-              <div>
-                <span className="text-zinc-500 block">Pick Rate</span>
-                <span className="text-[11px] font-black text-emerald-300 block tabular-nums">{pickRate}%</span>
+
+              {/* Mini Ribbon 3 Cột */}
+              <div className="mt-1.5 bg-black/60 border border-zinc-800/90 rounded-lg p-1 grid grid-cols-3 gap-0.5 text-center font-mono divide-x divide-zinc-800 text-[8px] relative z-10">
+                <div>
+                  <span className="text-zinc-500 block">Kỳ vọng</span>
+                  <span className="text-[11px] font-black text-zinc-200 block tabular-nums">
+                    {Math.round(teamPickupTarget * 0.75)}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block">Gap</span>
+                  <span
+                    className={`text-[11px] font-black block tabular-nums ${
+                      teamPickupGap >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                    }`}
+                  >
+                    {teamPickupGap >= 0 ? `+${teamPickupGap}` : teamPickupGap}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block">Pick Rate</span>
+                  <span className="text-[11px] font-black text-emerald-300 block tabular-nums">{pickRate}%</span>
+                </div>
               </div>
             </div>
           </div>

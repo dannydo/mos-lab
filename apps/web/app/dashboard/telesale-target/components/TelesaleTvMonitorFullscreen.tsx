@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Button, Tooltip, Progress, theme, Popover, Slider, Switch, Select, message } from 'antd';
 import {
   X,
@@ -31,6 +31,7 @@ import { TelesaleTvLiveCelebrationBanner } from './TelesaleTvLiveCelebrationBann
 import { TelesaleTvStaffContributionGrid } from './TelesaleTvStaffContributionGrid';
 import { TelesaleTvJournalModal } from './TelesaleTvJournalModal';
 import { SemicircleGauge } from './SemicircleGauge';
+import { RealisticCardFireworks } from './RealisticCardFireworks';
 
 interface TelesaleTvMonitorFullscreenProps {
   overview: TelesaleTargetOverview;
@@ -145,6 +146,91 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
 
   const isDoneOver100 = metrics.donePercent >= 100;
   const isBookOver100 = metrics.bookPercent >= 100;
+
+  // Tiến độ thực tế: đỏ < 80, vàng 80-99, xanh >= 100
+  const getProgressTier = (percent: number): 'rose' | 'amber' | 'emerald' => {
+    if (percent < 80) return 'rose';
+    if (percent < 100) return 'amber';
+    return 'emerald';
+  };
+
+  const bookTier = getProgressTier(metrics.bookPercent);
+  const doneTier = getProgressTier(metrics.donePercent);
+
+  // Demo fireworks testing state & milestone frenzy detection
+  const [testFireworksBook, setTestFireworksBook] = useState(false);
+  const [testFireworksDone, setTestFireworksDone] = useState(false);
+  const [frenzyBook, setFrenzyBook] = useState(false);
+  const [frenzyDone, setFrenzyDone] = useState(false);
+  const prevBookPercentRef = useRef(metrics.bookPercent);
+  const prevDonePercentRef = useRef(metrics.donePercent);
+
+  useEffect(() => {
+    if (metrics.bookPercent >= 100 && prevBookPercentRef.current < 100) {
+      setFrenzyBook(true);
+      const timer = setTimeout(() => setFrenzyBook(false), 8000);
+      return () => clearTimeout(timer);
+    }
+    prevBookPercentRef.current = metrics.bookPercent;
+  }, [metrics.bookPercent]);
+
+  useEffect(() => {
+    if (metrics.donePercent >= 100 && prevDonePercentRef.current < 100) {
+      setFrenzyDone(true);
+      const timer = setTimeout(() => setFrenzyDone(false), 8000);
+      return () => clearTimeout(timer);
+    }
+    prevDonePercentRef.current = metrics.donePercent;
+  }, [metrics.donePercent]);
+
+  const triggerTestFireworks = (card: 'BOOK' | 'DONE') => {
+    if (card === 'BOOK') {
+      setTestFireworksBook(true);
+      setTimeout(() => setTestFireworksBook(false), 8000);
+    } else {
+      setTestFireworksDone(true);
+      setTimeout(() => setTestFireworksDone(false), 8000);
+    }
+  };
+
+  const getCardTierStyles = (tier: 'rose' | 'amber' | 'emerald') => {
+    switch (tier) {
+      case 'emerald':
+        return {
+          container:
+            'bg-gradient-to-b from-emerald-950/40 via-zinc-900/90 to-zinc-950/90 border-emerald-400/90 shadow-[0_0_40px_rgba(16,185,129,0.32)] hover:border-emerald-300',
+          ambientGlow: 'bg-emerald-500/20',
+          headerTargetBadge: 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40',
+          ribbonBorder: 'border-emerald-900/40 border border-emerald-500/25',
+          ribbonActualText: 'text-emerald-300',
+          iconBox: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400',
+        };
+      case 'amber':
+        return {
+          container:
+            'bg-gradient-to-b from-amber-950/40 via-zinc-900/90 to-zinc-950/90 border-amber-400/85 shadow-[0_0_35px_rgba(245,158,11,0.25)] hover:border-amber-300',
+          ambientGlow: 'bg-amber-500/15',
+          headerTargetBadge: 'bg-amber-950/80 text-amber-300 border-amber-500/40',
+          ribbonBorder: 'border-amber-900/40 border border-amber-500/25',
+          ribbonActualText: 'text-amber-300',
+          iconBox: 'bg-amber-500/20 border-amber-500/40 text-amber-400',
+        };
+      case 'rose':
+      default:
+        return {
+          container:
+            'bg-gradient-to-b from-rose-950/40 via-zinc-900/90 to-zinc-950/90 border-rose-500/70 shadow-[0_0_35px_rgba(244,63,94,0.25)] hover:border-rose-400',
+          ambientGlow: 'bg-rose-500/15',
+          headerTargetBadge: 'bg-rose-950/80 text-rose-300 border-rose-500/40',
+          ribbonBorder: 'border-rose-900/40 border border-rose-500/25',
+          ribbonActualText: 'text-rose-300',
+          iconBox: 'bg-rose-500/20 border-rose-500/40 text-rose-400',
+        };
+    }
+  };
+
+  const bookStyles = getCardTierStyles(bookTier);
+  const doneStyles = getCardTierStyles(doneTier);
 
   const dateFormatted = dayjs(now).locale('vi').format('dddd, [ngày] DD/MM/YYYY');
   // Capitalize first letter of day of week
@@ -295,6 +381,26 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
             onClick={() => triggerDemoCelebration('MILESTONE')}
           >
             Milestone
+          </Button>
+        </div>
+      </div>
+
+      <div className="border-t border-zinc-800 pt-2.5 flex flex-col gap-1.5">
+        <span className="text-[11px] font-mono text-zinc-400">Thử nghiệm pháo hoa:</span>
+        <div className="grid grid-cols-2 gap-1.5">
+          <Button
+            size="small"
+            className="text-[11px] bg-sky-950 border-sky-500/70 text-sky-300 hover:bg-sky-900 font-bold"
+            onClick={() => triggerTestFireworks('BOOK')}
+          >
+            🎆 Pháo Book
+          </Button>
+          <Button
+            size="small"
+            className="text-[11px] bg-emerald-950 border-emerald-500/70 text-emerald-300 hover:bg-emerald-900 font-bold"
+            onClick={() => triggerTestFireworks('DONE')}
+          >
+            🎆 Pháo Done
           </Button>
         </div>
       </div>
@@ -584,27 +690,37 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
       <main className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-3.5 lg:gap-5 my-1 flex-1 items-stretch min-h-0">
         {/* COLUMN 1: BOOK HÔM NAY (TẠO LỊCH - HÀNH ĐỘNG DẪN DẮT) */}
         <div
-          className={`rounded-3xl p-4 sm:p-5 lg:p-6 flex flex-col justify-between border backdrop-blur-xl transition-all shadow-2xl relative overflow-hidden ${
-            isBookOver100
-              ? 'bg-gradient-to-b from-amber-950/40 via-zinc-900 to-zinc-950 border-amber-400/90 shadow-[0_0_40px_rgba(245,158,11,0.2)]'
-              : 'bg-gradient-to-b from-blue-950/30 via-zinc-900/90 to-zinc-950/90 border-blue-500/40 hover:border-blue-400/60 shadow-[0_0_25px_rgba(59,130,246,0.15)]'
-          }`}
+          className={`rounded-3xl p-4 sm:p-5 lg:p-6 flex flex-col justify-between border backdrop-blur-xl transition-all shadow-2xl relative overflow-hidden ${bookStyles.container}`}
         >
+          {/* Realistic Physics Fireworks (bắn khi đạt mốc >= 100% hoặc khi test) */}
+          <RealisticCardFireworks
+            active={isBookOver100 || testFireworksBook}
+            isFrenzy={frenzyBook || testFireworksBook}
+            soundEnabled={voiceSettings.soundEnabled}
+            volume={voiceSettings.volume}
+            theme={bookTier === 'emerald' ? 'emerald' : bookTier === 'amber' ? 'amber' : 'gold'}
+            cardLabel="BOOK"
+          />
+
           {/* Ambient inner glow */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div
+            className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl pointer-events-none ${bookStyles.ambientGlow}`}
+          />
 
           {/* Header */}
-          <div className="flex items-center justify-between shrink-0">
+          <div className="flex items-center justify-between shrink-0 relative z-10">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-sky-500/20 border border-sky-500/40 flex items-center justify-center">
-                <Calendar className="w-4 h-4 text-sky-400" />
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${bookStyles.iconBox}`}>
+                <Calendar className="w-4 h-4" />
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-zinc-100 tracking-tight m-0">
                 BOOK HÔM NAY · TẠO LỊCH
               </h2>
             </div>
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-xl font-mono text-xs font-bold bg-blue-950/80 text-blue-300 border border-blue-500/40">
+              <span
+                className={`px-3 py-1 rounded-xl font-mono text-xs font-bold border ${bookStyles.headerTargetBadge}`}
+              >
                 Chỉ tiêu: ≥ {metrics.bookTarget} Book
               </span>
               <span
@@ -622,7 +738,7 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
           </div>
 
           {/* Semicircle Gauge (Option 1) - Hero Centered */}
-          <div className="flex-1 flex flex-col items-center justify-center my-auto min-h-0 py-1 w-full max-w-[720px] mx-auto">
+          <div className="flex-1 flex flex-col items-center justify-center my-auto min-h-0 py-1 w-full max-w-[720px] mx-auto relative z-10">
             <SemicircleGauge
               percent={metrics.bookPercent}
               actual={metrics.bookActual}
@@ -631,7 +747,7 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
               label=""
               hideLabelText={true}
               hideUnitText={true}
-              tone="blue"
+              tone={bookTier}
               sizeVariant="tv"
               actualDataTestId="tv-monitor-fullscreen-book-actual"
               heightClass="h-[290px] sm:h-[315px] lg:h-[330px]"
@@ -639,16 +755,18 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
               gapText={
                 metrics.gapBook >= 0 ? `GAP: +${metrics.gapBook} VƯỢT NHỊP` : `GAP: ${metrics.gapBook} CHẬM NHỊP`
               }
-              gapType={metrics.gapBook >= 0 ? 'positive' : 'negative'}
+              gapType={metrics.gapBook >= 0 ? 'positive' : metrics.gapBook === -1 ? 'neutral' : 'negative'}
             />
           </div>
 
           {/* 4-Stat Horizontal Ribbon (Option 1) */}
-          <div className="mt-auto shrink-0 border-t border-blue-900/40 bg-black/50 rounded-2xl p-3 sm:p-4 border border-blue-500/20">
+          <div
+            className={`mt-auto shrink-0 bg-black/50 rounded-2xl p-3 sm:p-4 relative z-10 ${bookStyles.ribbonBorder}`}
+          >
             <div className="grid grid-cols-4 gap-2 text-center font-mono divide-x divide-zinc-800">
               <div>
                 <span className="text-[11px] sm:text-xs text-zinc-400 block mb-1">Đã đạt</span>
-                <span className="text-xl sm:text-2xl font-black text-blue-200 block tabular-nums">
+                <span className={`text-xl sm:text-2xl font-black block tabular-nums ${bookStyles.ribbonActualText}`}>
                   {metrics.bookActual}
                 </span>
               </div>
@@ -680,36 +798,46 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
               </div>
             </div>
 
-            <div className="mt-3 pt-2 border-t border-blue-900/40 flex items-center justify-between text-xs font-mono text-zinc-400">
+            <div className="mt-3 pt-2 border-t border-zinc-800/60 flex items-center justify-between text-xs font-mono text-zinc-400">
               <span>
                 Định mức tối thiểu mỗi ngày: <strong className="text-zinc-200">25 Cuộc hẹn thành công</strong>
               </span>
-              <span className="text-sky-300 font-semibold">Hành động chính dẫn dắt</span>
+              <span className="text-zinc-400 font-medium">Hành động chính dẫn dắt</span>
             </div>
           </div>
         </div>
 
         {/* COLUMN 2: DONE HÔM NAY (KHÁCH LẺ - KẾT QUẢ THEO SAU) */}
         <div
-          className={`rounded-3xl p-4 sm:p-5 lg:p-6 flex flex-col justify-between border backdrop-blur-xl transition-all shadow-2xl relative overflow-hidden ${
-            isDoneOver100
-              ? 'bg-gradient-to-b from-amber-950/40 via-zinc-900 to-zinc-950 border-amber-400/90 shadow-[0_0_40px_rgba(245,158,11,0.2)]'
-              : 'bg-gradient-to-b from-emerald-950/30 via-zinc-900/90 to-zinc-950/90 border-emerald-500/40 hover:border-emerald-400/60 shadow-[0_0_25px_rgba(16,185,129,0.15)]'
-          }`}
+          className={`rounded-3xl p-4 sm:p-5 lg:p-6 flex flex-col justify-between border backdrop-blur-xl transition-all shadow-2xl relative overflow-hidden ${doneStyles.container}`}
         >
+          {/* Realistic Physics Fireworks (bắn khi đạt mốc >= 100% hoặc khi test) */}
+          <RealisticCardFireworks
+            active={isDoneOver100 || testFireworksDone}
+            isFrenzy={frenzyDone || testFireworksDone}
+            soundEnabled={voiceSettings.soundEnabled}
+            volume={voiceSettings.volume}
+            theme={doneTier === 'emerald' ? 'emerald' : doneTier === 'amber' ? 'amber' : 'gold'}
+            cardLabel="DONE"
+          />
+
           {/* Ambient inner glow */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div
+            className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl pointer-events-none ${doneStyles.ambientGlow}`}
+          />
 
           {/* Header */}
-          <div className="flex items-center justify-between shrink-0">
+          <div className="flex items-center justify-between shrink-0 relative z-10">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${doneStyles.iconBox}`}>
+                <CheckCircle2 className="w-4 h-4" />
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-zinc-100 tracking-tight m-0">DONE HÔM NAY</h2>
             </div>
             <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-xl font-mono text-xs font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-500/40">
+              <span
+                className={`px-3 py-1 rounded-xl font-mono text-xs font-bold border ${doneStyles.headerTargetBadge}`}
+              >
                 Chỉ tiêu: {metrics.doneTarget} Done
               </span>
               <span
@@ -727,7 +855,7 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
           </div>
 
           {/* Semicircle Gauge (Option 1) - Hero Centered */}
-          <div className="flex-1 flex flex-col items-center justify-center my-auto min-h-0 py-1 w-full max-w-[720px] mx-auto">
+          <div className="flex-1 flex flex-col items-center justify-center my-auto min-h-0 py-1 w-full max-w-[720px] mx-auto relative z-10">
             <SemicircleGauge
               percent={metrics.donePercent}
               actual={metrics.doneActual}
@@ -736,7 +864,7 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
               label=""
               hideLabelText={true}
               hideUnitText={true}
-              tone="emerald"
+              tone={doneTier}
               sizeVariant="tv"
               actualDataTestId="tv-monitor-fullscreen-done-actual"
               heightClass="h-[290px] sm:h-[315px] lg:h-[330px]"
@@ -744,16 +872,18 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
               gapText={
                 metrics.gapDone >= 0 ? `GAP: +${metrics.gapDone} VƯỢT NHỊP` : `GAP: ${metrics.gapDone} CHẬM NHỊP`
               }
-              gapType={metrics.gapDone >= 0 ? 'positive' : 'negative'}
+              gapType={metrics.gapDone >= 0 ? 'positive' : metrics.gapDone === -1 ? 'neutral' : 'negative'}
             />
           </div>
 
           {/* 4-Stat Horizontal Ribbon (Option 1) */}
-          <div className="mt-auto shrink-0 border-t border-zinc-800/80 bg-black/50 rounded-2xl p-3 sm:p-4 border border-zinc-800/60">
+          <div
+            className={`mt-auto shrink-0 bg-black/50 rounded-2xl p-3 sm:p-4 relative z-10 ${doneStyles.ribbonBorder}`}
+          >
             <div className="grid grid-cols-4 gap-2 text-center font-mono divide-x divide-zinc-800">
               <div>
                 <span className="text-[11px] sm:text-xs text-zinc-400 block mb-1">Đã đạt</span>
-                <span className="text-xl sm:text-2xl font-black text-zinc-100 block tabular-nums">
+                <span className={`text-xl sm:text-2xl font-black block tabular-nums ${doneStyles.ribbonActualText}`}>
                   {metrics.doneActual}
                 </span>
               </div>
@@ -794,7 +924,7 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
                   <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />+{metrics.comboLiveDoneActual} Combo Live
                 </span>
               ) : (
-                <span className="text-emerald-400 font-semibold">Kết quả theo sau</span>
+                <span className="text-zinc-400 font-medium">Kết quả theo sau</span>
               )}
             </div>
           </div>
