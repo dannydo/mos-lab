@@ -334,13 +334,15 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       }
 
       const requestedStatus = (status || 'ALL').toUpperCase();
-      const statusParam = ['ALL', 'COMPLETED', 'MISSED', 'TIP', 'COMBO'].includes(requestedStatus)
+      const statusParam = ['ALL', 'COMPLETED', 'SINGLE', 'COMBO_LIVE', 'COMBO_SOLD', 'MISSED', 'TIP', 'COMBO'].includes(
+        requestedStatus
+      )
         ? requestedStatus
         : 'ALL';
       let stateCondition = '';
       let dateField = 'COALESCE(ro.actual_booking_date_start, o.booking_date_start)';
 
-      if (statusParam === 'COMPLETED') {
+      if (['COMPLETED', 'SINGLE', 'COMBO_LIVE', 'COMBO_SOLD', 'COMBO'].includes(statusParam)) {
         stateCondition = `AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)`;
       } else if (statusParam === 'MISSED') {
         stateCondition = `AND o.booking_date_start <= NOW() AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut')`;
@@ -394,11 +396,22 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
 
       const filteredRows = rows.filter((row) => {
         const orderId = Number(row.orderId);
+        const checkinInfo = orderCheckinMap.get(orderId);
+        const isCompleted = String(row.orderState) === 'Completed';
+        const isComboLive = Boolean(checkinInfo?.isCombo);
+        const isComboSold = (comboSalesByOrder.get(orderId)?.netRevenue || 0) > 0;
+
         if (statusParam === 'TIP') {
-          return String(row.orderState) === 'Completed' && (tipMap.get(orderId) || 0) > 0;
+          return isCompleted && (tipMap.get(orderId) || 0) > 0;
         }
-        if (statusParam === 'COMBO') {
-          return String(row.orderState) === 'Completed' && (comboSalesByOrder.get(orderId)?.netRevenue || 0) > 0;
+        if (statusParam === 'COMBO' || statusParam === 'COMBO_SOLD') {
+          return isCompleted && isComboSold;
+        }
+        if (statusParam === 'SINGLE') {
+          return isCompleted && !isComboLive;
+        }
+        if (statusParam === 'COMBO_LIVE') {
+          return isCompleted && isComboLive;
         }
         return true;
       });
@@ -431,6 +444,9 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         const isCompletedOrder = String(r.orderState) === 'Completed';
         const netRev = isCompletedOrder ? Math.round(totalPrice) : 0;
         const comboSale = comboSalesByOrder.get(orderId);
+        const isSingle = isCompletedOrder && !checkinInfo.isCombo;
+        const isComboSold = Boolean(comboSale && ((comboSale.netRevenue || 0) > 0 || Boolean(comboSale.comboName)));
+
         return {
           orderId,
           orderKey: String(r.orderKey || `#${r.orderId}`),
@@ -444,7 +460,9 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           serviceName: checkinInfo.serviceName || String(r.serviceName || 'Đặt lịch dịch vụ'),
           servicePrice: checkinInfo.servicePrice || 0,
           discountPercent: Math.round(checkinInfo.discountPercent || 0),
+          isSingle,
           isComboLive: checkinInfo.isCombo,
+          isComboSold,
           netRevenue: netRev,
           comboName: comboSale?.comboName,
           comboRevenue: comboSale?.netRevenue || 0,
@@ -461,6 +479,22 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         };
       });
 
+      let totalSingleDone = 0;
+      let totalComboLiveDone = 0;
+      let totalComboSold = 0;
+      let totalComboRevenue = 0;
+
+      data.forEach((d) => {
+        if (d.isSingle) totalSingleDone++;
+        if (d.isComboLive) totalComboLiveDone++;
+        if (d.isComboSold) {
+          totalComboSold++;
+          totalComboRevenue += d.comboRevenue || 0;
+        }
+      });
+
+      const singleToComboRate = totalSingleDone > 0 ? Number(((totalComboSold / totalSingleDone) * 100).toFixed(1)) : 0;
+
       return {
         data,
         total: data.length,
@@ -468,6 +502,11 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           totalDone: data.length,
           avgDoneRate: 100,
           totalDoneBonus: totalDoneBonusSum,
+          totalSingleDone,
+          totalComboLiveDone,
+          totalComboSold,
+          comboRevenue: totalComboRevenue,
+          singleToComboRate,
         },
       };
     } catch (err: SafeAny) {

@@ -9432,7 +9432,7 @@
         "path": "/api/kpi/bk/tip/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 480
+        "line": 529
       }
     },
     {
@@ -9446,7 +9446,7 @@
         "path": "/api/kpi/bk/tip/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 593
+        "line": 642
       }
     },
     {
@@ -9460,7 +9460,7 @@
         "path": "/api/kpi/bk/revenue/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 697
+        "line": 746
       }
     },
     {
@@ -9474,7 +9474,7 @@
         "path": "/api/kpi/bk/revenue/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 708
+        "line": 757
       }
     },
     {
@@ -9488,7 +9488,7 @@
         "path": "/api/kpi/bk/paystub",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 804
+        "line": 853
       }
     },
     {
@@ -9502,7 +9502,7 @@
         "path": "/api/kpi/bk/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 837
+        "line": 886
       }
     },
     {
@@ -9516,7 +9516,7 @@
         "path": "/api/kpi/bk/attendance-exception",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 871
+        "line": 920
       }
     },
     {
@@ -9530,7 +9530,7 @@
         "path": "/api/kpi/bk/attendance-exception/audit-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 926
+        "line": 975
       }
     },
     {
@@ -9544,7 +9544,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 944
+        "line": 993
       }
     },
     {
@@ -9558,7 +9558,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 989
+        "line": 1038
       }
     },
     {
@@ -9572,7 +9572,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1041
+        "line": 1090
       }
     },
     {
@@ -9586,7 +9586,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1053
+        "line": 1102
       }
     },
     {
@@ -9600,7 +9600,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1074
+        "line": 1123
       }
     },
     {
@@ -9614,7 +9614,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1092
+        "line": 1141
       }
     },
     {
@@ -9628,7 +9628,7 @@
         "path": "/api/kpi/bk/games/:id/finalize",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1113
+        "line": 1162
       }
     },
     {
@@ -9642,7 +9642,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1134
+        "line": 1183
       }
     },
     {
@@ -28566,6 +28566,54 @@
       }
     },
     {
+      "id": "uicomp:SalaryInfographic",
+      "type": "UIComponent",
+      "label": "<SalaryInfographic />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/salary-explainer/SalaryInfographic.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SalaryInfographic",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:SalarySimulator",
+      "type": "UIComponent",
+      "label": "<SalarySimulator />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/salary-explainer/SalarySimulator.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SalarySimulator",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:bk-salary.adapter",
+      "type": "UIComponent",
+      "label": "<bk-salary.adapter />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/salary-explainer/adapters/bk-salary.adapter.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "bk-salary.adapter",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:salary-explainer.types",
+      "type": "UIComponent",
+      "label": "<salary-explainer.types />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/salary-explainer/contracts/salary-explainer.types.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "salary-explainer.types",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:SMSModal",
       "type": "UIComponent",
       "label": "<SMSModal />",
@@ -31476,8 +31524,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 45668,
-        "lineCount": 1150,
+        "sizeBytes": 47146,
+        "lineCount": 1199,
         "ext": ".ts"
       }
     },
@@ -31710,8 +31758,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-leaderboard.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 20505,
-        "lineCount": 565,
+        "sizeBytes": 23920,
+        "lineCount": 640,
         "ext": ".ts"
       }
     },
@@ -31736,8 +31784,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-salary.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 57149,
-        "lineCount": 1646,
+        "sizeBytes": 57682,
+        "lineCount": 1658,
         "ext": ".ts"
       }
     },
@@ -35545,8 +35593,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkDoneTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 35076,
-        "lineCount": 891,
+        "sizeBytes": 42504,
+        "lineCount": 1024,
         "ext": ".tsx"
       }
     },
@@ -35675,8 +35723,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 86472,
-        "lineCount": 1848,
+        "sizeBytes": 87324,
+        "lineCount": 1866,
         "ext": ".tsx"
       }
     },
@@ -37521,8 +37569,8 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 57007,
-        "lineCount": 1403,
+        "sizeBytes": 57758,
+        "lineCount": 1424,
         "ext": ".tsx"
       }
     },
@@ -38379,8 +38427,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30144,
-        "lineCount": 607,
+        "sizeBytes": 30107,
+        "lineCount": 605,
         "ext": ".tsx"
       }
     },
@@ -39991,8 +40039,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 97447,
-        "lineCount": 1453,
+        "sizeBytes": 101617,
+        "lineCount": 1517,
         "ext": ".ts"
       }
     },
@@ -40212,8 +40260,8 @@
       "filePath": "packages/shared/src/types/bk.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 10578,
-        "lineCount": 420,
+        "sizeBytes": 11580,
+        "lineCount": 444,
         "ext": ".ts"
       }
     },
@@ -40524,8 +40572,8 @@
       "filePath": "packages/shared/src/types/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 1169,
-        "lineCount": 45,
+        "sizeBytes": 1280,
+        "lineCount": 47,
         "ext": ".ts"
       }
     },
@@ -57108,6 +57156,62 @@
     {
       "id": "edge:uicomp:qa-shop.types:token:color:primary",
       "source": "uicomp:qa-shop.types",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SalaryInfographic:ws:apps/web",
+      "source": "uicomp:SalaryInfographic",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SalaryInfographic:token:color:primary",
+      "source": "uicomp:SalaryInfographic",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SalarySimulator:ws:apps/web",
+      "source": "uicomp:SalarySimulator",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SalarySimulator:token:color:primary",
+      "source": "uicomp:SalarySimulator",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:bk-salary.adapter:ws:apps/web",
+      "source": "uicomp:bk-salary.adapter",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:bk-salary.adapter:token:color:primary",
+      "source": "uicomp:bk-salary.adapter",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:salary-explainer.types:ws:apps/web",
+      "source": "uicomp:salary-explainer.types",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:salary-explainer.types:token:color:primary",
+      "source": "uicomp:salary-explainer.types",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -88012,8 +88116,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 3126,
-    "totalEdges": 6740,
+    "totalNodes": 3130,
+    "totalEdges": 6748,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 163,
@@ -88021,14 +88125,14 @@
       "Component": 58,
       "SharedType": 1132,
       "DesignToken": 12,
-      "UIComponent": 212,
+      "UIComponent": 216,
       "File": 887
     },
     "edgeTypeCounts": {
       "EXPORTS": 1307,
       "HANDLES_ROUTE": 659,
-      "RENDERS": 270,
-      "USES_TOKEN": 214,
+      "RENDERS": 274,
+      "USES_TOKEN": 218,
       "IMPORTS": 469,
       "QUERIES_MODEL": 382,
       "API_CALL": 3439

@@ -96,6 +96,10 @@ export interface BkDoneRecord {
   discountPercent?: number;
   /** Customer had a valid remaining combo balance at the completed service time. */
   isComboLive?: boolean;
+  /** Customer had NO active combo balance at booking time (pure retail customer). */
+  isSingle?: boolean;
+  /** Order contains recognized sold combo packages. */
+  isComboSold?: boolean;
   netRevenue?: number;
   /** Recognized combo sold with this completed order. */
   comboName?: string;
@@ -120,6 +124,16 @@ export interface BkDoneLeaderboardEntry {
   avatar?: string | null;
   store: string;
   doneCount: number;
+  /** Khách lẻ Done (chính thức tính KPI Done & Milestone). */
+  singleDoneCount?: number;
+  /** Khách có gói combo live Done (tracking bổ trợ, nhận 1.000đ/lượt). */
+  comboLiveDoneCount?: number;
+  /** Số gói combo bán ra trong kỳ của Booker. */
+  comboSoldCount?: number;
+  /** Doanh thu combo bán ra trong kỳ của Booker. */
+  comboRevenue?: number;
+  /** Tỷ lệ chuyển đổi Single -> Combo (%) */
+  singleToComboRate?: number;
   missedCount: number;
   doneRatePercent: number;
   missedRatePercent: number;
@@ -134,6 +148,11 @@ export interface BkDoneLeaderboardResponse {
   leaderboard: BkDoneLeaderboardEntry[];
   summary: {
     totalDone: number;
+    totalSingleDone?: number;
+    totalComboLiveDone?: number;
+    totalComboSold?: number;
+    comboRevenue?: number;
+    singleToComboRate?: number;
     totalMissed?: number;
     avgDoneRate: number;
     avgMissedRate?: number;
@@ -141,7 +160,8 @@ export interface BkDoneLeaderboardResponse {
   };
 }
 
-export type BkDoneDetailsFilter = 'ALL' | 'COMPLETED' | 'MISSED' | 'TIP' | 'COMBO';
+export type BkDoneDetailsFilter =
+  'ALL' | 'COMPLETED' | 'SINGLE' | 'COMBO_LIVE' | 'COMBO_SOLD' | 'MISSED' | 'TIP' | 'COMBO';
 
 export interface BkDoneDetailsParams {
   bookerId?: string;
@@ -156,6 +176,11 @@ export interface BkDoneResponse {
   total: number;
   summary: {
     totalDone: number;
+    totalSingleDone?: number;
+    totalComboLiveDone?: number;
+    totalComboSold?: number;
+    comboRevenue?: number;
+    singleToComboRate?: number;
     avgDoneRate: number;
     totalDoneBonus: number;
   };

@@ -97,6 +97,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isImpersonating, setIsImpersonating] = useState(false);
   const [deployedAt, setDeployedAt] = useState<string | null>(null);
   const [isMosBibleOpen, setIsMosBibleOpen] = useState(false);
+  const [targetBibleCommandmentId, setTargetBibleCommandmentId] = useState<string | undefined>();
+
+  useEffect(() => {
+    const handleOpenBible = (event: Event) => {
+      const customEvent = event as CustomEvent<{ commandmentId?: string }>;
+      setIsMosBibleOpen(true);
+      if (customEvent.detail?.commandmentId) {
+        setTargetBibleCommandmentId(customEvent.detail.commandmentId);
+      }
+    };
+    window.addEventListener('open-mos-bible', handleOpenBible);
+    return () => window.removeEventListener('open-mos-bible', handleOpenBible);
+  }, []);
 
   const [isPendingAllocationOpen, setIsPendingAllocationOpen] = useState(false);
   const [pendingAllocationCount, setPendingAllocationCount] = useState(0);
@@ -892,7 +905,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <QuickSearchModal open={isQuickSearchOpen} onClose={() => setIsQuickSearchOpen(false)} />
 
-          <MosBibleDrawer open={isMosBibleOpen} pathname={pathname} onClose={() => setIsMosBibleOpen(false)} />
+          <MosBibleDrawer
+            open={isMosBibleOpen}
+            pathname={pathname}
+            targetCommandmentId={targetBibleCommandmentId}
+            onClose={() => {
+              setIsMosBibleOpen(false);
+              setTargetBibleCommandmentId(undefined);
+            }}
+          />
 
           <style jsx global>{`
             /* Compact persistent nav rail, never used for mobile navigation. */

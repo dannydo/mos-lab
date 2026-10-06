@@ -54,6 +54,11 @@ export interface BkDoneLeaderboardResult {
     avgDoneRate: number;
     avgMissedRate?: number;
     totalDoneBonus: number;
+    totalSingleDone?: number;
+    totalComboLiveDone?: number;
+    totalComboSold?: number;
+    comboRevenue?: number;
+    singleToComboRate?: number;
   };
 }
 
@@ -301,7 +306,7 @@ export class BkLeaderboardService {
     }
 
     // Compute Check-in bonuses per Booker (matching salary-calculator.ts and /dashboard/kpi)
-    const { clientBonusMap } = await computeBkOrderCheckins(
+    const { clientBonusMap, singleDoneMap, comboLiveDoneMap } = await computeBkOrderCheckins(
       fastify,
       startPart,
       endPart,
@@ -332,14 +337,52 @@ export class BkLeaderboardService {
       ORDER BY doneCount DESC
     `;
 
-    const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql);
+    let comboStoreFilter = '';
+    if (storeId && storeId !== 'ALL') {
+      comboStoreFilter = `AND o.client_store_id IN (SELECT id FROM client_store WHERE UPPER(client_store_key) = '${storeId.toUpperCase()}')`;
+    }
 
-    let rank = 1;
+    const comboSoldSql = `
+      SELECT 
+        o.created_staff_id as bookerId,
+        COALESCE(SUM(osc.quantity), 0) as comboSoldQty,
+        COALESCE(SUM(osc.total_price), 0) as comboSoldRevenue
+      FROM \`order\` o
+      JOIN \`order_service_combo\` osc ON osc.order_id = o.id
+      LEFT JOIN report_order ro ON ro.order_id = o.id
+      WHERE o.created_staff_id IN (${activeTelesalesIds.join(',')})
+        AND (
+          (ro.actual_booking_date_start >= '${startPart} 00:00:00' AND ro.actual_booking_date_start <= '${endPart} 23:59:59')
+          OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${startPart} 00:00:00' AND o.booking_date_start <= '${endPart} 23:59:59')
+          OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start IS NULL AND o.date_created >= '${startPart} 00:00:00' AND o.date_created <= '${endPart} 23:59:59')
+        )
+        AND o.order_state = 'Completed'
+        ${comboStoreFilter}
+      GROUP BY o.created_staff_id
+    `;
+
+    const [rows, comboSoldRows] = await Promise.all([
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql),
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboSoldSql),
+    ]);
+
+    const comboSoldMap = new Map<number, { qty: number; revenue: number }>();
+    comboSoldRows.forEach((r) => {
+      comboSoldMap.set(Number(r.bookerId), {
+        qty: Number(r.comboSoldQty || 0),
+        revenue: Number(r.comboSoldRevenue || 0),
+      });
+    });
+
     let grandTotalDone = 0;
     let grandTotalMissed = 0;
     let grandTotalDoneBonus = 0;
+    let grandTotalSingleDone = 0;
+    let grandTotalComboLiveDone = 0;
+    let grandTotalComboSold = 0;
+    let grandTotalComboRevenue = 0;
 
-    const leaderboard: BkDoneLeaderboardEntry[] = rows.map((r) => {
+    const entries: BkDoneLeaderboardEntry[] = rows.map((r) => {
       const bookerId = Number(r.bookerId);
       const doneCount = Number(r.doneCount || 0);
       const missedCount = Number(r.missedCount || 0);
@@ -347,10 +390,18 @@ export class BkLeaderboardService {
       const doneRatePercent = totalCount > 0 ? Number(((doneCount / totalCount) * 100).toFixed(1)) : 0;
       const missedRatePercent = totalCount > 0 ? Number(((missedCount / totalCount) * 100).toFixed(1)) : 0;
 
+      const singleDoneCount = singleDoneMap.get(bookerId) || 0;
+      const comboLiveDoneCount = comboLiveDoneMap.get(bookerId) || 0;
+      const comboInfo = comboSoldMap.get(bookerId) || { qty: 0, revenue: 0 };
+      const comboSoldCount = comboInfo.qty;
+      const comboRevenue = comboInfo.revenue;
+      const singleToComboRate = singleDoneCount > 0 ? Number(((comboSoldCount / singleDoneCount) * 100).toFixed(1)) : 0;
+
       const basicBonus = clientBonusMap.get(bookerId) || 0;
       const promoBonus = 0;
 
-      const milestoneBonus = getMilestoneBonus(doneCount, config.doneBonusTiers);
+      // Invariant BK-005: Rank & Milestone bonus for Booker is strictly calculated on singleDoneCount
+      const milestoneBonus = getMilestoneBonus(singleDoneCount, config.doneBonusTiers);
       const penaltyBonus = getMissedRateBonus(missedRatePercent, config.missedBonusTiers);
 
       const totalDoneBonus = basicBonus + promoBonus + milestoneBonus + penaltyBonus;
@@ -358,9 +409,13 @@ export class BkLeaderboardService {
       grandTotalDone += doneCount;
       grandTotalMissed += missedCount;
       grandTotalDoneBonus += totalDoneBonus;
+      grandTotalSingleDone += singleDoneCount;
+      grandTotalComboLiveDone += comboLiveDoneCount;
+      grandTotalComboSold += comboSoldCount;
+      grandTotalComboRevenue += comboRevenue;
 
       return {
-        rank: rank++,
+        rank: 1, // assigned after sorting
         bookerId,
         displayName: String(r.displayName || `BK #${r.bookerId}`),
         avatar: r.avatar ? String(r.avatar) : null,
@@ -374,27 +429,46 @@ export class BkLeaderboardService {
         milestoneBonus,
         penaltyBonus,
         totalDoneBonus,
+        singleDoneCount,
+        comboLiveDoneCount,
+        comboSoldCount,
+        comboRevenue,
+        singleToComboRate,
       };
     });
 
+    // Invariant BK-005: Sort primarily by singleDoneCount DESC, then doneCount DESC
+    entries.sort((a, b) => (b.singleDoneCount ?? 0) - (a.singleDoneCount ?? 0) || b.doneCount - a.doneCount);
+    entries.forEach((e, idx) => {
+      e.rank = idx + 1;
+    });
+
     const avgDoneRate =
-      leaderboard.length > 0
-        ? Number((leaderboard.reduce((acc, l) => acc + l.doneRatePercent, 0) / leaderboard.length).toFixed(1))
+      entries.length > 0
+        ? Number((entries.reduce((acc, l) => acc + l.doneRatePercent, 0) / entries.length).toFixed(1))
         : 0;
 
     const avgMissedRate =
-      leaderboard.length > 0
-        ? Number((leaderboard.reduce((acc, l) => acc + l.missedRatePercent, 0) / leaderboard.length).toFixed(1))
+      entries.length > 0
+        ? Number((entries.reduce((acc, l) => acc + l.missedRatePercent, 0) / entries.length).toFixed(1))
         : 0;
 
+    const grandSingleToComboRate =
+      grandTotalSingleDone > 0 ? Number(((grandTotalComboSold / grandTotalSingleDone) * 100).toFixed(1)) : 0;
+
     const payload: BkDoneLeaderboardResult = {
-      leaderboard,
+      leaderboard: entries,
       summary: {
         totalDone: grandTotalDone,
         totalMissed: grandTotalMissed,
         avgDoneRate,
         avgMissedRate,
         totalDoneBonus: grandTotalDoneBonus,
+        totalSingleDone: grandTotalSingleDone,
+        totalComboLiveDone: grandTotalComboLiveDone,
+        totalComboSold: grandTotalComboSold,
+        comboRevenue: grandTotalComboRevenue,
+        singleToComboRate: grandSingleToComboRate,
       },
     };
 

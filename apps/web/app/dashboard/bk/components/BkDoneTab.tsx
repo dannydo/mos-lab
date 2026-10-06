@@ -20,7 +20,7 @@ import {
   ExpandOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { CircleCheck, CircleX, DollarSign, ListFilter, Package } from 'lucide-react';
+import { CircleCheck, DollarSign, ListFilter, Package, Sparkles } from 'lucide-react';
 import {
   BkDoneDetailsFilter,
   BkDoneLeaderboardEntry,
@@ -53,7 +53,7 @@ export const formatStoreCode = (store?: string | null): string => {
 
 export const BK_DONE_LEADERBOARD_LABELS = {
   booker: 'Booker',
-  done: 'Done',
+  done: 'Done (Lẻ / Combo)',
   missed: 'Missed',
   doneBonus: 'Thưởng Done',
   rankBonus: 'Thưởng Hạng',
@@ -80,15 +80,34 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
   const [customerDrawerOpen, setCustomerDrawerOpen] = useState(false);
 
   const [leaderboard, setLeaderboard] = useState<BkDoneLeaderboardEntry[]>([]);
-  const [summary, setSummary] = useState({
+  const [summary, setSummary] = useState<{
+    totalDone: number;
+    avgDoneRate: number;
+    totalDoneBonus: number;
+    totalSingleDone?: number;
+    totalComboLiveDone?: number;
+    totalComboSold?: number;
+    comboRevenue?: number;
+    singleToComboRate?: number;
+  }>({
     totalDone: 0,
     avgDoneRate: 0,
     totalDoneBonus: 0,
+    totalSingleDone: 0,
+    totalComboLiveDone: 0,
+    totalComboSold: 0,
+    comboRevenue: 0,
+    singleToComboRate: 0,
   });
   const [previousSummary, setPreviousSummary] = useState<{
     totalDone: number;
     avgDoneRate: number;
     totalDoneBonus: number;
+    totalSingleDone?: number;
+    totalComboLiveDone?: number;
+    totalComboSold?: number;
+    comboRevenue?: number;
+    singleToComboRate?: number;
   } | null>(null);
 
   const [selectedBookerId, setSelectedBookerId] = useState<string | null>(null);
@@ -131,6 +150,8 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
   const ratio = (elapsedRatioPercent || 100) / 100;
 
   const projectedDone = Math.round((summary.totalDone || 0) / (ratio || 1));
+  const projectedSingleDone = Math.round(((summary.totalSingleDone ?? summary.totalDone) || 0) / (ratio || 1));
+  const projectedComboLiveDone = Math.round((summary.totalComboLiveDone || 0) / (ratio || 1));
   const projectedDoneBonus = Math.round((summary.totalDoneBonus || 0) / (ratio || 1));
 
   const renderForecastSubtext = (projectedVal: number, unit = '') => {
@@ -251,13 +272,6 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
     }
   };
 
-  const handleSelectBookerMissed = (bookerId: string, bookerName?: string) => {
-    setSelectedBookerId(bookerId);
-    const found = leaderboard.find((item) => String(item.bookerId) === bookerId);
-    setSelectedBookerName(bookerName || found?.displayName || `BK #${bookerId}`);
-    setFilterStatus('MISSED');
-  };
-
   const filteredDetailRecords = useMemo(() => {
     if (!searchText) return detailRecords;
     const q = removeVietnameseTones(searchText);
@@ -279,9 +293,9 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
       width: 60,
       align: 'center' as const,
       render: (rank: number) => {
-        if (rank === 1) return <span style={{ fontSize: '18px' }}>🥇</span>;
-        if (rank === 2) return <span style={{ fontSize: '18px' }}>🥈</span>;
-        if (rank === 3) return <span style={{ fontSize: '18px' }}>🥉</span>;
+        if (rank === 1) return <span className="text-lg leading-none">🥇</span>;
+        if (rank === 2) return <span className="text-lg leading-none">🥈</span>;
+        if (rank === 3) return <span className="text-lg leading-none">🥉</span>;
         return <span className="tabular-nums font-semibold text-slate-500 text-xs">#{rank}</span>;
       },
     },
@@ -330,11 +344,59 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
       },
     },
     {
-      title: BK_DONE_LEADERBOARD_LABELS.done,
+      title: (
+        <Tooltip title="Phân định Khách Lẻ (KPI chính xét Rank & Milestone theo Điều răn BK-005) và Khách đi bằng gói Combo Live">
+          <span className="cursor-help font-semibold text-xs">Done (Lẻ / Combo)</span>
+        </Tooltip>
+      ),
       dataIndex: 'doneCount',
       key: 'doneCount',
       align: 'center' as const,
-      render: (val: number) => <span className="tabular-nums font-bold text-xs text-emerald-400">{val}</span>,
+      render: (_: number, record: BkDoneLeaderboardEntry) => {
+        const single = record.singleDoneCount ?? record.doneCount;
+        const combo = record.comboLiveDoneCount ?? 0;
+        return (
+          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+            <Tooltip title={`Khách Lẻ Done: ${single} lượt (KPI xếp hạng & thưởng bậc thang Milestone)`}>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 tabular-nums">
+                <span className="text-[10px] uppercase font-semibold opacity-75">Lẻ</span>
+                {single}
+              </span>
+            </Tooltip>
+            {combo > 0 && (
+              <Tooltip title={`Combo Live: +${combo} lượt khách dùng gói (+1.000đ/lượt chăm sóc)`}>
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-semibold bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 tabular-nums">
+                  <span className="text-[9px] uppercase font-semibold opacity-75">Combo</span>+{combo}
+                </span>
+              </Tooltip>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      title: (
+        <Tooltip title="Số lượng gói Combo bán mới và tỷ lệ chuyển đổi từ Single sang Combo">
+          <span className="cursor-help font-semibold text-xs">Bán Combo</span>
+        </Tooltip>
+      ),
+      key: 'comboSold',
+      align: 'center' as const,
+      render: (_: any, record: BkDoneLeaderboardEntry) => {
+        const sold = record.comboSoldCount ?? 0;
+        const rev = record.comboRevenue ?? 0;
+        const rate = record.singleToComboRate ?? 0;
+        if (sold === 0) return <span className="text-slate-500 text-xs">-</span>;
+        return (
+          <Tooltip title={`Bán ${sold} gói combo (${formatCurrency(rev)}). Tỷ lệ chuyển đổi Single ➔ Combo: ${rate}%`}>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30 tabular-nums cursor-help">
+              <Sparkles size={11} className="inline text-purple-400" />
+              <span>{sold} gói</span>
+              <span className="text-[10px] opacity-80">({rate}%)</span>
+            </span>
+          </Tooltip>
+        );
+      },
     },
     {
       title: BK_DONE_LEADERBOARD_LABELS.missed,
@@ -343,22 +405,8 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
       align: 'center' as const,
       render: (val: number, record: BkDoneLeaderboardEntry) => (
         <span
-          className="tabular-nums font-semibold text-xs text-rose-400 cursor-pointer hover:underline hover:text-rose-300 transition-colors"
-          title="Click để lọc ra và xem chi tiết danh sách khách missed của Booker này"
-          role="button"
-          tabIndex={0}
-          aria-label={`Xem chi tiết danh sách khách missed của booker ${record.displayName}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleSelectBookerMissed(String(record.bookerId), record.displayName);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.stopPropagation();
-              e.preventDefault();
-              handleSelectBookerMissed(String(record.bookerId), record.displayName);
-            }
-          }}
+          className="tabular-nums font-semibold text-xs text-rose-400"
+          title="Số lượng khách Missed của Booker trong kỳ (đối soát tỷ lệ phạt)"
         >
           {val} <span className="text-[11px] font-normal opacity-90">({record.missedRatePercent || 0}%)</span>
         </span>
@@ -506,22 +554,38 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
       ),
     },
     {
-      title: 'Dịch vụ chính',
+      title: 'Dịch vụ chính & Phân loại',
       key: 'service',
       render: (record: BkDoneRecord) => (
         <div>
+          <div className="flex items-center gap-1.5 flex-wrap mb-1">
+            {record.isComboLive ? (
+              <Tag color="cyan" className="font-semibold text-[10px] py-0 px-1.5 m-0 inline-flex items-center gap-1">
+                <Package size={10} /> Combo Live
+              </Tag>
+            ) : record.isSingle ? (
+              <Tag color="green" className="font-semibold text-[10px] py-0 px-1.5 m-0 inline-flex items-center gap-1">
+                <CheckCircleOutlined /> Khách Lẻ
+              </Tag>
+            ) : null}
+            {record.isComboSold && (
+              <Tag color="purple" className="font-semibold text-[10px] py-0 px-1.5 m-0 inline-flex items-center gap-1">
+                <Sparkles size={10} /> Bán Combo
+              </Tag>
+            )}
+          </div>
           <div className="text-xs font-medium text-slate-600 dark:text-slate-300">
             {record.serviceName || 'Không có thông tin'}
           </div>
           {record.isComboLive ? (
-            <div className="text-[10px] font-medium text-violet-400 whitespace-nowrap">Combo Live</div>
+            <div className="text-[10px] font-medium text-cyan-500 whitespace-nowrap">Combo Live (+1.000đ)</div>
           ) : (record.servicePrice || 0) > 0 ? (
             <div className="text-[10px] text-slate-400 tabular-nums">
               Giá: {formatCurrency(record.servicePrice || 0)} | Giảm: {record.discountPercent || 0}%
             </div>
           ) : null}
           {record.comboName && (
-            <div className="text-[10px] font-medium text-violet-400 whitespace-nowrap">
+            <div className="text-[10px] font-medium text-purple-400 whitespace-nowrap">
               Gói combo: {record.comboName}
             </div>
           )}
@@ -629,62 +693,122 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
     <div className="space-y-6">
       {/* Summary Header */}
       <Row gutter={[16, 16]}>
-        <Col xs={24} sm={12} md={8}>
+        {/* Card 1: Khách Lẻ Done (KPI Chính) */}
+        <Col xs={24} sm={12} lg={6}>
           <Card
             className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
             style={{ background: token.colorBgContainer }}
           >
             <Statistic
               title={
-                <Tooltip title="Đơn hoàn tất có thời điểm check-in thực tế nằm trong kỳ; có thể khác cohort booking được tạo trong kỳ.">
-                  <span className="text-xs font-semibold text-slate-500 uppercase">Lượt Check-in trong kỳ</span>
+                <Tooltip title="Đơn khách lẻ hoàn tất check-in trong kỳ. Đây là chỉ số cốt lõi dùng để xếp hạng Rank và tính thưởng bậc thang Milestone Bonus theo Điều răn BK-005.">
+                  <span className="text-xs font-semibold text-slate-500 uppercase flex items-center justify-between">
+                    <span>Khách Lẻ Done</span>
+                    <Tag color="cyan" className="text-[10px] m-0 py-0 px-1 font-bold">
+                      KPI Chính
+                    </Tag>
+                  </span>
                 </Tooltip>
               }
-              value={summary.totalDone}
-              valueStyle={{ color: '#10b981', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
-              prefix={<CheckCircleOutlined className="mr-2" />}
+              value={summary.totalSingleDone ?? summary.totalDone}
+              className="[&_.ant-statistic-content-value]:text-emerald-500 [&_.ant-statistic-content-value]:font-bold [&_.ant-statistic-content-value]:tabular-nums"
+              prefix={<UserOutlined className="mr-2 text-emerald-500" />}
             />
             <PeriodComparison
               comparison={previousPeriod?.comparison}
-              currentValue={summary.totalDone}
-              previousValue={previousSummary?.totalDone || 0}
+              currentValue={summary.totalSingleDone ?? summary.totalDone}
+              previousValue={previousSummary?.totalSingleDone ?? previousSummary?.totalDone ?? 0}
               formatter={(value) => `${value.toLocaleString('vi-VN')} lượt`}
             />
-            {renderForecastSubtext(projectedDone, 'lượt')}
+            {renderForecastSubtext(projectedSingleDone, 'lượt')}
           </Card>
         </Col>
-        <Col xs={24} sm={12} md={8}>
-          <Card
-            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
-            style={{ background: token.colorBgContainer }}
-          >
-            <Statistic
-              title={<span className="text-xs font-semibold text-slate-500 uppercase">Tỷ Lệ Done Trung Bình</span>}
-              value={summary.avgDoneRate}
-              suffix="%"
-              valueStyle={{ color: '#f59e0b', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
-              prefix={<TrophyOutlined className="mr-2" />}
-            />
-            <PeriodComparison
-              comparison={previousPeriod?.comparison}
-              currentValue={summary.avgDoneRate}
-              previousValue={previousSummary?.avgDoneRate || 0}
-              formatter={(value) => `${value.toFixed(1)}%`}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} md={8}>
+
+        {/* Card 2: Combo Live Done */}
+        <Col xs={24} sm={12} lg={6}>
           <Card
             className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
             style={{ background: token.colorBgContainer }}
           >
             <Statistic
               title={
-                <span className="text-xs font-semibold text-slate-500 uppercase">∑ Hoa Hồng OC & Thưởng Done</span>
+                <Tooltip title="Lượt khách có gói Combo đang hoạt động đến làm dịch vụ trong kỳ. Booker nhận 1.000đ/lượt chăm sóc; không tính vào bậc thang Milestone Bonus theo Điều răn BK-005.">
+                  <span className="text-xs font-semibold text-slate-500 uppercase flex items-center justify-between">
+                    <span>Combo Live Done</span>
+                    <Tag color="purple" className="text-[10px] m-0 py-0 px-1 font-semibold">
+                      +1.000đ/lượt
+                    </Tag>
+                  </span>
+                </Tooltip>
+              }
+              value={summary.totalComboLiveDone ?? 0}
+              className="[&_.ant-statistic-content-value]:text-cyan-500 [&_.ant-statistic-content-value]:font-bold [&_.ant-statistic-content-value]:tabular-nums"
+              prefix={<Package className="mr-2 inline text-cyan-500" size={18} />}
+            />
+            <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5">
+              <span>Tỷ trọng / Tổng Done:</span>
+              <span className="tabular-nums font-semibold text-cyan-400">
+                {summary.totalDone > 0
+                  ? `${(((summary.totalComboLiveDone || 0) / summary.totalDone) * 100).toFixed(1)}%`
+                  : '0%'}
+              </span>
+            </div>
+            {renderForecastSubtext(projectedComboLiveDone, 'lượt')}
+          </Card>
+        </Col>
+
+        {/* Card 3: Combo Bán Mới & Chuyển đổi */}
+        <Col xs={24} sm={12} lg={6}>
+          <Card
+            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
+            style={{ background: token.colorBgContainer }}
+          >
+            <Statistic
+              title={
+                <Tooltip title="Số lượng gói Combo bán mới trong kỳ và tỷ lệ chuyển đổi từ Khách Lẻ sang mua Combo (Single ➔ Combo).">
+                  <span className="text-xs font-semibold text-slate-500 uppercase flex items-center justify-between">
+                    <span>Combo Bán Mới</span>
+                    <Tag color="magenta" className="text-[10px] m-0 py-0 px-1 font-semibold">
+                      Single ➔ Combo
+                    </Tag>
+                  </span>
+                </Tooltip>
+              }
+              value={summary.totalComboSold ?? 0}
+              suffix="gói"
+              className="[&_.ant-statistic-content-value]:text-purple-500 [&_.ant-statistic-content-value]:font-bold [&_.ant-statistic-content-value]:tabular-nums"
+              prefix={<TrophyOutlined className="mr-2 text-purple-500" />}
+            />
+            <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5">
+              <span>Tỷ lệ chuyển đổi:</span>
+              <span className="tabular-nums font-semibold text-purple-400">{summary.singleToComboRate ?? 0}%</span>
+            </div>
+            {(summary.comboRevenue || 0) > 0 && (
+              <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center justify-between pt-1">
+                <span>Doanh thu:</span>
+                <span className="tabular-nums font-medium text-purple-300">
+                  {formatCompactVND(summary.comboRevenue || 0)}
+                </span>
+              </div>
+            )}
+          </Card>
+        </Col>
+
+        {/* Card 4: ∑ Thưởng Done & Check-in */}
+        <Col xs={24} sm={12} lg={6}>
+          <Card
+            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
+            style={{ background: token.colorBgContainer }}
+          >
+            <Statistic
+              title={
+                <Tooltip title="Tổng tiền thưởng Done bao gồm thưởng check-in cơ bản, thưởng bậc thang Milestone Rank và thưởng/phạt Missed.">
+                  <span className="text-xs font-semibold text-slate-500 uppercase">∑ Thưởng Done & Check-in</span>
+                </Tooltip>
               }
               value={summary.totalDoneBonus}
               formatter={(val) => formatCurrency(Number(val))}
-              valueStyle={{ color: '#059669', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
+              className="[&_.ant-statistic-content-value]:text-emerald-600 [&_.ant-statistic-content-value]:font-bold [&_.ant-statistic-content-value]:tabular-nums"
               prefix={<DollarOutlined className="mr-2" />}
             />
             <PeriodComparison
@@ -701,14 +825,18 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
       {/* Done Leaderboard */}
       <BkLeaderboardCard
         title="BK Leaderboard - Done"
-        description="Chỉ xếp hạng thành tích nhóm Telesales trong khoảng thời gian lọc"
+        description="Xếp hạng thành tích Telesales theo Khách Lẻ Done (Điều răn BK-005) trong khoảng thời gian lọc"
         leaderboard={leaderboard}
         loading={loading}
         columns={columns}
         selectedBooker={selectedBookerId || undefined}
         onSelectBooker={(bId) => handleSelectBooker(bId)}
         mobileMetrics={(record) => [
-          { label: 'Done', value: record.doneCount ?? 0, tone: 'success' },
+          {
+            label: 'Lẻ / Combo',
+            value: `${record.singleDoneCount ?? record.doneCount} Lẻ · +${record.comboLiveDoneCount ?? 0} Combo`,
+            tone: 'success',
+          },
           { label: 'Missed', value: `${record.missedCount ?? 0} (${record.missedRatePercent ?? 0}%)`, tone: 'danger' },
           { label: 'Thưởng', value: formatCurrency(record.totalDoneBonus ?? 0), tone: 'success' },
         ]}
@@ -746,15 +874,17 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
               )}
             </div>
             <Text type="secondary" className="text-xs">
-              {filterStatus === 'MISSED'
-                ? 'Đang hiển thị danh sách tất cả Khách hàng MISSED (đã đặt hẹn nhưng không đến)'
-                : filterStatus === 'COMPLETED'
-                  ? 'Đang hiển thị danh sách Khách hàng DONE (đã đến làm dịch vụ thành công)'
-                  : filterStatus === 'TIP'
-                    ? 'Đang hiển thị các đơn Completed có tiền tip'
-                    : filterStatus === 'COMBO'
-                      ? 'Đang hiển thị các đơn Completed có bán combo'
-                      : 'Hiển thị tất cả đơn hàng đặt lịch của Booker'}
+              {filterStatus === 'SINGLE'
+                ? 'Đang hiển thị danh sách Khách hàng LẺ DONE (không có gói combo active, tính KPI Rank)'
+                : filterStatus === 'COMBO_LIVE'
+                  ? 'Đang hiển thị danh sách Khách hàng COMBO LIVE DONE (làm bằng gói combo, +1.000đ/lượt)'
+                  : filterStatus === 'COMBO_SOLD'
+                    ? 'Đang hiển thị các đơn Completed có bán gói combo mới'
+                    : filterStatus === 'COMPLETED'
+                      ? 'Đang hiển thị tất cả Khách hàng DONE (cả Lẻ và Combo)'
+                      : filterStatus === 'TIP'
+                        ? 'Đang hiển thị các đơn Completed có tiền tip'
+                        : 'Hiển thị tất cả đơn hàng hoàn thành (Done) của Booker'}
             </Text>
           </div>
 
@@ -775,29 +905,42 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
               </button>
               <button
                 type="button"
-                aria-pressed={filterStatus === 'COMPLETED'}
+                aria-pressed={filterStatus === 'SINGLE'}
                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-medium transition-colors ${
-                  filterStatus === 'COMPLETED'
+                  filterStatus === 'SINGLE'
                     ? 'bg-emerald-600 text-white shadow-xs font-semibold'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
-                onClick={() => setFilterStatus('COMPLETED')}
+                onClick={() => setFilterStatus('SINGLE')}
               >
                 <AppIcon icon={CircleCheck} size={14} />
-                <span>Done</span>
+                <span>Khách Lẻ</span>
               </button>
               <button
                 type="button"
-                aria-pressed={filterStatus === 'MISSED'}
+                aria-pressed={filterStatus === 'COMBO_LIVE'}
                 className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-medium transition-colors ${
-                  filterStatus === 'MISSED'
-                    ? 'bg-rose-600 text-white shadow-xs font-semibold'
+                  filterStatus === 'COMBO_LIVE'
+                    ? 'bg-cyan-600 text-white shadow-xs font-semibold'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
                 }`}
-                onClick={() => setFilterStatus('MISSED')}
+                onClick={() => setFilterStatus('COMBO_LIVE')}
               >
-                <AppIcon icon={CircleX} size={14} />
-                <span>Missed</span>
+                <AppIcon icon={Package} size={14} />
+                <span>Combo Live</span>
+              </button>
+              <button
+                type="button"
+                aria-pressed={filterStatus === 'COMBO_SOLD'}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-medium transition-colors ${
+                  filterStatus === 'COMBO_SOLD'
+                    ? 'bg-violet-600 text-white shadow-xs font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+                onClick={() => setFilterStatus('COMBO_SOLD')}
+              >
+                <AppIcon icon={Sparkles} size={14} />
+                <span>Bán Combo</span>
               </button>
               <button
                 type="button"
@@ -811,19 +954,6 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
               >
                 <AppIcon icon={DollarSign} size={14} />
                 <span>Tip</span>
-              </button>
-              <button
-                type="button"
-                aria-pressed={filterStatus === 'COMBO'}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-medium transition-colors ${
-                  filterStatus === 'COMBO'
-                    ? 'bg-violet-600 text-white shadow-xs font-semibold'
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                }`}
-                onClick={() => setFilterStatus('COMBO')}
-              >
-                <AppIcon icon={Package} size={14} />
-                <span>Combo</span>
               </button>
             </div>
 

@@ -15,6 +15,7 @@ import {
   type MosBibleCommandment,
 } from '@mos-lab/shared';
 import { AdaptiveDrawer, AppIcon, StatePanel, StatusTag } from '../ui';
+import { SalarySimulator } from '../salary-explainer';
 import styles from './MosBibleDrawer.module.css';
 
 const { Text } = Typography;
@@ -24,6 +25,7 @@ type BibleScope = 'PAGE' | 'ALL';
 export interface MosBibleDrawerProps {
   open: boolean;
   pathname: string;
+  targetCommandmentId?: string;
   onClose: () => void;
 }
 
@@ -73,6 +75,15 @@ function CommandmentDetail({ commandment }: { commandment: MosBibleCommandment }
           {commandment.rationale}
         </div>
       </section>
+
+      {commandment.interactiveComponent === 'BK_SALARY_EXPLAINER' ? (
+        <section className="my-2">
+          <div className={styles.detailSectionTitle} style={{ color: token.colorTextSecondary }}>
+            Sơ đồ 5 dòng tiền & Bộ giả lập thu nhập trực quan
+          </div>
+          <SalarySimulator />
+        </section>
+      ) : null}
 
       {commandment.examples?.length ? (
         <section>
@@ -129,25 +140,46 @@ function CommandmentDetail({ commandment }: { commandment: MosBibleCommandment }
   );
 }
 
-export default function MosBibleDrawer({ open, pathname, onClose }: MosBibleDrawerProps) {
+export default function MosBibleDrawer({ open, pathname, targetCommandmentId, onClose }: MosBibleDrawerProps) {
   const { token } = theme.useToken();
   const relatedCommandments = useMemo(() => getMosBibleCommandmentsForPath(pathname), [pathname]);
   const [scope, setScope] = useState<BibleScope>('PAGE');
   const [searchText, setSearchText] = useState('');
   const [book, setBook] = useState<MosBibleBookKey | 'ALL'>('ALL');
 
+  const effectiveTargetId = useMemo(() => {
+    if (targetCommandmentId) return targetCommandmentId;
+    if (typeof window !== 'undefined' && window.location.search.includes('tab=thunhap')) {
+      return 'BK-006';
+    }
+    return undefined;
+  }, [targetCommandmentId, open]);
+
+  const [activeCollapseKeys, setActiveCollapseKeys] = useState<string[]>([]);
+
   useEffect(() => {
     if (!open) return;
     setScope(relatedCommandments.length > 0 ? 'PAGE' : 'ALL');
     setSearchText('');
     setBook('ALL');
-  }, [open, pathname, relatedCommandments.length]);
+    if (effectiveTargetId) {
+      setActiveCollapseKeys([effectiveTargetId]);
+    } else {
+      setActiveCollapseKeys([]);
+    }
+  }, [open, pathname, relatedCommandments.length, effectiveTargetId]);
 
   const scopedCommandments = scope === 'PAGE' ? relatedCommandments : MOS_BIBLE_COMMANDMENTS;
-  const visibleCommandments = useMemo(
-    () => filterMosBibleCommandments(scopedCommandments, searchText, book),
-    [book, scopedCommandments, searchText]
-  );
+  const visibleCommandments = useMemo(() => {
+    const list = filterMosBibleCommandments(scopedCommandments, searchText, book);
+    if (!effectiveTargetId) return list;
+    return [...list].sort((a, b) => {
+      if (a.id === effectiveTargetId) return -1;
+      if (b.id === effectiveTargetId) return 1;
+      return 0;
+    });
+  }, [book, scopedCommandments, searchText, effectiveTargetId]);
+
   const availableBookKeys = useMemo(
     () => new Set(scopedCommandments.map((commandment) => commandment.book)),
     [scopedCommandments]
@@ -163,6 +195,7 @@ export default function MosBibleDrawer({ open, pathname, onClose }: MosBibleDraw
   const collapseItems = visibleCommandments.map((commandment) => {
     const commandmentBook = getMosBibleBook(commandment.book);
     const isRelated = isMosBibleCommandmentRelevant(commandment, pathname);
+    const isTarget = commandment.id === effectiveTargetId;
 
     return {
       key: commandment.id,
@@ -173,7 +206,11 @@ export default function MosBibleDrawer({ open, pathname, onClose }: MosBibleDraw
             <Text type="secondary" className="text-[11px]">
               {commandmentBook.label}
             </Text>
-            {scope === 'ALL' && isRelated ? <StatusTag status="processing" label="Liên quan trang này" /> : null}
+            {isTarget ? (
+              <StatusTag status="processing" label="Đang ghim theo ngữ cảnh" />
+            ) : scope === 'ALL' && isRelated ? (
+              <StatusTag status="processing" label="Liên quan trang này" />
+            ) : null}
           </div>
           <div className={styles.commandmentTitle}>{commandment.title}</div>
           <div className={styles.commandmentSummary} style={{ color: token.colorTextSecondary }}>
@@ -274,7 +311,12 @@ export default function MosBibleDrawer({ open, pathname, onClose }: MosBibleDraw
       </div>
 
       {visibleCommandments.length ? (
-        <Collapse accordion items={collapseItems} />
+        <Collapse
+          accordion
+          activeKey={activeCollapseKeys}
+          onChange={(keys) => setActiveCollapseKeys(typeof keys === 'string' ? [keys] : keys)}
+          items={collapseItems}
+        />
       ) : (
         <StatePanel
           surface={false}

@@ -1,6 +1,7 @@
 'use client';
 
 import { MobileRecordList, TableIndexHeader } from '~/components/ui';
+import { BookOpenCheck } from 'lucide-react';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import dayjs from 'dayjs';
@@ -782,14 +783,31 @@ export default function BkThuNhapTab({ dateRange, selectedStore, selectedBooker,
             </div>
           </div>
 
-          <Tooltip title={isCompact ? 'Chuyển Chế Độ Xem Chuẩn' : 'Chuyển Chế Độ Xem Gọn (Compact)'}>
+          <div className="flex items-center gap-2">
             <Button
-              icon={isCompact ? <ExpandOutlined /> : <CompressOutlined />}
-              size="small"
-              onClick={() => setIsCompact(!isCompact)}
-              className={isCompact ? 'text-amber-500 border-amber-500/50' : ''}
-            />
-          </Tooltip>
+              icon={<BookOpenCheck size={14} className="mr-1 text-amber-500" />}
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(
+                    new CustomEvent('open-mos-bible', {
+                      detail: { commandmentId: 'BK-006' },
+                    })
+                  );
+                }
+              }}
+              className="text-xs font-semibold rounded-lg flex items-center bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 hover:text-amber-300 border border-amber-500/40 hover:border-amber-500 shadow-sm"
+            >
+              Kinh Thánh Lương BK-006 & Giả Lập
+            </Button>
+            <Tooltip title={isCompact ? 'Chuyển Chế Độ Xem Chuẩn' : 'Chuyển Chế Độ Xem Gọn (Compact)'}>
+              <Button
+                icon={isCompact ? <ExpandOutlined /> : <CompressOutlined />}
+                size="small"
+                onClick={() => setIsCompact(!isCompact)}
+                className={isCompact ? 'text-amber-500 border-amber-500/50' : ''}
+              />
+            </Tooltip>
+          </div>
         </div>
 
         {isMobile ? (

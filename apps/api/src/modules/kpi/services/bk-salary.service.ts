@@ -400,6 +400,8 @@ export async function computeBkOrderCheckins(
   if (targetBkIds.length === 0) {
     return {
       clientBonusMap: new Map<number, number>(),
+      singleDoneMap: new Map<number, number>(),
+      comboLiveDoneMap: new Map<number, number>(),
       orderCheckinMap: new Map<
         number,
         {
@@ -440,6 +442,8 @@ export async function computeBkOrderCheckins(
   const userIds = Array.from(new Set(orders.map((o) => Number(o.userId)).filter((id) => !!id)));
 
   const clientBonusMap = new Map<number, number>();
+  const singleDoneMap = new Map<number, number>();
+  const comboLiveDoneMap = new Map<number, number>();
   const orderCheckinMap = new Map<
     number,
     {
@@ -454,7 +458,7 @@ export async function computeBkOrderCheckins(
   >();
 
   if (orderIds.length === 0) {
-    return { clientBonusMap, orderCheckinMap };
+    return { clientBonusMap, orderCheckinMap, singleDoneMap, comboLiveDoneMap };
   }
 
   const orderServicesMap = new Map<number, SafeAny[]>();
@@ -634,9 +638,17 @@ export async function computeBkOrderCheckins(
 
     const prevBonus = clientBonusMap.get(bookerId) || 0;
     clientBonusMap.set(bookerId, prevBonus + bonus);
+
+    if (isCombo) {
+      const prevCombo = comboLiveDoneMap.get(bookerId) || 0;
+      comboLiveDoneMap.set(bookerId, prevCombo + 1);
+    } else {
+      const prevSingle = singleDoneMap.get(bookerId) || 0;
+      singleDoneMap.set(bookerId, prevSingle + 1);
+    }
   });
 
-  return { clientBonusMap, orderCheckinMap };
+  return { clientBonusMap, orderCheckinMap, singleDoneMap, comboLiveDoneMap };
 }
 
 export function calculateStandardWorkDays(startDateStr: string, endDateStr: string): number {

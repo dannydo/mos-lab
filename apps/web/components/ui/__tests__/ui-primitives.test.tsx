@@ -68,7 +68,7 @@ describe('UI primitives', () => {
   it('keeps BK Done leaderboard headers concise and business-specific', () => {
     expect(BK_DONE_LEADERBOARD_LABELS).toEqual({
       booker: 'Booker',
-      done: 'Done',
+      done: 'Done (Lẻ / Combo)',
       missed: 'Missed',
       doneBonus: 'Thưởng Done',
       rankBonus: 'Thưởng Hạng',

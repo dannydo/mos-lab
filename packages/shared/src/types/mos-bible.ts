@@ -40,5 +40,7 @@ export interface MosBibleCommandment {
   status: MosBibleCommandmentStatus;
   version: string;
   effectiveFrom: string;
+  /** Optional interactive component key for visual explainer / calculator */
+  interactiveComponent?: string;
   sources: readonly MosBibleSourceReference[];
 }

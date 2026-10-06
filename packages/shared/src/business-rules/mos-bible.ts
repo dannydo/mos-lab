@@ -244,6 +244,58 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'BK-006',
+    book: 'REWARDS',
+    title:
+      'Quy chế Thu nhập Booker: Lương ca, Thưởng Check-in, Mốc bậc thang Khách lẻ, Thưởng Missed và Hoa hồng Doanh thu',
+    summary:
+      'Thu nhập hàng tháng của Booker gồm 5 cấu phần minh bạch: Lương theo ca, Thưởng Check-in đơn, Thưởng Mốc bậc thang Khách Lẻ Done, Thưởng/Phạt tỷ lệ Missed và Hoa hồng Doanh thu + Tip.',
+    interactiveComponent: 'BK_SALARY_EXPLAINER',
+    commandments: [
+      'Công thức tổng thu nhập Booker: Tổng Thu Nhập = Lương ca/cơ bản + Thưởng Check-in đơn + Thưởng Mốc bậc thang Done + Thưởng/Phạt tỷ lệ Missed + Hoa hồng Doanh thu Net + Tiền Tip được chia.',
+      'Cấu phần 1 - Lương cơ bản theo ca: Mức chuẩn 6.500.000đ/tháng dựa trên 26 ngày công chuẩn; chi trả tương ứng theo số giờ công ca làm việc thực tế được chấm trên hệ thống.',
+      'Cấu phần 2 - Thưởng Check-in đơn (Basic Bonus): Khách Lẻ Nối Mới nhận 35.000đ (0% giảm), 12.000đ (giảm ≤30%), 6.000đ (giảm ≤50%), 1.000đ (giảm >50%). Khách Lẻ Dặm Mi nhận 9.000đ (giảm ≤30%), 6.000đ (giảm ≤50%), 1.000đ (giảm >50%). Khách Combo Live nhận cố định 1.000đ/lượt.',
+      'Cấu phần 3 - Thưởng Mốc Bậc Thang Done (Milestone Bonus): Áp dụng chuẩn Điều răn BK-005, chỉ tính trên số lượng Khách Lẻ Done trong tháng. Bắt đầu từ mốc 100 khách lẻ (+300.000đ), mỗi bước 50 khách lẻ tăng thêm 300.000đ: 150 (+600k), 200 (+900k), 250 (+1.200k), 300 (+1.500k), 350 (+1.800k), 400 (+2.100k), 450 (+2.400k), 500 (+2.700k). Hưởng mức thưởng của mốc cao nhất đạt được.',
+      'Cấu phần 4 - Thưởng/Phạt Tỷ lệ Khách Missed: Tỷ lệ Missed = Missed / (Done + Missed) * 100%. Đạt ≤10% thưởng +1.000.000đ; ≤15% thưởng +500.000đ; 15.1% - 20% là 0đ; 20.1% - 25% phạt -500.000đ; >25% phạt -1.000.000đ.',
+      'Cấu phần 5 - Hoa hồng Doanh thu Net & Tip: Doanh thu Net từ 50tr (0.7%), 100tr (0.8%), 150tr (0.9%), 200tr (1.0%), 250tr (1.1%), từ 300tr (1.2%). Thưởng Tip: 7% tổng tiền tip khách hàng tặng cho Booker.',
+    ],
+    rationale:
+      'Chính sách thu nhập Booker được xây dựng theo triết lý "Đa nguồn - Trúng đích - Lũy tiến": Đảm bảo lương nền ổn định, kích thích đưa khách lẻ mới về tiệm qua mốc bậc thang, kiểm soát chất lượng đặt lịch qua tỷ lệ Missed, và đồng hành cùng doanh số salon qua hoa hồng doanh thu.',
+    examples: [
+      'Booker A trong tháng đi làm đủ 26 công (Lương cơ bản 6.500.000đ). Tạo ra 210 Khách Lẻ Done (Thưởng check-in tích lũy 4.500.000đ) và 40 Khách Combo Live (40.000đ). Đạt mốc 200 Khách Lẻ Done (Thưởng mốc bậc thang +900.000đ). Tỷ lệ Missed 12% (Thưởng Missed +500.000đ). Doanh thu mang về 160 triệu (Hoa hồng 0.9% = 1.440.000đ). Tiền tip 200.000đ (14.000đ). 👉 Tổng thu nhập tháng: 6.500.000 + 4.540.000 + 900.000 + 500.000 + 1.440.000 + 14.000 = 13.894.000đ.',
+    ],
+    tags: [
+      'Booker',
+      'Telesales',
+      'Lương thưởng',
+      'Thu nhập',
+      'Bậc thang',
+      'Milestone Bonus',
+      'Checkin Bonus',
+      'Missed Bonus',
+      'Hoa hồng Doanh thu',
+      'Paystub',
+    ],
+    routeScopes: ['/dashboard/bk', '/dashboard/kpi', '/dashboard/telesale-target'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-10-06',
+    sources: [
+      {
+        label: 'BK Salary Service',
+        reference: 'apps/api/src/modules/kpi/services/bk-salary.service.ts',
+      },
+      {
+        label: 'Salary Calculator Engine',
+        reference: 'apps/api/src/modules/kpi/services/salary-calculator.ts',
+      },
+      {
+        label: 'Điều răn Khách Lẻ Done BK-005',
+        reference: 'packages/shared/src/business-rules/mos-bible.ts · BK-005',
+      },
+    ],
+  },
+  {
     id: 'OPS-001',
     book: 'SERVICE',
     title: 'Vòng đời đơn có chủ nhân rõ ràng',
