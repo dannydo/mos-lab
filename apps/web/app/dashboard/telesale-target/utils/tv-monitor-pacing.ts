@@ -150,6 +150,38 @@ export interface TvMonitorKpiMetrics {
   teamStateBadge: string;
   teamStateColor: 'blue' | 'emerald' | 'amber' | 'rose';
   actionableMessage: string;
+  bookTier: 'emerald' | 'amber' | 'rose';
+  doneTier: 'emerald' | 'amber' | 'rose';
+}
+
+/**
+ * Tính toán màu sắc nhịp độ (Pacing Tier) theo thời gian thực:
+ * - Đạt 100% mục tiêu cả ngày -> 'emerald' (Xanh lá)
+ * - Đầu ca làm việc (rTime <= 0.08, khoảng 35-40 phút đầu ngày):
+ *   + Nếu đã có >= 1 đơn -> 'emerald' (Xanh lá - Nổ đơn sớm vượt nhịp)
+ *   + Nếu chưa có đơn -> 'amber' (Vàng - Đang khởi động, không phạt đỏ đầu ngày)
+ * - Trong ca làm việc (rTime > 0.08):
+ *   + gap >= 0 (Thực tế >= Kỳ vọng thời gian) -> 'emerald' (Xanh lá - Đạt/Vượt nhịp)
+ *   + gap >= -1 (hoặc tỷ lệ bám nhịp >= 80%) -> 'amber' (Vàng - Chậm nhẹ 1 đơn / Bám nhịp)
+ *   + gap <= -2 (trễ từ 2 đơn trở lên) -> 'rose' (Đỏ - Cần tăng tốc)
+ */
+export function calculatePacingTier(
+  actual: number,
+  expected: number,
+  fullDayTarget: number,
+  rTime: number
+): 'emerald' | 'amber' | 'rose' {
+  if (fullDayTarget > 0 && actual >= fullDayTarget) return 'emerald';
+
+  if (rTime <= 0.08) {
+    if (actual >= 1) return 'emerald';
+    return 'amber';
+  }
+
+  const gap = actual - expected;
+  if (gap >= 0) return 'emerald';
+  if (gap >= -1 || (expected > 0 && actual / expected >= 0.8)) return 'amber';
+  return 'rose';
 }
 
 export function calculateTvMonitorMetrics(
@@ -239,6 +271,10 @@ export function calculateTvMonitorMetrics(
     }
   }
 
+  // 3. Pacing-aware Tiers (Xanh khi bám/vượt nhịp thời gian, Vàng khi chậm nhẹ/khởi động, Đỏ khi trễ nhịp rõ rệt)
+  const bookTier = calculatePacingTier(bookActual, expectedBook, bookTarget, pacing.rTime);
+  const doneTier = calculatePacingTier(doneActual, expectedDone, doneTarget, pacing.rTime);
+
   return {
     doneTarget,
     bookTarget,
@@ -259,5 +295,7 @@ export function calculateTvMonitorMetrics(
     teamStateBadge,
     teamStateColor,
     actionableMessage,
+    bookTier,
+    doneTier,
   };
 }

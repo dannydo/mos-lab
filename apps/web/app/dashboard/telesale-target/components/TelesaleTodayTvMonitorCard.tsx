@@ -108,8 +108,8 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
     Math.round(((metrics.expectedDone || 0) / (metrics.doneTarget || 1)) * 100)
   );
 
-  const bookTier = getProgressTier(metrics.bookPercent);
-  const doneTier = getProgressTier(metrics.donePercent);
+  const bookTier = metrics.bookTier;
+  const doneTier = metrics.doneTier;
   const bookStyles = getCardTierStyles(bookTier);
   const doneStyles = getCardTierStyles(doneTier);
 

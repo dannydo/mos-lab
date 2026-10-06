@@ -1,18 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Progress } from 'antd';
 import { PhoneCall } from 'lucide-react';
 import { TelesaleTargetOverview, TelesaleStaffDailyAction, TelesaleDailyActionStatus } from '@mos-lab/shared';
 import { SemicircleGauge } from './SemicircleGauge';
 import { RealisticCardFireworks } from './RealisticCardFireworks';
-
-// Tiến độ thực tế: đỏ < 80%, vàng 80-99%, xanh >= 100%
-const getProgressTier = (percent: number): 'rose' | 'amber' | 'emerald' => {
-  if (percent < 80) return 'rose';
-  if (percent < 100) return 'amber';
-  return 'emerald';
-};
+import { calculateShiftPacing } from '../utils/tv-monitor-pacing';
 
 const getActionTierStyles = (tier: 'rose' | 'amber' | 'emerald') => {
   switch (tier) {
@@ -51,18 +45,53 @@ interface DailyActionScheduleProps {
 
 export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overview, isTvOpen = false }) => {
   const { dailyAction, staffTargets } = overview;
+  const [now, setNow] = useState<Date>(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 10000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const pacing = calculateShiftPacing(now);
+  const pacingPercent = Math.min(100, Math.round(pacing.rTime * 100));
 
   const callTargetPerStaff = dailyAction.callTargetPerStaff || 83;
   const pickupTargetPerStaff = dailyAction.pickupTargetPerStaff || 25;
   const teamCallTarget = dailyAction.teamCallTarget ?? 0;
   const teamCallActual = dailyAction.teamCallActual ?? dailyAction.totalCallsToday ?? 0;
   const teamCallPercent = dailyAction.teamCallPercent ?? 0;
-  const teamCallGap = dailyAction.teamCallGap ?? teamCallActual - teamCallTarget;
 
   const teamPickupTarget = dailyAction.teamPickupTarget ?? 0;
   const teamPickupActual = dailyAction.teamPickupActual ?? 0;
   const teamPickupPercent = dailyAction.teamPickupPercent ?? 0;
-  const teamPickupGap = dailyAction.teamPickupGap ?? teamPickupActual - teamPickupTarget;
+
+  // Tính toán kỳ vọng theo tiến độ thời gian trong ca làm việc
+  const expectedCalls = Math.round(teamCallTarget * pacing.rTime);
+  const gapCalls = teamCallActual - expectedCalls;
+
+  const expectedPickup = Math.round(teamPickupTarget * pacing.rTime);
+  const gapPickup = teamPickupActual - expectedPickup;
+
+  // Tính số lượng cần gọi trung bình mỗi giờ làm việc còn lại
+  const hoursRemaining = pacing.hoursRemaining + (pacing.minsRemaining > 0 ? 1 : 0);
+  const remainingCalls = Math.max(0, teamCallTarget - teamCallActual);
+  const hourlyRequiredCalls = hoursRemaining > 0 ? Math.ceil(remainingCalls / hoursRemaining) : 0;
+
+  // Pacing Tier cho Calls và Pickup
+  const getActionPacingTier = (actual: number, expected: number, fullTarget: number): 'emerald' | 'amber' | 'rose' => {
+    if (fullTarget > 0 && actual >= fullTarget) return 'emerald';
+    if (pacing.rTime <= 0.08) {
+      if (actual >= 3) return 'emerald';
+      return 'amber';
+    }
+    const gap = actual - expected;
+    if (gap >= 0) return 'emerald';
+    if (gap >= -5) return 'amber';
+    return 'rose';
+  };
+
+  const callTier = getActionPacingTier(teamCallActual, expectedCalls, teamCallTarget);
+  const pickupTier = getActionPacingTier(teamPickupActual, expectedPickup, teamPickupTarget);
 
   // Fallback if staffActions isn't populated
   const staffActions: TelesaleStaffDailyAction[] =
@@ -102,8 +131,6 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
 
   const pickRate = teamCallActual > 0 ? Number(((teamPickupActual / teamCallActual) * 100).toFixed(1)) : 0;
 
-  const callTier = getProgressTier(teamCallPercent);
-  const pickupTier = getProgressTier(teamPickupPercent);
   const callStyles = getActionTierStyles(callTier);
   const pickupStyles = getActionTierStyles(pickupTier);
   const isCallOver100 = teamCallPercent >= 100;
@@ -154,9 +181,9 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
                   hideLabelText={true}
                   hideUnitText={true}
                   tone={callTier}
-                  pacingPercent={75}
-                  gapText={`GAP: ${teamCallGap >= 0 ? '+' : ''}${teamCallGap}`}
-                  gapType={teamCallGap >= 0 ? 'positive' : 'negative'}
+                  pacingPercent={pacingPercent}
+                  gapText={`GAP: ${gapCalls >= 0 ? '+' : ''}${gapCalls}`}
+                  gapType={gapCalls >= 0 ? 'positive' : gapCalls >= -5 ? 'neutral' : 'negative'}
                   radius={85}
                   heightClass="h-[95px]"
                 />
@@ -166,23 +193,23 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
               <div className="mt-1 bg-black/60 border border-zinc-800/90 rounded-lg p-1 grid grid-cols-3 gap-0.5 text-center font-mono divide-x divide-zinc-800 text-[8px] relative z-10">
                 <div>
                   <span className="text-zinc-500 block">Kỳ vọng</span>
-                  <span className="text-[11px] font-black text-zinc-200 block tabular-nums">
-                    {Math.round(teamCallTarget * 0.75)}
-                  </span>
+                  <span className="text-[11px] font-black text-zinc-200 block tabular-nums">{expectedCalls}</span>
                 </div>
                 <div>
                   <span className="text-zinc-500 block">Gap</span>
                   <span
                     className={`text-[11px] font-black block tabular-nums ${
-                      teamCallGap >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                      gapCalls >= 0 ? 'text-emerald-400' : gapCalls >= -5 ? 'text-amber-400' : 'text-rose-400'
                     }`}
                   >
-                    {teamCallGap >= 0 ? `+${teamCallGap}` : teamCallGap}
+                    {gapCalls >= 0 ? `+${gapCalls}` : gapCalls}
                   </span>
                 </div>
                 <div>
                   <span className="text-zinc-500 block">Cần TB</span>
-                  <span className="text-[11px] font-black text-amber-300 block tabular-nums">29/h</span>
+                  <span className="text-[11px] font-black text-amber-300 block tabular-nums">
+                    {hourlyRequiredCalls}/h
+                  </span>
                 </div>
               </div>
             </div>
@@ -215,9 +242,9 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
                   hideLabelText={true}
                   hideUnitText={true}
                   tone={pickupTier}
-                  pacingPercent={75}
-                  gapText={`GAP: ${teamPickupGap >= 0 ? '+' : ''}${teamPickupGap}`}
-                  gapType={teamPickupGap >= 0 ? 'positive' : 'negative'}
+                  pacingPercent={pacingPercent}
+                  gapText={`GAP: ${gapPickup >= 0 ? '+' : ''}${gapPickup}`}
+                  gapType={gapPickup >= 0 ? 'positive' : gapPickup >= -3 ? 'neutral' : 'negative'}
                   radius={85}
                   heightClass="h-[95px]"
                 />
@@ -227,18 +254,16 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
               <div className="mt-1 bg-black/60 border border-zinc-800/90 rounded-lg p-1 grid grid-cols-3 gap-0.5 text-center font-mono divide-x divide-zinc-800 text-[8px] relative z-10">
                 <div>
                   <span className="text-zinc-500 block">Kỳ vọng</span>
-                  <span className="text-[11px] font-black text-zinc-200 block tabular-nums">
-                    {Math.round(teamPickupTarget * 0.75)}
-                  </span>
+                  <span className="text-[11px] font-black text-zinc-200 block tabular-nums">{expectedPickup}</span>
                 </div>
                 <div>
                   <span className="text-zinc-500 block">Gap</span>
                   <span
                     className={`text-[11px] font-black block tabular-nums ${
-                      teamPickupGap >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                      gapPickup >= 0 ? 'text-emerald-400' : gapPickup >= -3 ? 'text-amber-400' : 'text-rose-400'
                     }`}
                   >
-                    {teamPickupGap >= 0 ? `+${teamPickupGap}` : teamPickupGap}
+                    {gapPickup >= 0 ? `+${gapPickup}` : gapPickup}
                   </span>
                 </div>
                 <div>

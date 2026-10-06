@@ -38340,8 +38340,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DailyActionSchedule.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18638,
-        "lineCount": 403,
+        "sizeBytes": 19834,
+        "lineCount": 428,
         "ext": ".tsx"
       }
     },
@@ -38483,7 +38483,7 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16184,
+        "sizeBytes": 16144,
         "lineCount": 357,
         "ext": ".tsx"
       }
@@ -38561,7 +38561,7 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 45061,
+        "sizeBytes": 45021,
         "lineCount": 1005,
         "ext": ".tsx"
       }
@@ -38652,8 +38652,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/utils/tv-monitor-pacing.test.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5550,
-        "lineCount": 166,
+        "sizeBytes": 7157,
+        "lineCount": 205,
         "ext": ".ts"
       }
     },
@@ -38665,8 +38665,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/utils/tv-monitor-pacing.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8722,
-        "lineCount": 264,
+        "sizeBytes": 10406,
+        "lineCount": 302,
         "ext": ".ts"
       }
     },

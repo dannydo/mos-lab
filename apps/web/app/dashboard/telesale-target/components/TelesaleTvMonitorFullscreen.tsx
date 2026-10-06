@@ -145,8 +145,8 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
     return 'emerald';
   };
 
-  const bookTier = getProgressTier(metrics.bookPercent);
-  const doneTier = getProgressTier(metrics.donePercent);
+  const bookTier = metrics.bookTier;
+  const doneTier = metrics.doneTier;
 
   // Demo fireworks testing state & milestone frenzy detection
   const [testFireworksBook, setTestFireworksBook] = useState(false);

@@ -162,4 +162,43 @@ describe('calculateTvMonitorMetrics', () => {
     expect(metrics.remainingDone).toBe(0);
     expect(metrics.actionableMessage).toContain('hoàn thành 100%');
   });
+
+  it('determines EMERALD bookTier and AMBER doneTier at 08:14 morning shift', () => {
+    // 08:14 is 14 minutes into shift (rTime = 14/480 = 0.029)
+    const pacing = calculateShiftPacing({ hour: 8, minute: 14 });
+    expect(pacing.shiftStatus).toBe('IN_SHIFT_MORNING');
+    expect(pacing.rTime).toBeLessThan(0.08);
+
+    const metrics = calculateTvMonitorMetrics(
+      {
+        bookTarget: 25,
+        bookActual: 1,
+        doneTarget: 18,
+        doneActual: 0,
+      },
+      pacing
+    );
+
+    // 1 Book at 08:14 is ahead of time pace (expected: 0.73 book) -> MUST BE EMERALD (Xanh)
+    expect(metrics.bookTier).toBe('emerald');
+    // 0 Done at 08:14 is during warmup (< 0.08 rTime) -> MUST BE AMBER (Khởi động, không phạt đỏ)
+    expect(metrics.doneTier).toBe('amber');
+  });
+
+  it('determines pacing tiers correctly during midday shift progression', () => {
+    // 10:00 is 120 minutes into shift (rTime = 0.25, expected = 25 * 0.25 = 6.25 -> 6)
+    const pacing = calculateShiftPacing({ hour: 10, minute: 0 });
+
+    // On pace (6 books >= expected 6) -> EMERALD
+    const onPace = calculateTvMonitorMetrics({ bookTarget: 25, bookActual: 6 }, pacing);
+    expect(onPace.bookTier).toBe('emerald');
+
+    // Slight delay (5 books, gap = -1) -> AMBER
+    const slightDelay = calculateTvMonitorMetrics({ bookTarget: 25, bookActual: 5 }, pacing);
+    expect(slightDelay.bookTier).toBe('amber');
+
+    // Severe delay (3 books, gap = -3) -> ROSE
+    const severeDelay = calculateTvMonitorMetrics({ bookTarget: 25, bookActual: 3 }, pacing);
+    expect(severeDelay.bookTier).toBe('rose');
+  });
 });
