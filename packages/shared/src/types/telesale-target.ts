@@ -11,6 +11,8 @@ export interface TelesaleStaffTarget {
   bookContributionPercent?: number;
   isTopBookToday?: boolean;
   comboLiveDoneActual?: number;
+  comboSoldActual?: number;
+  comboRevenueActual?: number;
   retailDoneActual?: number;
   comboLiveDoneToday?: number;
   retailDoneToday?: number;
@@ -95,6 +97,9 @@ export interface TelesaleTargetOverview {
     doneTarget: number;
     doneActual: number;
     comboLiveDoneActual?: number;
+    comboSoldActual?: number;
+    comboRevenueActual?: number;
+    singleToComboRate?: number;
     retailDoneActual?: number;
     incomingTarget?: number;
     incomingActual?: number;

@@ -11,6 +11,9 @@ const mockOverview: TelesaleTargetOverview = {
     doneTarget: 450,
     doneActual: 180,
     comboLiveDoneActual: 20,
+    comboSoldActual: 6,
+    comboRevenueActual: 15000000,
+    singleToComboRate: 3.3,
     bookTarget: 650,
     bookActual: 240,
     workDaysTotal: 26,
@@ -49,6 +52,7 @@ const mockOverview: TelesaleTargetOverview = {
       doneActual: 70,
       doneToday: 5,
       comboLiveDoneActual: 8,
+      comboSoldActual: 3,
       comboLiveDoneToday: 1,
       callTargetDaily: 40,
       callActualToday: 35,
@@ -68,6 +72,7 @@ const mockOverview: TelesaleTargetOverview = {
       doneActual: 38,
       doneToday: 2,
       comboLiveDoneActual: 5,
+      comboSoldActual: 2,
       comboLiveDoneToday: 0,
       callTargetDaily: 40,
       callActualToday: 30,
@@ -87,6 +92,7 @@ const mockOverview: TelesaleTargetOverview = {
       doneActual: 25,
       doneToday: 1,
       comboLiveDoneActual: 3,
+      comboSoldActual: 1,
       comboLiveDoneToday: 0,
       callTargetDaily: 40,
       callActualToday: 25,
@@ -152,16 +158,19 @@ describe('KpiOverviewCards - MOS-BUG-72 Individual KPI (Done)', () => {
     expect(screen.getByText(/20\.506\.920đ/)).toBeInTheDocument();
     expect(screen.getByText(/16\.293\.480đ/)).toBeInTheDocument();
 
-    // 8. Combo
-    expect(screen.getByText('8')).toBeInTheDocument();
-    expect(screen.getByText('5')).toBeInTheDocument();
-    expect(screen.getByText('3')).toBeInTheDocument();
+    // 8. Combo Bán vs Combo Done (separate badges)
+    expect(screen.getAllByText('Bán:').length).toBe(4); // 3 staff + 1 leaderboard footer
+    expect(screen.getAllByText('Done:').length).toBe(4); // 3 staff + 1 leaderboard footer
 
     // 9. Staff Call and Staff Tổng must NOT be present in card body
     expect(screen.queryByText(/Call:/i)).toBeNull();
     expect(screen.queryByText(/^Tổng:\s*\d+$/i)).not.toBeInTheDocument();
-    // 10. Combo must be present across cards (team month, TV monitor, and all 3 staff = 6)
-    expect(screen.getAllByText(/Combo:/i).length).toBe(6);
+
+    // 10. Refactored Combo Hub in Box 1
+    expect(screen.getByText('COMBO HIỆU SUẤT THÁNG')).toBeInTheDocument();
+    expect(screen.getByText('Combo Bán')).toBeInTheDocument();
+    expect(screen.getByText('Combo Done')).toBeInTheDocument();
+    expect(screen.getByText('Single ➔ Combo')).toBeInTheDocument();
   });
 
   it('MOS-BUG-95: renders Incoming Tháng card with 6 management metrics and excludes Book Tháng', () => {

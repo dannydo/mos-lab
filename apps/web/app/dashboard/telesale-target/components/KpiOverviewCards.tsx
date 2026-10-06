@@ -22,10 +22,16 @@ export const KpiTeamMonthCard: React.FC<KpiCardProps> = ({ overview, className =
   const monthNumStr = month.split('-')[1] || '10';
 
   const comboLiveMonthActual = teamMonth.comboLiveDoneActual || 0;
+  const comboSoldMonthActual = teamMonth.comboSoldActual || 0;
+  const comboRevenueMonthActual = teamMonth.comboRevenueActual || 0;
   // Retail Done (Single Done thuần túy không gồm Combo, e.g. 44 ở T10, 313 ở T9)
   const retailDoneActual = teamMonth.retailDoneActual ?? teamMonth.doneActual;
   // Total Done in month across all orders (e.g. 44 + 12 = 56 ở T10, 313 + 125 = 438 ở T9)
   const totalMonthDone = retailDoneActual + comboLiveMonthActual;
+
+  const singleToComboRate =
+    teamMonth.singleToComboRate ??
+    (retailDoneActual > 0 ? Number(((comboSoldMonthActual / retailDoneActual) * 100).toFixed(1)) : 0);
 
   const donePercent = Math.round((retailDoneActual / (teamMonth.doneTarget || 1)) * 100);
   const isDoneOver100 = donePercent > 100;
@@ -269,27 +275,71 @@ export const KpiTeamMonthCard: React.FC<KpiCardProps> = ({ overview, className =
           </div>
         </div>
 
-        {/* Combo Progress Bar */}
-        <div className="p-2 rounded-xl bg-purple-950/30 border border-purple-500/30 my-1.5">
-          <div className="flex items-center justify-between text-xs font-mono mb-1">
-            <span className="text-purple-300 font-bold flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-purple-400" /> Combo
+        {/* Refactored Combo Hub: Bán, Done, Doanh thu, % Single -> Combo */}
+        <div className="p-2.5 rounded-2xl bg-gradient-to-r from-purple-950/40 via-purple-900/20 to-zinc-950/60 border border-purple-500/35 my-2 shadow-inner">
+          {/* Header */}
+          <div className="flex items-center justify-between text-xs font-mono mb-2">
+            <span className="text-purple-300 font-bold flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
+              <span className="w-2 h-2 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.6)]" /> COMBO HIỆU
+              SUẤT THÁNG
             </span>
-            <span className="text-purple-200 font-black tabular-nums">{comboLiveMonthActual} Done</span>
+            <span className="text-[10px] text-purple-300 font-semibold bg-purple-950/80 px-2 py-0.5 rounded-md border border-purple-500/30">
+              Chuyển đổi {singleToComboRate}%
+            </span>
           </div>
-          <div className="w-full my-1">
-            <Progress
-              percent={Math.min(100, comboLiveMonthShare)}
-              size="small"
-              showInfo={false}
-              strokeColor={token.colorPrimary}
-              className="!m-0 leading-none"
-            />
+
+          {/* 4-Stat Ribbon Grid */}
+          <div className="bg-black/60 border border-zinc-800/90 rounded-xl p-2 grid grid-cols-4 gap-1 text-center font-mono divide-x divide-zinc-800/80">
+            {/* 1. Combo Bán */}
+            <div>
+              <span className="text-zinc-500 text-[10px] block">Combo Bán</span>
+              <span className="text-sm font-black text-purple-300 block tabular-nums">
+                {comboSoldMonthActual} <span className="text-[9px] font-normal text-purple-400/80">gói</span>
+              </span>
+            </div>
+
+            {/* 2. Combo Done */}
+            <div>
+              <span className="text-zinc-500 text-[10px] block">Combo Done</span>
+              <span className="text-sm font-black text-cyan-300 block tabular-nums">
+                {comboLiveMonthActual} <span className="text-[9px] font-normal text-cyan-400/80">Done</span>
+              </span>
+            </div>
+
+            {/* 3. Doanh thu Combo */}
+            <div>
+              <span className="text-zinc-500 text-[10px] block">Doanh Thu</span>
+              <span
+                className="text-sm font-black text-emerald-300 block tabular-nums"
+                title={`${comboRevenueMonthActual.toLocaleString('vi-VN')}đ`}
+              >
+                {comboRevenueMonthActual >= 1_000_000
+                  ? `${(comboRevenueMonthActual / 1_000_000).toFixed(1)}M`
+                  : `${comboRevenueMonthActual.toLocaleString('vi-VN')}đ`}
+              </span>
+            </div>
+
+            {/* 4. % từ Single -> Combo */}
+            <div>
+              <span className="text-zinc-500 text-[10px] block">Single ➔ Combo</span>
+              <span className="text-sm font-black text-amber-300 block tabular-nums">{singleToComboRate}%</span>
+            </div>
           </div>
-          <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 mt-1">
-            <span>Tỷ trọng</span>
-            <span className="text-purple-300 font-bold">
-              {comboLiveMonthShare}% (tổng Done: {totalMonthDone})
+
+          {/* Progress / Context Bar */}
+          <div className="mt-2 flex items-center justify-between text-[10px] font-mono text-zinc-400">
+            <span>
+              Tỷ trọng Done: <strong className="text-cyan-300 tabular-nums">{comboLiveMonthShare}%</strong>{' '}
+              <span className="text-zinc-500">
+                ({comboLiveMonthActual}/{totalMonthDone} tổng Done)
+              </span>
+            </span>
+            <span>
+              Tỷ lệ bán:{' '}
+              <strong className="text-purple-300 tabular-nums">
+                {retailDoneActual > 0 ? `${comboSoldMonthActual}/${retailDoneActual}` : '0'}
+              </strong>{' '}
+              <span className="text-zinc-500">khách lẻ</span>
             </span>
           </div>
         </div>
@@ -351,7 +401,8 @@ export const KpiStaffLeaderboardCard: React.FC<KpiCardProps & { isFullVertical?:
           {staffTargets.map((staff, idx) => {
             const percent = Math.round((staff.doneActual / (staff.doneTarget || 1)) * 100);
             const isOver100 = percent > 100;
-            const staffComboActual = staff.comboLiveDoneActual || 0;
+            const staffComboDoneActual = staff.comboLiveDoneActual || 0;
+            const staffComboSoldActual = staff.comboSoldActual || 0;
 
             const expectedProgressRate =
               overview.teamMonth?.expectedProgressRate ?? (workDaysTotal > 0 ? workDaysElapsed / workDaysTotal : 0);
@@ -487,15 +538,28 @@ export const KpiStaffLeaderboardCard: React.FC<KpiCardProps & { isFullVertical?:
                   </div>
                 </div>
 
-                {/* Footer: Revenue & Combo */}
+                {/* Footer: Revenue & Combo Bán vs Combo Done */}
                 <div className="mt-1.5 pt-1 border-t border-zinc-800/80 flex items-center justify-between text-[9px] font-mono">
-                  <span className="text-zinc-400 truncate">
+                  <span className="text-zinc-400 truncate mr-1">
                     Doanh thu:{' '}
                     <strong className="text-emerald-300 font-medium">{revenueVnd.toLocaleString('vi-VN')}đ</strong>
                   </span>
-                  <span className="text-purple-300 shrink-0">
-                    Combo: <strong>{staffComboActual}</strong>
-                  </span>
+                  <div className="flex items-center gap-1 shrink-0 font-mono">
+                    <span
+                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-purple-950/60 border border-purple-500/40 text-purple-300 font-bold leading-none"
+                      title="Combo Bán: Số gói combo đã chốt bán trong tháng"
+                    >
+                      <span className="text-[8px] text-purple-400 font-normal">Bán:</span>
+                      <strong className="tabular-nums">{staffComboSoldActual}</strong>
+                    </span>
+                    <span
+                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/40 text-cyan-300 font-bold leading-none"
+                      title="Combo Done: Số lượt khách đi làm bằng combo trong tháng"
+                    >
+                      <span className="text-[8px] text-cyan-400 font-normal">Done:</span>
+                      <strong className="tabular-nums">{staffComboDoneActual}</strong>
+                    </span>
+                  </div>
                 </div>
               </div>
             );
@@ -508,9 +572,17 @@ export const KpiStaffLeaderboardCard: React.FC<KpiCardProps & { isFullVertical?:
         <span>
           Tổng chỉ tiêu: <strong className="text-zinc-200">{teamMonth.doneTarget}</strong>
         </span>
-        <span>
-          Thực tế: <strong className="text-emerald-400">{teamMonth.doneActual}</strong>
-        </span>
+        <div className="flex items-center gap-2">
+          <span>
+            Thực tế: <strong className="text-emerald-400">{teamMonth.doneActual}</strong>
+          </span>
+          <span className="text-purple-300 text-[10px]">
+            Bán: <strong className="tabular-nums">{teamMonth.comboSoldActual || 0}</strong>
+          </span>
+          <span className="text-cyan-300 text-[10px]">
+            Done: <strong className="tabular-nums">{teamMonth.comboLiveDoneActual || 0}</strong>
+          </span>
+        </div>
       </div>
     </section>
   );

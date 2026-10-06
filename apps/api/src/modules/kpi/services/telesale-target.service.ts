@@ -768,6 +768,24 @@ export class TelesaleTargetService {
         AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)
     `;
 
+    const comboSoldSql = `
+      SELECT 
+        o.created_staff_id as bookerId,
+        COALESCE(SUM(osc.quantity), 0) as comboSoldQty,
+        COALESCE(SUM(osc.total_price), 0) as comboSoldRevenue
+      FROM \`order\` o
+      JOIN \`order_service_combo\` osc ON osc.order_id = o.id
+      LEFT JOIN report_order ro ON ro.order_id = o.id
+      WHERE o.created_staff_id IN (${candidateIdsStr})
+        AND (
+          (ro.actual_booking_date_start >= '${startDateTimeStr}' AND ro.actual_booking_date_start <= '${endDateTimeStr}')
+          OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${startDateTimeStr}' AND o.booking_date_start <= '${endDateTimeStr}')
+          OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start IS NULL AND o.date_created >= '${startDateTimeStr}' AND o.date_created <= '${endDateTimeStr}')
+        )
+        AND o.order_state = 'Completed'
+      GROUP BY o.created_staff_id
+    `;
+
     // 1. Fetch Month, Today metrics, and month orders in parallel (Single Source of Truth)
     const [
       _monthBookingRes,
@@ -777,6 +795,7 @@ export class TelesaleTargetService {
       monthRevenueRes,
       teamMonthIncomingActual,
       rawMonthOrders,
+      rawComboSoldRows,
     ] = await Promise.all([
       BkLeaderboardService.getBookingLeaderboard(fastify, {
         dateFrom: startDateStr,
@@ -814,13 +833,28 @@ export class TelesaleTargetService {
         targetStaffIds: combinedStaffIds,
       }),
       fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(monthOrdersSql).catch(() => []),
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboSoldSql).catch(() => []),
     ]);
+
+    const comboSoldMap = new Map<number, number>();
+    const comboRevenueMap = new Map<number, number>();
+    for (const r of rawComboSoldRows || []) {
+      const bid = Number(r.bookerId);
+      comboSoldMap.set(bid, Number(r.comboSoldQty || 0));
+      comboRevenueMap.set(bid, Math.round(Number(r.comboSoldRevenue || 0)));
+    }
+    const teamMonthComboSoldActual = Array.from(comboSoldMap.values()).reduce((sum, v) => sum + v, 0);
+    const teamMonthComboRevenueActual = Array.from(comboRevenueMap.values()).reduce((sum, v) => sum + v, 0);
 
     const monthOrders: SafeAny[] = rawMonthOrders || [];
     const teamMonthComboLiveDoneActual = monthOrders.filter((o) => Number(o.isComboLive) === 1).length;
     const rawTotalMonthDone = monthDoneRes.summary.totalDone;
     // KPI is STRICTLY Single Done (Done Khách Lẻ). Combo Live is kept completely separate!
     const teamMonthSingleDoneActual = Math.max(0, rawTotalMonthDone - teamMonthComboLiveDoneActual);
+    const teamMonthSingleToComboRate =
+      teamMonthSingleDoneActual > 0
+        ? Number(((teamMonthComboSoldActual / teamMonthSingleDoneActual) * 100).toFixed(1))
+        : 0;
 
     const incomingTarget = config.teamIncomingTarget ?? config.teamBookTarget;
 
@@ -1037,6 +1071,8 @@ export class TelesaleTargetService {
         (o) => Number(o.bookerId) === Number(st.legacyStaffId) && Number(o.isComboLive || 0) === 1
       );
       const staffComboLiveDoneActual = staffComboOrders.length;
+      const staffComboSoldActual = comboSoldMap.get(Number(st.legacyStaffId)) || 0;
+      const staffComboRevenueActual = comboRevenueMap.get(Number(st.legacyStaffId)) || 0;
       // Individual Done KPI is 100% Single Done (Done Khách Lẻ)
       const staffSingleDoneActual = Math.max(0, rawStaffDone - staffComboLiveDoneActual);
 
@@ -1108,6 +1144,8 @@ export class TelesaleTargetService {
         doneTarget: st.doneTarget,
         doneActual: staffSingleDoneActual,
         comboLiveDoneActual: staffComboLiveDoneActual,
+        comboSoldActual: staffComboSoldActual,
+        comboRevenueActual: staffComboRevenueActual,
         retailDoneActual: staffSingleDoneActual,
         doneToday: staffSingleDoneToday,
         bookToday: staffBookToday,
@@ -1477,6 +1515,9 @@ export class TelesaleTargetService {
         doneTarget: config.teamDoneTarget,
         doneActual: teamMonthSingleDoneActual,
         comboLiveDoneActual: teamMonthComboLiveDoneActual,
+        comboSoldActual: teamMonthComboSoldActual,
+        comboRevenueActual: teamMonthComboRevenueActual,
+        singleToComboRate: teamMonthSingleToComboRate,
         retailDoneActual: teamMonthSingleDoneActual,
         incomingTarget,
         incomingActual: teamMonthIncomingActual,

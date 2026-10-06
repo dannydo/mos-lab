@@ -31879,8 +31879,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 82703,
-        "lineCount": 2122,
+        "sizeBytes": 84917,
+        "lineCount": 2163,
         "ext": ".ts"
       }
     },
@@ -38340,8 +38340,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DailyActionSchedule.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19834,
-        "lineCount": 428,
+        "sizeBytes": 19754,
+        "lineCount": 424,
         "ext": ".tsx"
       }
     },
@@ -38366,8 +38366,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6252,
-        "lineCount": 190,
+        "sizeBytes": 6639,
+        "lineCount": 199,
         "ext": ".tsx"
       }
     },
@@ -38379,8 +38379,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25966,
-        "lineCount": 533,
+        "sizeBytes": 30144,
+        "lineCount": 607,
         "ext": ".tsx"
       }
     },
@@ -39991,8 +39991,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 92898,
-        "lineCount": 1393,
+        "sizeBytes": 97447,
+        "lineCount": 1453,
         "ext": ".ts"
       }
     },
@@ -40758,8 +40758,8 @@
       "filePath": "packages/shared/src/types/telesale-target.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 6546,
-        "lineCount": 259,
+        "sizeBytes": 6700,
+        "lineCount": 264,
         "ext": ".ts"
       }
     },

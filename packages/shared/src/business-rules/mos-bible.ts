@@ -186,6 +186,64 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'BK-005',
+    book: 'BOOKING',
+    title: 'Khách lẻ đo chỉ tiêu Done; Khách có Combo luôn là khách Combo',
+    summary:
+      'Khách lẻ là khách hoàn toàn không có gói combo active và là trọng tâm tính KPI Done; khách có gói combo active dù không dùng gói vẫn là khách combo.',
+    commandments: [
+      'Phân định Khách lẻ và Khách combo dựa trên trạng thái tài khoản của khách hàng tại thời điểm đặt lịch (order.date_created qua user_service_balance), tuyệt đối không suy đoán từ việc có bấm trừ lượt combo trên hóa đơn hay không.',
+      'Khách lẻ (Retail / Single Customer): Là khách hàng hoàn toàn không có gói combo nào đang active (chưa từng mua gói, hoặc gói combo trước đó đã dùng hết lượt hay hết hạn sử dụng).',
+      'Đơn hoàn tất (Completed) của Khách lẻ là nguồn duy nhất tính vào Chỉ tiêu KPI Done chính thức của Booker và Đội nhóm (ví dụ: mốc 450 Done toàn đội).',
+      'Khách lẻ mang lại dòng tiền mới, Booker được hưởng thưởng Check-in từ 12.000đ đến 35.000đ/khách (theo mức giảm giá) và cộng dồn vào các mốc thưởng bậc thang Done tháng (từ +300.000đ đến +2.700.000đ).',
+      'Khách Combo (Combo Live Customer): Là khách hàng đang có ít nhất 1 gói combo còn hiệu lực (còn số lượt normal_count + retain_count > 0 và date_expired còn hạn).',
+      'Quy tắc bất biến: Khách hàng đang có gói combo active, dù buổi hẹn đó làm dịch vụ lẻ khác, trả thêm tiền mặt, hay không dùng đến gói combo, thì khách đó VẪN LÀ KHÁCH COMBO.',
+      'Đơn của Khách Combo không tính vào chỉ tiêu KPI Done Khách Lẻ, được tracking tiến độ riêng biệt trên War Room/TV Monitor (Combo: +X Done), và Booker nhận thưởng chăm sóc cố định 1.000đ/lượt hoàn tất.',
+      'Tỷ lệ chuyển đổi Single ➔ Combo (%) đo lường hiệu quả phối hợp giữa Telesale (đưa khách lẻ đến tiệm) và Salon (tư vấn chốt bán combo mới cho khách lẻ).',
+    ],
+    rationale:
+      'Bảo đảm tính công bằng về độ khó và công sức lao động: Telesale thuyết phục khách lẻ mang dòng tiền mới về tiệm; khách có combo là khách chăm sóc định kỳ theo chu kỳ dặm/nối.',
+    examples: [
+      'Khách A có gói Combo 5 lần còn 2 lượt. Khách đến tiệm chỉ làm dịch vụ uốn mi 300.000đ tiền mặt (không dùng lượt nối mi trong combo). Hệ thống vẫn ghi nhận đây là Khách Combo; Booker nhận thưởng 1.000đ, không tính vào chỉ tiêu 450 Done khách lẻ.',
+      'Khách B chưa từng mua combo hoặc gói combo đã hết hạn tháng trước. Khách đến nối mi mới giảm 20%. Hệ thống ghi nhận Khách Lẻ Done; Booker nhận 12.000đ thưởng check-in và tính +1 vào chỉ tiêu Done tháng của Booker.',
+    ],
+    tags: [
+      'Booker',
+      'Telesales',
+      'Khách lẻ',
+      'Khách Combo',
+      'Combo Live',
+      'KPI Done',
+      '1.000đ',
+      'Checkin Bonus',
+      'Single to Combo',
+    ],
+    routeScopes: [
+      '/dashboard/bk',
+      '/dashboard/telesale-target',
+      '/dashboard/kpi',
+      '/dashboard/customers',
+      '/dashboard/appointments',
+    ],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-10-06',
+    sources: [
+      {
+        label: 'Telesale Target Service',
+        reference: 'apps/api/src/modules/kpi/services/telesale-target.service.ts',
+      },
+      {
+        label: 'BK Salary Service',
+        reference: 'apps/api/src/modules/kpi/services/bk-salary.service.ts',
+      },
+      {
+        label: 'Nhận diện Combo Live tại thời điểm đặt lịch',
+        reference: 'apps/api/src/modules/customers/services/combo-recognition.service.ts · buildComboLiveAtBookingSql',
+      },
+    ],
+  },
+  {
     id: 'OPS-001',
     book: 'SERVICE',
     title: 'Vòng đời đơn có chủ nhân rõ ràng',
@@ -571,16 +629,18 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     book: 'CUSTOMER',
     title: 'Combo bán mới và Combo Live không phải một phép màu',
     summary:
-      'Combo bán mới cần giao dịch Completed; Combo Live là khách hàng vào thời điểm đặt lịch vẫn còn gói combo có số lần và hạn sử dụng.',
+      'Combo bán mới cần giao dịch Completed; Khách lẻ là khách không có gói combo active; Khách hàng có combo active không dùng gói vẫn là khách combo.',
     commandments: [
       'Đơn bán Combo chuẩn phải Completed, có chi tiết Combo hợp lệ và cập nhật user_service_balance.',
       'Loại trừ package key chứa single, refill hoặc balance khỏi nhận diện Combo bán mới.',
       'Combo Live định nghĩa chuẩn xác: Vào thời điểm đặt lịch (order.date_created), khách hàng vẫn còn số dư combo (user_service_balance đã tồn tại trước đó), còn số lần sử dụng (normal_count + retain_count > 0) và còn hạn sử dụng (date_expired >= ngày đặt lịch hoặc không thời hạn).',
-      'Đối với KPI Telesale/Booking: Đơn hoàn tất (Completed) của khách Combo Live được tracking tiến độ riêng; chỉ đơn của khách lẻ (Not Combo Live) mới tính vào chỉ tiêu KPI Done chính thức.',
+      'Khách hàng combo không dùng gói vẫn là khách combo: Việc khách làm dịch vụ ngoài gói hoặc trả tiền mặt không biến khách đó thành khách lẻ; trạng thái combo gắn liền với tài khoản khách hàng tại thời điểm đặt lịch.',
+      'Khách lẻ định nghĩa chuẩn xác: Là khách hàng hoàn toàn không có gói combo nào đang active tại thời điểm đặt lịch.',
+      'Đối với KPI Telesale/Booking: Đơn hoàn tất (Completed) của khách Combo Live được tracking tiến độ riêng (Combo: +X Done); chỉ đơn của khách lẻ (Not Combo Live) mới tính vào chỉ tiêu KPI Done chính thức (450 Done).',
       'Combo Live Completed cho Booker 1.000đ cố định thay tier giảm giá và UI phải hiện “Combo Live”.',
     ],
     rationale: 'Bán một gói mới và phục vụ trên gói cũ tạo ra hai loại doanh số và khoản thưởng khác nhau.',
-    tags: ['Combo', 'Combo Live', 'Completed', 'user_service_balance', 'Telesale KPI'],
+    tags: ['Combo', 'Combo Live', 'Khách lẻ', 'Completed', 'user_service_balance', 'Telesale KPI'],
     routeScopes: [
       '/dashboard/customers',
       '/dashboard/loca',
@@ -590,8 +650,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       '/dashboard/telesale-target',
     ],
     status: 'ACTIVE',
-    version: '1.1.0',
-    effectiveFrom: '2026-09-29',
+    version: '1.2.0',
+    effectiveFrom: '2026-10-06',
     sources: [
       { label: 'Nhận diện Combo tập trung', reference: 'AGENTS.md · Rule #21' },
       {
@@ -697,7 +757,16 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Khách đặt lịch làm lần đầu tiên: trạng thái hiển thị là lead_book, nhắc CC đón tiếp và tư vấn dịch vụ lần đầu chu đáo.',
       'Khách đã mua Combo 5 lượt và đã dùng 4 lượt: trạng thái hiển thị là combo_last, nhắc CC chuẩn bị kịch bản tư vấn mua tiếp combo mới.',
     ],
-    tags: ['user_service_type', 'lead_book', 'khách hàng', 'combo', 'combo_last', 'lapser', 'long_time', 'phân loại khách'],
+    tags: [
+      'user_service_type',
+      'lead_book',
+      'khách hàng',
+      'combo',
+      'combo_last',
+      'lapser',
+      'long_time',
+      'phân loại khách',
+    ],
     routeScopes: [
       '/dashboard/customers',
       '/dashboard/appointments',
