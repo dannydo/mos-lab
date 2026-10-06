@@ -31879,8 +31879,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 81672,
-        "lineCount": 2100,
+        "sizeBytes": 82703,
+        "lineCount": 2122,
         "ext": ".ts"
       }
     },
@@ -38340,8 +38340,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DailyActionSchedule.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16322,
-        "lineCount": 355,
+        "sizeBytes": 18638,
+        "lineCount": 403,
         "ext": ".tsx"
       }
     },
@@ -38561,7 +38561,7 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 45041,
+        "sizeBytes": 45061,
         "lineCount": 1005,
         "ext": ".tsx"
       }
@@ -38587,8 +38587,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8635,
-        "lineCount": 201,
+        "sizeBytes": 8593,
+        "lineCount": 199,
         "ext": ".tsx"
       }
     },
@@ -40758,8 +40758,8 @@
       "filePath": "packages/shared/src/types/telesale-target.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 6523,
-        "lineCount": 258,
+        "sizeBytes": 6546,
+        "lineCount": 259,
         "ext": ".ts"
       }
     },

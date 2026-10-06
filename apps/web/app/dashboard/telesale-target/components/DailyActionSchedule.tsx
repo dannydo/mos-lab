@@ -119,7 +119,9 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
           </span>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[10px] text-zinc-400 font-mono">{workingStaffCount} Chuyên Viên Trực Ca</span>
+            <span className="text-[10px] text-zinc-400 font-mono">
+              {workingStaffCount}/{staffActions.length} Chuyên Viên Trực Ca
+            </span>
           </div>
         </div>
 
@@ -155,13 +157,13 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
                   pacingPercent={75}
                   gapText={`GAP: ${teamCallGap >= 0 ? '+' : ''}${teamCallGap}`}
                   gapType={teamCallGap >= 0 ? 'positive' : 'negative'}
-                  radius={90}
-                  heightClass="h-[105px]"
+                  radius={85}
+                  heightClass="h-[95px]"
                 />
               </div>
 
               {/* Mini Ribbon 3 Cột */}
-              <div className="mt-1.5 bg-black/60 border border-zinc-800/90 rounded-lg p-1 grid grid-cols-3 gap-0.5 text-center font-mono divide-x divide-zinc-800 text-[8px] relative z-10">
+              <div className="mt-1 bg-black/60 border border-zinc-800/90 rounded-lg p-1 grid grid-cols-3 gap-0.5 text-center font-mono divide-x divide-zinc-800 text-[8px] relative z-10">
                 <div>
                   <span className="text-zinc-500 block">Kỳ vọng</span>
                   <span className="text-[11px] font-black text-zinc-200 block tabular-nums">
@@ -216,13 +218,13 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
                   pacingPercent={75}
                   gapText={`GAP: ${teamPickupGap >= 0 ? '+' : ''}${teamPickupGap}`}
                   gapType={teamPickupGap >= 0 ? 'positive' : 'negative'}
-                  radius={90}
-                  heightClass="h-[105px]"
+                  radius={85}
+                  heightClass="h-[95px]"
                 />
               </div>
 
               {/* Mini Ribbon 3 Cột */}
-              <div className="mt-1.5 bg-black/60 border border-zinc-800/90 rounded-lg p-1 grid grid-cols-3 gap-0.5 text-center font-mono divide-x divide-zinc-800 text-[8px] relative z-10">
+              <div className="mt-1 bg-black/60 border border-zinc-800/90 rounded-lg p-1 grid grid-cols-3 gap-0.5 text-center font-mono divide-x divide-zinc-800 text-[8px] relative z-10">
                 <div>
                   <span className="text-zinc-500 block">Kỳ vọng</span>
                   <span className="text-[11px] font-black text-zinc-200 block tabular-nums">
@@ -249,8 +251,8 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
         </div>
 
         {/* 3. Bottom: Clean Metric Matrix Table (Zero white underlines) */}
-        <div className="bg-black/50 border border-zinc-800/90 rounded-2xl p-2 font-mono text-[10px]">
-          <div className="grid grid-cols-12 text-zinc-400 font-semibold pb-1 mb-1 text-[9px]">
+        <div className="bg-black/50 border border-zinc-800/90 rounded-2xl p-1.5 font-mono text-[10px]">
+          <div className="grid grid-cols-12 text-zinc-400 font-semibold pb-1 mb-0.5 text-[9px]">
             <span className="col-span-3">Chuyên Viên</span>
             <span className="col-span-2 text-center">Ca Trực</span>
             <span className="col-span-3 text-center">Tiến độ Gọi</span>
@@ -258,86 +260,128 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
             <span className="col-span-2 text-right">Trạng Thái</span>
           </div>
 
-          <div className="space-y-1">
-            {staffActions.slice(0, 4).map((s, idx) => {
-              const isMorning = idx < 2;
-              const isAchieved = s.callPercent >= 80 && s.pickupPercent >= 80;
-              const isApproaching = !isAchieved && (s.callPercent >= 60 || s.pickupPercent >= 60);
+          <div className="space-y-0.5 max-h-[175px] overflow-y-auto scrollbar-thin pr-0.5">
+            {[...staffActions]
+              .sort((a, b) => {
+                if (a.isWorkingToday && !b.isWorkingToday) return -1;
+                if (!a.isWorkingToday && b.isWorkingToday) return 1;
+                return 0;
+              })
+              .map((s, idx) => {
+                const isOff = !s.isWorkingToday;
+                const isAchieved = !isOff && s.callPercent >= 80 && s.pickupPercent >= 80;
+                const isApproaching = !isOff && !isAchieved && (s.callPercent >= 60 || s.pickupPercent >= 60);
 
-              const statusBadge = isAchieved ? (
-                <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/80 px-1.5 py-0.2 rounded border border-emerald-500/40">
-                  🌟 Đạt
-                </span>
-              ) : isApproaching ? (
-                <span className="text-[9px] font-bold text-amber-400 bg-amber-950/80 px-1.5 py-0.2 rounded border border-amber-500/40">
-                  ⚡ Gần đạt
-                </span>
-              ) : (
-                <span className="text-[9px] font-bold text-rose-400 bg-rose-950/80 px-1.5 py-0.2 rounded border border-rose-500/40">
-                  ⚠️ Chậm
-                </span>
-              );
-
-              return (
-                <div
-                  key={s.legacyStaffId}
-                  className="grid grid-cols-12 items-center text-[10px] hover:bg-zinc-800/40 p-1 rounded-lg transition-colors"
-                >
-                  <span className="col-span-3 font-bold text-zinc-100 flex items-center gap-1 truncate">
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        isAchieved ? 'bg-emerald-400' : isApproaching ? 'bg-amber-400' : 'bg-rose-400'
-                      }`}
-                    />
-                    {s.name}
+                const statusBadge = isOff ? (
+                  <span className="text-[9px] font-bold text-zinc-400 bg-zinc-900/90 px-1.5 py-0.5 rounded border border-zinc-700/50">
+                    🏖️ Nghỉ
                   </span>
-
-                  <span className="col-span-2 text-center">
-                    {isMorning ? (
-                      <span className="text-[8px] bg-amber-500/15 text-amber-300 px-1.5 py-0.2 rounded border border-amber-500/30">
-                        ☀️ Sáng
-                      </span>
-                    ) : (
-                      <span className="text-[8px] bg-blue-500/15 text-blue-300 px-1.5 py-0.2 rounded border border-blue-500/30">
-                        🌙 Chiều
-                      </span>
-                    )}
+                ) : isAchieved ? (
+                  <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-500/40">
+                    🌟 Đạt
                   </span>
+                ) : isApproaching ? (
+                  <span className="text-[9px] font-bold text-amber-400 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-500/40">
+                    ⚡ Gần đạt
+                  </span>
+                ) : (
+                  <span className="text-[9px] font-bold text-rose-400 bg-rose-950/80 px-1.5 py-0.5 rounded border border-rose-500/40">
+                    ⚠️ Chậm
+                  </span>
+                );
 
-                  <div className="col-span-3 px-1">
-                    <div className="flex justify-between text-[8px] text-zinc-400 mb-0.5">
-                      <span className="text-blue-300 font-bold tabular-nums">
-                        {s.callActual}/{s.callTarget}
-                      </span>
+                const shiftBadge = isOff ? (
+                  <span className="text-[8px] bg-zinc-800/80 text-zinc-400 px-1.5 py-0.5 rounded border border-zinc-700/50">
+                    🏖️ Nghỉ ca
+                  </span>
+                ) : s.shiftLabel ? (
+                  <span
+                    className={`text-[8px] px-1.5 py-0.5 rounded border ${
+                      s.shiftLabel.includes('Sáng')
+                        ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                        : s.shiftLabel.includes('Chiều')
+                          ? 'bg-blue-500/15 text-blue-300 border-blue-500/30'
+                          : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                    }`}
+                  >
+                    {s.shiftLabel}
+                  </span>
+                ) : (
+                  <span className="text-[8px] bg-blue-500/15 text-blue-300 px-1.5 py-0.5 rounded border border-blue-500/30">
+                    {idx < 2 ? '☀️ Sáng' : '🌙 Chiều'}
+                  </span>
+                );
+
+                return (
+                  <div
+                    key={s.legacyStaffId}
+                    className={`grid grid-cols-12 items-center text-[10px] py-0.5 px-1 rounded-lg transition-colors ${
+                      isOff ? 'opacity-60 hover:opacity-100 hover:bg-zinc-800/30' : 'hover:bg-zinc-800/40'
+                    }`}
+                  >
+                    <span className="col-span-3 font-bold text-zinc-100 flex items-center gap-1 truncate">
                       <span
-                        className={`font-bold ${
-                          s.callPercent >= 80
-                            ? 'text-emerald-400'
-                            : s.callPercent >= 60
-                              ? 'text-amber-400'
-                              : 'text-rose-400'
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          isOff
+                            ? 'bg-zinc-500'
+                            : isAchieved
+                              ? 'bg-emerald-400'
+                              : isApproaching
+                                ? 'bg-amber-400'
+                                : 'bg-rose-400'
                         }`}
-                      >
-                        {s.callPercent}%
-                      </span>
+                      />
+                      {s.name}
+                    </span>
+
+                    <span className="col-span-2 text-center">{shiftBadge}</span>
+
+                    <div className="col-span-3 px-1">
+                      {isOff ? (
+                        <div className="text-[9px] text-zinc-500 font-mono italic text-center">Nghỉ ca</div>
+                      ) : (
+                        <>
+                          <div className="flex justify-between text-[8px] text-zinc-400 mb-0.5">
+                            <span className="text-blue-300 font-bold tabular-nums">
+                              {s.callActual}/{s.callTarget}
+                            </span>
+                            <span
+                              className={`font-bold tabular-nums ${
+                                s.callPercent >= 80
+                                  ? 'text-emerald-400'
+                                  : s.callPercent >= 60
+                                    ? 'text-amber-400'
+                                    : 'text-rose-400'
+                              }`}
+                            >
+                              {s.callPercent}%
+                            </span>
+                          </div>
+                          <Progress
+                            percent={Math.min(100, s.callPercent)}
+                            size="small"
+                            showInfo={false}
+                            className="m-0 leading-none"
+                          />
+                        </>
+                      )}
                     </div>
-                    <Progress
-                      percent={Math.min(100, s.callPercent)}
-                      size="small"
-                      showInfo={false}
-                      className="m-0 leading-none"
-                    />
-                  </div>
 
-                  <div className="col-span-2 text-center">
-                    <span className="font-bold text-emerald-300 tabular-nums">{s.pickupActual}</span>
-                    <span className="text-zinc-500 text-[9px]">/{s.pickupTarget}</span>
-                  </div>
+                    <div className="col-span-2 text-center">
+                      {isOff ? (
+                        <span className="text-zinc-600 text-[10px] font-mono">-</span>
+                      ) : (
+                        <>
+                          <span className="font-bold text-emerald-300 tabular-nums">{s.pickupActual}</span>
+                          <span className="text-zinc-500 text-[9px]">/{s.pickupTarget}</span>
+                        </>
+                      )}
+                    </div>
 
-                  <span className="col-span-2 text-right">{statusBadge}</span>
-                </div>
-              );
-            })}
+                    <span className="col-span-2 text-right">{statusBadge}</span>
+                  </div>
+                );
+              })}
           </div>
         </div>
       </div>

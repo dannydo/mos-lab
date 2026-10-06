@@ -66,6 +66,7 @@ export interface TelesaleStaffDailyAction {
   overallPercent: number;
   status: TelesaleDailyActionStatus;
   statusLabel: string;
+  shiftLabel?: string;
 }
 
 export interface TelesaleDailyActionOverview {

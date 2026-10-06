@@ -843,13 +843,14 @@ export class TelesaleTargetService {
 
     // 2. Query today's working shift for target staff to evaluate isWorkingToday (MOS-BUG-77)
     const workingShiftMap = new Map<number, boolean>();
+    const shiftDetailMap = new Map<number, { isWorking: boolean; shiftLabel: string }>();
     let shiftRows: SafeAny[] = [];
     try {
       const shiftStaffIds = targetStaffIds;
       if (shiftStaffIds.length > 0) {
         shiftRows = await fastify.prisma.legacy
           .$queryRawUnsafe<SafeAny[]>(
-            `SELECT user_id, working_day_count FROM staff_working_shift WHERE date = ? AND user_id IN (${shiftStaffIds.join(',')})`,
+            `SELECT user_id, working_day_count, TIME(start_time) as startTime, TIME(end_time) as endTime FROM staff_working_shift WHERE date = ? AND user_id IN (${shiftStaffIds.join(',')})`,
             todayStr
           )
           .catch(() => []);
@@ -857,7 +858,24 @@ export class TelesaleTargetService {
         for (const r of shiftRows) {
           const uid = Number(r.user_id);
           const dayCount = Number(r.working_day_count ?? 1);
-          workingShiftMap.set(uid, dayCount > 0);
+          const isWorking = dayCount > 0;
+          workingShiftMap.set(uid, isWorking);
+
+          let shiftLabel = '☀️ Trực ca';
+          const startTime = r.startTime ? String(r.startTime) : '';
+          const endTime = r.endTime ? String(r.endTime) : '';
+          if (startTime && endTime) {
+            const startHour = parseInt(startTime.split(':')[0], 10);
+            const endHour = parseInt(endTime.split(':')[0], 10);
+            if (startHour < 12 && endHour <= 13) {
+              shiftLabel = '☀️ Sáng';
+            } else if (startHour >= 12) {
+              shiftLabel = '🌙 Chiều';
+            } else {
+              shiftLabel = '☀️ Trực ca';
+            }
+          }
+          shiftDetailMap.set(uid, { isWorking, shiftLabel });
         }
       }
     } catch (err) {
@@ -1361,20 +1379,23 @@ export class TelesaleTargetService {
           legacyStaffId: st.legacyStaffId,
           name: resolvedName,
           isWorkingToday: false,
-          callTarget: callTargetPerStaff,
+          callTarget: 0,
           callActual,
           callPercent: 0,
           callGap: 0,
-          pickupTarget: pickupTargetPerStaff,
+          pickupTarget: 0,
           pickupActual,
           pickupPercent: 0,
           pickupGap: 0,
           overallPercent: 0,
           status: 'OFF' as TelesaleDailyActionStatus,
           statusLabel: 'Nghỉ',
+          shiftLabel: '🏖️ Nghỉ ca',
         };
       }
 
+      const shiftInfo = shiftDetailMap.get(st.legacyStaffId);
+      const shiftLabel = shiftInfo?.shiftLabel || '☀️ Trực ca';
       const callTarget = callTargetPerStaff;
       const pickupTarget = pickupTargetPerStaff;
       const callPercent = callTarget > 0 ? Number(((callActual / callTarget) * 100).toFixed(1)) : 0;
@@ -1414,6 +1435,7 @@ export class TelesaleTargetService {
         overallPercent,
         status,
         statusLabel,
+        shiftLabel,
       };
     });
 
