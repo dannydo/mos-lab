@@ -41,3 +41,4 @@
 {"type":"SLOW_API","source":"fastify","timestamp":"2026-10-05T06:34:59.964Z","durationMs":6226,"method":"GET","url":"/api/kpi/telesale-target?month=2026-10","statusCode":200}
 {"type":"SLOW_API","source":"fastify","timestamp":"2026-10-05T06:35:01.469Z","durationMs":1422,"method":"POST","url":"/api/telemetry/frontend-issues","statusCode":200}
 {"type":"SLOW_API","source":"fastify","timestamp":"2026-10-05T06:35:31.780Z","durationMs":1294,"method":"GET","url":"/api/kpi/telesale-target?month=2026-10","statusCode":200}
+{"type":"SLOW_API","source":"fastify","timestamp":"2026-10-06T04:47:20.331Z","durationMs":1022,"method":"GET","url":"/api/kpi/telesale-target?month=2026-10","statusCode":200}

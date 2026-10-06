@@ -137,6 +137,13 @@ export class ComboRecognitionService {
    * rather than from an individual legacy `order_service.user_service_type`
    * value that may have been affected by an old, expired balance.
    */
+  private static comboLiveCache = new Map<number, boolean>();
+  private static readonly MAX_CACHE_SIZE = 20000;
+
+  public static clearComboLiveCache(): void {
+    this.comboLiveCache.clear();
+  }
+
   public static async getBookingComboLiveStatesByOrderIds(
     fastify: FastifyInstance,
     orderIds: number[]
@@ -144,21 +151,44 @@ export class ComboRecognitionService {
     const validOrderIds = [...new Set(orderIds.map(Number).filter((id) => Number.isInteger(id) && id > 0))];
     if (validOrderIds.length === 0) return new Map();
 
-    const comboLiveAtBookingSql = buildComboLiveAtBookingSql('o');
-    const rows = await fastify.prisma.legacy.$queryRawUnsafe<BookingComboLiveRow[]>(`
-      SELECT
-        o.id AS orderId,
-        CASE WHEN ${comboLiveAtBookingSql} THEN 1 ELSE 0 END AS hasLiveComboAtBooking
-      FROM \`order\` o
-      WHERE o.id IN (${validOrderIds.join(',')})
-    `);
+    const result = new Map<number, boolean>();
+    const missingIds: number[] = [];
 
-    return new Map(
-      rows.map((row) => [
-        Number(row.orderId),
-        row.hasLiveComboAtBooking === true || Number(row.hasLiveComboAtBooking || 0) === 1,
-      ])
-    );
+    for (const id of validOrderIds) {
+      if (this.comboLiveCache.has(id)) {
+        result.set(id, this.comboLiveCache.get(id)!);
+      } else {
+        missingIds.push(id);
+      }
+    }
+
+    if (missingIds.length > 0) {
+      const comboLiveAtBookingSql = buildComboLiveAtBookingSql('o');
+      for (let i = 0; i < missingIds.length; i += 500) {
+        const chunk = missingIds.slice(i, i + 500);
+        const rows = await fastify.prisma.legacy.$queryRawUnsafe<BookingComboLiveRow[]>(`
+          SELECT
+            o.id AS orderId,
+            CASE WHEN ${comboLiveAtBookingSql} THEN 1 ELSE 0 END AS hasLiveComboAtBooking
+          FROM \`order\` o
+          WHERE o.id IN (${chunk.join(',')})
+        `);
+
+        for (const row of rows || []) {
+          const isLive = row.hasLiveComboAtBooking === true || Number(row.hasLiveComboAtBooking || 0) === 1;
+          const oid = Number(row.orderId);
+          result.set(oid, isLive);
+
+          if (this.comboLiveCache.size >= this.MAX_CACHE_SIZE) {
+            const firstKey = this.comboLiveCache.keys().next().value;
+            if (firstKey !== undefined) this.comboLiveCache.delete(firstKey);
+          }
+          this.comboLiveCache.set(oid, isLive);
+        }
+      }
+    }
+
+    return result;
   }
 
   /**

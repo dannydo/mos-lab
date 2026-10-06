@@ -23,7 +23,7 @@ import {
   TELESALES_EXECUTIVE_STANDARDS,
 } from '@mos-lab/shared';
 import { BkLeaderboardService } from './bk-leaderboard.service.js';
-import { buildComboLiveAtBookingSql } from '../../customers/services/combo-recognition.service.js';
+import { ComboRecognitionService } from '../../customers/services/combo-recognition.service.js';
 
 export const DEFAULT_OCTOBER_CONFIG: TelesaleTargetConfigDto = {
   month: '2026-10',
@@ -756,8 +756,8 @@ export class TelesaleTargetService {
             LIMIT 1
           ),
           999
-        ) as daysSinceLastVisit,
-        CASE WHEN ${buildComboLiveAtBookingSql('o')} THEN 1 ELSE 0 END as isComboLive
+        ) as daysSinceLastVisit
+        /* origin: buildComboLiveAtBookingSql */
       FROM \`order\` o
       LEFT JOIN report_order ro ON ro.order_id = o.id
       WHERE (
@@ -847,6 +847,22 @@ export class TelesaleTargetService {
     const teamMonthComboRevenueActual = Array.from(comboRevenueMap.values()).reduce((sum, v) => sum + v, 0);
 
     const monthOrders: SafeAny[] = rawMonthOrders || [];
+    // Decoupled batch resolution for isComboLive with in-memory LRU cache
+    const monthOrderIdsToResolve = monthOrders
+      .filter((o) => o.isComboLive === undefined)
+      .map((o) => Number(o.id))
+      .filter((id) => Number.isInteger(id) && id > 0);
+    if (monthOrderIdsToResolve.length > 0) {
+      const monthComboLiveMap = await ComboRecognitionService.getBookingComboLiveStatesByOrderIds(
+        fastify,
+        monthOrderIdsToResolve
+      );
+      for (const o of monthOrders) {
+        if (o.isComboLive === undefined) {
+          o.isComboLive = monthComboLiveMap.get(Number(o.id)) ? 1 : 0;
+        }
+      }
+    }
     const teamMonthComboLiveDoneActual = monthOrders.filter((o) => Number(o.isComboLive) === 1).length;
     const rawTotalMonthDone = monthDoneRes.summary.totalDone;
     // KPI is STRICTLY Single Done (Done Khách Lẻ). Combo Live is kept completely separate!
@@ -1013,8 +1029,8 @@ export class TelesaleTargetService {
           o.id,
           o.created_staff_id as bookerId,
           o.order_state as orderState,
-          DATE_FORMAT(o.date_created, '%Y-%m-%dT%H:%i:%s+07:00') as dateCreated,
-          CASE WHEN ${buildComboLiveAtBookingSql('o')} THEN 1 ELSE 0 END as isComboLive
+          DATE_FORMAT(o.date_created, '%Y-%m-%dT%H:%i:%s+07:00') as dateCreated
+          /* origin: buildComboLiveAtBookingSql */
         FROM \`order\` o
         WHERE o.date_created >= '${todayStartStr}' 
           AND o.date_created <= '${todayEndStr}'
@@ -1034,8 +1050,8 @@ export class TelesaleTargetService {
           DATE_FORMAT(ro.actual_booking_date_start, '%Y-%m-%dT%H:%i:%s+07:00') as actualBookingDateStart,
           DATE_FORMAT(ro.actual_booking_date_end, '%Y-%m-%dT%H:%i:%s+07:00') as actualBookingDateEnd,
           DATE_FORMAT(o.date_updated, '%Y-%m-%dT%H:%i:%s+07:00') as dateUpdated,
-          DATE_FORMAT(COALESCE(ro.actual_booking_date_end, o.date_updated, ro.actual_booking_date_start, o.date_created), '%Y-%m-%dT%H:%i:%s+07:00') as doneDate,
-          CASE WHEN ${buildComboLiveAtBookingSql('o')} THEN 1 ELSE 0 END as isComboLive
+          DATE_FORMAT(COALESCE(ro.actual_booking_date_end, o.date_updated, ro.actual_booking_date_start, o.date_created), '%Y-%m-%dT%H:%i:%s+07:00') as doneDate
+          /* origin: buildComboLiveAtBookingSql */
         FROM \`order\` o
         LEFT JOIN report_order ro ON ro.order_id = o.id
         WHERE o.created_staff_id IN (${candidateIdsStr})
@@ -1048,6 +1064,29 @@ export class TelesaleTargetService {
         )
         .catch(() => []),
     ]);
+
+    // Batch resolve isComboLive for today's orders with in-memory LRU caching
+    const todayOrderIdsToResolve = [
+      ...todayBookOrders.filter((o) => o.isComboLive === undefined).map((o) => Number(o.id)),
+      ...todayDoneOrders.filter((o) => o.isComboLive === undefined).map((o) => Number(o.id)),
+    ].filter((id) => Number.isInteger(id) && id > 0);
+
+    if (todayOrderIdsToResolve.length > 0) {
+      const todayComboLiveMap = await ComboRecognitionService.getBookingComboLiveStatesByOrderIds(
+        fastify,
+        todayOrderIdsToResolve
+      );
+      for (const o of todayBookOrders) {
+        if (o.isComboLive === undefined) {
+          o.isComboLive = todayComboLiveMap.get(Number(o.id)) ? 1 : 0;
+        }
+      }
+      for (const o of todayDoneOrders) {
+        if (o.isComboLive === undefined) {
+          o.isComboLive = todayComboLiveMap.get(Number(o.id)) ? 1 : 0;
+        }
+      }
+    }
 
     const teamDailyComboLiveDoneActual = todayDoneOrders.filter((o) => Number(o.isComboLive || 0) === 1).length;
     const teamDailySingleDoneActual = todayDoneOrders.filter((o) => Number(o.isComboLive || 0) === 0).length;

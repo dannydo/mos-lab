@@ -9432,7 +9432,7 @@
         "path": "/api/kpi/bk/tip/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 529
+        "line": 519
       }
     },
     {
@@ -9446,7 +9446,7 @@
         "path": "/api/kpi/bk/tip/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 642
+        "line": 632
       }
     },
     {
@@ -9460,7 +9460,7 @@
         "path": "/api/kpi/bk/revenue/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 746
+        "line": 736
       }
     },
     {
@@ -9474,7 +9474,7 @@
         "path": "/api/kpi/bk/revenue/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 757
+        "line": 747
       }
     },
     {
@@ -9488,7 +9488,7 @@
         "path": "/api/kpi/bk/paystub",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 853
+        "line": 843
       }
     },
     {
@@ -9502,7 +9502,7 @@
         "path": "/api/kpi/bk/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 886
+        "line": 876
       }
     },
     {
@@ -9516,7 +9516,7 @@
         "path": "/api/kpi/bk/attendance-exception",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 920
+        "line": 910
       }
     },
     {
@@ -9530,7 +9530,7 @@
         "path": "/api/kpi/bk/attendance-exception/audit-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 975
+        "line": 965
       }
     },
     {
@@ -9544,7 +9544,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 993
+        "line": 983
       }
     },
     {
@@ -9558,7 +9558,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1038
+        "line": 1028
       }
     },
     {
@@ -9572,7 +9572,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1090
+        "line": 1080
       }
     },
     {
@@ -9586,7 +9586,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1102
+        "line": 1092
       }
     },
     {
@@ -9600,7 +9600,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1123
+        "line": 1113
       }
     },
     {
@@ -9614,7 +9614,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1141
+        "line": 1131
       }
     },
     {
@@ -9628,7 +9628,7 @@
         "path": "/api/kpi/bk/games/:id/finalize",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1162
+        "line": 1152
       }
     },
     {
@@ -9642,7 +9642,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1183
+        "line": 1173
       }
     },
     {
@@ -31186,8 +31186,8 @@
       "filePath": "apps/api/src/modules/customers/services/combo-recognition.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3165,
-        "lineCount": 91,
+        "sizeBytes": 3711,
+        "lineCount": 106,
         "ext": ".ts"
       }
     },
@@ -31199,8 +31199,8 @@
       "filePath": "apps/api/src/modules/customers/services/combo-recognition.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13559,
-        "lineCount": 335,
+        "sizeBytes": 14559,
+        "lineCount": 365,
         "ext": ".ts"
       }
     },
@@ -31524,8 +31524,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 47146,
-        "lineCount": 1199,
+        "sizeBytes": 47061,
+        "lineCount": 1189,
         "ext": ".ts"
       }
     },
@@ -31758,8 +31758,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-leaderboard.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 23920,
-        "lineCount": 640,
+        "sizeBytes": 23912,
+        "lineCount": 639,
         "ext": ".ts"
       }
     },
@@ -31927,8 +31927,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 84917,
-        "lineCount": 2163,
+        "sizeBytes": 86300,
+        "lineCount": 2196,
         "ext": ".ts"
       }
     },
@@ -33175,8 +33175,8 @@
       "filePath": "apps/api/src/scripts/apply-benchmark-slow-query-indexes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2848,
-        "lineCount": 87,
+        "sizeBytes": 3279,
+        "lineCount": 95,
         "ext": ".ts"
       }
     },
@@ -35593,8 +35593,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkDoneTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 42504,
-        "lineCount": 1024,
+        "sizeBytes": 42453,
+        "lineCount": 1021,
         "ext": ".tsx"
       }
     },
@@ -38531,8 +38531,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16144,
-        "lineCount": 357,
+        "sizeBytes": 28133,
+        "lineCount": 663,
         "ext": ".tsx"
       }
     },
@@ -38609,8 +38609,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 45021,
-        "lineCount": 1005,
+        "sizeBytes": 46422,
+        "lineCount": 1031,
         "ext": ".tsx"
       }
     },
@@ -38661,8 +38661,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 31607,
-        "lineCount": 811,
+        "sizeBytes": 32733,
+        "lineCount": 845,
         "ext": ".ts"
       }
     },
@@ -38674,8 +38674,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22124,
-        "lineCount": 527,
+        "sizeBytes": 22245,
+        "lineCount": 528,
         "ext": ".tsx"
       }
     },
@@ -40039,8 +40039,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 101617,
-        "lineCount": 1517,
+        "sizeBytes": 101598,
+        "lineCount": 1514,
         "ext": ".ts"
       }
     },
@@ -40260,8 +40260,8 @@
       "filePath": "packages/shared/src/types/bk.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 11580,
-        "lineCount": 444,
+        "sizeBytes": 11582,
+        "lineCount": 445,
         "ext": ".ts"
       }
     },

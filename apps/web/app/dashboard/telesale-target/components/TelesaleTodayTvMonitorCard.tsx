@@ -1,13 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { Tooltip, Button, theme } from 'antd';
-import { Tv, Calendar, Maximize2, Volume2, ClipboardList } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { Tooltip, Button, theme, Popover, Switch, Slider } from 'antd';
+import { Tv, Calendar, Maximize2, Volume2, VolumeX, ClipboardList, Sparkles, Settings, Square } from 'lucide-react';
 import { TelesaleTargetOverview, isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { calculateShiftPacing, calculateTvMonitorMetrics } from '../utils/tv-monitor-pacing';
 import { TelesaleTvJournalModal } from './TelesaleTvJournalModal';
 import { SemicircleGauge } from './SemicircleGauge';
 import { RealisticCardFireworks } from './RealisticCardFireworks';
+import { useTelesaleTvLiveCelebration, TvCelebrationSettings } from '../hooks/useTelesaleTvLiveCelebration';
 
 // Tiến độ thực tế: đỏ < 80%, vàng 80-99%, xanh >= 100%
 const getProgressTier = (percent: number): 'rose' | 'amber' | 'emerald' => {
@@ -62,16 +63,92 @@ interface TelesaleTodayTvMonitorCardProps {
   overview: TelesaleTargetOverview;
   onOpenFullscreen?: () => void;
   isTvOpen?: boolean;
+  liveCelebration?: ReturnType<typeof useTelesaleTvLiveCelebration>;
 }
 
 export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProps> = ({
   overview,
   onOpenFullscreen,
   isTvOpen = false,
+  liveCelebration,
 }) => {
   const { teamDaily } = overview;
   const [now, setNow] = useState<Date>(new Date());
   const [journalOpen, setJournalOpen] = useState<boolean>(false);
+  const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
+
+  // Fallback local settings if liveCelebration is not provided
+  const [localSettings, setLocalSettings] = useState<TvCelebrationSettings>({
+    soundEnabled: true,
+    volume: 0.9,
+    eventTypeFilter: 'ALL',
+    quietModeEnabled: false,
+    voiceStyle: 'MALE_CHARM',
+    fireworksEnabled: true,
+  });
+
+  useEffect(() => {
+    if (liveCelebration) return;
+    try {
+      const raw = localStorage.getItem('MOS_TV_MONITOR_VOICE_SETTINGS');
+      if (raw) {
+        setLocalSettings((prev) => ({ ...prev, ...JSON.parse(raw) }));
+      }
+    } catch {}
+  }, [liveCelebration]);
+
+  const settings = liveCelebration ? liveCelebration.settings : localSettings;
+  const updateSettings = useCallback(
+    (newSettings: Partial<TvCelebrationSettings>) => {
+      if (liveCelebration) {
+        liveCelebration.updateSettings(newSettings);
+      } else {
+        setLocalSettings((prev) => {
+          const updated = { ...prev, ...newSettings };
+          try {
+            localStorage.setItem('MOS_TV_MONITOR_VOICE_SETTINGS', JSON.stringify(updated));
+            window.dispatchEvent(new CustomEvent('mos:tv-settings-updated', { detail: updated }));
+          } catch {}
+          return updated;
+        });
+      }
+    },
+    [liveCelebration]
+  );
+
+  const fireworksEnabled = settings.fireworksEnabled ?? true;
+  const soundEnabled = settings.soundEnabled ?? true;
+  const volume = settings.volume ?? 0.9;
+
+  // Test fireworks state
+  const [testFireworksBook, setTestFireworksBook] = useState(false);
+  const [testFireworksDone, setTestFireworksDone] = useState(false);
+  const testTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const triggerTestFireworks = (type: 'BOOK' | 'DONE') => {
+    if (testTimerRef.current) clearTimeout(testTimerRef.current);
+    if (type === 'BOOK') {
+      setTestFireworksBook(true);
+      setTestFireworksDone(false);
+      testTimerRef.current = setTimeout(() => setTestFireworksBook(false), 8000);
+    } else {
+      setTestFireworksDone(true);
+      setTestFireworksBook(false);
+      testTimerRef.current = setTimeout(() => setTestFireworksDone(false), 8000);
+    }
+  };
+
+  const stopTestFireworks = () => {
+    if (testTimerRef.current) clearTimeout(testTimerRef.current);
+    setTestFireworksBook(false);
+    setTestFireworksDone(false);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (testTimerRef.current) clearTimeout(testTimerRef.current);
+    };
+  }, []);
 
   const isManagerOrAdmin = useMemo(() => {
     try {
@@ -113,6 +190,144 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
   const bookStyles = getCardTierStyles(bookTier);
   const doneStyles = getCardTierStyles(doneTier);
 
+  // Popover configuration content for fireworks and sound
+  const settingsPopoverContent = (
+    <div className="w-72 sm:w-80 p-1 flex flex-col gap-3.5 text-zinc-100">
+      {/* Title */}
+      <div className="border-b border-zinc-800/80 pb-2 flex items-center justify-between">
+        <div>
+          <span className="font-bold text-xs sm:text-sm text-zinc-100 flex items-center gap-1.5">
+            <Settings className="w-3.5 h-3.5 text-amber-400" />
+            Cấu hình Pháo bông & Âm thanh
+          </span>
+          <span className="text-[10px] text-zinc-400 block mt-0.5">TV Monitor Telesales Hôm Nay</span>
+        </div>
+      </div>
+
+      {/* Switch 1: Fireworks */}
+      <div className="flex items-center justify-between gap-2">
+        <div>
+          <span className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            Pháo bông chúc mừng
+          </span>
+          <span className="text-[10px] text-zinc-400 block mt-0.5 leading-tight">
+            Tự động bắn pháo khi Book hoặc Done đạt ≥ 100%
+          </span>
+        </div>
+        <Switch
+          checked={fireworksEnabled}
+          onChange={(checked) => updateSettings({ fireworksEnabled: checked })}
+          className="bg-zinc-700 shrink-0"
+        />
+      </div>
+
+      {/* Switch 2: Sound */}
+      <div className="flex items-center justify-between gap-2 border-t border-zinc-800/80 pt-2.5">
+        <div>
+          <span className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
+            <Volume2 className="w-3.5 h-3.5 text-amber-400" />
+            Âm thanh hiệu ứng & Loa
+          </span>
+          <span className="text-[10px] text-zinc-400 block mt-0.5 leading-tight">
+            Tiếng rít phóng pháo hoa, tiếng nổ boom & chúc mừng
+          </span>
+        </div>
+        <Switch
+          checked={soundEnabled}
+          onChange={(checked) => updateSettings({ soundEnabled: checked })}
+          className="bg-zinc-700 shrink-0"
+        />
+      </div>
+
+      {/* Slider: Volume */}
+      <div className="border-t border-zinc-800/80 pt-2.5">
+        <div className="flex justify-between text-[11px] font-mono text-zinc-400 mb-1">
+          <span>Âm lượng loa</span>
+          <span className="text-amber-300 font-bold tabular-nums">{Math.round(volume * 100)}%</span>
+        </div>
+        <Slider
+          min={0}
+          max={1}
+          step={0.05}
+          value={volume}
+          onChange={(val) => updateSettings({ volume: val })}
+          disabled={!soundEnabled}
+        />
+      </div>
+
+      {/* Section: Test Fireworks */}
+      <div className="border-t border-zinc-800/80 pt-2.5 flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[11px] font-mono text-zinc-300 font-bold flex items-center gap-1">
+            <Sparkles className="w-3 h-3 text-amber-400" />
+            Bắn thử nghiệm pháo hoa:
+          </span>
+          {(testFireworksBook || testFireworksDone) && (
+            <button
+              type="button"
+              onClick={stopTestFireworks}
+              className="text-[10px] text-rose-400 hover:text-rose-300 flex items-center gap-0.5 font-bold cursor-pointer"
+            >
+              <Square className="w-2.5 h-2.5 fill-current" />
+              Dừng bắn
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          <Button
+            size="small"
+            onClick={() => triggerTestFireworks('BOOK')}
+            className={`text-[11px] font-bold h-7 rounded-lg transition-all ${
+              testFireworksBook
+                ? 'bg-emerald-600 text-white border-emerald-400 animate-pulse'
+                : 'bg-emerald-950/80 border-emerald-500/60 text-emerald-300 hover:bg-emerald-900'
+            }`}
+          >
+            🎆 Pháo Book
+          </Button>
+          <Button
+            size="small"
+            onClick={() => triggerTestFireworks('DONE')}
+            className={`text-[11px] font-bold h-7 rounded-lg transition-all ${
+              testFireworksDone
+                ? 'bg-amber-600 text-white border-amber-400 animate-pulse'
+                : 'bg-amber-950/80 border-amber-500/60 text-amber-300 hover:bg-amber-900'
+            }`}
+          >
+            🎆 Pháo Done
+          </Button>
+        </div>
+      </div>
+
+      {/* Section: Test Voice Celebrations */}
+      {liveCelebration?.triggerDemoCelebration && (
+        <div className="border-t border-zinc-800/80 pt-2.5 flex flex-col gap-1.5">
+          <span className="text-[11px] font-mono text-zinc-300 font-bold flex items-center gap-1">
+            <Volume2 className="w-3 h-3 text-blue-400" />
+            Thử loa giọng nói:
+          </span>
+          <div className="grid grid-cols-2 gap-1.5">
+            <Button
+              size="small"
+              onClick={() => liveCelebration.triggerDemoCelebration('BOOK')}
+              className="text-[11px] bg-blue-950/80 border-blue-500/60 text-blue-300 hover:bg-blue-900 h-7 rounded-lg font-medium"
+            >
+              Loa Book
+            </Button>
+            <Button
+              size="small"
+              onClick={() => liveCelebration.triggerDemoCelebration('DONE')}
+              className="text-[11px] bg-emerald-950/80 border-emerald-500/60 text-emerald-300 hover:bg-emerald-900 h-7 rounded-lg font-medium"
+            >
+              Loa Done
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <section
       className={`relative overflow-hidden rounded-3xl bg-gradient-to-b from-amber-950/25 via-zinc-950/95 to-zinc-950 border p-3.5 glass-card shadow-2xl backdrop-blur-md h-full flex flex-col justify-between group transition-all duration-300 ${
@@ -140,16 +355,81 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 sm:gap-1.5">
             <span className="hidden sm:inline-flex items-center gap-1 text-[10px] text-zinc-300 bg-black/60 px-2 py-0.5 rounded-lg border border-zinc-800 font-mono tabular-nums">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               {teamDaily.date}
             </span>
 
-            <span className="hidden md:inline-flex items-center gap-1 text-[9px] text-amber-300/90 bg-amber-950/40 px-1.5 py-0.5 rounded-lg border border-amber-500/30 font-medium">
-              <Volume2 className="w-3 h-3 text-amber-400" />
-              Loa TV: Bật
-            </span>
+            {/* Quick Loa toggle button */}
+            <Tooltip
+              title={
+                soundEnabled
+                  ? 'Âm thanh TV đang BẬT · Bấm để tắt tiếng nhanh'
+                  : 'Âm thanh TV đang TẮT · Bấm để bật tiếng nhanh'
+              }
+            >
+              <button
+                type="button"
+                data-testid="tv-card-sound-toggle"
+                onClick={() => updateSettings({ soundEnabled: !soundEnabled })}
+                className={`inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-lg border font-medium transition-all cursor-pointer ${
+                  soundEnabled
+                    ? 'text-amber-300/90 bg-amber-950/40 border-amber-500/30 hover:bg-amber-900/50 hover:border-amber-400/50'
+                    : 'text-zinc-500 bg-zinc-900/60 border-zinc-800 hover:text-zinc-300 hover:border-zinc-700'
+                }`}
+              >
+                {soundEnabled ? (
+                  <Volume2 className="w-3 h-3 text-amber-400" />
+                ) : (
+                  <VolumeX className="w-3 h-3 text-zinc-500" />
+                )}
+                <span className="hidden xs:inline">{soundEnabled ? 'Loa: Bật' : 'Loa: Tắt'}</span>
+              </button>
+            </Tooltip>
+
+            {/* Quick Pháo bông toggle button */}
+            <Tooltip
+              title={
+                fireworksEnabled
+                  ? 'Pháo bông đang BẬT · Bấm để tắt hiệu ứng pháo'
+                  : 'Pháo bông đang TẮT · Bấm để bật hiệu ứng pháo'
+              }
+            >
+              <button
+                type="button"
+                data-testid="tv-card-fireworks-toggle"
+                onClick={() => updateSettings({ fireworksEnabled: !fireworksEnabled })}
+                className={`inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-lg border font-medium transition-all cursor-pointer ${
+                  fireworksEnabled
+                    ? 'text-emerald-300/90 bg-emerald-950/40 border-emerald-500/30 hover:bg-emerald-900/50 hover:border-emerald-400/50'
+                    : 'text-zinc-500 bg-zinc-900/60 border-zinc-800 hover:text-zinc-300 hover:border-zinc-700'
+                }`}
+              >
+                <Sparkles className={`w-3 h-3 ${fireworksEnabled ? 'text-emerald-400' : 'text-zinc-500'}`} />
+                <span className="hidden xs:inline">{fireworksEnabled ? 'Pháo: Bật' : 'Pháo: Tắt'}</span>
+              </button>
+            </Tooltip>
+
+            {/* Cài đặt Popover */}
+            <Popover
+              content={settingsPopoverContent}
+              trigger="click"
+              placement="bottomRight"
+              open={settingsOpen}
+              onOpenChange={setSettingsOpen}
+              overlayClassName="tv-monitor-settings-popover"
+            >
+              <Tooltip title="Cài đặt Pháo bông & Âm thanh">
+                <Button
+                  type="default"
+                  size="small"
+                  data-testid="tv-card-settings-button"
+                  icon={<Settings className="w-3 h-3 text-zinc-300" />}
+                  className="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border-zinc-700 rounded-lg text-xs h-6 px-1.5 flex items-center cursor-pointer"
+                />
+              </Tooltip>
+            </Popover>
 
             {isManagerOrAdmin && (
               <Tooltip title="Nhật ký giám sát Live TV Monitor">
@@ -186,10 +466,12 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
         <div className="grid grid-cols-2 gap-2.5">
           {/* Card 2.1: Book Hôm Nay (Hành động chính) */}
           <div className={bookStyles.container}>
-            {/* Pháo bông thực tế khi đạt mốc >= 100% (tắt khi mở TV fullscreen) */}
+            {/* Pháo bông thực tế khi đạt mốc >= 100% hoặc khi test (tắt khi mở TV fullscreen) */}
             <RealisticCardFireworks
-              active={!isTvOpen && isBookOver100}
-              soundEnabled={!isTvOpen}
+              active={!isTvOpen && (testFireworksBook || (fireworksEnabled && isBookOver100))}
+              isFrenzy={testFireworksBook}
+              soundEnabled={!isTvOpen && soundEnabled}
+              volume={volume}
               theme="emerald"
               cardLabel="BOOK"
             />
@@ -263,10 +545,12 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
 
           {/* Card 2.2: Done Hôm Nay */}
           <div className={doneStyles.container}>
-            {/* Pháo bông thực tế khi đạt mốc >= 100% (tắt khi mở TV fullscreen) */}
+            {/* Pháo bông thực tế khi đạt mốc >= 100% hoặc khi test (tắt khi mở TV fullscreen) */}
             <RealisticCardFireworks
-              active={!isTvOpen && isDoneOver100}
-              soundEnabled={!isTvOpen}
+              active={!isTvOpen && (testFireworksDone || (fireworksEnabled && isDoneOver100))}
+              isFrenzy={testFireworksDone}
+              soundEnabled={!isTvOpen && soundEnabled}
+              volume={volume}
               theme="emerald"
               cardLabel="DONE"
             />

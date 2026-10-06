@@ -74,8 +74,8 @@ function TelesaleTargetContent() {
   const loadAvailableMonths = useCallback(async () => {
     try {
       const months = await apiClient.telesaleTarget.getMonths();
-      if (months && months.length > 0) {
-        setAvailableMonths(months);
+      if (Array.isArray(months) && months.length > 0) {
+        setAvailableMonths(months.filter((m) => typeof m === 'string' && m.includes('-')));
       }
     } catch {
       // ignore
@@ -439,6 +439,7 @@ function TelesaleTargetContent() {
                 overview={overview}
                 isTvOpen={tvModeOpen}
                 onOpenFullscreen={() => setTvModeOpen(true)}
+                liveCelebration={liveCelebration}
               />
             </div>
 

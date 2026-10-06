@@ -12,6 +12,7 @@ export interface TvCelebrationSettings {
   eventTypeFilter: 'ALL' | 'BOOK_ONLY' | 'DONE_ONLY';
   quietModeEnabled: boolean; // Manual quiet mode or during quiet hours
   voiceStyle?: 'MALE_CHARM' | 'FEMALE_SWEET' | 'BROWSER_LOCAL';
+  fireworksEnabled?: boolean;
 }
 
 export interface ActiveCelebration {
@@ -35,6 +36,7 @@ const DEFAULT_SETTINGS: TvCelebrationSettings = {
   eventTypeFilter: 'ALL',
   quietModeEnabled: false,
   voiceStyle: 'MALE_CHARM',
+  fireworksEnabled: true,
 };
 
 // Script quotes: Charming Male Voice & 4 Wings Cultural Values (Vui vẻ, Ân Cần, Chân Thành, Khoa Học)
@@ -110,18 +112,49 @@ export function useTelesaleTvLiveCelebration() {
   const lastSpokenTimeRef = useRef<number>(0);
   const isInitializedRef = useRef<boolean>(false);
 
-  // 1. Load settings from localStorage
+  // 1. Load settings from localStorage and listen to real-time updates
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    try {
-      const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        setSettings((prev) => ({ ...prev, ...parsed }));
+
+    const loadSettings = () => {
+      try {
+        const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          setSettings((prev) => ({ ...prev, ...parsed }));
+        }
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
-    }
+    };
+
+    loadSettings();
+
+    const handleCustomUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<Partial<TvCelebrationSettings>>;
+      if (customEvent.detail) {
+        setSettings((prev) => ({ ...prev, ...customEvent.detail }));
+      } else {
+        loadSettings();
+      }
+    };
+
+    const handleStorageUpdate = (e: StorageEvent) => {
+      if (e.key === SETTINGS_STORAGE_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
+          setSettings((prev) => ({ ...prev, ...parsed }));
+        } catch {}
+      }
+    };
+
+    window.addEventListener('mos:tv-settings-updated', handleCustomUpdate);
+    window.addEventListener('storage', handleStorageUpdate);
+
+    return () => {
+      window.removeEventListener('mos:tv-settings-updated', handleCustomUpdate);
+      window.removeEventListener('storage', handleStorageUpdate);
+    };
   }, []);
 
   // 2. Persist settings changes
@@ -131,6 +164,7 @@ export function useTelesaleTvLiveCelebration() {
       if (typeof window !== 'undefined') {
         try {
           localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(updated));
+          window.dispatchEvent(new CustomEvent('mos:tv-settings-updated', { detail: updated }));
         } catch {
           // ignore
         }

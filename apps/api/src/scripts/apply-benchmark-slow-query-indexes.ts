@@ -60,6 +60,14 @@ async function main() {
         continue;
       }
 
+      const tableCheck = await legacy.$queryRawUnsafe<Array<{ count: bigint | number }>>(
+        `SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = '${index.table}'`
+      );
+      if (!tableCheck[0] || Number(tableCheck[0].count) === 0) {
+        console.log(`[IndexMigration] Table ${index.table} does not exist, skipping index: ${index.name}`);
+        continue;
+      }
+
       const statement = `CREATE INDEX ${quoteIdentifier(index.name)} ON ${quoteIdentifier(index.table)} (${index.columns
         .map(quoteIdentifier)
         .join(', ')})`;

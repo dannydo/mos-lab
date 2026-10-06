@@ -24,12 +24,15 @@ test('evaluates COMBO_LIVE from the booking-time ledger snapshot', () => {
   assert.doesNotMatch(sql, /actual_booking_date_start|booking_date_start/);
 });
 
-test('maps canonical combo-live states by booking ID', async () => {
+test('maps canonical combo-live states by booking ID and caches in memory', async () => {
+  ComboRecognitionService.clearComboLiveCache();
+  let queryCount = 0;
   let capturedSql = '';
   const fastify = {
     prisma: {
       legacy: {
         $queryRawUnsafe: async (sql: string) => {
+          queryCount++;
           capturedSql = sql;
           return [
             { orderId: 11, hasLiveComboAtBooking: 1 },
@@ -49,9 +52,21 @@ test('maps canonical combo-live states by booking ID', async () => {
       [12, false],
     ]
   );
+  assert.equal(queryCount, 1);
   assert.match(capturedSql, /FROM `order` o/);
   assert.match(capturedSql, /usb\.date_created < o\.date_created/);
   assert.match(capturedSql, /WHERE o\.id IN \(11,12\)/);
+
+  // Second call must return from in-memory cache without hitting database
+  const cachedStates = await ComboRecognitionService.getBookingComboLiveStatesByOrderIds(fastify as never, [11, 12]);
+  assert.deepEqual(
+    [...cachedStates],
+    [
+      [11, true],
+      [12, false],
+    ]
+  );
+  assert.equal(queryCount, 1, 'Subsequent call should be served from memory cache without new DB queries');
 });
 
 test('recognizes completed combo sales only by actual check-in and an existing customer balance', async () => {

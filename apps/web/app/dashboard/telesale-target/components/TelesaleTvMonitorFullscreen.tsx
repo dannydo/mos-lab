@@ -53,6 +53,7 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
   const [now, setNow] = useState<Date>(new Date());
   const [isBrowserFullscreen, setIsBrowserFullscreen] = useState<boolean>(false);
   const [journalOpen, setJournalOpen] = useState<boolean>(false);
+  const fullscreenContainerRef = useRef<HTMLDivElement>(null);
 
   const isManagerOrAdmin = useMemo(() => {
     if (typeof window === 'undefined') return true;
@@ -283,6 +284,21 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
   const soundSettingsContent = (
     <div className="w-72 p-1 flex flex-col gap-4 text-zinc-100">
       <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
+        <div>
+          <span className="font-bold text-sm flex items-center gap-1.5 text-zinc-100">
+            <Sparkles className="w-4 h-4 text-emerald-400" />
+            Hiệu ứng pháo bông
+          </span>
+          <span className="text-[10px] text-zinc-400 block">Tự động bắn khi đạt mốc ≥ 100%</span>
+        </div>
+        <Switch
+          checked={voiceSettings.fireworksEnabled ?? true}
+          onChange={(checked) => updateVoiceSettings({ fireworksEnabled: checked })}
+          className="bg-zinc-700"
+        />
+      </div>
+
+      <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
         <span className="font-bold text-sm flex items-center gap-1.5 text-zinc-100">
           <Volume2 className="w-4 h-4 text-amber-400" />
           Âm thanh chúc mừng
@@ -315,6 +331,7 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
           value={voiceSettings.eventTypeFilter}
           onChange={(val) => updateVoiceSettings({ eventTypeFilter: val })}
           className="w-full"
+          getPopupContainer={(trigger) => trigger.parentElement || fullscreenContainerRef.current || document.body}
           options={[
             { label: 'Tất cả (Book & Done)', value: 'ALL' },
             { label: 'Chỉ Book mới', value: 'BOOK_ONLY' },
@@ -329,6 +346,7 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
           value={voiceSettings.voiceStyle || 'MALE_CHARM'}
           onChange={(val) => updateVoiceSettings({ voiceStyle: val })}
           className="w-full"
+          getPopupContainer={(trigger) => trigger.parentElement || fullscreenContainerRef.current || document.body}
           options={[
             { label: '👑 Nam thần Nam Minh (Studio Neural · Trầm ấm & gợi cảm)', value: 'MALE_CHARM' },
             { label: '🌸 Nữ thần Hoài My (Studio Neural · Ngọt ngào & ân cần)', value: 'FEMALE_SWEET' },
@@ -401,7 +419,10 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[99999] bg-zinc-950 text-zinc-100 flex flex-col justify-between p-3 sm:p-4 select-none overflow-hidden font-sans h-screen max-h-screen">
+    <div
+      ref={fullscreenContainerRef}
+      className="fixed inset-0 z-[99999] bg-zinc-950 text-zinc-100 flex flex-col justify-between p-3 sm:p-4 select-none overflow-hidden font-sans h-screen max-h-screen"
+    >
       <TelesaleTvLiveCelebrationBanner
         celebration={activeCelebration}
         isSpeaking={isSpeaking}
@@ -496,11 +517,14 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
               content={soundSettingsContent}
               trigger="click"
               placement="bottomRight"
+              zIndex={100005}
+              getPopupContainer={() => fullscreenContainerRef.current || document.body}
               overlayClassName="tv-sound-settings-popover"
             >
-              <Tooltip title="Cài đặt TV Monitor">
+              <Tooltip title="Cài đặt Pháo bông & Âm thanh TV">
                 <Button
                   type="text"
+                  data-testid="tv-fullscreen-settings-button"
                   icon={<Settings className="w-4 h-4 text-zinc-300" />}
                   className="!rounded-xl !h-10 !w-10 !p-0 flex items-center justify-center border border-zinc-700/60 bg-zinc-800/90 hover:bg-zinc-700/80 text-zinc-300"
                 />
@@ -512,6 +536,8 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
               content={soundSettingsContent}
               trigger="click"
               placement="bottomRight"
+              zIndex={100005}
+              getPopupContainer={() => fullscreenContainerRef.current || document.body}
               overlayClassName="tv-sound-settings-popover"
             >
               <Tooltip title="Cài đặt âm thanh & Live Voice Celebration">
@@ -684,7 +710,7 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
         >
           {/* Realistic Physics Fireworks (bắn khi đạt mốc >= 100% hoặc khi test) */}
           <RealisticCardFireworks
-            active={isBookOver100 || testFireworksBook}
+            active={testFireworksBook || ((voiceSettings.fireworksEnabled ?? true) && isBookOver100)}
             isFrenzy={frenzyBook || testFireworksBook}
             soundEnabled={voiceSettings.soundEnabled}
             volume={voiceSettings.volume}
@@ -807,7 +833,7 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
         >
           {/* Realistic Physics Fireworks (bắn khi đạt mốc >= 100% hoặc khi test) */}
           <RealisticCardFireworks
-            active={isDoneOver100 || testFireworksDone}
+            active={testFireworksDone || ((voiceSettings.fireworksEnabled ?? true) && isDoneOver100)}
             isFrenzy={frenzyDone || testFireworksDone}
             soundEnabled={voiceSettings.soundEnabled}
             volume={voiceSettings.volume}
