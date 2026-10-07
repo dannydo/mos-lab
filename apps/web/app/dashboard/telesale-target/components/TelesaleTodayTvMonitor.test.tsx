@@ -118,7 +118,7 @@ describe('TelesaleTodayTvMonitorCard', () => {
     render(<TelesaleTodayTvMonitorCard overview={mockOverview} onOpenFullscreen={handleOpenFullscreen} />);
 
     expect(screen.getByText('TV MONITOR HÔM NAY')).toBeInTheDocument();
-    expect(screen.getByText('DONE KHÁCH LẺ')).toBeInTheDocument();
+    expect(screen.getByText('CHECK-IN KHÁCH LẺ')).toBeInTheDocument();
     expect(screen.getByText('BOOK HÔM NAY')).toBeInTheDocument();
 
     // Actual numbers
@@ -156,8 +156,14 @@ describe('TelesaleTvMonitorFullscreen', () => {
     );
 
     expect(screen.getByText(/TELESALES TV MONITOR · WAR ROOM/i)).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /DONE KHÁCH LẺ/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /BOOK HÔM NAY · TẠO LỊCH/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { name: /CHECK-IN HÔM NAY/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole('heading', { name: /BOOK HÔM NAY/i }).length).toBeGreaterThanOrEqual(1);
+
+    // Book & Check-in Side Panels & Toggle Buttons
+    expect(screen.getByTestId('tv-toggle-book-panel-button')).toBeInTheDocument();
+    expect(screen.getByTestId('tv-toggle-checkin-panel-button')).toBeInTheDocument();
+    expect(screen.getByTestId('tv-book-side-panel')).toBeInTheDocument();
+    expect(screen.getByTestId('tv-checkin-side-panel')).toBeInTheDocument();
 
     // Individual Staff Contribution section
     expect(screen.getByText(/ĐÓNG GÓP CÁ NHÂN HÔM NAY · TELESALES EXECUTIVES/i)).toBeInTheDocument();

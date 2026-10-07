@@ -7853,8 +7853,8 @@ button:not(:disabled):not(.ant-btn-loading):active,
 }
 
 /* Telesale TV Monitor Popover Custom Styling */
-.tv-sound-settings-popover .ant-popover-inner,
-.tv-monitor-settings-popover .ant-popover-inner {
+.dark-theme .tv-sound-settings-popover .ant-popover-inner,
+.dark-theme .tv-monitor-settings-popover .ant-popover-inner {
   background: rgba(24, 24, 27, 0.98) !important;
   border: 1px solid rgba(63, 63, 70, 0.8) !important;
   border-radius: 1rem !important;
@@ -7864,7 +7864,23 @@ button:not(:disabled):not(.ant-btn-loading):active,
   padding: 12px 14px !important;
 }
 
-.tv-sound-settings-popover .ant-popover-arrow::after,
-.tv-monitor-settings-popover .ant-popover-arrow::after {
+.light-theme .tv-sound-settings-popover .ant-popover-inner,
+.light-theme .tv-monitor-settings-popover .ant-popover-inner {
+  background: #ffffff !important;
+  border: 1px solid rgba(226, 232, 240, 0.95) !important;
+  border-radius: 1rem !important;
+  box-shadow:
+    0 20px 40px -10px rgba(0, 0, 0, 0.12),
+    0 0 15px 0 rgba(245, 158, 11, 0.08) !important;
+  padding: 12px 14px !important;
+}
+
+.dark-theme .tv-sound-settings-popover .ant-popover-arrow::after,
+.dark-theme .tv-monitor-settings-popover .ant-popover-arrow::after {
   background: rgba(24, 24, 27, 0.98) !important;
+}
+
+.light-theme .tv-sound-settings-popover .ant-popover-arrow::after,
+.light-theme .tv-monitor-settings-popover .ant-popover-arrow::after {
+  background: #ffffff !important;
 }

@@ -461,10 +461,24 @@ export function ThemeProvider({ children, defaultIsAdmin }: { children: React.Re
   );
 }
 
+const defaultThemeContextFallback: ThemeContextType = {
+  coreThemeId: DEFAULT_CORE_THEME_ID,
+  themeId: DEFAULT_CORE_THEME_ID,
+  availableCoreThemes: [],
+  setCoreThemeId: () => {},
+  setThemeId: () => {},
+  themeMode: 'light',
+  toggleTheme: () => {},
+  desktopDensity: 'standard',
+  effectiveDensity: 'standard',
+  setDesktopDensity: () => {},
+  saveCustomTheme: () => {},
+  deleteCustomTheme: () => {},
+  activeThemeDefinition: coreThemeRegistry[DEFAULT_CORE_THEME_ID],
+  canManageThemes: false,
+};
+
 export function useTheme() {
   const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
+  return context ?? defaultThemeContextFallback;
 }

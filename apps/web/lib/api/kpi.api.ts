@@ -470,7 +470,7 @@ export const kpiApi = {
       return response.data;
     },
     getCelebrationQuote: async (data: {
-      type: 'BOOK' | 'DONE';
+      type: 'BOOK' | 'DONE' | 'CHECKIN' | 'COMBO' | 'TIP';
       staffName: string;
     }): Promise<{ quote: string; source: 'gemini' | 'fallback' }> => {
       const response = await api.post('/kpi/telesale-target/live-celebration-quote', data);

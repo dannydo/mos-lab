@@ -43,7 +43,7 @@ const styleFiles = webFiles.filter((file) => /\.css$/.test(file));
 function getImportedNames(source: string, moduleName: string): string[] {
   const escapedModuleName = moduleName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const importPattern = new RegExp(
-    `import\\s*(?:type\\s*)?\\{([\\s\\S]*?)\\}\\s*from\\s*['"]${escapedModuleName}['"]`,
+    `import\\s*(?:type\\s*)?\\{([^}]*?)\\}\\s*from\\s*['"]${escapedModuleName}['"]`,
     'g'
   );
   const names = new Set<string>();

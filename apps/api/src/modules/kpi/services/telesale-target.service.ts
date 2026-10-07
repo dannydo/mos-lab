@@ -11,6 +11,8 @@ import {
   TelesaleCustomerPoolItem,
   TelesaleStaffTarget,
   TelesaleTodayLiveEvent,
+  TelesaleTodayBookItem,
+  TelesaleTodayCheckinItem,
   TelesaleTvEventLog,
   TelesaleTvJournalOverview,
   TelesalePipelineStage,
@@ -1020,16 +1022,21 @@ export class TelesaleTargetService {
       }
     }
 
-    // Query today's completed and booked orders with isComboLive recognition
-    const [todayBookOrders, todayDoneOrders] = await Promise.all([
+    // Query today's completed, booked, and checked-in orders with isComboLive recognition
+    const [todayBookOrders, todayDoneOrders, todayCheckinOrders] = await Promise.all([
       fastify.prisma.legacy
         .$queryRawUnsafe<SafeAny[]>(
           `
         SELECT 
           o.id,
           o.created_staff_id as bookerId,
+          o.user_id as customerId,
           o.order_state as orderState,
-          DATE_FORMAT(o.date_created, '%Y-%m-%dT%H:%i:%s+07:00') as dateCreated
+          DATE_FORMAT(o.date_created, '%Y-%m-%dT%H:%i:%s+07:00') as dateCreated,
+          DATE_FORMAT(o.booking_date_start, '%Y-%m-%dT%H:%i:%s+07:00') as bookingDateStart,
+          o.booking_note as bookingNote,
+          o.promotion_id as promotionId,
+          o.is_new as isNew
           /* origin: buildComboLiveAtBookingSql */
         FROM \`order\` o
         WHERE o.date_created >= '${todayStartStr}' 
@@ -1044,7 +1051,6 @@ export class TelesaleTargetService {
         SELECT 
           o.id as id,
           o.created_staff_id as bookerId,
-          o.order_state as orderState,
           o.total_price as totalPrice,
           DATE_FORMAT(o.booking_date_start, '%Y-%m-%dT%H:%i:%s+07:00') as bookingDateStart,
           DATE_FORMAT(ro.actual_booking_date_start, '%Y-%m-%dT%H:%i:%s+07:00') as actualBookingDateStart,
@@ -1063,12 +1069,38 @@ export class TelesaleTargetService {
       `
         )
         .catch(() => []),
+      fastify.prisma.legacy
+        .$queryRawUnsafe<SafeAny[]>(
+          `
+        SELECT 
+          o.id as id,
+          o.created_staff_id as bookerId,
+          o.user_id as customerId,
+          o.order_state as orderState,
+          o.total_price as totalPrice,
+          DATE_FORMAT(o.booking_date_start, '%Y-%m-%dT%H:%i:%s+07:00') as bookingDateStart,
+          DATE_FORMAT(ro.actual_booking_date_start, '%Y-%m-%dT%H:%i:%s+07:00') as actualBookingDateStart,
+          DATE_FORMAT(ro.actual_booking_date_end, '%Y-%m-%dT%H:%i:%s+07:00') as actualBookingDateEnd,
+          DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start, o.date_created), '%Y-%m-%dT%H:%i:%s+07:00') as checkinDate
+          /* origin: buildComboLiveAtBookingSql */
+        FROM \`order\` o
+        LEFT JOIN report_order ro ON ro.order_id = o.id
+        WHERE o.created_staff_id IN (${candidateIdsStr})
+          AND (
+            (ro.actual_booking_date_start >= '${todayStartStr}' AND ro.actual_booking_date_start <= '${todayEndStr}')
+            OR (ro.actual_booking_date_start IS NULL AND o.order_state = 'Completed' AND o.booking_date_start >= '${todayStartStr}' AND o.booking_date_start <= '${todayEndStr}')
+          )
+          AND o.order_state != 'Cancelled'
+      `
+        )
+        .catch(() => []),
     ]);
 
     // Batch resolve isComboLive for today's orders with in-memory LRU caching
     const todayOrderIdsToResolve = [
       ...todayBookOrders.filter((o) => o.isComboLive === undefined).map((o) => Number(o.id)),
       ...todayDoneOrders.filter((o) => o.isComboLive === undefined).map((o) => Number(o.id)),
+      ...todayCheckinOrders.filter((o) => o.isComboLive === undefined).map((o) => Number(o.id)),
     ].filter((id) => Number.isInteger(id) && id > 0);
 
     if (todayOrderIdsToResolve.length > 0) {
@@ -1086,10 +1118,17 @@ export class TelesaleTargetService {
           o.isComboLive = todayComboLiveMap.get(Number(o.id)) ? 1 : 0;
         }
       }
+      for (const o of todayCheckinOrders) {
+        if (o.isComboLive === undefined) {
+          o.isComboLive = todayComboLiveMap.get(Number(o.id)) ? 1 : 0;
+        }
+      }
     }
 
     const teamDailyComboLiveDoneActual = todayDoneOrders.filter((o) => Number(o.isComboLive || 0) === 1).length;
     const teamDailySingleDoneActual = todayDoneOrders.filter((o) => Number(o.isComboLive || 0) === 0).length;
+    const teamDailyComboLiveCheckinActual = todayCheckinOrders.filter((o) => Number(o.isComboLive || 0) === 1).length;
+    const teamDailySingleCheckinActual = todayCheckinOrders.filter((o) => Number(o.isComboLive || 0) === 0).length;
     const teamDailyComboLiveBookActual = todayBookOrders.filter((o) => Number(o.isComboLive || 0) === 1).length;
 
     // 4. Map staffTargets directly from BK Leaderboard results (Single Source of Truth)
@@ -1120,6 +1159,14 @@ export class TelesaleTargetService {
         (o) => Number(o.bookerId) === Number(st.legacyStaffId) && Number(o.isComboLive || 0) === 1
       ).length;
       const staffSingleDoneToday = todayDoneOrders.filter(
+        (o) => Number(o.bookerId) === Number(st.legacyStaffId) && Number(o.isComboLive || 0) === 0
+      ).length;
+
+      // Today Check-in: Single Check-in as primary, Combo Live as secondary
+      const staffTodayComboCheckinCount = todayCheckinOrders.filter(
+        (o) => Number(o.bookerId) === Number(st.legacyStaffId) && Number(o.isComboLive || 0) === 1
+      ).length;
+      const staffSingleCheckinToday = todayCheckinOrders.filter(
         (o) => Number(o.bookerId) === Number(st.legacyStaffId) && Number(o.isComboLive || 0) === 0
       ).length;
 
@@ -1187,6 +1234,10 @@ export class TelesaleTargetService {
         comboRevenueActual: staffComboRevenueActual,
         retailDoneActual: staffSingleDoneActual,
         doneToday: staffSingleDoneToday,
+        retailDoneToday: staffSingleDoneToday,
+        checkinToday: staffSingleCheckinToday,
+        checkinActual: staffSingleCheckinToday,
+        comboLiveCheckinToday: staffTodayComboCheckinCount,
         bookToday: staffBookToday,
         bookContributionPercent,
         comboLiveDoneToday: staffTodayComboCount,
@@ -1243,6 +1294,42 @@ export class TelesaleTargetService {
       };
     });
 
+    const sortedTodayCheckinOrders = [...todayCheckinOrders]
+      .filter((o) => o && o.id)
+      .sort((a, b) => {
+        const timeA = new Date(
+          parseVietnamDateToIso(a.checkinDate || a.actualBookingDateStart || a.bookingDateStart || 0)
+        ).getTime();
+        const timeB = new Date(
+          parseVietnamDateToIso(b.checkinDate || b.actualBookingDateStart || b.bookingDateStart || 0)
+        ).getTime();
+        return timeA - timeB;
+      });
+
+    const staffCheckinCountMap = new Map<number, number>();
+    const checkinEvents: TelesaleTodayLiveEvent[] = sortedTodayCheckinOrders.map((o) => {
+      const bookerId = Number(o.bookerId);
+      const prevCheckin = staffCheckinCountMap.get(bookerId) || 0;
+      const newCheckin = prevCheckin + 1;
+      staffCheckinCountMap.set(bookerId, newCheckin);
+
+      const timestamp = parseVietnamDateToIso(o.checkinDate || o.actualBookingDateStart || o.bookingDateStart);
+
+      return {
+        id: `checkin-${o.id}`,
+        type: 'CHECKIN' as const,
+        staffId: bookerId,
+        staffName:
+          staffNameMap.get(bookerId) ||
+          allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name ||
+          'Telesales',
+        avatarUrl: staffAvatarMap.get(bookerId) || null,
+        timestamp,
+        orderId: Number(o.id),
+        changeResult: `Check-in ${prevCheckin} → ${newCheckin}`,
+      };
+    });
+
     const sortedTodayDoneOrders = [...todayDoneOrders]
       .filter((o) => o && o.id)
       .sort((a, b) => {
@@ -1255,6 +1342,22 @@ export class TelesaleTargetService {
         return timeA - timeB;
       });
 
+    // Query tip data for today's completed orders
+    const doneOrderIds = todayDoneOrders.map((o) => Number(o.id)).filter((id) => id > 0);
+    const tipMap = new Map<number, number>();
+    if (doneOrderIds.length > 0) {
+      try {
+        const tips = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT order_id, SUM(tip_amount) as totalTip FROM staff_tip WHERE order_id IN (${doneOrderIds.join(',')}) GROUP BY order_id`
+        );
+        for (const t of tips) {
+          tipMap.set(Number(t.order_id), Number(t.totalTip || 0));
+        }
+      } catch (err) {
+        fastify.log.warn(`Failed to query staff_tip for telesale today done orders: ${err}`);
+      }
+    }
+
     const staffDoneCountMap = new Map<number, number>();
     const doneEvents: TelesaleTodayLiveEvent[] = sortedTodayDoneOrders.map((o) => {
       const bookerId = Number(o.bookerId);
@@ -1265,6 +1368,19 @@ export class TelesaleTargetService {
       const timestamp = parseVietnamDateToIso(
         o.doneDate || o.actualBookingDateEnd || o.dateUpdated || o.actualBookingDateStart || o.bookingDateStart
       );
+
+      const hasCombo = Number(o.isComboLive || 0) === 1;
+      const tipAmount = tipMap.get(Number(o.id)) || 0;
+      const hasTip = tipAmount > 0;
+
+      let changeResult = `Done ${prevDone} → ${newDone}`;
+      if (hasCombo && hasTip) {
+        changeResult = `Done · Combo + Tip ${tipAmount.toLocaleString('vi-VN')}đ`;
+      } else if (hasCombo) {
+        changeResult = `Done · Chốt Combo Live`;
+      } else if (hasTip) {
+        changeResult = `Done · Tip ${tipAmount.toLocaleString('vi-VN')}đ`;
+      }
 
       return {
         id: `done-${o.id}`,
@@ -1277,13 +1393,293 @@ export class TelesaleTargetService {
         avatarUrl: staffAvatarMap.get(bookerId) || null,
         timestamp,
         orderId: Number(o.id),
-        changeResult: `Done ${prevDone} → ${newDone}`,
+        changeResult,
+        hasCombo,
+        hasTip,
+        tipAmount,
       };
     });
 
-    const todayLiveEvents: TelesaleTodayLiveEvent[] = [...bookEvents, ...doneEvents].sort(
+    const todayLiveEvents: TelesaleTodayLiveEvent[] = [...bookEvents, ...checkinEvents, ...doneEvents].sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
+
+    // 5.5 Build Today Book List & Today Checkin List for TV Monitor Side Panels
+    const customerIdsToFetch = Array.from(
+      new Set(
+        [
+          ...todayBookOrders.map((o) => Number(o.customerId)),
+          ...todayCheckinOrders.map((o) => Number(o.customerId)),
+        ].filter((id) => Number.isInteger(id) && id > 0)
+      )
+    );
+
+    const customerInfoMap = new Map<number, { fullName: string; phone?: string; avatar?: string | null }>();
+    if (customerIdsToFetch.length > 0) {
+      try {
+        const custRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `
+          SELECT 
+            up.user_id as userId,
+            up.full_name as fullName,
+            up.avatar as avatar,
+            uc.phone_number as phone
+          FROM user_profile up
+          LEFT JOIN user_contact uc ON uc.user_id = up.user_id AND uc.is_disabled = 0
+          WHERE up.user_id IN (${customerIdsToFetch.join(',')})
+        `
+        );
+        for (const c of custRows) {
+          customerInfoMap.set(Number(c.userId), {
+            fullName: c.fullName || 'Khách hàng',
+            phone: c.phone || '',
+            avatar: c.avatar || null,
+          });
+        }
+      } catch (err) {
+        fastify.log.warn(`Failed to query customer profiles for today orders: ${err}`);
+      }
+    }
+
+    // Query order_service for checkin orders to get CV, CC, and serviceName
+    const checkinOrderIds = todayCheckinOrders.map((o) => Number(o.id)).filter((id) => id > 0);
+    const orderServiceDetailsMap = new Map<number, { serviceName: string; cvStaffId?: number; ccStaffId?: number }>();
+    const extraStaffIdsToFetch = new Set<number>();
+
+    if (checkinOrderIds.length > 0) {
+      try {
+        const osRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `
+          SELECT 
+            os.order_id as orderId,
+            os.assigned_staff_id as cvStaffId,
+            os.check_in_staff_id as ccStaffId,
+            COALESCE(sl.name, s.service_key, 'Nối mi thiết kế') as serviceName
+          FROM order_service os
+          LEFT JOIN service s ON s.id = os.service_id
+          LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
+          WHERE os.order_id IN (${checkinOrderIds.join(',')})
+          ORDER BY os.id ASC
+        `
+        );
+        for (const row of osRows) {
+          const ordId = Number(row.orderId);
+          if (!orderServiceDetailsMap.has(ordId)) {
+            orderServiceDetailsMap.set(ordId, {
+              serviceName: row.serviceName || 'Nối mi thiết kế',
+              cvStaffId: row.cvStaffId ? Number(row.cvStaffId) : undefined,
+              ccStaffId: row.ccStaffId ? Number(row.ccStaffId) : undefined,
+            });
+            if (row.cvStaffId && !staffNameMap.has(Number(row.cvStaffId))) {
+              extraStaffIdsToFetch.add(Number(row.cvStaffId));
+            }
+            if (row.ccStaffId && !staffNameMap.has(Number(row.ccStaffId))) {
+              extraStaffIdsToFetch.add(Number(row.ccStaffId));
+            }
+          }
+        }
+      } catch (err) {
+        fastify.log.warn(`Failed to query order_service for checkin orders: ${err}`);
+      }
+    }
+
+    if (extraStaffIdsToFetch.size > 0) {
+      try {
+        const extraStaffRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT user_id as userId, full_name as fullName, avatar FROM user_profile WHERE user_id IN (${Array.from(
+            extraStaffIdsToFetch
+          ).join(',')})`
+        );
+        for (const st of extraStaffRows) {
+          const sid = Number(st.userId);
+          if (st.fullName && !staffNameMap.has(sid)) staffNameMap.set(sid, st.fullName);
+          if (st.avatar && !staffAvatarMap.has(sid)) staffAvatarMap.set(sid, st.avatar);
+        }
+      } catch (err) {
+        fastify.log.warn(`Failed to query extra staff profiles: ${err}`);
+      }
+    }
+
+    // Helper: Mask phone number (090***1234)
+    const maskPhoneNumber = (phone?: string): string => {
+      if (!phone) return '';
+      const clean = phone.replace(/\\D/g, '');
+      if (clean.length < 7) return clean;
+      return clean.slice(0, 3) + '***' + clean.slice(-4);
+    };
+
+    // Helper: Format Booking Date Display ("Hôm nay 14:30" or "08/10 10:00")
+    const formatBookingDateDisplay = (dateStr?: string): string => {
+      if (!dateStr) return 'Hôm nay';
+      try {
+        const d = new Date(parseVietnamDateToIso(dateStr));
+        const today = new Date();
+        const isToday =
+          d.getDate() === today.getDate() &&
+          d.getMonth() === today.getMonth() &&
+          d.getFullYear() === today.getFullYear();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+        const isTomorrow =
+          d.getDate() === tomorrow.getDate() &&
+          d.getMonth() === tomorrow.getMonth() &&
+          d.getFullYear() === tomorrow.getFullYear();
+
+        const hours = String(d.getHours()).padStart(2, '0');
+        const mins = String(d.getMinutes()).padStart(2, '0');
+        if (isToday) return `Hôm nay ${hours}:${mins}`;
+        if (isTomorrow) return `Ngày mai ${hours}:${mins}`;
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        return `${day}/${month} ${hours}:${mins}`;
+      } catch {
+        return dateStr;
+      }
+    };
+
+    // Helper: Format Time Ago ("Vừa xong", "5p trước", "1h trước")
+    const formatTimeAgo = (dateStr?: string): string => {
+      if (!dateStr) return 'Vừa xong';
+      try {
+        const d = new Date(parseVietnamDateToIso(dateStr)).getTime();
+        const now = Date.now();
+        const diffMins = Math.floor((now - d) / 60000);
+        if (diffMins <= 1) return 'Vừa xong';
+        if (diffMins < 60) return `${diffMins}p trước`;
+        const diffHours = Math.floor(diffMins / 60);
+        return `${diffHours}h trước`;
+      } catch {
+        return 'Vừa xong';
+      }
+    };
+
+    // Helper: Format Duration in Service ("35p", "1h 15p")
+    const formatTimeInService = (startStr?: string, endStr?: string, isDone?: boolean): string => {
+      if (!startStr) return '';
+      try {
+        const startTime = new Date(parseVietnamDateToIso(startStr)).getTime();
+        const endTime = isDone && endStr ? new Date(parseVietnamDateToIso(endStr)).getTime() : Date.now();
+        const diffMins = Math.max(1, Math.floor((endTime - startTime) / 60000));
+        if (diffMins < 60) return `${diffMins}p`;
+        const h = Math.floor(diffMins / 60);
+        const m = diffMins % 60;
+        return m > 0 ? `${h}h ${m}p` : `${h}h`;
+      } catch {
+        return '';
+      }
+    };
+
+    // Helper: Extract promotion name
+    const resolvePromotionName = (promoId?: number, bookingNote?: string): string | null => {
+      if (bookingNote && bookingNote.trim()) {
+        const note = bookingNote.trim();
+        if (/voucher|giảm|off|sale|km|tri ân|deal/i.test(note)) {
+          return note.length > 25 ? note.slice(0, 25) + '...' : note;
+        }
+      }
+      if (promoId && Number(promoId) > 0) {
+        return 'Có ưu đãi đặt lịch';
+      }
+      return null;
+    };
+
+    // Build todayBookList
+    const todayBookList: TelesaleTodayBookItem[] = [...todayBookOrders]
+      .filter((o) => o && o.id)
+      .sort((a, b) => {
+        const timeA = new Date(parseVietnamDateToIso(a.dateCreated || 0)).getTime();
+        const timeB = new Date(parseVietnamDateToIso(b.dateCreated || 0)).getTime();
+        return timeB - timeA; // Mới nhất lên đầu
+      })
+      .map((o) => {
+        const cust = customerInfoMap.get(Number(o.customerId));
+        const bookerId = Number(o.bookerId);
+        const bookerName =
+          staffNameMap.get(bookerId) ||
+          allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name ||
+          'Telesales';
+        const bookerAvatar = staffAvatarMap.get(bookerId) || null;
+        return {
+          orderId: Number(o.id),
+          customerName: cust?.fullName || 'Khách hàng',
+          customerPhone: maskPhoneNumber(cust?.phone),
+          customerAvatar: cust?.avatar || null,
+          bookerId,
+          bookerName,
+          bookerAvatar,
+          bookingDateStart: parseVietnamDateToIso(o.bookingDateStart || o.dateCreated),
+          bookingDateDisplay: formatBookingDateDisplay(o.bookingDateStart || o.dateCreated),
+          promotionName: resolvePromotionName(o.promotionId, o.bookingNote),
+          dateCreated: parseVietnamDateToIso(o.dateCreated),
+          timeAgoText: formatTimeAgo(o.dateCreated),
+          isNewCustomer: Boolean(o.isNew),
+        };
+      });
+
+    // Build todayCheckinList
+    const todayCheckinList: TelesaleTodayCheckinItem[] = [...todayCheckinOrders]
+      .filter((o) => o && o.id)
+      .map((o) => {
+        const ordId = Number(o.id);
+        const cust = customerInfoMap.get(Number(o.customerId));
+        const bookerId = Number(o.bookerId);
+        const bookerName =
+          staffNameMap.get(bookerId) ||
+          allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name ||
+          'Telesales';
+        const bookerAvatar = staffAvatarMap.get(bookerId) || null;
+        const osDetails = orderServiceDetailsMap.get(ordId);
+        const cvStaffName = osDetails?.cvStaffId ? staffNameMap.get(osDetails.cvStaffId) || null : null;
+        const cvStaffAvatar = osDetails?.cvStaffId ? staffAvatarMap.get(osDetails.cvStaffId) || null : null;
+        const ccStaffName = osDetails?.ccStaffId ? staffNameMap.get(osDetails.ccStaffId) || null : null;
+
+        const isDone = o.orderState === 'Completed';
+        const hasCombo = Number(o.isComboLive || 0) === 1;
+        const tipAmount = tipMap.get(ordId) || 0;
+        const hasTip = tipAmount > 0;
+
+        const checkinTimestamp = parseVietnamDateToIso(o.checkinDate || o.actualBookingDateStart || o.bookingDateStart);
+        let checkinTimeDisplay = '08:00';
+        try {
+          const cd = new Date(checkinTimestamp);
+          checkinTimeDisplay = `${String(cd.getHours()).padStart(2, '0')}:${String(cd.getMinutes()).padStart(2, '0')}`;
+        } catch {}
+
+        return {
+          orderId: ordId,
+          customerName: cust?.fullName || 'Khách hàng',
+          customerPhone: maskPhoneNumber(cust?.phone),
+          customerAvatar: cust?.avatar || null,
+          bookerId,
+          bookerName,
+          bookerAvatar,
+          checkinDate: checkinTimestamp,
+          checkinDateDisplay: checkinTimeDisplay,
+          serviceName: osDetails?.serviceName || 'Nối mi thiết kế',
+          assignedStaffName: cvStaffName,
+          assignedStaffAvatar: cvStaffAvatar,
+          checkInStaffName: ccStaffName,
+          orderState: o.orderState || 'In-Progress',
+          isDone,
+          hasCombo,
+          comboPackageName: hasCombo ? 'Combo Live Wings' : null,
+          comboPrice: hasCombo ? 1200000 : undefined,
+          hasTip,
+          tipAmount: hasTip ? tipAmount : undefined,
+          timeInService: formatTimeInService(
+            o.actualBookingDateStart || o.checkinDate,
+            o.actualBookingDateEnd || o.doneDate,
+            isDone
+          ),
+        };
+      })
+      .sort((a, b) => {
+        // Priority: Done with Combo/Tip (1000) > Just Done (800) > In-Progress (500)
+        const scoreA = a.isDone && (a.hasCombo || a.hasTip) ? 1000 : a.isDone ? 800 : 500;
+        const scoreB = b.isDone && (b.hasCombo || b.hasTip) ? 1000 : b.isDone ? 800 : 500;
+        if (scoreA !== scoreB) return scoreB - scoreA;
+        return new Date(b.checkinDate).getTime() - new Date(a.checkinDate).getTime();
+      });
 
     // 6. Aggregate 4 Pipeline Stages (Done in Month per stage)
     const stageCounts: Record<
@@ -1590,6 +1986,10 @@ export class TelesaleTargetService {
         doneActual: teamDailySingleDoneActual,
         comboLiveDoneActual: teamDailyComboLiveDoneActual,
         retailDoneActual: teamDailySingleDoneActual,
+        checkinTarget: config.dailyDoneTarget,
+        checkinActual: teamDailySingleCheckinActual,
+        retailCheckinActual: teamDailySingleCheckinActual,
+        comboLiveCheckinActual: teamDailyComboLiveCheckinActual,
         bookTarget: config.dailyBookTarget,
         bookActual: teamDailyBookActual,
         comboLiveBookActual: teamDailyComboLiveBookActual,
@@ -1612,6 +2012,8 @@ export class TelesaleTargetService {
       },
       pipelineStages,
       todayLiveEvents,
+      todayBookList,
+      todayCheckinList,
     };
   }
 
@@ -1732,7 +2134,7 @@ export class TelesaleTargetService {
     };
   }
 
-  static getFallbackCelebrationQuote(type: 'BOOK' | 'DONE', staffName: string): string {
+  static getFallbackCelebrationQuote(type: 'BOOK' | 'DONE' | 'CHECKIN' | 'COMBO' | 'TIP', staffName: string): string {
     const bookQuotes = [
       'Anh thích cái cách [Tên] chăm sóc khách hàng đầy ân cần. Thêm một lịch hẹn ngọt ngào về với đội mình rồi, em làm anh tự hào quá!',
       '[Tên] ơi, sự chân thành từ trái tim em luôn có ma lực đặc biệt. Thêm một Book tuyệt đẹp, tiếp tục tỏa sáng nhé người đẹp!',
@@ -1740,6 +2142,27 @@ export class TelesaleTargetService {
       'Nụ cười vui vẻ của [Tên] qua từng cuộc gọi đã thắp sáng cả phòng rồi. Chốt thêm một Book quá đỗi quyến rũ em ơi!',
       'Từng lời em nói đều làm khách hàng xiêu lòng. Một Book xuất sắc nữa cho [Tên], phong độ đỉnh cao của em khiến ai cũng phải ngước nhìn!',
       'Năng lượng tích cực và sự chân thành của [Tên] đã chinh phục khách hàng hoàn toàn. Một Book rực rỡ nữa cho cô gái tuyệt vời của anh!',
+    ];
+
+    const checkinQuotes = [
+      'Khách đã bước chân vào tiệm rồi [Tên] ơi! Sự ân cần của em đã đưa khách đến đúng hẹn, thêm một Check-in chắc thắng!',
+      'Check-in thành công rồi! Khách tới tiệm là nắm chắc trong tay quả ngọt, [Tên] làm anh tự hào quá!',
+      'Sự chân thành của [Tên] đã dẫn lối khách đến với Wings. Thêm một khách check-in cực kỳ rực rỡ nhé!',
+      'Đón khách vào tiệm suôn sẻ và ấm áp! Năng lượng vui vẻ của [Tên] hôm nay lan tỏa khắp salon rồi!',
+      'Khách đã có mặt tại tiệm, quy trình chăm sóc quá đỗi khoa học của [Tên] đang phát huy sức mạnh tối đa!',
+    ];
+
+    const comboQuotes = [
+      'Đỉnh cao tư vấn! [Tên] vừa chốt trọn gói Combo làm đẹp rực rỡ, đẳng cấp của em khiến ai cũng phải ngưỡng mộ!',
+      'Khách hàng mê mẩn gói Combo của [Tên] rồi! Sự am hiểu khoa học và ân cần của em đã chạm đến trái tim khách hàng!',
+      'Thêm một siêu phẩm Combo về với đội mình! [Tên] ơi, phong độ đỉnh cao của em hôm nay sáng bừng cả phòng!',
+      'Combo đã chốt ngọt ngào! Niềm tin tuyệt đối khách dành cho sự chân thành của [Tên], xuất sắc lắm em!',
+    ];
+
+    const tipQuotes = [
+      'Khách hàng thưởng Tip vì sự hài lòng tuyệt đối! Trái tim ân cần của [Tên] đã được đền đáp xứng đáng rồi!',
+      'Thêm một khoản Tip ngọt ngào cho [Tên]! Năng lượng tích cực và nụ cười của em làm khách quý mến vô cùng!',
+      'Khách yêu quý gửi trọn niềm vui và tiền Tip! Đẳng cấp phục vụ chuẩn mực của [Tên] làm anh vô cùng tự hào!',
     ];
 
     const doneQuotes = [
@@ -1751,14 +2174,19 @@ export class TelesaleTargetService {
       'Chăm sóc ân cần, bám sát khoa học. Không ai làm điều đó xuất sắc hơn [Tên], chúc mừng em đã mang thêm một Done rực rỡ về đội!',
     ];
 
-    const list = type === 'DONE' ? doneQuotes : bookQuotes;
+    let list = bookQuotes;
+    if (type === 'CHECKIN') list = checkinQuotes;
+    else if (type === 'COMBO') list = comboQuotes;
+    else if (type === 'TIP') list = tipQuotes;
+    else if (type === 'DONE') list = doneQuotes;
+
     const template = list[Math.floor(Math.random() * list.length)] || list[0];
     return template.replace(/\[Tên\]/g, staffName);
   }
 
   static async generateLiveCelebrationQuote(
     fastify: FastifyInstance,
-    type: 'BOOK' | 'DONE',
+    type: 'BOOK' | 'DONE' | 'CHECKIN' | 'COMBO' | 'TIP',
     staffName: string
   ): Promise<{ quote: string; source: 'gemini' | 'fallback' }> {
     const fallbackQuote = this.getFallbackCelebrationQuote(type, staffName);
@@ -1771,10 +2199,17 @@ export class TelesaleTargetService {
     try {
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
 
+      const eventDescription =
+        {
+          BOOK: 'BOOK (khách hàng vừa chốt lịch hẹn mới)',
+          CHECKIN: 'CHECK-IN (khách hàng vừa có mặt check-in tại tiệm, chắc chắn hoàn tất)',
+          DONE: 'DONE (khách hàng đã hoàn tất dịch vụ tại tiệm)',
+          COMBO: 'COMBO (khách hàng quyết định mua gói Combo làm đẹp giá trị cao)',
+          TIP: 'TIP (khách hàng hài lòng tuyệt đối và gửi tiền tip thưởng)',
+        }[type] || type;
+
       const systemPrompt = `Bạn là một "Nam Thần" lịch lãm, quyến rũ, ấm áp và khích lệ tại hệ thống chuỗi làm đẹp Wings (Wingslashes).
-Nhiệm vụ của bạn là nói duy nhất 1 câu chúc mừng ngắn gọn (dưới 18 từ) bằng tiếng Việt dành tặng cho nhân viên Telesales tên là "${staffName}", vừa có 1 đơn ${
-        type === 'DONE' ? 'DONE (khách hàng đã tới tiệm hoàn tất dịch vụ)' : 'BOOK (khách hàng vừa chốt lịch hẹn mới)'
-      }.
+Nhiệm vụ của bạn là nói duy nhất 1 câu chúc mừng ngắn gọn (dưới 18 từ) bằng tiếng Việt dành tặng cho nhân viên Telesales tên là "${staffName}", vừa có 1 sự kiện ${eventDescription}.
 YÊU CẦU BẮT BUỘC:
 1. Giọng điệu: Nam thần cuốn hút, gợi cảm, chân thành và tràn đầy sự khích lệ, tự hào về người đó.
 2. Khéo léo lồng ghép ít nhất một trong 4 giá trị văn hóa cốt lõi của Wings: Vui vẻ, Ân cần, Chân thành, Khoa học.

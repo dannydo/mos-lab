@@ -81,7 +81,7 @@ describe('useTelesaleTvLiveCelebration Hook & Event Ingestion (MOS-BUG-86)', () 
     expect(result.current.activeCelebration).toBeNull();
   });
 
-  it('triggers Voice Celebration immediately when a new Done or Book arrives in subsequent polls', async () => {
+  it('triggers Voice Celebration immediately when a new Check-in or Book arrives in subsequent polls', async () => {
     const { result } = renderHook(() => useTelesaleTvLiveCelebration());
 
     const initialEvents: TelesaleTodayLiveEvent[] = [
@@ -101,10 +101,10 @@ describe('useTelesaleTvLiveCelebration Hook & Event Ingestion (MOS-BUG-86)', () 
     });
     expect(result.current.activeCelebration).toBeNull();
 
-    // Subsequent poll: new Done event arrives for Bích Phượng
-    const newDoneEvent: TelesaleTodayLiveEvent = {
-      id: 'done-336827',
-      type: 'DONE',
+    // Subsequent poll: new Check-in event arrives for Bích Phượng
+    const newCheckinEvent: TelesaleTodayLiveEvent = {
+      id: 'checkin-336827',
+      type: 'CHECKIN',
       staffId: 50670,
       staffName: 'Bích Phượng',
       avatarUrl: 'https://avatar/phuong.jpg',
@@ -113,18 +113,48 @@ describe('useTelesaleTvLiveCelebration Hook & Event Ingestion (MOS-BUG-86)', () 
     };
 
     act(() => {
-      result.current.ingestLiveEvents([...initialEvents, newDoneEvent]);
+      result.current.ingestLiveEvents([...initialEvents, newCheckinEvent]);
     });
 
     await waitFor(() => {
       expect(result.current.activeCelebration).not.toBeNull();
     });
 
-    expect(result.current.activeCelebration?.id).toBe('done-336827');
-    expect(result.current.activeCelebration?.kind).toBe('DONE');
+    expect(result.current.activeCelebration?.id).toBe('checkin-336827');
+    expect(result.current.activeCelebration?.kind).toBe('CHECKIN');
     expect(result.current.activeCelebration?.staffName).toBe('Bích Phượng');
-    expect(result.current.activeCelebration?.badgeText).toBe('+1 DONE HÔM NAY');
+    expect(result.current.activeCelebration?.badgeText).toBe('+1 CHECK-IN KHÁCH LẺ');
     expect(result.current.activeCelebration?.colorTheme).toBe('emerald');
+  });
+
+  it('triggers special Voice Celebration for Done event with Combo package', async () => {
+    const { result } = renderHook(() => useTelesaleTvLiveCelebration());
+
+    act(() => {
+      result.current.ingestLiveEvents([]);
+    });
+
+    const comboDoneEvent: TelesaleTodayLiveEvent = {
+      id: 'done-combo-1',
+      type: 'DONE',
+      staffId: 50670,
+      staffName: 'Bích Phượng',
+      timestamp: new Date().toISOString(),
+      hasCombo: true,
+      comboPackageName: 'Combo 5 Buổi',
+    };
+
+    act(() => {
+      result.current.ingestLiveEvents([comboDoneEvent]);
+    });
+
+    await waitFor(() => {
+      expect(result.current.activeCelebration).not.toBeNull();
+    });
+
+    expect(result.current.activeCelebration?.kind).toBe('COMBO');
+    expect(result.current.activeCelebration?.badgeText).toBe('✨ +1 COMBO ĐÃ CHỐT!');
+    expect(result.current.activeCelebration?.colorTheme).toBe('purple');
   });
 
   it('ensures each event is announced only once and does not repeat on duplicate polls', async () => {
@@ -135,9 +165,9 @@ describe('useTelesaleTvLiveCelebration Hook & Event Ingestion (MOS-BUG-86)', () 
       result.current.ingestLiveEvents([]);
     });
 
-    const newDoneEvent: TelesaleTodayLiveEvent = {
-      id: 'done-500',
-      type: 'DONE',
+    const newCheckinEvent: TelesaleTodayLiveEvent = {
+      id: 'checkin-500',
+      type: 'CHECKIN',
       staffId: 52648,
       staffName: 'Thuý Kiều',
       timestamp: new Date().toISOString(),
@@ -145,19 +175,19 @@ describe('useTelesaleTvLiveCelebration Hook & Event Ingestion (MOS-BUG-86)', () 
     };
 
     act(() => {
-      result.current.ingestLiveEvents([newDoneEvent]);
+      result.current.ingestLiveEvents([newCheckinEvent]);
     });
 
     await waitFor(() => {
-      expect(result.current.activeCelebration?.id).toBe('done-500');
+      expect(result.current.activeCelebration?.id).toBe('checkin-500');
     });
 
     // Ingesting the same event again in next poll must NOT duplicate
     act(() => {
-      result.current.ingestLiveEvents([newDoneEvent]);
+      result.current.ingestLiveEvents([newCheckinEvent]);
     });
 
-    // Remains done-500 (not queued a second time)
-    expect(result.current.activeCelebration?.id).toBe('done-500');
+    // Remains checkin-500 (not queued a second time)
+    expect(result.current.activeCelebration?.id).toBe('checkin-500');
   });
 });

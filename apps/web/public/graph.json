@@ -10090,7 +10090,7 @@
         "path": "/api/kpi/telesale-target/live-celebration-audio",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 173
+        "line": 174
       }
     },
     {
@@ -10104,7 +10104,7 @@
         "path": "/api/kpi/telesale-target/tv-journal",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 198
+        "line": 199
       }
     },
     {
@@ -10118,7 +10118,7 @@
         "path": "/api/kpi/telesale-target/tv-journal/sync",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 219
+        "line": 220
       }
     },
     {
@@ -26274,6 +26274,30 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:TelesaleTodayBookItem",
+      "type": "SharedType",
+      "label": "TelesaleTodayBookItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-target.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleTodayBookItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TelesaleTodayCheckinItem",
+      "type": "SharedType",
+      "label": "TelesaleTodayCheckinItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-target.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleTodayCheckinItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:TelesaleTodayLiveEvent",
       "type": "SharedType",
       "label": "TelesaleTodayLiveEvent",
@@ -31680,8 +31704,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9143,
-        "lineCount": 231,
+        "sizeBytes": 9160,
+        "lineCount": 232,
         "ext": ".ts"
       }
     },
@@ -31914,8 +31938,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 50536,
-        "lineCount": 1422,
+        "sizeBytes": 50742,
+        "lineCount": 1425,
         "ext": ".ts"
       }
     },
@@ -31927,8 +31951,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 86300,
-        "lineCount": 2196,
+        "sizeBytes": 106207,
+        "lineCount": 2646,
         "ext": ".ts"
       }
     },
@@ -38388,8 +38412,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DailyActionSchedule.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19754,
-        "lineCount": 424,
+        "sizeBytes": 24233,
+        "lineCount": 504,
         "ext": ".tsx"
       }
     },
@@ -38401,8 +38425,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DataPipelineStages.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8269,
-        "lineCount": 193,
+        "sizeBytes": 10336,
+        "lineCount": 234,
         "ext": ".tsx"
       }
     },
@@ -38427,8 +38451,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30107,
-        "lineCount": 605,
+        "sizeBytes": 41128,
+        "lineCount": 923,
         "ext": ".tsx"
       }
     },
@@ -38466,8 +38490,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/SemicircleGauge.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7630,
-        "lineCount": 209,
+        "sizeBytes": 8136,
+        "lineCount": 207,
         "ext": ".tsx"
       }
     },
@@ -38518,8 +38542,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitor.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6244,
-        "lineCount": 194,
+        "sizeBytes": 6638,
+        "lineCount": 200,
         "ext": ".tsx"
       }
     },
@@ -38531,8 +38555,21 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 28133,
-        "lineCount": 663,
+        "sizeBytes": 36264,
+        "lineCount": 761,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvBookSidePanel.tsx",
+      "type": "File",
+      "label": "TelesaleTvBookSidePanel.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvBookSidePanel.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 9379,
+        "lineCount": 215,
         "ext": ".tsx"
       }
     },
@@ -38546,6 +38583,19 @@
       "metadata": {
         "sizeBytes": 299,
         "lineCount": 17,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvCheckinSidePanel.tsx",
+      "type": "File",
+      "label": "TelesaleTvCheckinSidePanel.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvCheckinSidePanel.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 14135,
+        "lineCount": 283,
         "ext": ".tsx"
       }
     },
@@ -38570,8 +38620,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvJournalModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26259,
-        "lineCount": 652,
+        "sizeBytes": 31518,
+        "lineCount": 773,
         "ext": ".tsx"
       }
     },
@@ -38596,8 +38646,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvLiveCelebrationBanner.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16533,
-        "lineCount": 423,
+        "sizeBytes": 19343,
+        "lineCount": 478,
         "ext": ".tsx"
       }
     },
@@ -38609,8 +38659,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 46422,
-        "lineCount": 1031,
+        "sizeBytes": 67045,
+        "lineCount": 1454,
         "ext": ".tsx"
       }
     },
@@ -38635,8 +38685,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8593,
-        "lineCount": 199,
+        "sizeBytes": 10995,
+        "lineCount": 250,
         "ext": ".tsx"
       }
     },
@@ -38648,8 +38698,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.test.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5716,
-        "lineCount": 164,
+        "sizeBytes": 6695,
+        "lineCount": 194,
         "ext": ".ts"
       }
     },
@@ -38661,8 +38711,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 32733,
-        "lineCount": 845,
+        "sizeBytes": 41178,
+        "lineCount": 1031,
         "ext": ".ts"
       }
     },
@@ -38674,8 +38724,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22245,
-        "lineCount": 528,
+        "sizeBytes": 27702,
+        "lineCount": 640,
         "ext": ".tsx"
       }
     },
@@ -38687,8 +38737,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/utils/kpi-color-utils.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2853,
-        "lineCount": 84,
+        "sizeBytes": 4058,
+        "lineCount": 92,
         "ext": ".ts"
       }
     },
@@ -38713,8 +38763,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/utils/tv-monitor-pacing.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 10406,
-        "lineCount": 302,
+        "sizeBytes": 11578,
+        "lineCount": 331,
         "ext": ".ts"
       }
     },
@@ -39649,7 +39699,7 @@
       "filePath": "apps/web/lib/api/kpi.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18859,
+        "sizeBytes": 18889,
         "lineCount": 489,
         "ext": ".ts"
       }
@@ -40806,8 +40856,8 @@
       "filePath": "packages/shared/src/types/telesale-target.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 6700,
-        "lineCount": 264,
+        "sizeBytes": 8292,
+        "lineCount": 323,
         "ext": ".ts"
       }
     },
@@ -54760,6 +54810,20 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:TelesaleTodayBookItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleTodayBookItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TelesaleTodayCheckinItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleTodayCheckinItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:TelesaleTodayLiveEvent:ws:packages/shared",
       "source": "type:@mos-lab/shared:TelesaleTodayLiveEvent",
       "target": "ws:packages/shared",
@@ -61076,6 +61140,20 @@
     {
       "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TelesaleTvBookSidePanel.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvBookSidePanel.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TelesaleTvCheckinSidePanel.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvCheckinSidePanel.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -88116,31 +88194,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3130,
-    "totalEdges": 6748,
+    "totalNodes": 3134,
+    "totalEdges": 6752,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 163,
       "FastifyRoute": 659,
       "Component": 58,
-      "SharedType": 1132,
+      "SharedType": 1134,
       "DesignToken": 12,
       "UIComponent": 216,
-      "File": 887
+      "File": 889
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1307,
+      "EXPORTS": 1309,
       "HANDLES_ROUTE": 659,
       "RENDERS": 274,
       "USES_TOKEN": 218,
-      "IMPORTS": 469,
+      "IMPORTS": 471,
       "QUERIES_MODEL": 382,
       "API_CALL": 3439
     },
     "fastifyRouteCount": 664,
     "prismaModelCount": 163,
     "nextPageCount": 58,
-    "sharedTypeCount": 1132
+    "sharedTypeCount": 1134
   },
   "routes": [
     {

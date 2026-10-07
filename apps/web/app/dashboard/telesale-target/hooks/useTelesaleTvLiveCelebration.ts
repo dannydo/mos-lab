@@ -17,15 +17,19 @@ export interface TvCelebrationSettings {
 
 export interface ActiveCelebration {
   id: string;
-  kind: 'BOOK' | 'DONE' | 'MILESTONE';
+  kind: 'BOOK' | 'DONE' | 'CHECKIN' | 'COMBO' | 'TIP' | 'MILESTONE';
   staffId?: number;
   staffName?: string;
   avatarUrl?: string | null;
   textToSpeak: string;
   badgeText: string;
-  colorTheme: 'blue' | 'emerald' | 'amber';
+  colorTheme: 'blue' | 'emerald' | 'amber' | 'purple' | 'gold';
   changeResult?: string;
   orderId?: number;
+  hasCombo?: boolean;
+  comboPackageName?: string;
+  hasTip?: boolean;
+  tipAmount?: number;
 }
 
 const SETTINGS_STORAGE_KEY = 'MOS_TV_MONITOR_VOICE_SETTINGS';
@@ -49,6 +53,31 @@ const BOOK_QUOTES = [
   'Năng lượng tích cực và sự chân thành của [Tên] đã chinh phục khách hàng hoàn toàn. Một Book rực rỡ nữa cho cô gái tuyệt vời của anh!',
 ];
 
+const CHECKIN_QUOTES = [
+  'Khách yêu đã tới tiệm rồi! Chúc mừng [Tên] vừa có thêm 1 lượt Check-in thành công, khách vào tiệm là chắc chắn Done rồi em ơi!',
+  'Ân cần từ lúc book đến khi khách tới cửa. Một Check-in tuyệt vời cho [Tên], phong độ của em hôm nay đỉnh quá!',
+  'Chào đón khách rạng rỡ như ánh bình minh! [Tên] vừa ghi nhận thêm một lượt Check-in, tiếp tục giữ vững năng lượng nhé!',
+  'Khách đã có mặt đúng giờ hẹn rồi! Sự chân thành của [Tên] luôn làm khách an tâm, cộng thêm một Check-in ngọt ngào!',
+  'Khách vào ghế rồi các em ơi! Chúc mừng [Tên] đã đồng hành trọn vẹn, thêm một lượt Check-in chuẩn chỉ cho đội mình!',
+];
+
+const COMBO_QUOTES = [
+  'Đỉnh cao tư vấn! Khách không chỉ làm đẹp mà còn chốt ngay Combo! Chúc mừng [Tên] đã mang về một Combo quá đỗi đẳng cấp!',
+  'Thấu hiểu nhu cầu và trao gửi giá trị dài lâu! Một Combo xuất sắc nữa thuộc về [Tên], em làm anh thực sự thán phục!',
+  'Bùng nổ rồi [Tên] ơi! Khách tin yêu chốt trọn gói Combo, phong thái chuyên nghiệp của em hôm nay tỏa sáng rực rỡ!',
+];
+
+const TIP_QUOTES = [
+  'Khách thương khách quý thưởng Tip liền tay! Chúc mừng [Tên], sự tận tâm và chân thành của em đã chạm đến trái tim khách hàng!',
+  'Một nụ cười, trọn niềm tin và thêm khoản Tip xứng đáng! Tự hào về sự chăm sóc ân cần của [Tên] vô cùng!',
+  'Tuyệt vời lắm [Tên] ơi! Tay nghề tinh hoa cùng sự chu đáo đã được khách gửi gắm bằng món quà Tip ngọt ngào!',
+];
+
+const COMBO_TIP_QUOTES = [
+  'Siêu phẩm hôm nay đây rồi! Vừa chốt trọn Combo lại vừa được khách thưởng Tip! [Tên] hôm nay chính là ngôi sao sáng nhất phòng Telesales!',
+  'Đẳng cấp nhân đôi! Cả Combo lẫn Tip đều về với đội [Tên]! Sự ân cần và khoa học của em đã tạo nên kỳ tích ngọt ngào!',
+];
+
 const DONE_QUOTES = [
   'Từ lời hẹn ân cần đến trải nghiệm thực tế, [Tên] biến mọi khoảnh khắc thành sự hài lòng tuyệt đối. Cộng một Done quá đỗi ngọt ngào!',
   'Khách hàng trao gửi trọn vẹn niềm tin cho sự chân thành của [Tên]. Một Done hoàn hảo, phong thái của em hôm nay quyến rũ không thể cưỡng lại!',
@@ -64,7 +93,10 @@ export function getRandomQuote(quotes: string[], name: string): string {
 }
 
 // Synthesize pleasant celebratory chime with Web Audio API
-function playCelebratoryChime(volume = 0.9, kind: 'BOOK' | 'DONE' | 'MILESTONE' = 'BOOK') {
+function playCelebratoryChime(
+  volume = 0.9,
+  kind: 'BOOK' | 'DONE' | 'CHECKIN' | 'COMBO' | 'TIP' | 'MILESTONE' = 'BOOK'
+) {
   if (typeof window === 'undefined') return;
   try {
     const AudioCtx =
@@ -77,13 +109,19 @@ function playCelebratoryChime(volume = 0.9, kind: 'BOOK' | 'DONE' | 'MILESTONE' 
     gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
     gainNode.connect(ctx.destination);
 
-    // Chime chords: higher pitches for Milestone, bright for Book/Done
+    // Chime chords: higher pitches for Milestone, bright for Book/Done/Checkin/Combo/Tip
     const baseFreqs =
       kind === 'MILESTONE'
         ? [523.25, 659.25, 783.99, 1046.5]
-        : kind === 'DONE'
-          ? [440, 554.37, 659.25]
-          : [587.33, 739.99, 880];
+        : kind === 'COMBO'
+          ? [440, 554.37, 659.25, 880]
+          : kind === 'TIP'
+            ? [587.33, 739.99, 880, 1174.66]
+            : kind === 'CHECKIN'
+              ? [523.25, 659.25, 783.99]
+              : kind === 'DONE'
+                ? [440, 554.37, 659.25]
+                : [587.33, 739.99, 880];
 
     baseFreqs.forEach((freq, idx) => {
       const osc = ctx.createOscillator();
@@ -611,44 +649,168 @@ export function useTelesaleTvLiveCelebration() {
       // Process all fresh events in sequence (không bỏ sót bất kỳ event nào)
       for (const ev of eventsToAnnounce) {
         const staffName = ev.staffName || 'Bạn Telesales';
-        const defaultQuote = getRandomQuote(ev.type === 'BOOK' ? BOOK_QUOTES : DONE_QUOTES, staffName);
 
-        // Fetch quote with 1500ms timeout so we don't delay celebration
-        const quotePromise = Promise.race([
-          apiClient.telesaleTarget.getCelebrationQuote({ type: ev.type, staffName }),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
-        ]);
+        if (ev.type === 'BOOK') {
+          const defaultQuote = getRandomQuote(BOOK_QUOTES, staffName);
+          // Fetch quote with 1500ms timeout so we don't delay celebration
+          const quotePromise = Promise.race([
+            apiClient.telesaleTarget.getCelebrationQuote({ type: 'BOOK', staffName }),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+          ]);
 
-        quotePromise
-          .then((res: SafeAny) => {
-            const quote = res?.quote?.trim() || defaultQuote;
-            enqueueCelebration({
-              id: ev.id,
-              kind: ev.type,
-              staffId: ev.staffId,
-              staffName,
-              avatarUrl: ev.avatarUrl,
-              textToSpeak: quote,
-              badgeText: ev.type === 'BOOK' ? '+1 BOOK HÔM NAY' : '+1 DONE HÔM NAY',
-              colorTheme: ev.type === 'BOOK' ? 'blue' : 'emerald',
-              changeResult: ev.changeResult,
-              orderId: ev.orderId,
+          quotePromise
+            .then((res: SafeAny) => {
+              const quote = res?.quote?.trim() || defaultQuote;
+              enqueueCelebration({
+                id: ev.id,
+                kind: 'BOOK',
+                staffId: ev.staffId,
+                staffName,
+                avatarUrl: ev.avatarUrl,
+                textToSpeak: quote,
+                badgeText: '+1 BOOK HÔM NAY',
+                colorTheme: 'blue',
+                changeResult: ev.changeResult,
+                orderId: ev.orderId,
+              });
+            })
+            .catch(() => {
+              enqueueCelebration({
+                id: ev.id,
+                kind: 'BOOK',
+                staffId: ev.staffId,
+                staffName,
+                avatarUrl: ev.avatarUrl,
+                textToSpeak: defaultQuote,
+                badgeText: '+1 BOOK HÔM NAY',
+                colorTheme: 'blue',
+                changeResult: ev.changeResult,
+                orderId: ev.orderId,
+              });
             });
-          })
-          .catch(() => {
+        } else if (ev.type === 'CHECKIN') {
+          const defaultQuote = getRandomQuote(CHECKIN_QUOTES, staffName);
+          const quotePromise = Promise.race([
+            apiClient.telesaleTarget.getCelebrationQuote({ type: 'CHECKIN', staffName }),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+          ]);
+
+          quotePromise
+            .then((res: SafeAny) => {
+              const quote = res?.quote?.trim() || defaultQuote;
+              enqueueCelebration({
+                id: ev.id,
+                kind: 'CHECKIN',
+                staffId: ev.staffId,
+                staffName,
+                avatarUrl: ev.avatarUrl,
+                textToSpeak: quote,
+                badgeText: '+1 CHECK-IN KHÁCH LẺ',
+                colorTheme: 'emerald',
+                changeResult: ev.changeResult,
+                orderId: ev.orderId,
+              });
+            })
+            .catch(() => {
+              enqueueCelebration({
+                id: ev.id,
+                kind: 'CHECKIN',
+                staffId: ev.staffId,
+                staffName,
+                avatarUrl: ev.avatarUrl,
+                textToSpeak: defaultQuote,
+                badgeText: '+1 CHECK-IN KHÁCH LẺ',
+                colorTheme: 'emerald',
+                changeResult: ev.changeResult,
+                orderId: ev.orderId,
+              });
+            });
+        } else if (ev.type === 'DONE') {
+          // Chỉ chúc mừng nếu có COMBO hoặc TIP (theo đúng kịch bản grill-me)
+          const hasCombo = !!ev.hasCombo;
+          const hasTip = !!ev.hasTip;
+
+          if (hasCombo && hasTip) {
+            const defaultQuote = getRandomQuote(COMBO_TIP_QUOTES, staffName);
+            const tipText = ev.tipAmount ? ` ${ev.tipAmount.toLocaleString('vi-VN')}đ` : '';
             enqueueCelebration({
               id: ev.id,
-              kind: ev.type,
+              kind: 'COMBO',
               staffId: ev.staffId,
               staffName,
               avatarUrl: ev.avatarUrl,
               textToSpeak: defaultQuote,
-              badgeText: ev.type === 'BOOK' ? '+1 BOOK HÔM NAY' : '+1 DONE HÔM NAY',
-              colorTheme: ev.type === 'BOOK' ? 'blue' : 'emerald',
+              badgeText: `👑 +COMBO & TIP${tipText} XUẤT SẮC!`,
+              colorTheme: 'purple',
               changeResult: ev.changeResult,
               orderId: ev.orderId,
+              hasCombo: true,
+              comboPackageName: ev.comboPackageName,
+              hasTip: true,
+              tipAmount: ev.tipAmount,
             });
-          });
+          } else if (hasCombo) {
+            const defaultQuote = getRandomQuote(COMBO_QUOTES, staffName);
+            enqueueCelebration({
+              id: ev.id,
+              kind: 'COMBO',
+              staffId: ev.staffId,
+              staffName,
+              avatarUrl: ev.avatarUrl,
+              textToSpeak: defaultQuote,
+              badgeText: '✨ +1 COMBO ĐÃ CHỐT!',
+              colorTheme: 'purple',
+              changeResult: ev.changeResult,
+              orderId: ev.orderId,
+              hasCombo: true,
+              comboPackageName: ev.comboPackageName,
+            });
+          } else if (hasTip) {
+            const defaultQuote = getRandomQuote(TIP_QUOTES, staffName);
+            const tipText = ev.tipAmount ? ` ${ev.tipAmount.toLocaleString('vi-VN')}đ` : '';
+            enqueueCelebration({
+              id: ev.id,
+              kind: 'TIP',
+              staffId: ev.staffId,
+              staffName,
+              avatarUrl: ev.avatarUrl,
+              textToSpeak: defaultQuote,
+              badgeText: `💛 +TIP KHÁCH THƯỞNG${tipText}!`,
+              colorTheme: 'gold',
+              changeResult: ev.changeResult,
+              orderId: ev.orderId,
+              hasTip: true,
+              tipAmount: ev.tipAmount,
+            });
+          } else {
+            // Đơn thường hoàn tất: Ghi nhận êm ái vào nhật ký, không làm phiền phòng trực
+            recordEventLog({
+              id: ev.id,
+              type: 'DONE',
+              staffId: ev.staffId,
+              staffName,
+              avatarUrl: ev.avatarUrl,
+              timestamp: ev.timestamp,
+              timeFormatted: new Date(ev.timestamp).toLocaleTimeString('vi-VN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false,
+                timeZone: 'Asia/Ho_Chi_Minh',
+              }),
+              changeResult: ev.changeResult || 'Done (Đơn thường)',
+              orderId: ev.orderId,
+              eventReceived: true,
+              eventReceivedAt: new Date().toISOString(),
+              voiceTriggered: false,
+              voiceErrorReason: 'Đơn thường hoàn tất (không combo/tip)',
+              overlayTriggered: false,
+              overlayErrorReason: 'Đơn thường hoàn tất (không combo/tip)',
+              status: 'SUCCESS',
+              errorMessage: null,
+            });
+          }
+        }
       }
     },
     [enqueueCelebration, recordEventLog]
@@ -755,7 +917,7 @@ export function useTelesaleTvLiveCelebration() {
 
   // 8. Manual Demo Triggers (For testing & Manager preview)
   const triggerDemoCelebration = useCallback(
-    (type: 'BOOK' | 'DONE' | 'MILESTONE') => {
+    (type: 'BOOK' | 'DONE' | 'CHECKIN' | 'COMBO' | 'TIP' | 'MILESTONE') => {
       const demoId = `demo-${Date.now()}`;
       if (type === 'BOOK') {
         const staffName = 'Bích Phượng';
@@ -786,35 +948,58 @@ export function useTelesaleTvLiveCelebration() {
               colorTheme: 'blue',
             });
           });
+      } else if (type === 'CHECKIN') {
+        const staffName = 'Thuý Kiều';
+        const defaultQuote = getRandomQuote(CHECKIN_QUOTES, staffName);
+        enqueueCelebration({
+          id: demoId,
+          kind: 'CHECKIN',
+          staffName,
+          avatarUrl: 'https://lh3.googleusercontent.com/a/ACg8ocIDkNj8m3jfUn2iO_gmhiuLwSJ3XF2Gaqvi69RiG3-My5olzA=s96-c',
+          textToSpeak: defaultQuote,
+          badgeText: '+1 CHECK-IN (DEMO)',
+          colorTheme: 'emerald',
+        });
+      } else if (type === 'COMBO') {
+        const staffName = 'Bích Phượng';
+        const defaultQuote = getRandomQuote(COMBO_QUOTES, staffName);
+        enqueueCelebration({
+          id: demoId,
+          kind: 'COMBO',
+          staffName,
+          avatarUrl: 'https://lh3.googleusercontent.com/a/ACg8ocImU7oxC33vMir9F9rllmN4y1LVBkzJXB5ff9RCZyy-9brDnA=s96-c',
+          textToSpeak: defaultQuote,
+          badgeText: '✨ +1 COMBO ĐÃ CHỐT! (DEMO)',
+          colorTheme: 'purple',
+          hasCombo: true,
+          comboPackageName: 'Combo Nàng Thơ 5 Buổi',
+        });
+      } else if (type === 'TIP') {
+        const staffName = 'Thuý Kiều';
+        const defaultQuote = getRandomQuote(TIP_QUOTES, staffName);
+        enqueueCelebration({
+          id: demoId,
+          kind: 'TIP',
+          staffName,
+          avatarUrl: 'https://lh3.googleusercontent.com/a/ACg8ocIDkNj8m3jfUn2iO_gmhiuLwSJ3XF2Gaqvi69RiG3-My5olzA=s96-c',
+          textToSpeak: defaultQuote,
+          badgeText: '💛 +TIP 50.000đ (DEMO)',
+          colorTheme: 'gold',
+          hasTip: true,
+          tipAmount: 50000,
+        });
       } else if (type === 'DONE') {
         const staffName = 'Thuý Kiều';
         const defaultQuote = getRandomQuote(DONE_QUOTES, staffName);
-        apiClient.telesaleTarget
-          .getCelebrationQuote({ type: 'DONE', staffName })
-          .then((res) => {
-            enqueueCelebration({
-              id: demoId,
-              kind: 'DONE',
-              staffName,
-              avatarUrl:
-                'https://lh3.googleusercontent.com/a/ACg8ocIDkNj8m3jfUn2iO_gmhiuLwSJ3XF2Gaqvi69RiG3-My5olzA=s96-c',
-              textToSpeak: res?.quote?.trim() || defaultQuote,
-              badgeText: '+1 DONE (DEMO)',
-              colorTheme: 'emerald',
-            });
-          })
-          .catch(() => {
-            enqueueCelebration({
-              id: demoId,
-              kind: 'DONE',
-              staffName,
-              avatarUrl:
-                'https://lh3.googleusercontent.com/a/ACg8ocIDkNj8m3jfUn2iO_gmhiuLwSJ3XF2Gaqvi69RiG3-My5olzA=s96-c',
-              textToSpeak: defaultQuote,
-              badgeText: '+1 DONE (DEMO)',
-              colorTheme: 'emerald',
-            });
-          });
+        enqueueCelebration({
+          id: demoId,
+          kind: 'DONE',
+          staffName,
+          avatarUrl: 'https://lh3.googleusercontent.com/a/ACg8ocIDkNj8m3jfUn2iO_gmhiuLwSJ3XF2Gaqvi69RiG3-My5olzA=s96-c',
+          textToSpeak: defaultQuote,
+          badgeText: '+1 DONE (DEMO)',
+          colorTheme: 'emerald',
+        });
       } else {
         enqueueCelebration({
           id: demoId,

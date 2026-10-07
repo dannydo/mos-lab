@@ -36,28 +36,33 @@ const TONE_MAP: Record<
 > = {
   emerald: {
     strokeClass: 'stroke-emerald-500',
-    textClass: 'text-emerald-400',
-    badgeClass: 'text-emerald-400 border-emerald-500/30 bg-emerald-950/40',
+    textClass: 'text-emerald-600 dark:text-emerald-400',
+    badgeClass:
+      'text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/40',
   },
   blue: {
     strokeClass: 'stroke-blue-500',
-    textClass: 'text-blue-400',
-    badgeClass: 'text-blue-400 border-blue-500/30 bg-blue-950/40',
+    textClass: 'text-blue-600 dark:text-blue-400',
+    badgeClass:
+      'text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-950/40',
   },
   purple: {
     strokeClass: 'stroke-purple-500',
-    textClass: 'text-purple-400',
-    badgeClass: 'text-purple-400 border-purple-500/30 bg-purple-950/40',
+    textClass: 'text-purple-600 dark:text-purple-400',
+    badgeClass:
+      'text-purple-700 dark:text-purple-400 border-purple-300 dark:border-purple-500/30 bg-purple-50 dark:bg-purple-950/40',
   },
   amber: {
     strokeClass: 'stroke-amber-500',
-    textClass: 'text-amber-400',
-    badgeClass: 'text-amber-400 border-amber-500/30 bg-amber-950/40',
+    textClass: 'text-amber-600 dark:text-amber-400',
+    badgeClass:
+      'text-amber-800 dark:text-amber-400 border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-950/40',
   },
   rose: {
     strokeClass: 'stroke-rose-500',
-    textClass: 'text-rose-400',
-    badgeClass: 'text-rose-400 border-rose-500/30 bg-rose-950/40',
+    textClass: 'text-rose-600 dark:text-rose-400',
+    badgeClass:
+      'text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-950/40',
   },
 };
 
@@ -110,10 +115,10 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
 
   const gapColorClasses =
     gapType === 'positive'
-      ? 'text-emerald-400 bg-emerald-950/80 border-emerald-500/40'
+      ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/80 border-emerald-300 dark:border-emerald-500/40'
       : gapType === 'negative'
-        ? 'text-rose-400 bg-rose-950/80 border-rose-500/40'
-        : 'text-amber-400 bg-amber-950/80 border-amber-500/40';
+        ? 'text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/80 border-rose-300 dark:border-rose-500/40'
+        : 'text-amber-800 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/80 border-amber-300 dark:border-amber-500/40';
 
   const bottomOffsetClass = isTv ? 'bottom-[16px] sm:bottom-[20px]' : 'bottom-[8px]';
   const toneConfig = TONE_MAP[tone] || TONE_MAP.emerald;
@@ -125,8 +130,8 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
     ? `text-7xl sm:text-8xl lg:text-9xl font-black font-mono tabular-nums leading-none ${toneConfig.textClass}`
     : `text-2xl sm:text-3xl font-black font-mono tabular-nums leading-none ${toneConfig.textClass}`;
   const targetTextClass = isTv
-    ? 'text-2xl sm:text-3xl lg:text-4xl font-mono text-zinc-500 font-bold leading-none'
-    : 'text-[11px] font-mono text-zinc-500 font-bold leading-none';
+    ? 'text-2xl sm:text-3xl lg:text-4xl font-mono text-slate-400 dark:text-zinc-500 font-bold leading-none'
+    : 'text-[11px] font-mono text-slate-400 dark:text-zinc-500 font-bold leading-none';
   const badgeClass = isTv
     ? `text-xs sm:text-sm font-mono font-bold px-3 py-1 rounded-md border ${toneConfig.badgeClass}`
     : `text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border ${toneConfig.badgeClass}`;
@@ -138,7 +143,13 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
     <div className={`relative w-full ${heightClass} mx-auto flex flex-col items-center justify-end ${className}`}>
       <svg className="w-full h-full overflow-visible" viewBox={viewBoxStr}>
         {/* Background Track Arc */}
-        <path d={pathD} fill="none" strokeWidth={strokeWidthVal} strokeLinecap="round" className="stroke-zinc-800" />
+        <path
+          d={pathD}
+          fill="none"
+          strokeWidth={strokeWidthVal}
+          strokeLinecap="round"
+          className="stroke-slate-200 dark:stroke-zinc-800"
+        />
 
         {/* Target / Pacing Arc (e.g. Red Gap or Pacing target) */}
         {showPacingArc && pacingOffset !== undefined && (
@@ -197,11 +208,7 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
           <span className={badgeClass}>{percent}% ĐẠT</span>
           {gapText && <span className={gapBadgeClass}>{gapText}</span>}
         </div>
-        {subtitle ? (
-          <div className="text-zinc-400 text-xs font-mono font-medium mt-1">{subtitle}</div>
-        ) : isTv ? (
-          <div className="text-zinc-400 text-xs font-mono font-medium mt-1">Ca chiều: 13:00 - 17:00</div>
-        ) : null}
+        {subtitle && <div className="text-zinc-400 text-xs font-mono font-medium mt-1">{subtitle}</div>}
       </div>
     </div>
   );

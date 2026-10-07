@@ -145,6 +145,13 @@ export interface TvMonitorKpiMetrics {
   gapBook: number;
   remainingDone: number;
   remainingBook: number;
+  checkinTarget: number;
+  checkinActual: number;
+  comboLiveCheckinActual: number;
+  checkinPercent: number;
+  expectedCheckin: number;
+  gapCheckin: number;
+  remainingCheckin: number;
   teamState: 'WARMUP' | 'ON_PACE' | 'ACCELERATING' | 'APPROACHING' | 'COMPLETED' | 'NEEDS_BREAKTHROUGH';
   teamStateLabel: string;
   teamStateBadge: string;
@@ -152,6 +159,7 @@ export interface TvMonitorKpiMetrics {
   actionableMessage: string;
   bookTier: 'emerald' | 'amber' | 'rose';
   doneTier: 'emerald' | 'amber' | 'rose';
+  checkinTier: 'emerald' | 'amber' | 'rose';
 }
 
 /**
@@ -192,6 +200,10 @@ export function calculateTvMonitorMetrics(
     bookActual?: number | null;
     comboLiveDoneActual?: number | null;
     comboLiveBookActual?: number | null;
+    checkinTarget?: number | null;
+    checkinActual?: number | null;
+    retailCheckinActual?: number | null;
+    comboLiveCheckinActual?: number | null;
   },
   pacing: ShiftPacingResult
 ): TvMonitorKpiMetrics {
@@ -202,17 +214,25 @@ export function calculateTvMonitorMetrics(
   const comboLiveDoneActual = teamDaily.comboLiveDoneActual || 0;
   const comboLiveBookActual = teamDaily.comboLiveBookActual || 0;
 
+  const checkinTarget = teamDaily.checkinTarget || doneTarget;
+  const checkinActual = teamDaily.checkinActual ?? teamDaily.retailCheckinActual ?? doneActual;
+  const comboLiveCheckinActual = teamDaily.comboLiveCheckinActual ?? comboLiveDoneActual;
+
   const donePercent = Math.round((doneActual / doneTarget) * 100);
   const bookPercent = Math.round((bookActual / bookTarget) * 100);
+  const checkinPercent = Math.round((checkinActual / checkinTarget) * 100);
 
   const expectedDone = Math.round(doneTarget * pacing.rTime);
   const expectedBook = Math.round(bookTarget * pacing.rTime);
+  const expectedCheckin = Math.round(checkinTarget * pacing.rTime);
 
   const gapDone = doneActual - expectedDone;
   const gapBook = bookActual - expectedBook;
+  const gapCheckin = checkinActual - expectedCheckin;
 
   const remainingDone = Math.max(0, doneTarget - doneActual);
   const remainingBook = Math.max(0, bookTarget - bookActual);
+  const remainingCheckin = Math.max(0, checkinTarget - checkinActual);
 
   // 1. Determine Team State - Ưu tiên theo tiến độ BOOK (MOS-BUG-75)
   let teamState: TvMonitorKpiMetrics['teamState'];
@@ -274,6 +294,7 @@ export function calculateTvMonitorMetrics(
   // 3. Pacing-aware Tiers (Xanh khi bám/vượt nhịp thời gian, Vàng khi chậm nhẹ/khởi động, Đỏ khi trễ nhịp rõ rệt)
   const bookTier = calculatePacingTier(bookActual, expectedBook, bookTarget, pacing.rTime);
   const doneTier = calculatePacingTier(doneActual, expectedDone, doneTarget, pacing.rTime);
+  const checkinTier = calculatePacingTier(checkinActual, expectedCheckin, checkinTarget, pacing.rTime);
 
   return {
     doneTarget,
@@ -290,6 +311,13 @@ export function calculateTvMonitorMetrics(
     gapBook,
     remainingDone,
     remainingBook,
+    checkinTarget,
+    checkinActual,
+    comboLiveCheckinActual,
+    checkinPercent,
+    expectedCheckin,
+    gapCheckin,
+    remainingCheckin,
     teamState,
     teamStateLabel,
     teamStateBadge,
@@ -297,5 +325,6 @@ export function calculateTvMonitorMetrics(
     actionableMessage,
     bookTier,
     doneTier,
+    checkinTier,
   };
 }

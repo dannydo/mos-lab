@@ -17,6 +17,9 @@ export interface TelesaleStaffTarget {
   comboLiveDoneToday?: number;
   retailDoneToday?: number;
   comboLiveBookToday?: number;
+  checkinToday?: number;
+  checkinActual?: number;
+  comboLiveCheckinToday?: number;
   callTargetDaily: number;
   callActualToday: number;
   pickupTargetDaily?: number;
@@ -136,6 +139,10 @@ export interface TelesaleTargetOverview {
     doneActual: number;
     comboLiveDoneActual?: number;
     retailDoneActual?: number;
+    checkinTarget?: number;
+    checkinActual?: number;
+    retailCheckinActual?: number;
+    comboLiveCheckinActual?: number;
     bookTarget: number;
     bookActual: number;
     comboLiveBookActual?: number;
@@ -158,22 +165,69 @@ export interface TelesaleTargetOverview {
   };
   pipelineStages: TelesalePipelineStage[];
   todayLiveEvents?: TelesaleTodayLiveEvent[];
+  todayBookList?: TelesaleTodayBookItem[];
+  todayCheckinList?: TelesaleTodayCheckinItem[];
+}
+
+export interface TelesaleTodayBookItem {
+  orderId: number;
+  customerName: string;
+  customerPhone?: string;
+  customerAvatar?: string | null;
+  bookerId: number;
+  bookerName: string;
+  bookerAvatar?: string | null;
+  bookingDateStart: string;
+  bookingDateDisplay: string;
+  promotionName?: string | null;
+  dateCreated: string;
+  timeAgoText?: string;
+  isNewCustomer?: boolean;
+}
+
+export interface TelesaleTodayCheckinItem {
+  orderId: number;
+  customerName: string;
+  customerPhone?: string;
+  customerAvatar?: string | null;
+  bookerId: number;
+  bookerName: string;
+  bookerAvatar?: string | null;
+  checkinDate: string;
+  checkinDateDisplay: string;
+  serviceName?: string | null;
+  assignedStaffName?: string | null;
+  assignedStaffAvatar?: string | null;
+  checkInStaffName?: string | null;
+  orderState: string;
+  isDone: boolean;
+  hasCombo?: boolean;
+  comboPackageName?: string | null;
+  comboPrice?: number;
+  hasTip?: boolean;
+  tipAmount?: number;
+  timeInService?: string;
 }
 
 export interface TelesaleTodayLiveEvent {
   id: string;
-  type: 'BOOK' | 'DONE';
+  type: 'BOOK' | 'CHECKIN' | 'DONE' | 'COMBO' | 'TIP';
   staffId: number;
   staffName: string;
   avatarUrl?: string | null;
   timestamp: string;
   orderId?: number;
   changeResult?: string;
+  hasCombo?: boolean;
+  comboPackageName?: string;
+  comboPrice?: number;
+  hasTip?: boolean;
+  tipAmount?: number;
 }
 
 export interface TelesaleTvEventLog {
   id: string;
-  type: 'BOOK' | 'DONE' | 'MILESTONE';
+  type: 'BOOK' | 'CHECKIN' | 'DONE' | 'COMBO' | 'TIP' | 'MILESTONE';
   staffId?: number;
   staffName: string;
   avatarUrl?: string | null;
@@ -181,6 +235,11 @@ export interface TelesaleTvEventLog {
   timeFormatted?: string;
   changeResult: string;
   orderId?: number;
+  hasCombo?: boolean;
+  comboPackageName?: string;
+  comboPrice?: number;
+  hasTip?: boolean;
+  tipAmount?: number;
 
   // Pipeline execution tracking
   eventReceived: boolean;

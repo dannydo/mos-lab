@@ -30,9 +30,16 @@ Start with [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the current package ma
 3. **Workspace Anchoring & Absolute Config Paths (Neo thư mục gốc chuẩn xác)**: Luôn neo `Cwd` tại thư mục gốc workspace (`/Users/dannydo/projects/mos-lab`). Các đường dẫn tệp cấu hình môi trường (.env) bắt buộc dùng đường dẫn tuyệt đối hoặc tính từ root để tránh lỗi nhân đôi path (`apps/api/apps/api/.env`).
 4. **Pre-edit Context Freshness (Làm tươi ngữ cảnh trước khi sửa tệp)**: Trước khi gọi `replace_file_content`, nếu tệp vừa được chỉnh sửa ở các bước trước, bắt buộc `view_file` lại 15-20 dòng xung quanh để đảm bảo khớp 100% từng ký tự, tránh lỗi `target content not found`.
 5. **Tool Scope Discipline (Tuân thủ phạm vi công cụ)**: `write_to_file` chỉ dùng cho Artifacts (`brain/...`) và Code dự án (`projects/mos-lab/...`). Đối với các tệp cấu hình hệ thống ngoài workspace (`~/.gemini/antigravity/...`), luôn dùng Python inline hoặc Bash script để không vi phạm sandbox boundary.
-6. **Zero Lingering Background Tasks & Graceful Self-Termination (Tiêu chuẩn Tự kết thúc Sạch sẽ)**:
-   - Mọi script nền, bridge daemon (`ide-task-bridge.ts`), và worker bắt buộc phải có cơ chế tự kết thúc tường minh (`process.exit(0)`), gắn timeout cho mọi network call (`AbortSignal.timeout(10_000)`), và nhận diện trạng thái hoàn tất (terminal state: `FIXED`, `AWAITING_REPORTER_ACCEPTANCE`, đã chốt release) để tự thoát ngay khi hết việc, tuyệt đối không để rò rỉ socket hay loop vô tận.
-   - Khi thực thi lệnh kiểm tra DB hoặc node một lần (one-liner) qua SSH/shell, bắt buộc bọc trong `try ... finally { await conn.end(); process.exit(0); }` để không làm treo kênh SSH hay Event Loop.
+6. **Zero Lingering Background Tasks & Automatic Task Garbage Collection (Tiêu chuẩn Triệt tiêu & Tự Dọn Dẹp Task Nền Sạch sẽ)**:
+   - **Tự động Dọn Dẹp Task Nền Trước Mỗi Lượt Kết Thúc (Mandatory Turn-End Task GC)**:
+     - Trước khi hoàn tất câu trả lời hoặc gọi `speak`, Agent **BẮT BUỘC** gọi `manage_task(Action: 'list')` để rà soát danh sách task nền.
+     - Nếu phát hiện bất kỳ background task nào ngoài các dev server thường trực đang chạy quá 45 giây hoặc đã mồ côi/hoàn thành, Agent **BẮT BUỘC phải gọi `manage_task(Action: 'kill')`** để triệt tiêu ngay lập tức, tuyệt đối không để dồn ứ các task chạy vô tận (`tasks running forever`).
+   - **Hard Timeout & Unhandled Rejection Self-Termination (Bọc Timeout & Thoát Lỗi Tường Minh)**:
+     - Mọi script Node.js / Playwright / Puppeteer thực thi một lần bắt buộc phải bọc `const t = setTimeout(() => process.exit(1), 25000); t.unref();` và `try { ... } finally { await browser?.close?.(); process.exit(0); }`. Tuyệt đối không để Chromium socket hoặc Node Event Loop treo lơ lửng.
+     - Mọi lệnh `grep` tìm kiếm chuỗi bắt buộc phải loại trừ thư mục cache và dependencies: `--exclude-dir={.next,node_modules,dist,.turbo,coverage}` để không quét file nhị phân lớn làm treo stream.
+   - **Bridge Daemons & Long-running Workers**:
+     - Mọi script nền, bridge daemon (`ide-task-bridge.ts`), và worker bắt buộc phải có cơ chế tự kết thúc tường minh (`process.exit(0)`), gắn timeout cho mọi network call (`AbortSignal.timeout(10_000)`), và nhận diện trạng thái hoàn tất (terminal state: `FIXED`, `AWAITING_REPORTER_ACCEPTANCE`, đã chốt release) để tự thoát ngay khi hết việc.
+   - **DB / Shell One-liners**: Khi thực thi lệnh kiểm tra DB hoặc node một lần (one-liner) qua SSH/shell, bắt buộc bọc trong `try ... finally { await conn.end(); process.exit(0); }`.
 7. **Comment-First Discipline & Live Ticket Context (Kỷ luật Đọc Comment Tươi & Phản hồi Trúng Đích)**:
    - Mỗi khi trao đổi, giải đáp hay lập phương án cho bất kỳ ticket nào từ mOS Inbox, Agent **BẮT BUỘC** phải truy vấn danh sách comment mới nhất trực tiếp từ database (`crm_bug_report_comments`).
    - Đọc kỹ, thấu hiểu tường tận từng câu hỏi kỹ thuật, ý kiến đóng góp của Danny và người dùng; tuyệt đối không đưa ra câu trả lời né tránh, rập khuôn template hay phớt lờ câu hỏi.

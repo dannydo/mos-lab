@@ -22,14 +22,23 @@ import {
 import dayjs, { Dayjs } from 'dayjs';
 import { TelesaleTvEventLog, TelesaleTvJournalOverview } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
+import { useTheme } from '../../../../context/ThemeContext';
 
 interface TelesaleTvJournalModalProps {
   open: boolean;
   onClose: () => void;
   staffList?: Array<{ legacyStaffId: number; name: string }>;
+  zIndex?: number;
 }
 
-export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ open, onClose, staffList = [] }) => {
+export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({
+  open,
+  onClose,
+  staffList = [],
+  zIndex = 100005,
+}) => {
+  const { themeMode } = useTheme();
+  const isDark = themeMode === 'dark';
   const [selectedDate, setSelectedDate] = useState<string>(() => dayjs().format('YYYY-MM-DD'));
   const [loading, setLoading] = useState<boolean>(false);
   const [journalData, setJournalData] = useState<TelesaleTvJournalOverview | null>(null);
@@ -265,10 +274,16 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ 
         const isBook = record.type === 'BOOK';
         const isDone = record.type === 'DONE';
         const colorClass = isBook
-          ? 'text-blue-300 bg-blue-950/60 border-blue-600/40'
+          ? isDark
+            ? 'text-blue-300 bg-blue-950/60 border-blue-600/40'
+            : 'text-blue-700 bg-blue-50 border-blue-200'
           : isDone
-            ? 'text-emerald-300 bg-emerald-950/60 border-emerald-600/40'
-            : 'text-amber-300 bg-amber-950/60 border-amber-600/40';
+            ? isDark
+              ? 'text-emerald-300 bg-emerald-950/60 border-emerald-600/40'
+              : 'text-emerald-700 bg-emerald-50 border-emerald-200'
+            : isDark
+              ? 'text-amber-300 bg-amber-950/60 border-amber-600/40'
+              : 'text-amber-700 bg-amber-50 border-amber-200';
 
         return (
           <span
@@ -282,7 +297,7 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ 
     {
       title: (
         <span className="flex items-center gap-1 text-[11px]">
-          <Tv className="w-3.5 h-3.5 text-zinc-400" />
+          <Tv className={`w-3.5 h-3.5 ${isDark ? 'text-zinc-400' : 'text-slate-400'}`} />
           TV Nhận
         </span>
       ),
@@ -291,12 +306,24 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ 
       width: 100,
       render: (received: boolean) =>
         received ? (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-emerald-950 text-emerald-300 border border-emerald-500/40">
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-semibold ${
+              isDark
+                ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40'
+                : 'bg-emerald-50 text-emerald-800 border border-emerald-300'
+            }`}
+          >
             ✅ Đã nhận
           </span>
         ) : (
           <Tooltip title="Sự kiện phát sinh trước khi mở TV Monitor (Lịch sử) hoặc chưa tiếp nhận">
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-zinc-800 text-zinc-300 border border-zinc-700 cursor-help">
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-semibold cursor-help ${
+                isDark
+                  ? 'bg-zinc-800 text-zinc-300 border border-zinc-700'
+                  : 'bg-slate-100 text-slate-600 border border-slate-300'
+              }`}
+            >
               ⏸️ Chưa nhận
             </span>
           </Tooltip>
@@ -305,7 +332,7 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ 
     {
       title: (
         <span className="flex items-center gap-1 text-[11px]">
-          <Volume2 className="w-3.5 h-3.5 text-amber-400" />
+          <Volume2 className={`w-3.5 h-3.5 ${isDark ? 'text-amber-400' : 'text-amber-500'}`} />
           Voice
         </span>
       ),
@@ -314,7 +341,13 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ 
       width: 110,
       render: (triggered: boolean, record: TelesaleTvEventLog) =>
         triggered ? (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-emerald-950 text-emerald-300 border border-emerald-500/40">
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-semibold ${
+              isDark
+                ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40'
+                : 'bg-emerald-50 text-emerald-800 border border-emerald-300'
+            }`}
+          >
             ✅ Đã phát
           </span>
         ) : (
@@ -327,8 +360,12 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ 
             <span
               className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-semibold cursor-help ${
                 record.eventReceived
-                  ? 'bg-rose-950 text-rose-300 border border-rose-500/40'
-                  : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                  ? isDark
+                    ? 'bg-rose-950 text-rose-300 border border-rose-500/40'
+                    : 'bg-rose-50 text-rose-800 border border-rose-300'
+                  : isDark
+                    ? 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                    : 'bg-slate-100 text-slate-500 border border-slate-300'
               }`}
             >
               {record.eventReceived ? '❌ Lỗi phát' : '⏸️ Không phát'}
@@ -339,7 +376,7 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ 
     {
       title: (
         <span className="flex items-center gap-1 text-[11px]">
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          <Sparkles className={`w-3.5 h-3.5 ${isDark ? 'text-amber-400' : 'text-amber-500'}`} />
           Overlay
         </span>
       ),
@@ -348,7 +385,13 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ 
       width: 110,
       render: (triggered: boolean, record: TelesaleTvEventLog) =>
         triggered ? (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-emerald-950 text-emerald-300 border border-emerald-500/40">
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-semibold ${
+              isDark
+                ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40'
+                : 'bg-emerald-50 text-emerald-800 border border-emerald-300'
+            }`}
+          >
             ✅ Đã hiện
           </span>
         ) : (
@@ -361,8 +404,12 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ 
             <span
               className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-semibold cursor-help ${
                 record.eventReceived
-                  ? 'bg-rose-950 text-rose-300 border border-rose-500/40'
-                  : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                  ? isDark
+                    ? 'bg-rose-950 text-rose-300 border border-rose-500/40'
+                    : 'bg-rose-50 text-rose-800 border border-rose-300'
+                  : isDark
+                    ? 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+                    : 'bg-slate-100 text-slate-500 border border-slate-300'
               }`}
             >
               {record.eventReceived ? '❌ Không hiện' : '⏸️ Không hiện'}
@@ -380,20 +427,32 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ 
           <div className="flex flex-col gap-0.5">
             <div>
               {isSuccess ? (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-600/50">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${
+                    isDark
+                      ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-600/50'
+                      : 'bg-emerald-50 text-emerald-700 border border-emerald-300'
+                  }`}
+                >
+                  <CheckCircle2 className={`w-3.5 h-3.5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
                   {record.eventReceived ? 'Thành công' : 'Ghi nhận'}
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-rose-950/80 text-rose-400 border border-rose-600/50">
-                  <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${
+                    isDark
+                      ? 'bg-rose-950/80 text-rose-400 border border-rose-600/50'
+                      : 'bg-rose-50 text-rose-700 border border-rose-300'
+                  }`}
+                >
+                  <XCircle className={`w-3.5 h-3.5 ${isDark ? 'text-rose-400' : 'text-rose-600'}`} />
                   Lỗi
                 </span>
               )}
             </div>
             {!isSuccess && (record.errorMessage || record.voiceErrorReason || record.overlayErrorReason) && (
               <span
-                className="text-[11px] text-rose-300/90 font-mono line-clamp-1"
+                className={`text-[11px] font-mono line-clamp-1 ${isDark ? 'text-rose-300/90' : 'text-rose-600'}`}
                 title={record.errorMessage || record.voiceErrorReason || record.overlayErrorReason || ''}
               >
                 {record.errorMessage || record.voiceErrorReason || record.overlayErrorReason}
@@ -401,7 +460,7 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ 
             )}
             {isSuccess && !record.eventReceived && (
               <span
-                className="text-[10px] text-zinc-400 font-mono line-clamp-1"
+                className={`text-[10px] font-mono line-clamp-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}
                 title="Sự kiện lịch sử (phát sinh trước khi mở TV Monitor)"
               >
                 Lịch sử ca làm
@@ -420,30 +479,51 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ 
       footer={null}
       width={1080}
       centered
+      zIndex={zIndex}
       className="tv-journal-modal"
       title={null}
       destroyOnHidden
       intent="detail"
     >
-      <div className="bg-zinc-950 text-zinc-100 -m-6 p-6 rounded-2xl border border-zinc-800 flex flex-col gap-5 select-none font-sans">
+      <div
+        className={`-m-6 p-6 rounded-2xl border flex flex-col gap-5 select-none font-sans transition-colors ${
+          isDark ? 'bg-zinc-950 text-zinc-100 border-zinc-800' : 'bg-white text-slate-800 border-slate-200'
+        }`}
+      >
         {/* 1. HEADER */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-4">
+        <div
+          className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4 ${
+            isDark ? 'border-zinc-800' : 'border-slate-200'
+          }`}
+        >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-700 p-0.5 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20">
-              <div className="w-full h-full bg-zinc-950 rounded-[10px] flex items-center justify-center">
-                <ClipboardList className="w-5 h-5 text-amber-400" />
+              <div
+                className={`w-full h-full rounded-[10px] flex items-center justify-center ${
+                  isDark ? 'bg-zinc-950' : 'bg-white'
+                }`}
+              >
+                <ClipboardList className={`w-5 h-5 ${isDark ? 'text-amber-400' : 'text-amber-500'}`} />
               </div>
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-black text-zinc-100 tracking-tight m-0">
+                <h2
+                  className={`text-base sm:text-lg font-black tracking-tight m-0 ${isDark ? 'text-zinc-100' : 'text-slate-900'}`}
+                >
                   NHẬT KÝ TV MONITOR · GIÁM SÁT LIVE EVENTS
                 </h2>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-950 text-amber-300 border border-amber-500/40">
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
+                    isDark
+                      ? 'bg-amber-950 text-amber-300 border-amber-500/40'
+                      : 'bg-amber-50 text-amber-800 border-amber-300'
+                  }`}
+                >
                   MANAGER / ADMIN
                 </span>
               </div>
-              <p className="text-xs text-zinc-400 m-0 mt-0.5">
+              <p className={`text-xs m-0 mt-0.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
                 Kiểm tra từng bước xử lý sự kiện: Tiếp nhận TV → Kích hoạt Voice → Kích hoạt Overlay
               </p>
             </div>
@@ -453,14 +533,28 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ 
             <Tooltip title="Làm mới lịch sử sự kiện">
               <Button
                 type="text"
-                icon={<RotateCw className={`w-4 h-4 text-zinc-300 ${loading ? 'animate-spin' : ''}`} />}
+                icon={
+                  <RotateCw
+                    className={`w-4 h-4 ${isDark ? 'text-zinc-300' : 'text-slate-600'} ${
+                      loading ? 'animate-spin' : ''
+                    }`}
+                  />
+                }
                 onClick={() => fetchJournal(selectedDate)}
-                className="!text-zinc-300 hover:!bg-zinc-800 !rounded-xl !h-9 !w-9 !p-0 flex items-center justify-center border border-zinc-700"
+                className={`!rounded-xl !h-9 !w-9 !p-0 flex items-center justify-center border transition-all ${
+                  isDark
+                    ? '!text-zinc-300 hover:!bg-zinc-800 border-zinc-700'
+                    : '!text-slate-600 hover:!bg-slate-100 border-slate-300 shadow-sm'
+                }`}
               />
             </Tooltip>
             <Button
               onClick={onClose}
-              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border-zinc-700 rounded-xl text-xs h-9 px-3 font-semibold"
+              className={`rounded-xl text-xs h-9 px-3 font-semibold border transition-all ${
+                isDark
+                  ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border-zinc-700'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300 shadow-sm'
+              }`}
             >
               Đóng
             </Button>
@@ -470,78 +564,132 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ 
         {/* 2. TOP OVERVIEW SUMMARY (4 METRIC CARDS) */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {/* Card 1: Tổng Live Event */}
-          <div className="bg-zinc-900/90 rounded-xl p-3 border border-zinc-800 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-zinc-400 text-xs">
+          <div
+            className={`rounded-xl p-3 border flex flex-col justify-between transition-colors ${
+              isDark ? 'bg-zinc-900/90 border-zinc-800' : 'bg-slate-50 border-slate-200'
+            }`}
+          >
+            <div className={`flex items-center justify-between text-xs ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
               <span>Tổng Live Events</span>
-              <Flame className="w-3.5 h-3.5 text-amber-400" />
+              <Flame className="w-3.5 h-3.5 text-amber-500" />
             </div>
-            <div className="text-2xl font-black font-mono text-amber-300 tabular-nums mt-1">
+            <div
+              className={`text-2xl font-black font-mono tabular-nums mt-1 ${
+                isDark ? 'text-amber-300' : 'text-amber-700'
+              }`}
+            >
               {journalData?.totalEvents ?? 0}
             </div>
-            <div className="text-[10px] text-zinc-400 font-mono mt-0.5">Sự kiện trong ngày</div>
+            <div className={`text-[10px] font-mono mt-0.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+              Sự kiện trong ngày
+            </div>
           </div>
 
           {/* Card 2: Voice thành công / lỗi */}
-          <div className="bg-zinc-900/90 rounded-xl p-3 border border-zinc-800 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-zinc-400 text-xs">
+          <div
+            className={`rounded-xl p-3 border flex flex-col justify-between transition-colors ${
+              isDark ? 'bg-zinc-900/90 border-zinc-800' : 'bg-slate-50 border-slate-200'
+            }`}
+          >
+            <div className={`flex items-center justify-between text-xs ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
               <span>Loa / Voice TTS</span>
-              <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
+              <Volume2 className="w-3.5 h-3.5 text-emerald-500" />
             </div>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-xl font-black font-mono text-emerald-400 tabular-nums">
+              <span
+                className={`text-xl font-black font-mono tabular-nums ${
+                  isDark ? 'text-emerald-400' : 'text-emerald-600'
+                }`}
+              >
                 {journalData?.voiceSuccess ?? 0}
               </span>
-              <span className="text-xs text-zinc-400 font-mono">/</span>
-              <span className="text-xl font-black font-mono text-rose-400 tabular-nums">
+              <span className={`text-xs font-mono ${isDark ? 'text-zinc-400' : 'text-slate-400'}`}>/</span>
+              <span
+                className={`text-xl font-black font-mono tabular-nums ${isDark ? 'text-rose-400' : 'text-rose-600'}`}
+              >
                 {journalData?.voiceError ?? 0}
               </span>
             </div>
-            <div className="text-[10px] text-zinc-400 font-mono mt-0.5">
-              <span className="text-emerald-400 font-bold">{journalData?.voiceSuccess ?? 0} thành công</span> ·{' '}
-              <span className="text-rose-400 font-bold">{journalData?.voiceError ?? 0} lỗi</span>
+            <div className={`text-[10px] font-mono mt-0.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+              <span className={`${isDark ? 'text-emerald-400' : 'text-emerald-600'} font-bold`}>
+                {journalData?.voiceSuccess ?? 0} thành công
+              </span>{' '}
+              ·{' '}
+              <span className={`${isDark ? 'text-rose-400' : 'text-rose-600'} font-bold`}>
+                {journalData?.voiceError ?? 0} lỗi
+              </span>
             </div>
           </div>
 
           {/* Card 3: Overlay thành công / lỗi */}
-          <div className="bg-zinc-900/90 rounded-xl p-3 border border-zinc-800 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-zinc-400 text-xs">
+          <div
+            className={`rounded-xl p-3 border flex flex-col justify-between transition-colors ${
+              isDark ? 'bg-zinc-900/90 border-zinc-800' : 'bg-slate-50 border-slate-200'
+            }`}
+          >
+            <div className={`flex items-center justify-between text-xs ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
               <span>Celebration Overlay</span>
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
             </div>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-xl font-black font-mono text-emerald-400 tabular-nums">
+              <span
+                className={`text-xl font-black font-mono tabular-nums ${
+                  isDark ? 'text-emerald-400' : 'text-emerald-600'
+                }`}
+              >
                 {journalData?.overlaySuccess ?? 0}
               </span>
-              <span className="text-xs text-zinc-400 font-mono">/</span>
-              <span className="text-xl font-black font-mono text-rose-400 tabular-nums">
+              <span className={`text-xs font-mono ${isDark ? 'text-zinc-400' : 'text-slate-400'}`}>/</span>
+              <span
+                className={`text-xl font-black font-mono tabular-nums ${isDark ? 'text-rose-400' : 'text-rose-600'}`}
+              >
                 {journalData?.overlayError ?? 0}
               </span>
             </div>
-            <div className="text-[10px] text-zinc-400 font-mono mt-0.5">
-              <span className="text-emerald-400 font-bold">{journalData?.overlaySuccess ?? 0} thành công</span> ·{' '}
-              <span className="text-rose-400 font-bold">{journalData?.overlayError ?? 0} lỗi</span>
+            <div className={`text-[10px] font-mono mt-0.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+              <span className={`${isDark ? 'text-emerald-400' : 'text-emerald-600'} font-bold`}>
+                {journalData?.overlaySuccess ?? 0} thành công
+              </span>{' '}
+              ·{' '}
+              <span className={`${isDark ? 'text-rose-400' : 'text-rose-600'} font-bold`}>
+                {journalData?.overlayError ?? 0} lỗi
+              </span>
             </div>
           </div>
 
           {/* Card 4: Sự kiện gần nhất */}
-          <div className="bg-zinc-900/90 rounded-xl p-3 border border-zinc-800 flex flex-col justify-between">
-            <div className="flex items-center justify-between text-zinc-400 text-xs">
+          <div
+            className={`rounded-xl p-3 border flex flex-col justify-between transition-colors ${
+              isDark ? 'bg-zinc-900/90 border-zinc-800' : 'bg-slate-50 border-slate-200'
+            }`}
+          >
+            <div className={`flex items-center justify-between text-xs ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
               <span>Sự kiện gần nhất</span>
-              <Clock className="w-3.5 h-3.5 text-sky-400" />
+              <Clock className="w-3.5 h-3.5 text-sky-500" />
             </div>
-            <div className="text-lg font-black font-mono text-sky-300 tabular-nums mt-1 truncate">
+            <div
+              className={`text-lg font-black font-mono tabular-nums mt-1 truncate ${
+                isDark ? 'text-sky-300' : 'text-sky-700'
+              }`}
+            >
               {latestTimeFormatted}
             </div>
-            <div className="text-[10px] text-zinc-400 font-mono mt-0.5">Thời điểm phát sinh</div>
+            <div className={`text-[10px] font-mono mt-0.5 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+              Thời điểm phát sinh
+            </div>
           </div>
         </div>
 
         {/* 3. FILTERS TOOLBAR */}
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-900/70 p-3 rounded-xl border border-zinc-800/80">
+        <div
+          className={`flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl border transition-colors ${
+            isDark ? 'bg-zinc-900/70 border-zinc-800/80' : 'bg-slate-50 border-slate-200'
+          }`}
+        >
           <div className="flex flex-wrap items-center gap-2.5">
             {/* Date filter */}
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-zinc-400 flex items-center gap-1">
+              <span className={`text-xs flex items-center gap-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
                 <Calendar className="w-3.5 h-3.5" />
                 Ngày:
               </span>
@@ -551,13 +699,19 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ 
                   if (d) setSelectedDate(d.format('YYYY-MM-DD'));
                 }}
                 allowClear={false}
-                className="bg-zinc-950 border-zinc-700 text-zinc-100 rounded-lg text-xs h-8"
+                className={
+                  isDark ? 'bg-zinc-950 border-zinc-700 text-zinc-100 rounded-lg text-xs h-8' : 'rounded-lg text-xs h-8'
+                }
               />
               {selectedDate !== dayjs().format('YYYY-MM-DD') && (
                 <Button
                   size="small"
                   onClick={() => setSelectedDate(dayjs().format('YYYY-MM-DD'))}
-                  className="bg-zinc-800 border-zinc-700 text-zinc-300 text-[11px] h-8 rounded-lg"
+                  className={`text-[11px] h-8 rounded-lg ${
+                    isDark
+                      ? 'bg-zinc-800 border-zinc-700 text-zinc-300'
+                      : 'bg-white border-slate-300 text-slate-700 shadow-sm'
+                  }`}
                 >
                   Hôm nay
                 </Button>
@@ -566,7 +720,7 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ 
 
             {/* Staff filter */}
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-zinc-400 flex items-center gap-1">
+              <span className={`text-xs flex items-center gap-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
                 <Users className="w-3.5 h-3.5" />
                 Nhân viên:
               </span>
@@ -587,7 +741,7 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ 
             <Segmented
               value={typeFilter}
               onChange={(val) => setTypeFilter(val as string)}
-              className="bg-zinc-950 border border-zinc-800 text-xs"
+              className={isDark ? 'bg-zinc-950 border border-zinc-800 text-xs' : 'text-xs'}
               options={[
                 { label: 'Tất cả', value: 'ALL' },
                 { label: 'BOOK', value: 'BOOK' },
@@ -600,7 +754,7 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ 
             <Segmented
               value={statusFilter}
               onChange={(val) => setStatusFilter(val as string)}
-              className="bg-zinc-950 border border-zinc-800 text-xs"
+              className={isDark ? 'bg-zinc-950 border border-zinc-800 text-xs' : 'text-xs'}
               options={[
                 { label: 'Tất cả', value: 'ALL' },
                 { label: '✅ Thành công', value: 'SUCCESS' },
@@ -611,7 +765,11 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ 
         </div>
 
         {/* 4. MAIN EVENTS TABLE */}
-        <div className="rounded-xl border border-zinc-800 overflow-hidden bg-zinc-950">
+        <div
+          className={`rounded-xl border overflow-hidden transition-colors ${
+            isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-white border-slate-200'
+          }`}
+        >
           <DataTable
             dataSource={filteredEvents}
             columns={columns as any}
@@ -620,13 +778,15 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ 
             pagination={{
               pageSize: 8,
               showSizeChanger: false,
-              className: '!text-zinc-400 !m-3',
+              className: `!m-3 ${isDark ? '!text-zinc-400' : '!text-slate-600'}`,
             }}
             locale={{
               emptyText: (
-                <div className="p-8 text-center text-zinc-500">
-                  <ClipboardList className="w-8 h-8 mx-auto text-zinc-600 mb-2" />
-                  <p className="text-xs text-zinc-400">Không có Live Event nào phù hợp với bộ lọc</p>
+                <div className={`p-8 text-center ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>
+                  <ClipboardList className={`w-8 h-8 mx-auto mb-2 ${isDark ? 'text-zinc-600' : 'text-slate-300'}`} />
+                  <p className={`text-xs ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+                    Không có Live Event nào phù hợp với bộ lọc
+                  </p>
                 </div>
               ),
             }}
@@ -636,12 +796,16 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({ 
         </div>
 
         {/* 5. FOOTER INVARIANT NOTE */}
-        <div className="flex items-center justify-between text-[11px] text-zinc-400 border-t border-zinc-800/80 pt-3">
-          <span className="flex items-center gap-1.5 text-zinc-400">
-            <AlertCircle className="w-3.5 h-3.5 text-amber-400" />
+        <div
+          className={`flex items-center justify-between text-[11px] border-t pt-3 ${
+            isDark ? 'border-zinc-800/80 text-zinc-400' : 'border-slate-200 text-slate-500'
+          }`}
+        >
+          <span className={`flex items-center gap-1.5 ${isDark ? 'text-zinc-400' : 'text-slate-600'}`}>
+            <AlertCircle className={`w-3.5 h-3.5 ${isDark ? 'text-amber-400' : 'text-amber-500'}`} />
             Nhật ký giám sát: Không tự động phát lại loa hoặc hiệu ứng khi xem báo cáo
           </span>
-          <span className="font-mono text-zinc-500">
+          <span className={`font-mono ${isDark ? 'text-zinc-500' : 'text-slate-400'}`}>
             Hiển thị {filteredEvents.length} / {journalData?.totalEvents ?? 0} sự kiện
           </span>
         </div>

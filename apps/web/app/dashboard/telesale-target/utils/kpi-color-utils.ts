@@ -14,19 +14,21 @@ export function getKpiColorTier(percent: number): KpiColorTier {
   return 'BEHIND';
 }
 
-export function getKpiColorClasses(percent: number, isNotStarted = false) {
+export function getKpiColorClasses(percent: number, isNotStarted = false, isDark = true) {
   if (isNotStarted) {
     return {
       tier: 'BEHIND' as KpiColorTier,
-      textClass: 'text-zinc-400',
-      bgClass: 'bg-zinc-900/40',
-      bgSolidClass: 'bg-zinc-800/80',
-      borderClass: 'border-zinc-800',
-      hoverBorderClass: 'hover:border-zinc-700',
-      badgeClass: 'bg-zinc-800/80 text-zinc-400 border border-zinc-700/80',
+      textClass: isDark ? 'text-zinc-400' : 'text-slate-400',
+      bgClass: isDark ? 'bg-zinc-900/40' : 'bg-slate-100',
+      bgSolidClass: isDark ? 'bg-zinc-800/80' : 'bg-slate-200',
+      borderClass: isDark ? 'border-zinc-800' : 'border-slate-300',
+      hoverBorderClass: isDark ? 'hover:border-zinc-700' : 'hover:border-slate-400',
+      badgeClass: isDark
+        ? 'bg-zinc-800/80 text-zinc-400 border border-zinc-700/80'
+        : 'bg-slate-100 text-slate-600 border border-slate-300',
       badgeLabel: 'Chưa bắt đầu',
-      dotClass: 'bg-zinc-600',
-      gradientClass: 'from-zinc-900/40 to-zinc-950',
+      dotClass: isDark ? 'bg-zinc-600' : 'bg-slate-400',
+      gradientClass: isDark ? 'from-zinc-900/40 to-zinc-950' : 'from-slate-100 to-white',
     };
   }
 
@@ -35,42 +37,48 @@ export function getKpiColorClasses(percent: number, isNotStarted = false) {
     case 'ACHIEVED':
       return {
         tier,
-        textClass: 'text-emerald-400',
-        bgClass: 'bg-emerald-950/20',
-        bgSolidClass: 'bg-emerald-950/80',
-        borderClass: 'border-emerald-500/40',
-        hoverBorderClass: 'hover:border-emerald-400',
-        badgeClass: 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/40',
+        textClass: isDark ? 'text-emerald-400' : 'text-emerald-700',
+        bgClass: isDark ? 'bg-emerald-950/20' : 'bg-emerald-50',
+        bgSolidClass: isDark ? 'bg-emerald-950/80' : 'bg-emerald-100',
+        borderClass: isDark ? 'border-emerald-500/40' : 'border-emerald-300',
+        hoverBorderClass: isDark ? 'hover:border-emerald-400' : 'hover:border-emerald-500',
+        badgeClass: isDark
+          ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/40'
+          : 'bg-emerald-100 text-emerald-800 border border-emerald-300',
         badgeLabel: percent > 100 ? `🔥 VƯỢT ${percent}%` : 'Đạt',
-        dotClass: 'bg-emerald-400',
-        gradientClass: 'from-emerald-950/30 to-zinc-950',
+        dotClass: isDark ? 'bg-emerald-400' : 'bg-emerald-500',
+        gradientClass: isDark ? 'from-emerald-950/30 to-zinc-950' : 'from-emerald-50 to-white',
       };
     case 'APPROACHING':
       return {
         tier,
-        textClass: 'text-amber-400',
-        bgClass: 'bg-amber-950/20',
-        bgSolidClass: 'bg-amber-950/80',
-        borderClass: 'border-amber-500/40',
-        hoverBorderClass: 'hover:border-amber-400',
-        badgeClass: 'bg-amber-950/80 text-amber-300 border border-amber-500/40',
+        textClass: isDark ? 'text-amber-400' : 'text-amber-800',
+        bgClass: isDark ? 'bg-amber-950/20' : 'bg-amber-50',
+        bgSolidClass: isDark ? 'bg-amber-950/80' : 'bg-amber-100',
+        borderClass: isDark ? 'border-amber-500/40' : 'border-amber-300',
+        hoverBorderClass: isDark ? 'hover:border-amber-400' : 'hover:border-amber-500',
+        badgeClass: isDark
+          ? 'bg-amber-950/80 text-amber-300 border border-amber-500/40'
+          : 'bg-amber-100 text-amber-800 border border-amber-300',
         badgeLabel: 'Gần đạt',
-        dotClass: 'bg-amber-400',
-        gradientClass: 'from-amber-950/30 to-zinc-950',
+        dotClass: isDark ? 'bg-amber-400' : 'bg-amber-500',
+        gradientClass: isDark ? 'from-amber-950/30 to-zinc-950' : 'from-amber-50 to-white',
       };
     case 'BEHIND':
     default:
       return {
         tier,
-        textClass: 'text-rose-400',
-        bgClass: 'bg-rose-950/25',
-        bgSolidClass: 'bg-rose-950/80',
-        borderClass: 'border-rose-500/60',
-        hoverBorderClass: 'hover:border-rose-400',
-        badgeClass: 'bg-rose-950/80 text-rose-300 border border-rose-500/60 font-semibold',
+        textClass: isDark ? 'text-rose-400' : 'text-rose-700',
+        bgClass: isDark ? 'bg-rose-950/25' : 'bg-rose-50',
+        bgSolidClass: isDark ? 'bg-rose-950/80' : 'bg-rose-100',
+        borderClass: isDark ? 'border-rose-500/60' : 'border-rose-300',
+        hoverBorderClass: isDark ? 'hover:border-rose-400' : 'hover:border-rose-500',
+        badgeClass: isDark
+          ? 'bg-rose-950/80 text-rose-300 border border-rose-500/60 font-semibold'
+          : 'bg-rose-100 text-rose-800 border border-rose-300 font-semibold',
         badgeLabel: 'Chưa đạt',
-        dotClass: 'bg-rose-500',
-        gradientClass: 'from-rose-950/30 to-zinc-950',
+        dotClass: isDark ? 'bg-rose-500' : 'bg-rose-500',
+        gradientClass: isDark ? 'from-rose-950/30 to-zinc-950' : 'from-rose-50 to-white',
       };
   }
 }

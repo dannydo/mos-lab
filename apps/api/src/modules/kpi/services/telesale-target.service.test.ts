@@ -688,12 +688,15 @@ test('TelesaleTargetService.getOverview calculates staff Book today, contributio
 
   // Live events feed verification
   assert.ok(overview.todayLiveEvents);
-  assert.equal(overview.todayLiveEvents.length, 6); // 4 books + 2 dones
+  assert.equal(overview.todayLiveEvents.length, 8); // 4 books + 2 checkins + 2 dones
   const bookEvents = overview.todayLiveEvents.filter((e) => e.type === 'BOOK');
+  const checkinEvents = overview.todayLiveEvents.filter((e) => e.type === 'CHECKIN');
   const doneEvents = overview.todayLiveEvents.filter((e) => e.type === 'DONE');
   assert.equal(bookEvents.length, 4);
+  assert.equal(checkinEvents.length, 2);
   assert.equal(doneEvents.length, 2);
   assert.ok(bookEvents[0].changeResult?.includes('Book'));
+  assert.ok(checkinEvents[0].changeResult?.includes('Check-in'));
   assert.ok(doneEvents[0].changeResult?.includes('Done'));
 });
 

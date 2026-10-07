@@ -46,6 +46,23 @@ const CONFETTI_DONE_COLORS = [
   'rgb(45, 212, 191)', // teal-400
 ];
 
+const CONFETTI_COMBO_COLORS = [
+  'rgb(192, 132, 252)', // purple-400
+  'rgb(168, 85, 247)', // purple-500
+  'rgb(232, 121, 249)', // fuchsia-400
+  'rgb(217, 70, 239)', // fuchsia-500
+  'rgb(251, 191, 36)', // gold
+  'rgb(255, 255, 255)', // crisp white
+];
+
+const CONFETTI_TIP_COLORS = [
+  'rgb(251, 191, 36)', // amber-400 (gold)
+  'rgb(245, 158, 11)', // amber-500
+  'rgb(252, 211, 77)', // yellow-300
+  'rgb(254, 240, 138)', // yellow-200
+  'rgb(255, 255, 255)', // crisp white
+];
+
 const FIREWORK_COLORS = [
   'rgb(251, 191, 36)', // bright gold
   'rgb(245, 158, 11)', // warm amber
@@ -82,9 +99,13 @@ const CelebrationCanvas: React.FC<{ active: boolean; isMilestone: boolean; color
     const particles: Particle[] = [];
     const colors = isMilestone
       ? FIREWORK_COLORS
-      : colorTheme === 'emerald'
-        ? CONFETTI_DONE_COLORS
-        : CONFETTI_BOOK_COLORS;
+      : colorTheme === 'purple'
+        ? CONFETTI_COMBO_COLORS
+        : colorTheme === 'gold'
+          ? CONFETTI_TIP_COLORS
+          : colorTheme === 'emerald'
+            ? CONFETTI_DONE_COLORS
+            : CONFETTI_BOOK_COLORS;
 
     if (isMilestone) {
       // FIREWORKS MODE: Multiple staggered burst centers
@@ -247,6 +268,9 @@ export const TelesaleTvLiveCelebrationBanner: React.FC<TelesaleTvLiveCelebration
 
   const isMilestone = celebration.kind === 'MILESTONE';
   const isBook = celebration.kind === 'BOOK';
+  const isCombo = celebration.kind === 'COMBO' || celebration.colorTheme === 'purple';
+  const isTip = celebration.kind === 'TIP' || celebration.colorTheme === 'gold';
+  const isCheckin = celebration.kind === 'CHECKIN' || (!isMilestone && !isBook && !isCombo && !isTip);
 
   const themeStyles = isMilestone
     ? {
@@ -262,31 +286,64 @@ export const TelesaleTvLiveCelebrationBanner: React.FC<TelesaleTvLiveCelebration
         icon: <Trophy className="w-16 h-16 sm:w-20 sm:h-20 text-amber-300 animate-bounce drop-shadow-lg" />,
         headerLabel: '👑 ĐỈNH CAO THÀNH TÍCH · MILESTONE MỚI 👑',
       }
-    : isBook
+    : isCombo
       ? {
-          cardBorder: 'border-blue-400/90 shadow-[0_0_90px_rgba(59,130,246,0.5)]',
-          cardBg: 'bg-gradient-to-b from-blue-950/90 via-zinc-900/95 to-zinc-950/95',
-          badgeBg: 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-black shadow-blue-500/40',
-          glowBg: 'bg-blue-500/20',
-          radialRays: 'text-blue-400/20',
-          ringColor: 'ring-blue-400 shadow-[0_0_60px_rgba(59,130,246,0.65)]',
-          titleGradient: 'from-blue-100 via-zinc-100 to-blue-200',
-          quoteHighlight: 'text-blue-200/95',
-          icon: <Calendar className="w-16 h-16 sm:w-20 sm:h-20 text-blue-400 animate-pulse drop-shadow-lg" />,
-          headerLabel: '★ MỞ KHÓA THÀNH TÍCH · MORE BOOK ★',
+          cardBorder: 'border-purple-400/90 shadow-[0_0_100px_rgba(192,132,252,0.55)]',
+          cardBg: 'bg-gradient-to-b from-purple-950/90 via-zinc-900/95 to-zinc-950/95',
+          badgeBg:
+            'bg-gradient-to-r from-purple-500 via-fuchsia-400 to-pink-500 text-white font-black shadow-purple-500/40',
+          glowBg: 'bg-purple-500/25',
+          radialRays: 'text-purple-400/20',
+          ringColor: 'ring-purple-400 shadow-[0_0_60px_rgba(192,132,252,0.65)]',
+          titleGradient: 'from-purple-200 via-fuchsia-200 to-pink-300',
+          quoteHighlight: 'text-purple-200/95',
+          icon: <Sparkles className="w-16 h-16 sm:w-20 sm:h-20 text-purple-300 animate-pulse drop-shadow-lg" />,
+          headerLabel: '★ SIÊU PHẨM COMBO · GIÁ TRỊ VƯỢT TRỘI ★',
         }
-      : {
-          cardBorder: 'border-emerald-400/90 shadow-[0_0_90px_rgba(16,185,129,0.5)]',
-          cardBg: 'bg-gradient-to-b from-emerald-950/90 via-zinc-900/95 to-zinc-950/95',
-          badgeBg: 'bg-gradient-to-r from-emerald-400 to-teal-500 text-zinc-950 font-black shadow-emerald-500/40',
-          glowBg: 'bg-emerald-500/20',
-          radialRays: 'text-emerald-400/20',
-          ringColor: 'ring-emerald-400 shadow-[0_0_60px_rgba(16,185,129,0.65)]',
-          titleGradient: 'from-emerald-100 via-zinc-100 to-emerald-200',
-          quoteHighlight: 'text-emerald-200/95',
-          icon: <CheckCircle2 className="w-16 h-16 sm:w-20 sm:h-20 text-emerald-400 animate-pulse drop-shadow-lg" />,
-          headerLabel: '★ MỞ KHÓA THÀNH TÍCH · MORE DONE ★',
-        };
+      : isTip
+        ? {
+            cardBorder: 'border-amber-400/90 shadow-[0_0_100px_rgba(251,191,36,0.6)]',
+            cardBg: 'bg-gradient-to-b from-amber-950/90 via-zinc-900/95 to-zinc-950/95',
+            badgeBg:
+              'bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-zinc-950 font-black shadow-amber-500/40',
+            glowBg: 'bg-amber-500/25',
+            radialRays: 'text-amber-400/20',
+            ringColor: 'ring-amber-400 shadow-[0_0_60px_rgba(251,191,36,0.65)]',
+            titleGradient: 'from-amber-200 via-yellow-200 to-amber-300',
+            quoteHighlight: 'text-amber-200/95',
+            icon: <Award className="w-16 h-16 sm:w-20 sm:h-20 text-amber-300 animate-bounce drop-shadow-lg" />,
+            headerLabel: '★ KHÁCH THƯƠNG TẶNG TIP · TẬN TÂM TRỌN VẸN ★',
+          }
+        : isBook
+          ? {
+              cardBorder: 'border-blue-400/90 shadow-[0_0_90px_rgba(59,130,246,0.5)]',
+              cardBg: 'bg-gradient-to-b from-blue-950/90 via-zinc-900/95 to-zinc-950/95',
+              badgeBg: 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-black shadow-blue-500/40',
+              glowBg: 'bg-blue-500/20',
+              radialRays: 'text-blue-400/20',
+              ringColor: 'ring-blue-400 shadow-[0_0_60px_rgba(59,130,246,0.65)]',
+              titleGradient: 'from-blue-100 via-zinc-100 to-blue-200',
+              quoteHighlight: 'text-blue-200/95',
+              icon: <Calendar className="w-16 h-16 sm:w-20 sm:h-20 text-blue-400 animate-pulse drop-shadow-lg" />,
+              headerLabel: '★ MỞ KHÓA THÀNH TÍCH · MORE BOOK ★',
+            }
+          : {
+              cardBorder: 'border-emerald-400/90 shadow-[0_0_90px_rgba(16,185,129,0.5)]',
+              cardBg: 'bg-gradient-to-b from-emerald-950/90 via-zinc-900/95 to-zinc-950/95',
+              badgeBg: 'bg-gradient-to-r from-emerald-400 to-teal-500 text-zinc-950 font-black shadow-emerald-500/40',
+              glowBg: 'bg-emerald-500/20',
+              radialRays: 'text-emerald-400/20',
+              ringColor: 'ring-emerald-400 shadow-[0_0_60px_rgba(16,185,129,0.65)]',
+              titleGradient: 'from-emerald-100 via-zinc-100 to-emerald-200',
+              quoteHighlight: 'text-emerald-200/95',
+              icon: (
+                <CheckCircle2 className="w-16 h-16 sm:w-20 sm:h-20 text-emerald-400 animate-pulse drop-shadow-lg" />
+              ),
+              headerLabel:
+                celebration.kind === 'DONE'
+                  ? '★ MỞ KHÓA THÀNH TÍCH · MORE DONE ★'
+                  : '★ MỞ KHÓA THÀNH TÍCH · CHECK-IN KHÁCH LẺ ★',
+            };
 
   const getInitials = (name?: string) => {
     if (!name) return 'TS';
