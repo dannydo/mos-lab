@@ -403,6 +403,14 @@ export const TelesaleTvLiveCelebrationBanner: React.FC<TelesaleTvLiveCelebration
           >
             {celebration.badgeText}
           </span>
+          {celebration.comboPackageName && (
+            <div className="mt-2 flex items-center justify-center">
+              <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-xl text-xs sm:text-sm font-bold bg-purple-950/80 border border-purple-400/60 text-purple-200 shadow-md">
+                <Sparkles className="w-3.5 h-3.5 text-purple-300" />
+                Gói: {celebration.comboPackageName}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* 3. Hero Avatar with Glowing Ring & Sparkles */}

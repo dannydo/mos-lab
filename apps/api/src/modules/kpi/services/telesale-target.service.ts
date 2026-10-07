@@ -1352,21 +1352,42 @@ export class TelesaleTargetService {
         return timeA - timeB;
       });
 
-    // Query tip data for today's completed and check-in orders
+    // Query tip data and combo sales for today's completed and check-in orders
     const tipOrderIds = Array.from(
       new Set([...todayDoneOrders.map((o) => Number(o.id)), ...todayCheckinOrders.map((o) => Number(o.id))])
     ).filter((id) => Number.isInteger(id) && id > 0);
     const tipMap = new Map<number, number>();
+    const comboSaleMap = new Map<number, { comboPackageName: string; comboPrice: number }>();
     if (tipOrderIds.length > 0) {
       try {
-        const tips = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT order_id, SUM(tip_amount) as totalTip FROM staff_tip WHERE order_id IN (${tipOrderIds.join(',')}) GROUP BY order_id`
-        );
+        const [tips, comboRows] = await Promise.all([
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+            `SELECT order_id, SUM(tip_amount) as totalTip FROM staff_tip WHERE order_id IN (${tipOrderIds.join(',')}) GROUP BY order_id`
+          ),
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+            `SELECT 
+              osc.order_id as orderId,
+              COALESCE(osc.total_price, osc.service_price, 0) as comboPrice,
+              COALESCE(sl.service_name, s.service_key, 'Gói Combo') as comboName
+            FROM order_service_combo osc
+            JOIN \`order\` o ON o.id = osc.order_id
+            LEFT JOIN service s ON s.id = osc.service_id
+            LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
+            WHERE osc.order_id IN (${tipOrderIds.join(',')})
+              AND o.order_state = 'Completed'`
+          ),
+        ]);
         for (const t of tips) {
           tipMap.set(Number(t.order_id), Number(t.totalTip || 0));
         }
+        for (const r of comboRows) {
+          comboSaleMap.set(Number(r.orderId), {
+            comboPackageName: r.comboName || 'Gói Combo',
+            comboPrice: Math.round(Number(r.comboPrice || 0)),
+          });
+        }
       } catch (err) {
-        fastify.log.warn(`Failed to query staff_tip for telesale today orders: ${err}`);
+        fastify.log.warn(`Failed to query staff_tip or order_service_combo for telesale today orders: ${err}`);
       }
     }
 
@@ -1381,14 +1402,24 @@ export class TelesaleTargetService {
         o.doneDate || o.actualBookingDateEnd || o.dateUpdated || o.actualBookingDateStart || o.bookingDateStart
       );
 
-      const hasCombo = Number(o.isComboLive || 0) === 1;
-      const tipAmount = tipMap.get(Number(o.id)) || 0;
+      const ordId = Number(o.id);
+      const comboSale = comboSaleMap.get(ordId);
+      const hasComboSale = Boolean(comboSale);
+      const isComboMember = Number(o.isComboLive || 0) === 1;
+      const hasCombo = hasComboSale || isComboMember;
+      const comboPackageName = comboSale?.comboPackageName || (isComboMember ? 'Combo Live Wings' : undefined);
+      const comboPrice = comboSale?.comboPrice || (isComboMember ? 1200000 : undefined);
+      const tipAmount = tipMap.get(ordId) || 0;
       const hasTip = tipAmount > 0;
 
       let changeResult = `Done ${prevDone} → ${newDone}`;
-      if (hasCombo && hasTip) {
-        changeResult = `Done · Combo + Tip ${tipAmount.toLocaleString('vi-VN')}đ`;
-      } else if (hasCombo) {
+      if (hasComboSale && hasTip) {
+        changeResult = `Done · Chốt Combo + Tip ${tipAmount.toLocaleString('vi-VN')}đ`;
+      } else if (hasComboSale) {
+        changeResult = `Done · Chốt ${comboPackageName}`;
+      } else if (isComboMember && hasTip) {
+        changeResult = `Done · Combo Live + Tip ${tipAmount.toLocaleString('vi-VN')}đ`;
+      } else if (isComboMember) {
         changeResult = `Done · Chốt Combo Live`;
       } else if (hasTip) {
         changeResult = `Done · Tip ${tipAmount.toLocaleString('vi-VN')}đ`;
@@ -1404,9 +1435,11 @@ export class TelesaleTargetService {
           'Telesales',
         avatarUrl: staffAvatarMap.get(bookerId) || null,
         timestamp,
-        orderId: Number(o.id),
+        orderId: ordId,
         changeResult,
         hasCombo,
+        comboPackageName,
+        comboPrice,
         hasTip,
         tipAmount,
       };
@@ -1646,7 +1679,12 @@ export class TelesaleTargetService {
         const ccStaffName = osDetails?.ccStaffId ? staffNameMap.get(osDetails.ccStaffId) || null : null;
 
         const isDone = o.orderState === 'Completed';
-        const hasCombo = Number(o.isComboLive || 0) === 1;
+        const comboSale = comboSaleMap.get(ordId);
+        const hasComboSale = Boolean(comboSale);
+        const isComboMember = Number(o.isComboLive || 0) === 1;
+        const hasCombo = hasComboSale || isComboMember;
+        const comboPackageName = comboSale?.comboPackageName || (isComboMember ? 'Combo Live Wings' : null);
+        const comboPrice = comboSale?.comboPrice || (isComboMember ? 1200000 : undefined);
         const tipAmount = tipMap.get(ordId) || 0;
         const hasTip = tipAmount > 0;
 
@@ -1674,8 +1712,8 @@ export class TelesaleTargetService {
           orderState: o.orderState || 'In-Progress',
           isDone,
           hasCombo,
-          comboPackageName: hasCombo ? 'Combo Live Wings' : null,
-          comboPrice: hasCombo ? 1200000 : undefined,
+          comboPackageName,
+          comboPrice,
           hasTip,
           tipAmount: hasTip ? tipAmount : undefined,
           timeInService: formatTimeInService(

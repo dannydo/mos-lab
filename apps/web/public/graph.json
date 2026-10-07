@@ -10090,7 +10090,7 @@
         "path": "/api/kpi/telesale-target/live-celebration-audio",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 174
+        "line": 172
       }
     },
     {
@@ -10104,7 +10104,7 @@
         "path": "/api/kpi/telesale-target/tv-journal",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 199
+        "line": 197
       }
     },
     {
@@ -10118,7 +10118,7 @@
         "path": "/api/kpi/telesale-target/tv-journal/sync",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 220
+        "line": 218
       }
     },
     {
@@ -30625,8 +30625,8 @@
       "filePath": "apps/api/src/modules/campaigns/campaign.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 174301,
-        "lineCount": 4958,
+        "sizeBytes": 175444,
+        "lineCount": 4981,
         "ext": ".ts"
       }
     },
@@ -31704,8 +31704,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9160,
-        "lineCount": 232,
+        "sizeBytes": 9135,
+        "lineCount": 229,
         "ext": ".ts"
       }
     },
@@ -31951,8 +31951,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 106207,
-        "lineCount": 2646,
+        "sizeBytes": 108728,
+        "lineCount": 2687,
         "ext": ".ts"
       }
     },
@@ -38412,8 +38412,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DailyActionSchedule.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24233,
-        "lineCount": 504,
+        "sizeBytes": 25912,
+        "lineCount": 570,
         "ext": ".tsx"
       }
     },
@@ -38425,8 +38425,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DataPipelineStages.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 10336,
-        "lineCount": 234,
+        "sizeBytes": 10465,
+        "lineCount": 240,
         "ext": ".tsx"
       }
     },
@@ -38451,8 +38451,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/KpiOverviewCards.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 41128,
-        "lineCount": 923,
+        "sizeBytes": 40112,
+        "lineCount": 875,
         "ext": ".tsx"
       }
     },
@@ -38490,8 +38490,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/SemicircleGauge.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8136,
-        "lineCount": 207,
+        "sizeBytes": 8202,
+        "lineCount": 216,
         "ext": ".tsx"
       }
     },
@@ -38555,8 +38555,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 36264,
-        "lineCount": 761,
+        "sizeBytes": 37212,
+        "lineCount": 819,
         "ext": ".tsx"
       }
     },
@@ -38568,8 +38568,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvBookSidePanel.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9379,
-        "lineCount": 215,
+        "sizeBytes": 9123,
+        "lineCount": 199,
         "ext": ".tsx"
       }
     },
@@ -38594,8 +38594,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvCheckinSidePanel.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14135,
-        "lineCount": 283,
+        "sizeBytes": 15428,
+        "lineCount": 296,
         "ext": ".tsx"
       }
     },
@@ -38620,8 +38620,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvJournalModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 31518,
-        "lineCount": 773,
+        "sizeBytes": 32176,
+        "lineCount": 816,
         "ext": ".tsx"
       }
     },
@@ -38646,8 +38646,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvLiveCelebrationBanner.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19343,
-        "lineCount": 478,
+        "sizeBytes": 19855,
+        "lineCount": 488,
         "ext": ".tsx"
       }
     },
@@ -38659,8 +38659,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 67045,
-        "lineCount": 1454,
+        "sizeBytes": 70302,
+        "lineCount": 1566,
         "ext": ".tsx"
       }
     },
@@ -38685,8 +38685,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 10995,
-        "lineCount": 250,
+        "sizeBytes": 11243,
+        "lineCount": 264,
         "ext": ".tsx"
       }
     },
@@ -38711,8 +38711,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 41178,
-        "lineCount": 1031,
+        "sizeBytes": 41136,
+        "lineCount": 1030,
         "ext": ".ts"
       }
     },
@@ -62282,6 +62282,13 @@
       "id": "edge:file:apps/api/src/modules/campaigns/campaign.service.ts:prisma:crm:CrmCampaignSharedPoolLog",
       "source": "file:apps/api/src/modules/campaigns/campaign.service.ts",
       "target": "prisma:crm:CrmCampaignSharedPoolLog",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/campaign.service.ts:prisma:crm:CrmCampaignTouchpoint",
+      "source": "file:apps/api/src/modules/campaigns/campaign.service.ts",
+      "target": "prisma:crm:CrmCampaignTouchpoint",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -88195,7 +88202,7 @@
   ],
   "stats": {
     "totalNodes": 3134,
-    "totalEdges": 6752,
+    "totalEdges": 6753,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 163,
@@ -88212,7 +88219,7 @@
       "RENDERS": 274,
       "USES_TOKEN": 218,
       "IMPORTS": 471,
-      "QUERIES_MODEL": 382,
+      "QUERIES_MODEL": 383,
       "API_CALL": 3439
     },
     "fastifyRouteCount": 664,

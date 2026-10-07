@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { CheckCircle2, X, Sparkles, User, Crown, Coins, Clock, Scissors } from 'lucide-react';
+import { CheckCircle2, X, Sparkles, User, Crown, Coins, Clock, Scissors, Package } from 'lucide-react';
 import { Avatar, Tooltip } from 'antd';
 import type { TelesaleTodayCheckinItem } from '@mos-lab/shared';
 
@@ -133,30 +133,38 @@ export const TelesaleTvCheckinSidePanel: React.FC<TelesaleTvCheckinSidePanelProp
                 {/* Status Celebration Banner on Top */}
                 {isSuperWin && (
                   <div className="mb-2 -mx-3 -mt-3 px-3 py-1 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-amber-500 text-white flex items-center justify-between text-[10px] font-black uppercase tracking-wider shadow-sm">
-                    <span className="flex items-center gap-1">
-                      <Crown className="w-3 h-3 fill-amber-300 text-amber-200" />
-                      👑 CHỐT COMBO & TIP {item.tipAmount ? `${item.tipAmount.toLocaleString('vi-VN')}đ` : ''}!
+                    <span className="flex items-center gap-1 truncate">
+                      <Crown className="w-3 h-3 fill-amber-300 text-amber-200 shrink-0" />
+                      <span className="truncate">
+                        👑 CHỐT {item.comboPackageName || 'COMBO'} & TIP{' '}
+                        {item.tipAmount ? `${item.tipAmount.toLocaleString('vi-VN')}đ` : ''}!
+                      </span>
                     </span>
-                    <Sparkles className="w-3 h-3 text-amber-200 animate-spin" />
+                    <Sparkles className="w-3 h-3 text-amber-200 animate-spin shrink-0" />
                   </div>
                 )}
 
                 {isComboWin && !isSuperWin && (
                   <div className="mb-2 -mx-3 -mt-3 px-3 py-1 bg-gradient-to-r from-purple-600 to-indigo-600 text-white flex items-center justify-between text-[10px] font-black uppercase tracking-wider shadow-sm">
-                    <span className="flex items-center gap-1">
-                      <Crown className="w-3 h-3 text-purple-200" />✨ ĐÃ CHỐT COMBO LIVE!
+                    <span className="flex items-center gap-1 truncate">
+                      <Crown className="w-3 h-3 text-purple-200 shrink-0" />
+                      <span className="truncate">
+                        ✨ ĐÃ CHỐT {item.comboPackageName ? item.comboPackageName.toUpperCase() : 'COMBO MỚI'}!
+                      </span>
                     </span>
-                    <Sparkles className="w-3 h-3 text-purple-200" />
+                    <Sparkles className="w-3 h-3 text-purple-200 shrink-0" />
                   </div>
                 )}
 
                 {isTipWin && !isSuperWin && (
                   <div className="mb-2 -mx-3 -mt-3 px-3 py-1 bg-gradient-to-r from-amber-500 to-yellow-600 text-white flex items-center justify-between text-[10px] font-black uppercase tracking-wider shadow-sm">
-                    <span className="flex items-center gap-1">
-                      <Coins className="w-3 h-3 fill-white" />
-                      💛 KHÁCH TIP +{item.tipAmount ? `${item.tipAmount.toLocaleString('vi-VN')}đ` : ''}!
+                    <span className="flex items-center gap-1 truncate">
+                      <Coins className="w-3 h-3 fill-white shrink-0" />
+                      <span className="truncate">
+                        💛 KHÁCH TIP +{item.tipAmount ? `${item.tipAmount.toLocaleString('vi-VN')}đ` : ''}!
+                      </span>
                     </span>
-                    <Sparkles className="w-3 h-3 text-white" />
+                    <Sparkles className="w-3 h-3 text-white shrink-0" />
                   </div>
                 )}
 
@@ -237,6 +245,27 @@ export const TelesaleTvCheckinSidePanel: React.FC<TelesaleTvCheckinSidePanelProp
                     Vào: {item.checkinDateDisplay}
                   </span>
                 </div>
+
+                {/* Combo Package Row if purchased or combo member */}
+                {item.hasCombo && item.comboPackageName && (
+                  <div
+                    className={`p-1.5 px-2 rounded-xl border flex items-center justify-between gap-1.5 mb-1.5 text-[10px] font-bold ${
+                      isDark
+                        ? 'bg-purple-950/60 border-purple-500/50 text-purple-200 shadow-sm'
+                        : 'bg-purple-50 border-purple-200 text-purple-800 shadow-sm'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 truncate">
+                      <Package className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                      <span className="truncate">Gói: {item.comboPackageName}</span>
+                    </div>
+                    {item.comboPrice && (
+                      <span className="font-mono text-purple-400 dark:text-purple-300 shrink-0 tabular-nums">
+                        {item.comboPrice.toLocaleString('vi-VN')}đ
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 {/* Row 3: Staff in salon (Chuyên Viên CV & Tư Vấn CC) */}
                 <div className="flex items-center justify-between text-[10px] font-semibold pt-0.5">
