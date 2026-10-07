@@ -166,11 +166,19 @@ export class CampaignService {
     return normalized;
   }
 
+  private static lastStatusCheckTime = 0;
+
   /**
    * Auto check and transition campaign statuses based on start/end dates.
    */
-  static async checkAndUpdateCampaignStatuses(fastify: FastifyInstance): Promise<void> {
-    const now = new Date();
+  static async checkAndUpdateCampaignStatuses(fastify: FastifyInstance, force = false): Promise<void> {
+    const nowMs = Date.now();
+    if (!force && nowMs - this.lastStatusCheckTime < 60_000) {
+      return;
+    }
+    this.lastStatusCheckTime = nowMs;
+
+    const now = new Date(nowMs);
     const todayStart = new Date(now);
     todayStart.setHours(0, 0, 0, 0);
     try {
@@ -251,18 +259,35 @@ export class CampaignService {
         orderBy: { createdAt: 'desc' },
         include: {
           creator: { select: { id: true, displayName: true, username: true } },
-          touchpoints: { orderBy: { sortOrder: 'asc' } },
-          promotions: true,
-          _count: {
-            select: {
-              customers: { where: { removedAt: null } },
-              touchpoints: true,
-              promotions: true,
-            },
-          },
         },
       }),
     ]);
+
+    const campaignIds = campaigns.map((c) => c.id);
+    const [customerCounts, touchpointCounts, promotionCounts] =
+      campaignIds.length > 0
+        ? await Promise.all([
+            fastify.prisma.crm.crmCampaignCustomer.groupBy({
+              by: ['campaignId'],
+              where: { campaignId: { in: campaignIds }, removedAt: null },
+              _count: { _all: true },
+            }),
+            fastify.prisma.crm.crmCampaignTouchpoint.groupBy({
+              by: ['campaignId'],
+              where: { campaignId: { in: campaignIds } },
+              _count: { _all: true },
+            }),
+            fastify.prisma.crm.crmCampaignPromotion.groupBy({
+              by: ['campaignId'],
+              where: { campaignId: { in: campaignIds } },
+              _count: { _all: true },
+            }),
+          ])
+        : [[], [], []];
+
+    const customerCountMap = new Map(customerCounts.map((item) => [item.campaignId, item._count._all]));
+    const touchpointCountMap = new Map(touchpointCounts.map((item) => [item.campaignId, item._count._all]));
+    const promotionCountMap = new Map(promotionCounts.map((item) => [item.campaignId, item._count._all]));
 
     const items: Campaign[] = campaigns.map((c) => {
       let assignedStaffIds: number[] = [];
@@ -293,9 +318,9 @@ export class CampaignService {
         createdAt: c.createdAt.toISOString(),
         updatedAt: c.updatedAt.toISOString(),
         _count: {
-          customers: c._count.customers,
-          touchpoints: c._count.touchpoints,
-          promotions: c._count.promotions,
+          customers: customerCountMap.get(c.id) || 0,
+          touchpoints: touchpointCountMap.get(c.id) || 0,
+          promotions: promotionCountMap.get(c.id) || 0,
         },
       };
     });
@@ -1507,11 +1532,13 @@ export class CampaignService {
         bookedByStaffName: cc.bookedByStaffName,
         bookedAt: cc.bookedAt?.toISOString() || null,
         callCount: cc.callCount,
-        isClaimedByMe: !isRecycleEnded && (currentStaffId
-          ? cc.claimedByStaffId === currentStaffId
-          : restrictToAssignedStaffId
-            ? cc.claimedByStaffId === restrictToAssignedStaffId
-            : false),
+        isClaimedByMe:
+          !isRecycleEnded &&
+          (currentStaffId
+            ? cc.claimedByStaffId === currentStaffId
+            : restrictToAssignedStaffId
+              ? cc.claimedByStaffId === restrictToAssignedStaffId
+              : false),
         canClaim: effectivePoolStatus === 'AVAILABLE' && (!effectiveCooldownUntil || effectiveCooldownUntil <= now),
         canCall:
           campaign.operationMode === 'SHARED_POOL'
@@ -3488,8 +3515,12 @@ export class CampaignService {
     isBooked: boolean;
     isExcluded: boolean;
   } {
-    const rawResult = String(callLog.callResult || '').toUpperCase().trim();
-    const rawOutcome = String(callLog.outcome || '').toUpperCase().trim();
+    const rawResult = String(callLog.callResult || '')
+      .toUpperCase()
+      .trim();
+    const rawOutcome = String(callLog.outcome || '')
+      .toUpperCase()
+      .trim();
     const durationSec = Number(callLog.durationSec) || 0;
     const now = new Date();
 
@@ -3540,11 +3571,7 @@ export class CampaignService {
       rawOutcome.includes('KHÔNG TRẢ LỜI')
     ) {
       mappedCallResult = 'NO_ANSWER';
-    } else if (
-      rawResult === 'BUSY' ||
-      rawOutcome.includes('MÁY BẬN') ||
-      rawOutcome.includes('BẬN MÁY')
-    ) {
+    } else if (rawResult === 'BUSY' || rawOutcome.includes('MÁY BẬN') || rawOutcome.includes('BẬN MÁY')) {
       mappedCallResult = 'BUSY';
     } else if (
       rawResult === 'FAILED' ||
@@ -3601,8 +3628,7 @@ export class CampaignService {
       cooldownUntil = new Date(now.getTime() + (config?.cooldownMinutes || 60) * 60 * 1000);
     } else if (['THINKING', 'NO_ANSWER', 'BUSY', 'ERROR'].includes(mappedCallResult)) {
       const defaultDays = mappedCallResult === 'THINKING' ? 7 : 3;
-      const days =
-        config?.recycleRules?.[mappedCallResult as keyof typeof config.recycleRules] ?? defaultDays;
+      const days = config?.recycleRules?.[mappedCallResult as keyof typeof config.recycleRules] ?? defaultDays;
       nextPoolStatus = 'RECYCLING';
       availableAt = new Date(now.getTime() + (Number(days) || defaultDays) * 24 * 3600 * 1000);
       cooldownUntil = new Date(now.getTime() + (config?.cooldownMinutes || 60) * 60 * 1000);
@@ -3662,10 +3688,7 @@ export class CampaignService {
             operationMode: 'SHARED_POOL',
             status: { in: ['ACTIVE', 'SCHEDULED'] },
           },
-          OR: [
-            { claimedByStaffId: staffId },
-            { poolStatus: { in: ['CLAIMED', 'AVAILABLE', 'RECYCLING'] } },
-          ],
+          OR: [{ claimedByStaffId: staffId }, { poolStatus: { in: ['CLAIMED', 'AVAILABLE', 'RECYCLING'] } }],
         },
         include: {
           campaign: {
@@ -3758,8 +3781,8 @@ export class CampaignService {
           note: mapped.isExcluded
             ? `Khách hàng bị loại khỏi Shared Pool (Chờ kiểm tra) từ cuộc gọi chuẩn mOS: ${mapped.mappedCallResult}. Ghi chú: ${resolvedCallLog.note || 'Không'}.`
             : mapped.isBooked
-            ? `Khách hàng đã chốt Booking thành công từ cuộc gọi chuẩn mOS. Ghi chú: ${resolvedCallLog.note || 'Không'}.`
-            : `Tự động cập nhật từ cuộc gọi chuẩn mOS: ${mapped.mappedCallResult} (${resolvedCallLog.durationSec || 0}s). Trạng thái pool: ${mapped.nextPoolStatus}. Ghi chú: ${resolvedCallLog.note || 'Không'}.`,
+              ? `Khách hàng đã chốt Booking thành công từ cuộc gọi chuẩn mOS. Ghi chú: ${resolvedCallLog.note || 'Không'}.`
+              : `Tự động cập nhật từ cuộc gọi chuẩn mOS: ${mapped.mappedCallResult} (${resolvedCallLog.durationSec || 0}s). Trạng thái pool: ${mapped.nextPoolStatus}. Ghi chú: ${resolvedCallLog.note || 'Không'}.`,
           metadata: JSON.stringify({
             callResult: mapped.mappedCallResult,
             rawCallResult: resolvedCallLog.callResult,
