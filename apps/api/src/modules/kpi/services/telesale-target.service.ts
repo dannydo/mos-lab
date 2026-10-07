@@ -1088,9 +1088,19 @@ export class TelesaleTargetService {
         WHERE o.created_staff_id IN (${candidateIdsStr})
           AND (
             (ro.actual_booking_date_start >= '${todayStartStr}' AND ro.actual_booking_date_start <= '${todayEndStr}')
-            OR (ro.actual_booking_date_start IS NULL AND o.order_state = 'Completed' AND o.booking_date_start >= '${todayStartStr}' AND o.booking_date_start <= '${todayEndStr}')
+            OR (
+              ro.actual_booking_date_start IS NULL 
+              AND (
+                o.order_state NOT IN ('New', 'Confirmed', 'Missed', 'Cancelled')
+                OR EXISTS (SELECT 1 FROM order_service os WHERE os.order_id = o.id AND os.check_in_staff_id IS NOT NULL)
+              )
+              AND (
+                (o.booking_date_start >= '${todayStartStr}' AND o.booking_date_start <= '${todayEndStr}')
+                OR (o.booking_date_start IS NULL AND o.date_created >= '${todayStartStr}' AND o.date_created <= '${todayEndStr}')
+              )
+            )
           )
-          AND o.order_state != 'Cancelled'
+          AND o.order_state NOT IN ('Cancelled', 'Missed')
       `
         )
         .catch(() => []),
@@ -1342,19 +1352,21 @@ export class TelesaleTargetService {
         return timeA - timeB;
       });
 
-    // Query tip data for today's completed orders
-    const doneOrderIds = todayDoneOrders.map((o) => Number(o.id)).filter((id) => id > 0);
+    // Query tip data for today's completed and check-in orders
+    const tipOrderIds = Array.from(
+      new Set([...todayDoneOrders.map((o) => Number(o.id)), ...todayCheckinOrders.map((o) => Number(o.id))])
+    ).filter((id) => Number.isInteger(id) && id > 0);
     const tipMap = new Map<number, number>();
-    if (doneOrderIds.length > 0) {
+    if (tipOrderIds.length > 0) {
       try {
         const tips = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT order_id, SUM(tip_amount) as totalTip FROM staff_tip WHERE order_id IN (${doneOrderIds.join(',')}) GROUP BY order_id`
+          `SELECT order_id, SUM(tip_amount) as totalTip FROM staff_tip WHERE order_id IN (${tipOrderIds.join(',')}) GROUP BY order_id`
         );
         for (const t of tips) {
           tipMap.set(Number(t.order_id), Number(t.totalTip || 0));
         }
       } catch (err) {
-        fastify.log.warn(`Failed to query staff_tip for telesale today done orders: ${err}`);
+        fastify.log.warn(`Failed to query staff_tip for telesale today orders: ${err}`);
       }
     }
 
@@ -1454,7 +1466,7 @@ export class TelesaleTargetService {
             os.order_id as orderId,
             os.assigned_staff_id as cvStaffId,
             os.check_in_staff_id as ccStaffId,
-            COALESCE(sl.name, s.service_key, 'Nối mi thiết kế') as serviceName
+            COALESCE(sl.service_name, s.service_key, 'Nối mi thiết kế') as serviceName
           FROM order_service os
           LEFT JOIN service s ON s.id = os.service_id
           LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
