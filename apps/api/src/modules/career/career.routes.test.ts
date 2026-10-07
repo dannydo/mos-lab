@@ -30,7 +30,8 @@ function createTestApp() {
     },
     legacy: {
       $queryRawUnsafe: async (sql: string) => {
-        if (sql.includes('COUNT(os.id)') || sql.includes('COUNT(DISTINCT os.order_id)')) return [{ total_orders: 340 }];
+        if (sql.includes('COUNT(os.id)') || sql.includes('COUNT(DISTINCT os.order_id)') || sql.includes('total_orders'))
+          return [{ total_orders: 340 }];
         if (sql.includes('fix_count')) return [{ fix_count: 4 }];
         if (sql.includes('shop_total_tip')) return [{ shop_total_tip: 10000000, shop_orders: 1000 }];
         if (sql.includes('staff_tip')) return [{ staff_tip: 15000000, total_tip: 15000000 }];

@@ -19722,6 +19722,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:CareerPeriod",
+      "type": "SharedType",
+      "label": "CareerPeriod",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/career-progression.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CareerPeriod",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:CareerProgressionStatus",
       "type": "SharedType",
       "label": "CareerProgressionStatus",
@@ -30651,7 +30663,7 @@
       "filePath": "apps/api/src/modules/career/career.routes.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5360,
+        "sizeBytes": 5392,
         "lineCount": 163,
         "ext": ".ts"
       }
@@ -30664,8 +30676,8 @@
       "filePath": "apps/api/src/modules/career/career.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14301,
-        "lineCount": 397,
+        "sizeBytes": 14438,
+        "lineCount": 398,
         "ext": ".ts"
       }
     },
@@ -30690,8 +30702,8 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 90811,
-        "lineCount": 2273,
+        "sizeBytes": 92464,
+        "lineCount": 2355,
         "ext": ".ts"
       }
     },
@@ -36267,8 +36279,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 47227,
-        "lineCount": 1090,
+        "sizeBytes": 49014,
+        "lineCount": 1124,
         "ext": ".tsx"
       }
     },
@@ -36280,8 +36292,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38282,
-        "lineCount": 854,
+        "sizeBytes": 39047,
+        "lineCount": 868,
         "ext": ".tsx"
       }
     },
@@ -38594,8 +38606,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvCheckinSidePanel.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15428,
-        "lineCount": 296,
+        "sizeBytes": 15457,
+        "lineCount": 297,
         "ext": ".tsx"
       }
     },
@@ -39647,8 +39659,8 @@
       "filePath": "apps/web/lib/api/career.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5906,
-        "lineCount": 164,
+        "sizeBytes": 6020,
+        "lineCount": 167,
         "ext": ".ts"
       }
     },
@@ -40362,8 +40374,8 @@
       "filePath": "packages/shared/src/types/career-progression.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 28564,
-        "lineCount": 691,
+        "sizeBytes": 28837,
+        "lineCount": 700,
         "ext": ".ts"
       }
     },
@@ -50983,6 +50995,13 @@
     {
       "id": "edge:type:@mos-lab/shared:CareerRole:ws:packages/shared",
       "source": "type:@mos-lab/shared:CareerRole",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CareerPeriod:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CareerPeriod",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -88201,20 +88220,20 @@
     }
   ],
   "stats": {
-    "totalNodes": 3134,
-    "totalEdges": 6753,
+    "totalNodes": 3135,
+    "totalEdges": 6754,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 163,
       "FastifyRoute": 659,
       "Component": 58,
-      "SharedType": 1134,
+      "SharedType": 1135,
       "DesignToken": 12,
       "UIComponent": 216,
       "File": 889
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1309,
+      "EXPORTS": 1310,
       "HANDLES_ROUTE": 659,
       "RENDERS": 274,
       "USES_TOKEN": 218,
@@ -88225,7 +88244,7 @@
     "fastifyRouteCount": 664,
     "prismaModelCount": 163,
     "nextPageCount": 58,
-    "sharedTypeCount": 1134
+    "sharedTypeCount": 1135
   },
   "routes": [
     {

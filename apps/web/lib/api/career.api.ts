@@ -3,6 +3,7 @@ import {
   type CareerProgressionConfig,
   type StaffCareerStatus,
   type CareerStaffSummary,
+  type CareerPeriod,
   type BananaTransactionResponse,
   type CvPlusRewardSnapshot,
   type CvPlusSimulationSummaryResponse,
@@ -42,7 +43,7 @@ export const careerApi = {
       return res.data;
     },
     listStaff: async (
-      params?: { role?: string; search?: string },
+      params?: { role?: string; search?: string; period?: CareerPeriod },
       options?: ApiRequestOptions
     ): Promise<CareerStaffSummary[]> => {
       try {
@@ -66,11 +67,13 @@ export const careerApi = {
       staffId: number,
       refresh = false,
       targetRole?: string,
+      period?: CareerPeriod,
       options?: ApiRequestOptions
     ): Promise<StaffCareerStatus> => {
       const query: Record<string, string> = {};
       if (refresh) query.refresh = 'true';
       if (targetRole) query.targetRole = targetRole;
+      if (period) query.period = period;
       const res = await dedupeApiGet<{ success: boolean; data: StaffCareerStatus }>(
         `/career/staff/${staffId}`,
         Object.keys(query).length > 0 ? query : undefined,

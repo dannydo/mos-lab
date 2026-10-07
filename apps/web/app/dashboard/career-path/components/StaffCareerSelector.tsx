@@ -23,7 +23,7 @@ import {
   X,
 } from 'lucide-react';
 import { StatusTag, DataTable } from '../../../../components/ui';
-import type { CareerStaffSummary, CareerRole } from '@mos-lab/shared';
+import type { CareerStaffSummary, CareerRole, CareerPeriod } from '@mos-lab/shared';
 
 interface StaffCareerSelectorProps {
   staffList: CareerStaffSummary[];
@@ -34,6 +34,8 @@ interface StaffCareerSelectorProps {
   lastSyncedAt?: string | null;
   activeRoleFilter?: string;
   onRoleFilterChange?: (role: string) => void;
+  period?: CareerPeriod;
+  onPeriodChange?: (period: CareerPeriod) => void;
   onSetRole?: (staffId: number, newRole: CareerRole) => Promise<void>;
   onDemote?: (staffId: number, targetRole: CareerRole) => Promise<void>;
   actionLoading?: boolean;
@@ -46,6 +48,21 @@ const ROLE_TABS = [
   { key: 'CV_PLUS_PLUS', label: 'CV++', fullLabel: 'Đàn Chị Sảnh (CV++)' },
 ];
 
+const PERIOD_TABS: { key: CareerPeriod; label: string; fullLabel: string }[] = [
+  {
+    key: 'last_month',
+    label: 'Tháng trước',
+    fullLabel: 'Tháng trước (chu kỳ hoàn tất gần nhất, không tính tháng này)',
+  },
+  { key: 'this_month', label: 'Tháng này', fullLabel: 'Tháng này (tính từ ngày 1 đến hiện tại)' },
+  { key: 'last_30_days', label: '30 ngày qua', fullLabel: '30 ngày gần nhất tính đến hôm nay' },
+  {
+    key: 'last_3_months',
+    label: '3 tháng trước',
+    fullLabel: '3 tháng trước (quý hoàn tất gần nhất, không tính tháng này)',
+  },
+];
+
 export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
   staffList,
   selectedStaffId,
@@ -55,6 +72,8 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
   lastSyncedAt,
   activeRoleFilter = 'ALL',
   onRoleFilterChange,
+  period = 'last_month',
+  onPeriodChange,
   onSetRole,
   onDemote,
   actionLoading = false,
@@ -432,7 +451,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
-        <Tooltip title="Bộ mi: Số ca hoàn thành trong 3 tháng hoàn tất gần nhất (Chuẩn ≥ 300 bộ)">
+        <Tooltip title="Bộ mi: Số ca hoàn thành trong 90 ngày qua (Chuẩn ≥ 300 bộ)">
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <Eye className="w-4 h-4 text-slate-600 dark:text-slate-300" />
           </span>
@@ -447,7 +466,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
         const count = ordersCount || 0;
         const status = getOrdersStatus(count);
         return (
-          <Tooltip title={`${count}/300 bộ mi (3 tháng hoàn tất) · ${getStatusLabel(status)}`}>
+          <Tooltip title={`${count}/300 bộ mi (90 ngày qua) · ${getStatusLabel(status)}`}>
             <span
               className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${getStatusBadgeClass(
                 status
@@ -689,6 +708,29 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
                       isActive
                         ? 'bg-rose-500 text-white shadow-xs'
                         : 'bg-slate-100/90 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 hover:bg-slate-200/90 dark:hover:bg-slate-700/80'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                </Tooltip>
+              );
+            })}
+          </div>
+
+          <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-1 hidden md:block" />
+
+          {/* Period Filter Chips */}
+          <div className="flex items-center gap-0.5 bg-slate-100/80 dark:bg-slate-800/60 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+            {PERIOD_TABS.map((tab) => {
+              const isActive = (period || 'last_month') === tab.key;
+              return (
+                <Tooltip key={tab.key} title={tab.fullLabel}>
+                  <button
+                    onClick={() => onPeriodChange?.(tab.key)}
+                    className={`px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all duration-150 cursor-pointer ${
+                      isActive
+                        ? 'bg-rose-500 text-white shadow-xs font-bold'
+                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-700/70'
                     }`}
                   >
                     {tab.label}
@@ -969,7 +1011,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
             )}
             <span className="text-slate-400">·</span>
             <span className="tabular-nums text-slate-600 dark:text-slate-300">
-              <strong>{selectedStaff.ordersCount}</strong> bộ mi (3 tháng hoàn tất)
+              <strong>{selectedStaff.ordersCount}</strong> bộ mi (90 ngày qua)
             </span>
             <span className="text-slate-400">·</span>
             <span className="tabular-nums text-slate-600 dark:text-slate-300">

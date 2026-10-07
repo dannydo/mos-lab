@@ -3,7 +3,13 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, Slider, message, Tooltip, Switch, Avatar } from 'antd';
 import { Settings, Zap, Award, Eye, Bug, Coins, ShieldCheck, Heart } from 'lucide-react';
-import type { CareerProgressionConfig, StaffCareerStatus, CareerStaffSummary, CareerRole } from '@mos-lab/shared';
+import type {
+  CareerProgressionConfig,
+  StaffCareerStatus,
+  CareerStaffSummary,
+  CareerRole,
+  CareerPeriod,
+} from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
 import { useTheme } from '../../../context/ThemeContext';
 import { CareerConfigDrawer } from './components/CareerConfigDrawer';
@@ -45,6 +51,7 @@ export default function CareerPathPage() {
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<boolean>(false);
   const [activeRoleFilter, setActiveRoleFilter] = useState<string>('ALL');
+  const [selectedPeriod, setSelectedPeriod] = useState<CareerPeriod>('last_month');
 
   const [loading, setLoading] = useState<boolean>(true);
   const [isConfigDrawerOpen, setIsConfigDrawerOpen] = useState<boolean>(false);
@@ -82,9 +89,10 @@ export default function CareerPathPage() {
   const { cvToCc, cvPlusToCvPlusPlus, cvPlusPlusToFm, ccToFm, fmToCho, choToBoss, rewardRates } = safeConfig;
 
   const fetchStaffProgression = useCallback(
-    async (staffId: number, refresh = false, targetRole?: 'CV_PLUS' | 'CV_PLUS_PLUS') => {
+    async (staffId: number, refresh = false, targetRole?: 'CV_PLUS' | 'CV_PLUS_PLUS', period?: CareerPeriod) => {
       try {
-        const res = await apiClient.career.getStaffProgression(staffId, refresh, targetRole);
+        const activePeriod = period || selectedPeriod;
+        const res = await apiClient.career.getStaffProgression(staffId, refresh, targetRole, activePeriod);
         setSelectedStaffStatus(res);
         if (res?.metrics) {
           setSliderOrders(res.metrics.ordersCount || 300);
@@ -100,49 +108,62 @@ export default function CareerPathPage() {
         // fallback
       }
     },
-    []
+    [selectedPeriod]
   );
 
   const handleSimulationTargetChange = (target: 'CV_PLUS' | 'CV_PLUS_PLUS') => {
     playSound('pop');
     setSimulationTarget(target);
     if (selectedStaffId) {
-      fetchStaffProgression(selectedStaffId, false, target);
+      fetchStaffProgression(selectedStaffId, false, target, selectedPeriod);
     }
   };
 
   // Load config & live data
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [fetchedConfig, fetchedStaffList] = await Promise.allSettled([
-        apiClient.career.getConfig(),
-        apiClient.career.listStaff(),
-      ]);
+  const loadData = useCallback(
+    async (periodToLoad?: CareerPeriod) => {
+      try {
+        setLoading(true);
+        const activeP = periodToLoad || selectedPeriod;
+        const [fetchedConfig, fetchedStaffList] = await Promise.allSettled([
+          apiClient.career.getConfig(),
+          apiClient.career.listStaff({ period: activeP }),
+        ]);
 
-      if (fetchedConfig.status === 'fulfilled' && fetchedConfig.value?.cvToCc) {
-        setConfig(fetchedConfig.value);
-      }
-
-      if (fetchedStaffList.status === 'fulfilled' && fetchedStaffList.value?.length > 0) {
-        const list = fetchedStaffList.value;
-        setStaffList(list);
-
-        // Auto select first technician or staff member
-        const defaultStaff = list.find((s) => ['CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole)) || list[0];
-        if (defaultStaff) {
-          setSelectedStaffId(defaultStaff.id);
-          const defaultTarget = defaultStaff.careerRole === 'CV_PLUS' ? 'CV_PLUS_PLUS' : 'CV_PLUS';
-          setSimulationTarget(defaultTarget);
-          fetchStaffProgression(defaultStaff.id, false, defaultTarget);
+        if (fetchedConfig.status === 'fulfilled' && fetchedConfig.value?.cvToCc) {
+          setConfig(fetchedConfig.value);
         }
+
+        if (fetchedStaffList.status === 'fulfilled' && fetchedStaffList.value?.length > 0) {
+          const list = fetchedStaffList.value;
+          setStaffList(list);
+
+          // Auto select first technician or staff member
+          const defaultStaff =
+            (selectedStaffId ? list.find((s) => s.id === selectedStaffId) : null) ||
+            list.find((s) => ['CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole)) ||
+            list[0];
+          if (defaultStaff) {
+            setSelectedStaffId(defaultStaff.id);
+            const defaultTarget = defaultStaff.careerRole === 'CV_PLUS' ? 'CV_PLUS_PLUS' : 'CV_PLUS';
+            setSimulationTarget(defaultTarget);
+            fetchStaffProgression(defaultStaff.id, false, defaultTarget, activeP);
+          }
+        }
+      } catch (_err) {
+        // Graceful fallback to default simulation
+      } finally {
+        setLoading(false);
       }
-    } catch (_err) {
-      // Graceful fallback to default simulation
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchStaffProgression]);
+    },
+    [selectedPeriod, selectedStaffId, fetchStaffProgression]
+  );
+
+  const handlePeriodChange = (newPeriod: CareerPeriod) => {
+    playSound('pop');
+    setSelectedPeriod(newPeriod);
+    loadData(newPeriod);
+  };
 
   useEffect(() => {
     loadData();
@@ -275,7 +296,7 @@ export default function CareerPathPage() {
     const staff = staffList.find((s) => s.id === staffId);
     const defaultTarget = staff?.careerRole === 'CV_PLUS' ? 'CV_PLUS_PLUS' : 'CV_PLUS';
     setSimulationTarget(defaultTarget);
-    fetchStaffProgression(staffId, false, defaultTarget);
+    fetchStaffProgression(staffId, false, defaultTarget, selectedPeriod);
   };
 
   const handleSyncProd = async () => {
@@ -285,11 +306,11 @@ export default function CareerPathPage() {
       message.success(res.message || 'Đã làm mới dữ liệu từ Production!');
       setLastSyncedAt(res.timestamp || new Date().toISOString());
 
-      const updatedList = await apiClient.career.listStaff();
+      const updatedList = await apiClient.career.listStaff({ period: selectedPeriod });
       setStaffList(updatedList);
 
       if (selectedStaffId) {
-        await fetchStaffProgression(selectedStaffId, true, simulationTarget);
+        await fetchStaffProgression(selectedStaffId, true, simulationTarget, selectedPeriod);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Lỗi làm mới dữ liệu';
@@ -494,7 +515,7 @@ export default function CareerPathPage() {
         value: `${m.ordersCount || 0}`,
         iconType: 'eye',
         isPassed: isOrdersPassed,
-        tooltip: `Bộ mi hoàn thành: ${m.ordersCount || 0}/${targetOrders} bộ · ${isOrdersPassed ? '✓ Đạt chuẩn' : '⚡ Còn thiếu'} (Bấm để xem)`,
+        tooltip: `Bộ mi hoàn thành (90 ngày qua): ${m.ordersCount || 0}/${targetOrders} bộ · ${isOrdersPassed ? '✓ Đạt chuẩn' : '⚡ Còn thiếu'} (Bấm để xem)`,
       },
       {
         id: 2,
@@ -750,6 +771,8 @@ export default function CareerPathPage() {
           lastSyncedAt={lastSyncedAt}
           activeRoleFilter={activeRoleFilter}
           onRoleFilterChange={setActiveRoleFilter}
+          period={selectedPeriod}
+          onPeriodChange={handlePeriodChange}
           onSetRole={handleSetRole}
           onDemote={handleDemote}
           actionLoading={actionLoading}

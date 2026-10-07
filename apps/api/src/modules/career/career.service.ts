@@ -4,6 +4,7 @@ import {
   DEFAULT_CAREER_PROGRESSION_CONFIG,
   StaffCareerStatus,
   CareerRole,
+  CareerPeriod,
   CareerProgressionStatus,
   calculateComboBonus,
   CvPlusRewardSnapshot,
@@ -41,6 +42,67 @@ export function resolveBranchInfo(storeId?: number | null) {
   if (id === 16) return { storeId: 16, branchName: 'Estella Place', branchCode: 'EP' };
   if (id === 2) return { storeId: 2, branchName: 'PXL', branchCode: 'PXL' };
   return { storeId: 6, branchName: 'Đề Thám', branchCode: 'DT' };
+}
+
+export function resolveCareerPeriodDates(period: CareerPeriod = 'last_month') {
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+
+  let periodStart: Date;
+  let periodEnd: Date;
+  let periodLabel: string;
+
+  // Số bộ mi luôn luôn giữ ở 90 ngày qua tính đến thời điểm hiện tại:
+  const orders90dStart = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+  const orders90dEnd = now;
+
+  switch (period) {
+    case 'last_30_days':
+      periodLabel = '30 ngày qua';
+      periodStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      periodEnd = now;
+      break;
+
+    case 'this_month':
+      periodLabel = 'Tháng này';
+      periodStart = new Date(currentYear, currentMonth, 1, 0, 0, 0, 0);
+      periodEnd = now;
+      break;
+
+    case 'last_3_months':
+      periodLabel = '3 tháng trước';
+      // 3 tháng hoàn chỉnh trước tháng này (không tính tháng này)
+      periodStart = new Date(currentYear, currentMonth - 3, 1, 0, 0, 0, 0);
+      periodEnd = new Date(currentYear, currentMonth, 1, 0, 0, 0, 0);
+      break;
+
+    case 'last_month':
+    default:
+      periodLabel = 'Tháng trước';
+      // 1 tháng hoàn chỉnh trước tháng này (không tính tháng này)
+      periodStart = new Date(currentYear, currentMonth - 1, 1, 0, 0, 0, 0);
+      periodEnd = new Date(currentYear, currentMonth, 1, 0, 0, 0, 0);
+      break;
+  }
+
+  const formatSql = (d: Date) => {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  };
+
+  return {
+    period: (period || 'last_month') as CareerPeriod,
+    periodLabel,
+    periodStart,
+    periodEnd,
+    periodStartSql: `'${formatSql(periodStart)}'`,
+    periodEndSql: `'${formatSql(periodEnd)}'`,
+    orders90dStart,
+    orders90dEnd,
+    orders90dStartSql: `'${formatSql(orders90dStart)}'`,
+    orders90dEndSql: `'${formatSql(orders90dEnd)}'`,
+  };
 }
 
 export class CareerProgressionService {
@@ -166,7 +228,10 @@ export class CareerProgressionService {
   /**
    * Danh sách toàn bộ nhân viên tham gia lộ trình kèm chỉ số thực tế từ DB
    */
-  static async listStaff(fastify: FastifyInstance, query?: { role?: string; search?: string }): Promise<any[]> {
+  static async listStaff(
+    fastify: FastifyInstance,
+    query?: { role?: string; search?: string; period?: CareerPeriod }
+  ): Promise<any[]> {
     // 1. Lấy danh sách ID Chuyên Viên hoạt động từ cấu hình Báo Cáo CV (ACTIVE_CV_STAFF_CONFIG / CrmTeam 'CV')
     let activeCvLegacyIds: number[] = [];
     try {
@@ -213,14 +278,15 @@ export class CareerProgressionService {
     });
 
     const config = await this.getConfig(fastify);
+    const periodConfig = resolveCareerPeriodDates(query?.period);
 
     const legacyIds = crmStaffList
       .map((s) => s.legacyStaffId)
       .filter((id): id is number => typeof id === 'number' && id > 0);
     const legacyAvatarMap = new Map<number, string>();
 
-    // 1. Bulk query performance: Số bộ mi lấy 3 tháng (90 ngày); Bug, Tip, HI, Chuối nhận lấy tháng gần nhất (30 ngày)
-    const ordersMap: Record<number, { orders90d: number; orders30d: number; fixes30d: number }> = {};
+    // 1. Bulk query performance: Số bộ mi luôn luôn giữ 90 ngày qua (300 bộ); Bug, Tip, HI, Chuối nhận tính theo kỳ được chọn
+    const ordersMap: Record<number, { orders90d: number; ordersPeriod: number; fixesPeriod: number }> = {};
     const tipsMap: Record<number, { totalTip: number; tipCount: number; validTipOrders?: number }> = {};
     const combosMap: Record<number, number> = {};
     const bonusesMap: Record<number, { points: number; cash: number; banana: number }> = {};
@@ -261,14 +327,16 @@ export class CareerProgressionService {
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
             os.assigned_staff_id,
-            COUNT(os.id) as total_orders_90d,
-            COUNT(CASE WHEN o.booking_date_start >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00') AND o.booking_date_start < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00') THEN os.id END) as total_orders_30d,
-            COUNT(CASE WHEN os.next_fix_order_service_id IS NOT NULL AND o.booking_date_start >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00') AND o.booking_date_start < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00') THEN 1 END) as fix_count_30d
+            COUNT(CASE WHEN o.booking_date_start >= ${periodConfig.orders90dStartSql} AND o.booking_date_start < ${periodConfig.orders90dEndSql} THEN os.id END) as total_orders_90d,
+            COUNT(CASE WHEN o.booking_date_start >= ${periodConfig.periodStartSql} AND o.booking_date_start < ${periodConfig.periodEndSql} THEN os.id END) as total_orders_period,
+            COUNT(CASE WHEN os.next_fix_order_service_id IS NOT NULL AND o.booking_date_start >= ${periodConfig.periodStartSql} AND o.booking_date_start < ${periodConfig.periodEndSql} THEN 1 END) as fix_count_period
           FROM order_service os
           JOIN \`order\` o ON o.id = os.order_id
           WHERE o.order_state = 'Completed'
-            AND o.booking_date_start >= DATE_SUB(DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00'), INTERVAL 3 MONTH)
-            AND o.booking_date_start < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
+            AND (
+              (o.booking_date_start >= ${periodConfig.orders90dStartSql} AND o.booking_date_start < ${periodConfig.orders90dEndSql})
+              OR (o.booking_date_start >= ${periodConfig.periodStartSql} AND o.booking_date_start < ${periodConfig.periodEndSql})
+            )
           GROUP BY os.assigned_staff_id
         `),
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
@@ -280,8 +348,8 @@ export class CareerProgressionService {
           FROM staff_tip st
           JOIN \`order\` o ON o.id = st.order_id
           WHERE o.order_state = 'Completed'
-            AND o.booking_date_start >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00')
-            AND o.booking_date_start < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
+            AND o.booking_date_start >= ${periodConfig.periodStartSql}
+            AND o.booking_date_start < ${periodConfig.periodEndSql}
           GROUP BY st.user_id
         `),
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
@@ -292,8 +360,8 @@ export class CareerProgressionService {
           JOIN \`order\` o ON o.id = os.order_id
           JOIN order_service_combo osc ON osc.order_id = os.order_id
           WHERE o.order_state = 'Completed'
-            AND o.booking_date_start >= DATE_SUB(DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00'), INTERVAL 3 MONTH)
-            AND o.booking_date_start < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
+            AND o.booking_date_start >= ${periodConfig.orders90dStartSql}
+            AND o.booking_date_start < ${periodConfig.orders90dEndSql}
           GROUP BY os.assigned_staff_id
         `),
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
@@ -303,8 +371,8 @@ export class CareerProgressionService {
             COALESCE(SUM(CASE WHEN sb.bonus_type = 'Cash' THEN sb.bonus_amount ELSE 0 END), 0) as cc_cash,
             COALESCE(SUM(CASE WHEN sb.bonus_type IN ('Credit', 'Banana') THEN sb.bonus_amount ELSE 0 END), 0) as banana_count
           FROM staff_bonus sb
-          WHERE sb.date_created >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00')
-            AND sb.date_created < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
+          WHERE sb.date_created >= ${periodConfig.periodStartSql}
+            AND sb.date_created < ${periodConfig.periodEndSql}
           GROUP BY sb.user_id
         `),
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
@@ -312,15 +380,15 @@ export class CareerProgressionService {
             o.client_store_id,
             COALESCE(SUM(st.tip_amount), 0) as branch_total_tip,
             COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as branch_valid_tip_orders,
-            (SELECT COUNT(o2.id) FROM \`order\` o2 WHERE o2.order_state = 'Completed' AND o2.booking_date_start >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00') AND o2.booking_date_start < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00') AND o2.client_store_id = o.client_store_id) as branch_orders,
+            (SELECT COUNT(o2.id) FROM \`order\` o2 WHERE o2.order_state = 'Completed' AND o2.booking_date_start >= ${periodConfig.periodStartSql} AND o2.booking_date_start < ${periodConfig.periodEndSql} AND o2.client_store_id = o.client_store_id) as branch_orders,
             COALESCE(SUM(st.tip_amount), 0) as shop_total_tip,
             COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as shop_valid_tip_orders,
-            (SELECT COUNT(id) FROM \`order\` WHERE order_state = 'Completed' AND booking_date_start >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00') AND booking_date_start < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')) as shop_orders
+            (SELECT COUNT(id) FROM \`order\` WHERE order_state = 'Completed' AND booking_date_start >= ${periodConfig.periodStartSql} AND booking_date_start < ${periodConfig.periodEndSql}) as shop_orders
           FROM \`order\` o
           LEFT JOIN staff_tip st ON st.order_id = o.id
           WHERE o.order_state = 'Completed'
-            AND o.booking_date_start >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00')
-            AND o.booking_date_start < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
+            AND o.booking_date_start >= ${periodConfig.periodStartSql}
+            AND o.booking_date_start < ${periodConfig.periodEndSql}
           GROUP BY o.client_store_id
         `),
         legacyIds.length > 0
@@ -338,8 +406,8 @@ export class CareerProgressionService {
               WHERE r.type = 'CheckIn5MinuteEarly'
                 AND g.from_user_id != g.to_user_id
                 AND (g.created_staff_id IS NULL OR g.created_staff_id != g.to_user_id)
-                AND g.date_created >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00')
-                AND g.date_created < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
+                AND g.date_created >= ${periodConfig.periodStartSql}
+                AND g.date_created < ${periodConfig.periodEndSql}
                 AND g.to_user_id IN (${legacyIds.join(',')})
               GROUP BY g.to_user_id
             `)
@@ -352,20 +420,23 @@ export class CareerProgressionService {
                 COALESCE(SUM(relationship_happy_count + relationship_neutral_count + relationship_unhappy_count), 0) as total_evaluations
               FROM report_staff_relationship
               WHERE user_id IN (${legacyIds.join(',')})
-                AND date >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01')
-                AND date < DATE_FORMAT(NOW(), '%Y-%m-01')
+                AND date >= DATE(${periodConfig.periodStartSql})
+                AND date < DATE(${periodConfig.periodEndSql})
               GROUP BY user_id
             `)
           : Promise.resolve([]),
         legacyIds.length > 0
-          ? fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
-              SELECT 
-                user_id,
-                amount
-              FROM user_balance
-              WHERE currency_id = 3
-                AND user_id IN (${legacyIds.join(',')})
-            `)
+          ? fastify.prisma.legacy
+              .$queryRawUnsafe<any[]>(
+                `
+                SELECT 
+                  user_id,
+                  balance as amount
+                FROM staff_banana_account
+                WHERE user_id IN (${legacyIds.join(',')})
+              `
+              )
+              .catch(() => [])
           : Promise.resolve([]),
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
@@ -375,8 +446,8 @@ export class CareerProgressionService {
           FROM order_service os
           JOIN \`order\` o ON o.id = os.order_id
           WHERE o.order_state = 'Completed'
-            AND o.booking_date_start >= DATE_SUB(DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00'), INTERVAL 3 MONTH)
-            AND o.booking_date_start < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
+            AND o.booking_date_start >= ${periodConfig.orders90dStartSql}
+            AND o.booking_date_start < ${periodConfig.orders90dEndSql}
           GROUP BY os.assigned_staff_id, o.client_store_id
           ORDER BY os.assigned_staff_id, store_order_count DESC
         `),
@@ -414,8 +485,8 @@ export class CareerProgressionService {
         if (r.assigned_staff_id) {
           ordersMap[Number(r.assigned_staff_id)] = {
             orders90d: Number(r.total_orders_90d) || 0,
-            orders30d: Number(r.total_orders_30d) || 0,
-            fixes30d: Number(r.fix_count_30d) || 0,
+            ordersPeriod: Number(r.total_orders_period) || 0,
+            fixesPeriod: Number(r.fix_count_period) || 0,
           };
         }
       });
@@ -504,23 +575,28 @@ export class CareerProgressionService {
       fastify.log.warn({ err }, 'Could not run bulk legacy queries for staff career list');
     }
 
-    const now = new Date();
-    const startOfLastCompletedMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
-    const endOfLastCompletedMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    const periodStart = periodConfig.periodStart;
+    const periodEnd = periodConfig.periodEnd;
+    const evaluatedWeeks = Math.max(
+      1,
+      Math.round((periodEnd.getTime() - periodStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
+    );
 
     return crmStaffList.map((staff) => {
       const legacyId = staff.legacyStaffId || staff.id;
       const staffOrders90d = ordersMap[legacyId]?.orders90d || 0;
-      const staffOrders30d = ordersMap[legacyId]?.orders30d || 0;
-      const staffFixes30d = ordersMap[legacyId]?.fixes30d || 0;
-      const fixRate = staffOrders30d > 0 ? Number((staffFixes30d / staffOrders30d).toFixed(4)) : 0;
+      const staffOrdersPeriod = ordersMap[legacyId]?.ordersPeriod || 0;
+      const staffFixesPeriod = ordersMap[legacyId]?.fixesPeriod || 0;
+      const fixRate = staffOrdersPeriod > 0 ? Number((staffFixesPeriod / staffOrdersPeriod).toFixed(4)) : 0;
       const totalTip = tipsMap[legacyId]?.totalTip || 0;
-      const staffAvgTip = staffOrders30d > 0 ? totalTip / staffOrders30d : 0;
+      const staffAvgTip = staffOrdersPeriod > 0 ? totalTip / staffOrdersPeriod : 0;
       const validTipOrders = tipsMap[legacyId]?.validTipOrders || 0;
       let staffTipRate =
-        staffOrders30d > 0 && validTipOrders > 0 ? Number((validTipOrders / staffOrders30d).toFixed(3)) : 0;
-      if (staffTipRate === 0 && totalTip > 0 && staffOrders30d > 0) {
-        staffTipRate = Number(Math.min(0.65, Math.max(0.2, (totalTip / (staffOrders30d * 38000)) * 0.45)).toFixed(3));
+        staffOrdersPeriod > 0 && validTipOrders > 0 ? Number((validTipOrders / staffOrdersPeriod).toFixed(3)) : 0;
+      if (staffTipRate === 0 && totalTip > 0 && staffOrdersPeriod > 0) {
+        staffTipRate = Number(
+          Math.min(0.65, Math.max(0.2, (totalTip / (staffOrdersPeriod * 38000)) * 0.45)).toFixed(3)
+        );
       }
 
       // Xác định chi nhánh của nhân sự: ưu tiên store có nhiều ca làm nhất trong 3 tháng đã hoàn tất, fallback profile store
@@ -537,14 +613,14 @@ export class CareerProgressionService {
         avgTip: defaultShopAvgTip,
       };
 
-      // Tỷ lệ tip và tiền tip trung bình được tính theo chuẩn chi nhánh của chính nhân sự đó (tháng gần nhất đã hoàn tất)
+      // Tỷ lệ tip và tiền tip trung bình được tính theo chuẩn chi nhánh của chính nhân sự đó
       const shopTipRate = staffBranch.tipRate;
       const shopAvgTip = staffBranch.avgTip;
 
       const tipRatioAboveShop =
         shopTipRate > 0 && staffTipRate > 0
           ? Number(((staffTipRate - shopTipRate) / shopTipRate).toFixed(3))
-          : shopAvgTip > 0 && staffOrders30d > 0
+          : shopAvgTip > 0 && staffOrdersPeriod > 0
             ? Number(((staffAvgTip - shopAvgTip) / shopAvgTip).toFixed(3))
             : 0;
       const comboOrders = combosMap[legacyId] || 0;
@@ -580,11 +656,14 @@ export class CareerProgressionService {
         careerRole,
         avatarUrl,
         legacyStaffId: staff.legacyStaffId,
-        ordersCount: staffOrders90d, // Riêng số bộ mi: 3 tháng đã hoàn tất
-        fixRate, // Bug: tháng gần nhất đã hoàn tất
+        ordersCount: staffOrders90d, // Riêng số bộ mi: luôn luôn giữ ở 90 ngày qua
+        periodOrders: staffOrdersPeriod,
+        targetOrders: 300, // Chuẩn 90 ngày: ≥ 300 bộ
+        period: periodConfig.period,
+        fixRate, // Bug trong kỳ được chọn
         totalTip,
         tipRatioAboveShop,
-        staffTipRate, // % Tip: tháng gần nhất đã hoàn tất
+        staffTipRate, // % Tip trong kỳ được chọn
         shopTipRate,
         storeId: staffBranch.storeId,
         branchName: staffBranch.branchName,
@@ -592,24 +671,24 @@ export class CareerProgressionService {
         branchTipRate: staffBranch.tipRate,
         branchAvgTip: staffBranch.avgTip,
         selfComboRate,
-        happinessIndex: hiMap[legacyId] ?? 0.75, // HI: tháng gần nhất đã hoàn tất
-        bananaCount: bananasMap[legacyId] ?? 0, // Chuối nhận: tháng gần nhất đã hoàn tất
+        happinessIndex: hiMap[legacyId] ?? 0.75, // HI trong kỳ được chọn
+        bananaCount: bananasMap[legacyId] ?? 0, // Chuối nhận trong kỳ được chọn
         bananaBalance: legacyId ? (bananaBalancesMap[legacyId] ?? bananasMap[legacyId] ?? 0) : 0,
-        isBananaPassed: (bananasMap[legacyId] ?? 0) >= 20, // Chuẩn chuối tháng gần nhất: ≥ 20 chuối
+        isBananaPassed: (bananasMap[legacyId] ?? 0) >= (periodConfig.period === 'last_3_months' ? 60 : 20),
         ccLevel: ['CC', 'FM'].includes(careerRole) ? ccLevel : null,
         monthlyPoints: ['CC', 'FM'].includes(careerRole) ? monthlyPoints : null,
         qaAuditPassed: (() => {
-          const reqAudits = 4; // QA&QC: tháng gần nhất đã hoàn tất (4 lần = 1 lần/tuần)
+          const reqAudits = evaluatedWeeks;
           const realAudits = qaShopService
             .getStaffAudits(staff.id)
             .concat(legacyId !== staff.id ? qaShopService.getStaffAudits(legacyId) : []);
-          const monthAudits = realAudits.filter((a) => {
+          const periodAudits = realAudits.filter((a) => {
             const d = new Date(a.auditDate || a.createdAt);
-            return !isNaN(d.getTime()) && d >= startOfLastCompletedMonth && d < endOfLastCompletedMonth;
+            return !isNaN(d.getTime()) && d >= periodStart && d < periodEnd;
           });
-          if (monthAudits.length > 0) {
-            const hasFail = monthAudits.some((a) => a.auditEvaluationResult === 'FAILED');
-            return monthAudits.length >= reqAudits && !hasFail;
+          if (periodAudits.length > 0) {
+            const hasFail = periodAudits.some((a) => a.auditEvaluationResult === 'FAILED');
+            return periodAudits.length >= reqAudits && !hasFail;
           }
           return false;
         })(),
@@ -617,12 +696,12 @@ export class CareerProgressionService {
           const realAudits = qaShopService
             .getStaffAudits(staff.id)
             .concat(legacyId !== staff.id ? qaShopService.getStaffAudits(legacyId) : []);
-          const monthAudits = realAudits.filter((a) => {
+          const periodAudits = realAudits.filter((a) => {
             const d = new Date(a.auditDate || a.createdAt);
-            return !isNaN(d.getTime()) && d >= startOfLastCompletedMonth && d < endOfLastCompletedMonth;
+            return !isNaN(d.getTime()) && d >= periodStart && d < periodEnd;
           });
-          if (monthAudits.length > 0) {
-            return monthAudits.some((a) => a.auditEvaluationResult === 'FAILED');
+          if (periodAudits.length > 0) {
+            return periodAudits.some((a) => a.auditEvaluationResult === 'FAILED');
           }
           return false;
         })(),
@@ -630,12 +709,12 @@ export class CareerProgressionService {
           const realAudits = qaShopService
             .getStaffAudits(staff.id)
             .concat(legacyId !== staff.id ? qaShopService.getStaffAudits(legacyId) : []);
-          const monthAudits = realAudits.filter((a) => {
+          const periodAudits = realAudits.filter((a) => {
             const d = new Date(a.auditDate || a.createdAt);
-            return !isNaN(d.getTime()) && d >= startOfLastCompletedMonth && d < endOfLastCompletedMonth;
+            return !isNaN(d.getTime()) && d >= periodStart && d < periodEnd;
           });
-          if (monthAudits.length > 0) {
-            return Number((monthAudits.length / 4).toFixed(2));
+          if (periodAudits.length > 0) {
+            return Number((periodAudits.length / evaluatedWeeks).toFixed(2));
           }
           return 0;
         })(),
@@ -643,11 +722,11 @@ export class CareerProgressionService {
           const realAudits = qaShopService
             .getStaffAudits(staff.id)
             .concat(legacyId !== staff.id ? qaShopService.getStaffAudits(legacyId) : []);
-          const monthAudits = realAudits.filter((a) => {
+          const periodAudits = realAudits.filter((a) => {
             const d = new Date(a.auditDate || a.createdAt);
-            return !isNaN(d.getTime()) && d >= startOfLastCompletedMonth && d < endOfLastCompletedMonth;
+            return !isNaN(d.getTime()) && d >= periodStart && d < periodEnd;
           });
-          return monthAudits.length;
+          return periodAudits.length;
         })(),
       };
     });
@@ -660,7 +739,8 @@ export class CareerProgressionService {
     fastify: FastifyInstance,
     staffId: number,
     forceRefresh = false,
-    requestedTargetRole?: CareerRole
+    requestedTargetRole?: CareerRole,
+    period?: CareerPeriod
   ): Promise<StaffCareerStatus> {
     if (forceRefresh) {
       this.invalidateCache();
@@ -668,6 +748,7 @@ export class CareerProgressionService {
 
     const config = await this.getConfig(fastify);
     const cvReq = config.cvToCvPlus || config.cvToCc;
+    const periodConfig = resolveCareerPeriodDates(period);
 
     const staff = await fastify.prisma.crm.crmStaff.findUnique({
       where: { id: staffId },
@@ -731,8 +812,8 @@ export class CareerProgressionService {
     let ccBonusCash = 0;
     let ccTipShare = 0;
     const totalVisits = 0;
-    let lastMonthOrders = 0;
-    let lastMonthTip = 0;
+    let periodOrders = 0;
+    let periodTip = 0;
     let lastMonthWorkingHours = 0;
     let avg90dWorkingHours = 0;
 
@@ -754,52 +835,54 @@ export class CareerProgressionService {
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(
           `
           SELECT 
-            COUNT(os.id) as total_orders,
+            -- Số bộ mi luôn luôn giữ ở 90 ngày qua:
+            COUNT(CASE WHEN o.booking_date_start >= ${periodConfig.orders90dStartSql} AND o.booking_date_start < ${periodConfig.orders90dEndSql} THEN os.id END) as total_orders,
             COUNT(CASE 
-              WHEN o.booking_date_start >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00')
-               AND o.booking_date_start < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
-              THEN os.id END) as last_month_orders
+              WHEN o.booking_date_start >= ${periodConfig.periodStartSql}
+               AND o.booking_date_start < ${periodConfig.periodEndSql}
+              THEN os.id END) as period_orders
           FROM order_service os
           JOIN \`order\` o ON o.id = os.order_id
           WHERE os.assigned_staff_id = ?
             AND o.order_state = 'Completed'
-            AND o.booking_date_start >= DATE_SUB(DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00'), INTERVAL 3 MONTH)
-            AND o.booking_date_start < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
+            AND (
+              (o.booking_date_start >= ${periodConfig.orders90dStartSql} AND o.booking_date_start < ${periodConfig.orders90dEndSql})
+              OR (o.booking_date_start >= ${periodConfig.periodStartSql} AND o.booking_date_start < ${periodConfig.periodEndSql})
+            )
         `,
           targetLegacyStaffId
         ),
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(
           `
           SELECT 
-            COUNT(CASE WHEN o.booking_date_start >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00') AND o.booking_date_start < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00') AND os.next_fix_order_service_id IS NOT NULL THEN os.id END) as fix_count_30d,
+            COUNT(CASE WHEN o.booking_date_start >= ${periodConfig.periodStartSql} AND o.booking_date_start < ${periodConfig.periodEndSql} AND os.next_fix_order_service_id IS NOT NULL THEN os.id END) as fix_count_period,
             COUNT(CASE WHEN os.next_fix_order_service_id IS NOT NULL THEN os.id END) as fix_count
           FROM order_service os
           JOIN \`order\` o ON o.id = os.order_id
           WHERE os.assigned_staff_id = ?
             AND os.next_fix_order_service_id IS NOT NULL
             AND o.order_state = 'Completed'
-            AND o.booking_date_start >= DATE_SUB(DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00'), INTERVAL 3 MONTH)
-            AND o.booking_date_start < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
+            AND o.booking_date_start >= ${periodConfig.periodStartSql}
+            AND o.booking_date_start < ${periodConfig.periodEndSql}
         `,
           targetLegacyStaffId
         ),
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(
           `
           SELECT 
-            COALESCE(SUM(st.tip_amount), 0) as total_tip,
             COALESCE(SUM(CASE 
-              WHEN o.booking_date_start >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00')
-               AND o.booking_date_start < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
-              THEN st.tip_amount ELSE 0 END), 0) as last_month_tip,
+              WHEN o.booking_date_start >= ${periodConfig.periodStartSql}
+               AND o.booking_date_start < ${periodConfig.periodEndSql}
+              THEN st.tip_amount ELSE 0 END), 0) as period_tip,
             COUNT(st.id) as tip_count,
-            COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 AND o.booking_date_start >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00') AND o.booking_date_start < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00') THEN st.order_id END) as valid_tip_orders_30d,
+            COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 AND o.booking_date_start >= ${periodConfig.periodStartSql} AND o.booking_date_start < ${periodConfig.periodEndSql} THEN st.order_id END) as valid_tip_orders_period,
             COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as valid_tip_orders
           FROM staff_tip st
           JOIN \`order\` o ON o.id = st.order_id
           WHERE st.user_id = ?
             AND o.order_state = 'Completed'
-            AND o.booking_date_start >= DATE_SUB(DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00'), INTERVAL 3 MONTH)
-            AND o.booking_date_start < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
+            AND o.booking_date_start >= ${periodConfig.periodStartSql}
+            AND o.booking_date_start < ${periodConfig.periodEndSql}
         `,
           targetLegacyStaffId
         ),
@@ -811,8 +894,8 @@ export class CareerProgressionService {
           JOIN order_service_combo osc ON osc.order_id = os.order_id
           WHERE os.assigned_staff_id = ?
             AND o.order_state = 'Completed'
-            AND o.booking_date_start >= DATE_SUB(DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00'), INTERVAL 3 MONTH)
-            AND o.booking_date_start < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
+            AND o.booking_date_start >= ${periodConfig.orders90dStartSql}
+            AND o.booking_date_start < ${periodConfig.orders90dEndSql}
         `,
           targetLegacyStaffId
         ),
@@ -824,8 +907,8 @@ export class CareerProgressionService {
             COALESCE(SUM(CASE WHEN sb.bonus_type IN ('Credit', 'Banana') THEN sb.bonus_amount ELSE 0 END), 0) as banana_count
           FROM staff_bonus sb
           WHERE sb.user_id = ?
-            AND sb.date_created >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00')
-            AND sb.date_created < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
+            AND sb.date_created >= ${periodConfig.periodStartSql}
+            AND sb.date_created < ${periodConfig.periodEndSql}
         `,
           targetLegacyStaffId
         ),
@@ -834,15 +917,15 @@ export class CareerProgressionService {
             o.client_store_id,
             COALESCE(SUM(st.tip_amount), 0) as branch_total_tip,
             COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as branch_valid_tip_orders,
-            (SELECT COUNT(o2.id) FROM \`order\` o2 WHERE o2.order_state = 'Completed' AND o2.booking_date_start >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00') AND o2.booking_date_start < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00') AND o2.client_store_id = o.client_store_id) as branch_orders,
+            (SELECT COUNT(o2.id) FROM \`order\` o2 WHERE o2.order_state = 'Completed' AND o2.booking_date_start >= ${periodConfig.periodStartSql} AND o2.booking_date_start < ${periodConfig.periodEndSql} AND o2.client_store_id = o.client_store_id) as branch_orders,
             COALESCE(SUM(st.tip_amount), 0) as shop_total_tip,
             COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as shop_valid_tip_orders,
-            (SELECT COUNT(id) FROM \`order\` WHERE order_state = 'Completed' AND booking_date_start >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00') AND booking_date_start < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')) as shop_orders
+            (SELECT COUNT(id) FROM \`order\` WHERE order_state = 'Completed' AND booking_date_start >= ${periodConfig.periodStartSql} AND booking_date_start < ${periodConfig.periodEndSql}) as shop_orders
           FROM \`order\` o
           LEFT JOIN staff_tip st ON st.order_id = o.id
           WHERE o.order_state = 'Completed'
-            AND o.booking_date_start >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00')
-            AND o.booking_date_start < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
+            AND o.booking_date_start >= ${periodConfig.periodStartSql}
+            AND o.booking_date_start < ${periodConfig.periodEndSql}
           GROUP BY o.client_store_id
         `),
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(
@@ -854,8 +937,8 @@ export class CareerProgressionService {
             COALESCE(SUM(relationship_happy_count + relationship_neutral_count + relationship_unhappy_count), 0) as total_evaluations
           FROM report_staff_relationship
           WHERE user_id = ?
-            AND date >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01')
-            AND date < DATE_FORMAT(NOW(), '%Y-%m-01')
+            AND date >= DATE(${periodConfig.periodStartSql})
+            AND date < DATE(${periodConfig.periodEndSql})
         `,
           targetLegacyStaffId
         ),
@@ -869,8 +952,8 @@ export class CareerProgressionService {
             AND r.type = 'CheckIn5MinuteEarly'
             AND g.from_user_id != g.to_user_id
             AND (g.created_staff_id IS NULL OR g.created_staff_id != g.to_user_id)
-            AND g.date_created >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01 00:00:00')
-            AND g.date_created < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
+            AND g.date_created >= ${periodConfig.periodStartSql}
+            AND g.date_created < ${periodConfig.periodEndSql}
         `,
           targetLegacyStaffId
         ),
@@ -878,28 +961,30 @@ export class CareerProgressionService {
           `
           SELECT 
             ROUND(COALESCE(SUM(CASE 
-              WHEN date >= DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), '%Y-%m-01')
-               AND date < DATE_FORMAT(NOW(), '%Y-%m-01')
+              WHEN date >= DATE(${periodConfig.periodStartSql})
+               AND date < DATE(${periodConfig.periodEndSql})
               THEN TIMESTAMPDIFF(MINUTE, start_time, end_time) ELSE 0 END), 0) / 60, 1) as last_month_hours,
             ROUND(COALESCE(SUM(CASE 
-              WHEN date >= DATE_SUB(DATE_FORMAT(NOW(), '%Y-%m-01'), INTERVAL 3 MONTH)
-               AND date < DATE_FORMAT(NOW(), '%Y-%m-01')
+              WHEN date >= DATE(${periodConfig.orders90dStartSql})
+               AND date < DATE(${periodConfig.orders90dEndSql})
               THEN TIMESTAMPDIFF(MINUTE, start_time, end_time) ELSE 0 END), 0) / 60 / 3, 1) as avg_90d_hours
           FROM staff_working_shift
           WHERE user_id = ?
-            AND date >= DATE_SUB(DATE_FORMAT(NOW(), '%Y-%m-01'), INTERVAL 3 MONTH)
-            AND date < DATE_FORMAT(NOW(), '%Y-%m-01')
+            AND date >= DATE(${periodConfig.orders90dStartSql})
+            AND date < DATE(${periodConfig.orders90dEndSql})
         `,
           targetLegacyStaffId
         ),
-        fastify.prisma.legacy.$queryRawUnsafe<any[]>(
-          `
-          SELECT amount
-          FROM user_balance
-          WHERE user_id = ? AND currency_id = 3
+        fastify.prisma.legacy
+          .$queryRawUnsafe<any[]>(
+            `
+          SELECT balance as amount
+          FROM staff_banana_account
+          WHERE user_id = ?
         `,
-          targetLegacyStaffId
-        ),
+            targetLegacyStaffId
+          )
+          .catch(() => []),
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(
           `
           SELECT 
@@ -909,8 +994,8 @@ export class CareerProgressionService {
           JOIN \`order\` o ON o.id = os.order_id
           WHERE os.assigned_staff_id = ?
             AND o.order_state = 'Completed'
-            AND o.booking_date_start >= DATE_SUB(DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00'), INTERVAL 3 MONTH)
-            AND o.booking_date_start < DATE_FORMAT(NOW(), '%Y-%m-01 00:00:00')
+            AND o.booking_date_start >= ${periodConfig.orders90dStartSql}
+            AND o.booking_date_start < ${periodConfig.orders90dEndSql}
           GROUP BY o.client_store_id
           ORDER BY store_order_count DESC
           LIMIT 1
@@ -954,22 +1039,22 @@ export class CareerProgressionService {
         }
       }
 
-      ordersCount = Number(orderRes?.[0]?.total_orders || 0); // 3 tháng (90 ngày)
-      lastMonthOrders = Number(orderRes?.[0]?.last_month_orders || 0); // Tháng gần nhất (30 ngày)
-      fixCount = Number(fixRes?.[0]?.fix_count_30d ?? 0); // Lỗi bảo hành trong tháng gần nhất
-      fixRate = lastMonthOrders > 0 ? Number((fixCount / lastMonthOrders).toFixed(4)) : 0;
-      totalTip = Number(tipRes?.[0]?.last_month_tip ?? tipRes?.[0]?.total_tip ?? 0);
-      lastMonthTip = Number(tipRes?.[0]?.last_month_tip || 0);
+      ordersCount = Number(orderRes?.[0]?.total_orders || 0); // Số bộ mi: luôn giữ 90 ngày qua (chuẩn ≥ 300 bộ)
+      periodOrders = Number(orderRes?.[0]?.period_orders || 0); // Số đơn trong kỳ được chọn
+      fixCount = Number(fixRes?.[0]?.fix_count_period ?? 0); // Lỗi bảo hành trong kỳ được chọn
+      fixRate = periodOrders > 0 ? Number((fixCount / periodOrders).toFixed(4)) : 0;
+      totalTip = Number(tipRes?.[0]?.period_tip ?? 0);
+      periodTip = Number(tipRes?.[0]?.period_tip || 0);
       lastMonthWorkingHours = Number(workingHoursRes?.[0]?.last_month_hours || 0);
       avg90dWorkingHours = Number(workingHoursRes?.[0]?.avg_90d_hours || 0);
-      staffAvgTip = lastMonthOrders > 0 ? Math.round(totalTip / lastMonthOrders) : 0;
+      staffAvgTip = periodOrders > 0 ? Math.round(totalTip / periodOrders) : 0;
 
-      tippedOrdersCount = Number(tipRes?.[0]?.valid_tip_orders_30d ?? 0);
+      tippedOrdersCount = Number(tipRes?.[0]?.valid_tip_orders_period ?? 0);
       staffTipRate =
-        lastMonthOrders > 0 && tippedOrdersCount > 0 ? Number((tippedOrdersCount / lastMonthOrders).toFixed(3)) : 0;
-      if (staffTipRate === 0 && totalTip > 0 && lastMonthOrders > 0) {
-        staffTipRate = Number(Math.min(0.65, Math.max(0.2, (totalTip / (lastMonthOrders * 38000)) * 0.45)).toFixed(3));
-        tippedOrdersCount = Math.round(lastMonthOrders * staffTipRate);
+        periodOrders > 0 && tippedOrdersCount > 0 ? Number((tippedOrdersCount / periodOrders).toFixed(3)) : 0;
+      if (staffTipRate === 0 && totalTip > 0 && periodOrders > 0) {
+        staffTipRate = Number(Math.min(0.65, Math.max(0.2, (totalTip / (periodOrders * 38000)) * 0.45)).toFixed(3));
+        tippedOrdersCount = Math.round(periodOrders * staffTipRate);
       }
 
       let staffStoreId = 6;
@@ -1052,7 +1137,7 @@ export class CareerProgressionService {
       tipRatioAboveShop =
         shopTipRate > 0 && staffTipRate > 0
           ? Number(((staffTipRate - shopTipRate) / shopTipRate).toFixed(3))
-          : shopAvgTip > 0 && lastMonthOrders > 0 && totalTip > 0
+          : shopAvgTip > 0 && periodOrders > 0 && totalTip > 0
             ? Number(((staffAvgTip - shopAvgTip) / shopAvgTip).toFixed(3))
             : totalTip > 0
               ? 0.15
@@ -1146,20 +1231,22 @@ export class CareerProgressionService {
 
     // Quest gates evaluation against dynamic config
 
-    // QA/QC Audit Quest Evaluation: Tháng gần nhất đã hoàn tất (4 tuần, chuẩn >= 4 lần = 1 lần/tuần)
-    const evaluatedWeeks = 4; // Tháng gần nhất tương đương 4 tuần làm việc
-    const now = new Date();
-    const startOfLastCompletedMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
-    const endOfLastCompletedMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    // QA/QC Audit Quest Evaluation: Tính theo kỳ được chọn
+    const periodStart = periodConfig.periodStart;
+    const periodEnd = periodConfig.periodEnd;
+    const evaluatedWeeks = Math.max(
+      1,
+      Math.round((periodEnd.getTime() - periodStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
+    );
 
-    // Truy vấn dữ liệu biên bản kiểm tra QA/QC tác phong & phòng mi thực tế từ QaShopService trong tháng gần nhất đã hoàn tất
+    // Truy vấn dữ liệu biên bản kiểm tra QA/QC tác phong & phòng mi thực tế từ QaShopService trong kỳ được chọn
     const allStaffAuditRecords = qaShopService
       .getStaffAudits(staff.id)
       .concat(targetLegacyStaffId !== staff.id ? qaShopService.getStaffAudits(targetLegacyStaffId) : []);
 
     const staffAuditRecords = allStaffAuditRecords.filter((a) => {
       const d = new Date(a.auditDate || a.createdAt);
-      return !isNaN(d.getTime()) && d >= startOfLastCompletedMonth && d < endOfLastCompletedMonth;
+      return !isNaN(d.getTime()) && d >= periodStart && d < periodEnd;
     });
 
     let totalAudits = 0;
@@ -1249,16 +1336,15 @@ export class CareerProgressionService {
       lastMonthWorkingHours > 0 ? lastMonthWorkingHours : avg90dWorkingHours > 0 ? avg90dWorkingHours : 260;
     const monthlyEstimatedHours = actualWorkingHours;
 
-    // Tiền tip thực tế CV đã nhận (70%): ưu tiên tháng trước, nếu tháng trước = 0 thì lấy trung bình 3 tháng (totalTip / 3)
-    const actualTipReceived = lastMonthTip > 0 ? lastMonthTip : ordersCount > 0 ? Math.round(totalTip / 3) : 2500000;
+    // Tiền tip thực tế CV đã nhận (70%): ưu tiên theo kỳ được chọn, nếu kỳ = 0 thì lấy trung bình 3 tháng (totalTip / 3)
+    const actualTipReceived = periodTip > 0 ? periodTip : ordersCount > 0 ? Math.round(totalTip / 3) : 2500000;
     const monthlyTipAvg = actualTipReceived;
 
     // Tổng tiền tip mà khách hàng thực tế đã cho trên hóa đơn (100% tip khách: actualTipReceived / 0.7)
     const customerTotalTip = Math.round(actualTipReceived / 0.7);
 
-    // Số đơn làm trong tháng: ưu tiên tháng trước, nếu không thì lấy trung bình 3 tháng
-    const monthlyOrdersCount =
-      lastMonthOrders > 0 ? lastMonthOrders : ordersCount > 0 ? Math.round(ordersCount / 3) : 80;
+    // Số đơn làm trong kỳ: ưu tiên theo kỳ được chọn, nếu không thì lấy trung bình 3 tháng
+    const monthlyOrdersCount = periodOrders > 0 ? periodOrders : ordersCount > 0 ? Math.round(ordersCount / 3) : 80;
 
     // Tệp khách hàng có thể bán combo: 40% số khách (loại trừ khách đang có gói combo live)
     const potentialComboCustomers = Math.max(20, Math.round(monthlyOrdersCount * 0.4));
@@ -1352,8 +1438,13 @@ export class CareerProgressionService {
       status: progressionStatus,
       trialStartedAt: progression?.trialStartedAt?.toISOString() || null,
       trialEndsAt: progression?.trialEndsAt?.toISOString() || null,
+      period: periodConfig.period,
+      targetOrders: 300,
       metrics: {
-        ordersCount,
+        ordersCount, // Luôn luôn giữ ở 90 ngày qua (chuẩn ≥ 300 bộ)
+        periodOrders,
+        targetOrders: 300,
+        period: periodConfig.period,
         fixCount,
         fixRate,
         totalTip,

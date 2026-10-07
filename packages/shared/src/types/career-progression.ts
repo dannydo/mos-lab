@@ -1,5 +1,7 @@
 export type CareerRole = 'CV' | 'CV_PLUS' | 'CV_PLUS_PLUS' | 'FM' | 'CHO' | 'BOSS' | 'MASTER_TECH' | 'CC';
 
+export type CareerPeriod = 'last_30_days' | 'this_month' | 'last_month' | 'last_3_months';
+
 export type CareerProgressionStatus = 'IN_PROGRESS' | 'TRIAL_GATE' | 'QUALIFIED' | 'PROMOTED' | 'SPECIALIST_PATH';
 
 export interface CvToCvPlusRequirements {
@@ -450,6 +452,8 @@ export interface CareerStaffSummary {
   branchCode?: string;
   branchTipRate?: number;
   branchAvgTip?: number;
+  period?: CareerPeriod;
+  targetOrders?: number;
 }
 
 export interface StaffCareerStatus {
@@ -461,6 +465,8 @@ export interface StaffCareerStatus {
   status: CareerProgressionStatus;
   trialStartedAt?: string | null;
   trialEndsAt?: string | null;
+  period?: CareerPeriod;
+  targetOrders?: number;
   metrics: {
     ordersCount: number;
     fixCount?: number;
@@ -476,6 +482,9 @@ export interface StaffCareerStatus {
     branchCode?: string;
     branchTipRate?: number;
     branchAvgTip?: number;
+    period?: CareerPeriod;
+    targetOrders?: number;
+    periodOrders?: number;
     targetTipRate?: number;
     tippedOrdersCount?: number;
     happinessIndex: number;

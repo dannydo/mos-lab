@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { requireAuth } from '../../middlewares/auth.js';
-import { isAdminOrSuperAdminRole, CareerProgressionConfig } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, CareerProgressionConfig, CareerPeriod } from '@mos-lab/shared';
 import { CareerProgressionService } from './career.service.js';
 
 export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
@@ -85,7 +85,7 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
    * Danh sách nhân viên tham gia lộ trình thăng tiến kèm chỉ số thực tế
    * GET /api/career/staff-list
    */
-  fastify.get<{ Querystring: { role?: string; search?: string } }>(
+  fastify.get<{ Querystring: { role?: string; search?: string; period?: CareerPeriod } }>(
     '/career/staff-list',
     {
       preHandler: [requireAuth],
@@ -127,9 +127,12 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
 
   /**
    * Xem tiến trình thăng cấp của một nhân viên cụ thể
-   * GET /api/career/staff/:staffId?refresh=true
+   * GET /api/career/staff/:staffId?refresh=true&period=last_month
    */
-  fastify.get<{ Params: { staffId: string }; Querystring: { refresh?: string; targetRole?: string } }>(
+  fastify.get<{
+    Params: { staffId: string };
+    Querystring: { refresh?: string; targetRole?: string; period?: CareerPeriod };
+  }>(
     '/career/staff/:staffId',
     {
       preHandler: [requireAuth],
@@ -138,13 +141,20 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       const staffId = Number(request.params.staffId);
       const forceRefresh = request.query?.refresh === 'true';
       const targetRole = request.query?.targetRole as any;
+      const period = request.query?.period as any;
 
       if (isNaN(staffId) || staffId <= 0) {
         return reply.status(400).send({ success: false, message: 'ID nhân viên không hợp lệ' });
       }
 
       try {
-        const status = await CareerProgressionService.getStaffProgression(fastify, staffId, forceRefresh, targetRole);
+        const status = await CareerProgressionService.getStaffProgression(
+          fastify,
+          staffId,
+          forceRefresh,
+          targetRole,
+          period
+        );
         return reply.send({ success: true, data: status });
       } catch (err: any) {
         fastify.log.error({ err, staffId }, 'Failed to get staff career status');
