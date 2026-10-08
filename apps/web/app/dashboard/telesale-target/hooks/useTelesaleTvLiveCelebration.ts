@@ -30,6 +30,10 @@ export interface ActiveCelebration {
   comboPackageName?: string;
   hasTip?: boolean;
   tipAmount?: number;
+  customerPraiseNote?: string;
+  customerName?: string;
+  assignedStaffName?: string;
+  checkInStaffName?: string;
 }
 
 const SETTINGS_STORAGE_KEY = 'MOS_TV_MONITOR_VOICE_SETTINGS';
@@ -726,11 +730,50 @@ export function useTelesaleTvLiveCelebration() {
               });
             });
         } else if (ev.type === 'DONE') {
-          // Chỉ chúc mừng nếu có COMBO hoặc TIP (theo đúng kịch bản grill-me)
+          // Xử lý các loại vinh danh: Lời khen của khách (Ưu tiên số 1) > Combo & Tip > Combo > Tip
           const hasCombo = !!ev.hasCombo;
           const hasTip = !!ev.hasTip;
+          const hasPraise = !!ev.customerPraiseNote;
+          const praiseNote = ev.customerPraiseNote || '';
+          const customerName = ev.customerName || 'Khách yêu';
+          const cvName = ev.assignedStaffName || 'Chuyên Viên';
+          const ccName = ev.checkInStaffName || staffName;
 
-          if (hasCombo && hasTip) {
+          if (hasPraise) {
+            // Trường hợp khách có lời nhắn khen ngợi chân thành (đã qua AI sentiment filter)
+            let praiseQuote = '';
+            let badgeText = '💌 LỜI KHEN TỪ KHÁCH YÊU!';
+            const tipText = ev.tipAmount ? ` ${ev.tipAmount.toLocaleString('vi-VN')}đ` : '';
+
+            if (hasTip) {
+              badgeText = `👑 TIP${tipText} & LỜI KHEN NGỌT NGÀO!`;
+              praiseQuote = `Khách yêu ${customerName} vừa gửi tặng tip${tipText} cùng lời khen ngọt ngào: "${praiseNote}". Chúc mừng Chuyên Viên ${cvName} và Tư Vấn ${ccName} đã tạo nên trải nghiệm tuyệt vời!`;
+            } else {
+              badgeText = `💌 LỜI KHEN TỪ KHÁCH YÊU!`;
+              praiseQuote = `Khách yêu ${customerName} vừa gửi lời khen ngọt ngào: "${praiseNote}". Chúc mừng Chuyên Viên ${cvName} và Tư Vấn ${ccName} đã đồng hành xuất sắc!`;
+            }
+
+            enqueueCelebration({
+              id: ev.id,
+              kind: 'TIP', // Chime vàng kim vui tươi
+              staffId: ev.staffId,
+              staffName,
+              avatarUrl: ev.avatarUrl,
+              textToSpeak: praiseQuote,
+              badgeText,
+              colorTheme: 'gold',
+              changeResult: ev.changeResult,
+              orderId: ev.orderId,
+              hasCombo,
+              comboPackageName: ev.comboPackageName,
+              hasTip,
+              tipAmount: ev.tipAmount,
+              customerPraiseNote: praiseNote,
+              customerName,
+              assignedStaffName: cvName,
+              checkInStaffName: ccName,
+            });
+          } else if (hasCombo && hasTip) {
             const defaultQuote = getRandomQuote(COMBO_TIP_QUOTES, staffName);
             const tipText = ev.tipAmount ? ` ${ev.tipAmount.toLocaleString('vi-VN')}đ` : '';
             enqueueCelebration({

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { ActiveCelebration } from '../hooks/useTelesaleTvLiveCelebration';
-import { Sparkles, Trophy, Calendar, CheckCircle2, Volume2, Award, Flame } from 'lucide-react';
+import { Sparkles, Trophy, Calendar, CheckCircle2, Volume2, Award, Flame, MessageSquareHeart } from 'lucide-react';
 
 export interface TelesaleTvLiveCelebrationBannerProps {
   celebration: ActiveCelebration | null;
@@ -456,14 +456,41 @@ export const TelesaleTvLiveCelebrationBanner: React.FC<TelesaleTvLiveCelebration
           )}
         </div>
 
-        {/* 5. Celebration Quote (100% Matched With Voice) */}
-        <div className="my-4 px-2 sm:px-6">
-          <p
-            className={`text-base sm:text-lg md:text-xl font-bold font-mono italic leading-relaxed m-0 drop-shadow-md ${themeStyles.quoteHighlight}`}
-          >
-            “{celebration.textToSpeak}”
-          </p>
-        </div>
+        {/* 5. Celebration Quote or Dedicated Golden Customer Praise Box */}
+        {celebration.customerPraiseNote ? (
+          <div className="my-4 mx-auto max-w-xl p-4 sm:p-5 rounded-2xl bg-amber-950/70 border-2 border-amber-400/90 shadow-[0_0_28px_rgba(251,191,36,0.35)] backdrop-blur-md">
+            <div className="flex items-center justify-center gap-2 text-xs font-black uppercase tracking-wider text-amber-300 mb-2">
+              <MessageSquareHeart className="w-4 h-4 text-amber-400 animate-pulse" />
+              <span>Lời nhắn từ khách yêu {celebration.customerName || ''}</span>
+            </div>
+            <p className="text-base sm:text-2xl font-bold italic text-amber-100 leading-relaxed m-0 font-serif drop-shadow-md">
+              “{celebration.customerPraiseNote}”
+            </p>
+            {(celebration.assignedStaffName || celebration.checkInStaffName) && (
+              <div className="mt-3 pt-2.5 border-t border-amber-500/30 flex items-center justify-center gap-3 text-xs sm:text-sm font-bold text-amber-200">
+                {celebration.assignedStaffName && (
+                  <span className="flex items-center gap-1">
+                    <span className="text-amber-400">CV:</span> {celebration.assignedStaffName}
+                  </span>
+                )}
+                {celebration.assignedStaffName && celebration.checkInStaffName && <span className="opacity-40">·</span>}
+                {celebration.checkInStaffName && (
+                  <span className="flex items-center gap-1">
+                    <span className="text-amber-400">CC:</span> {celebration.checkInStaffName}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="my-4 px-2 sm:px-6">
+            <p
+              className={`text-base sm:text-lg md:text-xl font-bold font-mono italic leading-relaxed m-0 drop-shadow-md ${themeStyles.quoteHighlight}`}
+            >
+              “{celebration.textToSpeak}”
+            </p>
+          </div>
+        )}
 
         {/* 6. Footer: Audio Indicator & Auto-dismiss Progress Bar */}
         <div className="mt-6 flex flex-col items-center gap-3">

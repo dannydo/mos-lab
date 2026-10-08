@@ -207,6 +207,7 @@ export interface TelesaleTodayCheckinItem {
   hasTip?: boolean;
   tipAmount?: number;
   timeInService?: string;
+  customerPraiseNote?: string | null;
 }
 
 export interface TelesaleTodayLiveEvent {
@@ -223,6 +224,10 @@ export interface TelesaleTodayLiveEvent {
   comboPrice?: number;
   hasTip?: boolean;
   tipAmount?: number;
+  customerPraiseNote?: string | null;
+  customerName?: string;
+  assignedStaffName?: string | null;
+  checkInStaffName?: string | null;
 }
 
 export interface TelesaleTvEventLog {
@@ -240,6 +245,7 @@ export interface TelesaleTvEventLog {
   comboPrice?: number;
   hasTip?: boolean;
   tipAmount?: number;
+  customerPraiseNote?: string | null;
 
   // Pipeline execution tracking
   eventReceived: boolean;

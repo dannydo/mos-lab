@@ -1,7 +1,18 @@
 'use client';
 
 import React from 'react';
-import { CheckCircle2, X, Sparkles, User, Crown, Coins, Clock, Scissors, Package } from 'lucide-react';
+import {
+  CheckCircle2,
+  X,
+  Sparkles,
+  User,
+  Crown,
+  Coins,
+  Clock,
+  Scissors,
+  Package,
+  MessageSquareHeart,
+} from 'lucide-react';
 import { Avatar, Tooltip } from 'antd';
 import type { TelesaleTodayCheckinItem } from '@mos-lab/shared';
 
@@ -131,7 +142,17 @@ export const TelesaleTvCheckinSidePanel: React.FC<TelesaleTvCheckinSidePanelProp
                 }`}
               >
                 {/* Status Celebration Banner on Top */}
-                {isSuperWin && (
+                {item.customerPraiseNote && (
+                  <div className="mb-2 -mx-3 -mt-3 px-3 py-1 bg-gradient-to-r from-amber-500 via-rose-500 to-amber-600 text-white flex items-center justify-between text-[10px] font-black uppercase tracking-wider shadow-sm">
+                    <span className="flex items-center gap-1 truncate">
+                      <MessageSquareHeart className="w-3 h-3 fill-white shrink-0" />
+                      <span className="truncate">💌 KHÁCH GỬI LỜI KHEN NGỌT NGÀO!</span>
+                    </span>
+                    <Sparkles className="w-3 h-3 text-amber-200 animate-spin shrink-0" />
+                  </div>
+                )}
+
+                {isSuperWin && !item.customerPraiseNote && (
                   <div className="mb-2 -mx-3 -mt-3 px-3 py-1 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-amber-500 text-white flex items-center justify-between text-[10px] font-black uppercase tracking-wider shadow-sm">
                     <span className="flex items-center gap-1 truncate">
                       <Crown className="w-3 h-3 fill-amber-300 text-amber-200 shrink-0" />
@@ -264,6 +285,20 @@ export const TelesaleTvCheckinSidePanel: React.FC<TelesaleTvCheckinSidePanelProp
                         {item.comboPrice.toLocaleString('vi-VN')}đ
                       </span>
                     )}
+                  </div>
+                )}
+
+                {/* Customer Praise Quote Box */}
+                {item.customerPraiseNote && (
+                  <div
+                    className={`p-2 rounded-xl border flex items-start gap-1.5 mb-1.5 text-[11px] font-medium italic ${
+                      isDark
+                        ? 'bg-amber-950/40 border-amber-500/50 text-amber-200'
+                        : 'bg-amber-50/80 border-amber-200 text-amber-900'
+                    }`}
+                  >
+                    <MessageSquareHeart className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                    <span className="line-clamp-2">“{item.customerPraiseNote}”</span>
                   </div>
                 )}
 

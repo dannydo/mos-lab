@@ -30676,8 +30676,8 @@
       "filePath": "apps/api/src/modules/career/career.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14509,
-        "lineCount": 407,
+        "sizeBytes": 14574,
+        "lineCount": 408,
         "ext": ".ts"
       }
     },
@@ -30702,8 +30702,8 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 92546,
-        "lineCount": 2364,
+        "sizeBytes": 98477,
+        "lineCount": 2504,
         "ext": ".ts"
       }
     },
@@ -31963,8 +31963,21 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 111743,
-        "lineCount": 2763,
+        "sizeBytes": 113889,
+        "lineCount": 2801,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/utils/customer-praise-analyzer.ts",
+      "type": "File",
+      "label": "customer-praise-analyzer.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/utils/customer-praise-analyzer.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3435,
+        "lineCount": 181,
         "ext": ".ts"
       }
     },
@@ -36214,8 +36227,8 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path.constants.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17259,
-        "lineCount": 371,
+        "sizeBytes": 19257,
+        "lineCount": 394,
         "ext": ".ts"
       }
     },
@@ -36227,8 +36240,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/BananaTransactionDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18378,
-        "lineCount": 413,
+        "sizeBytes": 23844,
+        "lineCount": 520,
         "ext": ".tsx"
       }
     },
@@ -36240,8 +36253,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 74731,
-        "lineCount": 1481,
+        "sizeBytes": 74650,
+        "lineCount": 1479,
         "ext": ".tsx"
       }
     },
@@ -36254,7 +36267,20 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "sizeBytes": 4214,
-        "lineCount": 94,
+        "lineCount": 95,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/career-path/components/IslandGameIcon.tsx",
+      "type": "File",
+      "label": "IslandGameIcon.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/IslandGameIcon.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6800,
+        "lineCount": 203,
         "ext": ".tsx"
       }
     },
@@ -36266,8 +36292,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 162387,
-        "lineCount": 3157,
+        "sizeBytes": 164684,
+        "lineCount": 3196,
         "ext": ".tsx"
       }
     },
@@ -36279,8 +36305,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 49044,
-        "lineCount": 1132,
+        "sizeBytes": 53118,
+        "lineCount": 1196,
         "ext": ".tsx"
       }
     },
@@ -36292,8 +36318,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 39132,
-        "lineCount": 877,
+        "sizeBytes": 40315,
+        "lineCount": 900,
         "ext": ".tsx"
       }
     },
@@ -38606,8 +38632,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvCheckinSidePanel.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15457,
-        "lineCount": 297,
+        "sizeBytes": 16941,
+        "lineCount": 323,
         "ext": ".tsx"
       }
     },
@@ -38658,8 +38684,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvLiveCelebrationBanner.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19855,
-        "lineCount": 488,
+        "sizeBytes": 21592,
+        "lineCount": 515,
         "ext": ".tsx"
       }
     },
@@ -38723,8 +38749,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 41136,
-        "lineCount": 1030,
+        "sizeBytes": 43269,
+        "lineCount": 1073,
         "ext": ".ts"
       }
     },
@@ -39659,7 +39685,7 @@
       "filePath": "apps/web/lib/api/career.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6020,
+        "sizeBytes": 6037,
         "lineCount": 167,
         "ext": ".ts"
       }
@@ -40374,8 +40400,8 @@
       "filePath": "packages/shared/src/types/career-progression.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 28837,
-        "lineCount": 700,
+        "sizeBytes": 28961,
+        "lineCount": 704,
         "ext": ".ts"
       }
     },
@@ -40868,8 +40894,8 @@
       "filePath": "packages/shared/src/types/telesale-target.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 8292,
-        "lineCount": 323,
+        "sizeBytes": 8504,
+        "lineCount": 329,
         "ext": ".ts"
       }
     },
@@ -88220,7 +88246,7 @@
     }
   ],
   "stats": {
-    "totalNodes": 3135,
+    "totalNodes": 3137,
     "totalEdges": 6754,
     "nodeTypeCounts": {
       "Workspace": 3,
@@ -88230,7 +88256,7 @@
       "SharedType": 1135,
       "DesignToken": 12,
       "UIComponent": 216,
-      "File": 889
+      "File": 891
     },
     "edgeTypeCounts": {
       "EXPORTS": 1310,

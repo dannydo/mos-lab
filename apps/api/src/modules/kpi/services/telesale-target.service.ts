@@ -26,6 +26,7 @@ import {
 } from '@mos-lab/shared';
 import { BkLeaderboardService } from './bk-leaderboard.service.js';
 import { ComboRecognitionService } from '../../customers/services/combo-recognition.service.js';
+import { analyzeCustomerPraiseNote } from '../utils/customer-praise-analyzer.js';
 
 export const DEFAULT_OCTOBER_CONFIG: TelesaleTargetConfigDto = {
   month: '2026-10',
@@ -1340,15 +1341,17 @@ export class TelesaleTargetService {
         return timeA - timeB;
       });
 
-    // Query tip data and combo sales for today's completed and check-in orders
+    // Query tip data, combo sales, and customer praise feedback for today's completed and check-in orders
     const tipOrderIds = Array.from(
       new Set([...todayDoneOrders.map((o) => Number(o.id)), ...todayCheckinOrders.map((o) => Number(o.id))])
     ).filter((id) => Number.isInteger(id) && id > 0);
     const tipMap = new Map<number, number>();
     const comboSaleMap = new Map<number, { comboPackageName: string; comboPrice: number }>();
+    const customerPraiseMap = new Map<number, string>();
+
     if (tipOrderIds.length > 0) {
       try {
-        const [tips, comboRows] = await Promise.all([
+        const [tips, comboRows, feedbackRows] = await Promise.all([
           fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
             `SELECT order_id, SUM(tip_amount) as totalTip FROM staff_tip WHERE order_id IN (${tipOrderIds.join(',')}) GROUP BY order_id`
           ),
@@ -1364,6 +1367,19 @@ export class TelesaleTargetService {
             WHERE osc.order_id IN (${tipOrderIds.join(',')})
               AND o.order_state = 'Completed'`
           ),
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+            `SELECT 
+              booking_id as bookingId,
+              customer_name as customerName,
+              rating,
+              tip_amount as tipAmount,
+              tip_note as tipNote,
+              cc_user_name as ccUserName
+            FROM cc_feedback_reviews
+            WHERE booking_id IN (${tipOrderIds.map((id) => `'${id}'`).join(',')})
+              AND tip_note IS NOT NULL
+              AND TRIM(tip_note) != ''`
+          ),
         ]);
         for (const t of tips) {
           tipMap.set(Number(t.order_id), Number(t.totalTip || 0));
@@ -1374,75 +1390,27 @@ export class TelesaleTargetService {
             comboPrice: Math.round(Number(r.comboPrice || 0)),
           });
         }
+        for (const f of feedbackRows) {
+          const ordId = Number(f.bookingId);
+          if (ordId > 0 && f.tipNote) {
+            const analysis = analyzeCustomerPraiseNote(f.tipNote);
+            if (analysis.isPraise) {
+              customerPraiseMap.set(ordId, analysis.cleanNote);
+            }
+          }
+        }
       } catch (err) {
-        fastify.log.warn(`Failed to query staff_tip or order_service_combo for telesale today orders: ${err}`);
+        fastify.log.warn(`Failed to query staff_tip, order_service_combo, or cc_feedback_reviews: ${err}`);
       }
     }
 
-    const staffDoneCountMap = new Map<number, number>();
-    const doneEvents: TelesaleTodayLiveEvent[] = sortedTodayDoneOrders.map((o) => {
-      const bookerId = Number(o.bookerId);
-      const prevDone = staffDoneCountMap.get(bookerId) || 0;
-      const newDone = prevDone + 1;
-      staffDoneCountMap.set(bookerId, newDone);
-
-      const timestamp = parseVietnamDateToIso(
-        o.doneDate || o.actualBookingDateEnd || o.dateUpdated || o.actualBookingDateStart || o.bookingDateStart
-      );
-
-      const ordId = Number(o.id);
-      const comboSale = comboSaleMap.get(ordId);
-      const hasComboSale = Boolean(comboSale);
-      const isComboMember = Number(o.isComboLive || 0) === 1;
-      const hasCombo = hasComboSale || isComboMember;
-      const comboPackageName = comboSale?.comboPackageName || (isComboMember ? 'Combo Live Wings' : undefined);
-      const comboPrice = comboSale?.comboPrice || (isComboMember ? 1200000 : undefined);
-      const tipAmount = tipMap.get(ordId) || 0;
-      const hasTip = tipAmount > 0;
-
-      let changeResult = `Done ${prevDone} → ${newDone}`;
-      if (hasComboSale && hasTip) {
-        changeResult = `Done · Chốt Combo + Tip ${tipAmount.toLocaleString('vi-VN')}đ`;
-      } else if (hasComboSale) {
-        changeResult = `Done · Chốt ${comboPackageName}`;
-      } else if (isComboMember && hasTip) {
-        changeResult = `Done · Combo Live + Tip ${tipAmount.toLocaleString('vi-VN')}đ`;
-      } else if (isComboMember) {
-        changeResult = `Done · Chốt Combo Live`;
-      } else if (hasTip) {
-        changeResult = `Done · Tip ${tipAmount.toLocaleString('vi-VN')}đ`;
-      }
-
-      return {
-        id: `done-${o.id}`,
-        type: 'DONE' as const,
-        staffId: bookerId,
-        staffName:
-          staffNameMap.get(bookerId) ||
-          allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name ||
-          'Telesales',
-        avatarUrl: staffAvatarMap.get(bookerId) || null,
-        timestamp,
-        orderId: ordId,
-        changeResult,
-        hasCombo,
-        comboPackageName,
-        comboPrice,
-        hasTip,
-        tipAmount,
-      };
-    });
-
-    const todayLiveEvents: TelesaleTodayLiveEvent[] = [...bookEvents, ...checkinEvents, ...doneEvents].sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
-
-    // 5.5 Build Today Book List & Today Checkin List for TV Monitor Side Panels
+    // 5.4 Pre-fetch Customer Info and Order Service Details (CV, CC, Service)
     const customerIdsToFetch = Array.from(
       new Set(
         [
           ...todayBookOrders.map((o) => Number(o.customerId)),
           ...todayCheckinOrders.map((o) => Number(o.customerId)),
+          ...todayDoneOrders.map((o) => Number(o.customerId)),
         ].filter((id) => Number.isInteger(id) && id > 0)
       )
     );
@@ -1474,12 +1442,14 @@ export class TelesaleTargetService {
       }
     }
 
-    // Query order_service for checkin orders to get CV, CC, and serviceName
-    const checkinOrderIds = todayCheckinOrders.map((o) => Number(o.id)).filter((id) => id > 0);
+    // Query order_service for all today orders (checkin + done) to get CV, CC, and serviceName
+    const allOrderIdsForDetails = Array.from(
+      new Set([...todayCheckinOrders.map((o) => Number(o.id)), ...todayDoneOrders.map((o) => Number(o.id))])
+    ).filter((id) => id > 0);
     const orderServiceDetailsMap = new Map<number, { serviceName: string; cvStaffId?: number; ccStaffId?: number }>();
     const extraStaffIdsToFetch = new Set<number>();
 
-    if (checkinOrderIds.length > 0) {
+    if (allOrderIdsForDetails.length > 0) {
       try {
         const osRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `
@@ -1491,7 +1461,7 @@ export class TelesaleTargetService {
           FROM order_service os
           LEFT JOIN service s ON s.id = os.service_id
           LEFT JOIN service_language sl ON sl.service_id = s.id AND sl.language_id = 1
-          WHERE os.order_id IN (${checkinOrderIds.join(',')})
+          WHERE os.order_id IN (${allOrderIdsForDetails.join(',')})
           ORDER BY os.id ASC
         `
         );
@@ -1512,7 +1482,7 @@ export class TelesaleTargetService {
           }
         }
       } catch (err) {
-        fastify.log.warn(`Failed to query order_service for checkin orders: ${err}`);
+        fastify.log.warn(`Failed to query order_service for today orders: ${err}`);
       }
     }
 
@@ -1532,6 +1502,80 @@ export class TelesaleTargetService {
         fastify.log.warn(`Failed to query extra staff profiles: ${err}`);
       }
     }
+
+    const staffDoneCountMap = new Map<number, number>();
+    const doneEvents: TelesaleTodayLiveEvent[] = sortedTodayDoneOrders.map((o) => {
+      const bookerId = Number(o.bookerId);
+      const prevDone = staffDoneCountMap.get(bookerId) || 0;
+      const newDone = prevDone + 1;
+      staffDoneCountMap.set(bookerId, newDone);
+
+      const timestamp = parseVietnamDateToIso(
+        o.doneDate || o.actualBookingDateEnd || o.dateUpdated || o.actualBookingDateStart || o.bookingDateStart
+      );
+
+      const ordId = Number(o.id);
+      const comboSale = comboSaleMap.get(ordId);
+      const hasComboSale = Boolean(comboSale);
+      const isComboMember = Number(o.isComboLive || 0) === 1;
+      const hasCombo = hasComboSale || isComboMember;
+      const comboPackageName = comboSale?.comboPackageName || (isComboMember ? 'Combo Live Wings' : undefined);
+      const comboPrice = comboSale?.comboPrice || (isComboMember ? 1200000 : undefined);
+      const tipAmount = tipMap.get(ordId) || 0;
+      const hasTip = tipAmount > 0;
+      const customerPraiseNote = customerPraiseMap.get(ordId) || null;
+      const hasPraise = Boolean(customerPraiseNote);
+
+      let changeResult = `Done ${prevDone} → ${newDone}`;
+      if (hasPraise && hasTip) {
+        changeResult = `Done · Khen & Tip ${tipAmount.toLocaleString('vi-VN')}đ`;
+      } else if (hasPraise) {
+        changeResult = `Done · Khách gửi lời khen`;
+      } else if (hasComboSale && hasTip) {
+        changeResult = `Done · Chốt Combo + Tip ${tipAmount.toLocaleString('vi-VN')}đ`;
+      } else if (hasComboSale) {
+        changeResult = `Done · Chốt ${comboPackageName}`;
+      } else if (isComboMember && hasTip) {
+        changeResult = `Done · Combo Live + Tip ${tipAmount.toLocaleString('vi-VN')}đ`;
+      } else if (isComboMember) {
+        changeResult = `Done · Chốt Combo Live`;
+      } else if (hasTip) {
+        changeResult = `Done · Tip ${tipAmount.toLocaleString('vi-VN')}đ`;
+      }
+
+      const osDetails = orderServiceDetailsMap.get(ordId);
+      const cvStaffName = osDetails?.cvStaffId ? staffNameMap.get(osDetails.cvStaffId) || null : null;
+      const ccStaffName = osDetails?.ccStaffId ? staffNameMap.get(osDetails.ccStaffId) || null : null;
+      const cust = customerInfoMap.get(Number(o.customerId));
+      const customerName = cust?.fullName || 'Khách yêu';
+
+      return {
+        id: `done-${o.id}`,
+        type: 'DONE' as const,
+        staffId: bookerId,
+        staffName:
+          staffNameMap.get(bookerId) ||
+          allStaffCandidates.find((c) => c.legacyStaffId === bookerId)?.name ||
+          'Telesales',
+        avatarUrl: staffAvatarMap.get(bookerId) || null,
+        timestamp,
+        orderId: ordId,
+        changeResult,
+        hasCombo,
+        comboPackageName,
+        comboPrice,
+        hasTip,
+        tipAmount,
+        customerPraiseNote,
+        customerName,
+        assignedStaffName: cvStaffName,
+        checkInStaffName: ccStaffName,
+      };
+    });
+
+    const todayLiveEvents: TelesaleTodayLiveEvent[] = [...bookEvents, ...checkinEvents, ...doneEvents].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
 
     // Helper: Mask phone number (090***1234)
     const maskPhoneNumber = (phone?: string): string => {
@@ -1704,6 +1748,7 @@ export class TelesaleTargetService {
           comboPrice,
           hasTip,
           tipAmount: hasTip ? tipAmount : undefined,
+          customerPraiseNote: customerPraiseMap.get(ordId) || null,
           timeInService: formatTimeInService(
             o.actualBookingDateStart || o.checkinDate,
             o.actualBookingDateEnd || o.doneDate,
@@ -1712,9 +1757,11 @@ export class TelesaleTargetService {
         };
       })
       .sort((a, b) => {
-        // Priority: Done with Combo/Tip (1000) > Just Done (800) > In-Progress (500)
-        const scoreA = a.isDone && (a.hasCombo || a.hasTip) ? 1000 : a.isDone ? 800 : 500;
-        const scoreB = b.isDone && (b.hasCombo || b.hasTip) ? 1000 : b.isDone ? 800 : 500;
+        // Priority: Done with Praise/Combo/Tip (1000) > Just Done (800) > In-Progress (500)
+        const isSuperA = a.isDone && (a.hasCombo || a.hasTip || Boolean(a.customerPraiseNote));
+        const scoreA = isSuperA ? 1000 : a.isDone ? 800 : 500;
+        const isSuperB = b.isDone && (b.hasCombo || b.hasTip || Boolean(b.customerPraiseNote));
+        const scoreB = isSuperB ? 1000 : b.isDone ? 800 : 500;
         if (scoreA !== scoreB) return scoreB - scoreA;
         return new Date(b.checkinDate).getTime() - new Date(a.checkinDate).getTime();
       });
