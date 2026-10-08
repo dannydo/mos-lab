@@ -746,20 +746,8 @@ export class TelesaleTargetService {
         o.booking_date_start as bookingDateStart,
         ro.actual_booking_date_start as actualBookingDateStart,
         o.user_id as customerId,
-        COALESCE(o.total_price, 0) as totalPrice,
-        COALESCE(
-          (
-            SELECT DATEDIFF(o.date_created, prev_o.booking_date_start)
-            FROM \`order\` prev_o
-            WHERE prev_o.user_id = o.user_id
-              AND prev_o.order_state = 'Completed'
-              AND prev_o.date_created < o.date_created
-            ORDER BY prev_o.date_created DESC
-            LIMIT 1
-          ),
-          999
-        ) as daysSinceLastVisit
-        /* origin: buildComboLiveAtBookingSql */
+        COALESCE(o.total_price, 0) as totalPrice
+        /* origin: prev_o.booking_date_start daysSinceLastVisit */
       FROM \`order\` o
       LEFT JOIN report_order ro ON ro.order_id = o.id
       WHERE (
@@ -1743,8 +1731,87 @@ export class TelesaleTargetService {
     };
 
     try {
+      // Decoupled batch resolution for daysSinceLastVisit
+      const ordersNeedingDays = monthOrders.filter(
+        (o) => o.daysSinceLastVisit === undefined && o.customerId && o.dateCreated
+      );
+      if (ordersNeedingDays.length > 0) {
+        const uniqueCustomerIds = Array.from(
+          new Set(ordersNeedingDays.map((o) => Number(o.customerId)).filter((id) => Number.isInteger(id) && id > 0))
+        );
+        if (uniqueCustomerIds.length > 0) {
+          const prevOrdersSql = `
+            SELECT 
+              user_id as customerId,
+              booking_date_start as bookingDateStart,
+              date_created as dateCreated
+            FROM \`order\`
+            WHERE user_id IN (${uniqueCustomerIds.join(',')})
+              AND order_state = 'Completed'
+            ORDER BY user_id, date_created DESC
+          `;
+          const prevRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(prevOrdersSql).catch(() => []);
+
+          const prevOrdersByCustomer = new Map<number, Array<{ bookingDateStart: SafeAny; dateCreated: SafeAny }>>();
+          for (const row of prevRows || []) {
+            const cid = Number(row.customerId);
+            let list = prevOrdersByCustomer.get(cid);
+            if (!list) {
+              list = [];
+              prevOrdersByCustomer.set(cid, list);
+            }
+            list.push({
+              bookingDateStart: row.bookingDateStart,
+              dateCreated: row.dateCreated,
+            });
+          }
+
+          const toDateStr = (val: SafeAny): string | null => {
+            if (!val) return null;
+            if (val instanceof Date) return val.toISOString().slice(0, 10);
+            if (typeof val === 'string') return val.slice(0, 10);
+            return null;
+          };
+
+          const toTimestamp = (val: SafeAny): number => {
+            if (!val) return 0;
+            if (val instanceof Date) return val.getTime();
+            return new Date(val).getTime();
+          };
+
+          for (const ord of ordersNeedingDays) {
+            const cid = Number(ord.customerId);
+            const customerPrevOrders = prevOrdersByCustomer.get(cid);
+            if (!customerPrevOrders || customerPrevOrders.length === 0) {
+              ord.daysSinceLastVisit = 999;
+              continue;
+            }
+            const ordCreatedTs = toTimestamp(ord.dateCreated);
+            const ordDateStr = toDateStr(ord.dateCreated);
+            const prevOrder = customerPrevOrders.find((p) => {
+              const pCreatedTs = toTimestamp(p.dateCreated);
+              return pCreatedTs < ordCreatedTs && p.bookingDateStart;
+            });
+
+            if (prevOrder && ordDateStr) {
+              const prevBookingDateStr = toDateStr(prevOrder.bookingDateStart);
+              if (prevBookingDateStr) {
+                const d1 = new Date(ordDateStr).getTime();
+                const d2 = new Date(prevBookingDateStr).getTime();
+                const diffDays = Math.max(0, Math.round((d1 - d2) / 86400000));
+                ord.daysSinceLastVisit = diffDays;
+              } else {
+                ord.daysSinceLastVisit = 999;
+              }
+            } else {
+              ord.daysSinceLastVisit = 999;
+            }
+          }
+        }
+      }
+
       for (const ord of monthOrders) {
-        const days = Number(ord.daysSinceLastVisit);
+        const days = ord.daysSinceLastVisit !== undefined ? Number(ord.daysSinceLastVisit) : 999;
         const isCombo = Number(ord.isComboLive) === 1;
         let targetKey: TelesalePipelineStageKey;
         if (days <= 30) {

@@ -30663,8 +30663,8 @@
       "filePath": "apps/api/src/modules/career/career.routes.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5392,
-        "lineCount": 163,
+        "sizeBytes": 5402,
+        "lineCount": 164,
         "ext": ".ts"
       }
     },
@@ -30676,8 +30676,8 @@
       "filePath": "apps/api/src/modules/career/career.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14438,
-        "lineCount": 398,
+        "sizeBytes": 14509,
+        "lineCount": 407,
         "ext": ".ts"
       }
     },
@@ -30702,8 +30702,8 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 92464,
-        "lineCount": 2355,
+        "sizeBytes": 92546,
+        "lineCount": 2364,
         "ext": ".ts"
       }
     },
@@ -31963,8 +31963,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 108728,
-        "lineCount": 2687,
+        "sizeBytes": 111743,
+        "lineCount": 2763,
         "ext": ".ts"
       }
     },
@@ -33029,8 +33029,8 @@
       "filePath": "apps/api/src/plugins/slow-query-logger.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4097,
-        "lineCount": 131,
+        "sizeBytes": 4181,
+        "lineCount": 135,
         "ext": ".ts"
       }
     },
@@ -36279,8 +36279,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 49014,
-        "lineCount": 1124,
+        "sizeBytes": 49044,
+        "lineCount": 1132,
         "ext": ".tsx"
       }
     },
@@ -36292,8 +36292,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 39047,
-        "lineCount": 868,
+        "sizeBytes": 39132,
+        "lineCount": 877,
         "ext": ".tsx"
       }
     },

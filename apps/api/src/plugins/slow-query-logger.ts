@@ -77,7 +77,11 @@ const slowQueryLoggerPlugin: FastifyPluginAsync = fp(async (fastify: FastifyInst
   // Hook into Fastify onResponse to track slow API endpoints
   fastify.addHook('onResponse', async (request, reply) => {
     const durationMs = Math.round(reply.elapsedTime);
-    if (durationMs >= slowApiThreshold && !request.url.startsWith('/api/benchmark')) {
+    if (
+      durationMs >= slowApiThreshold &&
+      !request.url.startsWith('/api/benchmark') &&
+      !request.url.startsWith('/api/ag-task-bridge/chat/next')
+    ) {
       appendSlowLog({
         type: 'SLOW_API',
         source: 'fastify',
