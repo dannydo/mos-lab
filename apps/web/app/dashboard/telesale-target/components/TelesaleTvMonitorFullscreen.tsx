@@ -178,8 +178,16 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
     if (overview.todayLiveEvents) {
       ingestLiveEvents(overview.todayLiveEvents);
     }
-    checkMilestones(overview.teamDaily.date, metrics.bookActual, metrics.doneActual);
-  }, [open, overview, ingestLiveEvents, checkMilestones, metrics.bookActual, metrics.doneActual]);
+    checkMilestones(overview.teamDaily.date, metrics.bookActual, metrics.doneActual, metrics.checkinActual);
+  }, [
+    open,
+    overview,
+    ingestLiveEvents,
+    checkMilestones,
+    metrics.bookActual,
+    metrics.doneActual,
+    metrics.checkinActual,
+  ]);
 
   const isDoneOver100 = metrics.donePercent >= 100;
   const isCheckinOver100 = metrics.checkinPercent >= 100;
@@ -552,17 +560,30 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
             Test Tip
           </Button>
         </div>
-        <Button
-          size="small"
-          className={`text-[11px] mt-0.5 ${
-            isDark
-              ? 'bg-amber-950/80 border-amber-500/80 text-amber-300 hover:bg-amber-900'
-              : 'bg-amber-50 border-amber-400 text-amber-800 hover:bg-amber-100'
-          }`}
-          onClick={() => triggerDemoCelebration('MILESTONE')}
-        >
-          👑 Test Milestone
-        </Button>
+        <div className="grid grid-cols-2 gap-1.5 mt-0.5">
+          <Button
+            size="small"
+            className={`text-[11px] ${
+              isDark
+                ? 'bg-amber-950/80 border-amber-500/80 text-amber-300 hover:bg-amber-900'
+                : 'bg-amber-50 border-amber-400 text-amber-800 hover:bg-amber-100'
+            }`}
+            onClick={() => triggerDemoCelebration('MILESTONE')}
+          >
+            👑 Test Milestone
+          </Button>
+          <Button
+            size="small"
+            className={`text-[11px] ${
+              isDark
+                ? 'bg-emerald-950/80 border-emerald-500/80 text-emerald-300 hover:bg-emerald-900'
+                : 'bg-emerald-50 border-emerald-400 text-emerald-800 hover:bg-emerald-100'
+            }`}
+            onClick={() => triggerDemoCelebration('CHECKIN_18')}
+          >
+            🎉 Check-in 18
+          </Button>
+        </div>
       </div>
 
       <div className={`border-t pt-2.5 flex flex-col gap-1.5 ${isDark ? 'border-zinc-800' : 'border-slate-200'}`}>

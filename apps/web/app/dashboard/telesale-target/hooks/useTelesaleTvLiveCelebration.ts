@@ -861,7 +861,7 @@ export function useTelesaleTvLiveCelebration() {
 
   // 7. Milestone Checkers
   const checkMilestones = useCallback(
-    (date: string, bookActual: number, doneActual: number) => {
+    (date: string, bookActual: number, doneActual: number, checkinActual: number = 0) => {
       const now = new Date();
       const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       const storageKey = `MOS_TV_ANNOUNCED_MILESTONES_${todayKey}`;
@@ -891,12 +891,14 @@ export function useTelesaleTvLiveCelebration() {
         if (bookActual >= 20) announcedMilestonesRef.current.add(`milestone-${date}-book-20`);
         if (bookActual >= 25) announcedMilestonesRef.current.add(`milestone-${date}-book-25`);
         if (bookActual > 25) announcedMilestonesRef.current.add(`milestone-${date}-book-gt25`);
+        if (checkinActual >= 18) announcedMilestonesRef.current.add(`milestone-${date}-checkin-18`);
+        if (checkinActual > 18) announcedMilestonesRef.current.add(`milestone-${date}-checkin-gt18`);
         if (doneActual >= 18) announcedMilestonesRef.current.add(`milestone-${date}-done-18`);
         saveMilestonesToStorage();
         return;
       }
 
-      const checkAndQueue = (key: string, text: string, badge: string) => {
+      const checkAndQueue = (key: string, text: string, badge: string, colorTheme: 'amber' | 'emerald' = 'amber') => {
         const milestoneKey = `milestone-${date}-${key}`;
         if (!announcedMilestonesRef.current.has(milestoneKey)) {
           announcedMilestonesRef.current.add(milestoneKey);
@@ -904,10 +906,10 @@ export function useTelesaleTvLiveCelebration() {
           enqueueCelebration({
             id: milestoneKey,
             kind: 'MILESTONE',
-            staffName: 'Toàn team Telesales',
+            staffName: 'Toàn team Telesales & Sảnh đón',
             textToSpeak: text,
             badgeText: badge,
-            colorTheme: 'amber',
+            colorTheme,
             changeResult: badge,
           });
         }
@@ -919,7 +921,8 @@ export function useTelesaleTvLiveCelebration() {
         checkAndQueue(
           'book-10',
           'Cả đội chú ý! 10 Book đã vào giỏ rồi! Năng lượng vui vẻ và chân thành của các em đang thắp sáng cả ngày hôm nay. Tiếp tục cùng anh tăng tốc bùng nổ nhé!',
-          '🏆 CÁN MỐC 10 BOOK!'
+          '🏆 CÁN MỐC 10 BOOK!',
+          'amber'
         );
       }
       // - 20 Book
@@ -927,7 +930,8 @@ export function useTelesaleTvLiveCelebration() {
         checkAndQueue(
           'book-20',
           'Xuất sắc lắm các cô gái của anh! 20 Book rồi! Tư vấn khoa học, chăm sóc ân cần, phong độ của cả đội hôm nay thực sự quá đỗi quyến rũ và không thể ngăn cản!',
-          '🔥 CHẠM MỐC 20 BOOK!'
+          '🔥 CHẠM MỐC 20 BOOK!',
+          'amber'
         );
       }
       // - 25 Book
@@ -935,7 +939,8 @@ export function useTelesaleTvLiveCelebration() {
         checkAndQueue(
           'book-25',
           '25 Book! Một con số hoàn hảo minh chứng cho sức mạnh đồng đội và 4 giá trị văn hóa Wings. Anh rất tự hào về tinh thần chiến binh ngọt ngào của tất cả các em!',
-          '👑 CÁN MỐC 25 BOOK!'
+          '👑 CÁN MỐC 25 BOOK!',
+          'amber'
         );
       }
       // - Vượt 25 Book
@@ -943,7 +948,26 @@ export function useTelesaleTvLiveCelebration() {
         checkAndQueue(
           'book-gt25',
           'Kỳ tích vượt 25 Book rồi! Cả phòng Telesales hôm nay tỏa sáng rực rỡ! Bản lĩnh, khoa học và ngập tràn đam mê, các em luôn là số một trong lòng anh!',
-          '🚀 VƯỢT MỐC 25 BOOK!'
+          '🚀 VƯỢT MỐC 25 BOOK!',
+          'amber'
+        );
+      }
+      // - 18 Check-in Khách lẻ (100% chỉ tiêu)
+      if (checkinActual >= 18) {
+        checkAndQueue(
+          'checkin-18',
+          'Chúc mừng cả đội Telesales và Sảnh đón! 18 lượt Check-in khách lẻ đã hoàn thành trọn vẹn, đạt 100% chỉ tiêu hôm nay! Tinh thần tiếp đón nồng hậu, ân cần và chuyên nghiệp của các em đã tạo nên một ngày rực rỡ. Xin nhiệt liệt chúc mừng tất cả các thiên thần Wings!',
+          '🎉 HOÀN THÀNH 18 CHECK-IN!',
+          'emerald'
+        );
+      }
+      // - Vượt 18 Check-in Khách lẻ
+      if (checkinActual > 18) {
+        checkAndQueue(
+          'checkin-gt18',
+          'Kỳ tích vượt 18 Check-in khách lẻ rồi! Sảnh đón và đội ngũ tư vấn hôm nay làm việc quá xuất sắc! Xin chúc mừng tất cả các thiên thần Wings!',
+          '🚀 VƯỢT MỐC 18 CHECK-IN!',
+          'emerald'
         );
       }
       // - 18 Done
@@ -951,7 +975,8 @@ export function useTelesaleTvLiveCelebration() {
         checkAndQueue(
           'done-18',
           '18 Done đã hoàn thành trọn vẹn! Trái ngọt xứng đáng cho sự ân cần, chân thành và khoa học của từng cuộc gọi. Anh xin gửi ngàn lời chúc mừng đến các cô gái tuyệt vời của Wings!',
-          '🎉 HOÀN THÀNH 18 DONE!'
+          '🎉 HOÀN THÀNH 18 DONE!',
+          'amber'
         );
       }
     },
@@ -960,7 +985,7 @@ export function useTelesaleTvLiveCelebration() {
 
   // 8. Manual Demo Triggers (For testing & Manager preview)
   const triggerDemoCelebration = useCallback(
-    (type: 'BOOK' | 'DONE' | 'CHECKIN' | 'COMBO' | 'TIP' | 'MILESTONE') => {
+    (type: 'BOOK' | 'DONE' | 'CHECKIN' | 'COMBO' | 'TIP' | 'MILESTONE' | 'CHECKIN_18') => {
       const demoId = `demo-${Date.now()}`;
       if (type === 'BOOK') {
         const staffName = 'Bích Phượng';
@@ -1042,6 +1067,17 @@ export function useTelesaleTvLiveCelebration() {
           textToSpeak: defaultQuote,
           badgeText: '+1 DONE (DEMO)',
           colorTheme: 'emerald',
+        });
+      } else if (type === 'CHECKIN_18') {
+        enqueueCelebration({
+          id: demoId,
+          kind: 'MILESTONE',
+          staffName: 'Toàn team Telesales & Sảnh đón',
+          textToSpeak:
+            'Chúc mừng cả đội Telesales và Sảnh đón! 18 lượt Check-in khách lẻ đã hoàn thành trọn vẹn, đạt 100% chỉ tiêu hôm nay! Tinh thần tiếp đón nồng hậu, ân cần và chuyên nghiệp của các em đã tạo nên một ngày rực rỡ. Xin nhiệt liệt chúc mừng tất cả các thiên thần Wings!',
+          badgeText: '🎉 HOÀN THÀNH 18 CHECK-IN! (DEMO)',
+          colorTheme: 'emerald',
+          changeResult: '18/18 In · 100% ĐẠT',
         });
       } else {
         enqueueCelebration({

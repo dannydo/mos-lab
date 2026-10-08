@@ -463,22 +463,29 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
               title={
                 soundEnabled
                   ? 'Âm thanh TV đang BẬT · Bấm để tắt tiếng nhanh'
-                  : 'Âm thanh TV đang TẮT · Bấm để bật tiếng nhanh'
+                  : 'Loa đang TẮT · Bấm để BẬT âm thanh chúc mừng & pháo hoa'
               }
             >
               <button
                 type="button"
                 data-testid="tv-card-sound-toggle"
                 aria-label={soundEnabled ? 'Loa: Bật' : 'Loa: Tắt'}
-                onClick={() => updateSettings({ soundEnabled: !soundEnabled })}
+                onClick={() => {
+                  const nextSound = !soundEnabled;
+                  updateSettings({ soundEnabled: nextSound });
+                  if (nextSound && metrics.checkinPercent >= 100) {
+                    triggerTestFireworks('CHECKIN');
+                    liveCelebration?.triggerDemoCelebration('CHECKIN_18');
+                  }
+                }}
                 className={`w-7 h-7 rounded-lg border flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                   soundEnabled
                     ? isDark
                       ? 'text-amber-400 bg-amber-500/15 border-amber-500/40 hover:bg-amber-500/25 hover:border-amber-400'
                       : 'text-amber-700 bg-amber-50 border-amber-300 hover:bg-amber-100'
                     : isDark
-                      ? 'text-zinc-500 bg-zinc-900/80 border-zinc-800 hover:text-zinc-300 hover:border-zinc-700'
-                      : 'text-slate-400 bg-slate-50 border-slate-200 hover:text-slate-600'
+                      ? 'text-rose-400 bg-rose-950/40 border-rose-500/40 hover:text-rose-300 hover:border-rose-400 animate-pulse'
+                      : 'text-rose-600 bg-rose-50 border-rose-300 hover:text-rose-700 animate-pulse'
                 }`}
               >
                 {soundEnabled ? (
@@ -708,11 +715,27 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
               <div
                 className={`flex items-center justify-between ${isDark ? 'text-zinc-400' : 'text-slate-500'} text-xs mb-0.5 relative z-10`}
               >
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1.5">
                   <span
                     className={`w-1.5 h-1.5 rounded-full ${checkinTier === 'emerald' ? 'bg-emerald-400' : checkinTier === 'amber' ? 'bg-amber-400' : 'bg-rose-400'}`}
                   />
                   <strong className={checkinStyles.title}>CHECK-IN KHÁCH LẺ</strong>
+                  {isCheckinOver100 && (
+                    <Tooltip title="Đạt 100% chỉ tiêu! Bấm để phát lại chúc mừng & pháo hoa">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!soundEnabled) updateSettings({ soundEnabled: true });
+                          triggerTestFireworks('CHECKIN');
+                          liveCelebration?.triggerDemoCelebration('CHECKIN_18');
+                        }}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500/30 transition-all cursor-pointer animate-pulse"
+                      >
+                        <Sparkles className="w-2.5 h-2.5 text-emerald-400" />
+                        Chúc mừng!
+                      </button>
+                    </Tooltip>
+                  )}
                 </span>
                 <span className={checkinStyles.targetBadge}>Chỉ tiêu: {metrics.checkinTarget}</span>
               </div>

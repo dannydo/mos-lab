@@ -128,7 +128,12 @@ function TelesaleTargetContent() {
     }
     const pacing = calculateShiftPacing(new Date());
     const metrics = calculateTvMonitorMetrics(overview.teamDaily, pacing);
-    liveCelebration.checkMilestones(overview.teamDaily.date, metrics.bookActual, metrics.doneActual);
+    liveCelebration.checkMilestones(
+      overview.teamDaily.date,
+      metrics.bookActual,
+      metrics.doneActual,
+      metrics.checkinActual
+    );
   }, [overview, liveCelebration]);
 
   useEffect(() => {
