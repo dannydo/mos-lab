@@ -453,10 +453,11 @@ export async function calculateBookerSalaryStats(
       doneLevelCount = matchedDone.minCount;
     }
 
-    // 2. Missed Bonus
+    // 2. Missed Bonus (Chỉ tính khi đạt mốc tối thiểu 100 khách Done)
     let missedBonus = 0;
     let missedLevelRate = 0;
-    if (totalCount > 0) {
+    const minDoneForMissed = config.minDoneForMissedBonus ?? 100;
+    if (totalCount > 0 && stats.doneCount >= minDoneForMissed) {
       const missedRatePct = missedRate * 100;
       const matchedMissed = sortedMissedTiers.find((t) => missedRatePct <= t.maxRate);
       if (matchedMissed) {

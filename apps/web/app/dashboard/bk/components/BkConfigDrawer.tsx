@@ -79,6 +79,7 @@ export default function BkConfigDrawer({ open, onClose, onSuccess }: BkConfigDra
         missed20: cfg.missedBonusTiers?.[2]?.bonus || 0,
         missed25: cfg.missedBonusTiers?.[3]?.bonus || -500000,
         missedMore: cfg.missedBonusTiers?.[4]?.bonus || -1000000,
+        minDoneForMissed: cfg.minDoneForMissedBonus ?? 100,
 
         rev50M: cfg.revBonusTiers?.[0]?.rate || 0.7,
         rev100M: cfg.revBonusTiers?.[1]?.rate || 0.8,
@@ -165,6 +166,7 @@ export default function BkConfigDrawer({ open, onClose, onSuccess }: BkConfigDra
           { maxRate: 25, bonus: values.missed25 },
           { maxRate: 100, bonus: values.missedMore },
         ],
+        minDoneForMissedBonus: values.minDoneForMissed ?? 100,
         revBonusTiers: [
           { minRev: 50000000, rate: values.rev50M },
           { minRev: 100000000, rate: values.rev100M },
@@ -367,10 +369,19 @@ export default function BkConfigDrawer({ open, onClose, onSuccess }: BkConfigDra
 
           {/* Section 5 */}
           <div>
-            <h4 className="text-sm font-bold text-amber-500 uppercase mb-3">
-              5. Thưởng/Phạt Tỷ Lệ Lỡ Hẹn (Missed Call Rate)
-            </h4>
+            <div className="flex items-center justify-between mb-1">
+              <h4 className="text-sm font-bold text-amber-500 uppercase mb-0">
+                5. Thưởng/Phạt Tỷ Lệ Lỡ Hẹn (Missed Call Rate)
+              </h4>
+            </div>
+            <p className="text-xs text-amber-500/90 dark:text-amber-400/90 font-medium mb-3">
+              ⚡ Chỉ áp dụng thưởng/phạt khi Booker đạt mốc khách hàng DONE tối thiểu là 100 khách (Điều răn BK-005 &
+              BK-006).
+            </p>
             <div className="grid grid-cols-2 gap-3">
+              <Form.Item name="minDoneForMissed" label="Mốc khách DONE tối thiểu để xét Missed" className="col-span-2">
+                <InputNumber className="w-full tabular-nums" min={0} addonAfter="khách" placeholder="100" />
+              </Form.Item>
               <Form.Item name="missed10" label="Tỷ lệ lỡ <= 10% (Thưởng)">
                 <InputNumber
                   className="w-full tabular-nums"

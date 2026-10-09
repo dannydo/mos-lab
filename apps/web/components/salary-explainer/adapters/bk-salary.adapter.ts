@@ -88,7 +88,7 @@ export function calculateBkSalary(inputs: BkSalaryInputs): BkSalaryResult {
   const milestoneBonus = currentMilestone.bonus;
   const singleNeededForNext = nextMilestone ? Math.max(0, nextMilestone.minSingle - singleDone) : 0;
 
-  // 4. Thưởng/Phạt Tỷ lệ Missed
+  // 4. Thưởng/Phạt Tỷ lệ Missed (Chỉ tính khi đạt mốc tối thiểu 100 khách Done)
   let currentMissedTier = BK_MISSED_TIERS[BK_MISSED_TIERS.length - 1];
   for (const tier of BK_MISSED_TIERS) {
     if (missedRate <= tier.maxRate) {
@@ -96,7 +96,9 @@ export function calculateBkSalary(inputs: BkSalaryInputs): BkSalaryResult {
       break;
     }
   }
-  const missedBonus = currentMissedTier.bonus;
+  const effectiveDone = singleDone > 0 ? singleDone : singleDone + comboDone;
+  const isMissedEligible = effectiveDone >= 100;
+  const missedBonus = isMissedEligible ? currentMissedTier.bonus : 0;
 
   // 5. Hoa hồng Doanh thu Net & Tip
   let matchedRevenueTier = BK_REVENUE_TIERS[BK_REVENUE_TIERS.length - 1];
@@ -146,9 +148,17 @@ export function calculateBkSalary(inputs: BkSalaryInputs): BkSalaryResult {
       name: 'Thưởng/Phạt Tỷ lệ Missed',
       shortLabel: 'Tỷ lệ Missed',
       amount: missedBonus,
-      formula: `Tỷ lệ ${missedRate.toFixed(1)}% (${currentMissedTier.type === 'bonus' ? 'Thưởng' : currentMissedTier.type === 'penalty' ? 'Phạt' : 'Chuẩn'})`,
-      highlightNote: currentMissedTier.label,
-      accent: currentMissedTier.type === 'penalty' ? 'rose' : currentMissedTier.type === 'bonus' ? 'amber' : 'cyan',
+      formula: isMissedEligible
+        ? `Tỷ lệ ${missedRate.toFixed(1)}% (${currentMissedTier.type === 'bonus' ? 'Thưởng' : currentMissedTier.type === 'penalty' ? 'Phạt' : 'Chuẩn'})`
+        : `Chưa đạt mốc tối thiểu 100 khách Done (Tỷ lệ: ${missedRate.toFixed(1)}% - Không tính thưởng/phạt)`,
+      highlightNote: isMissedEligible ? currentMissedTier.label : 'Chưa đạt tối thiểu 100 khách Done (0đ)',
+      accent: isMissedEligible
+        ? currentMissedTier.type === 'penalty'
+          ? 'rose'
+          : currentMissedTier.type === 'bonus'
+            ? 'amber'
+            : 'cyan'
+        : 'cyan',
     },
     {
       key: 'revenue_tip',

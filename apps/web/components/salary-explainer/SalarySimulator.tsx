@@ -321,6 +321,11 @@ export default function SalarySimulator({ initialInputs }: SalarySimulatorProps)
             </div>
             <div className="text-[10px] text-slate-500">
               ≤10% (+1tr) · ≤15% (+500k) · 15.1-20% (0đ) · 20.1-25% (-500k) · &gt;25% (-1tr)
+              {(inputs.singleDone || 0) + (inputs.comboDone || 0) < 100 && (
+                <span className="text-amber-500 font-medium ml-1">
+                  (Chưa đạt tối thiểu 100 khách Done: không tính thưởng/phạt)
+                </span>
+              )}
             </div>
           </div>
 

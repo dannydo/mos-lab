@@ -11,6 +11,8 @@ import {
   fetchTelesalesAttendanceExceptions,
   getActiveBkTelesalesIds,
   getBkWorkDaysOverrides,
+  getMissedRateBonus,
+  getMissedRateBonusInfo,
   isStaffTelesalesExecutive,
   resolveBkTelesalesStaffScope,
   upsertTelesalesAttendanceException,
@@ -621,4 +623,34 @@ test('upsertTelesalesAttendanceException handles MANUAL_CHECKIN_OUT validation, 
   assert.equal(auditLogs[0].manualOutTime, '17:15');
   assert.equal(auditLogs[0].note, 'Đã kiểm tra camera cửa ra vào');
   assert.equal(auditLogs[0].performedByName, 'Admin Danny');
+});
+
+test('getMissedRateBonus only awards/penalizes when doneCount >= 100 (BK-006 & user requirement)', () => {
+  // Case 1: Thuý Kiều (Done: 4, Missed: 0 => 0%)
+  // Under old logic, 0% <= 10% awarded +1,000,000đ. Under new logic (4 < 100), bonus is 0.
+  assert.equal(getMissedRateBonus(0, undefined, 4, 100), 0);
+
+  // Case 2: Booker đạt 100 Done trở lên với Missed 0% => nhận thưởng +1,000,000đ
+  assert.equal(getMissedRateBonus(0, undefined, 100, 100), 1000000);
+  assert.equal(getMissedRateBonus(9.8, undefined, 204, 100), 1000000); // Bích Phượng
+
+  // Case 3: Tâm Nguyễn (Done: 70, Missed Rate: 25.8% > 25%)
+  // Under old logic, penalized -1,000,000đ. Under new logic (70 < 100), bonus is 0 (không bị phạt).
+  assert.equal(getMissedRateBonus(25.8, undefined, 70, 100), 0);
+
+  // Case 4: Booker đạt 100 Done trở lên với Missed 25.8% => bị phạt -1,000,000đ
+  assert.equal(getMissedRateBonus(25.8, undefined, 120, 100), -1000000);
+
+  // Case 5: Ngọc Điệp (Done: 31, Missed Rate: 20.5% => 20.1-25% tier)
+  // Under old logic, penalized -500,000đ. Under new logic (31 < 100), bonus is 0.
+  assert.equal(getMissedRateBonus(20.5, undefined, 31, 100), 0);
+
+  // Case 6: getMissedRateBonusInfo preserves missedLevelRate while zeroing bonus
+  const infoUnder100 = getMissedRateBonusInfo(0, undefined, 4, 100);
+  assert.equal(infoUnder100.bonus, 0);
+  assert.equal(infoUnder100.missedLevelRate, 10);
+
+  const infoOver100 = getMissedRateBonusInfo(0, undefined, 100, 100);
+  assert.equal(infoOver100.bonus, 1000000);
+  assert.equal(infoOver100.missedLevelRate, 10);
 });

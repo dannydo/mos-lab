@@ -437,11 +437,21 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
       dataIndex: 'penaltyBonus',
       key: 'penaltyBonus',
       align: 'right' as const,
-      render: (val: number) => (
-        <span className={`tabular-nums font-semibold text-xs ${val >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-          {val > 0 ? `+${formatCurrency(val)}` : val < 0 ? formatCurrency(val) : '-'}
-        </span>
-      ),
+      render: (val: number, record: BkDoneLeaderboardEntry) => {
+        const effectiveDone = (record.singleDoneCount ?? 0) > 0 ? (record.singleDoneCount ?? 0) : record.doneCount;
+        if (effectiveDone < 100) {
+          return (
+            <Tooltip title="Chưa đạt mốc tối thiểu 100 khách Done trong kỳ, không tính thưởng/phạt Missed">
+              <span className="tabular-nums font-semibold text-xs text-slate-400 dark:text-slate-500">-</span>
+            </Tooltip>
+          );
+        }
+        return (
+          <span className={`tabular-nums font-semibold text-xs ${val >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+            {val > 0 ? `+${formatCurrency(val)}` : val < 0 ? formatCurrency(val) : '-'}
+          </span>
+        );
+      },
     },
     {
       title: BK_DONE_LEADERBOARD_LABELS.totalDoneBonus,

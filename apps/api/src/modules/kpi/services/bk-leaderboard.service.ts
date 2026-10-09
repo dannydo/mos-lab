@@ -402,7 +402,14 @@ export class BkLeaderboardService {
 
       // Invariant BK-005: Rank & Milestone bonus for Booker is strictly calculated on singleDoneCount
       const milestoneBonus = getMilestoneBonus(singleDoneCount, config.doneBonusTiers);
-      const penaltyBonus = getMissedRateBonus(missedRatePercent, config.missedBonusTiers);
+      const minDoneForMissed = config.minDoneForMissedBonus ?? 100;
+      const effectiveDone = singleDoneCount > 0 ? singleDoneCount : doneCount;
+      const penaltyBonus = getMissedRateBonus(
+        missedRatePercent,
+        config.missedBonusTiers,
+        effectiveDone,
+        minDoneForMissed
+      );
 
       const totalDoneBonus = basicBonus + promoBonus + milestoneBonus + penaltyBonus;
 

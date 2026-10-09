@@ -18,6 +18,7 @@ export const DEFAULT_BK_CONFIG: BkSalaryConfig = {
   activeBkIds: [43554, 50670, 52316, 32268, 49126, 50585],
   baseSalary: 5500000,
   tipsPercent: 7,
+  minDoneForMissedBonus: 100,
   clientBonusFullSet: {
     discount0: 35000,
     discount30: 12000,
@@ -288,8 +289,14 @@ export function getMilestoneBonusInfo(
 
 export function getMissedRateBonus(
   missedRatePercent: number,
-  tiers?: Array<{ maxRate: number; bonus: number }>
+  tiers?: Array<{ maxRate: number; bonus: number }>,
+  doneCount?: number,
+  minDoneCount?: number
 ): number {
+  const threshold = minDoneCount ?? DEFAULT_BK_CONFIG.minDoneForMissedBonus ?? 100;
+  if (doneCount !== undefined && doneCount < threshold) {
+    return 0;
+  }
   const sorted = [...(tiers || DEFAULT_BK_CONFIG.missedBonusTiers)].sort((a, b) => a.maxRate - b.maxRate);
   const found = sorted.find((t) => missedRatePercent <= t.maxRate);
   return found ? found.bonus : 0;
@@ -297,10 +304,16 @@ export function getMissedRateBonus(
 
 export function getMissedRateBonusInfo(
   missedRatePercent: number,
-  tiers?: Array<{ maxRate: number; bonus: number }>
+  tiers?: Array<{ maxRate: number; bonus: number }>,
+  doneCount?: number,
+  minDoneCount?: number
 ): { bonus: number; missedLevelRate: number } {
+  const threshold = minDoneCount ?? DEFAULT_BK_CONFIG.minDoneForMissedBonus ?? 100;
   const sorted = [...(tiers || DEFAULT_BK_CONFIG.missedBonusTiers)].sort((a, b) => a.maxRate - b.maxRate);
   const found = sorted.find((t) => missedRatePercent <= t.maxRate);
+  if (doneCount !== undefined && doneCount < threshold) {
+    return { bonus: 0, missedLevelRate: found ? found.maxRate : 0 };
+  }
   return found ? { bonus: found.bonus, missedLevelRate: found.maxRate } : { bonus: 0, missedLevelRate: 0 };
 }
 
@@ -1247,7 +1260,7 @@ export async function getBkPaystubData(
 
   const bkIdsStr = activeBkIds.join(',');
 
-  const [{ clientBonusMap, orderCheckinMap }, holidayBreakdownMap, attendanceMap, workDaysOverrides] =
+  const [{ clientBonusMap, orderCheckinMap, singleDoneMap }, holidayBreakdownMap, attendanceMap, workDaysOverrides] =
     await Promise.all([
       computeBkOrderCheckins(fastify, startPart, endPart, activeBkIds, storeFilter),
       HolidayWorkService.getPayBreakdownByLegacyStaffIds(fastify, activeBkIds, startPart, endPart),
@@ -1341,9 +1354,18 @@ export async function getBkPaystubData(
     const calculatedBaseSalary =
       standardWorkDays > 0 ? Math.round((monthlyBaseSalary / standardWorkDays) * actualWorkDays) : 0;
 
+    const singleDoneCount = singleDoneMap?.get(staffId) || 0;
+    const effectiveDone = singleDoneCount > 0 ? singleDoneCount : doneCount;
+    const minDone = config.minDoneForMissedBonus ?? 100;
+
     const basicCheckinBonus = clientBonusMap.get(staffId) || 0;
-    const { bonus: milestoneBonus, doneLevelCount } = getMilestoneBonusInfo(doneCount, config.doneBonusTiers);
-    const { bonus: penaltyBonus, missedLevelRate } = getMissedRateBonusInfo(missedRatePercent, config.missedBonusTiers);
+    const { bonus: milestoneBonus, doneLevelCount } = getMilestoneBonusInfo(effectiveDone, config.doneBonusTiers);
+    const { bonus: penaltyBonus, missedLevelRate } = getMissedRateBonusInfo(
+      missedRatePercent,
+      config.missedBonusTiers,
+      effectiveDone,
+      minDone
+    );
 
     const doneBonus = basicCheckinBonus + milestoneBonus + penaltyBonus;
     const tipBonus = Math.round((totalCustomerTip * (config.tipsPercent || 7)) / 100);

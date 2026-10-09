@@ -256,13 +256,14 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Cấu phần 1 - Lương cơ bản theo ca: Mức chuẩn 6.500.000đ/tháng dựa trên 26 ngày công chuẩn; chi trả tương ứng theo số giờ công ca làm việc thực tế được chấm trên hệ thống.',
       'Cấu phần 2 - Thưởng Check-in đơn (Basic Bonus): Khách Lẻ Nối Mới nhận 35.000đ (0% giảm), 12.000đ (giảm ≤30%), 6.000đ (giảm ≤50%), 1.000đ (giảm >50%). Khách Lẻ Dặm Mi nhận 9.000đ (giảm ≤30%), 6.000đ (giảm ≤50%), 1.000đ (giảm >50%). Khách Combo Live nhận cố định 1.000đ/lượt.',
       'Cấu phần 3 - Thưởng Mốc Bậc Thang Done (Milestone Bonus): Áp dụng chuẩn Điều răn BK-005, chỉ tính trên số lượng Khách Lẻ Done trong tháng. Bắt đầu từ mốc 100 khách lẻ (+300.000đ), mỗi bước 50 khách lẻ tăng thêm 300.000đ: 150 (+600k), 200 (+900k), 250 (+1.200k), 300 (+1.500k), 350 (+1.800k), 400 (+2.100k), 450 (+2.400k), 500 (+2.700k). Hưởng mức thưởng của mốc cao nhất đạt được.',
-      'Cấu phần 4 - Thưởng/Phạt Tỷ lệ Khách Missed: Tỷ lệ Missed = Missed / (Done + Missed) * 100%. Đạt ≤10% thưởng +1.000.000đ; ≤15% thưởng +500.000đ; 15.1% - 20% là 0đ; 20.1% - 25% phạt -500.000đ; >25% phạt -1.000.000đ.',
+      'Cấu phần 4 - Thưởng/Phạt Tỷ lệ Khách Missed: Tỷ lệ Missed = Missed / (Done + Missed) * 100%. Đạt ≤10% thưởng +1.000.000đ; ≤15% thưởng +500.000đ; 15.1% - 20% là 0đ; 20.1% - 25% phạt -500.000đ; >25% phạt -1.000.000đ. Điều kiện kích hoạt: Booker bắt buộc phải đạt mốc khách hàng Done tối thiểu là 100 khách (theo Điều răn BK-005). Trong trường hợp Booker không đạt mốc tối thiểu 100 khách Done, phần thưởng/phạt Missed sẽ không tính (0đ).',
       'Cấu phần 5 - Hoa hồng Doanh thu Net & Tip: Doanh thu Net từ 50tr (0.7%), 100tr (0.8%), 150tr (0.9%), 200tr (1.0%), 250tr (1.1%), từ 300tr (1.2%). Thưởng Tip: 7% tổng tiền tip khách hàng tặng cho Booker.',
     ],
     rationale:
-      'Chính sách thu nhập Booker được xây dựng theo triết lý "Đa nguồn - Trúng đích - Lũy tiến": Đảm bảo lương nền ổn định, kích thích đưa khách lẻ mới về tiệm qua mốc bậc thang, kiểm soát chất lượng đặt lịch qua tỷ lệ Missed, và đồng hành cùng doanh số salon qua hoa hồng doanh thu.',
+      'Chính sách thu nhập Booker được xây dựng theo triết lý "Đa nguồn - Trúng đích - Lũy tiến": Đảm bảo lương nền ổn định, kích thích đưa khách lẻ mới về tiệm qua mốc bậc thang, kiểm soát chất lượng đặt lịch qua tỷ lệ Missed, và đồng hành cùng doanh số salon qua hoa hồng doanh thu. Việc áp dụng mốc chặn 100 khách Done tối thiểu ngăn chặn bất hợp lý khi Booker có số lượng khách quá ít (dưới mốc tối thiểu) mà nhận thưởng lớn hoặc bị phạt nặng.',
     examples: [
       'Booker A trong tháng đi làm đủ 26 công (Lương cơ bản 6.500.000đ). Tạo ra 210 Khách Lẻ Done (Thưởng check-in tích lũy 4.500.000đ) và 40 Khách Combo Live (40.000đ). Đạt mốc 200 Khách Lẻ Done (Thưởng mốc bậc thang +900.000đ). Tỷ lệ Missed 12% (Thưởng Missed +500.000đ). Doanh thu mang về 160 triệu (Hoa hồng 0.9% = 1.440.000đ). Tiền tip 200.000đ (14.000đ). 👉 Tổng thu nhập tháng: 6.500.000 + 4.540.000 + 900.000 + 500.000 + 1.440.000 + 14.000 = 13.894.000đ.',
+      'Booker B chỉ đạt 35 Khách Lẻ Done (dưới mốc tối thiểu 100 khách), có 2 khách Missed (tỷ lệ 5.4%). Dù tỷ lệ Missed <= 10%, do chưa đạt mốc tối thiểu 100 Done nên Booker B nhận 0đ thưởng Missed thay vì +1.000.000đ.',
     ],
     tags: [
       'Booker',
@@ -278,8 +279,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
     routeScopes: ['/dashboard/bk', '/dashboard/kpi', '/dashboard/telesale-target'],
     status: 'ACTIVE',
-    version: '1.0.0',
-    effectiveFrom: '2026-10-06',
+    version: '1.1.0',
+    effectiveFrom: '2026-10-09',
     sources: [
       {
         label: 'BK Salary Service',

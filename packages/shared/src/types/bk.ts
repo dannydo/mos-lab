@@ -340,6 +340,7 @@ export interface BkSalaryConfig {
   };
   doneBonusTiers: Array<{ minCount: number; bonus: number }>;
   missedBonusTiers: Array<{ maxRate: number; bonus: number }>;
+  minDoneForMissedBonus?: number; // Mốc khách hàng DONE tối thiểu để tính thưởng/phạt missed (mặc định 100)
   revBonusTiers: Array<{ minRev: number; rate: number }>;
   workDaysOverrides?: Record<string, number>;
 }

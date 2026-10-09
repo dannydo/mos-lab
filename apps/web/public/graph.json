@@ -10090,7 +10090,7 @@
         "path": "/api/kpi/telesale-target/live-celebration-audio",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 192
+        "line": 188
       }
     },
     {
@@ -10104,7 +10104,7 @@
         "path": "/api/kpi/telesale-target/tv-journal",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 217
+        "line": 213
       }
     },
     {
@@ -10118,7 +10118,7 @@
         "path": "/api/kpi/telesale-target/tv-journal/sync",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 238
+        "line": 234
       }
     },
     {
@@ -28626,6 +28626,18 @@
       }
     },
     {
+      "id": "uicomp:bk-salary.adapter.test",
+      "type": "UIComponent",
+      "label": "<bk-salary.adapter.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/salary-explainer/adapters/bk-salary.adapter.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "bk-salary.adapter.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:bk-salary.adapter",
       "type": "UIComponent",
       "label": "<bk-salary.adapter />",
@@ -31716,8 +31728,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9587,
-        "lineCount": 249,
+        "sizeBytes": 9547,
+        "lineCount": 245,
         "ext": ".ts"
       }
     },
@@ -31794,8 +31806,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-leaderboard.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 23912,
-        "lineCount": 639,
+        "sizeBytes": 24132,
+        "lineCount": 646,
         "ext": ".ts"
       }
     },
@@ -31807,8 +31819,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-salary.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 21045,
-        "lineCount": 625,
+        "sizeBytes": 22704,
+        "lineCount": 657,
         "ext": ".ts"
       }
     },
@@ -31820,8 +31832,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-salary.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 57682,
-        "lineCount": 1658,
+        "sizeBytes": 58451,
+        "lineCount": 1680,
         "ext": ".ts"
       }
     },
@@ -31937,8 +31949,8 @@
       "filePath": "apps/api/src/modules/kpi/services/salary-calculator.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 21793,
-        "lineCount": 612,
+        "sizeBytes": 21959,
+        "lineCount": 613,
         "ext": ".ts"
       }
     },
@@ -31963,8 +31975,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 116563,
-        "lineCount": 2854,
+        "sizeBytes": 116579,
+        "lineCount": 2856,
         "ext": ".ts"
       }
     },
@@ -35629,8 +35641,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22706,
-        "lineCount": 569,
+        "sizeBytes": 23545,
+        "lineCount": 584,
         "ext": ".tsx"
       }
     },
@@ -35642,8 +35654,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkDoneTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 42453,
-        "lineCount": 1021,
+        "sizeBytes": 42974,
+        "lineCount": 1031,
         "ext": ".tsx"
       }
     },
@@ -40127,8 +40139,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 101598,
-        "lineCount": 1514,
+        "sizeBytes": 102367,
+        "lineCount": 1515,
         "ext": ".ts"
       }
     },
@@ -40348,8 +40360,8 @@
       "filePath": "packages/shared/src/types/bk.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 11582,
-        "lineCount": 445,
+        "sizeBytes": 11713,
+        "lineCount": 446,
         "ext": ".ts"
       }
     },
@@ -57293,6 +57305,20 @@
     {
       "id": "edge:uicomp:SalarySimulator:token:color:primary",
       "source": "uicomp:SalarySimulator",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:bk-salary.adapter.test:ws:apps/web",
+      "source": "uicomp:bk-salary.adapter.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:bk-salary.adapter.test:token:color:primary",
+      "source": "uicomp:bk-salary.adapter.test",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -88246,8 +88272,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 3137,
-    "totalEdges": 6754,
+    "totalNodes": 3138,
+    "totalEdges": 6756,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 163,
@@ -88255,14 +88281,14 @@
       "Component": 58,
       "SharedType": 1135,
       "DesignToken": 12,
-      "UIComponent": 216,
+      "UIComponent": 217,
       "File": 891
     },
     "edgeTypeCounts": {
       "EXPORTS": 1310,
       "HANDLES_ROUTE": 659,
-      "RENDERS": 274,
-      "USES_TOKEN": 218,
+      "RENDERS": 275,
+      "USES_TOKEN": 219,
       "IMPORTS": 471,
       "QUERIES_MODEL": 383,
       "API_CALL": 3439
