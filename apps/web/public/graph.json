@@ -31681,8 +31681,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cc-paystub.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 26023,
-        "lineCount": 654,
+        "sizeBytes": 26043,
+        "lineCount": 656,
         "ext": ".ts"
       }
     },
@@ -31746,7 +31746,7 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 46365,
+        "sizeBytes": 46369,
         "lineCount": 1115,
         "ext": ".ts"
       }
@@ -36647,8 +36647,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 75632,
-        "lineCount": 1880,
+        "sizeBytes": 75668,
+        "lineCount": 1881,
         "ext": ".tsx"
       }
     },

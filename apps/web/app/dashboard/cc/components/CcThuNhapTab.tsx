@@ -494,6 +494,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
             (r.comboProductBonus || 0) +
             (r.ccTipBonus || 0) +
             (r.minigameBonus || 0) +
+            (r.extraSupport || 0) +
             (r.holidayPaystubAdjustment || 0) +
             dInfo.thuong;
 
