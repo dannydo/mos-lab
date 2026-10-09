@@ -578,7 +578,10 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         const ssInfo = socialSecurityMap.get(staffId) || { rate: 0, amount: 0 };
         const socialSecurityRate = ssInfo.rate;
         const socialSecurityAmount = ssInfo.amount;
-        const netIncome = Math.round(totalIncome - socialSecurityAmount);
+        const netIncome =
+          sp?.total_amount != null
+            ? Math.round(Number(sp.total_amount))
+            : Math.round(totalIncome - socialSecurityAmount);
 
         grandTotalHourlyWage += hourlyWage;
         grandTotalCvXoayBonus += cvXoayBonus;
