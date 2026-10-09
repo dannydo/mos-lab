@@ -215,14 +215,15 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         fastify.log.warn('Could not parse CV_SENIORITY_BONUS_CONFIG, using default list.');
       }
 
-      // 2. Query Hourly Rates from staff_payroll (Optimized with MAX(id) B-Tree scan)
+      // 2. Query Hourly Rates and Social Security from staff_payroll (Optimized with MAX(id) B-Tree scan)
       const hourlyRatesQuery = `
-        SELECT sp.user_id, sp.working_hour_rate 
+        SELECT sp.user_id, sp.working_hour_rate, sp.social_security_rate, sp.total_social_security_amount, sp.total_support_parking_amount 
         FROM \`staff_payroll\` sp
         JOIN (
           SELECT user_id, MAX(id) as max_id
           FROM \`staff_payroll\`
           WHERE user_id IN (${validStaffListStr}) AND working_hour_rate > 0
+            AND date <= '${endPart}'
           GROUP BY user_id
         ) latest ON sp.id = latest.max_id
       `;
@@ -321,8 +322,15 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
       });
 
       const hourlyRateMap = new Map<number, number>();
+      const socialSecurityMap = new Map<number, { rate: number; amount: number }>();
+      const parkingAllowanceMap = new Map<number, number>();
       hourlyRatesRows.forEach((r: SafeAny) => {
         hourlyRateMap.set(Number(r.user_id), Number(r.working_hour_rate || 21500));
+        socialSecurityMap.set(Number(r.user_id), {
+          rate: Number(r.social_security_rate || 0),
+          amount: Number(r.total_social_security_amount || 0),
+        });
+        parkingAllowanceMap.set(Number(r.user_id), Number(r.total_support_parking_amount || 0));
       });
 
       const staffDayOffMap = new Map<number, Set<number>>();
@@ -386,7 +394,10 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
       let grandTotalHolidayBasePay = 0;
       let grandTotalHolidayPremiumPay = 0;
       let grandTotalHolidayPayrollAddition = 0;
+      let grandTotalParkingAllowance = 0;
       let grandTotalIncome = 0;
+      let grandTotalSocialSecurityAmount = 0;
+      let grandTotalNetIncome = 0;
 
       // reportStaffRows already contains the requested range plus the week boundaries used
       // for off-day detection. Group the requested rows once instead of scanning it per CV.
@@ -442,17 +453,21 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
 
         const cvTipBonus = cvTipMap.get(staffId) || 0;
 
-        // Calculate Seniority
+        // Calculate Seniority anchored to the end date of the payroll period (endPart)
         const legacyJoinedAt = staff.date_created ? new Date(staff.date_created) : new Date();
         const crmInfo = crmStaffMap.get(staffId);
         const joinedAt = crmInfo?.joinedAt || legacyJoinedAt;
         const offset = crmInfo?.seniorityOffset || 0;
 
-        const start = new Date(joinedAt);
-        const now = new Date();
-        const diffYears = now.getFullYear() - start.getFullYear();
-        const diffMonths = now.getMonth() - start.getMonth();
-        const seniorityMonths = Math.max(0, diffYears * 12 + diffMonths + offset);
+        const joinedDateStr =
+          joinedAt instanceof Date ? joinedAt.toISOString().split('T')[0] : String(joinedAt).split('T')[0];
+        const [sy, sm, sd] = joinedDateStr.split('-').map(Number);
+        const [ey, em, ed] = endPart.split('-').map(Number);
+        let rawMonths = (ey - sy) * 12 + (em - sm);
+        if (ed < sd) {
+          rawMonths -= 1;
+        }
+        const seniorityMonths = Math.max(0, rawMonths + offset);
 
         // Apply Seniority Bonus percentage on CV Xoay Bonus
         let appliedBonusPercent = 0;
@@ -468,7 +483,15 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         const techLevel = Math.floor(totalPoints / 100) + 1;
         const holiday = holidayBreakdownMap.get(staffId)!;
 
-        const totalIncome = hourlyWage + cvXoayBonus + cvTipBonus + seniorityBonus + holiday.holidayPaystubAdjustment;
+        const parkingAllowance = parkingAllowanceMap.get(staffId) || 0;
+        const totalIncome =
+          hourlyWage + cvXoayBonus + cvTipBonus + seniorityBonus + holiday.holidayPaystubAdjustment + parkingAllowance;
+
+        // Social Security deduction (10.5% for employee)
+        const ssInfo = socialSecurityMap.get(staffId) || { rate: 0, amount: 0 };
+        const socialSecurityRate = ssInfo.rate;
+        const socialSecurityAmount = ssInfo.amount;
+        const netIncome = Math.round(totalIncome - socialSecurityAmount);
 
         grandTotalHourlyWage += hourlyWage;
         grandTotalCvXoayBonus += cvXoayBonus;
@@ -477,7 +500,10 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         grandTotalHolidayBasePay += holiday.holidayBasePay;
         grandTotalHolidayPremiumPay += holiday.holidayPremiumPay;
         grandTotalHolidayPayrollAddition += holiday.holidayPayrollAddition;
+        grandTotalParkingAllowance += parkingAllowance;
         grandTotalIncome += totalIncome;
+        grandTotalSocialSecurityAmount += socialSecurityAmount;
+        grandTotalNetIncome += netIncome;
 
         return {
           staffId,
@@ -501,6 +527,10 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           offDaysWorked,
           offDaysWorkHours,
           offDaysWorkWage,
+          socialSecurityRate,
+          socialSecurityAmount,
+          parkingAllowance,
+          netIncome,
           ...holiday,
         };
       });
@@ -519,7 +549,10 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           totalHolidayBasePay: grandTotalHolidayBasePay,
           totalHolidayPremiumPay: grandTotalHolidayPremiumPay,
           totalHolidayPayrollAddition: grandTotalHolidayPayrollAddition,
+          totalParkingAllowance: grandTotalParkingAllowance,
           grandTotalIncome,
+          totalSocialSecurityAmount: grandTotalSocialSecurityAmount,
+          grandTotalNetIncome,
         },
       };
 

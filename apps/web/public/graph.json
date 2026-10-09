@@ -9824,7 +9824,7 @@
         "path": "/api/kpi/cv-paystub/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 536
+        "line": 569
       }
     },
     {
@@ -9992,7 +9992,7 @@
         "path": "/api/kpi/telesale-target/months",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 29
+        "line": 31
       }
     },
     {
@@ -10006,7 +10006,7 @@
         "path": "/api/kpi/telesale-target/clone",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 40
+        "line": 42
       }
     },
     {
@@ -10020,7 +10020,7 @@
         "path": "/api/kpi/telesale-target/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 59
+        "line": 61
       }
     },
     {
@@ -10034,7 +10034,7 @@
         "path": "/api/kpi/telesale-target/select-team",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 76
+        "line": 78
       }
     },
     {
@@ -10048,7 +10048,7 @@
         "path": "/api/kpi/telesale-target/pool",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 93
+        "line": 95
       }
     },
     {
@@ -10062,7 +10062,7 @@
         "path": "/api/kpi/telesale-target/stream",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 127
+        "line": 129
       }
     },
     {
@@ -10076,7 +10076,7 @@
         "path": "/api/kpi/telesale-target/live-celebration-quote",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 151
+        "line": 153
       }
     },
     {
@@ -10090,7 +10090,7 @@
         "path": "/api/kpi/telesale-target/live-celebration-audio",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 188
+        "line": 190
       }
     },
     {
@@ -10104,7 +10104,7 @@
         "path": "/api/kpi/telesale-target/tv-journal",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 213
+        "line": 215
       }
     },
     {
@@ -10118,7 +10118,7 @@
         "path": "/api/kpi/telesale-target/tv-journal/sync",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 234
+        "line": 236
       }
     },
     {
@@ -31650,8 +31650,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 26185,
-        "lineCount": 671,
+        "sizeBytes": 27940,
+        "lineCount": 704,
         "ext": ".ts"
       }
     },
@@ -31728,8 +31728,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9547,
-        "lineCount": 245,
+        "sizeBytes": 9662,
+        "lineCount": 247,
         "ext": ".ts"
       }
     },
@@ -31962,8 +31962,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 50742,
-        "lineCount": 1425,
+        "sizeBytes": 52908,
+        "lineCount": 1490,
         "ext": ".ts"
       }
     },
@@ -31975,8 +31975,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 116579,
-        "lineCount": 2856,
+        "sizeBytes": 117325,
+        "lineCount": 2876,
         "ext": ".ts"
       }
     },
@@ -35641,8 +35641,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23545,
-        "lineCount": 584,
+        "sizeBytes": 23471,
+        "lineCount": 580,
         "ext": ".tsx"
       }
     },
@@ -37175,8 +37175,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 65639,
-        "lineCount": 1590,
+        "sizeBytes": 68155,
+        "lineCount": 1644,
         "ext": ".tsx"
       }
     },
@@ -40542,8 +40542,8 @@
       "filePath": "packages/shared/src/types/cv.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 7385,
-        "lineCount": 312,
+        "sizeBytes": 7610,
+        "lineCount": 319,
         "ext": ".ts"
       }
     },

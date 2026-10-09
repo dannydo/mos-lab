@@ -894,7 +894,9 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
         const proj = getProjectedRecord(r);
         return (
           <div className="flex flex-col items-end">
-            <span className="tabular-nums font-bold text-emerald-400 text-sm">{val.toLocaleString('vi-VN')}đ</span>
+            <span className="tabular-nums font-bold text-slate-700 dark:text-slate-200 text-sm">
+              {val.toLocaleString('vi-VN')}đ
+            </span>
             {!isDayMode && !isPastPeriod && proj.projectedTotalIncome > 0 && (
               <Tooltip
                 title={`Dự đoán tổng thu nhập về đích cuối ${periodNoun}: ~${formatVND(proj.projectedTotalIncome)}đ`}
@@ -909,6 +911,29 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
             )}
           </div>
         );
+      },
+    },
+    {
+      title: 'Khấu trừ BHXH',
+      dataIndex: 'socialSecurityAmount',
+      key: 'socialSecurityAmount',
+      width: 115,
+      align: 'right' as const,
+      render: (val: number | undefined) => (
+        <span className="tabular-nums font-medium text-xs text-rose-500">
+          {val && val > 0 ? `-${val.toLocaleString('vi-VN')}đ` : '0đ'}
+        </span>
+      ),
+    },
+    {
+      title: 'Lương Thực Lãnh',
+      dataIndex: 'netIncome',
+      key: 'netIncome',
+      width: 130,
+      align: 'right' as const,
+      render: (val: number | undefined, r: CvPaystubRecord) => {
+        const net = val ?? r.totalIncome - (r.socialSecurityAmount || 0);
+        return <span className="tabular-nums font-bold text-emerald-500 text-sm">{net.toLocaleString('vi-VN')}đ</span>;
       },
     },
     {
@@ -1353,10 +1378,38 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                 </span>
               </div>
 
-              <div className="flex justify-between items-center pt-2 font-bold text-base">
-                <span>∑ THU NHẬP TẠM TÍNH:</span>
-                <span className="tabular-nums text-emerald-600 dark:text-emerald-400">
+              {selectedRecord.parkingAllowance && selectedRecord.parkingAllowance > 0 ? (
+                <div className="flex justify-between items-center py-1 border-b">
+                  <span className="text-sm text-slate-600 dark:text-slate-400">Phụ cấp gửi xe:</span>
+                  <span className="tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
+                    +{selectedRecord.parkingAllowance.toLocaleString('vi-VN')}đ
+                  </span>
+                </div>
+              ) : null}
+
+              <div className="flex justify-between items-center py-1 border-b bg-rose-500/10 px-2 rounded">
+                <span className="text-sm text-rose-700 dark:text-rose-300 font-medium">Khấu trừ BHXH (10.5% NLĐ):</span>
+                <span className="tabular-nums font-bold text-rose-600 dark:text-rose-400">
+                  {selectedRecord.socialSecurityAmount && selectedRecord.socialSecurityAmount > 0
+                    ? `-${selectedRecord.socialSecurityAmount.toLocaleString('vi-VN')}đ`
+                    : '0đ'}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center pt-2 border-t">
+                <span className="text-sm text-slate-500">∑ TỔNG THU NHẬP (GROSS):</span>
+                <span className="tabular-nums font-bold text-base text-slate-700 dark:text-slate-200">
                   {selectedRecord.totalIncome.toLocaleString('vi-VN')}đ
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center pt-1 font-bold text-lg text-emerald-600 dark:text-emerald-400">
+                <span>💰 LƯƠNG THỰC LÃNH (NET):</span>
+                <span className="tabular-nums">
+                  {(
+                    selectedRecord.netIncome ?? selectedRecord.totalIncome - (selectedRecord.socialSecurityAmount || 0)
+                  ).toLocaleString('vi-VN')}
+                  đ
                 </span>
               </div>
             </div>
