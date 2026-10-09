@@ -1738,7 +1738,7 @@ export class CareerProgressionService {
   static async getBananaTransactions(
     fastify: FastifyInstance,
     staffId: number,
-    query?: { category?: string; timeRange?: string; search?: string; limit?: number }
+    query?: { category?: string; timeRange?: string; period?: CareerPeriod; search?: string; limit?: number }
   ): Promise<BananaTransactionResponse> {
     // 1. Tìm thông tin nhân sự
     let staff = await fastify.prisma.crm.crmStaff.findUnique({
@@ -1767,11 +1767,13 @@ export class CareerProgressionService {
       // Safe fallback
     }
 
-    // 3. Thống kê tổng số Chuối Yêu Thương (Nhận & Tặng) từ staff_give_away
+    // 3. Thống kê tổng số Chuối Yêu Thương (Nhận & Tặng) & Chuối Checkin từ staff_give_away
     let totalReceivedGiveAway = 0;
     let totalSentGiveAway = 0;
     let countReceivedGiveAway = 0;
     let countSentGiveAway = 0;
+    let countCheckin = 0;
+    let totalCheckinAmount = 0;
 
     try {
       const stats = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
@@ -1798,16 +1800,17 @@ export class CareerProgressionService {
     }
 
     // 4. Map tên thân thiện của các nhân sự liên quan từ crmStaff
-    const crmStaffMap = new Map<number, { displayName: string }>();
+    const crmStaffMap = new Map<number, { displayName: string; avatarUrl?: string | null }>();
     try {
       const allStaff = await fastify.prisma.crm.crmStaff.findMany({
         where: { legacyStaffId: { not: null } },
-        select: { legacyStaffId: true, displayName: true, username: true },
+        select: { legacyStaffId: true, displayName: true, username: true, avatarUrl: true },
       });
       allStaff.forEach((s) => {
         if (s.legacyStaffId) {
           crmStaffMap.set(s.legacyStaffId, {
             displayName: s.displayName || s.username?.split('@')[0] || `Staff #${s.legacyStaffId}`,
+            avatarUrl: s.avatarUrl ? normalizeAvatarUrl(s.avatarUrl) : null,
           });
         }
       });
@@ -1818,11 +1821,16 @@ export class CareerProgressionService {
     // 5. Query các giao dịch Chuối
     const category = query?.category || 'ALL';
     const timeRange = query?.timeRange || '90d';
+    const period = query?.period;
     const search = query?.search?.trim()?.toLowerCase();
     const limit = query?.limit && query.limit > 0 ? Math.min(query.limit, 300) : 150;
 
     let timeFilterSql = '';
-    if (timeRange === '30d') {
+    let periodConfig: ReturnType<typeof resolveCareerPeriodDates> | null = null;
+    if (period) {
+      periodConfig = resolveCareerPeriodDates(period);
+      timeFilterSql = `AND ubt.date_created >= ${periodConfig.periodStartSql} AND ubt.date_created < ${periodConfig.periodEndSql}`;
+    } else if (timeRange === '30d') {
       timeFilterSql = 'AND ubt.date_created >= DATE_SUB(NOW(), INTERVAL 30 DAY)';
     } else if (timeRange === '90d') {
       timeFilterSql = 'AND ubt.date_created >= DATE_SUB(NOW(), INTERVAL 90 DAY)';
@@ -1846,12 +1854,17 @@ export class CareerProgressionService {
           sga.to_user_id,
           sga.give_away_amount,
           sga.description as give_away_message,
+          sga.staff_give_away_rule_id,
+          sgar.type as rule_type,
+          p_from.avatar as from_avatar,
           p_from.username as from_username,
           CONCAT(COALESCE(p_from.first_name, ''), ' ', COALESCE(p_from.last_name, '')) as from_fullname,
+          p_to.avatar as to_avatar,
           p_to.username as to_username,
           CONCAT(COALESCE(p_to.first_name, ''), ' ', COALESCE(p_to.last_name, '')) as to_fullname
         FROM user_balance_transaction ubt
         LEFT JOIN staff_give_away sga ON ubt.item_id = sga.id
+        LEFT JOIN staff_give_away_rule sgar ON sga.staff_give_away_rule_id = sgar.id
         LEFT JOIN user_profile p_from ON sga.from_user_id = p_from.user_id
         LEFT JOIN user_profile p_to ON sga.to_user_id = p_to.user_id
         WHERE ubt.currency_id = 3
@@ -1873,7 +1886,9 @@ export class CareerProgressionService {
     let sentGiveAways: any[] = [];
     if (category === 'ALL' || category === 'GIVE_AWAY_SENT') {
       let sgaTimeFilter = '';
-      if (timeRange === '30d') {
+      if (periodConfig) {
+        sgaTimeFilter = `AND sga.date_created >= ${periodConfig.periodStartSql} AND sga.date_created < ${periodConfig.periodEndSql}`;
+      } else if (timeRange === '30d') {
         sgaTimeFilter = 'AND sga.date_created >= DATE_SUB(NOW(), INTERVAL 30 DAY)';
       } else if (timeRange === '90d') {
         sgaTimeFilter = 'AND sga.date_created >= DATE_SUB(NOW(), INTERVAL 90 DAY)';
@@ -1888,6 +1903,7 @@ export class CareerProgressionService {
             sga.give_away_amount,
             sga.description as give_away_message,
             sga.date_created,
+            p_to.avatar as to_avatar,
             p_to.username as to_username,
             CONCAT(COALESCE(p_to.first_name, ''), ' ', COALESCE(p_to.last_name, '')) as to_fullname
           FROM staff_give_away sga
@@ -1902,6 +1918,50 @@ export class CareerProgressionService {
         );
       } catch (_err) {
         sentGiveAways = [];
+      }
+    }
+
+    // Query các lượt Checkin tặng trực tiếp từ staff_give_away (đặc biệt khi lọc ALL hoặc CHECKIN)
+    let checkinGiveAways: any[] = [];
+    if (category === 'ALL' || category === 'CHECKIN') {
+      let checkinTimeFilter = '';
+      if (periodConfig) {
+        checkinTimeFilter = `AND sga.date_created >= ${periodConfig.periodStartSql} AND sga.date_created < ${periodConfig.periodEndSql}`;
+      } else if (timeRange === '30d') {
+        checkinTimeFilter = 'AND sga.date_created >= DATE_SUB(NOW(), INTERVAL 30 DAY)';
+      } else if (timeRange === '90d') {
+        checkinTimeFilter = 'AND sga.date_created >= DATE_SUB(NOW(), INTERVAL 90 DAY)';
+      }
+      try {
+        checkinGiveAways = await fastify.prisma.legacy.$queryRawUnsafe<any[]>(
+          `
+          SELECT 
+            sga.id,
+            sga.from_user_id,
+            sga.to_user_id,
+            sga.give_away_amount,
+            sga.description as give_away_message,
+            sga.date_created,
+            sgar.type as rule_type,
+            p_from.avatar as from_avatar,
+            p_from.username as from_username,
+            CONCAT(COALESCE(p_from.first_name, ''), ' ', COALESCE(p_from.last_name, '')) as from_fullname
+          FROM staff_give_away sga
+          JOIN staff_give_away_rule sgar ON sga.staff_give_away_rule_id = sgar.id
+          LEFT JOIN user_profile p_from ON sga.from_user_id = p_from.user_id
+          WHERE sga.to_user_id = ?
+            AND sgar.type = 'CheckIn5MinuteEarly'
+            AND sga.from_user_id != sga.to_user_id
+            AND (sga.created_staff_id IS NULL OR sga.created_staff_id != sga.to_user_id)
+            ${checkinTimeFilter}
+          ORDER BY sga.date_created DESC
+          LIMIT ?
+          `,
+          targetLegacyStaffId,
+          limit
+        );
+      } catch (_err) {
+        checkinGiveAways = [];
       }
     }
 
@@ -1920,7 +1980,19 @@ export class CareerProgressionService {
         const fromUserId = Number(row.from_user_id);
         const toUserId = Number(row.to_user_id);
         const isReceived = toUserId === Number(targetLegacyStaffId) || amount > 0;
-        itemCategory = isReceived ? 'GIVE_AWAY_RECEIVED' : 'GIVE_AWAY_SENT';
+        const isCheckin =
+          isReceived &&
+          (row.rule_type === 'CheckIn5MinuteEarly' ||
+            (row.rule_type && String(row.rule_type).toLowerCase().includes('checkin')) ||
+            (row.give_away_message && String(row.give_away_message).toLowerCase().includes('checkin')));
+
+        if (isCheckin) {
+          itemCategory = 'CHECKIN';
+          countCheckin++;
+          totalCheckinAmount += Math.abs(amount || Number(row.give_away_amount) || 1);
+        } else {
+          itemCategory = isReceived ? 'GIVE_AWAY_RECEIVED' : 'GIVE_AWAY_SENT';
+        }
 
         const otherUserId = isReceived ? fromUserId : toUserId;
         const otherStaff = crmStaffMap.get(otherUserId);
@@ -1929,13 +2001,28 @@ export class CareerProgressionService {
           (isReceived ? row.from_fullname?.trim() || row.from_username : row.to_fullname?.trim() || row.to_username) ||
           `Đồng nghiệp #${otherUserId || ''}`;
 
-        title = isReceived ? `Nhận Chuối yêu thương từ ${otherName}` : `Gửi tặng Chuối yêu thương cho ${otherName}`;
+        const rawOtherAvatar = isReceived
+          ? row.from_avatar || otherStaff?.avatarUrl
+          : row.to_avatar || otherStaff?.avatarUrl;
+        const otherAvatarUrl = normalizeAvatarUrl(rawOtherAvatar) || otherStaff?.avatarUrl || undefined;
+
+        title = isCheckin
+          ? `Nhận Chuối Check-in cùng ${otherName}`
+          : isReceived
+            ? `Nhận Chuối yêu thương từ ${otherName}`
+            : `Gửi tặng Chuối yêu thương cho ${otherName}`;
+
         giveAway = {
           id: Number(row.give_away_id) || Number(row.id),
           direction: isReceived ? 'RECEIVED' : 'SENT',
           otherUserId,
           otherStaffName: otherName,
-          message: row.give_away_message || row.ubt_description || null,
+          otherAvatarUrl,
+          message: isCheckin
+            ? row.give_away_message || 'Check-in sớm 5 phút'
+            : row.give_away_message || row.ubt_description || null,
+          isCheckin: !!isCheckin,
+          ruleType: row.rule_type || (isCheckin ? 'CheckIn5MinuteEarly' : undefined),
         };
       } else if (type === 'staff_working_shift') {
         itemCategory = 'SHIFT';
@@ -1982,6 +2069,9 @@ export class CareerProgressionService {
       const amount = -Math.abs(Number(sga.give_away_amount) || 1);
       const dateCreated = sga.date_created instanceof Date ? sga.date_created.toISOString() : String(sga.date_created);
 
+      const rawOtherAvatar = sga.to_avatar || otherStaff?.avatarUrl;
+      const otherAvatarUrl = normalizeAvatarUrl(rawOtherAvatar) || otherStaff?.avatarUrl || undefined;
+
       transactions.push({
         id: `sga-${sgaId}`,
         dateCreated,
@@ -1996,7 +2086,55 @@ export class CareerProgressionService {
           direction: 'SENT',
           otherUserId: toUserId,
           otherStaffName: otherName,
+          otherAvatarUrl,
           message: sga.give_away_message || null,
+        },
+      });
+    }
+
+    // Merge checkin give aways directly from staff_give_away (if not in ubt)
+    const existingCheckinIds = new Set(
+      transactions
+        .filter((t) => t.category === 'CHECKIN')
+        .map((t) => t.giveAway?.id)
+        .filter(Boolean)
+    );
+
+    for (const cga of checkinGiveAways) {
+      const cgaId = Number(cga.id);
+      if (existingCheckinIds.has(cgaId)) continue;
+
+      const fromUserId = Number(cga.from_user_id);
+      const otherStaff = crmStaffMap.get(fromUserId);
+      const otherName =
+        otherStaff?.displayName || cga.from_fullname?.trim() || cga.from_username || `Đồng nghiệp #${fromUserId}`;
+      const amount = Math.abs(Number(cga.give_away_amount) || 1);
+      const dateCreated = cga.date_created instanceof Date ? cga.date_created.toISOString() : String(cga.date_created);
+
+      const rawOtherAvatar = cga.from_avatar || otherStaff?.avatarUrl;
+      const otherAvatarUrl = normalizeAvatarUrl(rawOtherAvatar) || otherStaff?.avatarUrl || undefined;
+
+      countCheckin++;
+      totalCheckinAmount += amount;
+
+      transactions.push({
+        id: `cga-${cgaId}`,
+        dateCreated,
+        amount,
+        balance: currentBalance,
+        type: 'staff_give_away',
+        category: 'CHECKIN',
+        title: `Nhận Chuối Check-in cùng ${otherName}`,
+        description: cga.give_away_message || 'Check-in sớm 5 phút',
+        giveAway: {
+          id: cgaId,
+          direction: 'RECEIVED',
+          otherUserId: fromUserId,
+          otherStaffName: otherName,
+          otherAvatarUrl,
+          message: cga.give_away_message || 'Check-in sớm 5 phút',
+          isCheckin: true,
+          ruleType: cga.rule_type || 'CheckIn5MinuteEarly',
         },
       });
     }
@@ -2027,6 +2165,8 @@ export class CareerProgressionService {
       totalSentGiveAway,
       countReceivedGiveAway,
       countSentGiveAway,
+      countCheckin,
+      totalCheckinAmount,
       transactions: filteredTransactions,
     };
   }

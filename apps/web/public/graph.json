@@ -36227,7 +36227,7 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path.constants.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19439,
+        "sizeBytes": 19428,
         "lineCount": 394,
         "ext": ".ts"
       }
@@ -36279,8 +36279,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/IslandGameIcon.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6800,
-        "lineCount": 203,
+        "sizeBytes": 9482,
+        "lineCount": 269,
         "ext": ".tsx"
       }
     },
@@ -36292,8 +36292,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 164684,
-        "lineCount": 3196,
+        "sizeBytes": 167469,
+        "lineCount": 3263,
         "ext": ".tsx"
       }
     },
@@ -36305,8 +36305,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 53124,
-        "lineCount": 1196,
+        "sizeBytes": 53229,
+        "lineCount": 1197,
         "ext": ".tsx"
       }
     },
@@ -36318,7 +36318,7 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 40327,
+        "sizeBytes": 40394,
         "lineCount": 900,
         "ext": ".tsx"
       }
@@ -38697,8 +38697,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 70900,
-        "lineCount": 1584,
+        "sizeBytes": 70903,
+        "lineCount": 1587,
         "ext": ".tsx"
       }
     },

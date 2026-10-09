@@ -29,14 +29,20 @@ import {
   Filter,
   Eye,
   Bug,
-  Coins,
+  HandCoins,
   Heart,
   ArrowDownCircle,
 } from 'lucide-react';
 import { StatusTag } from '../../../../components/ui';
-import { type StaffCareerStatus, type CareerProgressionConfig, type CvPlusRewardSnapshot } from '@mos-lab/shared';
+import {
+  type StaffCareerStatus,
+  type CareerProgressionConfig,
+  type CvPlusRewardSnapshot,
+  type BananaTransactionCategory,
+} from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { formatCareerRoleName, calculateComboBonus } from '../career-path.constants';
+import { WingRoleLabel } from './IslandGameIcon';
 
 interface RealStaffSimulationCardProps {
   status: StaffCareerStatus | null;
@@ -53,6 +59,7 @@ interface RealStaffSimulationCardProps {
   loadingAction?: boolean;
   simulationTarget?: 'CV_PLUS' | 'CV_PLUS_PLUS';
   onSimulationTargetChange?: (target: 'CV_PLUS' | 'CV_PLUS_PLUS') => void;
+  onOpenBananaDrawer?: (category: BananaTransactionCategory) => void;
 }
 
 interface StatRadarChartProps {
@@ -70,7 +77,7 @@ interface StatRadarChartProps {
  * Render icon đồng bộ cho 6 ải / 6 đỉnh Radar Career Path:
  * 0: Eye (Sản lượng bộ mi)
  * 1: Bug (Tỷ lệ bảo hành / sửa mi)
- * 2: Coins (Tỷ lệ tip - triệt tiêu icon 🪙 bị lỗi đĩa xám trên macOS)
+ * 2: HandCoins (Tỷ lệ tip - bàn tay nâng tiền boa)
  * 3: ShieldCheck (Kiểm định QA/QC)
  * 4: Heart (Teamwork HI Thả tim)
  * 5: 🍌 (Chuối Yêu Thương)
@@ -82,7 +89,7 @@ export const renderCareerNodeIcon = (index: number, className = 'w-4 h-4 shrink-
     case 1:
       return <Bug className={className} />;
     case 2:
-      return <Coins className={className} />;
+      return <HandCoins className={className} />;
     case 3:
       return <ShieldCheck className={className} />;
     case 4:
@@ -106,7 +113,7 @@ const renderRadarAxisIcon = (index: number, isActive: boolean, isPassed: boolean
     case 1:
       return <Bug size={12} strokeWidth={2.5} className={iconColorClass} />;
     case 2:
-      return <Coins size={12} strokeWidth={2.5} className={iconColorClass} />;
+      return <HandCoins size={12} strokeWidth={2.5} className={iconColorClass} />;
     case 3:
       return <ShieldCheck size={12} strokeWidth={2.5} className={iconColorClass} />;
     case 4:
@@ -499,6 +506,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
   loadingAction,
   simulationTarget,
   onSimulationTargetChange,
+  onOpenBananaDrawer,
 }) => {
   const isTargetCvPlusPlus = (simulationTarget || status?.targetRole) === 'CV_PLUS_PLUS';
   const targetReq = isTargetCvPlusPlus
@@ -991,36 +999,69 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
   const getStatusBadge = () => {
     if (hasFailedQa) {
       return (
-        <StatusTag status="error" label="Bị Khóa Nâng Cấp (Failed QA/QC)" className="font-bold text-xs uppercase" />
+        <StatusTag
+          status="error"
+          icon={<AlertCircle className="w-3 h-3" />}
+          label="Khóa nâng cấp (Lỗi QA)"
+          className="font-bold text-xs"
+        />
       );
     }
     if (!isQaPassed && isOrdersPassed && isFixPassed && isTipPassed) {
-      return <StatusTag status="warning" label="Chưa Đủ Tuần Kiểm Tra QA" className="font-bold text-xs uppercase" />;
+      return (
+        <StatusTag
+          status="warning"
+          icon={<Clock className="w-3 h-3" />}
+          label="Cần kiểm tra QA định kỳ"
+          className="font-bold text-xs"
+        />
+      );
     }
     switch (status.status) {
       case 'QUALIFIED':
         return (
           <StatusTag
             status="success"
+            icon={<CheckCircle2 className="w-3 h-3" />}
             label="Đủ điều kiện thăng cấp"
-            className="font-bold text-xs uppercase animate-pulse"
+            className="font-bold text-xs animate-pulse"
           />
         );
       case 'TRIAL_GATE':
         return (
           <StatusTag
             status="warning"
-            label="Đang thử thách ải trùm cuối"
-            className="font-bold text-xs uppercase animate-pulse"
+            icon={<Flame className="w-3 h-3 text-amber-500" />}
+            label="Đang thử thách Ải Trùm"
+            className="font-bold text-xs animate-pulse"
           />
         );
       case 'PROMOTED':
-        return <StatusTag status="purple" label="Đã thăng hạng thành công" className="font-bold text-xs uppercase" />;
+        return (
+          <StatusTag
+            status="purple"
+            icon={<Crown className="w-3 h-3" />}
+            label="Đã thăng hạng"
+            className="font-bold text-xs"
+          />
+        );
       case 'SPECIALIST_PATH':
-        return <StatusTag status="cyan" label="Nhánh Chuyên Gia Kỹ Thuật" className="font-bold text-xs uppercase" />;
+        return (
+          <StatusTag
+            status="cyan"
+            icon={<Gem className="w-3 h-3" />}
+            label="Nhánh Master Tech"
+            className="font-bold text-xs"
+          />
+        );
       default:
         return (
-          <StatusTag status="processing" label="Đang rèn luyện (In-Progress)" className="font-bold text-xs uppercase" />
+          <StatusTag
+            status="processing"
+            icon={<Sparkles className="w-3 h-3 text-blue-500" />}
+            label="Đang rèn luyện"
+            className="font-bold text-xs"
+          />
         );
     }
   };
@@ -1097,9 +1138,10 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
 
   return (
     <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl border border-rose-100/70 dark:border-slate-800 p-5 shadow-sm mb-6 transition-all duration-200">
-      {/* Top Banner: Staff Profile & Status */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-3">
+      {/* Top Banner: Staff Profile & Simulation Controls */}
+      <div className="flex items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800 flex-wrap sm:flex-nowrap">
+        {/* Left Side: Avatar + Staff Name + Status Tag + Journey Route */}
+        <div className="flex items-center gap-3.5 min-w-0">
           <Avatar
             src={status.avatarUrl || undefined}
             size={48}
@@ -1107,193 +1149,243 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
           >
             {status.staffName.slice(0, 1).toUpperCase()}
           </Avatar>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-lg font-black text-slate-800 dark:text-slate-100 m-0">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-base sm:text-lg font-black text-slate-800 dark:text-slate-100 m-0 truncate">
                 {status.staffName}
               </h2>
               {getStatusBadge()}
             </div>
-            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              <span>
-                Ải hiện tại:{' '}
-                <strong className="text-slate-700 dark:text-slate-200">
-                  {formatCareerRoleName(status.currentRole)}
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-1 flex-wrap">
+              <span className="inline-flex items-center gap-1">
+                <span>Ải hiện tại:</span>
+                <strong className="text-slate-700 dark:text-slate-200 font-bold inline-flex items-center">
+                  <WingRoleLabel text={formatCareerRoleName(status.currentRole)} />
                 </strong>
               </span>
-              <ArrowRight className="w-3 h-3 text-slate-400" />
-              <span>
-                Ải tiếp theo:{' '}
-                <strong className="text-rose-600 dark:text-rose-400">{formatCareerRoleName(status.targetRole)}</strong>
+              <ArrowRight className="w-3 h-3 text-slate-400 shrink-0 mx-0.5" />
+              <span className="inline-flex items-center gap-1">
+                <span>Ải tiếp theo:</span>
+                <strong className="text-rose-600 dark:text-rose-400 font-bold inline-flex items-center">
+                  <WingRoleLabel text={formatCareerRoleName(status.targetRole)} />
+                </strong>
               </span>
             </div>
           </div>
         </div>
 
-        {/* Target Role Selector & Action Buttons */}
-        <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
-          {onSimulationTargetChange && (
-            <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
-              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 pl-1.5 flex items-center gap-1">
-                <Target className="w-3 h-3 text-rose-500" />
-                <span>Mục tiêu:</span>
-              </span>
-              <Segmented
-                value={isTargetCvPlusPlus ? 'CV_PLUS_PLUS' : 'CV_PLUS'}
-                onChange={(val) => onSimulationTargetChange(val as 'CV_PLUS' | 'CV_PLUS_PLUS')}
-                options={[
-                  {
-                    label: (
-                      <span className="flex items-center gap-1 font-bold text-xs py-0.5">
-                        <span>Ải 1: CV+ (Tự Chủ)</span>
-                      </span>
-                    ),
-                    value: 'CV_PLUS',
-                  },
-                  {
-                    label: (
-                      <span className="flex items-center gap-1 font-bold text-xs py-0.5">
-                        <span>👑 Ải 2: CV++ (Sảnh)</span>
-                      </span>
-                    ),
-                    value: 'CV_PLUS_PLUS',
-                  },
-                ]}
-                className="font-bold text-xs bg-white dark:bg-slate-900 shadow-2xs"
-              />
-            </div>
+        {/* Right Side: Simulation Target Role Segmented Switcher */}
+        {onSimulationTargetChange && (
+          <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/90 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shrink-0 self-start md:self-auto">
+            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 pl-2 pr-1 flex items-center gap-1">
+              <Target className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+              <span>Mục tiêu:</span>
+            </span>
+            <Segmented
+              value={isTargetCvPlusPlus ? 'CV_PLUS_PLUS' : 'CV_PLUS'}
+              onChange={(val) => onSimulationTargetChange(val as 'CV_PLUS' | 'CV_PLUS_PLUS')}
+              options={[
+                {
+                  label: (
+                    <span className="inline-flex items-center gap-1 font-bold text-xs py-0.5 px-1">
+                      <WingRoleLabel text="🪽 CV" />
+                      <span className="text-slate-400 dark:text-slate-500 font-normal">·</span>
+                      <span>Thanh Lịch</span>
+                    </span>
+                  ),
+                  value: 'CV_PLUS',
+                },
+                {
+                  label: (
+                    <span className="inline-flex items-center gap-1 font-bold text-xs py-0.5 px-1">
+                      <WingRoleLabel text="🪽 CV 🪽" />
+                      <span className="text-slate-400 dark:text-slate-500 font-normal">·</span>
+                      <span>Quí Phái</span>
+                    </span>
+                  ),
+                  value: 'CV_PLUS_PLUS',
+                },
+              ]}
+              className="font-bold text-xs bg-white dark:bg-slate-900 shadow-2xs"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Sub-bar: Quest Milestone & Quick Actions Toolbar */}
+      <div className="flex items-center justify-between gap-3 pt-3.5 mt-0 flex-wrap sm:flex-nowrap">
+        {/* Left: Quest Milestone Progress Indicator */}
+        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+          <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+          <span>
+            Tiêu chí đạt chuẩn:{' '}
+            <strong className="text-slate-700 dark:text-slate-200 font-bold tabular-nums">
+              {passedQuestsCount}/6 ải
+            </strong>{' '}
+            <span className="tabular-nums">({xpPercent}%)</span>
+          </span>
+        </div>
+
+        {/* Right: Action Buttons Group */}
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-start sm:justify-end">
+          {onSwitchSpecialist && status.status !== 'SPECIALIST_PATH' && (
+            <button
+              onClick={onSwitchSpecialist}
+              disabled={loadingAction}
+              className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-xs transition-all active:scale-95 disabled:opacity-50"
+            >
+              Nhánh Master Tech
+            </button>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Manual Quick Override Promotion / Demotion */}
-            {status.currentRole === 'CV' && onSetRole && (
-              <Popconfirm
-                title="Đưa nhân sự này lên CV+?"
-                description={`Thăng cấp thủ công cho ${status.staffName} lên CV+ (Chuyên Viên Tự Chủ) ngay lập tức.`}
-                okText="Lên CV+"
-                cancelText="Hủy"
-                onConfirm={() => onSetRole('CV_PLUS')}
-              >
-                <button
-                  disabled={loadingAction}
-                  className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs transition-all shadow-sm active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>⚡ Lên CV+</span>
-                </button>
-              </Popconfirm>
-            )}
-
-            {status.currentRole === 'CV_PLUS' && (
-              <>
-                {onSetRole && (
-                  <Popconfirm
-                    title="Đưa nhân sự này lên CV++?"
-                    description={`Thăng cấp thủ công cho ${status.staffName} lên CV++ (Đàn Chị Sảnh) ngay lập tức.`}
-                    okText="Lên CV++"
-                    cancelText="Hủy"
-                    onConfirm={() => onSetRole('CV_PLUS_PLUS')}
-                  >
-                    <button
-                      disabled={loadingAction}
-                      className="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs transition-all shadow-sm active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>⚡ Lên CV++</span>
-                    </button>
-                  </Popconfirm>
-                )}
-                {onDemote && (
-                  <Popconfirm
-                    title="Hạ cấp nhân sự về CV?"
-                    description={`Chuyển cấp bậc của ${status.staffName} về CV (Chuyên Viên).`}
-                    okText="Hạ về CV"
-                    cancelText="Hủy"
-                    okType="danger"
-                    onConfirm={onDemote}
-                  >
-                    <button
-                      disabled={loadingAction}
-                      className="px-3.5 py-1.5 rounded-xl text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 font-bold text-xs transition-all shadow-sm active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
-                    >
-                      <ArrowDownCircle className="w-3.5 h-3.5" />
-                      <span>🔻 Hạ về CV</span>
-                    </button>
-                  </Popconfirm>
-                )}
-              </>
-            )}
-
-            {status.currentRole === 'CV_PLUS_PLUS' && onDemote && (
-              <Popconfirm
-                title="Hạ cấp nhân sự về CV+?"
-                description={`Chuyển cấp bậc của ${status.staffName} về CV+ (Chuyên Viên Tự Chủ).`}
-                okText="Hạ về CV+"
-                cancelText="Hủy"
-                okType="danger"
-                onConfirm={onDemote}
-              >
-                <button
-                  disabled={loadingAction}
-                  className="px-3.5 py-1.5 rounded-xl text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 font-bold text-xs transition-all shadow-sm active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
-                >
-                  <ArrowDownCircle className="w-3.5 h-3.5" />
-                  <span>🔻 Hạ về CV+</span>
-                </button>
-              </Popconfirm>
-            )}
-
-            {status.status !== 'TRIAL_GATE' && !status.qualifiedQuests.allPassed && (
-              <Tooltip
-                title={
-                  !isQaPassed
-                    ? hasFailedQa
-                      ? 'Không thể mở ải: Kỹ thuật viên có bài kiểm tra QA/QC tác phong hoặc phòng mi bị FAILED'
-                      : 'Không thể mở ải: Kỹ thuật viên phải mời QA/QC kiểm tra định kỳ ít nhất 1 lần/tuần'
-                    : undefined
-                }
-              >
-                <span>
-                  <button
-                    onClick={onActivateTrial}
-                    disabled={loadingAction || !isQaPassed}
-                    className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition-all shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
-                  >
-                    <Flame className="w-3.5 h-3.5" />
-                    Mở Ải Trùm Cuối (30 Ngày)
-                  </button>
-                </span>
-              </Tooltip>
-            )}
-
-            {status.qualifiedQuests.allPassed && (
-              <Tooltip
-                title={!isQaPassed ? 'Bắt buộc đạt chuẩn kiểm định QA/QC định kỳ mới được duyệt thăng hạng' : undefined}
-              >
-                <span>
-                  <button
-                    onClick={onPromote}
-                    disabled={loadingAction || !isQaPassed}
-                    className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 animate-pulse"
-                  >
-                    <Trophy className="w-3.5 h-3.5" />
-                    Duyệt Thăng Hạng
-                  </button>
-                </span>
-              </Tooltip>
-            )}
-
-            {onSwitchSpecialist && status.status !== 'SPECIALIST_PATH' && (
+          {/* Manual Quick Override Promotion / Demotion */}
+          {status.currentRole === 'KTV' && onSetRole && (
+            <Popconfirm
+              title="Đưa nhân sự này lên CV · Dịu Dàng?"
+              description={`Xác nhận thăng cấp cho ${status.staffName} lên CV · Dịu Dàng (khi được FM / Đàn Chị bảo trợ & đạt sát hạch).`}
+              okText="Lên CV · Dịu Dàng"
+              cancelText="Hủy"
+              onConfirm={() => onSetRole('CV')}
+            >
               <button
-                onClick={onSwitchSpecialist}
                 disabled={loadingAction}
-                className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-xs transition-all"
+                className="px-3 py-1.5 rounded-xl bg-pink-50 hover:bg-pink-100 dark:bg-pink-950/40 dark:hover:bg-pink-900/50 text-pink-600 dark:text-pink-400 border border-pink-200 dark:border-pink-800 font-bold text-xs transition-all shadow-2xs active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
               >
-                Nhánh Master Tech
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Lên CV · Dịu Dàng</span>
               </button>
-            )}
-          </div>
+            </Popconfirm>
+          )}
+
+          {status.currentRole === 'CV' && onSetRole && (
+            <Popconfirm
+              title="Đưa nhân sự này lên 🪽 CV · Thanh Lịch?"
+              description={`Thăng cấp thủ công cho ${status.staffName} lên 🪽 CV · Thanh Lịch ngay lập tức.`}
+              okText="Lên 🪽 CV · Thanh Lịch"
+              cancelText="Hủy"
+              onConfirm={() => onSetRole('CV_PLUS')}
+            >
+              <button
+                disabled={loadingAction}
+                className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 font-bold text-xs transition-all shadow-2xs active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span className="inline-flex items-center gap-1">
+                  <span>Lên</span>
+                  <WingRoleLabel text="🪽 CV" />
+                  <span>· Thanh Lịch</span>
+                </span>
+              </button>
+            </Popconfirm>
+          )}
+
+          {status.currentRole === 'CV_PLUS' && (
+            <>
+              {onSetRole && (
+                <Popconfirm
+                  title="Đưa nhân sự này lên 🪽 CV 🪽 · Quí Phái?"
+                  description={`Thăng cấp thủ công cho ${status.staffName} lên 🪽 CV 🪽 · Quí Phái ngay lập tức.`}
+                  okText="Lên 🪽 CV 🪽 · Quí Phái"
+                  cancelText="Hủy"
+                  onConfirm={() => onSetRole('CV_PLUS_PLUS')}
+                >
+                  <button
+                    disabled={loadingAction}
+                    className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800 font-bold text-xs transition-all shadow-2xs active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span className="inline-flex items-center gap-1">
+                      <span>Lên</span>
+                      <WingRoleLabel text="🪽 CV 🪽" />
+                      <span>· Quí Phái</span>
+                    </span>
+                  </button>
+                </Popconfirm>
+              )}
+              {onDemote && (
+                <Popconfirm
+                  title="Hạ cấp nhân sự về CV · Dịu Dàng?"
+                  description={`Chuyển cấp bậc của ${status.staffName} về CV · Dịu Dàng.`}
+                  okText="Hạ về CV · Dịu Dàng"
+                  cancelText="Hủy"
+                  okType="danger"
+                  onConfirm={onDemote}
+                >
+                  <button
+                    disabled={loadingAction}
+                    className="px-3 py-1.5 rounded-xl text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 font-bold text-xs transition-all shadow-2xs active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    <ArrowDownCircle className="w-3.5 h-3.5" />
+                    <span>🔻 Hạ về CV · Dịu Dàng</span>
+                  </button>
+                </Popconfirm>
+              )}
+            </>
+          )}
+
+          {status.currentRole === 'CV_PLUS_PLUS' && onDemote && (
+            <Popconfirm
+              title="Hạ cấp nhân sự về 🪽 CV · Thanh Lịch?"
+              description={`Chuyển cấp bậc của ${status.staffName} về 🪽 CV · Thanh Lịch.`}
+              okText="Hạ về 🪽 CV · Thanh Lịch"
+              cancelText="Hủy"
+              okType="danger"
+              onConfirm={onDemote}
+            >
+              <button
+                disabled={loadingAction}
+                className="px-3 py-1.5 rounded-xl text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 font-bold text-xs transition-all shadow-2xs active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <ArrowDownCircle className="w-3.5 h-3.5" />
+                <span className="inline-flex items-center gap-1">
+                  <span>🔻 Hạ về</span>
+                  <WingRoleLabel text="🪽 CV" />
+                  <span>· Thanh Lịch</span>
+                </span>
+              </button>
+            </Popconfirm>
+          )}
+
+          {/* Primary Action Button: Mở Ải Trùm Cuối hoặc Duyệt Thăng Hạng */}
+          {status.status !== 'TRIAL_GATE' && !status.qualifiedQuests.allPassed && (
+            <Tooltip
+              title={
+                !isQaPassed
+                  ? hasFailedQa
+                    ? 'Không thể mở ải: Kỹ thuật viên có bài kiểm tra QA/QC tác phong hoặc phòng mi bị FAILED'
+                    : 'Không thể mở ải: Kỹ thuật viên phải mời QA/QC kiểm tra định kỳ ít nhất 1 lần/tuần'
+                  : undefined
+              }
+            >
+              <span>
+                <button
+                  onClick={onActivateTrial}
+                  disabled={loadingAction || !isQaPassed}
+                  className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs transition-all shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                >
+                  <Flame className="w-3.5 h-3.5" />
+                  <span>Mở Ải Trùm Cuối (30 Ngày)</span>
+                </button>
+              </span>
+            </Tooltip>
+          )}
+
+          {status.qualifiedQuests.allPassed && (
+            <Tooltip
+              title={!isQaPassed ? 'Bắt buộc đạt chuẩn kiểm định QA/QC định kỳ mới được duyệt thăng hạng' : undefined}
+            >
+              <span>
+                <button
+                  onClick={onPromote}
+                  disabled={loadingAction || !isQaPassed}
+                  className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5 animate-pulse"
+                >
+                  <Trophy className="w-3.5 h-3.5" />
+                  <span>Duyệt Thăng Hạng</span>
+                </button>
+              </span>
+            </Tooltip>
+          )}
         </div>
       </div>
 
@@ -1701,7 +1793,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 {/* Header row: Title + Status Badge + Chevron */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <Coins className={`w-4 h-4 shrink-0 ${isTipPassed ? 'text-emerald-400' : 'text-amber-400'}`} />
+                    <HandCoins className={`w-4 h-4 shrink-0 ${isTipPassed ? 'text-emerald-400' : 'text-amber-400'}`} />
                     <span className="font-bold text-xs sm:text-sm text-slate-100 truncate">
                       3. Tip &gt; {(minTipRatioAboveShop * 100).toFixed(0)}% TB {branchName}
                     </span>
@@ -2219,6 +2311,20 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     </span>
                     <span className="shrink-0 font-semibold tabular-nums text-slate-300">1T ≥ {minBananaCount}</span>
                   </div>
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenBananaDrawer?.('CHECKIN');
+                      }}
+                      className="w-full py-1.5 px-3 rounded-xl bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-amber-500/20 hover:from-amber-500/30 hover:to-emerald-500/30 border border-amber-500/40 text-amber-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-98"
+                    >
+                      <span>⏰</span>
+                      <span>Xem danh sách Chuối Check-in tính điểm</span>
+                      <span className="text-[10px] text-emerald-300 font-mono">({bananaCount} chuối) ➔</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -2659,7 +2765,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                         </div>
                         <div>
                           <div className="text-xs font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                            <span>Đặc Quyền CV+ &amp; Đối Soát Data Thật</span>
+                            <span>Đặc Quyền 🪽 CV · Thanh Lịch &amp; Đối Soát Data Thật</span>
                             <span className="text-[10px] text-slate-400 font-normal">({cvPlusSnapshot.month})</span>
                           </div>
                           <div className="text-[10px] text-slate-500 dark:text-slate-400">
@@ -2725,15 +2831,16 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                         </div>
                         <div className="mt-1">
                           Tỷ lệ chốt combo tháng này đạt {(cvPlusSnapshot.selfComboRate * 100).toFixed(1)}% (chưa chạm
-                          ngưỡng tối thiểu 20%). Hệ thống giữ nguyên lương giờ CV (25.000đ/h) và tạm khóa thưởng Combo.
-                          Nhân viên vẫn nhận đủ 20% Tip tự chủ (90% tip: +{formatVnd(cvPlusSnapshot.deltaGain)}).
+                          ngưỡng tối thiểu 20%). Hệ thống giữ nguyên lương giờ CV · Dịu Dàng (25.000đ/h) và tạm khóa
+                          thưởng Combo. Nhân viên vẫn nhận đủ 20% Tip tự chủ (90% tip: +
+                          {formatVnd(cvPlusSnapshot.deltaGain)}).
                         </div>
                       </div>
                     ) : (
                       <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-800 dark:text-emerald-200 text-[11px] leading-relaxed">
                         <div className="font-bold flex items-center gap-1.5">
                           <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
-                          <span>Xuất sắc vượt chuẩn! Đã mở khóa toàn bộ quyền lợi CV+:</span>
+                          <span>Xuất sắc vượt chuẩn! Đã mở khóa toàn bộ quyền lợi 🪽 CV · Thanh Lịch:</span>
                         </div>
                         <div className="mt-1">
                           Tỷ lệ chốt combo đạt {(cvPlusSnapshot.selfComboRate * 100).toFixed(1)}% (vượt mốc 20%). Nhân
@@ -2746,9 +2853,9 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     <div className="p-2.5 rounded-xl bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 space-y-1.5 text-xs">
                       <div className="grid grid-cols-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider pb-1 border-b border-slate-100 dark:border-slate-700">
                         <div>Khoản mục</div>
-                        <div className="text-right">CV hiện tại</div>
+                        <div className="text-right">CV · Dịu Dàng hiện tại</div>
                         <div className="text-right text-emerald-600 dark:text-emerald-400 font-black">
-                          CV+ thực nhận
+                          🪽 CV · Thanh Lịch thực nhận
                         </div>
                       </div>
 
@@ -3080,7 +3187,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 pl-8 flex items-center justify-between gap-1 flex-wrap">
                       <span>* Gói TB 4.5M (+50K/1M trên 4M)</span>
                       <span className="text-purple-600 dark:text-purple-400 font-medium whitespace-nowrap">
-                        Chuẩn CV+: ≥{(minSelfComboRate * 100).toFixed(0)}% (~{minComboRequired} combo)
+                        Chuẩn 🪽 CV · Thanh Lịch: ≥{(minSelfComboRate * 100).toFixed(0)}% (~{minComboRequired} combo)
                       </span>
                     </div>
                   </div>

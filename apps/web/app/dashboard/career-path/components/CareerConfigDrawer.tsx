@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Slider, Switch, Segmented, InputNumber } from 'antd';
-import { Target, Sparkles, ShieldCheck, Flame, DollarSign, Crown, Coins, ShieldAlert } from 'lucide-react';
+import { Target, Sparkles, ShieldCheck, Flame, DollarSign, Crown, HandCoins, ShieldAlert } from 'lucide-react';
 import { type CareerProgressionConfig } from '@mos-lab/shared';
 import { calculateComboBonus } from '../career-path.constants';
 import { AdaptiveDrawer } from '../../../../components/ui/AdaptiveOverlay';
@@ -147,8 +147,7 @@ export function CareerConfigDrawer({
               {
                 label: (
                   <span className="flex items-center justify-center gap-1.5 py-1 text-xs font-bold">
-                    <span>🎯</span>
-                    <span>Ải 1: CV ➔ CV+ (Chuyên Viên Tự Chủ)</span>
+                    <span>Ải 1: CV ★ Dịu Dàng ➔ CV ★★ Thanh Lịch</span>
                   </span>
                 ),
                 value: 'CV_TO_CV_PLUS',
@@ -156,8 +155,7 @@ export function CareerConfigDrawer({
               {
                 label: (
                   <span className="flex items-center justify-center gap-1.5 py-1 text-xs font-bold">
-                    <Crown className="w-3.5 h-3.5 text-amber-500 fill-amber-500/20" />
-                    <span>Ải 2: CV+ ➔ CV++ (Đàn Chị)</span>
+                    <span>Ải 2: CV ★★ Thanh Lịch ➔ CV ★★★ Quí Phái</span>
                   </span>
                 ),
                 value: 'CV_PLUS_TO_CV_PLUS_PLUS',
@@ -540,7 +538,7 @@ export function CareerConfigDrawer({
               <div className="flex items-center justify-between border-b border-amber-200/50 dark:border-amber-800/40 pb-2">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
-                    <Coins className="w-3.5 h-3.5" />
+                    <HandCoins className="w-3.5 h-3.5" />
                   </div>
                   <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-100 m-0">
                     3. Lương Giờ, Tip &amp; Chế Tài 20% Combo
@@ -1193,7 +1191,7 @@ export function CareerConfigDrawer({
               <div className="flex items-center justify-between border-b border-amber-200/50 dark:border-amber-800/40 pb-2">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-6 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
-                    <Coins className="w-3.5 h-3.5" />
+                    <HandCoins className="w-3.5 h-3.5" />
                   </div>
                   <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-100 m-0">
                     3. Lương Giờ &amp; Tip Đàn Chị (CV++)

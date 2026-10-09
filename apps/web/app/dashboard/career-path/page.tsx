@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, Slider, message, Tooltip, Switch, Avatar } from 'antd';
-import { Settings, Zap, Award, Eye, Bug, Coins, ShieldCheck, Heart } from 'lucide-react';
+import { Settings, Zap, Award, Eye, Bug, HandCoins, ShieldCheck, Heart } from 'lucide-react';
 import type {
   CareerProgressionConfig,
   StaffCareerStatus,
   CareerStaffSummary,
   CareerRole,
   CareerPeriod,
+  BananaTransactionCategory,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
 import { useTheme } from '../../../context/ThemeContext';
@@ -17,6 +18,7 @@ import { BananaTransactionDrawer } from './components/BananaTransactionDrawer';
 import { StaffCareerSelector } from './components/StaffCareerSelector';
 import { RealStaffSimulationCard } from './components/RealStaffSimulationCard';
 import { CareerRealmEncyclopedia } from './components/CareerRealmEncyclopedia';
+import { IslandGameIcon, WingRoleLabel } from './components/IslandGameIcon';
 import { FALLBACK_CAREER_PROGRESSION_CONFIG, getCareerIslands, formatCareerRoleName } from './career-path.constants';
 
 export default function CareerPathPage() {
@@ -40,9 +42,9 @@ export default function CareerPathPage() {
   }, []);
 
   // State
-  const [activeIsland, setActiveIsland] = useState<'cv' | 'cv_plus' | 'cv_plus_plus' | 'fm' | 'cho' | 'boss' | 'cc'>(
-    'cv'
-  );
+  const [activeIsland, setActiveIsland] = useState<
+    'ktv' | 'cv' | 'cv_plus' | 'cv_plus_plus' | 'fm' | 'cho' | 'boss' | 'cc'
+  >('cv');
   const [config, setConfig] = useState<CareerProgressionConfig>(FALLBACK_CAREER_PROGRESSION_CONFIG);
   const [staffList, setStaffList] = useState<CareerStaffSummary[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
@@ -56,6 +58,7 @@ export default function CareerPathPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [isConfigDrawerOpen, setIsConfigDrawerOpen] = useState<boolean>(false);
   const [isBananaDrawerOpen, setIsBananaDrawerOpen] = useState<boolean>(false);
+  const [bananaDrawerCategory, setBananaDrawerCategory] = useState<BananaTransactionCategory>('ALL');
   const [savingConfig, setSavingConfig] = useState<boolean>(false);
 
   // Sliders for interactive simulation
@@ -215,6 +218,18 @@ export default function CareerPathPage() {
       }
     } catch (_) {}
   };
+
+  const openBananaDrawer = useCallback(
+    (staffId?: number | null, category: BananaTransactionCategory = 'ALL') => {
+      playSound('pop');
+      if (staffId && staffId !== selectedStaffId) {
+        setSelectedStaffId(staffId);
+      }
+      setBananaDrawerCategory(category);
+      setIsBananaDrawerOpen(true);
+    },
+    [selectedStaffId]
+  );
 
   // Confetti Canvas animation
   const triggerConfetti = () => {
@@ -581,7 +596,7 @@ export default function CareerPathPage() {
                 </Avatar>
               </div>
               <span className="absolute -bottom-1 -right-1 text-[9px] font-black bg-rose-500 text-white px-1.5 py-0.5 rounded-full border border-white dark:border-slate-900 font-mono whitespace-nowrap shadow-xs">
-                {formatCareerRoleName(selectedStaffStatus?.currentRole || 'CV')}
+                {formatCareerRoleName(selectedStaffStatus?.currentRole || 'CV', true)}
               </span>
             </div>
 
@@ -591,7 +606,7 @@ export default function CareerPathPage() {
                   {selectedStaffStatus?.staffName || 'Đang chọn nhân sự...'}
                 </span>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300">
-                  ✨ {formatCareerRoleName(selectedStaffStatus?.currentRole || 'CV')}
+                  ✨ {formatCareerRoleName(selectedStaffStatus?.currentRole || 'CV', true)}
                 </span>
               </div>
 
@@ -622,10 +637,7 @@ export default function CareerPathPage() {
 
               return (
                 <div
-                  onClick={() => {
-                    playSound('pop');
-                    setIsBananaDrawerOpen(true);
-                  }}
+                  onClick={() => openBananaDrawer(selectedStaffId, 'ALL')}
                   className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold font-mono shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer ${
                     isNegative
                       ? 'bg-rose-50 dark:bg-rose-500/15 border-rose-300 dark:border-rose-500/30 text-rose-700 dark:text-rose-300 hover:border-rose-400'
@@ -675,12 +687,18 @@ export default function CareerPathPage() {
                 <Tooltip key={item.id} title={item.tooltip} placement="bottom">
                   <button
                     type="button"
-                    onClick={() => scrollToGate(item.id)}
+                    onClick={() => {
+                      if (item.id === 6) {
+                        openBananaDrawer(selectedStaffId, 'CHECKIN');
+                      } else {
+                        scrollToGate(item.id);
+                      }
+                    }}
                     className={`inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full border text-[11px] sm:text-xs font-mono font-black tabular-nums shadow-2xs transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 select-none ${pillClass}`}
                   >
                     {item.iconType === 'eye' && <Eye className={`w-3.5 h-3.5 shrink-0 ${iconClass}`} />}
                     {item.iconType === 'bug' && <Bug className={`w-3.5 h-3.5 shrink-0 ${iconClass}`} />}
-                    {item.iconType === 'coins' && <Coins className={`w-3.5 h-3.5 shrink-0 ${iconClass}`} />}
+                    {item.iconType === 'coins' && <HandCoins className={`w-3.5 h-3.5 shrink-0 ${iconClass}`} />}
                     {item.iconType === 'shieldCheck' && <ShieldCheck className={`w-3.5 h-3.5 shrink-0 ${iconClass}`} />}
                     {item.iconType === 'heart' && (
                       <Heart className={`w-3.5 h-3.5 shrink-0 ${iconClass} fill-current/20`} />
@@ -704,7 +722,7 @@ export default function CareerPathPage() {
               🗺️ BẢN ĐỒ THẾ GIỚI THIÊN THẦN
             </div>
             <span className="text-[10px] text-pink-600 dark:text-pink-300 font-bold font-mono">
-              6 Vương Quốc · Vuốt ➔
+              7 Vương Quốc · Vuốt ➔
             </span>
           </div>
 
@@ -713,13 +731,13 @@ export default function CareerPathPage() {
             <span className="text-sm">✨</span>
           </h1>
           <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-snug mt-1">
-            Vượt ải Chuyên Viên Kỹ Thuật ➔ Chuyên Viên Tự Chủ ➔ Đàn Chị Sảnh ➔ Nhạc Trưởng Sàn ➔ Nữ Thần Hạnh Phúc ➔ Nữ
-            Hoàng Đồng Sáng Lập!
+            Vượt ải ⛑️ KTV Thử Việc ➔ CV · Dịu Dàng ➔ <WingRoleLabel text="🪽 CV" /> · Thanh Lịch ➔{' '}
+            <WingRoleLabel text="🪽 CV 🪽" /> · Quí Phái ➔ 🏰 FM Nữ Thần Sàn ➔ 💖 CHO Mẹ Thiên Thần ➔ 💎 BOSS Co-Owner!
           </p>
 
-          {/* 6 ISLANDS INTERACTIVE TRACK */}
-          <div className="mt-3.5 pt-3 border-t border-pink-200/60 dark:border-pink-500/20">
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 pt-0.5 -mx-2 px-2 scroll-smooth">
+          {/* 7 ISLANDS INTERACTIVE TRACK */}
+          <div className="mt-3 pt-1 border-t border-pink-200/60 dark:border-pink-500/20">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 pt-3.5 -mx-2 px-2 scroll-smooth">
               {islands.map((island) => {
                 const isActive = activeIsland === island.id;
                 return (
@@ -736,20 +754,22 @@ export default function CareerPathPage() {
                     }`}
                   >
                     <span
-                      className={`absolute -top-2 left-1/2 -translate-x-1/2 text-[8px] font-black px-1.5 py-0.2 rounded-full uppercase ${
+                      className={`absolute -top-2.5 left-1/2 -translate-x-1/2 text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase whitespace-nowrap shadow-xs z-10 ${
                         isActive
-                          ? 'bg-pink-500 text-white'
+                          ? 'bg-pink-500 text-white shadow-pink-500/30 ring-1 ring-white/50'
                           : 'bg-slate-300 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
                       }`}
                     >
                       {island.badge}
                     </span>
-                    <div className="text-2xl mt-1">{island.icon}</div>
-                    <div className="text-[10px] sm:text-[11px] font-black text-slate-900 dark:text-white mt-1">
-                      {island.name.split('·')[0]}
+                    <div className="mt-1 mb-1 flex justify-center">
+                      <IslandGameIcon islandId={island.id} size="md" isActive={isActive} />
+                    </div>
+                    <div className="text-[10px] sm:text-[11px] font-black text-slate-900 dark:text-white mt-0.5">
+                      <WingRoleLabel text={island.name.split('·')[0]?.trim()} />
                     </div>
                     <div className="text-[8px] sm:text-[9px] text-pink-700 dark:text-pink-300 font-bold truncate">
-                      {island.name.split('·')[1]}
+                      {island.name.split('·')[1]?.trim()}
                     </div>
                     <div className="text-[7.5px] sm:text-[8px] text-slate-400 font-mono mt-0.5 truncate">
                       {island.sub}
@@ -776,6 +796,7 @@ export default function CareerPathPage() {
           onSetRole={handleSetRole}
           onDemote={handleDemote}
           actionLoading={actionLoading}
+          onOpenBananaDrawer={(staffId, cat) => openBananaDrawer(staffId, cat)}
         />
 
         {/* REAL STAFF SIMULATION CARD (FULL-WIDTH CENTERPIECE) */}
@@ -799,6 +820,7 @@ export default function CareerPathPage() {
           loadingAction={actionLoading}
           simulationTarget={simulationTarget}
           onSimulationTargetChange={handleSimulationTargetChange}
+          onOpenBananaDrawer={(cat) => openBananaDrawer(selectedStaffId, cat)}
         />
 
         {/* ACTIVE REALM LORE & SKILL ENCYCLOPEDIA */}
@@ -870,6 +892,8 @@ export default function CareerPathPage() {
         staffId={selectedStaffId}
         staffName={selectedStaffStatus?.staffName}
         avatarUrl={selectedStaffStatus?.avatarUrl}
+        initialCategory={bananaDrawerCategory}
+        period={selectedPeriod}
       />
     </div>
   );

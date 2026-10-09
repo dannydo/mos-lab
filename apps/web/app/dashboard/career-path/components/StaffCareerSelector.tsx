@@ -9,7 +9,7 @@ import {
   UserCheck,
   Eye,
   Bug,
-  Coins,
+  HandCoins,
   ShieldCheck,
   Heart,
   Banana,
@@ -23,7 +23,8 @@ import {
   X,
 } from 'lucide-react';
 import { StatusTag, DataTable } from '../../../../components/ui';
-import type { CareerStaffSummary, CareerRole, CareerPeriod } from '@mos-lab/shared';
+import { WingRoleLabel } from './IslandGameIcon';
+import type { CareerStaffSummary, CareerRole, CareerPeriod, BananaTransactionCategory } from '@mos-lab/shared';
 
 interface StaffCareerSelectorProps {
   staffList: CareerStaffSummary[];
@@ -39,13 +40,15 @@ interface StaffCareerSelectorProps {
   onSetRole?: (staffId: number, newRole: CareerRole) => Promise<void>;
   onDemote?: (staffId: number, targetRole: CareerRole) => Promise<void>;
   actionLoading?: boolean;
+  onOpenBananaDrawer?: (staffId: number, category: BananaTransactionCategory) => void;
 }
 
 const ROLE_TABS = [
-  { key: 'ALL', label: 'Tất cả', fullLabel: 'Tất cả Chuyên Viên' },
-  { key: 'CV', label: 'CV', fullLabel: 'Chuyên Viên (CV)' },
-  { key: 'CV_PLUS', label: 'CV+', fullLabel: 'Chuyên Viên Tự Chủ (CV+)' },
-  { key: 'CV_PLUS_PLUS', label: 'CV++', fullLabel: 'Đàn Chị Sảnh (CV++)' },
+  { key: 'ALL', label: 'Tất cả', fullLabel: 'Tất cả Chuyên Viên & KTV' },
+  { key: 'KTV', label: 'KTV', fullLabel: 'KTV Thử Việc (Tập sự & Sát hạch)' },
+  { key: 'CV', label: 'CV · Dịu Dàng', fullLabel: 'Chuyên Viên Dịu Dàng' },
+  { key: 'CV_PLUS', label: '🪽 CV · Thanh Lịch', fullLabel: 'Chuyên Viên Thanh Lịch' },
+  { key: 'CV_PLUS_PLUS', label: '🪽 CV 🪽 · Quí Phái', fullLabel: 'Chuyên Viên Quí Phái' },
 ];
 
 const PERIOD_TABS: { key: CareerPeriod; label: string; fullLabel: string }[] = [
@@ -77,6 +80,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
   onSetRole,
   onDemote,
   actionLoading = false,
+  onOpenBananaDrawer,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchExpanded, setSearchExpanded] = useState(false);
@@ -92,10 +96,10 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
 
   const filteredStaff = useMemo(() => {
     return staffList.filter((s) => {
-      // Bắt buộc chỉ lọc lấy CV (Chuyên viên) theo danh sách báo cáo CV
+      // Bắt buộc chỉ lọc lấy CV (Chuyên viên) & KTV theo danh sách báo cáo
       const isCv =
-        ['lt', 'technician', 'cv'].includes((s.role || '').toLowerCase()) ||
-        ['CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole);
+        ['lt', 'technician', 'cv', 'ktv'].includes((s.role || '').toLowerCase()) ||
+        ['KTV', 'CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole);
       if (!isCv) return false;
 
       const matchSearch =
@@ -105,6 +109,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
 
       if (!matchSearch) return false;
       if (currentFilter === 'ALL') return true;
+      if (currentFilter === 'KTV') return s.careerRole === 'KTV';
       if (currentFilter === 'CV') return s.careerRole === 'CV';
       if (currentFilter === 'CV_PLUS') return s.careerRole === 'CV_PLUS';
       if (currentFilter === 'CV_PLUS_PLUS') return s.careerRole === 'CV_PLUS_PLUS';
@@ -240,28 +245,36 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
 
   const getRoleBadge = (role: CareerRole, compact = false) => {
     switch (role) {
+      case 'KTV':
+        return (
+          <StatusTag
+            status="default"
+            label={compact ? 'KTV' : 'KTV Thử Việc'}
+            className="tabular-nums font-semibold m-0 text-[10px] px-1.5 py-0 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800"
+          />
+        );
       case 'CV':
         return (
           <StatusTag
             status="processing"
-            label={compact ? 'CV' : 'CV · Chuyên Viên'}
-            className="tabular-nums font-bold m-0 text-[10px] px-1.5 py-0"
+            label={compact ? 'CV' : 'CV · Dịu Dàng'}
+            className="tabular-nums font-bold m-0 text-[10px] px-1.5 py-0 text-pink-600 dark:text-pink-400 border-pink-200 dark:border-pink-800 bg-pink-50 dark:bg-pink-950/40"
           />
         );
       case 'CV_PLUS':
         return (
           <StatusTag
             status="purple"
-            label={compact ? 'CV+' : 'CV+ · Tự Chủ'}
-            className="tabular-nums font-bold m-0 text-[10px] px-1.5 py-0"
+            label={<WingRoleLabel text={compact ? '🪽 CV' : '🪽 CV · Thanh Lịch'} />}
+            className="tabular-nums font-bold m-0 text-[10px] px-1.5 py-0 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40"
           />
         );
       case 'CV_PLUS_PLUS':
         return (
           <StatusTag
-            status="purple"
-            label={compact ? 'CV++' : 'CV++ · Đàn Chị'}
-            className="tabular-nums font-bold m-0 text-[10px] px-1.5 py-0"
+            status="gold"
+            label={<WingRoleLabel text={compact ? '🪽 CV 🪽' : '🪽 CV 🪽 · Quí Phái'} />}
+            className="tabular-nums font-bold m-0 text-[10px] px-1.5 py-0 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40"
           />
         );
       case 'MASTER_TECH':
@@ -319,10 +332,22 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
         menu={{
           items: [
             {
+              key: 'KTV',
+              label: (
+                <span className="font-semibold text-xs flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                  <span>⛑️ KTV Thử Việc</span>
+                  {staff.careerRole === 'KTV' && (
+                    <span className="text-[10px] text-emerald-500 font-bold">✓ Hiện tại</span>
+                  )}
+                </span>
+              ),
+              disabled: staff.careerRole === 'KTV',
+            },
+            {
               key: 'CV',
               label: (
-                <span className="font-semibold text-xs flex items-center gap-1.5">
-                  <span>✨ Chuyên Viên (CV)</span>
+                <span className="font-semibold text-xs flex items-center gap-1.5 text-pink-600 dark:text-pink-400">
+                  <span>CV · Dịu Dàng</span>
                   {staff.careerRole === 'CV' && (
                     <span className="text-[10px] text-emerald-500 font-bold">✓ Hiện tại</span>
                   )}
@@ -333,9 +358,9 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
             {
               key: 'CV_PLUS',
               label: (
-                <span className="font-semibold text-xs flex items-center gap-1.5 text-purple-600 dark:text-purple-400">
+                <span className="font-semibold text-xs flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Chuyên Viên Tự Chủ (CV+)</span>
+                  <span>🪽 CV · Thanh Lịch</span>
                   {staff.careerRole === 'CV_PLUS' && (
                     <span className="text-[10px] text-emerald-500 font-bold">✓ Hiện tại</span>
                   )}
@@ -348,7 +373,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
               label: (
                 <span className="font-semibold text-xs flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Đàn Chị Sảnh (CV++)</span>
+                  <span>🪽 CV 🪽 · Quí Phái</span>
                   {staff.careerRole === 'CV_PLUS_PLUS' && (
                     <span className="text-[10px] text-emerald-500 font-bold">✓ Hiện tại</span>
                   )}
@@ -513,7 +538,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
       title: (
         <Tooltip title="Tip: Tỷ lệ khách tip ≥ 20K trong tháng hoàn tất gần nhất (Chuẩn vượt 10% TB chi nhánh)">
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-            <Coins className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+            <HandCoins className="w-4 h-4 text-slate-600 dark:text-slate-300" />
           </span>
         </Tooltip>
       ),
@@ -623,18 +648,23 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
       width: 80,
       align: 'center',
       sorter: (a, b) => (a.bananaCount || 0) - (b.bananaCount || 0),
-      render: (bananaCount: number) => {
+      render: (bananaCount: number, staff: CareerStaffSummary) => {
         const count = bananaCount || 0;
         const status = getBananaCountStatus(count);
         return (
-          <Tooltip title={`${count}/20 chuối yêu thương tháng hoàn tất gần nhất · ${getStatusLabel(status)}`}>
-            <span
-              className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${getStatusBadgeClass(
+          <Tooltip title={`${count}/20 chuối Check-in tính điểm · ${getStatusLabel(status)} (Nhấn để xem danh sách)`}>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenBananaDrawer?.(staff.id, 'CHECKIN');
+              }}
+              className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border hover:scale-105 active:scale-95 transition-transform cursor-pointer ${getStatusBadgeClass(
                 status
               )}`}
             >
               {count}
-            </span>
+            </button>
           </Tooltip>
         );
       },
@@ -655,14 +685,21 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
         const balance = getBananaBalance(staff);
         const status = getBananaBalanceStatus(balance);
         return (
-          <Tooltip title={`Số dư ví: ${balance.toLocaleString('vi-VN')} 🍌 · ${getStatusLabel(status)}`}>
-            <span
-              className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-black tabular-nums border shadow-2xs ${getStatusBadgeClass(
+          <Tooltip
+            title={`Số dư ví: ${balance.toLocaleString('vi-VN')} 🍌 · ${getStatusLabel(status)} (Nhấn để xem sao kê)`}
+          >
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenBananaDrawer?.(staff.id, 'ALL');
+              }}
+              className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-black tabular-nums border shadow-2xs hover:scale-105 active:scale-95 transition-transform cursor-pointer ${getStatusBadgeClass(
                 status
               )}`}
             >
               {balance.toLocaleString('vi-VN')}
-            </span>
+            </button>
           </Tooltip>
         );
       },
@@ -710,7 +747,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
                         : 'bg-slate-100/90 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 hover:bg-slate-200/90 dark:hover:bg-slate-700/80'
                     }`}
                   >
-                    {tab.label}
+                    <WingRoleLabel text={tab.label} />
                   </button>
                 </Tooltip>
               );
@@ -943,7 +980,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
                         getTipStatus(staff)
                       )}`}
                     >
-                      <Coins className="w-2.5 h-2.5" />
+                      <HandCoins className="w-2.5 h-2.5" />
                       <span>{tipPct}%</span>
                     </div>
                     <div
@@ -962,26 +999,38 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
                       <Heart className="w-2.5 h-2.5" />
                       <span>{hiPct}%</span>
                     </div>
-                    <div
-                      className={`flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-full border tabular-nums font-bold ${getStatusBadgeClass(
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenBananaDrawer?.(staff.id, 'CHECKIN');
+                      }}
+                      className={`flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-full border tabular-nums font-bold hover:scale-105 active:scale-95 transition-transform cursor-pointer ${getStatusBadgeClass(
                         getBananaCountStatus(staff.bananaCount || 0)
                       )}`}
+                      title="Bấm để xem danh sách Chuối Check-in"
                     >
                       <Banana className="w-2.5 h-2.5" />
                       <span>{staff.bananaCount || 0}</span>
-                    </div>
+                    </button>
                   </div>
 
                   <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800/80 text-[10px]">
                     <span className="text-slate-400">Ví chuối:</span>
-                    <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border font-bold tabular-nums ${getStatusBadgeClass(
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenBananaDrawer?.(staff.id, 'ALL');
+                      }}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border font-bold tabular-nums hover:scale-105 active:scale-95 transition-transform cursor-pointer ${getStatusBadgeClass(
                         getBananaBalanceStatus(balance)
                       )}`}
+                      title="Bấm để xem sao kê ví chuối"
                     >
                       <Wallet className="w-2.5 h-2.5" />
                       <span>{balance.toLocaleString('vi-VN')}</span>
-                    </span>
+                    </button>
                   </div>
                 </div>
               );
@@ -1003,7 +1052,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
               {selectedStaff.displayName.slice(0, 1).toUpperCase()}
             </Avatar>
             <span className="font-bold text-slate-800 dark:text-slate-100">{selectedStaff.displayName}</span>
-            {getRoleBadge(selectedStaff.careerRole)}
+            {getRoleBadge(selectedStaff.careerRole, true)}
             {selectedStaff.branchName && (
               <span className="text-[11px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium border border-slate-200 dark:border-slate-700">
                 {selectedStaff.branchName}
@@ -1041,20 +1090,38 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
 
           <div className="flex items-center gap-2 flex-wrap">
             {/* Action buttons for manual promotion and demotion */}
+            {selectedStaff.careerRole === 'KTV' && onSetRole && (
+              <Popconfirm
+                title="Đưa nhân sự này lên CV · Dịu Dàng?"
+                description={`Xác nhận thăng cấp cho ${selectedStaff.displayName} lên CV · Dịu Dàng (khi được FM / Đàn Chị bảo trợ & hoàn thành sát hạch).`}
+                okText="Lên CV · Dịu Dàng"
+                cancelText="Hủy"
+                onConfirm={() => onSetRole(selectedStaff.id, 'CV')}
+              >
+                <button
+                  disabled={actionLoading}
+                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-pink-600 hover:bg-pink-700 text-white flex items-center gap-1 shadow-xs transition-all active:scale-95 disabled:opacity-50"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Lên CV · Dịu Dàng</span>
+                </button>
+              </Popconfirm>
+            )}
+
             {selectedStaff.careerRole === 'CV' && onSetRole && (
               <Popconfirm
-                title="Đưa nhân sự này lên CV+?"
-                description={`Xác nhận thăng cấp thủ công cho ${selectedStaff.displayName} lên CV+ (Chuyên Viên Tự Chủ).`}
-                okText="Lên CV+"
+                title="Đưa nhân sự này lên 🪽 CV · Thanh Lịch?"
+                description={`Xác nhận thăng cấp thủ công cho ${selectedStaff.displayName} lên 🪽 CV · Thanh Lịch.`}
+                okText="Lên 🪽 CV · Thanh Lịch"
                 cancelText="Hủy"
                 onConfirm={() => onSetRole(selectedStaff.id, 'CV_PLUS')}
               >
                 <button
                   disabled={actionLoading}
-                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-1 shadow-xs transition-all active:scale-95 disabled:opacity-50"
+                  className="px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1 shadow-xs transition-all active:scale-95 disabled:opacity-50"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>⚡ Lên CV+</span>
+                  <span>Lên 🪽 CV · Thanh Lịch</span>
                 </button>
               </Popconfirm>
             )}
@@ -1063,26 +1130,26 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
               <>
                 {onSetRole && (
                   <Popconfirm
-                    title="Đưa nhân sự này lên CV++?"
-                    description={`Xác nhận thăng cấp thủ công cho ${selectedStaff.displayName} lên CV++ (Đàn Chị Sảnh).`}
-                    okText="Lên CV++"
+                    title="Đưa nhân sự này lên 🪽 CV 🪽 · Quí Phái?"
+                    description={`Xác nhận thăng cấp thủ công cho ${selectedStaff.displayName} lên 🪽 CV 🪽 · Quí Phái.`}
+                    okText="Lên 🪽 CV 🪽 · Quí Phái"
                     cancelText="Hủy"
                     onConfirm={() => onSetRole(selectedStaff.id, 'CV_PLUS_PLUS')}
                   >
                     <button
                       disabled={actionLoading}
-                      className="px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-1 shadow-xs transition-all active:scale-95 disabled:opacity-50"
+                      className="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white flex items-center gap-1 shadow-xs transition-all active:scale-95 disabled:opacity-50"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
-                      <span>⚡ Lên CV++</span>
+                      <span>Lên 🪽 CV 🪽 · Quí Phái</span>
                     </button>
                   </Popconfirm>
                 )}
                 {onDemote && (
                   <Popconfirm
-                    title="Hạ cấp nhân sự về CV?"
-                    description={`Chuyển cấp bậc của ${selectedStaff.displayName} về CV (Chuyên Viên).`}
-                    okText="Hạ về CV"
+                    title="Hạ cấp nhân sự về CV · Dịu Dàng?"
+                    description={`Chuyển cấp bậc của ${selectedStaff.displayName} về CV · Dịu Dàng.`}
+                    okText="Hạ về CV · Dịu Dàng"
                     cancelText="Hủy"
                     okType="danger"
                     onConfirm={() => onDemote(selectedStaff.id, 'CV')}
@@ -1092,7 +1159,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
                       className="px-2.5 py-1 rounded-lg text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50"
                     >
                       <ArrowDownCircle className="w-3.5 h-3.5" />
-                      <span>🔻 Hạ về CV</span>
+                      <span>🔻 Hạ về CV · Dịu Dàng</span>
                     </button>
                   </Popconfirm>
                 )}
@@ -1101,9 +1168,9 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
 
             {selectedStaff.careerRole === 'CV_PLUS_PLUS' && onDemote && (
               <Popconfirm
-                title="Hạ cấp nhân sự về CV+?"
-                description={`Chuyển cấp bậc của ${selectedStaff.displayName} về CV+ (Chuyên Viên Tự Chủ).`}
-                okText="Hạ về CV+"
+                title="Hạ cấp nhân sự về 🪽 CV · Thanh Lịch?"
+                description={`Chuyển cấp bậc của ${selectedStaff.displayName} về 🪽 CV · Thanh Lịch.`}
+                okText="Hạ về 🪽 CV · Thanh Lịch"
                 cancelText="Hủy"
                 okType="danger"
                 onConfirm={() => onDemote(selectedStaff.id, 'CV_PLUS')}
@@ -1113,7 +1180,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
                   className="px-2.5 py-1 rounded-lg text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50"
                 >
                   <ArrowDownCircle className="w-3.5 h-3.5" />
-                  <span>🔻 Hạ về CV+</span>
+                  <span>🔻 Hạ về 🪽 CV · Thanh Lịch</span>
                 </button>
               </Popconfirm>
             )}

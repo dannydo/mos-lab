@@ -322,7 +322,7 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
    */
   fastify.get<{
     Params: { staffId: string };
-    Querystring: { category?: string; timeRange?: string; search?: string; limit?: string };
+    Querystring: { category?: string; timeRange?: string; period?: string; search?: string; limit?: string };
   }>(
     '/career/staff/:staffId/banana-transactions',
     {
@@ -338,6 +338,7 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
         const result = await CareerProgressionService.getBananaTransactions(fastify, staffId, {
           category: request.query?.category,
           timeRange: request.query?.timeRange,
+          period: request.query?.period as any,
           search: request.query?.search,
           limit: request.query?.limit ? Number(request.query.limit) : undefined,
         });

@@ -1,4 +1,4 @@
-export type CareerRole = 'CV' | 'CV_PLUS' | 'CV_PLUS_PLUS' | 'FM' | 'CHO' | 'BOSS' | 'MASTER_TECH' | 'CC';
+export type CareerRole = 'KTV' | 'CV' | 'CV_PLUS' | 'CV_PLUS_PLUS' | 'FM' | 'CHO' | 'BOSS' | 'MASTER_TECH' | 'CC';
 
 export type CareerPeriod = 'last_30_days' | 'this_month' | 'last_month' | 'last_3_months';
 
@@ -605,7 +605,8 @@ export function calculateComboBonus(
 /**
  * Phân loại nguồn giao dịch Chuối
  */
-export type BananaTransactionCategory = 'ALL' | 'GIVE_AWAY_RECEIVED' | 'GIVE_AWAY_SENT' | 'SHIFT' | 'REWARD' | 'OTHER';
+export type BananaTransactionCategory =
+  'ALL' | 'CHECKIN' | 'GIVE_AWAY_RECEIVED' | 'GIVE_AWAY_SENT' | 'SHIFT' | 'REWARD' | 'OTHER';
 
 /**
  * Chi tiết một giao dịch Chuối
@@ -626,6 +627,8 @@ export interface BananaTransactionItem {
     otherStaffName: string;
     otherAvatarUrl?: string;
     message?: string | null;
+    isCheckin?: boolean;
+    ruleType?: string;
   } | null;
 }
 
@@ -638,6 +641,8 @@ export interface BananaTransactionResponse {
   totalSentGiveAway: number;
   countReceivedGiveAway: number;
   countSentGiveAway: number;
+  countCheckin?: number;
+  totalCheckinAmount?: number;
   transactions: BananaTransactionItem[];
 }
 

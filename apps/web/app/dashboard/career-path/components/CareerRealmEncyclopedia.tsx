@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Zap, Award } from 'lucide-react';
+import { IslandGameIcon } from './IslandGameIcon';
 
 export interface CareerIslandData {
   id: string;
@@ -32,9 +33,9 @@ export const CareerRealmEncyclopedia: React.FC<CareerRealmEncyclopediaProps> = (
           <h2 className="text-base font-black text-slate-900 dark:text-white mt-1">{currentIslandData.title}</h2>
           <p className="text-xs text-slate-600 dark:text-slate-300 italic">&ldquo;{currentIslandData.desc}&rdquo;</p>
         </div>
-        <span className="text-3xl p-2.5 rounded-2xl bg-pink-50 dark:bg-slate-800 border border-pink-100 dark:border-slate-700 shrink-0 self-start sm:self-auto">
-          {currentIslandData.icon}
-        </span>
+        <div className="shrink-0 self-start sm:self-auto">
+          <IslandGameIcon islandId={currentIslandData.id} size="lg" isActive={true} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-slate-100 dark:border-slate-800">

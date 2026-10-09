@@ -120,7 +120,7 @@ export const careerApi = {
     },
     getBananaTransactions: async (
       staffId: number,
-      params?: { category?: string; timeRange?: string; search?: string; limit?: number },
+      params?: { category?: string; timeRange?: string; period?: string; search?: string; limit?: number },
       options?: ApiRequestOptions
     ): Promise<BananaTransactionResponse> => {
       const res = await dedupeApiGet<{ success: boolean; data: BananaTransactionResponse }>(
