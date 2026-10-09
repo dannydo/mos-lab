@@ -192,7 +192,7 @@ export interface CvPaystubRecord extends HolidayPayBreakdown {
   expectedWorkDays?: number;
   parkingCalculation?: string;
   otherAllowances?: number;
-  otherAllowancesDetails?: Array<{ description: string; amount: number }>;
+  otherAllowancesDetails?: CvOtherAllowanceItem[];
   previousMonthAddition?: number;
   penalties?: number;
   welfareFund?: number;
@@ -201,6 +201,23 @@ export interface CvPaystubRecord extends HolidayPayBreakdown {
   guaranteedIncome?: number;
   dayOffAvailable?: number;
   congratulationMessage?: string;
+}
+
+export interface CvOtherAllowanceItem {
+  id?: number | string;
+  description: string;
+  amount: number; // có thể âm hoặc dương
+  note?: string | null;
+  source?: 'mos' | 'legacy';
+  createdAt?: string;
+}
+
+export interface CreateCvAllowanceDto {
+  staffId: number;
+  month: string; // YYYY-MM
+  title: string;
+  amount: number; // có thể âm hoặc dương
+  note?: string;
 }
 
 export interface CvPaystubResponse {

@@ -3647,3 +3647,18 @@ model CrmStaffCvPlusRewardSnapshot {
   @@index([month])
   @@map("crm_staff_cv_plus_reward_snapshots")
 }
+
+model CrmCvPayrollAllowance {
+  id        Int      @id @default(autoincrement())
+  staffId   Int      @map("staff_id")
+  month     String   @db.VarChar(7) // YYYY-MM
+  title     String   @db.VarChar(255)
+  amount    Int      // Số tiền: có thể âm hoặc dương (e.g. +200000 hoặc -150000)
+  note      String?  @db.Text
+  createdBy Int?     @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([staffId, month], map: "crm_cv_payroll_allowance_staff_month_idx")
+  @@map("crm_cv_payroll_allowances")
+}

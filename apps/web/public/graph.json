@@ -2698,6 +2698,24 @@
       }
     },
     {
+      "id": "prisma:crm:CrmCvPayrollAllowance",
+      "type": "PrismaModel",
+      "label": "crm.CrmCvPayrollAllowance",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmCvPayrollAllowance",
+        "tableName": "crm_cv_payroll_allowances",
+        "fieldCount": 9,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
       "id": "prisma:legacy:client_store_language",
       "type": "PrismaModel",
       "label": "legacy.client_store_language",
@@ -9782,7 +9800,7 @@
         "path": "/api/kpi/cv-seniority-config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 34
+        "line": 35
       }
     },
     {
@@ -9796,7 +9814,7 @@
         "path": "/api/kpi/cv-seniority-config",
         "module": "kpi",
         "handler": "preHandler",
-        "line": 56
+        "line": 57
       }
     },
     {
@@ -9810,7 +9828,7 @@
         "path": "/api/kpi/cv-paystub",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 87
+        "line": 88
       }
     },
     {
@@ -9824,7 +9842,49 @@
         "path": "/api/kpi/cv-paystub/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 783
+        "line": 813
+      }
+    },
+    {
+      "id": "route:POST:/api/kpi/cv-allowances",
+      "type": "FastifyRoute",
+      "label": "POST /api/kpi/cv-allowances",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/kpi/cv-allowances",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 994
+      }
+    },
+    {
+      "id": "route:DELETE:/api/kpi/cv-allowances/:id",
+      "type": "FastifyRoute",
+      "label": "DELETE /api/kpi/cv-allowances/:id",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
+      "metadata": {
+        "method": "DELETE",
+        "path": "/api/kpi/cv-allowances/:id",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 1040
+      }
+    },
+    {
+      "id": "route:GET:/api/kpi/cv-allowances",
+      "type": "FastifyRoute",
+      "label": "GET /api/kpi/cv-allowances",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/kpi/cv-allowances",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 1064
       }
     },
     {
@@ -22242,6 +22302,30 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:CvOtherAllowanceItem",
+      "type": "SharedType",
+      "label": "CvOtherAllowanceItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cv.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CvOtherAllowanceItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreateCvAllowanceDto",
+      "type": "SharedType",
+      "label": "CreateCvAllowanceDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cv.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreateCvAllowanceDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:CvPaystubResponse",
       "type": "SharedType",
       "label": "CvPaystubResponse",
@@ -29478,8 +29562,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13483987,
-        "lineCount": 293322,
+        "sizeBytes": 13533601,
+        "lineCount": 294613,
         "ext": ".ts"
       }
     },
@@ -31662,8 +31746,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 40938,
-        "lineCount": 963,
+        "sizeBytes": 45421,
+        "lineCount": 1097,
         "ext": ".ts"
       }
     },
@@ -37187,8 +37271,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 105054,
-        "lineCount": 2178,
+        "sizeBytes": 115640,
+        "lineCount": 2420,
         "ext": ".tsx"
       }
     },
@@ -40567,8 +40651,8 @@
       "filePath": "packages/shared/src/types/cv.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 9094,
-        "lineCount": 375,
+        "sizeBytes": 9459,
+        "lineCount": 392,
         "ext": ".ts"
       }
     },
@@ -42035,6 +42119,13 @@
     {
       "id": "edge:prisma:crm:CrmStaffCvPlusRewardSnapshot:ws:apps/api",
       "source": "prisma:crm:CrmStaffCvPlusRewardSnapshot",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmCvPayrollAllowance:ws:apps/api",
+      "source": "prisma:crm:CrmCvPayrollAllowance",
       "target": "ws:apps/api",
       "type": "EXPORTS",
       "label": "DEFINED_IN"
@@ -45570,6 +45661,27 @@
     {
       "id": "edge:route:GET:/api/kpi/cv-paystub/work-logs:ws:apps/api",
       "source": "route:GET:/api/kpi/cv-paystub/work-logs",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/kpi/cv-allowances:ws:apps/api",
+      "source": "route:POST:/api/kpi/cv-allowances",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:DELETE:/api/kpi/cv-allowances/:id:ws:apps/api",
+      "source": "route:DELETE:/api/kpi/cv-allowances/:id",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/kpi/cv-allowances:ws:apps/api",
+      "source": "route:GET:/api/kpi/cv-allowances",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -52528,6 +52640,20 @@
     {
       "id": "edge:type:@mos-lab/shared:CvPaystubRecord:ws:packages/shared",
       "source": "type:@mos-lab/shared:CvPaystubRecord",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CvOtherAllowanceItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CvOtherAllowanceItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CreateCvAllowanceDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CreateCvAllowanceDto",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -63355,6 +63481,13 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
+      "id": "edge:file:apps/api/src/modules/kpi/routes/cv-paystub.routes.ts:prisma:crm:CrmCvPayrollAllowance",
+      "source": "file:apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
+      "target": "prisma:crm:CrmCvPayrollAllowance",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/kpi/routes/cv-speed.routes.ts:prisma:crm:CrmLashTypeBenchmark",
       "source": "file:apps/api/src/modules/kpi/routes/cv-speed.routes.ts",
       "target": "prisma:crm:CrmLashTypeBenchmark",
@@ -69928,6 +70061,27 @@
       "label": "CALLS kpi.getCcXoayReport"
     },
     {
+      "id": "edge:page:/dashboard/cc:route:POST:/api/kpi/cv-allowances",
+      "source": "page:/dashboard/cc",
+      "target": "route:POST:/api/kpi/cv-allowances",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
+      "id": "edge:page:/dashboard/cc:route:DELETE:/api/kpi/cv-allowances/:id",
+      "source": "page:/dashboard/cc",
+      "target": "route:DELETE:/api/kpi/cv-allowances/:id",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
+      "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/cv-allowances",
+      "source": "page:/dashboard/cc",
+      "target": "route:GET:/api/kpi/cv-allowances",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
       "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/cv-tip/leaderboard",
       "source": "page:/dashboard/cc",
       "target": "route:GET:/api/kpi/cv-tip/leaderboard",
@@ -74765,6 +74919,27 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/kpi/cv-allowances",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/kpi/cv-allowances",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:DELETE:/api/kpi/cv-allowances/:id",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:DELETE:/api/kpi/cv-allowances/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/cv-allowances",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/kpi/cv-allowances",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/cv-tip/leaderboard",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/kpi/cv-tip/leaderboard",
@@ -79374,6 +79549,27 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/cv-paystub/work-logs",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/kpi/cv-paystub/work-logs",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/kpi/cv-allowances",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/kpi/cv-allowances",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:DELETE:/api/kpi/cv-allowances/:id",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:DELETE:/api/kpi/cv-allowances/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/cv-allowances",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/kpi/cv-allowances",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -87043,6 +87239,27 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/kpi/cv-allowances",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/kpi/cv-allowances",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:DELETE:/api/kpi/cv-allowances/:id",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:DELETE:/api/kpi/cv-allowances/:id",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/cv-allowances",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/kpi/cv-allowances",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/cv-tip/leaderboard",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/kpi/cv-tip/leaderboard",
@@ -88311,31 +88528,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3140,
-    "totalEdges": 6758,
+    "totalNodes": 3146,
+    "totalEdges": 6777,
     "nodeTypeCounts": {
       "Workspace": 3,
-      "PrismaModel": 163,
-      "FastifyRoute": 659,
+      "PrismaModel": 164,
+      "FastifyRoute": 662,
       "Component": 58,
-      "SharedType": 1136,
+      "SharedType": 1138,
       "DesignToken": 12,
       "UIComponent": 217,
       "File": 892
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1311,
-      "HANDLES_ROUTE": 659,
+      "EXPORTS": 1314,
+      "HANDLES_ROUTE": 662,
       "RENDERS": 275,
       "USES_TOKEN": 219,
       "IMPORTS": 472,
-      "QUERIES_MODEL": 383,
-      "API_CALL": 3439
+      "QUERIES_MODEL": 384,
+      "API_CALL": 3451
     },
-    "fastifyRouteCount": 664,
-    "prismaModelCount": 163,
+    "fastifyRouteCount": 667,
+    "prismaModelCount": 164,
     "nextPageCount": 58,
-    "sharedTypeCount": 1136
+    "sharedTypeCount": 1138
   },
   "routes": [
     {
@@ -91769,6 +91986,27 @@
       "moduleName": "kpi"
     },
     {
+      "method": "POST",
+      "path": "/api/kpi/cv-allowances",
+      "filePath": "apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/kpi/cv-allowances/:id",
+      "filePath": "apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "GET",
+      "path": "/api/kpi/cv-allowances",
+      "filePath": "apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
       "method": "GET",
       "path": "/api/kpi/cv-tip/leaderboard",
       "filePath": "apps/api/src/modules/kpi/routes/cv-tip.routes.ts",
@@ -94316,6 +94554,15 @@
       "modelName": "CrmStaffCvPlusRewardSnapshot",
       "tableName": "crm_staff_cv_plus_reward_snapshots",
       "fieldCount": 25,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmCvPayrollAllowance",
+      "tableName": "crm_cv_payroll_allowances",
+      "fieldCount": 9,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []

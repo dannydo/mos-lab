@@ -19,6 +19,8 @@ import {
   InputNumber,
   message,
   Tooltip,
+  Radio,
+  Popconfirm,
 } from 'antd';
 import {
   WalletOutlined,
@@ -427,6 +429,14 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
   const [selectedRecord, setSelectedRecord] = useState<CvPaystubRecord | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
+  // Allowance Management State (Phụ cấp khác mOS)
+  const [isAllowanceModalOpen, setIsAllowanceModalOpen] = useState(false);
+  const [allowanceFormType, setAllowanceFormType] = useState<'plus' | 'minus'>('plus');
+  const [allowanceTitle, setAllowanceTitle] = useState('');
+  const [allowanceAmount, setAllowanceAmount] = useState<number | null>(null);
+  const [allowanceNote, setAllowanceNote] = useState('');
+  const [isSubmittingAllowance, setIsSubmittingAllowance] = useState(false);
+
   // Daily Work Log Detail Modal State
   const [workLogModalOpen, setWorkLogModalOpen] = useState(false);
   const [workLogLoading, setWorkLogLoading] = useState(false);
@@ -453,7 +463,12 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
       ]);
 
       if (res) {
-        setPaystubData(res.data || []);
+        const records = res.data || [];
+        setPaystubData(records);
+        setSelectedRecord((prev) => {
+          if (!prev) return null;
+          return records.find((r) => r.staffId === prev.staffId) || prev;
+        });
         setSummary({
           totalHourlyWage: res.summary?.totalHourlyWage || 0,
           totalCvXoayBonus: res.summary?.totalCvXoayBonus || 0,
@@ -487,6 +502,69 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
       setLoading(false);
     }
   }, [dateRange, previousPeriod, selectedStore]);
+
+  const handleAddAllowance = async () => {
+    if (!selectedRecord) return;
+    if (!allowanceTitle.trim()) {
+      message.error('Vui lòng nhập tên hoặc nội dung phụ cấp.');
+      return;
+    }
+    if (!allowanceAmount || allowanceAmount <= 0) {
+      message.error('Vui lòng nhập số tiền lớn hơn 0.');
+      return;
+    }
+
+    const monthStr = (dateRange?.[0] || dayjs()).format('YYYY-MM');
+    const finalAmount = allowanceFormType === 'minus' ? -Math.abs(allowanceAmount) : Math.abs(allowanceAmount);
+
+    setIsSubmittingAllowance(true);
+    try {
+      const res = await fetch('/api/kpi/cv-allowances', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          staffId: selectedRecord.staffId,
+          month: monthStr,
+          title: allowanceTitle.trim(),
+          amount: finalAmount,
+          note: allowanceNote.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Không thể thêm phụ cấp.');
+      }
+      message.success('Đã thêm phụ cấp thành công!');
+      setIsAllowanceModalOpen(false);
+      setAllowanceTitle('');
+      setAllowanceAmount(null);
+      setAllowanceNote('');
+      setAllowanceFormType('plus');
+      await fetchData();
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Lỗi khi thêm phụ cấp.';
+      message.error(errMsg);
+    } finally {
+      setIsSubmittingAllowance(false);
+    }
+  };
+
+  const handleDeleteAllowance = async (allowanceId: number | string) => {
+    try {
+      const res = await fetch(`/api/kpi/cv-allowances/${allowanceId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Không thể xoá phụ cấp.');
+      }
+      message.success('Đã xoá phụ cấp.');
+      await fetchData();
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : 'Lỗi khi xoá phụ cấp.';
+      message.error(errMsg);
+    }
+  };
 
   const fetchSeniorityConfig = async () => {
     setConfigLoading(true);
@@ -1714,25 +1792,92 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                     </td>
                   </tr>
 
-                  {/* (15) Phụ cấp khác */}
-                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
-                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
-                      15
-                    </td>
-                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Phụ cấp khác</td>
-                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
-                      {selectedRecord.otherAllowancesDetails && selectedRecord.otherAllowancesDetails.length > 0
-                        ? selectedRecord.otherAllowancesDetails
-                            .map((d) => `${d.description}: +${d.amount.toLocaleString('vi-VN')}đ`)
-                            .join('; ')
-                        : selectedRecord.otherAllowances && selectedRecord.otherAllowances > 0
-                          ? 'Khoản phụ cấp hỗ trợ khác từ hệ thống'
-                          : '—'}
-                    </td>
-                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
-                      {selectedRecord.otherAllowances && selectedRecord.otherAllowances > 0
-                        ? `+${Math.round(selectedRecord.otherAllowances).toLocaleString('vi-VN')}đ`
-                        : '0đ'}
+                  {/* (15) Phụ cấp khác: Mỗi phụ cấp hiển thị 1 dòng riêng */}
+                  {selectedRecord.otherAllowancesDetails && selectedRecord.otherAllowancesDetails.length > 0 ? (
+                    selectedRecord.otherAllowancesDetails.map((item, idx) => (
+                      <tr key={item.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                        <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono text-[11px]">
+                          15.{idx + 1}
+                        </td>
+                        <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 font-medium">
+                          {item.description || 'Phụ cấp khác'}
+                        </td>
+                        <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                          <div className="flex items-center justify-between gap-2">
+                            <span>
+                              {item.source === 'mos' ? (
+                                <Tag color="cyan" className="text-[10px] mr-1">
+                                  mOS
+                                </Tag>
+                              ) : (
+                                <Tag color="default" className="text-[10px] mr-1">
+                                  Legacy
+                                </Tag>
+                              )}
+                              {item.note
+                                ? item.note
+                                : item.createdAt
+                                  ? `Tạo ngày ${dayjs(item.createdAt).format('DD/MM/YYYY')}`
+                                  : 'Khoản điều chỉnh'}
+                            </span>
+                            {item.source === 'mos' && item.id ? (
+                              <Popconfirm
+                                title="Xoá phụ cấp này?"
+                                description={`Bạn có chắc muốn xoá khoản "${item.description}" (${item.amount >= 0 ? '+' : ''}${item.amount.toLocaleString('vi-VN')}đ) không?`}
+                                onConfirm={() => handleDeleteAllowance(item.id!)}
+                                okText="Xoá"
+                                cancelText="Hủy"
+                                okButtonProps={{ danger: true, size: 'small' }}
+                                cancelButtonProps={{ size: 'small' }}
+                              >
+                                <Button
+                                  type="text"
+                                  size="small"
+                                  danger
+                                  icon={<DeleteOutlined className="text-xs" />}
+                                  className="h-5 px-1 text-slate-400 hover:text-rose-500"
+                                />
+                              </Popconfirm>
+                            ) : null}
+                          </div>
+                        </td>
+                        <td
+                          className={`py-1.5 px-3 text-right tabular-nums font-semibold ${
+                            item.amount < 0
+                              ? 'text-rose-600 dark:text-rose-400'
+                              : 'text-emerald-600 dark:text-emerald-400'
+                          }`}
+                        >
+                          {item.amount < 0
+                            ? `-${Math.round(Math.abs(item.amount)).toLocaleString('vi-VN')}đ`
+                            : `+${Math.round(item.amount).toLocaleString('vi-VN')}đ`}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                      <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                        15
+                      </td>
+                      <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Phụ cấp khác</td>
+                      <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                        Chưa có khoản phụ cấp nào trong tháng này
+                      </td>
+                      <td className="py-1.5 px-3 text-right tabular-nums font-semibold text-slate-400">0đ</td>
+                    </tr>
+                  )}
+                  {/* Nút thêm phụ cấp khác tại mOS */}
+                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/20">
+                    <td colSpan={4} className="py-1.5 px-3 text-right">
+                      <Button
+                        type="dashed"
+                        size="small"
+                        icon={<PlusOutlined />}
+                        onClick={() => setIsAllowanceModalOpen(true)}
+                        className="text-xs text-sky-600 dark:text-sky-400 border-sky-300 dark:border-sky-800 hover:text-sky-500"
+                      >
+                        + Thêm phụ cấp khác tại mOS
+                      </Button>
                     </td>
                   </tr>
 
@@ -2179,6 +2324,102 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
           )}
         </Modal>
       )}
+
+      {/* Modal Thêm phụ cấp khác tại mOS */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2">
+            <span className="text-base font-bold">Thêm phụ cấp khác</span>
+            {selectedRecord && <Tag color="blue">{selectedRecord.staffName}</Tag>}
+            <Tag color="default">Tháng {(dateRange?.[0] || dayjs()).format('MM/YYYY')}</Tag>
+          </div>
+        }
+        open={isAllowanceModalOpen}
+        onCancel={() => {
+          setIsAllowanceModalOpen(false);
+          setAllowanceTitle('');
+          setAllowanceAmount(null);
+          setAllowanceNote('');
+          setAllowanceFormType('plus');
+        }}
+        onOk={handleAddAllowance}
+        confirmLoading={isSubmittingAllowance}
+        okText="Lưu phụ cấp"
+        cancelText="Hủy"
+        destroyOnClose
+      >
+        <div className="space-y-4 py-2">
+          <div>
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1.5">
+              Loại phụ cấp:
+            </label>
+            <Radio.Group
+              value={allowanceFormType}
+              onChange={(e) => setAllowanceFormType(e.target.value)}
+              buttonStyle="solid"
+              className="w-full flex"
+            >
+              <Radio.Button value="plus" className="flex-1 text-center font-medium">
+                + Cộng tiền (Thưởng / Hỗ trợ)
+              </Radio.Button>
+              <Radio.Button value="minus" className="flex-1 text-center font-medium text-rose-500">
+                - Trừ tiền (Khấu trừ / Phạt)
+              </Radio.Button>
+            </Radio.Group>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1.5">
+              Tên / Nội dung phụ cấp <span className="text-rose-500">*</span>:
+            </label>
+            <Input
+              placeholder="VD: Hỗ trợ xăng xe, Thưởng chiến dịch, Trừ đồng phục..."
+              value={allowanceTitle}
+              onChange={(e) => setAllowanceTitle(e.target.value)}
+              maxLength={150}
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1.5">
+              Số tiền (VNĐ) <span className="text-rose-500">*</span>:
+            </label>
+            <InputNumber<number>
+              className="w-full"
+              placeholder="VD: 200,000"
+              value={allowanceAmount}
+              onChange={(val) => setAllowanceAmount(val)}
+              min={1000}
+              step={10000}
+              formatter={(value) => (value ? `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '')}
+              parser={(value) => (value ? Number(value.replace(/\$\s?|(,*)/g, '')) : 0)}
+              addonAfter="VNĐ"
+            />
+            <div className="text-[11px] text-slate-400 mt-1">
+              Ghi nhận vào lương:{' '}
+              <span
+                className={allowanceFormType === 'minus' ? 'text-rose-500 font-bold' : 'text-emerald-500 font-bold'}
+              >
+                {allowanceFormType === 'minus' ? '-' : '+'}
+                {allowanceAmount ? Math.abs(allowanceAmount).toLocaleString('vi-VN') : 0}đ
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1.5">
+              Ghi chú chi tiết (tùy chọn):
+            </label>
+            <Input.TextArea
+              placeholder="Ghi chú thêm lý do..."
+              rows={2}
+              value={allowanceNote}
+              onChange={(e) => setAllowanceNote(e.target.value)}
+              maxLength={255}
+            />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

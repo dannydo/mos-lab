@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth, requireRole } from '../../../middlewares/auth.js';
 import {
+  CvOtherAllowanceItem,
   CvPaystubRecord,
   CvPaystubResponse,
   CvWorkLogDetailRecord,
@@ -345,6 +346,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         holidayBreakdownMap,
         holidayWorkedDateMap,
         extraSupportRows,
+        mosAllowances,
       ] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(hourlyRatesQuery),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(reportStaffQuery),
@@ -356,10 +358,35 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         HolidayWorkService.getPayBreakdownByLegacyStaffIds(fastify, validStaffIds, startPart, endPart),
         HolidayWorkService.getPublishedHolidayWorkedDateKeys(fastify, validStaffIds, startPart, endPart),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(extraSupportQuery),
+        fastify.prisma.crm.crmCvPayrollAllowance.findMany({
+          where: {
+            staffId: { in: validStaffIds },
+            month: startPart.substring(0, 7),
+          },
+          orderBy: { id: 'asc' },
+        }),
       ]);
 
-      const extraSupportDetailsMap = new Map<number, Array<{ description: string; amount: number }>>();
+      const extraSupportDetailsMap = new Map<number, CvOtherAllowanceItem[]>();
       const extraSupportMap = new Map<number, number>();
+
+      // 1. Phụ cấp linh hoạt do mOS quản lý (cho phép thêm bớt trực tiếp, có thể âm hoặc dương)
+      mosAllowances.forEach((a) => {
+        const uid = a.staffId;
+        const list = extraSupportDetailsMap.get(uid) || [];
+        list.push({
+          id: a.id,
+          description: a.title,
+          amount: a.amount,
+          note: a.note || null,
+          source: 'mos',
+          createdAt: a.createdAt.toISOString(),
+        });
+        extraSupportDetailsMap.set(uid, list);
+        extraSupportMap.set(uid, (extraSupportMap.get(uid) || 0) + a.amount);
+      });
+
+      // 2. Phụ cấp lịch sử từ legacy staff_payroll_extra (nếu có)
       extraSupportRows.forEach((r: SafeAny) => {
         const uid = Number(r.user_id);
         const desc = String(r.description || '').trim();
@@ -368,7 +395,12 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         if (/thâm niên|seniority/i.test(desc)) return;
         extraSupportMap.set(uid, (extraSupportMap.get(uid) || 0) + amt);
         const list = extraSupportDetailsMap.get(uid) || [];
-        list.push({ description: desc || 'Phụ cấp khác', amount: amt });
+        list.push({
+          id: `legacy-${uid}-${list.length}`,
+          description: desc || 'Phụ cấp khác',
+          amount: amt,
+          source: 'legacy',
+        });
         extraSupportDetailsMap.set(uid, list);
       });
 
@@ -563,10 +595,8 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
             break;
           }
         }
-        // If legacy staff_payroll exists for this closed period, use its approved total_extra_support_amount
-        const seniorityBonus = sp
-          ? Math.round(Number(sp.total_extra_support_amount || 0))
-          : Math.round((cvXoayBonus * appliedBonusPercent) / 100);
+        // Seniority Bonus is calculated directly from CV Xoay Bonus and applied percentage
+        const seniorityBonus = Math.round((cvXoayBonus * appliedBonusPercent) / 100);
 
         const totalPoints = techPointsMap.get(staffId) || 0;
         const techLevel = Math.floor(totalPoints / 100) + 1;
@@ -587,12 +617,11 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
                 return sum + Math.round(item.workingDayCount * hours * hourlyRate);
               }, 0);
 
-        // Other allowances (Phụ cấp khác) from staff_payroll_extra or legacy staff_payroll
+        // Other allowances (Phụ cấp khác) from mOS additions, staff_payroll_extra or legacy staff_payroll
         const extraDetails = extraSupportDetailsMap.get(staffId) || [];
         const extraFromDetails = extraSupportMap.get(staffId) || 0;
         const rawExtraFromSp = Math.round(Number(sp?.total_extra_support_amount || 0));
-        const otherAllowances =
-          extraFromDetails > 0 ? extraFromDetails : Math.max(0, rawExtraFromSp - (seniorityBonus || 0));
+        const otherAllowances = extraDetails.length > 0 ? extraFromDetails : rawExtraFromSp;
 
         // Holiday paid leave pay (nghỉ lễ x1 - không đi làm vẫn có tiền)
         const holidayPaidLeavePay = holiday.holidayPaidLeavePay || Number(sp?.total_off_public_holiday_amount || 0);
@@ -957,6 +986,109 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
     } catch (err) {
       fastify.log.error(err as Error, 'Error fetching CV Work Logs');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể lấy nhật ký ca làm CV.' });
+    }
+  });
+
+  // POST /api/kpi/cv-allowances - Thêm phụ cấp khác (hỗ trợ âm / dương)
+  fastify.post('/kpi/cv-allowances', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { staffId, month, title, amount, note } = request.body as {
+      staffId: number;
+      month: string;
+      title: string;
+      amount: number;
+      note?: string;
+    };
+
+    if (!staffId || !month || !title?.trim() || amount == null || isNaN(Number(amount))) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: 'Vui lòng nhập đầy đủ nhân sự, tháng, tên phụ cấp và số tiền hợp lệ.',
+      });
+    }
+
+    try {
+      const created = await fastify.prisma.crm.crmCvPayrollAllowance.create({
+        data: {
+          staffId: Number(staffId),
+          month: String(month).trim(),
+          title: String(title).trim(),
+          amount: Math.round(Number(amount)),
+          note: note ? String(note).trim() : null,
+        },
+      });
+
+      return reply.send({
+        success: true,
+        data: {
+          id: created.id,
+          description: created.title,
+          amount: created.amount,
+          note: created.note,
+          source: 'mos',
+          createdAt: created.createdAt.toISOString(),
+        },
+        message: 'Thêm phụ cấp khác thành công.',
+      });
+    } catch (err) {
+      fastify.log.error(err as Error, 'Error creating CV allowance');
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể thêm phụ cấp khác.' });
+    }
+  });
+
+  // DELETE /api/kpi/cv-allowances/:id - Xoá phụ cấp khác
+  fastify.delete('/kpi/cv-allowances/:id', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const allowanceId = Number(id);
+
+    if (!allowanceId) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'ID phụ cấp không hợp lệ.' });
+    }
+
+    try {
+      await fastify.prisma.crm.crmCvPayrollAllowance.delete({
+        where: { id: allowanceId },
+      });
+
+      return reply.send({
+        success: true,
+        message: 'Đã xoá phụ cấp khác thành công.',
+      });
+    } catch (err) {
+      fastify.log.error(err as Error, 'Error deleting CV allowance');
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể xoá phụ cấp khác.' });
+    }
+  });
+
+  // GET /api/kpi/cv-allowances - Lấy danh sách phụ cấp khác theo nhân sự & tháng
+  fastify.get('/kpi/cv-allowances', { preHandler: [requireAuth] }, async (request, reply) => {
+    const { staffId, month } = request.query as { staffId?: string; month?: string };
+
+    try {
+      const where: SafeAny = {};
+      if (staffId) where.staffId = Number(staffId);
+      if (month) where.month = String(month).trim();
+
+      const list = await fastify.prisma.crm.crmCvPayrollAllowance.findMany({
+        where,
+        orderBy: { id: 'asc' },
+      });
+
+      return reply.send({
+        success: true,
+        data: list.map((a) => ({
+          id: a.id,
+          staffId: a.staffId,
+          month: a.month,
+          description: a.title,
+          amount: a.amount,
+          note: a.note,
+          source: 'mos',
+          createdAt: a.createdAt.toISOString(),
+        })),
+      });
+    } catch (err) {
+      fastify.log.error(err as Error, 'Error listing CV allowances');
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể lấy danh sách phụ cấp.' });
     }
   });
 }
