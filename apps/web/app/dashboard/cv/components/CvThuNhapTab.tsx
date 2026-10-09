@@ -1515,28 +1515,45 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                       7
                     </td>
                     <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 font-medium">
-                      Nghỉ lễ x1 (Không đi làm vẫn có tiền)
+                      {(selectedRecord.holidayWorkedDays || 0) > 0 &&
+                      (!selectedRecord.holidayPaidLeaveDays || selectedRecord.holidayPaidLeaveDays === 0)
+                        ? 'Lương ngày lễ x1 (Đi làm ngày lễ)'
+                        : (selectedRecord.holidayWorkedDays || 0) > 0 && (selectedRecord.holidayPaidLeaveDays || 0) > 0
+                          ? `Lương & Nghỉ lễ x1 (${selectedRecord.holidayPaidLeaveDays} ngày nghỉ + ${selectedRecord.holidayWorkedDays} ngày làm)`
+                          : 'Nghỉ lễ x1 (Không đi làm vẫn có tiền)'}
                     </td>
                     <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
-                      {(selectedRecord.holidayPaidLeaveDays && selectedRecord.holidayPaidLeaveDays > 0) ||
-                      (selectedRecord.holidayOffDays && selectedRecord.holidayOffDays > 0) ||
-                      (selectedRecord.holidayPaidLeaveHours && selectedRecord.holidayPaidLeaveHours > 0)
-                        ? `Nghỉ lễ 01/09 & 02/09: ${selectedRecord.holidayPaidLeaveDays || selectedRecord.holidayOffDays || 2} ngày (ca ${
-                            selectedRecord.holidayPaidLeaveHours && selectedRecord.holidayPaidLeaveDays
-                              ? Math.round(selectedRecord.holidayPaidLeaveHours / selectedRecord.holidayPaidLeaveDays)
-                              : selectedRecord.offMonthLeaveDetails?.[0]?.shiftHours ||
-                                (selectedRecord.expectedWorkHours && selectedRecord.expectedWorkDays
-                                  ? Math.round(selectedRecord.expectedWorkHours / selectedRecord.expectedWorkDays)
-                                  : 9)
-                          }h x ${selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ x 1)`
-                        : selectedRecord.holidayWorkedDays && selectedRecord.holidayWorkedDays > 0
-                          ? `0 ngày nghỉ lễ (Đi làm toàn bộ ${selectedRecord.holidayWorkedDays} ngày lễ)`
-                          : '—'}
+                      {(selectedRecord.holidayWorkedDays || 0) > 0 &&
+                      (!selectedRecord.holidayPaidLeaveDays || selectedRecord.holidayPaidLeaveDays === 0)
+                        ? `Đi làm ngày lễ 01/09 & 02/09: ${selectedRecord.holidayWorkedDays} ngày (${selectedRecord.holidayWorkedHours}h làm x ${selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ x 1)`
+                        : (selectedRecord.holidayWorkedDays || 0) > 0 && (selectedRecord.holidayPaidLeaveDays || 0) > 0
+                          ? `${selectedRecord.holidayPaidLeaveDays} ngày nghỉ (+${Math.round(selectedRecord.holidayPaidLeavePay || 0).toLocaleString('vi-VN')}đ) + ${selectedRecord.holidayWorkedDays} ngày làm (${selectedRecord.holidayWorkedHours}h làm x ${selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ x 1 = +${Math.round(selectedRecord.holidayWorkedBasePay || 0).toLocaleString('vi-VN')}đ)`
+                          : (selectedRecord.holidayPaidLeaveDays && selectedRecord.holidayPaidLeaveDays > 0) ||
+                              (selectedRecord.holidayOffDays && selectedRecord.holidayOffDays > 0) ||
+                              (selectedRecord.holidayPaidLeaveHours && selectedRecord.holidayPaidLeaveHours > 0)
+                            ? `Nghỉ lễ 01/09 & 02/09: ${selectedRecord.holidayPaidLeaveDays || selectedRecord.holidayOffDays || 2} ngày (ca ${
+                                selectedRecord.holidayPaidLeaveHours && selectedRecord.holidayPaidLeaveDays
+                                  ? Math.round(
+                                      selectedRecord.holidayPaidLeaveHours / selectedRecord.holidayPaidLeaveDays
+                                    )
+                                  : selectedRecord.offMonthLeaveDetails?.[0]?.shiftHours ||
+                                    (selectedRecord.expectedWorkHours && selectedRecord.expectedWorkDays
+                                      ? Math.round(selectedRecord.expectedWorkHours / selectedRecord.expectedWorkDays)
+                                      : 9)
+                              }h x ${selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ x 1)`
+                            : '—'}
                     </td>
                     <td className="py-1.5 px-3 text-right tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
-                      {(selectedRecord.holidayPaidLeavePay || 0) > 0 || (selectedRecord.holidayPay || 0) > 0
-                        ? `+${Math.round(selectedRecord.holidayPaidLeavePay || selectedRecord.holidayPay || 0).toLocaleString('vi-VN')}đ`
-                        : '0đ'}
+                      {(selectedRecord.holidayWorkedDays || 0) > 0 &&
+                      (!selectedRecord.holidayPaidLeaveDays || selectedRecord.holidayPaidLeaveDays === 0)
+                        ? `+${Math.round(selectedRecord.holidayWorkedBasePay || selectedRecord.holidayBasePay || 0).toLocaleString('vi-VN')}đ`
+                        : (selectedRecord.holidayWorkedDays || 0) > 0 && (selectedRecord.holidayPaidLeaveDays || 0) > 0
+                          ? `+${Math.round(selectedRecord.holidayBasePay || 0).toLocaleString('vi-VN')}đ`
+                          : (selectedRecord.holidayPaidLeavePay || 0) > 0 ||
+                              (selectedRecord.holidayPay || 0) > 0 ||
+                              (selectedRecord.holidayBasePay || 0) > 0
+                            ? `+${Math.round(selectedRecord.holidayPaidLeavePay || selectedRecord.holidayPay || selectedRecord.holidayBasePay || 0).toLocaleString('vi-VN')}đ`
+                            : '0đ'}
                     </td>
                   </tr>
                   {/* 7.1 Đi làm lễ x3 (Không đi làm không có tiền) */}
