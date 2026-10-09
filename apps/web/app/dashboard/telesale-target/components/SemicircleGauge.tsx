@@ -325,11 +325,7 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
               y2={markerCoords.yOut}
               strokeWidth={isTv ? 3.5 : 2}
               strokeLinecap="round"
-              className={
-                isDeficit
-                  ? 'stroke-rose-400 dark:stroke-rose-400 drop-shadow-[0_0_8px_rgba(244,63,94,0.9)]'
-                  : 'stroke-emerald-400 dark:stroke-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.9)]'
-              }
+              className="stroke-emerald-400 dark:stroke-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.9)]"
             />
             {numericExpected !== undefined && isTv && (
               <text
@@ -337,9 +333,7 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
                 y={markerCoords.yLbl}
                 textAnchor="middle"
                 dominantBaseline="central"
-                className={`text-[11px] font-mono font-black ${
-                  isDeficit ? 'fill-rose-300' : 'fill-emerald-300'
-                } drop-shadow-[0_0_6px_rgba(0,0,0,0.9)] select-none pointer-events-none`}
+                className="text-[11px] font-mono font-black fill-emerald-400 dark:fill-emerald-300 drop-shadow-[0_0_8px_rgba(0,0,0,0.95)] select-none pointer-events-none"
               >
                 {numericExpected}
               </text>

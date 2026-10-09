@@ -38540,8 +38540,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/SemicircleGauge.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16164,
-        "lineCount": 429,
+        "sizeBytes": 15897,
+        "lineCount": 415,
         "ext": ".tsx"
       }
     },
@@ -38709,8 +38709,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 71582,
-        "lineCount": 1599,
+        "sizeBytes": 71622,
+        "lineCount": 1601,
         "ext": ".tsx"
       }
     },
