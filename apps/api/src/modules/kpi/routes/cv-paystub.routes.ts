@@ -325,6 +325,15 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           AND sdo.from_date BETWEEN '${startPart}' AND '${endPart}'
       `;
 
+      // 8. Query Other Allowances from staff_payroll_extra
+      const extraSupportQuery = `
+        SELECT user_id, amount, description
+        FROM \`staff_payroll_extra\`
+        WHERE user_id IN (${validStaffListStr})
+          AND type = 'total_extra_support_amount'
+          AND date BETWEEN '${startPart}' AND '${endPart}'
+      `;
+
       const [
         hourlyRatesRows,
         reportStaffRows,
@@ -335,6 +344,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         staffOffDayBatchMap,
         holidayBreakdownMap,
         holidayWorkedDateMap,
+        extraSupportRows,
       ] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(hourlyRatesQuery),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(reportStaffQuery),
@@ -345,7 +355,22 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         StaffOffDayService.getBatchStaffOffDays(fastify, validStaffIds),
         HolidayWorkService.getPayBreakdownByLegacyStaffIds(fastify, validStaffIds, startPart, endPart),
         HolidayWorkService.getPublishedHolidayWorkedDateKeys(fastify, validStaffIds, startPart, endPart),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(extraSupportQuery),
       ]);
+
+      const extraSupportDetailsMap = new Map<number, Array<{ description: string; amount: number }>>();
+      const extraSupportMap = new Map<number, number>();
+      extraSupportRows.forEach((r: SafeAny) => {
+        const uid = Number(r.user_id);
+        const desc = String(r.description || '').trim();
+        const amt = Math.round(Number(r.amount || 0));
+        // Skip seniority bonus entries that are dynamically handled
+        if (/thâm niên|seniority/i.test(desc)) return;
+        extraSupportMap.set(uid, (extraSupportMap.get(uid) || 0) + amt);
+        const list = extraSupportDetailsMap.get(uid) || [];
+        list.push({ description: desc || 'Phụ cấp khác', amount: amt });
+        extraSupportDetailsMap.set(uid, list);
+      });
 
       const techPointsMap = new Map<number, number>();
       techPointsRows.forEach((r: SafeAny) => {
@@ -562,13 +587,23 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
                 return sum + Math.round(item.workingDayCount * hours * hourlyRate);
               }, 0);
 
-        // Holiday pay (phụ cấp đi làm lễ 2/9) is separated out per HR decision (đi riêng)
-        const holidayPaystubAdjustment = 0;
+        // Other allowances (Phụ cấp khác) from staff_payroll_extra or legacy staff_payroll
+        const extraDetails = extraSupportDetailsMap.get(staffId) || [];
+        const extraFromDetails = extraSupportMap.get(staffId) || 0;
+        const rawExtraFromSp = Math.round(Number(sp?.total_extra_support_amount || 0));
+        const otherAllowances =
+          extraFromDetails > 0 ? extraFromDetails : Math.max(0, rawExtraFromSp - (seniorityBonus || 0));
+
+        // Holiday paid leave pay (nghỉ lễ x1 - không đi làm vẫn có tiền)
+        const holidayPaidLeavePay = holiday.holidayPaidLeavePay || Number(sp?.total_off_public_holiday_amount || 0);
+        // Holiday work premium (phụ cấp đi làm lễ 2/9 x3) is separated per HR decision (đi riêng)
+        const holidayPaystubAdjustment = holidayPaidLeavePay;
         const totalIncome = Math.round(
           hourlyWage +
             cvXoayBonus +
             cvTipBonus +
             seniorityBonus +
+            otherAllowances +
             holidayPaystubAdjustment +
             parkingAllowance +
             offMonthWage
@@ -589,7 +624,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         grandTotalSeniorityBonus += seniorityBonus;
         grandTotalHolidayBasePay += holiday.holidayBasePay;
         grandTotalHolidayPremiumPay += holiday.holidayPremiumPay;
-        grandTotalHolidayPayrollAddition += 0;
+        grandTotalHolidayPayrollAddition += holidayPaidLeavePay;
         grandTotalParkingAllowance += parkingAllowance;
         grandTotalOffMonthWage += offMonthWage;
         grandTotalIncome += totalIncome;
@@ -602,8 +637,8 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         const weeklyOffWorkedDays = offDaysWorked || 0;
         const weeklyOffPay = Number(sp?.total_off_week_amount || 0);
         const fullTimeWage = Number(sp?.total_overtime_daytime_amount || 0);
-        const holidayOffDays = Number(sp?.total_day_off_public_holiday || 0);
-        const holidayPay = holiday.holidayBasePay || Number(sp?.total_off_public_holiday_amount || 0);
+        const holidayOffDays = holiday.holidayPaidLeaveDays || Number(sp?.total_day_off_public_holiday || 0);
+        const holidayPay = holidayPaidLeavePay;
         const overLeaveDays = Number(sp?.total_day_off_punish || 0);
         const overLeaveDeduction = Math.round(Number(sp?.total_off_punish_amount || 0));
         const unpaidLeaveDays =
@@ -613,7 +648,6 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         const totalBaseWage = Math.round(
           hourlyWage + fullTimeWage + weeklyOffPay + offMonthWage + holidayPay - overLeaveDeduction
         );
-        const otherAllowances = seniorityBonus;
         const previousMonthAddition = Math.round(Number(sp?.total_extra_last_month_amount || 0));
         const penalties = Math.round(
           Number(sp?.total_extra_punish_amount || 0) + Number(sp?.total_punish_credit_balance_amount || 0)
@@ -687,7 +721,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           offMonthWage,
           offMonthLeaveDetails: monthOffList,
           ...holiday,
-          holidayPaystubAdjustment: 0,
+          holidayPaystubAdjustment,
           expectedWorkHours,
           expectedWorkDays,
           fullTimeWage,
@@ -702,6 +736,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           totalBaseWage,
           parkingCalculation: `200.000đ / ${expectedWorkDays} * ${activeDays}`,
           otherAllowances,
+          otherAllowancesDetails: extraDetails,
           previousMonthAddition,
           penalties,
           welfareFund,

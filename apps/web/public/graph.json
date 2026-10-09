@@ -9824,7 +9824,7 @@
         "path": "/api/kpi/cv-paystub/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 748
+        "line": 784
       }
     },
     {
@@ -31662,8 +31662,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 39023,
-        "lineCount": 928,
+        "sizeBytes": 40948,
+        "lineCount": 964,
         "ext": ".ts"
       }
     },
@@ -31987,8 +31987,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 118331,
-        "lineCount": 2883,
+        "sizeBytes": 118399,
+        "lineCount": 2887,
         "ext": ".ts"
       }
     },
@@ -37187,8 +37187,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 101145,
-        "lineCount": 2148,
+        "sizeBytes": 103202,
+        "lineCount": 2168,
         "ext": ".tsx"
       }
     },
@@ -40567,8 +40567,8 @@
       "filePath": "packages/shared/src/types/cv.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 9019,
-        "lineCount": 374,
+        "sizeBytes": 9094,
+        "lineCount": 375,
         "ext": ".ts"
       }
     },

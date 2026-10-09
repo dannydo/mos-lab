@@ -192,6 +192,7 @@ export interface CvPaystubRecord extends HolidayPayBreakdown {
   expectedWorkDays?: number;
   parkingCalculation?: string;
   otherAllowances?: number;
+  otherAllowancesDetails?: Array<{ description: string; amount: number }>;
   previousMonthAddition?: number;
   penalties?: number;
   welfareFund?: number;
