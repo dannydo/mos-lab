@@ -1532,20 +1532,18 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                   {/* 5.1 Làm off tuần */}
                   <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 bg-slate-50/30 dark:bg-slate-900/30 text-[11px]">
                     <td className="py-1 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400"></td>
-                    <td className="py-1 px-3 border-r border-slate-200 dark:border-slate-800 pl-6 text-slate-500 dark:text-slate-400">
-                      ↳ Làm off tuần (x2 lương)
+                    <td className="py-1 px-3 border-r border-slate-200 dark:border-slate-800 pl-6 text-slate-700 dark:text-slate-300 font-medium">
+                      ↳ Làm việc ngày off tuần (+1x phụ cấp = Tổng x2)
                     </td>
-                    <td className="py-1 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-400 text-[10px]">
-                      {selectedRecord.offDaysWorked
-                        ? `${formatHoursToHoursMinutes(selectedRecord.offDaysWorkHours || 0)} x ${selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ x 2`
+                    <td className="py-1 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[10px]">
+                      {(selectedRecord.offDaysWorked || 0) > 0
+                        ? `${formatHoursToHoursMinutes(selectedRecord.offDaysWorkHours || 0)} x ${selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ x 1 (Đã ăn 1x ở Mục 4, thêm 1x ở đây)`
                         : '—'}
                     </td>
-                    <td className="py-1 px-3 text-right tabular-nums">
-                      {selectedRecord.weeklyOffWorkedDays || selectedRecord.offDaysWorked || 0} ngày (+
-                      {Math.round(selectedRecord.weeklyOffPay || selectedRecord.offDaysWorkWage || 0).toLocaleString(
-                        'vi-VN'
-                      )}
-                      đ)
+                    <td className="py-1 px-3 text-right tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
+                      {(selectedRecord.offDaysWorked || 0) > 0 || (selectedRecord.offDaysWorkWage || 0) > 0
+                        ? `+${Math.round(selectedRecord.offDaysWorkWage || 0).toLocaleString('vi-VN')}đ`
+                        : '0đ'}
                     </td>
                   </tr>
 

@@ -559,7 +559,10 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         totalWorkHours = Math.round(totalWorkHours * 100) / 100;
         regularHours = Math.round(regularHours * 100) / 100;
         offDaysWorkHours = Math.round(offDaysWorkHours * 100) / 100;
-        const offDaysWorkWage = Number(sp?.total_overtime_daytime_off_week_amount || 0);
+        const offDaysWorkWage =
+          sp?.total_overtime_daytime_off_week_amount != null && Number(sp.total_overtime_daytime_off_week_amount) > 0
+            ? Math.round(Number(sp.total_overtime_daytime_off_week_amount))
+            : Math.round(offDaysWorkHours * hourlyRate); // Thêm 1 lần đơn giá giờ (+1x)
         const hourlyWage =
           sp?.total_wage_amount != null
             ? Math.round(Number(sp.total_wage_amount))
@@ -629,6 +632,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         const holidayPaystubAdjustment = holidayPaidLeavePay;
         const totalIncome = Math.round(
           hourlyWage +
+            offDaysWorkWage +
             cvXoayBonus +
             cvTipBonus +
             seniorityBonus +
