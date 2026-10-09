@@ -149,20 +149,36 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
 
   // 6. Generate Live Celebration Quote with Gemini AI & Wings Culture (Nam thần quyến rũ + Fallback)
   fastify.post('/kpi/telesale-target/live-celebration-quote', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { type, staffName } =
-      (request.body as { type?: 'BOOK' | 'DONE' | 'CHECKIN' | 'COMBO' | 'TIP'; staffName?: string }) || {};
+    const { type, staffName, tipAmount, comboPackageName, comboPrice, cvStaffName, customerName } =
+      (request.body as {
+        type?: 'BOOK' | 'DONE' | 'CHECKIN' | 'COMBO' | 'TIP';
+        staffName?: string;
+        tipAmount?: number;
+        comboPackageName?: string;
+        comboPrice?: number;
+        cvStaffName?: string;
+        customerName?: string;
+      }) || {};
     const safeType = type || 'BOOK';
+    const quoteOptions = {
+      tipAmount,
+      comboPackageName,
+      comboPrice,
+      cvStaffName,
+      customerName,
+    };
     try {
       const result = await TelesaleTargetService.generateLiveCelebrationQuote(
         fastify,
         safeType,
-        staffName || 'Bạn Telesales'
+        staffName || 'Bạn Telesales',
+        quoteOptions
       );
       return reply.send(result);
     } catch (err: any) {
       fastify.log.error(`Failed to generate celebration quote: ${err.message}`);
       return reply.send({
-        quote: TelesaleTargetService.getFallbackCelebrationQuote(safeType, staffName || 'Bạn Telesales'),
+        quote: TelesaleTargetService.getFallbackCelebrationQuote(safeType, staffName || 'Bạn Telesales', quoteOptions),
         source: 'fallback',
       });
     }

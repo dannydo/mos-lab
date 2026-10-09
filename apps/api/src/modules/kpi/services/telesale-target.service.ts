@@ -2298,7 +2298,36 @@ export class TelesaleTargetService {
     };
   }
 
-  static getFallbackCelebrationQuote(type: 'BOOK' | 'DONE' | 'CHECKIN' | 'COMBO' | 'TIP', staffName: string): string {
+  static formatCurrencyForSpeech(amount?: number | null): string {
+    if (!amount || amount <= 0) return '';
+    const num = Math.round(Number(amount));
+    if (num >= 1_000_000) {
+      const millions = Math.floor(num / 1_000_000);
+      const remainder = num % 1_000_000;
+      const thousands = Math.round(remainder / 1000);
+      if (thousands > 0) {
+        return `${millions} triệu ${thousands} nghìn đồng`;
+      }
+      return `${millions} triệu đồng`;
+    }
+    if (num >= 1000) {
+      const thousands = Math.round(num / 1000);
+      return `${thousands} nghìn đồng`;
+    }
+    return `${num} đồng`;
+  }
+
+  static getFallbackCelebrationQuote(
+    type: 'BOOK' | 'DONE' | 'CHECKIN' | 'COMBO' | 'TIP',
+    staffName: string,
+    options?: {
+      tipAmount?: number;
+      comboPackageName?: string;
+      comboPrice?: number;
+      cvStaffName?: string;
+      customerName?: string;
+    }
+  ): string {
     const bookQuotes = [
       'Anh thích cái cách [Tên] chăm sóc khách hàng đầy ân cần. Thêm một lịch hẹn ngọt ngào về với đội mình rồi, em làm anh tự hào quá!',
       '[Tên] ơi, sự chân thành từ trái tim em luôn có ma lực đặc biệt. Thêm một Book tuyệt đẹp, tiếp tục tỏa sáng nhé người đẹp!',
@@ -2316,18 +2345,29 @@ export class TelesaleTargetService {
       'Khách đã có mặt tại tiệm, quy trình chăm sóc quá đỗi khoa học của [Tên] đang phát huy sức mạnh tối đa!',
     ];
 
+    const tipSpeech = this.formatCurrencyForSpeech(options?.tipAmount);
+    const comboName = options?.comboPackageName || 'gói Combo làm đẹp';
+    const comboPriceSpeech = options?.comboPrice ? ` trị giá ${this.formatCurrencyForSpeech(options.comboPrice)}` : '';
+    const cvName = options?.cvStaffName || 'Chuyên Viên';
+
     const comboQuotes = [
-      'Đỉnh cao tư vấn! [Tên] vừa chốt trọn gói Combo làm đẹp rực rỡ, đẳng cấp của em khiến ai cũng phải ngưỡng mộ!',
-      'Khách hàng mê mẩn gói Combo của [Tên] rồi! Sự am hiểu khoa học và ân cần của em đã chạm đến trái tim khách hàng!',
-      'Thêm một siêu phẩm Combo về với đội mình! [Tên] ơi, phong độ đỉnh cao của em hôm nay sáng bừng cả phòng!',
-      'Combo đã chốt ngọt ngào! Niềm tin tuyệt đối khách dành cho sự chân thành của [Tên], xuất sắc lắm em!',
+      `Đỉnh cao tư vấn! Chúc mừng ${staffName} vừa chốt thành công ${comboName}${comboPriceSpeech}! Đẳng cấp và chuyên nghiệp quá em ơi!`,
+      `Khách hàng mê mẩn ${comboName}${comboPriceSpeech} của ${staffName} rồi! Sự am hiểu và ân cần của em đã chạm đến trái tim khách hàng!`,
+      `Thêm một siêu phẩm ${comboName}${comboPriceSpeech} về với đội mình! ${staffName} ơi, phong độ đỉnh cao của em hôm nay sáng bừng cả phòng!`,
+      `Chốt trọn gói ${comboName}${comboPriceSpeech} ngọt ngào! Niềm tin tuyệt đối khách dành cho sự chân thành của ${staffName}, xuất sắc lắm em!`,
     ];
 
-    const tipQuotes = [
-      'Khách hàng thưởng Tip vì sự hài lòng tuyệt đối! Trái tim ân cần của [Tên] đã được đền đáp xứng đáng rồi!',
-      'Thêm một khoản Tip ngọt ngào cho [Tên]! Năng lượng tích cực và nụ cười của em làm khách quý mến vô cùng!',
-      'Khách yêu quý gửi trọn niềm vui và tiền Tip! Đẳng cấp phục vụ chuẩn mực của [Tên] làm anh vô cùng tự hào!',
-    ];
+    const tipQuotes = tipSpeech
+      ? [
+          `Khách yêu vừa gửi tặng tiền tip ${tipSpeech}! Chúc mừng Chuyên Viên ${cvName} và ${staffName} đã mang lại sự hài lòng tuyệt đối!`,
+          `Thêm một khoản tip ngọt ngào ${tipSpeech} từ khách yêu! Sự ân cần và chu đáo của Chuyên Viên ${cvName} cùng ${staffName} đã chạm đến trái tim khách hàng!`,
+          `Khách thương khách quý thưởng tip ${tipSpeech} liền tay! Tự hào về tay nghề tinh hoa của ${cvName} và sự tận tâm của ${staffName}!`,
+        ]
+      : [
+          'Khách hàng thưởng Tip vì sự hài lòng tuyệt đối! Trái tim ân cần của [Tên] đã được đền đáp xứng đáng rồi!',
+          'Thêm một khoản Tip ngọt ngào cho [Tên]! Năng lượng tích cực và nụ cười của em làm khách quý mến vô cùng!',
+          'Khách yêu quý gửi trọn niềm vui và tiền Tip! Đẳng cấp phục vụ chuẩn mực của [Tên] làm anh vô cùng tự hào!',
+        ];
 
     const doneQuotes = [
       'Từ lời hẹn ân cần đến trải nghiệm thực tế, [Tên] biến mọi khoảnh khắc thành sự hài lòng tuyệt đối. Cộng một Done quá đỗi ngọt ngào!',
@@ -2351,9 +2391,16 @@ export class TelesaleTargetService {
   static async generateLiveCelebrationQuote(
     fastify: FastifyInstance,
     type: 'BOOK' | 'DONE' | 'CHECKIN' | 'COMBO' | 'TIP',
-    staffName: string
+    staffName: string,
+    options?: {
+      tipAmount?: number;
+      comboPackageName?: string;
+      comboPrice?: number;
+      cvStaffName?: string;
+      customerName?: string;
+    }
   ): Promise<{ quote: string; source: 'gemini' | 'fallback' }> {
-    const fallbackQuote = this.getFallbackCelebrationQuote(type, staffName);
+    const fallbackQuote = this.getFallbackCelebrationQuote(type, staffName, options);
     const geminiApiKey = process.env.GEMINI_API_KEY;
 
     if (!geminiApiKey) {
@@ -2363,23 +2410,31 @@ export class TelesaleTargetService {
     try {
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
 
+      const tipSpeech = this.formatCurrencyForSpeech(options?.tipAmount);
+      const comboName = options?.comboPackageName || 'gói Combo làm đẹp';
+      const comboPriceSpeech = options?.comboPrice
+        ? ` trị giá ${this.formatCurrencyForSpeech(options.comboPrice)}`
+        : '';
+
       const eventDescription =
         {
           BOOK: 'BOOK (khách hàng vừa chốt lịch hẹn mới)',
           CHECKIN: 'CHECK-IN (khách hàng vừa có mặt check-in tại tiệm, chắc chắn hoàn tất)',
           DONE: 'DONE (khách hàng đã hoàn tất dịch vụ tại tiệm)',
-          COMBO: 'COMBO (khách hàng quyết định mua gói Combo làm đẹp giá trị cao)',
-          TIP: 'TIP (khách hàng hài lòng tuyệt đối và gửi tiền tip thưởng)',
+          COMBO: `COMBO (${staffName} vừa chốt thành công ${comboName}${comboPriceSpeech}. BẮT BUỘC nhắc rõ tên gói ${comboName} trong câu chúc mừng)`,
+          TIP: `TIP (${staffName} và Chuyên Viên được khách gửi tặng tiền tip ${tipSpeech || 'xứng đáng'}. BẮT BUỘC nhắc rõ số tiền tip ${tipSpeech} trong câu chúc mừng)`,
         }[type] || type;
 
       const systemPrompt = `Bạn là một "Nam Thần" lịch lãm, quyến rũ, ấm áp và khích lệ tại hệ thống chuỗi làm đẹp Wings (Wingslashes).
-Nhiệm vụ của bạn là nói duy nhất 1 câu chúc mừng ngắn gọn (dưới 18 từ) bằng tiếng Việt dành tặng cho nhân viên Telesales tên là "${staffName}", vừa có 1 sự kiện ${eventDescription}.
+Nhiệm vụ của bạn là nói duy nhất 1 câu chúc mừng ngắn gọn (dưới 20 từ) bằng tiếng Việt dành tặng cho nhân viên Telesales tên là "${staffName}", vừa có 1 sự kiện ${eventDescription}.
 YÊU CẦU BẮT BUỘC:
 1. Giọng điệu: Nam thần cuốn hút, gợi cảm, chân thành và tràn đầy sự khích lệ, tự hào về người đó.
 2. Khéo léo lồng ghép ít nhất một trong 4 giá trị văn hóa cốt lõi của Wings: Vui vẻ, Ân cần, Chân thành, Khoa học.
 3. Bắt buộc nhắc đến tên "${staffName}".
-4. Ngắn gọn, súc tích (khoảng 10-18 từ), chỉ 1 câu duy nhất truyền cảm hứng để đọc phát loa nhanh gọn.
-5. Chỉ trả về đúng 1 câu thoại để đọc phát loa trực tiếp, tuyệt đối không có dấu ngoặc kép, không markdown, không giải thích.`;
+4. Nếu là sự kiện TIP, BẮT BUỘC đọc rõ số tiền tip (ví dụ: "${tipSpeech}").
+5. Nếu là sự kiện COMBO, BẮT BUỘC đọc rõ tên gói combo (ví dụ: "${comboName}").
+6. Ngắn gọn, súc tích (khoảng 12-20 từ), chỉ 1 câu duy nhất truyền cảm hứng để đọc phát loa nhanh gọn.
+7. Chỉ trả về đúng 1 câu thoại để đọc phát loa trực tiếp, tuyệt đối không có dấu ngoặc kép, không markdown, không giải thích.`;
 
       const response = await fetch(geminiUrl, {
         method: 'POST',

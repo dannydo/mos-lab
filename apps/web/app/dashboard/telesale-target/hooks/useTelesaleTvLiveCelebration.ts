@@ -28,6 +28,7 @@ export interface ActiveCelebration {
   orderId?: number;
   hasCombo?: boolean;
   comboPackageName?: string;
+  comboPrice?: number;
   hasTip?: boolean;
   tipAmount?: number;
   customerPraiseNote?: string;
@@ -94,6 +95,25 @@ const DONE_QUOTES = [
 export function getRandomQuote(quotes: string[], name: string): string {
   const template = quotes[Math.floor(Math.random() * quotes.length)] || quotes[0];
   return template.replace(/\[Tên\]/g, name);
+}
+
+export function formatCurrencyForSpeech(amount?: number | null): string {
+  if (!amount || amount <= 0) return '';
+  const num = Math.round(Number(amount));
+  if (num >= 1_000_000) {
+    const millions = Math.floor(num / 1_000_000);
+    const remainder = num % 1_000_000;
+    const thousands = Math.round(remainder / 1000);
+    if (thousands > 0) {
+      return `${millions} triệu ${thousands} nghìn đồng`;
+    }
+    return `${millions} triệu đồng`;
+  }
+  if (num >= 1000) {
+    const thousands = Math.round(num / 1000);
+    return `${thousands} nghìn đồng`;
+  }
+  return `${num} đồng`;
 }
 
 // Synthesize pleasant celebratory chime with Web Audio API
@@ -742,12 +762,13 @@ export function useTelesaleTvLiveCelebration() {
           if (hasPraise) {
             // Trường hợp khách có lời nhắn khen ngợi chân thành (đã qua AI sentiment filter)
             let praiseQuote = '';
-            let badgeText = '💌 LỜI KHEN TỪ KHÁCH YÊU!';
+            const tipSpeech = formatCurrencyForSpeech(ev.tipAmount);
             const tipText = ev.tipAmount ? ` ${ev.tipAmount.toLocaleString('vi-VN')}đ` : '';
+            let badgeText = '💌 LỜI KHEN TỪ KHÁCH YÊU!';
 
-            if (hasTip) {
+            if (hasTip && tipSpeech) {
               badgeText = `👑 TIP${tipText} & LỜI KHEN NGỌT NGÀO!`;
-              praiseQuote = `Khách yêu ${customerName} vừa gửi tặng tip${tipText} cùng lời khen ngọt ngào: "${praiseNote}". Chúc mừng Chuyên Viên ${cvName} và Tư Vấn ${ccName} đã tạo nên trải nghiệm tuyệt vời!`;
+              praiseQuote = `Khách yêu ${customerName} vừa gửi tặng tiền tip ${tipSpeech} cùng lời khen ngọt ngào: "${praiseNote}". Chúc mừng Chuyên Viên ${cvName} và Tư Vấn ${ccName} đã tạo nên trải nghiệm tuyệt vời!`;
             } else {
               badgeText = `💌 LỜI KHEN TỪ KHÁCH YÊU!`;
               praiseQuote = `Khách yêu ${customerName} vừa gửi lời khen ngọt ngào: "${praiseNote}". Chúc mừng Chuyên Viên ${cvName} và Tư Vấn ${ccName} đã đồng hành xuất sắc!`;
@@ -774,56 +795,92 @@ export function useTelesaleTvLiveCelebration() {
               checkInStaffName: ccName,
             });
           } else if (hasCombo && hasTip) {
-            const defaultQuote = getRandomQuote(COMBO_TIP_QUOTES, staffName);
+            const comboName = ev.comboPackageName || 'gói Combo làm đẹp';
+            const priceSpeech = ev.comboPrice ? ` trị giá ${formatCurrencyForSpeech(ev.comboPrice)}` : '';
+            const tipSpeech = formatCurrencyForSpeech(ev.tipAmount);
             const tipText = ev.tipAmount ? ` ${ev.tipAmount.toLocaleString('vi-VN')}đ` : '';
+            const comboPriceBadge = ev.comboPrice ? ` (${ev.comboPrice.toLocaleString('vi-VN')}đ)` : '';
+
+            const comboTipQuotes = [
+              `Siêu phẩm xuất sắc! Chúc mừng ${staffName} vừa chốt thành công ${comboName}${priceSpeech}, lại được khách gửi tặng tiền tip ${tipSpeech}! Đẳng cấp nhân đôi quá đỗi tự hào!`,
+              `Kỳ tích rực rỡ! Vừa chốt trọn ${comboName}${priceSpeech}, vừa nhận thêm tiền tip ${tipSpeech} từ khách yêu! Chúc mừng Chuyên Viên ${cvName} và ${staffName} hôm nay tỏa sáng nhất phòng!`,
+            ];
+            const textToSpeak = comboTipQuotes[Math.floor(Math.random() * comboTipQuotes.length)];
+
             enqueueCelebration({
               id: ev.id,
               kind: 'COMBO',
               staffId: ev.staffId,
               staffName,
               avatarUrl: ev.avatarUrl,
-              textToSpeak: defaultQuote,
-              badgeText: `👑 +COMBO & TIP${tipText} XUẤT SẮC!`,
+              textToSpeak,
+              badgeText: `👑 +${comboName.toUpperCase()}${comboPriceBadge} & TIP${tipText}!`,
               colorTheme: 'purple',
               changeResult: ev.changeResult,
               orderId: ev.orderId,
               hasCombo: true,
               comboPackageName: ev.comboPackageName,
+              comboPrice: ev.comboPrice,
               hasTip: true,
               tipAmount: ev.tipAmount,
+              assignedStaffName: cvName,
+              checkInStaffName: ccName,
             });
           } else if (hasCombo) {
-            const defaultQuote = getRandomQuote(COMBO_QUOTES, staffName);
+            const comboName = ev.comboPackageName || 'gói Combo làm đẹp';
+            const priceSpeech = ev.comboPrice ? ` trị giá ${formatCurrencyForSpeech(ev.comboPrice)}` : '';
+            const comboPriceBadge = ev.comboPrice ? ` (${ev.comboPrice.toLocaleString('vi-VN')}đ)` : '';
+
+            const comboQuotes = [
+              `Đỉnh cao tư vấn! Chúc mừng ${staffName} vừa chốt thành công ${comboName}${priceSpeech}! Đẳng cấp và chuyên nghiệp quá em ơi!`,
+              `Thấu hiểu nhu cầu và trao gửi giá trị dài lâu! ${staffName} vừa mang về một ${comboName}${priceSpeech}! Tự hào về em vô cùng!`,
+              `Bùng nổ rồi cả phòng ơi! Khách tin yêu chốt trọn ${comboName}${priceSpeech}! Chúc mừng ${staffName} cùng Chuyên Viên ${cvName} đã tỏa sáng rực rỡ!`,
+            ];
+            const textToSpeak = comboQuotes[Math.floor(Math.random() * comboQuotes.length)];
+
             enqueueCelebration({
               id: ev.id,
               kind: 'COMBO',
               staffId: ev.staffId,
               staffName,
               avatarUrl: ev.avatarUrl,
-              textToSpeak: defaultQuote,
-              badgeText: '✨ +1 COMBO ĐÃ CHỐT!',
+              textToSpeak,
+              badgeText: `✨ +CHỐT ${comboName.toUpperCase()}${comboPriceBadge}!`,
               colorTheme: 'purple',
               changeResult: ev.changeResult,
               orderId: ev.orderId,
               hasCombo: true,
               comboPackageName: ev.comboPackageName,
+              comboPrice: ev.comboPrice,
+              assignedStaffName: cvName,
+              checkInStaffName: ccName,
             });
           } else if (hasTip) {
-            const defaultQuote = getRandomQuote(TIP_QUOTES, staffName);
+            const tipSpeech = formatCurrencyForSpeech(ev.tipAmount);
             const tipText = ev.tipAmount ? ` ${ev.tipAmount.toLocaleString('vi-VN')}đ` : '';
+
+            const tipQuotes = [
+              `Khách yêu vừa gửi tặng tiền tip ${tipSpeech}! Chúc mừng Chuyên Viên ${cvName} và Tư Vấn ${ccName} đã mang lại sự hài lòng tuyệt đối!`,
+              `Thêm một khoản tip ngọt ngào ${tipSpeech} từ khách yêu! Sự ân cần và chu đáo của Chuyên Viên ${cvName} cùng ${ccName} đã chạm đến trái tim khách hàng!`,
+              `Khách thương khách quý thưởng tip ${tipSpeech} liền tay! Tự hào về tay nghề tinh hoa của ${cvName} và sự tận tâm của ${ccName}!`,
+            ];
+            const textToSpeak = tipQuotes[Math.floor(Math.random() * tipQuotes.length)];
+
             enqueueCelebration({
               id: ev.id,
               kind: 'TIP',
               staffId: ev.staffId,
               staffName,
               avatarUrl: ev.avatarUrl,
-              textToSpeak: defaultQuote,
+              textToSpeak,
               badgeText: `💛 +TIP KHÁCH THƯỞNG${tipText}!`,
               colorTheme: 'gold',
               changeResult: ev.changeResult,
               orderId: ev.orderId,
               hasTip: true,
               tipAmount: ev.tipAmount,
+              assignedStaffName: cvName,
+              checkInStaffName: ccName,
             });
           } else {
             // Đơn thường hoàn tất: Ghi nhận êm ái vào nhật ký, không làm phiền phòng trực
@@ -1030,31 +1087,39 @@ export function useTelesaleTvLiveCelebration() {
         });
       } else if (type === 'COMBO') {
         const staffName = 'Bích Phượng';
-        const defaultQuote = getRandomQuote(COMBO_QUOTES, staffName);
+        const comboName = 'Combo Nàng Thơ 5 Buổi';
+        const comboPrice = 5900000;
+        const priceSpeech = ` trị giá ${formatCurrencyForSpeech(comboPrice)}`;
         enqueueCelebration({
           id: demoId,
           kind: 'COMBO',
           staffName,
           avatarUrl: 'https://lh3.googleusercontent.com/a/ACg8ocImU7oxC33vMir9F9rllmN4y1LVBkzJXB5ff9RCZyy-9brDnA=s96-c',
-          textToSpeak: defaultQuote,
-          badgeText: '✨ +1 COMBO ĐÃ CHỐT! (DEMO)',
+          textToSpeak: `Đỉnh cao tư vấn! Chúc mừng ${staffName} vừa chốt thành công ${comboName}${priceSpeech}! Đẳng cấp và chuyên nghiệp quá em ơi!`,
+          badgeText: '✨ +CHỐT COMBO NÀNG THƠ (5.900.000đ)! (DEMO)',
           colorTheme: 'purple',
           hasCombo: true,
-          comboPackageName: 'Combo Nàng Thơ 5 Buổi',
+          comboPackageName: comboName,
+          comboPrice,
         });
       } else if (type === 'TIP') {
         const staffName = 'Thuý Kiều';
-        const defaultQuote = getRandomQuote(TIP_QUOTES, staffName);
+        const cvName = 'Thuý Kiều';
+        const ccName = 'Bích Phượng';
+        const tipAmount = 100000;
+        const tipSpeech = formatCurrencyForSpeech(tipAmount);
         enqueueCelebration({
           id: demoId,
           kind: 'TIP',
           staffName,
           avatarUrl: 'https://lh3.googleusercontent.com/a/ACg8ocIDkNj8m3jfUn2iO_gmhiuLwSJ3XF2Gaqvi69RiG3-My5olzA=s96-c',
-          textToSpeak: defaultQuote,
-          badgeText: '💛 +TIP 50.000đ (DEMO)',
+          textToSpeak: `Khách yêu vừa gửi tặng tiền tip ${tipSpeech}! Chúc mừng Chuyên Viên ${cvName} và Tư Vấn ${ccName} đã mang lại sự hài lòng tuyệt đối!`,
+          badgeText: '💛 +TIP KHÁCH THƯỞNG 100.000đ! (DEMO)',
           colorTheme: 'gold',
           hasTip: true,
-          tipAmount: 50000,
+          tipAmount,
+          assignedStaffName: cvName,
+          checkInStaffName: ccName,
         });
       } else if (type === 'DONE') {
         const staffName = 'Thuý Kiều';

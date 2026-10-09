@@ -153,7 +153,7 @@ describe('useTelesaleTvLiveCelebration Hook & Event Ingestion (MOS-BUG-86)', () 
     });
 
     expect(result.current.activeCelebration?.kind).toBe('COMBO');
-    expect(result.current.activeCelebration?.badgeText).toBe('✨ +1 COMBO ĐÃ CHỐT!');
+    expect(result.current.activeCelebration?.badgeText).toBe('✨ +CHỐT COMBO 5 BUỔI!');
     expect(result.current.activeCelebration?.colorTheme).toBe('purple');
   });
 

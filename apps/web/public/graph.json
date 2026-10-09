@@ -10090,7 +10090,7 @@
         "path": "/api/kpi/telesale-target/live-celebration-audio",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 172
+        "line": 192
       }
     },
     {
@@ -10104,7 +10104,7 @@
         "path": "/api/kpi/telesale-target/tv-journal",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 197
+        "line": 217
       }
     },
     {
@@ -10118,7 +10118,7 @@
         "path": "/api/kpi/telesale-target/tv-journal/sync",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 218
+        "line": 238
       }
     },
     {
@@ -31716,8 +31716,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9135,
-        "lineCount": 229,
+        "sizeBytes": 9587,
+        "lineCount": 249,
         "ext": ".ts"
       }
     },
@@ -31963,8 +31963,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 113889,
-        "lineCount": 2801,
+        "sizeBytes": 116563,
+        "lineCount": 2854,
         "ext": ".ts"
       }
     },
@@ -38736,7 +38736,7 @@
       "filePath": "apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.test.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6695,
+        "sizeBytes": 6697,
         "lineCount": 194,
         "ext": ".ts"
       }
@@ -38749,8 +38749,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 45358,
-        "lineCount": 1109,
+        "sizeBytes": 49535,
+        "lineCount": 1174,
         "ext": ".ts"
       }
     },
@@ -39737,8 +39737,8 @@
       "filePath": "apps/web/lib/api/kpi.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18889,
-        "lineCount": 489,
+        "sizeBytes": 19032,
+        "lineCount": 494,
         "ext": ".ts"
       }
     },

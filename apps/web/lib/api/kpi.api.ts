@@ -472,6 +472,11 @@ export const kpiApi = {
     getCelebrationQuote: async (data: {
       type: 'BOOK' | 'DONE' | 'CHECKIN' | 'COMBO' | 'TIP';
       staffName: string;
+      tipAmount?: number;
+      comboPackageName?: string;
+      comboPrice?: number;
+      cvStaffName?: string;
+      customerName?: string;
     }): Promise<{ quote: string; source: 'gemini' | 'fallback' }> => {
       const response = await api.post('/kpi/telesale-target/live-celebration-quote', data);
       return response.data;
