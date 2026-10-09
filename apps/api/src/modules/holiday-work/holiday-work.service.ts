@@ -422,7 +422,8 @@ export function calculateHolidayPayroll(input: {
       exceptionMessage: 'Không xác định được đơn giá giờ hợp lệ tại ngày lễ.',
     };
   }
-  if (input.approvedLeave || ['BOOKED_OFF', 'CANCELLED'].includes(input.rosterStatus)) return readyZero;
+  if (['BOOKED_OFF', 'CANCELLED'].includes(input.rosterStatus)) return readyZero;
+  if (input.approvedLeave && input.rosterStatus !== 'HOLIDAY_OFF') return readyZero;
 
   if (input.rosterStatus === 'HOLIDAY_OFF') {
     const baseHolidayAmount = roundMoney(

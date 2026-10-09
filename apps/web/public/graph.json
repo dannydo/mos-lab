@@ -31558,8 +31558,8 @@
       "filePath": "apps/api/src/modules/holiday-work/holiday-work.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 84002,
-        "lineCount": 1974,
+        "sizeBytes": 84064,
+        "lineCount": 1975,
         "ext": ".ts"
       }
     },
@@ -37187,8 +37187,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 97816,
-        "lineCount": 2039,
+        "sizeBytes": 101145,
+        "lineCount": 2148,
         "ext": ".tsx"
       }
     },

@@ -1509,16 +1509,29 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                     </td>
                   </tr>
 
-                  {/* (7) Ngày lễ & Phụ cấp lễ 2/9 */}
+                  {/* (7) Ngày lễ: Nghỉ lễ x1 & Đi làm lễ x3 */}
                   <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
                     <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
                       7
                     </td>
-                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Lương ngày lễ (1x)</td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">
+                      Nghỉ lễ (Hưởng x1 lương)
+                    </td>
                     <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
-                      {selectedRecord.holidayWorkedHours
-                        ? `${selectedRecord.holidayWorkedHours}h làm + ${selectedRecord.holidayPaidLeaveHours || 0}h nghỉ lễ`
-                        : '—'}
+                      {selectedRecord.holidayPaidLeaveDays ||
+                      selectedRecord.holidayOffDays ||
+                      (selectedRecord.holidayPaidLeaveHours && selectedRecord.holidayPaidLeaveHours > 0)
+                        ? `${selectedRecord.holidayPaidLeaveDays || selectedRecord.holidayOffDays || 1} ngày nghỉ lễ (ca ${
+                            selectedRecord.holidayPaidLeaveHours && selectedRecord.holidayPaidLeaveDays
+                              ? Math.round(selectedRecord.holidayPaidLeaveHours / selectedRecord.holidayPaidLeaveDays)
+                              : selectedRecord.offMonthLeaveDetails?.[0]?.shiftHours ||
+                                (selectedRecord.expectedWorkHours && selectedRecord.expectedWorkDays
+                                  ? Math.round(selectedRecord.expectedWorkHours / selectedRecord.expectedWorkDays)
+                                  : 9)
+                          }h x ${selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ x 1)`
+                        : selectedRecord.holidayWorkedHours
+                          ? '0 ngày (Đi làm lễ)'
+                          : '—'}
                     </td>
                     <td className="py-1.5 px-3 text-right tabular-nums font-semibold">
                       +
@@ -1528,16 +1541,16 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                       đ
                     </td>
                   </tr>
-                  {/* 7.1 Phụ cấp đi làm lễ 2/9 (HR đi riêng / tách quy trình) */}
+                  {/* 7.1 Phụ cấp đi làm lễ 2/9 (Hưởng x3 lương - HR đi riêng) */}
                   <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 bg-amber-500/10 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300">
                     <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 font-mono text-slate-400"></td>
                     <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 pl-6 font-medium">
-                      ↳ Phụ cấp đi làm lễ 2/9 (HR đi riêng / tách quy trình)
+                      ↳ Phụ cấp đi làm lễ 2/9 (Hưởng x3 lương - HR đi riêng)
                     </td>
                     <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-[11px] text-amber-700 dark:text-amber-400">
-                      {selectedRecord.holidayWorkedHours
-                        ? `${selectedRecord.holidayWorkedHours}h làm việc ngày lễ 2/9 (tách quy trình chi trả riêng)`
-                        : '—'}
+                      {selectedRecord.holidayWorkedHours && selectedRecord.holidayWorkedHours > 0
+                        ? `${selectedRecord.holidayWorkedHours}h làm x ${selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ x 3 (HR đi riêng / tách quy trình)`
+                        : '0h làm việc ngày lễ'}
                     </td>
                     <td className="py-1.5 px-3 text-right tabular-nums font-bold text-amber-600 dark:text-amber-400">
                       {selectedRecord.holidayPremiumPay && selectedRecord.holidayPremiumPay > 0
