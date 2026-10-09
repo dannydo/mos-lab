@@ -8,6 +8,7 @@ import { SemicircleGauge } from './SemicircleGauge';
 import { RealisticCardFireworks } from './RealisticCardFireworks';
 import { calculateShiftPacing } from '../utils/tv-monitor-pacing';
 import { useTheme } from '../../../../context/ThemeContext';
+import { TvCelebrationSettings } from '../hooks/useTelesaleTvLiveCelebration';
 
 const getActionTierStyles = (tier: 'rose' | 'amber' | 'emerald', isDark = true) => {
   switch (tier) {
@@ -48,11 +49,58 @@ const getActionTierStyles = (tier: 'rose' | 'amber' | 'emerald', isDark = true) 
 interface DailyActionScheduleProps {
   overview: TelesaleTargetOverview;
   isTvOpen?: boolean;
+  fireworksEnabled?: boolean;
+  soundEnabled?: boolean;
+  volume?: number;
 }
 
-export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overview, isTvOpen = false }) => {
+export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({
+  overview,
+  isTvOpen = false,
+  fireworksEnabled,
+  soundEnabled,
+  volume,
+}) => {
   const { dailyAction, staffTargets } = overview;
   const [now, setNow] = useState<Date>(new Date());
+
+  // Reactive settings from localStorage / custom events if not explicitly passed as props
+  const [internalSettings, setInternalSettings] = useState<Partial<TvCelebrationSettings>>(() => {
+    if (typeof window === 'undefined') return { fireworksEnabled: true, soundEnabled: true, volume: 0.9 };
+    try {
+      const raw = localStorage.getItem('MOS_TV_MONITOR_VOICE_SETTINGS');
+      if (raw) return JSON.parse(raw);
+    } catch {}
+    return { fireworksEnabled: true, soundEnabled: true, volume: 0.9 };
+  });
+
+  useEffect(() => {
+    const handleSettingsUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<Partial<TvCelebrationSettings>>;
+      if (customEvent.detail) {
+        setInternalSettings((prev) => ({ ...prev, ...customEvent.detail }));
+      }
+    };
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'MOS_TV_MONITOR_VOICE_SETTINGS' && e.newValue) {
+        try {
+          setInternalSettings(JSON.parse(e.newValue));
+        } catch {}
+      }
+    };
+
+    window.addEventListener('mos:tv-settings-updated', handleSettingsUpdate);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener('mos:tv-settings-updated', handleSettingsUpdate);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, []);
+
+  const effectiveFireworksEnabled =
+    fireworksEnabled !== undefined ? fireworksEnabled : (internalSettings.fireworksEnabled ?? true);
+  const effectiveSoundEnabled = soundEnabled !== undefined ? soundEnabled : (internalSettings.soundEnabled ?? true);
+  const effectiveVolume = volume !== undefined ? volume : (internalSettings.volume ?? 0.9);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 10000);
@@ -176,10 +224,11 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
         <div className="grid grid-cols-2 gap-2.5 mb-2">
           {/* Semicircle 1: Cuộc Gọi */}
           <div className={callStyles.container}>
-            {/* Pháo bông thực tế khi đạt mốc >= 100% (tắt khi mở TV fullscreen) */}
+            {/* Pháo bông thực tế khi đạt mốc >= 100% (tắt khi mở TV fullscreen hoặc khi tắt pháo bông) */}
             <RealisticCardFireworks
-              active={!isTvOpen && isCallOver100}
-              soundEnabled={!isTvOpen}
+              active={!isTvOpen && effectiveFireworksEnabled && isCallOver100}
+              soundEnabled={!isTvOpen && effectiveSoundEnabled}
+              volume={effectiveVolume}
               theme="emerald"
               cardLabel="CALLS"
             />
@@ -259,10 +308,11 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({ overvi
 
           {/* Semicircle 2: Pickup */}
           <div className={pickupStyles.container}>
-            {/* Pháo bông thực tế khi đạt mốc >= 100% (tắt khi mở TV fullscreen) */}
+            {/* Pháo bông thực tế khi đạt mốc >= 100% (tắt khi mở TV fullscreen hoặc khi tắt pháo bông) */}
             <RealisticCardFireworks
-              active={!isTvOpen && isPickupOver100}
-              soundEnabled={!isTvOpen}
+              active={!isTvOpen && effectiveFireworksEnabled && isPickupOver100}
+              soundEnabled={!isTvOpen && effectiveSoundEnabled}
+              volume={effectiveVolume}
               theme="emerald"
               cardLabel="PICKUP"
             />

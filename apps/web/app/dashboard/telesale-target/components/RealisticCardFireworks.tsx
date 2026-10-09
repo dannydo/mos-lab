@@ -455,8 +455,13 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       if (launchTimerRef.current) clearTimeout(launchTimerRef.current);
       resizeObserver.disconnect();
+      if (ctx && canvas) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
     };
   }, [active, isFrenzy, createRocket, explodeRocket]);
+
+  if (!active) return null;
 
   return (
     <div

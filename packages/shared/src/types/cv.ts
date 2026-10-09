@@ -120,9 +120,32 @@ export interface CvTipCustomerHistoryResponse {
   };
 }
 
+export interface CvPaystubSocialSecurityBreakdown {
+  baseAmount: number;
+  employer: {
+    socialRate: number;
+    socialAmount: number;
+    healthRate: number;
+    healthAmount: number;
+    unemploymentRate: number;
+    unemploymentAmount: number;
+    totalAmount: number;
+  };
+  employee: {
+    socialRate: number;
+    socialAmount: number;
+    healthRate: number;
+    healthAmount: number;
+    unemploymentRate: number;
+    unemploymentAmount: number;
+    totalAmount: number;
+  };
+}
+
 export interface CvPaystubRecord extends HolidayPayBreakdown {
   staffId: number;
   staffName: string;
+  fullName?: string;
   avatar?: string | null;
   store: string;
   totalWorkHours: number;
@@ -154,6 +177,29 @@ export interface CvPaystubRecord extends HolidayPayBreakdown {
     shiftHours?: number;
     note?: string | null;
   }>;
+  // Legacy Wings payslip fields
+  expectedWorkHours?: number;
+  fullTimeWage?: number;
+  weeklyOffDays?: number;
+  weeklyOffWorkedDays?: number;
+  weeklyOffPay?: number;
+  holidayOffDays?: number;
+  holidayPay?: number;
+  overLeaveDays?: number;
+  overLeaveDeduction?: number;
+  unpaidLeaveDays?: number;
+  totalBaseWage?: number;
+  expectedWorkDays?: number;
+  parkingCalculation?: string;
+  otherAllowances?: number;
+  previousMonthAddition?: number;
+  penalties?: number;
+  welfareFund?: number;
+  advancePayment?: number;
+  socialSecurityBreakdown?: CvPaystubSocialSecurityBreakdown;
+  guaranteedIncome?: number;
+  dayOffAvailable?: number;
+  congratulationMessage?: string;
 }
 
 export interface CvPaystubResponse {

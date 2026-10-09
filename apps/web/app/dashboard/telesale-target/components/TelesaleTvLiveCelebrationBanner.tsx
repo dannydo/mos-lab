@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActiveCelebration } from '../hooks/useTelesaleTvLiveCelebration';
 import { Sparkles, Trophy, Calendar, CheckCircle2, Volume2, Award, Flame, MessageSquareHeart } from 'lucide-react';
 
@@ -8,6 +8,7 @@ export interface TelesaleTvLiveCelebrationBannerProps {
   celebration: ActiveCelebration | null;
   isSpeaking?: boolean;
   isFadingOut?: boolean;
+  fireworksEnabled?: boolean;
 }
 
 interface Particle {
@@ -256,6 +257,8 @@ const CelebrationCanvas: React.FC<{ active: boolean; isMilestone: boolean; color
     };
   }, [active, isMilestone, colorTheme]);
 
+  if (!active) return null;
+
   return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none w-full h-full z-10" />;
 };
 
@@ -263,7 +266,33 @@ export const TelesaleTvLiveCelebrationBanner: React.FC<TelesaleTvLiveCelebration
   celebration,
   isSpeaking = false,
   isFadingOut = false,
+  fireworksEnabled,
 }) => {
+  const [internalFireworksEnabled, setInternalFireworksEnabled] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    try {
+      const raw = localStorage.getItem('MOS_TV_MONITOR_VOICE_SETTINGS');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed.fireworksEnabled === 'boolean') return parsed.fireworksEnabled;
+      }
+    } catch {}
+    return true;
+  });
+
+  useEffect(() => {
+    const handleUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<{ fireworksEnabled?: boolean }>;
+      if (customEvent.detail && typeof customEvent.detail.fireworksEnabled === 'boolean') {
+        setInternalFireworksEnabled(customEvent.detail.fireworksEnabled);
+      }
+    };
+    window.addEventListener('mos:tv-settings-updated', handleUpdate);
+    return () => window.removeEventListener('mos:tv-settings-updated', handleUpdate);
+  }, []);
+
+  const effectiveFireworksEnabled = fireworksEnabled !== undefined ? fireworksEnabled : internalFireworksEnabled;
+
   if (!celebration) return null;
 
   const isMilestone = celebration.kind === 'MILESTONE';
@@ -361,7 +390,11 @@ export const TelesaleTvLiveCelebrationBanner: React.FC<TelesaleTvLiveCelebration
       }`}
     >
       {/* Background Interactive Canvas Particle Layer (Confetti / Fireworks) */}
-      <CelebrationCanvas active={true} isMilestone={isMilestone} colorTheme={celebration.colorTheme} />
+      <CelebrationCanvas
+        active={effectiveFireworksEnabled}
+        isMilestone={isMilestone}
+        colorTheme={celebration.colorTheme}
+      />
 
       {/* Ambient Pulsing Radial Light Burst Behind Card */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden">

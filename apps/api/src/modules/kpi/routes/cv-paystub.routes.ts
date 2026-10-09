@@ -217,7 +217,17 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
 
       // 2. Query Hourly Rates and Social Security from staff_payroll (Optimized with MAX(id) B-Tree scan)
       const hourlyRatesQuery = `
-        SELECT sp.user_id, sp.working_hour_rate, sp.social_security_rate, sp.total_social_security_amount, sp.total_support_parking_amount 
+        SELECT sp.user_id, sp.working_hour_rate, sp.social_security_rate, sp.total_social_security_amount, sp.total_support_parking_amount,
+               sp.total_working_hour_expected, sp.total_working_day_expected,
+               sp.total_day_off_week, sp.total_day_overtime_daytime_off_week, sp.total_overtime_daytime_off_week_amount,
+               sp.total_day_off_month, sp.total_day_off_paid_leave, sp.total_off_month_amount, sp.total_off_paid_leave_amount,
+               sp.total_day_off_public_holiday, sp.total_off_public_holiday_amount,
+               sp.total_day_off_punish, sp.total_off_punish_amount,
+               sp.total_day_off_program,
+               sp.total_overtime_daytime_amount,
+               sp.total_extra_support_amount, sp.total_extra_last_month_amount, sp.total_extra_punish_amount, sp.total_punish_credit_balance_amount,
+               sp.total_welfare_fund_amount, sp.total_extra_advance_amount,
+               sp.day_off_available, sp.tracking_key
         FROM \`staff_payroll\` sp
         JOIN (
           SELECT user_id, MAX(id) as max_id
@@ -344,13 +354,15 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
       const hourlyRateMap = new Map<number, number>();
       const socialSecurityMap = new Map<number, { rate: number; amount: number }>();
       const parkingAllowanceMap = new Map<number, number>();
+      const staffPayrollMap = new Map<number, SafeAny>();
       hourlyRatesRows.forEach((r: SafeAny) => {
+        staffPayrollMap.set(Number(r.user_id), r);
         hourlyRateMap.set(Number(r.user_id), Number(r.working_hour_rate || 21500));
         socialSecurityMap.set(Number(r.user_id), {
           rate: Number(r.social_security_rate || 0),
           amount: Number(r.total_social_security_amount || 0),
         });
-        parkingAllowanceMap.set(Number(r.user_id), Number(r.total_support_parking_amount || 0));
+        parkingAllowanceMap.set(Number(r.user_id), Math.round(Number(r.total_support_parking_amount || 0)));
       });
 
       const staffDayOffMap = new Map<number, Set<number>>();
@@ -520,7 +532,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         const techLevel = Math.floor(totalPoints / 100) + 1;
         const holiday = holidayBreakdownMap.get(staffId)!;
 
-        const parkingAllowance = parkingAllowanceMap.get(staffId) || 0;
+        const parkingAllowance = Math.round(parkingAllowanceMap.get(staffId) || 0);
         // Month-off leave pay (calculated by scheduled shift hours: 9h for regular shift, 11h for full shift)
         const monthOffList = monthOffLeavesMap.get(staffId) || [];
         const offMonthDays = monthOffList.reduce((sum, item) => sum + item.workingDayCount, 0);
@@ -531,14 +543,15 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
 
         // Holiday pay (phụ cấp đi làm lễ 2/9) is separated out per HR decision (đi riêng)
         const holidayPaystubAdjustment = 0;
-        const totalIncome =
+        const totalIncome = Math.round(
           hourlyWage +
-          cvXoayBonus +
-          cvTipBonus +
-          seniorityBonus +
-          holidayPaystubAdjustment +
-          parkingAllowance +
-          offMonthWage;
+            cvXoayBonus +
+            cvTipBonus +
+            seniorityBonus +
+            holidayPaystubAdjustment +
+            parkingAllowance +
+            offMonthWage
+        );
 
         // Social Security deduction (10.5% for employee)
         const ssInfo = socialSecurityMap.get(staffId) || { rate: 0, amount: 0 };
@@ -559,9 +572,80 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         grandTotalSocialSecurityAmount += socialSecurityAmount;
         grandTotalNetIncome += netIncome;
 
+        const sp = staffPayrollMap.get(staffId);
+        let trackingData: SafeAny = {};
+        if (sp?.tracking_key) {
+          try {
+            trackingData = typeof sp.tracking_key === 'string' ? JSON.parse(sp.tracking_key) : sp.tracking_key;
+          } catch {
+            trackingData = {};
+          }
+        }
+
+        const expectedWorkDays = Number(sp?.total_working_day_expected || 26);
+        const expectedWorkHours = Number(sp?.total_working_hour_expected || expectedWorkDays * 9);
+        const weeklyOffDays = Number(sp?.total_day_off_week || 4);
+        const weeklyOffWorkedDays = offDaysWorked || 0;
+        const weeklyOffPay = offDaysWorkWage || 0;
+        const fullTimeWage = Number(sp?.total_overtime_daytime_amount || 0);
+        const holidayOffDays = Number(sp?.total_day_off_public_holiday || 0);
+        const holidayPay = holiday.holidayBasePay || Number(sp?.total_off_public_holiday_amount || 0);
+        const overLeaveDays = Number(sp?.total_day_off_punish || 0);
+        const overLeaveDeduction = Math.round(Number(sp?.total_off_punish_amount || 0));
+        const unpaidLeaveDays =
+          sp?.total_day_off_program != null && Number(sp.total_day_off_program) > 0
+            ? Number(sp.total_day_off_program)
+            : Math.max(0, expectedWorkDays - activeDays - offMonthDays - holidayOffDays);
+        const totalBaseWage = Math.round(
+          hourlyWage + fullTimeWage + weeklyOffPay + offMonthWage + holidayPay - overLeaveDeduction
+        );
+        const otherAllowances = seniorityBonus || Number(sp?.total_extra_support_amount || 0);
+        const previousMonthAddition = Math.round(Number(sp?.total_extra_last_month_amount || 0));
+        const penalties = Math.round(
+          Number(sp?.total_extra_punish_amount || 0) + Number(sp?.total_punish_credit_balance_amount || 0)
+        );
+        const welfareFund = Math.round(Number(sp?.total_welfare_fund_amount || 0));
+        const advancePayment = Math.round(Number(sp?.total_extra_advance_amount || 0));
+        const dayOffAvailable = Number(sp?.day_off_available != null ? sp.day_off_available : 26);
+        const congratulationMessage =
+          sp?.staff_payroll_level?.message_congratulation ||
+          'Chúc mừng bạn đã thành Đùi Gà ngon ngon. Tháng sau biến hình Thiên Thần nhé!';
+
+        let ssBreakdown = undefined;
+        if (socialSecurityAmount > 0) {
+          const ssBase = Number(
+            trackingData?.social_security?.social_insurance_rate ||
+              (socialSecurityRate > 1000000 ? socialSecurityRate : 5400000)
+          );
+          const employerSS = trackingData?.social_security?.rate?.employer || {};
+          const employeeSS = trackingData?.social_security?.rate?.employee || {};
+          ssBreakdown = {
+            baseAmount: ssBase,
+            employer: {
+              socialRate: Number(employerSS.social_insurance_rate || 17.5),
+              socialAmount: Math.round(Number(employerSS.social_insurance_amount || ssBase * 0.175)),
+              healthRate: Number(employerSS.health_insurance_rate || 3.0),
+              healthAmount: Math.round(Number(employerSS.health_insurance_amount || ssBase * 0.03)),
+              unemploymentRate: Number(employerSS.unemployment_insurance_rate || 1.0),
+              unemploymentAmount: Math.round(Number(employerSS.unemployment_insurance_amount || ssBase * 0.01)),
+              totalAmount: Math.round(Number(employerSS.total_social_security_amount || ssBase * 0.215)),
+            },
+            employee: {
+              socialRate: Number(employeeSS.social_insurance_rate || 8.0),
+              socialAmount: Math.round(Number(employeeSS.social_insurance_amount || ssBase * 0.08)),
+              healthRate: Number(employeeSS.health_insurance_rate || 1.5),
+              healthAmount: Math.round(Number(employeeSS.health_insurance_amount || ssBase * 0.015)),
+              unemploymentRate: Number(employeeSS.unemployment_insurance_rate || 1.0),
+              unemploymentAmount: Math.round(Number(employeeSS.unemployment_insurance_amount || ssBase * 0.01)),
+              totalAmount: Math.round(socialSecurityAmount),
+            },
+          };
+        }
+
         return {
           staffId,
           staffName: String(staff.fullName || ''),
+          fullName: String(staff.fullName || ''),
           avatar: String(staff.avatar || '') || null,
           store: String(staff.store || 'PXL'),
           totalWorkHours,
@@ -590,6 +674,28 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           offMonthLeaveDetails: monthOffList,
           ...holiday,
           holidayPaystubAdjustment: 0,
+          expectedWorkHours,
+          expectedWorkDays,
+          fullTimeWage,
+          weeklyOffDays,
+          weeklyOffWorkedDays,
+          weeklyOffPay,
+          holidayOffDays,
+          holidayPay,
+          overLeaveDays,
+          overLeaveDeduction,
+          unpaidLeaveDays,
+          totalBaseWage,
+          parkingCalculation: `200.000đ / ${expectedWorkDays} * ${activeDays}`,
+          otherAllowances,
+          previousMonthAddition,
+          penalties,
+          welfareFund,
+          advancePayment,
+          socialSecurityBreakdown: ssBreakdown,
+          guaranteedIncome: 0,
+          dayOffAvailable,
+          congratulationMessage,
         };
       });
 

@@ -502,6 +502,7 @@ function TelesaleTargetContent() {
           celebration={liveCelebration.activeCelebration}
           isSpeaking={liveCelebration.isSpeaking}
           isFadingOut={liveCelebration.isFadingOut}
+          fireworksEnabled={liveCelebration.settings.fireworksEnabled}
         />
       )}
 
@@ -562,7 +563,13 @@ function TelesaleTargetContent() {
 
             {/* Box 4: Hành Động Mỗi Ngày (Bottom 56%) */}
             <div className="h-[56%] overflow-hidden">
-              <DailyActionSchedule overview={overview} isTvOpen={tvModeOpen} />
+              <DailyActionSchedule
+                overview={overview}
+                isTvOpen={tvModeOpen}
+                fireworksEnabled={liveCelebration.settings.fireworksEnabled}
+                soundEnabled={liveCelebration.settings.soundEnabled}
+                volume={liveCelebration.settings.volume}
+              />
             </div>
           </div>
 

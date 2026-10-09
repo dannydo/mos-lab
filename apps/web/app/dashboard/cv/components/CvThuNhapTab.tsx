@@ -37,6 +37,7 @@ import {
   LogoutOutlined,
   CompressOutlined,
   ExpandOutlined,
+  PrinterOutlined,
 } from '@ant-design/icons';
 import {
   CvPaystubRecord,
@@ -911,7 +912,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
         return (
           <div className="flex flex-col items-end">
             <span className="tabular-nums font-bold text-slate-700 dark:text-slate-200 text-sm">
-              {val.toLocaleString('vi-VN')}đ
+              {Math.round(val).toLocaleString('vi-VN')}đ
             </span>
             {!isDayMode && !isPastPeriod && proj.projectedTotalIncome > 0 && (
               <Tooltip
@@ -948,7 +949,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
       width: 130,
       align: 'right' as const,
       render: (val: number | undefined, r: CvPaystubRecord) => {
-        const net = val ?? r.totalIncome - (r.socialSecurityAmount || 0);
+        const net = Math.round(val ?? r.totalIncome - (r.socialSecurityAmount || 0));
         return <span className="tabular-nums font-bold text-emerald-500 text-sm">{net.toLocaleString('vi-VN')}đ</span>;
       },
     },
@@ -1259,200 +1260,727 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
       </Card>
 
       {/* Paystub Detail Modal */}
+      {/* Paystub Detail Modal (Chuẩn cấu trúc 28 mục Wings Legacy) */}
       <Modal
         title={
-          <div className="flex items-center gap-2">
-            <WalletOutlined className="text-emerald-500" />
-            <span>Phiếu Lương Live Chi Tiết - {selectedRecord?.staffName}</span>
+          <div className="flex items-center justify-between pr-8 border-b pb-3 dark:border-slate-800">
+            <div className="flex items-center gap-2">
+              <WalletOutlined className="text-amber-500 text-lg" />
+              <span className="font-bold text-base">Phiếu Lương Live Chi Tiết - {selectedRecord?.staffName}</span>
+            </div>
+            <Space>
+              <Tag color="gold" className="font-mono text-xs font-semibold px-2 py-0.5">
+                KỲ: {dateRange?.[0] ? dayjs(dateRange[0]).format('MM.YYYY') : dayjs().format('MM.YYYY')}
+              </Tag>
+              <Button
+                size="small"
+                icon={<PrinterOutlined />}
+                onClick={() => {
+                  if (typeof window !== 'undefined') window.print();
+                }}
+                className="text-xs"
+              >
+                In phiếu
+              </Button>
+            </Space>
           </div>
         }
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
-        footer={null}
-        width={600}
+        footer={[
+          <div key="modal-footer" className="flex items-center justify-between w-full px-2 py-1">
+            <Text type="secondary" className="text-xs italic">
+              💡 Cấu trúc đầy đủ 28 mục đối chiếu chuẩn 100% Wings Legacy
+            </Text>
+            <Button
+              key="close-paystub"
+              type="primary"
+              onClick={() => setModalOpen(false)}
+              className="bg-amber-500 hover:bg-amber-400 border-amber-500 text-black font-semibold"
+            >
+              Đóng Phiếu Lương
+            </Button>
+          </div>,
+        ]}
+        width={780}
       >
         {selectedRecord && (
-          <div className="space-y-4 pt-2">
-            <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-lg flex justify-between items-center">
-              <div>
-                <Typography.Text type="secondary" className="text-xs">
-                  Nhân sự:
-                </Typography.Text>
-                <div className="font-bold text-base">
-                  {selectedRecord.staffName} (ID: {selectedRecord.staffId})
+          <div className="space-y-4 pt-2 text-slate-800 dark:text-slate-200">
+            {/* Staff Profile Header Card */}
+            <div className="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-1">
+                    PAYSLIP • MONTH {dateRange?.[0] ? dayjs(dateRange[0]).format('MM.YYYY') : dayjs().format('MM.YYYY')}
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-xs">
+                    <div>
+                      <span className="text-slate-500 dark:text-slate-400">NICKNAME:</span>{' '}
+                      <strong className="text-sm font-semibold">{selectedRecord.staffName}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 dark:text-slate-400">HỌ TÊN:</span>{' '}
+                      <strong className="text-sm font-semibold">
+                        {selectedRecord.fullName || selectedRecord.staffName}
+                      </strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 dark:text-slate-400">CHỨC VỤ:</span>{' '}
+                      <Tag color="cyan" className="font-semibold text-xs ml-1">
+                        Chuyên Viên (CV)
+                      </Tag>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 dark:text-slate-400">BỘ PHẬN/ PHÒNG BAN:</span>{' '}
+                      <Tag color="blue" className="font-semibold text-xs ml-1">
+                        {selectedRecord.store}
+                      </Tag>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 dark:text-slate-400">NGÀY NGHỈ PHÉP CÒN LẠI:</span>{' '}
+                      <strong className="text-amber-600 dark:text-amber-400 font-bold tabular-nums ml-1">
+                        {selectedRecord.dayOffAvailable ?? 26}
+                      </strong>{' '}
+                      ngày
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[11px] text-slate-400">Mã NV: #{selectedRecord.staffId}</div>
+                  <Tag color="green" className="mt-1">
+                    Active
+                  </Tag>
                 </div>
               </div>
-              <Tag color="blue">{selectedRecord.store}</Tag>
             </div>
 
-            <div className="border rounded-lg p-3 space-y-2">
-              {selectedRecord.offDaysWorked && selectedRecord.offDaysWorked > 0 ? (
-                <>
-                  <div className="flex justify-between items-center py-1 border-b">
-                    <span className="text-sm text-slate-600 dark:text-slate-400">
-                      1. Lương Giờ Ngày Thường ({formatHoursToHoursMinutes(selectedRecord.regularHours || 0)} x{' '}
-                      {selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ/h):
-                    </span>
-                    <span className="tabular-nums font-semibold">
-                      {(selectedRecord.regularHourlyWage || 0).toLocaleString('vi-VN')}đ
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-1 border-b bg-amber-500/10 px-2 rounded">
-                    <span className="text-sm text-amber-700 dark:text-amber-300 font-medium">
-                      2. Lương Đi Làm Ngày Nghỉ Tuần (x2) (
-                      {formatHoursToHoursMinutes(selectedRecord.offDaysWorkHours || 0)} x{' '}
-                      {selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ/h x 2):
-                    </span>
-                    <span className="tabular-nums font-bold text-amber-600 dark:text-amber-400">
-                      +{(selectedRecord.offDaysWorkWage || 0).toLocaleString('vi-VN')}đ
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-1 border-b">
-                    <span className="text-sm text-slate-600 dark:text-slate-400">3. Thưởng Ca CV (Xoay):</span>
-                    <span className="tabular-nums font-semibold text-blue-500">
-                      +{selectedRecord.cvXoayBonus.toLocaleString('vi-VN')}đ
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-1 border-b">
-                    <span className="text-sm text-slate-600 dark:text-slate-400">
-                      4. Thưởng Thâm Niên (
-                      {(() => {
-                        const months = selectedRecord.seniorityMonths || 0;
-                        const years = Math.floor(months / 12);
-                        const remainingMonths = months % 12;
-                        return years > 0 ? `${years} năm ${remainingMonths} th` : `${months} tháng`;
-                      })()}{' '}
-                      - +{selectedRecord.seniorityBonusPercent || 0}%):
-                    </span>
-                    <span className="tabular-nums font-semibold text-orange-500">
-                      +{(selectedRecord.seniorityBonus || 0).toLocaleString('vi-VN')}đ
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-1 border-b">
-                    <span className="text-sm text-slate-600 dark:text-slate-400">5. Thưởng CV Tip:</span>
-                    <span className="tabular-nums font-semibold text-purple-500">
-                      +{selectedRecord.cvTipBonus.toLocaleString('vi-VN')}đ
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex justify-between items-center py-1 border-b">
-                    <span className="text-sm text-slate-600 dark:text-slate-400">
-                      1. Lương Giờ ({formatHoursToHoursMinutes(selectedRecord.totalWorkHours)} x{' '}
-                      {selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ/h):
-                    </span>
-                    <span className="tabular-nums font-semibold">
-                      {selectedRecord.hourlyWage.toLocaleString('vi-VN')}đ
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-1 border-b">
-                    <span className="text-sm text-slate-600 dark:text-slate-400">2. Thưởng Ca CV (Xoay):</span>
-                    <span className="tabular-nums font-semibold text-blue-500">
-                      +{selectedRecord.cvXoayBonus.toLocaleString('vi-VN')}đ
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-1 border-b">
-                    <span className="text-sm text-slate-600 dark:text-slate-400">
-                      3. Thưởng Thâm Niên (
-                      {(() => {
-                        const months = selectedRecord.seniorityMonths || 0;
-                        const years = Math.floor(months / 12);
-                        const remainingMonths = months % 12;
-                        return years > 0 ? `${years} năm ${remainingMonths} th` : `${months} tháng`;
-                      })()}{' '}
-                      - +{selectedRecord.seniorityBonusPercent || 0}%):
-                    </span>
-                    <span className="tabular-nums font-semibold text-orange-500">
-                      +{(selectedRecord.seniorityBonus || 0).toLocaleString('vi-VN')}đ
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center py-1 border-b">
-                    <span className="text-sm text-slate-600 dark:text-slate-400">4. Thưởng CV Tip:</span>
-                    <span className="tabular-nums font-semibold text-purple-500">
-                      +{selectedRecord.cvTipBonus.toLocaleString('vi-VN')}đ
-                    </span>
-                  </div>
-                </>
-              )}
+            {/* 28-row Wings Legacy Payslip Table */}
+            <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-lg">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-100 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold">
+                    <th className="py-2 px-2 text-center w-10 border-r border-slate-200 dark:border-slate-700">STT</th>
+                    <th className="py-2 px-3 text-left border-r border-slate-200 dark:border-slate-700">Nội dung</th>
+                    <th className="py-2 px-3 text-left border-r border-slate-200 dark:border-slate-700">
+                      Công thức / Diễn giải
+                    </th>
+                    <th className="py-2 px-3 text-right w-36">Thành tiền / Giá trị</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                  {/* (1) Giờ chuẩn */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      1
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">
+                      Giờ làm việc chuẩn trong tháng
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                      26 ngày x 9h/ngày
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold">
+                      {selectedRecord.expectedWorkHours || 234}
+                    </td>
+                  </tr>
 
-              <div className="flex justify-between items-center py-1 border-b bg-rose-500/10 px-2 rounded">
-                <span className="text-sm text-rose-700 dark:text-rose-300 font-medium">
-                  Lương ngày lễ 1x ({selectedRecord.holidayWorkedHours || 0}h làm +{' '}
-                  {selectedRecord.holidayPaidLeaveHours || 0}h nghỉ lễ):
-                </span>
-                <span className="tabular-nums font-bold text-rose-600 dark:text-rose-400">
-                  {selectedRecord.holidayBasePay.toLocaleString('vi-VN')}đ
-                </span>
+                  {/* (2) Giờ thực tế */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 font-semibold">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      2
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 font-bold">
+                      Giờ làm việc thực tế
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px] font-normal">
+                      {formatHoursToHoursMinutes(selectedRecord.totalWorkHours)}
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-bold text-blue-600 dark:text-blue-400">
+                      {Number(selectedRecord.totalWorkHours || 0).toFixed(1)}
+                    </td>
+                  </tr>
+
+                  {/* (3) Đơn giá giờ */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      3
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Đơn giá giờ</td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                      —
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold">
+                      {selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ
+                    </td>
+                  </tr>
+
+                  {/* (4) Lương theo giờ làm */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      4
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Lương theo giờ làm</td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                      (4)=(2)x(3)
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold">
+                      {Math.round(selectedRecord.hourlyWage).toLocaleString('vi-VN')}đ
+                    </td>
+                  </tr>
+
+                  {/* (5) Ngày làm Full-Time */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      5
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Ngày làm Full-Time</td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                      —
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold">
+                      {Math.round(selectedRecord.fullTimeWage || 0).toLocaleString('vi-VN')}đ
+                    </td>
+                  </tr>
+
+                  {/* (6) Off tuần */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      6
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Off tuần</td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                      Nghỉ tuần theo lịch
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold">
+                      {selectedRecord.weeklyOffDays || 4}
+                    </td>
+                  </tr>
+                  {/* 6.1 Làm off tuần */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 bg-slate-50/30 dark:bg-slate-900/30 text-[11px]">
+                    <td className="py-1 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400"></td>
+                    <td className="py-1 px-3 border-r border-slate-200 dark:border-slate-800 pl-6 text-slate-500 dark:text-slate-400">
+                      ↳ Làm off tuần
+                    </td>
+                    <td className="py-1 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-400 text-[10px]">
+                      —
+                    </td>
+                    <td className="py-1 px-3 text-right tabular-nums">
+                      {selectedRecord.weeklyOffWorkedDays || selectedRecord.offDaysWorked || 0}
+                    </td>
+                  </tr>
+
+                  {/* (7) Cộng tiền ngày nghỉ tuần */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      7
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">
+                      Cộng tiền ngày nghỉ tuần
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                      {selectedRecord.offDaysWorked
+                        ? `${formatHoursToHoursMinutes(selectedRecord.offDaysWorkHours || 0)} x ${selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ x 2`
+                        : '—'}
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold">
+                      +
+                      {Math.round(selectedRecord.weeklyOffPay || selectedRecord.offDaysWorkWage || 0).toLocaleString(
+                        'vi-VN'
+                      )}
+                      đ
+                    </td>
+                  </tr>
+
+                  {/* (8) Off tháng (phép năm là 12 ngày) */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      8
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">
+                      Off tháng (phép năm là 12 ngày)
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                      Nghỉ phép tháng được duyệt
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold">
+                      {selectedRecord.offMonthDays || 0}
+                    </td>
+                  </tr>
+
+                  {/* (9) Cộng tiền ngày nghỉ phép */}
+                  <tr
+                    className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/40 ${selectedRecord.offMonthWage && selectedRecord.offMonthWage > 0 ? 'bg-emerald-500/10 dark:bg-emerald-950/20' : ''}`}
+                  >
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      9
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 font-medium">
+                      Cộng tiền ngày nghỉ phép
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-emerald-700 dark:text-emerald-400 text-[11px]">
+                      {selectedRecord.offMonthLeaveDetails && selectedRecord.offMonthLeaveDetails.length > 0
+                        ? selectedRecord.offMonthLeaveDetails
+                            .map(
+                              (d) =>
+                                `Ngày ${dayjs(d.date).format('DD/MM')} (ca ${d.shiftHours || 9}h x ${selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ)${d.note ? `: ${d.note}` : ''}`
+                            )
+                            .join('; ')
+                        : '—'}
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-bold text-emerald-600 dark:text-emerald-400">
+                      +{Math.round(selectedRecord.offMonthWage || 0).toLocaleString('vi-VN')}đ
+                    </td>
+                  </tr>
+
+                  {/* (10) Off lễ */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      10
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Off lễ</td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                      —
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold">
+                      {selectedRecord.holidayOffDays || 0}
+                    </td>
+                  </tr>
+
+                  {/* (11) Cộng tiền ngày làm lễ */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      11
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">
+                      Cộng tiền ngày làm lễ
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                      {selectedRecord.holidayWorkedHours
+                        ? `${selectedRecord.holidayWorkedHours}h làm + ${selectedRecord.holidayPaidLeaveHours || 0}h nghỉ lễ`
+                        : '—'}
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold">
+                      +
+                      {Math.round(selectedRecord.holidayPay || selectedRecord.holidayBasePay || 0).toLocaleString(
+                        'vi-VN'
+                      )}
+                      đ
+                    </td>
+                  </tr>
+
+                  {/* (12) Ngày nghỉ quá phép */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      12
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Ngày nghỉ quá phép</td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                      —
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold">
+                      {selectedRecord.overLeaveDays || 0}
+                    </td>
+                  </tr>
+
+                  {/* (13) Trừ lương ngày nghỉ quá phép */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      13
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">
+                      Trừ lương ngày nghỉ quá phép
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                      —
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold">
+                      -{Math.round(selectedRecord.overLeaveDeduction || 0).toLocaleString('vi-VN')}đ
+                    </td>
+                  </tr>
+
+                  {/* (14) Ngày nghỉ không lương */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      14
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">
+                      Ngày nghỉ không lương
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                      26 ngày chuẩn - {selectedRecord.activeDays || 0} ngày làm - {selectedRecord.offMonthDays || 0}{' '}
+                      phép
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold">
+                      {selectedRecord.unpaidLeaveDays || 0}
+                    </td>
+                  </tr>
+
+                  {/* (15) Tổng lương (Highlight) */}
+                  <tr className="bg-amber-500/10 dark:bg-amber-950/20 font-bold border-y-2 border-amber-500/30">
+                    <td className="py-2 px-2 text-center border-r border-slate-200 dark:border-slate-800 font-mono text-amber-700 dark:text-amber-400">
+                      15
+                    </td>
+                    <td className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-amber-900 dark:text-amber-200 font-bold">
+                      Tổng lương
+                    </td>
+                    <td className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-amber-700 dark:text-amber-400 text-[11px] font-normal">
+                      (15)=(4)+(5)+(7)+(9)+(11)-(13)
+                    </td>
+                    <td className="py-2 px-3 text-right tabular-nums font-bold text-amber-700 dark:text-amber-300 text-sm">
+                      {Math.round(
+                        selectedRecord.totalBaseWage ||
+                          selectedRecord.hourlyWage +
+                            (selectedRecord.offMonthWage || 0) +
+                            (selectedRecord.offDaysWorkWage || 0) +
+                            (selectedRecord.holidayBasePay || 0)
+                      ).toLocaleString('vi-VN')}
+                      đ
+                    </td>
+                  </tr>
+
+                  {/* (16) Lượt khách phục vụ */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      16
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Lượt khách phục vụ</td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                      {selectedRecord.serviceCount || 0} lượt hoàn thành
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold">
+                      {selectedRecord.serviceCount || 0}
+                    </td>
+                  </tr>
+
+                  {/* (17) Tips */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      17
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Tips</td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-purple-600 dark:text-purple-400 text-[11px]">
+                      Thưởng Tip CV (70% tiền tip khách)
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold text-purple-600 dark:text-purple-400">
+                      +{Math.round(selectedRecord.cvTipBonus).toLocaleString('vi-VN')}đ
+                    </td>
+                  </tr>
+
+                  {/* (18) Thưởng */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 font-semibold">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      18
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 font-bold">Thưởng</td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-blue-600 dark:text-blue-400 text-[11px] font-normal">
+                      Thưởng Ca CV (Xoay)
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-bold text-blue-600 dark:text-blue-400">
+                      +{Math.round(selectedRecord.cvXoayBonus).toLocaleString('vi-VN')}đ
+                    </td>
+                  </tr>
+
+                  {/* (19) Ngày làm việc thực tế trong tháng */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      19
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">
+                      Ngày làm việc thực tế trong tháng
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                      Số ngày đi làm / Số ngày công chuẩn
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold">
+                      {selectedRecord.activeDays || 0} / {selectedRecord.expectedWorkDays || 26}
+                    </td>
+                  </tr>
+
+                  {/* (20) Phụ cấp gửi xe */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      20
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Phụ cấp gửi xe</td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                      {selectedRecord.parkingCalculation ||
+                        `200.000đ / ${selectedRecord.expectedWorkDays || 26} * ${selectedRecord.activeDays || 0}`}
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
+                      +{Math.round(selectedRecord.parkingAllowance || 0).toLocaleString('vi-VN')}đ
+                    </td>
+                  </tr>
+
+                  {/* (21) Phụ cấp khác */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      21
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Phụ cấp khác</td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-orange-600 dark:text-orange-400 text-[11px]">
+                      {selectedRecord.seniorityMonths
+                        ? `Thưởng thâm niên ${selectedRecord.seniorityMonths} tháng (+${selectedRecord.seniorityBonusPercent || 0}%)`
+                        : '—'}
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold">
+                      +
+                      {Math.round(selectedRecord.otherAllowances || selectedRecord.seniorityBonus || 0).toLocaleString(
+                        'vi-VN'
+                      )}
+                      đ
+                    </td>
+                  </tr>
+
+                  {/* (22) Bổ sung các tháng trước */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      22
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">
+                      Bổ sung các tháng trước
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                      —
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold">
+                      +{Math.round(selectedRecord.previousMonthAddition || 0).toLocaleString('vi-VN')}đ
+                    </td>
+                  </tr>
+
+                  {/* (23) Phạt trừ thưởng */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      23
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Phạt trừ thưởng</td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                      —
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold">
+                      -{Math.round(selectedRecord.penalties || 0).toLocaleString('vi-VN')}đ
+                    </td>
+                  </tr>
+
+                  {/* (24) Tổng thu nhập thực tế trong tháng (Gross) */}
+                  <tr className="bg-blue-500/10 dark:bg-blue-950/20 font-bold border-y-2 border-blue-500/30">
+                    <td className="py-2 px-2 text-center border-r border-slate-200 dark:border-slate-800 font-mono text-blue-700 dark:text-blue-400">
+                      24
+                    </td>
+                    <td className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-blue-900 dark:text-blue-200 font-bold">
+                      Tổng thu nhập thực tế trong tháng
+                    </td>
+                    <td className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-blue-700 dark:text-blue-400 text-[11px] font-normal">
+                      (24)=(15)+(17)+(18)+(19)+(20)+(21)+(22)-(23)
+                    </td>
+                    <td className="py-2 px-3 text-right tabular-nums font-bold text-blue-700 dark:text-blue-300 text-sm">
+                      {Math.round(selectedRecord.totalIncome).toLocaleString('vi-VN')}đ
+                    </td>
+                  </tr>
+
+                  {/* (25) Trừ quỹ phúc lợi */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      25
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Trừ quỹ phúc lợi</td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                      —
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold">
+                      -{Math.round(selectedRecord.welfareFund || 0).toLocaleString('vi-VN')}đ
+                    </td>
+                  </tr>
+
+                  {/* (26) Trừ tạm ứng */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
+                      26
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Trừ tạm ứng</td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                      —
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold">
+                      -{Math.round(selectedRecord.advancePayment || 0).toLocaleString('vi-VN')}đ
+                    </td>
+                  </tr>
+
+                  {/* (27) BHXH */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 font-semibold bg-rose-500/5 dark:bg-rose-950/10">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-rose-600 dark:text-rose-400 font-mono">
+                      27
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-rose-700 dark:text-rose-300 font-bold">
+                      BHXH
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-rose-600 dark:text-rose-400 text-[11px] font-normal">
+                      Khấu trừ người lao động đóng (10.5%)
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-bold text-rose-600 dark:text-rose-400">
+                      -{Math.round(selectedRecord.socialSecurityAmount || 0).toLocaleString('vi-VN')}đ
+                    </td>
+                  </tr>
+
+                  {/* 27.1 Wings đóng */}
+                  {selectedRecord.socialSecurityAmount && selectedRecord.socialSecurityAmount > 0 ? (
+                    <>
+                      <tr className="bg-slate-50/60 dark:bg-slate-900/60 text-[11px]">
+                        <td className="py-1 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400"></td>
+                        <td className="py-1 px-3 border-r border-slate-200 dark:border-slate-800 pl-6 text-slate-600 dark:text-slate-300 font-medium">
+                          ↳ Wings (Công ty đóng 21.5%)
+                        </td>
+                        <td className="py-1 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-400 text-[10px]">
+                          Lương cơ sở 5.400.000đ
+                        </td>
+                        <td className="py-1 px-3 text-right tabular-nums text-slate-600 dark:text-slate-300 font-semibold">
+                          {Math.round(
+                            selectedRecord.socialSecurityBreakdown?.employer?.totalAmount || 1161000
+                          ).toLocaleString('vi-VN')}
+                          đ
+                        </td>
+                      </tr>
+                      <tr className="bg-slate-50/30 dark:bg-slate-900/30 text-[10px] text-slate-400">
+                        <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-800"></td>
+                        <td className="py-0.5 px-3 border-r border-slate-200 dark:border-slate-800 pl-10">
+                          BHXH (17.5%)
+                        </td>
+                        <td className="py-0.5 px-3 border-r border-slate-200 dark:border-slate-800">—</td>
+                        <td className="py-0.5 px-3 text-right tabular-nums">
+                          {Math.round(
+                            selectedRecord.socialSecurityBreakdown?.employer?.socialAmount || 945000
+                          ).toLocaleString('vi-VN')}
+                          đ
+                        </td>
+                      </tr>
+                      <tr className="bg-slate-50/30 dark:bg-slate-900/30 text-[10px] text-slate-400">
+                        <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-800"></td>
+                        <td className="py-0.5 px-3 border-r border-slate-200 dark:border-slate-800 pl-10">BHYT (3%)</td>
+                        <td className="py-0.5 px-3 border-r border-slate-200 dark:border-slate-800">—</td>
+                        <td className="py-0.5 px-3 text-right tabular-nums">
+                          {Math.round(
+                            selectedRecord.socialSecurityBreakdown?.employer?.healthAmount || 162000
+                          ).toLocaleString('vi-VN')}
+                          đ
+                        </td>
+                      </tr>
+                      <tr className="bg-slate-50/30 dark:bg-slate-900/30 text-[10px] text-slate-400">
+                        <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-800"></td>
+                        <td className="py-0.5 px-3 border-r border-slate-200 dark:border-slate-800 pl-10">BHTN (1%)</td>
+                        <td className="py-0.5 px-3 border-r border-slate-200 dark:border-slate-800">—</td>
+                        <td className="py-0.5 px-3 text-right tabular-nums">
+                          {Math.round(
+                            selectedRecord.socialSecurityBreakdown?.employer?.unemploymentAmount || 54000
+                          ).toLocaleString('vi-VN')}
+                          đ
+                        </td>
+                      </tr>
+
+                      {/* 27.2 Nhân sự đóng */}
+                      <tr className="bg-slate-50/60 dark:bg-slate-900/60 text-[11px]">
+                        <td className="py-1 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400"></td>
+                        <td className="py-1 px-3 border-r border-slate-200 dark:border-slate-800 pl-6 text-rose-700 dark:text-rose-300 font-medium">
+                          ↳ {selectedRecord.staffName} (NLĐ đóng 10.5%)
+                        </td>
+                        <td className="py-1 px-3 border-r border-slate-200 dark:border-slate-800 text-rose-500/80 text-[10px]">
+                          Trừ trực tiếp vào lương
+                        </td>
+                        <td className="py-1 px-3 text-right tabular-nums text-rose-600 dark:text-rose-400 font-semibold">
+                          -{Math.round(selectedRecord.socialSecurityAmount || 567000).toLocaleString('vi-VN')}đ
+                        </td>
+                      </tr>
+                      <tr className="bg-slate-50/30 dark:bg-slate-900/30 text-[10px] text-slate-400">
+                        <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-800"></td>
+                        <td className="py-0.5 px-3 border-r border-slate-200 dark:border-slate-800 pl-10">BHXH (8%)</td>
+                        <td className="py-0.5 px-3 border-r border-slate-200 dark:border-slate-800">—</td>
+                        <td className="py-0.5 px-3 text-right tabular-nums">
+                          -
+                          {Math.round(
+                            selectedRecord.socialSecurityBreakdown?.employee?.socialAmount || 432000
+                          ).toLocaleString('vi-VN')}
+                          đ
+                        </td>
+                      </tr>
+                      <tr className="bg-slate-50/30 dark:bg-slate-900/30 text-[10px] text-slate-400">
+                        <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-800"></td>
+                        <td className="py-0.5 px-3 border-r border-slate-200 dark:border-slate-800 pl-10">
+                          BHYT (1.5%)
+                        </td>
+                        <td className="py-0.5 px-3 border-r border-slate-200 dark:border-slate-800">—</td>
+                        <td className="py-0.5 px-3 text-right tabular-nums">
+                          -
+                          {Math.round(
+                            selectedRecord.socialSecurityBreakdown?.employee?.healthAmount || 81000
+                          ).toLocaleString('vi-VN')}
+                          đ
+                        </td>
+                      </tr>
+                      <tr className="bg-slate-50/30 dark:bg-slate-900/30 text-[10px] text-slate-400">
+                        <td className="py-0.5 px-2 text-center border-r border-slate-200 dark:border-slate-800"></td>
+                        <td className="py-0.5 px-3 border-r border-slate-200 dark:border-slate-800 pl-10">BHTN (1%)</td>
+                        <td className="py-0.5 px-3 border-r border-slate-200 dark:border-slate-800">—</td>
+                        <td className="py-0.5 px-3 text-right tabular-nums">
+                          -
+                          {Math.round(
+                            selectedRecord.socialSecurityBreakdown?.employee?.unemploymentAmount || 54000
+                          ).toLocaleString('vi-VN')}
+                          đ
+                        </td>
+                      </tr>
+                    </>
+                  ) : null}
+
+                  {/* (28) Lương thực lãnh trong tháng (Net) - Big Highlight */}
+                  <tr className="bg-emerald-500/15 dark:bg-emerald-950/30 font-extrabold border-y-2 border-emerald-500/40">
+                    <td className="py-3 px-2 text-center border-r border-slate-200 dark:border-slate-800 font-mono text-emerald-800 dark:text-emerald-300 text-base">
+                      28
+                    </td>
+                    <td className="py-3 px-3 border-r border-slate-200 dark:border-slate-800 text-emerald-900 dark:text-emerald-200 font-extrabold text-sm uppercase tracking-wide">
+                      💰 Lương thực lãnh trong tháng (Net)
+                    </td>
+                    <td className="py-3 px-3 border-r border-slate-200 dark:border-slate-800 text-emerald-700 dark:text-emerald-400 text-xs font-normal">
+                      (28)=(24)-(25)-(26)-(27)
+                    </td>
+                    <td className="py-3 px-3 text-right tabular-nums font-black text-emerald-600 dark:text-emerald-400 text-lg">
+                      {Math.round(
+                        selectedRecord.netIncome ??
+                          selectedRecord.totalIncome - (selectedRecord.socialSecurityAmount || 0)
+                      ).toLocaleString('vi-VN')}
+                      đ
+                    </td>
+                  </tr>
+
+                  {/* 28.1 Đảm bảo thu nhập */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 text-[11px] text-slate-500 dark:text-slate-400">
+                    <td className="py-1 px-2 text-center border-r border-slate-200 dark:border-slate-800"></td>
+                    <td className="py-1 px-3 border-r border-slate-200 dark:border-slate-800 pl-6">
+                      ↳ Đảm bảo thu nhập
+                    </td>
+                    <td className="py-1 px-3 border-r border-slate-200 dark:border-slate-800 text-[10px]">—</td>
+                    <td className="py-1 px-3 text-right tabular-nums">
+                      {Math.round(selectedRecord.guaranteedIncome || 0).toLocaleString('vi-VN')}đ / đ
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Congratulation Message Card */}
+            <div className="p-3 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-300/40 dark:border-amber-800/30 rounded-lg text-center text-xs font-medium text-amber-800 dark:text-amber-300">
+              🍗{' '}
+              {selectedRecord.congratulationMessage ||
+                'Chúc mừng bạn đã thành Đùi Gà ngon ngon. Tháng sau biến hình Thiên Thần nhé!'}{' '}
+              👼
+            </div>
+
+            {/* Company Legal Information Footer */}
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-800 text-[10px] text-slate-400 space-y-1">
+              <div className="flex justify-between font-semibold text-slate-600 dark:text-slate-300">
+                <span>CÔNG TY TNHH WINGS LASHES</span>
+                <span>Tax Number: 0313891996 • Hotline: 1800 8154</span>
               </div>
-              {selectedRecord.holidayPremiumPay && selectedRecord.holidayPremiumPay > 0 ? (
-                <div className="flex justify-between items-center py-1 border-b bg-amber-500/10 px-2 rounded">
-                  <span className="text-sm text-amber-700 dark:text-amber-300 font-medium">
-                    Phụ cấp đi làm lễ 2/9 (HR đi riêng / tách quy trình):
-                  </span>
-                  <span className="tabular-nums font-bold text-amber-600 dark:text-amber-400">
-                    +{selectedRecord.holidayPremiumPay.toLocaleString('vi-VN')}đ (Đi riêng)
-                  </span>
-                </div>
-              ) : null}
-
-              {selectedRecord.parkingAllowance && selectedRecord.parkingAllowance > 0 ? (
-                <div className="flex justify-between items-center py-1 border-b">
-                  <span className="text-sm text-slate-600 dark:text-slate-400">Phụ cấp gửi xe:</span>
-                  <span className="tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
-                    +{selectedRecord.parkingAllowance.toLocaleString('vi-VN')}đ
-                  </span>
-                </div>
-              ) : null}
-
-              {selectedRecord.offMonthWage && selectedRecord.offMonthWage > 0 ? (
-                <div className="flex justify-between items-center py-1 border-b bg-emerald-500/10 px-2 rounded">
-                  <div className="flex flex-col">
-                    <span className="text-sm text-emerald-700 dark:text-emerald-300 font-medium">
-                      Nghỉ phép tháng ({selectedRecord.offMonthDays || 1} ngày):
-                    </span>
-                    {selectedRecord.offMonthLeaveDetails && selectedRecord.offMonthLeaveDetails.length > 0 && (
-                      <span className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80">
-                        {selectedRecord.offMonthLeaveDetails
-                          .map(
-                            (d) =>
-                              `Ngày ${dayjs(d.date).format('DD/MM')} (ca ${d.shiftHours || 9}h x ${selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ)${d.note ? `: ${d.note}` : ''}`
-                          )
-                          .join('; ')}
-                      </span>
-                    )}
-                  </div>
-                  <span className="tabular-nums font-bold text-emerald-600 dark:text-emerald-400">
-                    +{(selectedRecord.offMonthWage || 0).toLocaleString('vi-VN')}đ
-                  </span>
-                </div>
-              ) : null}
-
-              <div className="flex justify-between items-center py-1 border-b bg-rose-500/10 px-2 rounded">
-                <span className="text-sm text-rose-700 dark:text-rose-300 font-medium">Khấu trừ BHXH (10.5% NLĐ):</span>
-                <span className="tabular-nums font-bold text-rose-600 dark:text-rose-400">
-                  {selectedRecord.socialSecurityAmount && selectedRecord.socialSecurityAmount > 0
-                    ? `-${selectedRecord.socialSecurityAmount.toLocaleString('vi-VN')}đ`
-                    : '0đ'}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center pt-2 border-t">
-                <span className="text-sm text-slate-500">∑ TỔNG THU NHẬP (GROSS):</span>
-                <span className="tabular-nums font-bold text-base text-slate-700 dark:text-slate-200">
-                  {selectedRecord.totalIncome.toLocaleString('vi-VN')}đ
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center pt-1 font-bold text-lg text-emerald-600 dark:text-emerald-400">
-                <span>💰 LƯƠNG THỰC LÃNH (NET):</span>
-                <span className="tabular-nums">
-                  {(
-                    selectedRecord.netIncome ?? selectedRecord.totalIncome - (selectedRecord.socialSecurityAmount || 0)
-                  ).toLocaleString('vi-VN')}
-                  đ
-                </span>
-              </div>
+              <div>• Chi nhánh 1: 309 Phan Xích Long, P.1, Q. Phú Nhuận, TP. Hồ Chí Minh</div>
+              <div>• Chi nhánh 2: 159 - 159A Đề Thám, P. Cô Giang, Q. 1, TP. Hồ Chí Minh</div>
+              <div>• Chi nhánh 3: L5-08, 09 Estella Place, 88 Song Hành, P. An Phú, TP. Thủ Đức, TP. Hồ Chí Minh</div>
             </div>
           </div>
         )}

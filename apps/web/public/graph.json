@@ -9824,7 +9824,7 @@
         "path": "/api/kpi/cv-paystub/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 628
+        "line": 725
       }
     },
     {
@@ -22218,6 +22218,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:CvPaystubSocialSecurityBreakdown",
+      "type": "SharedType",
+      "label": "CvPaystubSocialSecurityBreakdown",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cv.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CvPaystubSocialSecurityBreakdown",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:CvPaystubRecord",
       "type": "SharedType",
       "label": "CvPaystubRecord",
@@ -31650,8 +31662,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 32310,
-        "lineCount": 806,
+        "sizeBytes": 38143,
+        "lineCount": 905,
         "ext": ".ts"
       }
     },
@@ -37175,8 +37187,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 70322,
-        "lineCount": 1681,
+        "sizeBytes": 99199,
+        "lineCount": 2011,
         "ext": ".tsx"
       }
     },
@@ -38455,6 +38467,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/DailyActionSchedule.test.tsx",
+      "type": "File",
+      "label": "DailyActionSchedule.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/DailyActionSchedule.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3638,
+        "lineCount": 120,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/telesale-target/components/DailyActionSchedule.tsx",
       "type": "File",
       "label": "DailyActionSchedule.tsx",
@@ -38462,8 +38487,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DailyActionSchedule.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25912,
-        "lineCount": 570,
+        "sizeBytes": 28033,
+        "lineCount": 622,
         "ext": ".tsx"
       }
     },
@@ -38527,8 +38552,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/RealisticCardFireworks.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14515,
-        "lineCount": 471,
+        "sizeBytes": 14637,
+        "lineCount": 476,
         "ext": ".tsx"
       }
     },
@@ -38605,7 +38630,7 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38726,
+        "sizeBytes": 38744,
         "lineCount": 846,
         "ext": ".tsx"
       }
@@ -38696,8 +38721,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvLiveCelebrationBanner.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21592,
-        "lineCount": 515,
+        "sizeBytes": 22757,
+        "lineCount": 549,
         "ext": ".tsx"
       }
     },
@@ -38722,8 +38747,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6182,
-        "lineCount": 197,
+        "sizeBytes": 6181,
+        "lineCount": 196,
         "ext": ".tsx"
       }
     },
@@ -38735,8 +38760,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17246,
-        "lineCount": 395,
+        "sizeBytes": 17129,
+        "lineCount": 388,
         "ext": ".tsx"
       }
     },
@@ -38774,8 +38799,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27755,
-        "lineCount": 645,
+        "sizeBytes": 28075,
+        "lineCount": 652,
         "ext": ".tsx"
       }
     },
@@ -40542,8 +40567,8 @@
       "filePath": "packages/shared/src/types/cv.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 7829,
-        "lineCount": 328,
+        "sizeBytes": 9019,
+        "lineCount": 374,
         "ext": ".ts"
       }
     },
@@ -52494,6 +52519,13 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:CvPaystubSocialSecurityBreakdown:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CvPaystubSocialSecurityBreakdown",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:CvPaystubRecord:ws:packages/shared",
       "source": "type:@mos-lab/shared:CvPaystubRecord",
       "target": "ws:packages/shared",
@@ -61141,6 +61173,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/telesale-target/components/CustomerPoolDrawer.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-target/components/CustomerPoolDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/DailyActionSchedule.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/DailyActionSchedule.test.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -88272,31 +88311,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3138,
-    "totalEdges": 6756,
+    "totalNodes": 3140,
+    "totalEdges": 6758,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 163,
       "FastifyRoute": 659,
       "Component": 58,
-      "SharedType": 1135,
+      "SharedType": 1136,
       "DesignToken": 12,
       "UIComponent": 217,
-      "File": 891
+      "File": 892
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1310,
+      "EXPORTS": 1311,
       "HANDLES_ROUTE": 659,
       "RENDERS": 275,
       "USES_TOKEN": 219,
-      "IMPORTS": 471,
+      "IMPORTS": 472,
       "QUERIES_MODEL": 383,
       "API_CALL": 3439
     },
     "fastifyRouteCount": 664,
     "prismaModelCount": 163,
     "nextPageCount": 58,
-    "sharedTypeCount": 1135
+    "sharedTypeCount": 1136
   },
   "routes": [
     {

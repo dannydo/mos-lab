@@ -246,7 +246,7 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
             Pháo bông chúc mừng
           </span>
           <span className={`text-[10px] ${isDark ? 'text-zinc-400' : 'text-slate-500'} block mt-0.5 leading-tight`}>
-            Tự động bắn pháo khi Book hoặc Done đạt ≥ 100%
+            Tự động bắn pháo khi Book, Check-in hoặc Cuộc gọi đạt ≥ 100%
           </span>
         </div>
         <Switch
