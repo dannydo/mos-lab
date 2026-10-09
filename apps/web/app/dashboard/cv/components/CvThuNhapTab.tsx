@@ -1369,14 +1369,16 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                   {selectedRecord.holidayBasePay.toLocaleString('vi-VN')}đ
                 </span>
               </div>
-              <div className="flex justify-between items-center py-1 border-b bg-rose-500/10 px-2 rounded">
-                <span className="text-sm text-rose-700 dark:text-rose-300 font-medium">
-                  Phụ cấp đi làm lễ x3 ({selectedRecord.holidayWorkedDays || 0} ngày):
-                </span>
-                <span className="tabular-nums font-bold text-rose-600 dark:text-rose-400">
-                  +{selectedRecord.holidayPremiumPay.toLocaleString('vi-VN')}đ
-                </span>
-              </div>
+              {selectedRecord.holidayPremiumPay && selectedRecord.holidayPremiumPay > 0 ? (
+                <div className="flex justify-between items-center py-1 border-b bg-amber-500/10 px-2 rounded">
+                  <span className="text-sm text-amber-700 dark:text-amber-300 font-medium">
+                    Phụ cấp đi làm lễ 2/9 (HR đi riêng / tách quy trình):
+                  </span>
+                  <span className="tabular-nums font-bold text-amber-600 dark:text-amber-400">
+                    +{selectedRecord.holidayPremiumPay.toLocaleString('vi-VN')}đ (Đi riêng)
+                  </span>
+                </div>
+              ) : null}
 
               {selectedRecord.parkingAllowance && selectedRecord.parkingAllowance > 0 ? (
                 <div className="flex justify-between items-center py-1 border-b">

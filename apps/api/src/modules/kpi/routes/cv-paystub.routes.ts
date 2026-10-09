@@ -484,8 +484,10 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         const holiday = holidayBreakdownMap.get(staffId)!;
 
         const parkingAllowance = parkingAllowanceMap.get(staffId) || 0;
+        // Holiday pay (phụ cấp đi làm lễ 2/9) is separated out per HR decision (đi riêng)
+        const holidayPaystubAdjustment = 0;
         const totalIncome =
-          hourlyWage + cvXoayBonus + cvTipBonus + seniorityBonus + holiday.holidayPaystubAdjustment + parkingAllowance;
+          hourlyWage + cvXoayBonus + cvTipBonus + seniorityBonus + holidayPaystubAdjustment + parkingAllowance;
 
         // Social Security deduction (10.5% for employee)
         const ssInfo = socialSecurityMap.get(staffId) || { rate: 0, amount: 0 };
@@ -499,7 +501,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         grandTotalSeniorityBonus += seniorityBonus;
         grandTotalHolidayBasePay += holiday.holidayBasePay;
         grandTotalHolidayPremiumPay += holiday.holidayPremiumPay;
-        grandTotalHolidayPayrollAddition += holiday.holidayPayrollAddition;
+        grandTotalHolidayPayrollAddition += 0;
         grandTotalParkingAllowance += parkingAllowance;
         grandTotalIncome += totalIncome;
         grandTotalSocialSecurityAmount += socialSecurityAmount;
@@ -532,6 +534,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           parkingAllowance,
           netIncome,
           ...holiday,
+          holidayPaystubAdjustment: 0,
         };
       });
 
