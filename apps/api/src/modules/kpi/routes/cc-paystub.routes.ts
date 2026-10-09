@@ -324,10 +324,25 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
         const xoayInfo = xoayMap.get(uid) || { count: 0, bonus: 0 };
         const dailyBonusInfo = staffDailyBonusTotals.get(uid) || { bonus: 0, comboQty: 0, productQty: 0 };
 
+        // Prefer settled combo bonus from legacy staff_payroll tracking_key if available for exact parity
+        let settledComboBonus: number | null = null;
+        if (sp?.tracking_key) {
+          try {
+            const tk = typeof sp.tracking_key === 'string' ? JSON.parse(sp.tracking_key) : sp.tracking_key;
+            const comboReward = tk.level?.[0]?.BonusSalesDayCombo?.total_reward_amount;
+            if (comboReward != null && Number(comboReward) > 0) {
+              settledComboBonus = Math.round(Number(comboReward));
+            }
+          } catch {
+            // ignore JSON parse errors
+          }
+        }
+        const effectiveDailyBonus = settledComboBonus != null ? settledComboBonus : dailyBonusInfo.bonus;
+
         // CC Xoay is paid at no more than 150% of the same month's Daily Bonus.
         // Keep the ledger total and deferred amount for audit, but only the
         // effective amount is payroll income.
-        const capResult = calculateWheelBonusCap(dailyBonusInfo.bonus, xoayInfo.bonus);
+        const capResult = calculateWheelBonusCap(effectiveDailyBonus, xoayInfo.bonus);
         const ccXoayBonus = capResult.effectiveWheelBonus;
         const ccXoayHoldBonus = Math.max(0, capResult.rawWheelBonus - ccXoayBonus);
 
@@ -344,7 +359,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
         const totalIncome = Math.round(
           hourlyWage +
             ccXoayBonus +
-            dailyBonusInfo.bonus +
+            effectiveDailyBonus +
             minigameBonus +
             ccTipBonus +
             extraSupport +
@@ -353,7 +368,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
 
         summaryHourly += hourlyWage;
         summaryXoay += ccXoayBonus;
-        summaryComboProd += dailyBonusInfo.bonus;
+        summaryComboProd += effectiveDailyBonus;
         summaryMinigame += minigameBonus;
         summaryCcTip += ccTipBonus;
         summaryExtraSupport += extraSupport;
@@ -374,7 +389,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
           ccXoayHoldBonus,
           ccXoayBonus,
           checkinCount: xoayInfo.count,
-          comboProductBonus: dailyBonusInfo.bonus,
+          comboProductBonus: effectiveDailyBonus,
           comboCount: dailyBonusInfo.comboQty,
           productCount: dailyBonusInfo.productQty,
           minigameBonus,
