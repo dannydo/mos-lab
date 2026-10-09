@@ -847,13 +847,9 @@ export default function CareerPathPage() {
 
           <button
             onClick={() => {
-              if (selectedStaffStatus?.qualifiedQuests.allPassed) {
-                handlePromote();
-              } else if (isMasterTech) {
-                handleSwitchSpecialist();
-              } else {
-                handleActivateTrial();
-              }
+              if (selectedStaffStatus?.qualifiedQuests.allPassed) handlePromote();
+              else if (isMasterTech) handleSwitchSpecialist();
+              else handleActivateTrial();
             }}
             disabled={actionLoading}
             className={`flex-shrink-0 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-black text-xs shadow-md transition-all active:scale-95 flex items-center gap-1.5 ${
