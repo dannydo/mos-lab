@@ -218,6 +218,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
       // 2. Query Hourly Rates and Social Security from staff_payroll (Optimized with MAX(id) B-Tree scan)
       const hourlyRatesQuery = `
         SELECT sp.user_id, sp.working_hour_rate, sp.social_security_rate, sp.total_social_security_amount, sp.total_support_parking_amount,
+               sp.total_wage_amount, sp.total_base_amount, sp.total_amount,
                sp.total_working_hour_expected, sp.total_working_day_expected,
                sp.total_day_off_week, sp.total_day_overtime_daytime_off_week, sp.total_overtime_daytime_off_week_amount,
                sp.total_day_off_month, sp.total_day_off_paid_leave, sp.total_off_month_amount, sp.total_off_paid_leave_amount,
@@ -470,31 +471,42 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         let regularHours = 0;
         let regularHourlyWage = 0;
         let offDaysWorkHours = 0;
-        let offDaysWorkWage = 0;
         let offDaysWorked = 0;
         const activeDays = userFilteredDays.length;
 
         const userOffDayDates = userOffDayWorkDatesMap.get(staffId) || new Set();
         const holidayWorkedDates = holidayWorkedDateMap.get(staffId) || new Set();
 
+        const sp = staffPayrollMap.get(staffId);
+        let trackingData: SafeAny = {};
+        if (sp?.tracking_key) {
+          try {
+            trackingData = typeof sp.tracking_key === 'string' ? JSON.parse(sp.tracking_key) : sp.tracking_key;
+          } catch {
+            trackingData = {};
+          }
+        }
+
         userFilteredDays.forEach((r) => {
           const dayHours = Number(r.working_minute || 0) / 60;
           totalWorkHours += dayHours;
+          regularHours += dayHours;
+          regularHourlyWage += Math.round(dayHours * hourlyRate);
           const isOffDayWork = userOffDayDates.has(r.dateStr) && !holidayWorkedDates.has(r.dateStr);
           if (isOffDayWork) {
             offDaysWorked += 1;
             offDaysWorkHours += dayHours;
-            offDaysWorkWage += Math.round(dayHours * hourlyRate * 2);
-          } else {
-            regularHours += dayHours;
-            regularHourlyWage += Math.round(dayHours * hourlyRate);
           }
         });
 
         totalWorkHours = Math.round(totalWorkHours * 100) / 100;
         regularHours = Math.round(regularHours * 100) / 100;
         offDaysWorkHours = Math.round(offDaysWorkHours * 100) / 100;
-        const hourlyWage = regularHourlyWage + offDaysWorkWage;
+        const offDaysWorkWage = Number(sp?.total_overtime_daytime_off_week_amount || 0);
+        const hourlyWage =
+          sp?.total_wage_amount != null
+            ? Math.round(Number(sp.total_wage_amount))
+            : Math.round(totalWorkHours * hourlyRate);
 
         const xoayData = cvXoayMap.get(staffId) || { bonus: 0, serviceCount: 0 };
         const cvXoayBonus = xoayData.bonus;
@@ -526,20 +538,29 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
             break;
           }
         }
-        const seniorityBonus = Math.round((cvXoayBonus * appliedBonusPercent) / 100);
+        // If legacy staff_payroll exists for this closed period, use its approved total_extra_support_amount
+        const seniorityBonus = sp
+          ? Math.round(Number(sp.total_extra_support_amount || 0))
+          : Math.round((cvXoayBonus * appliedBonusPercent) / 100);
 
         const totalPoints = techPointsMap.get(staffId) || 0;
         const techLevel = Math.floor(totalPoints / 100) + 1;
         const holiday = holidayBreakdownMap.get(staffId)!;
 
         const parkingAllowance = Math.round(parkingAllowanceMap.get(staffId) || 0);
-        // Month-off leave pay (calculated by scheduled shift hours: 9h for regular shift, 11h for full shift)
+        // Month-off leave pay (honor approved staff_payroll amount or calculate by scheduled shift hours: 9h for regular shift, 11h for full shift)
         const monthOffList = monthOffLeavesMap.get(staffId) || [];
-        const offMonthDays = monthOffList.reduce((sum, item) => sum + item.workingDayCount, 0);
-        const offMonthWage = monthOffList.reduce((sum, item) => {
-          const hours = item.shiftHours || 9;
-          return sum + Math.round(item.workingDayCount * hours * hourlyRate);
-        }, 0);
+        const offMonthDays =
+          sp?.total_day_off_month != null && Number(sp.total_day_off_month) > 0
+            ? Number(sp.total_day_off_month)
+            : monthOffList.reduce((sum, item) => sum + item.workingDayCount, 0);
+        const offMonthWage =
+          sp?.total_off_month_amount != null && Number(sp.total_off_month_amount) > 0
+            ? Math.round(Number(sp.total_off_month_amount))
+            : monthOffList.reduce((sum, item) => {
+                const hours = item.shiftHours || 9;
+                return sum + Math.round(item.workingDayCount * hours * hourlyRate);
+              }, 0);
 
         // Holiday pay (phụ cấp đi làm lễ 2/9) is separated out per HR decision (đi riêng)
         const holidayPaystubAdjustment = 0;
@@ -572,21 +593,11 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         grandTotalSocialSecurityAmount += socialSecurityAmount;
         grandTotalNetIncome += netIncome;
 
-        const sp = staffPayrollMap.get(staffId);
-        let trackingData: SafeAny = {};
-        if (sp?.tracking_key) {
-          try {
-            trackingData = typeof sp.tracking_key === 'string' ? JSON.parse(sp.tracking_key) : sp.tracking_key;
-          } catch {
-            trackingData = {};
-          }
-        }
-
         const expectedWorkDays = Number(sp?.total_working_day_expected || 26);
         const expectedWorkHours = Number(sp?.total_working_hour_expected || expectedWorkDays * 9);
         const weeklyOffDays = Number(sp?.total_day_off_week || 4);
         const weeklyOffWorkedDays = offDaysWorked || 0;
-        const weeklyOffPay = offDaysWorkWage || 0;
+        const weeklyOffPay = Number(sp?.total_off_week_amount || 0);
         const fullTimeWage = Number(sp?.total_overtime_daytime_amount || 0);
         const holidayOffDays = Number(sp?.total_day_off_public_holiday || 0);
         const holidayPay = holiday.holidayBasePay || Number(sp?.total_off_public_holiday_amount || 0);
@@ -599,7 +610,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         const totalBaseWage = Math.round(
           hourlyWage + fullTimeWage + weeklyOffPay + offMonthWage + holidayPay - overLeaveDeduction
         );
-        const otherAllowances = seniorityBonus || Number(sp?.total_extra_support_amount || 0);
+        const otherAllowances = seniorityBonus;
         const previousMonthAddition = Math.round(Number(sp?.total_extra_last_month_amount || 0));
         const penalties = Math.round(
           Number(sp?.total_extra_punish_amount || 0) + Number(sp?.total_punish_credit_balance_amount || 0)
