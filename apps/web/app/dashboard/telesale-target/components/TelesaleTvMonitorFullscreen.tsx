@@ -1188,6 +1188,12 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
                   percent={metrics.bookPercent}
                   actual={metrics.bookActual}
                   target={metrics.bookTarget}
+                  expected={metrics.expectedBook}
+                  gap={metrics.gapBook}
+                  pacingPercent={metrics.bookTarget > 0 ? (metrics.expectedBook / metrics.bookTarget) * 100 : 0}
+                  showDeficitZone={true}
+                  showPacingMarker={true}
+                  showFloatingGapBadge={true}
                   unit="Book"
                   label=""
                   hideLabelText={true}
@@ -1363,6 +1369,14 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
                   percent={metrics.checkinPercent}
                   actual={metrics.checkinActual}
                   target={metrics.checkinTarget}
+                  expected={metrics.expectedCheckin}
+                  gap={metrics.gapCheckin}
+                  pacingPercent={
+                    metrics.checkinTarget > 0 ? (metrics.expectedCheckin / metrics.checkinTarget) * 100 : 0
+                  }
+                  showDeficitZone={true}
+                  showPacingMarker={true}
+                  showFloatingGapBadge={true}
                   unit="Check-in"
                   label=""
                   hideLabelText={true}

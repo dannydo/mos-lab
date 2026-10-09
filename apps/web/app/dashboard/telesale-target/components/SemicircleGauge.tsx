@@ -8,11 +8,16 @@ export interface SemicircleGaugeProps {
   percent: number;
   actual: number | string;
   target: number | string;
+  expected?: number;
+  gap?: number;
   unit?: string;
   label?: string;
   tone?: GaugeTone;
   pacingPercent?: number;
   showPacingArc?: boolean;
+  showDeficitZone?: boolean;
+  showPacingMarker?: boolean;
+  showFloatingGapBadge?: boolean;
   gapText?: string;
   gapType?: 'positive' | 'neutral' | 'negative';
   radius?: number;
@@ -70,11 +75,16 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
   percent,
   actual,
   target,
+  expected,
+  gap,
   unit = '',
   label = '',
   tone = 'emerald',
   pacingPercent,
-  showPacingArc = true,
+  showPacingArc = false,
+  showDeficitZone = true,
+  showPacingMarker = true,
+  showFloatingGapBadge = true,
   gapText,
   gapType = 'neutral',
   radius = 90,
@@ -95,7 +105,7 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
   const baselineY = isTv ? 175 : 102;
   const startX = centerCoordX - effectiveRadius;
   const endX = centerCoordX + effectiveRadius;
-  const viewBoxStr = isTv ? '0 0 360 190' : '0 0 200 112';
+  const viewBoxStr = isTv ? '0 -22 360 212' : '0 -10 200 122';
   const strokeWidthVal = isTv ? 26 : 12;
 
   // SVG Path definition for semicircle
@@ -104,9 +114,116 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
   // Actual progress stroke offset
   const actualOffset = arcLength * (1 - clampedPercent / 100);
 
-  // Optional pacing arc offset
-  const clampedPacing = pacingPercent !== undefined ? Math.min(100, Math.max(0, pacingPercent)) : undefined;
+  // Expected pacing calculation
+  const numericTarget = Number(target) || 0;
+  const numericActual = Number(actual) || 0;
+  const numericExpected =
+    expected !== undefined
+      ? expected
+      : pacingPercent !== undefined && numericTarget > 0
+        ? Math.round((pacingPercent / 100) * numericTarget)
+        : undefined;
+
+  const effectivePacingPercent =
+    pacingPercent !== undefined
+      ? pacingPercent
+      : numericExpected !== undefined && numericTarget > 0
+        ? (numericExpected / numericTarget) * 100
+        : undefined;
+
+  const clampedPacing =
+    effectivePacingPercent !== undefined ? Math.min(100, Math.max(0, effectivePacingPercent)) : undefined;
+
+  // Optional legacy pacing arc offset
   const pacingOffset = clampedPacing !== undefined ? arcLength * (1 - clampedPacing / 100) : undefined;
+
+  const effectiveGap =
+    gap !== undefined ? gap : numericExpected !== undefined ? numericActual - numericExpected : undefined;
+
+  const isDeficit =
+    effectiveGap !== undefined ? effectiveGap < 0 : clampedPacing !== undefined && clampedPercent < clampedPacing;
+
+  const deficitAmount = isDeficit
+    ? effectiveGap !== undefined
+      ? Math.abs(effectiveGap)
+      : Math.max(1, Math.round(((clampedPacing! - clampedPercent) / 100) * numericTarget))
+    : 0;
+
+  // Deficit Arc Calculation (from clampedPercent to clampedPacing)
+  let deficitArcD: string | null = null;
+  if (showDeficitZone && isDeficit && clampedPacing !== undefined && clampedPacing > clampedPercent) {
+    const rad1 = (clampedPercent / 100) * Math.PI;
+    const rad2 = (clampedPacing / 100) * Math.PI;
+    const x1 = Number((centerCoordX - effectiveRadius * Math.cos(rad1)).toFixed(1));
+    const y1 = Number((baselineY - effectiveRadius * Math.sin(rad1)).toFixed(1));
+    const x2 = Number((centerCoordX - effectiveRadius * Math.cos(rad2)).toFixed(1));
+    const y2 = Number((baselineY - effectiveRadius * Math.sin(rad2)).toFixed(1));
+    deficitArcD = `M ${x1} ${y1} A ${effectiveRadius} ${effectiveRadius} 0 0 1 ${x2} ${y2}`;
+  }
+
+  // Pacing Marker Line coordinates (Radial tick at clampedPacing)
+  let markerCoords: {
+    xIn: number;
+    yIn: number;
+    xOut: number;
+    yOut: number;
+    xLbl: number;
+    yLbl: number;
+  } | null = null;
+  if (showPacingMarker && clampedPacing !== undefined && clampedPacing > 0) {
+    const radP = (clampedPacing / 100) * Math.PI;
+    const rIn = effectiveRadius - strokeWidthVal / 2 - (isTv ? 6 : 3);
+    const rOut = effectiveRadius + strokeWidthVal / 2 + (isTv ? 7 : 4);
+    const rLbl = rOut + (isTv ? 13 : 8);
+    markerCoords = {
+      xIn: Number((centerCoordX - rIn * Math.cos(radP)).toFixed(1)),
+      yIn: Number((baselineY - rIn * Math.sin(radP)).toFixed(1)),
+      xOut: Number((centerCoordX - rOut * Math.cos(radP)).toFixed(1)),
+      yOut: Number((baselineY - rOut * Math.sin(radP)).toFixed(1)),
+      xLbl: Number((centerCoordX - rLbl * Math.cos(radP)).toFixed(1)),
+      yLbl: Number((baselineY - rLbl * Math.sin(radP)).toFixed(1)),
+    };
+  }
+
+  // Floating Gap Badge coordinates (Pill above the arc)
+  let floatingBadge: {
+    x: number;
+    y: number;
+    text: string;
+    type: 'deficit' | 'surplus' | 'on_track';
+  } | null = null;
+
+  if (showFloatingGapBadge && isTv && clampedPacing !== undefined) {
+    if (isDeficit && deficitAmount > 0) {
+      // Place badge at midpoint of deficit arc
+      const midRad = ((clampedPercent + clampedPacing) / 2 / 100) * Math.PI;
+      const rBadge = effectiveRadius + strokeWidthVal / 2 + 18;
+      floatingBadge = {
+        x: Number((centerCoordX - rBadge * Math.cos(midRad)).toFixed(1)),
+        y: Number((baselineY - rBadge * Math.sin(midRad)).toFixed(1)),
+        text: `-${deficitAmount} CHẬM`,
+        type: 'deficit',
+      };
+    } else if (effectiveGap !== undefined && effectiveGap > 0) {
+      const tipRad = (clampedPercent / 100) * Math.PI;
+      const rBadge = effectiveRadius + strokeWidthVal / 2 + 18;
+      floatingBadge = {
+        x: Number((centerCoordX - rBadge * Math.cos(tipRad)).toFixed(1)),
+        y: Number((baselineY - rBadge * Math.sin(tipRad)).toFixed(1)),
+        text: `+${effectiveGap} VƯỢT`,
+        type: 'surplus',
+      };
+    } else if (effectiveGap !== undefined && effectiveGap === 0 && numericActual > 0) {
+      const tipRad = (clampedPercent / 100) * Math.PI;
+      const rBadge = effectiveRadius + strokeWidthVal / 2 + 18;
+      floatingBadge = {
+        x: Number((centerCoordX - rBadge * Math.cos(tipRad)).toFixed(1)),
+        y: Number((baselineY - rBadge * Math.sin(tipRad)).toFixed(1)),
+        text: 'ĐÚNG NHỊP',
+        type: 'on_track',
+      };
+    }
+  }
 
   // Needle position (circle on the arc)
   const angle = (clampedPercent / 100) * Math.PI;
@@ -164,6 +281,29 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
           />
         )}
 
+        {/* Deficit Warning Arc (Vùng chậm nhịp từ actual đến expected) */}
+        {deficitArcD && (
+          <g className="transition-all duration-500">
+            {/* Glowing red base track */}
+            <path
+              d={deficitArcD}
+              fill="none"
+              strokeWidth={strokeWidthVal}
+              strokeLinecap="butt"
+              className="stroke-rose-600/50 dark:stroke-rose-600/60"
+            />
+            {/* Warning hazard striped pulse */}
+            <path
+              d={deficitArcD}
+              fill="none"
+              strokeWidth={strokeWidthVal - (isTv ? 6 : 3)}
+              strokeLinecap="butt"
+              strokeDasharray={isTv ? '6 4' : '3 2'}
+              className="stroke-amber-300 dark:stroke-amber-400 drop-shadow-[0_0_8px_rgba(244,63,94,0.95)] animate-pulse"
+            />
+          </g>
+        )}
+
         {/* Actual Progress Arc */}
         <path
           d={pathD}
@@ -175,6 +315,38 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
           className={`${toneConfig.strokeClass} transition-all duration-500`}
         />
 
+        {/* Expected Pacing Milestone Tick & Label */}
+        {markerCoords && (
+          <g className="transition-all duration-500">
+            <line
+              x1={markerCoords.xIn}
+              y1={markerCoords.yIn}
+              x2={markerCoords.xOut}
+              y2={markerCoords.yOut}
+              strokeWidth={isTv ? 3.5 : 2}
+              strokeLinecap="round"
+              className={
+                isDeficit
+                  ? 'stroke-rose-400 dark:stroke-rose-400 drop-shadow-[0_0_8px_rgba(244,63,94,0.9)]'
+                  : 'stroke-emerald-400 dark:stroke-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.9)]'
+              }
+            />
+            {numericExpected !== undefined && isTv && (
+              <text
+                x={markerCoords.xLbl}
+                y={markerCoords.yLbl}
+                textAnchor="middle"
+                dominantBaseline="central"
+                className={`text-[11px] font-mono font-black ${
+                  isDeficit ? 'fill-rose-300' : 'fill-emerald-300'
+                } drop-shadow-[0_0_6px_rgba(0,0,0,0.9)] select-none pointer-events-none`}
+              >
+                {numericExpected}
+              </text>
+            )}
+          </g>
+        )}
+
         {/* Gold Needle Marker Dot */}
         {showNeedle && (
           <circle
@@ -184,6 +356,39 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
             strokeWidth={isTv ? 3 : 1.5}
             className="fill-amber-300 stroke-zinc-950 transition-all duration-500 drop-shadow-[0_0_12px_rgba(245,158,11,0.95)]"
           />
+        )}
+
+        {/* Floating Gap Badge directly on Arc */}
+        {floatingBadge && (
+          <g
+            transform={`translate(${floatingBadge.x}, ${floatingBadge.y})`}
+            className="select-none pointer-events-none transition-all duration-500"
+          >
+            <rect
+              x={-34}
+              y={-10}
+              width={68}
+              height={20}
+              rx={10}
+              className={
+                floatingBadge.type === 'deficit'
+                  ? 'fill-rose-950/95 stroke stroke-rose-500/80 drop-shadow-[0_0_10px_rgba(244,63,94,0.7)]'
+                  : 'fill-emerald-950/95 stroke stroke-emerald-500/80 drop-shadow-[0_0_10px_rgba(52,211,153,0.7)]'
+              }
+              strokeWidth={1.5}
+            />
+            <text
+              x={0}
+              y={1}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              className={`text-[10px] font-mono font-black tracking-wider ${
+                floatingBadge.type === 'deficit' ? 'fill-rose-300' : 'fill-emerald-300'
+              }`}
+            >
+              {floatingBadge.text}
+            </text>
+          </g>
         )}
       </svg>
 

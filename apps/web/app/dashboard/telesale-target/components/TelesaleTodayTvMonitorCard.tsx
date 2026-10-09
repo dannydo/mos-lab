@@ -627,6 +627,8 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
                   percent={metrics.bookPercent}
                   actual={metrics.bookActual}
                   target={metrics.bookTarget}
+                  expected={metrics.expectedBook}
+                  gap={metrics.gapBook}
                   label=""
                   hideLabelText={true}
                   tone={bookTier}
@@ -746,6 +748,8 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
                   percent={metrics.checkinPercent}
                   actual={metrics.checkinActual}
                   target={metrics.checkinTarget}
+                  expected={metrics.expectedCheckin}
+                  gap={metrics.gapCheckin}
                   label=""
                   hideLabelText={true}
                   tone={checkinTier}

@@ -9824,7 +9824,7 @@
         "path": "/api/kpi/cv-paystub/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 617
+        "line": 620
       }
     },
     {
@@ -31650,8 +31650,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 31488,
-        "lineCount": 790,
+        "sizeBytes": 31512,
+        "lineCount": 793,
         "ext": ".ts"
       }
     },
@@ -37175,8 +37175,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 70330,
-        "lineCount": 1683,
+        "sizeBytes": 70329,
+        "lineCount": 1682,
         "ext": ".tsx"
       }
     },
