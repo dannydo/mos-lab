@@ -2354,20 +2354,21 @@ export class TelesaleTargetService {
     }
   ): string {
     const bookQuotes = [
-      'Anh thích cái cách [Tên] chăm sóc khách hàng đầy ân cần. Thêm một lịch hẹn ngọt ngào về với đội mình rồi, em làm anh tự hào quá!',
-      '[Tên] ơi, sự chân thành từ trái tim em luôn có ma lực đặc biệt. Thêm một Book tuyệt đẹp, tiếp tục tỏa sáng nhé người đẹp!',
-      'Tư vấn chuẩn xác, phân tích nhu cầu cực kỳ khoa học. Đẳng cấp của [Tên] hôm nay thực sự làm anh mê mẩn, cộng một Book nhé!',
-      'Nụ cười vui vẻ của [Tên] qua từng cuộc gọi đã thắp sáng cả phòng rồi. Chốt thêm một Book quá đỗi quyến rũ em ơi!',
-      'Từng lời em nói đều làm khách hàng xiêu lòng. Một Book xuất sắc nữa cho [Tên], phong độ đỉnh cao của em khiến ai cũng phải ngước nhìn!',
-      'Năng lượng tích cực và sự chân thành của [Tên] đã chinh phục khách hàng hoàn toàn. Một Book rực rỡ nữa cho cô gái tuyệt vời của anh!',
+      'Lại thêm một Book từ [Tên]! Em cứ liên tục tỏa sáng thế này làm anh xao xuyến, con tim đập loạn nhịp rồi đấy nhé!',
+      'Alo alo, [Tên] lại nổ Book! Em chốt đơn lia lịa như máy chém thế này thì cả phòng chỉ có nước die up die down thôi!',
+      '[Tên] ơi là [Tên], em tính thầu luôn cả chỉ tiêu phòng Telesales hôm nay hay sao mà Book về dồn dập thế!',
+      'Khách vừa nghe giọng [Tên] là chốt vội lịch hẹn! Duyên dáng thế này bảo sao khách không mê đứ đừ!',
+      'Thêm một Book rực rỡ từ [Tên]! Phong độ đỉnh nóc kịch trần, làm anh chết lên chết xuống vì nể phục em rồi đấy!',
+      'Một Book ngọt lịm từ [Tên]! Em tư vấn khéo léo thế này thì khách chỉ có nước gật đầu lia lịa rồi chốt lịch cái rụp!',
+      'Ting ting! [Tên] vừa tung tuyệt chiêu kéo thêm một Book, làm cả phòng xôn xao náo nhiệt luôn rồi!',
     ];
 
     const checkinQuotes = [
-      'Khách đã bước chân vào tiệm rồi [Tên] ơi! Sự ân cần của em đã đưa khách đến đúng hẹn, thêm một Check-in chắc thắng!',
-      'Check-in thành công rồi! Khách tới tiệm là nắm chắc trong tay quả ngọt, [Tên] làm anh tự hào quá!',
-      'Sự chân thành của [Tên] đã dẫn lối khách đến với Wings. Thêm một khách check-in cực kỳ rực rỡ nhé!',
-      'Đón khách vào tiệm suôn sẻ và ấm áp! Năng lượng vui vẻ của [Tên] hôm nay lan tỏa khắp salon rồi!',
-      'Khách đã có mặt tại tiệm, quy trình chăm sóc quá đỗi khoa học của [Tên] đang phát huy sức mạnh tối đa!',
+      'Khách của [Tên] đã vào tới cửa tiệm rồi! Chăm sóc kiểu gì mà khách mê mẩn đến đúng từng phút, làm anh chết lên chết xuống vì nể em!',
+      '[Tên] vừa kéo thêm một lượt Check-in! Khách nghe giọng ngọt như mía lùi là tự động xách xe phi tới tiệm ngay, đỉnh nóc kịch trần!',
+      'Khách vào ghế rồi các em ơi! Sự ân cần của [Tên] làm khách mê say đắm, cả phòng lại chuẩn bị die up die down rồi!',
+      'Check-in thành công cho [Tên]! Dẫn dắt khách đến tiệm mượt mà như một cơn gió, đẳng cấp không thể chối từ!',
+      'Thêm một khách check-in tươi rói của [Tên]! Năng lượng vui vẻ của em thắp sáng rực rỡ cả salon hôm nay rồi!',
     ];
 
     const tipSpeech = this.formatCurrencyForSpeech(options?.tipAmount);
@@ -2376,31 +2377,31 @@ export class TelesaleTargetService {
     const cvName = options?.cvStaffName || 'Chuyên Viên';
 
     const comboQuotes = [
-      `Đỉnh cao tư vấn! Chúc mừng ${staffName} vừa chốt thành công ${comboName}${comboPriceSpeech}! Đẳng cấp và chuyên nghiệp quá em ơi!`,
-      `Khách hàng mê mẩn ${comboName}${comboPriceSpeech} của ${staffName} rồi! Sự am hiểu và ân cần của em đã chạm đến trái tim khách hàng!`,
-      `Thêm một siêu phẩm ${comboName}${comboPriceSpeech} về với đội mình! ${staffName} ơi, phong độ đỉnh cao của em hôm nay sáng bừng cả phòng!`,
-      `Chốt trọn gói ${comboName}${comboPriceSpeech} ngọt ngào! Niềm tin tuyệt đối khách dành cho sự chân thành của ${staffName}, xuất sắc lắm em!`,
+      `Ủa ủa ${staffName} ơi! Khách đi làm đẹp sương sương mà em chốt luôn ${comboName}${comboPriceSpeech}, tính làm khách mê Wings tới già luôn đúng không?`,
+      `Bùng nổ rồi ${staffName} ơi! Khách tin yêu chốt ngay ${comboName}${comboPriceSpeech}, em tư vấn đỉnh thế này thì ví khách chỉ có nước die up die down!`,
+      `Siêu phẩm ${comboName}${comboPriceSpeech} về tay ${staffName}! Em chốt đơn bén như máy chém, làm anh xao xuyến cả buổi chiều!`,
+      `Đẳng cấp tư vấn khoa học của ${staffName} là đây! Khách chốt trọn ${comboName}${comboPriceSpeech} trong một nốt nhạc, quá đỗi quyến rũ em ơi!`,
     ];
 
     const tipQuotes = tipSpeech
       ? [
-          `Khách yêu vừa gửi tặng tiền tip ${tipSpeech}! Chúc mừng Chuyên Viên ${cvName} và ${staffName} đã mang lại sự hài lòng tuyệt đối!`,
-          `Thêm một khoản tip ngọt ngào ${tipSpeech} từ khách yêu! Sự ân cần và chu đáo của Chuyên Viên ${cvName} cùng ${staffName} đã chạm đến trái tim khách hàng!`,
-          `Khách thương khách quý thưởng tip ${tipSpeech} liền tay! Tự hào về tay nghề tinh hoa của ${cvName} và sự tận tâm của ${staffName}!`,
+          `Ting ting, khách thưởng tip ${tipSpeech} cho ${staffName}! Vừa duyên dáng lại vừa ân cần, khách thương khách nhớ tip tới tấp thế này thì ai làm lại em!`,
+          `Khách mê tay nghề Chuyên Viên ${cvName} hay mê nụ cười của ${staffName} mà tip hẳn ${tipSpeech} thế này? Đẳng cấp làm cả phòng die up die down!`,
+          `Một món quà tip ${tipSpeech} ngọt ngào từ khách yêu gửi tặng ${staffName} và ${cvName}! Sự chăm sóc chuẩn 5 sao làm anh chết lên chết xuống vì tự hào!`,
+          `Khách gửi trọn niềm tin và tip ${tipSpeech} liền tay cho ${staffName}! Phong độ đỉnh cao của em khiến ai cũng phải trầm trồ thán phục!`,
         ]
       : [
-          'Khách hàng thưởng Tip vì sự hài lòng tuyệt đối! Trái tim ân cần của [Tên] đã được đền đáp xứng đáng rồi!',
-          'Thêm một khoản Tip ngọt ngào cho [Tên]! Năng lượng tích cực và nụ cười của em làm khách quý mến vô cùng!',
-          'Khách yêu quý gửi trọn niềm vui và tiền Tip! Đẳng cấp phục vụ chuẩn mực của [Tên] làm anh vô cùng tự hào!',
+          'Khách hàng thưởng Tip vì sự hài lòng tuyệt đối! Trái tim ân cần của [Tên] đã làm khách mê đứ đừ rồi!',
+          'Thêm một khoản Tip ngọt ngào cho [Tên]! Năng lượng tích cực và nụ cười của em làm cả phòng die up die down!',
+          'Khách yêu quý gửi trọn niềm vui và tiền Tip! Đẳng cấp phục vụ chuẩn mực của [Tên] làm anh xao xuyến vô cùng!',
         ];
 
     const doneQuotes = [
-      'Từ lời hẹn ân cần đến trải nghiệm thực tế, [Tên] biến mọi khoảnh khắc thành sự hài lòng tuyệt đối. Cộng một Done quá đỗi ngọt ngào!',
-      'Khách hàng trao gửi trọn vẹn niềm tin cho sự chân thành của [Tên]. Một Done hoàn hảo, phong thái của em hôm nay quyến rũ không thể cưỡng lại!',
-      'Quy trình chuẩn mực, dẫn dắt khách đến tiệm thật khoa học và bài bản. [Tên] vừa ghi một bàn thắng quá đẳng cấp cho team!',
-      'Tuyệt vời lắm [Tên] ơi! Năng lượng vui vẻ của em đã nở hoa thành một Done rực rỡ. Hôm nay em chính là nữ thần của phòng Telesales rồi đấy!',
-      'Khách đã tới và trải nghiệm trọn vẹn rồi! Anh luôn tin vào tài năng và sức hút của [Tên], một Done hoàn hảo mang đậm bản sắc Wings!',
-      'Chăm sóc ân cần, bám sát khoa học. Không ai làm điều đó xuất sắc hơn [Tên], chúc mừng em đã mang thêm một Done rực rỡ về đội!',
+      'Xong một Done ngọt ngào cho [Tên]! Khách làm đẹp xong cười tít mắt, phong độ của em hôm nay đúng là làm cả phòng die up die down!',
+      'Một ca Done xuất sắc của [Tên]! Em tư vấn bài bản, khoa học thế này thì khách chỉ có nước khen nức nở rồi mê đứ đừ!',
+      'Done về rực rỡ cho [Tên]! Chăm sóc từ A đến Z không một vết xước, em làm con tim anh xao xuyến quá rồi đấy!',
+      'Chúc mừng [Tên] thêm một Done hoàn hảo! Em cứ làm việc nhiệt huyết thế này thì tiền thưởng chỉ có nước nhảy múa không ngừng!',
+      'Khách làm xong ngắm gương rồi gật gù khen [Tên] nức nở! Dẫn dắt khách chuẩn chỉ thế này thì ai đọ lại em!',
     ];
 
     let list = bookQuotes;
@@ -2450,16 +2451,17 @@ export class TelesaleTargetService {
           TIP: `TIP (${staffName} và Chuyên Viên được khách gửi tặng tiền tip ${tipSpeech || 'xứng đáng'}. BẮT BUỘC nhắc rõ số tiền tip ${tipSpeech} trong câu chúc mừng)`,
         }[type] || type;
 
-      const systemPrompt = `Bạn là một "Nam Thần" lịch lãm, quyến rũ, ấm áp và khích lệ tại hệ thống chuỗi làm đẹp Wings (Wingslashes).
-Nhiệm vụ của bạn là nói duy nhất 1 câu chúc mừng ngắn gọn (dưới 20 từ) bằng tiếng Việt dành tặng cho nhân viên Telesales tên là "${staffName}", vừa có 1 sự kiện ${eventDescription}.
-YÊU CẦU BẮT BUỘC:
-1. Giọng điệu: Nam thần cuốn hút, gợi cảm, chân thành và tràn đầy sự khích lệ, tự hào về người đó.
-2. Khéo léo lồng ghép ít nhất một trong 4 giá trị văn hóa cốt lõi của Wings: Vui vẻ, Ân cần, Chân thành, Khoa học.
-3. Bắt buộc nhắc đến tên "${staffName}".
-4. Nếu là sự kiện TIP, BẮT BUỘC đọc rõ số tiền tip (ví dụ: "${tipSpeech}").
-5. Nếu là sự kiện COMBO, BẮT BUỘC đọc rõ tên gói combo (ví dụ: "${comboName}").
-6. Ngắn gọn, súc tích (khoảng 12-20 từ), chỉ 1 câu duy nhất truyền cảm hứng để đọc phát loa nhanh gọn.
-7. Chỉ trả về đúng 1 câu thoại để đọc phát loa trực tiếp, tuyệt đối không có dấu ngoặc kép, không markdown, không giải thích.`;
+      const systemPrompt = `Bạn là một "Nam Thần" lịch lãm, hóm hỉnh, quyến rũ, cực kỳ thích "cà khịa" ngọt ngào và thả thính hài hước tại phòng Telesales War Room chuỗi làm đẹp Wings (Wingslashes).
+Nhiệm vụ của bạn là nói duy nhất 1 câu chúc mừng ngắn gọn (khoảng 14-22 từ) bằng tiếng Việt dành tặng cho nhân viên Telesales tên là "${staffName}", vừa có 1 sự kiện ${eventDescription}.
+PHONG CÁCH & QUY TẮC BẮT BUỘC:
+1. Giọng điệu: Hài hước, cà khịa duyên dáng, thả thính quyến rũ, khen ngợi độc lạ làm náo nhiệt cả phòng Telesales.
+2. Thường xuyên sử dụng các câu cảm thán, tiếng lóng dí dỏm như: "làm anh xao xuyến quá", "chết lên chết xuống", "làm cả phòng die up die down", "chốt đơn như máy chém", "phong độ đỉnh nóc kịch trần", "khách mê đứ đừ", "tính thầu luôn cả tiệm hay sao".
+3. Khéo léo kết hợp tinh thần 4 giá trị văn hóa Wings: Vui vẻ, Ân cần, Chân thành, Khoa học nhưng theo cách dí dỏm, tếu táo, không rập khuôn khô khan.
+4. Bắt buộc nhắc đến tên "${staffName}".
+5. Nếu là sự kiện TIP, BẮT BUỘC đọc rõ số tiền tip (ví dụ: "${tipSpeech}").
+6. Nếu là sự kiện COMBO, BẮT BUỘC đọc rõ tên gói combo (ví dụ: "${comboName}").
+7. Ngắn gọn, súc tích (khoảng 14-22 từ), chỉ 1 câu duy nhất truyền cảm hứng và gây cười để đọc phát loa nhanh gọn.
+8. Chỉ trả về đúng 1 câu thoại để đọc phát loa trực tiếp, tuyệt đối không có dấu ngoặc kép, không markdown, không giải thích thêm.`;
 
       const response = await fetch(geminiUrl, {
         method: 'POST',
@@ -2469,7 +2471,11 @@ YÊU CẦU BẮT BUỘC:
           contents: [
             {
               role: 'user',
-              parts: [{ text: `Tạo một câu chúc mừng nam thần ngẫu nhiên cho ${staffName} có đơn ${type}!` }],
+              parts: [
+                {
+                  text: `Tạo một câu cà khịa chúc mừng nam thần siêu hài hước, thả thính ngẫu nhiên cho ${staffName} vừa nổ đơn ${type}!`,
+                },
+              ],
             },
           ],
           generationConfig: {

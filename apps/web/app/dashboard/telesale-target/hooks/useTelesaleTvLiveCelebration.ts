@@ -48,48 +48,50 @@ const DEFAULT_SETTINGS: TvCelebrationSettings = {
   fireworksEnabled: true,
 };
 
-// Script quotes: Charming Male Voice & 4 Wings Cultural Values (Vui vẻ, Ân Cần, Chân Thành, Khoa Học)
+// Script quotes: Charming Male Voice, Playful Cà Khịa, Die Up Die Down & 4 Wings Cultural Values (Vui vẻ, Ân Cần, Chân Thành, Khoa Học)
 const BOOK_QUOTES = [
-  'Anh thích cái cách [Tên] chăm sóc khách hàng đầy ân cần. Thêm một lịch hẹn ngọt ngào về với đội mình rồi, em làm anh tự hào quá!',
-  '[Tên] ơi, sự chân thành từ trái tim em luôn có ma lực đặc biệt. Thêm một Book tuyệt đẹp, tiếp tục tỏa sáng nhé người đẹp!',
-  'Tư vấn chuẩn xác, phân tích nhu cầu cực kỳ khoa học. Đẳng cấp của [Tên] hôm nay thực sự làm anh mê mẩn, cộng một Book nhé!',
-  'Nụ cười vui vẻ của [Tên] qua từng cuộc gọi đã thắp sáng cả phòng rồi. Chốt thêm một Book quá đỗi quyến rũ em ơi!',
-  'Từng lời em nói đều làm khách hàng xiêu lòng. Một Book xuất sắc nữa cho [Tên], phong độ đỉnh cao của em khiến ai cũng phải ngước nhìn!',
-  'Năng lượng tích cực và sự chân thành của [Tên] đã chinh phục khách hàng hoàn toàn. Một Book rực rỡ nữa cho cô gái tuyệt vời của anh!',
+  'Lại thêm một Book từ [Tên]! Em cứ liên tục tỏa sáng thế này làm anh xao xuyến, con tim đập loạn nhịp rồi đấy nhé!',
+  'Alo alo, [Tên] lại nổ Book! Em chốt đơn lia lịa như máy chém thế này thì cả phòng chỉ có nước die up die down thôi!',
+  '[Tên] ơi là [Tên], em tính thầu luôn cả chỉ tiêu phòng Telesales hôm nay hay sao mà Book về dồn dập thế!',
+  'Khách vừa nghe giọng [Tên] là chốt vội lịch hẹn! Duyên dáng thế này bảo sao khách không mê đứ đừ!',
+  'Thêm một Book rực rỡ từ [Tên]! Phong độ đỉnh nóc kịch trần, làm anh chết lên chết xuống vì nể phục em rồi đấy!',
+  'Một Book ngọt lịm từ [Tên]! Em tư vấn khéo léo thế này thì khách chỉ có nước gật đầu lia lịa rồi chốt lịch cái rụp!',
+  'Ting ting! [Tên] vừa tung tuyệt chiêu kéo thêm một Book, làm cả phòng xôn xao náo nhiệt luôn rồi!',
 ];
 
 const CHECKIN_QUOTES = [
-  'Khách yêu đã tới tiệm rồi! Chúc mừng [Tên] vừa có thêm 1 lượt Check-in thành công, khách vào tiệm là chắc chắn Done rồi em ơi!',
-  'Ân cần từ lúc book đến khi khách tới cửa. Một Check-in tuyệt vời cho [Tên], phong độ của em hôm nay đỉnh quá!',
-  'Chào đón khách rạng rỡ như ánh bình minh! [Tên] vừa ghi nhận thêm một lượt Check-in, tiếp tục giữ vững năng lượng nhé!',
-  'Khách đã có mặt đúng giờ hẹn rồi! Sự chân thành của [Tên] luôn làm khách an tâm, cộng thêm một Check-in ngọt ngào!',
-  'Khách vào ghế rồi các em ơi! Chúc mừng [Tên] đã đồng hành trọn vẹn, thêm một lượt Check-in chuẩn chỉ cho đội mình!',
+  'Khách của [Tên] đã vào tới cửa tiệm rồi! Chăm sóc kiểu gì mà khách mê mẩn đến đúng từng phút, làm anh chết lên chết xuống vì nể em!',
+  '[Tên] vừa kéo thêm một lượt Check-in! Khách nghe giọng ngọt như mía lùi là tự động xách xe phi tới tiệm ngay, đỉnh nóc kịch trần!',
+  'Khách vào ghế rồi các em ơi! Sự ân cần của [Tên] làm khách mê say đắm, cả phòng lại chuẩn bị die up die down rồi!',
+  'Check-in thành công cho [Tên]! Dẫn dắt khách đến tiệm mượt mà như một cơn gió, đẳng cấp không thể chối từ!',
+  'Thêm một khách check-in tươi rói của [Tên]! Năng lượng vui vẻ của em thắp sáng rực rỡ cả salon hôm nay rồi!',
 ];
 
 const COMBO_QUOTES = [
-  'Đỉnh cao tư vấn! Khách không chỉ làm đẹp mà còn chốt ngay Combo! Chúc mừng [Tên] đã mang về một Combo quá đỗi đẳng cấp!',
-  'Thấu hiểu nhu cầu và trao gửi giá trị dài lâu! Một Combo xuất sắc nữa thuộc về [Tên], em làm anh thực sự thán phục!',
-  'Bùng nổ rồi [Tên] ơi! Khách tin yêu chốt trọn gói Combo, phong thái chuyên nghiệp của em hôm nay tỏa sáng rực rỡ!',
+  'Ủa ủa [Tên] ơi! Khách đi làm đẹp sương sương mà em chốt luôn gói Combo, tính làm khách mê Wings tới già luôn đúng không?',
+  'Bùng nổ rồi [Tên] ơi! Khách tin yêu chốt ngay gói Combo, em tư vấn đỉnh thế này thì ví khách chỉ có nước die up die down!',
+  'Siêu phẩm Combo về tay [Tên]! Em chốt đơn bén như máy chém, làm anh xao xuyến cả buổi chiều!',
+  'Đẳng cấp tư vấn khoa học của [Tên] là đây! Khách chốt trọn Combo trong một nốt nhạc, quá đỗi quyến rũ em ơi!',
 ];
 
 const TIP_QUOTES = [
-  'Khách thương khách quý thưởng Tip liền tay! Chúc mừng [Tên], sự tận tâm và chân thành của em đã chạm đến trái tim khách hàng!',
-  'Một nụ cười, trọn niềm tin và thêm khoản Tip xứng đáng! Tự hào về sự chăm sóc ân cần của [Tên] vô cùng!',
-  'Tuyệt vời lắm [Tên] ơi! Tay nghề tinh hoa cùng sự chu đáo đã được khách gửi gắm bằng món quà Tip ngọt ngào!',
+  'Ting ting, khách thưởng Tip cho [Tên]! Vừa duyên dáng lại vừa ân cần, khách thương khách nhớ tip tới tấp thế này thì ai làm lại em!',
+  'Khách mê tay nghề Chuyên Viên hay mê nụ cười của [Tên] mà thưởng Tip thế này? Đẳng cấp làm cả phòng die up die down!',
+  'Một món quà Tip ngọt ngào từ khách yêu gửi tặng [Tên]! Sự chăm sóc chuẩn 5 sao làm anh chết lên chết xuống vì tự hào!',
+  'Khách gửi trọn niềm tin và thưởng Tip liền tay cho [Tên]! Phong độ đỉnh cao của em khiến ai cũng phải trầm trồ thán phục!',
 ];
 
 const COMBO_TIP_QUOTES = [
-  'Siêu phẩm hôm nay đây rồi! Vừa chốt trọn Combo lại vừa được khách thưởng Tip! [Tên] hôm nay chính là ngôi sao sáng nhất phòng Telesales!',
-  'Đẳng cấp nhân đôi! Cả Combo lẫn Tip đều về với đội [Tên]! Sự ân cần và khoa học của em đã tạo nên kỳ tích ngọt ngào!',
+  'Siêu phẩm hôm nay đây rồi! Vừa chốt trọn Combo lại vừa được khách thưởng Tip! [Tên] hôm nay làm cả phòng die up die down vì ngỡ ngàng!',
+  'Đẳng cấp nhân đôi! Cả Combo lẫn Tip đều về tay [Tên]! Em xuất sắc thế này làm anh xao xuyến, chết lên chết xuống vì tự hào!',
 ];
 
 const DONE_QUOTES = [
-  'Từ lời hẹn ân cần đến trải nghiệm thực tế, [Tên] biến mọi khoảnh khắc thành sự hài lòng tuyệt đối. Cộng một Done quá đỗi ngọt ngào!',
-  'Khách hàng trao gửi trọn vẹn niềm tin cho sự chân thành của [Tên]. Một Done hoàn hảo, phong thái của em hôm nay quyến rũ không thể cưỡng lại!',
-  'Quy trình chuẩn mực, dẫn dắt khách đến tiệm thật khoa học và bài bản. [Tên] vừa ghi một bàn thắng quá đẳng cấp cho team!',
-  'Tuyệt vời lắm [Tên] ơi! Năng lượng vui vẻ của em đã nở hoa thành một Done rực rỡ. Hôm nay em chính là nữ thần của phòng Telesales rồi đấy!',
-  'Khách đã tới và trải nghiệm trọn vẹn rồi! Anh luôn tin vào tài năng và sức hút của [Tên], một Done hoàn hảo mang đậm bản sắc Wings!',
-  'Chăm sóc ân cần, bám sát khoa học. Không ai làm điều đó xuất sắc hơn [Tên], chúc mừng em đã mang thêm một Done rực rỡ về đội!',
+  'Xong một Done ngọt ngào cho [Tên]! Khách làm đẹp xong cười tít mắt, phong độ của em hôm nay đúng là làm cả phòng die up die down!',
+  'Một ca Done xuất sắc của [Tên]! Em tư vấn bài bản, khoa học thế này thì khách chỉ có nước khen nức nở rồi mê đứ đừ!',
+  'Done về rực rỡ cho [Tên]! Chăm sóc từ A đến Z không một vết xước, em làm con tim anh xao xuyến quá rồi đấy!',
+  'Chúc mừng [Tên] thêm một Done hoàn hảo! Em cứ làm việc nhiệt huyết thế này thì tiền thưởng chỉ có nước nhảy múa không ngừng!',
+  'Khách làm xong ngắm gương rồi gật gù khen [Tên] nức nở! Dẫn dắt khách chuẩn chỉ thế này thì ai đọ lại em!',
 ];
 
 export function getRandomQuote(quotes: string[], name: string): string {
@@ -802,86 +804,143 @@ export function useTelesaleTvLiveCelebration() {
             const comboPriceBadge = ev.comboPrice ? ` (${ev.comboPrice.toLocaleString('vi-VN')}đ)` : '';
 
             const comboTipQuotes = [
-              `Siêu phẩm xuất sắc! Chúc mừng ${staffName} vừa chốt thành công ${comboName}${priceSpeech}, lại được khách gửi tặng tiền tip ${tipSpeech}! Đẳng cấp nhân đôi quá đỗi tự hào!`,
-              `Kỳ tích rực rỡ! Vừa chốt trọn ${comboName}${priceSpeech}, vừa nhận thêm tiền tip ${tipSpeech} từ khách yêu! Chúc mừng Chuyên Viên ${cvName} và ${staffName} hôm nay tỏa sáng nhất phòng!`,
+              `Ủa ủa ${staffName} ơi! Vừa chốt trọn ${comboName}${priceSpeech}, lại vừa ẵm luôn tiền tip ${tipSpeech}! Em làm ăn kiểu này thì cả phòng chỉ có nước die up die down thôi!`,
+              `Kỳ tích chấn động phòng Telesales! Cả ${comboName}${priceSpeech} lẫn tiền tip ${tipSpeech} đều về tay ${staffName} và Chuyên Viên ${cvName}! Em xuất sắc thế này làm anh xao xuyến, chết lên chết xuống vì nể phục!`,
+              `Siêu phẩm kép hôm nay đây rồi! Khách mê ${staffName} hay mê Chuyên Viên ${cvName} mà chốt luôn ${comboName}${priceSpeech} rồi tip hẳn ${tipSpeech}! Đẳng cấp đỉnh nóc kịch trần em ơi!`,
             ];
-            const textToSpeak = comboTipQuotes[Math.floor(Math.random() * comboTipQuotes.length)];
+            const defaultQuote = comboTipQuotes[Math.floor(Math.random() * comboTipQuotes.length)];
 
-            enqueueCelebration({
-              id: ev.id,
-              kind: 'COMBO',
-              staffId: ev.staffId,
-              staffName,
-              avatarUrl: ev.avatarUrl,
-              textToSpeak,
-              badgeText: `👑 +${comboName.toUpperCase()}${comboPriceBadge} & TIP${tipText}!`,
-              colorTheme: 'purple',
-              changeResult: ev.changeResult,
-              orderId: ev.orderId,
-              hasCombo: true,
-              comboPackageName: ev.comboPackageName,
-              comboPrice: ev.comboPrice,
-              hasTip: true,
-              tipAmount: ev.tipAmount,
-              assignedStaffName: cvName,
-              checkInStaffName: ccName,
-            });
+            const quotePromise = Promise.race([
+              apiClient.telesaleTarget.getCelebrationQuote({
+                type: 'COMBO',
+                staffName,
+                comboPackageName: comboName,
+                comboPrice: ev.comboPrice,
+                tipAmount: ev.tipAmount,
+                cvStaffName: cvName,
+                customerName,
+              }),
+              new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+            ]);
+
+            const triggerComboTip = (quoteText: string) => {
+              enqueueCelebration({
+                id: ev.id,
+                kind: 'COMBO',
+                staffId: ev.staffId,
+                staffName,
+                avatarUrl: ev.avatarUrl,
+                textToSpeak: quoteText,
+                badgeText: `👑 +${comboName.toUpperCase()}${comboPriceBadge} & TIP${tipText}!`,
+                colorTheme: 'purple',
+                changeResult: ev.changeResult,
+                orderId: ev.orderId,
+                hasCombo: true,
+                comboPackageName: ev.comboPackageName,
+                comboPrice: ev.comboPrice,
+                hasTip: true,
+                tipAmount: ev.tipAmount,
+                assignedStaffName: cvName,
+                checkInStaffName: ccName,
+              });
+            };
+
+            quotePromise
+              .then((res: SafeAny) => triggerComboTip(res?.quote?.trim() || defaultQuote))
+              .catch(() => triggerComboTip(defaultQuote));
           } else if (hasCombo) {
             const comboName = ev.comboPackageName || 'gói Combo làm đẹp';
             const priceSpeech = ev.comboPrice ? ` trị giá ${formatCurrencyForSpeech(ev.comboPrice)}` : '';
             const comboPriceBadge = ev.comboPrice ? ` (${ev.comboPrice.toLocaleString('vi-VN')}đ)` : '';
 
             const comboQuotes = [
-              `Đỉnh cao tư vấn! Chúc mừng ${staffName} vừa chốt thành công ${comboName}${priceSpeech}! Đẳng cấp và chuyên nghiệp quá em ơi!`,
-              `Thấu hiểu nhu cầu và trao gửi giá trị dài lâu! ${staffName} vừa mang về một ${comboName}${priceSpeech}! Tự hào về em vô cùng!`,
-              `Bùng nổ rồi cả phòng ơi! Khách tin yêu chốt trọn ${comboName}${priceSpeech}! Chúc mừng ${staffName} cùng Chuyên Viên ${cvName} đã tỏa sáng rực rỡ!`,
+              `Ủa ủa ${staffName} ơi! Khách đi làm đẹp sương sương mà em chốt luôn ${comboName}${priceSpeech}, tính làm khách mê Wings tới già luôn đúng không?`,
+              `Bùng nổ rồi ${staffName} ơi! Khách tin yêu chốt ngay ${comboName}${priceSpeech}, em tư vấn đỉnh thế này thì ví khách chỉ có nước die up die down!`,
+              `Siêu phẩm ${comboName}${priceSpeech} về tay ${staffName}! Em chốt đơn bén như máy chém, làm anh xao xuyến cả buổi chiều!`,
+              `Đẳng cấp tư vấn khoa học của ${staffName} và Chuyên Viên ${cvName} là đây! Khách chốt trọn ${comboName}${priceSpeech} trong một nốt nhạc, quá đỗi quyến rũ em ơi!`,
             ];
-            const textToSpeak = comboQuotes[Math.floor(Math.random() * comboQuotes.length)];
+            const defaultQuote = comboQuotes[Math.floor(Math.random() * comboQuotes.length)];
 
-            enqueueCelebration({
-              id: ev.id,
-              kind: 'COMBO',
-              staffId: ev.staffId,
-              staffName,
-              avatarUrl: ev.avatarUrl,
-              textToSpeak,
-              badgeText: `✨ +CHỐT ${comboName.toUpperCase()}${comboPriceBadge}!`,
-              colorTheme: 'purple',
-              changeResult: ev.changeResult,
-              orderId: ev.orderId,
-              hasCombo: true,
-              comboPackageName: ev.comboPackageName,
-              comboPrice: ev.comboPrice,
-              assignedStaffName: cvName,
-              checkInStaffName: ccName,
-            });
+            const quotePromise = Promise.race([
+              apiClient.telesaleTarget.getCelebrationQuote({
+                type: 'COMBO',
+                staffName,
+                comboPackageName: comboName,
+                comboPrice: ev.comboPrice,
+                cvStaffName: cvName,
+                customerName,
+              }),
+              new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+            ]);
+
+            const triggerCombo = (quoteText: string) => {
+              enqueueCelebration({
+                id: ev.id,
+                kind: 'COMBO',
+                staffId: ev.staffId,
+                staffName,
+                avatarUrl: ev.avatarUrl,
+                textToSpeak: quoteText,
+                badgeText: `✨ +CHỐT ${comboName.toUpperCase()}${comboPriceBadge}!`,
+                colorTheme: 'purple',
+                changeResult: ev.changeResult,
+                orderId: ev.orderId,
+                hasCombo: true,
+                comboPackageName: ev.comboPackageName,
+                comboPrice: ev.comboPrice,
+                assignedStaffName: cvName,
+                checkInStaffName: ccName,
+              });
+            };
+
+            quotePromise
+              .then((res: SafeAny) => triggerCombo(res?.quote?.trim() || defaultQuote))
+              .catch(() => triggerCombo(defaultQuote));
           } else if (hasTip) {
             const tipSpeech = formatCurrencyForSpeech(ev.tipAmount);
             const tipText = ev.tipAmount ? ` ${ev.tipAmount.toLocaleString('vi-VN')}đ` : '';
 
             const tipQuotes = [
-              `Khách yêu vừa gửi tặng tiền tip ${tipSpeech}! Chúc mừng Chuyên Viên ${cvName} và Tư Vấn ${ccName} đã mang lại sự hài lòng tuyệt đối!`,
-              `Thêm một khoản tip ngọt ngào ${tipSpeech} từ khách yêu! Sự ân cần và chu đáo của Chuyên Viên ${cvName} cùng ${ccName} đã chạm đến trái tim khách hàng!`,
-              `Khách thương khách quý thưởng tip ${tipSpeech} liền tay! Tự hào về tay nghề tinh hoa của ${cvName} và sự tận tâm của ${ccName}!`,
+              `Ting ting, khách thưởng tip ${tipSpeech} cho ${ccName} và Chuyên Viên ${cvName}! Vừa duyên dáng lại vừa ân cần, khách thương khách nhớ tip tới tấp thế này thì ai làm lại các em!`,
+              `Khách mê tay nghề Chuyên Viên ${cvName} hay mê nụ cười của ${ccName} mà tip hẳn ${tipSpeech} thế này? Đẳng cấp làm cả phòng die up die down!`,
+              `Một món quà tip ${tipSpeech} ngọt ngào từ khách yêu gửi tặng ${ccName} và ${cvName}! Sự chăm sóc chuẩn 5 sao làm anh chết lên chết xuống vì tự hào!`,
+              `Khách gửi trọn niềm tin và tip ${tipSpeech} liền tay! Phong độ đỉnh cao của ${ccName} và ${cvName} hôm nay khiến ai cũng phải trầm trồ thán phục!`,
             ];
-            const textToSpeak = tipQuotes[Math.floor(Math.random() * tipQuotes.length)];
+            const defaultQuote = tipQuotes[Math.floor(Math.random() * tipQuotes.length)];
 
-            enqueueCelebration({
-              id: ev.id,
-              kind: 'TIP',
-              staffId: ev.staffId,
-              staffName,
-              avatarUrl: ev.avatarUrl,
-              textToSpeak,
-              badgeText: `💛 +TIP KHÁCH THƯỞNG${tipText}!`,
-              colorTheme: 'gold',
-              changeResult: ev.changeResult,
-              orderId: ev.orderId,
-              hasTip: true,
-              tipAmount: ev.tipAmount,
-              assignedStaffName: cvName,
-              checkInStaffName: ccName,
-            });
+            const quotePromise = Promise.race([
+              apiClient.telesaleTarget.getCelebrationQuote({
+                type: 'TIP',
+                staffName: ccName,
+                tipAmount: ev.tipAmount,
+                cvStaffName: cvName,
+                customerName,
+              }),
+              new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
+            ]);
+
+            const triggerTip = (quoteText: string) => {
+              enqueueCelebration({
+                id: ev.id,
+                kind: 'TIP',
+                staffId: ev.staffId,
+                staffName,
+                avatarUrl: ev.avatarUrl,
+                textToSpeak: quoteText,
+                badgeText: `💛 +TIP KHÁCH THƯỞNG${tipText}!`,
+                colorTheme: 'gold',
+                changeResult: ev.changeResult,
+                orderId: ev.orderId,
+                hasTip: true,
+                tipAmount: ev.tipAmount,
+                assignedStaffName: cvName,
+                checkInStaffName: ccName,
+              });
+            };
+
+            quotePromise
+              .then((res: SafeAny) => triggerTip(res?.quote?.trim() || defaultQuote))
+              .catch(() => triggerTip(defaultQuote));
           } else {
             // Đơn thường hoàn tất: Ghi nhận êm ái vào nhật ký, không làm phiền phòng trực
             recordEventLog({

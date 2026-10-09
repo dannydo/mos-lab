@@ -31987,8 +31987,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 117736,
-        "lineCount": 2881,
+        "sizeBytes": 118331,
+        "lineCount": 2883,
         "ext": ".ts"
       }
     },
@@ -38786,8 +38786,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 49535,
-        "lineCount": 1174,
+        "sizeBytes": 52545,
+        "lineCount": 1233,
         "ext": ".ts"
       }
     },
