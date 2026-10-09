@@ -143,7 +143,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
   };
 
   const getBananaBalance = (staff: CareerStaffSummary): number => {
-    return staff.bananaBalance ?? staff.bananaCount ?? 0;
+    return typeof staff.bananaBalance === 'number' ? staff.bananaBalance : 0;
   };
 
   type MetricStatus = 'passed' | 'near' | 'failed';
@@ -671,7 +671,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
-        <Tooltip title="Ví chuối: Tổng số dư chuối trong ví (Chuẩn không âm ≥ 0 🍌)">
+        <Tooltip title="Ví chuối: Số dư ví thực tế sống ở thời điểm hiện tại (Chuẩn không âm ≥ 0 🍌)">
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <Wallet className="w-4 h-4 text-amber-500" />
           </span>
@@ -686,7 +686,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
         const status = getBananaBalanceStatus(balance);
         return (
           <Tooltip
-            title={`Số dư ví: ${balance.toLocaleString('vi-VN')} 🍌 · ${getStatusLabel(status)} (Nhấn để xem sao kê)`}
+            title={`Số dư ví hiện tại: ${balance.toLocaleString('vi-VN')} 🍌 · ${getStatusLabel(status)} (Nhấn để xem sao kê)`}
           >
             <button
               type="button"

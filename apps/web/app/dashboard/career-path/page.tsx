@@ -630,9 +630,9 @@ export default function CareerPathPage() {
             {/* Tổng số chuối dư (Banana Balance) */}
             {(() => {
               const realBalance =
-                selectedStaffStatus?.metrics?.bananaBalance !== undefined
+                typeof selectedStaffStatus?.metrics?.bananaBalance === 'number'
                   ? selectedStaffStatus.metrics.bananaBalance
-                  : selectedStaffStatus?.metrics?.bananaCount || 0;
+                  : 0;
               const isNegative = realBalance < 0;
 
               return (

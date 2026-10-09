@@ -431,9 +431,10 @@ export class CareerProgressionService {
                 `
                 SELECT 
                   user_id,
-                  balance as amount
-                FROM staff_banana_account
-                WHERE user_id IN (${legacyIds.join(',')})
+                  amount
+                FROM user_balance
+                WHERE currency_id = 3
+                  AND user_id IN (${legacyIds.join(',')})
               `
               )
               .catch(() => [])
@@ -673,7 +674,7 @@ export class CareerProgressionService {
         selfComboRate,
         happinessIndex: hiMap[legacyId] ?? 0.75, // HI trong kỳ được chọn
         bananaCount: bananasMap[legacyId] ?? 0, // Chuối nhận trong kỳ được chọn
-        bananaBalance: legacyId ? (bananaBalancesMap[legacyId] ?? bananasMap[legacyId] ?? 0) : 0,
+        bananaBalance: legacyId ? (bananaBalancesMap[legacyId] ?? 0) : 0,
         isBananaPassed: (bananasMap[legacyId] ?? 0) >= (periodConfig.period === 'last_3_months' ? 60 : 20),
         ccLevel: ['CC', 'FM'].includes(careerRole) ? ccLevel : null,
         monthlyPoints: ['CC', 'FM'].includes(careerRole) ? monthlyPoints : null,
@@ -978,9 +979,10 @@ export class CareerProgressionService {
         fastify.prisma.legacy
           .$queryRawUnsafe<any[]>(
             `
-          SELECT balance as amount
-          FROM staff_banana_account
-          WHERE user_id = ?
+          SELECT amount
+          FROM user_balance
+          WHERE currency_id = 3 AND user_id = ?
+          LIMIT 1
         `,
             targetLegacyStaffId
           )
@@ -1155,7 +1157,7 @@ export class CareerProgressionService {
       bananaBalance =
         bananaBalanceRes?.[0]?.amount !== undefined && bananaBalanceRes?.[0]?.amount !== null
           ? Number(bananaBalanceRes[0].amount)
-          : bananaCount;
+          : 0;
       ccLevel = monthlyPoints > 0 ? Math.floor(monthlyPoints / 100) + 1 : 1;
       ccTipShare = totalTip;
     } catch (err) {
