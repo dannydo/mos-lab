@@ -1270,10 +1270,15 @@ export class TelesaleTargetService {
       };
     });
 
-    // Mark Top Book staff member
+    // Mark Top Book staff member with tie-breaker on Check-in/Done
     const maxBookToday = Math.max(0, ...staffTargets.map((s) => s.bookToday || 0));
+    const topBookers = staffTargets.filter((s) => maxBookToday > 0 && (s.bookToday || 0) === maxBookToday);
+    const maxCheckinAmongTopBookers = Math.max(0, ...topBookers.map((s) => s.checkinToday ?? s.doneToday ?? 0));
+
     for (const st of staffTargets) {
-      st.isTopBookToday = maxBookToday > 0 && st.bookToday === maxBookToday;
+      const isMaxBook = maxBookToday > 0 && (st.bookToday || 0) === maxBookToday;
+      const isMaxCheckin = (st.checkinToday ?? st.doneToday ?? 0) === maxCheckinAmongTopBookers;
+      st.isTopBookToday = isMaxBook && isMaxCheckin;
     }
 
     // 5. Build today's live events feed for TV Celebration

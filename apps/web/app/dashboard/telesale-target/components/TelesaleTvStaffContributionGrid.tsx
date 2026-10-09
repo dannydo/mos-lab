@@ -65,16 +65,34 @@ export const TelesaleTvStaffContributionGrid: React.FC<TelesaleTvStaffContributi
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
 
-  const topStaff = React.useMemo(() => {
-    if (!staffTargets || staffTargets.length === 0) return null;
+  const sortedStaffTargets = React.useMemo(() => {
+    if (!staffTargets || staffTargets.length === 0) return [];
     return [...staffTargets].sort((a, b) => {
+      // 1. Tiêu chí 1: Book hôm nay
       const bookDiff = (b.bookToday ?? 0) - (a.bookToday ?? 0);
       if (bookDiff !== 0) return bookDiff;
+
+      // 2. Tiêu chí 2 (Tie-breaker): Check-in hôm nay (tiền đề Done dịch vụ)
+      const aCheckin = a.checkinToday ?? a.doneToday ?? 0;
+      const bCheckin = b.checkinToday ?? b.doneToday ?? 0;
+      const checkinDiff = bCheckin - aCheckin;
+      if (checkinDiff !== 0) return checkinDiff;
+
+      // 3. Tiêu chí 3: Combo Live Check-in hôm nay
+      const aCombo = a.comboLiveCheckinToday ?? a.comboLiveDoneToday ?? 0;
+      const bCombo = b.comboLiveCheckinToday ?? b.comboLiveDoneToday ?? 0;
+      const comboDiff = bCombo - aCombo;
+      if (comboDiff !== 0) return comboDiff;
+
+      // 4. Tiêu chí 4: Backend isTopBookToday
       if (b.isTopBookToday && !a.isTopBookToday) return 1;
       if (a.isTopBookToday && !b.isTopBookToday) return -1;
+
       return 0;
-    })[0];
+    });
   }, [staffTargets]);
+
+  const topStaff = sortedStaffTargets[0] || null;
 
   if (!staffTargets || staffTargets.length === 0) {
     return null;
@@ -120,12 +138,16 @@ export const TelesaleTvStaffContributionGrid: React.FC<TelesaleTvStaffContributi
 
       {/* Cards Container (Option 1: 5-column layout on Fullscreen TV) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 my-auto">
-        {staffTargets.map((staff, idx) => {
+        {sortedStaffTargets.map((staff, idx) => {
           const bookToday = staff.bookToday ?? 0;
           const checkinToday = staff.checkinToday ?? staff.doneToday ?? 0;
           const comboLiveCheckinToday = staff.comboLiveCheckinToday ?? staff.comboLiveDoneToday ?? 0;
           const contributionPercent = totalTeamBookToday > 0 ? Math.round((bookToday / totalTeamBookToday) * 100) : 0;
-          const isTop = staff.legacyStaffId === topStaff?.legacyStaffId;
+          const isTop =
+            topStaff &&
+            bookToday > 0 &&
+            bookToday === (topStaff.bookToday ?? 0) &&
+            checkinToday === (topStaff.checkinToday ?? topStaff.doneToday ?? 0);
           const colorClass = AVATAR_BG_COLORS[idx % AVATAR_BG_COLORS.length];
 
           return (

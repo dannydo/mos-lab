@@ -51,12 +51,7 @@ describe('TelesaleTvStaffContributionGrid', () => {
   ];
 
   it('renders all staff cards with names, Book today, Done today, and % contribution', () => {
-    render(
-      <TelesaleTvStaffContributionGrid
-        staffTargets={mockStaffTargets}
-        totalTeamBookToday={16}
-      />
-    );
+    render(<TelesaleTvStaffContributionGrid staffTargets={mockStaffTargets} totalTeamBookToday={16} />);
 
     expect(screen.getByText(/ĐÓNG GÓP CÁ NHÂN HÔM NAY · TELESALES EXECUTIVES/i)).toBeInTheDocument();
     expect(screen.getByText(/3 Nhân sự hoạt động/i)).toBeInTheDocument();
@@ -75,10 +70,55 @@ describe('TelesaleTvStaffContributionGrid', () => {
     expect(screen.getByText('TOP BOOK')).toBeInTheDocument();
   });
 
+  it('ranks staff with higher check-in ahead when Book today is tied', () => {
+    const tiedStaffTargets: TelesaleStaffTarget[] = [
+      {
+        legacyStaffId: 101,
+        name: 'Tâm Nguyễn',
+        avatarUrl: null,
+        doneTarget: 100,
+        doneActual: 20,
+        doneToday: 0,
+        checkinToday: 0,
+        bookToday: 4,
+        bookContributionPercent: 50,
+        isTopBookToday: false,
+        callTargetDaily: 83,
+        callActualToday: 60,
+        pickupActualToday: 20,
+      },
+      {
+        legacyStaffId: 102,
+        name: 'Ngọc Điệp',
+        avatarUrl: null,
+        doneTarget: 100,
+        doneActual: 20,
+        doneToday: 1,
+        checkinToday: 1,
+        bookToday: 4,
+        bookContributionPercent: 50,
+        isTopBookToday: true,
+        callTargetDaily: 83,
+        callActualToday: 65,
+        pickupActualToday: 22,
+      },
+    ];
+
+    render(<TelesaleTvStaffContributionGrid staffTargets={tiedStaffTargets} totalTeamBookToday={8} />);
+
+    const cards = screen.getAllByTestId(/^tv-staff-card-/);
+    expect(cards).toHaveLength(2);
+    // Điệp (checkin: 1) must be rendered first before Tâm (checkin: 0)
+    expect(cards[0]).toHaveAttribute('data-testid', 'tv-staff-card-102');
+    expect(cards[1]).toHaveAttribute('data-testid', 'tv-staff-card-101');
+
+    // Only card 102 (Điệp) has the TOP BOOK crown
+    expect(cards[0]).toHaveTextContent('TOP BOOK');
+    expect(cards[1]).not.toHaveTextContent('TOP BOOK');
+  });
+
   it('handles empty staff targets gracefully', () => {
-    const { container } = render(
-      <TelesaleTvStaffContributionGrid staffTargets={[]} totalTeamBookToday={0} />
-    );
+    const { container } = render(<TelesaleTvStaffContributionGrid staffTargets={[]} totalTeamBookToday={0} />);
     expect(container.firstChild).toBeNull();
   });
 });

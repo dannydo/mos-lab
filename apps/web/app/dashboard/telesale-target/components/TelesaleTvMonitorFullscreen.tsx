@@ -342,7 +342,15 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
 
   const topStaff = useMemo(() => {
     if (!overview.staffTargets || overview.staffTargets.length === 0) return null;
-    return [...overview.staffTargets].sort((a, b) => (b.bookToday ?? 0) - (a.bookToday ?? 0))[0];
+    return [...overview.staffTargets].sort((a, b) => {
+      const bookDiff = (b.bookToday ?? 0) - (a.bookToday ?? 0);
+      if (bookDiff !== 0) return bookDiff;
+      const aCheckin = a.checkinToday ?? a.doneToday ?? 0;
+      const bCheckin = b.checkinToday ?? b.doneToday ?? 0;
+      const checkinDiff = bCheckin - aCheckin;
+      if (checkinDiff !== 0) return checkinDiff;
+      return (b.comboLiveCheckinToday ?? 0) - (a.comboLiveCheckinToday ?? 0);
+    })[0];
   }, [overview.staffTargets]);
 
   const shiftNodes = useMemo(() => {
