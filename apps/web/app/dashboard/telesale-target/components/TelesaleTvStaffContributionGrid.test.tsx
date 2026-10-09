@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { TelesaleTvStaffContributionGrid } from './TelesaleTvStaffContributionGrid';
 import { TelesaleStaffTarget } from '@mos-lab/shared';
+import { calculateShiftPacing } from '../utils/tv-monitor-pacing';
 
 describe('TelesaleTvStaffContributionGrid', () => {
   const mockStaffTargets: TelesaleStaffTarget[] = [
@@ -115,6 +116,76 @@ describe('TelesaleTvStaffContributionGrid', () => {
     // Only card 102 (Điệp) has the TOP BOOK crown
     expect(cards[0]).toHaveTextContent('TOP BOOK');
     expect(cards[1]).not.toHaveTextContent('TOP BOOK');
+  });
+
+  it('displays staff daily booking target and pacing tier colors (xanh, vàng, đỏ)', () => {
+    const tieredStaffTargets: TelesaleStaffTarget[] = [
+      {
+        legacyStaffId: 101,
+        name: 'Ngọc Điệp',
+        avatarUrl: null,
+        doneTarget: 100,
+        doneActual: 20,
+        doneToday: 1,
+        checkinToday: 1,
+        bookToday: 7, // 7 >= 5 -> Vượt target (emerald)
+        bookContributionPercent: 35,
+        isTopBookToday: true,
+        callTargetDaily: 83,
+        callActualToday: 60,
+        pickupActualToday: 20,
+      },
+      {
+        legacyStaffId: 102,
+        name: 'Vũ Huỳnh',
+        avatarUrl: null,
+        doneTarget: 100,
+        doneActual: 20,
+        doneToday: 0,
+        checkinToday: 0,
+        bookToday: 3, // rTime ~ 0.79 -> expected 4, gap -1 -> amber
+        bookContributionPercent: 15,
+        isTopBookToday: false,
+        callTargetDaily: 83,
+        callActualToday: 60,
+        pickupActualToday: 20,
+      },
+      {
+        legacyStaffId: 103,
+        name: 'Bích Phượng',
+        avatarUrl: null,
+        doneTarget: 100,
+        doneActual: 20,
+        doneToday: 0,
+        checkinToday: 0,
+        bookToday: 2, // expected 4, gap -2 -> rose
+        bookContributionPercent: 10,
+        isTopBookToday: false,
+        callTargetDaily: 83,
+        callActualToday: 60,
+        pickupActualToday: 20,
+      },
+    ];
+
+    // Pacing at 15:20 (ca chiều, expected ~ 4 book for target 5)
+    const mockPacing = calculateShiftPacing({ hour: 15, minute: 20 });
+
+    render(
+      <TelesaleTvStaffContributionGrid
+        staffTargets={tieredStaffTargets}
+        totalTeamBookToday={12}
+        dailyBookTarget={15} // 15 target / 3 staff = 5 book / staff
+        pacing={mockPacing}
+      />
+    );
+
+    // Target indicator in Book header
+    expect(screen.getAllByText('/5')).toHaveLength(3);
+
+    // Badges
+    expect(screen.getByText('+2 VƯỢT')).toBeInTheDocument();
+    expect(screen.getByText('-1 BÁM NHỊP')).toBeInTheDocument();
+    expect(screen.getByText('-2 CHẬM')).toBeInTheDocument();
   });
 
   it('handles empty staff targets gracefully', () => {

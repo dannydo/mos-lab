@@ -5,10 +5,13 @@ import { Progress, theme } from 'antd';
 import { TelesaleStaffTarget } from '@mos-lab/shared';
 import { Calendar, CheckCircle2, Crown, Users } from 'lucide-react';
 import { useTheme } from '../../../../context/ThemeContext';
+import { calculateShiftPacing, calculatePacingTier, ShiftPacingResult } from '../utils/tv-monitor-pacing';
 
 interface TelesaleTvStaffContributionGridProps {
   staffTargets: TelesaleStaffTarget[];
   totalTeamBookToday: number;
+  dailyBookTarget?: number;
+  pacing?: ShiftPacingResult;
 }
 
 const StaffAvatarItem: React.FC<{
@@ -60,10 +63,17 @@ const StaffAvatarItem: React.FC<{
 export const TelesaleTvStaffContributionGrid: React.FC<TelesaleTvStaffContributionGridProps> = ({
   staffTargets,
   totalTeamBookToday,
+  dailyBookTarget,
+  pacing,
 }) => {
   const { token } = theme.useToken();
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
+
+  const currentPacing = React.useMemo(() => pacing || calculateShiftPacing(new Date()), [pacing]);
+  const teamDailyBookTarget = dailyBookTarget || 25;
+  const staffDailyBookTarget =
+    staffTargets.length > 0 ? Math.max(1, Math.round(teamDailyBookTarget / staffTargets.length)) : 5;
 
   const sortedStaffTargets = React.useMemo(() => {
     if (!staffTargets || staffTargets.length === 0) return [];
@@ -150,6 +160,61 @@ export const TelesaleTvStaffContributionGrid: React.FC<TelesaleTvStaffContributi
             checkinToday === (topStaff.checkinToday ?? topStaff.doneToday ?? 0);
           const colorClass = AVATAR_BG_COLORS[idx % AVATAR_BG_COLORS.length];
 
+          // Pacing & Tier calculation for daily booking target
+          const expectedBookToday = Math.round(staffDailyBookTarget * currentPacing.rTime);
+          const gapBook = bookToday - expectedBookToday;
+          const staffBookTier = calculatePacingTier(
+            bookToday,
+            expectedBookToday,
+            staffDailyBookTarget,
+            currentPacing.rTime
+          );
+
+          let bookBadgeText: string;
+          if (bookToday >= staffDailyBookTarget) {
+            bookBadgeText =
+              bookToday > staffDailyBookTarget ? `+${bookToday - staffDailyBookTarget} VƯỢT` : 'ĐẠT TARGET';
+          } else if (gapBook >= 0) {
+            bookBadgeText = 'ĐÚNG NHỊP';
+          } else if (gapBook === -1) {
+            bookBadgeText = '-1 BÁM NHỊP';
+          } else {
+            bookBadgeText = `${gapBook} CHẬM`;
+          }
+
+          const bookTierStyles = {
+            emerald: {
+              box: isDark
+                ? 'bg-emerald-950/35 border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.15)]'
+                : 'bg-emerald-50/90 border-emerald-300 shadow-sm',
+              label: isDark ? 'text-emerald-400' : 'text-emerald-700',
+              number: isDark ? 'text-emerald-300 drop-shadow-[0_0_8px_rgba(52,211,153,0.7)]' : 'text-emerald-700',
+              badge: isDark
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                : 'bg-emerald-100 text-emerald-800 border-emerald-300',
+            },
+            amber: {
+              box: isDark
+                ? 'bg-amber-950/35 border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.15)]'
+                : 'bg-amber-50/90 border-amber-300 shadow-sm',
+              label: isDark ? 'text-amber-400' : 'text-amber-700',
+              number: isDark ? 'text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,0.7)]' : 'text-amber-700',
+              badge: isDark
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                : 'bg-amber-100 text-amber-800 border-amber-300',
+            },
+            rose: {
+              box: isDark
+                ? 'bg-rose-950/35 border-rose-500/40 shadow-[0_0_12px_rgba(244,63,94,0.15)]'
+                : 'bg-rose-50/90 border-rose-300 shadow-sm',
+              label: isDark ? 'text-rose-400' : 'text-rose-700',
+              number: isDark ? 'text-rose-300 drop-shadow-[0_0_8px_rgba(244,63,94,0.7)]' : 'text-rose-700',
+              badge: isDark
+                ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                : 'bg-rose-100 text-rose-800 border-rose-300',
+            },
+          }[staffBookTier];
+
           return (
             <div
               key={staff.legacyStaffId}
@@ -205,46 +270,83 @@ export const TelesaleTvStaffContributionGrid: React.FC<TelesaleTvStaffContributi
               </div>
 
               {/* Today Metrics: 2 Big Numbers Side-by-side (KPI Chính: Book & Check-in) */}
-              <div
-                className={`grid grid-cols-2 gap-1.5 mt-auto rounded-xl p-2 border transition-colors ${
-                  isDark ? 'bg-black/60 border-zinc-800/80' : 'bg-slate-50/90 border-slate-200'
-                }`}
-              >
-                {/* Book Today */}
-                <div className="text-center">
+              <div className="grid grid-cols-2 gap-1.5 mt-auto">
+                {/* Book Today with Daily Target Pacing Tier (Xanh, Vàng, Đỏ) */}
+                <div className={`text-center rounded-xl p-2 border transition-all ${bookTierStyles.box}`}>
                   <div
-                    className={`flex items-center justify-center gap-1 text-[10px] uppercase font-mono font-bold tracking-wider ${
-                      isDark ? 'text-blue-400' : 'text-blue-600'
-                    }`}
+                    className={`flex items-center justify-center gap-1 text-[10px] uppercase font-mono font-bold tracking-wider ${bookTierStyles.label}`}
                   >
-                    <Calendar className={`w-3 h-3 ${isDark ? 'text-blue-400' : 'text-blue-600'}`} />
+                    <Calendar className="w-3 h-3" />
                     <span>BOOK</span>
+                    <span className="text-[9px] opacity-75 font-normal">/{staffDailyBookTarget}</span>
                   </div>
                   <div
-                    className={`text-xl sm:text-2xl xl:text-3xl font-black font-mono tabular-nums mt-0.5 leading-none ${
-                      isDark ? 'text-blue-300' : 'text-blue-700'
-                    }`}
+                    className={`text-xl sm:text-2xl xl:text-3xl font-black font-mono tabular-nums mt-0.5 leading-none ${bookTierStyles.number}`}
                   >
                     {bookToday}
+                  </div>
+                  <div className="mt-1 flex items-center justify-center">
+                    <span
+                      className={`text-[8.5px] font-mono font-bold px-1.5 py-0.5 rounded-full border leading-none ${bookTierStyles.badge}`}
+                    >
+                      {bookBadgeText}
+                    </span>
                   </div>
                 </div>
 
                 {/* Single Check-in Today (Khách Lẻ - KPI Chính) */}
-                <div className={`text-center border-l ${isDark ? 'border-zinc-800' : 'border-slate-200'}`}>
+                <div
+                  className={`text-center rounded-xl p-2 border transition-all ${
+                    checkinToday > 0
+                      ? isDark
+                        ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
+                        : 'bg-emerald-50/60 border-emerald-200 text-emerald-800'
+                      : isDark
+                        ? 'bg-zinc-900/40 border-zinc-800 text-zinc-500'
+                        : 'bg-slate-50/80 border-slate-200 text-slate-400'
+                  }`}
+                >
                   <div
                     className={`flex items-center justify-center gap-1 text-[10px] uppercase font-mono font-bold tracking-wider ${
-                      isDark ? 'text-emerald-400' : 'text-emerald-600'
+                      checkinToday > 0
+                        ? isDark
+                          ? 'text-emerald-400'
+                          : 'text-emerald-600'
+                        : isDark
+                          ? 'text-zinc-500'
+                          : 'text-slate-400'
                     }`}
                   >
-                    <CheckCircle2 className={`w-3 h-3 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`} />
+                    <CheckCircle2 className="w-3 h-3" />
                     <span>CHECK-IN</span>
                   </div>
                   <div
                     className={`text-xl sm:text-2xl xl:text-3xl font-black font-mono tabular-nums mt-0.5 leading-none ${
-                      isDark ? 'text-emerald-300' : 'text-emerald-700'
+                      checkinToday > 0
+                        ? isDark
+                          ? 'text-emerald-300'
+                          : 'text-emerald-700'
+                        : isDark
+                          ? 'text-zinc-500'
+                          : 'text-slate-400'
                     }`}
                   >
                     {checkinToday}
+                  </div>
+                  <div className="mt-1 flex items-center justify-center">
+                    <span
+                      className={`text-[8.5px] font-mono font-bold px-1.5 py-0.5 rounded-full border leading-none ${
+                        checkinToday > 0
+                          ? isDark
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                            : 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                          : isDark
+                            ? 'bg-zinc-800/40 text-zinc-500 border-zinc-700/50'
+                            : 'bg-slate-100 text-slate-500 border-slate-200'
+                      }`}
+                    >
+                      {checkinToday > 0 ? `${checkinToday} LƯỢT` : 'CHƯA CÓ'}
+                    </span>
                   </div>
                 </div>
               </div>

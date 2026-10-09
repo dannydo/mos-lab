@@ -1503,6 +1503,8 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
             <TelesaleTvStaffContributionGrid
               staffTargets={overview.staffTargets}
               totalTeamBookToday={metrics.bookActual}
+              dailyBookTarget={metrics.bookTarget}
+              pacing={pacing}
             />
           )}
         </div>

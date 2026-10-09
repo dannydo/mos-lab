@@ -1409,13 +1409,15 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                 <div className="flex justify-between items-center py-1 border-b bg-emerald-500/10 px-2 rounded">
                   <div className="flex flex-col">
                     <span className="text-sm text-emerald-700 dark:text-emerald-300 font-medium">
-                      Nghỉ phép tháng ({selectedRecord.offMonthDays || 1} ngày x 11h x{' '}
-                      {selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ/h):
+                      Nghỉ phép tháng ({selectedRecord.offMonthDays || 1} ngày):
                     </span>
                     {selectedRecord.offMonthLeaveDetails && selectedRecord.offMonthLeaveDetails.length > 0 && (
                       <span className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80">
                         {selectedRecord.offMonthLeaveDetails
-                          .map((d) => `Ngày ${dayjs(d.date).format('DD/MM')}${d.note ? `: ${d.note}` : ''}`)
+                          .map(
+                            (d) =>
+                              `Ngày ${dayjs(d.date).format('DD/MM')} (ca ${d.shiftHours || 9}h x ${selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ)${d.note ? `: ${d.note}` : ''}`
+                          )
                           .join('; ')}
                       </span>
                     )}

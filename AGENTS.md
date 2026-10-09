@@ -641,3 +641,47 @@ mos-lab/
     $\rightarrow$ AG **tuyệt đối KHÔNG được cắm đầu chạy lệnh bừa bãi**.
     $\rightarrow$ AG bắt buộc phải **Clarify với Danny trước khi thực thi**: Nêu rõ server đích, database, câu lệnh dự kiến, phạm vi ảnh hưởng và rủi ro.
     $\rightarrow$ Nếu là tác vụ phức tạp hoặc có rủi ro, bắt buộc lập Implementation Plan và yêu cầu Danny duyệt (Proceed) trước khi chạy.
+
+### 57. CV Leave Pay & Balance Invariant (Quy Chuẩn Tính Lương Nghỉ Phép Tháng & Quỹ Phép Năm Chuyên Viên)
+
+- **Quy chuẩn Tính Lương Nghỉ Phép Tháng Có Hưởng Lương (100% Lương Giờ)**:
+  - **Mức Giờ Tính Phép Theo Ca Làm Việc Thực Tế**: Ngày nghỉ phép tháng của Chuyên Viên (CV) được tính theo **Thời lượng ca làm việc thực tế được xếp lịch trong ngày nghỉ đó (`staff_working_shift`)**. Ca thường tính 9 tiếng (9h), ca full tính trọn vẹn 11 tiếng (11h) per chỉ đạo trực tiếp của Danny.
+    $$\text{Tiền Phép Tháng} = \sum (\text{Ngày phép} \times \text{Số giờ ca (9h hoặc 11h)} \times \text{hourlyRate})$$
+    - Nhân viên làm ca thường 9h (như Thiên Thiên, HânEmBé): ngày phép tính hưởng 9h $\times$ hourlyRate.
+    - Nhân viên làm ca full 11h (như Thảo Ly, Nhung tại Đề Thám): ngày phép tính hưởng trọn vẹn **11h** $\times$ hourlyRate.
+  - **Điều kiện công nhận ngày nghỉ phép có hưởng lương**:
+    - Phải có đơn nghỉ phép tháng hợp lệ (`staff_day_off`) với trạng thái `Approved` (`request_state = 1`).
+    - Ngày nghỉ đó nhân viên phải có `working_minute = 0` (nghỉ trọn ngày). Nếu đơn bị hủy (`Cancelled`) hoặc nhân viên vẫn check-in đi làm thực tế (như trường hợp Thiên Thiên ngày 07/09) thì tính lương theo giờ công đi làm thực tế, **tuyệt đối không tính đè tiền nghỉ phép**.
+- **Cách Tính & Khấu Trừ Quỹ Phép Năm Còn Lại (`day_off_available`)**:
+  - **Nhân viên làm đủ năm**: Quỹ phép năm tiêu chuẩn là **12 ngày/năm** (tương ứng mỗi tháng làm việc tích lũy 1 ngày).
+  - **Nhân viên vào làm giữa năm hoặc ký lại hợp đồng mới sau khi nghỉ việc**:
+    - Tính từ tháng bắt đầu hợp đồng mới (`payroll_date_start`) đến hết tháng tính lương: $\text{Quỹ tích lũy} = \text{Số tháng làm việc} \times 1\text{ ngày}$.
+    - **Tuyệt đối không cộng dồn số ngày phép của hợp đồng cũ trước khi nghỉ việc** (triệt tiêu lỗi legacy cộng dồn ảo 24 ngày cũ của Thiên Thiên).
+  - **Công thức tính số phép còn lại thực tế**:
+    $$\text{Phép năm còn lại} = \text{Quỹ phép tích lũy trong năm} - \text{Tổng số ngày phép tháng đã dùng trong năm}$$
+    - Nếu tổng số ngày đã nghỉ vượt quá quỹ tích lũy: Phép còn lại bằng **0 ngày** (hết quỹ phép).
+- **Cơ Chế Bảng Lương CV Chuẩn (Bỏ KPI Bậc Thang, Giữ Thưởng Ca Xoay)**:
+  - Bỏ hoàn toàn KPI bậc thang tháng cũ (0đ, xóa `tracking_key.level`).
+  - Giữ nguyên thưởng vòng xoay ca làm việc thực tế (`staff_bonus`).
+  - Phụ cấp lễ 2/9 tách riêng dòng độc lập (`+229.500đ`).
+  - Phụ cấp gửi xe cố định 200.000đ.
+  - Thưởng thâm niên tính % theo ca xoay (`seniority`).
+  - Khấu trừ BHXH 10.5% NLĐ.
+  - $\text{Lương Net} = \text{Gross} - \text{BHXH 10.5\%}$.
+
+### 58. Staff Branch & Schedule Database-First Invariant (Quy Tắc Kiểm Chứng Trực Tiếp Cơ Sở Dữ Liệu Nhân Sự, Chi Nhánh & Lịch Ca)
+
+- **Tuyệt đối không đoán mò chi nhánh và ca kíp**: Nghiêm cấm mọi hành vi suy diễn, nhớ mang máng, hoặc quy chụp chi nhánh/ca làm việc của nhân sự.
+- **Single Source of Truth cho Chi Nhánh**:
+  - Truy vấn trực tiếp từ MySQL: `user_profile.client_store_id` JOIN `client_store_language` (`csl.language_id = 1`).
+  - Danh mục chi nhánh chuẩn:
+    - `client_store_id = 1`: **CMT8** (755 Cách Mạng Tháng 8, Tân Bình).
+    - `client_store_id = 2`: **PXL** (309 Phan Xích Long, Phú Nhuận).
+    - `client_store_id = 6`: **Đề Thám** (159 - 159A Đề Thám, Quận 1).
+    - `client_store_id = 11`: **Kỳ Đồng** (Tầng 2, 5A Kỳ Đồng, Quận 3).
+    - `client_store_id = 15`: **Him Lam** (58 Nguyễn Thị Thập, KĐT Him Lam, Quận 7).
+    - `client_store_id = 16`: **Estella Place** (L5-08, 09 Estella Place, 88 Song Hành, Quận 2).
+- **Single Source of Truth cho Ca Làm Việc & Chấm Công**:
+  - Lịch ca đăng ký: `staff_working_shift` (`date`, `start_time`, `end_time`, `working_day_count`).
+  - Chấm công thực tế: `report_staff` (`date`, `check_in_date`, `check_out_date`, `working_minute`).
+  - Đơn nghỉ phép: `staff_day_off` (`from_date`, `to_date`, `request_state`, `attribute_option_id`).

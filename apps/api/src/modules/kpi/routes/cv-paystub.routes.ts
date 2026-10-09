@@ -296,14 +296,18 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         GROUP BY sb.user_id
       `;
 
-      // 7. Query Approved Month-off Leaves (attribute_option_id = 111)
+      // 7. Query Approved Month-off Leaves (attribute_option_id = 111) with scheduled shift hours
       const monthOffLeavesQuery = `
         SELECT 
           sdo.from_user_id as staff_id,
           DATE_FORMAT(sdo.from_date, '%Y-%m-%d') as dateStr,
           COALESCE(sdo.working_day_count, 1) as working_day_count,
-          sdo.note
+          sdo.note,
+          COALESCE(TIMESTAMPDIFF(HOUR, sws.start_time, sws.end_time), 9) as shift_hours
         FROM \`staff_day_off\` sdo
+        LEFT JOIN \`staff_working_shift\` sws 
+          ON sws.user_id = sdo.from_user_id 
+          AND sws.date = DATE(sdo.from_date)
         WHERE sdo.from_user_id IN (${validStaffListStr})
           AND sdo.attribute_option_id = 111
           AND sdo.request_state = 'Approved'
@@ -405,7 +409,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
 
       const monthOffLeavesMap = new Map<
         number,
-        Array<{ date: string; workingDayCount: number; note: string | null }>
+        Array<{ date: string; workingDayCount: number; shiftHours: number; note: string | null }>
       >();
       monthOffLeavesRows.forEach((r: SafeAny) => {
         const uid = Number(r.staff_id);
@@ -413,6 +417,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         list.push({
           date: String(r.dateStr),
           workingDayCount: Number(r.working_day_count || 1),
+          shiftHours: Number(r.shift_hours || 9),
           note: r.note ? String(r.note) : null,
         });
         monthOffLeavesMap.set(uid, list);
@@ -516,10 +521,13 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         const holiday = holidayBreakdownMap.get(staffId)!;
 
         const parkingAllowance = parkingAllowanceMap.get(staffId) || 0;
-        // Month-off leave pay (11 standard working hours per approved leave day per Wings policy)
+        // Month-off leave pay (calculated by scheduled shift hours: 9h for regular shift, 11h for full shift)
         const monthOffList = monthOffLeavesMap.get(staffId) || [];
         const offMonthDays = monthOffList.reduce((sum, item) => sum + item.workingDayCount, 0);
-        const offMonthWage = Math.round(offMonthDays * 11 * hourlyRate);
+        const offMonthWage = monthOffList.reduce((sum, item) => {
+          const hours = item.shiftHours || 9;
+          return sum + Math.round(item.workingDayCount * hours * hourlyRate);
+        }, 0);
 
         // Holiday pay (phụ cấp đi làm lễ 2/9) is separated out per HR decision (đi riêng)
         const holidayPaystubAdjustment = 0;
@@ -661,9 +669,13 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           DATE_FORMAT(sdo.from_date, '%Y-%m-%d') as date,
           COALESCE(sdo.working_day_count, 1) as workingDayCount,
           sdo.note,
-          UPPER(COALESCE(cs.client_store_key, 'PXL')) as store
+          UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
+          COALESCE(TIMESTAMPDIFF(HOUR, sws.start_time, sws.end_time), 9) as shiftHours
         FROM \`staff_day_off\` sdo
         LEFT JOIN \`client_store\` cs ON cs.id = sdo.client_store_id
+        LEFT JOIN \`staff_working_shift\` sws 
+          ON sws.user_id = sdo.from_user_id 
+          AND sws.date = DATE(sdo.from_date)
         WHERE sdo.from_user_id = ${numStaffId}
           AND sdo.attribute_option_id = 111
           AND sdo.request_state = 'Approved'
@@ -751,10 +763,11 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         };
       });
 
-      // Add approved month-off leaves into work logs with 11 standard hours per day
+      // Add approved month-off leaves into work logs with scheduled shift hours (9h regular / 11h full)
       monthOffLeaves.forEach((leave: SafeAny) => {
         const leaveDays = Number(leave.workingDayCount || 1);
-        const leaveHours = leaveDays * 11;
+        const hoursPerDay = Number(leave.shiftHours || 9);
+        const leaveHours = leaveDays * hoursPerDay;
         const leaveWage = Math.round(leaveHours * hourlyRate);
         totalWorkHours += leaveHours;
         totalWage += leaveWage;
@@ -766,7 +779,9 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           hourlyRate,
           dailyWage: leaveWage,
           store: String(leave.store || 'PXL'),
-          notes: `Nghỉ phép tháng (${leaveDays} ngày hưởng 100% lương)` + (leave.note ? ` - ${leave.note}` : ''),
+          notes:
+            `Nghỉ phép tháng (${leaveDays} ngày x ${hoursPerDay}h hưởng 100% lương)` +
+            (leave.note ? ` - ${leave.note}` : ''),
         });
       });
 

@@ -151,6 +151,7 @@ export interface CvPaystubRecord extends HolidayPayBreakdown {
   offMonthLeaveDetails?: Array<{
     date: string;
     workingDayCount: number;
+    shiftHours?: number;
     note?: string | null;
   }>;
 }

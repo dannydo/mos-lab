@@ -1081,6 +1081,36 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'CV-003',
+    book: 'PEOPLE',
+    title: 'Quy chuẩn tính lương nghỉ phép tháng theo ca làm việc thực tế và đối soát phép năm Chuyên Viên',
+    summary:
+      'Lương ngày nghỉ phép tháng của Chuyên Viên tính theo thời lượng ca làm việc thực tế được phân công (ca 9h tính 9h, ca full 11h tính 11h); phép năm tích lũy theo thời gian hợp đồng hiện hành và không cộng dồn từ hợp đồng cũ.',
+    commandments: [
+      'Ngày nghỉ phép tháng có hưởng 100% lương giờ của Chuyên Viên được tính theo Thời Lượng Ca Làm Việc Thực Tế được xếp lịch trong ngày nghỉ đó (staff_working_shift). Ca thường tính 9 tiếng (9h), ca full tính 11 tiếng (11h). Tiền phép = Số ngày phép x Số giờ ca x Lương giờ.',
+      'Trường hợp Chuyên Viên làm việc ca full 11h (09:00 - 20:00 như Thảo Ly, Nhung): ngày nghỉ phép tháng được hưởng trọn vẹn lương ca full 11h (11h x Lương giờ).',
+      'Chỉ công nhận ngày nghỉ phép có hưởng lương khi đơn nghỉ phép (staff_day_off) được Approved và bản ghi chấm công (report_staff) có working_minute = 0. Nếu đơn bị Cancelled hoặc nhân viên vẫn check-in đi làm, tính lương theo giờ công thực tế, không tính đè tiền phép.',
+      'Quỹ phép năm tiêu chuẩn 12 ngày/năm (1 ngày/tháng). Nhân viên vào làm giữa năm hoặc ký lại hợp đồng mới chỉ tích lũy từ tháng bắt đầu hợp đồng mới (payroll_date_start), tuyệt đối không cộng dồn ngày phép của hợp đồng cũ trước khi nghỉ việc.',
+      'Số ngày phép năm còn lại = Quỹ phép tích lũy trong năm - Tổng số ngày phép tháng đã dùng trong năm. Khi đã nghỉ hết quỹ tích lũy, số dư phép bằng 0 ngày.',
+    ],
+    rationale:
+      'Đảm bảo sự công bằng, chính xác theo ca làm việc thực tế của nhân sự, đồng thời triệt tiêu lỗi cộng dồn phép ảo từ hệ thống cũ gây sai lệch sổ sách nhân sự.',
+    examples: [
+      'Thiên Thiên làm ca thường 9h (11:00 - 20:00): 1 ngày phép tính 9h x 25.500đ = +229.500đ.',
+      'Thảo Ly làm ca full 11h (09:00 - 20:00): 1 ngày phép tính 11h x 25.500đ = +280.500đ.',
+      'HânEmBé làm ca thường 9h (09:00 - 18:00): 2 ngày phép tính 2 x 9h x 27.500đ = +495.000đ.',
+    ],
+    tags: ['CV', 'phép năm', 'nghỉ phép', 'ca 9h', 'ca 11h', 'lương giờ', 'payroll_date_start', 'day_off_available'],
+    routeScopes: ['/dashboard/cv', '/dashboard/kpi'],
+    status: 'ACTIVE',
+    version: '1.1.0',
+    effectiveFrom: '2026-10-09',
+    sources: [
+      { label: 'Quy chuẩn Nghỉ phép CV', reference: 'AGENTS.md · Rule #57' },
+      { label: 'Service tính lương CV', reference: 'apps/api/src/modules/kpi/routes/cv-paystub.routes.ts' },
+    ],
+  },
+  {
     id: 'UI-001',
     book: 'SYSTEM',
     title: 'Có dấu hay không dấu đều tìm thấy nhau',

@@ -9824,7 +9824,7 @@
         "path": "/api/kpi/cv-paystub/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 620
+        "line": 628
       }
     },
     {
@@ -31650,8 +31650,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 31512,
-        "lineCount": 793,
+        "sizeBytes": 32310,
+        "lineCount": 806,
         "ext": ".ts"
       }
     },
@@ -31975,8 +31975,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 117754,
-        "lineCount": 2884,
+        "sizeBytes": 117736,
+        "lineCount": 2881,
         "ext": ".ts"
       }
     },
@@ -37175,8 +37175,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 70329,
-        "lineCount": 1682,
+        "sizeBytes": 70322,
+        "lineCount": 1681,
         "ext": ".tsx"
       }
     },
@@ -38709,8 +38709,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 71989,
-        "lineCount": 1609,
+        "sizeBytes": 72070,
+        "lineCount": 1611,
         "ext": ".tsx"
       }
     },
@@ -38722,8 +38722,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4101,
-        "lineCount": 137,
+        "sizeBytes": 6182,
+        "lineCount": 197,
         "ext": ".tsx"
       }
     },
@@ -38735,8 +38735,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvStaffContributionGrid.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12133,
-        "lineCount": 286,
+        "sizeBytes": 17246,
+        "lineCount": 395,
         "ext": ".tsx"
       }
     },
@@ -40139,8 +40139,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 102367,
-        "lineCount": 1515,
+        "sizeBytes": 105360,
+        "lineCount": 1545,
         "ext": ".ts"
       }
     },
@@ -40542,8 +40542,8 @@
       "filePath": "packages/shared/src/types/cv.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 7804,
-        "lineCount": 327,
+        "sizeBytes": 7829,
+        "lineCount": 328,
         "ext": ".ts"
       }
     },
