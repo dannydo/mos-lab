@@ -106,6 +106,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
     totalHolidayBasePay: 0,
     totalHolidayPremiumPay: 0,
     totalHolidayPayrollAddition: 0,
+    totalOffMonthWage: 0,
     grandTotalIncome: 0,
   });
   const [previousSummary, setPreviousSummary] = useState<{
@@ -116,6 +117,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
     totalHolidayBasePay: number;
     totalHolidayPremiumPay: number;
     totalHolidayPayrollAddition: number;
+    totalOffMonthWage?: number;
     grandTotalIncome: number;
   } | null>(null);
 
@@ -459,6 +461,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
           totalHolidayBasePay: res.summary?.totalHolidayBasePay || 0,
           totalHolidayPremiumPay: res.summary?.totalHolidayPremiumPay || 0,
           totalHolidayPayrollAddition: res.summary?.totalHolidayPayrollAddition || 0,
+          totalOffMonthWage: res.summary?.totalOffMonthWage || 0,
           grandTotalIncome: res.summary?.grandTotalIncome || 0,
         });
         setPreviousSummary(
@@ -471,6 +474,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                 totalHolidayBasePay: previousRes.summary?.totalHolidayBasePay || 0,
                 totalHolidayPremiumPay: previousRes.summary?.totalHolidayPremiumPay || 0,
                 totalHolidayPayrollAddition: previousRes.summary?.totalHolidayPayrollAddition || 0,
+                totalOffMonthWage: previousRes.summary?.totalOffMonthWage || 0,
                 grandTotalIncome: previousRes.summary?.grandTotalIncome || 0,
               }
             : null
@@ -727,21 +731,33 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
         const val = record.totalWorkHours || 0;
         const days = record.activeDays || 0;
         const offDays = record.offDaysWorked || 0;
+        const offMonthDays = record.offMonthDays || 0;
         const regularDays = Math.max(0, days - offDays);
 
         const hasOffWork = offDays > 0;
 
+        const monthOffBadge =
+          offMonthDays > 0 ? (
+            <Tooltip
+              title={`Đã nghỉ ${offMonthDays} ngày phép tháng có hưởng 100% lương (+${(record.offMonthWage || 0).toLocaleString('vi-VN')}đ)`}
+            >
+              <span className="text-emerald-400 font-semibold text-[11px] ml-1">+{offMonthDays}p</span>
+            </Tooltip>
+          ) : null;
+
         const daysContent =
           days === 0 ? (
-            <span className="text-slate-600 font-medium text-[11px]">0 ngày</span>
+            <span className="text-slate-600 font-medium text-[11px]">0 ngày{monthOffBadge}</span>
           ) : hasOffWork ? (
             <Tooltip title={`Có ${offDays} ngày đi làm vào ngày nghỉ tuần (Được tính x2 lương giờ)`}>
               <span className="cursor-help text-amber-400 font-semibold text-[11px]">
-                {regularDays}+{offDays} ngày
+                {regularDays}+{offDays} ngày{monthOffBadge}
               </span>
             </Tooltip>
           ) : (
-            <span className="text-slate-400 font-medium text-[11px]">{days} ngày</span>
+            <span className="text-slate-400 font-medium text-[11px]">
+              {days} ngày{monthOffBadge}
+            </span>
           );
 
         return (
@@ -1385,6 +1401,27 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                   <span className="text-sm text-slate-600 dark:text-slate-400">Phụ cấp gửi xe:</span>
                   <span className="tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
                     +{selectedRecord.parkingAllowance.toLocaleString('vi-VN')}đ
+                  </span>
+                </div>
+              ) : null}
+
+              {selectedRecord.offMonthWage && selectedRecord.offMonthWage > 0 ? (
+                <div className="flex justify-between items-center py-1 border-b bg-emerald-500/10 px-2 rounded">
+                  <div className="flex flex-col">
+                    <span className="text-sm text-emerald-700 dark:text-emerald-300 font-medium">
+                      Nghỉ phép tháng ({selectedRecord.offMonthDays || 1} ngày x 11h x{' '}
+                      {selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ/h):
+                    </span>
+                    {selectedRecord.offMonthLeaveDetails && selectedRecord.offMonthLeaveDetails.length > 0 && (
+                      <span className="text-[11px] text-emerald-600/80 dark:text-emerald-400/80">
+                        {selectedRecord.offMonthLeaveDetails
+                          .map((d) => `Ngày ${dayjs(d.date).format('DD/MM')}${d.note ? `: ${d.note}` : ''}`)
+                          .join('; ')}
+                      </span>
+                    )}
+                  </div>
+                  <span className="tabular-nums font-bold text-emerald-600 dark:text-emerald-400">
+                    +{(selectedRecord.offMonthWage || 0).toLocaleString('vi-VN')}đ
                   </span>
                 </div>
               ) : null}

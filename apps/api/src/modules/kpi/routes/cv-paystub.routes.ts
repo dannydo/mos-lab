@@ -296,12 +296,27 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         GROUP BY sb.user_id
       `;
 
+      // 7. Query Approved Month-off Leaves (attribute_option_id = 111)
+      const monthOffLeavesQuery = `
+        SELECT 
+          sdo.from_user_id as staff_id,
+          DATE_FORMAT(sdo.from_date, '%Y-%m-%d') as dateStr,
+          COALESCE(sdo.working_day_count, 1) as working_day_count,
+          sdo.note
+        FROM \`staff_day_off\` sdo
+        WHERE sdo.from_user_id IN (${validStaffListStr})
+          AND sdo.attribute_option_id = 111
+          AND sdo.request_state = 'Approved'
+          AND sdo.from_date BETWEEN '${startPart}' AND '${endPart}'
+      `;
+
       const [
         hourlyRatesRows,
         reportStaffRows,
         cvXoayBonusRows,
         cvTipBonusRows,
         techPointsRows,
+        monthOffLeavesRows,
         staffOffDayBatchMap,
         holidayBreakdownMap,
         holidayWorkedDateMap,
@@ -311,6 +326,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(cvXoayBonusQuery),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(cvTipBonusQuery),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(techPointsQuery),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(monthOffLeavesQuery),
         StaffOffDayService.getBatchStaffOffDays(fastify, validStaffIds),
         HolidayWorkService.getPayBreakdownByLegacyStaffIds(fastify, validStaffIds, startPart, endPart),
         HolidayWorkService.getPublishedHolidayWorkedDateKeys(fastify, validStaffIds, startPart, endPart),
@@ -387,6 +403,21 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         cvTipMap.set(Number(r.staff_id), Math.round(Number(r.total_cv_tip || 0)));
       });
 
+      const monthOffLeavesMap = new Map<
+        number,
+        Array<{ date: string; workingDayCount: number; note: string | null }>
+      >();
+      monthOffLeavesRows.forEach((r: SafeAny) => {
+        const uid = Number(r.staff_id);
+        const list = monthOffLeavesMap.get(uid) || [];
+        list.push({
+          date: String(r.dateStr),
+          workingDayCount: Number(r.working_day_count || 1),
+          note: r.note ? String(r.note) : null,
+        });
+        monthOffLeavesMap.set(uid, list);
+      });
+
       let grandTotalHourlyWage = 0;
       let grandTotalCvXoayBonus = 0;
       let grandTotalCvTipBonus = 0;
@@ -395,6 +426,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
       let grandTotalHolidayPremiumPay = 0;
       let grandTotalHolidayPayrollAddition = 0;
       let grandTotalParkingAllowance = 0;
+      let grandTotalOffMonthWage = 0;
       let grandTotalIncome = 0;
       let grandTotalSocialSecurityAmount = 0;
       let grandTotalNetIncome = 0;
@@ -484,10 +516,21 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         const holiday = holidayBreakdownMap.get(staffId)!;
 
         const parkingAllowance = parkingAllowanceMap.get(staffId) || 0;
+        // Month-off leave pay (11 standard working hours per approved leave day per Wings policy)
+        const monthOffList = monthOffLeavesMap.get(staffId) || [];
+        const offMonthDays = monthOffList.reduce((sum, item) => sum + item.workingDayCount, 0);
+        const offMonthWage = Math.round(offMonthDays * 11 * hourlyRate);
+
         // Holiday pay (phụ cấp đi làm lễ 2/9) is separated out per HR decision (đi riêng)
         const holidayPaystubAdjustment = 0;
         const totalIncome =
-          hourlyWage + cvXoayBonus + cvTipBonus + seniorityBonus + holidayPaystubAdjustment + parkingAllowance;
+          hourlyWage +
+          cvXoayBonus +
+          cvTipBonus +
+          seniorityBonus +
+          holidayPaystubAdjustment +
+          parkingAllowance +
+          offMonthWage;
 
         // Social Security deduction (10.5% for employee)
         const ssInfo = socialSecurityMap.get(staffId) || { rate: 0, amount: 0 };
@@ -503,6 +546,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         grandTotalHolidayPremiumPay += holiday.holidayPremiumPay;
         grandTotalHolidayPayrollAddition += 0;
         grandTotalParkingAllowance += parkingAllowance;
+        grandTotalOffMonthWage += offMonthWage;
         grandTotalIncome += totalIncome;
         grandTotalSocialSecurityAmount += socialSecurityAmount;
         grandTotalNetIncome += netIncome;
@@ -533,6 +577,9 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           socialSecurityAmount,
           parkingAllowance,
           netIncome,
+          offMonthDays,
+          offMonthWage,
+          offMonthLeaveDetails: monthOffList,
           ...holiday,
           holidayPaystubAdjustment: 0,
         };
@@ -553,6 +600,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           totalHolidayPremiumPay: grandTotalHolidayPremiumPay,
           totalHolidayPayrollAddition: grandTotalHolidayPayrollAddition,
           totalParkingAllowance: grandTotalParkingAllowance,
+          totalOffMonthWage: grandTotalOffMonthWage,
           grandTotalIncome,
           totalSocialSecurityAmount: grandTotalSocialSecurityAmount,
           grandTotalNetIncome,
@@ -607,8 +655,23 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
       extendedEndSunday.setDate(endMonday.getDate() + 6);
       const extendedEndStr = extendedEndSunday.toISOString().split('T')[0];
 
-      // 2. Query Shifts from report_staff for the requested range, and also pull extended attendance for week sizing
-      const [rateRows, shiftsRaw, reportStaffRows, staffOffDayInfo] = await Promise.all([
+      // 2. Query Shifts from report_staff for the requested range, pull extended attendance for week sizing, and approved month-off leaves
+      const monthOffLeavesPromise = fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+        SELECT 
+          DATE_FORMAT(sdo.from_date, '%Y-%m-%d') as date,
+          COALESCE(sdo.working_day_count, 1) as workingDayCount,
+          sdo.note,
+          UPPER(COALESCE(cs.client_store_key, 'PXL')) as store
+        FROM \`staff_day_off\` sdo
+        LEFT JOIN \`client_store\` cs ON cs.id = sdo.client_store_id
+        WHERE sdo.from_user_id = ${numStaffId}
+          AND sdo.attribute_option_id = 111
+          AND sdo.request_state = 'Approved'
+          AND sdo.from_date >= '${startPart}'
+          AND sdo.from_date <= '${endPart}'
+      `);
+
+      const [rateRows, shiftsRaw, reportStaffRows, staffOffDayInfo, monthOffLeaves] = await Promise.all([
         rateRowsPromise,
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT 
@@ -636,6 +699,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
             AND working_minute > 0
         `),
         StaffOffDayService.getStaffOffDays(fastify, numStaffId),
+        monthOffLeavesPromise,
       ]);
       const hourlyRate = rateRows.length > 0 ? Number(rateRows[0].working_hour_rate) : 21500;
 
@@ -686,6 +750,28 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           notes: isOffDayWork ? 'Đi làm ngày nghỉ (x2)' : '',
         };
       });
+
+      // Add approved month-off leaves into work logs with 11 standard hours per day
+      monthOffLeaves.forEach((leave: SafeAny) => {
+        const leaveDays = Number(leave.workingDayCount || 1);
+        const leaveHours = leaveDays * 11;
+        const leaveWage = Math.round(leaveHours * hourlyRate);
+        totalWorkHours += leaveHours;
+        totalWage += leaveWage;
+        logs.push({
+          date: String(leave.date),
+          checkInTime: '-',
+          checkOutTime: '-',
+          workHours: leaveHours,
+          hourlyRate,
+          dailyWage: leaveWage,
+          store: String(leave.store || 'PXL'),
+          notes: `Nghỉ phép tháng (${leaveDays} ngày hưởng 100% lương)` + (leave.note ? ` - ${leave.note}` : ''),
+        });
+      });
+
+      // Sort logs descending by date
+      logs.sort((a, b) => b.date.localeCompare(a.date));
 
       const response: CvWorkLogDetailResponse = {
         data: logs,

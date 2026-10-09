@@ -9824,7 +9824,7 @@
         "path": "/api/kpi/cv-paystub/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 572
+        "line": 617
       }
     },
     {
@@ -31650,8 +31650,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 28087,
-        "lineCount": 707,
+        "sizeBytes": 31488,
+        "lineCount": 790,
         "ext": ".ts"
       }
     },
@@ -37175,8 +37175,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 68294,
-        "lineCount": 1645,
+        "sizeBytes": 70330,
+        "lineCount": 1683,
         "ext": ".tsx"
       }
     },
@@ -38540,8 +38540,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/SemicircleGauge.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8202,
-        "lineCount": 216,
+        "sizeBytes": 16164,
+        "lineCount": 429,
         "ext": ".tsx"
       }
     },
@@ -38605,8 +38605,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38540,
-        "lineCount": 842,
+        "sizeBytes": 38726,
+        "lineCount": 846,
         "ext": ".tsx"
       }
     },
@@ -38709,8 +38709,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 70903,
-        "lineCount": 1587,
+        "sizeBytes": 71582,
+        "lineCount": 1599,
         "ext": ".tsx"
       }
     },
@@ -40542,8 +40542,8 @@
       "filePath": "packages/shared/src/types/cv.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 7610,
-        "lineCount": 319,
+        "sizeBytes": 7804,
+        "lineCount": 327,
         "ext": ".ts"
       }
     },
