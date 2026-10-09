@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Menu, Popover, Tooltip, message } from 'antd';
 import {
   ChevronDown,
@@ -424,6 +424,58 @@ export default function SidebarNav({
         .filter((group) => group.items.length > 0)
     : sidebarGroups;
 
+  const menuItemLookup = useMemo(() => {
+    const byKey = new Map<string, SidebarItemConfig>();
+    const byPath = new Map<string, SidebarItemConfig>();
+
+    const traverse = (items: SidebarItemConfig[]) => {
+      for (const item of items) {
+        if (item.key) byKey.set(item.key, item);
+        if (item.path) {
+          byPath.set(item.path, item);
+          const clean = item.path.split('?')[0];
+          if (clean && !byPath.has(clean)) {
+            byPath.set(clean, item);
+          }
+        }
+        if (item.children?.length) {
+          traverse(item.children);
+        }
+      }
+    };
+
+    for (const group of sidebarGroups) {
+      traverse(group.items);
+    }
+
+    return { byKey, byPath };
+  }, [sidebarGroups]);
+
+  const getResolvedPinnedIcon = useCallback(
+    (item: PinnedLinkItem, isExpanded = false) => {
+      // 1. Try finding in sidebar menu config (by menuKey first, then url)
+      const matched =
+        (item.menuKey ? menuItemLookup.byKey.get(item.menuKey) : undefined) ||
+        (item.url
+          ? menuItemLookup.byPath.get(item.url) || menuItemLookup.byPath.get(item.url.split('?')[0])
+          : undefined);
+
+      if (matched?.icon) {
+        return matched.icon;
+      }
+
+      // 2. Custom icon selected from AddPinnedLinkModal
+      if (item.icon && item.icon !== 'Pin') {
+        const CustomIconComp = getPinnedIconComponent(item.icon);
+        return <AppIcon icon={CustomIconComp} size="sm" className={isExpanded ? 'text-pink-500' : undefined} />;
+      }
+
+      // 3. Fallback to Pin
+      return <AppIcon icon={Pin} size="sm" className="text-pink-500" />;
+    },
+    [menuItemLookup]
+  );
+
   const pinnedGroup: SidebarGroupConfig = {
     groupKey: 'grp-pinned',
     groupTitle: 'ĐÃ GHIM',
@@ -433,7 +485,7 @@ export default function SidebarNav({
           key: `pinned-${item.id}`,
           label: item.title,
           path: item.url,
-          icon: <AppIcon icon={getPinnedIconComponent(item.icon)} size="sm" className="text-pink-500" />,
+          icon: getResolvedPinnedIcon(item, true),
           isExternal: item.isExternal,
           pinnedId: item.id,
           menuKey: item.menuKey,
@@ -710,7 +762,9 @@ export default function SidebarNav({
           {pinnedLinks.length > 0 && (
             <>
               {pinnedLinks.map((item) => {
-                const isActive = pathname === item.url;
+                const isActive =
+                  pathname === item.url || Boolean(item.url && !item.isExternal && pathname === item.url.split('?')[0]);
+                const realIcon = getResolvedPinnedIcon(item, false);
                 return (
                   <li className="sidebar-compact-item" key={`rail-pinned-${item.id}`}>
                     <Tooltip
@@ -728,6 +782,7 @@ export default function SidebarNav({
                         role="menuitem"
                         aria-label={item.title}
                         className={`sidebar-rail-action ${isActive ? 'sidebar-rail-action--active' : ''}`}
+                        onMouseEnter={() => !item.isExternal && item.url && router.prefetch(item.url)}
                         onClick={() => {
                           if (item.isExternal) {
                             window.open(item.url, '_blank', 'noopener,noreferrer');
@@ -737,8 +792,15 @@ export default function SidebarNav({
                           }
                         }}
                       >
-                        <span className="sidebar-rail-action__icon text-pink-500">
-                          <AppIcon icon={getPinnedIconComponent(item.icon)} size="sm" />
+                        <span className="sidebar-rail-action__icon relative" aria-hidden>
+                          {realIcon}
+                          <span
+                            className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-pink-500 pointer-events-none"
+                            style={{
+                              boxShadow: `0 0 0 1.5px ${themeMode === 'dark' ? '#141414' : '#ffffff'}`,
+                            }}
+                            aria-hidden
+                          />
                         </span>
                       </button>
                     </Tooltip>
