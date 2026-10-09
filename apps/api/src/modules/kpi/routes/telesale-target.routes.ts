@@ -12,12 +12,14 @@ import { TelesaleTargetService } from '../services/telesale-target.service.js';
 export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
   // 1. Get Overview Metrics
   fastify.get('/kpi/telesale-target', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { month } = request.query as { month?: string };
+    const { month, skipCache } = request.query as { month?: string; skipCache?: string | boolean };
     const user = (request as any).user;
     const currentStaffId = user?.staffId || user?.id;
 
     try {
-      const data = await TelesaleTargetService.getOverview(fastify, month || '2026-10', currentStaffId);
+      const data = await TelesaleTargetService.getOverview(fastify, month || '2026-10', currentStaffId, {
+        skipCache: skipCache === 'true' || skipCache === true,
+      });
       return reply.send(data);
     } catch (err: any) {
       fastify.log.error(`Failed to get telesale target overview: ${err.message}`);

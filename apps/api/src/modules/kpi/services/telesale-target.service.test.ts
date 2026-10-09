@@ -1422,3 +1422,68 @@ test('TelesaleTargetService & BkLeaderboardService: MOS-BUG-95 computes incoming
   assert.equal(pacing.expectedBook, pacing.expectedIncoming);
   assert.equal(pacing.gapBook, pacing.gapIncoming);
 });
+
+test('TelesaleTargetService.getOverview caches result in-memory and honors skipCache', async () => {
+  let queryCount = 0;
+  const cacheStore = new Map<string, any>();
+
+  const testMockFastify = {
+    prisma: {
+      crm: {
+        crmConfig: {
+          findUnique: async () => ({
+            key: 'TELESALE_TARGET_CONFIG_2099-10',
+            value: JSON.stringify(DEFAULT_OCTOBER_CONFIG),
+          }),
+        },
+        crmHolidayPeriod: {
+          findMany: async () => [],
+        },
+      },
+      legacy: {
+        $queryRawUnsafe: async (sql: string) => {
+          queryCount++;
+          if (sql.includes('doneCount')) return [];
+          if (sql.includes('completedOrdersCount')) return [];
+          if (sql.includes('totalCreatedBookings')) return [];
+          if (sql.includes('prev_o.booking_date_start')) return [];
+          if (sql.includes('buildComboLiveAtBookingSql')) return [];
+          return [];
+        },
+      },
+    },
+    cache: {
+      get: (key: string) => cacheStore.get(key) || null,
+      set: (key: string, val: any) => cacheStore.set(key, val),
+      invalidatePattern: (pattern: string) => {
+        const regex = new RegExp(pattern);
+        for (const k of cacheStore.keys()) {
+          if (regex.test(k)) cacheStore.delete(k);
+        }
+      },
+    },
+    log: {
+      warn: () => {},
+      error: () => {},
+    },
+  };
+
+  // First call executes queries and sets cache
+  const first = await TelesaleTargetService.getOverview(testMockFastify as any, '2099-10');
+  assert.ok(first);
+  const initialQueries = queryCount;
+  assert.ok(initialQueries > 0);
+  assert.ok(cacheStore.has('kpi:telesale-target:overview:2099-10'));
+
+  // Second call hits cache without executing further queries
+  const second = await TelesaleTargetService.getOverview(testMockFastify as any, '2099-10');
+  assert.equal(second, first);
+  assert.equal(queryCount, initialQueries);
+
+  // Third call with skipCache: true bypasses cache and re-queries
+  const third = await TelesaleTargetService.getOverview(testMockFastify as any, '2099-10', undefined, {
+    skipCache: true,
+  });
+  assert.ok(third);
+  assert.ok(queryCount > initialQueries);
+});

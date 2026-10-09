@@ -408,6 +408,9 @@ export class TelesaleTargetService {
       create: { key, value },
     });
 
+    // Invalidate cached overview for this month
+    fastify.cache?.invalidatePattern(`^kpi:telesale-target:overview:${config.month}`);
+
     return cleanConfig;
   }
 
@@ -444,6 +447,9 @@ export class TelesaleTargetService {
       update: { value, updatedAt: new Date() },
       create: { key, value },
     });
+
+    // Invalidate cached overview for this month
+    fastify.cache?.invalidatePattern(`^kpi:telesale-target:overview:${month}`);
 
     return updatedConfig;
   }
@@ -712,8 +718,17 @@ export class TelesaleTargetService {
   static async getOverview(
     fastify: FastifyInstance,
     month = '2026-10',
-    _currentStaffId?: number
+    _currentStaffId?: number,
+    options?: { skipCache?: boolean }
   ): Promise<TelesaleTargetOverview> {
+    const cacheKey = `kpi:telesale-target:overview:${month}`;
+    if (!options?.skipCache) {
+      const cached = fastify.cache?.get<TelesaleTargetOverview>(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    }
+
     const config = await this.getConfig(fastify, month);
     const [yearStr, monthNumStr] = month.split('-');
     const year = parseInt(yearStr, 10);
@@ -2105,7 +2120,7 @@ export class TelesaleTargetService {
       totalBookingsToday: teamDailyBookActual,
     };
 
-    return {
+    const overview: TelesaleTargetOverview = {
       month,
       teamCode: config.teamCode,
       teamName: config.teamName,
@@ -2179,6 +2194,11 @@ export class TelesaleTargetService {
       todayBookList,
       todayCheckinList,
     };
+
+    // Short-lived in-memory cache (15 seconds) to absorb high-frequency polling from dashboards/TV mode
+    fastify.cache?.set(cacheKey, overview, 15_000);
+
+    return overview;
   }
 
   static async getCustomerPool(
