@@ -157,6 +157,8 @@ export interface CcPaystubRecord extends HolidayPayBreakdown {
   tippedVisitsCount?: number;
   diamondBonus?: number;
   diamondCount?: number;
+  extraSupport?: number;
+  extraSupportNote?: string;
   totalIncome: number;
 }
 
@@ -169,6 +171,7 @@ export interface CcPaystubResponse {
     totalComboProductBonus: number;
     totalMinigameBonus: number;
     totalCcTipBonus: number;
+    totalExtraSupport?: number;
     totalHolidayBasePay: number;
     totalHolidayPremiumPay: number;
     totalHolidayPayrollAddition: number;

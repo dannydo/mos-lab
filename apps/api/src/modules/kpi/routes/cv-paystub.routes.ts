@@ -250,17 +250,18 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
       extendedEndSunday.setDate(endMonday.getDate() + 6);
       const extendedEndStr = extendedEndSunday.toISOString().split('T')[0];
 
-      // Query extended attendance for all users
+      // Query extended attendance for all users (deduplicated by day)
       const reportStaffQuery = `
         SELECT 
           rs.user_id as staff_id,
           DATE_FORMAT(rs.date, '%Y-%m-%d') as dateStr,
-          rs.working_minute
+          MAX(rs.working_minute) as working_minute
         FROM \`report_staff\` rs
         WHERE rs.user_id IN (${validStaffListStr})
           AND rs.date >= '${extendedStartMonday}'
           AND rs.date <= '${extendedEndStr}'
           AND rs.working_minute > 0
+        GROUP BY rs.user_id, DATE(rs.date)
       `;
 
       // 4. Query CV Xoay Cash Bonus
@@ -327,13 +328,14 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           AND sdo.from_date BETWEEN '${startPart}' AND '${endPart}'
       `;
 
-      // 8. Query Other Allowances from staff_payroll_extra
+      // 8. Query Other Allowances from staff_payroll_extra (Only approved)
       const extraSupportQuery = `
         SELECT user_id, amount, description
         FROM \`staff_payroll_extra\`
         WHERE user_id IN (${validStaffListStr})
           AND type = 'total_extra_support_amount'
           AND date BETWEEN '${startPart}' AND '${endPart}'
+          AND date_approved IS NOT NULL
       `;
 
       const [
@@ -387,6 +389,8 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         extraSupportMap.set(uid, (extraSupportMap.get(uid) || 0) + a.amount);
       });
 
+      const legacyOffWeekExtraMap = new Map<number, number>();
+
       // 2. Phụ cấp lịch sử từ legacy staff_payroll_extra (nếu có)
       extraSupportRows.forEach((r: SafeAny) => {
         const uid = Number(r.user_id);
@@ -394,6 +398,11 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         const amt = Math.round(Number(r.amount || 0));
         // Skip seniority bonus entries that are dynamically handled
         if (/thâm niên|seniority/i.test(desc)) return;
+        // Track off-week overtime entries separately to avoid duplicate counting with offDaysWorkWage
+        if (/off tuần|làm off/i.test(desc)) {
+          legacyOffWeekExtraMap.set(uid, (legacyOffWeekExtraMap.get(uid) || 0) + amt);
+          return;
+        }
         extraSupportMap.set(uid, (extraSupportMap.get(uid) || 0) + amt);
         const list = extraSupportDetailsMap.get(uid) || [];
         list.push({
@@ -561,10 +570,13 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         totalWorkHours = Math.round(totalWorkHours * 100) / 100;
         regularHours = Math.round(regularHours * 100) / 100;
         offDaysWorkHours = Math.round(offDaysWorkHours * 100) / 100;
+        const legacyOffWeekExtra = legacyOffWeekExtraMap.get(staffId);
         const offDaysWorkWage =
           sp?.total_overtime_daytime_off_week_amount != null && Number(sp.total_overtime_daytime_off_week_amount) > 0
             ? Math.round(Number(sp.total_overtime_daytime_off_week_amount))
-            : Math.round(offDaysWorkHours * hourlyRate); // Thêm 1 lần đơn giá giờ (+1x)
+            : legacyOffWeekExtra != null
+              ? legacyOffWeekExtra
+              : Math.round(offDaysWorkHours * hourlyRate); // Thêm 1 lần đơn giá giờ (+1x)
         const hourlyWage =
           sp?.total_wage_amount != null
             ? Math.round(Number(sp.total_wage_amount))
@@ -622,15 +634,12 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
                 return sum + Math.round(item.workingDayCount * hours * hourlyRate);
               }, 0);
 
-        // Other allowances (Phụ cấp khác) from mOS additions, staff_payroll_extra or legacy staff_payroll
+        // Other allowances (Phụ cấp khác) from mOS additions and legacy staff_payroll_extra
         const extraDetails = extraSupportDetailsMap.get(staffId) || [];
-        const extraFromDetails = extraSupportMap.get(staffId) || 0;
-        const rawExtraFromSp = Math.round(Number(sp?.total_extra_support_amount || 0));
-        const otherAllowances = extraDetails.length > 0 ? extraFromDetails : rawExtraFromSp;
+        const otherAllowances = extraSupportMap.get(staffId) || 0;
 
-        // Holiday paid leave pay (nghỉ lễ x1 - không đi làm vẫn có tiền)
-        const holidayPaidLeavePay = holiday.holidayPaidLeavePay || Number(sp?.total_off_public_holiday_amount || 0);
-        // Holiday work premium (phụ cấp đi làm lễ 2/9 x3) is separated per HR decision (đi riêng)
+        // Holiday paid leave pay (nghỉ lễ 2/9 tách riêng dòng độc lập per HR decision, chỉ cộng vào phiếu lương nếu legacy staff_payroll có ghi nhận)
+        const holidayPaidLeavePay = Number(sp?.total_off_public_holiday_amount || 0);
         const holidayPaystubAdjustment = holidayPaidLeavePay;
         const totalIncome = Math.round(
           hourlyWage +
@@ -882,17 +891,18 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT 
             DATE_FORMAT(rs.date, '%Y-%m-%d') as date,
-            TIME_FORMAT(rs.check_in_date, '%H:%i:%s') as checkInTime,
-            TIME_FORMAT(rs.check_out_date, '%H:%i:%s') as checkOutTime,
-            ROUND(rs.working_minute / 60, 2) as workHours,
-            UPPER(COALESCE(cs.client_store_key, 'PXL')) as store
+            MIN(TIME_FORMAT(rs.check_in_date, '%H:%i:%s')) as checkInTime,
+            MAX(TIME_FORMAT(rs.check_out_date, '%H:%i:%s')) as checkOutTime,
+            ROUND(MAX(rs.working_minute) / 60, 2) as workHours,
+            UPPER(COALESCE(MAX(cs.client_store_key), 'PXL')) as store
           FROM \`report_staff\` rs
           LEFT JOIN \`client_store\` cs ON cs.id = rs.client_store_id
           WHERE rs.user_id = ${numStaffId}
             AND rs.date >= '${startPart}'
             AND rs.date <= '${endPart}'
             AND rs.working_minute > 0
-          ORDER BY rs.date DESC, rs.check_in_date ASC
+          GROUP BY DATE(rs.date)
+          ORDER BY date DESC
         `),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
           SELECT 

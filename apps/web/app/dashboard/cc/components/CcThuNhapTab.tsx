@@ -116,6 +116,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
     totalComboProductBonus: 0,
     totalMinigameBonus: 0,
     totalCcTipBonus: 0,
+    totalExtraSupport: 0,
     totalHolidayBasePay: 0,
     totalHolidayPremiumPay: 0,
     totalHolidayPayrollAddition: 0,
@@ -515,6 +516,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
             totalComboProductBonus: res.summary.totalComboProductBonus || 0,
             totalMinigameBonus: res.summary.totalMinigameBonus || 0,
             totalCcTipBonus: res.summary.totalCcTipBonus || 0,
+            totalExtraSupport: res.summary.totalExtraSupport || 0,
             totalHolidayBasePay: res.summary.totalHolidayBasePay || 0,
             totalHolidayPremiumPay: res.summary.totalHolidayPremiumPay || 0,
             totalHolidayPayrollAddition: res.summary.totalHolidayPayrollAddition || 0,
@@ -897,6 +899,31 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
       },
     },
     {
+      title: 'Phụ Cấp Extra',
+      dataIndex: 'extraSupport',
+      key: 'extraSupport',
+      align: 'right' as const,
+      render: (val: number, record: CcPaystubRecord) => {
+        if (!val || val <= 0) {
+          return <span className="text-slate-400 dark:text-slate-600">-</span>;
+        }
+        return (
+          <Tooltip title={record.extraSupportNote || 'Phụ cấp Extra đã duyệt trên hệ thống'}>
+            <div className="text-right">
+              <span
+                className={`tabular-nums whitespace-nowrap font-bold text-sm ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}
+              >
+                +{formatVND(val)}
+              </span>
+              <div className="text-[11px] text-slate-500 truncate max-w-[120px]">
+                {record.extraSupportNote || 'Đã duyệt'}
+              </div>
+            </div>
+          </Tooltip>
+        );
+      },
+    },
+    {
       title: 'Tổng Thu Nhập Tạm Tính',
       dataIndex: 'totalIncome',
       key: 'totalIncome',
@@ -995,6 +1022,16 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
         },
         { key: 6, item: 'Thưởng Kỹ Thuật & Gamification Points', amount: 0, note: 'Điểm kỹ thuật quy đổi' },
         { key: 7, item: 'Thưởng Nóng Minigame', amount: selectedRecord.minigameBonus, note: 'Vượt mốc minigame tuần' },
+        ...(selectedRecord.extraSupport && selectedRecord.extraSupport > 0
+          ? [
+              {
+                key: 'extra-support',
+                item: 'Phụ Cấp Khác (Extra Support)',
+                amount: selectedRecord.extraSupport,
+                note: selectedRecord.extraSupportNote || 'Phụ cấp đã duyệt trên hệ thống',
+              },
+            ]
+          : []),
       ]
     : [];
 
@@ -1558,7 +1595,7 @@ export default function CcThuNhapTab({ dateRange, selectedStore, comparisonMode 
             <div className="cc-worklog-modal-table">
               <DataTable
                 dataSource={workLogs}
-                rowKey={(r) => `${r.work_date || ''}-${r.first_in || ''}`}
+                rowKey={(r, idx) => `${r.work_date || ''}-${r.first_in || ''}-${idx}`}
                 loading={workLogLoading}
                 pagination={{
                   current: workLogPage,

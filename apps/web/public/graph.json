@@ -9688,7 +9688,7 @@
         "path": "/api/kpi/cc-work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 379
+        "line": 432
       }
     },
     {
@@ -9842,7 +9842,7 @@
         "path": "/api/kpi/cv-paystub/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 822
+        "line": 831
       }
     },
     {
@@ -9856,7 +9856,7 @@
         "path": "/api/kpi/cv-allowances",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1003
+        "line": 1013
       }
     },
     {
@@ -9870,7 +9870,7 @@
         "path": "/api/kpi/cv-allowances/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1049
+        "line": 1059
       }
     },
     {
@@ -9884,7 +9884,7 @@
         "path": "/api/kpi/cv-allowances",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1073
+        "line": 1083
       }
     },
     {
@@ -31681,8 +31681,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cc-paystub.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 20151,
-        "lineCount": 527,
+        "sizeBytes": 26023,
+        "lineCount": 654,
         "ext": ".ts"
       }
     },
@@ -31746,8 +31746,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 45962,
-        "lineCount": 1105,
+        "sizeBytes": 46365,
+        "lineCount": 1115,
         "ext": ".ts"
       }
     },
@@ -36647,8 +36647,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 74193,
-        "lineCount": 1843,
+        "sizeBytes": 75632,
+        "lineCount": 1880,
         "ext": ".tsx"
       }
     },
@@ -37271,8 +37271,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 117885,
-        "lineCount": 2457,
+        "sizeBytes": 118143,
+        "lineCount": 2467,
         "ext": ".tsx"
       }
     },
@@ -40755,8 +40755,8 @@
       "filePath": "packages/shared/src/types/kpi.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 5808,
-        "lineCount": 259,
+        "sizeBytes": 5894,
+        "lineCount": 262,
         "ext": ".ts"
       }
     },

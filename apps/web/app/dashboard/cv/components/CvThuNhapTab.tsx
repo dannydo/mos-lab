@@ -2281,7 +2281,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
 
               <Table
                 dataSource={workLogs}
-                rowKey={(r) => `${r.date}-${r.checkInTime}`}
+                rowKey={(r, idx) => `${r.date}-${r.checkInTime}-${idx}`}
                 bordered
                 pagination={{ defaultPageSize: 10, showSizeChanger: true }}
                 size="small"
