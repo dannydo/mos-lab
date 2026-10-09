@@ -165,6 +165,7 @@ export interface CvPaystubRecord extends HolidayPayBreakdown {
   offDaysWorked?: number;
   offDaysWorkHours?: number;
   offDaysWorkWage?: number;
+  totalTimeBonus?: number;
   socialSecurityRate?: number;
   socialSecurityAmount?: number;
   parkingAllowance?: number;
@@ -231,6 +232,7 @@ export interface CvPaystubResponse {
     totalHolidayBasePay: number;
     totalHolidayPremiumPay: number;
     totalHolidayPayrollAddition: number;
+    totalTimeBonus?: number;
     totalParkingAllowance?: number;
     totalOffMonthWage?: number;
     grandTotalIncome: number;

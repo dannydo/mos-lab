@@ -114,6 +114,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
             totalHolidayBasePay: 0,
             totalHolidayPremiumPay: 0,
             totalHolidayPayrollAddition: 0,
+            totalTimeBonus: 0,
             grandTotalIncome: 0,
           },
         });
@@ -500,6 +501,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
       let grandTotalHolidayBasePay = 0;
       let grandTotalHolidayPremiumPay = 0;
       let grandTotalHolidayPayrollAddition = 0;
+      let grandTotalTimeBonus = 0;
       let grandTotalParkingAllowance = 0;
       let grandTotalOffMonthWage = 0;
       let grandTotalIncome = 0;
@@ -658,6 +660,8 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         grandTotalHolidayBasePay += holiday.holidayBasePay;
         grandTotalHolidayPremiumPay += holiday.holidayPremiumPay;
         grandTotalHolidayPayrollAddition += holidayPaidLeavePay;
+        const totalTimeBonus = Math.round((offDaysWorkWage || 0) + (holiday.holidayPremiumPay || 0));
+        grandTotalTimeBonus += totalTimeBonus;
         grandTotalParkingAllowance += parkingAllowance;
         grandTotalOffMonthWage += offMonthWage;
         grandTotalIncome += totalIncome;
@@ -746,6 +750,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           offDaysWorked,
           offDaysWorkHours,
           offDaysWorkWage,
+          totalTimeBonus,
           socialSecurityRate,
           socialSecurityAmount,
           parkingAllowance,
@@ -795,6 +800,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
           totalHolidayBasePay: grandTotalHolidayBasePay,
           totalHolidayPremiumPay: grandTotalHolidayPremiumPay,
           totalHolidayPayrollAddition: grandTotalHolidayPayrollAddition,
+          totalTimeBonus: grandTotalTimeBonus,
           totalParkingAllowance: grandTotalParkingAllowance,
           totalOffMonthWage: grandTotalOffMonthWage,
           grandTotalIncome,

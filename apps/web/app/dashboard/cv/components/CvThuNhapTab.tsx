@@ -109,6 +109,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
     totalHolidayBasePay: 0,
     totalHolidayPremiumPay: 0,
     totalHolidayPayrollAddition: 0,
+    totalTimeBonus: 0,
     totalOffMonthWage: 0,
     grandTotalIncome: 0,
   });
@@ -120,6 +121,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
     totalHolidayBasePay: number;
     totalHolidayPremiumPay: number;
     totalHolidayPayrollAddition: number;
+    totalTimeBonus?: number;
     totalOffMonthWage?: number;
     grandTotalIncome: number;
   } | null>(null);
@@ -477,6 +479,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
           totalHolidayBasePay: res.summary?.totalHolidayBasePay || 0,
           totalHolidayPremiumPay: res.summary?.totalHolidayPremiumPay || 0,
           totalHolidayPayrollAddition: res.summary?.totalHolidayPayrollAddition || 0,
+          totalTimeBonus: res.summary?.totalTimeBonus || 0,
           totalOffMonthWage: res.summary?.totalOffMonthWage || 0,
           grandTotalIncome: res.summary?.grandTotalIncome || 0,
         });
@@ -490,6 +493,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                 totalHolidayBasePay: previousRes.summary?.totalHolidayBasePay || 0,
                 totalHolidayPremiumPay: previousRes.summary?.totalHolidayPremiumPay || 0,
                 totalHolidayPayrollAddition: previousRes.summary?.totalHolidayPayrollAddition || 0,
+                totalTimeBonus: previousRes.summary?.totalTimeBonus || 0,
                 totalOffMonthWage: previousRes.summary?.totalOffMonthWage || 0,
                 grandTotalIncome: previousRes.summary?.grandTotalIncome || 0,
               }
@@ -1529,23 +1533,6 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                       {selectedRecord.weeklyOffDays || 4}
                     </td>
                   </tr>
-                  {/* 5.1 Làm off tuần */}
-                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 bg-slate-50/30 dark:bg-slate-900/30 text-[11px]">
-                    <td className="py-1 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400"></td>
-                    <td className="py-1 px-3 border-r border-slate-200 dark:border-slate-800 pl-6 text-slate-700 dark:text-slate-300 font-medium">
-                      ↳ Làm việc ngày off tuần (+1x phụ cấp = Tổng x2)
-                    </td>
-                    <td className="py-1 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[10px]">
-                      {(selectedRecord.offDaysWorked || 0) > 0
-                        ? `${formatHoursToHoursMinutes(selectedRecord.offDaysWorkHours || 0)} x ${selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ x 1 (Đã ăn 1x ở Mục 4, thêm 1x ở đây)`
-                        : '—'}
-                    </td>
-                    <td className="py-1 px-3 text-right tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
-                      {(selectedRecord.offDaysWorked || 0) > 0 || (selectedRecord.offDaysWorkWage || 0) > 0
-                        ? `+${Math.round(selectedRecord.offDaysWorkWage || 0).toLocaleString('vi-VN')}đ`
-                        : '0đ'}
-                    </td>
-                  </tr>
 
                   {/* (6) Off tháng (phép năm là 12 ngày) */}
                   <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
@@ -1585,7 +1572,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                     </td>
                   </tr>
 
-                  {/* (7) Ngày lễ: Nghỉ lễ x1 & Đi làm lễ x3 */}
+                  {/* (7) Nghỉ lễ x1 (Không đi làm vẫn có tiền) */}
                   <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
                     <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
                       7
@@ -1632,11 +1619,69 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                             : '0đ'}
                     </td>
                   </tr>
-                  {/* 7.1 Đi làm lễ x3 (Không đi làm không có tiền) */}
-                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 bg-amber-500/10 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300">
-                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 font-mono text-slate-400"></td>
-                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 pl-6 font-medium">
-                      ↳ Đi làm lễ x3 (Không đi làm không có tiền)
+
+                  {/* (8) Tổng lương thời gian & ngày nghỉ tiêu chuẩn */}
+                  <tr className="bg-slate-100/90 dark:bg-slate-800/90 font-bold border-y-2 border-slate-300 dark:border-slate-700">
+                    <td className="py-2 px-2 text-center border-r border-slate-200 dark:border-slate-800 font-mono text-slate-700 dark:text-slate-300">
+                      8
+                    </td>
+                    <td className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 font-bold">
+                      Tổng lương thời gian & Ngày nghỉ tiêu chuẩn
+                    </td>
+                    <td className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 text-[11px] font-normal">
+                      (8) = (4) Lương giờ + (6.1) Phép năm + (7) Nghỉ lễ x1
+                    </td>
+                    <td className="py-2 px-3 text-right tabular-nums font-bold text-slate-800 dark:text-slate-200 text-sm">
+                      +
+                      {Math.round(
+                        selectedRecord.hourlyWage +
+                          (selectedRecord.offMonthWage || 0) +
+                          (selectedRecord.holidayPaidLeavePay ||
+                            selectedRecord.holidayPay ||
+                            selectedRecord.holidayBasePay ||
+                            0)
+                      ).toLocaleString('vi-VN')}
+                      đ
+                    </td>
+                  </tr>
+
+                  {/* GROUP 2: THƯỞNG & PHỤ CẤP THEO THỜI GIAN (BONUS THỜI GIAN) */}
+                  <tr className="bg-amber-500/10 dark:bg-amber-950/25 border-y border-amber-500/30">
+                    <td
+                      colSpan={4}
+                      className="py-2 px-3 text-left font-bold text-amber-800 dark:text-amber-200 uppercase tracking-wider text-[11px]"
+                    >
+                      ⚡ II. Thưởng & Phụ cấp theo thời gian (Bonus thời gian)
+                    </td>
+                  </tr>
+
+                  {/* (9) Thưởng đi làm ngày off tuần */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-amber-600 dark:text-amber-400 font-mono font-semibold">
+                      9
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 font-medium">
+                      Thưởng đi làm ngày off tuần (+1x = Tổng x2)
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
+                      {(selectedRecord.offDaysWorked || 0) > 0
+                        ? `${formatHoursToHoursMinutes(selectedRecord.offDaysWorkHours || 0)} x ${selectedRecord.hourlyRate.toLocaleString('vi-VN')}đ x 1 (Đã ăn 1x ở Mục 4, thêm 1x ở đây)`
+                        : '0h làm ngày off tuần (Nghỉ tuần theo lịch)'}
+                    </td>
+                    <td className="py-1.5 px-3 text-right tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
+                      {(selectedRecord.offDaysWorked || 0) > 0 || (selectedRecord.offDaysWorkWage || 0) > 0
+                        ? `+${Math.round(selectedRecord.offDaysWorkWage || 0).toLocaleString('vi-VN')}đ`
+                        : '0đ'}
+                    </td>
+                  </tr>
+
+                  {/* (10) Thưởng đi làm ngày lễ 2/9 */}
+                  <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                    <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-amber-600 dark:text-amber-400 font-mono font-semibold">
+                      10
+                    </td>
+                    <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 font-medium">
+                      Thưởng đi làm ngày Lễ 2/9 (x3 phụ cấp)
                     </td>
                     <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-[11px] text-amber-700 dark:text-amber-400">
                       {selectedRecord.holidayWorkedHours && selectedRecord.holidayWorkedHours > 0
@@ -1650,43 +1695,40 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                     </td>
                   </tr>
 
-                  {/* (8) Tổng lương thời gian & ngày nghỉ */}
-                  <tr className="bg-amber-500/10 dark:bg-amber-950/20 font-bold border-y-2 border-amber-500/30">
-                    <td className="py-2 px-2 text-center border-r border-slate-200 dark:border-slate-800 font-mono text-amber-700 dark:text-amber-400">
-                      8
+                  {/* (11) Tổng Thưởng theo thời gian */}
+                  <tr className="bg-amber-500/15 dark:bg-amber-950/40 font-bold border-y-2 border-amber-500/30">
+                    <td className="py-2 px-2 text-center border-r border-slate-200 dark:border-slate-800 font-mono text-amber-700 dark:text-amber-300">
+                      11
                     </td>
                     <td className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-amber-900 dark:text-amber-200 font-bold">
-                      Tổng lương thời gian & Ngày nghỉ
+                      Tổng Thưởng theo thời gian
                     </td>
                     <td className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-amber-700 dark:text-amber-400 text-[11px] font-normal">
-                      Lương giờ + off tuần + ngày phép + lương ngày làm lễ
+                      (11) = (9) Thưởng off tuần + (10) Thưởng ngày lễ
                     </td>
-                    <td className="py-2 px-3 text-right tabular-nums font-bold text-amber-700 dark:text-amber-300 text-sm">
+                    <td className="py-2 px-3 text-right tabular-nums font-bold text-amber-600 dark:text-amber-300 text-sm">
+                      +
                       {Math.round(
-                        selectedRecord.totalBaseWage ||
-                          selectedRecord.hourlyWage +
-                            (selectedRecord.offMonthWage || 0) +
-                            (selectedRecord.offDaysWorkWage || 0) +
-                            (selectedRecord.holidayBasePay || 0)
+                        (selectedRecord.offDaysWorkWage || 0) + (selectedRecord.holidayPremiumPay || 0)
                       ).toLocaleString('vi-VN')}
                       đ
                     </td>
                   </tr>
 
-                  {/* GROUP 2: THƯỞNG DỊCH VỤ, THÂM NIÊN & TIPS */}
+                  {/* GROUP 3: THƯỞNG DỊCH VỤ, THÂM NIÊN & TIPS */}
                   <tr className="bg-slate-100/90 dark:bg-slate-800/90 border-y border-slate-200 dark:border-slate-700">
                     <td
                       colSpan={4}
                       className="py-2 px-3 text-left font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider text-[11px]"
                     >
-                      ⭐ II. Thưởng dịch vụ, Thâm niên & Tips
+                      ⭐ III. Thưởng dịch vụ, Thâm niên & Tips
                     </td>
                   </tr>
 
-                  {/* (9) Lượt khách phục vụ */}
+                  {/* (12) Lượt khách phục vụ */}
                   <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
                     <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
-                      9
+                      12
                     </td>
                     <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Lượt khách phục vụ</td>
                     <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
@@ -1697,10 +1739,10 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                     </td>
                   </tr>
 
-                  {/* (10) Thưởng Ca CV (Xoay) */}
+                  {/* (13) Thưởng Ca CV (Xoay) */}
                   <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 font-semibold">
                     <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
-                      10
+                      13
                     </td>
                     <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 font-bold">
                       Thưởng Ca CV (Xoay)
@@ -1713,10 +1755,10 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                     </td>
                   </tr>
 
-                  {/* (11) Thưởng Thâm Niên */}
+                  {/* (14) Thưởng Thâm Niên */}
                   <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 font-semibold bg-amber-500/5 dark:bg-amber-950/10">
                     <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-amber-600 dark:text-amber-400 font-mono">
-                      11
+                      14
                     </td>
                     <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 font-bold text-amber-700 dark:text-amber-300">
                       Thưởng Thâm Niên
@@ -1735,10 +1777,10 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                     </td>
                   </tr>
 
-                  {/* (12) Tips */}
+                  {/* (15) Tips */}
                   <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
                     <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
-                      12
+                      15
                     </td>
                     <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Thưởng CV Tip</td>
                     <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-purple-600 dark:text-purple-400 text-[11px]">
@@ -1749,20 +1791,20 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                     </td>
                   </tr>
 
-                  {/* GROUP 3: PHỤ CẤP & CÔNG LÀM VIỆC */}
+                  {/* GROUP 4: PHỤ CẤP & CÔNG LÀM VIỆC */}
                   <tr className="bg-slate-100/90 dark:bg-slate-800/90 border-y border-slate-200 dark:border-slate-700">
                     <td
                       colSpan={4}
                       className="py-2 px-3 text-left font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider text-[11px]"
                     >
-                      🛵 III. Phụ cấp & Công làm việc
+                      🛵 IV. Phụ cấp & Công làm việc
                     </td>
                   </tr>
 
-                  {/* (13) Ngày làm việc thực tế trong tháng */}
+                  {/* (16) Ngày làm việc thực tế trong tháng */}
                   <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
                     <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
-                      13
+                      16
                     </td>
                     <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">
                       Ngày làm việc thực tế trong tháng
@@ -1775,10 +1817,10 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                     </td>
                   </tr>
 
-                  {/* (14) Phụ cấp gửi xe */}
+                  {/* (17) Phụ cấp gửi xe */}
                   <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
                     <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
-                      14
+                      17
                     </td>
                     <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Phụ cấp gửi xe</td>
                     <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
@@ -1790,12 +1832,12 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                     </td>
                   </tr>
 
-                  {/* (15) Phụ cấp khác: Mỗi phụ cấp hiển thị 1 dòng riêng */}
+                  {/* (18) Phụ cấp khác: Mỗi phụ cấp hiển thị 1 dòng riêng */}
                   {selectedRecord.otherAllowancesDetails && selectedRecord.otherAllowancesDetails.length > 0 ? (
                     selectedRecord.otherAllowancesDetails.map((item, idx) => (
                       <tr key={item.id || idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
                         <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono text-[11px]">
-                          15.{idx + 1}
+                          18.{idx + 1}
                         </td>
                         <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 font-medium">
                           {item.description || 'Phụ cấp khác'}
@@ -1855,7 +1897,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                   ) : (
                     <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
                       <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-slate-400 font-mono">
-                        15
+                        18
                       </td>
                       <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Phụ cấp khác</td>
                       <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-[11px]">
@@ -1883,7 +1925,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                   {selectedRecord.penalties && selectedRecord.penalties > 0 ? (
                     <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 text-rose-600 dark:text-rose-400">
                       <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 font-mono">
-                        16
+                        !
                       </td>
                       <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800">Phạt trừ thưởng</td>
                       <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-[11px]">—</td>
@@ -1893,17 +1935,17 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                     </tr>
                   ) : null}
 
-                  {/* GROUP 4: TỔNG THU NHẬP & THỰC LÃNH */}
+                  {/* GROUP 5: TỔNG THU NHẬP & THỰC LÃNH */}
                   <tr className="bg-slate-100/90 dark:bg-slate-800/90 border-y border-slate-200 dark:border-slate-700">
                     <td
                       colSpan={4}
                       className="py-2 px-3 text-left font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider text-[11px]"
                     >
-                      💰 IV. Tổng thu nhập & Thực lãnh (Net)
+                      💰 V. Tổng thu nhập & Thực lãnh (Net)
                     </td>
                   </tr>
 
-                  {/* (15) Tổng thu nhập thực tế trong tháng (Gross) */}
+                  {/* Tổng thu nhập thực tế trong tháng (Gross) */}
                   <tr className="bg-blue-500/10 dark:bg-blue-950/20 font-bold border-y-2 border-blue-500/30">
                     <td className="py-2 px-2 text-center border-r border-slate-200 dark:border-slate-800 font-mono text-blue-700 dark:text-blue-400">
                       ∑
@@ -1912,17 +1954,18 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                       Tổng thu nhập thực tế trong tháng (Gross)
                     </td>
                     <td className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 text-blue-700 dark:text-blue-400 text-[11px] font-normal">
-                      Lương thời gian + Thưởng CV + Thâm niên + Tips + Gửi xe + Phụ cấp khác
+                      Lương thời gian + Thưởng thời gian (off tuần) + Thưởng CV + Thâm niên + Tips + Gửi xe + Phụ cấp
+                      khác
                     </td>
                     <td className="py-2 px-3 text-right tabular-nums font-bold text-blue-700 dark:text-blue-300 text-sm">
                       {Math.round(selectedRecord.totalIncome).toLocaleString('vi-VN')}đ
                     </td>
                   </tr>
 
-                  {/* (17) BHXH */}
+                  {/* (19) BHXH */}
                   <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 font-semibold bg-rose-500/5 dark:bg-rose-950/10">
                     <td className="py-1.5 px-2 text-center border-r border-slate-200 dark:border-slate-800 text-rose-600 dark:text-rose-400 font-mono">
-                      17
+                      19
                     </td>
                     <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-rose-700 dark:text-rose-300 font-bold">
                       Khấu trừ BHXH (10.5% NLĐ)
