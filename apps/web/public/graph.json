@@ -9824,7 +9824,7 @@
         "path": "/api/kpi/cv-paystub/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 725
+        "line": 748
       }
     },
     {
@@ -31662,8 +31662,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-paystub.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 38143,
-        "lineCount": 905,
+        "sizeBytes": 39023,
+        "lineCount": 928,
         "ext": ".ts"
       }
     },
@@ -37187,8 +37187,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 99199,
-        "lineCount": 2011,
+        "sizeBytes": 97816,
+        "lineCount": 2039,
         "ext": ".tsx"
       }
     },
@@ -38474,8 +38474,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DailyActionSchedule.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3638,
-        "lineCount": 120,
+        "sizeBytes": 3610,
+        "lineCount": 116,
         "ext": ".tsx"
       }
     },
@@ -38487,8 +38487,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/DailyActionSchedule.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 28033,
-        "lineCount": 622,
+        "sizeBytes": 28025,
+        "lineCount": 620,
         "ext": ".tsx"
       }
     },
@@ -38721,8 +38721,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvLiveCelebrationBanner.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22757,
-        "lineCount": 549,
+        "sizeBytes": 22753,
+        "lineCount": 548,
         "ext": ".tsx"
       }
     },
