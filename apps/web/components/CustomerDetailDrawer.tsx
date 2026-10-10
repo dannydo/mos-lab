@@ -29,7 +29,7 @@ const RescheduleBookingModal = dynamic(() => import('./RescheduleBookingModal').
 const BookingWizardDrawer = dynamic(() => import('./BookingWizardDrawer'), { ssr: false });
 import CalendarPlusIcon from './icons/CalendarPlusIcon';
 import { useCustomerDetail } from './customer-detail/hooks/useCustomerDetail';
-import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
 
 // Sub-components
 import { KpiStatsCard } from './customer-detail/components/KpiStatsCard';
@@ -197,6 +197,10 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   const isManagerOrAdmin = useMemo(() => {
     const role = currentUser?.role?.toLowerCase();
     return isAdminOrSuperAdminRole(role) || role === 'manager';
+  }, [currentUser]);
+
+  const isMaskedRole = useMemo(() => {
+    return shouldMaskCustomerPhone(currentUser?.role);
   }, [currentUser]);
 
   const handleRescheduleRequest = useCallback(
@@ -453,41 +457,54 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                     style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}
                   >
                     {customer.phones && customer.phones.length > 0 ? (
-                      customer.phones.map((phoneObj: SafeAny) => (
-                        <div key={phoneObj.id} className="inline-flex items-center gap-1">
-                          <span
-                            className={`inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text ${phoneObj.is_disabled ? 'opacity-50 line-through' : ''}`}
-                            onClick={() =>
-                              !phoneObj.is_disabled &&
-                              makeCall(phoneObj.phone_number, customer.name, customer.id, customer.avatar || undefined)
-                            }
-                            style={{
-                              fontSize: '12px',
-                              color: phoneObj.is_disabled ? token.colorTextDisabled : token.colorText,
-                              fontWeight: phoneObj.is_disabled ? 'normal' : '600',
-                            }}
-                          >
-                            <PhoneOutlined style={{ color: phoneObj.is_disabled ? '#bbb' : '#D4A84B' }} />
-                            <span>
-                              {phoneObj.phone_number} {phoneObj.is_disabled && '(Vô hiệu hóa)'}
+                      customer.phones.map((phoneObj: SafeAny) => {
+                        const displayPhone = isMaskedRole
+                          ? maskPhoneNumber(phoneObj.phone_number)
+                          : phoneObj.phone_number;
+                        return (
+                          <div key={phoneObj.id} className="inline-flex items-center gap-1">
+                            <span
+                              className={`inline-flex items-center gap-1.5 select-text ${phoneObj.is_disabled ? 'opacity-50 line-through' : ''} ${!isMaskedRole ? 'cursor-pointer hover:underline' : ''}`}
+                              onClick={() => {
+                                if (!isMaskedRole && !phoneObj.is_disabled) {
+                                  makeCall(
+                                    phoneObj.phone_number,
+                                    customer.name,
+                                    customer.id,
+                                    customer.avatar || undefined
+                                  );
+                                }
+                              }}
+                              style={{
+                                fontSize: '12px',
+                                color: phoneObj.is_disabled ? token.colorTextDisabled : token.colorText,
+                                fontWeight: phoneObj.is_disabled ? 'normal' : '600',
+                              }}
+                            >
+                              <PhoneOutlined style={{ color: phoneObj.is_disabled ? '#bbb' : '#D4A84B' }} />
+                              <span>
+                                {displayPhone} {phoneObj.is_disabled && '(Vô hiệu hóa)'}
+                              </span>
                             </span>
-                          </span>
-                          <CopyPhoneButton phone={phoneObj.phone_number} size="xs" />
-                        </div>
-                      ))
+                            {!isMaskedRole && <CopyPhoneButton phone={phoneObj.phone_number} size="xs" />}
+                          </div>
+                        );
+                      })
                     ) : customer.phone ? (
                       <div className="inline-flex items-center gap-1">
                         <span
-                          className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text"
-                          onClick={() =>
-                            makeCall(customer.phone, customer.name, customer.id, customer.avatar || undefined)
-                          }
+                          className={`inline-flex items-center gap-1.5 select-text ${!isMaskedRole ? 'cursor-pointer hover:underline' : ''}`}
+                          onClick={() => {
+                            if (!isMaskedRole) {
+                              makeCall(customer.phone, customer.name, customer.id, customer.avatar || undefined);
+                            }
+                          }}
                           style={{ fontSize: '12px', color: token.colorText, fontWeight: '600' }}
                         >
                           <PhoneOutlined style={{ color: '#D4A84B' }} />
-                          <span>{customer.phone}</span>
+                          <span>{isMaskedRole ? maskPhoneNumber(customer.phone) : customer.phone}</span>
                         </span>
-                        <CopyPhoneButton phone={customer.phone} size="xs" />
+                        {!isMaskedRole && <CopyPhoneButton phone={customer.phone} size="xs" />}
                       </div>
                     ) : (
                       <span>
@@ -495,29 +512,31 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                       </span>
                     )}
                   </div>
-                  <Tooltip title="Mở hồ sơ trên hệ thống Legacy">
-                    <a
-                      className="customer-detail-legacy-profile"
-                      href={legacyProfileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        color: themeMode === 'dark' ? '#60a5fa' : '#2563eb',
-                        fontSize: '12px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '24px',
-                        height: '24px',
-                        borderRadius: '6px',
-                        background: themeMode === 'dark' ? 'rgba(37, 99, 235, 0.15)' : '#eff6ff',
-                        border: `1px solid ${themeMode === 'dark' ? 'rgba(96, 165, 250, 0.3)' : '#bfdbfe'}`,
-                        transition: 'all 0.2s',
-                      }}
-                    >
-                      <ExportOutlined style={{ fontSize: '12px' }} />
-                    </a>
-                  </Tooltip>
+                  {!isMaskedRole && (
+                    <Tooltip title="Mở hồ sơ trên hệ thống Legacy">
+                      <a
+                        className="customer-detail-legacy-profile"
+                        href={legacyProfileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: themeMode === 'dark' ? '#60a5fa' : '#2563eb',
+                          fontSize: '12px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '6px',
+                          background: themeMode === 'dark' ? 'rgba(37, 99, 235, 0.15)' : '#eff6ff',
+                          border: `1px solid ${themeMode === 'dark' ? 'rgba(96, 165, 250, 0.3)' : '#bfdbfe'}`,
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        <ExportOutlined style={{ fontSize: '12px' }} />
+                      </a>
+                    </Tooltip>
+                  )}
                   {customer.email && <span>Email: {customer.email}</span>}
                   {customer.dob && (
                     <span
@@ -771,242 +790,244 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                 className="customer-detail-layout"
                 style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '20px' }}
               >
-              {/* SIDEBAR: Info & Stats */}
-              <div
-                className="customer-detail-sidebar"
-                style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
-              >
-                <KpiStatsCard
-                  stats={stats}
-                  themeMode={themeMode}
-                  onOpenGemModal={() => {
-                    setIsGemModalOpen(true);
-                    void loadDetailedData();
-                  }}
-                  onOpenTipModal={() => {
-                    setIsTipModalOpen(true);
-                    void loadDetailedData();
-                  }}
-                  onOpenRevenueModal={() => {
-                    setIsRevenueModalOpen(true);
-                    void loadDetailedData();
-                  }}
-                />
-
-                <ProfileDetailsCard customer={customer} themeMode={themeMode} onToggleForeign={handleToggleForeign} />
-
-                <BookingHabitsCard
-                  themeMode={themeMode}
-                  bookings={activeBookings}
-                  getFavoriteBranch={getFavoriteBranch}
-                  getFavoriteTechnicians={getFavoriteTechnicians}
-                  getRecentTechnician={getRecentTechnician}
-                  getMostFrequentDay={getMostFrequentDay}
-                  getFavoriteTimeSlot={getFavoriteTimeSlot}
-                  getRecentVisitTime={getRecentVisitTime}
-                />
-
-                <ComboBalancesCard
-                  comboBalances={comboBalances}
-                  customerName={customer?.name || ''}
-                  themeMode={themeMode}
-                  getComboDisplayInfo={getComboDisplayInfo}
-                  onOpenComboModal={() => {
-                    setIsComboModalOpen(true);
-                    void loadDetailedData();
-                  }}
-                />
-
-                <ReferralCard data={data} themeMode={themeMode} />
-              </div>
-
-              {/* MAIN PANEL: Timelines & History */}
-              <div
-                className="customer-detail-history"
-                style={{
-                  background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
-                  border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
-                  borderRadius: '8px',
-                  padding: '20px',
-                  minHeight: '600px',
-                }}
-              >
-                {/* Pinned / Sticky Notes Alert Box */}
-                {notes && notes.some((n: SafeAny) => n.isSticky) && (
-                  <div
-                    style={{
-                      background: themeMode === 'dark' ? 'rgba(239, 68, 68, 0.05)' : '#fff1f0',
-                      border: `1px solid ${themeMode === 'dark' ? 'rgba(239, 68, 68, 0.2)' : '#ffccc7'}`,
-                      borderRadius: '8px',
-                      padding: '12px 16px',
-                      marginBottom: '16px',
+                {/* SIDEBAR: Info & Stats */}
+                <div
+                  className="customer-detail-sidebar"
+                  style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}
+                >
+                  <KpiStatsCard
+                    stats={stats}
+                    themeMode={themeMode}
+                    onOpenGemModal={() => {
+                      setIsGemModalOpen(true);
+                      void loadDetailedData();
                     }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      <PushpinFilled
-                        style={{ color: themeMode === 'dark' ? '#f87171' : '#b91c1c', fontSize: '15px' }}
-                      />
-                      <strong
-                        style={{
-                          color: themeMode === 'dark' ? '#f87171' : '#cf1322',
-                          fontSize: '13px',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px',
-                        }}
-                      >
-                        Ghi chú quan trọng
-                      </strong>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {notes
-                        .filter((n: SafeAny) => n.isSticky)
-                        .map((n: SafeAny) => {
-                          let formattedDate = '';
-                          if (n.dateCreated) {
-                            const d = new Date(n.dateCreated);
-                            formattedDate = `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
-                          }
-                          return (
-                            <div
-                              key={n.id}
-                              style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'flex-start',
-                                gap: '12px',
-                                borderLeft: `2px solid ${themeMode === 'dark' ? 'rgba(239, 68, 68, 0.4)' : '#ffa39e'}`,
-                                paddingLeft: '10px',
-                              }}
-                            >
-                              <div style={{ flex: 1 }}>
-                                <div
-                                  style={{
-                                    whiteSpace: 'pre-wrap',
-                                    fontWeight: '500',
-                                    fontSize: '13px',
-                                    color: themeMode === 'dark' ? '#cbd5e1' : '#3f3f46',
-                                    lineHeight: '1.5',
-                                  }}
-                                >
-                                  {n.note}
-                                </div>
-                                <div style={{ fontSize: '11px', color: mutedTextColor, marginTop: '2px' }}>
-                                  Bởi: <strong>{n.staffName}</strong> ({formattedDate})
-                                </div>
-                              </div>
-                              {isManagerOrAdmin && (
-                                <Tooltip title="Bỏ ghim ghi chú">
-                                  <Button
-                                    type="text"
-                                    size="small"
-                                    danger
-                                    icon={<PushpinOutlined style={{ fontSize: '14px' }} />}
-                                    loading={unpinLoading}
-                                    onClick={() => handleUnpinNote(n.id)}
+                    onOpenTipModal={() => {
+                      setIsTipModalOpen(true);
+                      void loadDetailedData();
+                    }}
+                    onOpenRevenueModal={() => {
+                      setIsRevenueModalOpen(true);
+                      void loadDetailedData();
+                    }}
+                  />
+
+                  <ProfileDetailsCard customer={customer} themeMode={themeMode} onToggleForeign={handleToggleForeign} />
+
+                  <BookingHabitsCard
+                    themeMode={themeMode}
+                    bookings={activeBookings}
+                    getFavoriteBranch={getFavoriteBranch}
+                    getFavoriteTechnicians={getFavoriteTechnicians}
+                    getRecentTechnician={getRecentTechnician}
+                    getMostFrequentDay={getMostFrequentDay}
+                    getFavoriteTimeSlot={getFavoriteTimeSlot}
+                    getRecentVisitTime={getRecentVisitTime}
+                  />
+
+                  <ComboBalancesCard
+                    comboBalances={comboBalances}
+                    customerName={customer?.name || ''}
+                    themeMode={themeMode}
+                    getComboDisplayInfo={getComboDisplayInfo}
+                    onOpenComboModal={() => {
+                      setIsComboModalOpen(true);
+                      void loadDetailedData();
+                    }}
+                  />
+
+                  <ReferralCard data={data} themeMode={themeMode} />
+                </div>
+
+                {/* MAIN PANEL: Timelines & History */}
+                <div
+                  className="customer-detail-history"
+                  style={{
+                    background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
+                    border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
+                    borderRadius: '8px',
+                    padding: '20px',
+                    minHeight: '600px',
+                  }}
+                >
+                  {/* Pinned / Sticky Notes Alert Box */}
+                  {notes && notes.some((n: SafeAny) => n.isSticky) && (
+                    <div
+                      style={{
+                        background: themeMode === 'dark' ? 'rgba(239, 68, 68, 0.05)' : '#fff1f0',
+                        border: `1px solid ${themeMode === 'dark' ? 'rgba(239, 68, 68, 0.2)' : '#ffccc7'}`,
+                        borderRadius: '8px',
+                        padding: '12px 16px',
+                        marginBottom: '16px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                        <PushpinFilled
+                          style={{ color: themeMode === 'dark' ? '#f87171' : '#b91c1c', fontSize: '15px' }}
+                        />
+                        <strong
+                          style={{
+                            color: themeMode === 'dark' ? '#f87171' : '#cf1322',
+                            fontSize: '13px',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                          }}
+                        >
+                          Ghi chú quan trọng
+                        </strong>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {notes
+                          .filter((n: SafeAny) => n.isSticky)
+                          .map((n: SafeAny) => {
+                            let formattedDate = '';
+                            if (n.dateCreated) {
+                              const d = new Date(n.dateCreated);
+                              formattedDate = `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+                            }
+                            return (
+                              <div
+                                key={n.id}
+                                style={{
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'flex-start',
+                                  gap: '12px',
+                                  borderLeft: `2px solid ${themeMode === 'dark' ? 'rgba(239, 68, 68, 0.4)' : '#ffa39e'}`,
+                                  paddingLeft: '10px',
+                                }}
+                              >
+                                <div style={{ flex: 1 }}>
+                                  <div
                                     style={{
-                                      padding: '0 4px',
-                                      height: '22px',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
+                                      whiteSpace: 'pre-wrap',
+                                      fontWeight: '500',
+                                      fontSize: '13px',
+                                      color: themeMode === 'dark' ? '#cbd5e1' : '#3f3f46',
+                                      lineHeight: '1.5',
                                     }}
-                                  />
-                                </Tooltip>
-                              )}
-                            </div>
-                          );
-                        })}
+                                  >
+                                    {n.note}
+                                  </div>
+                                  <div style={{ fontSize: '11px', color: mutedTextColor, marginTop: '2px' }}>
+                                    Bởi: <strong>{n.staffName}</strong> ({formattedDate})
+                                  </div>
+                                </div>
+                                {isManagerOrAdmin && (
+                                  <Tooltip title="Bỏ ghim ghi chú">
+                                    <Button
+                                      type="text"
+                                      size="small"
+                                      danger
+                                      icon={<PushpinOutlined style={{ fontSize: '14px' }} />}
+                                      loading={unpinLoading}
+                                      onClick={() => handleUnpinNote(n.id)}
+                                      style={{
+                                        padding: '0 4px',
+                                        height: '22px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                      }}
+                                    />
+                                  </Tooltip>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
                     </div>
-                  </div>
-                )}
-                {(() => {
-                  const activeBookings = tabDataMap['bookings']?.items || bookings || [];
-                  const activeNotes = tabDataMap['notes']?.items || notes || [];
-                  const activeCalls = tabDataMap['calls']?.items || calls || [];
+                  )}
+                  {(() => {
+                    const activeBookings = tabDataMap['bookings']?.items || bookings || [];
+                    const activeNotes = tabDataMap['notes']?.items || notes || [];
+                    const activeCalls = tabDataMap['calls']?.items || calls || [];
 
-                  const bCount = Math.max(counts?.bookingCount ?? 0, activeBookings.length);
-                  const nCount = Math.max(counts?.noteCount ?? 0, activeNotes.length);
-                  const cCount = Math.max(counts?.callCount ?? 0, activeCalls.length);
+                    const bCount = Math.max(counts?.bookingCount ?? 0, activeBookings.length);
+                    const nCount = Math.max(counts?.noteCount ?? 0, activeNotes.length);
+                    const cCount = Math.max(counts?.callCount ?? 0, activeCalls.length);
 
-                  return (
-                    <Tabs
-                      className="customer-detail-tabs"
-                      activeKey={activeTabKey}
-                      onChange={handleTabChange}
-                      items={[
-                        {
-                          key: 'bookings',
-                          label: `Lịch sử đặt lịch (${bCount})`,
-                          children: (
-                            <BookingsTab
-                              bookings={activeBookings}
-                              notes={activeNotes}
-                              themeMode={themeMode}
-                              customer={customer}
-                              handleCancelBooking={handleCancelBooking}
-                              onRequestReschedule={handleRescheduleRequest}
-                              loading={tabDataMap['bookings']?.loading}
-                              hasMore={tabDataMap['bookings']?.hasMore}
-                              onLoadMore={() => fetchTabData('bookings', (tabDataMap['bookings']?.page || 1) + 1, true)}
-                              onRefreshDetails={refreshAllDetails}
-                            />
-                          ),
-                        },
-                        {
-                          key: 'timeline',
-                          label: `Tổng hợp ghi chú (${nCount})`,
-                          children: (
-                            <TimelineViewTab
-                              bookings={activeBookings}
-                              notes={activeNotes}
-                              calls={activeCalls}
-                              themeMode={themeMode}
-                            />
-                          ),
-                        },
-                        {
-                          key: 'notes',
-                          label: `Nhật ký ghi chú (${nCount})`,
-                          children: (
-                            <NotesTab
-                              notes={activeNotes}
-                              themeMode={themeMode}
-                              currentUser={currentUser}
-                              onPinToggle={handlePinToggle}
-                              unpinLoading={unpinLoading}
-                              loading={tabDataMap['notes']?.loading}
-                              hasMore={tabDataMap['notes']?.hasMore}
-                              onLoadMore={() => fetchTabData('notes', (tabDataMap['notes']?.page || 1) + 1, true)}
-                            />
-                          ),
-                        },
-                        {
-                          key: 'calls',
-                          label: `Lịch sử cuộc gọi (${cCount})`,
-                          children: (
-                            <CallsTab
-                              calls={activeCalls}
-                              themeMode={themeMode}
-                              loading={tabDataMap['calls']?.loading}
-                              hasMore={tabDataMap['calls']?.hasMore}
-                              onLoadMore={() => fetchTabData('calls', (tabDataMap['calls']?.page || 1) + 1, true)}
-                            />
-                          ),
-                        },
-                        {
-                          key: 'assignment-timeline',
-                          label: `Lịch sử Phân bổ`,
-                          children: <CustomerAssignmentTimeline customerId={customer.id} />,
-                        },
-                      ]}
-                    />
-                  );
-                })()}
+                    return (
+                      <Tabs
+                        className="customer-detail-tabs"
+                        activeKey={activeTabKey}
+                        onChange={handleTabChange}
+                        items={[
+                          {
+                            key: 'bookings',
+                            label: `Lịch sử đặt lịch (${bCount})`,
+                            children: (
+                              <BookingsTab
+                                bookings={activeBookings}
+                                notes={activeNotes}
+                                themeMode={themeMode}
+                                customer={customer}
+                                handleCancelBooking={handleCancelBooking}
+                                onRequestReschedule={handleRescheduleRequest}
+                                loading={tabDataMap['bookings']?.loading}
+                                hasMore={tabDataMap['bookings']?.hasMore}
+                                onLoadMore={() =>
+                                  fetchTabData('bookings', (tabDataMap['bookings']?.page || 1) + 1, true)
+                                }
+                                onRefreshDetails={refreshAllDetails}
+                              />
+                            ),
+                          },
+                          {
+                            key: 'timeline',
+                            label: `Tổng hợp ghi chú (${nCount})`,
+                            children: (
+                              <TimelineViewTab
+                                bookings={activeBookings}
+                                notes={activeNotes}
+                                calls={activeCalls}
+                                themeMode={themeMode}
+                              />
+                            ),
+                          },
+                          {
+                            key: 'notes',
+                            label: `Nhật ký ghi chú (${nCount})`,
+                            children: (
+                              <NotesTab
+                                notes={activeNotes}
+                                themeMode={themeMode}
+                                currentUser={currentUser}
+                                onPinToggle={handlePinToggle}
+                                unpinLoading={unpinLoading}
+                                loading={tabDataMap['notes']?.loading}
+                                hasMore={tabDataMap['notes']?.hasMore}
+                                onLoadMore={() => fetchTabData('notes', (tabDataMap['notes']?.page || 1) + 1, true)}
+                              />
+                            ),
+                          },
+                          {
+                            key: 'calls',
+                            label: `Lịch sử cuộc gọi (${cCount})`,
+                            children: (
+                              <CallsTab
+                                calls={activeCalls}
+                                themeMode={themeMode}
+                                loading={tabDataMap['calls']?.loading}
+                                hasMore={tabDataMap['calls']?.hasMore}
+                                onLoadMore={() => fetchTabData('calls', (tabDataMap['calls']?.page || 1) + 1, true)}
+                              />
+                            ),
+                          },
+                          {
+                            key: 'assignment-timeline',
+                            label: `Lịch sử Phân bổ`,
+                            children: <CustomerAssignmentTimeline customerId={customer.id} />,
+                          },
+                        ]}
+                      />
+                    );
+                  })()}
+                </div>
               </div>
             </div>
-          </div>
-        )
-      )}
+          )
+        )}
       </Spin>
 
       {rescheduleModalVisible && (

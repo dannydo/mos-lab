@@ -46,9 +46,13 @@ interface StaffCareerSelectorProps {
 const ROLE_TABS = [
   { key: 'ALL', label: 'Tất cả', fullLabel: 'Tất cả Chuyên Viên & KTV' },
   { key: 'KTV', label: 'KTV', fullLabel: 'KTV Thử Việc (Tập sự & Sát hạch)' },
-  { key: 'CV', label: 'CV · Dịu Dàng', fullLabel: 'Chuyên Viên Dịu Dàng' },
-  { key: 'CV_PLUS', label: '🪽 CV · Thanh Lịch', fullLabel: 'Chuyên Viên Thanh Lịch' },
-  { key: 'CV_PLUS_PLUS', label: '🪽 CV 🪽 · Quí Phái', fullLabel: 'Chuyên Viên Quí Phái' },
+  { key: 'CV', label: 'CV · Dịu Dàng', fullLabel: 'Chuyên Viên Dịu Dàng (0 Cánh)' },
+  {
+    key: 'CV_PLUS',
+    label: '🪽 CV (1 Cánh · Đang triển khai)',
+    fullLabel: 'Chuyên Viên Thanh Lịch (1 Cánh - Đang triển khai)',
+  },
+  { key: 'CV_PLUS_PLUS', label: '🪽 CV 🪽 (Nghiên cứu)', fullLabel: 'Chuyên Viên Quí Phái (2 Cánh - Đang nghiên cứu)' },
 ];
 
 const PERIOD_TABS: { key: CareerPeriod; label: string; fullLabel: string }[] = [
@@ -734,14 +738,14 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
           <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block" />
 
           {/* Role Filter Chips */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
             {ROLE_TABS.map((tab) => {
               const isActive = currentFilter === tab.key;
               return (
                 <Tooltip key={tab.key} title={tab.fullLabel}>
                   <button
                     onClick={() => setFilter(tab.key)}
-                    className={`px-2 py-0.5 rounded-lg text-xs font-semibold transition-all duration-150 ${
+                    className={`px-2 py-0.5 rounded-lg text-xs font-semibold transition-all duration-150 shrink-0 whitespace-nowrap ${
                       isActive
                         ? 'bg-rose-500 text-white shadow-xs'
                         : 'bg-slate-100/90 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 hover:bg-slate-200/90 dark:hover:bg-slate-700/80'
@@ -757,14 +761,14 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
           <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-1 hidden md:block" />
 
           {/* Period Filter Chips */}
-          <div className="flex items-center gap-0.5 bg-slate-100/80 dark:bg-slate-800/60 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60">
+          <div className="flex items-center gap-0.5 bg-slate-100/80 dark:bg-slate-800/60 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60 overflow-x-auto no-scrollbar shrink-0">
             {PERIOD_TABS.map((tab) => {
               const isActive = (period || 'last_month') === tab.key;
               return (
                 <Tooltip key={tab.key} title={tab.fullLabel}>
                   <button
                     onClick={() => onPeriodChange?.(tab.key)}
-                    className={`px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all duration-150 cursor-pointer ${
+                    className={`px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap ${
                       isActive
                         ? 'bg-rose-500 text-white shadow-xs font-bold'
                         : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-700/70'

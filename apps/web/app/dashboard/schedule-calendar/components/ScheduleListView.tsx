@@ -16,7 +16,7 @@ import {
   SyncOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { Appointment } from '@mos-lab/shared';
+import { Appointment, maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
 import { formatVND } from '../../../../lib/format-utils';
 import { useOmiCall } from '../../../../context/OmiCallContext';
 import { useTheme } from '../../../../context/ThemeContext';
@@ -71,6 +71,20 @@ export default function ScheduleListView({
   const { makeCall } = useOmiCall();
   const handleMakeCall = onMakeCall || makeCall;
   const { themeMode } = useTheme();
+
+  const isMaskedRole = React.useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const stored = localStorage.getItem('mos_user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        return shouldMaskCustomerPhone(u?.role);
+      }
+    } catch {
+      return false;
+    }
+    return false;
+  }, []);
 
   const getStatusTag = (state?: string) => {
     switch (state) {
@@ -238,8 +252,10 @@ export default function ScheduleListView({
         const phone = record.customerPhone || (record as any).phone || '';
         return (
           <Space size="small">
-            <span className="font-mono text-xs tabular-nums text-slate-700 dark:text-slate-200">{phone || '-'}</span>
-            {phone && (
+            <span className="font-mono text-xs tabular-nums text-slate-700 dark:text-slate-200">
+              {phone ? (isMaskedRole ? maskPhoneNumber(phone) : phone) : '-'}
+            </span>
+            {phone && !isMaskedRole && !phone.includes('*') && (
               <>
                 <Tooltip title="Gọi ngay qua OmiCall">
                   <Button

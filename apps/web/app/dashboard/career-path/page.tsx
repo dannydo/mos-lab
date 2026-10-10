@@ -19,7 +19,12 @@ import { StaffCareerSelector } from './components/StaffCareerSelector';
 import { RealStaffSimulationCard } from './components/RealStaffSimulationCard';
 import { CareerRealmEncyclopedia } from './components/CareerRealmEncyclopedia';
 import { IslandGameIcon, WingRoleLabel } from './components/IslandGameIcon';
-import { FALLBACK_CAREER_PROGRESSION_CONFIG, getCareerIslands, formatCareerRoleName } from './career-path.constants';
+import {
+  FALLBACK_CAREER_PROGRESSION_CONFIG,
+  getCareerIslands,
+  formatCareerRoleName,
+  computeHudMetrics,
+} from './career-path.constants';
 
 export default function CareerPathPage() {
   const { themeMode } = useTheme();
@@ -486,95 +491,10 @@ export default function CareerPathPage() {
     }
   }, []);
 
-  const hudMetrics = useMemo(() => {
-    if (!selectedStaffStatus?.metrics) return null;
-    const m = selectedStaffStatus.metrics;
-    const targetReq =
-      simulationTarget === 'CV_PLUS_PLUS' ? safeConfig.cvPlusToCvPlusPlus : safeConfig.cvToCvPlus || safeConfig.cvToCc;
-
-    const targetOrders = targetReq?.minOrders ?? (simulationTarget === 'CV_PLUS_PLUS' ? 350 : 300);
-    const targetMaxFix = targetReq?.maxFixRate ?? (simulationTarget === 'CV_PLUS_PLUS' ? 0.015 : 0.02);
-    const minTipRatioAboveShop = targetReq?.minTipRatioAboveShop ?? (simulationTarget === 'CV_PLUS_PLUS' ? 0.15 : 0.1);
-    const minBananaCount = targetReq?.minBananaCount ?? (simulationTarget === 'CV_PLUS_PLUS' ? 60 : 45);
-    const minHappinessIndex = targetReq?.minHappinessIndex ?? (simulationTarget === 'CV_PLUS_PLUS' ? 0.8 : 0.7);
-    const requiredQaAudits =
-      targetReq?.minQaAudits ?? (targetReq?.minWeeklyQaAudits ? Math.round(targetReq.minWeeklyQaAudits * 12) : 12);
-
-    const isOrdersPassed = (m.ordersCount || 0) >= targetOrders;
-    const isFixPassed = (m.fixRate || 0) <= targetMaxFix;
-
-    const staffTipRate =
-      m.staffTipRate ??
-      (m.ordersCount ? Math.min(0.65, Math.max(0.2, ((m.totalTip || 0) / (m.ordersCount * 38000)) * 0.45)) : 0.314);
-    const shopTipRate = m.shopTipRate ?? 0.45;
-    const targetTipRate = m.targetTipRate ?? Number((shopTipRate * (1 + minTipRatioAboveShop)).toFixed(3));
-    const isTipPassed = staffTipRate >= targetTipRate || (m.tipRatioAboveShop || 0) >= minTipRatioAboveShop;
-    const staffTipRatePercent = Number((staffTipRate * 100).toFixed(1));
-
-    const totalQaAudits = m.qaAudit?.totalAudits ?? 0;
-    const hasFailedQa = Boolean(m.qaAudit?.hasFailedAudit);
-    const isQaPassed =
-      requiredQaAudits === 0 || Boolean(m.qaAudit?.isPassed ?? (totalQaAudits >= requiredQaAudits && !hasFailedQa));
-
-    const happinessIndex = m.happinessIndex ?? 0;
-    const isHiPassed = happinessIndex >= minHappinessIndex;
-    const hiPercent = Math.round(happinessIndex * 100);
-
-    const bananaCount = m.bananaCount ?? 0;
-    const isBananaPassed = bananaCount >= minBananaCount;
-
-    return [
-      {
-        id: 1,
-        name: 'Bộ mi',
-        value: `${m.ordersCount || 0}`,
-        iconType: 'eye',
-        isPassed: isOrdersPassed,
-        tooltip: `Bộ mi hoàn thành (90 ngày qua): ${m.ordersCount || 0}/${targetOrders} bộ · ${isOrdersPassed ? '✓ Đạt chuẩn' : '⚡ Còn thiếu'} (Bấm để xem)`,
-      },
-      {
-        id: 2,
-        name: 'Fix mi',
-        value: `${((m.fixRate || 0) * 100).toFixed(1)}%`,
-        iconType: 'bug',
-        isPassed: isFixPassed,
-        tooltip: `Tỷ lệ bảo hành / sửa: ${((m.fixRate || 0) * 100).toFixed(1)}% (chuẩn < ${(targetMaxFix * 100).toFixed(1)}%) · ${isFixPassed ? '✓ Xuất sắc' : '⚡ Vượt mức'} (Bấm để xem)`,
-      },
-      {
-        id: 3,
-        name: 'Tỷ lệ Tip',
-        value: `${staffTipRatePercent}%`,
-        iconType: 'coins',
-        isPassed: isTipPassed,
-        tooltip: `Tỷ lệ khách tip: ${staffTipRatePercent}% (chuẩn ≥ ${(targetTipRate * 100).toFixed(1)}% · TB ${m.branchName || 'chi nhánh'}: ${((m.branchTipRate || shopTipRate) * 100).toFixed(1)}%) · ${isTipPassed ? '✓ Đạt chuẩn' : '⚡ Cần thêm'} (Bấm để xem)`,
-      },
-      {
-        id: 4,
-        name: 'QA/QC',
-        value: `${totalQaAudits}/${requiredQaAudits}`,
-        iconType: 'shieldCheck',
-        isPassed: isQaPassed,
-        hasFailed: hasFailedQa,
-        tooltip: `Kiểm định QA/QC: ${totalQaAudits}/${requiredQaAudits} lần · ${hasFailedQa ? 'Bị lỗi FAILED' : isQaPassed ? '✓ Đạt chuẩn' : totalQaAudits === 0 ? 'Chưa kiểm định' : 'Thiếu lượt'} (Bấm để xem)`,
-      },
-      {
-        id: 5,
-        name: 'Teamwork HI',
-        value: `${hiPercent}%`,
-        iconType: 'heart',
-        isPassed: isHiPassed,
-        tooltip: `Chỉ số HI Thả tim: ${hiPercent}% (chuẩn > ${Math.round(minHappinessIndex * 100)}%) · ${isHiPassed ? '✓ Tin yêu' : '⚡ Cần gắn kết'} (Bấm để xem)`,
-      },
-      {
-        id: 6,
-        name: 'Chuối',
-        value: `${bananaCount}`,
-        iconType: 'banana',
-        isPassed: isBananaPassed,
-        tooltip: `Chuối yêu thương: ${bananaCount}/${minBananaCount} chuối · ${isBananaPassed ? '✓ Đạt chuẩn' : '⚡ Chưa đủ'} (Bấm để xem)`,
-      },
-    ];
-  }, [selectedStaffStatus?.metrics, simulationTarget, safeConfig]);
+  const hudMetrics = useMemo(
+    () => computeHudMetrics(selectedStaffStatus?.metrics, simulationTarget, safeConfig),
+    [selectedStaffStatus?.metrics, simulationTarget, safeConfig]
+  );
 
   return (
     <div className="min-h-screen bg-rose-50/40 dark:bg-slate-950 text-slate-800 dark:text-slate-100 pb-36 transition-colors duration-200">
@@ -582,7 +502,7 @@ export default function CareerPathPage() {
 
       {/* TOP GAMER STATUS BAR (PLAYER HUD) */}
       <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-pink-200 dark:border-slate-800 px-3.5 py-2.5 shadow-xs">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
+        <div className="w-full max-w-[1880px] mx-auto flex items-center justify-between px-2 sm:px-4">
           {/* Player Avatar & Status */}
           <div className="flex items-center gap-2.5">
             <div className="relative">
@@ -669,7 +589,7 @@ export default function CareerPathPage() {
 
         {/* 6 GAME RPG HUD METRICS BAR */}
         {hudMetrics && (
-          <div className="max-w-5xl mx-auto mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 overflow-x-auto sm:overflow-x-visible no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth">
+          <div className="w-full max-w-[1880px] mx-auto mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 overflow-x-auto sm:overflow-x-visible no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden scroll-smooth px-2 sm:px-4">
             {hudMetrics.map((item) => {
               const pillClass = item.hasFailed
                 ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-300 dark:border-rose-500/40 text-rose-800 dark:text-rose-300 hover:border-rose-400'
@@ -714,7 +634,7 @@ export default function CareerPathPage() {
       </header>
 
       {/* MAIN CONTAINER */}
-      <main className="max-w-5xl mx-auto px-3.5 pt-3.5 space-y-4">
+      <main className="w-full max-w-[1880px] mx-auto px-3.5 sm:px-5 xl:px-6 pt-3.5 space-y-4">
         {/* WORLD MAP BANNER: 6 FLOATING ISLANDS */}
         <div className="rounded-3xl p-4 bg-gradient-to-br from-pink-50 via-purple-50 to-sky-50 dark:from-slate-900 dark:via-purple-950/40 dark:to-slate-900 border-2 border-pink-200/80 dark:border-pink-500/30 shadow-md relative overflow-hidden">
           <div className="flex items-center justify-between mb-2">
@@ -781,55 +701,65 @@ export default function CareerPathPage() {
           </div>
         </div>
 
-        {/* STAFF SELECTOR BAR */}
-        <StaffCareerSelector
-          staffList={staffList}
-          selectedStaffId={selectedStaffId}
-          onSelectStaff={handleSelectStaff}
-          onSyncProd={handleSyncProd}
-          syncing={syncingProd}
-          lastSyncedAt={lastSyncedAt}
-          activeRoleFilter={activeRoleFilter}
-          onRoleFilterChange={setActiveRoleFilter}
-          period={selectedPeriod}
-          onPeriodChange={handlePeriodChange}
-          onSetRole={handleSetRole}
-          onDemote={handleDemote}
-          actionLoading={actionLoading}
-          onOpenBananaDrawer={(staffId, cat) => openBananaDrawer(staffId, cat)}
-        />
+        {/* MASTER-DETAIL 2-COLUMN GRID ON DESKTOP FHD */}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+          {/* LEFT COLUMN: STAFF LIST SELECTOR & AUDIT (MASTER) */}
+          <div className="xl:col-span-5 xl:sticky xl:top-[105px] xl:max-h-[calc(100vh-130px)] xl:overflow-y-auto space-y-3 pr-0 xl:pr-1">
+            <StaffCareerSelector
+              staffList={staffList}
+              selectedStaffId={selectedStaffId}
+              onSelectStaff={handleSelectStaff}
+              onSyncProd={handleSyncProd}
+              syncing={syncingProd}
+              lastSyncedAt={lastSyncedAt}
+              activeRoleFilter={activeRoleFilter}
+              onRoleFilterChange={setActiveRoleFilter}
+              period={selectedPeriod}
+              onPeriodChange={handlePeriodChange}
+              onSetRole={handleSetRole}
+              onDemote={handleDemote}
+              actionLoading={actionLoading}
+              onOpenBananaDrawer={(staffId, cat) => openBananaDrawer(staffId, cat)}
+            />
+          </div>
 
-        {/* REAL STAFF SIMULATION CARD (FULL-WIDTH CENTERPIECE) */}
-        <RealStaffSimulationCard
-          status={selectedStaffStatus}
-          config={safeConfig}
-          sliderOrders={sliderOrders}
-          setSliderOrders={setSliderOrders}
-          sliderCombo={sliderCombo}
-          setSliderCombo={setSliderCombo}
-          onActivateTrial={handleActivateTrial}
-          onPromote={handlePromote}
-          onDemote={
-            selectedStaffStatus?.currentRole && selectedStaffStatus.currentRole !== 'CV'
-              ? () =>
-                  handleDemote(selectedStaffId!, selectedStaffStatus.currentRole === 'CV_PLUS_PLUS' ? 'CV_PLUS' : 'CV')
-              : undefined
-          }
-          onSetRole={selectedStaffId ? (role) => handleSetRole(selectedStaffId, role) : undefined}
-          onSwitchSpecialist={handleSwitchSpecialist}
-          loadingAction={actionLoading}
-          simulationTarget={simulationTarget}
-          onSimulationTargetChange={handleSimulationTargetChange}
-          onOpenBananaDrawer={(cat) => openBananaDrawer(selectedStaffId, cat)}
-        />
+          {/* RIGHT COLUMN: REAL STAFF SIMULATION CARD & ENCYCLOPEDIA (DETAIL) */}
+          <div className="xl:col-span-7 space-y-4">
+            <RealStaffSimulationCard
+              status={selectedStaffStatus}
+              config={safeConfig}
+              sliderOrders={sliderOrders}
+              setSliderOrders={setSliderOrders}
+              sliderCombo={sliderCombo}
+              setSliderCombo={setSliderCombo}
+              onActivateTrial={handleActivateTrial}
+              onPromote={handlePromote}
+              onDemote={
+                selectedStaffStatus?.currentRole && selectedStaffStatus.currentRole !== 'CV'
+                  ? () =>
+                      handleDemote(
+                        selectedStaffId!,
+                        selectedStaffStatus.currentRole === 'CV_PLUS_PLUS' ? 'CV_PLUS' : 'CV'
+                      )
+                  : undefined
+              }
+              onSetRole={selectedStaffId ? (role) => handleSetRole(selectedStaffId, role) : undefined}
+              onSwitchSpecialist={handleSwitchSpecialist}
+              loadingAction={actionLoading}
+              simulationTarget={simulationTarget}
+              onSimulationTargetChange={handleSimulationTargetChange}
+              onOpenBananaDrawer={(cat) => openBananaDrawer(selectedStaffId, cat)}
+            />
 
-        {/* ACTIVE REALM LORE & SKILL ENCYCLOPEDIA */}
-        <CareerRealmEncyclopedia currentIslandData={currentIslandData} />
+            {/* ACTIVE REALM LORE & SKILL ENCYCLOPEDIA */}
+            <CareerRealmEncyclopedia currentIslandData={currentIslandData} />
+          </div>
+        </div>
       </main>
 
       {/* BOTTOM ACTION BAR */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-rose-200 dark:border-slate-800 px-16 sm:px-20 py-3 pb-[max(12px,env(safe-area-inset-bottom))] shadow-lg">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-rose-200 dark:border-slate-800 px-4 sm:px-6 py-2.5 pb-[max(10px,env(safe-area-inset-bottom))] shadow-lg">
+        <div className="w-full max-w-[1880px] mx-auto flex items-center justify-between gap-3">
           <div className="text-[11px] sm:text-xs leading-tight min-w-0 flex-1">
             <div className="font-bold text-slate-800 dark:text-slate-200 truncate">
               {selectedStaffStatus

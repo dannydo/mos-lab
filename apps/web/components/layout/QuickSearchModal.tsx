@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { apiClient } from '../../lib/api-client';
 import { useOmiCall } from '../../context/OmiCallContext';
 import { useTheme } from '../../context/ThemeContext';
-import type { Customer } from '@mos-lab/shared';
+import { Customer, maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
 import { CopyPhoneButton } from '../ui';
 
 const { Text } = Typography;
@@ -26,6 +26,20 @@ export default function QuickSearchModal({ open, onClose, onOpenCustomerDetail }
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Customer[]>([]);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const isMaskedRole = React.useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const stored = localStorage.getItem('mos_user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        return shouldMaskCustomerPhone(u?.role);
+      }
+    } catch {
+      return false;
+    }
+    return false;
+  }, []);
 
   const handleSearch = useCallback((searchTerm: string) => {
     const trimmed = searchTerm.trim();
@@ -149,13 +163,15 @@ export default function QuickSearchModal({ open, onClose, onOpenCustomerDetail }
                       )}
                     </div>
                     <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums flex items-center gap-1">
-                      <span>{c.phone || 'Chưa có SĐT'}</span>
-                      {c.phone && <CopyPhoneButton phone={c.phone} size="xs" />}
+                      <span>{isMaskedRole ? maskPhoneNumber(c.phone) : c.phone || 'Chưa có SĐT'}</span>
+                      {!isMaskedRole && c.phone && !c.phone.includes('*') && (
+                        <CopyPhoneButton phone={c.phone} size="xs" />
+                      )}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-1">
-                    {c.phone && (
+                    {c.phone && !isMaskedRole && !c.phone.includes('*') && (
                       <Button
                         type="primary"
                         size="small"

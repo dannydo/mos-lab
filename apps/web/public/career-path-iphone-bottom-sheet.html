@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>📱 iPhone 12 Pro Mockup 4 · Bottom Sheet Chọn Chuyên Viên (iOS Style) · Career Path RPG</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Fredoka:wght@600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            game: ['Fredoka', 'cursive', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .tabular-nums { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* iPhone Frame Styling */
+    .device-screen {
+      width: 390px;
+      height: 844px;
+      border-radius: 48px;
+      box-shadow: 0 0 0 12px #1e293b, 0 0 0 14px #334155, 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .animate-sheet {
+      animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans flex flex-col items-center justify-center p-4">
+
+  <!-- TOP BAR CONTROL -->
+  <div class="mb-4 flex items-center justify-between w-[390px] text-xs">
+    <div class="flex items-center gap-2">
+      <span class="w-2.5 h-2.5 rounded-full bg-pink-500 animate-ping"></span>
+      <span class="font-bold text-slate-200">📱 iPhone 12 Pro · iOS Bottom Sheet</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="/career-path-iphone-profile.html" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold transition-all border border-slate-700">
+        Đóng Sheet ✕
+      </a>
+    </div>
+  </div>
+
+  <!-- IPHONE 12 PRO PHONE FRAME (390 x 844) -->
+  <div class="device-screen bg-slate-950 text-slate-100 relative overflow-hidden flex flex-col border border-slate-800">
+
+    <!-- DYNAMIC ISLAND / NOTCH -->
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-slate-900 rounded-b-2xl z-50 flex items-center justify-center pointer-events-none">
+      <div class="w-3 h-3 rounded-full bg-slate-950 mr-2"></div>
+      <div class="w-2 h-2 rounded-full bg-blue-900/60"></div>
+    </div>
+
+    <!-- STATUS BAR -->
+    <div class="h-10 shrink-0 px-6 pt-2 flex items-center justify-between text-[11px] font-bold text-slate-300 z-40 select-none">
+      <span>9:41</span>
+      <div class="flex items-center gap-1.5">
+        <span>5G</span>
+        <div class="w-5 h-2.5 border border-slate-300 rounded-sm p-0.5 flex items-center">
+          <div class="w-full h-full bg-white rounded-2xs"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BACKGROUND DIMMED PROFILE (Simulated background under the sheet) -->
+    <div class="flex-1 px-3.5 space-y-3 opacity-30 blur-[2px] pointer-events-none">
+      <div class="p-3 rounded-2xl bg-slate-900 border border-slate-800 h-20"></div>
+      <div class="p-3 rounded-2xl bg-slate-900 border border-slate-800 h-24"></div>
+      <div class="p-3 rounded-2xl bg-slate-900 border border-slate-800 h-64"></div>
+    </div>
+
+    <!-- BACKDROP OVERLAY -->
+    <div class="absolute inset-0 bg-slate-950/60 z-30"></div>
+
+    <!-- SLIDE-UP IOS BOTTOM SHEET (DRAWER) -->
+    <div class="absolute bottom-0 left-0 right-0 max-h-[720px] h-[86%] bg-slate-900 border-t-2 border-pink-500/40 rounded-t-3xl z-40 flex flex-col shadow-2xl animate-sheet">
+      
+      <!-- Drag Handle Pill -->
+      <div class="pt-3 pb-1 flex justify-center">
+        <div class="w-12 h-1 bg-slate-700 rounded-full"></div>
+      </div>
+
+      <!-- Sheet Header -->
+      <div class="px-4 py-2 border-b border-slate-800 flex items-center justify-between">
+        <div>
+          <div class="flex items-center gap-2">
+            <h3 class="text-sm font-black text-white">Chọn Chuyên Viên</h3>
+            <span class="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-pink-500 text-white">16 CV</span>
+          </div>
+          <span class="text-[10px] text-slate-400">Chạm để xem hồ sơ và kích hoạt thử thách</span>
+        </div>
+
+        <a href="/career-path-iphone-profile.html" class="w-7 h-7 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-xs text-slate-300 font-bold">
+          ✕
+        </a>
+      </div>
+
+      <!-- Search & Filters Container -->
+      <div class="p-3 space-y-2 border-b border-slate-800 bg-slate-900/90">
+        <!-- Search bar -->
+        <div class="relative">
+          <input type="text" id="mobileSearch" placeholder="Tìm tên, @username hoặc chi nhánh..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 pl-8 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-pink-500">
+          <span class="absolute left-2.5 top-2 text-xs text-slate-500">🔍</span>
+        </div>
+
+        <!-- Role Filter Tabs -->
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-[10px] font-bold">
+          <button class="px-2.5 py-1 rounded-xl bg-pink-600 text-white shrink-0 shadow-xs">Tất cả (16)</button>
+          <button class="px-2.5 py-1 rounded-xl bg-slate-950 text-slate-400 hover:text-white shrink-0 border border-slate-800">CV (10)</button>
+          <button class="px-2.5 py-1 rounded-xl bg-slate-950 text-slate-400 hover:text-white shrink-0 border border-slate-800">🪽 CV+ (4)</button>
+          <button class="px-2.5 py-1 rounded-xl bg-slate-950 text-slate-400 hover:text-white shrink-0 border border-slate-800">🪽 CV++ (2)</button>
+          <button class="px-2.5 py-1 rounded-xl bg-slate-950 text-slate-400 hover:text-white shrink-0 border border-slate-800">KTV (0)</button>
+        </div>
+      </div>
+
+      <!-- Scrollable Staff List (Card Items) -->
+      <div class="flex-1 overflow-y-auto no-scrollbar p-3 space-y-2.5 pb-8">
+        
+        <!-- Card 1: Ánh Tuyết (Currently Selected) -->
+        <a href="/career-path-iphone-profile.html" class="block p-3 rounded-2xl bg-emerald-950/40 border-2 border-emerald-500 shadow-md ring-2 ring-emerald-500/20 active:scale-98 transition-all">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="relative">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80" class="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-500">
+                <span class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-black">✓</span>
+              </div>
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <span class="font-extrabold text-xs text-white">Ánh Tuyết</span>
+                  <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-pink-500/20 text-pink-300 font-bold">CV</span>
+                </div>
+                <div class="text-[10px] text-slate-400">@user3832 · Chi nhánh Đề Thám</div>
+              </div>
+            </div>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500 text-white font-black">
+              ĐANG CHỌN
+            </span>
+          </div>
+
+          <!-- 6 metrics grid -->
+          <div class="grid grid-cols-6 gap-1 mt-2.5 pt-2 border-t border-slate-800 text-[9px] text-center font-bold">
+            <div class="bg-slate-900 rounded py-1 text-emerald-400 border border-emerald-500/30">👁️ 326</div>
+            <div class="bg-slate-900 rounded py-1 text-emerald-400 border border-emerald-500/30">🐛 0%</div>
+            <div class="bg-slate-900 rounded py-1 text-emerald-400 border border-emerald-500/30">🪙 53%</div>
+            <div class="bg-slate-900 rounded py-1 text-rose-400 border border-rose-500/30">🛡️ 0/4</div>
+            <div class="bg-slate-900 rounded py-1 text-amber-400 border border-amber-500/30">❤️ 68%</div>
+            <div class="bg-slate-900 rounded py-1 text-amber-400 border border-amber-500/30">🍌 17</div>
+          </div>
+        </a>
+
+        <!-- Card 2: Cẩm Tiên -->
+        <a href="/career-path-iphone-profile.html" class="block p-3 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 active:scale-98 transition-all">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-bold text-xs ring-1 ring-slate-700">CT</div>
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <span class="font-extrabold text-xs text-slate-200">Cẩm Tiên</span>
+                  <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-pink-500/20 text-pink-300 font-bold">CV</span>
+                </div>
+                <div class="text-[10px] text-slate-400">@user47950 · Estella Place</div>
+              </div>
+            </div>
+            <span class="text-[10px] text-slate-400 font-bold">Chọn ➔</span>
+          </div>
+
+          <div class="grid grid-cols-6 gap-1 mt-2.5 pt-2 border-t border-slate-800 text-[9px] text-center font-bold">
+            <div class="bg-slate-900 rounded py-1 text-emerald-400">👁️ 378</div>
+            <div class="bg-slate-900 rounded py-1 text-emerald-400">🐛 1.7%</div>
+            <div class="bg-slate-900 rounded py-1 text-rose-400">🪙 42%</div>
+            <div class="bg-slate-900 rounded py-1 text-rose-400">🛡️ 0/4</div>
+            <div class="bg-slate-900 rounded py-1 text-emerald-400">❤️ 73%</div>
+            <div class="bg-slate-900 rounded py-1 text-emerald-400">🍌 20</div>
+          </div>
+        </a>
+
+        <!-- Card 3: HânEmBé -->
+        <a href="/career-path-iphone-profile.html" class="block p-3 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 active:scale-98 transition-all">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-full bg-rose-500/20 text-rose-300 flex items-center justify-center font-bold text-xs ring-1 ring-slate-700">HE</div>
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <span class="font-extrabold text-xs text-slate-200">HânEmBé</span>
+                  <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-pink-500/20 text-pink-300 font-bold">CV</span>
+                </div>
+                <div class="text-[10px] text-slate-400">@user47510 · Estella Place</div>
+              </div>
+            </div>
+            <span class="text-[10px] text-slate-400 font-bold">Chọn ➔</span>
+          </div>
+
+          <div class="grid grid-cols-6 gap-1 mt-2.5 pt-2 border-t border-slate-800 text-[9px] text-center font-bold">
+            <div class="bg-slate-900 rounded py-1 text-emerald-400">👁️ 349</div>
+            <div class="bg-slate-900 rounded py-1 text-emerald-400">🐛 0%</div>
+            <div class="bg-slate-900 rounded py-1 text-rose-400">🪙 33%</div>
+            <div class="bg-slate-900 rounded py-1 text-rose-400">🛡️ 0/4</div>
+            <div class="bg-slate-900 rounded py-1 text-emerald-400">❤️ 72%</div>
+            <div class="bg-slate-900 rounded py-1 text-emerald-400">🍌 24</div>
+          </div>
+        </a>
+
+        <!-- Card 4: Huyền Nguyễn -->
+        <a href="/career-path-iphone-profile.html" class="block p-3 rounded-2xl bg-slate-950/80 border border-slate-800 hover:border-slate-700 active:scale-98 transition-all">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-10 h-10 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-xs ring-1 ring-slate-700">HN</div>
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <span class="font-extrabold text-xs text-slate-200">Huyền Nguyễn</span>
+                  <span class="text-[9px] px-1.5 py-0.2 rounded-full bg-pink-500/20 text-pink-300 font-bold">CV</span>
+                </div>
+                <div class="text-[10px] text-slate-400">@user48308 · Estella Place</div>
+              </div>
+            </div>
+            <span class="text-[10px] text-slate-400 font-bold">Chọn ➔</span>
+          </div>
+
+          <div class="grid grid-cols-6 gap-1 mt-2.5 pt-2 border-t border-slate-800 text-[9px] text-center font-bold">
+            <div class="bg-slate-900 rounded py-1 text-emerald-400">👁️ 373</div>
+            <div class="bg-slate-900 rounded py-1 text-emerald-400">🐛 0%</div>
+            <div class="bg-slate-900 rounded py-1 text-rose-400">🪙 40%</div>
+            <div class="bg-slate-900 rounded py-1 text-rose-400">🛡️ 0/4</div>
+            <div class="bg-slate-900 rounded py-1 text-amber-400">❤️ 69%</div>
+            <div class="bg-slate-900 rounded py-1 text-emerald-400">🍌 21</div>
+          </div>
+        </a>
+      </div>
+
+      <!-- Home bar -->
+      <div class="h-6 flex items-center justify-center shrink-0">
+        <div class="w-32 h-1 bg-slate-600 rounded-full"></div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

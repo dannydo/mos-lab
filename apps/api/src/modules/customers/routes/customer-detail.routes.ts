@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
-import { BucketType, SafeAny } from '@mos-lab/shared';
+import { BucketType, SafeAny, maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
 import { resolveIsForeign } from '../services/foreign-customer.service.js';
 import { CustomerAccessService } from '../services/customer-access.service.js';
 import { BookingReschedulePermissionService } from '../services/booking-reschedule-permission.service.js';
@@ -1254,14 +1254,16 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
         return sum + Number(cb.totalNormalBalanceAmount || 0) + Number(cb.totalRetainBalanceAmount || 0);
       }, 0);
 
+      const isMaskedRole = shouldMaskCustomerPhone(request.user?.role);
+
       return {
         customer: {
           id: row.id,
           name: row.name,
-          phone: row.phone,
+          phone: isMaskedRole ? maskPhoneNumber(row.phone) : row.phone,
           phones: userContacts.map((uc) => ({
             id: uc.id,
-            phone_number: uc.phone_number,
+            phone_number: isMaskedRole ? maskPhoneNumber(uc.phone_number) : uc.phone_number,
             is_disabled: uc.is_disabled,
           })),
           email: row.email,
@@ -1715,14 +1717,16 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
         }
       }
 
+      const isMaskedRole = shouldMaskCustomerPhone(request.user?.role);
+
       return {
         customer: {
           id: row.id,
           name: row.name,
-          phone: row.phone,
+          phone: isMaskedRole ? maskPhoneNumber(row.phone) : row.phone,
           phones: userContacts.map((uc) => ({
             id: uc.id,
-            phone_number: uc.phone_number,
+            phone_number: isMaskedRole ? maskPhoneNumber(uc.phone_number) : uc.phone_number,
             is_disabled: uc.is_disabled,
           })),
           email: row.email,

@@ -11,7 +11,7 @@ import { useTableConfig } from '../../../../hooks/useTableConfig';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
 import { BookingData } from '../hooks/useTodayData';
 import { DataTable, SectionCard } from '../../../../components/ui';
-import { vietnameseSearchFilter } from '@mos-lab/shared';
+import { vietnameseSearchFilter, maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
 import { getContrastingTextColor } from '../../../../lib/color-utils';
 
 const { Text } = Typography;
@@ -67,6 +67,20 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
   const goldText = token.colorPrimary;
   const [currentPage, setCurrentPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(10);
+
+  const isMaskedRole = React.useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const stored = localStorage.getItem('mos_user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        return shouldMaskCustomerPhone(u?.role);
+      }
+    } catch {
+      return false;
+    }
+    return false;
+  }, []);
 
   const tabCounts = React.useMemo(() => {
     const branchBookings = (allBookings || []).filter((b) => {
@@ -186,14 +200,18 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
         t ? (
           <span className="inline-flex items-center gap-1">
             <span
-              className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text tabular-nums"
-              onClick={() => makeCall(t, record.customer, record.customerId, record.avatar || undefined)}
+              className={`inline-flex items-center gap-1.5 select-text tabular-nums ${!isMaskedRole && !t.includes('*') ? 'cursor-pointer hover:underline' : ''}`}
+              onClick={() => {
+                if (!isMaskedRole && !t.includes('*')) {
+                  makeCall(t, record.customer, record.customerId, record.avatar || undefined);
+                }
+              }}
               style={{ color: token.colorText, fontWeight: '600' }}
             >
               <PhoneOutlined style={{ color: goldText }} />
-              <span>{t}</span>
+              <span>{isMaskedRole ? maskPhoneNumber(t) : t}</span>
             </span>
-            <CopyPhoneButton phone={t} size="xs" />
+            {!isMaskedRole && !t.includes('*') && <CopyPhoneButton phone={t} size="xs" />}
           </span>
         ) : (
           <Text type="secondary">-</Text>
@@ -469,8 +487,10 @@ const TodayBookingsTable = React.memo(function TodayBookingsTable({
               <div className="min-w-0">
                 <strong className="block truncate">{record.customer}</strong>
                 <span className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                  <span>{record.phone || 'Chưa có số điện thoại'}</span>
-                  {record.phone && <CopyPhoneButton phone={record.phone} size="xs" />}
+                  <span>{isMaskedRole ? maskPhoneNumber(record.phone) : record.phone || 'Chưa có số điện thoại'}</span>
+                  {!isMaskedRole && record.phone && !record.phone.includes('*') && (
+                    <CopyPhoneButton phone={record.phone} size="xs" />
+                  )}
                 </span>
               </div>
               <Tag className="!mr-0 shrink-0" color={getChannelColor(record.channel || '')}>

@@ -1094,15 +1094,41 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
 
   const avgComboPrice = earnings?.details?.avgComboPrice || 4500000;
   const singleComboBonus = calculateComboBonus(avgComboPrice, cvReq);
-  const potentialCustomers = Math.max(20, Math.round((sliderOrders / 3) * 0.4));
-  const minComboRequired = Math.max(1, Math.round(potentialCustomers * minSelfComboRate));
-  const simulatedComboCount = sliderCombos;
-  const simulatedComboPct = potentialCustomers > 0 ? Math.round((simulatedComboCount / potentialCustomers) * 100) : 22;
 
-  // Tiền combo cá nhân theo slider / config của Danny
-  const simulatedPersonalComboBonus = simulatedComboCount * singleComboBonus;
+  // Mẫu số: Tệp khách hàng Not Combo Live (chưa có gói combo)
+  const notComboLiveCustomers =
+    cvPlusSnapshot?.notComboLiveOrders || Math.max(20, Math.round((sliderOrders / 3) * 0.4));
+  const comboLiveCustomers = cvPlusSnapshot?.comboLiveOrders || Math.round((sliderOrders / 3) * 0.6);
 
-  // Đối với CV++: tư vấn combo chốt hộ khách CV khác
+  // Tỷ lệ chốt combo (%) lấy trực tiếp từ cần gạt sliderCombo
+  const simulatedComboPct = sliderCombo;
+  // Số combo bán được tương ứng trên khách Not Combo Live (khách có Combo Live bán được cũng cộng dồn vào)
+  const simulatedComboCount = Math.round(notComboLiveCustomers * (sliderCombo / 100));
+  const minComboRequired = Math.ceil(notComboLiveCustomers * 0.2);
+
+  // Điều kiện nhận hết thưởng: Bán tối thiểu 20% Combo trên khách Not Combo Live
+  const isComboTargetHit = simulatedComboPct >= 20;
+  const isPenaltyActive = !isComboTargetHit;
+
+  // Tiền combo cá nhân theo slider / bậc thang
+  const simulatedPersonalComboBonus = isPenaltyActive ? 0 : simulatedComboCount * singleComboBonus;
+  const baseComboCommission = earnings?.details?.comboCommissionCurrent || 0;
+  const comboGain = isPenaltyActive ? 0 : Math.max(0, simulatedPersonalComboBonus - baseComboCommission);
+
+  // 1. Lương giờ tăng thêm (+2k/h): Chỉ nhận khi đạt >= 20% combo
+  const effectiveWageGain = isPenaltyActive ? 0 : wageGain;
+  // 2. Thưởng dưỡng mi: Chỉ nhận khi đạt >= 20% combo
+  const effectiveSerumGain = isPenaltyActive ? 0 : monthlySerumBonus;
+  // 3. Tiền TIP: CV 1 CÁNH VẪN NHẬN 70% + 20% = 90% TIP KỂ CẢ KHI BÁN KHÔNG ĐƯỢC (< 20%)!
+  const effectiveTipGain = tipGain;
+
+  // Khoản tiền thưởng bị mất trắng / khóa do không đạt tối thiểu 20% combo:
+  const lostBonusAmount = isPenaltyActive
+    ? wageGain + Math.round(notComboLiveCustomers * 0.2 * singleComboBonus) + monthlySerumBonus
+    : 0;
+  // Cần thiết cho tương thích ngược & các slider nâng cao
+  const potentialCustomers = notComboLiveCustomers;
+  const effectiveComboGain = comboGain;
   const cvPlusReq = config.cvPlusToCvPlusPlus || {};
   const crossConsultCombos = earnings?.details?.expectedCrossConsultCombosPerMonth ?? 4;
   const crossComboBonusPerItem = calculateComboBonus(avgComboPrice, cvPlusReq);
@@ -1112,10 +1138,6 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
     ? Math.round(crossConsultComboBonus * crossConsultCvShareRate)
     : 0;
 
-  const totalSimulatedComboBonus = simulatedPersonalComboBonus + crossConsultComboBonus;
-  const baseComboCommission = earnings?.details?.comboCommissionCurrent || 0;
-  const comboGain = Math.max(0, totalSimulatedComboBonus - baseComboCommission);
-
   const crossTipRate = earnings?.details?.crossConsultTipRate ?? 0.2;
   const simulatedCrossTipAmount = isTargetCvPlusPlus ? Math.round(sliderCrossOrders * 40000 * crossTipRate) : 0;
   const baseCrossTipAmount =
@@ -1123,18 +1145,9 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
     (isTargetCvPlusPlus ? Math.round(defaultCrossOrders * 40000 * crossTipRate) : 0);
   const dynamicCrossTipDelta = isTargetCvPlusPlus ? simulatedCrossTipAmount - baseCrossTipAmount : 0;
 
-  // Chế tài bảo vệ chất lượng khi dưới 20% combo (Quy tắc Danny):
-  const isPenaltyActive = cvReq.enforceComboPenalty !== false && simulatedComboCount < minComboRequired;
-
-  const effectiveWageGain = isPenaltyActive ? 0 : wageGain;
-  const effectiveSerumGain = isPenaltyActive ? 0 : monthlySerumBonus;
-  const effectiveComboGain = isPenaltyActive ? 0 : comboGain;
-  const effectiveTipGain = tipGain; // Vẫn được giữ 20% tip tư vấn!
-
-  // Dynamic Simulated Earnings based on interactive sliders & penalties
-  const totalSimulatedGain =
-    effectiveWageGain + effectiveTipGain + effectiveComboGain + effectiveSerumGain + dynamicCrossTipDelta;
-  const simulatedNextTierIncome = (earnings?.currentEstimatedIncome || 0) + totalSimulatedGain;
+  // Tổng tiền tăng thêm thực nhận mỗi tháng
+  const totalSimulatedGain = effectiveWageGain + effectiveTipGain + comboGain + effectiveSerumGain;
+  const simulatedNextTierIncome = (earnings?.currentEstimatedIncome || 11800000) + totalSimulatedGain;
 
   return (
     <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl border border-rose-100/70 dark:border-slate-800 p-5 shadow-sm mb-6 transition-all duration-200">
@@ -1174,42 +1187,19 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
           </div>
         </div>
 
-        {/* Right Side: Simulation Target Role Segmented Switcher */}
-        {onSimulationTargetChange && (
-          <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/90 rounded-xl border border-slate-200/80 dark:border-slate-700/80 shrink-0 self-start md:self-auto">
-            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 pl-2 pr-1 flex items-center gap-1">
-              <Target className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-              <span>Mục tiêu:</span>
-            </span>
-            <Segmented
-              value={isTargetCvPlusPlus ? 'CV_PLUS_PLUS' : 'CV_PLUS'}
-              onChange={(val) => onSimulationTargetChange(val as 'CV_PLUS' | 'CV_PLUS_PLUS')}
-              options={[
-                {
-                  label: (
-                    <span className="inline-flex items-center gap-1 font-bold text-xs py-0.5 px-1">
-                      <WingRoleLabel text="🪽 CV" />
-                      <span className="text-slate-400 dark:text-slate-500 font-normal">·</span>
-                      <span>Thanh Lịch</span>
-                    </span>
-                  ),
-                  value: 'CV_PLUS',
-                },
-                {
-                  label: (
-                    <span className="inline-flex items-center gap-1 font-bold text-xs py-0.5 px-1">
-                      <WingRoleLabel text="🪽 CV 🪽" />
-                      <span className="text-slate-400 dark:text-slate-500 font-normal">·</span>
-                      <span>Quí Phái</span>
-                    </span>
-                  ),
-                  value: 'CV_PLUS_PLUS',
-                },
-              ]}
-              className="font-bold text-xs bg-white dark:bg-slate-900 shadow-2xs"
-            />
-          </div>
-        )}
+        {/* Right Side: Operational Scope Badge - CV 1 Cánh (Đang triển khai) */}
+        <div className="flex items-center gap-1.5 p-1 bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-indigo-500/10 dark:bg-slate-800/90 rounded-xl border border-amber-500/30 shrink-0 self-start md:self-auto">
+          <span className="inline-flex items-center gap-1 font-black text-xs py-1 px-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-xs">
+            <WingRoleLabel text="🪽 CV" />
+            <span>· Thanh Lịch (1 Cánh)</span>
+          </span>
+          <span className="text-[10px] text-amber-700 dark:text-amber-300 font-bold px-1.5 py-0.5">
+            🔥 Đang triển khai
+          </span>
+          <span className="text-[9px] text-slate-400 font-normal hidden lg:inline pl-1 border-l border-slate-200 dark:border-slate-700">
+            CV 2 cánh đang nghiên cứu
+          </span>
+        </div>
       </div>
 
       {/* Sub-bar: Quest Milestone & Quick Actions Toolbar */}
@@ -1386,6 +1376,377 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
               </span>
             </Tooltip>
           )}
+        </div>
+      </div>
+
+      {/* 🔥 THE FINANCIAL SUPER-NOVA JACKPOT CARD: TÂM ĐIỂM QUYỀN LỢI TÀI CHÍNH CV 1 CÁNH */}
+      <div className="mt-4 rounded-3xl p-4 sm:p-5 bg-gradient-to-br from-amber-950/90 via-slate-900 to-emerald-950/80 border-2 border-amber-500/80 shadow-2xl shadow-amber-500/20 relative overflow-hidden space-y-4 text-white">
+        {/* Ambient Golden & Emerald Glows */}
+        <div className="absolute -top-12 -right-12 w-48 h-48 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Top Header & Slogan */}
+        <div className="flex items-center justify-between gap-3 flex-wrap relative z-10">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 text-xs font-black uppercase tracking-wider shadow-md">
+              <span>🔥</span> TÂM ĐIỂM QUYỀN LỢI TÀI CHÍNH
+            </span>
+            <span className="text-xs font-bold text-amber-300">
+              Thăng Cấp Lên <WingRoleLabel text="🪽 CV" /> · Thanh Lịch (1 Cánh Tự Chủ)
+            </span>
+          </div>
+          <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-black flex items-center gap-1">
+            <span>💰</span> TIỀN TƯƠI RÓT VÀO VÍ
+          </span>
+        </div>
+
+        {/* THE BIG HERO NUMBER DISPLAY */}
+        <div className="p-4 rounded-2xl bg-slate-950/85 border border-amber-500/40 flex items-center justify-between gap-4 flex-wrap relative z-10">
+          <div>
+            <div className="text-[11px] font-black uppercase tracking-wider text-amber-400/90 flex items-center gap-1.5">
+              <span>💵</span>{' '}
+              {isComboTargetHit
+                ? 'THU NHẬP RÒNG TĂNG THÊM MỖI THÁNG:'
+                : 'THU NHẬP TĂNG THÊM TẠM TÍNH (BỊ KHÓA THƯỞNG):'}
+            </div>
+            <div className="flex items-baseline gap-2 mt-1">
+              {isComboTargetHit ? (
+                <span className="text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-emerald-400 tabular-nums drop-shadow-[0_0_20px_rgba(251,191,36,0.4)]">
+                  +{formatVnd(totalSimulatedGain)}
+                </span>
+              ) : (
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <span className="text-2xl lg:text-3xl font-black text-emerald-400 tabular-nums">
+                    +{formatVnd(effectiveTipGain)}
+                  </span>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    Bảo lưu 90% Tip (70+20)
+                  </span>
+                  <span className="text-xs font-bold text-rose-400 line-through">
+                    +{formatVnd(lostBonusAmount)} thưởng
+                  </span>
+                </div>
+              )}
+              <span className="text-xs font-bold text-slate-400 uppercase">/ Tháng</span>
+            </div>
+            <div className="text-xs font-bold text-emerald-400 flex items-center gap-1 mt-1">
+              {isComboTargetHit ? (
+                <>
+                  <span>🚀</span>
+                  <span>
+                    Tương đương{' '}
+                    <strong className="text-white text-sm font-black tabular-nums">
+                      +{formatVnd(totalSimulatedGain * 12)} / Năm
+                    </strong>{' '}
+                    (Đủ sắm xe tay ga hoặc 7 chỉ vàng 9999!)
+                  </span>
+                </>
+              ) : (
+                <span className="text-rose-300">
+                  ⚠️ Bị khóa +{formatVnd(lostBonusAmount)} tiền thưởng combo và lương tăng do chưa đạt tối thiểu 20%
+                  combo!
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* High-converting Catchphrase Badge */}
+          <div className="max-w-xs text-right hidden sm:block">
+            <div
+              className={`p-2.5 rounded-xl border text-[11px] font-semibold leading-relaxed ${
+                isComboTargetHit
+                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-200'
+                  : 'bg-rose-500/10 border-rose-500/30 text-rose-200'
+              }`}
+            >
+              {isComboTargetHit ? (
+                <span>
+                  “Cùng một ca làm, cùng lượng khách phục vụ — Nhưng đút túi thêm cả chỉ vàng mỗi tháng!{' '}
+                  <strong className="text-amber-300 font-black">
+                    Chỉ có người thù ghét tiền mới không muốn lên CV 1 cánh!
+                  </strong>
+                  ”
+                </span>
+              ) : (
+                <span>
+                  “⚠️ <strong className="text-rose-300 font-black">Quy tắc 2 Tháng Liền:</strong> CV 1 cánh bán không
+                  được vẫn nhận 90% Tip, nhưng không nhận thêm thưởng nào khác. Nếu 2 tháng liền không đạt 20% combo thì
+                  quay lại CV!”
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 🎛️ BỘ ĐÔI CẦN GẠT TÀI CHÍNH: 1. COMBO (BẮT BUỘC) & 2. DƯỠNG MI (KHUYẾN KHÍCH) */}
+        <div
+          className={`p-4 rounded-2xl border-2 relative z-10 space-y-3.5 transition-all duration-300 ${
+            isComboTargetHit
+              ? 'bg-slate-950/90 border-emerald-500/80 shadow-lg shadow-emerald-500/10'
+              : 'bg-rose-950/80 border-rose-500 shadow-xl shadow-rose-500/20'
+          }`}
+        >
+          {/* Header of Console */}
+          <div className="flex items-center justify-between flex-wrap gap-2 pb-2.5 border-b border-white/10">
+            <div className="flex items-center gap-2">
+              <span className="w-7 h-7 rounded-lg bg-gradient-to-tr from-amber-400 to-emerald-400 text-slate-950 flex items-center justify-center font-bold text-xs shadow-xs">
+                🎛️
+              </span>
+              <div>
+                <span className="text-xs font-black text-white uppercase tracking-wider">
+                  2 CẦN GẠT ĐỘT PHÁ THU NHẬP CV 1 CÁNH
+                </span>
+                <p className="text-[10px] text-slate-400 m-0">
+                  Kéo thử để thấy tiền tươi tăng giảm tức thì. Nhận thưởng combo &amp; dưỡng mi dựa trên điều kiện sống
+                  còn!
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span
+                className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${
+                  isComboTargetHit ? 'bg-emerald-500 text-slate-950' : 'bg-rose-600 text-white animate-bounce'
+                }`}
+              >
+                {isComboTargetHit ? '✓ ĐỦ ĐIỀU KIỆN NHẬN HẾT THƯỞNG' : '✕ BÁN KHÔNG ĐẠT (< 20%)'}
+              </span>
+            </div>
+          </div>
+
+          {/* 2 SLIDERS GRID: STACKED ON MOBILE, 2-COL ON DESKTOP */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 items-start">
+            {/* SLIDER 1: BÁN COMBO (BẮT BUỘC ≥ 20%) */}
+            <div
+              className={`p-3.5 rounded-xl border relative transition-all ${
+                isComboTargetHit ? 'bg-emerald-950/30 border-emerald-500/40' : 'bg-rose-950/40 border-rose-500/60'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm">💎</span>
+                  <span className="text-xs font-black text-white">
+                    1. BÁN COMBO <span className="text-rose-400 font-black">(BẮT BUỘC)</span>
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span
+                    className={`text-base font-black font-mono tabular-nums ${
+                      isComboTargetHit ? 'text-emerald-400' : 'text-rose-400'
+                    }`}
+                  >
+                    {sliderCombo}%
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-normal pl-1">(~{simulatedComboCount} combo)</span>
+                </div>
+              </div>
+
+              <div className="text-[10px] text-slate-300 leading-snug mb-2">
+                Tính trên <strong className="text-indigo-300">~{notComboLiveCustomers} khách Not Live</strong>. Bán cho
+                khách có Live vẫn cộng dồn!
+              </div>
+
+              {/* Slider */}
+              <Slider
+                min={0}
+                max={60}
+                step={1}
+                value={sliderCombo}
+                onChange={(val) => setSliderCombo(val)}
+                tooltip={{ formatter: (val) => `${val}% Combo` }}
+                className="my-1.5"
+              />
+
+              {/* Scale Labels */}
+              <div className="flex justify-between text-[9px] font-bold text-slate-400 pt-0.5">
+                <span className="text-rose-400">0% (Mất hết thưởng)</span>
+                <span className="text-amber-300 font-black">Chuẩn: ≥ 20% (Sống còn)</span>
+                <span className="text-emerald-400">30%+ (Xuất sắc)</span>
+              </div>
+
+              {/* Status Pill */}
+              <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between text-[11px]">
+                <span className="text-slate-400">Trạng thái:</span>
+                {isComboTargetHit ? (
+                  <span className="font-bold text-emerald-400 flex items-center gap-1">
+                    <span>✓</span> Đạt chuẩn sống còn (≥ 20%)
+                  </span>
+                ) : (
+                  <span className="font-bold text-rose-400 flex items-center gap-1">
+                    <span>✕</span> Thiếu {Math.max(0, 20 - sliderCombo)}% để nhận thưởng
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* SLIDER 2: BÁN DƯỠNG MI YEPPEUM (KHUYẾN KHÍCH ≥ 1 CÂY/TUẦN) */}
+            <div className="p-3.5 rounded-xl border border-teal-500/40 bg-teal-950/20 relative transition-all">
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm">🌿</span>
+                  <span className="text-xs font-black text-white">
+                    2. DƯỠNG MI <span className="text-teal-400 font-bold">(KHUYẾN KHÍCH)</span>
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-base font-black font-mono tabular-nums text-teal-300">
+                    {sliderSerums} cây / tuần
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-normal pl-1">(~{sliderSerums * 4} cây/thg)</span>
+                </div>
+              </div>
+
+              <div className="text-[10px] text-slate-300 leading-snug mb-2">
+                Khuyến khích <strong className="text-teal-300">≥ 1 cây/tuần</strong>. Tiền tươi trao tay:{' '}
+                <strong className="text-amber-300">{formatVnd(serumOrigBonus)}/cây</strong> giá gốc!
+              </div>
+
+              {/* Slider */}
+              <Slider
+                min={0}
+                max={10}
+                step={1}
+                value={sliderSerums}
+                onChange={(val) => setSliderSerums(val)}
+                tooltip={{ formatter: (val) => `${val ?? 0} cây/tuần (~${(val ?? 0) * 4} cây/tháng)` }}
+                className="my-1.5"
+              />
+
+              {/* Scale Labels */}
+              <div className="flex justify-between text-[9px] font-bold text-slate-400 pt-0.5">
+                <span>0 cây</span>
+                <span className="text-teal-300 font-bold">Chuẩn: ≥ 1 cây/tuần</span>
+                <span className="text-teal-400">2 cây/tuần</span>
+                <span className="text-emerald-400">4+ cây/tuần</span>
+              </div>
+
+              {/* Reward Value Pill */}
+              <div className="mt-2 pt-2 border-t border-white/10 flex items-center justify-between text-[11px]">
+                <span className="text-slate-400">Thưởng dưỡng mi:</span>
+                {isComboTargetHit ? (
+                  <span className="font-bold text-emerald-400 tabular-nums">
+                    +{formatVnd(monthlySerumBonus)} / tháng
+                  </span>
+                ) : (
+                  <span
+                    className="font-bold text-rose-400 line-through tabular-nums"
+                    title="Khóa do chưa đạt 20% combo"
+                  >
+                    +{formatVnd(monthlySerumBonus)} (Tạm khóa)
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* REALTIME DYNAMIC WARNING / REWARD BANNER */}
+          <div
+            className={`p-3 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${
+              isComboTargetHit
+                ? 'bg-emerald-950/60 border border-emerald-500/40 text-emerald-300'
+                : 'bg-rose-950/90 border border-rose-500 text-rose-200'
+            }`}
+          >
+            {isComboTargetHit ? (
+              <span>
+                ✅ <strong>XUẤT SẮC:</strong> Đạt {sliderCombo}% Combo (≥ 20% khách Not Live) và {sliderSerums} cây
+                dưỡng mi/tuần! Nhận TRỌN BỘ 4 NGUỒN THU: Lương giờ 27.5k/h (+2k/h), 90% TIP (70% mi + 20% tư vấn),
+                Thưởng Combo bậc thang (+{formatVnd(comboGain)}) và Thưởng Dưỡng mi (+{formatVnd(monthlySerumBonus)})!
+              </span>
+            ) : (
+              <span>
+                🚨 <strong>BÁN CHƯA ĐẠT 20% COMBO:</strong> CV 1 cánh VẪN NHẬN 90% TIP (70% mi + 20% tư vấn = +
+                {formatVnd(effectiveTipGain)}/tháng). Nhưng CẮT TẤT CẢ CÁC LOẠI THƯỞNG KHÁC (mất trắng +
+                {formatVnd(lostBonusAmount)} tiền thưởng combo, dưỡng mi và lương tăng)! ⚠️{' '}
+                <strong>2 tháng liền không đạt thì quay lại CV · Dịu Dàng</strong> (Tip tụt về 70%, mất quyền tự tư
+                vấn)!
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* HEAD-TO-HEAD BEFORE VS AFTER COMPARISON */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 relative z-10 text-xs">
+          {/* BEFORE: CV Dịu Dàng (Hiện Tại) */}
+          <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-2 opacity-85">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <span className="font-bold text-slate-400 flex items-center gap-1.5">
+                <span>🛑</span> CV · Dịu Dàng (Hiện Tại - 0 Cánh)
+              </span>
+              <span className="text-[10px] text-slate-500 font-mono">Mức cơ bản</span>
+            </div>
+            <ul className="space-y-1.5 text-[11px] text-slate-300">
+              <li className="flex justify-between">
+                <span className="text-slate-400">• Tỷ lệ Tip khách cho:</span>
+                <strong className="text-slate-300">70% Tip (bị trừ 30%)</strong>
+              </li>
+              <li className="flex justify-between">
+                <span className="text-slate-400">• Quyền chốt Combo:</span>
+                <strong className="text-rose-400">Không có (phụ thuộc sảnh)</strong>
+              </li>
+              <li className="flex justify-between">
+                <span className="text-slate-400">• Lương giờ ca làm:</span>
+                <strong className="text-slate-300">25.500đ / giờ</strong>
+              </li>
+            </ul>
+            <div className="pt-2 border-t border-slate-800 flex justify-between items-center text-xs">
+              <span className="text-slate-400">Tổng thu nhập ước tính:</span>
+              <strong className="text-slate-300 text-sm font-black tabular-nums">~11.800.000đ</strong>
+            </div>
+          </div>
+
+          {/* AFTER: 🪽 CV · Thanh Lịch (Sau Thăng Cấp 1 Cánh) */}
+          <div className="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-950/60 via-slate-950 to-emerald-950/50 border-2 border-emerald-500/80 shadow-lg space-y-2">
+            <div className="flex items-center justify-between pb-2 border-b border-emerald-500/30">
+              <span className="font-black text-emerald-300 flex items-center gap-1.5">
+                <span>👑</span> <WingRoleLabel text="🪽 CV" /> · Thanh Lịch (1 Cánh Tự Chủ)
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[9px] font-black uppercase shadow-xs">
+                {isComboTargetHit ? '+33% THU NHẬP' : '+90% TIP'}
+              </span>
+            </div>
+            <ul className="space-y-1.5 text-[11px] text-slate-200">
+              <li className="flex justify-between">
+                <span className="text-emerald-300/90">• Ăn trọn 90% TIP (70+20):</span>
+                <strong className="text-emerald-300 font-bold tabular-nums">
+                  +{formatVnd(effectiveTipGain)} / thg
+                </strong>
+              </li>
+              <li className="flex justify-between">
+                <span className="text-emerald-300/90">• Độc quyền chốt Combo Not Live:</span>
+                {isComboTargetHit ? (
+                  <strong className="text-emerald-300 font-bold tabular-nums">+{formatVnd(comboGain)} / thg</strong>
+                ) : (
+                  <span className="text-rose-400 font-bold">0đ (Khóa do &lt;20%)</span>
+                )}
+              </li>
+              <li className="flex justify-between">
+                <span className="text-emerald-300/90">• Tăng lương giờ (27.500đ/h):</span>
+                {isComboTargetHit ? (
+                  <strong className="text-emerald-300 font-bold tabular-nums">
+                    +{formatVnd(effectiveWageGain)} / thg
+                  </strong>
+                ) : (
+                  <span className="text-rose-400 font-bold">0đ (Khóa do &lt;20%)</span>
+                )}
+              </li>
+              <li className="flex justify-between">
+                <span className="text-emerald-300/90">• Thưởng Dưỡng mi & Chuối:</span>
+                {isComboTargetHit ? (
+                  <strong className="text-emerald-300 font-bold tabular-nums">
+                    +{formatVnd(effectiveSerumGain)} / thg
+                  </strong>
+                ) : (
+                  <span className="text-rose-400 font-bold">0đ (Khóa do &lt;20%)</span>
+                )}
+              </li>
+            </ul>
+            <div className="pt-2 border-t border-emerald-500/30 flex justify-between items-center text-xs">
+              <span className="text-emerald-300 font-bold">Tổng thu nhập thực nhận:</span>
+              <strong className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-emerald-300 text-base font-black tabular-nums">
+                ~{formatVnd(simulatedNextTierIncome)} / thg
+              </strong>
+            </div>
+          </div>
         </div>
       </div>
 

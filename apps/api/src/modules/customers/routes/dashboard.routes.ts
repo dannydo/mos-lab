@@ -1,6 +1,12 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
-import { RevenueHourlyResponse, RevenueDetailResponse, calculateFractionToday } from '@mos-lab/shared';
+import {
+  RevenueHourlyResponse,
+  RevenueDetailResponse,
+  calculateFractionToday,
+  maskPhoneNumber,
+  shouldMaskCustomerPhone,
+} from '@mos-lab/shared';
 import { CvAttendanceService } from '../services/cv-attendance.service.js';
 import { TeamService } from '../../teams/team.service.js';
 
@@ -643,7 +649,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
           customerId: o.user_id,
           customer: name,
           avatar: uProfile?.avatar || null,
-          phone,
+          phone: shouldMaskCustomerPhone(request.user?.role) ? maskPhoneNumber(phone) : phone,
           group,
           promo: promoName,
           booker,
@@ -953,7 +959,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
           time: formatDbTime(o.booking_date_start),
           customer: name,
           avatar: uProfile?.avatar || null,
-          phone,
+          phone: shouldMaskCustomerPhone(request.user?.role) ? maskPhoneNumber(phone) : phone,
           group,
           promo: promoName,
           booker,
@@ -1934,7 +1940,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
           orderId: o.orderId,
           customerId: o.user_id || 0,
           customerName: uInfo.name || 'Khách vãng lai',
-          customerPhone: uInfo.phone || '',
+          customerPhone: shouldMaskCustomerPhone(request.user?.role) ? maskPhoneNumber(uInfo.phone) : uInfo.phone || '',
           serviceName:
             svcs
               .map((s) => s.service_name)

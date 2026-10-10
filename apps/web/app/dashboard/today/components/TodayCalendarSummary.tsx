@@ -36,7 +36,12 @@ import {
 import dayjs from 'dayjs';
 import { BookingData, ComingClientData } from '../hooks/useTodayData';
 import { BookerTeamConfig, DEFAULT_BOOKER_TEAMS } from './BookerTeamConfigModal';
-import { removeVietnameseTones, vietnameseSearchFilter } from '@mos-lab/shared';
+import {
+  removeVietnameseTones,
+  vietnameseSearchFilter,
+  maskPhoneNumber,
+  shouldMaskCustomerPhone,
+} from '@mos-lab/shared';
 import type { ReportPeriodComparison, RevenueHourlyResponse } from '@mos-lab/shared';
 import { useOmiCall } from '../../../../context/OmiCallContext';
 import { RevenueKpiCards } from './RevenueKpiCards';
@@ -129,6 +134,20 @@ export default function TodayCalendarSummary({
     type?: string;
   } | null>(null);
   const [revenueDetailOpen, setRevenueDetailOpen] = useState(false);
+
+  const isMaskedRole = React.useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const stored = localStorage.getItem('mos_user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        return shouldMaskCustomerPhone(u?.role);
+      }
+    } catch {
+      return false;
+    }
+    return false;
+  }, []);
 
   const handleRevenueBarClick = (hour: string) => {
     setRevenueDetailContext({ hour });
@@ -1196,8 +1215,12 @@ export default function TodayCalendarSummary({
                           style={{ fontSize: '11px', color: token.colorTextDescription }}
                           className="flex items-center gap-1"
                         >
-                          <span className="tabular-nums">{item.phone}</span>
-                          <CopyPhoneButton phone={item.phone} size="xs" />
+                          <span className="tabular-nums">
+                            {isMaskedRole ? maskPhoneNumber(item.phone) : item.phone}
+                          </span>
+                          {!isMaskedRole && !item.phone.includes('*') && (
+                            <CopyPhoneButton phone={item.phone} size="xs" />
+                          )}
                           <span>
                             | Booker: <strong>{item.booker}</strong> | CV: {item.cv || '-'}
                           </span>
@@ -1211,12 +1234,14 @@ export default function TodayCalendarSummary({
                       >
                         {item.status.toUpperCase()}
                       </Tag>
-                      <Button
-                        size="small"
-                        icon={<PhoneOutlined />}
-                        onClick={() => makeCall(item.phone, item.customer, item.customerId)}
-                        title="Gọi OmiCall"
-                      />
+                      {!isMaskedRole && !item.phone.includes('*') && (
+                        <Button
+                          size="small"
+                          icon={<PhoneOutlined />}
+                          onClick={() => makeCall(item.phone, item.customer, item.customerId)}
+                          title="Gọi OmiCall"
+                        />
+                      )}
                       <Button
                         size="small"
                         icon={<EyeOutlined />}

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌟 Career Path RPG · 4 HTML Mockups Showcase Gallery</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Fredoka:wght@600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans flex flex-col h-full w-full">
+
+  <!-- TOP HUB NAVIGATION (Fixed height 56px) -->
+  <header class="bg-slate-900 border-b border-slate-800 px-6 py-2.5 shrink-0 flex items-center justify-between gap-4 h-14 z-20">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-pink-500 to-indigo-600 flex items-center justify-center font-bold text-white shadow-md text-sm">
+        ✨
+      </div>
+      <div>
+        <h1 class="text-xs font-black text-white">Career Path RPG · Bộ 4 HTML Mockups</h1>
+        <p class="text-[9px] text-slate-400">Thiết kế đáp ứng cho iPhone 12 Pro (390px) & Desktop FHD (1920x1080)</p>
+      </div>
+    </div>
+
+    <!-- TABS TO SWITCH MOCKUPS -->
+    <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-2xl border border-slate-800 text-xs font-bold">
+      <button onclick="switchMockup(1, '/career-path-desktop-master-detail.html')" id="tab1" class="px-3 py-1.5 rounded-xl bg-pink-600 text-white shadow-xs transition-all text-xs">
+        💻 1. Desktop Master-Detail (Khuyên Dùng)
+      </button>
+      <button onclick="switchMockup(2, '/career-path-desktop-panoramic-3col.html')" id="tab2" class="px-3 py-1.5 rounded-xl text-slate-400 hover:text-white transition-all text-xs">
+        💻 2. Desktop 3 Cột Toàn Cảnh
+      </button>
+      <button onclick="switchMockup(3, '/career-path-iphone-profile.html')" id="tab3" class="px-3 py-1.5 rounded-xl text-slate-400 hover:text-white transition-all text-xs">
+        📱 3. iPhone 12 Pro Hồ Sơ
+      </button>
+      <button onclick="switchMockup(4, '/career-path-iphone-bottom-sheet.html')" id="tab4" class="px-3 py-1.5 rounded-xl text-slate-400 hover:text-white transition-all text-xs">
+        📱 4. iPhone 12 Pro Bottom Sheet
+      </button>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="flex items-center gap-2">
+      <a id="openTabBtn" href="/career-path-desktop-master-detail.html" target="_blank" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 flex items-center gap-1.5 transition-all">
+        <span>Mở toàn màn hình</span>
+        <span>↗</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- IFRAME CONTAINER (Takes 100% of remaining viewport height) -->
+  <main class="w-full flex-1 overflow-hidden p-0 m-0 bg-slate-950" style="height: calc(100vh - 56px);">
+    <iframe id="mockupFrame" src="/career-path-desktop-master-detail.html" style="width: 100%; height: 100%; border: none; display: block;" class="w-full h-full bg-slate-950"></iframe>
+  </main>
+
+  <script>
+    function switchMockup(tabIndex, url) {
+      document.getElementById('mockupFrame').src = url;
+      document.getElementById('openTabBtn').href = url;
+
+      // Update tab active classes
+      for (let i = 1; i <= 4; i++) {
+        const tab = document.getElementById('tab' + i);
+        if (i === tabIndex) {
+          tab.className = "px-3 py-1.5 rounded-xl bg-pink-600 text-white shadow-xs transition-all text-xs";
+        } else {
+          tab.className = "px-3 py-1.5 rounded-xl text-slate-400 hover:text-white transition-all text-xs";
+        }
+      }
+    }
+  </script>
+</body>
+</html>

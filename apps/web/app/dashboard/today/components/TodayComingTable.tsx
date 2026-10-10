@@ -11,6 +11,7 @@ import { useTableConfig } from '../../../../hooks/useTableConfig';
 import { TableConfigDrawer } from '../../../../components/TableConfigDrawer';
 import { ComingClientData } from '../hooks/useTodayData';
 import { DataTable, SectionCard } from '../../../../components/ui';
+import { maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
 import { getContrastingTextColor } from '../../../../lib/color-utils';
 
 const { Text } = Typography;
@@ -65,6 +66,20 @@ const TodayComingTable = React.memo(function TodayComingTable({
   const infoText = themeMode === 'dark' ? '#60a5fa' : '#1d4ed8';
   const [currentPage, setCurrentPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(10);
+
+  const isMaskedRole = React.useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const stored = localStorage.getItem('mos_user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        return shouldMaskCustomerPhone(u?.role);
+      }
+    } catch {
+      return false;
+    }
+    return false;
+  }, []);
 
   const tabCounts = React.useMemo(() => {
     const branchComing = (allComingList || []).filter((item) => {
@@ -182,14 +197,18 @@ const TodayComingTable = React.memo(function TodayComingTable({
         t ? (
           <span className="inline-flex items-center gap-1">
             <span
-              className="inline-flex items-center gap-1.5 cursor-pointer hover:underline select-text tabular-nums"
-              onClick={() => makeCall(t, record.customer, record.customerId, record.avatar || undefined)}
+              className={`inline-flex items-center gap-1.5 select-text tabular-nums ${!isMaskedRole && !t.includes('*') ? 'cursor-pointer hover:underline' : ''}`}
+              onClick={() => {
+                if (!isMaskedRole && !t.includes('*')) {
+                  makeCall(t, record.customer, record.customerId, record.avatar || undefined);
+                }
+              }}
               style={{ color: token.colorText, fontWeight: '600' }}
             >
               <PhoneOutlined style={{ color: goldText }} />
-              <span>{t}</span>
+              <span>{isMaskedRole ? maskPhoneNumber(t) : t}</span>
             </span>
-            <CopyPhoneButton phone={t} size="xs" />
+            {!isMaskedRole && !t.includes('*') && <CopyPhoneButton phone={t} size="xs" />}
           </span>
         ) : (
           <Text type="secondary">-</Text>

@@ -15,6 +15,8 @@ import {
   BkGameFinalizeInput,
   TelesalesAttendanceExceptionType,
   SafeAny,
+  maskPhoneNumber,
+  shouldMaskCustomerPhone,
 } from '@mos-lab/shared';
 import {
   BkGameService,
@@ -237,7 +239,9 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           bookingDate: r.bookingDate ? new Date(r.bookingDate).toISOString() : '',
           createdDate: r.createdDate ? new Date(r.createdDate).toISOString() : '',
           clientName: String(r.clientName),
-          clientPhone: String(r.clientPhone || ''),
+          clientPhone: shouldMaskCustomerPhone(request.user?.role)
+            ? maskPhoneNumber(r.clientPhone)
+            : String(r.clientPhone || ''),
           store: String(r.store),
           status: orderState,
           bookerId: Number(r.bookerId),
@@ -452,7 +456,9 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           orderKey: String(r.orderKey || `#${r.orderId}`),
           orderDate: r.orderDate ? new Date(r.orderDate).toISOString() : '',
           clientName: String(r.clientName),
-          clientPhone: String(r.clientPhone || ''),
+          clientPhone: shouldMaskCustomerPhone(request.user?.role)
+            ? maskPhoneNumber(r.clientPhone)
+            : String(r.clientPhone || ''),
           clientAvatar: r.clientAvatar ? String(r.clientAvatar) : null,
           bookerName: r.bookerName ? String(r.bookerName) : undefined,
           bookerAvatar: r.bookerAvatar ? String(r.bookerAvatar) : null,

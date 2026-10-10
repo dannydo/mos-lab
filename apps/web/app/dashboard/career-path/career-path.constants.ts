@@ -1,4 +1,4 @@
-import type { CareerProgressionConfig } from '@mos-lab/shared';
+import type { CareerProgressionConfig, StaffCareerStatus } from '@mos-lab/shared';
 
 export const FALLBACK_CAREER_PROGRESSION_CONFIG: CareerProgressionConfig = {
   version: '2026.2',
@@ -207,31 +207,32 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
     {
       id: 'cv_plus',
       name: '🪽 CV · Thanh Lịch',
-      badge: 'Ải 2',
+      badge: 'Đang Triển Khai',
       icon: '👁️',
       sub: 'Tự Vấn + 90% Tip',
       title: 'Chuyên Viên Thanh Lịch · Elegant Artist',
       desc: 'Sang trọng kiểu quý cô, tự tin tư vấn, đĩnh đạc và cuốn hút. Độc lập tác chiến tại giường: tự hiểu dáng mắt, tự tư vấn dáng mi & combo dưỡng mi cho khách của chính mình.',
-      focus: 'Tự chủ tư vấn trọn gói cho khách mình, chốt combo ≥ 25%, chăm sóc khách ruột',
+      focus: 'Tự chủ tư vấn trọn gói cho khách mình, chốt combo ≥ 20% trên khách Not Combo Live, chăm sóc khách ruột',
       skills: [
-        { name: 'Tự Chủ Tư Vấn', desc: 'Hiểu mi khách nhất, tự tư vấn dáng mi & combo mi dưỡng ≥ 25%' },
+        { name: 'Tự Chủ Tư Vấn', desc: 'Hiểu mi khách nhất, tự tư vấn dáng mi & combo mi dưỡng ≥ 20%' },
         { name: 'Gắn Kết Khách Ruột', desc: 'Xây dựng tệp khách quen trung thành, tỷ lệ quay lại cao' },
         { name: 'Đại Sứ Google 5★', desc: 'Đạt tối thiểu 20 Google Review 5 sao/tháng từ khách hài lòng' },
       ],
       perks: [
         'Lương giờ bậc cao: 27.5K/h (+2K/h so với CV · Dịu Dàng)',
-        'Hưởng trọn 90% Tiền Tip: 70% Tip nối mi (CV) + 20% Tip tư vấn (CC) khi tự phục vụ khách mình',
-        'Hoa hồng Combo tự chốt (2% - 3%) trên doanh thu combo khách của chính mình',
-        'Thưởng Thâm Niên: +5% đến +20% trên Thưởng CV Xoay',
-        'Duy trì phong độ: Combo ≥ 20%, Fix ≤ 3%, HI ≥ 65% (rớt 2 tháng liên tiếp tụt về CV · Dịu Dàng)',
-        'Quy hoạch hạt giống để thăng cấp lên 🪽 CV 🪽 · Quí Phái!',
+        'Hưởng trọn 90% Tiền Tip (70% Tip nối mi + 20% Tip tự tư vấn) khi tự phục vụ khách mình',
+        'Điều kiện nhận hết thưởng: Bán tối thiểu 20% Combo trên khách Not Combo Live (Combo Live bán thêm cũng cộng dồn)',
+        'Trường hợp bán không được (< 20% Combo): Vẫn nhận 90% Tip, không nhận thêm bất kỳ phần thưởng nào khác (lương tăng, thưởng combo = 0đ)',
+        'Quy tắc 2 Tháng Liền: 2 tháng liền không đạt chuẩn thì quay lại CV · Dịu Dàng (Tip tụt về 70%, mất quyền tự tư vấn)',
+        'Hoa hồng Combo bậc thang tiền tươi: 50K - 150K - 500K/gói + Thưởng Dưỡng mi 100K/cây',
+        'Thưởng Thâm Niên: +5% đến +20% trên Thưởng CV Xoay hàng tháng',
       ],
-      gateText: `Duy trì 🪽 CV · Thanh Lịch ≥ ${cvPlusToCvPlusPlus?.minMonthsInCvPlus || 2} tháng + Tự chốt combo ≥ ${((cvPlusToCvPlusPlus?.minSelfComboRate || 0.3) * 100).toFixed(0)}% + Đồng đội tin yêu HI ≥ ${((cvPlusToCvPlusPlus?.minHappinessIndex || 0.8) * 100).toFixed(0)}% ➔ Thăng cấp 🪽 CV 🪽 · Quí Phái!`,
+      gateText: `Duy trì 🪽 CV · Thanh Lịch: Tự chốt combo ≥ 20% trên khách Not Combo Live + 0 vi phạm QA/QC + HI ≥ 65%. Chú ý: 2 tháng liền không đạt chuẩn thì quay lại CV · Dịu Dàng!`,
     },
     {
       id: 'cv_plus_plus',
       name: '🪽 CV 🪽 · Quí Phái',
-      badge: 'Ải 3',
+      badge: 'Đang Nghiên Cứu',
       icon: '👁️',
       sub: 'Sảnh + Hộ 20%',
       title: 'Chuyên Viên Quí Phái · Noble Senior Consultant',
@@ -262,7 +263,7 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
     {
       id: 'fm',
       name: 'FM · Nữ Thần Sàn',
-      badge: 'Ải 4',
+      badge: 'Đang Nghiên Cứu',
       icon: '🏰',
       sub: 'Tư Vấn + Vận Hành',
       title: 'Nhạc Trưởng Vận Hành · Floor Manager',
@@ -292,7 +293,7 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
     {
       id: 'cho',
       name: 'CHO · Mẹ Thiên Thần',
-      badge: 'Ải 5',
+      badge: 'Đang Nghiên Cứu',
       icon: '💖',
       sub: 'Khách Mới 1/Shop',
       title: 'Nữ Thần Hạnh Phúc · Chief Happiness Officer',
@@ -320,7 +321,7 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
     {
       id: 'boss',
       name: 'BOSS · Co-Owner',
-      badge: 'Ải 6',
+      badge: 'Đang Nghiên Cứu',
       icon: '💎',
       sub: 'Cổ Tức P&L',
       title: 'Nữ Hoàng Đồng Sáng Lập · Partner & Co-Owner',
@@ -394,4 +395,108 @@ export function calculateComboBonus(
 
   const millionsAbove4m = Math.floor((price - 4_000_000) / 1_000_000);
   return under4m + (1 + millionsAbove4m) * step;
+}
+
+export interface HudMetricItem {
+  id: number;
+  name: string;
+  value: string;
+  iconType: 'eye' | 'bug' | 'coins' | 'shieldCheck' | 'heart' | 'banana';
+  isPassed: boolean;
+  hasFailed?: boolean;
+  tooltip: string;
+}
+
+export function computeHudMetrics(
+  metrics: StaffCareerStatus['metrics'] | undefined,
+  simulationTarget: 'CV_PLUS' | 'CV_PLUS_PLUS',
+  safeConfig: CareerProgressionConfig
+): HudMetricItem[] | null {
+  if (!metrics) return null;
+  const m = metrics;
+  const targetReq =
+    simulationTarget === 'CV_PLUS_PLUS' ? safeConfig.cvPlusToCvPlusPlus : safeConfig.cvToCvPlus || safeConfig.cvToCc;
+
+  const targetOrders = targetReq?.minOrders ?? (simulationTarget === 'CV_PLUS_PLUS' ? 350 : 300);
+  const targetMaxFix = targetReq?.maxFixRate ?? (simulationTarget === 'CV_PLUS_PLUS' ? 0.015 : 0.02);
+  const minTipRatioAboveShop = targetReq?.minTipRatioAboveShop ?? (simulationTarget === 'CV_PLUS_PLUS' ? 0.15 : 0.1);
+  const minBananaCount = targetReq?.minBananaCount ?? (simulationTarget === 'CV_PLUS_PLUS' ? 60 : 45);
+  const minHappinessIndex = targetReq?.minHappinessIndex ?? (simulationTarget === 'CV_PLUS_PLUS' ? 0.8 : 0.7);
+  const requiredQaAudits =
+    targetReq?.minQaAudits ?? (targetReq?.minWeeklyQaAudits ? Math.round(targetReq.minWeeklyQaAudits * 12) : 12);
+
+  const isOrdersPassed = (m.ordersCount || 0) >= targetOrders;
+  const isFixPassed = (m.fixRate || 0) <= targetMaxFix;
+
+  const staffTipRate =
+    m.staffTipRate ??
+    (m.ordersCount ? Math.min(0.65, Math.max(0.2, ((m.totalTip || 0) / (m.ordersCount * 38000)) * 0.45)) : 0.314);
+  const shopTipRate = m.shopTipRate ?? 0.45;
+  const targetTipRate = m.targetTipRate ?? Number((shopTipRate * (1 + minTipRatioAboveShop)).toFixed(3));
+  const isTipPassed = staffTipRate >= targetTipRate || (m.tipRatioAboveShop || 0) >= minTipRatioAboveShop;
+  const staffTipRatePercent = Number((staffTipRate * 100).toFixed(1));
+
+  const totalQaAudits = m.qaAudit?.totalAudits ?? 0;
+  const hasFailedQa = Boolean(m.qaAudit?.hasFailedAudit);
+  const isQaPassed =
+    requiredQaAudits === 0 || Boolean(m.qaAudit?.isPassed ?? (totalQaAudits >= requiredQaAudits && !hasFailedQa));
+
+  const happinessIndex = m.happinessIndex ?? 0;
+  const isHiPassed = happinessIndex >= minHappinessIndex;
+  const hiPercent = Math.round(happinessIndex * 100);
+
+  const bananaCount = m.bananaCount ?? 0;
+  const isBananaPassed = bananaCount >= minBananaCount;
+
+  return [
+    {
+      id: 1,
+      name: 'Bộ mi',
+      value: `${m.ordersCount || 0}`,
+      iconType: 'eye',
+      isPassed: isOrdersPassed,
+      tooltip: `Bộ mi hoàn thành (90 ngày qua): ${m.ordersCount || 0}/${targetOrders} bộ · ${isOrdersPassed ? '✓ Đạt chuẩn' : '⚡ Còn thiếu'} (Bấm để xem)`,
+    },
+    {
+      id: 2,
+      name: 'Fix mi',
+      value: `${((m.fixRate || 0) * 100).toFixed(1)}%`,
+      iconType: 'bug',
+      isPassed: isFixPassed,
+      tooltip: `Tỷ lệ bảo hành / sửa: ${((m.fixRate || 0) * 100).toFixed(1)}% (chuẩn < ${(targetMaxFix * 100).toFixed(1)}%) · ${isFixPassed ? '✓ Xuất sắc' : '⚡ Vượt mức'} (Bấm để xem)`,
+    },
+    {
+      id: 3,
+      name: 'Tỷ lệ Tip',
+      value: `${staffTipRatePercent}%`,
+      iconType: 'coins',
+      isPassed: isTipPassed,
+      tooltip: `Tỷ lệ khách tip: ${staffTipRatePercent}% (chuẩn ≥ ${(targetTipRate * 100).toFixed(1)}% · TB ${m.branchName || 'chi nhánh'}: ${((m.branchTipRate || shopTipRate) * 100).toFixed(1)}%) · ${isTipPassed ? '✓ Đạt chuẩn' : '⚡ Cần thêm'} (Bấm để xem)`,
+    },
+    {
+      id: 4,
+      name: 'QA/QC',
+      value: `${totalQaAudits}/${requiredQaAudits}`,
+      iconType: 'shieldCheck',
+      isPassed: isQaPassed,
+      hasFailed: hasFailedQa,
+      tooltip: `Kiểm định QA/QC: ${totalQaAudits}/${requiredQaAudits} lần · ${hasFailedQa ? 'Bị lỗi FAILED' : isQaPassed ? '✓ Đạt chuẩn' : totalQaAudits === 0 ? 'Chưa kiểm định' : 'Thiếu lượt'} (Bấm để xem)`,
+    },
+    {
+      id: 5,
+      name: 'Teamwork HI',
+      value: `${hiPercent}%`,
+      iconType: 'heart',
+      isPassed: isHiPassed,
+      tooltip: `Chỉ số HI Thả tim: ${hiPercent}% (chuẩn > ${Math.round(minHappinessIndex * 100)}%) · ${isHiPassed ? '✓ Tin yêu' : '⚡ Cần gắn kết'} (Bấm để xem)`,
+    },
+    {
+      id: 6,
+      name: 'Chuối',
+      value: `${bananaCount}`,
+      iconType: 'banana',
+      isPassed: isBananaPassed,
+      tooltip: `Chuối yêu thương: ${bananaCount}/${minBananaCount} chuối · ${isBananaPassed ? '✓ Đạt chuẩn' : '⚡ Chưa đủ'} (Bấm để xem)`,
+    },
+  ];
 }

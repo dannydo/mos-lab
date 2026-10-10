@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>💻 Desktop FHD Mockup 1 · Master - Detail 2 Cột (Recommended) · Career Path RPG</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Fredoka:wght@600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            game: ['Fredoka', 'cursive', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .tabular-nums { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 9999px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.5); }
+    
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 8px;
+      border-radius: 9999px;
+      outline: none;
+      background: #334155;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #ec4899;
+      cursor: pointer;
+      border: 2px solid #ffffff;
+      box-shadow: 0 2px 8px rgba(236, 72, 153, 0.5);
+      transition: transform 0.1s ease;
+    }
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-pink-500 selection:text-white">
+
+  <!-- TOP APP BAR -->
+  <header class="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-md border-b border-pink-500/20 px-6 py-2.5">
+    <div class="max-w-[1880px] mx-auto flex items-center justify-between gap-4">
+      <!-- Left: Staff Profile & Level -->
+      <div class="flex items-center gap-3">
+        <div class="relative cursor-pointer group">
+          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80" alt="Avatar" class="w-11 h-11 rounded-full object-cover ring-2 ring-pink-500 ring-offset-2 ring-offset-slate-900 shadow-md">
+          <span class="absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded-full text-[9px] font-black bg-pink-500 text-white shadow-xs">CV</span>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-extrabold text-sm text-white">Ánh Tuyết</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-pink-500/20 text-pink-300 border border-pink-500/30">✨ CV · Dịu Dàng</span>
+            <span class="text-xs text-slate-400">@user3832 · Đề Thám</span>
+          </div>
+          <!-- EXP Progress Bar -->
+          <div class="flex items-center gap-2 mt-1">
+            <div class="w-40 h-2 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+              <div class="h-full bg-gradient-to-r from-pink-500 to-rose-400 rounded-full" style="width: 99%"></div>
+            </div>
+            <span class="text-[10px] font-mono font-bold text-pink-400 tabular-nums">99% EXP</span>
+            <span class="text-[10px] text-slate-400">➔ Thử thách: 🪽 CV · Thanh Lịch</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: 6 Live Metrics Quick Pills -->
+      <div class="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-slate-800/80 border border-slate-700/70 shadow-inner">
+        <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-xl bg-slate-900/90 border border-emerald-500/40 text-emerald-400 text-xs font-bold tabular-nums" title="326 bộ mi">
+          <span>👁️</span> <span>326</span>
+        </div>
+        <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-xl bg-slate-900/90 border border-emerald-500/40 text-emerald-400 text-xs font-bold tabular-nums" title="Bảo hành 0.0%">
+          <span>🐛</span> <span>0.0%</span>
+        </div>
+        <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-xl bg-slate-900/90 border border-emerald-500/40 text-emerald-400 text-xs font-bold tabular-nums" title="Tỷ lệ Tip 53.5%">
+          <span>🪙</span> <span>53.5%</span>
+        </div>
+        <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-xl bg-slate-900/90 border border-rose-500/40 text-rose-400 text-xs font-bold tabular-nums" title="QA 0/4 lượt">
+          <span>🛡️</span> <span>0/4</span>
+        </div>
+        <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-xl bg-slate-900/90 border border-amber-500/40 text-amber-400 text-xs font-bold tabular-nums" title="HI Hạnh phúc 68%">
+          <span>❤️</span> <span>68%</span>
+        </div>
+        <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-xl bg-slate-900/90 border border-amber-500/40 text-amber-400 text-xs font-bold tabular-nums" title="Chuối yêu thương: 17 🍌">
+          <span>🍌</span> <span>17</span>
+        </div>
+      </div>
+
+      <!-- Right: Banana Wallet & Actions -->
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-300 font-black text-xs tabular-nums shadow-xs">
+          <span>🍌</span> <span>1.386</span> <span class="text-[10px] text-amber-400/80 font-normal">Ví Chuối</span>
+        </div>
+        <button id="themeToggle" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors" title="Đổi giao diện">
+          ☀️
+        </button>
+        <span class="text-[11px] px-2.5 py-1 rounded-xl bg-pink-500/20 text-pink-300 border border-pink-500/30 font-bold">
+          🖥️ Desktop FHD 1920x1080 Mode
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN VIEWPORT CONTAINER -->
+  <main class="max-w-[1880px] mx-auto px-6 py-4 space-y-4">
+
+    <!-- HERO PANORAMIC BANNER: 7 KINGDOMS IN ONE ROW -->
+    <section class="rounded-3xl p-4 bg-gradient-to-r from-slate-900 via-purple-950/40 to-slate-900 border-2 border-pink-500/30 shadow-lg relative overflow-hidden">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center gap-1 px-3 py-0.5 rounded-full bg-pink-500 text-white text-[10px] font-black uppercase tracking-wider shadow-xs">
+            🗺️ BẢN ĐỒ THẾ GIỚI THIÊN THẦN
+          </span>
+          <span class="text-xs font-extrabold text-white">Hành Trình Thăng Cấp RPG ✨</span>
+        </div>
+        <span class="text-[11px] text-pink-400 font-mono font-bold">
+          7 Vương Quốc Panoramic · Nhìn trọn 1 màn hình
+        </span>
+      </div>
+      <p class="text-[11px] text-slate-300 mb-3">
+        Lộ trình 7 nấc thang vinh quang: Vượt ải ⛑️ KTV Thử Việc ➔ CV · Dịu Dàng ➔ 🪽 CV · Thanh Lịch ➔ 🪽 CV 🪽 · Quí Phái ➔ 🏰 FM Nữ Thần Sàn ➔ 💖 CHO Mẹ Thiên Thần ➔ 💎 BOSS Co-Owner!
+      </p>
+
+      <!-- 7 KINGDOMS GRID (1 ROW ON DESKTOP FHD) -->
+      <div class="grid grid-cols-7 gap-3">
+        <!-- Ải 0: KTV -->
+        <div class="p-2.5 rounded-2xl border text-center transition-all bg-slate-900/60 border-slate-800 opacity-70 hover:opacity-100 hover:border-slate-700">
+          <span class="text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase bg-slate-800 text-slate-300">Ải Khởi Đầu</span>
+          <div class="text-xl my-1">⛑️</div>
+          <div class="text-xs font-black text-white">KTV</div>
+          <div class="text-[9px] text-slate-400 font-bold truncate">Thử Việc</div>
+          <div class="text-[8px] text-slate-500 font-mono mt-0.5">Tập sự & Sát hạch</div>
+        </div>
+
+        <!-- Ải 1: CV (Current) -->
+        <div class="p-2.5 rounded-2xl border text-center transition-all bg-slate-800 border-pink-500 ring-2 ring-pink-500/30 shadow-md shadow-pink-500/20 relative">
+          <span class="text-[8px] font-black px-2 py-0.5 rounded-full uppercase bg-pink-500 text-white shadow-xs">Hiện tại · Ải 1</span>
+          <div class="text-xl my-1">👁️</div>
+          <div class="text-xs font-black text-white">CV</div>
+          <div class="text-[9px] text-pink-300 font-bold truncate">Chuyên Viên Mi</div>
+          <div class="text-[8px] text-slate-400 font-mono mt-0.5">70% Tip + Thâm niên</div>
+        </div>
+
+        <!-- Ải 2: CV+ (Target) -->
+        <div class="p-2.5 rounded-2xl border text-center transition-all bg-gradient-to-b from-indigo-950/60 to-slate-900 border-indigo-500/60 hover:border-indigo-400 shadow-sm relative group cursor-pointer">
+          <span class="text-[8px] font-black px-2 py-0.5 rounded-full uppercase bg-indigo-500 text-white shadow-xs animate-pulse">Mục Tiêu Ải 2</span>
+          <div class="text-xl my-1 group-hover:scale-110 transition-transform">🌸</div>
+          <div class="text-xs font-black text-indigo-300">🪽 CV</div>
+          <div class="text-[9px] text-indigo-200 font-bold truncate">Chuyên Viên Tự Chủ</div>
+          <div class="text-[8px] text-indigo-400/80 font-mono mt-0.5">Tự Vấn + 90% Tip</div>
+        </div>
+
+        <!-- Ải 3: CV++ -->
+        <div class="p-2.5 rounded-2xl border text-center transition-all bg-slate-900/60 border-slate-800 opacity-80 hover:opacity-100 hover:border-purple-500/50">
+          <span class="text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase bg-slate-800 text-slate-300">Ải 3</span>
+          <div class="text-xl my-1">🌺</div>
+          <div class="text-xs font-black text-white">🪽 CV 🪽</div>
+          <div class="text-[9px] text-purple-300 font-bold truncate">Đàn Chị Sảnh</div>
+          <div class="text-[8px] text-slate-400 font-mono mt-0.5">Sảnh + Hỗ 20%</div>
+        </div>
+
+        <!-- Ải 4: FM -->
+        <div class="p-2.5 rounded-2xl border text-center transition-all bg-slate-900/60 border-slate-800 opacity-80 hover:opacity-100 hover:border-blue-500/50">
+          <span class="text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase bg-slate-800 text-slate-300">Ải 4</span>
+          <div class="text-xl my-1">🏰</div>
+          <div class="text-xs font-black text-white">FM</div>
+          <div class="text-[9px] text-blue-300 font-bold truncate">Nữ Thần Sàn</div>
+          <div class="text-[8px] text-slate-400 font-mono mt-0.5">Tư Vấn + Vận Hành</div>
+        </div>
+
+        <!-- Ải 5: CHO -->
+        <div class="p-2.5 rounded-2xl border text-center transition-all bg-slate-900/60 border-slate-800 opacity-80 hover:opacity-100 hover:border-pink-500/50">
+          <span class="text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase bg-slate-800 text-slate-300">Ải 5</span>
+          <div class="text-xl my-1">💖</div>
+          <div class="text-xs font-black text-white">CHO</div>
+          <div class="text-[9px] text-pink-300 font-bold truncate">Mẹ Thiên Thần</div>
+          <div class="text-[8px] text-slate-400 font-mono mt-0.5">Khách Mới TjShop</div>
+        </div>
+
+        <!-- Ải 6: BOSS -->
+        <div class="p-2.5 rounded-2xl border text-center transition-all bg-slate-900/60 border-slate-800 opacity-80 hover:opacity-100 hover:border-amber-500/50">
+          <span class="text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase bg-slate-800 text-slate-300">Ải Cuối</span>
+          <div class="text-xl my-1">👑</div>
+          <div class="text-xs font-black text-white">BOSS</div>
+          <div class="text-[9px] text-amber-300 font-bold truncate">Co-Owner</div>
+          <div class="text-[8px] text-slate-400 font-mono mt-0.5">Cổ Tức P&L</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MASTER - DETAIL 2-COLUMN GRID (42% / 58%) -->
+    <div class="grid grid-cols-12 gap-5 items-start">
+
+      <!-- LEFT COLUMN: MASTER STAFF SELECTOR (5 cols = ~42% width) -->
+      <div class="col-span-5 space-y-3 bg-slate-900/90 rounded-3xl p-4 border border-slate-800 shadow-md">
+        
+        <!-- Header & Filter Bar -->
+        <div class="flex items-center justify-between gap-2 pb-2 border-b border-slate-800">
+          <div class="flex items-center gap-2">
+            <span class="w-8 h-8 rounded-xl bg-orange-500/20 text-orange-400 flex items-center justify-center font-bold text-sm">👥</span>
+            <div>
+              <h2 class="text-sm font-black text-white">Chuyên Viên (CV) Mô Phỏng</h2>
+              <span class="text-[10px] text-slate-400">16 Chuyên Viên · Chu kỳ 90 ngày</span>
+            </div>
+          </div>
+          <!-- Role Filters -->
+          <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-[10px] font-bold">
+            <button class="px-2 py-0.5 rounded-lg bg-pink-600 text-white">Tất cả</button>
+            <button class="px-2 py-0.5 rounded-lg text-slate-400 hover:text-white">CV</button>
+            <button class="px-2 py-0.5 rounded-lg text-slate-400 hover:text-white">CV+</button>
+            <button class="px-2 py-0.5 rounded-lg text-slate-400 hover:text-white">CV++</button>
+          </div>
+        </div>
+
+        <!-- Search input -->
+        <div class="relative">
+          <input type="text" placeholder="Tìm theo tên, @username hoặc chi nhánh..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-pink-500">
+          <span class="absolute right-3 top-2 text-xs text-slate-500">🔍</span>
+        </div>
+
+        <!-- Staff Table (Full 8 metrics columns) -->
+        <div class="overflow-x-auto custom-scrollbar max-h-[520px] rounded-xl border border-slate-800/80">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-950 text-slate-400 text-[10px] uppercase font-bold sticky top-0 border-b border-slate-800 z-10">
+              <tr>
+                <th class="py-2.5 px-3">Chuyên Viên</th>
+                <th class="py-2.5 px-2 text-center" title="Sản lượng mi (Chuẩn ≥ 300)">👁️</th>
+                <th class="py-2.5 px-2 text-center" title="Bảo hành (Chuẩn ≤ 2.0%)">🐛</th>
+                <th class="py-2.5 px-2 text-center" title="Tip (Chuẩn ≥ 49.5%)">🪙</th>
+                <th class="py-2.5 px-2 text-center" title="QA/QC (Chuẩn ≥ 4/4)">🛡️</th>
+                <th class="py-2.5 px-2 text-center" title="HI Hạnh phúc (Chuẩn ≥ 70%)">❤️</th>
+                <th class="py-2.5 px-2 text-center" title="Chuối yêu thương (≥ 20)">🍌</th>
+                <th class="py-2.5 px-2 text-center" title="Số dư ví (≥ 0)">💼</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60 font-medium">
+              <!-- Selected Staff: Ánh Tuyết -->
+              <tr class="bg-emerald-950/30 border-l-4 border-l-emerald-500 cursor-pointer">
+                <td class="py-2 px-3">
+                  <div class="flex items-center gap-2">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=80&auto=format&fit=crop&q=80" class="w-7 h-7 rounded-full object-cover ring-2 ring-emerald-500">
+                    <div>
+                      <div class="font-bold text-white flex items-center gap-1">
+                        Ánh Tuyết <span class="text-[9px] px-1 rounded bg-pink-500/20 text-pink-300 font-bold">CV</span>
+                      </div>
+                      <div class="text-[9px] text-slate-400">@user3832 · Đề Thám</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">326</td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">0.0%</td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">53.5%</td>
+                <td class="py-2 px-2 text-center font-bold text-rose-400 tabular-nums">0/4</td>
+                <td class="py-2 px-2 text-center font-bold text-amber-400 tabular-nums">68%</td>
+                <td class="py-2 px-2 text-center font-bold text-amber-400 tabular-nums">17</td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">1.386</td>
+              </tr>
+
+              <!-- Staff 2: Cẩm Tiên -->
+              <tr class="hover:bg-slate-800/40 cursor-pointer transition-colors">
+                <td class="py-2 px-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-bold text-[10px]">CT</div>
+                    <div>
+                      <div class="font-bold text-slate-200">Cẩm Tiên <span class="text-[9px] px-1 rounded bg-pink-500/20 text-pink-300 font-bold">CV</span></div>
+                      <div class="text-[9px] text-slate-400">@user47950 · Estella</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">378</td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">1.7%</td>
+                <td class="py-2 px-2 text-center font-bold text-rose-400 tabular-nums">42%</td>
+                <td class="py-2 px-2 text-center font-bold text-rose-400 tabular-nums">0/4</td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">73%</td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">20</td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">870</td>
+              </tr>
+
+              <!-- Staff 3: HânEmBé -->
+              <tr class="hover:bg-slate-800/40 cursor-pointer transition-colors">
+                <td class="py-2 px-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-full bg-rose-500/20 text-rose-300 flex items-center justify-center font-bold text-[10px]">HE</div>
+                    <div>
+                      <div class="font-bold text-slate-200">HânEmBé <span class="text-[9px] px-1 rounded bg-pink-500/20 text-pink-300 font-bold">CV</span></div>
+                      <div class="text-[9px] text-slate-400">@user47510 · Estella</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">349</td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">0%</td>
+                <td class="py-2 px-2 text-center font-bold text-rose-400 tabular-nums">33.3%</td>
+                <td class="py-2 px-2 text-center font-bold text-rose-400 tabular-nums">0/4</td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">72%</td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">24</td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">1.907</td>
+              </tr>
+
+              <!-- Staff 4: Huyền Nguyễn -->
+              <tr class="hover:bg-slate-800/40 cursor-pointer transition-colors">
+                <td class="py-2 px-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-full bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-[10px]">HN</div>
+                    <div>
+                      <div class="font-bold text-slate-200">Huyền Nguyễn <span class="text-[9px] px-1 rounded bg-pink-500/20 text-pink-300 font-bold">CV</span></div>
+                      <div class="text-[9px] text-slate-400">@user48308 · Estella</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">373</td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">0%</td>
+                <td class="py-2 px-2 text-center font-bold text-rose-400 tabular-nums">40.5%</td>
+                <td class="py-2 px-2 text-center font-bold text-rose-400 tabular-nums">0/4</td>
+                <td class="py-2 px-2 text-center font-bold text-amber-400 tabular-nums">69%</td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">21</td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">4.171</td>
+              </tr>
+
+              <!-- Staff 5: Khanh Cao -->
+              <tr class="hover:bg-slate-800/40 cursor-pointer transition-colors">
+                <td class="py-2 px-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-[10px]">KC</div>
+                    <div>
+                      <div class="font-bold text-slate-200">Khanh Cao <span class="text-[9px] px-1 rounded bg-pink-500/20 text-pink-300 font-bold">CV</span></div>
+                      <div class="text-[9px] text-slate-400">@user13783 · Đề Thám</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">413</td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">1.5%</td>
+                <td class="py-2 px-2 text-center font-bold text-rose-400 tabular-nums">35.5%</td>
+                <td class="py-2 px-2 text-center font-bold text-rose-400 tabular-nums">0/4</td>
+                <td class="py-2 px-2 text-center font-bold text-amber-400 tabular-nums">69%</td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">26</td>
+                <td class="py-2 px-2 text-center font-bold text-emerald-400 tabular-nums">1.715</td>
+              </tr>
+
+              <!-- Staff 6: Kim Ngân -->
+              <tr class="hover:bg-slate-800/40 cursor-pointer transition-colors">
+                <td class="py-2 px-3">
+                  <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold text-[10px]">KN</div>
+                    <div>
+                      <div class="font-bold text-slate-200">Kim Ngân <span class="text-[9px] px-1 rounded bg-pink-500/20 text-pink-300 font-bold">CV</span></div>
+                      <div class="text-[9px] text-slate-400">@user34806 · Estella</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="py-2 px-2 text-center font-bold text-amber-400 tabular-nums">241</td>
+                <td class="py-2 px-2 text-center font-bold text-amber-400 tabular-nums">2.3%</td>
+                <td class="py-2 px-2 text-center font-bold text-rose-400 tabular-nums">28.7%</td>
+                <td class="py-2 px-2 text-center font-bold text-rose-400 tabular-nums">0/4</td>
+                <td class="py-2 px-2 text-center font-bold text-amber-400 tabular-nums">67%</td>
+                <td class="py-2 px-2 text-center font-bold text-amber-400 tabular-nums">15</td>
+                <td class="py-2 px-2 text-center font-bold text-amber-400 tabular-nums">220</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Quick Summary footer for selected staff -->
+        <div class="p-3 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-2">
+            <span class="text-slate-400">Đang chọn:</span>
+            <strong class="text-white">Ánh Tuyết</strong>
+            <span class="text-pink-400 font-bold">CV ➔ CV+</span>
+          </div>
+          <span class="text-[10px] text-slate-500 font-mono">Đồng bộ lúc: 02:54:28</span>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: DETAIL SIMULATION CARD & QUESTS (7 cols = ~58% width) -->
+      <div class="col-span-7 space-y-4">
+        
+        <!-- CARD CONTAINER -->
+        <div class="rounded-3xl p-5 bg-slate-900 border border-slate-800 shadow-xl space-y-4">
+
+          <!-- Staff Header with Target Buttons -->
+          <div class="flex items-center justify-between gap-3 flex-wrap border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-3">
+              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" class="w-12 h-12 rounded-2xl object-cover ring-2 ring-pink-500">
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-base font-black text-white">Ánh Tuyết</h3>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    ĐANG RÈN LUYỆN (IN-PROGRESS)
+                  </span>
+                </div>
+                <div class="text-xs text-slate-400 mt-0.5">
+                  Ải hiện tại: <span class="font-bold text-white">CV</span> ➔ Ải tiếp theo: <span class="font-bold text-indigo-400">🪽 CV · Thanh Lịch</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Target Selection Pills -->
+            <div class="flex items-center gap-1.5 bg-slate-950 p-1.5 rounded-2xl border border-slate-800 text-xs font-bold">
+              <button class="px-3 py-1 rounded-xl bg-indigo-600 text-white shadow-xs">Ải 1: CV+ (Tự Chủ)</button>
+              <button class="px-3 py-1 rounded-xl text-slate-400 hover:text-white">Ải 2: CV++ (Sảnh)</button>
+              <button class="px-3 py-1 rounded-xl text-slate-400 hover:text-white">Nhánh Master Tech</button>
+            </div>
+          </div>
+
+          <!-- 🔥 THE FINANCIAL SUPER-NOVA JACKPOT CARD: TÂM ĐIỂM QUYỀN LỢI TÀI CHÍNH -->
+          <div class="rounded-3xl p-5 bg-gradient-to-br from-amber-950/90 via-slate-900 to-emerald-950/80 border-2 border-amber-500/80 shadow-2xl shadow-amber-500/20 relative overflow-hidden space-y-4">
+            
+            <!-- Ambient Golden Glow -->
+            <div class="absolute -top-12 -right-12 w-48 h-48 bg-amber-500/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-12 -left-12 w-48 h-48 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+            <!-- Top Header & Slogan -->
+            <div class="flex items-center justify-between gap-3 flex-wrap relative z-10">
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 text-xs font-black uppercase tracking-wider shadow-md">
+                  <span>🔥</span> TÂM ĐIỂM QUYỀN LỢI TÀI CHÍNH
+                </span>
+                <span class="text-xs font-bold text-amber-300">Thăng Cấp Lên 🪽 CV · Thanh Lịch (CV+)</span>
+              </div>
+              <span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-black">
+                💰 TIỀN TƯƠI RÓT THẲNG VÀO TÚI
+              </span>
+            </div>
+
+            <!-- THE BIG HERO NUMBER DISPLAY -->
+            <div class="p-4 rounded-2xl bg-slate-950/80 border border-amber-500/40 flex items-center justify-between gap-4 flex-wrap relative z-10">
+              <div>
+                <div class="text-[11px] font-black uppercase tracking-wider text-amber-400/90 flex items-center gap-1.5">
+                  <span>💵</span> THU NHẬP RÒNG TĂNG THÊM MỖI THÁNG:
+                </div>
+                <div class="flex items-baseline gap-2 mt-1">
+                  <span id="heroIncomeMonthly" class="text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-emerald-400 tabular-nums drop-shadow-[0_0_20px_rgba(251,191,36,0.4)]">
+                    +3.850.000đ
+                  </span>
+                  <span class="text-xs font-bold text-slate-400 uppercase">/ Tháng</span>
+                </div>
+                <div class="text-xs font-bold text-emerald-400 flex items-center gap-1 mt-1">
+                  <span>🚀</span>
+                  <span>Tương đương <strong id="heroIncomeYearly" class="text-white text-sm font-black tabular-nums">+46.200.000đ / Năm</strong> (Đủ sắm xe tay ga hoặc 7 chỉ vàng 9999!)</span>
+                </div>
+              </div>
+
+              <!-- High-converting Catchphrase Badge -->
+              <div class="max-w-xs text-right hidden sm:block">
+                <div class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-200 font-semibold leading-relaxed">
+                  “Cùng một ca làm, cùng lượng khách phục vụ — Nhưng đút túi thêm cả chỉ vàng mỗi tháng! <strong class="text-amber-300 font-black">Chỉ có người thù ghét tiền mới không muốn lên CV+!</strong>”
+                </div>
+              </div>
+            </div>
+
+            <!-- 🎛️ BỘ ĐÔI CẦN GẠT TÀI CHÍNH: 1. BÁN COMBO (BẮT BUỘC) & 2. BÁN DƯỠNG MI THEO TUẦN (KHUYẾN KHÍCH) -->
+            <div class="space-y-3.5 relative z-10">
+
+              <!-- CẦN GẠT 1: ĐIỀU KIỆN TIÊN QUYẾT BÁN COMBO (BẮT BUỘC ≥ 20%) -->
+              <div id="comboConditionBox" class="p-4 rounded-2xl bg-slate-950/90 border-2 border-emerald-500/80 shadow-lg space-y-2.5 transition-all duration-300">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                  <div class="flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-300 flex items-center justify-center font-bold text-sm">💎</span>
+                    <div>
+                      <div class="text-xs font-black text-white flex items-center gap-2">
+                        <span>1. ĐIỀU KIỆN TIÊN QUYẾT: TỶ LỆ TỰ CHỐT BÁN COMBO</span>
+                        <span id="comboBadgeStatus" class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500 text-slate-950 shadow-xs">
+                          ✓ ĐẠT CHUẨN (≥ 20%)
+                        </span>
+                      </div>
+                      <div class="text-[10px] text-slate-400">
+                        Tính trên tệp <strong class="text-indigo-300 font-bold">~43 khách Not Combo Live</strong>. Khách có Combo Live bán được vẫn cộng dồn! Tối thiểu <strong class="text-amber-300 font-bold">≥ 20%</strong> mới được hưởng trọn bộ tiền thưởng.
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Live Combo Rate Number -->
+                  <div class="text-right">
+                    <div class="text-xl font-black font-mono tabular-nums text-emerald-400" id="comboRateDisplay">25%</div>
+                    <div class="text-[10px] font-bold text-slate-400" id="comboImpactText">~11 combo cá nhân chốt</div>
+                  </div>
+                </div>
+
+                <!-- Interactive Slider for Combo Rate -->
+                <div class="space-y-1 pt-1">
+                  <div class="flex items-center gap-3">
+                    <span class="text-[11px] font-bold text-slate-400 shrink-0">Kéo thử tỷ lệ bán Combo:</span>
+                    <input type="range" id="comboSlider" min="0" max="60" value="25" step="1" class="w-full cursor-pointer accent-emerald-500" oninput="updateFinancialSimulation()">
+                  </div>
+                  <!-- Scale labels -->
+                  <div class="flex justify-between text-[9px] font-bold text-slate-500 px-1 pt-0.5">
+                    <span class="text-rose-400 font-black">0% (MẤT HẾT THƯỞNG)</span>
+                    <span class="text-amber-400 font-black">Chuẩn sống còn: ≥ 20%</span>
+                    <span class="text-emerald-400 font-black">25% (Chuẩn Đạt)</span>
+                    <span class="text-purple-300">40%+ (Bậc Thầy Chốt Đơn)</span>
+                    <span class="text-yellow-300">60% (Siêu Sao)</span>
+                  </div>
+                </div>
+
+                <!-- Realtime Warning / Reward Banner -->
+                <div id="comboBannerNotice" class="p-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between bg-emerald-950/40 border border-emerald-500/40 text-emerald-300">
+                  <span>✅ XUẤT SẮC: Tỷ lệ Combo đạt 25%! Đạt chuẩn Chuyên Viên Tự Chủ, kích hoạt nhận trọn 90% Tip + Thưởng Combo!</span>
+                </div>
+              </div>
+
+              <!-- CẦN GẠT 2: BÁN SẢN PHẨM DƯỠNG MI YEPPEUM THEO TUẦN (KHUYẾN KHÍCH ≥ 1 CÂY/TUẦN) -->
+              <div id="serumConditionBox" class="p-4 rounded-2xl bg-teal-950/30 border-2 border-teal-500/80 shadow-lg space-y-2.5 transition-all duration-300">
+                <div class="flex items-center justify-between flex-wrap gap-2">
+                  <div class="flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-xl bg-teal-500/20 text-teal-300 flex items-center justify-center font-bold text-sm">🌿</span>
+                    <div>
+                      <div class="text-xs font-black text-white flex items-center gap-2">
+                        <span>2. ĐIỀU KIỆN KHUYẾN KHÍCH: BÁN DƯỠNG MI THEO TUẦN</span>
+                        <span id="serumBadgeStatus" class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-teal-500 text-slate-950 shadow-xs">
+                          🌿 KHUYẾN KHÍCH (≥ 1 CÂY/TUẦN)
+                        </span>
+                      </div>
+                      <div class="text-[10px] text-slate-400">
+                        Khuyến khích bán <strong class="text-teal-300 font-bold">≥ 1 cây/tuần</strong> (~4 cây/tháng). Thưởng tiền tươi trao tay <strong class="text-amber-300 font-bold">100.000đ/cây</strong> giá gốc (50.000đ/cây khuyến mãi). Bán càng nhiều thưởng càng bùng nổ!
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Live Serum Number -->
+                  <div class="text-right">
+                    <div class="text-xl font-black font-mono tabular-nums text-teal-300" id="serumRateDisplay">1 cây / tuần</div>
+                    <div class="text-[10px] font-bold text-emerald-400 tabular-nums" id="serumImpactText">+400.000đ / tháng tiền tươi</div>
+                  </div>
+                </div>
+
+                <!-- Interactive Slider for Serum Rate -->
+                <div class="space-y-1 pt-1">
+                  <div class="flex items-center gap-3">
+                    <span class="text-[11px] font-bold text-slate-400 shrink-0">Kéo thử số cây dưỡng mi / tuần:</span>
+                    <input type="range" id="serumSlider" min="0" max="10" value="1" step="1" class="w-full cursor-pointer accent-teal-400" oninput="updateFinancialSimulation()">
+                  </div>
+                  <!-- Scale labels -->
+                  <div class="flex justify-between text-[9px] font-bold text-slate-500 px-1 pt-0.5">
+                    <span class="text-slate-400">0 cây (0đ)</span>
+                    <span class="text-teal-300 font-black">Chuẩn: ≥ 1 cây/tuần (+400k)</span>
+                    <span class="text-teal-400 font-bold">2 cây/tuần (+800k)</span>
+                    <span class="text-emerald-400 font-bold">4 cây/tuần (+1.6M)</span>
+                    <span class="text-yellow-300 font-black">7+ cây/tuần (+2.8M+)</span>
+                  </div>
+                </div>
+
+                <!-- Realtime Serum Reward Banner -->
+                <div id="serumBannerNotice" class="p-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between bg-teal-950/40 border border-teal-500/40 text-teal-300">
+                  <span>🌿 XUẤT SẮC: Bán 1 cây dưỡng mi/tuần (~4 cây/tháng) đút túi thêm +400.000đ/tháng tiền tươi rót thẳng vào ví!</span>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- HEAD-TO-HEAD BEFORE VS AFTER COMPARISON -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 relative z-10 text-xs">
+              
+              <!-- BEFORE: CV Dịu Dàng (Hiện Tại) -->
+              <div class="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-2 opacity-85">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                  <span class="font-bold text-slate-400 flex items-center gap-1.5">
+                    <span>🛑</span> CV · Dịu Dàng (Hiện Tại)
+                  </span>
+                  <span class="text-[10px] text-slate-500">Mức cơ bản</span>
+                </div>
+                <ul class="space-y-1.5 text-[11px] text-slate-300">
+                  <li class="flex justify-between">
+                    <span class="text-slate-400">• Tỷ lệ Tip khách cho:</span>
+                    <strong class="text-slate-300">70% Tip (bị trừ 30%)</strong>
+                  </li>
+                  <li class="flex justify-between">
+                    <span class="text-slate-400">• Quyền chốt Combo:</span>
+                    <strong class="text-rose-400">Không có (phụ thuộc sảnh)</strong>
+                  </li>
+                  <li class="flex justify-between">
+                    <span class="text-slate-400">• Lương giờ ca làm:</span>
+                    <strong class="text-slate-300">25.500đ / giờ</strong>
+                  </li>
+                </ul>
+                <div class="pt-2 border-t border-slate-800 flex justify-between items-center text-xs">
+                  <span class="text-slate-400">Tổng thu nhập ước tính:</span>
+                  <strong class="text-slate-300 text-sm font-black tabular-nums">~11.800.000đ</strong>
+                </div>
+              </div>
+
+              <!-- AFTER: 🪽 CV · Thanh Lịch (Sau Thăng Cấp 1 Cánh) -->
+              <div class="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-950/60 via-slate-950 to-emerald-950/50 border-2 border-emerald-500/80 shadow-lg space-y-2">
+                <div class="flex items-center justify-between pb-2 border-b border-emerald-500/30">
+                  <span class="font-black text-emerald-300 flex items-center gap-1.5">
+                    <span>👑</span> 🪽 CV · Thanh Lịch (1 Cánh)
+                  </span>
+                  <span id="afterBadgePill" class="px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[9px] font-black uppercase shadow-xs">
+                    +33% THU NHẬP
+                  </span>
+                </div>
+                <ul class="space-y-1.5 text-[11px] text-slate-200">
+                  <li class="flex justify-between">
+                    <span class="text-emerald-300/90">• Ăn trọn 90% TIP (70+20):</span>
+                    <strong class="text-emerald-300 font-bold tabular-nums" id="afterExtraTip">+834.000đ / thg</strong>
+                  </li>
+                  <li class="flex justify-between">
+                    <span class="text-emerald-300/90">• Độc quyền tự chốt Combo:</span>
+                    <strong class="text-emerald-300 font-bold tabular-nums" id="afterExtraCombo">+2.100.000đ / thg</strong>
+                  </li>
+                  <li class="flex justify-between">
+                    <span class="text-emerald-300/90">• Tăng lương giờ (27.500đ/h):</span>
+                    <strong class="text-emerald-300 font-bold tabular-nums" id="afterExtraWage">+520.000đ / thg</strong>
+                  </li>
+                  <li class="flex justify-between">
+                    <span class="text-emerald-300/90">• Thưởng Dưỡng mi Yeppeum:</span>
+                    <strong class="text-emerald-300 font-bold tabular-nums" id="afterExtraSerum">+400.000đ / thg</strong>
+                  </li>
+                </ul>
+                <div class="pt-2 border-t border-emerald-500/30 flex justify-between items-center text-xs">
+                  <span class="text-emerald-300 font-bold">Tổng thu nhập thực nhận:</span>
+                  <strong id="afterTotalIncome" class="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-emerald-300 text-base font-black tabular-nums">~15.654.000đ / thg</strong>
+                </div>
+              </div>
+
+            </div>
+
+            </div>
+
+            <!-- Progression status bar inside banner -->
+            <div class="pt-2 flex items-center justify-between text-xs text-slate-300 relative z-10 border-t border-amber-500/20">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span>
+                <span>Tiến trình hiện tại: <strong>3/6 ải cốt lõi</strong> · Chỉ cần hoàn thành sát hạch QA là mở khóa nhận trọn gói thu nhập này!</span>
+              </div>
+              <span class="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono font-bold text-[10px]">
+                Thiếu 4 lượt QA
+              </span>
+            </div>
+
+          </div>
+
+          <!-- INTERNAL 2-SUBCOLUMN GRID (Side-by-Side: Radar/Sliders on left, 6 Quests on right) -->
+          <div class="grid grid-cols-12 gap-4 items-start">
+
+            <!-- SUBCOLUMN 1: RADAR CHART & WHAT-IF SLIDERS (5 cols) -->
+            <div class="col-span-5 space-y-3 bg-slate-950/70 p-3.5 rounded-2xl border border-slate-800">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-black uppercase tracking-wider text-pink-400 flex items-center gap-1">
+                  <span>🎯</span> Radar Kỹ Năng RPG
+                </span>
+                <span class="text-[10px] px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-300 font-bold">What-If Live</span>
+              </div>
+
+              <!-- Interactive Radar SVG -->
+              <div class="flex justify-center py-1">
+                <svg width="260" height="260" viewBox="0 0 360 360" class="overflow-visible select-none">
+                  <!-- Hexagonal concentric guide webs -->
+                  <polygon points="180,30 310,105 310,255 180,330 50,255 50,105" fill="none" stroke="#334155" stroke-width="1.2" stroke-dasharray="3,3" />
+                  <polygon points="180,65 277,121 277,239 180,295 83,239 83,121" fill="none" stroke="#334155" stroke-width="1" />
+                  <polygon points="180,100 245,138 245,222 180,260 115,222 115,138" fill="none" stroke="#334155" stroke-width="1" />
+                  
+                  <!-- Target Standard Polygon (Dashed green boundary) -->
+                  <polygon points="180,45 297,112 297,248 180,315 63,248 63,112" fill="rgba(16,185,129,0.06)" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4,4" />
+
+                  <!-- Actual Achieved Polygon (Pink/Rose shape) -->
+                  <!-- Scores: Orders=1.08, Fix=1.0, Tip=1.08, QA=0.1, HI=0.97, Banana=0.85 -->
+                  <polygon points="180,35 305,108 302,260 180,195 72,250 78,118" fill="rgba(236,72,153,0.35)" stroke="#ec4899" stroke-width="2.5" />
+
+                  <!-- Axis lines -->
+                  <line x1="180" y1="180" x2="180" y2="30" stroke="#475569" stroke-width="1" />
+                  <line x1="180" y1="180" x2="310" y2="105" stroke="#475569" stroke-width="1" />
+                  <line x1="180" y1="180" x2="310" y2="255" stroke="#475569" stroke-width="1" />
+                  <line x1="180" y1="180" x2="180" y2="330" stroke="#475569" stroke-width="1" />
+                  <line x1="180" y1="180" x2="50" y2="255" stroke="#475569" stroke-width="1" />
+                  <line x1="180" y1="180" x2="50" y2="105" stroke="#475569" stroke-width="1" />
+
+                  <!-- Vertex Labels Pills -->
+                  <!-- Đỉnh 0: Sản lượng (Top) -->
+                  <rect x="130" y="8" width="100" height="20" rx="10" fill="#065f46" stroke="#34d399" />
+                  <text x="180" y="22" text-anchor="middle" fill="#ffffff" font-size="9.5" font-weight="bold">👁️ Sản Lượng ✓</text>
+
+                  <!-- Đỉnh 1: Bảo hành (Top Right) -->
+                  <rect x="260" y="88" width="90" height="20" rx="10" fill="#065f46" stroke="#34d399" />
+                  <text x="305" y="102" text-anchor="middle" fill="#ffffff" font-size="9.5" font-weight="bold">🐛 Fix Mi ✓</text>
+
+                  <!-- Đỉnh 2: Tip (Bottom Right) -->
+                  <rect x="260" y="248" width="85" height="20" rx="10" fill="#065f46" stroke="#34d399" />
+                  <text x="302" y="262" text-anchor="middle" fill="#ffffff" font-size="9.5" font-weight="bold">🪙 Tip 53% ✓</text>
+
+                  <!-- Đỉnh 3: QA (Bottom) -->
+                  <rect x="135" y="322" width="90" height="20" rx="10" fill="#881337" stroke="#fb7185" />
+                  <text x="180" y="336" text-anchor="middle" fill="#ffffff" font-size="9.5" font-weight="bold">🛡️ QA 0/4 ✕</text>
+
+                  <!-- Đỉnh 4: HI (Bottom Left) -->
+                  <rect x="15" y="248" width="85" height="20" rx="10" fill="#78350f" stroke="#fbbf24" />
+                  <text x="57" y="262" text-anchor="middle" fill="#ffffff" font-size="9.5" font-weight="bold">❤️ HI 68% ⚡</text>
+
+                  <!-- Đỉnh 5: Chuối (Top Left) -->
+                  <rect x="10" y="88" width="95" height="20" rx="10" fill="#78350f" stroke="#fbbf24" />
+                  <text x="57" y="102" text-anchor="middle" fill="#ffffff" font-size="9.5" font-weight="bold">🍌 17 Chuối ⚡</text>
+                </svg>
+              </div>
+
+              <!-- Sliders Controller with Live Financial Reactivity -->
+              <div class="space-y-2 pt-2 border-t border-slate-800 text-xs">
+                <div>
+                  <div class="flex justify-between text-[11px] mb-1">
+                    <span class="text-slate-400 font-bold">👁️ Sản lượng mi mô phỏng:</span>
+                    <span class="font-mono text-emerald-400 font-bold" id="ordersVal">326 bộ</span>
+                  </div>
+                  <input type="range" id="ordersSlider" min="150" max="450" value="326" class="w-full" oninput="updateFinancialSimulation()">
+                </div>
+
+                <div>
+                  <div class="flex justify-between text-[11px] mb-1">
+                    <span class="text-slate-400 font-bold">🪙 Tỷ lệ Tip dự phóng:</span>
+                    <span class="font-mono text-indigo-400 font-bold" id="tipVal">53.5%</span>
+                  </div>
+                  <input type="range" id="tipSlider" min="20" max="80" value="53" class="w-full" oninput="updateFinancialSimulation()">
+                </div>
+              </div>
+            </div>
+
+            <!-- SUBCOLUMN 2: 6 QUESTS PROGRESSION CARDS (7 cols) -->
+            <div class="col-span-7 space-y-2.5">
+              <div class="flex items-center justify-between text-xs font-bold text-slate-300">
+                <span>📋 CHI TIẾT 6 ẢI THĂNG CẤP (CV ➔ CV+)</span>
+                <span class="text-[10px] text-pink-400 font-normal">Cần vượt tối thiểu 4 ải cốt lõi</span>
+              </div>
+
+              <!-- Quest 1: Orders (Passed) -->
+              <div class="p-3 rounded-2xl bg-emerald-950/20 border border-emerald-500/40 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">👁️</div>
+                  <div>
+                    <div class="font-bold text-xs text-white">Ải 1: Sản lượng bộ mi hoàn tất</div>
+                    <div class="text-[10px] text-slate-400">Chuẩn: ≥ 300 bộ mi (90 ngày qua) · Thực tế: <strong class="text-emerald-400">326 bộ</strong></div>
+                  </div>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500 text-white shadow-xs">✓ ĐẠT CHUẨN</span>
+              </div>
+
+              <!-- Quest 2: Fix (Passed) -->
+              <div class="p-3 rounded-2xl bg-emerald-950/20 border border-emerald-500/40 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">🐛</div>
+                  <div>
+                    <div class="font-bold text-xs text-white">Ải 2: Tỷ lệ sửa mi bảo hành</div>
+                    <div class="text-[10px] text-slate-400">Chuẩn: ≤ 2.0% tổng ca mi · Thực tế: <strong class="text-emerald-400">0.0%</strong> (Xuất sắc)</div>
+                  </div>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500 text-white shadow-xs">✓ ĐẠT CHUẨN</span>
+              </div>
+
+              <!-- Quest 3: Tip (Passed) -->
+              <div class="p-3 rounded-2xl bg-emerald-950/20 border border-emerald-500/40 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">🪙</div>
+                  <div>
+                    <div class="font-bold text-xs text-white">Ải 3: Tỷ lệ Tip từ khách hàng</div>
+                    <div class="text-[10px] text-slate-400">Chuẩn: ≥ 110% chi nhánh (49.5%) · Thực tế: <strong class="text-emerald-400">53.5%</strong></div>
+                  </div>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-500 text-white shadow-xs">✓ ĐẠT CHUẨN</span>
+              </div>
+
+              <!-- Quest 4: QA (Failed) -->
+              <div class="p-3 rounded-2xl bg-rose-950/20 border border-rose-500/40 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-7 h-7 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold text-xs">🛡️</div>
+                  <div>
+                    <div class="font-bold text-xs text-white">Ải 4: Kiểm định tay nghề QA/QC</div>
+                    <div class="text-[10px] text-slate-400">Chuẩn: Đạt ≥ 4 lượt sát hạch · Thực tế: <strong class="text-rose-400">0/4 lượt</strong> (Chưa sát hạch)</div>
+                  </div>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-500/30 text-rose-300 border border-rose-500/40">✕ THIẾU 4 LƯỢT</span>
+              </div>
+
+              <!-- Quest 5: HI (Near) -->
+              <div class="p-3 rounded-2xl bg-amber-950/20 border border-amber-500/40 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-7 h-7 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs">❤️</div>
+                  <div>
+                    <div class="font-bold text-xs text-white">Ải 5: Teamwork HI Hạnh Phúc</div>
+                    <div class="text-[10px] text-slate-400">Chuẩn: ≥ 70% thả tim đồng đội · Thực tế: <strong class="text-amber-400">68%</strong> (Cần +2%)</div>
+                  </div>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/30 text-amber-300 border border-amber-500/40">⚡ GẦN ĐẠT (68%)</span>
+              </div>
+
+              <!-- Quest 6: Banana (Near) -->
+              <div class="p-3 rounded-2xl bg-amber-950/20 border border-amber-500/40 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-7 h-7 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs">🍌</div>
+                  <div>
+                    <div class="font-bold text-xs text-white">Ải 6: Chuối Yêu Thương & Số Dư Ví</div>
+                    <div class="text-[10px] text-slate-400">Chuẩn: ≥ 20 chuối nhận & Ví ≥ 0 · Thực tế: <strong class="text-amber-400">17 chuối</strong> (Ví 1.386)</div>
+                  </div>
+                </div>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500/30 text-amber-300 border border-amber-500/40">⚡ GẦN ĐẠT (17/20)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- INTEGRATED DESKTOP ACTION FOOTER (Pinned at the bottom of Right Column) -->
+          <div class="pt-3 border-t border-slate-800 flex items-center justify-between gap-4">
+            <div>
+              <div class="text-xs font-black text-white">
+                Ánh Tuyết: Chuyên Viên Mi ➔ 🪽 CV · Thanh Lịch
+              </div>
+              <div class="text-[10px] text-amber-400 font-mono">
+                Đã đạt 3/6 ải cốt lõi · Cần hoàn thành sát hạch QA để kích hoạt duyệt thăng cấp
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors">
+                Mở Ải Trùm Cuối (30 Ngày)
+              </button>
+              <button class="px-4 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-pink-500 to-indigo-600 text-white shadow-md shadow-pink-500/25 hover:opacity-95 transition-all">
+                ⚡ Kích Hoạt Thử Thách CV+
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Theme toggle
+    const themeBtn = document.getElementById('themeToggle');
+    themeBtn.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+      themeBtn.innerText = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+    });
+
+    // Realtime Financial Simulator với 2 Cần Gạt Tài Chính: 1. Combo (Bắt Buộc ≥ 20%) & 2. Dưỡng Mi Theo Tuần (Khuyến Khích)
+    function updateFinancialSimulation() {
+      const orders = parseInt(document.getElementById('ordersSlider')?.value) || 326;
+      const tipRate = parseFloat(document.getElementById('tipSlider')?.value) || 53.5;
+      const comboRate = parseFloat(document.getElementById('comboSlider')?.value) || 25;
+      const serumCount = parseInt(document.getElementById('serumSlider')?.value) || 1;
+
+      document.getElementById('ordersVal').innerText = orders + ' bộ';
+      document.getElementById('tipVal').innerText = tipRate.toFixed(1) + '%';
+
+      const comboRateEl = document.getElementById('comboRateDisplay');
+      const comboImpact = document.getElementById('comboImpactText');
+      const comboBadge = document.getElementById('comboBadgeStatus');
+      const comboNotice = document.getElementById('comboBannerNotice');
+      const comboBox = document.getElementById('comboConditionBox');
+
+      const serumRateEl = document.getElementById('serumRateDisplay');
+      const serumImpact = document.getElementById('serumImpactText');
+      const serumBadge = document.getElementById('serumBadgeStatus');
+      const serumNotice = document.getElementById('serumBannerNotice');
+      const serumBox = document.getElementById('serumConditionBox');
+
+      const monthlyOrders = Math.round(orders / 3);
+      const notComboLive = Math.round(monthlyOrders * 0.4); // Tệp khách Not Combo Live (~43 khách)
+      const simulatedCombos = Math.round(notComboLive * (comboRate / 100));
+      const monthlySerumBonus = serumCount * 4 * 100000; // 100.000đ/cây giá gốc
+
+      if (comboRateEl) comboRateEl.innerText = comboRate + '%';
+      if (comboImpact) comboImpact.innerText = `~${simulatedCombos} combo cá nhân chốt`;
+
+      if (serumRateEl) serumRateEl.innerText = `${serumCount} cây / tuần`;
+
+      const fmt = (n) => n.toLocaleString('vi-VN');
+
+      // TÍNH TOÁN CÁC NGUỒN THU:
+      // 1. Tiền Tip (+20% Tip Share từ 70% lên 90%): CV 1 CÁNH VẪN NHẬN ĐẦY ĐỦ 90% TIP KỂ CẢ KHI COMBO < 20%!
+      const extraTipPerMonth = Math.round(monthlyOrders * (tipRate / 100) * 45000 * 0.20);
+      // 2. Lương giờ tăng (+2.000đ/h x 260h = +520.000đ)
+      const baseWageGain = 520000;
+      // 3. Thưởng Combo cá nhân (~150.000đ/combo bậc thang)
+      const baseComboBonus = simulatedCombos * 150000;
+
+      // CASE 1: comboRate < 20% -> BÁN KHÔNG ĐẠT NGƯỠNG BẮT BUỘC!
+      if (comboRate < 20) {
+        if (comboBox) comboBox.className = "p-4 rounded-2xl bg-rose-950/80 border-2 border-rose-500 shadow-xl shadow-rose-500/20 space-y-2.5 transition-all duration-300";
+        if (comboRateEl) comboRateEl.className = "text-xl font-black font-mono tabular-nums text-rose-500 animate-pulse";
+        if (comboBadge) {
+          comboBadge.innerText = "✕ BÁN KHÔNG ĐẠT (< 20%)";
+          comboBadge.className = "px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-rose-600 text-white shadow-xs animate-bounce";
+        }
+        if (comboNotice) {
+          comboNotice.className = "p-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between bg-rose-950/90 border border-rose-500 text-rose-200";
+          comboNotice.innerHTML = `<span>🚨 <strong>BÁN CHƯA ĐẠT 20% COMBO:</strong> CV 1 cánh VẪN NHẬN 90% TIP (+${fmt(extraTipPerMonth)}đ). Nhưng CẮT TOÀN BỘ CÁC LOẠI THƯỞNG KHÁC! ⚠️ <strong>2 tháng liền không đạt thì quay lại CV · Dịu Dàng</strong> (Tip tụt về 70%, mất quyền tự tư vấn)!</span>`;
+        }
+
+        // Serum Locked
+        if (serumBox) serumBox.className = "p-4 rounded-2xl bg-slate-950/60 border-2 border-slate-700/80 shadow-md space-y-2.5 opacity-75 transition-all duration-300";
+        if (serumImpact) {
+          serumImpact.innerHTML = `<span class="line-through text-rose-400">+${fmt(monthlySerumBonus)}đ</span> <span class="text-rose-400 text-[9px]">(Tạm khóa do Combo &lt; 20%)</span>`;
+        }
+        if (serumNotice) {
+          serumNotice.className = "p-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between bg-rose-950/60 border border-rose-500/50 text-rose-300";
+          serumNotice.innerHTML = `<span>⚠️ Thưởng dưỡng mi (+${fmt(monthlySerumBonus)}đ/tháng) tạm thời bị khóa do chưa đạt chuẩn sống còn ≥ 20% Combo!</span>`;
+        }
+
+        const lostBonus = baseWageGain + baseComboBonus + monthlySerumBonus;
+
+        const heroMonthly = document.getElementById('heroIncomeMonthly');
+        if (heroMonthly) {
+          heroMonthly.innerHTML = `<span class="text-emerald-400">+${fmt(extraTipPerMonth)}đ</span> <span class="text-xs font-bold text-slate-400">/ Tháng</span> <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Bảo lưu 90% Tip</span> <span class="text-xs font-bold text-rose-400 line-through">+${fmt(lostBonus)}đ thưởng</span>`;
+        }
+
+        const heroYearly = document.getElementById('heroIncomeYearly');
+        if (heroYearly) {
+          heroYearly.innerHTML = `<strong class="text-emerald-400 text-sm font-black tabular-nums">+${fmt(extraTipPerMonth * 12)}đ / Năm</strong> (Bảo lưu 90% Tip, mất trắng +${fmt(lostBonus * 12)}đ tiền thưởng do chưa đạt 20% Combo)`;
+        }
+
+        const afterBadge = document.getElementById('afterBadgePill');
+        if (afterBadge) {
+          afterBadge.innerText = "+90% TIP (BỊ KHÓA THƯỞNG)";
+          afterBadge.className = "px-2 py-0.5 rounded-full bg-rose-500 text-white text-[9px] font-black uppercase shadow-xs";
+        }
+
+        const tipEl = document.getElementById('afterExtraTip');
+        if (tipEl) tipEl.innerText = '+' + fmt(extraTipPerMonth) + 'đ / thg';
+
+        const comboEl = document.getElementById('afterExtraCombo');
+        if (comboEl) comboEl.innerHTML = `<span class="text-rose-400 font-bold">0đ (Khóa do &lt;20%)</span>`;
+
+        const wageEl = document.getElementById('afterExtraWage');
+        if (wageEl) wageEl.innerHTML = `<span class="text-rose-400 font-bold">0đ (Khóa do &lt;20%)</span>`;
+
+        const serumEl = document.getElementById('afterExtraSerum');
+        if (serumEl) serumEl.innerHTML = `<span class="text-rose-400 font-bold">0đ (Khóa do &lt;20%)</span>`;
+
+        const totalEl = document.getElementById('afterTotalIncome');
+        if (totalEl) totalEl.innerText = '~' + fmt(11800000 + extraTipPerMonth) + 'đ / thg';
+        return;
+      }
+
+      // CASE 2: comboRate >= 20% -> ĐỦ ĐIỀU KIỆN NHẬN TRỌN BỘ 4 NGUỒN THU!
+      if (comboBox) comboBox.className = "p-4 rounded-2xl bg-slate-950/90 border-2 border-emerald-500/80 shadow-lg space-y-2.5 transition-all duration-300";
+      if (comboRateEl) comboRateEl.className = "text-xl font-black font-mono tabular-nums text-emerald-400";
+      if (comboBadge) {
+        comboBadge.innerText = "✓ ĐẠT CHUẨN (≥ 20%)";
+        comboBadge.className = "px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500 text-slate-950 shadow-xs";
+      }
+      if (comboNotice) {
+        comboNotice.className = "p-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between bg-emerald-950/40 border border-emerald-500/40 text-emerald-300";
+        comboNotice.innerHTML = `<span>✅ <strong>XUẤT SẮC:</strong> Tỷ lệ Combo đạt ${comboRate}% (≥ 20% chuẩn sống còn)! Đạt chuẩn Chuyên Viên Tự Chủ, kích hoạt nhận trọn 90% Tip + Thưởng Combo + Lương tăng!</span>`;
+      }
+
+      // Serum Active
+      if (serumBox) serumBox.className = "p-4 rounded-2xl bg-teal-950/30 border-2 border-teal-500/80 shadow-lg space-y-2.5 transition-all duration-300";
+      if (serumImpact) {
+        serumImpact.innerText = `+${fmt(monthlySerumBonus)}đ / tháng tiền tươi`;
+        serumImpact.className = "text-[10px] font-bold text-emerald-400 tabular-nums";
+      }
+      if (serumNotice) {
+        if (serumCount >= 1) {
+          serumNotice.className = "p-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between bg-teal-950/40 border border-teal-500/40 text-teal-300";
+          serumNotice.innerHTML = `<span>🌿 <strong>XUẤT SẮC:</strong> Bán ${serumCount} cây dưỡng mi/tuần (~${serumCount * 4} cây/tháng) đút túi thêm +${fmt(monthlySerumBonus)}đ/tháng tiền tươi rót thẳng vào ví!</span>`;
+        } else {
+          serumNotice.className = "p-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between bg-slate-900 border border-slate-700 text-slate-300";
+          serumNotice.innerHTML = `<span>ℹ️ Chưa bán dưỡng mi (0đ). Khuyến khích bán từ 1 cây/tuần để đút túi thêm ít nhất +400.000đ/tháng!</span>`;
+        }
+      }
+
+      const totalExtraMonthly = extraTipPerMonth + baseComboBonus + baseWageGain + monthlySerumBonus;
+      const totalExtraYearly = totalExtraMonthly * 12;
+      const baseSalaryMonthly = 11800000;
+      const newTotalMonthly = baseSalaryMonthly + totalExtraMonthly;
+
+      const heroMonthly = document.getElementById('heroIncomeMonthly');
+      if (heroMonthly) heroMonthly.innerText = '+' + fmt(totalExtraMonthly) + 'đ';
+
+      const heroYearly = document.getElementById('heroIncomeYearly');
+      if (heroYearly) heroYearly.innerHTML = `<strong class="text-white text-sm font-black tabular-nums">+${fmt(totalExtraYearly)}đ / Năm</strong> (Đủ sắm xe tay ga hoặc 7 chỉ vàng 9999!)`;
+
+      const afterBadge = document.getElementById('afterBadgePill');
+      if (afterBadge) {
+        afterBadge.innerText = "+33% THU NHẬP";
+        afterBadge.className = "px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[9px] font-black uppercase shadow-xs";
+      }
+
+      const tipEl = document.getElementById('afterExtraTip');
+      if (tipEl) tipEl.innerText = '+' + fmt(extraTipPerMonth) + 'đ / thg';
+
+      const comboEl = document.getElementById('afterExtraCombo');
+      if (comboEl) comboEl.innerText = '+' + fmt(baseComboBonus) + 'đ / thg';
+
+      const wageEl = document.getElementById('afterExtraWage');
+      if (wageEl) wageEl.innerText = '+' + fmt(baseWageGain) + 'đ / thg';
+
+      const serumEl = document.getElementById('afterExtraSerum');
+      if (serumEl) serumEl.innerText = '+' + fmt(monthlySerumBonus) + 'đ / thg';
+
+      const totalEl = document.getElementById('afterTotalIncome');
+      if (totalEl) totalEl.innerText = '~' + fmt(newTotalMonthly) + 'đ / thg';
+    }
+
+    // Run once on load
+    updateFinancialSimulation();
+  </script>
+</body>
+</html>

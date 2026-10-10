@@ -28,6 +28,8 @@ import {
   removeVietnameseTones,
   type ReportComparisonMode,
   calculateFractionToday,
+  maskPhoneNumber,
+  shouldMaskCustomerPhone,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
@@ -64,6 +66,20 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
 
   const [loading, setLoading] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
+
+  const isMaskedRole = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const stored = localStorage.getItem('mos_user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        return shouldMaskCustomerPhone(u?.role);
+      }
+    } catch {
+      return false;
+    }
+    return false;
+  }, []);
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [customerDrawerOpen, setCustomerDrawerOpen] = useState(false);
@@ -473,8 +489,8 @@ export default function BkBookingTab({ dateRange, selectedStore, selectedBooker,
               </div>
               {r.clientPhone && (
                 <div className="text-[10px] text-slate-400 tabular-nums whitespace-nowrap flex items-center gap-1">
-                  <span>{r.clientPhone}</span>
-                  <CopyPhoneButton phone={r.clientPhone} size="xs" />
+                  <span>{isMaskedRole ? maskPhoneNumber(r.clientPhone) : r.clientPhone}</span>
+                  {!isMaskedRole && <CopyPhoneButton phone={r.clientPhone} size="xs" />}
                 </div>
               )}
             </div>

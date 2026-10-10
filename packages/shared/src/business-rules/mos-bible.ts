@@ -470,6 +470,48 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'CV-002',
+    book: 'REWARDS',
+    title: 'Quy chế Chuyên Viên 1 Cánh (🪽 CV Tự Chủ): Thưởng Combo, Bảo lưu 90% Tip và Giáng cấp 2 Tháng Liền',
+    summary:
+      'Chuyên Viên 1 Cánh (🪽 CV / CV+) nhận trọn bộ thưởng khi đạt tối thiểu 20% Combo trên khách Not Combo Live (khách có Combo Live bán được cũng cộng dồn). Bán không đạt vẫn nhận 90% Tip nhưng không nhận thêm bất kỳ thưởng nào khác; 2 tháng liền không đạt thì quay lại CV.',
+    commandments: [
+      'Phạm vi triển khai hiện tại: Hệ thống chỉ áp dụng và triển khai cho cấp bậc Chuyên Viên 1 Cánh (🪽 CV / CV+ / Chuyên Viên Tự Chủ). CV 2 cánh (🪽 CV 🪽) và những vai trò khác (FM, CHO, BOSS) hiện đang trong giai đoạn nghiên cứu.',
+      'Điều kiện nhận hết thưởng: Phải bán được tối thiểu 20% combo cho tệp khách hàng Not Combo Live (khách chưa có gói combo dặm). Trường hợp bán được combo cho khách đang có Combo Live thì cũng được cộng dồn vào tỷ lệ (làm tăng tử số).',
+      'Quyền lợi khi đạt chuẩn (Combo ≥ 20%): Mở khóa trọn bộ quyền lợi tài chính gồm: Lương giờ tăng +2.000đ/h (27.500đ/h), 90% Tiền Tip (70% làm mi + 20% tự tư vấn), Thưởng Combo bậc thang tiền tươi theo COMBO-REWARD-001, và Thưởng bán Dưỡng Mi Yeppeum (100k gốc / 50k khuyến mãi).',
+      'Quyền lợi & Chế tài khi bán không được (Combo < 20%): Chuyên Viên 1 Cánh VẪN NHẬN ĐỦ 90% TIP (70% mi + 20% tư vấn). Nhưng KHÔNG NHẬN THÊM BẤT KỲ PHẦN THƯỞNG NÀO KHÁC: không nhận lương giờ tăng +2k/h (giữ 25.5k/h), không nhận thưởng combo (0đ), không nhận thưởng sản phẩm/dưỡng mi (0đ).',
+      'Quy tắc Giáng cấp 2 Tháng Liền: Nếu trong 2 tháng liên tiếp (2 tháng liền) không đạt chuẩn tối thiểu 20% combo, Chuyên Viên bị tước 1 cánh và quay lại CV · Dịu Dàng (0 cánh). Khi quay lại CV, tỷ lệ Tip tụt về lại 70%, mất quyền tự tư vấn tại giường và phải chuyển khách cho sảnh.',
+      'Quy chuẩn 2 Cần gạt Mô phỏng Thu nhập: Giao diện mô phỏng thu nhập CV 1 Cánh tích hợp 2 thanh trượt tương tác rõ ràng: 1. Slider Combo (Bắt buộc ≥ 20%): Ngưỡng sống còn để mở khóa quyền lợi tài chính; dưới 20% vẫn nhận đủ 90% Tip, nhưng cắt sạch toàn bộ các loại thưởng khác (lương giờ +2k/h = 0đ, thưởng combo = 0đ, thưởng dưỡng mi = 0đ); 2 tháng liền không đạt thì quay lại CV. 2. Slider Dưỡng mi Yeppeum (Khuyến khích ≥ 1 cây/tuần ~ 4 cây/tháng): Thưởng tiền tươi theo số cây bán được (100k/cây giá gốc), chỉ được nhận khi Slider 1 đạt chuẩn bắt buộc ≥ 20% combo.',
+    ],
+    rationale:
+      'Gắn kết quyền lợi tài chính đột phá với năng lực tự chủ bán combo tại giường, công nhận công sức tự tư vấn bằng việc luôn bảo lưu 90% Tip, đồng thời thiết lập kỷ luật doanh nghiệp rõ ràng qua quy tắc 2 tháng liền không đạt thì quay lại CV.',
+    examples: [
+      'Chuyên Viên 1 Cánh phục vụ 40 khách Not Combo Live và bán được 10 combo (tỷ lệ 25% ≥ 20%): Nhận đủ lương 27.5k/h, 90% Tip, thưởng combo và thưởng dưỡng mi (~+3.850.000đ/tháng).',
+      'Chuyên Viên 1 Cánh phục vụ 40 khách Not Combo Live và bán được 5 combo (tỷ lệ 12.5% < 20%): Vẫn nhận đủ 90% Tip (+1.850.000đ), nhưng bị khóa toàn bộ thưởng combo, lương tăng +2k/h và thưởng dưỡng mi. Nếu tháng kế tiếp vẫn < 20% (2 tháng liền), nhân viên sẽ bị tước cánh và giáng cấp về CV · Dịu Dàng.',
+    ],
+    tags: [
+      'CV 1 cánh',
+      '🪽 CV',
+      'CV+',
+      'Chuyên Viên Tự Chủ',
+      'Not Combo Live',
+      'Combo Live cộng dồn',
+      '90% Tip',
+      '2 tháng liền',
+      'quay lại CV',
+      'giáng cấp',
+    ],
+    routeScopes: ['/dashboard/career-path', '/dashboard/cv'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-10-10',
+    sources: [
+      { label: 'Kinh Thánh mOS · Điều răn CV-002', reference: 'packages/shared/src/business-rules/mos-bible.ts' },
+      { label: 'Quy chế CV 1 Cánh', reference: 'packages/shared/src/types/career-progression.ts' },
+      { label: 'Mô phỏng thăng cấp Career Service', reference: 'apps/api/src/modules/career/career.service.ts' },
+    ],
+  },
+  {
     id: 'FC-001',
     book: 'REWARDS',
     title: 'Dự đoán Vòng xoay là tổng dự đoán từng người, không lấy tổng công ty bình phương',

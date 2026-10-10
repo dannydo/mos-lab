@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
-import { BucketType, SafeAny } from '@mos-lab/shared';
+import { BucketType, SafeAny, maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
 import { CustomerAccessService } from '../services/customer-access.service.js';
 import { BookingReschedulePermissionService } from '../services/booking-reschedule-permission.service.js';
 import { isAssignmentTimeSort, resolveCustomerListSort } from '../customer-list-sort.js';
@@ -296,11 +296,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
             select: { legacyUserId: true },
           });
           const campUserIds = Array.from(
-            new Set(
-              campaignCustomers
-                .map((c) => Number(c.legacyUserId))
-                .filter((id) => Number.isInteger(id) && id > 0)
-            )
+            new Set(campaignCustomers.map((c) => Number(c.legacyUserId)).filter((id) => Number.isInteger(id) && id > 0))
           );
 
           if (mode === 'IN') {
@@ -1597,7 +1593,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         return {
           id: Number(row.id),
           name: row.name,
-          phone: row.phone,
+          phone: shouldMaskCustomerPhone(request.user?.role) ? maskPhoneNumber(row.phone) : row.phone,
           email: row.email,
           gender: row.gender,
           dob: row.dob ? new Date(row.dob).toISOString().split('T')[0] : null,
@@ -1889,11 +1885,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
             select: { legacyUserId: true },
           });
           const campUserIds = Array.from(
-            new Set(
-              campaignCustomers
-                .map((c) => Number(c.legacyUserId))
-                .filter((id) => Number.isInteger(id) && id > 0)
-            )
+            new Set(campaignCustomers.map((c) => Number(c.legacyUserId)).filter((id) => Number.isInteger(id) && id > 0))
           );
 
           if (mode === 'IN') {

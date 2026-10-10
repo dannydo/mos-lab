@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>💻 Desktop FHD Mockup 2 · 3 Cột Toàn Cảnh (Alternative Command Center) · Career Path RPG</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Fredoka:wght@600;700&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+            game: ['Fredoka', 'cursive', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .tabular-nums { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 9999px; }
+    
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      height: 8px;
+      border-radius: 9999px;
+      outline: none;
+      background: #334155;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #8b5cf6;
+      cursor: pointer;
+      border: 2px solid #ffffff;
+      box-shadow: 0 2px 8px rgba(139, 92, 246, 0.5);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-purple-500 selection:text-white">
+
+  <!-- HEADER -->
+  <header class="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-md border-b border-purple-500/20 px-6 py-2.5">
+    <div class="max-w-[1880px] mx-auto flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-xl shadow-md">
+          🏰
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-sm font-black text-white">mOS Career Command Center</h1>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30">
+              Desktop FHD · 3 Cột Toàn Cảnh
+            </span>
+          </div>
+          <span class="text-[11px] text-slate-400">Trung tâm điều hành Lộ trình & Sát hạch Chuyên Viên Toàn Hệ Thống</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-300 font-bold text-xs tabular-nums">
+          <span>🍌</span> <span>1.386 Chuối</span>
+        </div>
+        <button id="themeToggle" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300">☀️</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-[1880px] mx-auto px-6 py-4 space-y-4">
+
+    <!-- 1. FULL WIDTH HERO MAP -->
+    <section class="rounded-3xl p-4 bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/30 shadow-md">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-black uppercase text-indigo-300 flex items-center gap-1.5">
+          <span>🗺️</span> Bản Đồ 7 Vương Quốc RPG
+        </span>
+        <span class="text-[11px] text-indigo-400 font-mono">Bấm vương quốc để lọc tiêu chuẩn ải</span>
+      </div>
+      <div class="grid grid-cols-7 gap-2.5">
+        <div class="p-2 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
+          <div class="text-base">⛑️</div>
+          <div class="text-[11px] font-bold text-slate-300">KTV Thử Việc</div>
+          <div class="text-[8px] text-slate-500">Sát hạch</div>
+        </div>
+        <div class="p-2 rounded-xl bg-pink-950/40 border border-pink-500 text-center ring-1 ring-pink-500/40">
+          <div class="text-base">👁️</div>
+          <div class="text-[11px] font-bold text-pink-300">CV Dịu Dàng</div>
+          <div class="text-[8px] text-pink-400">70% Tip (Hiện tại)</div>
+        </div>
+        <div class="p-2 rounded-xl bg-indigo-950/40 border border-indigo-500 text-center ring-1 ring-indigo-500/40">
+          <div class="text-base">🌸</div>
+          <div class="text-[11px] font-bold text-indigo-300">🪽 CV Thanh Lịch</div>
+          <div class="text-[8px] text-indigo-400">90% Tip (Mục tiêu)</div>
+        </div>
+        <div class="p-2 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
+          <div class="text-base">🌺</div>
+          <div class="text-[11px] font-bold text-slate-300">🪽 CV 🪽 Quí Phái</div>
+          <div class="text-[8px] text-slate-500">Đàn Chị Sảnh</div>
+        </div>
+        <div class="p-2 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
+          <div class="text-base">🏰</div>
+          <div class="text-[11px] font-bold text-slate-300">FM Nữ Thần</div>
+          <div class="text-[8px] text-slate-500">Quản lý Sàn</div>
+        </div>
+        <div class="p-2 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
+          <div class="text-base">💖</div>
+          <div class="text-[11px] font-bold text-slate-300">CHO Mẹ Thiên Thần</div>
+          <div class="text-[8px] text-slate-500">Vận hành Chuỗi</div>
+        </div>
+        <div class="p-2 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
+          <div class="text-base">👑</div>
+          <div class="text-[11px] font-bold text-slate-300">BOSS Co-Owner</div>
+          <div class="text-[8px] text-slate-500">Cổ tức P&L</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. FULL-WIDTH HORIZONTAL STAFF SELECTOR STRIP -->
+    <section class="rounded-3xl p-3.5 bg-slate-900/90 border border-slate-800 space-y-2.5">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-black text-white flex items-center gap-1.5">
+            <span>👥</span> Chọn Chuyên Viên Mô Phỏng (16 Nhân Sự)
+          </span>
+          <div class="flex items-center gap-1 text-[10px] bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <button class="px-2 py-0.5 rounded-lg bg-purple-600 text-white font-bold">Tất cả</button>
+            <button class="px-2 py-0.5 rounded-lg text-slate-400">CV</button>
+            <button class="px-2 py-0.5 rounded-lg text-slate-400">CV+</button>
+            <button class="px-2 py-0.5 rounded-lg text-slate-400">CV++</button>
+          </div>
+        </div>
+        <div class="text-xs text-slate-400">
+          Đang chọn: <strong class="text-white">Ánh Tuyết</strong> (@user3832 · Đề Thám)
+        </div>
+      </div>
+
+      <!-- Quick horizontal staff cards scroll track -->
+      <div class="flex gap-2.5 overflow-x-auto no-scrollbar py-1">
+        <!-- Ánh Tuyết (Active) -->
+        <div class="shrink-0 w-64 p-2.5 rounded-2xl bg-purple-950/40 border-2 border-purple-500 shadow-md ring-2 ring-purple-500/20 cursor-pointer">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=60&auto=format&fit=crop&q=80" class="w-8 h-8 rounded-full object-cover ring-2 ring-purple-500">
+              <div>
+                <div class="text-xs font-black text-white">Ánh Tuyết</div>
+                <div class="text-[9px] text-purple-300">CV · Dịu Dàng</div>
+              </div>
+            </div>
+            <span class="text-[9px] px-1.5 py-0.5 rounded-md bg-purple-500 text-white font-black">CHỌN</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1 mt-2 text-[9px] text-center font-bold">
+            <div class="bg-slate-900/80 rounded py-0.5 text-emerald-400 border border-slate-800">👁️ 326</div>
+            <div class="bg-slate-900/80 rounded py-0.5 text-emerald-400 border border-slate-800">🐛 0%</div>
+            <div class="bg-slate-900/80 rounded py-0.5 text-emerald-400 border border-slate-800">🪙 53%</div>
+          </div>
+        </div>
+
+        <!-- Cẩm Tiên -->
+        <div class="shrink-0 w-64 p-2.5 rounded-2xl bg-slate-900/70 border border-slate-800 hover:border-slate-700 cursor-pointer opacity-80 hover:opacity-100 transition-all">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-300 flex items-center justify-center font-bold text-xs">CT</div>
+              <div>
+                <div class="text-xs font-black text-slate-200">Cẩm Tiên</div>
+                <div class="text-[9px] text-slate-400">CV · Estella</div>
+              </div>
+            </div>
+            <span class="text-[9px] px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 font-bold">Xem</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1 mt-2 text-[9px] text-center font-bold">
+            <div class="bg-slate-900/80 rounded py-0.5 text-emerald-400 border border-slate-800">👁️ 378</div>
+            <div class="bg-slate-900/80 rounded py-0.5 text-emerald-400 border border-slate-800">🐛 1.7%</div>
+            <div class="bg-slate-900/80 rounded py-0.5 text-rose-400 border border-slate-800">🪙 42%</div>
+          </div>
+        </div>
+
+        <!-- HânEmBé -->
+        <div class="shrink-0 w-64 p-2.5 rounded-2xl bg-slate-900/70 border border-slate-800 hover:border-slate-700 cursor-pointer opacity-80 hover:opacity-100 transition-all">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-full bg-rose-500/20 text-rose-300 flex items-center justify-center font-bold text-xs">HE</div>
+              <div>
+                <div class="text-xs font-black text-slate-200">HânEmBé</div>
+                <div class="text-[9px] text-slate-400">CV · Estella</div>
+              </div>
+            </div>
+            <span class="text-[9px] px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 font-bold">Xem</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1 mt-2 text-[9px] text-center font-bold">
+            <div class="bg-slate-900/80 rounded py-0.5 text-emerald-400 border border-slate-800">👁️ 349</div>
+            <div class="bg-slate-900/80 rounded py-0.5 text-emerald-400 border border-slate-800">🐛 0%</div>
+            <div class="bg-slate-900/80 rounded py-0.5 text-rose-400 border border-slate-800">🪙 33%</div>
+          </div>
+        </div>
+
+        <!-- Huyền Nguyễn -->
+        <div class="shrink-0 w-64 p-2.5 rounded-2xl bg-slate-900/70 border border-slate-800 hover:border-slate-700 cursor-pointer opacity-80 hover:opacity-100 transition-all">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-300 flex items-center justify-center font-bold text-xs">HN</div>
+              <div>
+                <div class="text-xs font-black text-slate-200">Huyền Nguyễn</div>
+                <div class="text-[9px] text-slate-400">CV · Estella</div>
+              </div>
+            </div>
+            <span class="text-[9px] px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-400 font-bold">Xem</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1 mt-2 text-[9px] text-center font-bold">
+            <div class="bg-slate-900/80 rounded py-0.5 text-emerald-400 border border-slate-800">👁️ 373</div>
+            <div class="bg-slate-900/80 rounded py-0.5 text-emerald-400 border border-slate-800">🐛 0%</div>
+            <div class="bg-slate-900/80 rounded py-0.5 text-rose-400 border border-slate-800">🪙 40%</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. PANORAMIC 3-COLUMN DASHBOARD (Equal width 4-4-4 cols) -->
+    <div class="grid grid-cols-12 gap-5 items-stretch">
+
+      <!-- COL 1: PROFILE & FINANCIAL SIMULATION (4 cols) -->
+      <div class="col-span-4 rounded-3xl p-5 bg-slate-900 border border-slate-800 space-y-4 flex flex-col justify-between shadow-lg">
+        <div class="space-y-4">
+          <div class="flex items-center gap-3 pb-3 border-b border-slate-800">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" class="w-14 h-14 rounded-2xl object-cover ring-2 ring-purple-500 shadow-md">
+            <div>
+              <h3 class="text-base font-black text-white">Ánh Tuyết</h3>
+              <div class="text-xs text-purple-300 font-bold">CV · Dịu Dàng ➔ 🪽 CV · Thanh Lịch</div>
+              <div class="text-[10px] text-slate-400">Kinh nghiệm: 14 tháng · Chi nhánh Đề Thám</div>
+            </div>
+          </div>
+
+          <!-- 🔥 FINANCIAL SUPER-NOVA CARD -->
+          <div class="p-4 rounded-2xl bg-gradient-to-br from-amber-950/90 via-slate-950 to-emerald-950/80 border-2 border-amber-500/80 space-y-3 shadow-xl relative overflow-hidden">
+            <div class="flex items-center justify-between">
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 text-[10px] font-black uppercase shadow-xs">
+                🔥 TÂM ĐIỂM TÀI CHÍNH
+              </span>
+              <span class="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+                💰 TIỀN RÓT VÀO TÚI
+              </span>
+            </div>
+
+            <div class="p-3 rounded-xl bg-slate-950/80 border border-amber-500/40 text-center">
+              <div class="text-[10px] font-black uppercase text-amber-400">THU NHẬP TĂNG THÊM MỖI THÁNG:</div>
+              <div class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-emerald-400 tabular-nums my-1">
+                +3.850.000đ
+              </div>
+              <div class="text-[10px] font-bold text-emerald-400">
+                ≈ <strong class="text-white">+46.200.000đ / Năm</strong> (Đủ mua xe tay ga mới hoặc 7 chỉ vàng!)
+              </div>
+            </div>
+
+            <div class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[10px] text-amber-200 text-center leading-snug">
+              “Cùng một ca làm, cùng lượng khách phục vụ — Nhưng đút túi thêm cả chỉ vàng! <strong class="text-amber-300 font-black">Chỉ có người ghét tiền mới không muốn lên CV+!</strong>”
+            </div>
+          </div>
+
+          <!-- Target switchers -->
+          <div class="space-y-1.5">
+            <span class="text-[11px] font-bold text-slate-400">Chọn Ải Mục Tiêu:</span>
+            <div class="grid grid-cols-2 gap-2">
+              <button class="p-2.5 rounded-xl bg-purple-600 text-white font-bold text-xs shadow-xs text-left">
+                🌸 Ải 1: CV+ (Tự Chủ)
+              </button>
+              <button class="p-2.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white font-bold text-xs text-left border border-slate-700">
+                🌺 Ải 2: CV++ (Sảnh)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Col 1 Action -->
+        <div class="pt-4 border-t border-slate-800">
+          <button class="w-full py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-black text-xs shadow-md shadow-purple-500/25 active:scale-98 transition-all">
+            ⚡ Kích Hoạt Thử Thách 30 Ngày
+          </button>
+        </div>
+      </div>
+
+      <!-- COL 2: RADAR CHART & WHAT-IF CONTROLLER (4 cols) -->
+      <div class="col-span-4 rounded-3xl p-5 bg-slate-900 border border-slate-800 space-y-3 flex flex-col justify-between shadow-lg">
+        <div>
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <span class="text-xs font-black text-purple-300 uppercase flex items-center gap-1.5">
+              <span>🎯</span> Radar 6 Đỉnh Kỹ Năng
+            </span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold">What-If Live</span>
+          </div>
+
+          <!-- Radar Chart SVG -->
+          <div class="flex justify-center py-2">
+            <svg width="280" height="280" viewBox="0 0 360 360" class="overflow-visible select-none">
+              <!-- Concentric polygons -->
+              <polygon points="180,30 310,105 310,255 180,330 50,255 50,105" fill="none" stroke="#334155" stroke-width="1.2" stroke-dasharray="3,3" />
+              <polygon points="180,65 277,121 277,239 180,295 83,239 83,121" fill="none" stroke="#334155" stroke-width="1" />
+              <polygon points="180,45 297,112 297,248 180,315 63,248 63,112" fill="rgba(139,92,246,0.08)" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="4,4" />
+              
+              <!-- Actual Polygon -->
+              <polygon points="180,35 305,108 302,260 180,195 72,250 78,118" fill="rgba(168,85,247,0.35)" stroke="#a855f7" stroke-width="2.5" />
+
+              <!-- Axes -->
+              <line x1="180" y1="180" x2="180" y2="30" stroke="#475569" stroke-width="1" />
+              <line x1="180" y1="180" x2="310" y2="105" stroke="#475569" stroke-width="1" />
+              <line x1="180" y1="180" x2="310" y2="255" stroke="#475569" stroke-width="1" />
+              <line x1="180" y1="180" x2="180" y2="330" stroke="#475569" stroke-width="1" />
+              <line x1="180" y1="180" x2="50" y2="255" stroke="#475569" stroke-width="1" />
+              <line x1="180" y1="180" x2="50" y2="105" stroke="#475569" stroke-width="1" />
+
+              <!-- Pills -->
+              <rect x="130" y="8" width="100" height="20" rx="10" fill="#065f46" stroke="#34d399" />
+              <text x="180" y="22" text-anchor="middle" fill="#ffffff" font-size="9.5" font-weight="bold">👁️ Sản Lượng ✓</text>
+              <rect x="260" y="88" width="90" height="20" rx="10" fill="#065f46" stroke="#34d399" />
+              <text x="305" y="102" text-anchor="middle" fill="#ffffff" font-size="9.5" font-weight="bold">🐛 Fix Mi ✓</text>
+              <rect x="260" y="248" width="85" height="20" rx="10" fill="#065f46" stroke="#34d399" />
+              <text x="302" y="262" text-anchor="middle" fill="#ffffff" font-size="9.5" font-weight="bold">🪙 Tip 53% ✓</text>
+              <rect x="135" y="322" width="90" height="20" rx="10" fill="#881337" stroke="#fb7185" />
+              <text x="180" y="336" text-anchor="middle" fill="#ffffff" font-size="9.5" font-weight="bold">🛡️ QA 0/4 ✕</text>
+              <rect x="15" y="248" width="85" height="20" rx="10" fill="#78350f" stroke="#fbbf24" />
+              <text x="57" y="262" text-anchor="middle" fill="#ffffff" font-size="9.5" font-weight="bold">❤️ HI 68% ⚡</text>
+              <rect x="10" y="88" width="95" height="20" rx="10" fill="#78350f" stroke="#fbbf24" />
+              <text x="57" y="102" text-anchor="middle" fill="#ffffff" font-size="9.5" font-weight="bold">🍌 17 Chuối ⚡</text>
+            </svg>
+          </div>
+
+          <!-- Live Slider -->
+          <div class="space-y-2 pt-2 border-t border-slate-800 text-xs">
+            <div class="flex justify-between text-[11px]">
+              <span class="text-slate-400 font-bold">Kéo thử sản lượng:</span>
+              <span class="font-mono text-purple-400 font-bold">326 bộ mi</span>
+            </div>
+            <input type="range" min="200" max="450" value="326" class="w-full">
+          </div>
+        </div>
+
+        <div class="text-[10px] text-center text-slate-500 font-mono">
+          Radar tự động phóng đại tỷ lệ đạt theo từng ải
+        </div>
+      </div>
+
+      <!-- COL 3: 6 QUESTS PROGRESSION (4 cols) -->
+      <div class="col-span-4 rounded-3xl p-5 bg-slate-900 border border-slate-800 space-y-3 flex flex-col justify-between shadow-lg">
+        <div>
+          <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+            <span class="text-xs font-black text-pink-300 uppercase flex items-center gap-1.5">
+              <span>📋</span> Danh Sách 6 Ải Thăng Cấp
+            </span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-pink-500/20 text-pink-300 font-bold font-mono">
+              3/6 Đạt
+            </span>
+          </div>
+
+          <div class="space-y-2 mt-2">
+            <!-- Ải 1 -->
+            <div class="p-2.5 rounded-xl bg-slate-950 border border-emerald-500/40 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span>👁️</span> <div><div class="font-bold text-white">Sản Lượng Bộ Mi</div><div class="text-[10px] text-slate-400">≥ 300 bộ (Đạt 326)</div></div>
+              </div>
+              <span class="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500 text-white font-bold">✓ ĐẠT</span>
+            </div>
+
+            <!-- Ải 2 -->
+            <div class="p-2.5 rounded-xl bg-slate-950 border border-emerald-500/40 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span>🐛</span> <div><div class="font-bold text-white">Sửa Mi Bảo Hành</div><div class="text-[10px] text-slate-400">≤ 2.0% (Đạt 0.0%)</div></div>
+              </div>
+              <span class="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500 text-white font-bold">✓ ĐẠT</span>
+            </div>
+
+            <!-- Ải 3 -->
+            <div class="p-2.5 rounded-xl bg-slate-950 border border-emerald-500/40 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span>🪙</span> <div><div class="font-bold text-white">Tỷ Lệ Tip Khách</div><div class="text-[10px] text-slate-400">≥ 49.5% (Đạt 53.5%)</div></div>
+              </div>
+              <span class="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500 text-white font-bold">✓ ĐẠT</span>
+            </div>
+
+            <!-- Ải 4 -->
+            <div class="p-2.5 rounded-xl bg-slate-950 border border-rose-500/40 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span>🛡️</span> <div><div class="font-bold text-white">Sát Hạch QA/QC</div><div class="text-[10px] text-slate-400">≥ 4 lượt (Hiện có 0/4)</div></div>
+              </div>
+              <span class="text-[9px] px-2 py-0.5 rounded-full bg-rose-500/30 text-rose-300 font-bold border border-rose-500/40">✕ THIẾU 4</span>
+            </div>
+
+            <!-- Ải 5 -->
+            <div class="p-2.5 rounded-xl bg-slate-950 border border-amber-500/40 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span>❤️</span> <div><div class="font-bold text-white">HI Teamwork</div><div class="text-[10px] text-slate-400">≥ 70% (Hiện có 68%)</div></div>
+              </div>
+              <span class="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-300 font-bold border border-amber-500/40">⚡ GẦN ĐẠT</span>
+            </div>
+
+            <!-- Ải 6 -->
+            <div class="p-2.5 rounded-xl bg-slate-950 border border-amber-500/40 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <span>🍌</span> <div><div class="font-bold text-white">Chuối Đồng Đội</div><div class="text-[10px] text-slate-400">≥ 20 chuối (Có 17 chuối)</div></div>
+              </div>
+              <span class="text-[9px] px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-300 font-bold border border-amber-500/40">⚡ GẦN ĐẠT</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-800">
+          <button class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition-all">
+            Duyệt Thăng Cấp (Đang Chờ QA)
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const themeBtn = document.getElementById('themeToggle');
+    themeBtn.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+      themeBtn.innerText = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+    });
+  </script>
+</body>
+</html>

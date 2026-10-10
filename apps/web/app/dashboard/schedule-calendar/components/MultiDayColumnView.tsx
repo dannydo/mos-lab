@@ -15,12 +15,12 @@ import {
   CheckCircleFilled,
   CloseCircleFilled,
   ClockCircleFilled,
-  SyncOutlined,
   CreditCardFilled,
   ThunderboltFilled,
+  SyncOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { Appointment } from '@mos-lab/shared';
+import { Appointment, maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
 import { formatVND } from '../../../../lib/format-utils';
 import { useOmiCall } from '../../../../context/OmiCallContext';
 import { useTheme } from '../../../../context/ThemeContext';
@@ -565,6 +565,20 @@ const AppointmentCardItem = React.memo(function AppointmentCardItem({
   const isCancelled = appt.orderState === 'Cancelled';
   const isMissed = appt.orderState === 'Missed';
 
+  const isMaskedRole = React.useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const stored = localStorage.getItem('mos_user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        return shouldMaskCustomerPhone(u?.role);
+      }
+    } catch {
+      return false;
+    }
+    return false;
+  }, []);
+
   const isBeingDragged =
     draggedAppt &&
     ((draggedAppt.id && appt.id && draggedAppt.id === appt.id) ||
@@ -577,8 +591,8 @@ const AppointmentCardItem = React.memo(function AppointmentCardItem({
       <div className="border-b border-slate-100 dark:border-slate-800 pb-1.5">
         <div className="font-bold text-slate-800 dark:text-slate-100 text-sm">{customerName}</div>
         <div className="text-xs text-slate-400 tabular-nums flex items-center gap-1">
-          <span>SĐT: {phone || '-'}</span>
-          {phone && <CopyPhoneButton phone={phone} size="xs" />}
+          <span>SĐT: {phone ? (isMaskedRole ? maskPhoneNumber(phone) : phone) : '-'}</span>
+          {phone && !isMaskedRole && !phone.includes('*') && <CopyPhoneButton phone={phone} size="xs" />}
         </div>
       </div>
       <div className="text-xs space-y-1">
@@ -622,7 +636,7 @@ const AppointmentCardItem = React.memo(function AppointmentCardItem({
         </div>
       </div>
       <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex gap-1 justify-end">
-        {phone && (
+        {phone && !isMaskedRole && !phone.includes('*') && (
           <Button
             size="small"
             icon={<PhoneOutlined className="text-emerald-500" />}

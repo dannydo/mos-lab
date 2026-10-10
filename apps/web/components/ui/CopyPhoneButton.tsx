@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { Tooltip, message } from 'antd';
 import { Copy, Check } from 'lucide-react';
+import { shouldMaskCustomerPhone } from '@mos-lab/shared';
 import { AppIcon } from './AppIcon';
 
 export interface CopyPhoneButtonProps {
@@ -85,14 +86,31 @@ export function CopyPhoneButton({
     [cleanPhone, quiet]
   );
 
-  // Return null if phone is empty or a placeholder
+  // Return null if phone is empty, placeholder, already masked, or current user is CV/facility role
+  const isMaskedRole =
+    typeof window !== 'undefined' &&
+    (() => {
+      try {
+        const stored = localStorage.getItem('mos_user');
+        if (stored) {
+          const u = JSON.parse(stored);
+          return shouldMaskCustomerPhone(u?.role);
+        }
+      } catch {
+        return false;
+      }
+      return false;
+    })();
+
   if (
     !cleanPhone ||
     cleanPhone === '-' ||
     cleanPhone === '—' ||
     cleanPhone === 'Chưa có SĐT' ||
     cleanPhone === 'Chưa cập nhật' ||
-    cleanPhone === 'N/A'
+    cleanPhone === 'N/A' ||
+    cleanPhone.includes('*') ||
+    isMaskedRole
   ) {
     return null;
   }

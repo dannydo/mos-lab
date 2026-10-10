@@ -28,6 +28,8 @@ import {
   removeVietnameseTones,
   type ReportComparisonMode,
   calculateFractionToday,
+  maskPhoneNumber,
+  shouldMaskCustomerPhone,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
 import { useTheme } from '../../../../context/ThemeContext';
@@ -75,6 +77,20 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
 
   const [loading, setLoading] = useState(false);
   const [detailsLoading, setDetailsLoading] = useState(false);
+
+  const isMaskedRole = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      const stored = localStorage.getItem('mos_user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        return shouldMaskCustomerPhone(u?.role);
+      }
+    } catch {
+      return false;
+    }
+    return false;
+  }, []);
 
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [customerDrawerOpen, setCustomerDrawerOpen] = useState(false);
@@ -533,8 +549,8 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
                 <UserOutlined className="text-[10px] opacity-0 group-hover:opacity-100 text-amber-400 transition-opacity" />
               </div>
               <div className="text-[10px] text-slate-400 tabular-nums whitespace-nowrap flex items-center gap-1">
-                <span>{record.clientPhone || 'Chưa có SĐT'}</span>
-                {record.clientPhone && <CopyPhoneButton phone={record.clientPhone} size="xs" />}
+                <span>{isMaskedRole ? maskPhoneNumber(record.clientPhone) : record.clientPhone || 'Chưa có SĐT'}</span>
+                {!isMaskedRole && record.clientPhone && <CopyPhoneButton phone={record.clientPhone} size="xs" />}
               </div>
             </div>
           </div>
