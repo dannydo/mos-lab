@@ -111,7 +111,7 @@ export function CvSpeedTab() {
   // Predictor trigger
   const handlePredict = async () => {
     if (!predCvId) {
-      message.warning('Vui lòng chọn Kỹ thuật viên!');
+      message.warning('Vui lòng chọn Chuyên Viên (CV)!');
       return;
     }
     setPredictLoading(true);
@@ -135,7 +135,7 @@ export function CvSpeedTab() {
     setSeeding(true);
     try {
       const res = await apiClient.kpi.cvSpeed.seed();
-      message.success(`Đã tính toán xong ${res.profilesProcessed} hồ sơ cho ${res.cvsCount} KTV.`);
+      message.success(`Đã tính toán xong ${res.profilesProcessed} hồ sơ cho ${res.cvsCount} CV.`);
       fetchMatrix();
       fetchRanking();
     } catch {

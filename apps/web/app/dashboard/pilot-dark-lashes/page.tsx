@@ -508,7 +508,7 @@ export default function PilotDarkLashesPage() {
       },
     },
     {
-      title: 'Kỹ thuật viên',
+      title: 'Chuyên Viên',
       dataIndex: 'technicianName',
       key: 'technicianName',
       width: 130,
@@ -803,7 +803,7 @@ export default function PilotDarkLashesPage() {
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-2 flex-wrap flex-1">
             <Input
-              placeholder="Tìm theo tên KH, SĐT, KTV..."
+              placeholder="Tìm theo tên KH, SĐT, CV..."
               prefix={<AppIcon icon={Search} size="sm" className="text-slate-400" />}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}

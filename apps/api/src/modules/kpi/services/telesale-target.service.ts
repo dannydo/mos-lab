@@ -176,7 +176,7 @@ export class TelesaleTargetService {
     if (teamCode === 'BK_CS') return 'Customer Service (CS)';
     if (teamCode === 'BK') return 'Booker';
     if (teamCode === 'CC') return 'Client Consultant';
-    if (teamCode === 'CV') return 'Chuyên Viên / KTV';
+    if (teamCode === 'CV') return 'Chuyên Viên (CV)';
     return teamCode;
   }
 

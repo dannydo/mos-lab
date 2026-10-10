@@ -70,7 +70,7 @@ test('GET /career/config returns default dynamic config successfully', async () 
   const body = JSON.parse(res.body);
   assert.equal(body.success, true);
   assert.equal(body.data.version, DEFAULT_CAREER_PROGRESSION_CONFIG.version);
-  assert.equal(body.data.cvToCc.minOrders, 300);
+  assert.equal(body.data.cvToCc.minOrders, DEFAULT_CAREER_PROGRESSION_CONFIG.cvToCc.minOrders);
 });
 
 test('PUT /career/config blocks non-admin and allows admin to update config', async () => {

@@ -349,13 +349,13 @@ export const UpdateBookingModal: React.FC<UpdateBookingModalProps> = ({ visible,
 
           {/* Form for editable parameters */}
           <Form form={form} layout="vertical" onFinish={handleSubmit}>
-            {/* 1. Technician / KTV Selection */}
+            {/* 1. Specialist / CV Selection */}
             <Form.Item
               name="technicianId"
               label={
                 <span style={{ fontWeight: 600, color: isDark ? '#e2e8f0' : '#1e293b' }}>
                   <UserOutlined style={{ marginRight: '6px', color: '#1890ff' }} />
-                  Chuyên viên (KTV / Technician)
+                  Chuyên viên (CV)
                 </span>
               }
             >

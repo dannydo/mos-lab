@@ -47,7 +47,7 @@ flowchart TD
     TagWarranty --> Stage1[GIAI ĐOẠN 1: CSKH Đặt Lịch Hẹn Đón Khách Đến Shop\\nStatus: APPOINTMENT_SCHEDULED]
     TagNoWarranty --> Stage1
     Stage1 --> CustomerArrives[Khách Hàng Đến Tiệm Theo Lịch Hẹn]
-    CustomerArrives --> Stage2[GIAI ĐOẠN 2: Trưởng KTV Soi Mi Tại Shop\\n- Nhập Kết Quả Soi Mi Trực Tiếp\\n- Phân Công KTV Tay Nghề Cao Làm Lại]
+    CustomerArrives --> Stage2[GIAI ĐOẠN 2: Quản lý CV Soi Mi Tại Shop\\n- Nhập Kết Quả Soi Mi Trực Tiếp\\n- Phân Công CV Tay Nghề Cao Làm Lại]
     Stage2 --> POSService[Tạo Đơn Dịch Vụ Bảo Hành Trên App POS Tiệm\\nFix / Adjust / Log / Replace]
     POSService --> SubtaskDone2[Sub-task CV RESOLVED]
     SubtaskDone1 --> CheckAllSubtasks{Tất Cả Sub-tasks\\nĐã RESOLVED?}
@@ -56,10 +56,10 @@ flowchart TD
     CheckAllSubtasks -->|Đã hoàn tất| MasterResolve[7. CSKH Gọi Lại Chốt Với Khách\\nĐóng Master Ticket]
     MasterResolve --> MidnightCron[8. CRONJOB NỬA ĐÊM 02:00 AM ICT\\nOrderRegenerationService.php Quét Đơn POS]
     MidnightCron --> FALCalc{Tự Động Tính\\nFAL Rules?}
-    FALCalc -->|Dịch vụ FIX <=25p| PunishCV[Trừ Thưởng KTV Cũ + Cộng Banana KTV Mới]
-    FALCalc -->|Dịch vụ ADJUST| PunishCC[Trừ Thưởng CC Cũ + Không Trừ KTV]
-    FALCalc -->|Dịch vụ LOG| AwardLog[Cộng Banana KTV Tháo Mi + Không Trừ Cũ]
-    FALCalc -->|Dịch vụ REPLACE| PunishCVReplace[Trừ Thưởng KTV Cũ]
+    FALCalc -->|Dịch vụ FIX <=25p| PunishCV[Trừ Thưởng CV Cũ + Cộng Banana CV Mới]
+    FALCalc -->|Dịch vụ ADJUST| PunishCC[Trừ Thưởng CC Cũ + Không Trừ CV]
+    FALCalc -->|Dịch vụ LOG| AwardLog[Cộng Banana CV Tháo Mi + Không Trừ Cũ]
+    FALCalc -->|Dịch vụ REPLACE| PunishCVReplace[Trừ Thưởng CV Cũ]
 `,
   },
   {

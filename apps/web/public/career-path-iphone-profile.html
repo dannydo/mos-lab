@@ -213,38 +213,68 @@
             </div>
           </div>
 
-          <!-- Mobile Dual Sliders: Combo (Bắt Buộc) & Dưỡng Mi (Khuyến Khích) -->
-          <div class="space-y-2 p-2.5 rounded-xl bg-slate-950/80 border border-emerald-500/40">
-            <!-- Slider 1: Combo -->
-            <div class="space-y-1">
+          <!-- Mobile Dual Sliders: Combo (Bắt Buộc) & Dưỡng Mi (Khuyến Khích) - Chuẩn Minimalism -->
+          <div class="space-y-2.5">
+            <!-- Slider 1 Card -->
+            <div id="mobileComboBox" class="p-2.5 rounded-xl bg-slate-950/90 border border-emerald-500/60 shadow-md space-y-1.5">
               <div class="flex justify-between items-center text-[10px]">
-                <span class="font-bold text-white flex items-center gap-1">💎 1. Combo (Bắt buộc ≥ 20%):</span>
-                <span id="mobileComboVal" class="font-mono font-bold text-emerald-400">25%</span>
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span class="text-xs">💎</span>
+                  <span class="font-bold text-white truncate">1. Combo</span>
+                  <span id="mobileComboBadge" class="text-[8px] font-bold px-1.5 py-0.5 rounded-full border bg-amber-500/15 text-amber-300 border-amber-500/30">≥ 20%</span>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <span id="mobileComboVal" class="font-mono font-black text-emerald-400 text-xs">25%</span>
+                  <div class="relative group/tip inline-flex items-center cursor-help">
+                    <button type="button" class="w-4 h-4 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-[9px] font-mono font-bold border border-slate-700">i</button>
+                    <div class="pointer-events-none absolute right-0 top-full mt-1.5 hidden group-hover/tip:flex flex-col w-56 p-2 bg-slate-950/95 border border-slate-700 rounded-lg shadow-xl text-[10px] text-slate-300 z-50 leading-snug">
+                      <strong class="text-amber-300 mb-0.5">💎 Quy tắc Combo:</strong>
+                      <span>• Tính trên ~43 khách Not Live.</span>
+                      <span>• Đạt ≥ 20% để nhận thưởng. Dưới 20% giữ 90% Tip, cắt thưởng khác.</span>
+                      <span class="text-rose-400 mt-0.5">• 2 tháng liền không đạt hạ cấp về CV.</span>
+                    </div>
+                  </div>
+                </div>
               </div>
               <input type="range" id="mobileComboSlider" min="0" max="60" value="25" step="1" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500" oninput="updateMobileFinancialSimulation()">
               <div class="flex justify-between text-[8px] text-slate-400">
-                <span class="text-rose-400">0% (Khóa thưởng)</span>
-                <span class="text-amber-400 font-bold">Chuẩn: ≥ 20%</span>
-                <span class="text-emerald-400">40%+</span>
+                <span class="text-rose-400 font-bold">0%</span>
+                <span class="text-amber-400 font-bold">≥ 20% (Chuẩn)</span>
+                <span class="text-emerald-400 font-bold">40%+</span>
               </div>
             </div>
 
-            <!-- Slider 2: Eyelash Serum -->
-            <div class="space-y-1 pt-1.5 border-t border-slate-800">
+            <!-- Slider 2 Card -->
+            <div id="mobileSerumBox" class="p-2.5 rounded-xl bg-slate-950/90 border border-teal-500/60 shadow-md space-y-1.5">
               <div class="flex justify-between items-center text-[10px]">
-                <span class="font-bold text-white flex items-center gap-1">🌿 2. Dưỡng mi (≥ 1 cây/tuần):</span>
-                <span id="mobileSerumVal" class="font-mono font-bold text-teal-300">1 cây/tuần</span>
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span class="text-xs">🌿</span>
+                  <span class="font-bold text-white truncate">2. Dưỡng Mi</span>
+                  <span class="text-[8px] font-bold px-1.5 py-0.5 rounded-full border bg-teal-500/15 text-teal-300 border-teal-500/30">Khuyến khích</span>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <span id="mobileSerumVal" class="font-mono font-black text-teal-300 text-xs">1 cây/tuần</span>
+                  <div class="relative group/tip inline-flex items-center cursor-help">
+                    <button type="button" class="w-4 h-4 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-[9px] font-mono font-bold border border-slate-700">i</button>
+                    <div class="pointer-events-none absolute right-0 top-full mt-1.5 hidden group-hover/tip:flex flex-col w-56 p-2 bg-slate-950/95 border border-slate-700 rounded-lg shadow-xl text-[10px] text-slate-300 z-50 leading-snug">
+                      <strong class="text-teal-300 mb-0.5">🌿 Dưỡng Mi Yeppeum:</strong>
+                      <span>• Thưởng 100k/cây giá gốc (50k KM).</span>
+                      <span>• Điều kiện: Mở khóa khi Combo ≥ 20%.</span>
+                    </div>
+                  </div>
+                </div>
               </div>
               <input type="range" id="mobileSerumSlider" min="0" max="10" value="1" step="1" class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-teal-400" oninput="updateMobileFinancialSimulation()">
               <div class="flex justify-between text-[8px] text-slate-400">
                 <span>0 cây</span>
-                <span class="text-teal-300 font-bold">Chuẩn: ≥ 1 cây/tuần (+400k)</span>
-                <span class="text-emerald-400">4 cây (+1.6M)</span>
+                <span class="text-teal-300 font-bold">1 cây (+400k)</span>
+                <span class="text-emerald-400 font-bold">4 cây (+1.6M)</span>
               </div>
             </div>
 
-            <div id="mobileBannerNotice" class="text-[9px] font-bold p-1.5 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-emerald-300">
-              ✅ Đạt chuẩn 25% Combo! Nhận trọn 90% Tip + Thưởng Combo + Thưởng Dưỡng mi!
+            <div id="mobileBannerNotice" class="text-[9px] font-bold p-1.5 rounded-lg bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 flex items-center justify-between">
+              <span>✓ Đạt chuẩn 25% Combo!</span>
+              <span class="text-[8px] text-slate-400">Nhận trọn 90% Tip + Thưởng</span>
             </div>
           </div>
 

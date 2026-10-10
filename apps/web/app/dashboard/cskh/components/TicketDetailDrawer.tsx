@@ -429,7 +429,7 @@ export default function TicketDetailDrawer({ open, onClose, ticketId, ticket, on
                           )}
                           {st.previousTechnicianName && (
                             <span className="text-slate-500">
-                              KTV ca cũ:{' '}
+                              CV ca cũ:{' '}
                               <strong className="text-amber-600 dark:text-amber-400">
                                 {st.previousTechnicianName}
                               </strong>
@@ -469,7 +469,7 @@ export default function TicketDetailDrawer({ open, onClose, ticketId, ticket, on
                         )}
                         {st.replacementTechnicianName && (
                           <div>
-                            <strong className="text-emerald-800 dark:text-emerald-300">KTV làm lại:</strong>{' '}
+                            <strong className="text-emerald-800 dark:text-emerald-300">CV làm lại:</strong>{' '}
                             {st.replacementTechnicianName}
                           </div>
                         )}
@@ -697,7 +697,7 @@ export default function TicketDetailDrawer({ open, onClose, ticketId, ticket, on
         </Form>
       </Modal>
 
-      {/* Modal Stage 2: Trưởng KTV Soi Mi Tại Shop & Chốt Bảo Hành */}
+      {/* Modal Stage 2: Quản lý CV Soi Mi Tại Shop & Chốt Bảo Hành */}
       <Modal
         title={`🔍 Giai Đoạn 2: Soi Mi Tại Shop & Chốt Bảo Hành — Bộ Phận ${activeSubtask?.department || ''}`}
         open={subtaskModalOpen}
@@ -713,7 +713,7 @@ export default function TicketDetailDrawer({ open, onClose, ticketId, ticket, on
             </div>
             {activeSubtask?.department === 'CV' && activeSubtask?.previousTechnicianName && (
               <div className="text-amber-600 dark:text-amber-400 font-medium">
-                ⚠️ KTV ca cũ: {activeSubtask.previousTechnicianName}
+                ⚠️ CV ca cũ: {activeSubtask.previousTechnicianName}
               </div>
             )}
           </div>
@@ -751,15 +751,15 @@ export default function TicketDetailDrawer({ open, onClose, ticketId, ticket, on
                   placeholder="Tự động chốt theo dịch vụ thực tế (hoặc chọn trước nếu có)"
                   options={[
                     {
-                      label: '🛠️ FIX (Sửa mi <= 25p 0đ) — Phạt KTV cũ, KTV mới có Banana <=25p',
+                      label: '🛠️ FIX (Sửa mi <= 25p 0đ) — Phạt CV cũ, CV mới có Banana <=25p',
                       value: 'FIX_25M_FREE',
                     },
-                    { label: '📐 ADJUST (Chỉnh dáng 0đ) — Phạt CC cũ, KHÔNG phạt KTV (CV)', value: 'ADJUST_FREE' },
+                    { label: '📐 ADJUST (Chỉnh dáng 0đ) — Phạt CC cũ, KHÔNG phạt CV', value: 'ADJUST_FREE' },
                     {
-                      label: '📋 LOG (Tháo mi / Kiểm tra mi 0đ) — KTV mới có Banana, KHÔNG phạt ca cũ',
+                      label: '📋 LOG (Tháo mi / Kiểm tra mi 0đ) — CV mới có Banana, KHÔNG phạt ca cũ',
                       value: 'LOG_FREE',
                     },
-                    { label: '🔄 REPLACE (Nối lại bộ mới 100% 0đ) — Phạt KTV cũ', value: 'REPLACE_FULL_FREE' },
+                    { label: '🔄 REPLACE (Nối lại bộ mới 100% 0đ) — Phạt CV cũ', value: 'REPLACE_FULL_FREE' },
                   ]}
                 />
               </Form.Item>
@@ -769,10 +769,10 @@ export default function TicketDetailDrawer({ open, onClose, ticketId, ticket, on
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <Form.Item name="replacementTechnicianId" label="KTV Mới Thay Thế (Tay nghề cao)" className="!mb-0">
+                <Form.Item name="replacementTechnicianId" label="CV Mới Thay Thế (Tay nghề cao)" className="!mb-0">
                   <Select
                     showSearch
-                    placeholder="Chọn KTV làm lại tại tiệm"
+                    placeholder="Chọn CV làm lại tại tiệm"
                     allowClear
                     filterOption={(input, option) => {
                       const staff = staffList.find((s: any) => Number(s.id) === Number(option?.value));
@@ -784,7 +784,7 @@ export default function TicketDetailDrawer({ open, onClose, ticketId, ticket, on
                       .filter((s: any) => Number(s.id) !== Number(activeSubtask?.previousTechnicianId))
                       .map((s: any) => ({
                         value: Number(s.id),
-                        label: `${s.displayName || s.name} (${s.role || 'KTV'})`,
+                        label: `${s.displayName || s.name} (${s.role || 'CV'})`,
                       }))}
                   />
                 </Form.Item>

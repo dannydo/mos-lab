@@ -41,7 +41,7 @@ flowchart TD
     TagWarranty --> Stage1[GIAI ĐOẠN 1: CSKH Đặt Lịch Hẹn Đón Khách Đến Shop\\nStatus: APPOINTMENT_SCHEDULED]
     TagNoWarranty --> Stage1
     Stage1 --> CustomerArrives[Khách Hàng Đến Tiệm Theo Lịch Hẹn]
-    CustomerArrives --> Stage2[GIAI ĐOẠN 2: Trưởng KTV Soi Mi Tại Shop\\n- Nhập Kết Quả Soi Mi Trực Tiếp\\n- Phân Công KTV Tay Nghề Cao Làm Lại]
+    CustomerArrives --> Stage2[GIAI ĐOẠN 2: Quản lý CV Soi Mi Tại Shop\\n- Nhập Kết Quả Soi Mi Trực Tiếp\\n- Phân Công CV Tay Nghề Cao Làm Lại]
     Stage2 --> POSService[Tạo Đơn Dịch Vụ Bảo Hành Trên App POS Tiệm\\nFix / Adjust / Log / Replace]
     POSService --> SubtaskDone2[Sub-task CV RESOLVED]
     SubtaskDone1 --> CheckAllSubtasks{Tất Cả Sub-tasks\\nĐã RESOLVED?}
@@ -50,10 +50,10 @@ flowchart TD
     CheckAllSubtasks -->|Đã hoàn tất| MasterResolve[7. CSKH Gọi Lại Chốt Với Khách\\nĐóng Master Ticket]
     MasterResolve --> MidnightCron[8. CRONJOB NỬA ĐÊM 02:00 AM ICT\\nOrderRegenerationService.php Quét Đơn POS]
     MidnightCron --> FALCalc{Tự Động Tính\\nFAL Rules?}
-    FALCalc -->|Dịch vụ FIX <=25p| PunishCV[Trừ Thưởng KTV Cũ + Cộng Banana KTV Mới]
-    FALCalc -->|Dịch vụ ADJUST| PunishCC[Trừ Thưởng CC Cũ + Không Trừ KTV]
-    FALCalc -->|Dịch vụ LOG| AwardLog[Cộng Banana KTV Tháo Mi + Không Trừ Cũ]
-    FALCalc -->|Dịch vụ REPLACE| PunishCVReplace[Trừ Thưởng KTV Cũ]
+    FALCalc -->|Dịch vụ FIX <=25p| PunishCV[Trừ Thưởng CV Cũ + Cộng Banana CV Mới]
+    FALCalc -->|Dịch vụ ADJUST| PunishCC[Trừ Thưởng CC Cũ + Không Trừ CV]
+    FALCalc -->|Dịch vụ LOG| AwardLog[Cộng Banana CV Tháo Mi + Không Trừ Cũ]
+    FALCalc -->|Dịch vụ REPLACE| PunishCVReplace[Trừ Thưởng CV Cũ]
 `;
 
 export default function WorkflowTrainingTab() {
@@ -104,7 +104,7 @@ export default function WorkflowTrainingTab() {
     {
       num: '06',
       title: 'Quy Trình CV 2 Giai Đoạn Tại Shop',
-      desc: 'GĐ1: CSKH hẹn khách đến Shop -> GĐ2: Trưởng KTV soi mi trực tiếp & gán KTV làm lại tại tiệm.',
+      desc: 'GĐ1: CSKH hẹn khách đến Shop -> GĐ2: Quản lý CV soi mi trực tiếp & gán CV làm lại tại tiệm.',
       icon: <ShopOutlined className="text-purple-500 text-xl" />,
       tag: '2 Giai Đoạn',
       tagColor: 'purple',
@@ -120,7 +120,7 @@ export default function WorkflowTrainingTab() {
     {
       num: '08',
       title: 'Cronjob Nửa Đêm Tính FAL (02:00 AM)',
-      desc: 'Script Legacy tự động tính thưởng/phạt KTV & CC cũ dựa trên đơn bảo hành tại Tiệm.',
+      desc: 'Script Legacy tự động tính thưởng/phạt CV & CC cũ dựa trên đơn bảo hành tại Tiệm.',
       icon: <ToolOutlined className="text-orange-500 text-xl" />,
       tag: 'Legacy Auto-FAL',
       tagColor: 'orange',
@@ -144,7 +144,7 @@ export default function WorkflowTrainingTab() {
       key: 'desc',
     },
     {
-      title: 'Điểm Thưởng KTV Mới',
+      title: 'Điểm Thưởng CV Mới',
       dataIndex: 'banana',
       key: 'banana',
       render: (text: string) => (
@@ -172,7 +172,7 @@ export default function WorkflowTrainingTab() {
       type: 'FIX (Sửa Mi)',
       desc: 'Sửa lỗi cộm, cay, dính keo rải rác',
       banana: 'Có Banana khi <= 25p ( >25p: Không có Banana, chỉ tính lương giờ)',
-      punish: 'Phạt thu hồi thưởng KTV (CV) ca cũ',
+      punish: 'Phạt thu hồi thưởng CV ca cũ',
       color: 'volcano',
     },
     {
@@ -181,7 +181,7 @@ export default function WorkflowTrainingTab() {
       type: 'ADJUST (Chỉnh Dáng)',
       desc: 'Thay đổi độ cong, chiều dài hoặc dáng mi theo ý khách',
       banana: 'Có Banana khi <= 25p ( >25p: Không có Banana, chỉ tính lương giờ)',
-      punish: 'Phạt thu hồi thưởng CC tư vấn cũ (KHÔNG phạt KTV)',
+      punish: 'Phạt thu hồi thưởng CC tư vấn cũ (KHÔNG phạt CV)',
       color: 'orange',
     },
     {
@@ -199,7 +199,7 @@ export default function WorkflowTrainingTab() {
       type: 'REPLACE (Nối Mới 100%)',
       desc: 'Tháo toàn bộ mi cũ và nối lại bộ mi mới hoàn toàn 0đ',
       banana: 'Tính thưởng Full theo bộ mi mới',
-      punish: 'Phạt thu hồi thưởng KTV (CV) ca cũ',
+      punish: 'Phạt thu hồi thưởng CV ca cũ',
       color: 'red',
     },
   ];
@@ -235,7 +235,7 @@ export default function WorkflowTrainingTab() {
       {/* SLA Alert Note */}
       <Alert
         message="📌 Nguyên Tắc Vàng Trong Đào Tạo CSKH"
-        description="Khách hàng không hài lòng trong vòng 72 Giờ (3 Ngày) kể từ lúc Checkout luôn được áp dụng Quyền Lợi Bảo Hành 3 Ngày (Kiểu Úc 0đ) — Sửa mi hoặc Nối bộ mới hoàn toàn miễn phí tại Shop với KTV tay nghề cao!"
+        description="Khách hàng không hài lòng trong vòng 72 Giờ (3 Ngày) kể từ lúc Checkout luôn được áp dụng Quyền Lợi Bảo Hành 3 Ngày (Kiểu Úc 0đ) — Sửa mi hoặc Nối bộ mới hoàn toàn miễn phí tại Shop với CV tay nghề cao!"
         type="info"
         showIcon
         icon={<SafetyCertificateOutlined className="text-xl" />}
@@ -404,7 +404,7 @@ export default function WorkflowTrainingTab() {
               </div>
               <div>
                 • <strong>CC Cũ ca tư vấn sai (ADJUST)</strong>: Vẫn BỊ PHẠT thu hồi tiền thưởng ca cũ{' '}
-                <code>_punishBonus</code> (bất kể KTV sửa trong bao lâu).
+                <code>_punishBonus</code> (bất kể CV sửa trong bao lâu).
               </div>
               <div>
                 • <strong>Thưởng Doanh Số</strong>: CC không nhận thưởng % doanh số đơn 0đ nhưng giữ mốc Level CC tích
@@ -432,12 +432,10 @@ export default function WorkflowTrainingTab() {
           </Col>
           <Col xs={24} sm={12} md={6}>
             <div className="p-3 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800 space-y-1">
-              <span className="font-bold text-purple-700 dark:text-purple-400 block text-sm">
-                👁️ Trưởng KTV Store (CV)
-              </span>
+              <span className="font-bold text-purple-700 dark:text-purple-400 block text-sm">👁️ Quản lý CV Store</span>
               <div>• Tiếp đón khách hàng theo lịch hẹn GĐ1</div>
               <div>• Soi mi trực tiếp dưới đèn tại Tiệm (GĐ2)</div>
-              <div>• Gán KTV Senior làm lại bộ mi 0đ</div>
+              <div>• Gán CV Senior làm lại bộ mi 0đ</div>
               <div>• Đảm bảo thời lượng sửa mi &lt;= 25 phút</div>
             </div>
           </Col>
@@ -456,7 +454,7 @@ export default function WorkflowTrainingTab() {
               <div>• Giám sát SLA các Ticket Khẩn cấp (&lt;= 4h)</div>
               <div>• Duyệt bảo hành quá hạn &gt; 3 ngày (nếu có)</div>
               <div>• Theo dõi Bảng Xếp Hạng Chất Lượng</div>
-              <div>• Đào tạo nâng cao tay nghề KTV bị phạt Fix</div>
+              <div>• Đào tạo nâng cao tay nghề CV bị phạt Fix</div>
             </div>
           </Col>
         </Row>

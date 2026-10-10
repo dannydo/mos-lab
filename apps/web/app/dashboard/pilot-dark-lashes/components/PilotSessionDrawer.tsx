@@ -240,13 +240,13 @@ export function PilotSessionDrawer({
                 <Input placeholder="VD: 14:30" className="rounded-lg tabular-nums" />
               </Form.Item>
 
-              <Form.Item name="technicianName" label="Kỹ thuật viên phụ trách" className="!mb-2">
+              <Form.Item name="technicianName" label="Chuyên Viên phụ trách" className="!mb-2">
                 <Select
-                  placeholder="Chọn KTV"
+                  placeholder="Chọn CV"
                   className="rounded-lg"
                   options={[
                     { label: 'Cô Đẫm (Lead Technical)', value: 'Cô Đẫm' },
-                    { label: 'KTV Wings Đề Thám', value: 'KTV Wings Đề Thám' },
+                    { label: 'CV Wings Đề Thám', value: 'CV Wings Đề Thám' },
                   ]}
                   allowClear
                 />
@@ -491,7 +491,7 @@ export function PilotSessionDrawer({
                 />
               </Form.Item>
 
-              <Form.Item name="technicianCost" label="Chi phí KTV (đ)" className="!mb-2">
+              <Form.Item name="technicianCost" label="Chi phí CV (đ)" className="!mb-2">
                 <InputNumber<number>
                   className="w-full rounded-lg tabular-nums"
                   formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}

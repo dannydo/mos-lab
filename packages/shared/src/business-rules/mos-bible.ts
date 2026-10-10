@@ -135,16 +135,16 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
   {
     id: 'BK-003',
     book: 'BOOKING',
-    title: 'Lịch không chọn KTV không mượn lịch nghỉ của KTV khác',
+    title: 'Lịch không chọn CV không mượn lịch nghỉ của CV khác',
     summary:
-      'Khi Booker dời hoặc tạo lịch không chỉ định KTV, ngày có thể chọn được xác định theo ngày hiện tại và công suất chi nhánh, không theo lịch nghỉ của một KTV mặc định.',
+      'Khi Booker dời hoặc tạo lịch không chỉ định CV, ngày có thể chọn được xác định theo ngày hiện tại và công suất chi nhánh, không theo lịch nghỉ của một CV mặc định.',
     commandments: [
-      'Không gán fallback KTV vào date picker khi booking.assigned_staff_id là null.',
-      'Ngày quá khứ vẫn bị khóa; ngày nghỉ hoặc phép chỉ khóa khi chính KTV được chọn có lịch nghỉ hợp lệ.',
-      'Khung giờ còn chỗ được kiểm tra bằng roster và công suất của chi nhánh khi chưa chỉ định KTV.',
+      'Không gán fallback CV vào date picker khi booking.assigned_staff_id là null.',
+      'Ngày quá khứ vẫn bị khóa; ngày nghỉ hoặc phép chỉ khóa khi chính CV được chọn có lịch nghỉ hợp lệ.',
+      'Khung giờ còn chỗ được kiểm tra bằng roster và công suất của chi nhánh khi chưa chỉ định CV.',
     ],
-    rationale: 'Một KTV không được chọn không thể làm cho lịch của cả chi nhánh bị mờ hoặc bị khóa sai.',
-    tags: ['đặt lịch', 'dời lịch', 'KTV', 'công suất', 'ngày nghỉ'],
+    rationale: 'Một CV không được chọn không thể làm cho lịch của cả chi nhánh bị mờ hoặc bị khóa sai.',
+    tags: ['đặt lịch', 'dời lịch', 'CV', 'công suất', 'ngày nghỉ'],
     routeScopes: ['/dashboard/customers', '/dashboard/appointments', '/dashboard/schedule-calendar'],
     status: 'ACTIVE',
     version: '1.0.0',
@@ -304,7 +304,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     commandments: [
       'BK/Telesales sở hữu New, Confirmed; BK/Admin sở hữu Cancelled.',
       'CC sở hữu CheckIn, Consultation, Preparation, ServiceStart và CheckOut trong luồng đón và thanh toán.',
-      'CV/KTV thực hiện các mốc ServiceStart, ServiceCleaned, ServiceEnd và ServiceCompleted của dịch vụ.',
+      'CV thực hiện các mốc ServiceStart, ServiceCleaned, ServiceEnd và ServiceCompleted của dịch vụ.',
       'Hệ thống tự chốt Completed hoặc Missed; không gán người dùng giả cho hành động tự động.',
       'ServiceCompleted trả CV về hàng chờ ngay; ServiceEnd chỉ xác nhận đã nối xong và có ảnh After.',
     ],
@@ -352,8 +352,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     summary: 'CC IN, CC OUT, BK và CV là bốn vai trò khác nhau; dữ liệu thiếu phải hiển thị thiếu.',
     commandments: [
       'Đơn chưa check-in hoặc bị lỡ/hủy phải trả ccInName và ccOutName là null.',
-      'Khách không chọn KTV chỉ định phải trả technicianName là null.',
-      'Không fallback Booker, CV đầu tiên hoặc chuỗi “Kỹ thuật viên” vào vai trò đang thiếu.',
+      'Khách không chọn CV chỉ định phải trả technicianName là null.',
+      'Không fallback Booker, CV đầu tiên hoặc chuỗi “Chuyên Viên” vào vai trò đang thiếu.',
       'UI hiển thị dấu “-” khi chưa có người thực hiện thật.',
     ],
     rationale: 'Một cái tên dễ nhìn nhưng sai làm sai trách nhiệm, thưởng và lịch sử phục vụ khách hàng.',
@@ -447,17 +447,17 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     book: 'REWARDS',
     title: 'Vòng xoay CV tích lũy theo cá nhân và chốt theo tháng',
     summary:
-      'Thưởng Vòng xoay Kỹ thuật viên (CV) là mô hình lũy tiến cấp số cộng theo từng cá nhân, reset về 0 vào ngày 1 hàng tháng và không tính theo chu kỳ tuần.',
+      'Thưởng Vòng xoay Chuyên Viên (CV) là mô hình lũy tiến cấp số cộng theo từng cá nhân, reset về 0 vào ngày 1 hàng tháng và không tính theo chu kỳ tuần.',
     commandments: [
-      'Thưởng Vòng xoay CV được tính theo cấp số cộng lũy tiến dựa trên số lượng ca hoàn thành của riêng từng Kỹ thuật viên trong tháng.',
+      'Thưởng Vòng xoay CV được tính theo cấp số cộng lũy tiến dựa trên số lượng ca hoàn thành của riêng từng Chuyên Viên trong tháng.',
       'Chu kỳ Vòng xoay CV reset về 0 vào đúng 00:00:00 ngày đầu tiên của mỗi tháng; không áp dụng chu kỳ tuần hay ngày.',
       'Do tính chất phi tuyến bậc hai O(N²), khi số lượng khách làm tăng gấp đôi thì tiền thưởng vòng xoay cá nhân tăng xấp xỉ gấp 4 lần.',
       'Mọi báo cáo, widget KPI và Leaderboard CV lấy trực tiếp số tiền thưởng thực tế đã ghi sổ trong bảng ledger staff_bonus.',
     ],
     rationale:
-      'Tạo động lực mạnh mẽ cho Kỹ thuật viên gia tăng năng suất và gắn bó phục vụ khách hàng liên tục trong suốt tháng mà không bị ngắt quãng.',
+      'Tạo động lực mạnh mẽ cho Chuyên Viên gia tăng năng suất và gắn bó phục vụ khách hàng liên tục trong suốt tháng mà không bị ngắt quãng.',
     examples: [
-      'KTV A hoàn thành 40 ca trong tháng sẽ nhận mức thưởng vòng xoay cao gấp gần 4 lần so với KTV B chỉ hoàn thành 20 ca.',
+      'CV A hoàn thành 40 ca trong tháng sẽ nhận mức thưởng vòng xoay cao gấp gần 4 lần so với CV B chỉ hoàn thành 20 ca.',
     ],
     tags: ['CV', 'Vòng xoay', 'cấp số cộng', 'phi tuyến', 'reset tháng', 'staff_bonus'],
     routeScopes: ['/dashboard/cv', '/dashboard/kpi'],
@@ -472,22 +472,22 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
   {
     id: 'CV-002',
     book: 'REWARDS',
-    title: 'Quy chế Chuyên Viên 1 Cánh (🪽 CV Tự Chủ): Thưởng Combo, Bảo lưu 90% Tip và Giáng cấp 2 Tháng Liền',
+    title: 'Quy chế Chuyên Viên 1 Cánh (🪽 CV Tự Chủ): Thưởng Combo Bậc Thang, Bảo lưu 90% Tip và Chế Tài Ngưỡng 21%',
     summary:
-      'Chuyên Viên 1 Cánh (🪽 CV / CV+) nhận trọn bộ thưởng khi đạt tối thiểu 20% Combo trên khách Not Combo Live (khách có Combo Live bán được cũng cộng dồn). Bán không đạt vẫn nhận 90% Tip nhưng không nhận thêm bất kỳ thưởng nào khác; 2 tháng liền không đạt thì quay lại CV.',
+      'Chuyên Viên 1 Cánh (🪽 CV / CV+) nhận trọn bộ đãi ngộ khi đạt tối thiểu 21% Combo trên khách Not Combo Live (khách có Combo Live bán được cũng cộng dồn). Bán không đạt vẫn nhận 90% Tip nhưng bị khóa lương tăng thêm và thưởng bán hàng; 2 tháng liền không đạt thì quay lại CV.',
     commandments: [
-      'Phạm vi triển khai hiện tại: Hệ thống chỉ áp dụng và triển khai cho cấp bậc Chuyên Viên 1 Cánh (🪽 CV / CV+ / Chuyên Viên Tự Chủ). CV 2 cánh (🪽 CV 🪽) và những vai trò khác (FM, CHO, BOSS) hiện đang trong giai đoạn nghiên cứu.',
-      'Điều kiện nhận hết thưởng: Phải bán được tối thiểu 20% combo cho tệp khách hàng Not Combo Live (khách chưa có gói combo dặm). Trường hợp bán được combo cho khách đang có Combo Live thì cũng được cộng dồn vào tỷ lệ (làm tăng tử số).',
-      'Quyền lợi khi đạt chuẩn (Combo ≥ 20%): Mở khóa trọn bộ quyền lợi tài chính gồm: Lương giờ tăng +2.000đ/h (27.500đ/h), 90% Tiền Tip (70% làm mi + 20% tự tư vấn), Thưởng Combo bậc thang tiền tươi theo COMBO-REWARD-001, và Thưởng bán Dưỡng Mi Yeppeum (100k gốc / 50k khuyến mãi).',
-      'Quyền lợi & Chế tài khi bán không được (Combo < 20%): Chuyên Viên 1 Cánh VẪN NHẬN ĐỦ 90% TIP (70% mi + 20% tư vấn). Nhưng KHÔNG NHẬN THÊM BẤT KỲ PHẦN THƯỞNG NÀO KHÁC: không nhận lương giờ tăng +2k/h (giữ 25.5k/h), không nhận thưởng combo (0đ), không nhận thưởng sản phẩm/dưỡng mi (0đ).',
-      'Quy tắc Giáng cấp 2 Tháng Liền: Nếu trong 2 tháng liên tiếp (2 tháng liền) không đạt chuẩn tối thiểu 20% combo, Chuyên Viên bị tước 1 cánh và quay lại CV · Dịu Dàng (0 cánh). Khi quay lại CV, tỷ lệ Tip tụt về lại 70%, mất quyền tự tư vấn tại giường và phải chuyển khách cho sảnh.',
-      'Quy chuẩn 2 Cần gạt Mô phỏng Thu nhập: Giao diện mô phỏng thu nhập CV 1 Cánh tích hợp 2 thanh trượt tương tác rõ ràng: 1. Slider Combo (Bắt buộc ≥ 20%): Ngưỡng sống còn để mở khóa quyền lợi tài chính; dưới 20% vẫn nhận đủ 90% Tip, nhưng cắt sạch toàn bộ các loại thưởng khác (lương giờ +2k/h = 0đ, thưởng combo = 0đ, thưởng dưỡng mi = 0đ); 2 tháng liền không đạt thì quay lại CV. 2. Slider Dưỡng mi Yeppeum (Khuyến khích ≥ 1 cây/tuần ~ 4 cây/tháng): Thưởng tiền tươi theo số cây bán được (100k/cây giá gốc), chỉ được nhận khi Slider 1 đạt chuẩn bắt buộc ≥ 20% combo.',
+      'Phạm vi triển khai toàn cầu (Global Invariant): Cấu hình này áp dụng thống nhất trên toàn hệ thống Wings Lashes cho lộ trình thăng tiến Chuyên Viên 1 Cánh (🪽 CV / CV+ / Chuyên Viên Tự Chủ).',
+      'Chuẩn 6 Ải Cốt Lõi xét thăng cấp (CV ➔ CV+): (1) Sản lượng tối thiểu 330 bộ mi trong 3 tháng liền (110 bộ/tháng); (2) Tỷ lệ bảo hành Fix ≤ 1.5%; (3) Tỷ lệ Tip cao hơn tối thiểu 10% trung bình shop; (4) Kiểm định QA/QC tối thiểu 4 lần/tháng (1 lần/tuần) và bắt buộc không có bài FAILED (0 vi phạm); (5) Chỉ số gắn kết đồng đội HI ≥ 70%; (6) Tích lũy tối thiểu 20 Chuối Yêu Thương check-in trong tháng.',
+      'Ải Trùm Cuối (Thử thách tự tư vấn): 30 ngày tự chủ tư vấn tại giường với tỷ lệ chốt combo đạt tối thiểu 21% trên tập khách tiềm năng.',
+      'Đãi ngộ vượt trội khi đạt chuẩn (Combo ≥ 21%): Lương giờ tăng +2.000đ/h (27.500đ/h), nhận trọn 90% Tip khách cho (70% làm mi + 20% tư vấn), Thưởng tiền tươi Dưỡng mi Yeppeum (100k gốc / 50k KM, chuẩn 1 cây/tuần = +400k/tháng), và Thưởng hoa hồng Combo bậc thang tiền tươi (<2M: 50k, 2M-<3M: 100k, 3M-<4M: 150k, ≥4M: +50k/1M; gói 4.5M nhận 200k/combo; chuẩn 8 combo = +1.600.000đ/tháng). Tổng hoa hồng bán hàng dự kiến đạt +2.000.000đ/tháng.',
+      'Chế tài nghiêm minh khi không đạt (Combo < 21%): Chuyên Viên VẪN ĐƯỢC BẢO LƯU 90% TIP (công nhận nỗ lực tư vấn). Nhưng BỊ KHÓA TOÀN BỘ PHẦN THƯỞNG KHÁC: không nhận lương giờ tăng thêm (giữ mức gốc 25.5k/h), không nhận thưởng combo (0đ), không nhận thưởng dưỡng mi (0đ).',
+      'Quy tắc Giáng cấp 2 Tháng Liền: Nếu trong 2 tháng liên tiếp tỷ lệ tự chốt combo vẫn dưới 21%, Chuyên Viên bị tước danh hiệu 1 cánh và quay lại CV · Dịu Dàng (0 cánh), tỷ lệ Tip tụt về lại 70%, mất quyền tự tư vấn tại giường và phải chuyển khách cho sảnh.',
     ],
     rationale:
       'Gắn kết quyền lợi tài chính đột phá với năng lực tự chủ bán combo tại giường, công nhận công sức tự tư vấn bằng việc luôn bảo lưu 90% Tip, đồng thời thiết lập kỷ luật doanh nghiệp rõ ràng qua quy tắc 2 tháng liền không đạt thì quay lại CV.',
     examples: [
-      'Chuyên Viên 1 Cánh phục vụ 40 khách Not Combo Live và bán được 10 combo (tỷ lệ 25% ≥ 20%): Nhận đủ lương 27.5k/h, 90% Tip, thưởng combo và thưởng dưỡng mi (~+3.850.000đ/tháng).',
-      'Chuyên Viên 1 Cánh phục vụ 40 khách Not Combo Live và bán được 5 combo (tỷ lệ 12.5% < 20%): Vẫn nhận đủ 90% Tip (+1.850.000đ), nhưng bị khóa toàn bộ thưởng combo, lương tăng +2k/h và thưởng dưỡng mi. Nếu tháng kế tiếp vẫn < 20% (2 tháng liền), nhân viên sẽ bị tước cánh và giáng cấp về CV · Dịu Dàng.',
+      'Chuyên Viên phục vụ 40 khách Not Combo Live và bán được 10 combo (tỷ lệ 25% ≥ 21%): Nhận đủ lương 27.5k/h, 90% Tip, thưởng combo và thưởng dưỡng mi (+2.000.000đ hoa hồng bán hàng).',
+      'Chuyên Viên phục vụ 40 khách Not Combo Live và bán được 5 combo (tỷ lệ 12.5% < 21%): Vẫn nhận đủ 90% Tip (+560.120đ), nhưng bị khóa toàn bộ thưởng combo, lương tăng +2k/h và thưởng dưỡng mi. Nếu tháng kế tiếp vẫn < 21% (2 tháng liền), nhân viên sẽ bị giáng cấp về CV · Dịu Dàng.',
     ],
     tags: [
       'CV 1 cánh',
@@ -497,17 +497,23 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Not Combo Live',
       'Combo Live cộng dồn',
       '90% Tip',
+      '21% combo',
+      'chế tài 21%',
+      '330 bộ mi',
+      'Fix 1.5%',
       '2 tháng liền',
-      'quay lại CV',
       'giáng cấp',
     ],
     routeScopes: ['/dashboard/career-path', '/dashboard/cv'],
     status: 'ACTIVE',
-    version: '1.0.0',
-    effectiveFrom: '2026-10-10',
+    version: '2.0.0',
+    effectiveFrom: '2026-10-11',
     sources: [
       { label: 'Kinh Thánh mOS · Điều răn CV-002', reference: 'packages/shared/src/business-rules/mos-bible.ts' },
-      { label: 'Quy chế CV 1 Cánh', reference: 'packages/shared/src/types/career-progression.ts' },
+      {
+        label: 'Quy chế CV 1 Cánh & DEFAULT_CAREER_PROGRESSION_CONFIG',
+        reference: 'packages/shared/src/types/career-progression.ts',
+      },
       { label: 'Mô phỏng thăng cấp Career Service', reference: 'apps/api/src/modules/career/career.service.ts' },
     ],
   },
@@ -847,7 +853,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Trạng thái này quyết định trực tiếp icon huy hiệu hiển thị trước tên khách hàng trên ứng dụng iPad/iOS và CRM Web.',
     ],
     rationale:
-      'Nhận diện đúng trạng thái giúp KTV và CC biết trước khách là khách mới cần hướng dẫn kỹ hay khách combo sắp hết lượt để kịp thời tư vấn tái ký.',
+      'Nhận diện đúng trạng thái giúp CV và CC biết trước khách là khách mới cần hướng dẫn kỹ hay khách combo sắp hết lượt để kịp thời tư vấn tái ký.',
     examples: [
       'Khách đặt lịch làm lần đầu tiên: trạng thái hiển thị là lead_book, nhắc CC đón tiếp và tư vấn dịch vụ lần đầu chu đáo.',
       'Khách đã mua Combo 5 lượt và đã dùng 4 lượt: trạng thái hiển thị là combo_last, nhắc CC chuẩn bị kịch bản tư vấn mua tiếp combo mới.',
@@ -1040,7 +1046,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Giá gợi ý của gói Combo tính theo số lượt mua nhân giá bán lẻ niêm yết của dịch vụ gốc; các lượt tặng (bonusNormalCount, bonusRetainCount) có giá quy ước 0đ.',
     ],
     rationale:
-      'Việc tách bạch 3 tầng phân loại giúp hệ thống tính đúng điểm kỹ thuật cho KTV, phân bổ doanh thu chính xác và ngăn ngừa sai lệch thời lượng phục vụ.',
+      'Việc tách bạch 3 tầng phân loại giúp hệ thống tính đúng điểm kỹ thuật cho CV, phân bổ doanh thu chính xác và ngăn ngừa sai lệch thời lượng phục vụ.',
     examples: [
       'Dịch vụ "Dặm Mi Ivylight 3L": Dòng mi là Ivylight, Loại dịch vụ là Retain (Dặm), Nhóm dịch vụ là LashesTop.',
     ],
@@ -1099,26 +1105,26 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     book: 'SERVICE',
     title: 'Tốc độ làm mi tính từ iPad trong khung 90 ngày động',
     summary:
-      'Tốc độ thao tác của KTV được đo bằng tổng thời gian thao tác thực tế trên ứng dụng iPad qua 90 ngày gần nhất, chia theo 3 nhóm dịch vụ.',
+      'Tốc độ thao tác của Chuyên Viên (CV) được đo bằng tổng thời gian thao tác thực tế trên ứng dụng iPad qua 90 ngày gần nhất, chia theo 3 nhóm dịch vụ.',
     commandments: [
       'Thời lượng thao tác thực tế tính bằng: preparation_minute + pre_servicing_minute + cleaning_minute + servicing_minute ghi nhận từ report_order_service trên iPad.',
       'Khung thời gian tính toán lấy động trong 90 ngày gần nhất (actual_booking_date_start >= NOW() - 90 ngày) cho các đơn Completed thuộc nhóm dịch vụ Lashes (Lashes, LashesTop, LashesUnder).',
       'Chỉ nhận các ca làm có thời lượng hợp lệ từ 15 đến 200 phút để loại bỏ ca lỗi dữ liệu hoặc quên bấm kết thúc trên iPad.',
       'Phân chia thành 3 chỉ số độc lập: normalAvg (Nối mới), retainAvg (Dặm mi) và removalAvg (Tháo mi hoặc Fix).',
-      'Giao diện hiển thị Badge tốc độ linh hoạt khi KTV có bất kỳ chỉ số nào trong 3 nhóm, không ẩn badge khi nhân sự chuyên dặm hoặc tháo.',
+      'Giao diện hiển thị Badge tốc độ linh hoạt khi CV có bất kỳ chỉ số nào trong 3 nhóm, không ẩn badge khi nhân sự chuyên dặm hoặc tháo.',
     ],
     rationale:
-      'Thời lượng niêm yết trên catalog chỉ mang tính ước lượng; tốc độ thực tế từ iPad phản ánh đúng tay nghề và công suất phục vụ thực tế của từng KTV.',
+      'Thời lượng niêm yết trên catalog chỉ mang tính ước lượng; tốc độ thực tế từ iPad phản ánh đúng tay nghề và công suất phục vụ thực tế của từng CV.',
     examples: [
-      'KTV có trung bình nối mới 65 phút, dặm mi 38 phút, tháo mi 18 phút: badge hiển thị chi tiết 3 chỉ số tương ứng theo ca làm.',
+      'CV có trung bình nối mới 65 phút, dặm mi 38 phút, tháo mi 18 phút: badge hiển thị chi tiết 3 chỉ số tương ứng theo ca làm.',
     ],
-    tags: ['KTV', 'CV', 'tốc độ', 'iPad', 'benchmark', '90 ngày', 'normalAvg', 'retainAvg', 'removalAvg'],
+    tags: ['CV', 'Chuyên Viên', 'tốc độ', 'iPad', 'benchmark', '90 ngày', 'normalAvg', 'retainAvg', 'removalAvg'],
     routeScopes: ['/dashboard/cv', '/dashboard/today', '/dashboard/schedule-calendar', '/dashboard/customers'],
     status: 'ACTIVE',
     version: '1.0.0',
     effectiveFrom: '2026-09-28',
     sources: [
-      { label: 'Quy chuẩn tốc độ KTV', reference: 'AGENTS.md · Rule #52' },
+      { label: 'Quy chuẩn tốc độ CV', reference: 'AGENTS.md · Rule #52' },
       { label: 'Service tính toán tốc độ', reference: 'apps/api/src/modules/kpi/services/cv-speed-model.service.ts' },
     ],
   },
@@ -1488,12 +1494,12 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     book: 'PEOPLE',
     title: 'Kiểm Định QA/QC Tác Phong & Phòng Nối Mi Trong Lộ Trình Thăng Tiến CV',
     summary:
-      'Để đủ điều kiện nâng cấp (CV lên CV+, CV++), kỹ thuật viên CV bắt buộc phải chủ động mời QA/QC kiểm tra tác phong bản thân và phòng nối mi định kỳ ít nhất 1 lần/tuần. Nếu có bài kiểm tra FAILED, nhân viên bị khóa quyền nâng cấp.',
+      'Để đủ điều kiện nâng cấp (CV lên CV+, CV++), Chuyên Viên (CV) bắt buộc phải chủ động mời QA/QC kiểm tra tác phong bản thân và phòng nối mi định kỳ ít nhất 1 lần/tuần. Nếu có bài kiểm tra FAILED, nhân viên bị khóa quyền nâng cấp.',
     commandments: [
-      'Chủ động mời QA/QC kiểm tra định kỳ: Kỹ thuật viên CV phải chủ động sắp xếp và mời QA/QC kiểm tra tác phong bản thân và phòng nối mi ít nhất 1 lần mỗi tuần trong suốt chu kỳ xét thăng cấp.',
+      'Chủ động mời QA/QC kiểm tra định kỳ: Chuyên Viên (CV) phải chủ động sắp xếp và mời QA/QC kiểm tra tác phong bản thân và phòng nối mi ít nhất 1 lần mỗi tuần trong suốt chu kỳ xét thăng cấp.',
       'Nội dung kiểm tra song song hai hạng mục: (1) Tác phong bản thân (đồng phục, đầu tóc, vệ sinh móng tay, khẩu trang, giao tiếp) và (2) Phòng nối mi cá nhân (giường, đèn chiếu sáng không dính keo/mi, khay dụng cụ khử trùng chuẩn, nhíp sạch, không đồ cá nhân).',
       'Cổng kiểm soát chất lượng tuyệt đối (Hard Gatekeeper): Nếu có bất kỳ bài kiểm tra nào bị FAILED hoặc không đạt tần suất tối thiểu 1 lần/tuần, nhân viên lập tức bị KHÓA QUYỀN NÂNG CẤP, không được mở Ải Trùm Cuối và không được duyệt thăng hạng.',
-      'Duy trì liên tục: Khi đã thăng cấp lên CV+ hoặc CV++, kỹ thuật viên vẫn phải duy trì kiểm định QA/QC định kỳ hàng tuần; vi phạm kiểm định là căn cứ xem xét giáng cấp.',
+      'Duy trì liên tục: Khi đã thăng cấp lên CV+ hoặc CV++, Chuyên Viên vẫn phải duy trì kiểm định QA/QC định kỳ hàng tuần; vi phạm kiểm định là căn cứ xem xét giáng cấp.',
     ],
     rationale:
       'Tay nghề kỹ thuật và doanh số tự bán combo chỉ có giá trị bền vững khi đi kèm kỷ luật tác phong và chuẩn mực vệ sinh phòng nối mi. Quy định này đảm bảo khách hàng luôn được phục vụ trong không gian sạch sẽ, an toàn và chuyên nghiệp nhất.',

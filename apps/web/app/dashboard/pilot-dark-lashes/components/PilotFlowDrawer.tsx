@@ -555,7 +555,7 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
               </span>
             </div>
             <div>
-              <span className="text-slate-400 block mb-0.5">Kỹ thuật viên:</span>
+              <span className="text-slate-400 block mb-0.5">Chuyên Viên:</span>
               <span className="font-semibold text-slate-700 dark:text-slate-200">
                 {session.technicianName || 'Cô Đẫm (Lead)'}
               </span>
@@ -1333,7 +1333,7 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
               </div>
               <div className="text-[11px] text-rose-600 dark:text-rose-400 mt-1">
                 Các bước thực hiện dịch vụ (Ảnh trước/sau, Quy trình SOP, Khảo sát Feedback) đã được tự động bỏ qua. Quý
-                KTV vui lòng di chuyển xuống <strong>Bước 8: Check-out</strong> để hoàn tất ghi nhận thời gian khách tại
+                CV vui lòng di chuyển xuống <strong>Bước 8: Check-out</strong> để hoàn tất ghi nhận thời gian khách tại
                 salon.
               </div>
             </div>
@@ -1498,7 +1498,7 @@ export function PilotFlowDrawer({ open, session, onClose, onSessionUpdated }: Pi
                 <span className="font-bold text-sm text-slate-800 dark:text-slate-100">
                   Hoàn Thành Dịch Vụ (Service Done)
                 </span>
-                <div className="text-xs text-slate-400">Kỹ thuật viên hoàn tất uốn mi bóng tối cho khách</div>
+                <div className="text-xs text-slate-400">Chuyên Viên hoàn tất uốn mi bóng tối cho khách</div>
               </div>
             </div>
             {isIneligible ? (

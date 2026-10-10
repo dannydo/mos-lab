@@ -316,13 +316,13 @@ export default function CsTipTab({
         ),
     },
     {
-      title: 'KTV / CC Phục Vụ',
+      title: 'CV / CC Phục Vụ',
       key: 'staff',
       render: (_, record) => (
         <div className="text-xs space-y-0.5">
           {record.technicianName && (
             <div className="text-slate-700 dark:text-slate-300 flex items-center gap-1">
-              <span className="text-slate-400 text-[11px]">KTV:</span>
+              <span className="text-slate-400 text-[11px]">CV:</span>
               <span className="font-medium text-slate-900 dark:text-white">{record.technicianName}</span>
             </div>
           )}

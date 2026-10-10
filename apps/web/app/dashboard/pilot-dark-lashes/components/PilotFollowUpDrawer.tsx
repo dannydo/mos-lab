@@ -49,7 +49,7 @@ export function PilotFollowUpDrawer({ open, session, form, onClose, onSubmit }: 
           </span>
         </div>
         <div>
-          Kỹ thuật viên: <strong>{session?.technicianName || 'Cô Đẫm'}</strong>
+          Chuyên Viên: <strong>{session?.technicianName || 'Cô Đẫm'}</strong>
         </div>
       </div>
 

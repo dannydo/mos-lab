@@ -106,7 +106,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
           name="isCritical"
           valuePropName="checked"
           label="Phân Loại Tiêu Chí Kiểm Định (Career Progression Gate):"
-          tooltip="Lỗi Nghiêm Trọng (Critical): Kỹ thuật viên vi phạm 1 lỗi là RỚT ngay lập tức! Lỗi Nhỏ (Minor): Vi phạm từ 3 lỗi mới rớt."
+          tooltip="Lỗi Nghiêm Trọng (Critical): Chuyên Viên vi phạm 1 lỗi là RỚT ngay lập tức! Lỗi Nhỏ (Minor): Vi phạm từ 3 lỗi mới rớt."
         >
           <div className="flex items-center gap-3 p-2.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
             <Switch checkedChildren="🔴 Nghiêm Trọng" unCheckedChildren="🟡 Lỗi Nhỏ" />

@@ -130,7 +130,7 @@ export class CareerProgressionService {
           ...(parsed.cvToCvPlus || {}),
         };
         if (!normalizedCvReq.minBananaCount || normalizedCvReq.minBananaCount <= 1) {
-          normalizedCvReq.minBananaCount = 45;
+          normalizedCvReq.minBananaCount = 20;
         }
 
         const normalizedCvPlusReq = {
@@ -817,6 +817,12 @@ export class CareerProgressionService {
     let periodTip = 0;
     let lastMonthWorkingHours = 0;
     let avg90dWorkingHours = 0;
+    let payrollHourlyRate = 0;
+    let payrollWorkingHours = 0;
+    let payrollNetIncome = 0;
+    let payrollSocialSecurity = 0;
+    let payrollGrossIncome = 0;
+    let payrollBonusAmount = 0;
 
     try {
       const [
@@ -832,6 +838,7 @@ export class CareerProgressionService {
         bananaBalanceRes,
         staffStoreRes,
         staffProfileStoreRes,
+        payrollRes,
       ] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(
           `
@@ -1012,7 +1019,40 @@ export class CareerProgressionService {
         `,
           targetLegacyStaffId
         ),
+        fastify.prisma.legacy
+          .$queryRawUnsafe<any[]>(
+            `
+          SELECT 
+            sp.working_hour_rate,
+            sp.total_working_hour,
+            sp.total_wage_amount,
+            sp.total_off_week_amount,
+            sp.total_support_parking_amount,
+            sp.total_tip_amount,
+            sp.total_bonus_amount,
+            sp.total_extra_support_amount,
+            sp.total_amount,
+            sp.total_social_security_amount
+          FROM staff_payroll sp
+          WHERE sp.user_id = ?
+            AND sp.date <= DATE(${periodConfig.periodEndSql})
+          ORDER BY sp.date DESC
+          LIMIT 1
+        `,
+            targetLegacyStaffId
+          )
+          .catch(() => []),
       ]);
+
+      if (payrollRes && payrollRes.length > 0) {
+        const pr = payrollRes[0];
+        payrollHourlyRate = Number(pr.working_hour_rate || 0);
+        payrollWorkingHours = Number(pr.total_working_hour || 0);
+        payrollNetIncome = Math.round(Number(pr.total_amount || 0));
+        payrollSocialSecurity = Math.round(Number(pr.total_social_security_amount || 0));
+        payrollGrossIncome = payrollNetIncome + payrollSocialSecurity;
+        payrollBonusAmount = Math.round(Number(pr.total_bonus_amount || 0));
+      }
 
       totalHi = Number(hiRes?.[0]?.total_evaluations || 0);
       happyCount = Number(hiRes?.[0]?.happy_count || 0);
@@ -1205,8 +1245,8 @@ export class CareerProgressionService {
       ? config.cvPlusToCvPlusPlus || DEFAULT_CAREER_PROGRESSION_CONFIG.cvPlusToCvPlusPlus
       : config.cvToCvPlus || config.cvToCc || DEFAULT_CAREER_PROGRESSION_CONFIG.cvToCvPlus;
 
-    const minOrders = activeReq.minOrders ?? (isCvPlusPlusTarget ? 350 : 300);
-    const maxFixRate = activeReq.maxFixRate ?? (isCvPlusPlusTarget ? 0.015 : 0.02);
+    const minOrders = activeReq.minOrders ?? (isCvPlusPlusTarget ? 350 : 330);
+    const maxFixRate = activeReq.maxFixRate ?? (isCvPlusPlusTarget ? 0.015 : 0.015);
     const minTipRatioAboveShop = activeReq.minTipRatioAboveShop ?? (isCvPlusPlusTarget ? 0.15 : 0.1);
     targetTipRate = Number((shopTipRate * (1 + minTipRatioAboveShop)).toFixed(3));
     const minBananaCount =
@@ -1328,14 +1368,20 @@ export class CareerProgressionService {
 
     // Earnings simulation based on real numbers of the specific CV
     const hourlyWages = config.compensation?.hourlyWages || {
-      cv: 25500,
-      cvPlus: 27500,
-      cvPlusPlus: 29500,
+      cv: payrollHourlyRate > 0 ? payrollHourlyRate : 25500,
+      cvPlus: (payrollHourlyRate > 0 ? payrollHourlyRate : 25500) + 2000,
+      cvPlusPlus: (payrollHourlyRate > 0 ? payrollHourlyRate : 25500) + 4000,
     };
 
-    // Giờ công thực tế: ưu tiên số giờ thực tế tháng trước của CV, nếu chưa có ca thì lấy trung bình 90 ngày, fallback 260h
+    // Giờ công thực tế: ưu tiên số giờ từ bảng lương staff_payroll, rồi giờ thực tế tháng trước của CV, nếu chưa có ca thì lấy trung bình 90 ngày, fallback 260h
     const actualWorkingHours =
-      lastMonthWorkingHours > 0 ? lastMonthWorkingHours : avg90dWorkingHours > 0 ? avg90dWorkingHours : 260;
+      payrollWorkingHours > 0
+        ? payrollWorkingHours
+        : lastMonthWorkingHours > 0
+          ? lastMonthWorkingHours
+          : avg90dWorkingHours > 0
+            ? avg90dWorkingHours
+            : 260;
     const monthlyEstimatedHours = actualWorkingHours;
 
     // Tiền tip thực tế CV đã nhận (70%): ưu tiên theo kỳ được chọn, nếu kỳ = 0 thì lấy trung bình 3 tháng (totalTip / 3)
@@ -1408,12 +1454,16 @@ export class CareerProgressionService {
     const comboGain = Math.max(0, comboCommNext - comboCommCurrent);
 
     const cvXoayAllowance = 2500000;
+    const fallbackCurrentIncome =
+      wageCurrent * actualWorkingHours + tipShareCurrent + comboCommCurrent + cvXoayAllowance;
     const currentEstimatedIncome =
       currentRole === 'FM'
         ? 8000000 + ccBonusCash + Math.round(totalTip * 0.2) + 2000000
         : currentRole === 'CHO'
           ? 11000000 + 3000000 + 3500000
-          : wageCurrent * actualWorkingHours + tipShareCurrent + comboCommCurrent + cvXoayAllowance;
+          : payrollGrossIncome > 0
+            ? payrollGrossIncome
+            : fallbackCurrentIncome;
 
     const incomeGain =
       currentRole === 'CV' || isCvPlusPlusTarget
@@ -1493,6 +1543,10 @@ export class CareerProgressionService {
         nextTierEstimatedIncome,
         incomeGain,
         details: {
+          currentGrossIncome: payrollGrossIncome > 0 ? payrollGrossIncome : currentEstimatedIncome,
+          currentNetIncome: payrollNetIncome > 0 ? payrollNetIncome : Math.round(currentEstimatedIncome * 0.9),
+          payrollBonusAmount,
+          socialSecurityAmount: payrollSocialSecurity,
           hourlyWageCurrent: wageCurrent,
           hourlyWageNext: wageNext,
           tipShareCurrent,

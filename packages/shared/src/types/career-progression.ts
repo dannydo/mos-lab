@@ -265,10 +265,10 @@ export interface CareerProgressionConfig {
 }
 
 const DEFAULT_CV_TO_CV_PLUS: CvToCvPlusRequirements = {
-  minOrders: 300,
+  minOrders: 330, // 330 bộ mi trong 3 tháng liền (chuẩn 110 bộ/tháng)
   minConsecutiveMonths: 3,
   minTipRatioAboveShop: 0.1, // 10% cao hơn trung bình shop
-  maxFixRate: 0.02,
+  maxFixRate: 0.015, // Tỷ lệ lỗi Fix tối đa 1.5%
   minHappinessIndex: 0.7, // Hệ thống HI tối thiểu 70% từ check-in thả tim
   minBananaCount: 20, // Chuối yêu thương nhận từ thiên thần khác lúc check-in trong tháng gần nhất (chuẩn 20 chuối/tháng)
   maxDisciplinaryViolations: 0, // Bị 1 biên bản QA/QC là failed
@@ -276,10 +276,10 @@ const DEFAULT_CV_TO_CV_PLUS: CvToCvPlusRequirements = {
   minQaAudits: 4, // Tối thiểu 4 lần trong tháng gần nhất (1 lần/tuần * 4 tuần)
   requireZeroFailedAudits: true, // Nếu có bài kiểm tra failed -> KHÔNG được nâng cấp
   trialDurationDays: 30,
-  minSelfComboRate: 0.2, // Tối thiểu 20% trên tệp khách tiềm năng chưa có gói combo (~8 combo/tháng)
+  minSelfComboRate: 0.21, // Tối thiểu 21% trên tệp khách tiềm năng chưa có gói combo
   allowSelfConsultTrial: true,
-  expectedSerumsPerWeek: 4, // 4 cây dưỡng mi / tuần (cho phép tự chỉnh)
-  expectedCombosPerMonth: 6, // 6 combo / tháng (cho phép tự chỉnh)
+  expectedSerumsPerWeek: 1, // 1 cây dưỡng mi / tuần (+100.000đ/tuần ~ +400.000đ/tháng)
+  expectedCombosPerMonth: 8, // 8 combo / tháng (+1.600.000đ/tháng theo bậc thang combo 4.5M -> 200k)
   serumOriginalPriceBonus: 100000, // 100K/cây giá gốc
   serumDiscountedPriceBonus: 50000, // 50K/cây giá khuyến mãi
   comboUnder2mBonus: 50000, // 50K cho combo < 2M
@@ -288,7 +288,7 @@ const DEFAULT_CV_TO_CV_PLUS: CvToCvPlusRequirements = {
   comboStepPerMillionBonus: 50000, // +50K/1M từ 4M trở lên
   hourlyWage: 27500, // 27.500đ/h (+2.000đ/h so với CV 25.500đ/h)
   tipShareRatio: 0.9, // 90% = 70% làm mi + 20% tư vấn
-  enforceComboPenalty: true, // Nếu combo < 20%: giữ nguyên 25.5K, không thưởng hàng, chỉ giữ 20% tip tư vấn
+  enforceComboPenalty: true, // Chế tài nếu combo < 21%: khóa lương tăng thêm và thưởng bán hàng, chỉ giữ 20% tip tư vấn
 };
 
 const DEFAULT_CV_PLUS_TO_CV_PLUS_PLUS: CvPlusToCvPlusPlusRequirements = {
@@ -568,6 +568,10 @@ export interface StaffCareerStatus {
       serumDiscountedPriceBonus?: number;
       crossConsultCvShareRate?: number;
       crossConsultCvSharedAmount?: number;
+      currentGrossIncome?: number;
+      currentNetIncome?: number;
+      payrollBonusAmount?: number;
+      socialSecurityAmount?: number;
     };
   };
   lastSyncedAt?: string;

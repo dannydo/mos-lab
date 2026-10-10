@@ -364,7 +364,7 @@ export default function DashboardPage() {
         <StatCard
           title="Nhân sự đang có lịch"
           value={derived.onDutyStaff}
-          subValue={`${derived.availableTechnicians} KTV đang sẵn sàng`}
+          subValue={`${derived.availableTechnicians} CV đang sẵn sàng`}
           icon={<TeamOutlined />}
         />
       </section>
@@ -402,7 +402,7 @@ export default function DashboardPage() {
                   <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
                     <span>{branch.coming.length} khách đến</span>
                     <span>{consultantsOnDuty + techniciansOnDuty} nhân sự có lịch</span>
-                    <span>{availableTechnicians} KTV sẵn sàng</span>
+                    <span>{availableTechnicians} CV sẵn sàng</span>
                   </div>
                 </button>
               )
@@ -442,7 +442,7 @@ export default function DashboardPage() {
             <div className="rounded-lg bg-slate-50 p-3 dark:bg-slate-800/60">
               <div className="font-medium text-slate-900 dark:text-slate-100">Điều phối năng lực</div>
               <Text type="secondary" className="text-sm">
-                {derived.availableTechnicians} KTV đang ở trạng thái sẵn sàng trong snapshot hiện tại.
+                {derived.availableTechnicians} CV đang ở trạng thái sẵn sàng trong snapshot hiện tại.
               </Text>
               <Button type="link" className="!mt-1 !px-0" onClick={() => router.push('/dashboard/schedule-calendar')}>
                 Mở lịch điều phối <RightOutlined />
@@ -504,7 +504,7 @@ export default function DashboardPage() {
                   >
                     <span className="font-medium text-slate-900 dark:text-slate-100">{name}</span>
                     <span className="tabular-nums text-slate-500 dark:text-slate-400">{consultantsOnDuty} CC</span>
-                    <span className="tabular-nums text-slate-500 dark:text-slate-400">{techniciansOnDuty} KTV</span>
+                    <span className="tabular-nums text-slate-500 dark:text-slate-400">{techniciansOnDuty} CV</span>
                     <span className="tabular-nums text-cyan-700 dark:text-cyan-300">
                       {availableTechnicians}/{branch.coming.length} sẵn sàng/khách đến
                     </span>

@@ -74,9 +74,9 @@ function getRoleBadge(role?: string | null, token?: SafeAny) {
       border: 'rgba(16, 185, 129, 0.25)',
     };
   }
-  if (normalized === 'technician' || normalized === 'ktv') {
+  if (normalized === 'technician' || normalized === 'ktv' || normalized === 'cv') {
     return {
-      label: 'Kỹ thuật viên',
+      label: 'Chuyên Viên (CV)',
       bg: 'rgba(20, 184, 166, 0.12)',
       color: '#14b8a6',
       border: 'rgba(20, 184, 166, 0.25)',

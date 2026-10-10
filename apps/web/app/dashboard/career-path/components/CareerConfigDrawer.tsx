@@ -89,8 +89,8 @@ export function CareerConfigDrawer({
   };
 
   // Tab 1 calculations (CV -> CV+)
-  const combosPerMonth = cvToCc.expectedCombosPerMonth ?? 6;
-  const serumsPerWeek = cvToCc.expectedSerumsPerWeek ?? 4;
+  const combosPerMonth = cvToCc.expectedCombosPerMonth ?? 8;
+  const serumsPerWeek = cvToCc.expectedSerumsPerWeek ?? 1;
   const serumOrigBonus = cvToCc.serumOriginalPriceBonus ?? 100000;
   const serumDiscountBonus = cvToCc.serumDiscountedPriceBonus ?? 50000;
 
@@ -491,14 +491,14 @@ export function CareerConfigDrawer({
                       <span>Tỷ lệ tự chốt combo tối thiểu (Chuẩn CV+):</span>
                     </span>
                     <span className="font-mono text-purple-600 dark:text-purple-400 font-black text-sm">
-                      {((cvToCc.minSelfComboRate ?? 0.2) * 100).toFixed(0)}%
+                      {((cvToCc.minSelfComboRate ?? 0.21) * 100).toFixed(0)}%
                     </span>
                   </div>
                   <Slider
                     min={5}
                     max={50}
                     step={1}
-                    value={Math.round((cvToCc.minSelfComboRate ?? 0.2) * 100)}
+                    value={Math.round((cvToCc.minSelfComboRate ?? 0.21) * 100)}
                     onChange={(val) =>
                       onConfigChange({
                         ...config,
@@ -541,7 +541,7 @@ export function CareerConfigDrawer({
                     <HandCoins className="w-3.5 h-3.5" />
                   </div>
                   <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-100 m-0">
-                    3. Lương Giờ, Tip &amp; Chế Tài 20% Combo
+                    3. Lương Giờ, Tip &amp; Chế Tài {((cvToCc.minSelfComboRate ?? 0.2) * 100).toFixed(0)}% Combo
                   </h3>
                 </div>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 uppercase tracking-tight">

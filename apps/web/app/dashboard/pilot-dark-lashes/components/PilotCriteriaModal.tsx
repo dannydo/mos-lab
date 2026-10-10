@@ -317,7 +317,7 @@ export function PilotCriteriaModal({ open, onClose, onRefresh }: PilotCriteriaMo
           >
             <TextArea
               rows={3}
-              placeholder="Hướng dẫn KTV cách kiểm tra và tiêu chuẩn đánh giá..."
+              placeholder="Hướng dẫn CV cách kiểm tra và tiêu chuẩn đánh giá..."
               className="rounded-lg"
             />
           </Form.Item>

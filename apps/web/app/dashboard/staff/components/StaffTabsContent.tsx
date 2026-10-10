@@ -212,7 +212,7 @@ export default function StaffTabsContent({
                 label={
                   <Space>
                     <Text style={{ color: token.colorText }}>Liên kết Tài khoản Wings Lashes (Legacy)</Text>
-                    <Tooltip title="Chọn tài khoản Wings Lashes để liên kết danh nghĩa Booker/KTV khi đặt lịch và thống kê doanh thu.">
+                    <Tooltip title="Chọn tài khoản Wings Lashes để liên kết danh nghĩa Booker/CV khi đặt lịch và thống kê doanh thu.">
                       <InfoCircleOutlined style={{ color: '#888' }} />
                     </Tooltip>
                   </Space>

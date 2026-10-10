@@ -26,5 +26,5 @@ export const buildBookingDetailsUpdateRequest = ({
   serviceId,
   ...(includePromotionSelection ? { promotionId, campaignPromotionId } : {}),
   reasonCategory: 'Cập nhật thông tin đơn hàng',
-  reasonNote: 'Cập nhật KTV/Dịch vụ/Ưu đãi/Ghi chú từ CRM',
+  reasonNote: 'Cập nhật CV/Dịch vụ/Ưu đãi/Ghi chú từ CRM',
 });

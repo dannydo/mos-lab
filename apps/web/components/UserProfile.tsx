@@ -50,7 +50,8 @@ const roleColors: Record<string, { color: string; label: string }> = {
   manager: { color: 'purple', label: 'Quản lý cửa hàng' },
   telesales: { color: 'blue', label: 'Telesales / Booker' },
   consultant: { color: 'cyan', label: 'Tư vấn viên (CC)' },
-  technician: { color: 'gold', label: 'Kỹ thuật viên (CV)' },
+  technician: { color: 'gold', label: 'Chuyên Viên (CV)' },
+  cv: { color: 'gold', label: 'Chuyên Viên (CV)' },
 };
 
 export function UserProfile({ user, onEdit, onRefresh, className = '', compact = false }: UserProfileProps) {

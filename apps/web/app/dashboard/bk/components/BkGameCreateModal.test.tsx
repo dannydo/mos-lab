@@ -33,7 +33,7 @@ describe('BkGameCreateModal', () => {
   const mockStaff = [
     { id: 1, legacyStaffId: 50670, displayName: 'Thùy Dương (Telesales)', role: 'telesales', avatarUrl: null },
     { id: 2, legacyStaffId: 52316, displayName: 'Hồng Nhung (CC)', role: 'cc', avatarUrl: null },
-    { id: 3, legacyStaffId: 52400, displayName: 'Lan Anh (KTV)', role: 'technician', avatarUrl: null },
+    { id: 3, legacyStaffId: 52400, displayName: 'Lan Anh (CV)', role: 'technician', avatarUrl: null },
     { id: 4, legacyStaffId: 52500, displayName: 'Tâm Nguyễn (Admin)', role: 'admin', avatarUrl: null },
   ];
 
@@ -61,7 +61,7 @@ describe('BkGameCreateModal', () => {
       {
         id: 3,
         code: 'CV',
-        name: 'Chuyên viên KTV',
+        name: 'Chuyên viên (CV)',
         activeStaffIds: [52400],
         department: { code: 'SHOP', name: 'Shop Operations' },
       },
@@ -71,7 +71,7 @@ describe('BkGameCreateModal', () => {
   const mockRoles = [
     { key: 'telesales', name: 'Telesales' },
     { key: 'cc', name: 'Tư vấn viên (CC)' },
-    { key: 'technician', name: 'Kỹ thuật viên' },
+    { key: 'technician', name: 'Chuyên Viên' },
     { key: 'admin', name: 'Quản trị viên' },
   ];
 
@@ -186,4 +186,3 @@ describe('BkGameCreateModal', () => {
     });
   });
 });
-

@@ -308,7 +308,7 @@ export default function CsDashboardTab({ dateFrom, dateTo }: CsDashboardTabProps
                     <div className="text-2xl font-semibold tabular-nums">
                       {stats.ratings.technicianAverage > 0 ? stats.ratings.technicianAverage.toFixed(1) : '0.0'}
                     </div>
-                    <div className="text-xs text-slate-500">Kỹ thuật KTV</div>
+                    <div className="text-xs text-slate-500">Kỹ thuật CV</div>
                   </div>
                   <div className="text-center">
                     <div className="text-2xl font-semibold tabular-nums">

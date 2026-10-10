@@ -103,7 +103,7 @@ export default function ScheduleListView({
       case 'CheckOut':
       case 'ServiceCompleted':
         return (
-          <Tooltip title="💳 KTV đã hoàn thành — Chờ CC checkout / tính tiền">
+          <Tooltip title="💳 CV đã hoàn thành — Chờ CC checkout / tính tiền">
             <Tag
               icon={<CreditCardOutlined />}
               color="purple"
@@ -116,7 +116,7 @@ export default function ScheduleListView({
       case 'ServiceCleaned':
       case 'ServiceEnd':
         return (
-          <Tooltip title="💅 KTV đang nối mi / chụp ảnh trên iPad">
+          <Tooltip title="💅 CV đang nối mi / chụp ảnh trên iPad">
             <Tag
               icon={<SyncOutlined spin />}
               color="processing"
@@ -129,7 +129,7 @@ export default function ScheduleListView({
       case 'Preparation':
       case 'ServiceStart':
         return (
-          <Tooltip title="🤝 CC đang bàn giao khách cho KTV (đo thời gian rước khách)">
+          <Tooltip title="🤝 CC đang bàn giao khách cho CV (đo thời gian rước khách)">
             <Tag
               icon={<ClockCircleOutlined />}
               color="cyan"
@@ -306,11 +306,11 @@ export default function ScheduleListView({
         <div className="text-xs space-y-0.5">
           {record.technicianName ? (
             <div>
-              <span className="text-slate-400">KTV: </span>
+              <span className="text-slate-400">CV: </span>
               <span className="font-medium text-slate-700 dark:text-slate-200">{record.technicianName}</span>
             </div>
           ) : (
-            <div className="text-slate-400 font-italic">KTV: Chưa gán</div>
+            <div className="text-slate-400 font-italic">CV: Chưa gán</div>
           )}
           {record.bookerName && (
             <div>

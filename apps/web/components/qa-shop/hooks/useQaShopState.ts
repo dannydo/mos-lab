@@ -108,7 +108,7 @@ export function useQaShopState() {
         {
           id: 'area-cv-grooming',
           code: 'GROOMING',
-          title: '👗 TÁC PHONG & DIỆN MẠO BẢN THÂN (Quy chuẩn 5 sao KTV)',
+          title: '👗 TÁC PHONG & DIỆN MẠO BẢN THÂN (Quy chuẩn 5 sao CV)',
           badgeColor: 'blue',
           subSections: groomingSecs,
           totalItems: groomingSecs.reduce((acc: number, s: SafeAny) => acc + (s.items?.length || 0), 0),
@@ -539,7 +539,7 @@ export function useQaShopState() {
         isPreApproved: isPersonalCheck ? isPreApproved : false,
         notes:
           isPersonalCheck && evaluatedStaffName
-            ? `Biên bản kiểm định tác phong & phòng mi KTV ${evaluatedStaffName} (${selectedBranch} ca ${selectedShift}). Kết quả: ${
+            ? `Biên bản kiểm định tác phong & phòng mi CV ${evaluatedStaffName} (${selectedBranch} ca ${selectedShift}). Kết quả: ${
                 inspectionStats.evaluationResult === 'PASSED'
                   ? 'ĐẠT'
                   : inspectionStats.evaluationResult === 'REMEDIATION_PENDING'

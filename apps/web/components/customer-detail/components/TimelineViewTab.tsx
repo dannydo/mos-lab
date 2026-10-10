@@ -495,7 +495,7 @@ export const TimelineViewTab: React.FC<TimelineViewTabProps> = React.memo(({ boo
                           </span>
                           {group.technicianName && (
                             <span>
-                              | KTV: <strong>{group.technicianName}</strong>
+                              | CV: <strong>{group.technicianName}</strong>
                             </span>
                           )}
                         </div>

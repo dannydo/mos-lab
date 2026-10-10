@@ -60,7 +60,7 @@ export const getAuthorColor = (name: string): string => {
   if (!name) return '#8b5cf6';
   if (name.includes('Phương Giao')) return '#a855f7'; // Purple
   if (name.includes('Ngọc Điệp')) return '#ec4899'; // Pink
-  if (name.includes('Trưởng KTV')) return '#f59e0b'; // Amber
+  if (name.includes('Quản lý CV') || name.includes('Trưởng KTV')) return '#f59e0b'; // Amber
   if (name.includes('Tech Admin')) return '#06b6d4'; // Cyan
   return '#3b82f6'; // Blue
 };
@@ -104,18 +104,18 @@ const DEFAULT_NODE_COMMENTS: Record<string, NodeComment[]> = {
       role: 'Booking Leader',
       category: 'training',
       content:
-        'CSKH tuyệt đối không hứa trước Fix/Adjust/Log khi gọi điện. Chỉ hỗ trợ Đặt Lịch Hẹn Đón Khách Đến Shop 0đ (Stage 1) để Trưởng KTV soi mi trực tiếp.',
+        'CSKH tuyệt đối không hứa trước Fix/Adjust/Log khi gọi điện. Chỉ hỗ trợ Đặt Lịch Hẹn Đón Khách Đến Shop 0đ (Stage 1) để Quản lý CV soi mi trực tiếp.',
       createdAt: '2026-08-06 08:45',
     },
   ],
   'cs-warranty:Stage2': [
     {
       id: 'c3',
-      author: 'Trưởng KTV Store',
+      author: 'Quản lý CV Store',
       role: 'Technical Lead',
       category: 'technical',
       content:
-        'Soi mi trực tiếp dưới đèn tại tiệm. Nhập kết quả soi mi vào Sub-task (ví dụ: Chân mi bết keo ca cũ) trước khi phân công KTV Senior làm mới.',
+        'Soi mi trực tiếp dưới đèn tại tiệm. Nhập kết quả soi mi vào Sub-task (ví dụ: Chân mi bết keo ca cũ) trước khi phân công CV Senior làm mới.',
       createdAt: '2026-08-06 09:00',
     },
   ],
@@ -126,7 +126,7 @@ const DEFAULT_NODE_COMMENTS: Record<string, NodeComment[]> = {
       role: 'System Architect',
       category: 'technical',
       content:
-        'Cronjob OrderRegenerationService.php chạy tự động lúc 02:00 AM, 02:10 AM, 02:20 AM ICT quét 3 ngày lùi để làm sạch và thu hồi thưởng KTV/CC cũ.',
+        'Cronjob OrderRegenerationService.php chạy tự động lúc 02:00 AM, 02:10 AM, 02:20 AM ICT quét 3 ngày lùi để làm sạch và thu hồi thưởng CV/CC cũ.',
       createdAt: '2026-08-06 09:15',
     },
   ],

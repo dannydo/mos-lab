@@ -8526,7 +8526,7 @@
         "path": "/api/customers/random-ids",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1658
+        "line": 1654
       }
     },
     {
@@ -8806,7 +8806,7 @@
         "path": "/api/nyc/config",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 10
+        "line": 16
       }
     },
     {
@@ -8820,7 +8820,7 @@
         "path": "/api/nyc/config",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 61
+        "line": 67
       }
     },
     {
@@ -8834,7 +8834,7 @@
         "path": "/api/loca/config",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 119
+        "line": 125
       }
     },
     {
@@ -8848,7 +8848,7 @@
         "path": "/api/loca/config",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 156
+        "line": 162
       }
     },
     {
@@ -8862,7 +8862,7 @@
         "path": "/api/dashboard/vat-config",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 205
+        "line": 211
       }
     },
     {
@@ -8876,7 +8876,7 @@
         "path": "/api/dashboard/vat-config",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 223
+        "line": 229
       }
     },
     {
@@ -8890,7 +8890,7 @@
         "path": "/api/dashboard/today",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 261
+        "line": 267
       }
     },
     {
@@ -8904,7 +8904,7 @@
         "path": "/api/dashboard/today/revenue-hourly",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1381
+        "line": 1387
       }
     },
     {
@@ -8918,7 +8918,7 @@
         "path": "/api/dashboard/today/revenue-detail",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1745
+        "line": 1751
       }
     },
     {
@@ -30827,7 +30827,7 @@
       "filePath": "apps/api/src/modules/career/career.routes.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5402,
+        "sizeBytes": 5449,
         "lineCount": 164,
         "ext": ".ts"
       }
@@ -30866,8 +30866,8 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 98477,
-        "lineCount": 2506,
+        "sizeBytes": 100679,
+        "lineCount": 2560,
         "ext": ".ts"
       }
     },
@@ -31152,8 +31152,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-list.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 85380,
-        "lineCount": 2088,
+        "sizeBytes": 85256,
+        "lineCount": 2080,
         "ext": ".ts"
       }
     },
@@ -31217,8 +31217,8 @@
       "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 81914,
-        "lineCount": 2005,
+        "sizeBytes": 81899,
+        "lineCount": 2009,
         "ext": ".ts"
       }
     },
@@ -32153,7 +32153,7 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 119258,
+        "sizeBytes": 119257,
         "lineCount": 2914,
         "ext": ".ts"
       }
@@ -32764,7 +32764,7 @@
       "filePath": "apps/api/src/modules/pilot/pilot-ai.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 15677,
+        "sizeBytes": 15676,
         "lineCount": 345,
         "ext": ".ts"
       }
@@ -32946,7 +32946,7 @@
       "filePath": "apps/api/src/modules/qa-shop/qa-shop.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 43638,
+        "sizeBytes": 43622,
         "lineCount": 1157,
         "ext": ".ts"
       }
@@ -35832,8 +35832,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkDoneTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 43507,
-        "lineCount": 1051,
+        "sizeBytes": 43431,
+        "lineCount": 1047,
         "ext": ".tsx"
       }
     },
@@ -35845,7 +35845,7 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameCreateModal.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6612,
+        "sizeBytes": 6607,
         "lineCount": 190,
         "ext": ".tsx"
       }
@@ -35858,8 +35858,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameCreateModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38313,
-        "lineCount": 931,
+        "sizeBytes": 38330,
+        "lineCount": 932,
         "ext": ".tsx"
       }
     },
@@ -36443,7 +36443,7 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 74650,
+        "sizeBytes": 74703,
         "lineCount": 1479,
         "ext": ".tsx"
       }
@@ -36482,8 +36482,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 187071,
-        "lineCount": 3609,
+        "sizeBytes": 123044,
+        "lineCount": 2430,
         "ext": ".tsx"
       }
     },
@@ -36495,8 +36495,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 53545,
-        "lineCount": 1199,
+        "sizeBytes": 75307,
+        "lineCount": 1643,
         "ext": ".tsx"
       }
     },
@@ -36508,8 +36508,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 36694,
-        "lineCount": 824,
+        "sizeBytes": 31342,
+        "lineCount": 750,
         "ext": ".tsx"
       }
     },
@@ -36534,7 +36534,7 @@
       "filePath": "apps/web/app/dashboard/catalog/components/CatalogBranchTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26846,
+        "sizeBytes": 26845,
         "lineCount": 775,
         "ext": ".tsx"
       }
@@ -36573,7 +36573,7 @@
       "filePath": "apps/web/app/dashboard/catalog/components/CatalogItemDetailPanel.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8513,
+        "sizeBytes": 8512,
         "lineCount": 241,
         "ext": ".tsx"
       }
@@ -36833,7 +36833,7 @@
       "filePath": "apps/web/app/dashboard/cs/components/CsTipTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23212,
+        "sizeBytes": 23210,
         "lineCount": 620,
         "ext": ".tsx"
       }
@@ -36885,7 +36885,7 @@
       "filePath": "apps/web/app/dashboard/cskh/components/CsDashboardTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14044,
+        "sizeBytes": 14043,
         "lineCount": 389,
         "ext": ".tsx"
       }
@@ -36950,7 +36950,7 @@
       "filePath": "apps/web/app/dashboard/cskh/components/TicketDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 36246,
+        "sizeBytes": 36230,
         "lineCount": 825,
         "ext": ".tsx"
       }
@@ -36976,7 +36976,7 @@
       "filePath": "apps/web/app/dashboard/cskh/components/WorkflowTrainingTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22152,
+        "sizeBytes": 22121,
         "lineCount": 467,
         "ext": ".tsx"
       }
@@ -37041,8 +37041,8 @@
       "filePath": "apps/web/app/dashboard/customers/components/CustomerBulkActions.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13673,
-        "lineCount": 387,
+        "sizeBytes": 13691,
+        "lineCount": 388,
         "ext": ".tsx"
       }
     },
@@ -37353,7 +37353,7 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 118038,
+        "sizeBytes": 118037,
         "lineCount": 2466,
         "ext": ".tsx"
       }
@@ -37379,7 +37379,7 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvXoayTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 31588,
+        "sizeBytes": 31587,
         "lineCount": 834,
         "ext": ".tsx"
       }
@@ -37418,7 +37418,7 @@
       "filePath": "apps/web/app/dashboard/cv/components/cv-speed/CvSpeedPredictorWidget.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7679,
+        "sizeBytes": 7678,
         "lineCount": 205,
         "ext": ".tsx"
       }
@@ -37444,7 +37444,7 @@
       "filePath": "apps/web/app/dashboard/cv/components/cv-speed/CvSpeedTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11555,
+        "sizeBytes": 11554,
         "lineCount": 347,
         "ext": ".tsx"
       }
@@ -37496,7 +37496,7 @@
       "filePath": "apps/web/app/dashboard/diagrams/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9376,
+        "sizeBytes": 9370,
         "lineCount": 199,
         "ext": ".tsx"
       }
@@ -37743,7 +37743,7 @@
       "filePath": "apps/web/app/dashboard/kpi/components/cv-speed/CvSpeedPredictorWidget.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7519,
+        "sizeBytes": 7518,
         "lineCount": 201,
         "ext": ".tsx"
       }
@@ -37769,7 +37769,7 @@
       "filePath": "apps/web/app/dashboard/kpi/components/cv-speed/CvSpeedTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7812,
+        "sizeBytes": 7811,
         "lineCount": 236,
         "ext": ".tsx"
       }
@@ -37977,7 +37977,7 @@
       "filePath": "apps/web/app/dashboard/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22131,
+        "sizeBytes": 22127,
         "lineCount": 558,
         "ext": ".tsx"
       }
@@ -38003,7 +38003,7 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11807,
+        "sizeBytes": 11806,
         "lineCount": 329,
         "ext": ".tsx"
       }
@@ -38016,7 +38016,7 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotFlowDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 96609,
+        "sizeBytes": 96598,
         "lineCount": 1922,
         "ext": ".tsx"
       }
@@ -38029,7 +38029,7 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotFollowUpDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3561,
+        "sizeBytes": 3556,
         "lineCount": 98,
         "ext": ".tsx"
       }
@@ -38042,7 +38042,7 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotMaterialModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14614,
+        "sizeBytes": 14613,
         "lineCount": 387,
         "ext": ".tsx"
       }
@@ -38068,7 +38068,7 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSessionDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 31218,
+        "sizeBytes": 31209,
         "lineCount": 691,
         "ext": ".tsx"
       }
@@ -38107,7 +38107,7 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 35446,
+        "sizeBytes": 35440,
         "lineCount": 896,
         "ext": ".tsx"
       }
@@ -38380,7 +38380,7 @@
       "filePath": "apps/web/app/dashboard/schedule-calendar/components/ScheduleListView.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15062,
+        "sizeBytes": 15057,
         "lineCount": 444,
         "ext": ".tsx"
       }
@@ -38549,7 +38549,7 @@
       "filePath": "apps/web/app/dashboard/staff/components/StaffTabsContent.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9345,
+        "sizeBytes": 9344,
         "lineCount": 263,
         "ext": ".tsx"
       }
@@ -38614,7 +38614,7 @@
       "filePath": "apps/web/app/dashboard/staff/teams/teams-page.helpers.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3044,
+        "sizeBytes": 3040,
         "lineCount": 100,
         "ext": ".tsx"
       }
@@ -39108,8 +39108,8 @@
       "filePath": "apps/web/app/dashboard/today/components/TodayBookingsTable.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18104,
-        "lineCount": 531,
+        "sizeBytes": 18144,
+        "lineCount": 533,
         "ext": ".tsx"
       }
     },
@@ -39121,8 +39121,8 @@
       "filePath": "apps/web/app/dashboard/today/components/TodayCalendarSummary.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 53092,
-        "lineCount": 1321,
+        "sizeBytes": 53215,
+        "lineCount": 1330,
         "ext": ".tsx"
       }
     },
@@ -40330,8 +40330,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 110075,
-        "lineCount": 1587,
+        "sizeBytes": 109895,
+        "lineCount": 1590,
         "ext": ".ts"
       }
     },
@@ -40603,8 +40603,8 @@
       "filePath": "packages/shared/src/types/career-progression.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 28963,
-        "lineCount": 705,
+        "sizeBytes": 29254,
+        "lineCount": 709,
         "ext": ".ts"
       }
     },
@@ -41149,8 +41149,8 @@
       "filePath": "packages/shared/src/utils/phone.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 1783,
-        "lineCount": 62,
+        "sizeBytes": 1811,
+        "lineCount": 69,
         "ext": ".ts"
       }
     },

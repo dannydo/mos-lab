@@ -314,7 +314,7 @@ Hãy trả về phân tích theo đúng cấu trúc JSON yêu cầu.`;
     }
 
     if (hasNote && suitability === 'PASS') {
-      riskAttention += ` Ghi chú KTV: "${input.technicianNotes}".`;
+      riskAttention += ` Ghi chú CV: "${input.technicianNotes}".`;
     }
 
     return {

@@ -89,7 +89,8 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
               return 'Tư vấn viên (CC)';
             case 'lt':
             case 'technician':
-              return 'Kỹ thuật viên';
+            case 'cv':
+              return 'Chuyên Viên';
             case 'ht':
               return 'Head Teacher';
             case 'teacher':
@@ -338,7 +339,7 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
         options: [
           { value: 'TEAM:BK_TELESALES', label: `Telesales (${telesalesCount})`, count: telesalesCount },
           { value: 'TEAM:CC', label: `Client Consultant - CC (${ccCount})`, count: ccCount },
-          { value: 'TEAM:CV', label: `Chuyên viên / KTV (${cvCount})`, count: cvCount },
+          { value: 'TEAM:CV', label: `Chuyên viên - CV (${cvCount})`, count: cvCount },
           { value: 'TEAM:BK_CS', label: `Customer Service - CS (${csCount})`, count: csCount },
           { value: 'TEAM:BK_CONTROL', label: `Control (${controlCount})`, count: controlCount },
           { value: 'TEAM:ACADEMY', label: `Đào tạo / Giảng viên (${academyCount})`, count: academyCount },
@@ -647,7 +648,9 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
             }
             extra={
               <span className="text-[12px] text-slate-500 dark:text-slate-400">
-                🎯 <strong>Fair-play:</strong> Giới hạn kênh tiếp nhận (ví dụ: <code>GB</code>) giúp đảm bảo công bằng cho người chơi chỉ phụ trách kênh đó, không bị chênh lệch với người chơi nhận nhiều nguồn (FB, Zalo, WA). Để trống = tính tất cả kênh.
+                🎯 <strong>Fair-play:</strong> Giới hạn kênh tiếp nhận (ví dụ: <code>GB</code>) giúp đảm bảo công bằng
+                cho người chơi chỉ phụ trách kênh đó, không bị chênh lệch với người chơi nhận nhiều nguồn (FB, Zalo,
+                WA). Để trống = tính tất cả kênh.
               </span>
             }
           >

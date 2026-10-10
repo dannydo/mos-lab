@@ -20,15 +20,15 @@ export const CV_PERSONAL_QA_TEMPLATE: QaChecklistTemplate = {
   code: 'CV.Personal.Grooming.Station.check',
   branchCode: 'ALL',
   branchName: 'Tất Cả Chi Nhánh',
-  title: 'Kiểm Định Tác Phong & Phòng Nối Mi Cá Nhân KTV (CV)',
+  title: 'Kiểm Định Tác Phong & Phòng Nối Mi Cá Nhân CV',
   description:
-    'Tiêu chuẩn kiểm định định kỳ tác phong diện mạo và phòng nối mi cá nhân của Kỹ thuật viên (CV/CV+/CV++). Đạt chuẩn là điều kiện tiên quyết để được nâng cấp lộ trình nghề nghiệp.',
+    'Tiêu chuẩn kiểm định định kỳ tác phong diện mạo và phòng nối mi cá nhân của Chuyên Viên (CV/CV+/CV++). Đạt chuẩn là điều kiện tiên quyết để được nâng cấp lộ trình nghề nghiệp.',
   updatedAt: new Date().toISOString(),
   sections: [
     {
       id: 'sec-cv-grooming',
       title: '1. Tác Phong & Diện Mạo Bản Thân (Personal Grooming & Uniform)',
-      description: 'Quy chuẩn hình ảnh đại diện thương hiệu 5 sao của Kỹ thuật viên nối mi.',
+      description: 'Quy chuẩn hình ảnh đại diện thương hiệu 5 sao của Chuyên Viên nối mi.',
       order: 1,
       items: [
         {

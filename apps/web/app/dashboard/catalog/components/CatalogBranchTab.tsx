@@ -377,7 +377,7 @@ export default function CatalogBranchTab({ onRegisterCreate }: CatalogBranchTabP
       key: 'staffCount',
       align: 'center' as const,
       render: (_: any, record: CrmBranch) => (
-        <Tooltip title="Số lượng KTV & CC làm việc sở tại chi nhánh này">
+        <Tooltip title="Số lượng CV & CC làm việc sở tại chi nhánh này">
           <Tag color="purple" icon={<TeamOutlined />} className="px-2.5 py-0.5 font-semibold text-sm tabular-nums">
             {(record.staffCount || 0).toLocaleString('vi-VN')}
           </Tag>

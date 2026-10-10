@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Input, Tooltip, Avatar, Dropdown, Popconfirm } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
-  Search,
   RefreshCw,
   UserCheck,
   Eye,
@@ -20,13 +19,21 @@ import {
   Sparkles,
   ArrowDownCircle,
   Info,
-  X,
+  ChevronDown,
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  CircleUser,
+  CreditCard,
 } from 'lucide-react';
 import { StatusTag, DataTable } from '../../../../components/ui';
 import { WingRoleLabel } from './IslandGameIcon';
 import type { CareerStaffSummary, CareerRole, CareerPeriod, BananaTransactionCategory } from '@mos-lab/shared';
+import { formatCareerRoleName } from '../career-path.constants';
 
-interface StaffCareerSelectorProps {
+export type CareerSelectorMode = 'ultra_compact' | 'cards' | 'table';
+
+export interface StaffCareerSelectorProps {
   staffList: CareerStaffSummary[];
   selectedStaffId: number | null;
   onSelectStaff: (staffId: number) => void;
@@ -41,6 +48,11 @@ interface StaffCareerSelectorProps {
   onDemote?: (staffId: number, targetRole: CareerRole) => Promise<void>;
   actionLoading?: boolean;
   onOpenBananaDrawer?: (staffId: number, category: BananaTransactionCategory) => void;
+  isCollapsedHorizontal?: boolean;
+  onCollapseHorizontal?: () => void;
+  onExpandHorizontal?: () => void;
+  selectorMode?: CareerSelectorMode;
+  onSelectorModeChange?: (mode: CareerSelectorMode) => void;
 }
 
 const ROLE_TABS = [
@@ -70,7 +82,7 @@ const PERIOD_TABS: { key: CareerPeriod; label: string; fullLabel: string }[] = [
   },
 ];
 
-export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
+const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
   staffList,
   selectedStaffId,
   onSelectStaff,
@@ -85,18 +97,123 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
   onDemote,
   actionLoading = false,
   onOpenBananaDrawer,
+  isCollapsedHorizontal = false,
+  onCollapseHorizontal,
+  onExpandHorizontal,
+  selectorMode,
+  onSelectorModeChange,
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchExpanded, setSearchExpanded] = useState(false);
-  const searchInputRef = React.useRef<any>(null);
   const [internalRoleFilter, setInternalRoleFilter] = useState('ALL');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [internalMode, setInternalMode] = useState<CareerSelectorMode>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('mos_career_selector_mode') as CareerSelectorMode | null;
+        if (saved === 'ultra_compact' || saved === 'cards' || saved === 'table') {
+          return saved;
+        }
+      } catch (_) {}
+    }
+    return isCollapsedHorizontal ? 'cards' : 'table';
+  });
+
+  const currentMode: CareerSelectorMode = selectorMode ?? internalMode;
+
+  const handleModeChange = (mode: CareerSelectorMode) => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('mos_career_selector_mode', mode);
+      } catch (_) {}
+    }
+    if (onSelectorModeChange) {
+      onSelectorModeChange(mode);
+    } else {
+      setInternalMode(mode);
+      if (mode === 'table') {
+        onExpandHorizontal?.();
+      } else {
+        onCollapseHorizontal?.();
+      }
+    }
+  };
 
   const currentFilter = onRoleFilterChange ? activeRoleFilter : internalRoleFilter;
   const setFilter = (role: string) => {
     if (onRoleFilterChange) onRoleFilterChange(role);
     else setInternalRoleFilter(role);
   };
+
+  const scrollRailRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (selectedStaffId && scrollRailRef.current) {
+      const activeEl = scrollRailRef.current.querySelector<HTMLElement>(`[data-staff-id="${selectedStaffId}"]`);
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
+    }
+  }, [selectedStaffId, currentMode]);
+
+  const scrollRail = (direction: 'left' | 'right') => {
+    if (scrollRailRef.current) {
+      scrollRailRef.current.scrollBy({
+        left: direction === 'left' ? -350 : 350,
+        behavior: 'smooth',
+      });
+    }
+  };
+
+  const renderModeSwitcher = () => (
+    <div className="flex items-center gap-0.5 bg-slate-100/90 dark:bg-slate-800/80 p-0.5 rounded-xl border border-slate-200/80 dark:border-slate-700/70 shrink-0">
+      <Tooltip title="Chế độ Siêu Gọn: Chỉ hiển thị avatar các bạn Chuyên Viên, tối đa diện tích màn hình">
+        <button
+          type="button"
+          data-testid="mode-ultra-compact-btn"
+          onClick={() => handleModeChange('ultra_compact')}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            currentMode === 'ultra_compact'
+              ? 'bg-rose-500 text-white shadow-xs font-black'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-700/70'
+          }`}
+        >
+          <CircleUser className="w-3.5 h-3.5" />
+          <span>Chỉ Avatar</span>
+        </button>
+      </Tooltip>
+
+      <Tooltip title="Chế độ Thẻ Ngang: Hiển thị avatar kèm tên, cấp bậc và 3 chỉ số nhanh">
+        <button
+          type="button"
+          data-testid="mode-cards-btn"
+          onClick={() => handleModeChange('cards')}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            currentMode === 'cards'
+              ? 'bg-rose-500 text-white shadow-xs font-black'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-700/70'
+          }`}
+        >
+          <CreditCard className="w-3.5 h-3.5" />
+          <span>Thẻ Ngang</span>
+        </button>
+      </Tooltip>
+
+      <Tooltip title="Chế độ Bảng 8 Cột: Mở rộng xem toàn bộ 8 chỉ số kiểm toán của toàn salon">
+        <button
+          type="button"
+          data-testid="mode-table-btn"
+          onClick={() => handleModeChange('table')}
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            currentMode === 'table'
+              ? 'bg-rose-500 text-white shadow-xs font-black'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-700/70'
+          }`}
+        >
+          <TableIcon className="w-3.5 h-3.5" />
+          <span>Bảng 8 Cột</span>
+        </button>
+      </Tooltip>
+    </div>
+  );
 
   const filteredStaff = useMemo(() => {
     return staffList.filter((s) => {
@@ -106,12 +223,6 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
         ['KTV', 'CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole);
       if (!isCv) return false;
 
-      const matchSearch =
-        !searchTerm.trim() ||
-        s.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.username.toLowerCase().includes(searchTerm.toLowerCase());
-
-      if (!matchSearch) return false;
       if (currentFilter === 'ALL') return true;
       if (currentFilter === 'KTV') return s.careerRole === 'KTV';
       if (currentFilter === 'CV') return s.careerRole === 'CV';
@@ -119,7 +230,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
       if (currentFilter === 'CV_PLUS_PLUS') return s.careerRole === 'CV_PLUS_PLUS';
       return true;
     });
-  }, [staffList, searchTerm, currentFilter]);
+  }, [staffList, currentFilter]);
 
   const selectedStaff = useMemo(() => {
     return staffList.find((s) => s.id === selectedStaffId) || null;
@@ -407,8 +518,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
     {
       title: 'Chuyên Viên',
       key: 'staff',
-      width: 190,
-      fixed: 'left',
+      minWidth: 160,
       sorter: (a, b) => a.displayName.localeCompare(b.displayName),
       render: (_, staff) => {
         const isSelected = staff.id === selectedStaffId;
@@ -488,7 +598,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
       ),
       key: 'ordersCount',
       dataIndex: 'ordersCount',
-      width: 75,
+      width: 64,
       align: 'center',
       sorter: (a, b) => (a.ordersCount || 0) - (b.ordersCount || 0),
       render: (ordersCount: number) => {
@@ -517,7 +627,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
       ),
       key: 'fixRate',
       dataIndex: 'fixRate',
-      width: 75,
+      width: 64,
       align: 'center',
       sorter: (a, b) => (a.fixRate || 0) - (b.fixRate || 0),
       render: (fixRate: number) => {
@@ -547,7 +657,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
         </Tooltip>
       ),
       key: 'tip',
-      width: 75,
+      width: 66,
       align: 'center',
       sorter: (a, b) => getStaffTipPercent(a) - getStaffTipPercent(b),
       render: (_, staff) => {
@@ -583,7 +693,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
         </Tooltip>
       ),
       key: 'qaAudits',
-      width: 80,
+      width: 68,
       align: 'center',
       sorter: (a, b) => getQaAuditsCount(a) - getQaAuditsCount(b),
       render: (_, staff) => {
@@ -618,7 +728,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
       ),
       key: 'hi',
       dataIndex: 'happinessIndex',
-      width: 70,
+      width: 62,
       align: 'center',
       sorter: (a, b) => (a.happinessIndex || 0) - (b.happinessIndex || 0),
       render: (happinessIndex: number) => {
@@ -649,7 +759,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
       ),
       key: 'bananaCount',
       dataIndex: 'bananaCount',
-      width: 80,
+      width: 66,
       align: 'center',
       sorter: (a, b) => (a.bananaCount || 0) - (b.bananaCount || 0),
       render: (bananaCount: number, staff: CareerStaffSummary) => {
@@ -682,7 +792,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
         </Tooltip>
       ),
       key: 'bananaBalance',
-      width: 90,
+      width: 76,
       align: 'center',
       sorter: (a, b) => getBananaBalance(a) - getBananaBalance(b),
       render: (_, staff) => {
@@ -710,140 +820,456 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
     },
   ];
 
-  return (
-    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-rose-100/60 dark:border-slate-800/80 p-4 shadow-sm mb-6 transition-all duration-200">
-      {/* Header bar: Title + Count + Info + Role Filters + Controls (Single Toggle View + Expandable Search) */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-rose-500 to-amber-400 flex items-center justify-center text-white shadow-xs shrink-0">
-            <UserCheck className="w-3.5 h-3.5" />
-          </div>
-          <div className="flex items-center gap-1.5">
-            <h3 className="text-xs md:text-sm font-bold text-slate-800 dark:text-slate-100 m-0">
-              Chuyên Viên (CV) Mô Phỏng
-            </h3>
-            <span className="text-[11px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 font-semibold tabular-nums">
-              {filteredStaff.length}
+  if (currentMode === 'ultra_compact') {
+    return (
+      <div className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl border border-rose-100/60 dark:border-slate-800/80 p-2.5 shadow-sm transition-all duration-200">
+        {/* Top Control Bar: Title, Count, Inline Role Chips, Period & 3-Way Mode Switcher */}
+        <div className="flex items-center justify-between gap-2.5 pb-2 mb-2 border-b border-slate-100 dark:border-slate-800/80 flex-wrap">
+          {/* Left: Title + Staff Count + Inline Role Chips */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="w-6 h-6 rounded-lg bg-pink-500/10 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400 border border-pink-500/20 flex items-center justify-center shrink-0">
+              <UserCheck className="w-3.5 h-3.5" />
+            </div>
+            <h3 className="text-xs font-bold text-slate-800 dark:text-slate-100 m-0">Chuyên Viên</h3>
+            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-500/30 tabular-nums">
+              {filteredStaff.length} CV
             </span>
-            <Tooltip
-              title="Dữ liệu đánh giá theo tháng hoàn tất gần nhất (VD: Tháng 10 tính tháng 9 trọn vẹn). Riêng số bộ mi & combo tính 3 tháng hoàn tất gần nhất (T7, T8, T9)."
-              placement="bottomLeft"
-            >
-              <span className="cursor-help text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-0.5 inline-flex items-center">
-                <Info className="w-3.5 h-3.5" />
-              </span>
-            </Tooltip>
+
+            {/* Inline Role Filter Chips */}
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 ml-1">
+              {ROLE_TABS.map((tab) => {
+                const isActive = currentFilter === tab.key;
+                return (
+                  <Tooltip key={tab.key} title={tab.fullLabel}>
+                    <button
+                      type="button"
+                      onClick={() => setFilter(tab.key)}
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-semibold transition-all duration-150 shrink-0 whitespace-nowrap cursor-pointer ${
+                        isActive
+                          ? 'bg-rose-500 text-white shadow-xs font-bold'
+                          : 'bg-slate-100/90 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 hover:bg-slate-200/90 dark:hover:bg-slate-700/80'
+                      }`}
+                    >
+                      <WingRoleLabel text={tab.label} />
+                    </button>
+                  </Tooltip>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block" />
+          {/* Right: Period Chips, Scroll Arrows & 3-Way Mode Switcher */}
+          <div className="flex items-center gap-2 ml-auto">
+            {/* Period selector */}
+            <div className="hidden sm:flex items-center gap-0.5 bg-slate-100/80 dark:bg-slate-800/60 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60 overflow-x-auto no-scrollbar shrink-0">
+              {PERIOD_TABS.map((tab) => {
+                const isActive = (period || 'last_month') === tab.key;
+                return (
+                  <Tooltip key={tab.key} title={tab.fullLabel}>
+                    <button
+                      type="button"
+                      onClick={() => onPeriodChange?.(tab.key)}
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap ${
+                        isActive
+                          ? 'bg-rose-500 text-white shadow-xs font-bold'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-700/70'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  </Tooltip>
+                );
+              })}
+            </div>
 
-          {/* Role Filter Chips */}
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
-            {ROLE_TABS.map((tab) => {
-              const isActive = currentFilter === tab.key;
-              return (
-                <Tooltip key={tab.key} title={tab.fullLabel}>
-                  <button
-                    onClick={() => setFilter(tab.key)}
-                    className={`px-2 py-0.5 rounded-lg text-xs font-semibold transition-all duration-150 shrink-0 whitespace-nowrap ${
-                      isActive
-                        ? 'bg-rose-500 text-white shadow-xs'
-                        : 'bg-slate-100/90 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 hover:bg-slate-200/90 dark:hover:bg-slate-700/80'
-                    }`}
-                  >
-                    <WingRoleLabel text={tab.label} />
-                  </button>
-                </Tooltip>
-              );
-            })}
-          </div>
+            {/* Scroll navigation arrows for horizontal rail */}
+            <div className="flex items-center gap-1">
+              <Tooltip title="Cuộn sang trái (kéo ngang)">
+                <button
+                  type="button"
+                  onClick={() => scrollRail('left')}
+                  className="w-6 h-6 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-all active:scale-95 cursor-pointer shadow-2xs"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+              </Tooltip>
+              <Tooltip title="Cuộn sang phải (kéo ngang)">
+                <button
+                  type="button"
+                  onClick={() => scrollRail('right')}
+                  className="w-6 h-6 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-all active:scale-95 cursor-pointer shadow-2xs"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </Tooltip>
+            </div>
 
-          <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-1 hidden md:block" />
-
-          {/* Period Filter Chips */}
-          <div className="flex items-center gap-0.5 bg-slate-100/80 dark:bg-slate-800/60 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60 overflow-x-auto no-scrollbar shrink-0">
-            {PERIOD_TABS.map((tab) => {
-              const isActive = (period || 'last_month') === tab.key;
-              return (
-                <Tooltip key={tab.key} title={tab.fullLabel}>
-                  <button
-                    onClick={() => onPeriodChange?.(tab.key)}
-                    className={`px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap ${
-                      isActive
-                        ? 'bg-rose-500 text-white shadow-xs font-bold'
-                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-700/70'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                </Tooltip>
-              );
-            })}
+            {/* 3-Way Mode Switcher */}
+            {renderModeSwitcher()}
           </div>
         </div>
 
-        {/* Right side controls: Toggle View Mode + Expandable Search */}
-        <div className="flex items-center gap-1.5 ml-auto">
-          {/* Toggle View Mode Button */}
-          <Tooltip title={viewMode === 'table' ? 'Chuyển sang dạng Thẻ (Grid)' : 'Chuyển sang dạng Bảng (Table)'}>
-            <button
-              onClick={() => setViewMode(viewMode === 'table' ? 'grid' : 'table')}
-              className="p-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-all active:scale-95 flex items-center justify-center cursor-pointer"
-            >
-              {viewMode === 'table' ? (
-                <LayoutGrid className="w-4 h-4 text-slate-600 dark:text-slate-300" />
-              ) : (
-                <TableIcon className="w-4 h-4 text-slate-600 dark:text-slate-300" />
-              )}
-            </button>
-          </Tooltip>
-
-          {/* Expandable Search Button */}
-          {!searchExpanded && !searchTerm ? (
-            <Tooltip title="Tìm tên Chuyên Viên...">
-              <button
-                onClick={() => {
-                  setSearchExpanded(true);
-                  setTimeout(() => searchInputRef.current?.focus(), 50);
-                }}
-                className="p-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all active:scale-95 flex items-center justify-center cursor-pointer"
-              >
-                <Search className="w-4 h-4" />
-              </button>
-            </Tooltip>
+        {/* ULTRA COMPACT AVATAR ONLY RAIL ("Chỉ thấy avatar CV thôi") */}
+        <div
+          ref={scrollRailRef}
+          className="flex items-center gap-3 overflow-x-auto py-1 px-1 no-scrollbar scroll-smooth"
+        >
+          {filteredStaff.length === 0 ? (
+            <div className="py-2 px-3 text-xs text-slate-400">Không tìm thấy Chuyên Viên nào trong danh mục này</div>
           ) : (
-            <div className="relative flex items-center transition-all duration-300 ease-in-out w-40 md:w-52">
-              <Input
-                ref={searchInputRef}
-                placeholder="Tìm tên Chuyên Viên..."
-                prefix={<Search className="w-3.5 h-3.5 text-slate-400" />}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onBlur={() => {
-                  if (!searchTerm) setSearchExpanded(false);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    setSearchTerm('');
-                    setSearchExpanded(false);
+            filteredStaff.map((staff) => {
+              const isSelected = staff.id === selectedStaffId;
+              const overallStatus = getStaffOverallStatus(staff);
+              const tipRate = getStaffTipPercent(staff);
+              const balance = getBananaBalance(staff);
+
+              return (
+                <Tooltip
+                  key={staff.id}
+                  title={
+                    <div className="p-1 space-y-1 text-center min-w-[140px]">
+                      <div className="font-bold text-xs text-white flex items-center justify-center gap-1">
+                        <span>{staff.displayName}</span>
+                        {getRoleBadge(staff.careerRole, true)}
+                      </div>
+                      <div className="text-[10px] text-slate-300">{getStatusLabel(overallStatus)}</div>
+                      <div className="text-[10px] font-mono text-amber-300 border-t border-white/10 pt-1">
+                        {staff.ordersCount || 0} mi · {tipRate}% tip · {balance.toLocaleString('vi-VN')} 🍌
+                      </div>
+                    </div>
                   }
-                }}
-                suffix={
-                  searchTerm ? (
-                    <X
-                      className="w-3.5 h-3.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                      onClick={() => {
-                        setSearchTerm('');
-                        setSearchExpanded(false);
-                      }}
-                    />
-                  ) : null
-                }
-                className="text-xs rounded-xl"
-                autoFocus
-              />
-            </div>
+                >
+                  <button
+                    data-staff-id={staff.id}
+                    type="button"
+                    onClick={() => onSelectStaff(staff.id)}
+                    className={`group relative flex flex-col items-center px-1.5 py-1 rounded-2xl transition-all duration-200 shrink-0 cursor-pointer select-none active:scale-95 ${
+                      isSelected
+                        ? 'bg-rose-500/10 dark:bg-rose-500/20 shadow-xs'
+                        : 'hover:bg-slate-100/80 dark:hover:bg-slate-800/60 opacity-85 hover:opacity-100'
+                    }`}
+                  >
+                    <div className="relative">
+                      <Avatar
+                        src={staff.avatarUrl || undefined}
+                        className={`bg-gradient-to-tr from-rose-400 to-amber-300 text-white font-bold text-xs transition-all ${
+                          isSelected
+                            ? 'ring-2 ring-pink-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 shadow-md shadow-pink-500/30'
+                            : overallStatus === 'passed'
+                              ? 'border-2 border-emerald-500'
+                              : overallStatus === 'near'
+                                ? 'border-2 border-amber-500'
+                                : 'border-2 border-rose-500'
+                        }`}
+                        size={42}
+                      >
+                        {staff.displayName.slice(0, 1).toUpperCase()}
+                      </Avatar>
+
+                      {isSelected ? (
+                        <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center text-[9px] text-white font-black shadow-xs">
+                          ✓
+                        </span>
+                      ) : (
+                        <span
+                          className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-slate-900 ${
+                            overallStatus === 'passed'
+                              ? 'bg-emerald-500'
+                              : overallStatus === 'near'
+                                ? 'bg-amber-500'
+                                : 'bg-rose-500'
+                          }`}
+                        />
+                      )}
+                    </div>
+                    <span
+                      className={`text-[10px] truncate max-w-[58px] text-center block mt-1 transition-colors ${
+                        isSelected
+                          ? 'font-bold text-pink-600 dark:text-pink-400'
+                          : 'font-medium text-slate-600 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white'
+                      }`}
+                    >
+                      {staff.displayName}
+                    </span>
+                  </button>
+                </Tooltip>
+              );
+            })
           )}
+        </div>
+      </div>
+    );
+  }
+
+  if (currentMode === 'cards' || (isCollapsedHorizontal && currentMode !== 'table')) {
+    return (
+      <div className="w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl border border-rose-100/60 dark:border-slate-800/80 p-3 shadow-sm transition-all duration-200">
+        {/* Top Control Bar: Title, Count, Role Filters, Period & 3-Way Mode Switcher */}
+        <div className="flex items-center justify-between gap-3 pb-2.5 mb-2 border-b border-slate-100 dark:border-slate-800/80 flex-wrap">
+          {/* Left: Title + Staff Count + Inline Role Chips */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="w-7 h-7 rounded-lg bg-pink-500/10 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400 border border-pink-500/20 flex items-center justify-center shrink-0">
+              <UserCheck className="w-3.5 h-3.5" />
+            </div>
+            <h3 className="text-xs md:text-sm font-bold text-slate-800 dark:text-slate-100 m-0">
+              Chuyên Viên Mô Phỏng
+            </h3>
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-500/30 tabular-nums">
+              {filteredStaff.length} CV
+            </span>
+
+            {/* Inline Role Filter Chips */}
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 ml-1">
+              {ROLE_TABS.map((tab) => {
+                const isActive = currentFilter === tab.key;
+                return (
+                  <Tooltip key={tab.key} title={tab.fullLabel}>
+                    <button
+                      type="button"
+                      onClick={() => setFilter(tab.key)}
+                      className={`px-2.5 py-0.5 rounded-lg text-[11px] font-semibold transition-all duration-150 shrink-0 whitespace-nowrap cursor-pointer ${
+                        isActive
+                          ? 'bg-rose-500 text-white shadow-xs font-bold'
+                          : 'bg-slate-100/90 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 hover:bg-slate-200/90 dark:hover:bg-slate-700/80'
+                      }`}
+                    >
+                      <WingRoleLabel text={tab.label} />
+                    </button>
+                  </Tooltip>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right: Period Chips, Scroll Arrows & 3-Way Mode Switcher */}
+          <div className="flex items-center gap-2 ml-auto">
+            {/* Period selector */}
+            <div className="hidden sm:flex items-center gap-0.5 bg-slate-100/80 dark:bg-slate-800/60 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60 overflow-x-auto no-scrollbar shrink-0">
+              {PERIOD_TABS.map((tab) => {
+                const isActive = (period || 'last_month') === tab.key;
+                return (
+                  <Tooltip key={tab.key} title={tab.fullLabel}>
+                    <button
+                      type="button"
+                      onClick={() => onPeriodChange?.(tab.key)}
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap ${
+                        isActive
+                          ? 'bg-rose-500 text-white shadow-xs font-bold'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-700/70'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  </Tooltip>
+                );
+              })}
+            </div>
+
+            {/* Scroll navigation arrows for horizontal rail */}
+            <div className="flex items-center gap-1">
+              <Tooltip title="Cuộn sang trái (kéo ngang)">
+                <button
+                  type="button"
+                  onClick={() => scrollRail('left')}
+                  className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-all active:scale-95 cursor-pointer shadow-2xs"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+              </Tooltip>
+              <Tooltip title="Cuộn sang phải (kéo ngang)">
+                <button
+                  type="button"
+                  onClick={() => scrollRail('right')}
+                  className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-all active:scale-95 cursor-pointer shadow-2xs"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </Tooltip>
+            </div>
+
+            {/* 3-Way Mode Switcher */}
+            {renderModeSwitcher()}
+          </div>
+        </div>
+
+        {/* Horizontal Scrollable Rail of Avatars ("Kéo ngang và để avatar ngang") */}
+        <div
+          ref={scrollRailRef}
+          className="flex items-center gap-3 overflow-x-auto py-1 px-1 no-scrollbar scroll-smooth"
+        >
+          {filteredStaff.length === 0 ? (
+            <div className="py-3 px-4 text-xs text-slate-400">Không tìm thấy Chuyên Viên nào trong danh mục này</div>
+          ) : (
+            filteredStaff.map((staff) => {
+              const isSelected = staff.id === selectedStaffId;
+              const overallStatus = getStaffOverallStatus(staff);
+              const tipRate = getStaffTipPercent(staff);
+              const balance = getBananaBalance(staff);
+
+              return (
+                <button
+                  key={staff.id}
+                  data-staff-id={staff.id}
+                  type="button"
+                  onClick={() => onSelectStaff(staff.id)}
+                  className={`group relative flex items-center gap-3 px-3.5 py-2 rounded-2xl border transition-all shrink-0 cursor-pointer select-none active:scale-95 ${
+                    isSelected
+                      ? 'bg-rose-50/90 dark:bg-rose-950/40 border-rose-500 shadow-md ring-2 ring-rose-500/25'
+                      : 'bg-white/80 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700/70 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600'
+                  }`}
+                >
+                  <div className="relative shrink-0">
+                    <Avatar
+                      src={staff.avatarUrl || undefined}
+                      size={42}
+                      className={`transition-all ${
+                        isSelected
+                          ? overallStatus === 'passed'
+                            ? 'ring-2 ring-emerald-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 shadow-sm shadow-emerald-500/30'
+                            : overallStatus === 'near'
+                              ? 'ring-2 ring-amber-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 shadow-sm shadow-amber-500/30'
+                              : 'ring-2 ring-rose-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 shadow-sm shadow-rose-500/30'
+                          : 'border border-slate-200 dark:border-slate-700 group-hover:border-pink-400'
+                      }`}
+                    >
+                      {staff.displayName.slice(0, 1).toUpperCase()}
+                    </Avatar>
+                    {isSelected ? (
+                      <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 flex items-center justify-center text-[9px] text-white font-black shadow-xs">
+                        ✓
+                      </span>
+                    ) : (
+                      <span
+                        className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 ${
+                          overallStatus === 'passed'
+                            ? 'bg-emerald-500'
+                            : overallStatus === 'near'
+                              ? 'bg-amber-500'
+                              : 'bg-rose-500'
+                        }`}
+                        title={getStatusLabel(overallStatus)}
+                      />
+                    )}
+                  </div>
+
+                  <div className="text-left min-w-0">
+                    <div className="flex items-center gap-1.5 flex-nowrap">
+                      <span
+                        className={`text-xs truncate max-w-[120px] ${
+                          isSelected
+                            ? 'font-black text-rose-600 dark:text-rose-400'
+                            : 'font-bold text-slate-800 dark:text-slate-100'
+                        }`}
+                        title={staff.displayName}
+                      >
+                        {staff.displayName}
+                      </span>
+                      <span className="scale-90 origin-left shrink-0">{getRoleBadge(staff.careerRole, true)}</span>
+                    </div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-mono mt-0.5 whitespace-nowrap">
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">
+                        {staff.ordersCount || 0} mi
+                      </span>
+                      <span>·</span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">{tipRate}% tip</span>
+                      <span>·</span>
+                      <span
+                        className={
+                          balance < 0
+                            ? 'text-rose-600 dark:text-rose-400 font-bold'
+                            : 'text-amber-600 dark:text-amber-400 font-bold'
+                        }
+                      >
+                        {balance.toLocaleString('vi-VN')} 🍌
+                      </span>
+                    </div>
+                  </div>
+                </button>
+              );
+            })
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl border border-rose-100/60 dark:border-slate-800/80 p-4 shadow-sm mb-6 transition-all duration-200">
+      {/* Header bar: Refactored Clean 2-Row Layout */}
+      <div className="space-y-2.5 mb-3 pb-2.5 border-b border-slate-100 dark:border-slate-800/80">
+        {/* Row 1: Title, Count, Info, Period Filter, View Mode & Symbol-only Collapse Button */}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-pink-500/10 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400 border border-pink-500/20 flex items-center justify-center shrink-0">
+              <UserCheck className="w-3.5 h-3.5" />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-xs md:text-sm font-bold text-slate-800 dark:text-slate-100 m-0">
+                Chuyên Viên Mô Phỏng
+              </h3>
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-500/30 tabular-nums">
+                {filteredStaff.length} CV
+              </span>
+              <Tooltip
+                title="Dữ liệu đánh giá theo tháng hoàn tất gần nhất (3 tháng đối với bộ mi & combo). Bấm vào từng bạn để mô phỏng."
+                placement="bottomLeft"
+              >
+                <span className="cursor-help text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-0.5 inline-flex items-center">
+                  <Info className="w-3.5 h-3.5" />
+                </span>
+              </Tooltip>
+            </div>
+          </div>
+
+          {/* Right Controls: Period, View Mode & Pure Symbol Collapse Button */}
+          <div className="flex items-center gap-1.5 ml-auto">
+            {/* Period Filter Chips */}
+            <div className="flex items-center gap-0.5 bg-slate-100/80 dark:bg-slate-800/60 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60 overflow-x-auto no-scrollbar shrink-0">
+              {PERIOD_TABS.map((tab) => {
+                const isActive = (period || 'last_month') === tab.key;
+                return (
+                  <Tooltip key={tab.key} title={tab.fullLabel}>
+                    <button
+                      type="button"
+                      onClick={() => onPeriodChange?.(tab.key)}
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-semibold transition-all duration-150 cursor-pointer shrink-0 whitespace-nowrap ${
+                        isActive
+                          ? 'bg-rose-500 text-white shadow-xs font-bold'
+                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200/80 dark:hover:bg-slate-700/70'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  </Tooltip>
+                );
+              })}
+            </div>
+
+            {/* 3-Way Mode Switcher */}
+            {renderModeSwitcher()}
+          </div>
+        </div>
+
+        {/* Row 2: Full-width Role Filter Chips */}
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
+          {ROLE_TABS.map((tab) => {
+            const isActive = currentFilter === tab.key;
+            return (
+              <Tooltip key={tab.key} title={tab.fullLabel}>
+                <button
+                  type="button"
+                  onClick={() => setFilter(tab.key)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all duration-150 shrink-0 whitespace-nowrap ${
+                    isActive
+                      ? 'bg-rose-500 text-white shadow-xs font-bold'
+                      : 'bg-slate-100/90 dark:bg-slate-800/70 text-slate-600 dark:text-slate-300 hover:bg-slate-200/90 dark:hover:bg-slate-700/80'
+                  }`}
+                >
+                  <WingRoleLabel text={tab.label} />
+                </button>
+              </Tooltip>
+            );
+          })}
         </div>
       </div>
 
@@ -856,7 +1282,7 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
             rowKey="id"
             size="small"
             pagination={false}
-            scroll={{ y: 320, x: 'max-content' }}
+            scroll={{ y: 520 }}
             onRow={(record) => ({
               onClick: () => onSelectStaff(record.id),
               className: 'cursor-pointer group',
@@ -1200,3 +1626,5 @@ export const StaffCareerSelector: React.FC<StaffCareerSelectorProps> = ({
     </div>
   );
 };
+
+export const StaffCareerSelector = React.memo(StaffCareerSelectorComponent);

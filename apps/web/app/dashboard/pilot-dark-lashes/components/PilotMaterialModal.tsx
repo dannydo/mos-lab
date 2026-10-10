@@ -270,7 +270,7 @@ export function PilotMaterialModal({ open, onClose, materials, onRefresh }: Pilo
       >
         <div className="mb-3 p-3 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-500/20 text-xs text-emerald-800 dark:text-emerald-200">
           💡 <strong>Quy tắc tính tự động:</strong> Cost trên 1 đơn vị = <code>Giá mua / Quy cách dung tích</code>. Khi
-          KTV ghi nhận lượng dùng trong ca làm, hệ thống sẽ nhân với Cost/đơn vị này để tính chi phí vật tư chính xác.
+          CV ghi nhận lượng dùng trong ca làm, hệ thống sẽ nhân với Cost/đơn vị này để tính chi phí vật tư chính xác.
         </div>
 
         <DataTable<PilotMaterial>

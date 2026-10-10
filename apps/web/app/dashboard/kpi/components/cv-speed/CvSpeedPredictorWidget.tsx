@@ -73,7 +73,7 @@ export function CvSpeedPredictorWidget({
             onChange={onCvIdChange}
             style={{ width: '100%' }}
             options={cvOptions}
-            placeholder="Chọn KTV / Chuyên Viên"
+            placeholder="Chọn Chuyên Viên (CV)"
             showSearch
             filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
           />

@@ -92,7 +92,7 @@ export default function CatalogItemDetailPanel({
       key: 'staffName',
       render: (name: string) => (
         <Tag color="cyan" className="text-[11px] font-medium m-0">
-          {name || 'KTV'}
+          {name || 'CV'}
         </Tag>
       ),
     },

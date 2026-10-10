@@ -298,7 +298,7 @@ export const QaHeaderMetrics: React.FC<QaHeaderMetricsProps> = ({
                     },
                     {
                       value: 'CV.Personal.Grooming.Station.check',
-                      label: '💅 Tác Phong & Phòng Nối Mi KTV (Lộ Trình CV)',
+                      label: '💅 Tác Phong & Phòng Nối Mi CV (Lộ Trình CV)',
                     },
                   ]}
                 />
@@ -308,12 +308,12 @@ export const QaHeaderMetrics: React.FC<QaHeaderMetricsProps> = ({
                 <>
                   <div className={styles.controlGroup}>
                     <Text className={`${styles.controlLabel} text-slate-600 dark:text-slate-400`}>
-                      Kỹ Thuật Viên Được Kiểm Định:
+                      Chuyên Viên Được Kiểm Định:
                     </Text>
                     <Select
                       showSearch
-                      placeholder="Chọn KTV kiểm định..."
-                      aria-label="Chọn KTV kiểm định"
+                      placeholder="Chọn CV kiểm định..."
+                      aria-label="Chọn CV kiểm định"
                       value={evaluatedStaffId || undefined}
                       onChange={(val) => onSelectEvaluatedStaff?.(val || null)}
                       filterOption={(input, option) =>

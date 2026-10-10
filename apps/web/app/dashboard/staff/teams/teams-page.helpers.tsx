@@ -29,7 +29,7 @@ export type TeamFormValues = {
 export const ROLE_FILTERS: ReadonlyArray<{ label: string; value: RoleFilter }> = [
   { label: 'Tất cả', value: 'ALL' },
   { label: 'CC', value: 'CC' },
-  { label: 'KTV/CV', value: 'CV' },
+  { label: 'CV', value: 'CV' },
   { label: 'Booker', value: 'BK' },
   { label: 'Khác', value: 'OTHER' },
 ];
