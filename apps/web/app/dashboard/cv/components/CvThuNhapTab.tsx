@@ -2137,9 +2137,8 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                 <span>CÔNG TY TNHH WINGS LASHES</span>
                 <span>Tax Number: 0313891996 • Hotline: 1800 8154</span>
               </div>
-              <div>• Chi nhánh 1: 309 Phan Xích Long, P.1, Q. Phú Nhuận, TP. Hồ Chí Minh</div>
-              <div>• Chi nhánh 2: 159 - 159A Đề Thám, P. Cô Giang, Q. 1, TP. Hồ Chí Minh</div>
-              <div>• Chi nhánh 3: L5-08, 09 Estella Place, 88 Song Hành, P. An Phú, TP. Thủ Đức, TP. Hồ Chí Minh</div>
+              <div>• Chi nhánh 1: 159 - 159A Đề Thám, P. Cô Giang, Q. 1, TP. Hồ Chí Minh</div>
+              <div>• Chi nhánh 2: L5-08, 09 Estella Place, 88 Song Hành, P. An Phú, TP. Thủ Đức, TP. Hồ Chí Minh</div>
             </div>
           </div>
         )}

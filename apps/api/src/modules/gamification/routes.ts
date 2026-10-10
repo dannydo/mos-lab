@@ -284,13 +284,18 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
 
   // 4. GET /api/gamification/daily-sales-bonus/transactions
   fastify.get('/gamification/daily-sales-bonus/transactions', async (request, reply) => {
-    const { date, consultantId } = request.query as {
+    const { date, dateFrom, dateTo, consultantId } = request.query as {
       date?: string;
+      dateFrom?: string;
+      dateTo?: string;
       consultantId?: string;
     };
 
-    if (!date) {
-      return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu tham số date.' });
+    const startStr = dateFrom || date;
+    const endStr = dateTo || date || startStr;
+
+    if (!startStr || !endStr) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu tham số date hoặc dateFrom.' });
     }
 
     try {
@@ -315,9 +320,10 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         staffFilterUdp = ` AND COALESCE(udp.created_staff_id, ud.user_debt_payment_staff_id, ud.created_staff_id) = ${uid}`;
       }
 
-      const datePart = normalizeDatePart(date, date);
+      const startPart = normalizeDatePart(startStr, startStr);
+      const endPart = normalizeDatePart(endStr, endStr);
       const filteredOrdersCte = buildActualCheckinOrdersCte();
-      const dateQueryParams = actualCheckinQueryParams(datePart, datePart);
+      const dateQueryParams = actualCheckinQueryParams(startPart, endPart);
 
       // Query Combos (Net cash value subtracts unpaid debt) with 50/50 Split for CC IN != CC OUT
       const comboQuery = `
@@ -342,7 +348,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           SELECT 
             osc.id as order_service_id,
             fo.orderId as order_id,
-            DATE_FORMAT(fo.checkinTime, '%H:%i:%s') as order_time,
+            DATE_FORMAT(fo.checkinTime, '%d/%m/%Y %H:%i') as order_time,
             up_cust.full_name as customer_name,
             UPPER(cs.client_store_key) as store_code,
             CONCAT('Combo #', osc.service_id, ' - ', COALESCE(sl.service_name, 'Gói Combo')) as item_title,
@@ -373,7 +379,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           SELECT 
             osc.id as order_service_id,
             fo.orderId as order_id,
-            DATE_FORMAT(fo.checkinTime, '%H:%i:%s') as order_time,
+            DATE_FORMAT(fo.checkinTime, '%d/%m/%Y %H:%i') as order_time,
             up_cust.full_name as customer_name,
             UPPER(cs.client_store_key) as store_code,
             CONCAT('Combo #', osc.service_id, ' - ', COALESCE(sl.service_name, 'Gói Combo')) as item_title,
@@ -404,7 +410,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           SELECT 
             osc.id as order_service_id,
             fo.orderId as order_id,
-            DATE_FORMAT(fo.checkinTime, '%H:%i:%s') as order_time,
+            DATE_FORMAT(fo.checkinTime, '%d/%m/%Y %H:%i') as order_time,
             up_cust.full_name as customer_name,
             UPPER(cs.client_store_key) as store_code,
             CONCAT('Combo #', osc.service_id, ' - ', COALESCE(sl.service_name, 'Gói Combo')) as item_title,
@@ -444,7 +450,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         SELECT 
           op.id as order_service_id,
           fo.orderId as order_id,
-          DATE_FORMAT(fo.checkinTime, '%H:%i:%s') as order_time,
+          DATE_FORMAT(fo.checkinTime, '%d/%m/%Y %H:%i') as order_time,
           up_cust.full_name as customer_name,
           UPPER(cs.client_store_key) as store_code,
           CONCAT('Sản Phẩm #', op.product_id, ' - ', COALESCE(pl.product_name, 'Sản Phẩm')) as item_title,
@@ -473,7 +479,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         SELECT 
           os.id as order_service_id,
           fo.orderId as order_id,
-          DATE_FORMAT(fo.checkinTime, '%H:%i:%s') as order_time,
+          DATE_FORMAT(fo.checkinTime, '%d/%m/%Y %H:%i') as order_time,
           up_cust.full_name as customer_name,
           UPPER(cs.client_store_key) as store_code,
           CONCAT('DV #', os.service_id, ' - ', COALESCE(sl.service_name, os.service_group, 'Mi/SP')) as item_title,
@@ -525,7 +531,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           SELECT 
             os.id as order_service_id,
             fo.orderId as order_id,
-            DATE_FORMAT(fo.checkinTime, '%H:%i:%s') as order_time,
+            DATE_FORMAT(fo.checkinTime, '%d/%m/%Y %H:%i') as order_time,
             up_cust.full_name as customer_name,
             UPPER(cs.client_store_key) as store_code,
             CONCAT('Nâng Cấp Combo DV #', os.service_id, ' - ', COALESCE(sl.service_name, os.service_group, 'Mi/SP')) as item_title,
@@ -556,7 +562,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           SELECT 
             os.id as order_service_id,
             fo.orderId as order_id,
-            DATE_FORMAT(fo.checkinTime, '%H:%i:%s') as order_time,
+            DATE_FORMAT(fo.checkinTime, '%d/%m/%Y %H:%i') as order_time,
             up_cust.full_name as customer_name,
             UPPER(cs.client_store_key) as store_code,
             CONCAT('Nâng Cấp Combo DV #', os.service_id, ' - ', COALESCE(sl.service_name, os.service_group, 'Mi/SP')) as item_title,
@@ -587,7 +593,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           SELECT 
             os.id as order_service_id,
             fo.orderId as order_id,
-            DATE_FORMAT(fo.checkinTime, '%H:%i:%s') as order_time,
+            DATE_FORMAT(fo.checkinTime, '%d/%m/%Y %H:%i') as order_time,
             up_cust.full_name as customer_name,
             UPPER(cs.client_store_key) as store_code,
             CONCAT('Nâng Cấp Combo DV #', os.service_id, ' - ', COALESCE(sl.service_name, os.service_group, 'Mi/SP')) as item_title,

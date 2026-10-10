@@ -2316,10 +2316,71 @@ export class CampaignService {
     };
   }
 
+  private static inFlightCampaignStatsPromises = new Map<string, Promise<CampaignStatsResponse>>();
+  private static inFlightSharedPoolOverviewPromises = new Map<string, Promise<SharedPoolOverviewStats>>();
+
+  static invalidateCampaignCache(fastify: FastifyInstance, campaignId?: number): void {
+    if (campaignId) {
+      fastify.cache?.invalidatePattern(`^campaign:stats:${campaignId}:`);
+      fastify.cache?.invalidatePattern(`^campaign:shared-pool:overview:${campaignId}:`);
+      for (const key of this.inFlightCampaignStatsPromises.keys()) {
+        if (key.startsWith(`campaign:stats:${campaignId}:`)) {
+          this.inFlightCampaignStatsPromises.delete(key);
+        }
+      }
+      for (const key of this.inFlightSharedPoolOverviewPromises.keys()) {
+        if (key.startsWith(`campaign:shared-pool:overview:${campaignId}:`)) {
+          this.inFlightSharedPoolOverviewPromises.delete(key);
+        }
+      }
+    } else {
+      fastify.cache?.invalidatePattern(`^campaign:stats:`);
+      fastify.cache?.invalidatePattern(`^campaign:shared-pool:overview:`);
+      this.inFlightCampaignStatsPromises.clear();
+      this.inFlightSharedPoolOverviewPromises.clear();
+    }
+  }
+
   /**
    * Header metrics for campaign (total customers, booked count, booked rate, touchpoint logs count, revenue).
+   * Features a 15-second in-memory cache + Single-Flight in-flight promise sharing to absorb high polling frequency.
    */
   static async getCampaignStats(
+    fastify: FastifyInstance,
+    campaignId: number,
+    restrictToAssignedStaffId?: number,
+    options?: { skipCache?: boolean }
+  ): Promise<CampaignStatsResponse> {
+    const cacheKey = `campaign:stats:${campaignId}:${restrictToAssignedStaffId || 'ALL'}`;
+    if (!options?.skipCache) {
+      const cached = fastify.cache?.get<CampaignStatsResponse>(cacheKey);
+      if (cached) {
+        return cached;
+      }
+      const inFlight = this.inFlightCampaignStatsPromises.get(cacheKey);
+      if (inFlight) {
+        return await inFlight;
+      }
+    }
+
+    const computePromise = (async () => {
+      try {
+        const stats = await this.computeCampaignStats(fastify, campaignId, restrictToAssignedStaffId);
+        fastify.cache?.set(cacheKey, stats, 15_000);
+        return stats;
+      } finally {
+        this.inFlightCampaignStatsPromises.delete(cacheKey);
+      }
+    })();
+
+    if (!options?.skipCache) {
+      this.inFlightCampaignStatsPromises.set(cacheKey, computePromise);
+    }
+
+    return await computePromise;
+  }
+
+  private static async computeCampaignStats(
     fastify: FastifyInstance,
     campaignId: number,
     restrictToAssignedStaffId?: number
@@ -2771,8 +2832,45 @@ export class CampaignService {
 
   /**
    * Get Shared Pool Overview Stats: active batch metrics, campaign metrics, burn rate, and early warning levels.
+   * Features a 15-second in-memory cache + Single-Flight in-flight promise sharing to absorb high polling frequency.
    */
   static async getSharedPoolOverview(
+    fastify: FastifyInstance,
+    campaignId: number,
+    batchNumberParam?: number | string | 'ALL',
+    options?: { skipCache?: boolean }
+  ): Promise<SharedPoolOverviewStats> {
+    const batchKeyPart = batchNumberParam !== undefined ? String(batchNumberParam) : 'DEFAULT';
+    const cacheKey = `campaign:shared-pool:overview:${campaignId}:${batchKeyPart}`;
+    if (!options?.skipCache) {
+      const cached = fastify.cache?.get<SharedPoolOverviewStats>(cacheKey);
+      if (cached) {
+        return cached;
+      }
+      const inFlight = this.inFlightSharedPoolOverviewPromises.get(cacheKey);
+      if (inFlight) {
+        return await inFlight;
+      }
+    }
+
+    const computePromise = (async () => {
+      try {
+        const overview = await this.computeSharedPoolOverview(fastify, campaignId, batchNumberParam);
+        fastify.cache?.set(cacheKey, overview, 15_000);
+        return overview;
+      } finally {
+        this.inFlightSharedPoolOverviewPromises.delete(cacheKey);
+      }
+    })();
+
+    if (!options?.skipCache) {
+      this.inFlightSharedPoolOverviewPromises.set(cacheKey, computePromise);
+    }
+
+    return await computePromise;
+  }
+
+  private static async computeSharedPoolOverview(
     fastify: FastifyInstance,
     campaignId: number,
     batchNumberParam?: number | string | 'ALL'
@@ -3401,6 +3499,8 @@ export class CampaignService {
       claimExpiresAt: claimExpiresAt.toISOString(),
     });
 
+    this.invalidateCampaignCache(fastify, campaignId);
+
     return {
       success: true,
       message: `Đã nhận thành công khách hàng. Bạn có ${config.claimTtlMinutes || 15} phút để xử lý.`,
@@ -3486,6 +3586,8 @@ export class CampaignService {
       legacyUserId: customer.legacyUserId,
       reason: isManager ? 'RELEASE_MANAGER' : 'RELEASE_MANUAL',
     });
+
+    this.invalidateCampaignCache(fastify, campaignId);
 
     return {
       success: true,
@@ -3808,6 +3910,7 @@ export class CampaignService {
       });
 
       await this.maintainSharedPool(fastify, customer.campaignId);
+      this.invalidateCampaignCache(fastify, customer.campaignId);
 
       results.push({
         campaignId: customer.campaignId,
@@ -4019,6 +4122,7 @@ export class CampaignService {
 
     // Check if active batch has completed and auto-advance
     await this.maintainSharedPool(fastify, campaignId);
+    this.invalidateCampaignCache(fastify, campaignId);
 
     return {
       success: true,
@@ -4078,6 +4182,8 @@ export class CampaignService {
       type: 'BATCH_ADVANCED',
       currentBatchNumber: nextBatch,
     });
+
+    this.invalidateCampaignCache(fastify, campaignId);
 
     return {
       success: true,
@@ -4154,6 +4260,8 @@ export class CampaignService {
     SharedPoolBroadcaster.broadcast(campaignId, {
       type: isPaused ? 'POOL_PAUSED' : 'POOL_RESUMED',
     });
+
+    this.invalidateCampaignCache(fastify, campaignId);
 
     return {
       success: true,

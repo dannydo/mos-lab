@@ -133,6 +133,8 @@ export interface DailySalesBonusQueryParams {
 }
 
 export interface DailySalesBonusTransactionsQueryParams {
-  date: string;
+  date?: string;
+  dateFrom?: string;
+  dateTo?: string;
   consultantId: string | number;
 }

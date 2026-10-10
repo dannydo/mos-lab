@@ -582,6 +582,7 @@ export async function campaignRoutes(fastify: FastifyInstance) {
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const params = request.params as { id: string };
+        const query = (request.query || {}) as { skipCache?: string | boolean };
         const id = parseInt(params.id, 10);
         if (isNaN(id)) {
           return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
@@ -590,7 +591,8 @@ export async function campaignRoutes(fastify: FastifyInstance) {
         const stats = await CampaignService.getCampaignStats(
           fastify,
           id,
-          CustomerAccessService.isTelesales(user) ? user.id : undefined
+          CustomerAccessService.isTelesales(user) ? user.id : undefined,
+          { skipCache: query.skipCache === 'true' || query.skipCache === true }
         );
         return reply.send(stats);
       } catch (err: any) {
@@ -634,12 +636,14 @@ export async function campaignRoutes(fastify: FastifyInstance) {
     async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const params = request.params as { id: string };
-        const query = (request.query || {}) as { batchNumber?: string };
+        const query = (request.query || {}) as { batchNumber?: string; skipCache?: string | boolean };
         const id = parseInt(params.id, 10);
         if (isNaN(id)) {
           return reply.status(400).send({ error: 'Bad Request', message: 'ID chiến dịch không hợp lệ' });
         }
-        const overview = await CampaignService.getSharedPoolOverview(fastify, id, query.batchNumber);
+        const overview = await CampaignService.getSharedPoolOverview(fastify, id, query.batchNumber, {
+          skipCache: query.skipCache === 'true' || query.skipCache === true,
+        });
         return reply.send(overview);
       } catch (err: any) {
         request.log.error('Failed to get shared pool overview:', err);

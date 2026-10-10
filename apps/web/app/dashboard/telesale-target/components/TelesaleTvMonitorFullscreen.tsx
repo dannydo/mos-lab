@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Button, Tooltip, Progress, theme, Popover, Slider, Switch, Select, message } from 'antd';
+import { Button, Tooltip, Progress, theme, Popover, Slider, Switch, Select, message, Badge } from 'antd';
 import {
   X,
   Maximize2,
@@ -631,7 +631,7 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
   return (
     <div
       ref={fullscreenContainerRef}
-      className={`fixed inset-0 z-[99999] flex flex-col justify-between p-3 sm:p-4 select-none overflow-hidden font-sans h-screen max-h-screen transition-colors duration-300 ${
+      className={`fixed inset-0 z-[99999] flex flex-col justify-between select-none overflow-hidden font-sans h-screen max-h-screen transition-colors duration-300 ${
         isDark ? 'bg-zinc-950 text-zinc-100' : 'bg-slate-100 text-slate-800'
       }`}
     >
@@ -653,259 +653,316 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
         }`}
       />
 
-      {/* 1. TOP BAR (MOCKUP 3: WALL STREET FINANCIAL WAR ROOM) */}
-      <header className="relative z-10 w-full shrink-0 flex flex-col items-center">
-        {/* ROW 1: THE UNIFIED HORIZONTAL TOP CAPSULE BAR */}
-        <div
-          className={`relative w-full h-14 rounded-2xl flex items-center justify-between px-3 overflow-hidden backdrop-blur-md transition-colors ${
-            isDark
-              ? 'bg-zinc-900/95 border border-zinc-800/80 shadow-[0_4px_24px_rgba(0,0,0,0.5)]'
-              : 'bg-white/95 border border-slate-200/90 shadow-[0_4px_20px_rgba(0,0,0,0.06)]'
-          }`}
-        >
-          {/* Subtle horizontal gradient highlight across top bar */}
+      {/* Top & Main Cockpit Content Area */}
+      <div className="flex-1 flex flex-col min-h-0 w-full p-3 sm:p-4 pb-1 overflow-hidden">
+        {/* 1. TOP BAR (MOCKUP 3: WALL STREET FINANCIAL WAR ROOM) */}
+        <header className="relative z-10 w-full shrink-0 flex flex-col items-center">
+          {/* ROW 1: THE UNIFIED HORIZONTAL TOP CAPSULE BAR */}
           <div
-            className={`absolute inset-0 pointer-events-none bg-gradient-to-r ${
+            className={`relative w-full h-14 rounded-2xl flex items-center justify-between px-3 overflow-hidden backdrop-blur-md transition-colors ${
               isDark
-                ? 'from-amber-500/[0.04] via-transparent to-zinc-500/[0.03]'
-                : 'from-amber-500/[0.05] via-transparent to-slate-200/[0.25]'
+                ? 'bg-zinc-900/95 border border-zinc-800/80 shadow-[0_4px_24px_rgba(0,0,0,0.5)]'
+                : 'bg-white/95 border border-slate-200/90 shadow-[0_4px_20px_rgba(0,0,0,0.06)]'
             }`}
-          />
+          >
+            {/* Subtle horizontal gradient highlight across top bar */}
+            <div
+              className={`absolute inset-0 pointer-events-none bg-gradient-to-r ${
+                isDark
+                  ? 'from-amber-500/[0.04] via-transparent to-zinc-500/[0.03]'
+                  : 'from-amber-500/[0.05] via-transparent to-slate-200/[0.25]'
+              }`}
+            />
 
-          {/* Left: Brand Plate with Chamfered Metallic Gold Slice + Book Toggle Button */}
-          <div className="flex items-center gap-3 shrink-0 relative z-10">
-            <div className="relative flex items-center h-full -ml-3 pl-3 pr-8 shrink-0">
-              {/* SVG Background for Brand Plate + Diagonal Slanted Gold Slice */}
-              <svg
-                className="absolute inset-0 w-full h-full pointer-events-none"
-                preserveAspectRatio="none"
-                viewBox="0 0 350 56"
+            {/* Left: Pure Brand Identity */}
+            <div className="flex items-center gap-2.5 pl-1 shrink-0 relative z-10">
+              <div
+                className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border transition-all ${
+                  isDark
+                    ? 'bg-amber-500/15 border-amber-400/40 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.25)]'
+                    : 'bg-amber-100 border-amber-300 text-amber-700 shadow-sm'
+                }`}
               >
-                <defs>
-                  {/* Metallic Gold Gradient for the angled slice */}
-                  <linearGradient id="goldSliceGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="rgb(254, 240, 138)" />
-                    <stop offset="35%" stopColor="rgb(245, 158, 11)" />
-                    <stop offset="70%" stopColor="rgb(217, 119, 6)" />
-                    <stop offset="100%" stopColor="rgb(146, 64, 14)" />
-                  </linearGradient>
-                  {/* Brand Plate Warm Cognac/Bronze fill */}
-                  <linearGradient id="brandCognacGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="rgb(55, 28, 8)" stopOpacity="0.95" />
-                    <stop offset="50%" stopColor="rgb(36, 18, 5)" stopOpacity="0.95" />
-                    <stop offset="100%" stopColor="rgb(18, 11, 4)" stopOpacity="0.98" />
-                  </linearGradient>
-                  {/* Gold outline */}
-                  <linearGradient id="brandOuterBorder" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="rgb(245, 158, 11)" stopOpacity="0.8" />
-                    <stop offset="100%" stopColor="rgb(180, 83, 9)" stopOpacity="0.4" />
-                  </linearGradient>
-                </defs>
-
-                {/* Main Cognac Body with rounded left and slanted right (top=318, bottom=304) */}
-                <path
-                  d="M 15 1 L 318 1 L 304 55 L 15 55 A 14 14 0 0 1 1 41 L 1 15 A 14 14 0 0 1 15 1 Z"
-                  fill="url(#brandCognacGrad)"
-                  stroke="url(#brandOuterBorder)"
-                  strokeWidth="1.2"
-                />
-
-                {/* Angled Metallic Gold Slice (chamfered accent band, width ~18px) */}
-                <polygon
-                  points="318,1 338,1 324,55 304,55"
-                  fill="url(#goldSliceGrad)"
-                  filter="drop-shadow(0 0 4px rgba(245,158,11,0.5))"
-                />
-              </svg>
-
-              {/* Brand Content */}
-              <div className="relative z-10 flex items-center gap-3 pl-2 pr-10">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(245,158,11,0.35)]">
-                  <Flame className="w-5 h-5 text-amber-400 fill-amber-400/20" />
+                <Flame className="w-5 h-5 fill-amber-400/20" />
+              </div>
+              <div className="flex flex-col justify-center">
+                <div
+                  className={`font-serif tracking-[0.24em] text-[11px] font-bold uppercase leading-none ${
+                    isDark ? 'text-amber-300' : 'text-amber-800'
+                  }`}
+                >
+                  WINGS LASHES
                 </div>
-                <div>
-                  <div className="text-amber-300 font-serif tracking-[0.26em] text-[11px] font-bold uppercase leading-none">
-                    WINGS LASHES
-                  </div>
-                  <div className="text-xs sm:text-sm font-black text-zinc-100 tracking-wider m-0 uppercase font-sans mt-1 leading-tight drop-shadow-[0_0_6px_rgba(255,255,255,0.2)]">
-                    TELESALES WAR ROOM
-                    <span className="sr-only">TELESALES TV MONITOR · WAR ROOM</span>
-                  </div>
+                <div
+                  className={`text-xs sm:text-sm font-black tracking-wider uppercase font-sans mt-1 leading-tight ${
+                    isDark ? 'text-zinc-100 drop-shadow-[0_0_6px_rgba(255,255,255,0.2)]' : 'text-slate-900'
+                  }`}
+                >
+                  TELESALES WAR ROOM
+                  <span className="sr-only">TELESALES TV MONITOR · WAR ROOM</span>
                 </div>
               </div>
             </div>
 
-            {/* Toggle Panel Book Hôm Nay (Trái - Bên ngoài Brand Plate) */}
-            <Tooltip title={showBookPanel ? 'Thu gọn Panel Book hôm nay' : 'Mở rộng Panel Book hôm nay'}>
-              <Button
-                type="text"
-                data-testid="tv-toggle-book-panel-button"
-                aria-label="Toggle Panel Book Hôm Nay"
-                icon={
-                  <Calendar
-                    className={`w-4 h-4 ${
+            {/* Center: Large Clean Sans-Serif Master Clock - Proportional Size & Perfect Optical Center */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <span
+                className={`text-3xl sm:text-[36px] font-black font-sans tracking-[0.02em] tabular-nums leading-none select-none ${
+                  isDark
+                    ? 'text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.25)]'
+                    : 'text-slate-900 drop-shadow-[0_1px_2px_rgba(0,0,0,0.08)]'
+                }`}
+              >
+                {timeDisplay}
+              </span>
+            </div>
+
+            {/* Right Toolbar Controls: unified square icon buttons */}
+            <div className="flex items-center gap-2 shrink-0 relative z-10">
+              {/* Toggle Panel Book Hôm Nay (Square Icon Button + Badge + LED Indicator) */}
+              <Tooltip
+                title={
+                  showBookPanel
+                    ? `Panel Book hôm nay: Đang BẬT (${overview.todayBookList?.length || 0} lịch hẹn) · Bấm để thu gọn`
+                    : `Panel Book hôm nay: Đang TẮT (${overview.todayBookList?.length || 0} lịch hẹn) · Bấm để mở rộng`
+                }
+              >
+                <Badge
+                  count={overview.todayBookList?.length || 0}
+                  overflowCount={99}
+                  showZero={true}
+                  offset={[-2, 2]}
+                  size="small"
+                  styles={{
+                    root: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center' },
+                    indicator: {
+                      backgroundColor: showBookPanel
+                        ? 'rgb(245, 158, 11)'
+                        : isDark
+                          ? 'rgb(63, 63, 70)'
+                          : 'rgb(148, 163, 184)',
+                      color: 'rgb(255, 255, 255)',
+                      fontWeight: 700,
+                      fontSize: '10px',
+                      boxShadow: '0 0 0 1px rgba(0,0,0,0.5)',
+                    },
+                  }}
+                >
+                  <Button
+                    type="text"
+                    data-testid="tv-toggle-book-panel-button"
+                    aria-label="Toggle Panel Book Hôm Nay"
+                    onClick={() => toggleBookPanel(!showBookPanel)}
+                    className={`relative !rounded-xl !h-10 !w-10 !p-0 !inline-flex !items-center !justify-center !leading-none !border transition-all cursor-pointer ${
                       showBookPanel
                         ? isDark
-                          ? 'text-amber-300'
-                          : 'text-amber-700'
+                          ? '!border-amber-400 !bg-amber-500/25 !text-amber-300 shadow-[0_0_14px_rgba(245,158,11,0.35)]'
+                          : '!border-amber-500 !bg-amber-100 !text-amber-800 shadow-sm'
                         : isDark
-                          ? 'text-zinc-400'
-                          : 'text-slate-500'
+                          ? '!border-zinc-700/60 !bg-zinc-800/90 !text-zinc-400 hover:!text-zinc-200 hover:!bg-zinc-700/80 hover:!border-zinc-600'
+                          : '!border-slate-200 !bg-white !text-slate-600 hover:!bg-slate-100 shadow-sm'
                     }`}
-                  />
+                  >
+                    <Calendar
+                      className={`w-4 h-4 shrink-0 -translate-y-0.5 transition-all ${
+                        showBookPanel
+                          ? isDark
+                            ? 'text-amber-300'
+                            : 'text-amber-700'
+                          : isDark
+                            ? 'text-zinc-400'
+                            : 'text-slate-500'
+                      }`}
+                    />
+                    {/* BẬT / TẮT LED Status Indicator Dot */}
+                    <span
+                      className={`absolute bottom-1 w-1.5 h-1.5 rounded-full transition-all ${
+                        showBookPanel
+                          ? isDark
+                            ? 'bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,1)] animate-pulse'
+                            : 'bg-amber-600 shadow-sm'
+                          : isDark
+                            ? 'bg-zinc-600/70'
+                            : 'bg-slate-300'
+                      }`}
+                    />
+                  </Button>
+                </Badge>
+              </Tooltip>
+
+              {/* Toggle Panel Check-in Hôm Nay (Square Icon Button + Badge + LED Indicator) */}
+              <Tooltip
+                title={
+                  showCheckinPanel
+                    ? `Panel Check-in hôm nay: Đang BẬT (${overview.todayCheckinList?.length || 0} khách) · Bấm để thu gọn`
+                    : `Panel Check-in hôm nay: Đang TẮT (${overview.todayCheckinList?.length || 0} khách) · Bấm để mở rộng`
                 }
-                onClick={() => toggleBookPanel(!showBookPanel)}
-                className={`!rounded-xl !h-10 px-3 flex items-center gap-1.5 border transition-all cursor-pointer font-bold text-xs ${
-                  showBookPanel
-                    ? isDark
-                      ? 'border-amber-500/50 bg-amber-500/20 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.25)]'
-                      : 'border-amber-400 bg-amber-100 text-amber-800 shadow-sm'
-                    : isDark
-                      ? 'border-zinc-800 bg-zinc-800/80 text-zinc-400 hover:text-zinc-200'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100'
-                }`}
               >
-                <span>Book ({overview.todayBookList?.length || 0})</span>
-              </Button>
-            </Tooltip>
-          </div>
-
-          {/* Center: Large Clean Sans-Serif Master Clock - Proportional Size & Perfect Optical Center */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <span
-              className={`text-3xl sm:text-[36px] font-black font-sans tracking-[0.02em] tabular-nums leading-none select-none ${
-                isDark
-                  ? 'text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.25)]'
-                  : 'text-slate-900 drop-shadow-[0_1px_2px_rgba(0,0,0,0.08)]'
-              }`}
-            >
-              {timeDisplay}
-            </span>
-          </div>
-
-          {/* Right Toolbar Controls: rounded buttons */}
-          <div className="flex items-center gap-2 shrink-0 relative z-10">
-            {/* Toggle Panel Check-in Hôm Nay (Phải) */}
-            <Tooltip title={showCheckinPanel ? 'Thu gọn Panel Check-in hôm nay' : 'Mở rộng Panel Check-in hôm nay'}>
-              <Button
-                type="text"
-                data-testid="tv-toggle-checkin-panel-button"
-                aria-label="Toggle Panel Check-in Hôm Nay"
-                icon={
-                  <CheckCircle2
-                    className={`w-4 h-4 ${
+                <Badge
+                  count={overview.todayCheckinList?.length || 0}
+                  overflowCount={99}
+                  showZero={true}
+                  offset={[-2, 2]}
+                  size="small"
+                  styles={{
+                    root: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center' },
+                    indicator: {
+                      backgroundColor: showCheckinPanel
+                        ? 'rgb(16, 185, 129)'
+                        : isDark
+                          ? 'rgb(63, 63, 70)'
+                          : 'rgb(148, 163, 184)',
+                      color: 'rgb(255, 255, 255)',
+                      fontWeight: 700,
+                      fontSize: '10px',
+                      boxShadow: '0 0 0 1px rgba(0,0,0,0.5)',
+                    },
+                  }}
+                >
+                  <Button
+                    type="text"
+                    data-testid="tv-toggle-checkin-panel-button"
+                    aria-label="Toggle Panel Check-in Hôm Nay"
+                    onClick={() => toggleCheckinPanel(!showCheckinPanel)}
+                    className={`relative !rounded-xl !h-10 !w-10 !p-0 !inline-flex !items-center !justify-center !leading-none !border transition-all cursor-pointer ${
                       showCheckinPanel
                         ? isDark
-                          ? 'text-emerald-300'
-                          : 'text-emerald-700'
+                          ? '!border-emerald-400 !bg-emerald-500/25 !text-emerald-300 shadow-[0_0_14px_rgba(16,185,129,0.35)]'
+                          : '!border-emerald-500 !bg-emerald-100 !text-emerald-800 shadow-sm'
                         : isDark
-                          ? 'text-zinc-400'
-                          : 'text-slate-500'
+                          ? '!border-zinc-700/60 !bg-zinc-800/90 !text-zinc-400 hover:!text-zinc-200 hover:!bg-zinc-700/80 hover:!border-zinc-600'
+                          : '!border-slate-200 !bg-white !text-slate-600 hover:!bg-slate-100 shadow-sm'
                     }`}
-                  />
-                }
-                onClick={() => toggleCheckinPanel(!showCheckinPanel)}
-                className={`!rounded-xl !h-10 px-3 flex items-center gap-1.5 border transition-all cursor-pointer font-bold text-xs ${
-                  showCheckinPanel
-                    ? isDark
-                      ? 'border-emerald-500/50 bg-emerald-500/20 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
-                      : 'border-emerald-400 bg-emerald-100 text-emerald-800 shadow-sm'
-                    : isDark
-                      ? 'border-zinc-800 bg-zinc-800/80 text-zinc-400 hover:text-zinc-200'
-                      : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-100'
-                }`}
+                  >
+                    <CheckCircle2
+                      className={`w-4 h-4 shrink-0 -translate-y-0.5 transition-all ${
+                        showCheckinPanel
+                          ? isDark
+                            ? 'text-emerald-300'
+                            : 'text-emerald-700'
+                          : isDark
+                            ? 'text-zinc-400'
+                            : 'text-slate-500'
+                      }`}
+                    />
+                    {/* BẬT / TẮT LED Status Indicator Dot */}
+                    <span
+                      className={`absolute bottom-1 w-1.5 h-1.5 rounded-full transition-all ${
+                        showCheckinPanel
+                          ? isDark
+                            ? 'bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,1)] animate-pulse'
+                            : 'bg-emerald-600 shadow-sm'
+                          : isDark
+                            ? 'bg-zinc-600/70'
+                            : 'bg-slate-300'
+                      }`}
+                    />
+                  </Button>
+                </Badge>
+              </Tooltip>
+
+              {/* Subtle Divider between Data Panels and System Controls */}
+              <div className={`h-5 w-px shrink-0 mx-0.5 self-center ${isDark ? 'bg-zinc-800' : 'bg-slate-200'}`} />
+
+              {/* 1. Cài đặt TV Monitor (Pháo bông & Âm thanh) */}
+              <Popover
+                content={soundSettingsContent}
+                trigger="click"
+                placement="bottomRight"
+                zIndex={100005}
+                getPopupContainer={() => fullscreenContainerRef.current || document.body}
+                overlayClassName="tv-sound-settings-popover"
               >
-                <span>Check-in ({overview.todayCheckinList?.length || 0})</span>
-              </Button>
-            </Tooltip>
-            {/* 1. Cài đặt TV Monitor (Pháo bông & Âm thanh) */}
-            <Popover
-              content={soundSettingsContent}
-              trigger="click"
-              placement="bottomRight"
-              zIndex={100005}
-              getPopupContainer={() => fullscreenContainerRef.current || document.body}
-              overlayClassName="tv-sound-settings-popover"
-            >
-              <Tooltip title="Cài đặt Pháo bông & Âm thanh TV">
+                <Tooltip title="Cài đặt Pháo bông & Âm thanh TV">
+                  <Button
+                    type="text"
+                    data-testid="tv-fullscreen-settings-button"
+                    aria-label="Cài đặt TV Monitor"
+                    className={`!rounded-xl !h-10 !w-10 !p-0 !inline-flex !items-center !justify-center !leading-none border transition-all cursor-pointer ${
+                      isDark
+                        ? 'border-zinc-700/60 bg-zinc-800/90 hover:bg-zinc-700/80 text-zinc-300'
+                        : 'border-slate-200 bg-white hover:bg-slate-100 text-slate-600 shadow-sm'
+                    }`}
+                  >
+                    <Settings className={`w-4 h-4 shrink-0 ${isDark ? 'text-zinc-300' : 'text-slate-600'}`} />
+                  </Button>
+                </Tooltip>
+              </Popover>
+
+              {/* 2. Bật / Tắt Âm thanh nhanh (Quick Sound Mute/Unmute) */}
+              <Tooltip
+                title={
+                  voiceSettings.soundEnabled && !isQuietHours
+                    ? 'Âm thanh TV đang BẬT · Bấm để tắt tiếng nhanh'
+                    : 'Âm thanh TV đang TẮT · Bấm để bật tiếng nhanh'
+                }
+              >
                 <Button
                   type="text"
-                  data-testid="tv-fullscreen-settings-button"
-                  aria-label="Cài đặt TV Monitor"
-                  icon={<Settings className={`w-4 h-4 ${isDark ? 'text-zinc-300' : 'text-slate-600'}`} />}
-                  className={`!rounded-xl !h-10 !w-10 !p-0 flex items-center justify-center border transition-all cursor-pointer ${
-                    isDark
-                      ? 'border-zinc-700/60 bg-zinc-800/90 hover:bg-zinc-700/80 text-zinc-300'
-                      : 'border-slate-200 bg-white hover:bg-slate-100 text-slate-600 shadow-sm'
+                  data-testid="tv-sound-settings-button"
+                  aria-label={voiceSettings.soundEnabled && !isQuietHours ? 'Loa: Bật' : 'Loa: Tắt'}
+                  onClick={() => {
+                    const next = !voiceSettings.soundEnabled;
+                    updateVoiceSettings({ soundEnabled: next });
+                    if (next) {
+                      message.success('Đã bật âm thanh TV Monitor');
+                    } else {
+                      message.info('Đã tắt tiếng TV Monitor');
+                    }
+                  }}
+                  className={`!rounded-xl !h-10 !w-10 !p-0 !inline-flex !items-center !justify-center !leading-none border transition-all cursor-pointer ${
+                    voiceSettings.soundEnabled && !isQuietHours
+                      ? isDark
+                        ? '!text-amber-400 border-amber-500/50 bg-amber-500/15 hover:!bg-amber-500/25 shadow-sm shadow-amber-500/10'
+                        : '!text-amber-600 border-amber-400 bg-amber-50 hover:!bg-amber-100 shadow-sm'
+                      : isDark
+                        ? '!text-zinc-400 border-zinc-700/60 bg-zinc-800/90 hover:!bg-zinc-700/80'
+                        : '!text-slate-500 border-slate-200 bg-white hover:!bg-slate-100 shadow-sm'
                   }`}
-                />
-              </Tooltip>
-            </Popover>
-
-            {/* 2. Bật / Tắt Âm thanh nhanh (Quick Sound Mute/Unmute) */}
-            <Tooltip
-              title={
-                voiceSettings.soundEnabled && !isQuietHours
-                  ? 'Âm thanh TV đang BẬT · Bấm để tắt tiếng nhanh'
-                  : 'Âm thanh TV đang TẮT · Bấm để bật tiếng nhanh'
-              }
-            >
-              <Button
-                type="text"
-                data-testid="tv-sound-settings-button"
-                aria-label={voiceSettings.soundEnabled && !isQuietHours ? 'Loa: Bật' : 'Loa: Tắt'}
-                onClick={() => {
-                  const next = !voiceSettings.soundEnabled;
-                  updateVoiceSettings({ soundEnabled: next });
-                  if (next) {
-                    message.success('Đã bật âm thanh TV Monitor');
-                  } else {
-                    message.info('Đã tắt tiếng TV Monitor');
-                  }
-                }}
-                icon={
-                  !voiceSettings.soundEnabled || isQuietHours ? (
-                    <VolumeX className={`w-4 h-4 ${isDark ? 'text-zinc-400' : 'text-slate-400'}`} />
+                >
+                  {!voiceSettings.soundEnabled || isQuietHours ? (
+                    <VolumeX className={`w-4 h-4 shrink-0 ${isDark ? 'text-zinc-400' : 'text-slate-400'}`} />
                   ) : (
-                    <Volume2 className={`w-4 h-4 animate-pulse ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
-                  )
-                }
-                className={`!rounded-xl !h-10 !w-10 !p-0 flex items-center justify-center border transition-all cursor-pointer ${
-                  voiceSettings.soundEnabled && !isQuietHours
-                    ? isDark
-                      ? '!text-amber-400 border-amber-500/50 bg-amber-500/15 hover:!bg-amber-500/25 shadow-sm shadow-amber-500/10'
-                      : '!text-amber-600 border-amber-400 bg-amber-50 hover:!bg-amber-100 shadow-sm'
-                    : isDark
-                      ? '!text-zinc-400 border-zinc-700/60 bg-zinc-800/90 hover:!bg-zinc-700/80'
-                      : '!text-slate-500 border-slate-200 bg-white hover:!bg-slate-100 shadow-sm'
-                }`}
-              />
-            </Tooltip>
+                    <Volume2
+                      className={`w-4 h-4 shrink-0 animate-pulse ${isDark ? 'text-amber-400' : 'text-amber-600'}`}
+                    />
+                  )}
+                </Button>
+              </Tooltip>
 
-            {/* 3. Ẩn / Hiện Bảng Đóng Góp Nhân Viên (Toggle Staff Grid) */}
-            <Tooltip
-              title={
-                showStaffGrid
-                  ? 'Bảng nhân sự đang HIỆN · Bấm để thu gọn chỉ xem 2 đồng hồ'
-                  : 'Bảng nhân sự đang ẨN · Bấm để hiển thị chi tiết từng nhân viên'
-              }
-            >
-              <Button
-                type="text"
-                data-testid="tv-staff-toggle-button"
-                aria-label={showStaffGrid ? 'Ẩn bảng nhân viên' : 'Hiện bảng nhân viên'}
-                onClick={() => {
-                  const next = !showStaffGrid;
-                  setShowStaffGrid(next);
-                  if (next) {
-                    message.success('Đã hiển thị bảng đóng góp nhân sự');
-                  } else {
-                    message.info('Đã thu gọn bảng nhân sự (Mở rộng 2 đồng hồ)');
-                  }
-                }}
-                icon={
+              {/* 3. Ẩn / Hiện Bảng Đóng Góp Nhân Viên (Toggle Staff Grid) */}
+              <Tooltip
+                title={
+                  showStaffGrid
+                    ? 'Bảng nhân sự đang HIỆN · Bấm để thu gọn chỉ xem 2 đồng hồ'
+                    : 'Bảng nhân sự đang ẨN · Bấm để hiển thị chi tiết từng nhân viên'
+                }
+              >
+                <Button
+                  type="text"
+                  data-testid="tv-staff-toggle-button"
+                  aria-label={showStaffGrid ? 'Ẩn bảng nhân viên' : 'Hiện bảng nhân viên'}
+                  onClick={() => {
+                    const next = !showStaffGrid;
+                    setShowStaffGrid(next);
+                    if (next) {
+                      message.success('Đã hiển thị bảng đóng góp nhân sự');
+                    } else {
+                      message.info('Đã thu gọn bảng nhân sự (Mở rộng 2 đồng hồ)');
+                    }
+                  }}
+                  className={`!rounded-xl !h-10 !w-10 !p-0 !inline-flex !items-center !justify-center !leading-none border transition-all cursor-pointer ${
+                    showStaffGrid
+                      ? isDark
+                        ? '!text-amber-300 border-amber-500/40 bg-zinc-800/90 hover:!bg-zinc-700/80 shadow-sm shadow-amber-500/10'
+                        : '!text-amber-600 border-amber-400 bg-amber-50 hover:!bg-amber-100 shadow-sm'
+                      : isDark
+                        ? '!text-zinc-500 border-zinc-800 bg-zinc-900/80 hover:!text-zinc-300 hover:border-zinc-700'
+                        : '!text-slate-500 border-slate-200 bg-white hover:!bg-slate-100 shadow-sm'
+                  }`}
+                >
                   <User
-                    className={`w-4 h-4 ${
+                    className={`w-4 h-4 shrink-0 ${
                       showStaffGrid
                         ? isDark
                           ? 'text-amber-300'
@@ -915,613 +972,604 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
                           : 'text-slate-400'
                     }`}
                   />
-                }
-                className={`!rounded-xl !h-10 !w-10 !p-0 flex items-center justify-center border transition-all cursor-pointer ${
-                  showStaffGrid
-                    ? isDark
-                      ? '!text-amber-300 border-amber-500/40 bg-zinc-800/90 hover:!bg-zinc-700/80 shadow-sm shadow-amber-500/10'
-                      : '!text-amber-600 border-amber-400 bg-amber-50 hover:!bg-amber-100 shadow-sm'
-                    : isDark
-                      ? '!text-zinc-500 border-zinc-800 bg-zinc-900/80 hover:!text-zinc-300 hover:border-zinc-700'
-                      : '!text-slate-500 border-slate-200 bg-white hover:!bg-slate-100 shadow-sm'
-                }`}
-              />
-            </Tooltip>
+                </Button>
+              </Tooltip>
 
-            {/* 4. TV Journal Modal Trigger (MOS-BUG-90) */}
-            {isManagerOrAdmin && (
-              <Tooltip title="Nhật ký giám sát Live TV Monitor">
-                <Button
-                  type="text"
-                  data-testid="tv-journal-button"
-                  aria-label="Nhật ký TV Monitor"
-                  icon={
+              {/* 4. TV Journal Modal Trigger (MOS-BUG-90) */}
+              {isManagerOrAdmin && (
+                <Tooltip title="Nhật ký giám sát Live TV Monitor">
+                  <Button
+                    type="text"
+                    data-testid="tv-journal-button"
+                    aria-label="Nhật ký TV Monitor"
+                    onClick={handleOpenJournal}
+                    className={`!rounded-xl !h-10 !w-10 !p-0 !inline-flex !items-center !justify-center !leading-none border transition-all cursor-pointer ${
+                      isDark
+                        ? 'border-zinc-700/60 bg-zinc-800/90 hover:bg-zinc-700/80 hover:border-amber-500/40 text-zinc-300'
+                        : 'border-slate-200 bg-white hover:bg-slate-100 hover:border-amber-400 text-slate-600 shadow-sm'
+                    }`}
+                  >
                     <ClipboardList
-                      className={`w-4 h-4 transition-colors ${
+                      className={`w-4 h-4 shrink-0 transition-colors ${
                         isDark ? 'text-zinc-300 hover:text-amber-300' : 'text-slate-600 hover:text-amber-600'
                       }`}
                     />
-                  }
-                  onClick={handleOpenJournal}
-                  className={`!rounded-xl !h-10 !w-10 !p-0 flex items-center justify-center border transition-all cursor-pointer ${
-                    isDark
-                      ? 'border-zinc-700/60 bg-zinc-800/90 hover:bg-zinc-700/80 hover:border-amber-500/40 text-zinc-300'
-                      : 'border-slate-200 bg-white hover:bg-slate-100 hover:border-amber-400 text-slate-600 shadow-sm'
-                  }`}
-                />
-              </Tooltip>
-            )}
+                  </Button>
+                </Tooltip>
+              )}
 
-            {/* 5. Browser Fullscreen toggle */}
-            <Tooltip
-              title={
-                isBrowserFullscreen ? 'Thoát toàn màn hình trình duyệt (F11/Esc)' : 'Toàn màn hình trình duyệt (F11)'
-              }
-            >
-              <Button
-                type="text"
-                data-testid="tv-fullscreen-toggle-button"
-                aria-label={isBrowserFullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'}
-                icon={
-                  isBrowserFullscreen ? (
-                    <Minimize2 className={`w-4 h-4 ${isDark ? 'text-amber-300' : 'text-amber-600'}`} />
-                  ) : (
-                    <Maximize2 className={`w-4 h-4 ${isDark ? 'text-zinc-300' : 'text-slate-600'}`} />
-                  )
+              {/* 5. Browser Fullscreen toggle */}
+              <Tooltip
+                title={
+                  isBrowserFullscreen ? 'Thoát toàn màn hình trình duyệt (F11/Esc)' : 'Toàn màn hình trình duyệt (F11)'
                 }
-                onClick={toggleBrowserFullscreen}
-                className={`!rounded-xl !h-10 !w-10 !p-0 flex items-center justify-center border transition-all cursor-pointer ${
-                  isBrowserFullscreen
-                    ? isDark
-                      ? 'border-amber-500/40 bg-zinc-800/90 text-amber-300'
-                      : 'border-amber-400 bg-amber-50 text-amber-600 shadow-sm'
-                    : isDark
-                      ? 'border-zinc-700/60 bg-zinc-800/90 hover:bg-zinc-700/80 text-zinc-300'
-                      : 'border-slate-200 bg-white hover:bg-slate-100 text-slate-600 shadow-sm'
-                }`}
-              />
-            </Tooltip>
-
-            {/* 6. Close TV View */}
-            <Tooltip title="Thoát chế độ TV Monitor (Phím Esc)">
-              <Button
-                type="text"
-                data-testid="tv-close-button"
-                aria-label="Đóng TV"
-                icon={<X className={`w-4 h-4 ${isDark ? 'text-zinc-300' : 'text-slate-600'}`} />}
-                onClick={onClose}
-                className={`!rounded-xl !h-10 px-3.5 flex items-center gap-1.5 text-xs shadow-md transition-all cursor-pointer !font-semibold !border ${
-                  isDark
-                    ? '!bg-zinc-800/90 hover:!bg-zinc-700/80 !text-zinc-200 !border-zinc-700/60'
-                    : '!bg-white hover:!bg-slate-100 !text-slate-700 !border-slate-200 shadow-sm'
-                }`}
               >
-                <span>Đóng TV</span>
-              </Button>
-            </Tooltip>
-          </div>
-        </div>
-
-        {/* ROW 2: EXPANSIVE SHIFT TIMELINE BAR (WIDTH ~1160px, CENTERED, MATCHING MOCKUP 3) */}
-        <div className="w-full max-w-[1160px] mx-auto relative flex items-center justify-between h-10 mt-3 mb-2 sm:mt-4 sm:mb-3 px-4">
-          {/* Layer 1: Background & Active Track SVG (z-0, sits behind hour node pills) */}
-          <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none z-0">
-            <defs>
-              {/* Trailing Fading Beam Gradient (from subtle amber to brilliant white/gold core) */}
-              <linearGradient id="activeTrailingGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="rgba(245, 158, 11, 0)" />
-                <stop offset="25%" stopColor="rgba(245, 158, 11, 0.2)" />
-                <stop offset="65%" stopColor={isDark ? 'rgba(186, 230, 253, 0.6)' : 'rgba(245, 158, 11, 0.5)'} />
-                <stop offset="90%" stopColor={isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(217, 119, 6, 0.85)'} />
-                <stop offset="100%" stopColor={isDark ? 'rgba(255, 255, 255, 1)' : 'rgba(180, 83, 9, 1)'} />
-              </linearGradient>
-            </defs>
-
-            {/* Background dashed line (full future track between first and last node) */}
-            <line
-              x1="2%"
-              y1="20"
-              x2="98%"
-              y2="20"
-              stroke={isDark ? 'rgb(63, 63, 70)' : 'rgb(203, 213, 225)'}
-              strokeWidth="1.8"
-              strokeDasharray="4 4"
-            />
-
-            {/* Glowing Trailing Diffuse Beam (Behind the orb, fading trail) */}
-            <rect
-              x="2%"
-              y="16"
-              width={`${Math.max(0, shiftProgress.percent - 2)}%`}
-              height="8"
-              rx="4"
-              fill="url(#activeTrailingGrad)"
-              opacity={isDark ? 0.7 : 0.4}
-              filter="blur(3px)"
-            />
-
-            {/* Glowing Active Trailing Beam (Solid crisp bar with trail fade) */}
-            <rect
-              x="2%"
-              y="18.5"
-              width={`${Math.max(0, shiftProgress.percent - 2)}%`}
-              height="3"
-              rx="1.5"
-              fill="url(#activeTrailingGrad)"
-              filter={
-                isDark
-                  ? 'drop-shadow(0 0 5px rgba(255,255,255,0.95)) drop-shadow(0 0 12px rgba(245,158,11,0.8))'
-                  : 'drop-shadow(0 0 4px rgba(245,158,11,0.5))'
-              }
-            />
-          </svg>
-
-          {/* Layer 2: Shift Hour Nodes (z-10, sits ON TOP of trailing beam, so [15h] text is on top of beam) */}
-          <div className="relative w-full flex items-center justify-between z-10 pointer-events-none">
-            {shiftNodes.map((node, idx) => {
-              const nodePercent = (idx / (shiftNodes.length - 1)) * 100;
-              const isPast = nodePercent <= shiftProgress.percent;
-              return (
-                <span
-                  key={node}
-                  className={`px-1.5 py-0.5 rounded font-mono text-xs sm:text-sm font-bold transition-colors ${
-                    isDark
-                      ? `bg-zinc-950 ${isPast ? 'text-amber-400' : 'text-zinc-500'}`
-                      : `bg-slate-100 ${isPast ? 'text-amber-600' : 'text-slate-400'}`
+                <Button
+                  type="text"
+                  data-testid="tv-fullscreen-toggle-button"
+                  aria-label={isBrowserFullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'}
+                  onClick={toggleBrowserFullscreen}
+                  className={`!rounded-xl !h-10 !w-10 !p-0 !inline-flex !items-center !justify-center !leading-none border transition-all cursor-pointer ${
+                    isBrowserFullscreen
+                      ? isDark
+                        ? 'border-amber-500/40 bg-zinc-800/90 text-amber-300'
+                        : 'border-amber-400 bg-amber-50 text-amber-600 shadow-sm'
+                      : isDark
+                        ? 'border-zinc-700/60 bg-zinc-800/90 hover:bg-zinc-700/80 text-zinc-300'
+                        : 'border-slate-200 bg-white hover:bg-slate-100 text-slate-600 shadow-sm'
                   }`}
                 >
-                  {node}
-                </span>
-              );
-            })}
+                  {isBrowserFullscreen ? (
+                    <Minimize2 className={`w-4 h-4 shrink-0 ${isDark ? 'text-amber-300' : 'text-amber-600'}`} />
+                  ) : (
+                    <Maximize2 className={`w-4 h-4 shrink-0 ${isDark ? 'text-zinc-300' : 'text-slate-600'}`} />
+                  )}
+                </Button>
+              </Tooltip>
+
+              {/* 6. Close TV View */}
+              <Tooltip title="Thoát chế độ TV Monitor (Phím Esc)">
+                <Button
+                  type="text"
+                  data-testid="tv-close-button"
+                  aria-label="Đóng TV"
+                  onClick={onClose}
+                  className={`!rounded-xl !h-10 px-3.5 !inline-flex !items-center !justify-center !leading-none gap-1.5 text-xs shadow-md transition-all cursor-pointer !font-semibold !border ${
+                    isDark
+                      ? '!bg-zinc-800/90 hover:!bg-zinc-700/80 !text-zinc-200 !border-zinc-700/60'
+                      : '!bg-white hover:!bg-slate-100 !text-slate-700 !border-slate-200 shadow-sm'
+                  }`}
+                >
+                  <X className={`w-4 h-4 shrink-0 ${isDark ? 'text-zinc-300' : 'text-slate-600'}`} />
+                  <span>Đóng TV</span>
+                </Button>
+              </Tooltip>
+            </div>
           </div>
 
-          {/* Layer 3: Current Time Indicator (z-20, sits ON TOP of hour nodes so glowing orb is on top of [16h]) */}
-          <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none z-20">
-            <svg x={`${shiftProgress.percent}%`} y="20" overflow="visible">
-              {/* Floating Time Label above Orb */}
-              <text
-                x="0"
-                y="-15"
-                textAnchor="middle"
-                fill={isDark ? 'rgb(251, 191, 36)' : 'rgb(180, 83, 9)'}
-                fontSize="13"
-                fontFamily="monospace"
-                fontWeight="bold"
-                filter={
-                  isDark ? 'drop-shadow(0 0 6px rgba(245,158,11,0.9))' : 'drop-shadow(0 1px 2px rgba(0,0,0,0.15))'
-                }
-              >
-                {shiftProgress.timeFormatted}
-              </text>
+          {/* ROW 2: EXPANSIVE SHIFT TIMELINE BAR (WIDTH ~1160px, CENTERED, MATCHING MOCKUP 3) */}
+          <div className="w-full max-w-[1160px] mx-auto relative flex items-center justify-between h-10 mt-3 mb-2 sm:mt-4 sm:mb-3 px-4">
+            {/* Layer 1: Background & Active Track SVG (z-0, sits behind hour node pills) */}
+            <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none z-0">
+              <defs>
+                {/* Trailing Fading Beam Gradient (from subtle amber to brilliant white/gold core) */}
+                <linearGradient id="activeTrailingGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="rgba(245, 158, 11, 0)" />
+                  <stop offset="25%" stopColor="rgba(245, 158, 11, 0.2)" />
+                  <stop offset="65%" stopColor={isDark ? 'rgba(186, 230, 253, 0.6)' : 'rgba(245, 158, 11, 0.5)'} />
+                  <stop offset="90%" stopColor={isDark ? 'rgba(255, 255, 255, 0.9)' : 'rgba(217, 119, 6, 0.85)'} />
+                  <stop offset="100%" stopColor={isDark ? 'rgba(255, 255, 255, 1)' : 'rgba(180, 83, 9, 1)'} />
+                </linearGradient>
+              </defs>
 
-              {/* Glowing Orb Halo */}
-              <circle
-                cx="0"
-                cy="0"
-                r="11"
-                fill="rgba(245, 158, 11, 0.35)"
-                filter="drop-shadow(0 0 10px rgb(245,158,11))"
+              {/* Background dashed line (full future track between first and last node) */}
+              <line
+                x1="2%"
+                y1="20"
+                x2="98%"
+                y2="20"
+                stroke={isDark ? 'rgb(63, 63, 70)' : 'rgb(203, 213, 225)'}
+                strokeWidth="1.8"
+                strokeDasharray="4 4"
               />
 
-              {/* Glowing Orb Ring */}
-              <circle
-                cx="0"
-                cy="0"
-                r="6.5"
-                fill="white"
-                stroke="rgb(245, 158, 11)"
-                strokeWidth="2.5"
-                filter="drop-shadow(0 0 8px rgb(255,255,255))"
+              {/* Glowing Trailing Diffuse Beam (Behind the orb, fading trail) */}
+              <rect
+                x="2%"
+                y="16"
+                width={`${Math.max(0, shiftProgress.percent - 2)}%`}
+                height="8"
+                rx="4"
+                fill="url(#activeTrailingGrad)"
+                opacity={isDark ? 0.7 : 0.4}
+                filter="blur(3px)"
+              />
+
+              {/* Glowing Active Trailing Beam (Solid crisp bar with trail fade) */}
+              <rect
+                x="2%"
+                y="18.5"
+                width={`${Math.max(0, shiftProgress.percent - 2)}%`}
+                height="3"
+                rx="1.5"
+                fill="url(#activeTrailingGrad)"
+                filter={
+                  isDark
+                    ? 'drop-shadow(0 0 5px rgba(255,255,255,0.95)) drop-shadow(0 0 12px rgba(245,158,11,0.8))'
+                    : 'drop-shadow(0 0 4px rgba(245,158,11,0.5))'
+                }
               />
             </svg>
-          </svg>
-        </div>
-      </header>
 
-      {/* 2. ELASTIC 3-ZONE COCKPIT: LEFT BOOK PANEL | CENTER CARDS & STAFF | RIGHT CHECK-IN PANEL */}
-      <div className="relative z-10 flex flex-row gap-2.5 sm:gap-3 xl:gap-4 my-1 flex-1 items-stretch min-h-0 w-full overflow-hidden">
-        {/* 2.1 LEFT PANEL: BOOK HÔM NAY */}
-        {showBookPanel && (
-          <TelesaleTvBookSidePanel
-            bookList={overview.todayBookList}
-            isDark={isDark}
-            onClose={() => toggleBookPanel(false)}
-          />
-        )}
-
-        {/* 2.2 CENTER AREA: DUAL COCKPIT GAUGE CARDS & STAFF CONTRIBUTIONS */}
-        <div className="flex-1 flex flex-col justify-between min-w-0 h-full overflow-hidden transition-all duration-300">
-          <main className="relative grid grid-cols-1 lg:grid-cols-2 gap-2.5 sm:gap-3.5 xl:gap-4 flex-1 items-stretch min-h-0 mb-2">
-            {/* COLUMN 1: BOOK HÔM NAY (TẠO LỊCH - HÀNH ĐỘNG DẪN DẮT) */}
-            <div
-              className={`rounded-3xl p-4 sm:p-5 lg:p-6 flex flex-col justify-between border backdrop-blur-xl transition-all shadow-2xl relative overflow-hidden ${bookStyles.container}`}
-            >
-              {/* Realistic Physics Fireworks (bắn khi đạt mốc >= 100% hoặc khi test) */}
-              <RealisticCardFireworks
-                active={testFireworksBook || ((voiceSettings.fireworksEnabled ?? true) && isBookOver100)}
-                isFrenzy={frenzyBook || testFireworksBook}
-                soundEnabled={voiceSettings.soundEnabled}
-                volume={voiceSettings.volume}
-                theme={bookTier === 'emerald' ? 'emerald' : bookTier === 'amber' ? 'amber' : 'gold'}
-                cardLabel="BOOK"
-              />
-
-              {/* Ambient inner glow */}
-              <div
-                className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl pointer-events-none ${bookStyles.ambientGlow}`}
-              />
-
-              {/* Header */}
-              <div className="flex items-center justify-between gap-2 shrink-0 relative z-10">
-                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                  <div className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center ${bookStyles.iconBox}`}>
-                    <Calendar className="w-4 h-4" />
-                  </div>
-                  <h2
-                    className={`text-xs sm:text-sm xl:text-base font-black tracking-tight m-0 truncate ${isDark ? 'text-zinc-100' : 'text-slate-900'}`}
-                  >
-                    BOOK HÔM NAY
-                  </h2>
-                </div>
-                <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            {/* Layer 2: Shift Hour Nodes (z-10, sits ON TOP of trailing beam, so [15h] text is on top of beam) */}
+            <div className="relative w-full flex items-center justify-between z-10 pointer-events-none">
+              {shiftNodes.map((node, idx) => {
+                const nodePercent = (idx / (shiftNodes.length - 1)) * 100;
+                const isPast = nodePercent <= shiftProgress.percent;
+                return (
                   <span
-                    className={`px-2 py-0.5 rounded-lg font-mono text-[11px] font-bold border ${bookStyles.headerTargetBadge}`}
-                  >
-                    Chỉ tiêu: {metrics.bookTarget}
-                  </span>
-                  <span
-                    className={`px-2 py-0.5 rounded-lg font-mono text-[11px] font-black border ${
-                      metrics.gapBook >= 0
-                        ? isDark
-                          ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
-                          : 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                        : metrics.gapBook === -1
-                          ? isDark
-                            ? 'bg-amber-950 text-amber-300 border-amber-500/40'
-                            : 'bg-amber-50 text-amber-800 border-amber-300'
-                          : isDark
-                            ? 'bg-rose-950 text-rose-300 border-rose-500/40'
-                            : 'bg-rose-50 text-rose-800 border-rose-300'
+                    key={node}
+                    className={`px-1.5 py-0.5 rounded font-mono text-xs sm:text-sm font-bold transition-colors ${
+                      isDark
+                        ? `bg-zinc-950 ${isPast ? 'text-amber-400' : 'text-zinc-500'}`
+                        : `bg-slate-100 ${isPast ? 'text-amber-600' : 'text-slate-400'}`
                     }`}
                   >
-                    {metrics.gapBook >= 0 ? `+${metrics.gapBook} ĐÚNG NHỊP` : `${metrics.gapBook} CHẬM NHỊP`}
+                    {node}
                   </span>
-                </div>
-              </div>
+                );
+              })}
+            </div>
 
-              {/* Semicircle Gauge (Option 1) - Hero Centered */}
-              <div className="flex-1 flex flex-col items-center justify-center my-auto min-h-0 py-1 w-full max-w-[720px] mx-auto relative z-10">
-                <SemicircleGauge
-                  percent={metrics.bookPercent}
-                  actual={metrics.bookActual}
-                  target={metrics.bookTarget}
-                  expected={metrics.expectedBook}
-                  gap={metrics.gapBook}
-                  pacingPercent={metrics.bookTarget > 0 ? (metrics.expectedBook / metrics.bookTarget) * 100 : 0}
-                  showDeficitZone={true}
-                  showPacingMarker={true}
-                  showFloatingGapBadge={true}
-                  unit="Book"
-                  label=""
-                  hideLabelText={true}
-                  hideUnitText={true}
-                  tone={bookTier}
-                  sizeVariant="tv"
-                  actualDataTestId="tv-monitor-fullscreen-book-actual"
-                  heightClass="h-[245px] sm:h-[270px] lg:h-[290px]"
-                  showPacingArc={false}
-                  gapText={
-                    metrics.gapBook >= 0 ? `GAP: +${metrics.gapBook} VƯỢT NHỊP` : `GAP: ${metrics.gapBook} CHẬM NHỊP`
+            {/* Layer 3: Current Time Indicator (z-20, sits ON TOP of hour nodes so glowing orb is on top of [16h]) */}
+            <svg className="absolute inset-0 w-full h-full overflow-visible pointer-events-none z-20">
+              <svg x={`${shiftProgress.percent}%`} y="20" overflow="visible">
+                {/* Floating Time Label above Orb */}
+                <text
+                  x="0"
+                  y="-15"
+                  textAnchor="middle"
+                  fill={isDark ? 'rgb(251, 191, 36)' : 'rgb(180, 83, 9)'}
+                  fontSize="13"
+                  fontFamily="monospace"
+                  fontWeight="bold"
+                  filter={
+                    isDark ? 'drop-shadow(0 0 6px rgba(245,158,11,0.9))' : 'drop-shadow(0 1px 2px rgba(0,0,0,0.15))'
                   }
-                  gapType={metrics.gapBook >= 0 ? 'positive' : metrics.gapBook === -1 ? 'neutral' : 'negative'}
-                />
-              </div>
-
-              {/* 4-Stat Horizontal Ribbon (Option 1) */}
-              <div
-                className={`mt-auto shrink-0 rounded-2xl p-3 sm:p-4 relative z-10 transition-colors ${
-                  isDark ? 'bg-black/50' : 'bg-slate-50/90'
-                } ${bookStyles.ribbonBorder}`}
-              >
-                <div
-                  className={`grid grid-cols-4 gap-2 text-center font-mono divide-x ${
-                    isDark ? 'divide-zinc-800' : 'divide-slate-200'
-                  }`}
                 >
-                  <div>
-                    <span
-                      className={`text-[11px] sm:text-xs block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}
+                  {shiftProgress.timeFormatted}
+                </text>
+
+                {/* Glowing Orb Halo */}
+                <circle
+                  cx="0"
+                  cy="0"
+                  r="11"
+                  fill="rgba(245, 158, 11, 0.35)"
+                  filter="drop-shadow(0 0 10px rgb(245,158,11))"
+                />
+
+                {/* Glowing Orb Ring */}
+                <circle
+                  cx="0"
+                  cy="0"
+                  r="6.5"
+                  fill="white"
+                  stroke="rgb(245, 158, 11)"
+                  strokeWidth="2.5"
+                  filter="drop-shadow(0 0 8px rgb(255,255,255))"
+                />
+              </svg>
+            </svg>
+          </div>
+        </header>
+
+        {/* 2. ELASTIC 3-ZONE COCKPIT: LEFT BOOK PANEL | CENTER CARDS & STAFF | RIGHT CHECK-IN PANEL */}
+        <div className="relative z-10 flex flex-row gap-2.5 sm:gap-3 xl:gap-4 my-1 flex-1 items-stretch min-h-0 w-full overflow-hidden">
+          {/* 2.1 LEFT PANEL: BOOK HÔM NAY */}
+          {showBookPanel && (
+            <TelesaleTvBookSidePanel
+              bookList={overview.todayBookList}
+              isDark={isDark}
+              onClose={() => toggleBookPanel(false)}
+            />
+          )}
+
+          {/* 2.2 CENTER AREA: DUAL COCKPIT GAUGE CARDS & STAFF CONTRIBUTIONS */}
+          <div className="flex-1 flex flex-col justify-between min-w-0 h-full overflow-hidden transition-all duration-300">
+            <main className="relative grid grid-cols-1 lg:grid-cols-2 gap-2.5 sm:gap-3.5 xl:gap-4 flex-1 items-stretch min-h-0 mb-2">
+              {/* COLUMN 1: BOOK HÔM NAY (TẠO LỊCH - HÀNH ĐỘNG DẪN DẮT) */}
+              <div
+                className={`rounded-3xl p-4 sm:p-5 lg:p-6 flex flex-col justify-between border backdrop-blur-xl transition-all shadow-2xl relative overflow-hidden ${bookStyles.container}`}
+              >
+                {/* Realistic Physics Fireworks (bắn khi đạt mốc >= 100% hoặc khi test) */}
+                <RealisticCardFireworks
+                  active={testFireworksBook || ((voiceSettings.fireworksEnabled ?? true) && isBookOver100)}
+                  isFrenzy={frenzyBook || testFireworksBook}
+                  soundEnabled={voiceSettings.soundEnabled}
+                  volume={voiceSettings.volume}
+                  theme={bookTier === 'emerald' ? 'emerald' : bookTier === 'amber' ? 'amber' : 'gold'}
+                  cardLabel="BOOK"
+                />
+
+                {/* Ambient inner glow */}
+                <div
+                  className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl pointer-events-none ${bookStyles.ambientGlow}`}
+                />
+
+                {/* Header */}
+                <div className="flex items-center justify-between gap-2 shrink-0 relative z-10">
+                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                    <div
+                      className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center ${bookStyles.iconBox}`}
                     >
-                      Đã đạt
-                    </span>
-                    <span
-                      className={`text-xl sm:text-2xl font-black block tabular-nums ${bookStyles.ribbonActualText}`}
+                      <Calendar className="w-4 h-4" />
+                    </div>
+                    <h2
+                      className={`text-xs sm:text-sm xl:text-base font-black tracking-tight m-0 truncate ${isDark ? 'text-zinc-100' : 'text-slate-900'}`}
                     >
-                      {metrics.bookActual}
-                    </span>
+                      BOOK HÔM NAY
+                    </h2>
                   </div>
-                  <div>
+                  <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                     <span
-                      className={`text-[11px] sm:text-xs block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}
+                      className={`px-2 py-0.5 rounded-lg font-mono text-[11px] font-bold border ${bookStyles.headerTargetBadge}`}
                     >
-                      Kỳ vọng giờ này
+                      Chỉ tiêu: {metrics.bookTarget}
                     </span>
                     <span
-                      className={`text-xl sm:text-2xl font-black block tabular-nums ${isDark ? 'text-zinc-300' : 'text-slate-700'}`}
-                    >
-                      {metrics.expectedBook}
-                    </span>
-                  </div>
-                  <div>
-                    <span
-                      className={`text-[11px] sm:text-xs block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}
-                    >
-                      Nhịp (Gap)
-                    </span>
-                    <span
-                      className={`text-xl sm:text-2xl font-black block tabular-nums ${
+                      className={`px-2 py-0.5 rounded-lg font-mono text-[11px] font-black border ${
                         metrics.gapBook >= 0
                           ? isDark
-                            ? 'text-emerald-400'
-                            : 'text-emerald-600'
+                            ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
+                            : 'bg-emerald-50 text-emerald-800 border-emerald-300'
                           : metrics.gapBook === -1
                             ? isDark
-                              ? 'text-amber-400'
-                              : 'text-amber-600'
+                              ? 'bg-amber-950 text-amber-300 border-amber-500/40'
+                              : 'bg-amber-50 text-amber-800 border-amber-300'
                             : isDark
-                              ? 'text-rose-400'
-                              : 'text-rose-600'
+                              ? 'bg-rose-950 text-rose-300 border-rose-500/40'
+                              : 'bg-rose-50 text-rose-800 border-rose-300'
                       }`}
                     >
-                      {metrics.gapBook >= 0 ? `+${metrics.gapBook}` : metrics.gapBook}
-                    </span>
-                  </div>
-                  <div>
-                    <span
-                      className={`text-[11px] sm:text-xs block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}
-                    >
-                      Còn thiếu
-                    </span>
-                    <span
-                      className={`text-xl sm:text-2xl font-black block tabular-nums ${isDark ? 'text-amber-300' : 'text-amber-700'}`}
-                    >
-                      {metrics.remainingBook}
+                      {metrics.gapBook >= 0 ? `+${metrics.gapBook} ĐÚNG NHỊP` : `${metrics.gapBook} CHẬM NHỊP`}
                     </span>
                   </div>
                 </div>
 
+                {/* Semicircle Gauge (Option 1) - Hero Centered */}
+                <div className="flex-1 flex flex-col items-center justify-center my-auto min-h-0 py-1 w-full max-w-[720px] mx-auto relative z-10">
+                  <SemicircleGauge
+                    percent={metrics.bookPercent}
+                    actual={metrics.bookActual}
+                    target={metrics.bookTarget}
+                    expected={metrics.expectedBook}
+                    gap={metrics.gapBook}
+                    pacingPercent={metrics.bookTarget > 0 ? (metrics.expectedBook / metrics.bookTarget) * 100 : 0}
+                    showDeficitZone={true}
+                    showPacingMarker={true}
+                    showFloatingGapBadge={true}
+                    unit="Book"
+                    label=""
+                    hideLabelText={true}
+                    hideUnitText={true}
+                    tone={bookTier}
+                    sizeVariant="tv"
+                    actualDataTestId="tv-monitor-fullscreen-book-actual"
+                    heightClass="h-[245px] sm:h-[270px] lg:h-[290px]"
+                    showPacingArc={false}
+                    gapText={
+                      metrics.gapBook >= 0 ? `GAP: +${metrics.gapBook} VƯỢT NHỊP` : `GAP: ${metrics.gapBook} CHẬM NHỊP`
+                    }
+                    gapType={metrics.gapBook >= 0 ? 'positive' : metrics.gapBook === -1 ? 'neutral' : 'negative'}
+                  />
+                </div>
+
+                {/* 4-Stat Horizontal Ribbon (Option 1) */}
                 <div
-                  className={`mt-3 pt-2 border-t flex items-center justify-between text-xs font-mono ${
-                    isDark ? 'border-zinc-800/60 text-zinc-400' : 'border-slate-200 text-slate-500'
-                  }`}
+                  className={`mt-auto shrink-0 rounded-2xl p-3 sm:p-4 relative z-10 transition-colors ${
+                    isDark ? 'bg-black/50' : 'bg-slate-50/90'
+                  } ${bookStyles.ribbonBorder}`}
                 >
-                  <span>
-                    Định mức tối thiểu mỗi ngày:{' '}
-                    <strong className={isDark ? 'text-zinc-200' : 'text-slate-800'}>
-                      {metrics.bookTarget} Cuộc hẹn thành công
-                    </strong>
-                  </span>
-                  <span
-                    className={`font-bold flex items-center gap-1 ${isDark ? 'text-purple-300' : 'text-purple-700'}`}
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                    Combo: +{metrics.comboLiveBookActual || 0} Book
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* COLUMN 2: CHECK-IN HÔM NAY (KHÁCH LẺ - TIỀN ĐỀ CHẮC CHẮN DONE) */}
-            <div
-              className={`rounded-3xl p-4 sm:p-5 lg:p-6 flex flex-col justify-between border backdrop-blur-xl transition-all shadow-2xl relative overflow-hidden ${checkinStyles.container}`}
-            >
-              {/* Realistic Physics Fireworks (bắn khi đạt mốc >= 100% hoặc khi test) */}
-              <RealisticCardFireworks
-                active={testFireworksCheckin || ((voiceSettings.fireworksEnabled ?? true) && isCheckinOver100)}
-                isFrenzy={frenzyCheckin || testFireworksCheckin}
-                soundEnabled={voiceSettings.soundEnabled}
-                volume={voiceSettings.volume}
-                theme={checkinTier === 'emerald' ? 'emerald' : checkinTier === 'amber' ? 'amber' : 'gold'}
-                cardLabel="CHECK-IN"
-              />
-
-              {/* Ambient inner glow */}
-              <div
-                className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl pointer-events-none ${checkinStyles.ambientGlow}`}
-              />
-
-              {/* Header */}
-              <div className="flex items-center justify-between gap-2 shrink-0 relative z-10">
-                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                   <div
-                    className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center ${checkinStyles.iconBox}`}
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                  </div>
-                  <h2
-                    className={`text-xs sm:text-sm xl:text-base font-black tracking-tight m-0 truncate ${isDark ? 'text-zinc-100' : 'text-slate-900'}`}
-                  >
-                    CHECK-IN HÔM NAY
-                  </h2>
-                </div>
-                <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-                  <span
-                    className={`px-2 py-0.5 rounded-lg font-mono text-[11px] font-bold border ${checkinStyles.headerTargetBadge}`}
-                  >
-                    Chỉ tiêu: {metrics.checkinTarget}
-                  </span>
-                  <span
-                    className={`px-2 py-0.5 rounded-lg font-mono text-[11px] font-black border ${
-                      metrics.gapCheckin >= 0
-                        ? isDark
-                          ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
-                          : 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                        : metrics.gapCheckin === -1
-                          ? isDark
-                            ? 'bg-amber-950 text-amber-300 border-amber-500/40'
-                            : 'bg-amber-50 text-amber-800 border-amber-300'
-                          : isDark
-                            ? 'bg-rose-950 text-rose-300 border-rose-500/40'
-                            : 'bg-rose-50 text-rose-800 border-rose-300'
+                    className={`grid grid-cols-4 gap-2 text-center font-mono divide-x ${
+                      isDark ? 'divide-zinc-800' : 'divide-slate-200'
                     }`}
                   >
-                    {metrics.gapCheckin >= 0 ? `+${metrics.gapCheckin} ĐÚNG NHỊP` : `${metrics.gapCheckin} CHẬM NHỊP`}
-                  </span>
+                    <div>
+                      <span
+                        className={`text-[11px] sm:text-xs block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}
+                      >
+                        Đã đạt
+                      </span>
+                      <span
+                        className={`text-xl sm:text-2xl font-black block tabular-nums ${bookStyles.ribbonActualText}`}
+                      >
+                        {metrics.bookActual}
+                      </span>
+                    </div>
+                    <div>
+                      <span
+                        className={`text-[11px] sm:text-xs block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}
+                      >
+                        Kỳ vọng giờ này
+                      </span>
+                      <span
+                        className={`text-xl sm:text-2xl font-black block tabular-nums ${isDark ? 'text-zinc-300' : 'text-slate-700'}`}
+                      >
+                        {metrics.expectedBook}
+                      </span>
+                    </div>
+                    <div>
+                      <span
+                        className={`text-[11px] sm:text-xs block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}
+                      >
+                        Nhịp (Gap)
+                      </span>
+                      <span
+                        className={`text-xl sm:text-2xl font-black block tabular-nums ${
+                          metrics.gapBook >= 0
+                            ? isDark
+                              ? 'text-emerald-400'
+                              : 'text-emerald-600'
+                            : metrics.gapBook === -1
+                              ? isDark
+                                ? 'text-amber-400'
+                                : 'text-amber-600'
+                              : isDark
+                                ? 'text-rose-400'
+                                : 'text-rose-600'
+                        }`}
+                      >
+                        {metrics.gapBook >= 0 ? `+${metrics.gapBook}` : metrics.gapBook}
+                      </span>
+                    </div>
+                    <div>
+                      <span
+                        className={`text-[11px] sm:text-xs block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}
+                      >
+                        Còn thiếu
+                      </span>
+                      <span
+                        className={`text-xl sm:text-2xl font-black block tabular-nums ${isDark ? 'text-amber-300' : 'text-amber-700'}`}
+                      >
+                        {metrics.remainingBook}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`mt-3 pt-2 border-t flex items-center justify-between text-xs font-mono ${
+                      isDark ? 'border-zinc-800/60 text-zinc-400' : 'border-slate-200 text-slate-500'
+                    }`}
+                  >
+                    <span>
+                      Định mức tối thiểu mỗi ngày:{' '}
+                      <strong className={isDark ? 'text-zinc-200' : 'text-slate-800'}>
+                        {metrics.bookTarget} Cuộc hẹn thành công
+                      </strong>
+                    </span>
+                    <span
+                      className={`font-bold flex items-center gap-1 ${isDark ? 'text-purple-300' : 'text-purple-700'}`}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                      Combo: +{metrics.comboLiveBookActual || 0} Book
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Semicircle Gauge (Option 1) - Hero Centered */}
-              <div className="flex-1 flex flex-col items-center justify-center my-auto min-h-0 py-1 w-full max-w-[720px] mx-auto relative z-10">
-                <SemicircleGauge
-                  percent={metrics.checkinPercent}
-                  actual={metrics.checkinActual}
-                  target={metrics.checkinTarget}
-                  expected={metrics.expectedCheckin}
-                  gap={metrics.gapCheckin}
-                  pacingPercent={
-                    metrics.checkinTarget > 0 ? (metrics.expectedCheckin / metrics.checkinTarget) * 100 : 0
-                  }
-                  showDeficitZone={true}
-                  showPacingMarker={true}
-                  showFloatingGapBadge={true}
-                  unit="Check-in"
-                  label=""
-                  hideLabelText={true}
-                  hideUnitText={true}
-                  tone={checkinTier}
-                  sizeVariant="tv"
-                  actualDataTestId="tv-monitor-fullscreen-checkin-actual"
-                  heightClass="h-[245px] sm:h-[270px] lg:h-[290px]"
-                  showPacingArc={false}
-                  gapText={
-                    metrics.gapCheckin >= 0
-                      ? `GAP: +${metrics.gapCheckin} VƯỢT NHỊP`
-                      : `GAP: ${metrics.gapCheckin} CHẬM NHỊP`
-                  }
-                  gapType={metrics.gapCheckin >= 0 ? 'positive' : metrics.gapCheckin === -1 ? 'neutral' : 'negative'}
-                />
-              </div>
-
-              {/* 4-Stat Horizontal Ribbon (Option 1) */}
+              {/* COLUMN 2: CHECK-IN HÔM NAY (KHÁCH LẺ - TIỀN ĐỀ CHẮC CHẮN DONE) */}
               <div
-                className={`mt-auto shrink-0 rounded-2xl p-3 sm:p-4 relative z-10 transition-colors ${
-                  isDark ? 'bg-black/50' : 'bg-slate-50/90'
-                } ${checkinStyles.ribbonBorder}`}
+                className={`rounded-3xl p-4 sm:p-5 lg:p-6 flex flex-col justify-between border backdrop-blur-xl transition-all shadow-2xl relative overflow-hidden ${checkinStyles.container}`}
               >
+                {/* Realistic Physics Fireworks (bắn khi đạt mốc >= 100% hoặc khi test) */}
+                <RealisticCardFireworks
+                  active={testFireworksCheckin || ((voiceSettings.fireworksEnabled ?? true) && isCheckinOver100)}
+                  isFrenzy={frenzyCheckin || testFireworksCheckin}
+                  soundEnabled={voiceSettings.soundEnabled}
+                  volume={voiceSettings.volume}
+                  theme={checkinTier === 'emerald' ? 'emerald' : checkinTier === 'amber' ? 'amber' : 'gold'}
+                  cardLabel="CHECK-IN"
+                />
+
+                {/* Ambient inner glow */}
                 <div
-                  className={`grid grid-cols-4 gap-2 text-center font-mono divide-x ${
-                    isDark ? 'divide-zinc-800' : 'divide-slate-200'
-                  }`}
-                >
-                  <div>
-                    <span
-                      className={`text-[11px] sm:text-xs block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}
+                  className={`absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl pointer-events-none ${checkinStyles.ambientGlow}`}
+                />
+
+                {/* Header */}
+                <div className="flex items-center justify-between gap-2 shrink-0 relative z-10">
+                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                    <div
+                      className={`w-8 h-8 rounded-xl shrink-0 flex items-center justify-center ${checkinStyles.iconBox}`}
                     >
-                      Đã đạt
-                    </span>
-                    <span
-                      className={`text-xl sm:text-2xl font-black block tabular-nums ${checkinStyles.ribbonActualText}`}
+                      <CheckCircle2 className="w-4 h-4" />
+                    </div>
+                    <h2
+                      className={`text-xs sm:text-sm xl:text-base font-black tracking-tight m-0 truncate ${isDark ? 'text-zinc-100' : 'text-slate-900'}`}
                     >
-                      {metrics.checkinActual}
-                    </span>
+                      CHECK-IN HÔM NAY
+                    </h2>
                   </div>
-                  <div>
+                  <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                     <span
-                      className={`text-[11px] sm:text-xs block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}
+                      className={`px-2 py-0.5 rounded-lg font-mono text-[11px] font-bold border ${checkinStyles.headerTargetBadge}`}
                     >
-                      Kỳ vọng giờ này
+                      Chỉ tiêu: {metrics.checkinTarget}
                     </span>
                     <span
-                      className={`text-xl sm:text-2xl font-black block tabular-nums ${isDark ? 'text-zinc-300' : 'text-slate-700'}`}
-                    >
-                      {metrics.expectedCheckin}
-                    </span>
-                  </div>
-                  <div>
-                    <span
-                      className={`text-[11px] sm:text-xs block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}
-                    >
-                      Nhịp (Gap)
-                    </span>
-                    <span
-                      className={`text-xl sm:text-2xl font-black block tabular-nums ${
+                      className={`px-2 py-0.5 rounded-lg font-mono text-[11px] font-black border ${
                         metrics.gapCheckin >= 0
                           ? isDark
-                            ? 'text-emerald-400'
-                            : 'text-emerald-600'
+                            ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
+                            : 'bg-emerald-50 text-emerald-800 border-emerald-300'
                           : metrics.gapCheckin === -1
                             ? isDark
-                              ? 'text-amber-400'
-                              : 'text-amber-600'
+                              ? 'bg-amber-950 text-amber-300 border-amber-500/40'
+                              : 'bg-amber-50 text-amber-800 border-amber-300'
                             : isDark
-                              ? 'text-rose-400'
-                              : 'text-rose-600'
+                              ? 'bg-rose-950 text-rose-300 border-rose-500/40'
+                              : 'bg-rose-50 text-rose-800 border-rose-300'
                       }`}
                     >
-                      {metrics.gapCheckin >= 0 ? `+${metrics.gapCheckin}` : metrics.gapCheckin}
-                    </span>
-                  </div>
-                  <div>
-                    <span
-                      className={`text-[11px] sm:text-xs block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}
-                    >
-                      Còn thiếu
-                    </span>
-                    <span
-                      className={`text-xl sm:text-2xl font-black block tabular-nums ${isDark ? 'text-amber-300' : 'text-amber-700'}`}
-                    >
-                      {metrics.remainingCheckin}
+                      {metrics.gapCheckin >= 0 ? `+${metrics.gapCheckin} ĐÚNG NHỊP` : `${metrics.gapCheckin} CHẬM NHỊP`}
                     </span>
                   </div>
                 </div>
 
+                {/* Semicircle Gauge (Option 1) - Hero Centered */}
+                <div className="flex-1 flex flex-col items-center justify-center my-auto min-h-0 py-1 w-full max-w-[720px] mx-auto relative z-10">
+                  <SemicircleGauge
+                    percent={metrics.checkinPercent}
+                    actual={metrics.checkinActual}
+                    target={metrics.checkinTarget}
+                    expected={metrics.expectedCheckin}
+                    gap={metrics.gapCheckin}
+                    pacingPercent={
+                      metrics.checkinTarget > 0 ? (metrics.expectedCheckin / metrics.checkinTarget) * 100 : 0
+                    }
+                    showDeficitZone={true}
+                    showPacingMarker={true}
+                    showFloatingGapBadge={true}
+                    unit="Check-in"
+                    label=""
+                    hideLabelText={true}
+                    hideUnitText={true}
+                    tone={checkinTier}
+                    sizeVariant="tv"
+                    actualDataTestId="tv-monitor-fullscreen-checkin-actual"
+                    heightClass="h-[245px] sm:h-[270px] lg:h-[290px]"
+                    showPacingArc={false}
+                    gapText={
+                      metrics.gapCheckin >= 0
+                        ? `GAP: +${metrics.gapCheckin} VƯỢT NHỊP`
+                        : `GAP: ${metrics.gapCheckin} CHẬM NHỊP`
+                    }
+                    gapType={metrics.gapCheckin >= 0 ? 'positive' : metrics.gapCheckin === -1 ? 'neutral' : 'negative'}
+                  />
+                </div>
+
+                {/* 4-Stat Horizontal Ribbon (Option 1) */}
                 <div
-                  className={`mt-3 pt-2 border-t flex items-center justify-between text-xs font-mono ${
-                    isDark ? 'border-zinc-800/60 text-zinc-400' : 'border-slate-200 text-slate-500'
-                  }`}
+                  className={`mt-auto shrink-0 rounded-2xl p-3 sm:p-4 relative z-10 transition-colors ${
+                    isDark ? 'bg-black/50' : 'bg-slate-50/90'
+                  } ${checkinStyles.ribbonBorder}`}
                 >
-                  <span>
-                    Chỉ tiêu KPI chính:{' '}
-                    <strong className={isDark ? 'text-zinc-200' : 'text-slate-800'}>
-                      {metrics.checkinTarget} Khách lẻ
-                    </strong>
-                  </span>
-                  <span
-                    className={`font-bold flex items-center gap-1 ${isDark ? 'text-purple-300' : 'text-purple-700'}`}
+                  <div
+                    className={`grid grid-cols-4 gap-2 text-center font-mono divide-x ${
+                      isDark ? 'divide-zinc-800' : 'divide-slate-200'
+                    }`}
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                    Combo: +{metrics.comboLiveCheckinActual || 0} Check-in
-                  </span>
+                    <div>
+                      <span
+                        className={`text-[11px] sm:text-xs block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}
+                      >
+                        Đã đạt
+                      </span>
+                      <span
+                        className={`text-xl sm:text-2xl font-black block tabular-nums ${checkinStyles.ribbonActualText}`}
+                      >
+                        {metrics.checkinActual}
+                      </span>
+                    </div>
+                    <div>
+                      <span
+                        className={`text-[11px] sm:text-xs block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}
+                      >
+                        Kỳ vọng giờ này
+                      </span>
+                      <span
+                        className={`text-xl sm:text-2xl font-black block tabular-nums ${isDark ? 'text-zinc-300' : 'text-slate-700'}`}
+                      >
+                        {metrics.expectedCheckin}
+                      </span>
+                    </div>
+                    <div>
+                      <span
+                        className={`text-[11px] sm:text-xs block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}
+                      >
+                        Nhịp (Gap)
+                      </span>
+                      <span
+                        className={`text-xl sm:text-2xl font-black block tabular-nums ${
+                          metrics.gapCheckin >= 0
+                            ? isDark
+                              ? 'text-emerald-400'
+                              : 'text-emerald-600'
+                            : metrics.gapCheckin === -1
+                              ? isDark
+                                ? 'text-amber-400'
+                                : 'text-amber-600'
+                              : isDark
+                                ? 'text-rose-400'
+                                : 'text-rose-600'
+                        }`}
+                      >
+                        {metrics.gapCheckin >= 0 ? `+${metrics.gapCheckin}` : metrics.gapCheckin}
+                      </span>
+                    </div>
+                    <div>
+                      <span
+                        className={`text-[11px] sm:text-xs block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}
+                      >
+                        Còn thiếu
+                      </span>
+                      <span
+                        className={`text-xl sm:text-2xl font-black block tabular-nums ${isDark ? 'text-amber-300' : 'text-amber-700'}`}
+                      >
+                        {metrics.remainingCheckin}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`mt-3 pt-2 border-t flex items-center justify-between text-xs font-mono ${
+                      isDark ? 'border-zinc-800/60 text-zinc-400' : 'border-slate-200 text-slate-500'
+                    }`}
+                  >
+                    <span>
+                      Chỉ tiêu KPI chính:{' '}
+                      <strong className={isDark ? 'text-zinc-200' : 'text-slate-800'}>
+                        {metrics.checkinTarget} Khách lẻ
+                      </strong>
+                    </span>
+                    <span
+                      className={`font-bold flex items-center gap-1 ${isDark ? 'text-purple-300' : 'text-purple-700'}`}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                      Combo: +{metrics.comboLiveCheckinActual || 0} Check-in
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </main>
+            </main>
 
-          {/* 2.5 INDIVIDUAL STAFF CONTRIBUTIONS TODAY (MOS-FEAT-83) */}
-          {showStaffGrid && (
-            <TelesaleTvStaffContributionGrid
-              staffTargets={overview.staffTargets}
-              totalTeamBookToday={metrics.bookActual}
-              dailyBookTarget={metrics.bookTarget}
-              pacing={pacing}
+            {/* 2.5 INDIVIDUAL STAFF CONTRIBUTIONS TODAY (MOS-FEAT-83) */}
+            {showStaffGrid && (
+              <TelesaleTvStaffContributionGrid
+                staffTargets={overview.staffTargets}
+                totalTeamBookToday={metrics.bookActual}
+                dailyBookTarget={metrics.bookTarget}
+                pacing={pacing}
+              />
+            )}
+          </div>
+
+          {/* 2.3 RIGHT PANEL: CHECK-IN HÔM NAY */}
+          {showCheckinPanel && (
+            <TelesaleTvCheckinSidePanel
+              checkinList={overview.todayCheckinList}
+              isDark={isDark}
+              onClose={() => toggleCheckinPanel(false)}
             />
           )}
         </div>
-
-        {/* 2.3 RIGHT PANEL: CHECK-IN HÔM NAY */}
-        {showCheckinPanel && (
-          <TelesaleTvCheckinSidePanel
-            checkinList={overview.todayCheckinList}
-            isDark={isDark}
-            onClose={() => toggleCheckinPanel(false)}
-          />
-        )}
       </div>
 
       {/* 3. BOTTOM SECTION: WALL STREET TICKER TAPE (MOCKUP 3) */}
       <footer
-        className={`relative z-10 w-full h-14 border-t px-8 flex items-center justify-between text-sm sm:text-base font-sans shrink-0 -mx-3 sm:-mx-4 -mb-3 sm:-mb-4 backdrop-blur-md transition-colors ${
+        className={`relative z-10 w-full h-14 border-t px-4 sm:px-8 flex items-center justify-between text-sm sm:text-base font-sans shrink-0 backdrop-blur-md transition-colors ${
           isDark
             ? 'bg-zinc-950/98 border-zinc-800/90 shadow-[0_-4px_24px_rgba(0,0,0,0.5)]'
             : 'bg-white/95 border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]'

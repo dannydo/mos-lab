@@ -37,6 +37,8 @@ interface CcThuongTransactionsModalProps {
   open: boolean;
   onClose: () => void;
   date?: string;
+  dateFrom?: string;
+  dateTo?: string;
   consultantId?: string | number;
   consultantName?: string;
   includeVat?: boolean;
@@ -46,6 +48,8 @@ export default function CcThuongTransactionsModal({
   open,
   onClose,
   date,
+  dateFrom,
+  dateTo,
   consultantId,
   consultantName,
   includeVat: propsIncludeVat = true,
@@ -134,11 +138,13 @@ export default function CcThuongTransactionsModal({
   );
 
   const fetchTransactions = async () => {
-    if (!date || !consultantId) return;
+    if ((!date && !dateFrom) || !consultantId) return;
     setLoading(true);
     try {
       const res = (await apiClient.gamification.getDailySalesBonusTransactions({
         date,
+        dateFrom,
+        dateTo,
         consultantId,
       })) as SafeAny;
       if (res && res.data) {
@@ -155,10 +161,10 @@ export default function CcThuongTransactionsModal({
   };
 
   useEffect(() => {
-    if (open && date && consultantId) {
+    if (open && (date || dateFrom) && consultantId) {
       fetchTransactions();
     }
-  }, [open, date, consultantId]);
+  }, [open, date, dateFrom, dateTo, consultantId]);
 
   const getItemValue = (item: DailySalesBonusTransaction) => {
     const debt = item.debt_amount || 0;
@@ -395,7 +401,11 @@ export default function CcThuongTransactionsModal({
           <div className="flex items-center gap-2">
             <ShoppingCartOutlined className="text-amber-500 text-lg" />
             <span className="font-bold text-lg" style={{ color: token.colorText }}>
-              Chi Tiết Giao Dịch Trong Ngày ({date})
+              {date
+                ? `Chi Tiết Giao Dịch Trong Ngày (${date})`
+                : dateFrom && dateTo && dateFrom !== dateTo
+                  ? `Chi Tiết Giao Dịch Combo & SP (${dateFrom} ~ ${dateTo})`
+                  : `Chi Tiết Giao Dịch Combo & SP (${dateFrom || date})`}
             </span>
             {consultantName && (
               <Tag color="gold" className="font-semibold ml-2">

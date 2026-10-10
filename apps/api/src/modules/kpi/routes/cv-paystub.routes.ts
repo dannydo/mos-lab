@@ -217,10 +217,24 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         fastify.log.warn('Could not parse CV_SENIORITY_BONUS_CONFIG, using default list.');
       }
 
-      // 2. Query Hourly Rates and Social Security from staff_payroll (Optimized with MAX(id) B-Tree scan)
-      const hourlyRatesQuery = `
+      // 2. Query Contract Rates (working_hour_rate, social_security_rate) from latest staff_payroll
+      const contractRatesQuery = `
+        SELECT sp.user_id, sp.working_hour_rate, sp.social_security_rate
+        FROM \`staff_payroll\` sp
+        JOIN (
+          SELECT user_id, MAX(id) as max_id
+          FROM \`staff_payroll\`
+          WHERE user_id IN (${validStaffListStr}) AND working_hour_rate > 0
+            AND date <= '${endPart}'
+          GROUP BY user_id
+        ) latest ON sp.id = latest.max_id
+      `;
+
+      // 3. Query Period-Specific Settled Payroll from staff_payroll (strictly within requested month)
+      const periodPayrollQuery = `
         SELECT sp.user_id, sp.working_hour_rate, sp.social_security_rate, sp.total_social_security_amount, sp.total_support_parking_amount,
                sp.total_wage_amount, sp.total_base_amount, sp.total_amount,
+               sp.total_working_hour,
                sp.total_working_hour_expected, sp.total_working_day_expected,
                sp.total_day_off_week, sp.total_day_overtime_daytime_off_week, sp.total_overtime_daytime_off_week_amount,
                sp.total_day_off_month, sp.total_day_off_paid_leave, sp.total_off_month_amount, sp.total_off_paid_leave_amount,
@@ -230,15 +244,17 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
                sp.total_overtime_daytime_amount,
                sp.total_extra_support_amount, sp.total_extra_last_month_amount, sp.total_extra_punish_amount, sp.total_punish_credit_balance_amount,
                sp.total_welfare_fund_amount, sp.total_extra_advance_amount,
-               sp.day_off_available, sp.tracking_key
+               sp.day_off_available, sp.tracking_key,
+               DATE_FORMAT(sp.date, '%Y-%m-%d') as payroll_date,
+               sp.date_completed
         FROM \`staff_payroll\` sp
         JOIN (
           SELECT user_id, MAX(id) as max_id
           FROM \`staff_payroll\`
-          WHERE user_id IN (${validStaffListStr}) AND working_hour_rate > 0
-            AND date <= '${endPart}'
+          WHERE user_id IN (${validStaffListStr})
+            AND date >= '${startPart}' AND date <= '${endPart}'
           GROUP BY user_id
-        ) latest ON sp.id = latest.max_id
+        ) m ON sp.id = m.max_id
       `;
       // Calculate extended boundaries to query entire weeks
       const startDate = getLocalDate(startPart);
@@ -339,7 +355,8 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
       `;
 
       const [
-        hourlyRatesRows,
+        contractRatesRows,
+        periodPayrollRows,
         reportStaffRows,
         cvXoayBonusRows,
         cvTipBonusRows,
@@ -351,7 +368,8 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         extraSupportRows,
         mosAllowances,
       ] = await Promise.all([
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(hourlyRatesQuery),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(contractRatesQuery),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(periodPayrollQuery),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(reportStaffQuery),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(cvXoayBonusQuery),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(cvTipBonusQuery),
@@ -423,14 +441,27 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
       const socialSecurityMap = new Map<number, { rate: number; amount: number }>();
       const parkingAllowanceMap = new Map<number, number>();
       const staffPayrollMap = new Map<number, SafeAny>();
-      hourlyRatesRows.forEach((r: SafeAny) => {
-        staffPayrollMap.set(Number(r.user_id), r);
-        hourlyRateMap.set(Number(r.user_id), Number(r.working_hour_rate || 21500));
-        socialSecurityMap.set(Number(r.user_id), {
+
+      contractRatesRows.forEach((r: SafeAny) => {
+        const uid = Number(r.user_id);
+        hourlyRateMap.set(uid, Number(r.working_hour_rate || 21500));
+        socialSecurityMap.set(uid, {
+          rate: Number(r.social_security_rate || 0),
+          amount: 0,
+        });
+      });
+
+      periodPayrollRows.forEach((r: SafeAny) => {
+        const uid = Number(r.user_id);
+        staffPayrollMap.set(uid, r);
+        if (r.working_hour_rate) {
+          hourlyRateMap.set(uid, Number(r.working_hour_rate));
+        }
+        socialSecurityMap.set(uid, {
           rate: Number(r.social_security_rate || 0),
           amount: Number(r.total_social_security_amount || 0),
         });
-        parkingAllowanceMap.set(Number(r.user_id), Math.round(Number(r.total_support_parking_amount || 0)));
+        parkingAllowanceMap.set(uid, Math.round(Number(r.total_support_parking_amount || 0)));
       });
 
       const staffDayOffMap = new Map<number, Set<number>>();
@@ -554,6 +585,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
             trackingData = {};
           }
         }
+        const expectedWorkDays = Number(sp?.total_working_day_expected || 26);
 
         userFilteredDays.forEach((r) => {
           const dayHours = Number(r.working_minute || 0) / 60;
@@ -571,14 +603,17 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         regularHours = Math.round(regularHours * 100) / 100;
         offDaysWorkHours = Math.round(offDaysWorkHours * 100) / 100;
         const legacyOffWeekExtra = legacyOffWeekExtraMap.get(staffId);
+        const isPayrollCompleted = sp?.date_completed != null;
         const offDaysWorkWage =
-          sp?.total_overtime_daytime_off_week_amount != null && Number(sp.total_overtime_daytime_off_week_amount) > 0
+          isPayrollCompleted &&
+          sp?.total_overtime_daytime_off_week_amount != null &&
+          Number(sp.total_overtime_daytime_off_week_amount) > 0
             ? Math.round(Number(sp.total_overtime_daytime_off_week_amount))
             : legacyOffWeekExtra != null
               ? legacyOffWeekExtra
               : Math.round(offDaysWorkHours * hourlyRate); // Thêm 1 lần đơn giá giờ (+1x)
         const hourlyWage =
-          sp?.total_wage_amount != null
+          isPayrollCompleted && sp?.total_wage_amount != null
             ? Math.round(Number(sp.total_wage_amount))
             : Math.round(totalWorkHours * hourlyRate);
 
@@ -619,7 +654,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         const techLevel = Math.floor(totalPoints / 100) + 1;
         const holiday = holidayBreakdownMap.get(staffId)!;
 
-        const parkingAllowance = Math.round(parkingAllowanceMap.get(staffId) || 0);
+        const parkingAllowance = Math.min(200000, Math.round((200000 / (expectedWorkDays || 26)) * (activeDays || 0)));
         // Month-off leave pay (honor approved staff_payroll amount or calculate by scheduled shift hours: 9h for regular shift, 11h for full shift)
         const monthOffList = monthOffLeavesMap.get(staffId) || [];
         const offMonthDays =
@@ -657,10 +692,7 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         const ssInfo = socialSecurityMap.get(staffId) || { rate: 0, amount: 0 };
         const socialSecurityRate = ssInfo.rate;
         const socialSecurityAmount = ssInfo.amount;
-        const netIncome =
-          sp?.total_amount != null
-            ? Math.round(Number(sp.total_amount))
-            : Math.round(totalIncome - socialSecurityAmount);
+        const netIncome = Math.round(totalIncome - socialSecurityAmount);
 
         grandTotalHourlyWage += hourlyWage;
         grandTotalCvXoayBonus += cvXoayBonus;
@@ -677,7 +709,6 @@ export async function registerCvPaystubRoutes(fastify: FastifyInstance) {
         grandTotalSocialSecurityAmount += socialSecurityAmount;
         grandTotalNetIncome += netIncome;
 
-        const expectedWorkDays = Number(sp?.total_working_day_expected || 26);
         const expectedWorkHours = Number(sp?.total_working_hour_expected || expectedWorkDays * 9);
         const weeklyOffDays = Number(sp?.total_day_off_week || 4);
         const weeklyOffWorkedDays = offDaysWorked || 0;

@@ -1,5 +1,6 @@
 import type { ReportPeriodComparison } from './report-period.js';
 import type { HolidayPayBreakdown } from './holiday-work.js';
+import type { CvPaystubSocialSecurityBreakdown, CvOtherAllowanceItem } from './cv.js';
 
 export interface StaffKPI {
   id: number;
@@ -133,6 +134,7 @@ export interface CcPaystubRecord extends HolidayPayBreakdown {
   consultantId: number;
   userId?: number;
   displayName: string;
+  fullName?: string;
   avatar?: string | null;
   store: string;
   hourlyWage: number;
@@ -160,6 +162,35 @@ export interface CcPaystubRecord extends HolidayPayBreakdown {
   extraSupport?: number;
   extraSupportNote?: string;
   totalIncome: number;
+
+  // Chi tiết chuẩn cấu trúc giống CV
+  expectedWorkDays?: number;
+  expectedWorkHours?: number;
+  weeklyOffDays?: number;
+  activeDays?: number;
+  offDaysWorked?: number;
+  offDaysWorkHours?: number;
+  offDaysWorkWage?: number;
+  totalTimeBonus?: number;
+  offMonthDays?: number;
+  offMonthWage?: number;
+  offMonthLeaveDetails?: Array<{
+    date: string;
+    workingDayCount: number;
+    shiftHours?: number;
+    note?: string | null;
+  }>;
+  parkingAllowance?: number;
+  parkingCalculation?: string;
+  otherAllowances?: number;
+  otherAllowancesDetails?: CvOtherAllowanceItem[];
+  penalties?: number;
+  socialSecurityRate?: number;
+  socialSecurityAmount?: number;
+  socialSecurityBreakdown?: CvPaystubSocialSecurityBreakdown;
+  netIncome?: number;
+  congratulationMessage?: string;
+  dayOffAvailable?: number;
 }
 
 export interface CcPaystubResponse {
@@ -175,7 +206,12 @@ export interface CcPaystubResponse {
     totalHolidayBasePay: number;
     totalHolidayPremiumPay: number;
     totalHolidayPayrollAddition: number;
+    totalTimeBonus?: number;
+    totalParkingAllowance?: number;
+    totalOffMonthWage?: number;
     grandTotalIncome: number;
+    totalSocialSecurityAmount?: number;
+    grandTotalNetIncome?: number;
     comparison?: ReportPeriodComparison & {
       totalHourlyWage: number;
       totalCcXoayBonus: number;

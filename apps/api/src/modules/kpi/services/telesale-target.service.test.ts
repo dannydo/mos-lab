@@ -1487,3 +1487,45 @@ test('TelesaleTargetService.getOverview caches result in-memory and honors skipC
   assert.ok(third);
   assert.ok(queryCount > initialQueries);
 });
+
+test('TelesaleTargetService.getOverview shares in-flight promise across concurrent callers (Single-Flight)', async () => {
+  let executionCount = 0;
+  const slowMockFastify = {
+    prisma: {
+      crm: {
+        crmConfig: {
+          findUnique: async ({ where }: any = {}) => {
+            if (where?.key === 'TELESALE_TARGET_CONFIG_2099-11') {
+              executionCount++;
+            }
+            // Simulate async database latency
+            await new Promise((r) => setTimeout(r, 40));
+            return {
+              key: 'TELESALE_TARGET_CONFIG_2099-11',
+              value: JSON.stringify(DEFAULT_OCTOBER_CONFIG),
+            };
+          },
+        },
+        crmHolidayPeriod: { findMany: async () => [] },
+      },
+      legacy: { $queryRawUnsafe: async () => [] },
+    },
+    cache: {
+      get: () => null, // Cache miss
+      set: () => {},
+    },
+    log: { warn: () => {}, error: () => {} },
+  };
+
+  // Launch 3 simultaneous concurrent calls
+  const [res1, res2, res3] = await Promise.all([
+    TelesaleTargetService.getOverview(slowMockFastify as any, '2099-11'),
+    TelesaleTargetService.getOverview(slowMockFastify as any, '2099-11'),
+    TelesaleTargetService.getOverview(slowMockFastify as any, '2099-11'),
+  ]);
+
+  assert.equal(res1, res2);
+  assert.equal(res2, res3);
+  // Exactly 1 computation execution despite 3 concurrent calls
+  assert.equal(executionCount, 1);
+});

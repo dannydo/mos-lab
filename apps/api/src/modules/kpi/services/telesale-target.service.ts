@@ -410,6 +410,7 @@ export class TelesaleTargetService {
 
     // Invalidate cached overview for this month
     fastify.cache?.invalidatePattern(`^kpi:telesale-target:overview:${config.month}`);
+    this.inFlightOverviewPromises.delete(`kpi:telesale-target:overview:${config.month}`);
 
     return cleanConfig;
   }
@@ -450,6 +451,7 @@ export class TelesaleTargetService {
 
     // Invalidate cached overview for this month
     fastify.cache?.invalidatePattern(`^kpi:telesale-target:overview:${month}`);
+    this.inFlightOverviewPromises.delete(`kpi:telesale-target:overview:${month}`);
 
     return updatedConfig;
   }
@@ -715,6 +717,8 @@ export class TelesaleTargetService {
     };
   }
 
+  private static inFlightOverviewPromises = new Map<string, Promise<TelesaleTargetOverview>>();
+
   static async getOverview(
     fastify: FastifyInstance,
     month = '2026-10',
@@ -727,8 +731,34 @@ export class TelesaleTargetService {
       if (cached) {
         return cached;
       }
+      const inFlight = this.inFlightOverviewPromises.get(cacheKey);
+      if (inFlight) {
+        return await inFlight;
+      }
     }
 
+    const computePromise = (async () => {
+      try {
+        const overview = await this.computeOverview(fastify, month, _currentStaffId);
+        fastify.cache?.set(cacheKey, overview, 15_000);
+        return overview;
+      } finally {
+        this.inFlightOverviewPromises.delete(cacheKey);
+      }
+    })();
+
+    if (!options?.skipCache) {
+      this.inFlightOverviewPromises.set(cacheKey, computePromise);
+    }
+
+    return await computePromise;
+  }
+
+  private static async computeOverview(
+    fastify: FastifyInstance,
+    month = '2026-10',
+    _currentStaffId?: number
+  ): Promise<TelesaleTargetOverview> {
     const config = await this.getConfig(fastify, month);
     const [yearStr, monthNumStr] = month.split('-');
     const year = parseInt(yearStr, 10);
@@ -2199,9 +2229,6 @@ export class TelesaleTargetService {
       todayBookList,
       todayCheckinList,
     };
-
-    // Short-lived in-memory cache (15 seconds) to absorb high-frequency polling from dashboards/TV mode
-    fastify.cache?.set(cacheKey, overview, 15_000);
 
     return overview;
   }
