@@ -451,14 +451,15 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           'Product' as item_type,
           op.quantity,
           op.total_price as gross_value,
-          (op.total_price - op.tax_amount) as net_value,
-          0 as debt_amount,
+          GREATEST(0, (op.total_price - COALESCE(op.tax_amount, 0) - COALESCE(ud.debt_amount, 0))) as net_value,
+          COALESCE(ud.debt_amount, 0) as debt_amount,
           0 as is_split,
           NULL as cc_in_name,
           NULL as cc_out_name
         FROM filtered_orders fo
         JOIN \`order\` o ON o.id = fo.orderId
         JOIN \`order_product\` op ON op.order_id = fo.orderId
+        LEFT JOIN \`user_debt\` ud ON ud.order_id = fo.orderId AND ud.debt_amount > 0
         LEFT JOIN \`product_language\` pl ON pl.product_id = op.product_id AND pl.language_id = 1
         LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
         LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
@@ -479,8 +480,8 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           'Service' as item_type,
           os.quantity,
           os.total_price as gross_value,
-          0 as net_value,
-          0 as debt_amount,
+          GREATEST(0, (os.total_price - COALESCE(os.tax_amount, 0) - COALESCE(ud.debt_amount, 0))) as net_value,
+          COALESCE(ud.debt_amount, 0) as debt_amount,
           0 as is_split,
           up_in.full_name as cc_in_name,
           up_out.full_name as cc_out_name
@@ -488,6 +489,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
         JOIN \`order\` o ON o.id = fo.orderId
         JOIN \`order_service\` os ON os.order_id = fo.orderId
         LEFT JOIN \`service_language\` sl ON sl.service_id = os.service_id AND sl.language_id = 1
+        LEFT JOIN \`user_debt\` ud ON ud.order_id = fo.orderId AND ud.debt_amount > 0
         LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
         LEFT JOIN \`user_profile\` up_in ON up_in.user_id = os.check_in_staff_id
         LEFT JOIN \`user_profile\` up_out ON up_out.user_id = os.check_out_staff_id
@@ -530,8 +532,8 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
             'Combo' as item_type,
             0.5 as quantity,
             os.upgrade_price * 0.5 as gross_value,
-            os.upgrade_price * 0.5 as net_value,
-            0 as debt_amount,
+            GREATEST(0, (os.upgrade_price - COALESCE(ud.debt_amount, 0))) * 0.5 as net_value,
+            COALESCE(ud.debt_amount, 0) * 0.5 as debt_amount,
             1 as is_split,
             os.check_in_staff_id as staff_id,
             up_in.full_name as cc_in_name,
@@ -540,6 +542,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           JOIN \`order\` o ON o.id = fo.orderId
           JOIN \`order_service\` os ON os.order_id = fo.orderId
           LEFT JOIN \`service_language\` sl ON sl.service_id = os.service_id AND sl.language_id = 1
+          LEFT JOIN \`user_debt\` ud ON ud.order_id = fo.orderId AND ud.debt_amount > 0
           LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
           LEFT JOIN \`user_profile\` up_in ON up_in.user_id = os.check_in_staff_id
           LEFT JOIN \`user_profile\` up_out ON up_out.user_id = os.check_out_staff_id
@@ -560,8 +563,8 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
             'Combo' as item_type,
             0.5 as quantity,
             os.upgrade_price * 0.5 as gross_value,
-            os.upgrade_price * 0.5 as net_value,
-            0 as debt_amount,
+            GREATEST(0, (os.upgrade_price - COALESCE(ud.debt_amount, 0))) * 0.5 as net_value,
+            COALESCE(ud.debt_amount, 0) * 0.5 as debt_amount,
             1 as is_split,
             os.check_out_staff_id as staff_id,
             up_in.full_name as cc_in_name,
@@ -570,6 +573,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           JOIN \`order\` o ON o.id = fo.orderId
           JOIN \`order_service\` os ON os.order_id = fo.orderId
           LEFT JOIN \`service_language\` sl ON sl.service_id = os.service_id AND sl.language_id = 1
+          LEFT JOIN \`user_debt\` ud ON ud.order_id = fo.orderId AND ud.debt_amount > 0
           LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
           LEFT JOIN \`user_profile\` up_in ON up_in.user_id = os.check_in_staff_id
           LEFT JOIN \`user_profile\` up_out ON up_out.user_id = os.check_out_staff_id
@@ -590,8 +594,8 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
             'Combo' as item_type,
             1.0 as quantity,
             os.upgrade_price * 1.0 as gross_value,
-            os.upgrade_price * 1.0 as net_value,
-            0 as debt_amount,
+            GREATEST(0, (os.upgrade_price - COALESCE(ud.debt_amount, 0))) * 1.0 as net_value,
+            COALESCE(ud.debt_amount, 0) * 1.0 as debt_amount,
             0 as is_split,
             COALESCE(os.check_in_staff_id, os.check_out_staff_id, os.assigned_staff_id, o.created_staff_id) as staff_id,
             up_in.full_name as cc_in_name,
@@ -600,6 +604,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
           JOIN \`order\` o ON o.id = fo.orderId
           JOIN \`order_service\` os ON os.order_id = fo.orderId
           LEFT JOIN \`service_language\` sl ON sl.service_id = os.service_id AND sl.language_id = 1
+          LEFT JOIN \`user_debt\` ud ON ud.order_id = fo.orderId AND ud.debt_amount > 0
           LEFT JOIN \`user_profile\` up_cust ON up_cust.user_id = o.user_id
           LEFT JOIN \`user_profile\` up_in ON up_in.user_id = os.check_in_staff_id
           LEFT JOIN \`user_profile\` up_out ON up_out.user_id = os.check_out_staff_id

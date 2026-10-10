@@ -161,8 +161,10 @@ export default function CcThuongTransactionsModal({
   }, [open, date, consultantId]);
 
   const getItemValue = (item: DailySalesBonusTransaction) => {
+    const debt = item.debt_amount || 0;
     if (includeVat) {
-      return item.gross_value ?? item.payment_value ?? 0;
+      const gross = item.gross_value ?? item.payment_value ?? 0;
+      return Math.max(0, gross - debt);
     }
     return item.net_value ?? item.payment_value ?? 0;
   };
@@ -556,7 +558,7 @@ export default function CcThuongTransactionsModal({
       <Table
         dataSource={displayTransactions}
         columns={columns}
-        rowKey="order_service_id"
+        rowKey={(record, index) => `${record.item_type}_${record.order_id}_${record.order_service_id}_${index}`}
         loading={loading}
         size="small"
         bordered
