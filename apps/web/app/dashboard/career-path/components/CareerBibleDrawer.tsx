@@ -84,13 +84,13 @@ const BIBLE_TOPICS_MAP: Record<CareerBibleTopic, BibleTopicContent> = {
   },
   WAGE: {
     ruleId: 'CV-002',
-    ruleTitle: 'Quy chế Lương Giờ Chuyên Viên 1 Cánh (27.500đ/h)',
-    version: '2.0.0',
+    ruleTitle: 'Quy chế Lương Giờ Chuyên Viên 1 Lông (27.500đ/h)',
+    version: '2.1.0',
     icon: <Sparkles className="w-5 h-5 text-amber-400" />,
     subtitle: 'Tăng lương cứng theo giờ làm việc thực tế cho CV Tự Chủ',
     commandments: [
       'Mức lương giờ gốc của CV · Dịu Dàng: 25.500đ/giờ.',
-      'Khi thăng cấp lên 🪽 CV · Thanh Lịch (1 Cánh): Lương giờ được tăng thêm +2.000đ/h ➔ Đạt 27.500đ/giờ.',
+      'Khi thăng cấp lên 🪶 CV · 1 Lông (Thanh Lịch): Lương giờ được tăng thêm +2.000đ/h ➔ Đạt 27.500đ/giờ.',
       'Trung bình mỗi tháng làm việc 24 ca (~192 giờ) mang lại thu nhập lương giờ tăng thêm ~+384.000đ/tháng.',
     ],
     rewardFormula: 'Lương giờ = 27.500đ/h (+2.000đ/h so với mức 25.500đ/h gốc)',
@@ -100,16 +100,16 @@ const BIBLE_TOPICS_MAP: Record<CareerBibleTopic, BibleTopicContent> = {
   TIP: {
     ruleId: 'TIP-001',
     ruleTitle: 'Quy chế Hưởng 90% Tip Khi Tự Tư Vấn & Làm Mi',
-    version: '2.0.0',
+    version: '2.1.0',
     icon: <HandCoins className="w-5 h-5 text-indigo-400" />,
     subtitle: 'Bảo lưu trọn vẹn 90% tiền tip do khách trao tặng',
     commandments: [
       'Tại cấp bậc CV cũ: Chuyên viên nhận 70% tip khách cho (bị khấu trừ 30% cho chi phí vận hành/sảnh).',
-      'Khi lên 🪽 CV 1 Cánh Tự Chủ: Chuyên viên tự đón, tự tư vấn và làm mi trọn vẹn sẽ được nhận 70% Tip Mi + 20% Tip Tư Vấn = Ăn trọn 90% Tip!',
+      'Khi lên 🪶 CV 1 Lông Tự Chủ: Chuyên viên tự đón, tự tư vấn và làm mi trọn vẹn sẽ được nhận 70% Tip Mi + 20% Tip Tư Vấn = Ăn trọn 90% Tip!',
       'Chỉ các đơn hàng có tiền tip từ 20.000đ trở lên mới tính vào tỷ lệ tip rate của shop (Điều răn TIP-001).',
       'Nguyên tắc bảo vệ quyền lợi: Kể cả khi bán combo < 21%, Chuyên Viên VẪN ĐƯỢC BẢO LƯU 90% TIP, không bao giờ bị cắt khoản này!',
     ],
-    rewardFormula: 'Tip CV 1 Cánh = 70% Tip Dịch Vụ + 20% Tip Tư Vấn = 90% Tip khách cho',
+    rewardFormula: 'Tip CV 1 Lông = 70% Tip Dịch Vụ + 20% Tip Tư Vấn = 90% Tip khách cho',
     routeScope: '/dashboard/cv',
   },
   ORDERS: {
@@ -205,7 +205,7 @@ const BIBLE_TOPICS_MAP: Record<CareerBibleTopic, BibleTopicContent> = {
     commandments: [
       'Chuyên Viên bước vào 30 ngày thử thách tự chủ tiếp nhận khách tại giường, tự soi mi, tự tư vấn giải pháp và tự chốt gói combo.',
       'Trong 30 ngày này, tỷ lệ chốt combo phải cán mốc tối thiểu 21% trên khách tiềm năng.',
-      'Sau khi hoàn thành xuất sắc 30 ngày thử thách, Chuyên Viên chính thức được sắc phong 🪽 CV 1 Cánh Tự Chủ!',
+      'Sau khi hoàn thành xuất sắc 30 ngày thử thách, Chuyên Viên chính thức được sắc phong 🪶 CV 1 Lông Tự Chủ!',
     ],
     rewardFormula: '30 ngày rèn luyện thực tế · Tỷ lệ chốt Combo ≥ 21%',
     routeScope: '/dashboard/career-path',

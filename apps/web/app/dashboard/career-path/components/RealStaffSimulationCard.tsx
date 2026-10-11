@@ -532,7 +532,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
   const effectiveWageGain = isPenaltyActive ? 0 : wageGain;
   // 2. Thưởng dưỡng mi: Chỉ nhận khi đạt >= minSelfComboPercent% combo
   const effectiveSerumGain = isPenaltyActive ? 0 : monthlySerumBonus;
-  // 3. Tiền TIP: CV 1 CÁNH VẪN NHẬN 70% + 20% = 90% TIP KỂ CẢ KHI BÁN KHÔNG ĐƯỢC (< minSelfComboPercent%)!
+  // 3. Tiền TIP: CV 1 LÔNG VẪN NHẬN 70% + 20% = 90% TIP KỂ CẢ KHI BÁN KHÔNG ĐƯỢC (< minSelfComboPercent%)!
   const effectiveTipGain = tipGain;
 
   // Khoản tiền thưởng bị mất trắng / khóa do không đạt tối thiểu minSelfComboPercent% combo:
@@ -563,10 +563,42 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
   const currentIncome = earnings?.currentEstimatedIncome || earnings?.details?.currentGrossIncome || 13023340;
   const simulatedNextTierIncome = currentIncome + totalSimulatedGain;
 
+  const origOrders = metrics.ordersCount || 0;
+  const origCombo = Math.round((metrics.selfComboRate || 0.25) * 100);
+  const origSerums = defaultSerums;
+  const origTipRate = staffTipRatePercent;
+  const isWhatIfModified =
+    sliderOrders !== origOrders ||
+    sliderCombo !== origCombo ||
+    sliderSerums !== origSerums ||
+    sliderTipRate !== origTipRate;
+
   return (
-    <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl border border-rose-100/70 dark:border-slate-800 p-5 shadow-sm mb-6 transition-all duration-200">
-      {/* Top Banner: Staff Profile & Simulation Controls */}
-      <div className="flex items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800 flex-wrap sm:flex-nowrap">
+    <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl border border-rose-100/70 dark:border-slate-800 p-3 sm:p-5 shadow-sm mb-6 transition-all duration-200">
+      {/* 📱 MOBILE ULTRA-COMPACT UNIFIED ROUTE & BENEFIT BAR (< md): Combines route, gain & badges */}
+      <div className="md:hidden flex items-center justify-between gap-1.5 pb-2 mb-2 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-1.5 text-xs font-bold shrink-0">
+          <span className="text-slate-800 dark:text-slate-200 inline-flex items-center">
+            <WingRoleLabel text={formatCareerRoleName(status.currentRole, true)} iconSize={11} />
+          </span>
+          <span className="text-pink-500 font-black">➔</span>
+          <span className="text-rose-500 dark:text-rose-400 font-black inline-flex items-center">
+            <WingRoleLabel text={formatCareerRoleName(status.targetRole, true)} iconSize={11} />
+          </span>
+          <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 font-mono">
+            (+{isComboTargetHit ? formatVnd(totalSimulatedGain) : formatVnd(effectiveTipGain)}/thg)
+          </span>
+        </div>
+        <div className="shrink-0 flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold tabular-nums">
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+          <span>
+            {passedQuestsCount}/6 ải ({xpPercent}%)
+          </span>
+        </div>
+      </div>
+
+      {/* 🖥️ DESKTOP TOP BANNER (>= md): Staff Profile & Simulation Controls */}
+      <div className="hidden md:flex items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800 flex-wrap sm:flex-nowrap">
         {/* Left Side: Avatar + Staff Name + Status Tag + Journey Route */}
         <div className="flex items-center gap-3.5 min-w-0">
           {onExpandStaffSelector && (
@@ -612,23 +644,23 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
           </div>
         </div>
 
-        {/* Right Side: Operational Scope Badge - CV 1 Cánh (Đang triển khai) */}
+        {/* Right Side: Operational Scope Badge - CV 1 Lông (Đang triển khai) */}
         <div className="flex items-center gap-1.5 p-1 bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-indigo-500/10 dark:bg-slate-800/90 rounded-xl border border-amber-500/30 shrink-0 self-start md:self-auto">
           <span className="inline-flex items-center gap-1 font-black text-xs py-1 px-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-xs">
-            <WingRoleLabel text="🪽 CV" />
-            <span>· Thanh Lịch (1 Cánh)</span>
+            <WingRoleLabel text="🪶 CV" />
+            <span>· Thanh Lịch (1 Lông)</span>
           </span>
           <span className="text-[10px] text-amber-700 dark:text-amber-300 font-bold px-1.5 py-0.5">
             🔥 Đang triển khai
           </span>
           <span className="text-[9px] text-slate-400 font-normal hidden lg:inline pl-1 border-l border-slate-200 dark:border-slate-700">
-            CV 2 cánh đang nghiên cứu
+            CV 2 lông đang nghiên cứu
           </span>
         </div>
       </div>
 
-      {/* Sub-bar: Quest Milestone & Quick Actions Toolbar */}
-      <div className="flex items-center justify-between gap-3 pt-3.5 mt-0 flex-wrap sm:flex-nowrap">
+      {/* 🖥️ DESKTOP Sub-bar: Quest Milestone & Quick Actions Toolbar (>= md) */}
+      <div className="hidden md:flex items-center justify-between gap-3 pt-3.5 mt-0 flex-wrap sm:flex-nowrap">
         {/* Left: Quest Milestone Progress Indicator */}
         <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
           <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -674,9 +706,9 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
 
           {status.currentRole === 'CV' && onSetRole && (
             <Popconfirm
-              title="Đưa nhân sự này lên 🪽 CV · Thanh Lịch?"
-              description={`Thăng cấp thủ công cho ${status.staffName} lên 🪽 CV · Thanh Lịch ngay lập tức.`}
-              okText="Lên 🪽 CV · Thanh Lịch"
+              title="Đưa nhân sự này lên 🪶 CV · 1 Lông (Thanh Lịch)?"
+              description={`Thăng cấp thủ công cho ${status.staffName} lên 🪶 CV · 1 Lông (Thanh Lịch) ngay lập tức.`}
+              okText="Lên 🪶 CV · 1 Lông (Thanh Lịch)"
               cancelText="Hủy"
               onConfirm={() => onSetRole('CV_PLUS')}
             >
@@ -687,8 +719,8 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 <Sparkles className="w-3.5 h-3.5" />
                 <span className="inline-flex items-center gap-1">
                   <span>Lên</span>
-                  <WingRoleLabel text="🪽 CV" />
-                  <span>· Thanh Lịch</span>
+                  <WingRoleLabel text="🪶 CV" />
+                  <span>· 1 Lông (Thanh Lịch)</span>
                 </span>
               </button>
             </Popconfirm>
@@ -698,9 +730,9 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
             <>
               {onSetRole && (
                 <Popconfirm
-                  title="Đưa nhân sự này lên 🪽 CV 🪽 · Quí Phái?"
-                  description={`Thăng cấp thủ công cho ${status.staffName} lên 🪽 CV 🪽 · Quí Phái ngay lập tức.`}
-                  okText="Lên 🪽 CV 🪽 · Quí Phái"
+                  title="Đưa nhân sự này lên 🪶 CV 🪶 · 2 Lông (Quí Phái)?"
+                  description={`Thăng cấp thủ công cho ${status.staffName} lên 🪶 CV 🪶 · 2 Lông (Quí Phái) ngay lập tức.`}
+                  okText="Lên 🪶 CV 🪶 · 2 Lông (Quí Phái)"
                   cancelText="Hủy"
                   onConfirm={() => onSetRole('CV_PLUS_PLUS')}
                 >
@@ -711,8 +743,8 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     <Sparkles className="w-3.5 h-3.5" />
                     <span className="inline-flex items-center gap-1">
                       <span>Lên</span>
-                      <WingRoleLabel text="🪽 CV 🪽" />
-                      <span>· Quí Phái</span>
+                      <WingRoleLabel text="🪶 CV 🪶" />
+                      <span>· 2 Lông (Quí Phái)</span>
                     </span>
                   </button>
                 </Popconfirm>
@@ -740,9 +772,9 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
 
           {status.currentRole === 'CV_PLUS_PLUS' && onDemote && (
             <Popconfirm
-              title="Hạ cấp nhân sự về 🪽 CV · Thanh Lịch?"
-              description={`Chuyển cấp bậc của ${status.staffName} về 🪽 CV · Thanh Lịch.`}
-              okText="Hạ về 🪽 CV · Thanh Lịch"
+              title="Hạ cấp nhân sự về 🪶 CV · 1 Lông (Thanh Lịch)?"
+              description={`Chuyển cấp bậc của ${status.staffName} về 🪶 CV · 1 Lông (Thanh Lịch).`}
+              okText="Hạ về 🪶 CV · 1 Lông (Thanh Lịch)"
               cancelText="Hủy"
               okType="danger"
               onConfirm={onDemote}
@@ -754,8 +786,8 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 <ArrowDownCircle className="w-3.5 h-3.5" />
                 <span className="inline-flex items-center gap-1">
                   <span>🔻 Hạ về</span>
-                  <WingRoleLabel text="🪽 CV" />
-                  <span>· Thanh Lịch</span>
+                  <WingRoleLabel text="🪶 CV" />
+                  <span>· 1 Lông (Thanh Lịch)</span>
                 </span>
               </button>
             </Popconfirm>
@@ -767,109 +799,116 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 mt-4 items-start">
         {/* LEFT COLUMN: TÂM ĐIỂM QUYỀN LỢI TÀI CHÍNH & BỘ 4 CẦN GẠT WHAT-IF (xl:col-span-7) */}
         <div className="xl:col-span-7 space-y-4">
-          {/* 🔥 THE FINANCIAL SUPER-NOVA JACKPOT CARD: TÂM ĐIỂM QUYỀN LỢI TÀI CHÍNH CV 1 CÁNH */}
-          <div className="rounded-3xl p-4 sm:p-5 bg-gradient-to-br from-amber-950/90 via-slate-900 to-emerald-950/80 border-2 border-amber-500/80 shadow-2xl shadow-amber-500/20 relative overflow-hidden space-y-4 text-white">
+          {/* 🔥 THE FINANCIAL SUPER-NOVA JACKPOT CARD: TÂM ĐIỂM QUYỀN LỢI TÀI CHÍNH CV 1 LÔNG */}
+          <div className="rounded-2xl sm:rounded-3xl p-2.5 sm:p-5 bg-gradient-to-br from-amber-950/90 via-slate-900 to-emerald-950/80 border-2 border-amber-500/80 shadow-2xl shadow-amber-500/20 relative overflow-hidden space-y-3 sm:space-y-4 text-white">
             {/* Ambient Golden & Emerald Glows */}
             <div className="absolute -top-12 -right-12 w-48 h-48 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
 
-            {/* Top Header & Slogan */}
-            <div className="flex items-center justify-between gap-3 flex-wrap relative z-10">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 text-xs font-black uppercase tracking-wider shadow-md">
-                  <span>🔥</span> TÂM ĐIỂM QUYỀN LỢI TÀI CHÍNH
-                </span>
-                <span className="text-xs font-bold text-amber-300">
-                  Thăng Cấp Lên <WingRoleLabel text="🪽 CV" /> · Thanh Lịch (1 Cánh Tự Chủ)
+            {/* 🖥️ DESKTOP HERO FINANCIAL JACKPOT BANNER (>= md) */}
+            <div className="hidden md:block space-y-4">
+              {/* Top Header & Slogan */}
+              <div className="flex items-center justify-between gap-3 flex-wrap relative z-10">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 text-xs font-black uppercase tracking-wider shadow-md">
+                    <span>🔥</span> TÂM ĐIỂM QUYỀN LỢI TÀI CHÍNH
+                  </span>
+                  <span className="text-xs font-bold text-amber-300">
+                    Thăng Cấp Lên <WingRoleLabel text="🪶 CV" /> · Thanh Lịch (1 Lông Tự Chủ)
+                  </span>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-black flex items-center gap-1">
+                  <span>💰</span> TIỀN TƯƠI RÓT VÀO VÍ
                 </span>
               </div>
-              <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-black flex items-center gap-1">
-                <span>💰</span> TIỀN TƯƠI RÓT VÀO VÍ
-              </span>
-            </div>
 
-            {/* THE BIG HERO NUMBER DISPLAY */}
-            <div className="p-4 rounded-2xl bg-slate-950/85 border border-amber-500/40 flex items-center justify-between gap-4 flex-wrap relative z-10">
-              <div>
-                <div className="text-[11px] font-black uppercase tracking-wider text-amber-400/90 flex items-center gap-1.5">
-                  <span>💵</span>{' '}
-                  {isComboTargetHit
-                    ? 'THU NHẬP RÒNG TĂNG THÊM MỖI THÁNG:'
-                    : 'THU NHẬP TĂNG THÊM TẠM TÍNH (BỊ KHÓA THƯỞNG):'}
+              {/* THE BIG HERO NUMBER DISPLAY */}
+              <div className="p-4 rounded-2xl bg-slate-950/85 border border-amber-500/40 flex items-center justify-between gap-4 flex-wrap relative z-10">
+                <div>
+                  <div className="text-[11px] font-black uppercase tracking-wider text-amber-400/90 flex items-center gap-1.5">
+                    <span>💵</span>{' '}
+                    {isComboTargetHit
+                      ? 'THU NHẬP RÒNG TĂNG THÊM MỖI THÁNG:'
+                      : 'THU NHẬP TĂNG THÊM TẠM TÍNH (BỊ KHÓA THƯỞNG):'}
+                  </div>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    {isComboTargetHit ? (
+                      <span className="text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-emerald-400 tabular-nums drop-shadow-[0_0_20px_rgba(251,191,36,0.4)]">
+                        +{formatVnd(totalSimulatedGain)}
+                      </span>
+                    ) : (
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        <span className="text-2xl lg:text-3xl font-black text-emerald-400 tabular-nums">
+                          +{formatVnd(effectiveTipGain)}
+                        </span>
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          Bảo lưu 90% Tip (70+20)
+                        </span>
+                        <span className="text-xs font-bold text-rose-400 line-through">
+                          +{formatVnd(lostBonusAmount)} thưởng
+                        </span>
+                      </div>
+                    )}
+                    <span className="text-xs font-bold text-slate-400 uppercase">/ Tháng</span>
+                  </div>
+                  <div className="text-xs font-bold text-emerald-400 flex items-center gap-1 mt-1">
+                    {isComboTargetHit ? (
+                      <>
+                        <span>🚀</span>
+                        <span>
+                          Tương đương{' '}
+                          <strong className="text-white text-sm font-black tabular-nums">
+                            +{formatVnd(totalSimulatedGain * 12)} / Năm
+                          </strong>{' '}
+                          (Đủ sắm xe tay ga hoặc 7 chỉ vàng 9999!)
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-rose-300">
+                        ⚠️ Bị khóa +{formatVnd(lostBonusAmount)} tiền thưởng combo và lương tăng do chưa đạt tối thiểu{' '}
+                        {minSelfComboPercent}% combo!
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-baseline gap-2 mt-1">
-                  {isComboTargetHit ? (
-                    <span className="text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-200 to-emerald-400 tabular-nums drop-shadow-[0_0_20px_rgba(251,191,36,0.4)]">
-                      +{formatVnd(totalSimulatedGain)}
-                    </span>
-                  ) : (
-                    <div className="flex items-baseline gap-2 flex-wrap">
-                      <span className="text-2xl lg:text-3xl font-black text-emerald-400 tabular-nums">
-                        +{formatVnd(effectiveTipGain)}
-                      </span>
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                        Bảo lưu 90% Tip (70+20)
-                      </span>
-                      <span className="text-xs font-bold text-rose-400 line-through">
-                        +{formatVnd(lostBonusAmount)} thưởng
-                      </span>
-                    </div>
-                  )}
-                  <span className="text-xs font-bold text-slate-400 uppercase">/ Tháng</span>
-                </div>
-                <div className="text-xs font-bold text-emerald-400 flex items-center gap-1 mt-1">
-                  {isComboTargetHit ? (
-                    <>
-                      <span>🚀</span>
+
+                {/* High-converting Catchphrase Badge */}
+                <div className="max-w-xs text-right hidden sm:block">
+                  <div
+                    className={`p-2.5 rounded-xl border text-[11px] font-semibold leading-relaxed ${
+                      isComboTargetHit
+                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-200'
+                        : 'bg-rose-500/10 border-rose-500/30 text-rose-200'
+                    }`}
+                  >
+                    {isComboTargetHit ? (
                       <span>
-                        Tương đương{' '}
-                        <strong className="text-white text-sm font-black tabular-nums">
-                          +{formatVnd(totalSimulatedGain * 12)} / Năm
-                        </strong>{' '}
-                        (Đủ sắm xe tay ga hoặc 7 chỉ vàng 9999!)
+                        “Cùng một ca làm, cùng lượng khách phục vụ — Nhưng đút túi thêm cả chỉ vàng mỗi tháng!{' '}
+                        <strong className="text-amber-300 font-black">
+                          Chỉ có người thù ghét tiền mới không muốn lên CV 1 lông!
+                        </strong>
+                        ”
                       </span>
-                    </>
-                  ) : (
-                    <span className="text-rose-300">
-                      ⚠️ Bị khóa +{formatVnd(lostBonusAmount)} tiền thưởng combo và lương tăng do chưa đạt tối thiểu{' '}
-                      {minSelfComboPercent}% combo!
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* High-converting Catchphrase Badge */}
-              <div className="max-w-xs text-right hidden sm:block">
-                <div
-                  className={`p-2.5 rounded-xl border text-[11px] font-semibold leading-relaxed ${
-                    isComboTargetHit
-                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-200'
-                      : 'bg-rose-500/10 border-rose-500/30 text-rose-200'
-                  }`}
-                >
-                  {isComboTargetHit ? (
-                    <span>
-                      “Cùng một ca làm, cùng lượng khách phục vụ — Nhưng đút túi thêm cả chỉ vàng mỗi tháng!{' '}
-                      <strong className="text-amber-300 font-black">
-                        Chỉ có người thù ghét tiền mới không muốn lên CV 1 cánh!
-                      </strong>
-                      ”
-                    </span>
-                  ) : (
-                    <span>
-                      “⚠️ <strong className="text-rose-300 font-black">Quy tắc 2 Tháng Liền:</strong> CV 1 cánh bán
-                      không được vẫn nhận 90% Tip, nhưng không nhận thêm thưởng nào khác. Nếu 2 tháng liền không đạt{' '}
-                      {minSelfComboPercent}% combo thì quay lại CV!”
-                    </span>
-                  )}
+                    ) : (
+                      <span>
+                        “⚠️ <strong className="text-rose-300 font-black">Quy tắc 2 Tháng Liền:</strong> CV 1 lông bán
+                        không được vẫn nhận 90% Tip, nhưng không nhận thêm thưởng nào khác. Nếu 2 tháng liền không đạt{' '}
+                        {minSelfComboPercent}% combo thì quay lại CV!”
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* 🎛️ BỘ 4 CẦN GẠT WHAT-IF TRỰC TIẾP (UNIFIED WHAT-IF COCKPIT) */}
             <div className="space-y-2.5 relative z-10">
-              <div className="flex items-center justify-between gap-2 flex-wrap pb-1 border-b border-amber-500/20">
-                <div className="flex items-center gap-2">
+              <div
+                className={`flex items-center justify-between gap-2 flex-wrap pb-1 border-b border-amber-500/20 ${
+                  !isWhatIfModified ? 'hidden md:flex' : ''
+                }`}
+              >
+                <div className="hidden md:flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
                   <span className="text-xs font-black uppercase tracking-wider text-amber-300">
                     Bộ 4 Cần Gạt What-If Trực Tiếp
@@ -886,7 +925,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     setSliderSerums(defaultSerums);
                     setSliderTipRate(staffTipRatePercent);
                   }}
-                  className="text-[10px] text-amber-300 hover:text-white font-bold px-2.5 py-1 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-amber-500/30 transition-all cursor-pointer active:scale-95 shadow-2xs flex items-center gap-1"
+                  className="text-[10px] text-amber-300 hover:text-white font-bold px-2.5 py-1 rounded-lg bg-slate-900/90 hover:bg-slate-800 border border-amber-500/30 transition-all cursor-pointer active:scale-95 shadow-2xs flex items-center gap-1 ml-auto"
                   title="Đặt lại tất cả 4 chỉ số về số liệu thực tế của chuyên viên"
                 >
                   <span>↺</span>
@@ -1240,7 +1279,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 {/* ROW 1: Title on left, FIXED (i) at top-right */}
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-bold text-slate-400 flex items-center gap-1.5 text-xs">
-                    <span>🛑</span> CV · Dịu Dàng (Hiện Tại - 0 Cánh)
+                    <span>🛑</span> CV · Dịu Dàng (Hiện Tại - 0 Lông)
                   </span>
                   <Tooltip
                     title={
@@ -1267,7 +1306,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 {/* ROW 2: Badge on left, Level description on right */}
                 <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-800">
                   <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full border bg-slate-800 text-slate-400 border-slate-700">
-                    0 Cánh
+                    0 Lông
                   </span>
                   <span className="text-[10px] text-slate-500 font-mono">Mức cơ bản</span>
                 </div>
@@ -1305,18 +1344,18 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 </div>
               </div>
 
-              {/* AFTER: 🪽 CV · Thanh Lịch (Sau Thăng Cấp 1 Cánh) */}
+              {/* AFTER: 🪶 CV · Thanh Lịch (Sau Thăng Cấp 1 Lông) */}
               <div className="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-950/60 via-slate-950 to-emerald-950/50 border-2 border-emerald-500/80 shadow-lg space-y-2">
                 {/* ROW 1: Title on left, FIXED (i) at top-right */}
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-black text-emerald-300 flex items-center gap-1.5 text-xs">
-                    <span>👑</span> <WingRoleLabel text="🪽 CV" /> · Thanh Lịch (1 Cánh Tự Chủ)
+                    <span>👑</span> <WingRoleLabel text="🪶 CV" /> · Thanh Lịch (1 Lông Tự Chủ)
                   </span>
                   <Tooltip
                     title={
                       <div className="text-[11px] text-slate-300 leading-relaxed space-y-1 p-0.5 max-w-xs">
                         <div className="text-emerald-300 font-bold text-xs flex items-center gap-1.5">
-                          <span>👑</span> Đặc quyền 🪽 CV · Thanh Lịch (1 Cánh Tự Chủ)
+                          <span>👑</span> Đặc quyền 🪶 CV · Thanh Lịch (1 Lông Tự Chủ)
                         </div>
                         <div>• Ăn trọn 90% TIP (70% mi + 20% tư vấn).</div>
                         <div>• Độc quyền tự chốt Combo Not Live nhận thưởng bậc thang.</div>
@@ -1329,7 +1368,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     <button
                       type="button"
                       className="w-5 h-5 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-400 hover:text-white inline-flex items-center justify-center text-[10px] font-mono font-bold border border-slate-700/80 cursor-help transition-all hover:scale-110 active:scale-95 shadow-xs shrink-0"
-                      aria-label="Xem đặc quyền CV 1 Cánh"
+                      aria-label="Xem đặc quyền CV 1 Lông"
                     >
                       i
                     </button>
@@ -1338,7 +1377,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 {/* ROW 2: Badge on left, Level reward tag on right */}
                 <div className="flex items-center justify-between gap-2 pb-2 border-b border-emerald-500/30">
                   <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full border bg-emerald-500/15 text-emerald-300 border-emerald-500/30">
-                    1 Cánh Tự Chủ
+                    1 Lông Tự Chủ
                   </span>
                   <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[9px] font-black uppercase shadow-xs">
                     {isComboTargetHit ? '+33% THU NHẬP' : '+90% TIP'}
@@ -1407,9 +1446,11 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-100">
-                      Tiến Trình Thăng Cấp: {formatCareerRoleName(status.currentRole)} ➔{' '}
-                      {formatCareerRoleName(status.targetRole)}
+                    <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-slate-100 inline-flex items-center gap-1.5 flex-wrap">
+                      <span>Tiến Trình Thăng Cấp:</span>
+                      <WingRoleLabel text={formatCareerRoleName(status.currentRole)} />
+                      <span className="text-pink-400">➔</span>
+                      <WingRoleLabel text={formatCareerRoleName(status.targetRole)} />
                     </span>
                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black tabular-nums bg-indigo-500/20 border border-indigo-400/30 text-indigo-300">
                       {passedQuestsCount}/6 ải ({xpPercent}%)
@@ -1425,7 +1466,9 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                       <span>
                         Còn thiếu <strong className="text-amber-400 font-bold">{6 - passedQuestsCount} ải</strong> để
                         nhận danh hiệu{' '}
-                        <strong className="text-white font-bold">{formatCareerRoleName(status.targetRole)}</strong>
+                        <strong className="text-white font-bold inline-flex items-center">
+                          <WingRoleLabel text={formatCareerRoleName(status.targetRole)} />
+                        </strong>
                       </span>
                     )}
                   </p>
@@ -1475,8 +1518,8 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   </button>
                 </div>
 
-                {/* Toggle all simple vs expanded */}
-                <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-800/90 border border-white/10 shadow-inner">
+                {/* Toggle all simple vs expanded (Desktop only: Mobile uses 6 Large Badges) */}
+                <div className="hidden md:inline-flex items-center p-0.5 rounded-xl bg-slate-800/90 border border-white/10 shadow-inner">
                   <button
                     type="button"
                     onClick={() => handleSetGateViewMode('simple')}
@@ -1526,14 +1569,14 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
 
             {/* 📱 MOBILE LƯỚI 6 HUY HIỆU TRÒN LỚN (3x2) - Ít Chữ, Icon Lớn, Chạm (i) Xem Kinh Thánh */}
             <div className="md:hidden space-y-2 my-3">
-              <div className="flex items-center justify-between text-xs font-bold text-slate-300">
-                <span className="flex items-center gap-1.5">
-                  <span>📋 6 ẢI THĂNG CẤP</span>
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-300">
+                <span className="flex items-center gap-1.5 text-slate-200">
+                  <span>🛡️ 6 Ải Thăng Cấp</span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-pink-500/15 text-pink-300 font-bold border border-pink-500/25">
-                    {passedQuestsCount}/6 ải đạt
+                    {passedQuestsCount}/6 đạt
                   </span>
                 </span>
-                <span className="text-[10px] text-slate-400">Chạm huy hiệu để xem Kinh Thánh</span>
+                <span className="text-[10px] text-pink-400 font-medium">Chạm xem Kinh Thánh 📖</span>
               </div>
 
               <div className="grid grid-cols-3 gap-2">
@@ -2544,12 +2587,14 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
               )}
             </div>
 
-            {/* INTEGRATED ACTION FOOTER */}
-            <div className="relative z-10 pt-3.5 border-t border-slate-800 flex items-center justify-between gap-4 flex-wrap mt-4">
+            {/* INTEGRATED ACTION FOOTER (Desktop only: mobile uses Sticky Bottom Bar) */}
+            <div className="hidden md:flex relative z-10 pt-3.5 border-t border-slate-800 items-center justify-between gap-4 flex-wrap mt-4">
               <div>
-                <div className="text-xs sm:text-sm font-black text-white">
-                  {status.staffName}: {formatCareerRoleName(status.currentRole)} ➔{' '}
-                  {formatCareerRoleName(status.targetRole)}
+                <div className="text-xs sm:text-sm font-black text-white inline-flex items-center gap-1.5 flex-wrap">
+                  <span>{status.staffName}:</span>
+                  <WingRoleLabel text={formatCareerRoleName(status.currentRole)} />
+                  <span className="text-pink-400">➔</span>
+                  <WingRoleLabel text={formatCareerRoleName(status.targetRole)} />
                 </div>
                 <div className="text-[10px] text-amber-400 font-mono mt-0.5">
                   {status.qualifiedQuests.allPassed
@@ -2589,9 +2634,10 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     type="button"
                     onClick={onPromote}
                     disabled={loadingAction}
-                    className="px-4 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-pink-500 via-rose-500 to-emerald-500 text-white shadow-md shadow-pink-500/25 hover:opacity-95 transition-all cursor-pointer animate-pulse"
+                    className="px-4 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-pink-500 via-rose-500 to-emerald-500 text-white shadow-md shadow-pink-500/25 hover:opacity-95 transition-all cursor-pointer animate-pulse inline-flex items-center gap-1.5"
                   >
-                    🎉 Duyệt Thăng Hạng {formatCareerRoleName(status.targetRole)}
+                    <span>🎉 Duyệt Thăng Hạng</span>
+                    <WingRoleLabel text={formatCareerRoleName(status.targetRole)} />
                   </button>
                 )}
 

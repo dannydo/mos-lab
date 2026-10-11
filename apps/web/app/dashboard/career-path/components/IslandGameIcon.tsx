@@ -1,5 +1,5 @@
 import React from 'react';
-import { HardHat, Castle, HeartHandshake, Gem, HelpCircle, LucideProps } from 'lucide-react';
+import { HardHat, Castle, HeartHandshake, Gem, HelpCircle, LucideProps, Feather } from 'lucide-react';
 
 /**
  * Biểu tượng Hàng Mi Nàng Thơ (Lash Icon) chuyên biệt chuẩn nét Lucide (2px stroke)
@@ -60,7 +60,7 @@ export const AngelWing: React.FC<{
 );
 
 /**
- * Biểu tượng 1 Cánh Trái (vươn sang bên trái, lật chuẩn) cho Ải 2 (CV+)
+ * Biểu tượng 1 Cánh Trái (vươn sang bên trái, lật chuẩn) - Dành cho FM sơ cấp
  */
 export const LeftWingIcon: React.FC<LucideProps> = ({ size = 24, strokeWidth = 2, className = '' }) => (
   <AngelWing
@@ -72,7 +72,7 @@ export const LeftWingIcon: React.FC<LucideProps> = ({ size = 24, strokeWidth = 2
 );
 
 /**
- * Biểu tượng Đôi Cánh Đối Xứng (Trái + Phải) cho Ải 3 (CV++)
+ * Biểu tượng Đôi Cánh Đối Xứng (Trái + Phải) cho Ải 4 (🪽 FM 🪽 · 2 Cánh)
  */
 export const BothWingsIcon: React.FC<LucideProps> = ({ size = 24, strokeWidth = 2, className = '' }) => {
   const numSize = typeof size === 'number' ? size : 24;
@@ -81,6 +81,27 @@ export const BothWingsIcon: React.FC<LucideProps> = ({ size = 24, strokeWidth = 
     <span className={`inline-flex items-center justify-center -space-x-1 ${className}`}>
       <AngelWing side="left" size={singleWingSize} strokeWidth={typeof strokeWidth === 'number' ? strokeWidth : 2} />
       <AngelWing side="right" size={singleWingSize} strokeWidth={typeof strokeWidth === 'number' ? strokeWidth : 2} />
+    </span>
+  );
+};
+
+/**
+ * Biểu tượng 1 Lông Vũ (Feather) cho Ải 2 (CV 1 Lông)
+ */
+export const SingleFeatherIcon: React.FC<LucideProps> = ({ size = 20, strokeWidth = 2, className = '' }) => (
+  <Feather size={size} strokeWidth={strokeWidth} className={className} />
+);
+
+/**
+ * Biểu tượng Cặp Lông Vũ Đối Xứng (Trái + Phải Flip) cho Ải 3 (CV 2 Lông)
+ */
+export const PairOfFeathersIcon: React.FC<LucideProps> = ({ size = 20, strokeWidth = 2, className = '' }) => {
+  const numSize = typeof size === 'number' ? size : 20;
+  const singleSize = Math.round(numSize * 0.75);
+  return (
+    <span className={`inline-flex items-center justify-center -space-x-1 ${className}`}>
+      <Feather size={singleSize} strokeWidth={strokeWidth} />
+      <Feather size={singleSize} strokeWidth={strokeWidth} className="-scale-x-100" />
     </span>
   );
 };
@@ -123,31 +144,31 @@ const ISLAND_THEMES: Record<string, IslandTheme> = {
     name: 'CV · Dịu Dàng (Hàng Mi Nàng Thơ)',
   },
   cv_plus: {
-    Icon: LeftWingIcon,
+    Icon: SingleFeatherIcon,
     baseBg: 'bg-purple-500/10 border-purple-500/25 text-purple-600 dark:text-purple-400',
     activeBg:
       'bg-purple-500/20 border-purple-500/50 text-purple-600 dark:text-purple-300 ring-2 ring-purple-500/40 shadow-md shadow-purple-500/30',
     iconColor: 'text-purple-600 dark:text-purple-400',
     glowColor: 'shadow-purple-500/30',
-    name: '🪽 CV · Thanh Lịch (1 Cánh)',
+    name: '🪶 CV · 1 Lông (Thanh Lịch)',
   },
   cv_plus_plus: {
-    Icon: BothWingsIcon,
+    Icon: PairOfFeathersIcon,
     baseBg: 'bg-amber-500/10 border-amber-500/25 text-amber-600 dark:text-amber-400',
     activeBg:
       'bg-amber-500/20 border-amber-500/50 text-amber-600 dark:text-amber-300 ring-2 ring-amber-500/40 shadow-md shadow-amber-500/30',
     iconColor: 'text-amber-600 dark:text-amber-400',
     glowColor: 'shadow-amber-500/30',
-    name: '🪽 CV 🪽 · Quí Phái (Đôi Cánh)',
+    name: '🪶 CV 🪶 · 2 Lông (Quí Phái)',
   },
   fm: {
-    Icon: Castle,
+    Icon: BothWingsIcon,
     baseBg: 'bg-sky-500/10 border-sky-500/25 text-sky-600 dark:text-sky-400',
     activeBg:
       'bg-sky-500/20 border-sky-500/50 text-sky-600 dark:text-sky-300 ring-2 ring-sky-500/40 shadow-md shadow-sky-500/30',
     iconColor: 'text-sky-600 dark:text-sky-400',
     glowColor: 'shadow-sky-500/30',
-    name: 'FM Thành Trì Vận Hành',
+    name: '🪽 FM 🪽 · 2 Cánh (Nữ Thần Sàn)',
   },
   cho: {
     Icon: HeartHandshake,
@@ -223,18 +244,87 @@ export const IslandGameIcon: React.FC<IslandGameIconProps> = ({
 };
 
 /**
- * Component hiển thị nhãn cấp bậc có cánh với cánh trái được lật đối xứng (-scale-x-100) chuẩn xác
- * Ví dụ: "🪽 CV 🪽" -> [cánh trái lật] CV [cánh phải]
- *        "🪽 CV" -> [cánh trái lật] CV
+ * Component hiển thị nhãn cấp bậc lông (🪶 CV) và cánh (🪽 FM) với hiệu ứng lật đối xứng (-scale-x-100)
+ * Chuẩn định dạng:
+ * - 🪶 CV 🪶: [lông trái chuẩn] CV [lông phải flip đối xứng ngang]
+ * - 🪶 CV: [lông chuẩn] CV
+ * - 🪽 FM 🪽: [cánh trái flip đối xứng ngang] FM [cánh phải chuẩn]
+ * - FM 🪽: FM [cánh phải chuẩn]
  */
 export const WingRoleLabel: React.FC<{
   text?: string | null;
   className?: string;
   wingClassName?: string;
-}> = ({ text, className = '', wingClassName = '' }) => {
+  iconSize?: number;
+}> = ({ text, className = '', wingClassName = '', iconSize = 11 }) => {
   if (!text) return null;
 
-  // Nếu text chứa "🪽 CV 🪽"
+  // 1. Nếu text chứa "🪶 CV 🪶" (Lông bên phải flip đối xứng ngang)
+  if (text.includes('🪶 CV 🪶') || text.includes('🪶CV🪶')) {
+    const parts = text.split(/🪶\s*CV\s*🪶/);
+    return (
+      <span className={`inline-flex items-center justify-center gap-1 ${className}`}>
+        {parts[0] && <span>{parts[0]}</span>}
+        <Feather size={iconSize} strokeWidth={2.5} className={`shrink-0 ${wingClassName}`} />
+        <span className="font-black">CV</span>
+        <Feather size={iconSize} strokeWidth={2.5} className={`shrink-0 -scale-x-100 ${wingClassName}`} />
+        {parts[1] && <span>{parts[1]}</span>}
+      </span>
+    );
+  }
+
+  // 2. Nếu text chứa "🪶 CV" (1 Lông Vũ chuẩn)
+  if (text.includes('🪶 CV') || text.includes('🪶CV')) {
+    const parts = text.split(/🪶\s*CV/);
+    return (
+      <span className={`inline-flex items-center justify-center gap-1 ${className}`}>
+        {parts[0] && <span>{parts[0]}</span>}
+        <Feather size={iconSize} strokeWidth={2.5} className={`shrink-0 ${wingClassName}`} />
+        <span className="font-black">CV</span>
+        {parts[1] && <span>{parts[1]}</span>}
+      </span>
+    );
+  }
+
+  // 3. Nếu text chứa "🪽 FM 🪽" (Cánh bên trái flip đối xứng ngang)
+  if (text.includes('🪽 FM 🪽') || text.includes('🪽FM🪽')) {
+    const parts = text.split(/🪽\s*FM\s*🪽/);
+    return (
+      <span className={`inline-flex items-center justify-center gap-1 ${className}`}>
+        {parts[0] && <span>{parts[0]}</span>}
+        <AngelWing side="left" size={iconSize + 2} strokeWidth={2} className={`shrink-0 ${wingClassName}`} />
+        <span className="font-black">FM</span>
+        <AngelWing side="right" size={iconSize + 2} strokeWidth={2} className={`shrink-0 ${wingClassName}`} />
+        {parts[1] && <span>{parts[1]}</span>}
+      </span>
+    );
+  }
+
+  // 4. Nếu text chứa "FM 🪽" hoặc "🪽 FM"
+  if (text.includes('FM 🪽') || text.includes('FM🪽')) {
+    const parts = text.split(/FM\s*🪽/);
+    return (
+      <span className={`inline-flex items-center justify-center gap-1 ${className}`}>
+        {parts[0] && <span>{parts[0]}</span>}
+        <span className="font-black">FM</span>
+        <AngelWing side="right" size={iconSize + 2} strokeWidth={2} className={`shrink-0 ${wingClassName}`} />
+        {parts[1] && <span>{parts[1]}</span>}
+      </span>
+    );
+  }
+  if (text.includes('🪽 FM') || text.includes('🪽FM')) {
+    const parts = text.split(/🪽\s*FM/);
+    return (
+      <span className={`inline-flex items-center justify-center gap-1 ${className}`}>
+        {parts[0] && <span>{parts[0]}</span>}
+        <AngelWing side="left" size={iconSize + 2} strokeWidth={2} className={`shrink-0 ${wingClassName}`} />
+        <span className="font-black">FM</span>
+        {parts[1] && <span>{parts[1]}</span>}
+      </span>
+    );
+  }
+
+  // 5. Tương thích ngược: Nếu text chứa "🪽 CV 🪽"
   if (text.includes('🪽 CV 🪽') || text.includes('🪽CV🪽')) {
     const parts = text.split(/🪽\s*CV\s*🪽/);
     return (
@@ -248,7 +338,7 @@ export const WingRoleLabel: React.FC<{
     );
   }
 
-  // Nếu text chứa "🪽 CV"
+  // 6. Tương thích ngược: Nếu text chứa "🪽 CV"
   if (text.includes('🪽 CV') || text.includes('🪽CV')) {
     const parts = text.split(/🪽\s*CV/);
     return (

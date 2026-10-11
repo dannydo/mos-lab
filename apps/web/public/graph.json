@@ -36417,7 +36417,7 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path.constants.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24360,
+        "sizeBytes": 24501,
         "lineCount": 503,
         "ext": ".ts"
       }
@@ -36443,8 +36443,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerBibleDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16665,
-        "lineCount": 332,
+        "sizeBytes": 16573,
+        "lineCount": 326,
         "ext": ".tsx"
       }
     },
@@ -36482,8 +36482,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/IslandGameIcon.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9500,
-        "lineCount": 266,
+        "sizeBytes": 13556,
+        "lineCount": 357,
         "ext": ".tsx"
       }
     },
@@ -36495,8 +36495,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 140039,
-        "lineCount": 2668,
+        "sizeBytes": 142953,
+        "lineCount": 2703,
         "ext": ".tsx"
       }
     },
@@ -36508,8 +36508,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 77796,
-        "lineCount": 1694,
+        "sizeBytes": 77883,
+        "lineCount": 1688,
         "ext": ".tsx"
       }
     },
@@ -36521,8 +36521,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 36274,
-        "lineCount": 849,
+        "sizeBytes": 38188,
+        "lineCount": 887,
         "ext": ".tsx"
       }
     },

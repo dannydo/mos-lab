@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, Slider, message, Tooltip, Switch, Avatar } from 'antd';
-import { Settings, Zap, Award } from 'lucide-react';
+import { Settings, Zap, Award, ChevronDown } from 'lucide-react';
 import type {
   CareerProgressionConfig,
   StaffCareerStatus,
@@ -77,6 +77,7 @@ export default function CareerPathPage() {
   const [isEncyclopediaDrawerOpen, setIsEncyclopediaDrawerOpen] = useState<boolean>(false);
   const [selectedBibleTopic, setSelectedBibleTopic] = useState<CareerBibleTopic | null>(null);
   const [isMapDrawerOpen, setIsMapDrawerOpen] = useState<boolean>(false);
+  const [isMobileStaffDrawerOpen, setIsMobileStaffDrawerOpen] = useState<boolean>(false);
 
   // Sliders for interactive simulation
   const [sliderOrders, setSliderOrders] = useState<number>(300);
@@ -479,12 +480,20 @@ export default function CareerPathPage() {
       <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-50" />
 
       {/* TOP COMPACT STATUS BAR (PLAYER HUD) */}
-      <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-pink-200 dark:border-slate-800 px-3.5 py-2 shadow-xs">
-        <div className="w-full max-w-[1880px] mx-auto flex items-center justify-between px-2 sm:px-4">
-          {/* Player Avatar & Status */}
-          <div className="flex items-center gap-2.5">
-            <div className="relative">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-400 via-rose-400 to-purple-400 p-0.5 shadow-md shadow-pink-500/25">
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-pink-200 dark:border-slate-800 px-3 py-2.5 shadow-xs">
+        <div className="w-full max-w-[1880px] mx-auto flex items-center justify-between">
+          {/* Player Avatar & Status (Click to open staff picker on mobile) */}
+          <button
+            type="button"
+            onClick={() => {
+              playSound('pop');
+              setIsMobileStaffDrawerOpen(true);
+            }}
+            className="flex items-center gap-2 text-left transition hover:opacity-90 active:scale-98 cursor-pointer group min-w-0"
+            title="Nhấn để đổi chuyên viên"
+          >
+            <div className="relative shrink-0 w-10 h-10">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-pink-400 via-rose-400 to-purple-400 p-0.5 shadow-md shadow-pink-500/25 group-hover:ring-2 group-hover:ring-pink-400">
                 <Avatar
                   src={selectedStaffStatus?.avatarUrl || undefined}
                   shape="square"
@@ -493,38 +502,60 @@ export default function CareerPathPage() {
                   {selectedStaffStatus?.staffName ? selectedStaffStatus.staffName.slice(0, 1).toUpperCase() : '🧝‍♀️'}
                 </Avatar>
               </div>
-              <span className="absolute -bottom-1 -right-1 text-[9px] font-black bg-rose-500 text-white px-1.5 py-0.5 rounded-full border border-white dark:border-slate-900 font-mono whitespace-nowrap shadow-xs">
-                {formatCareerRoleName(selectedStaffStatus?.currentRole || 'CV', true)}
+              <span className="absolute -bottom-0.5 -right-1 text-[9px] font-black bg-gradient-to-r from-rose-500 to-pink-500 text-white px-1.5 py-0.5 rounded-full border border-white dark:border-slate-900 shadow-sm whitespace-nowrap inline-flex items-center justify-center leading-none z-10">
+                <WingRoleLabel
+                  text={formatCareerRoleName(selectedStaffStatus?.currentRole || 'CV', true)}
+                  iconSize={9.5}
+                />
               </span>
             </div>
 
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-black text-xs sm:text-sm text-slate-900 dark:text-white">
-                  {selectedStaffStatus?.staffName || 'Đang chọn nhân sự...'}
+            <div className="min-w-0">
+              <div className="flex items-center gap-1">
+                <span className="font-black text-xs sm:text-sm text-slate-900 dark:text-white flex items-center gap-1 truncate">
+                  <span className="truncate max-w-[95px] xs:max-w-[120px] sm:max-w-none">
+                    {selectedStaffStatus?.staffName || 'Đang chọn nhân sự...'}
+                  </span>
+                  <ChevronDown className="w-3 h-3 text-pink-500 dark:text-pink-400 shrink-0 md:hidden" />
                 </span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300">
-                  ✨ {formatCareerRoleName(selectedStaffStatus?.currentRole || 'CV', true)}
+                {/* Desktop-only full role badge (hidden on mobile to prevent clutter and weird oval wrap) */}
+                <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 whitespace-nowrap shrink-0">
+                  <span>✨</span>
+                  <WingRoleLabel text={formatCareerRoleName(selectedStaffStatus?.currentRole || 'CV', true)} />
                 </span>
               </div>
 
               {/* Mini EXP Bar */}
               <div className="flex items-center gap-1.5 mt-0.5">
-                <div className="w-20 sm:w-28 h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-300 dark:border-slate-700">
+                <div className="w-12 sm:w-24 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden p-0 border border-slate-300 dark:border-slate-700 shrink-0">
                   <div
                     className="h-full bg-gradient-to-r from-pink-500 to-purple-500 rounded-full transition-all duration-300"
                     style={expProgressStyle}
                   />
                 </div>
-                <span className="text-[9px] font-mono text-slate-500 dark:text-slate-400 font-bold tabular-nums">
-                  {Math.min(100, Math.round((staffRealOrders / cvToCc.minOrders) * 100))}% EXP
+                <span className="text-[9px] font-mono text-slate-500 dark:text-slate-400 font-bold tabular-nums whitespace-nowrap">
+                  {Math.min(100, Math.round((staffRealOrders / cvToCc.minOrders) * 100))}%
+                  <span className="hidden sm:inline"> EXP</span>
                 </span>
               </div>
             </div>
-          </div>
+          </button>
 
-          {/* Currencies & Admin Setting Button */}
-          <div className="flex items-center gap-2">
+          {/* Currencies, 7 Islands & Admin Setting Button */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* 🗺️ 7 Đảo Button (Mobile & Desktop) */}
+            <button
+              type="button"
+              onClick={() => {
+                playSound('pop');
+                setIsMapDrawerOpen(true);
+              }}
+              className="h-8 px-2.5 rounded-full bg-pink-500/15 dark:bg-pink-500/25 border border-pink-500/40 text-pink-700 dark:text-pink-300 text-xs font-bold shadow-xs active:scale-95 transition cursor-pointer shrink-0 flex items-center gap-1 hover:bg-pink-500/30"
+            >
+              <span className="text-xs">🗺️</span>
+              <span className="text-[11px] font-bold">7 Đảo</span>
+            </button>
+
             {/* Tổng số chuối dư (Banana Balance) */}
             {(() => {
               const realBalance =
@@ -536,14 +567,14 @@ export default function CareerPathPage() {
               return (
                 <div
                   onClick={() => openBananaDrawer(selectedStaffId, 'ALL')}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold font-mono shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer ${
+                  className={`h-8 flex items-center gap-1 px-2.5 rounded-full border text-xs font-bold font-mono shadow-xs transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 ${
                     isNegative
                       ? 'bg-rose-50 dark:bg-rose-500/15 border-rose-300 dark:border-rose-500/30 text-rose-700 dark:text-rose-300 hover:border-rose-400'
                       : 'bg-amber-50 dark:bg-amber-500/15 border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 hover:border-amber-400'
                   }`}
                   title={`Số dư chuối của ${selectedStaffStatus?.staffName || 'nhân sự'}: ${realBalance.toLocaleString('vi-VN')} · Nhấn để xem sao kê lịch sử chuối`}
                 >
-                  <span>🍌</span>
+                  <span className="text-xs">🍌</span>
                   <span className="tabular-nums">{realBalance.toLocaleString('vi-VN')}</span>
                 </div>
               );
@@ -561,7 +592,7 @@ export default function CareerPathPage() {
                   playSound('pop');
                   setIsConfigDrawerOpen(true);
                 }}
-                className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 active:scale-90 transition hover:border-pink-400"
+                className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 active:scale-90 transition hover:border-pink-400 shrink-0"
                 title="Cấu hình quy chuẩn thăng cấp"
               >
                 <Settings className="w-4 h-4" />
@@ -573,43 +604,6 @@ export default function CareerPathPage() {
 
       {/* MAIN CONTAINER */}
       <main className="w-full max-w-[1880px] mx-auto px-3.5 sm:px-5 xl:px-6 pt-3.5 space-y-4">
-        {/* MOBILE MINI LEVEL BAR (< md): Ultra-compact & touch-friendly */}
-        <div className="md:hidden bg-white/95 dark:bg-slate-900/95 border border-pink-200 dark:border-pink-500/30 rounded-2xl p-2.5 shadow-xs flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <Avatar
-              src={selectedStaffStatus?.avatarUrl}
-              size={40}
-              className="border-2 border-pink-400 shrink-0 font-bold bg-pink-100 text-pink-600"
-            >
-              {selectedStaffStatus?.staffName?.[0] || 'C'}
-            </Avatar>
-            <div className="min-w-0">
-              <div className="text-xs font-black text-slate-900 dark:text-white truncate">
-                {selectedStaffStatus?.staffName || 'Chọn Chuyên Viên'}
-              </div>
-              <div className="text-[10px] text-pink-600 dark:text-pink-400 font-bold truncate flex items-center gap-1.5 mt-0.5">
-                <WingRoleLabel text={formatCareerRoleName(selectedStaffStatus?.currentRole || 'CV')} />
-                <span className="text-slate-400 font-normal">·</span>
-                <span className="font-mono text-amber-600 dark:text-amber-400 font-black">
-                  🍌 {(selectedStaffStatus?.metrics?.bananaBalance || 0).toLocaleString('vi-VN')}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              playSound('pop');
-              setIsMapDrawerOpen(true);
-            }}
-            className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs font-bold shadow-xs active:scale-95 transition"
-          >
-            <span>🗺️</span>
-            <span>7 Đảo</span>
-          </button>
-        </div>
-
         {/* WORLD MAP BANNER: 7 FLOATING ISLANDS (Desktop only) */}
         <div className="hidden md:block rounded-3xl p-4 bg-gradient-to-br from-pink-50 via-purple-50 to-sky-50 dark:from-slate-900 dark:via-purple-950/40 dark:to-slate-900 border-2 border-pink-200/80 dark:border-pink-500/30 shadow-md relative overflow-hidden">
           <div className="flex items-center justify-between mb-2">
@@ -626,8 +620,9 @@ export default function CareerPathPage() {
             <span className="text-sm">✨</span>
           </h1>
           <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-snug mt-1">
-            Vượt ải ⛑️ KTV Thử Việc ➔ CV · Dịu Dàng ➔ <WingRoleLabel text="🪽 CV" /> · Thanh Lịch ➔{' '}
-            <WingRoleLabel text="🪽 CV 🪽" /> · Quí Phái ➔ 🏰 FM Nữ Thần Sàn ➔ 💖 CHO Mẹ Thiên Thần ➔ 💎 BOSS Co-Owner!
+            Vượt ải ⛑️ KTV Thử Việc ➔ CV · Dịu Dàng ➔ <WingRoleLabel text="🪶 CV" /> · 1 Lông (Thanh Lịch) ➔{' '}
+            <WingRoleLabel text="🪶 CV 🪶" /> · 2 Lông (Quí Phái) ➔ <WingRoleLabel text="🪽 FM 🪽" /> · 2 Cánh (Nữ Thần
+            Sàn) ➔ 💖 CHO Mẹ Thiên Thần ➔ 💎 BOSS Co-Owner!
           </p>
 
           {/* 7 ISLANDS PANORAMIC GRID ON DESKTOP FHD */}
@@ -677,8 +672,8 @@ export default function CareerPathPage() {
           </div>
         </div>
 
-        {/* STAFF LIST SELECTOR & AUDIT (HORIZONTAL AVATAR RAIL OR EXPANDABLE TABLE) */}
-        <div className="w-full space-y-3 transition-all duration-300">
+        {/* STAFF LIST SELECTOR & AUDIT (Desktop only, Mobile uses Bottom Sheet) */}
+        <div className="hidden md:block w-full space-y-3 transition-all duration-300">
           <StaffCareerSelector
             staffList={staffList}
             selectedStaffId={selectedStaffId}
@@ -800,6 +795,56 @@ export default function CareerPathPage() {
               );
             })}
           </div>
+        </div>
+      </AdaptiveDrawer>
+
+      {/* 📱 MOBILE STAFF SELECTOR BOTTOM SHEET */}
+      <AdaptiveDrawer
+        title={
+          <div className="flex items-center gap-2">
+            <span className="text-base">👩‍🦰</span>
+            <span className="font-black text-base">Chọn Chuyên Viên</span>
+          </div>
+        }
+        placement="bottom"
+        height="80vh"
+        open={isMobileStaffDrawerOpen}
+        onClose={() => setIsMobileStaffDrawerOpen(false)}
+        destroyOnHidden
+      >
+        <div className="p-3">
+          <StaffCareerSelector
+            staffList={staffList}
+            selectedStaffId={selectedStaffId}
+            onSelectStaff={(id) => {
+              handleSelectStaff(id);
+              setIsMobileStaffDrawerOpen(false);
+            }}
+            onSyncProd={handleSyncProd}
+            syncing={syncingProd}
+            lastSyncedAt={lastSyncedAt}
+            activeRoleFilter={activeRoleFilter}
+            onRoleFilterChange={setActiveRoleFilter}
+            period={selectedPeriod}
+            onPeriodChange={handlePeriodChange}
+            onSetRole={handleSetRole}
+            onDemote={handleDemote}
+            actionLoading={actionLoading}
+            onOpenBananaDrawer={(staffId, cat) => openBananaDrawer(staffId, cat)}
+            selectorMode={selectorMode}
+            onSelectorModeChange={(mode) => {
+              setSelectorMode(mode);
+              setIsStaffSelectorCollapsed(mode !== 'table');
+            }}
+            isCollapsedHorizontal={selectorMode !== 'table'}
+            onCollapseHorizontal={() => {
+              setIsStaffSelectorCollapsed(true);
+            }}
+            onExpandHorizontal={() => {
+              setSelectorMode('table');
+              setIsStaffSelectorCollapsed(false);
+            }}
+          />
         </div>
       </AdaptiveDrawer>
 
