@@ -33,6 +33,7 @@ import {
   HandCoins,
   Heart,
   ArrowDownCircle,
+  Info,
 } from 'lucide-react';
 import { StatusTag } from '../../../../components/ui';
 import {
@@ -44,6 +45,7 @@ import {
 import { apiClient } from '../../../../lib/api-client';
 import { formatCareerRoleName, calculateComboBonus } from '../career-path.constants';
 import { WingRoleLabel } from './IslandGameIcon';
+import { type CareerBibleTopic } from './CareerBibleDrawer';
 
 interface RealStaffSimulationCardProps {
   status: StaffCareerStatus | null;
@@ -62,6 +64,7 @@ interface RealStaffSimulationCardProps {
   onSimulationTargetChange?: (target: 'CV_PLUS' | 'CV_PLUS_PLUS') => void;
   onOpenBananaDrawer?: (category: BananaTransactionCategory) => void;
   onExpandStaffSelector?: () => void;
+  onOpenBibleTopic?: (topic: CareerBibleTopic) => void;
 }
 
 /**
@@ -108,6 +111,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
   onSimulationTargetChange,
   onOpenBananaDrawer,
   onExpandStaffSelector,
+  onOpenBibleTopic,
 }) => {
   const isTargetCvPlusPlus = (simulationTarget || status?.targetRole) === 'CV_PLUS_PLUS';
   const targetReq = isTargetCvPlusPlus
@@ -902,38 +906,20 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="text-sm shrink-0">💎</span>
-                      <span className="text-xs font-bold text-white tracking-wide truncate">1. Bán Combo</span>
+                      <span className="text-xs font-bold text-white tracking-wide truncate">1. Bán Combo Nối Mi</span>
                     </div>
                     <Tooltip
-                      title={
-                        <div className="text-[11px] text-slate-300 leading-relaxed space-y-1 p-0.5 max-w-xs">
-                          <div className="text-amber-300 font-bold text-xs flex items-center gap-1.5">
-                            <span>💎</span> Quy tắc Bán Combo (Bắt buộc)
-                          </div>
-                          <div>
-                            • Tính trên tệp{' '}
-                            <strong className="text-white">~{notComboLiveCustomers} khách Not Live</strong>.
-                          </div>
-                          <div>
-                            • Tối thiểu đạt <strong className="text-emerald-400">≥ {minSelfComboPercent}%</strong> để mở
-                            khóa trọn bộ thưởng và lương tăng.
-                          </div>
-                          <div>
-                            • Dưới {minSelfComboPercent}%: Vẫn bảo lưu 90% Tip (70+20), cắt các khoản thưởng khác.
-                          </div>
-                          <div className="text-rose-400 font-semibold">
-                            • 2 tháng liền không đạt sẽ quay về CV · Dịu Dàng (Tip tụt về 70%).
-                          </div>
-                        </div>
-                      }
+                      title="Nhấn để xem trích lục Kinh Thánh mOS về quy chế Bán Combo & Chế tài 21%"
                       placement="topRight"
                     >
                       <button
                         type="button"
-                        className="w-5 h-5 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-400 hover:text-white inline-flex items-center justify-center text-[10px] font-mono font-bold border border-slate-700/80 cursor-help transition-all hover:scale-110 active:scale-95 shadow-xs shrink-0"
-                        aria-label="Xem quy tắc và điều kiện Bán Combo"
+                        data-testid="info-btn-combo"
+                        onClick={() => onOpenBibleTopic?.('COMBO')}
+                        className="w-7 h-7 sm:w-6 sm:h-6 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white inline-flex items-center justify-center border border-slate-700/80 cursor-pointer transition-all hover:scale-110 active:scale-95 shadow-xs shrink-0"
+                        aria-label="Xem quy tắc Kinh Thánh Bán Combo"
                       >
-                        i
+                        <Info className="w-3.5 h-3.5" />
                       </button>
                     </Tooltip>
                   </div>
@@ -1012,35 +998,15 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                       <span className="text-sm shrink-0">🌿</span>
                       <span className="text-xs font-bold text-white tracking-wide truncate">2. Dưỡng Mi Yeppeum</span>
                     </div>
-                    <Tooltip
-                      title={
-                        <div className="text-[11px] text-slate-300 leading-relaxed space-y-1 p-0.5 max-w-xs">
-                          <div className="text-teal-300 font-bold text-xs flex items-center gap-1.5">
-                            <span>🌿</span> Quy tắc Dưỡng Mi Yeppeum
-                          </div>
-                          <div>
-                            • Mục tiêu khuyến khích: <strong className="text-white">≥ 1 cây/tuần</strong> (~4
-                            cây/tháng).
-                          </div>
-                          <div>
-                            • Tiền tươi trao tay:{' '}
-                            <strong className="text-amber-300">{formatVnd(serumOrigBonus)}/cây</strong> giá gốc (
-                            {formatVnd(serumDiscountBonus)}/cây KM).
-                          </div>
-                          <div>• Bán cây nào đút túi ngay cây đó.</div>
-                          <div className="text-amber-300 font-semibold">
-                            • Điều kiện: Nhận thưởng khi Combo đạt chuẩn ≥ {minSelfComboPercent}%.
-                          </div>
-                        </div>
-                      }
-                      placement="topRight"
-                    >
+                    <Tooltip title="Nhấn để xem trích lục Kinh Thánh mOS về Dưỡng mi Yeppeum" placement="topRight">
                       <button
                         type="button"
-                        className="w-5 h-5 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-400 hover:text-white inline-flex items-center justify-center text-[10px] font-mono font-bold border border-slate-700/80 cursor-help transition-all hover:scale-110 active:scale-95 shadow-xs shrink-0"
+                        data-testid="info-btn-serum"
+                        onClick={() => onOpenBibleTopic?.('SERUM')}
+                        className="w-7 h-7 sm:w-6 sm:h-6 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white inline-flex items-center justify-center border border-slate-700/80 cursor-pointer transition-all hover:scale-110 active:scale-95 shadow-xs shrink-0"
                         aria-label="Xem quy tắc Dưỡng Mi Yeppeum"
                       >
-                        i
+                        <Info className="w-3.5 h-3.5" />
                       </button>
                     </Tooltip>
                   </div>
@@ -1116,31 +1082,15 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                       <Eye className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                       <span className="text-xs font-bold text-white tracking-wide truncate">3. Sản lượng mi</span>
                     </div>
-                    <Tooltip
-                      title={
-                        <div className="text-[11px] text-slate-300 leading-relaxed space-y-1 p-0.5 max-w-xs">
-                          <div className="text-emerald-300 font-bold text-xs flex items-center gap-1.5">
-                            <Eye className="w-3.5 h-3.5 text-emerald-400" /> Quy tắc Sản lượng mi
-                          </div>
-                          <div>
-                            • Định mức ải: <strong className="text-white">≥ {targetOrders} bộ / 3 tháng</strong> (~
-                            {Math.round(targetOrders / 3)} bộ/tháng).
-                          </div>
-                          <div>
-                            • Số liệu thực tế của chuyên viên:{' '}
-                            <strong className="text-amber-300">{metrics.ordersCount || 0} bộ</strong>.
-                          </div>
-                          <div>• Kéo thanh trượt để thử nghiệm vượt ải 1 và tăng tiền tip.</div>
-                        </div>
-                      }
-                      placement="topRight"
-                    >
+                    <Tooltip title="Nhấn để xem trích lục Kinh Thánh mOS về định mức 330 bộ mi" placement="topRight">
                       <button
                         type="button"
-                        className="w-5 h-5 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-400 hover:text-white inline-flex items-center justify-center text-[10px] font-mono font-bold border border-slate-700/80 cursor-help transition-all hover:scale-110 active:scale-95 shadow-xs shrink-0"
+                        data-testid="info-btn-orders"
+                        onClick={() => onOpenBibleTopic?.('ORDERS')}
+                        className="w-7 h-7 sm:w-6 sm:h-6 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white inline-flex items-center justify-center border border-slate-700/80 cursor-pointer transition-all hover:scale-110 active:scale-95 shadow-xs shrink-0"
                         aria-label="Xem quy tắc sản lượng mi"
                       >
-                        i
+                        <Info className="w-3.5 h-3.5" />
                       </button>
                     </Tooltip>
                   </div>
@@ -1214,31 +1164,15 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                       <HandCoins className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                       <span className="text-xs font-bold text-white tracking-wide truncate">4. Tỷ lệ Tip</span>
                     </div>
-                    <Tooltip
-                      title={
-                        <div className="text-[11px] text-slate-300 leading-relaxed space-y-1 p-0.5 max-w-xs">
-                          <div className="text-indigo-300 font-bold text-xs flex items-center gap-1.5">
-                            <HandCoins className="w-3.5 h-3.5 text-indigo-400" /> Quy tắc Tỷ lệ Tip
-                          </div>
-                          <div>
-                            • Chuẩn chi nhánh: <strong className="text-white">≥ {targetTipRatePercent}%</strong> (Điều
-                            răn TIP-001).
-                          </div>
-                          <div>
-                            • Thực tế của chuyên viên:{' '}
-                            <strong className="text-indigo-300">{staffTipRatePercent}%</strong>.
-                          </div>
-                          <div>• Ăn trọn 90% Tip (70% mi + 20% tư vấn) khi lên CV 1 cánh.</div>
-                        </div>
-                      }
-                      placement="topRight"
-                    >
+                    <Tooltip title="Nhấn để xem trích lục Kinh Thánh mOS về quy chế Tip 90%" placement="topRight">
                       <button
                         type="button"
-                        className="w-5 h-5 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-400 hover:text-white inline-flex items-center justify-center text-[10px] font-mono font-bold border border-slate-700/80 cursor-help transition-all hover:scale-110 active:scale-95 shadow-xs shrink-0"
+                        data-testid="info-btn-tip"
+                        onClick={() => onOpenBibleTopic?.('TIP')}
+                        className="w-7 h-7 sm:w-6 sm:h-6 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white inline-flex items-center justify-center border border-slate-700/80 cursor-pointer transition-all hover:scale-110 active:scale-95 shadow-xs shrink-0"
                         aria-label="Xem quy tắc tỷ lệ tip"
                       >
-                        i
+                        <Info className="w-3.5 h-3.5" />
                       </button>
                     </Tooltip>
                   </div>
@@ -1590,8 +1524,191 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
               </div>
             </div>
 
-            {/* 6 QUESTS PROGRESSION CARDS */}
-            <div className="relative z-10 space-y-2.5 mt-3">
+            {/* 📱 MOBILE LƯỚI 6 HUY HIỆU TRÒN LỚN (3x2) - Ít Chữ, Icon Lớn, Chạm (i) Xem Kinh Thánh */}
+            <div className="md:hidden space-y-2 my-3">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+                <span className="flex items-center gap-1.5">
+                  <span>📋 6 ẢI THĂNG CẤP</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-pink-500/15 text-pink-300 font-bold border border-pink-500/25">
+                    {passedQuestsCount}/6 ải đạt
+                  </span>
+                </span>
+                <span className="text-[10px] text-slate-400">Chạm huy hiệu để xem Kinh Thánh</span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                {/* Ải 1: 330 bộ mi */}
+                <button
+                  type="button"
+                  data-testid="badge-quest-orders"
+                  onClick={() => onOpenBibleTopic?.('ORDERS')}
+                  className={`p-2.5 rounded-2xl border flex flex-col items-center justify-center text-center transition-all active:scale-95 cursor-pointer relative ${
+                    isSimOrdersPassed
+                      ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300'
+                      : 'bg-slate-900/90 border-slate-800 text-slate-300'
+                  }`}
+                >
+                  <div
+                    className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-1 ${
+                      isSimOrdersPassed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-amber-400'
+                    }`}
+                  >
+                    <Eye className="w-5 h-5" />
+                  </div>
+                  <div className="text-[11px] font-black tabular-nums text-white">
+                    {localOrders}/{targetOrders}
+                  </div>
+                  <div className="text-[9px] font-bold text-slate-400 truncate max-w-full">
+                    {isSimOrdersPassed ? '✓ 330 Mi' : `Thiếu ${Math.max(0, targetOrders - localOrders)}`}
+                  </div>
+                  <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white/10 text-slate-400 flex items-center justify-center text-[9px] font-bold">
+                    i
+                  </span>
+                </button>
+
+                {/* Ải 2: Fix <= 1.5% */}
+                <button
+                  type="button"
+                  data-testid="badge-quest-fix"
+                  onClick={() => onOpenBibleTopic?.('FIX')}
+                  className={`p-2.5 rounded-2xl border flex flex-col items-center justify-center text-center transition-all active:scale-95 cursor-pointer relative ${
+                    isFixPassed
+                      ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300'
+                      : 'bg-rose-500/10 border-rose-500/40 text-rose-300'
+                  }`}
+                >
+                  <div
+                    className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-1 ${
+                      isFixPassed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
+                    }`}
+                  >
+                    <Bug className="w-5 h-5" />
+                  </div>
+                  <div className="text-[11px] font-black tabular-nums text-white">
+                    {((metrics.fixRate || 0) * 100).toFixed(1)}%
+                  </div>
+                  <div className="text-[9px] font-bold text-slate-400 truncate max-w-full">
+                    {isFixPassed ? '✓ Fix ≤ 1.5%' : '✕ Quá 1.5%'}
+                  </div>
+                  <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white/10 text-slate-400 flex items-center justify-center text-[9px] font-bold">
+                    i
+                  </span>
+                </button>
+
+                {/* Ải 3: Tip >= +10% TB Shop */}
+                <button
+                  type="button"
+                  data-testid="badge-quest-tip"
+                  onClick={() => onOpenBibleTopic?.('TIP_RATIO')}
+                  className={`p-2.5 rounded-2xl border flex flex-col items-center justify-center text-center transition-all active:scale-95 cursor-pointer relative ${
+                    isSimTipPassed
+                      ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300'
+                      : 'bg-amber-500/10 border-amber-500/40 text-amber-300'
+                  }`}
+                >
+                  <div
+                    className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-1 ${
+                      isSimTipPassed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
+                    }`}
+                  >
+                    <HandCoins className="w-5 h-5" />
+                  </div>
+                  <div className="text-[11px] font-black tabular-nums text-white">{staffTipRatePercent}%</div>
+                  <div className="text-[9px] font-bold text-slate-400 truncate max-w-full">
+                    {isSimTipPassed ? '✓ Tip +10%' : `Cần ${targetTipRatePercent}%`}
+                  </div>
+                  <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white/10 text-slate-400 flex items-center justify-center text-[9px] font-bold">
+                    i
+                  </span>
+                </button>
+
+                {/* Ải 4: QA 4 lần */}
+                <button
+                  type="button"
+                  data-testid="badge-quest-qa"
+                  onClick={() => onOpenBibleTopic?.('QA')}
+                  className={`p-2.5 rounded-2xl border flex flex-col items-center justify-center text-center transition-all active:scale-95 cursor-pointer relative ${
+                    isQaPassed
+                      ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300'
+                      : 'bg-amber-500/10 border-amber-500/40 text-amber-300'
+                  }`}
+                >
+                  <div
+                    className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-1 ${
+                      isQaPassed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'
+                    }`}
+                  >
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div className="text-[11px] font-black tabular-nums text-white">{totalQaAudits}/4 bài</div>
+                  <div className="text-[9px] font-bold text-slate-400 truncate max-w-full">
+                    {isQaPassed ? '✓ 4 Lần QA' : 'Thiếu bài'}
+                  </div>
+                  <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white/10 text-slate-400 flex items-center justify-center text-[9px] font-bold">
+                    i
+                  </span>
+                </button>
+
+                {/* Ải 5: 20 Chuối */}
+                <button
+                  type="button"
+                  data-testid="badge-quest-banana"
+                  onClick={() => onOpenBibleTopic?.('BANANA')}
+                  className={`p-2.5 rounded-2xl border flex flex-col items-center justify-center text-center transition-all active:scale-95 cursor-pointer relative ${
+                    isBananaPassed
+                      ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300'
+                      : 'bg-amber-500/10 border-amber-500/40 text-amber-300'
+                  }`}
+                >
+                  <div
+                    className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-1 ${
+                      isBananaPassed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-amber-400'
+                    }`}
+                  >
+                    <span className="text-xl">🍌</span>
+                  </div>
+                  <div className="text-[11px] font-black tabular-nums text-white">{bananaCount}/20</div>
+                  <div className="text-[9px] font-bold text-slate-400 truncate max-w-full">
+                    {isBananaPassed ? '✓ 20 Chuối' : `Thiếu ${Math.max(0, 20 - bananaCount)}`}
+                  </div>
+                  <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white/10 text-slate-400 flex items-center justify-center text-[9px] font-bold">
+                    i
+                  </span>
+                </button>
+
+                {/* Ải 6: HI >= 70% */}
+                <button
+                  type="button"
+                  data-testid="badge-quest-hi"
+                  onClick={() => onOpenBibleTopic?.('HI')}
+                  className={`p-2.5 rounded-2xl border flex flex-col items-center justify-center text-center transition-all active:scale-95 cursor-pointer relative ${
+                    isHiPassed
+                      ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300'
+                      : 'bg-amber-500/10 border-amber-500/40 text-amber-300'
+                  }`}
+                >
+                  <div
+                    className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-1 ${
+                      isHiPassed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
+                    }`}
+                  >
+                    <Heart className="w-5 h-5 fill-current/20" />
+                  </div>
+                  <div className="text-[11px] font-black tabular-nums text-white">
+                    {Math.round((happinessIndex || 0.75) * 100)}%
+                  </div>
+                  <div className="text-[9px] font-bold text-slate-400 truncate max-w-full">
+                    {isHiPassed ? '✓ HI ≥ 70%' : 'Thiếu HI'}
+                  </div>
+                  <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white/10 text-slate-400 flex items-center justify-center text-[9px] font-bold">
+                    i
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* 6 QUESTS PROGRESSION CARDS (DESKTOP DETAILED LIST) */}
+            <div className="hidden md:block relative z-10 space-y-2.5 mt-3">
               <div className="flex items-center justify-between text-xs font-bold text-slate-300 pb-1">
                 <span className="flex items-center gap-1.5">
                   <span>📋 TIẾN TRÌNH 6 ẢI THĂNG CẤP</span>
@@ -2491,6 +2608,47 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* 📱 MOBILE STICKY BOTTOM ACTION BAR (iOS Safari Safe Area) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-md border-t border-slate-800/90 px-4 py-2.5 pb-[max(14px,env(safe-area-inset-bottom))] shadow-2xl flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate">
+            {isComboTargetHit ? 'Thực nhận thêm' : 'Bảo lưu 90% Tip (<21%)'}
+          </div>
+          <div className="flex items-baseline gap-1">
+            <span
+              className={`text-base font-black font-mono tabular-nums ${
+                isComboTargetHit ? 'text-emerald-400' : 'text-amber-400'
+              }`}
+            >
+              +{formatVnd(isComboTargetHit ? totalSimulatedGain : effectiveTipGain)}
+            </span>
+            <span className="text-[10px] text-slate-400">/tháng</span>
+          </div>
+        </div>
+
+        <div className="shrink-0 flex items-center gap-2">
+          {status.qualifiedQuests.allPassed ? (
+            <button
+              type="button"
+              onClick={onPromote}
+              disabled={loadingAction}
+              className="px-4 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-pink-500 via-rose-500 to-emerald-500 text-white shadow-lg shadow-pink-500/30 hover:opacity-95 transition-all cursor-pointer animate-pulse active:scale-95"
+            >
+              🎉 Duyệt Thăng Hạng
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onActivateTrial}
+              disabled={loadingAction || !isQaPassed}
+              className="px-4 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-md shadow-amber-500/20 hover:opacity-95 transition-all cursor-pointer active:scale-95 disabled:opacity-40"
+            >
+              🚀 Mở Ải 30 Ngày
+            </button>
+          )}
         </div>
       </div>
     </div>

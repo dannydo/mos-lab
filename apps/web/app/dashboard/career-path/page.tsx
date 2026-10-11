@@ -19,6 +19,7 @@ import { BananaTransactionDrawer } from './components/BananaTransactionDrawer';
 import { StaffCareerSelector, type CareerSelectorMode } from './components/StaffCareerSelector';
 import { RealStaffSimulationCard } from './components/RealStaffSimulationCard';
 import { CareerRealmEncyclopedia } from './components/CareerRealmEncyclopedia';
+import { CareerBibleDrawer, type CareerBibleTopic } from './components/CareerBibleDrawer';
 import { IslandGameIcon, WingRoleLabel } from './components/IslandGameIcon';
 import { FALLBACK_CAREER_PROGRESSION_CONFIG, getCareerIslands, formatCareerRoleName } from './career-path.constants';
 
@@ -74,6 +75,8 @@ export default function CareerPathPage() {
   });
   const [isStaffSelectorCollapsed, setIsStaffSelectorCollapsed] = useState<boolean>(true);
   const [isEncyclopediaDrawerOpen, setIsEncyclopediaDrawerOpen] = useState<boolean>(false);
+  const [selectedBibleTopic, setSelectedBibleTopic] = useState<CareerBibleTopic | null>(null);
+  const [isMapDrawerOpen, setIsMapDrawerOpen] = useState<boolean>(false);
 
   // Sliders for interactive simulation
   const [sliderOrders, setSliderOrders] = useState<number>(300);
@@ -570,8 +573,45 @@ export default function CareerPathPage() {
 
       {/* MAIN CONTAINER */}
       <main className="w-full max-w-[1880px] mx-auto px-3.5 sm:px-5 xl:px-6 pt-3.5 space-y-4">
-        {/* WORLD MAP BANNER: 6 FLOATING ISLANDS */}
-        <div className="rounded-3xl p-4 bg-gradient-to-br from-pink-50 via-purple-50 to-sky-50 dark:from-slate-900 dark:via-purple-950/40 dark:to-slate-900 border-2 border-pink-200/80 dark:border-pink-500/30 shadow-md relative overflow-hidden">
+        {/* MOBILE MINI LEVEL BAR (< md): Ultra-compact & touch-friendly */}
+        <div className="md:hidden bg-white/95 dark:bg-slate-900/95 border border-pink-200 dark:border-pink-500/30 rounded-2xl p-2.5 shadow-xs flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Avatar
+              src={selectedStaffStatus?.avatarUrl}
+              size={40}
+              className="border-2 border-pink-400 shrink-0 font-bold bg-pink-100 text-pink-600"
+            >
+              {selectedStaffStatus?.staffName?.[0] || 'C'}
+            </Avatar>
+            <div className="min-w-0">
+              <div className="text-xs font-black text-slate-900 dark:text-white truncate">
+                {selectedStaffStatus?.staffName || 'Chọn Chuyên Viên'}
+              </div>
+              <div className="text-[10px] text-pink-600 dark:text-pink-400 font-bold truncate flex items-center gap-1.5 mt-0.5">
+                <WingRoleLabel text={formatCareerRoleName(selectedStaffStatus?.currentRole || 'CV')} />
+                <span className="text-slate-400 font-normal">·</span>
+                <span className="font-mono text-amber-600 dark:text-amber-400 font-black">
+                  🍌 {(selectedStaffStatus?.metrics?.bananaBalance || 0).toLocaleString('vi-VN')}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              playSound('pop');
+              setIsMapDrawerOpen(true);
+            }}
+            className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs font-bold shadow-xs active:scale-95 transition"
+          >
+            <span>🗺️</span>
+            <span>7 Đảo</span>
+          </button>
+        </div>
+
+        {/* WORLD MAP BANNER: 7 FLOATING ISLANDS (Desktop only) */}
+        <div className="hidden md:block rounded-3xl p-4 bg-gradient-to-br from-pink-50 via-purple-50 to-sky-50 dark:from-slate-900 dark:via-purple-950/40 dark:to-slate-900 border-2 border-pink-200/80 dark:border-pink-500/30 shadow-md relative overflow-hidden">
           <div className="flex items-center justify-between mb-2">
             <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-pink-500 text-white text-[10px] font-black tracking-wide shadow-xs">
               🗺️ BẢN ĐỒ THẾ GIỚI THIÊN THẦN
@@ -696,9 +736,72 @@ export default function CareerPathPage() {
             simulationTarget={simulationTarget}
             onSimulationTargetChange={handleSimulationTargetChange}
             onOpenBananaDrawer={(cat) => openBananaDrawer(selectedStaffId, cat)}
+            onOpenBibleTopic={(topic) => setSelectedBibleTopic(topic)}
           />
         </div>
       </main>
+
+      {/* CAREER BIBLE DRAWER (KINH THÁNH mOS) */}
+      <CareerBibleDrawer
+        open={!!selectedBibleTopic}
+        onClose={() => setSelectedBibleTopic(null)}
+        topic={selectedBibleTopic}
+      />
+
+      {/* 7 ISLANDS MAP BOTTOM SHEET FOR MOBILE */}
+      <AdaptiveDrawer
+        title={
+          <div className="flex items-center gap-2">
+            <span className="text-base">🗺️</span>
+            <span className="font-black text-base">Bản Đồ 7 Đảo Thế Giới Thiên Thần</span>
+          </div>
+        }
+        placement="bottom"
+        height="75vh"
+        open={isMapDrawerOpen}
+        onClose={() => setIsMapDrawerOpen(false)}
+        destroyOnHidden
+      >
+        <div className="p-3 space-y-3">
+          <p className="text-xs text-slate-600 dark:text-slate-300">
+            Chọn một vương quốc để khám phá bí tịch kỹ năng và chuẩn thăng tiến:
+          </p>
+          <div className="grid grid-cols-2 gap-2.5">
+            {islands.map((island) => {
+              const isActive = activeIsland === island.id;
+              return (
+                <button
+                  key={island.id}
+                  onClick={() => {
+                    playSound('pop');
+                    setActiveIsland(island.id);
+                    setIsMapDrawerOpen(false);
+                    setIsEncyclopediaDrawerOpen(true);
+                  }}
+                  className={`w-full p-3 rounded-2xl border text-left transition-all relative ${
+                    isActive
+                      ? 'bg-pink-50/70 dark:bg-pink-950/30 border-pink-500 shadow-sm ring-1 ring-pink-500/30'
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <IslandGameIcon islandId={island.id} size="sm" isActive={isActive} />
+                    <div className="min-w-0">
+                      <div className="text-xs font-black text-slate-900 dark:text-white truncate">
+                        <WingRoleLabel text={island.name.split('·')[0]?.trim()} />
+                      </div>
+                      <div className="text-[10px] text-pink-600 dark:text-pink-300 font-bold truncate">
+                        {island.name.split('·')[1]?.trim()}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">{island.sub}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </AdaptiveDrawer>
 
       {/* ACTIVE REALM LORE & SKILL ENCYCLOPEDIA DRAWER */}
       <AdaptiveDrawer

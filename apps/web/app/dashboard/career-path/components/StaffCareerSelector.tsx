@@ -926,7 +926,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
             </div>
 
             {/* Scroll navigation arrows for horizontal rail */}
-            <div className="flex items-center gap-1">
+            <div className="hidden md:flex items-center gap-1">
               <Tooltip title="Cuộn sang trái (kéo ngang)">
                 <button
                   type="button"
@@ -948,7 +948,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
             </div>
 
             {/* 3-Way Mode Switcher */}
-            {renderModeSwitcher()}
+            <div className="hidden md:inline-flex">{renderModeSwitcher()}</div>
           </div>
         </div>
 
@@ -1110,7 +1110,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
             </div>
 
             {/* Scroll navigation arrows for horizontal rail */}
-            <div className="flex items-center gap-1">
+            <div className="hidden md:flex items-center gap-1">
               <Tooltip title="Cuộn sang trái (kéo ngang)">
                 <button
                   type="button"
@@ -1132,7 +1132,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
             </div>
 
             {/* 3-Way Mode Switcher */}
-            {renderModeSwitcher()}
+            <div className="hidden md:inline-flex">{renderModeSwitcher()}</div>
           </div>
         </div>
 
@@ -1290,7 +1290,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
             </div>
 
             {/* 3-Way Mode Switcher */}
-            {renderModeSwitcher()}
+            <div className="hidden md:inline-flex">{renderModeSwitcher()}</div>
           </div>
         </div>
 
