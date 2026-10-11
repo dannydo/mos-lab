@@ -289,7 +289,8 @@ export class CareerProgressionService {
     const ordersMap: Record<number, { orders90d: number; ordersPeriod: number; fixesPeriod: number }> = {};
     const tipsMap: Record<number, { totalTip: number; tipCount: number; validTipOrders?: number }> = {};
     const combosMap: Record<number, { period: number; ninetyDays: number }> = {};
-    const notComboLiveOrdersMap: Record<number, number> = {};
+    const notComboLiveOrdersPeriodMap: Record<number, number> = {};
+    const notComboLiveOrders90dMap: Record<number, number> = {};
     const bonusesMap: Record<number, { points: number; cash: number; banana: number }> = {};
     const bananasMap: Record<number, number> = {};
     const bananaBalancesMap: Record<number, number> = {};
@@ -325,6 +326,7 @@ export class CareerProgressionService {
         balanceRows,
         staffStoreRows,
         periodStaffOrdersRows,
+        ninetyDaysStaffOrdersRows,
       ] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
@@ -363,8 +365,10 @@ export class CareerProgressionService {
           JOIN \`order\` o ON o.id = os.order_id
           JOIN order_service_combo osc ON osc.order_id = os.order_id
           WHERE o.order_state = 'Completed'
-            AND o.booking_date_start >= ${periodConfig.orders90dStartSql}
-            AND o.booking_date_start < ${periodConfig.orders90dEndSql}
+            AND (
+              (o.booking_date_start >= ${periodConfig.orders90dStartSql} AND o.booking_date_start < ${periodConfig.orders90dEndSql})
+              OR (o.booking_date_start >= ${periodConfig.periodStartSql} AND o.booking_date_start < ${periodConfig.periodEndSql})
+            )
             AND osc.total_price > 0
           GROUP BY os.assigned_staff_id
         `),
@@ -468,17 +472,51 @@ export class CareerProgressionService {
         `
           )
           .catch(() => []),
+        fastify.prisma.legacy
+          .$queryRawUnsafe<any[]>(
+            `
+          SELECT DISTINCT os.assigned_staff_id, o.id as order_id
+          FROM order_service os
+          JOIN \`order\` o ON o.id = os.order_id
+          WHERE o.order_state = 'Completed'
+            AND o.booking_date_start >= ${periodConfig.orders90dStartSql}
+            AND o.booking_date_start < ${periodConfig.orders90dEndSql}
+        `
+          )
+          .catch(() => []),
       ]);
 
-      if (Array.isArray(periodStaffOrdersRows) && periodStaffOrdersRows.length > 0) {
-        const pOrderIds = Array.from(new Set(periodStaffOrdersRows.map((r: any) => Number(r.order_id))));
+      const allOrderIdsToClassify = Array.from(
+        new Set([
+          ...(periodStaffOrdersRows || []).map((r: any) => Number(r.order_id)),
+          ...(ninetyDaysStaffOrdersRows || []).map((r: any) => Number(r.order_id)),
+        ])
+      );
+
+      if (allOrderIdsToClassify.length > 0) {
         try {
-          const liveMap = await ComboRecognitionService.getBookingComboLiveStatesByOrderIds(fastify, pOrderIds);
-          for (const r of periodStaffOrdersRows) {
-            const staffId = Number(r.assigned_staff_id);
-            const isLive = liveMap.get(Number(r.order_id));
-            if (!isLive) {
-              notComboLiveOrdersMap[staffId] = (notComboLiveOrdersMap[staffId] || 0) + 1;
+          const liveMap = await ComboRecognitionService.getBookingComboLiveStatesByOrderIds(
+            fastify,
+            allOrderIdsToClassify
+          );
+
+          if (Array.isArray(periodStaffOrdersRows)) {
+            for (const r of periodStaffOrdersRows) {
+              const staffId = Number(r.assigned_staff_id);
+              const isLive = liveMap.get(Number(r.order_id));
+              if (!isLive) {
+                notComboLiveOrdersPeriodMap[staffId] = (notComboLiveOrdersPeriodMap[staffId] || 0) + 1;
+              }
+            }
+          }
+
+          if (Array.isArray(ninetyDaysStaffOrdersRows)) {
+            for (const r of ninetyDaysStaffOrdersRows) {
+              const staffId = Number(r.assigned_staff_id);
+              const isLive = liveMap.get(Number(r.order_id));
+              if (!isLive) {
+                notComboLiveOrders90dMap[staffId] = (notComboLiveOrders90dMap[staffId] || 0) + 1;
+              }
             }
           }
         } catch (liveErr) {
@@ -661,17 +699,28 @@ export class CareerProgressionService {
             : 0;
       // Kinh Thánh mOS Điều răn CV-002: Tỷ lệ chốt combo được tính trên khách Not Combo Live thực tế.
       // Khách có Combo Live bán được cũng được cộng dồn vào tử số (đòn bẩy cộng dồn).
+      // Đánh giá tỷ lệ đạt chuẩn tốt nhất trên chu kỳ 90 ngày tích lũy hoặc kỳ hiện hành.
       const staffComboData = combosMap[legacyId];
-      const comboOrders = staffComboData?.period ?? staffComboData?.ninetyDays ?? 0;
-      const notComboLiveOrders =
-        notComboLiveOrdersMap[legacyId] !== undefined
-          ? notComboLiveOrdersMap[legacyId]
+      const comboPeriodCount = staffComboData?.period || 0;
+      const combo90dCount = staffComboData?.ninetyDays || 0;
+
+      const notComboLivePeriod =
+        notComboLiveOrdersPeriodMap[legacyId] !== undefined
+          ? notComboLiveOrdersPeriodMap[legacyId]
           : staffOrdersPeriod > 0
             ? Math.max(1, Math.round(staffOrdersPeriod * 0.4))
-            : staffOrders90d > 0
-              ? Math.max(1, Math.round((staffOrders90d / 3) * 0.4))
-              : 0;
-      const selfComboRate = notComboLiveOrders > 0 ? Number((comboOrders / notComboLiveOrders).toFixed(3)) : 0;
+            : 0;
+      const notComboLive90d =
+        notComboLiveOrders90dMap[legacyId] !== undefined
+          ? notComboLiveOrders90dMap[legacyId]
+          : staffOrders90d > 0
+            ? Math.max(1, Math.round((staffOrders90d / 3) * 0.4 * 3))
+            : 0;
+
+      const ratePeriod = notComboLivePeriod > 0 ? Number((comboPeriodCount / notComboLivePeriod).toFixed(3)) : 0;
+      const rate90d = notComboLive90d > 0 ? Number((combo90dCount / notComboLive90d).toFixed(3)) : 0;
+
+      const selfComboRate = Math.max(rate90d, ratePeriod);
       const monthlyPoints = bonusesMap[legacyId]?.points || 0;
       const ccLevel = monthlyPoints > 0 ? Math.floor(monthlyPoints / 100) + 1 : 1;
 
@@ -952,8 +1001,10 @@ export class CareerProgressionService {
           JOIN order_service_combo osc ON osc.order_id = os.order_id
           WHERE os.assigned_staff_id = ?
             AND o.order_state = 'Completed'
-            AND o.booking_date_start >= ${periodConfig.orders90dStartSql}
-            AND o.booking_date_start < ${periodConfig.orders90dEndSql}
+            AND (
+              (o.booking_date_start >= ${periodConfig.orders90dStartSql} AND o.booking_date_start < ${periodConfig.orders90dEndSql})
+              OR (o.booking_date_start >= ${periodConfig.periodStartSql} AND o.booking_date_start < ${periodConfig.periodEndSql})
+            )
             AND osc.total_price > 0
         `,
           targetLegacyStaffId
