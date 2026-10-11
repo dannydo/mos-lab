@@ -25,6 +25,7 @@ import {
   ChevronRight,
   CircleUser,
   CreditCard,
+  Gem,
 } from 'lucide-react';
 import { StatusTag, DataTable } from '../../../../components/ui';
 import { WingRoleLabel } from './IslandGameIcon';
@@ -197,7 +198,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
         </button>
       </Tooltip>
 
-      <Tooltip title="Chế độ Bảng 8 Cột: Mở rộng xem toàn bộ 8 chỉ số kiểm toán của toàn salon">
+      <Tooltip title="Chế độ Bảng 9 Cột: Mở rộng xem toàn bộ 9 chỉ số kiểm toán của toàn salon">
         <button
           type="button"
           data-testid="mode-table-btn"
@@ -209,7 +210,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
           }`}
         >
           <TableIcon className="w-3.5 h-3.5" />
-          <span>Bảng 8 Cột</span>
+          <span>Bảng 9 Cột</span>
         </button>
       </Tooltip>
     </div>
@@ -333,6 +334,17 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
   const getBananaBalanceStatus = (balance: number): MetricStatus => {
     if (balance >= 0) return 'passed';
     if (balance >= -500) return 'near';
+    return 'failed';
+  };
+
+  const getStaffComboPercent = (staff: CareerStaffSummary): number => {
+    return Number(((staff.selfComboRate || 0) * 100).toFixed(1));
+  };
+
+  const getComboStatus = (staff: CareerStaffSummary): MetricStatus => {
+    const comboPct = getStaffComboPercent(staff);
+    if (comboPct >= 21.0) return 'passed';
+    if (comboPct >= 15.0) return 'near';
     return 'failed';
   };
 
@@ -785,6 +797,37 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
+        <Tooltip title="Combo: Tỷ lệ chốt Combo trên khách Not Combo Live (Ải Trùm Cuối · Chuẩn ≥ 21%)">
+          <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+            <Gem className="w-4 h-4 text-pink-500 dark:text-pink-400" />
+          </span>
+        </Tooltip>
+      ),
+      key: 'comboRate',
+      dataIndex: 'selfComboRate',
+      width: 66,
+      align: 'center',
+      sorter: (a, b) => (a.selfComboRate || 0) - (b.selfComboRate || 0),
+      render: (_, staff) => {
+        const comboPct = getStaffComboPercent(staff);
+        const status = getComboStatus(staff);
+        return (
+          <Tooltip
+            title={`Tỷ lệ bán Combo: ${comboPct}% trên khách Not Combo Live (chuẩn ≥ 21%) · ${getStatusLabel(status)}`}
+          >
+            <span
+              className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${getStatusBadgeClass(
+                status
+              )}`}
+            >
+              {comboPct}%
+            </span>
+          </Tooltip>
+        );
+      },
+    },
+    {
+      title: (
         <Tooltip title="Ví chuối: Số dư ví thực tế sống ở thời điểm hiện tại (Chuẩn không âm ≥ 0 🍌)">
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <Wallet className="w-4 h-4 text-amber-500" />
@@ -934,7 +977,8 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
                       </div>
                       <div className="text-[10px] text-slate-300">{getStatusLabel(overallStatus)}</div>
                       <div className="text-[10px] font-mono text-amber-300 border-t border-white/10 pt-1">
-                        {staff.ordersCount || 0} mi · {tipRate}% tip · {balance.toLocaleString('vi-VN')} 🍌
+                        {staff.ordersCount || 0} mi · {tipRate}% tip · {getStaffComboPercent(staff)}% combo ·{' '}
+                        {balance.toLocaleString('vi-VN')} 🍌
                       </div>
                     </div>
                   }
@@ -1443,6 +1487,15 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
                       <Banana className="w-2.5 h-2.5" />
                       <span>{staff.bananaCount || 0}</span>
                     </button>
+                    <div
+                      className={`flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-full border tabular-nums font-bold ${getStatusBadgeClass(
+                        getComboStatus(staff)
+                      )}`}
+                      title={`Tỷ lệ bán Combo: ${getStaffComboPercent(staff)}% trên khách Not Combo Live (Chuẩn ≥ 21%)`}
+                    >
+                      <Gem className="w-2.5 h-2.5 text-pink-500 dark:text-pink-400" />
+                      <span>{getStaffComboPercent(staff)}%</span>
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800/80 text-[10px]">
@@ -1511,6 +1564,10 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
             <span className="text-slate-400">·</span>
             <span className="tabular-nums text-slate-600 dark:text-slate-300">
               Chuối yêu thương: <strong>{selectedStaff.bananaCount || 0} 🍌</strong>
+            </span>
+            <span className="text-slate-400">·</span>
+            <span className="tabular-nums text-slate-600 dark:text-slate-300">
+              Combo: <strong>{getStaffComboPercent(selectedStaff)}%</strong>
             </span>
             <span className="text-slate-400">·</span>
             <span className="tabular-nums text-amber-600 dark:text-amber-400 font-bold">

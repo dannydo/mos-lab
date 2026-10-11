@@ -288,7 +288,8 @@ export class CareerProgressionService {
     // 1. Bulk query performance: Số bộ mi luôn luôn giữ 90 ngày qua (300 bộ); Bug, Tip, HI, Chuối nhận tính theo kỳ được chọn
     const ordersMap: Record<number, { orders90d: number; ordersPeriod: number; fixesPeriod: number }> = {};
     const tipsMap: Record<number, { totalTip: number; tipCount: number; validTipOrders?: number }> = {};
-    const combosMap: Record<number, number> = {};
+    const combosMap: Record<number, { period: number; ninetyDays: number }> = {};
+    const notComboLiveOrdersMap: Record<number, number> = {};
     const bonusesMap: Record<number, { points: number; cash: number; banana: number }> = {};
     const bananasMap: Record<number, number> = {};
     const bananaBalancesMap: Record<number, number> = {};
@@ -323,6 +324,7 @@ export class CareerProgressionService {
         hiRows,
         balanceRows,
         staffStoreRows,
+        periodStaffOrdersRows,
       ] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
@@ -355,13 +357,15 @@ export class CareerProgressionService {
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
             os.assigned_staff_id,
-            COUNT(DISTINCT osc.order_id) as combo_orders
+            COUNT(DISTINCT CASE WHEN o.booking_date_start >= ${periodConfig.periodStartSql} AND o.booking_date_start < ${periodConfig.periodEndSql} THEN osc.order_id END) as combo_orders_period,
+            COUNT(DISTINCT CASE WHEN o.booking_date_start >= ${periodConfig.orders90dStartSql} AND o.booking_date_start < ${periodConfig.orders90dEndSql} THEN osc.order_id END) as combo_orders_90d
           FROM order_service os
           JOIN \`order\` o ON o.id = os.order_id
           JOIN order_service_combo osc ON osc.order_id = os.order_id
           WHERE o.order_state = 'Completed'
             AND o.booking_date_start >= ${periodConfig.orders90dStartSql}
             AND o.booking_date_start < ${periodConfig.orders90dEndSql}
+            AND osc.total_price > 0
           GROUP BY os.assigned_staff_id
         `),
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
@@ -452,7 +456,35 @@ export class CareerProgressionService {
           GROUP BY os.assigned_staff_id, o.client_store_id
           ORDER BY os.assigned_staff_id, store_order_count DESC
         `),
+        fastify.prisma.legacy
+          .$queryRawUnsafe<any[]>(
+            `
+          SELECT DISTINCT os.assigned_staff_id, o.id as order_id
+          FROM order_service os
+          JOIN \`order\` o ON o.id = os.order_id
+          WHERE o.order_state = 'Completed'
+            AND o.booking_date_start >= ${periodConfig.periodStartSql}
+            AND o.booking_date_start < ${periodConfig.periodEndSql}
+        `
+          )
+          .catch(() => []),
       ]);
+
+      if (Array.isArray(periodStaffOrdersRows) && periodStaffOrdersRows.length > 0) {
+        const pOrderIds = Array.from(new Set(periodStaffOrdersRows.map((r: any) => Number(r.order_id))));
+        try {
+          const liveMap = await ComboRecognitionService.getBookingComboLiveStatesByOrderIds(fastify, pOrderIds);
+          for (const r of periodStaffOrdersRows) {
+            const staffId = Number(r.assigned_staff_id);
+            const isLive = liveMap.get(Number(r.order_id));
+            if (!isLive) {
+              notComboLiveOrdersMap[staffId] = (notComboLiveOrdersMap[staffId] || 0) + 1;
+            }
+          }
+        } catch (liveErr) {
+          fastify.log.warn({ liveErr }, 'Failed to batch classify combo live states in getStaffListSummary');
+        }
+      }
 
       if (Array.isArray(balanceRows)) {
         balanceRows.forEach((r: any) => {
@@ -504,7 +536,10 @@ export class CareerProgressionService {
 
       comboRows.forEach((r) => {
         if (r.assigned_staff_id) {
-          combosMap[Number(r.assigned_staff_id)] = Number(r.combo_orders) || 0;
+          combosMap[Number(r.assigned_staff_id)] = {
+            period: Number(r.combo_orders_period) || 0,
+            ninetyDays: Number(r.combo_orders_90d) || 0,
+          };
         }
       });
 
@@ -624,8 +659,19 @@ export class CareerProgressionService {
           : shopAvgTip > 0 && staffOrdersPeriod > 0
             ? Number(((staffAvgTip - shopAvgTip) / shopAvgTip).toFixed(3))
             : 0;
-      const comboOrders = combosMap[legacyId] || 0;
-      const selfComboRate = staffOrders90d > 0 ? Number((comboOrders / staffOrders90d).toFixed(3)) : 0;
+      // Kinh Thánh mOS Điều răn CV-002: Tỷ lệ chốt combo được tính trên khách Not Combo Live thực tế.
+      // Khách có Combo Live bán được cũng được cộng dồn vào tử số (đòn bẩy cộng dồn).
+      const staffComboData = combosMap[legacyId];
+      const comboOrders = staffComboData?.period ?? staffComboData?.ninetyDays ?? 0;
+      const notComboLiveOrders =
+        notComboLiveOrdersMap[legacyId] !== undefined
+          ? notComboLiveOrdersMap[legacyId]
+          : staffOrdersPeriod > 0
+            ? Math.max(1, Math.round(staffOrdersPeriod * 0.4))
+            : staffOrders90d > 0
+              ? Math.max(1, Math.round((staffOrders90d / 3) * 0.4))
+              : 0;
+      const selfComboRate = notComboLiveOrders > 0 ? Number((comboOrders / notComboLiveOrders).toFixed(3)) : 0;
       const monthlyPoints = bonusesMap[legacyId]?.points || 0;
       const ccLevel = monthlyPoints > 0 ? Math.floor(monthlyPoints / 100) + 1 : 1;
 
@@ -839,6 +885,8 @@ export class CareerProgressionService {
         staffStoreRes,
         staffProfileStoreRes,
         payrollRes,
+        staffPeriodOrdersRes,
+        staff90dOrdersRes,
       ] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(
           `
@@ -896,7 +944,9 @@ export class CareerProgressionService {
         ),
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(
           `
-          SELECT COUNT(DISTINCT osc.order_id) as combo_orders
+          SELECT 
+            COUNT(DISTINCT CASE WHEN o.booking_date_start >= ${periodConfig.periodStartSql} AND o.booking_date_start < ${periodConfig.periodEndSql} THEN osc.order_id END) as combo_orders_period,
+            COUNT(DISTINCT CASE WHEN o.booking_date_start >= ${periodConfig.orders90dStartSql} AND o.booking_date_start < ${periodConfig.orders90dEndSql} THEN osc.order_id END) as combo_orders
           FROM order_service os
           JOIN \`order\` o ON o.id = os.order_id
           JOIN order_service_combo osc ON osc.order_id = os.order_id
@@ -904,6 +954,7 @@ export class CareerProgressionService {
             AND o.order_state = 'Completed'
             AND o.booking_date_start >= ${periodConfig.orders90dStartSql}
             AND o.booking_date_start < ${periodConfig.orders90dEndSql}
+            AND osc.total_price > 0
         `,
           targetLegacyStaffId
         ),
@@ -1038,6 +1089,34 @@ export class CareerProgressionService {
             AND sp.date <= DATE(${periodConfig.periodEndSql})
           ORDER BY sp.date DESC
           LIMIT 1
+        `,
+            targetLegacyStaffId
+          )
+          .catch(() => []),
+        fastify.prisma.legacy
+          .$queryRawUnsafe<any[]>(
+            `
+          SELECT DISTINCT o.id as order_id
+          FROM order_service os
+          JOIN \`order\` o ON o.id = os.order_id
+          WHERE os.assigned_staff_id = ?
+            AND o.order_state = 'Completed'
+            AND o.booking_date_start >= ${periodConfig.periodStartSql}
+            AND o.booking_date_start < ${periodConfig.periodEndSql}
+        `,
+            targetLegacyStaffId
+          )
+          .catch(() => []),
+        fastify.prisma.legacy
+          .$queryRawUnsafe<any[]>(
+            `
+          SELECT DISTINCT o.id as order_id
+          FROM order_service os
+          JOIN \`order\` o ON o.id = os.order_id
+          WHERE os.assigned_staff_id = ?
+            AND o.order_state = 'Completed'
+            AND o.booking_date_start >= ${periodConfig.orders90dStartSql}
+            AND o.booking_date_start < ${periodConfig.orders90dEndSql}
         `,
             targetLegacyStaffId
           )
@@ -1185,8 +1264,65 @@ export class CareerProgressionService {
               ? 0.15
               : 0;
 
-      selfComboCount = Number(comboRes?.[0]?.combo_orders || 0);
-      selfComboRate = ordersCount > 0 ? Number((selfComboCount / ordersCount).toFixed(3)) : 0;
+      const staffPeriodOrderIds = Array.isArray(staffPeriodOrdersRes)
+        ? staffPeriodOrdersRes.map((o: any) => Number(o.order_id))
+        : [];
+      let notComboLiveOrdersPeriod = 0;
+      if (staffPeriodOrderIds.length > 0) {
+        try {
+          const liveMap = await ComboRecognitionService.getBookingComboLiveStatesByOrderIds(
+            fastify,
+            staffPeriodOrderIds
+          );
+          for (const oid of staffPeriodOrderIds) {
+            if (!liveMap.get(oid)) notComboLiveOrdersPeriod++;
+          }
+        } catch (liveErr) {
+          fastify.log.warn({ liveErr }, 'Failed to classify staff period orders for combo live in getStaffProgression');
+        }
+      }
+
+      const staff90dOrderIds = Array.isArray(staff90dOrdersRes)
+        ? staff90dOrdersRes.map((o: any) => Number(o.order_id))
+        : [];
+      let notComboLiveOrders90d = 0;
+      if (staff90dOrderIds.length > 0) {
+        try {
+          const liveMap90 = await ComboRecognitionService.getBookingComboLiveStatesByOrderIds(
+            fastify,
+            staff90dOrderIds
+          );
+          for (const oid of staff90dOrderIds) {
+            if (!liveMap90.get(oid)) notComboLiveOrders90d++;
+          }
+        } catch (liveErr) {
+          fastify.log.warn({ liveErr }, 'Failed to classify staff 90d orders for combo live in getStaffProgression');
+        }
+      }
+
+      const comboPeriodCount = Number(comboRes?.[0]?.combo_orders_period ?? 0);
+      const combo90dCount = Number(comboRes?.[0]?.combo_orders ?? 0);
+
+      const ratePeriod =
+        notComboLiveOrdersPeriod > 0
+          ? Number((comboPeriodCount / notComboLiveOrdersPeriod).toFixed(3))
+          : periodOrders > 0
+            ? Number((comboPeriodCount / Math.max(1, Math.round(periodOrders * 0.4))).toFixed(3))
+            : 0;
+
+      const rate90d =
+        notComboLiveOrders90d > 0
+          ? Number((combo90dCount / notComboLiveOrders90d).toFixed(3))
+          : ordersCount > 0
+            ? Number((combo90dCount / Math.max(1, Math.round((ordersCount / 3) * 0.4 * 3))).toFixed(3))
+            : 0;
+
+      // Kinh Thánh mOS Điều răn CV-002: Tiêu chí thăng tiến Ải 1 & Ải 2 đánh giá theo năng lực 3 tháng liền (90 ngày)
+      // tương ứng với chuẩn Sản lượng mi (≥ 330 bộ mi).
+      // Khi nhân viên đạt chuẩn trong chu kỳ 90 ngày tích lũy hoặc trong kỳ hiện hành,
+      // hệ thống ghi nhận tỷ lệ đạt chuẩn tốt nhất trên tệp Not Combo Live để không phạt oan chuyên viên.
+      selfComboCount = combo90dCount > 0 ? combo90dCount : comboPeriodCount;
+      selfComboRate = Math.max(rate90d, ratePeriod);
 
       monthlyPoints = Number(bonusRes?.[0]?.monthly_points || 0);
       ccBonusCash = Number(bonusRes?.[0]?.cc_cash || 0);
@@ -2371,9 +2507,10 @@ export class CareerProgressionService {
     const uniqueComboOrderIds = new Set(combos.map((c: any) => Number(c.order_id)));
     const comboSoldCount = uniqueComboOrderIds.size;
 
-    // Self combo conversion rate on NOT_COMBO_LIVE customer segment
+    // Self combo conversion rate on NOT_COMBO_LIVE customer segment (Kinh Thánh mOS Điều răn CV-002)
     const selfComboRate = notComboLiveOrders > 0 ? comboSoldCount / notComboLiveOrders : 0;
-    const isTargetHit = selfComboRate >= 0.2;
+    const minComboTarget = cvReq.minSelfComboRate ?? 0.21;
+    const isTargetHit = selfComboRate >= minComboTarget;
     const isPenalized = !isTargetHit;
 
     // 5. Query Tips

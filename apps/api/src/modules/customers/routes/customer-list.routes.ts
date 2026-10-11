@@ -371,6 +371,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
             `SELECT DISTINCT user_id
              FROM user_service_balance
              WHERE (normal_count + retain_count) > 0
+               AND (service_group IS NULL OR service_group != 'LashesUnder')
                AND (date_expired IS NULL OR date_expired > NOW())
                ${usbScopeFilter}`
           )
@@ -412,6 +413,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
             `SELECT DISTINCT user_id
              FROM user_service_balance
              WHERE (normal_count + retain_count) > 0
+               AND (service_group IS NULL OR service_group != 'LashesUnder')
                AND date_expired IS NOT NULL
                AND date_expired > NOW()
                AND date_expired <= DATE_ADD(NOW(), INTERVAL 30 DAY)`
@@ -453,6 +455,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
             `SELECT user_id
              FROM user_service_balance
              WHERE (normal_count + retain_count) > 0
+               AND (service_group IS NULL OR service_group != 'LashesUnder')
                AND (date_expired IS NULL OR date_expired > NOW())
              GROUP BY user_id
              HAVING SUM(normal_count + retain_count) = 1`
@@ -553,7 +556,8 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
       }
       if (needServiceBalance) {
         const isComboLive = bucket === 'COMBO_LIVE';
-        const liveCondition = '(normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW())';
+        const liveCondition =
+          "(normal_count + retain_count) > 0 AND (service_group IS NULL OR service_group != 'LashesUnder') AND (date_expired IS NULL OR date_expired > NOW())";
         const usbFilterClauses: string[] = [];
         if (usbUserFilter) {
           usbFilterClauses.push(usbUserFilter.replace(/^WHERE\s+/i, ''));
@@ -568,7 +572,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
             user_id,
             SUM(
               CASE 
-                WHEN (normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW()) THEN 1 
+                WHEN (normal_count + retain_count) > 0 AND (service_group IS NULL OR service_group != 'LashesUnder') AND (date_expired IS NULL OR date_expired > NOW()) THEN 1 
                 ELSE 0 
               END
             ) as live_count,
@@ -1234,7 +1238,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
               `SELECT
                  user_id as userId,
                  SUM(CASE
-                   WHEN (normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW()) THEN 1
+                   WHEN (normal_count + retain_count) > 0 AND (service_group IS NULL OR service_group != 'LashesUnder') AND (date_expired IS NULL OR date_expired > NOW()) THEN 1
                    ELSE 0
                  END) as live_count,
                  SUM(normal_count) as normalCount,
@@ -1712,7 +1716,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
       if (needServiceBalance) {
         const isComboLive = bucket === 'COMBO_LIVE';
         const liveFilter = isComboLive
-          ? 'WHERE (normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW())'
+          ? "WHERE (normal_count + retain_count) > 0 AND (service_group IS NULL OR service_group != 'LashesUnder') AND (date_expired IS NULL OR date_expired > NOW())"
           : '';
 
         innerJoins += ` LEFT JOIN (
@@ -1720,7 +1724,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
             user_id,
             SUM(
               CASE 
-                WHEN (normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW()) THEN 1 
+                WHEN (normal_count + retain_count) > 0 AND (service_group IS NULL OR service_group != 'LashesUnder') AND (date_expired IS NULL OR date_expired > NOW()) THEN 1 
                 ELSE 0 
               END
             ) as live_count

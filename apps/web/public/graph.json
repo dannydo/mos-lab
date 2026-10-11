@@ -8526,7 +8526,7 @@
         "path": "/api/customers/random-ids",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1654
+        "line": 1658
       }
     },
     {
@@ -8904,7 +8904,7 @@
         "path": "/api/dashboard/today/revenue-hourly",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1387
+        "line": 1393
       }
     },
     {
@@ -8918,7 +8918,7 @@
         "path": "/api/dashboard/today/revenue-detail",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1751
+        "line": 1757
       }
     },
     {
@@ -30866,8 +30866,8 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 100679,
-        "lineCount": 2560,
+        "sizeBytes": 107176,
+        "lineCount": 2687,
         "ext": ".ts"
       }
     },
@@ -31152,8 +31152,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-list.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 85256,
-        "lineCount": 2080,
+        "sizeBytes": 85811,
+        "lineCount": 2084,
         "ext": ".ts"
       }
     },
@@ -31191,8 +31191,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-stats.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 52882,
-        "lineCount": 1303,
+        "sizeBytes": 53096,
+        "lineCount": 1304,
         "ext": ".ts"
       }
     },
@@ -31217,8 +31217,8 @@
       "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 81899,
-        "lineCount": 2009,
+        "sizeBytes": 82133,
+        "lineCount": 2015,
         "ext": ".ts"
       }
     },
@@ -31412,8 +31412,8 @@
       "filePath": "apps/api/src/modules/customers/services/combo-recognition.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14559,
-        "lineCount": 365,
+        "sizeBytes": 14740,
+        "lineCount": 367,
         "ext": ".ts"
       }
     },
@@ -35845,8 +35845,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameCreateModal.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6607,
-        "lineCount": 190,
+        "sizeBytes": 6606,
+        "lineCount": 189,
         "ext": ".tsx"
       }
     },
@@ -35858,8 +35858,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameCreateModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38330,
-        "lineCount": 932,
+        "sizeBytes": 38362,
+        "lineCount": 934,
         "ext": ".tsx"
       }
     },
@@ -36482,8 +36482,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 123044,
-        "lineCount": 2430,
+        "sizeBytes": 131349,
+        "lineCount": 2499,
         "ext": ".tsx"
       }
     },
@@ -36495,8 +36495,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 75307,
-        "lineCount": 1643,
+        "sizeBytes": 77528,
+        "lineCount": 1687,
         "ext": ".tsx"
       }
     },
@@ -36508,8 +36508,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 31342,
-        "lineCount": 750,
+        "sizeBytes": 31333,
+        "lineCount": 744,
         "ext": ".tsx"
       }
     },
@@ -36976,8 +36976,8 @@
       "filePath": "apps/web/app/dashboard/cskh/components/WorkflowTrainingTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22121,
-        "lineCount": 467,
+        "sizeBytes": 22089,
+        "lineCount": 465,
         "ext": ".tsx"
       }
     },
@@ -40330,8 +40330,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 109895,
-        "lineCount": 1590,
+        "sizeBytes": 111146,
+        "lineCount": 1595,
         "ext": ".ts"
       }
     },

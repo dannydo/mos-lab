@@ -401,6 +401,7 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
               select: {
                 id: true,
                 user_id: true,
+                service_group: true,
                 date_created: true,
                 date_expired: true,
                 normal_count: true,
@@ -535,6 +536,11 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
         const userBals = balancesByUserId.get(userId) || [];
 
         for (const usb of userBals) {
+          // Rule COMBO-001: Combo mi dưới (LashesUnder) không tính vào active combo hoặc combo live
+          if (usb.service_group === 'LashesUnder') {
+            continue;
+          }
+
           // Condition 1: usb.date_created < booking_date_start
           if (new Date(usb.date_created).getTime() >= bTimeMs) {
             continue;

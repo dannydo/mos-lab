@@ -183,6 +183,7 @@ mos-lab/
   ```
 - **Inline Styles**: Luôn sử dụng `themeMode === 'dark' ? ... : ...` hoặc `theme.useToken()` của Ant Design.
 - **Tabular Numbers**: Tất cả các số đếm ngược, thời gian chạy, đồng hồ, thời lượng, v.v. bắt buộc phải dùng `font-variant-numeric: tabular-nums` (hoặc class Tailwind `tabular-nums`) để không bị giật giao diện khi số thay đổi.
+- **Drawer Close Button Placement Invariant (Mandatory Right/End Placement)**: Toàn bộ nút đóng `[✕]` của tất cả Drawer trong hệ thống (`AdaptiveDrawer` hoặc Ant Design `Drawer`) **BẮT BUỘC nằm ở góc trên bên phải** (`closable: { placement: 'end' }`). Tiêu đề luôn neo ở góc trên bên trái. **Tuyệt đối KHÔNG BAO GIỜ** để nút đóng `[✕]` ở góc bên trái tiêu đề.
 
 ### 5. Booker Salary API Configuration & Privacy (Refer to `.agents/AGENTS.md`)
 

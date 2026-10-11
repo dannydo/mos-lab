@@ -190,6 +190,12 @@ Mỗi khi nhận nhiệm vụ từ mOS Inbox (ticket bug/feature qua worktree ri
 - **Tuyệt đối KHÔNG sử dụng class `align-center`**: Class `align-center` không tồn tại trong Tailwind CSS. Khi cần căn giữa theo chiều dọc trong flex container, luôn luôn sử dụng class `items-center` (`align-items: center`).
 - **Căn giữa chuẩn cho Badges, Tags & Pills**: Tất cả các thành phần dạng nhãn (Thẻ Tag, Badges, Pills, Status Badge) bắt buộc phải dùng `inline-flex items-center justify-center leading-none` kèm padding cân đối (`py-1 px-2.5`) để văn bản và biểu tượng vector luôn nằm chính giữa tuyệt đối theo chiều dọc, không bị lệch lề trên hay lề dưới.
 
+## 8. Drawer Close Button Placement Invariant (Mandatory Right/End Placement)
+
+- **Quy tắc bất biến (UI Invariant)**: Toàn bộ nút đóng `[✕]` của tất cả Drawer trong hệ thống (`AdaptiveDrawer` hoặc Ant Design `Drawer`) **BẮT BUỘC nằm ở góc trên bên phải** (`closable: { placement: 'end' }`).
+- **Tiêu đề (Title)**: Luôn neo cố định ở **góc trên bên trái** để người dùng quét mắt nhận diện ngữ cảnh tức thì.
+- **Cấm Tuyệt Đối (Strictly Forbidden)**: Tuyệt đối **KHÔNG BAO GIỜ** để nút đóng `[✕]` ở góc bên trái tiêu đề. Mọi Drawer mới tạo hoặc refactor bắt buộc dùng `AdaptiveDrawer` (đã được cấu hình tự động chuẩn hóa placement end).
+
 ---
 
 # Booker Salary API Configuration & Usage Rules

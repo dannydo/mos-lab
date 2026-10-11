@@ -20,13 +20,22 @@ export interface AdaptiveDrawerProps extends DrawerProps {
   intent?: OverlayIntent;
 }
 
-export function AdaptiveDrawer({ intent = 'detail', className = '', width, ...props }: AdaptiveDrawerProps) {
+export function AdaptiveDrawer({ intent = 'detail', className = '', width, closable, ...props }: AdaptiveDrawerProps) {
   const tier = useResponsiveTier();
   const isMobile = tier === 'mobile';
+
+  // Invariant: Nút đóng [✕] của mọi Drawer bắt buộc nằm ở góc trên bên phải (placement: 'end')
+  const mergedClosable =
+    closable === false
+      ? false
+      : typeof closable === 'object' && closable !== null
+        ? { placement: 'end' as const, ...closable }
+        : { placement: 'end' as const };
 
   return (
     <Drawer
       {...props}
+      closable={mergedClosable}
       width={isMobile ? '100vw' : (width ?? getOverlayWidth(tier, intent))}
       placement={isMobile ? 'right' : props.placement}
       className={`adaptive-overlay ${isMobile ? 'adaptive-overlay-mobile-fullscreen' : ''} ${className}`}

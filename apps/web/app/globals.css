@@ -7905,3 +7905,42 @@ button:not(:disabled):not(.ant-btn-loading):active,
 .light-theme .tv-monitor-settings-popover .ant-popover-arrow::after {
   background: #ffffff !important;
 }
+
+/* ==========================================================================
+   Drawer Close Button Position Invariant (Mandatory Right/End Placement)
+   Quy tắc bất biến: Toàn bộ nút đóng [✕] của Drawer bắt buộc nằm ở góc
+   trên bên phải (End/Right), tiêu đề nằm bên trái. Tuyệt đối không để bên trái.
+   ========================================================================== */
+.ant-drawer .ant-drawer-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+.ant-drawer .ant-drawer-header-title {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  align-items: center !important;
+  min-width: 0 !important;
+}
+
+/* Tiêu đề luôn ở bên trái */
+.ant-drawer .ant-drawer-title {
+  order: 1 !important;
+  flex: 1 1 auto !important;
+  margin: 0 !important;
+}
+
+/* Fallback: Nếu Drawer dùng mặc định của Antd (nút close render trước title), đẩy sang góc phải */
+.ant-drawer .ant-drawer-header-title .ant-drawer-close:not(.ant-drawer-close-end) {
+  order: 99 !important;
+  margin-inline-start: auto !important;
+  margin-inline-end: 0 !important;
+}
+
+/* Nút close chuẩn vị trí end */
+.ant-drawer .ant-drawer-close.ant-drawer-close-end {
+  order: 99 !important;
+  margin-inline-start: 12px !important;
+  margin-inline-end: 0 !important;
+}

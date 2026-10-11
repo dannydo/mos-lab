@@ -482,6 +482,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Đãi ngộ vượt trội khi đạt chuẩn (Combo ≥ 21%): Lương giờ tăng +2.000đ/h (27.500đ/h), nhận trọn 90% Tip khách cho (70% làm mi + 20% tư vấn), Thưởng tiền tươi Dưỡng mi Yeppeum (100k gốc / 50k KM, chuẩn 1 cây/tuần = +400k/tháng), và Thưởng hoa hồng Combo bậc thang tiền tươi (<2M: 50k, 2M-<3M: 100k, 3M-<4M: 150k, ≥4M: +50k/1M; gói 4.5M nhận 200k/combo; chuẩn 8 combo = +1.600.000đ/tháng). Tổng hoa hồng bán hàng dự kiến đạt +2.000.000đ/tháng.',
       'Chế tài nghiêm minh khi không đạt (Combo < 21%): Chuyên Viên VẪN ĐƯỢC BẢO LƯU 90% TIP (công nhận nỗ lực tư vấn). Nhưng BỊ KHÓA TOÀN BỘ PHẦN THƯỞNG KHÁC: không nhận lương giờ tăng thêm (giữ mức gốc 25.5k/h), không nhận thưởng combo (0đ), không nhận thưởng dưỡng mi (0đ).',
       'Quy tắc Giáng cấp 2 Tháng Liền: Nếu trong 2 tháng liên tiếp tỷ lệ tự chốt combo vẫn dưới 21%, Chuyên Viên bị tước danh hiệu 1 cánh và quay lại CV · Dịu Dàng (0 cánh), tỷ lệ Tip tụt về lại 70%, mất quyền tự tư vấn tại giường và phải chuyển khách cho sảnh.',
+      'Quy tắc Combo Mi Dưới (LashesUnder) trong Tỷ lệ chốt Combo: Gói combo mi dưới khi Chuyên Viên chốt được VẪN ĐƯỢC TÍNH VÀO TỬ SỐ của tỷ lệ chốt combo (tăng thành tích bán hàng và hưởng thưởng combo). Tuy nhiên, khách hàng chỉ sở hữu gói combo mi dưới thì KHÔNG BỊ TÍNH là Combo Live; ca làm phục vụ khách này vẫn được tính vào mẫu số Not Combo Live (khách tiềm năng) để Chuyên Viên có cơ hội tư vấn tiếp gói combo mi chính.',
     ],
     rationale:
       'Gắn kết quyền lợi tài chính đột phá với năng lực tự chủ bán combo tại giường, công nhận công sức tự tư vấn bằng việc luôn bảo lưu 90% Tip, đồng thời thiết lập kỷ luật doanh nghiệp rõ ràng qua quy tắc 2 tháng liền không đạt thì quay lại CV.',
@@ -739,6 +740,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Khách lẻ định nghĩa chuẩn xác: Là khách hàng hoàn toàn không có gói combo nào đang active tại thời điểm đặt lịch.',
       'Đối với KPI Telesale/Booking: Đơn hoàn tất (Completed) của khách Combo Live được tracking tiến độ riêng (Combo: +X Done); chỉ đơn của khách lẻ (Not Combo Live) mới tính vào chỉ tiêu KPI Done chính thức (450 Done).',
       'Combo Live Completed cho Booker 1.000đ cố định thay tier giảm giá và UI phải hiện “Combo Live”.',
+      'Quy tắc Combo Mi Dưới (LashesUnder) - Bán được tính thưởng nhưng KHÔNG tính Active Combo / Combo Live: Gói combo mi dưới khi bán thành công (đơn Completed) VẪN ĐƯỢC TÍNH là 1 gói combo bán được vào doanh số, KPI và hoa hồng thưởng bậc thang của nhân sự; TUY NHIÊN, gói combo mi dưới TUYỆT ĐỐI KHÔNG được tính vào Active Combo hoặc Combo Live của khách hàng. Khách hàng chỉ sở hữu gói mi dưới khi đặt lịch làm dịch vụ mi chính VẪN LÀ KHÁCH HÀNG LẺ (NOT_COMBO_LIVE), tiếp tục nằm trong mẫu số tiềm năng để Chuyên Viên tư vấn gói combo mi trên.',
     ],
     rationale: 'Bán một gói mới và phục vụ trên gói cũ tạo ra hai loại doanh số và khoản thưởng khác nhau.',
     tags: ['Combo', 'Combo Live', 'Khách lẻ', 'Completed', 'user_service_balance', 'Telesale KPI'],

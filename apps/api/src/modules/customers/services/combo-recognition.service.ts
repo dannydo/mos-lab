@@ -48,6 +48,8 @@ export function buildComboLiveAtBookingSql(orderAlias: string): string {
     FROM user_service_balance usb
     WHERE usb.user_id = ${orderAlias}.user_id
       AND usb.date_created < ${orderAlias}.date_created
+      -- Rule COMBO-001: Combo mi dưới (LashesUnder) không tính vào active combo hoặc combo live
+      AND (usb.service_group IS NULL OR usb.service_group != 'LashesUnder')
       -- Short-circuit 1: If current balance + future uses <= 0, balance can never be live!
       AND (
         usb.normal_count + usb.retain_count + (

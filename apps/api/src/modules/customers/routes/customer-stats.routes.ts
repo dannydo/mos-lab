@@ -201,7 +201,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
             FROM (
               SELECT 
                 usb.user_id,
-                SUM(CASE WHEN (usb.normal_count + usb.retain_count) > 0 AND (usb.date_expired IS NULL OR usb.date_expired > NOW()) THEN 1 ELSE 0 END) as live_count,
+                SUM(CASE WHEN (usb.normal_count + usb.retain_count) > 0 AND (usb.service_group IS NULL OR usb.service_group != 'LashesUnder') AND (usb.date_expired IS NULL OR usb.date_expired > NOW()) THEN 1 ELSE 0 END) as live_count,
                 SUM(usb.normal_count) as normalCount,
                 SUM(usb.retain_count) as retainCount,
                 MAX(usb.date_expired) as expiryDate
@@ -347,11 +347,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
             select: { legacyUserId: true },
           });
           const campUserIds = Array.from(
-            new Set(
-              campaignCustomers
-                .map((c) => Number(c.legacyUserId))
-                .filter((id) => Number.isInteger(id) && id > 0)
-            )
+            new Set(campaignCustomers.map((c) => Number(c.legacyUserId)).filter((id) => Number.isInteger(id) && id > 0))
           );
 
           if (mode === 'IN') {
@@ -1042,7 +1038,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
               user_id,
               SUM(
                 CASE 
-                  WHEN (normal_count + retain_count) > 0 AND (date_expired IS NULL OR date_expired > NOW()) THEN 1 
+                  WHEN (normal_count + retain_count) > 0 AND (service_group IS NULL OR service_group != 'LashesUnder') AND (date_expired IS NULL OR date_expired > NOW()) THEN 1 
                   ELSE 0 
                 END
               ) as live_count,
@@ -1175,6 +1171,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
           SELECT 1 FROM user_service_balance usb
           WHERE usb.user_id = u.id
             AND (usb.normal_count + usb.retain_count) > 0
+            AND (usb.service_group IS NULL OR usb.service_group != 'LashesUnder')
             AND (usb.date_expired IS NULL OR usb.date_expired > NOW())
         )`,
       ];
