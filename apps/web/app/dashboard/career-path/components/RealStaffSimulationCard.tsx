@@ -488,19 +488,57 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
   // Fix Shield Safety Ratio (100% when fixRate == 0, drops towards 0 as fixRate hits 4%)
   const safetyShieldPercent = Math.max(0, Math.min(100, Math.round((1 - (metrics.fixRate || 0)) * 100)));
 
-  // Detailed monthly income gains per perk
+  // 1. Quy đổi sản lượng mi mô phỏng sang 1 tháng (Slider 3 là định mức 3 tháng)
+  const simOrdersPerMonth = Math.max(1, localOrders / 3);
+
+  /**
+   * 2. Thưởng Vòng Xoay CV (CV Xoay) theo công thức phỏng đoán chuẩn Báo Cáo CV (Exact Closed-Form Model):
+   * - Điểm kỹ thuật trung bình p_bar = 35 (chuẩn ải thăng cấp), factor = p_bar / 200 = 0.175
+   * - CV_Xoay = 1.000đ * [ (p_bar / 200) * N_hat^2 + (1 - p_bar / 200) * N_hat ]
+   */
+  const calculateProjectedCvXoayBonus = (monthlyOrders: number, avgPoints: number = 35): number => {
+    if (monthlyOrders <= 0) return 0;
+    const factor = avgPoints / 200; // 0.175
+    const projected = 1000 * (factor * monthlyOrders * monthlyOrders + (1 - factor) * monthlyOrders);
+    return Math.round(projected);
+  };
+  const simulatedCvXoay = calculateProjectedCvXoayBonus(simOrdersPerMonth, 35);
+
+  // 3. Giờ làm việc & Lương giờ ca làm:
   const hourlyWageNext = cvReq.hourlyWage || earnings?.details?.hourlyWageNext || (isTargetCvPlusPlus ? 29500 : 27500);
   const hourlyWageCurrent = earnings?.details?.hourlyWageCurrent || config.compensation?.hourlyWages?.cv || 25500;
-  const actualHours = earnings?.details?.actualWorkingHours || earnings?.details?.monthlyEstimatedHours || 260;
-  const wageGain = Math.max(0, (hourlyWageNext - hourlyWageCurrent) * actualHours);
+  const baselineHours = earnings?.details?.actualWorkingHours || earnings?.details?.monthlyEstimatedHours || 260;
+  const baselineOrdersPerMonth = Math.max(1, (metrics.ordersCount || 300) / 3);
+  const hoursPerOrder = baselineHours / baselineOrdersPerMonth;
+  const safeHoursPerOrder = Math.max(1.8, Math.min(2.8, hoursPerOrder || 2.4));
+  const simWorkingHours = Math.round(simOrdersPerMonth * safeHoursPerOrder);
 
+  const wageCvCurrent = Math.round(simWorkingHours * hourlyWageCurrent);
+  const wageCvPlus = Math.round(simWorkingHours * hourlyWageNext);
+  const wageGain = Math.max(0, wageCvPlus - wageCvCurrent);
+
+  // 4. Tiền TIP khách trao tặng theo sản lượng mi và tỷ lệ tip:
   const targetTipRatio = cvReq.tipShareRatio ?? 0.9;
   const baseTipRatio = config.rewardRates?.tipShareCvRatio ?? 0.7;
-  const totalCustomerTip =
-    (earnings?.details as any)?.customerTotalTip || (earnings?.details as any)?.totalCustomerTip || 4171200;
-  const tipGain = Math.max(0, Math.round(totalCustomerTip * (targetTipRatio - baseTipRatio)));
+  const simTipRatio = Math.max(0, Math.min(1, sliderTipRate / 100));
+  const simTippedVisits = simOrdersPerMonth * simTipRatio;
 
-  // Cấu hình tiền tươi dưỡng mi & combo bậc thang
+  const avgCustomerTip =
+    metrics.staffAvgTip ||
+    metrics.shopAvgTip ||
+    (earnings?.details?.actualTipReceived && metrics.ordersCount
+      ? Math.round(
+          earnings.details.actualTipReceived / 0.7 / Math.max(1, (metrics.ordersCount / 3) * (staffTipRate || 0.45))
+        )
+      : 40000);
+  const safeAvgCustomerTip = Math.max(30000, Math.min(80000, avgCustomerTip || 40000));
+  const simTotalCustomerTip = Math.round(simTippedVisits * safeAvgCustomerTip);
+
+  const tipCvCurrent = Math.round(simTotalCustomerTip * baseTipRatio);
+  const tipCvPlus = Math.round(simTotalCustomerTip * targetTipRatio);
+  const tipGain = Math.max(0, tipCvPlus - tipCvCurrent);
+
+  // 5. Cấu hình tiền tươi dưỡng mi & combo bậc thang:
   const serumOrigBonus = cvReq.serumOriginalPriceBonus ?? 100000;
   const serumDiscountBonus = cvReq.serumDiscountedPriceBonus ?? 50000;
   const weeklySerumBonus = sliderSerums * serumOrigBonus;
@@ -509,13 +547,17 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
   const avgComboPrice = earnings?.details?.avgComboPrice || 4500000;
   const singleComboBonus = calculateComboBonus(avgComboPrice, cvReq);
 
-  // Mẫu số: Tệp khách hàng Not Combo Live (chưa có gói combo)
-  const notComboLiveCustomers = cvPlusSnapshot?.notComboLiveOrders || Math.max(20, Math.round((localOrders / 3) * 0.4));
-  const comboLiveCustomers = cvPlusSnapshot?.comboLiveOrders || Math.round((localOrders / 3) * 0.6);
+  // Mẫu số: Tệp khách hàng Not Combo Live (tỷ lệ thuận với sản lượng mi hàng tháng)
+  const actualNotComboRatio =
+    cvPlusSnapshot && cvPlusSnapshot.totalOrders > 0
+      ? Math.max(0.2, Math.min(0.8, cvPlusSnapshot.notComboLiveOrders / cvPlusSnapshot.totalOrders))
+      : 0.4;
+  const notComboLiveCustomers = Math.max(10, Math.round(simOrdersPerMonth * actualNotComboRatio));
+  const comboLiveCustomers = Math.max(10, Math.round(simOrdersPerMonth * (1 - actualNotComboRatio)));
 
   // Tỷ lệ chốt combo (%) lấy trực tiếp từ cần gạt sliderCombo
   const simulatedComboPct = localCombo;
-  // Số combo bán được tương ứng trên khách Not Combo Live (khách có Combo Live bán được cũng cộng dồn vào)
+  // Số combo bán được tương ứng trên khách Not Combo Live
   const simulatedComboCount = Math.round(notComboLiveCustomers * (localCombo / 100));
   const minComboRequired = Math.ceil(notComboLiveCustomers * (minSelfComboPercent / 100));
 
@@ -528,11 +570,11 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
   const baseComboCommission = earnings?.details?.comboCommissionCurrent || 0;
   const comboGain = isPenaltyActive ? 0 : Math.max(0, simulatedPersonalComboBonus - baseComboCommission);
 
-  // 1. Lương giờ tăng thêm (+2k/h): Chỉ nhận khi đạt >= minSelfComboPercent% combo
+  // Lương giờ tăng thêm (+2k/h): Chỉ nhận khi đạt >= minSelfComboPercent% combo
   const effectiveWageGain = isPenaltyActive ? 0 : wageGain;
-  // 2. Thưởng dưỡng mi: Chỉ nhận khi đạt >= minSelfComboPercent% combo
+  // Thưởng dưỡng mi: Chỉ nhận khi đạt >= minSelfComboPercent% combo
   const effectiveSerumGain = isPenaltyActive ? 0 : monthlySerumBonus;
-  // 3. Tiền TIP: CV 1 LÔNG VẪN NHẬN 70% + 20% = 90% TIP KỂ CẢ KHI BÁN KHÔNG ĐƯỢC (< minSelfComboPercent%)!
+  // Tiền TIP: CV 1 LÔNG VẪN NHẬN 70% + 20% = 90% TIP KỂ CẢ KHI BÁN KHÔNG ĐƯỢC (< minSelfComboPercent%)!
   const effectiveTipGain = tipGain;
 
   // Khoản tiền thưởng bị mất trắng / khóa do không đạt tối thiểu minSelfComboPercent% combo:
@@ -558,10 +600,11 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
     (isTargetCvPlusPlus ? Math.round(defaultCrossOrders * 40000 * crossTipRate) : 0);
   const dynamicCrossTipDelta = isTargetCvPlusPlus ? simulatedCrossTipAmount - baseCrossTipAmount : 0;
 
-  // Tổng tiền tăng thêm thực nhận mỗi tháng
+  // 6. Tổng thu nhập mô phỏng cả 2 bên (CV Hiện Tại vs 🪶 CV Sau Thăng Cấp):
+  const currentIncome = wageCvCurrent + simulatedCvXoay + tipCvCurrent;
   const totalSimulatedGain = effectiveWageGain + effectiveTipGain + comboGain + effectiveSerumGain;
-  const currentIncome = earnings?.currentEstimatedIncome || earnings?.details?.currentGrossIncome || 13023340;
   const simulatedNextTierIncome = currentIncome + totalSimulatedGain;
+  const incomeIncreasePercent = currentIncome > 0 ? Math.round((totalSimulatedGain / currentIncome) * 100) : 33;
 
   const origOrders = metrics.ordersCount || 0;
   const origCombo = Math.round((metrics.selfComboRate || 0.25) * 100);
@@ -1144,8 +1187,11 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                       <span className="text-base font-black font-mono tabular-nums text-emerald-400">
                         {localOrders} bộ
                       </span>
+                      <span className="text-[10px] text-slate-400 pl-1 font-normal">
+                        (~{Math.round(simOrdersPerMonth)} ca/tháng)
+                      </span>
                       {localOrders !== (metrics.ordersCount || 0) && (
-                        <span className="text-[9px] text-amber-400 pl-1 font-normal">
+                        <span className="text-[9px] text-amber-400 pl-1 font-normal block sm:inline">
                           (Thực: {metrics.ordersCount || 0})
                         </span>
                       )}
@@ -1226,8 +1272,11 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                       <span className="text-base font-black font-mono tabular-nums text-indigo-400">
                         {sliderTipRate.toFixed(1)}%
                       </span>
+                      <span className="text-[10px] text-slate-400 pl-1 font-normal">
+                        (~{Math.round(simTippedVisits)} ca tip)
+                      </span>
                       {Math.abs(sliderTipRate - staffTipRatePercent) > 0.1 && (
-                        <span className="text-[9px] text-amber-400 pl-1 font-normal">
+                        <span className="text-[9px] text-amber-400 pl-1 font-normal block sm:inline">
                           (Thực: {staffTipRatePercent}%)
                         </span>
                       )}
@@ -1308,32 +1357,42 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 </div>
                 <ul className="space-y-1.5 text-[11px] text-slate-300">
                   <li className="flex justify-between">
-                    <span className="text-slate-400">• Tỷ lệ Tip khách cho:</span>
-                    <strong className="text-slate-300">
-                      70% Tip{' '}
-                      {earnings?.details?.actualTipReceived
-                        ? `(${formatVnd(earnings.details.actualTipReceived)})`
-                        : '(bị trừ 30%)'}
+                    <span className="text-slate-400">• Lương giờ ({formatVnd(hourlyWageCurrent)}/h):</span>
+                    <strong className="text-slate-200 tabular-nums">
+                      {formatVnd(wageCvCurrent)}{' '}
+                      <span className="text-[10px] text-slate-400 font-normal">(~{simWorkingHours}h)</span>
+                    </strong>
+                  </li>
+                  <li className="flex justify-between">
+                    <span className="text-slate-400">• Thưởng Vòng Xoay CV:</span>
+                    <strong className="text-amber-400 tabular-nums">
+                      {formatVnd(simulatedCvXoay)}{' '}
+                      <span className="text-[10px] text-slate-400 font-normal">
+                        (~{Math.round(simOrdersPerMonth)} ca)
+                      </span>
+                    </strong>
+                  </li>
+                  <li className="flex justify-between">
+                    <span className="text-slate-400">• Tiền Tip nhận (70%):</span>
+                    <strong className="text-slate-200 tabular-nums">
+                      {formatVnd(tipCvCurrent)}{' '}
+                      <span className="text-[10px] text-slate-400 font-normal">(-30% tư vấn)</span>
                     </strong>
                   </li>
                   <li className="flex justify-between">
                     <span className="text-slate-400">• Quyền chốt Combo:</span>
                     <strong className="text-rose-400">Không có (phụ thuộc sảnh)</strong>
                   </li>
-                  <li className="flex justify-between">
-                    <span className="text-slate-400">• Lương giờ ca làm:</span>
-                    <strong className="text-slate-300">{formatVnd(hourlyWageCurrent)} / giờ</strong>
-                  </li>
                 </ul>
                 <div className="pt-2 border-t border-slate-800 flex justify-between items-center text-xs">
-                  <span className="text-slate-400">Tổng thu nhập thực tế:</span>
+                  <span className="text-slate-400">Tổng thu nhập mô phỏng:</span>
                   <div className="text-right">
                     <strong className="text-slate-200 text-sm font-black tabular-nums">
-                      ~{formatVnd(currentIncome)}
+                      ~{formatVnd(currentIncome)} / thg
                     </strong>
                     {earnings?.details?.currentNetIncome ? (
                       <div className="text-[10px] text-slate-400 font-normal tabular-nums">
-                        ({formatVnd(earnings.details.currentNetIncome)} thực lãnh)
+                        ({formatVnd(earnings.details.currentNetIncome)} thực lãnh tháng trước)
                       </div>
                     ) : null}
                   </div>
@@ -1376,47 +1435,64 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     Đặc Quyền
                   </span>
                   <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[9px] font-black uppercase shadow-xs">
-                    {isComboTargetHit ? '+33% THU NHẬP' : '+90% TIP'}
+                    {isComboTargetHit ? `+${incomeIncreasePercent}% THU NHẬP` : '+90% TIP'}
                   </span>
                 </div>
                 <ul className="space-y-1.5 text-[11px] text-slate-200">
                   <li className="flex justify-between">
-                    <span className="text-emerald-300/90">• Ăn trọn 90% TIP (70+20):</span>
-                    <strong className="text-emerald-300 font-bold tabular-nums">
-                      +{formatVnd(effectiveTipGain)} / thg
+                    <span className="text-emerald-300/90">• Lương giờ ({formatVnd(hourlyWageNext)}/h):</span>
+                    <div className="text-right">
+                      <strong className="text-emerald-300 font-bold tabular-nums">{formatVnd(wageCvPlus)}</strong>
+                      {isComboTargetHit && effectiveWageGain > 0 ? (
+                        <span className="text-[10px] text-emerald-400 font-normal pl-1">
+                          (+{formatVnd(effectiveWageGain)})
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-rose-400 font-normal pl-1">(Khóa)</span>
+                      )}
+                    </div>
+                  </li>
+                  <li className="flex justify-between">
+                    <span className="text-emerald-300/90">• Thưởng Vòng Xoay CV:</span>
+                    <strong className="text-amber-300 font-bold tabular-nums">
+                      {formatVnd(simulatedCvXoay)}{' '}
+                      <span className="text-[10px] text-slate-400 font-normal">
+                        (~{Math.round(simOrdersPerMonth)} ca)
+                      </span>
                     </strong>
                   </li>
                   <li className="flex justify-between">
-                    <span className="text-emerald-300/90">• Độc quyền chốt Combo Not Live:</span>
-                    {isComboTargetHit ? (
-                      <strong className="text-emerald-300 font-bold tabular-nums">+{formatVnd(comboGain)} / thg</strong>
-                    ) : (
-                      <span className="text-rose-400 font-bold">0đ (Khóa do &lt;{minSelfComboPercent}%)</span>
-                    )}
+                    <span className="text-emerald-300/90">• Ăn trọn 90% TIP (70+20):</span>
+                    <div className="text-right">
+                      <strong className="text-emerald-300 font-bold tabular-nums">{formatVnd(tipCvPlus)}</strong>
+                      <span className="text-[10px] text-emerald-400 font-normal pl-1">
+                        (+{formatVnd(effectiveTipGain)})
+                      </span>
+                    </div>
                   </li>
                   <li className="flex justify-between">
-                    <span className="text-emerald-300/90">• Tăng lương giờ (27.500đ/h):</span>
+                    <span className="text-emerald-300/90">• Độc quyền Combo & Dưỡng mi:</span>
                     {isComboTargetHit ? (
-                      <strong className="text-emerald-300 font-bold tabular-nums">
-                        +{formatVnd(effectiveWageGain)} / thg
-                      </strong>
-                    ) : (
-                      <span className="text-rose-400 font-bold">0đ (Khóa do &lt;{minSelfComboPercent}%)</span>
-                    )}
-                  </li>
-                  <li className="flex justify-between">
-                    <span className="text-emerald-300/90">• Thưởng Dưỡng mi & Chuối:</span>
-                    {isComboTargetHit ? (
-                      <strong className="text-emerald-300 font-bold tabular-nums">
-                        +{formatVnd(effectiveSerumGain)} / thg
-                      </strong>
+                      <div className="text-right">
+                        <strong className="text-emerald-300 font-bold tabular-nums">
+                          +{formatVnd(comboGain + effectiveSerumGain)} / thg
+                        </strong>
+                        <div className="text-[9.5px] text-slate-400 font-normal">
+                          (~{simulatedComboCount} combo + {sliderSerums * 4} cây)
+                        </div>
+                      </div>
                     ) : (
                       <span className="text-rose-400 font-bold">0đ (Khóa do &lt;{minSelfComboPercent}%)</span>
                     )}
                   </li>
                 </ul>
                 <div className="pt-2 border-t border-emerald-500/30 flex justify-between items-center text-xs">
-                  <span className="text-emerald-300 font-bold">Tổng thu nhập thực nhận:</span>
+                  <div>
+                    <span className="text-emerald-300 font-bold block">Tổng thu nhập thực nhận:</span>
+                    <span className="text-[10px] text-emerald-400 font-medium">
+                      (Tăng thêm +{formatVnd(totalSimulatedGain)} / thg)
+                    </span>
+                  </div>
                   <strong className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-emerald-300 text-base font-black tabular-nums">
                     ~{formatVnd(simulatedNextTierIncome)} / thg
                   </strong>

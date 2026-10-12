@@ -36495,8 +36495,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 142343,
-        "lineCount": 2702,
+        "sizeBytes": 146734,
+        "lineCount": 2784,
         "ext": ".tsx"
       }
     },
@@ -36508,8 +36508,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 78141,
-        "lineCount": 1707,
+        "sizeBytes": 78171,
+        "lineCount": 1715,
         "ext": ".tsx"
       }
     },
