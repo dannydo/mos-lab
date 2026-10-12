@@ -36417,7 +36417,7 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path.constants.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24501,
+        "sizeBytes": 24420,
         "lineCount": 503,
         "ext": ".ts"
       }
@@ -36443,7 +36443,7 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerBibleDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16573,
+        "sizeBytes": 16547,
         "lineCount": 326,
         "ext": ".tsx"
       }
@@ -36482,8 +36482,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/IslandGameIcon.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13556,
-        "lineCount": 357,
+        "sizeBytes": 13517,
+        "lineCount": 356,
         "ext": ".tsx"
       }
     },
@@ -36495,7 +36495,7 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 142953,
+        "sizeBytes": 142784,
         "lineCount": 2703,
         "ext": ".tsx"
       }
@@ -36508,8 +36508,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 77883,
-        "lineCount": 1688,
+        "sizeBytes": 77686,
+        "lineCount": 1692,
         "ext": ".tsx"
       }
     },
@@ -36521,8 +36521,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38188,
-        "lineCount": 887,
+        "sizeBytes": 38250,
+        "lineCount": 892,
         "ext": ".tsx"
       }
     },
@@ -40343,8 +40343,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 111146,
-        "lineCount": 1595,
+        "sizeBytes": 111098,
+        "lineCount": 1594,
         "ext": ".ts"
       }
     },

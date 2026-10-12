@@ -60,7 +60,7 @@ export const AngelWing: React.FC<{
 );
 
 /**
- * Biểu tượng 1 Cánh Trái (vươn sang bên trái, lật chuẩn) - Dành cho FM sơ cấp
+ * Biểu tượng Cánh Trái (vươn sang bên trái, lật chuẩn) - Dành cho FM sơ cấp (FM 🪽)
  */
 export const LeftWingIcon: React.FC<LucideProps> = ({ size = 24, strokeWidth = 2, className = '' }) => (
   <AngelWing
@@ -72,7 +72,7 @@ export const LeftWingIcon: React.FC<LucideProps> = ({ size = 24, strokeWidth = 2
 );
 
 /**
- * Biểu tượng Đôi Cánh Đối Xứng (Trái + Phải) cho Ải 4 (🪽 FM 🪽 · 2 Cánh)
+ * Biểu tượng Đôi Cánh Đối Xứng (Trái + Phải) cho Ải 4 (🪽 FM 🪽)
  */
 export const BothWingsIcon: React.FC<LucideProps> = ({ size = 24, strokeWidth = 2, className = '' }) => {
   const numSize = typeof size === 'number' ? size : 24;
@@ -86,14 +86,14 @@ export const BothWingsIcon: React.FC<LucideProps> = ({ size = 24, strokeWidth = 
 };
 
 /**
- * Biểu tượng 1 Lông Vũ (Feather) cho Ải 2 (CV 1 Lông)
+ * Biểu tượng Lông Vũ (Feather) cho Ải 2 (🪶 CV)
  */
 export const SingleFeatherIcon: React.FC<LucideProps> = ({ size = 20, strokeWidth = 2, className = '' }) => (
   <Feather size={size} strokeWidth={strokeWidth} className={className} />
 );
 
 /**
- * Biểu tượng Cặp Lông Vũ Đối Xứng (Trái + Phải Flip) cho Ải 3 (CV 2 Lông)
+ * Biểu tượng Cặp Lông Vũ Đối Xứng (Trái + Phải Flip) cho Ải 3 (🪶 CV 🪶)
  */
 export const PairOfFeathersIcon: React.FC<LucideProps> = ({ size = 20, strokeWidth = 2, className = '' }) => {
   const numSize = typeof size === 'number' ? size : 20;
@@ -150,7 +150,7 @@ const ISLAND_THEMES: Record<string, IslandTheme> = {
       'bg-purple-500/20 border-purple-500/50 text-purple-600 dark:text-purple-300 ring-2 ring-purple-500/40 shadow-md shadow-purple-500/30',
     iconColor: 'text-purple-600 dark:text-purple-400',
     glowColor: 'shadow-purple-500/30',
-    name: '🪶 CV · 1 Lông (Thanh Lịch)',
+    name: '🪶 CV · Thanh Lịch',
   },
   cv_plus_plus: {
     Icon: PairOfFeathersIcon,
@@ -159,7 +159,7 @@ const ISLAND_THEMES: Record<string, IslandTheme> = {
       'bg-amber-500/20 border-amber-500/50 text-amber-600 dark:text-amber-300 ring-2 ring-amber-500/40 shadow-md shadow-amber-500/30',
     iconColor: 'text-amber-600 dark:text-amber-400',
     glowColor: 'shadow-amber-500/30',
-    name: '🪶 CV 🪶 · 2 Lông (Quí Phái)',
+    name: '🪶 CV 🪶 · Quí Phái',
   },
   fm: {
     Icon: BothWingsIcon,
@@ -168,7 +168,7 @@ const ISLAND_THEMES: Record<string, IslandTheme> = {
       'bg-sky-500/20 border-sky-500/50 text-sky-600 dark:text-sky-300 ring-2 ring-sky-500/40 shadow-md shadow-sky-500/30',
     iconColor: 'text-sky-600 dark:text-sky-400',
     glowColor: 'shadow-sky-500/30',
-    name: '🪽 FM 🪽 · 2 Cánh (Nữ Thần Sàn)',
+    name: '🪽 FM 🪽 · Nữ Thần Sàn',
   },
   cho: {
     Icon: HeartHandshake,
@@ -273,7 +273,7 @@ export const WingRoleLabel: React.FC<{
     );
   }
 
-  // 2. Nếu text chứa "🪶 CV" (1 Lông Vũ chuẩn)
+  // 2. Nếu text chứa "🪶 CV" (Lông Vũ chuẩn)
   if (text.includes('🪶 CV') || text.includes('🪶CV')) {
     const parts = text.split(/🪶\s*CV/);
     return (

@@ -202,11 +202,11 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
         'Thưởng giữ chân khách quen (Retention Bonus)',
         'Thưởng Thâm Niên: +5% đến +20% trên Thưởng CV Xoay hàng tháng',
       ],
-      gateText: `Đạt ${cvToCc.minOrders} ca mi (3 tháng liên tiếp) + Tip cao hơn TB chi nhánh ≥ ${(cvToCc.minTipRatioAboveShop * 100).toFixed(0)}% + Fix ≤ ${(cvToCc.maxFixRate * 100).toFixed(1)}% + HI ≥ ${(cvToCc.minHappinessIndex * 100).toFixed(0)}% (0 biên bản QA/QC) ➔ Mở khóa ải Trùm Cuối Tự Bán Combo (≥ ${(cvToCc.minSelfComboRate * 100).toFixed(0)}% khách của mình) để thăng cấp 🪶 CV · 1 Lông (Thanh Lịch)!`,
+      gateText: `Đạt ${cvToCc.minOrders} ca mi (3 tháng liên tiếp) + Tip cao hơn TB chi nhánh ≥ ${(cvToCc.minTipRatioAboveShop * 100).toFixed(0)}% + Fix ≤ ${(cvToCc.maxFixRate * 100).toFixed(1)}% + HI ≥ ${(cvToCc.minHappinessIndex * 100).toFixed(0)}% (0 biên bản QA/QC) ➔ Mở khóa ải Trùm Cuối Tự Bán Combo (≥ ${(cvToCc.minSelfComboRate * 100).toFixed(0)}% khách của mình) để thăng cấp 🪶 CV · Thanh Lịch!`,
     },
     {
       id: 'cv_plus',
-      name: '🪶 CV · 1 Lông (Thanh Lịch)',
+      name: '🪶 CV · Thanh Lịch',
       badge: 'Đang Triển Khai',
       icon: '👁️',
       sub: 'Tự Vấn + 90% Tip',
@@ -227,11 +227,11 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
         'Hoa hồng Combo bậc thang tiền tươi: 50K - 150K - 500K/gói + Thưởng Dưỡng mi 100K/cây',
         'Thưởng Thâm Niên: +5% đến +20% trên Thưởng CV Xoay hàng tháng',
       ],
-      gateText: `Duy trì 🪶 CV · 1 Lông (Thanh Lịch): Tự chốt combo ≥ 20% trên khách Not Combo Live + 0 vi phạm QA/QC + HI ≥ 65%. Chú ý: 2 tháng liền không đạt chuẩn thì quay lại CV · Dịu Dàng!`,
+      gateText: `Duy trì 🪶 CV · Thanh Lịch: Tự chốt combo ≥ 20% trên khách Not Combo Live + 0 vi phạm QA/QC + HI ≥ 65%. Chú ý: 2 tháng liền không đạt chuẩn thì quay lại CV · Dịu Dàng!`,
     },
     {
       id: 'cv_plus_plus',
-      name: '🪶 CV 🪶 · 2 Lông (Quí Phái)',
+      name: '🪶 CV 🪶 · Quí Phái',
       badge: 'Đang Nghiên Cứu',
       icon: '👁️',
       sub: 'Sảnh + Hộ 20%',
@@ -258,11 +258,11 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
         'Thưởng Thâm Niên: +5% đến +20% trên Thưởng CV Xoay',
         'Quy hoạch hạt giống số 1 để bổ nhiệm lên Floor Manager (FM) chính thức!',
       ],
-      gateText: `Duy trì 🪶 CV 🪶 · 2 Lông (Quí Phái) ≥ ${cvPlusPlusToFm?.minMonthsInRole || 3} tháng + Đạt ≥ ${cvPlusPlusToFm?.minMonthlyGoogleReviews || 30} Google Review 5★/tháng + Kiểm tra kho & CSVC hàng tuần + Tỷ lệ combo shop ≥ ${((cvPlusPlusToFm?.minShopComboRate || 0.25) * 100).toFixed(0)}% ➔ Thăng cấp Floor Manager (🪽 FM 🪽 · 2 Cánh)!`,
+      gateText: `Duy trì 🪶 CV 🪶 · Quí Phái ≥ ${cvPlusPlusToFm?.minMonthsInRole || 3} tháng + Đạt ≥ ${cvPlusPlusToFm?.minMonthlyGoogleReviews || 30} Google Review 5★/tháng + Kiểm tra kho & CSVC hàng tuần + Tỷ lệ combo shop ≥ ${((cvPlusPlusToFm?.minShopComboRate || 0.25) * 100).toFixed(0)}% ➔ Thăng cấp Floor Manager (🪽 FM 🪽 · Nữ Thần Sàn)!`,
     },
     {
       id: 'fm',
-      name: '🪽 FM 🪽 · 2 Cánh (Nữ Thần Sàn)',
+      name: '🪽 FM 🪽 · Nữ Thần Sàn',
       badge: 'Đang Nghiên Cứu',
       icon: '🏰',
       sub: 'Tư Vấn + Vận Hành',
@@ -350,15 +350,15 @@ export function formatCareerRoleName(role?: string | null, compact = false): str
     case 'CV':
       return compact ? 'CV' : 'CV · Dịu Dàng';
     case 'CV_PLUS':
-      return compact ? '🪶 CV' : '🪶 CV · 1 Lông (Thanh Lịch)';
+      return compact ? '🪶 CV' : '🪶 CV · Thanh Lịch';
     case 'CV_PLUS_PLUS':
-      return compact ? '🪶 CV 🪶' : '🪶 CV 🪶 · 2 Lông (Quí Phái)';
+      return compact ? '🪶 CV 🪶' : '🪶 CV 🪶 · Quí Phái';
     case 'MASTER_TECH':
       return 'Master Tech';
     case 'CC':
       return 'CC';
     case 'FM':
-      return compact ? '🪽 FM 🪽' : '🪽 FM 🪽 · 2 Cánh (Nữ Thần Sàn)';
+      return compact ? '🪽 FM 🪽' : '🪽 FM 🪽 · Nữ Thần Sàn';
     case 'CHO':
       return compact ? 'CHO' : 'CHO · Mẹ Thiên Thần';
     case 'BOSS':

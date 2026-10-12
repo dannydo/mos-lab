@@ -620,9 +620,9 @@ export default function CareerPathPage() {
             <span className="text-sm">✨</span>
           </h1>
           <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-snug mt-1">
-            Vượt ải ⛑️ KTV Thử Việc ➔ CV · Dịu Dàng ➔ <WingRoleLabel text="🪶 CV" /> · 1 Lông (Thanh Lịch) ➔{' '}
-            <WingRoleLabel text="🪶 CV 🪶" /> · 2 Lông (Quí Phái) ➔ <WingRoleLabel text="🪽 FM 🪽" /> · 2 Cánh (Nữ Thần
-            Sàn) ➔ 💖 CHO Mẹ Thiên Thần ➔ 💎 BOSS Co-Owner!
+            Vượt ải ⛑️ KTV Thử Việc ➔ CV · Dịu Dàng ➔ <WingRoleLabel text="🪶 CV" /> · Thanh Lịch ➔{' '}
+            <WingRoleLabel text="🪶 CV 🪶" /> · Quí Phái ➔ <WingRoleLabel text="🪽 FM 🪽" /> · Nữ Thần Sàn ➔ 💖 CHO Mẹ
+            Thiên Thần ➔ 💎 BOSS Co-Owner!
           </p>
 
           {/* 7 ISLANDS PANORAMIC GRID ON DESKTOP FHD */}
