@@ -918,6 +918,11 @@ export class CareerProgressionService {
     let payrollSocialSecurity = 0;
     let payrollGrossIncome = 0;
     let payrollBonusAmount = 0;
+    let payrollWageAmount = 0;
+    let payrollTipAmount = 0;
+    let payrollAllowanceAmount = 0;
+    let payrollDate: string | null = null;
+    let payrollMonthLabel: string | null = null;
 
     try {
       const [
@@ -1138,7 +1143,7 @@ export class CareerProgressionService {
           FROM staff_payroll sp
           WHERE sp.user_id = ?
             AND sp.date <= DATE(${periodConfig.periodEndSql})
-          ORDER BY sp.date DESC
+          ORDER BY (sp.date_completed IS NOT NULL) DESC, sp.date DESC
           LIMIT 1
         `,
             targetLegacyStaffId
@@ -1182,6 +1187,21 @@ export class CareerProgressionService {
         payrollSocialSecurity = Math.round(Number(pr.total_social_security_amount || 0));
         payrollGrossIncome = payrollNetIncome + payrollSocialSecurity;
         payrollBonusAmount = Math.round(Number(pr.total_bonus_amount || 0));
+        payrollWageAmount = Math.round(Number(pr.total_wage_amount || 0));
+        payrollTipAmount = Math.round(Number(pr.total_tip_amount || 0));
+        payrollAllowanceAmount = Math.round(
+          Number(pr.total_support_parking_amount || 0) +
+            Number(pr.total_off_week_amount || 0) +
+            Number(pr.total_extra_support_amount || 0) -
+            payrollSocialSecurity
+        );
+        if (pr.date) {
+          const d = new Date(pr.date);
+          payrollDate = d.toISOString();
+          const m = d.getMonth() + 1;
+          const y = d.getFullYear();
+          payrollMonthLabel = `Tháng ${m < 10 ? '0' + m : m}/${y}`;
+        }
       }
 
       totalHi = Number(hiRes?.[0]?.total_evaluations || 0);
@@ -1575,8 +1595,10 @@ export class CareerProgressionService {
     const actualTipReceived = periodTip > 0 ? periodTip : ordersCount > 0 ? Math.round(totalTip / 3) : 2500000;
     const monthlyTipAvg = actualTipReceived;
 
-    // Tổng tiền tip mà khách hàng thực tế đã cho trên hóa đơn (100% tip khách: actualTipReceived / 0.7)
-    const customerTotalTip = Math.round(actualTipReceived / 0.7);
+    // Tổng tiền tip mà khách hàng thực tế đã cho trên hóa đơn (100% tip khách: actualTipReceived / 7 * 10)
+    // Chân Lý Danny: CV nhận 70% Tip (7 phần). Lên 🪶 CV ăn trọn 90% Tip (thêm 20% do tự tư vấn không bị trừ cho sảnh/CC = (Tip / 7) * 2).
+    const customerTotalTip = Math.round((actualTipReceived / 7) * 10);
+    const tipGainFrom70 = Math.round((actualTipReceived / 7) * 2);
 
     // Số đơn làm trong kỳ: ưu tiên theo kỳ được chọn, nếu không thì lấy trung bình 3 tháng
     const monthlyOrdersCount = periodOrders > 0 ? periodOrders : ordersCount > 0 ? Math.round(ordersCount / 3) : 80;
@@ -1610,7 +1632,7 @@ export class CareerProgressionService {
     let wageCurrent = hourlyWages.cv;
     let wageNext = hourlyWages.cvPlus;
     let tipShareCurrent = actualTipReceived; // Hiện tại nhận 70%
-    let tipShareNext = Math.round(customerTotalTip * 0.9); // Khi lên CV+ nhận 90%
+    let tipShareNext = actualTipReceived + tipGainFrom70; // Khi lên CV+ nhận 90%
     let comboCommCurrent = 0;
     let comboCommNext = Math.round(predictedComboCount * singleComboBonus); // Tiền tươi theo bậc thang combo
 
@@ -1734,6 +1756,13 @@ export class CareerProgressionService {
           currentNetIncome: payrollNetIncome > 0 ? payrollNetIncome : Math.round(currentEstimatedIncome * 0.9),
           payrollBonusAmount,
           socialSecurityAmount: payrollSocialSecurity,
+          payrollWageAmount,
+          payrollTipAmount,
+          payrollAllowanceAmount,
+          payrollWorkingHours,
+          payrollHourlyRate,
+          payrollDate,
+          payrollMonthLabel,
           hourlyWageCurrent: wageCurrent,
           hourlyWageNext: wageNext,
           tipShareCurrent,

@@ -259,29 +259,43 @@ export const WingRoleLabel: React.FC<{
 }> = ({ text, className = '', wingClassName = '', iconSize = 11 }) => {
   if (!text) return null;
 
-  // 1. Nếu text chứa "🪶 CV 🪶" (Lông bên trái flip -scale-x-100 đối xứng ngang xòe ra ngoài)
-  if (text.includes('🪶 CV 🪶') || text.includes('🪶CV🪶')) {
-    const parts = text.split(/🪶\s*CV\s*🪶/);
+  // 1. Nếu text chứa "CV 2 Lông" hoặc "🪶 CV 🪶" hoặc "CV++" (2 lông hai bên đối xứng)
+  if (
+    text.includes('CV 2 Lông') ||
+    text.includes('CV 2 lông') ||
+    text.includes('🪶 CV 🪶') ||
+    text.includes('🪶CV🪶') ||
+    text.includes('CV++')
+  ) {
+    const rawNoFeathers = text.replace(/🪶/g, '').trim();
+    const parts = rawNoFeathers.split(/CV\s*2\s*[Ll]ông|CV\+\+|CV/);
     return (
       <span className={`inline-flex items-center justify-center gap-1 ${className}`}>
-        {parts[0] && <span>{parts[0]}</span>}
+        {parts[0]?.trim() && <span>{parts[0].trim()} </span>}
         <Feather size={iconSize} strokeWidth={2.5} className={`shrink-0 -scale-x-100 ${wingClassName}`} />
         <span className="font-black">CV</span>
         <Feather size={iconSize} strokeWidth={2.5} className={`shrink-0 ${wingClassName}`} />
-        {parts[1] && <span>{parts[1]}</span>}
+        {parts[1]?.trim() && <span> {parts[1].trim()}</span>}
       </span>
     );
   }
 
-  // 2. Nếu text chứa "🪶 CV" (Lông bên trái flip -scale-x-100 vươn ra ngoài)
-  if (text.includes('🪶 CV') || text.includes('🪶CV')) {
-    const parts = text.split(/🪶\s*CV/);
+  // 2. Nếu text chứa "CV 1 Lông" hoặc "🪶 CV" hoặc "CV+" (1 lông bên trái)
+  if (
+    text.includes('CV 1 Lông') ||
+    text.includes('CV 1 lông') ||
+    text.includes('🪶 CV') ||
+    text.includes('🪶CV') ||
+    text.includes('CV+')
+  ) {
+    const rawNoFeathers = text.replace(/🪶/g, '').trim();
+    const parts = rawNoFeathers.split(/CV\s*1\s*[Ll]ông|CV\+|CV/);
     return (
       <span className={`inline-flex items-center justify-center gap-1 ${className}`}>
-        {parts[0] && <span>{parts[0]}</span>}
+        {parts[0]?.trim() && <span>{parts[0].trim()} </span>}
         <Feather size={iconSize} strokeWidth={2.5} className={`shrink-0 -scale-x-100 ${wingClassName}`} />
         <span className="font-black">CV</span>
-        {parts[1] && <span>{parts[1]}</span>}
+        {parts[1]?.trim() && <span> {parts[1].trim()}</span>}
       </span>
     );
   }

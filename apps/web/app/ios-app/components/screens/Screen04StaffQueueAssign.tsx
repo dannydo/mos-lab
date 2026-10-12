@@ -76,7 +76,7 @@ export function Screen04StaffQueueAssign({ onBack, onAssign }: Screen04StaffQueu
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[15px] font-bold text-black">Thảo Ly (CV+)</span>
+                  <span className="text-[15px] font-bold text-black">Thảo Ly (🪶 CV)</span>
                   <span className="bg-[#FF9500] text-black font-black text-[10px] px-1.5 py-0.5 rounded tracking-wider">
                     BOOKED
                   </span>

@@ -68,7 +68,7 @@ export function ScreenSettingsRoleSwitch({ currentRole, onRoleChange, onBack }: 
     const testReceipt = {
       orderId: 'TEST-8888',
       customerName: 'Khách Kiểm Thử Máy In',
-      staffName: 'Diễm Hương (CV+)',
+      staffName: 'Diễm Hương (🪶 CV)',
       storeName: 'Wings Lashes Q.1',
       storeAddress: '123 Lê Thánh Tôn, Bến Nghé, Q.1',
       storePhone: '1900 8888',

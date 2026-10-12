@@ -29,6 +29,10 @@ import type {
   UpsertTeamRequest,
   AvatarUploadRequest,
   AvatarUploadResponse,
+  SendOnboardingEmailRequest,
+  BulkSendOnboardingEmailRequest,
+  SendOnboardingEmailResponse,
+  BulkSendOnboardingEmailResponse,
 } from '@mos-lab/shared';
 
 import { api, dedupeApiGet, invalidateApiGetCache, ApiRequestOptions } from './base';
@@ -94,6 +98,19 @@ export const staffApi = {
     },
     uploadAvatar: async (data: AvatarUploadRequest): Promise<AvatarUploadResponse> => {
       const response = await api.post('/staff/avatar/upload', data);
+      invalidateApiGetCache(['/staff']);
+      return response.data;
+    },
+    sendOnboardingEmail: async (
+      id: number,
+      data?: SendOnboardingEmailRequest
+    ): Promise<SendOnboardingEmailResponse> => {
+      const response = await api.post(`/staff/${id}/send-onboarding-email`, data || {});
+      invalidateApiGetCache(['/staff']);
+      return response.data;
+    },
+    bulkSendOnboardingEmail: async (data: BulkSendOnboardingEmailRequest): Promise<BulkSendOnboardingEmailResponse> => {
+      const response = await api.post('/staff/bulk-send-onboarding-email', data);
       invalidateApiGetCache(['/staff']);
       return response.data;
     },

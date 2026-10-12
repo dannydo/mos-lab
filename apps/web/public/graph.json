@@ -43,7 +43,7 @@
         "dbSource": "crm",
         "modelName": "CrmStaff",
         "tableName": "crm_staff",
-        "fieldCount": 83,
+        "fieldCount": 84,
         "readOnly": false,
         "isCatalogException": false,
         "relations": [],
@@ -11648,7 +11648,7 @@
         "path": "/api/staff",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 137
+        "line": 144
       }
     },
     {
@@ -11662,7 +11662,7 @@
         "path": "/api/staff/:id",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 222
+        "line": 229
       }
     },
     {
@@ -11676,7 +11676,7 @@
         "path": "/api/staff",
         "module": "staff",
         "handler": "preHandler",
-        "line": 302
+        "line": 309
       }
     },
     {
@@ -11690,7 +11690,7 @@
         "path": "/api/staff/:id",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 451
+        "line": 458
       }
     },
     {
@@ -11704,7 +11704,7 @@
         "path": "/api/staff/:id/audit-logs",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 793
+        "line": 800
       }
     },
     {
@@ -11718,7 +11718,7 @@
         "path": "/api/staff/roles/telesales-profile",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 847
+        "line": 854
       }
     },
     {
@@ -11732,7 +11732,7 @@
         "path": "/api/staff/bulk-update",
         "module": "staff",
         "handler": "preHandler",
-        "line": 852
+        "line": 859
       }
     },
     {
@@ -11746,7 +11746,35 @@
         "path": "/api/staff/:id",
         "module": "staff",
         "handler": "preHandler",
-        "line": 932
+        "line": 939
+      }
+    },
+    {
+      "id": "route:POST:/api/staff/:id/send-onboarding-email",
+      "type": "FastifyRoute",
+      "label": "POST /api/staff/:id/send-onboarding-email",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/staff/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/staff/:id/send-onboarding-email",
+        "module": "staff",
+        "handler": "preHandler",
+        "line": 1012
+      }
+    },
+    {
+      "id": "route:POST:/api/staff/bulk-send-onboarding-email",
+      "type": "FastifyRoute",
+      "label": "POST /api/staff/bulk-send-onboarding-email",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/staff/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/staff/bulk-send-onboarding-email",
+        "module": "staff",
+        "handler": "preHandler",
+        "line": 1095
       }
     },
     {
@@ -11760,7 +11788,7 @@
         "path": "/api/staff/legacy",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 1005
+        "line": 1193
       }
     },
     {
@@ -11774,7 +11802,7 @@
         "path": "/api/staff/sync-legacy",
         "module": "staff",
         "handler": "preHandler",
-        "line": 1036
+        "line": 1224
       }
     },
     {
@@ -11788,7 +11816,7 @@
         "path": "/api/staff/merge",
         "module": "staff",
         "handler": "preHandler",
-        "line": 1221
+        "line": 1409
       }
     },
     {
@@ -11802,7 +11830,7 @@
         "path": "/api/staff/off-days",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 1391
+        "line": 1579
       }
     },
     {
@@ -11816,7 +11844,7 @@
         "path": "/api/staff/:id/off-days",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 1431
+        "line": 1619
       }
     },
     {
@@ -11830,7 +11858,7 @@
         "path": "/api/staff/media/avatars/:filename",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 1456
+        "line": 1644
       }
     },
     {
@@ -11844,7 +11872,7 @@
         "path": "/api/staff/avatar/upload",
         "module": "staff",
         "handler": "inlineHandler",
-        "line": 1470
+        "line": 1658
       }
     },
     {
@@ -16498,6 +16526,54 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "Staff",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SendOnboardingEmailRequest",
+      "type": "SharedType",
+      "label": "SendOnboardingEmailRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/auth.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SendOnboardingEmailRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BulkSendOnboardingEmailRequest",
+      "type": "SharedType",
+      "label": "BulkSendOnboardingEmailRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/auth.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BulkSendOnboardingEmailRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SendOnboardingEmailResponse",
+      "type": "SharedType",
+      "label": "SendOnboardingEmailResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/auth.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SendOnboardingEmailResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BulkSendOnboardingEmailResponse",
+      "type": "SharedType",
+      "label": "BulkSendOnboardingEmailResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/auth.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BulkSendOnboardingEmailResponse",
         "package": "@mos-lab/shared"
       }
     },
@@ -28826,6 +28902,18 @@
       }
     },
     {
+      "id": "uicomp:SendOnboardingEmailModal",
+      "type": "UIComponent",
+      "label": "<SendOnboardingEmailModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/staff/SendOnboardingEmailModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SendOnboardingEmailModal",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:StaffDetailDrawerContent",
       "type": "UIComponent",
       "label": "<StaffDetailDrawerContent />",
@@ -29618,8 +29706,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13533590,
-        "lineCount": 294613,
+        "sizeBytes": 13550033,
+        "lineCount": 294836,
         "ext": ".ts"
       }
     },
@@ -30866,8 +30954,8 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 109288,
-        "lineCount": 2748,
+        "sizeBytes": 110618,
+        "lineCount": 2777,
         "ext": ".ts"
       }
     },
@@ -32991,6 +33079,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/staff/onboarding-email.test.ts",
+      "type": "File",
+      "label": "onboarding-email.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/staff/onboarding-email.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 1579,
+        "lineCount": 33,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/staff/routes.ts",
       "type": "File",
       "label": "routes.ts",
@@ -32998,8 +33099,8 @@
       "filePath": "apps/api/src/modules/staff/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 54993,
-        "lineCount": 1520,
+        "sizeBytes": 61728,
+        "lineCount": 1708,
         "ext": ".ts"
       }
     },
@@ -34352,6 +34453,32 @@
       "metadata": {
         "sizeBytes": 16366,
         "lineCount": 414,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/services/mail.service.ts",
+      "type": "File",
+      "label": "mail.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/services/mail.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 2444,
+        "lineCount": 88,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/templates/onboarding-email.template.ts",
+      "type": "File",
+      "label": "onboarding-email.template.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/templates/onboarding-email.template.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 9497,
+        "lineCount": 151,
         "ext": ".ts"
       }
     },
@@ -36417,7 +36544,7 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path.constants.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23926,
+        "sizeBytes": 23950,
         "lineCount": 504,
         "ext": ".ts"
       }
@@ -36456,7 +36583,7 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 74603,
+        "sizeBytes": 74808,
         "lineCount": 1479,
         "ext": ".tsx"
       }
@@ -36482,8 +36609,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/IslandGameIcon.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13616,
-        "lineCount": 356,
+        "sizeBytes": 14061,
+        "lineCount": 370,
         "ext": ".tsx"
       }
     },
@@ -36495,8 +36622,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 146734,
-        "lineCount": 2784,
+        "sizeBytes": 152100,
+        "lineCount": 2875,
         "ext": ".tsx"
       }
     },
@@ -36508,7 +36635,7 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 78171,
+        "sizeBytes": 78150,
         "lineCount": 1715,
         "ext": ".tsx"
       }
@@ -38536,8 +38663,8 @@
       "filePath": "apps/web/app/dashboard/staff/components/StaffColumns.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16945,
-        "lineCount": 504,
+        "sizeBytes": 17894,
+        "lineCount": 526,
         "ext": ".tsx"
       }
     },
@@ -38601,8 +38728,8 @@
       "filePath": "apps/web/app/dashboard/staff/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 32533,
-        "lineCount": 950,
+        "sizeBytes": 34336,
+        "lineCount": 998,
         "ext": ".tsx"
       }
     },
@@ -39251,7 +39378,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen04StaffQueueAssign.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6272,
+        "sizeBytes": 6276,
         "lineCount": 146,
         "ext": ".tsx"
       }
@@ -39329,7 +39456,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen10CustomerSurvey.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6450,
+        "sizeBytes": 6454,
         "lineCount": 157,
         "ext": ".tsx"
       }
@@ -39355,7 +39482,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/Screen12CheckoutBilling.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6729,
+        "sizeBytes": 6733,
         "lineCount": 159,
         "ext": ".tsx"
       }
@@ -39394,7 +39521,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/ScreenCvPaystub.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6744,
+        "sizeBytes": 6748,
         "lineCount": 168,
         "ext": ".tsx"
       }
@@ -39420,7 +39547,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/ScreenLogin.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9969,
+        "sizeBytes": 9973,
         "lineCount": 247,
         "ext": ".tsx"
       }
@@ -39433,7 +39560,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/ScreenSettingsRoleSwitch.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 10291,
+        "sizeBytes": 10295,
         "lineCount": 258,
         "ext": ".tsx"
       }
@@ -39446,7 +39573,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/ScreenStoreDashboard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8385,
+        "sizeBytes": 8389,
         "lineCount": 205,
         "ext": ".tsx"
       }
@@ -40018,8 +40145,8 @@
       "filePath": "apps/web/lib/api/staff.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9295,
-        "lineCount": 233,
+        "sizeBytes": 10021,
+        "lineCount": 252,
         "ext": ".ts"
       }
     },
@@ -40343,7 +40470,7 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 110964,
+        "sizeBytes": 110988,
         "lineCount": 1594,
         "ext": ".ts"
       }
@@ -40538,8 +40665,8 @@
       "filePath": "packages/shared/src/types/auth.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 5180,
-        "lineCount": 191,
+        "sizeBytes": 5830,
+        "lineCount": 223,
         "ext": ".ts"
       }
     },
@@ -40616,8 +40743,8 @@
       "filePath": "packages/shared/src/types/career-progression.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 29243,
-        "lineCount": 709,
+        "sizeBytes": 29495,
+        "lineCount": 716,
         "ext": ".ts"
       }
     },
@@ -46739,6 +46866,20 @@
       "label": "REGISTERED_IN"
     },
     {
+      "id": "edge:route:POST:/api/staff/:id/send-onboarding-email:ws:apps/api",
+      "source": "route:POST:/api/staff/:id/send-onboarding-email",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/staff/bulk-send-onboarding-email:ws:apps/api",
+      "source": "route:POST:/api/staff/bulk-send-onboarding-email",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
       "id": "edge:route:GET:/api/staff/legacy:ws:apps/api",
       "source": "route:GET:/api/staff/legacy",
       "target": "ws:apps/api",
@@ -49373,6 +49514,34 @@
     {
       "id": "edge:type:@mos-lab/shared:Staff:ws:packages/shared",
       "source": "type:@mos-lab/shared:Staff",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SendOnboardingEmailRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SendOnboardingEmailRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BulkSendOnboardingEmailRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BulkSendOnboardingEmailRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SendOnboardingEmailResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SendOnboardingEmailResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BulkSendOnboardingEmailResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BulkSendOnboardingEmailResponse",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -57668,6 +57837,20 @@
     {
       "id": "edge:uicomp:SMSModal:token:color:primary",
       "source": "uicomp:SMSModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SendOnboardingEmailModal:ws:apps/web",
+      "source": "uicomp:SendOnboardingEmailModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SendOnboardingEmailModal:token:color:primary",
+      "source": "uicomp:SendOnboardingEmailModal",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -76076,6 +76259,20 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/staff/:id/send-onboarding-email",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/staff/:id/send-onboarding-email",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/staff/bulk-send-onboarding-email",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/staff/bulk-send-onboarding-email",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/staff/legacy",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/staff/legacy",
@@ -80738,6 +80935,20 @@
       "label": "CALLS customers.getStaff"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/staff/:id/send-onboarding-email",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/staff/:id/send-onboarding-email",
+      "type": "API_CALL",
+      "label": "CALLS customers.getStaff"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/staff/bulk-send-onboarding-email",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/staff/bulk-send-onboarding-email",
+      "type": "API_CALL",
+      "label": "CALLS customers.getStaff"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/staff/legacy",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/staff/legacy",
@@ -81378,6 +81589,20 @@
       "id": "edge:page:/dashboard/omicall:route:DELETE:/api/staff/:id",
       "source": "page:/dashboard/omicall",
       "target": "route:DELETE:/api/staff/:id",
+      "type": "API_CALL",
+      "label": "CALLS staff.list"
+    },
+    {
+      "id": "edge:page:/dashboard/omicall:route:POST:/api/staff/:id/send-onboarding-email",
+      "source": "page:/dashboard/omicall",
+      "target": "route:POST:/api/staff/:id/send-onboarding-email",
+      "type": "API_CALL",
+      "label": "CALLS staff.list"
+    },
+    {
+      "id": "edge:page:/dashboard/omicall:route:POST:/api/staff/bulk-send-onboarding-email",
+      "source": "page:/dashboard/omicall",
+      "target": "route:POST:/api/staff/bulk-send-onboarding-email",
       "type": "API_CALL",
       "label": "CALLS staff.list"
     },
@@ -88452,6 +88677,20 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/staff/:id/send-onboarding-email",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/staff/:id/send-onboarding-email",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/staff/bulk-send-onboarding-email",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/staff/bulk-send-onboarding-email",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/staff/legacy",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/staff/legacy",
@@ -88817,31 +89056,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3155,
-    "totalEdges": 6801,
+    "totalNodes": 3165,
+    "totalEdges": 6817,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 164,
-      "FastifyRoute": 666,
+      "FastifyRoute": 668,
       "Component": 58,
-      "SharedType": 1138,
+      "SharedType": 1142,
       "DesignToken": 12,
-      "UIComponent": 217,
-      "File": 897
+      "UIComponent": 218,
+      "File": 900
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1314,
-      "HANDLES_ROUTE": 666,
-      "RENDERS": 275,
-      "USES_TOKEN": 219,
+      "EXPORTS": 1318,
+      "HANDLES_ROUTE": 668,
+      "RENDERS": 276,
+      "USES_TOKEN": 220,
       "IMPORTS": 475,
       "QUERIES_MODEL": 385,
-      "API_CALL": 3467
+      "API_CALL": 3475
     },
-    "fastifyRouteCount": 671,
+    "fastifyRouteCount": 673,
     "prismaModelCount": 164,
     "nextPageCount": 58,
-    "sharedTypeCount": 1138
+    "sharedTypeCount": 1142
   },
   "routes": [
     {
@@ -93262,6 +93501,20 @@
       "moduleName": "staff"
     },
     {
+      "method": "POST",
+      "path": "/api/staff/:id/send-onboarding-email",
+      "filePath": "apps/api/src/modules/staff/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "staff"
+    },
+    {
+      "method": "POST",
+      "path": "/api/staff/bulk-send-onboarding-email",
+      "filePath": "apps/api/src/modules/staff/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "staff"
+    },
+    {
       "method": "GET",
       "path": "/api/staff/legacy",
       "filePath": "apps/api/src/modules/staff/routes.ts",
@@ -93547,7 +93800,7 @@
       "dbSource": "crm",
       "modelName": "CrmStaff",
       "tableName": "crm_staff",
-      "fieldCount": 83,
+      "fieldCount": 84,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []

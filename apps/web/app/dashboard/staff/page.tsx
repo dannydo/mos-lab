@@ -72,6 +72,7 @@ import StaffDetailDrawerContent from '~/components/staff/StaffDetailDrawerConten
 import { getStaffColumns, getRoleColumns } from './components/StaffColumns';
 import { StaffDirectoryToolbar } from './components/StaffDirectoryToolbar';
 import StaffTabsContent from './components/StaffTabsContent';
+import { SendOnboardingEmailModal } from '~/components/staff/SendOnboardingEmailModal';
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -181,6 +182,7 @@ export default function StaffPage() {
     handleDeleteRole,
     syncing,
     handleSyncLegacyStaff,
+    fetchStaff,
   } = useStaffData({
     staffForm,
     roleForm,
@@ -214,6 +216,24 @@ export default function StaffPage() {
     }
   }, [isDrawerOpen, selectedStaff?.id]);
 
+  // Onboarding Email Modal States
+  const [isOnboardingEmailModalOpen, setIsOnboardingEmailModalOpen] = React.useState(false);
+  const [emailModalStaff, setEmailModalStaff] = React.useState<Staff | null>(null);
+  const [emailModalBulkList, setEmailModalBulkList] = React.useState<Staff[]>([]);
+
+  const handleOpenSingleEmailModal = (record: Staff) => {
+    setEmailModalStaff(record);
+    setEmailModalBulkList([]);
+    setIsOnboardingEmailModalOpen(true);
+  };
+
+  const handleOpenBulkEmailModal = () => {
+    const selectedStaffList = staffList.filter((s) => selectedRowKeys.includes(s.id));
+    setEmailModalStaff(null);
+    setEmailModalBulkList(selectedStaffList);
+    setIsOnboardingEmailModalOpen(true);
+  };
+
   // Table columns for Staff Directory
   const staffColumns = getStaffColumns({
     currentPage,
@@ -225,6 +245,7 @@ export default function StaffPage() {
     openStaffDetails,
     openStaffModal,
     handleDeleteStaff,
+    openSendEmailModal: isHrOrAdmin ? handleOpenSingleEmailModal : undefined,
     currentUser,
     onRoleClick: (roleKey) => {
       setCurrentPage(1);
@@ -573,6 +594,15 @@ export default function StaffPage() {
             >
               Khóa tài khoản
             </Button>
+            {isHrOrAdmin && (
+              <Button
+                icon={<MailOutlined className="text-cyan-500" />}
+                onClick={handleOpenBulkEmailModal}
+                className="rounded-md border-cyan-500 text-cyan-500 font-medium whitespace-nowrap"
+              >
+                Gửi email hướng dẫn ({selectedRowKeys.length})
+              </Button>
+            )}
             {selectedRowKeys.length >= 2 && (
               <Button
                 type="primary"
@@ -944,6 +974,24 @@ export default function StaffPage() {
           )}
         </div>
       </Modal>
+
+      {/* Send Onboarding Email Modal */}
+      <SendOnboardingEmailModal
+        open={isOnboardingEmailModalOpen}
+        onClose={() => {
+          setIsOnboardingEmailModalOpen(false);
+          setEmailModalStaff(null);
+          setEmailModalBulkList([]);
+        }}
+        staff={emailModalStaff}
+        bulkStaffList={emailModalBulkList}
+        roles={roles}
+        onSuccess={(msg) => {
+          message.success(msg);
+          handleClearSelection();
+          fetchStaff();
+        }}
+      />
     </div>
   );
 }

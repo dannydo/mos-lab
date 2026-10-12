@@ -69,13 +69,13 @@ const ROLE_TABS = [
   { key: 'CV', label: 'CV', fullLabel: 'Chuyên Viên Mi' },
   {
     key: 'CV_PLUS',
-    label: '🪶 CV (Đang triển khai)',
+    label: '🪶 CV',
     fullLabel: 'Chuyên Viên · 🪶 CV (Đang triển khai)',
   },
   {
     key: 'CV_PLUS_PLUS',
-    label: '🪶 CV 🪶 (Nghiên cứu)',
-    fullLabel: 'Chuyên Viên Cấp Cao (Đang nghiên cứu)',
+    label: '🪶 CV 🪶',
+    fullLabel: 'Chuyên Viên Cấp Cao · 🪶 CV 🪶 (Đang nghiên cứu)',
   },
 ];
 

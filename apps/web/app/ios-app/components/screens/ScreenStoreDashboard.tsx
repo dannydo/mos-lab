@@ -22,7 +22,7 @@ export function ScreenStoreDashboard({ onSelectBooking, onOpenSettings }: Screen
   const activeBeds = [
     {
       bed: 'Giường 01',
-      cv: 'Diễm Hương (CV+)',
+      cv: 'Diễm Hương (🪶 CV)',
       customer: 'Chị Quyên',
       service: 'Flawless 3D Design',
       status: 'IN_PROGRESS',

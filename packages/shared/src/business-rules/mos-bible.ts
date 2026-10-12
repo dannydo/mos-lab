@@ -1495,12 +1495,12 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     book: 'PEOPLE',
     title: 'Kiểm Định QA/QC Tác Phong & Phòng Nối Mi Trong Lộ Trình Thăng Tiến CV',
     summary:
-      'Để đủ điều kiện nâng cấp (CV lên CV+, CV++), Chuyên Viên (CV) bắt buộc phải chủ động mời QA/QC kiểm tra tác phong bản thân và phòng nối mi định kỳ ít nhất 1 lần/tuần. Nếu có bài kiểm tra FAILED, nhân viên bị khóa quyền nâng cấp.',
+      'Để đủ điều kiện nâng cấp (CV lên 🪶 CV, 🪶 CV 🪶), Chuyên Viên (CV) bắt buộc phải chủ động mời QA/QC kiểm tra tác phong bản thân và phòng nối mi định kỳ ít nhất 1 lần/tuần. Nếu có bài kiểm tra FAILED, nhân viên bị khóa quyền nâng cấp.',
     commandments: [
       'Chủ động mời QA/QC kiểm tra định kỳ: Chuyên Viên (CV) phải chủ động sắp xếp và mời QA/QC kiểm tra tác phong bản thân và phòng nối mi ít nhất 1 lần mỗi tuần trong suốt chu kỳ xét thăng cấp.',
       'Nội dung kiểm tra song song hai hạng mục: (1) Tác phong bản thân (đồng phục, đầu tóc, vệ sinh móng tay, khẩu trang, giao tiếp) và (2) Phòng nối mi cá nhân (giường, đèn chiếu sáng không dính keo/mi, khay dụng cụ khử trùng chuẩn, nhíp sạch, không đồ cá nhân).',
       'Cổng kiểm soát chất lượng tuyệt đối (Hard Gatekeeper): Nếu có bất kỳ bài kiểm tra nào bị FAILED hoặc không đạt tần suất tối thiểu 1 lần/tuần, nhân viên lập tức bị KHÓA QUYỀN NÂNG CẤP, không được mở Ải Trùm Cuối và không được duyệt thăng hạng.',
-      'Duy trì liên tục: Khi đã thăng cấp lên CV+ hoặc CV++, Chuyên Viên vẫn phải duy trì kiểm định QA/QC định kỳ hàng tuần; vi phạm kiểm định là căn cứ xem xét giáng cấp.',
+      'Duy trì liên tục: Khi đã thăng cấp lên 🪶 CV hoặc 🪶 CV 🪶, Chuyên Viên vẫn phải duy trì kiểm định QA/QC định kỳ hàng tuần; vi phạm kiểm định là căn cứ xem xét giáng cấp.',
     ],
     rationale:
       'Tay nghề kỹ thuật và doanh số tự bán combo chỉ có giá trị bền vững khi đi kèm kỷ luật tác phong và chuẩn mực vệ sinh phòng nối mi. Quy định này đảm bảo khách hàng luôn được phục vụ trong không gian sạch sẽ, an toàn và chuyên nghiệp nhất.',

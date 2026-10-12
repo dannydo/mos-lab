@@ -31,6 +31,7 @@ interface StaffColumnsOptions {
   openStaffDetails: (record: Staff) => void;
   openStaffModal: (record: Staff) => void;
   handleDeleteStaff: (id: number) => void;
+  openSendEmailModal?: (record: Staff) => void;
   currentUser: SafeAny;
   onRoleClick?: (roleKey: string) => void;
 }
@@ -45,6 +46,7 @@ export const getStaffColumns = ({
   openStaffDetails,
   openStaffModal,
   handleDeleteStaff,
+  openSendEmailModal,
   currentUser,
   onRoleClick,
 }: StaffColumnsOptions): ColumnsType<Staff> => {
@@ -277,7 +279,7 @@ export const getStaffColumns = ({
     {
       title: 'Thao tác',
       key: 'action',
-      width: 180,
+      width: 215,
       render: (_: SafeAny, record: Staff) => {
         const isAdmin = isAdminOrSuperAdminRole(currentUser?.role);
         const isSuperAdmin = isSuperAdminRole(currentUser?.role);
@@ -292,9 +294,25 @@ export const getStaffColumns = ({
         const impersonationLabel = isTargetAdmin
           ? `Super Admin đăng nhập dưới quyền ${record.displayName} (phiên 30 phút)`
           : `Đăng nhập dưới quyền ${record.displayName} (phiên 30 phút)`;
+        const emailSentTooltip = record.lastOnboardingEmailSentAt
+          ? `Gửi lại email hướng dẫn mOS (Đã gửi lúc: ${dayjs(record.lastOnboardingEmailSentAt).format('DD/MM/YYYY HH:mm')})`
+          : 'Gửi email hướng dẫn đăng nhập mOS (Google Sign-In)';
 
         return (
           <Space size="middle">
+            {openSendEmailModal && (
+              <Tooltip title={emailSentTooltip}>
+                <Button
+                  type="text"
+                  icon={
+                    <Badge dot={!record.lastOnboardingEmailSentAt} color="cyan" offset={[-2, 2]}>
+                      <MailOutlined className="text-cyan-500 text-[15px]" />
+                    </Badge>
+                  }
+                  onClick={() => openSendEmailModal(record)}
+                />
+              </Tooltip>
+            )}
             {!record.isActive && (
               <Tooltip title={`Mở khóa tài khoản ${record.displayName}`}>
                 <Button

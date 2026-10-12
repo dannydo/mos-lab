@@ -45,7 +45,7 @@ export function Screen10CustomerSurvey({
               {customerName} ơi, Chị cảm nhận ca làm hôm nay thế nào ạ?
             </h2>
             <div className="text-[12px] text-gray-500 font-medium mt-2">
-              Chuyên viên phục vụ: <span className="text-gray-800 font-bold">{staffName} (CV+)</span> · Salon Đề Thám
+              Chuyên viên phục vụ: <span className="text-gray-800 font-bold">{staffName} (🪶 CV)</span> · Salon Đề Thám
             </div>
           </div>
 

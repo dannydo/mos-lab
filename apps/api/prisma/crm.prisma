@@ -31,6 +31,7 @@ model CrmStaff {
   legacyStaffId    Int?      @map("legacy_staff_id")
   lastLoginAt      DateTime? @map("last_login_at") @db.DateTime(0)
   lastActiveAt     DateTime? @map("last_active_at") @db.DateTime(0)
+  lastOnboardingEmailSentAt DateTime? @map("last_onboarding_email_sent_at") @db.DateTime(0)
   omicallAutoInit  Boolean?  @map("omicall_auto_init") @db.TinyInt
   baseSalary       Float?    @map("base_salary")
   hourlyWage       Float?    @map("hourly_wage")

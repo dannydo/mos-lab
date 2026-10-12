@@ -274,7 +274,7 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
       skills: [
         {
           name: 'Tư Vấn Trưởng Sàn',
-          desc: 'Trực tiếp đón tiếp & tư vấn chuyên sâu cho khách của các Chuyên Viên CV (chưa lên CV+)',
+          desc: 'Trực tiếp đón tiếp & tư vấn chuyên sâu cho khách của các Chuyên Viên CV (chưa lên 🪶 CV)',
         },
         { name: 'Mắt Thần Kho Bãi', desc: 'Kiểm kê kho & CSVC hàng tuần, chống thất thoát ≤ 0.5%' },
         { name: 'Nâng Tầm Đồng Đội', desc: 'Chăm sóc và kèm cặp giúp nhân sự có điểm HI thấp tiến bộ hơn' },
@@ -286,7 +286,7 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
         'Thưởng Cán Mốc Hòa Vốn (2.0M) + Thưởng 2.0% phần doanh thu vượt mốc (DT ≥ 450M, EP ≥ 350M)',
         'Thưởng Đánh Giá Sàn (1.0M - 1.5M): Đạt chuẩn CSVC ≥ 95 điểm & shop đạt ≥ 30 Google Review 5★/tháng',
         'Thưởng Tiết Kiệm: Nhận 10% số tiền chi phí vận hành tiết kiệm được (khi kho hao hụt ≤ 0.5% & vật tư ≤ 5%)',
-        'Nghỉ lễ trọn vẹn hưởng nguyên gói lương khi đào tạo được CV++ quán xuyến sảnh; chịu trách nhiệm On-Call 24/7 giải quyết sự cố',
+        'Nghỉ lễ trọn vẹn hưởng nguyên gói lương khi đào tạo được 🪶 CV 🪶 quán xuyến sảnh; chịu trách nhiệm On-Call 24/7 giải quyết sự cố',
         `Túi Chuối Thần Kỳ: Được cấp ${rewardRates.fmMonthlyBananaGrant} Chuối/tháng để thưởng nóng tức thì cho nhân viên xuất sắc`,
       ],
       gateText: `Chi nhánh đạt Target ≥ ${fmToCho.minTargetHitMonths} tháng + Giúp đỡ người có HI thấp tiến bộ + Thất thoát kho ≤ ${(fmToCho.maxInventoryLossRate * 100).toFixed(1)}% + CSVC 5 giác quan ≥ ${fmToCho.minFacilityScore}% ➔ Thăng cấp Chief Happiness Officer (CHO)!`,
@@ -311,7 +311,7 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
       perks: [
         'Gói đãi ngộ Executive cấp Trưởng Ban (Lương cứng 11M)',
         'Thưởng Cán Mốc Hòa Vốn (3.0M) + Thưởng 3.0% phần doanh thu vượt mốc (DT ≥ 450M, EP ≥ 350M)',
-        'Thưởng Phát Triển Thiên Thần (1.5M - 4.5M): Khoán theo số lượng Chuyên Viên đạt chuẩn CV+ & CV++ duy trì tại shop (kèm cơ chế tụt cấp)',
+        'Thưởng Phát Triển Thiên Thần (1.5M - 4.5M): Khoán theo số lượng Chuyên Viên đạt chuẩn 🪶 CV & 🪶 CV 🪶 duy trì tại shop (kèm cơ chế tụt cấp)',
         `Thưởng trực tiếp theo số lượng khách mới đến shop (Đạt ≥ ${choToBoss.minMonthlyNewCustomers || 60} khách mới/tháng hoặc 50K/khách)`,
         'Thưởng Tiết Kiệm: Đồng hưởng 10% chi phí vận hành tiết kiệm được cùng FM',
         'Nghỉ lễ trọn vẹn hưởng nguyên gói 11M (không tính thưởng giờ x3-x4); chịu trách nhiệm tối hậu về kết quả và vận hành chi nhánh',

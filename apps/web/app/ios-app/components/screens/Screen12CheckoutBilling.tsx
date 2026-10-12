@@ -53,7 +53,7 @@ export function Screen12CheckoutBilling({ onBack, onChoosePayment }: Screen12Che
             <div className="p-3.5 flex items-center justify-between">
               <div>
                 <div className="text-[14px] font-bold text-black">1. Nối mi New Flawless</div>
-                <div className="text-[12px] text-gray-400 mt-0.5">Chuyên viên: Thảo Ly (CV+)</div>
+                <div className="text-[12px] text-gray-400 mt-0.5">Chuyên viên: Thảo Ly (🪶 CV)</div>
               </div>
               <span className="text-[14px] text-gray-600 font-medium">550.000 đ</span>
             </div>

@@ -572,6 +572,13 @@ export interface StaffCareerStatus {
       currentNetIncome?: number;
       payrollBonusAmount?: number;
       socialSecurityAmount?: number;
+      payrollWageAmount?: number;
+      payrollTipAmount?: number;
+      payrollAllowanceAmount?: number;
+      payrollWorkingHours?: number;
+      payrollHourlyRate?: number;
+      payrollDate?: string | null;
+      payrollMonthLabel?: string | null;
     };
   };
   lastSyncedAt?: string;

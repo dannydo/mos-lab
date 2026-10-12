@@ -483,12 +483,12 @@ export function CareerConfigDrawer({
                   </p>
                 </div>
 
-                {/* 2.3 TỶ LỆ CHỐT COMBO TỰ THÂN TỐI THIỂU (CHUẨN CV+) */}
+                {/* 2.3 TỶ LỆ CHỐT COMBO TỰ THÂN TỐI THIỂU (CHUẨN 🪶 CV) */}
                 <div className="pt-2.5 border-t border-purple-200/60 dark:border-purple-800/50">
                   <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
                     <span className="flex items-center gap-1">
                       <span>🎯</span>
-                      <span>Tỷ lệ tự chốt combo tối thiểu (Chuẩn CV+):</span>
+                      <span>Tỷ lệ tự chốt combo tối thiểu (Chuẩn 🪶 CV):</span>
                     </span>
                     <span className="font-mono text-purple-600 dark:text-purple-400 font-black text-sm">
                       {((cvToCc.minSelfComboRate ?? 0.21) * 100).toFixed(0)}%
@@ -520,7 +520,7 @@ export function CareerConfigDrawer({
                   <DollarSign className="w-4 h-4 text-emerald-500" />
                   <div>
                     <div className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">
-                      Tổng hoa hồng bán hàng dự kiến (CV+)
+                      Tổng hoa hồng bán hàng dự kiến (🪶 CV)
                     </div>
                     <div className="text-[11px] text-slate-600 dark:text-slate-300">
                       Combo ({formatVnd(comboCommissionEstimated)}) + Dưỡng mi ({formatVnd(serumCommissionMonthly)})
@@ -545,14 +545,14 @@ export function CareerConfigDrawer({
                   </h3>
                 </div>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 uppercase tracking-tight">
-                  Đãi ngộ CV+
+                  Đãi ngộ 🪶 CV
                 </span>
               </div>
 
               {/* Lương theo giờ */}
               <div className="space-y-1">
                 <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-                  <span>Lương theo giờ CV+ (Gốc CV: 25.500đ/h):</span>
+                  <span>Lương theo giờ 🪶 CV (Gốc CV: 25.500đ/h):</span>
                   <span className="font-mono text-amber-600 dark:text-amber-400 font-black">
                     {formatVnd(cvToCc.hourlyWage ?? 27500)}/h (+{formatVnd((cvToCc.hourlyWage ?? 27500) - 25500)}/h)
                   </span>
@@ -820,12 +820,12 @@ export function CareerConfigDrawer({
           </div>
         ) : (
           /* ========================================================================= */
-          /* TAB 2: CV+ ➔ CV++ (ĐÀN CHỊ SẢNH / SENIOR TECH) */
+          /* TAB 2: 🪶 CV ➔ 🪶 CV 🪶 (ĐÀN CHỊ SẢNH / SENIOR TECH) */
           /* ========================================================================= */
           <div className="space-y-4">
             <p className="text-xs text-slate-500 dark:text-slate-400 m-0">
-              Điều chỉnh trực tiếp các tiêu chuẩn thăng cấp <strong>Ải 2: CV+ ➔ CV++ (Đàn Chị Sảnh)</strong>. Đàn Chị
-              Sảnh trực tiếp tư vấn, giữ vững tỷ lệ combo cao và hỗ trợ tư vấn chéo cho khách của các CV khác.
+              Điều chỉnh trực tiếp các tiêu chuẩn thăng cấp <strong>Ải 2: 🪶 CV ➔ 🪶 CV 🪶 (Đàn Chị Sảnh)</strong>. Đàn
+              Chị Sảnh trực tiếp tư vấn, giữ vững tỷ lệ combo cao và hỗ trợ tư vấn chéo cho khách của các CV khác.
             </p>
 
             {/* NHÓM 1: NĂNG SUẤT & KỸ THUẬT CỐT LÕI */}
@@ -836,18 +836,18 @@ export function CareerConfigDrawer({
                     <Target className="w-3.5 h-3.5" />
                   </div>
                   <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-100 m-0">
-                    1. Năng Suất &amp; Thâm Niên CV+
+                    1. Năng Suất &amp; Thâm Niên 🪶 CV
                   </h3>
                 </div>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 uppercase tracking-tight">
-                  CV++ Benchmarks
+                  🪶 CV 🪶 Benchmarks
                 </span>
               </div>
 
-              {/* 1.1 Thâm niên tối thiểu ở vị trí CV+ */}
+              {/* 1.1 Thâm niên tối thiểu ở vị trí 🪶 CV */}
               <div>
                 <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-                  <span>Số tháng tối thiểu ở vị trí CV+:</span>
+                  <span>Số tháng tối thiểu ở vị trí 🪶 CV:</span>
                   <span className="font-mono text-amber-600 dark:text-amber-400 font-black">
                     {cvPlusToCvPlusPlus.minMonthsInCvPlus ?? 2} tháng
                   </span>
@@ -941,11 +941,11 @@ export function CareerConfigDrawer({
                     <Sparkles className="w-3.5 h-3.5" />
                   </div>
                   <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-100 m-0">
-                    2. Bán Hàng &amp; Tư Vấn Chéo (CV++)
+                    2. Bán Hàng &amp; Tư Vấn Chéo (🪶 CV 🪶)
                   </h3>
                 </div>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 uppercase tracking-tight">
-                  Hoa hồng CV++
+                  Hoa hồng 🪶 CV 🪶
                 </span>
               </div>
 
@@ -954,7 +954,7 @@ export function CareerConfigDrawer({
                 <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
                   <span className="flex items-center gap-1">
                     <span>🎯</span>
-                    <span>Tỷ lệ tự chốt combo tối thiểu trên khách của mình (Chuẩn CV++):</span>
+                    <span>Tỷ lệ tự chốt combo tối thiểu trên khách của mình (Chuẩn 🪶 CV 🪶):</span>
                   </span>
                   <span className="font-mono text-purple-600 dark:text-purple-400 font-black text-sm">
                     {((cvPlusToCvPlusPlus.minSelfComboRate ?? 0.25) * 100).toFixed(0)}%
@@ -973,9 +973,9 @@ export function CareerConfigDrawer({
                   }
                 />
                 <p className="text-[10px] text-slate-500 dark:text-slate-400 m-0 mt-0.5 italic">
-                  * Chuẩn duy trì cho CV++. Nếu chốt dưới tỷ lệ này, hệ thống sẽ kích hoạt chế tài tạm khóa phần phụ cấp
-                  lương giờ tăng thêm (+{formatVnd((cvPlusToCvPlusPlus.hourlyWage ?? 29500) - 25500)}/h) và thưởng bán
-                  hàng.
+                  * Chuẩn duy trì cho 🪶 CV 🪶. Nếu chốt dưới tỷ lệ này, hệ thống sẽ kích hoạt chế tài tạm khóa phần phụ
+                  cấp lương giờ tăng thêm (+{formatVnd((cvPlusToCvPlusPlus.hourlyWage ?? 29500) - 25500)}/h) và thưởng
+                  bán hàng.
                 </p>
               </div>
 
@@ -1105,7 +1105,7 @@ export function CareerConfigDrawer({
                 <div className="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 space-y-1.5">
                   <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
                     <span className="text-emerald-700 dark:text-emerald-300">
-                      💖 Tỷ lệ chia hoa hồng cho CV làm mi (CV get % of CV++):
+                      💖 Tỷ lệ chia hoa hồng cho CV làm mi (CV nhận % từ 🪶 CV 🪶):
                     </span>
                     <span className="font-mono text-emerald-600 dark:text-emerald-400 font-black">
                       {(cvPlusCrossCvShare * 100).toFixed(0)}%
@@ -1130,7 +1130,7 @@ export function CareerConfigDrawer({
                       {formatVnd(Math.round(serumOrigBonus * cvPlusCrossCvShare))}/cây gốc).
                     </div>
                     <div>
-                      • <strong>CV++ chốt hộ:</strong> Hưởng trọn 100% tiền thưởng hoa hồng (+
+                      • <strong>🪶 CV 🪶 chốt hộ:</strong> Hưởng trọn 100% tiền thưởng hoa hồng (+
                       {formatVnd(cvPlusCrossComboComm)}/tháng).
                     </div>
                   </div>
@@ -1141,7 +1141,7 @@ export function CareerConfigDrawer({
               <div>
                 <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
                   <div>
-                    <span>✨ Số cây Dưỡng mi bán dự kiến / tuần (CV++):</span>
+                    <span>✨ Số cây Dưỡng mi bán dự kiến / tuần (🪶 CV 🪶):</span>
                     <p className="text-[10px] text-slate-400 font-normal mt-0.5">
                       Thưởng giá gốc ({formatVnd(cvPlusToCvPlusPlus.serumOriginalPriceBonus ?? 100000)}/cây). Nhận thêm:
                       +{formatVnd(cvPlusSerumMonthly)}/tháng (+
@@ -1166,13 +1166,13 @@ export function CareerConfigDrawer({
                 />
               </div>
 
-              {/* Mini-Summary Box CV++ */}
+              {/* Mini-Summary Box 🪶 CV 🪶 */}
               <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500/10 via-amber-500/10 to-emerald-500/10 border border-purple-500/20 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <DollarSign className="w-4 h-4 text-emerald-500" />
                   <div>
                     <div className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider">
-                      Tổng hoa hồng bán hàng &amp; tư vấn chéo CV++
+                      Tổng hoa hồng bán hàng &amp; tư vấn chéo 🪶 CV 🪶
                     </div>
                     <div className="text-[11px] text-slate-600 dark:text-slate-300">
                       Combo ({formatVnd(cvPlusComboComm)}) + Dưỡng mi ({formatVnd(cvPlusSerumMonthly)}) + Tip chéo ( +
@@ -1194,18 +1194,18 @@ export function CareerConfigDrawer({
                     <HandCoins className="w-3.5 h-3.5" />
                   </div>
                   <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-100 m-0">
-                    3. Lương Giờ &amp; Tip Đàn Chị (CV++)
+                    3. Lương Giờ &amp; Tip Đàn Chị (🪶 CV 🪶)
                   </h3>
                 </div>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 uppercase tracking-tight">
-                  Đãi ngộ CV++
+                  Đãi ngộ 🪶 CV 🪶
                 </span>
               </div>
 
-              {/* Lương theo giờ CV++ */}
+              {/* Lương theo giờ 🪶 CV 🪶 */}
               <div className="space-y-1">
                 <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-                  <span>Lương theo giờ CV++ (Gốc CV: 25.500đ/h):</span>
+                  <span>Lương theo giờ 🪶 CV 🪶 (Gốc CV: 25.500đ/h):</span>
                   <span className="font-mono text-amber-600 dark:text-amber-400 font-black">
                     {formatVnd(cvPlusToCvPlusPlus.hourlyWage ?? 29500)}/h (+
                     {formatVnd((cvPlusToCvPlusPlus.hourlyWage ?? 29500) - 25500)}/h)
@@ -1251,7 +1251,7 @@ export function CareerConfigDrawer({
                 />
               </div>
 
-              {/* Chế tài bảo vệ chất lượng nếu dưới chuẩn combo CV++ */}
+              {/* Chế tài bảo vệ chất lượng nếu dưới chuẩn combo 🪶 CV 🪶 */}
               <div className="p-2.5 rounded-xl bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-800/60 space-y-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-rose-800 dark:text-rose-200 flex items-center gap-1.5">
@@ -1420,7 +1420,7 @@ export function CareerConfigDrawer({
                   </h3>
                 </div>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 uppercase tracking-tight">
-                  Thử thách CV++
+                  Thử thách 🪶 CV 🪶
                 </span>
               </div>
 
@@ -1454,7 +1454,7 @@ export function CareerConfigDrawer({
         <div className="text-[11px] text-slate-500 dark:text-slate-400">
           Đang cấu hình:{' '}
           <strong className="text-slate-700 dark:text-slate-200">
-            {activeTab === 'CV_TO_CV_PLUS' ? 'Ải CV ➔ CV+' : 'Ải CV+ ➔ CV++'}
+            {activeTab === 'CV_TO_CV_PLUS' ? 'Ải CV ➔ 🪶 CV' : 'Ải 🪶 CV ➔ 🪶 CV 🪶'}
           </strong>
         </div>
         <div className="flex gap-2">

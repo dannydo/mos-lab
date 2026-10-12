@@ -136,6 +136,7 @@ export interface Staff {
   legacyStaffId?: number | null;
   lastLoginAt?: string | null;
   lastActiveAt?: string | null;
+  lastOnboardingEmailSentAt?: string | null;
   omicallAutoInit?: boolean | null;
   baseSalary?: number | null;
   hourlyWage?: number | null;
@@ -154,6 +155,37 @@ export interface Staff {
   offDays?: string[] | null;
   off_days?: string[] | null;
   offDaysList?: string[] | null;
+}
+
+export interface SendOnboardingEmailRequest {
+  emailOverride?: string;
+}
+
+export interface BulkSendOnboardingEmailRequest {
+  staffIds: number[];
+}
+
+export interface SendOnboardingEmailResponse {
+  success: boolean;
+  message: string;
+  sentTo: string;
+  isMock?: boolean;
+  lastOnboardingEmailSentAt?: string;
+}
+
+export interface BulkSendOnboardingEmailResponse {
+  success: boolean;
+  message: string;
+  totalRequested: number;
+  sentCount: number;
+  failedCount: number;
+  details: {
+    staffId: number;
+    displayName: string;
+    email: string;
+    success: boolean;
+    error?: string;
+  }[];
 }
 
 export interface LoginRequest {
