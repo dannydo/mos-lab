@@ -648,7 +648,6 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
         <div className="flex items-center gap-1.5 p-1 bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-indigo-500/10 dark:bg-slate-800/90 rounded-xl border border-amber-500/30 shrink-0 self-start md:self-auto">
           <span className="inline-flex items-center gap-1 font-black text-xs py-1 px-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-xs">
             <WingRoleLabel text="🪶 CV" />
-            <span>· Thanh Lịch</span>
           </span>
           <span className="text-[10px] text-amber-700 dark:text-amber-300 font-bold px-1.5 py-0.5">
             🔥 Đang triển khai
@@ -688,9 +687,9 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
           {/* Manual Quick Override Promotion / Demotion */}
           {status.currentRole === 'KTV' && onSetRole && (
             <Popconfirm
-              title="Đưa nhân sự này lên CV · Dịu Dàng?"
-              description={`Xác nhận thăng cấp cho ${status.staffName} lên CV · Dịu Dàng (khi được FM / Đàn Chị bảo trợ & đạt sát hạch).`}
-              okText="Lên CV · Dịu Dàng"
+              title="Đưa nhân sự này lên CV?"
+              description={`Xác nhận thăng cấp cho ${status.staffName} lên CV (khi được FM / Đàn Chị bảo trợ & đạt sát hạch).`}
+              okText="Lên CV"
               cancelText="Hủy"
               onConfirm={() => onSetRole('CV')}
             >
@@ -699,16 +698,16 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 className="px-3 py-1.5 rounded-xl bg-pink-50 hover:bg-pink-100 dark:bg-pink-950/40 dark:hover:bg-pink-900/50 text-pink-600 dark:text-pink-400 border border-pink-200 dark:border-pink-800 font-bold text-xs transition-all shadow-2xs active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Lên CV · Dịu Dàng</span>
+                <span>Lên CV</span>
               </button>
             </Popconfirm>
           )}
 
           {status.currentRole === 'CV' && onSetRole && (
             <Popconfirm
-              title="Đưa nhân sự này lên 🪶 CV · Thanh Lịch?"
-              description={`Thăng cấp thủ công cho ${status.staffName} lên 🪶 CV · Thanh Lịch ngay lập tức.`}
-              okText="Lên 🪶 CV · Thanh Lịch"
+              title="Đưa nhân sự này lên 🪶 CV?"
+              description={`Thăng cấp thủ công cho ${status.staffName} lên 🪶 CV ngay lập tức.`}
+              okText="Lên 🪶 CV"
               cancelText="Hủy"
               onConfirm={() => onSetRole('CV_PLUS')}
             >
@@ -720,7 +719,6 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 <span className="inline-flex items-center gap-1">
                   <span>Lên</span>
                   <WingRoleLabel text="🪶 CV" />
-                  <span>· Thanh Lịch</span>
                 </span>
               </button>
             </Popconfirm>
@@ -730,9 +728,9 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
             <>
               {onSetRole && (
                 <Popconfirm
-                  title="Đưa nhân sự này lên 🪶 CV 🪶 · Quí Phái?"
-                  description={`Thăng cấp thủ công cho ${status.staffName} lên 🪶 CV 🪶 · Quí Phái ngay lập tức.`}
-                  okText="Lên 🪶 CV 🪶 · Quí Phái"
+                  title="Đưa nhân sự này lên 🪶 CV 🪶?"
+                  description={`Thăng cấp thủ công cho ${status.staffName} lên 🪶 CV 🪶 ngay lập tức.`}
+                  okText="Lên 🪶 CV 🪶"
                   cancelText="Hủy"
                   onConfirm={() => onSetRole('CV_PLUS_PLUS')}
                 >
@@ -744,16 +742,15 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     <span className="inline-flex items-center gap-1">
                       <span>Lên</span>
                       <WingRoleLabel text="🪶 CV 🪶" />
-                      <span>· Quí Phái</span>
                     </span>
                   </button>
                 </Popconfirm>
               )}
               {onDemote && (
                 <Popconfirm
-                  title="Hạ cấp nhân sự về CV · Dịu Dàng?"
-                  description={`Chuyển cấp bậc của ${status.staffName} về CV · Dịu Dàng.`}
-                  okText="Hạ về CV · Dịu Dàng"
+                  title="Hạ cấp nhân sự về CV?"
+                  description={`Chuyển cấp bậc của ${status.staffName} về CV.`}
+                  okText="Hạ về CV"
                   cancelText="Hủy"
                   okType="danger"
                   onConfirm={onDemote}
@@ -763,7 +760,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     className="px-3 py-1.5 rounded-xl text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 font-bold text-xs transition-all shadow-2xs active:scale-95 disabled:opacity-50 flex items-center gap-1.5"
                   >
                     <ArrowDownCircle className="w-3.5 h-3.5" />
-                    <span>🔻 Hạ về CV · Dịu Dàng</span>
+                    <span>🔻 Hạ về CV</span>
                   </button>
                 </Popconfirm>
               )}
@@ -772,9 +769,9 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
 
           {status.currentRole === 'CV_PLUS_PLUS' && onDemote && (
             <Popconfirm
-              title="Hạ cấp nhân sự về 🪶 CV · Thanh Lịch?"
-              description={`Chuyển cấp bậc của ${status.staffName} về 🪶 CV · Thanh Lịch.`}
-              okText="Hạ về 🪶 CV · Thanh Lịch"
+              title="Hạ cấp nhân sự về 🪶 CV?"
+              description={`Chuyển cấp bậc của ${status.staffName} về 🪶 CV.`}
+              okText="Hạ về 🪶 CV"
               cancelText="Hủy"
               okType="danger"
               onConfirm={onDemote}
@@ -787,7 +784,6 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 <span className="inline-flex items-center gap-1">
                   <span>🔻 Hạ về</span>
                   <WingRoleLabel text="🪶 CV" />
-                  <span>· Thanh Lịch</span>
                 </span>
               </button>
             </Popconfirm>
@@ -814,7 +810,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     <span>🔥</span> TÂM ĐIỂM QUYỀN LỢI TÀI CHÍNH
                   </span>
                   <span className="text-xs font-bold text-amber-300">
-                    Thăng Cấp Lên <WingRoleLabel text="🪶 CV" /> · Thanh Lịch (Tự Chủ)
+                    Thăng Cấp Lên <WingRoleLabel text="🪶 CV" />
                   </span>
                 </div>
                 <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-black flex items-center gap-1">
@@ -885,7 +881,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                       <span>
                         “Cùng một ca làm, cùng lượng khách phục vụ — Nhưng đút túi thêm cả chỉ vàng mỗi tháng!{' '}
                         <strong className="text-amber-300 font-black">
-                          Chỉ có người thù ghét tiền mới không muốn lên 🪶 CV Tự Chủ!
+                          Chỉ có người thù ghét tiền mới không muốn lên 🪶 CV!
                         </strong>
                         ”
                       </span>
@@ -1274,18 +1270,18 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
 
             {/* HEAD-TO-HEAD BEFORE VS AFTER COMPARISON */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 relative z-10 text-xs">
-              {/* BEFORE: CV Dịu Dàng (Hiện Tại) */}
+              {/* BEFORE: CV (Hiện Tại) */}
               <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-2 opacity-85">
                 {/* ROW 1: Title on left, FIXED (i) at top-right */}
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-bold text-slate-400 flex items-center gap-1.5 text-xs">
-                    <span>🛑</span> CV · Dịu Dàng (Hiện Tại)
+                    <span>🛑</span> CV (Hiện Tại)
                   </span>
                   <Tooltip
                     title={
                       <div className="text-[11px] text-slate-300 leading-relaxed space-y-1 p-0.5 max-w-xs">
                         <div className="text-slate-200 font-bold text-xs flex items-center gap-1.5">
-                          <span>🛑</span> Cấp bậc CV · Dịu Dàng (Hiện Tại)
+                          <span>🛑</span> Cấp bậc CV (Hiện Tại)
                         </div>
                         <div>• Tỷ lệ Tip: Nhận 70% Tip do khách cho (bị trừ 30%).</div>
                         <div>• Quyền tư vấn: Phụ thuộc lễ tân/sảnh xếp lịch và tư vấn combo.</div>
@@ -1297,7 +1293,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     <button
                       type="button"
                       className="w-5 h-5 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-400 hover:text-white inline-flex items-center justify-center text-[10px] font-mono font-bold border border-slate-700/80 cursor-help transition-all hover:scale-110 active:scale-95 shadow-xs shrink-0"
-                      aria-label="Xem quy tắc CV Dịu Dàng"
+                      aria-label="Xem quy tắc CV"
                     >
                       i
                     </button>
@@ -1344,18 +1340,18 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 </div>
               </div>
 
-              {/* AFTER: 🪶 CV · Thanh Lịch (Sau Thăng Cấp) */}
+              {/* AFTER: 🪶 CV (Sau Thăng Cấp) */}
               <div className="p-3.5 rounded-2xl bg-gradient-to-br from-indigo-950/60 via-slate-950 to-emerald-950/50 border-2 border-emerald-500/80 shadow-lg space-y-2">
                 {/* ROW 1: Title on left, FIXED (i) at top-right */}
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-black text-emerald-300 flex items-center gap-1.5 text-xs">
-                    <span>👑</span> <WingRoleLabel text="🪶 CV" /> · Thanh Lịch (Tự Chủ)
+                    <span>👑</span> <WingRoleLabel text="🪶 CV" /> (Sau Thăng Cấp)
                   </span>
                   <Tooltip
                     title={
                       <div className="text-[11px] text-slate-300 leading-relaxed space-y-1 p-0.5 max-w-xs">
                         <div className="text-emerald-300 font-bold text-xs flex items-center gap-1.5">
-                          <span>👑</span> Đặc quyền 🪶 CV · Thanh Lịch (Tự Chủ)
+                          <span>👑</span> Đặc quyền 🪶 CV
                         </div>
                         <div>• Ăn trọn 90% TIP (70% mi + 20% tư vấn).</div>
                         <div>• Độc quyền tự chốt Combo Not Live nhận thưởng bậc thang.</div>
@@ -1368,7 +1364,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     <button
                       type="button"
                       className="w-5 h-5 rounded-full bg-slate-800/90 hover:bg-slate-700 text-slate-400 hover:text-white inline-flex items-center justify-center text-[10px] font-mono font-bold border border-slate-700/80 cursor-help transition-all hover:scale-110 active:scale-95 shadow-xs shrink-0"
-                      aria-label="Xem đặc quyền 🪶 CV Tự Chủ"
+                      aria-label="Xem đặc quyền 🪶 CV"
                     >
                       i
                     </button>
@@ -1377,7 +1373,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 {/* ROW 2: Badge on left, Level reward tag on right */}
                 <div className="flex items-center justify-between gap-2 pb-2 border-b border-emerald-500/30">
                   <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full border bg-emerald-500/15 text-emerald-300 border-emerald-500/30">
-                    Tự Chủ
+                    Đặc Quyền
                   </span>
                   <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[9px] font-black uppercase shadow-xs">
                     {isComboTargetHit ? '+33% THU NHẬP' : '+90% TIP'}

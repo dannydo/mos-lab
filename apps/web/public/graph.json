@@ -29618,7 +29618,7 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13533601,
+        "sizeBytes": 13533590,
         "lineCount": 294613,
         "ext": ".ts"
       }
@@ -30866,7 +30866,7 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 109299,
+        "sizeBytes": 109288,
         "lineCount": 2748,
         "ext": ".ts"
       }
@@ -31841,8 +31841,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-speed.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 31679,
-        "lineCount": 799,
+        "sizeBytes": 35973,
+        "lineCount": 933,
         "ext": ".ts"
       }
     },
@@ -36417,7 +36417,7 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path.constants.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24420,
+        "sizeBytes": 23918,
         "lineCount": 503,
         "ext": ".ts"
       }
@@ -36443,7 +36443,7 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerBibleDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16547,
+        "sizeBytes": 16408,
         "lineCount": 326,
         "ext": ".tsx"
       }
@@ -36456,7 +36456,7 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 74703,
+        "sizeBytes": 74603,
         "lineCount": 1479,
         "ext": ".tsx"
       }
@@ -36482,7 +36482,7 @@
       "filePath": "apps/web/app/dashboard/career-path/components/IslandGameIcon.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13517,
+        "sizeBytes": 13616,
         "lineCount": 356,
         "ext": ".tsx"
       }
@@ -36495,8 +36495,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 142784,
-        "lineCount": 2703,
+        "sizeBytes": 142186,
+        "lineCount": 2699,
         "ext": ".tsx"
       }
     },
@@ -36508,7 +36508,7 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 77686,
+        "sizeBytes": 77193,
         "lineCount": 1692,
         "ext": ".tsx"
       }
@@ -36521,8 +36521,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38250,
-        "lineCount": 892,
+        "sizeBytes": 38154,
+        "lineCount": 891,
         "ext": ".tsx"
       }
     },
@@ -39394,7 +39394,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/ScreenCvPaystub.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6761,
+        "sizeBytes": 6744,
         "lineCount": 168,
         "ext": ".tsx"
       }
@@ -39420,7 +39420,7 @@
       "filePath": "apps/web/app/ios-app/components/screens/ScreenLogin.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9986,
+        "sizeBytes": 9969,
         "lineCount": 247,
         "ext": ".tsx"
       }
@@ -40343,7 +40343,7 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 111098,
+        "sizeBytes": 110964,
         "lineCount": 1594,
         "ext": ".ts"
       }
@@ -40421,7 +40421,7 @@
       "filePath": "packages/shared/src/theme/tokens.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 37626,
+        "sizeBytes": 37628,
         "lineCount": 1293,
         "ext": ".ts"
       }
@@ -40616,7 +40616,7 @@
       "filePath": "packages/shared/src/types/career-progression.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 29254,
+        "sizeBytes": 29243,
         "lineCount": 709,
         "ext": ".ts"
       }

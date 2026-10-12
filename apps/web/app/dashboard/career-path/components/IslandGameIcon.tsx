@@ -86,22 +86,22 @@ export const BothWingsIcon: React.FC<LucideProps> = ({ size = 24, strokeWidth = 
 };
 
 /**
- * Biểu tượng Lông Vũ (Feather) cho Ải 2 (🪶 CV)
+ * Biểu tượng Lông Vũ (Feather) cho Ải 2 (🪶 CV) - Lật sang trái (-scale-x-100) vươn ra ngoài
  */
 export const SingleFeatherIcon: React.FC<LucideProps> = ({ size = 20, strokeWidth = 2, className = '' }) => (
-  <Feather size={size} strokeWidth={strokeWidth} className={className} />
+  <Feather size={size} strokeWidth={strokeWidth} className={`-scale-x-100 ${className}`} />
 );
 
 /**
- * Biểu tượng Cặp Lông Vũ Đối Xứng (Trái + Phải Flip) cho Ải 3 (🪶 CV 🪶)
+ * Biểu tượng Cặp Lông Vũ Đối Xứng (Trái Flip -scale-x-100 + Phải Chuẩn) cho Ải 3 (🪶 CV 🪶)
  */
 export const PairOfFeathersIcon: React.FC<LucideProps> = ({ size = 20, strokeWidth = 2, className = '' }) => {
   const numSize = typeof size === 'number' ? size : 20;
   const singleSize = Math.round(numSize * 0.75);
   return (
     <span className={`inline-flex items-center justify-center -space-x-1 ${className}`}>
-      <Feather size={singleSize} strokeWidth={strokeWidth} />
       <Feather size={singleSize} strokeWidth={strokeWidth} className="-scale-x-100" />
+      <Feather size={singleSize} strokeWidth={strokeWidth} />
     </span>
   );
 };
@@ -141,7 +141,7 @@ const ISLAND_THEMES: Record<string, IslandTheme> = {
       'bg-pink-500/20 border-pink-500/50 text-pink-600 dark:text-pink-300 ring-2 ring-pink-500/40 shadow-md shadow-pink-500/30',
     iconColor: 'text-pink-600 dark:text-pink-400',
     glowColor: 'shadow-pink-500/30',
-    name: 'CV · Dịu Dàng (Hàng Mi Nàng Thơ)',
+    name: 'CV (Hàng Mi Nàng Thơ)',
   },
   cv_plus: {
     Icon: SingleFeatherIcon,
@@ -150,7 +150,7 @@ const ISLAND_THEMES: Record<string, IslandTheme> = {
       'bg-purple-500/20 border-purple-500/50 text-purple-600 dark:text-purple-300 ring-2 ring-purple-500/40 shadow-md shadow-purple-500/30',
     iconColor: 'text-purple-600 dark:text-purple-400',
     glowColor: 'shadow-purple-500/30',
-    name: '🪶 CV · Thanh Lịch',
+    name: '🪶 CV',
   },
   cv_plus_plus: {
     Icon: PairOfFeathersIcon,
@@ -159,7 +159,7 @@ const ISLAND_THEMES: Record<string, IslandTheme> = {
       'bg-amber-500/20 border-amber-500/50 text-amber-600 dark:text-amber-300 ring-2 ring-amber-500/40 shadow-md shadow-amber-500/30',
     iconColor: 'text-amber-600 dark:text-amber-400',
     glowColor: 'shadow-amber-500/30',
-    name: '🪶 CV 🪶 · Quí Phái',
+    name: '🪶 CV 🪶',
   },
   fm: {
     Icon: BothWingsIcon,
@@ -168,7 +168,7 @@ const ISLAND_THEMES: Record<string, IslandTheme> = {
       'bg-sky-500/20 border-sky-500/50 text-sky-600 dark:text-sky-300 ring-2 ring-sky-500/40 shadow-md shadow-sky-500/30',
     iconColor: 'text-sky-600 dark:text-sky-400',
     glowColor: 'shadow-sky-500/30',
-    name: '🪽 FM 🪽 · Nữ Thần Sàn',
+    name: '🪽 FM 🪽',
   },
   cho: {
     Icon: HeartHandshake,
@@ -259,27 +259,27 @@ export const WingRoleLabel: React.FC<{
 }> = ({ text, className = '', wingClassName = '', iconSize = 11 }) => {
   if (!text) return null;
 
-  // 1. Nếu text chứa "🪶 CV 🪶" (Lông bên phải flip đối xứng ngang)
+  // 1. Nếu text chứa "🪶 CV 🪶" (Lông bên trái flip -scale-x-100 đối xứng ngang xòe ra ngoài)
   if (text.includes('🪶 CV 🪶') || text.includes('🪶CV🪶')) {
     const parts = text.split(/🪶\s*CV\s*🪶/);
     return (
       <span className={`inline-flex items-center justify-center gap-1 ${className}`}>
         {parts[0] && <span>{parts[0]}</span>}
-        <Feather size={iconSize} strokeWidth={2.5} className={`shrink-0 ${wingClassName}`} />
-        <span className="font-black">CV</span>
         <Feather size={iconSize} strokeWidth={2.5} className={`shrink-0 -scale-x-100 ${wingClassName}`} />
+        <span className="font-black">CV</span>
+        <Feather size={iconSize} strokeWidth={2.5} className={`shrink-0 ${wingClassName}`} />
         {parts[1] && <span>{parts[1]}</span>}
       </span>
     );
   }
 
-  // 2. Nếu text chứa "🪶 CV" (Lông Vũ chuẩn)
+  // 2. Nếu text chứa "🪶 CV" (Lông bên trái flip -scale-x-100 vươn ra ngoài)
   if (text.includes('🪶 CV') || text.includes('🪶CV')) {
     const parts = text.split(/🪶\s*CV/);
     return (
       <span className={`inline-flex items-center justify-center gap-1 ${className}`}>
         {parts[0] && <span>{parts[0]}</span>}
-        <Feather size={iconSize} strokeWidth={2.5} className={`shrink-0 ${wingClassName}`} />
+        <Feather size={iconSize} strokeWidth={2.5} className={`shrink-0 -scale-x-100 ${wingClassName}`} />
         <span className="font-black">CV</span>
         {parts[1] && <span>{parts[1]}</span>}
       </span>

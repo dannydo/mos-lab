@@ -664,7 +664,7 @@ export interface CvPlusComboDetail {
 }
 
 /**
- * Snapshot kết quả tính toán chi tiết quyền lợi CV+ (lương giờ tăng, tip tự chủ 90%, thưởng combo bậc thang)
+ * Snapshot kết quả tính toán chi tiết quyền lợi CV+ (lương giờ tăng, 90% tip, thưởng combo bậc thang)
  */
 export interface CvPlusRewardSnapshot {
   staffId: number;

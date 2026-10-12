@@ -747,7 +747,7 @@ export const builtInThemes: Record<string, CoreThemeDefinition> = {
   },
   ivory: {
     id: 'ivory',
-    label: 'Warm Ivory (Màu Ngà Quý Phái)',
+    label: 'Warm Ivory (Màu Ngà Sang Trọng)',
     description: 'Màu giấy ngà ấm áp, chống mỏi mắt, phong cách spa & beauty cao cấp',
     defaultMode: 'light',
     typography: themeTokens.typography,
@@ -934,7 +934,7 @@ export const builtInThemes: Record<string, CoreThemeDefinition> = {
   emerald: {
     id: 'emerald',
     label: 'Emerald Velvet (Ngọc Lục Bảo)',
-    description: 'Tone ngọc bích quý phái hoàng gia, dịu mắt và giàu năng lượng',
+    description: 'Tone ngọc bích hoàng gia thanh thoát, êm mắt và giàu năng lượng',
     defaultMode: 'dark',
     typography: themeTokens.typography,
     radii: themeTokens.radii,

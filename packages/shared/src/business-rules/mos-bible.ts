@@ -472,28 +472,28 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
   {
     id: 'CV-002',
     book: 'REWARDS',
-    title: 'Quy chế Chuyên Viên Tự Chủ (🪶 CV): Thưởng Combo Bậc Thang, Bảo lưu 90% Tip và Chế Tài Ngưỡng 21%',
+    title: 'Quy chế 🪶 CV: Thưởng Combo Bậc Thang, Bảo lưu 90% Tip và Chế Tài Ngưỡng 21%',
     summary:
-      'Chuyên Viên Tự Chủ (🪶 CV / CV+) nhận trọn bộ đãi ngộ khi đạt tối thiểu 21% Combo trên khách Not Combo Live (khách có Combo Live bán được cũng cộng dồn). Bán không đạt vẫn nhận 90% Tip nhưng bị khóa lương tăng thêm và thưởng bán hàng; 2 tháng liền không đạt thì quay lại CV.',
+      '🪶 CV (CV+) nhận trọn bộ đãi ngộ khi đạt tối thiểu 21% Combo trên khách Not Combo Live (khách có Combo Live bán được cũng cộng dồn). Bán không đạt vẫn nhận 90% Tip nhưng bị khóa lương tăng thêm và thưởng bán hàng; 2 tháng liền không đạt thì quay lại CV.',
     commandments: [
-      'Phạm vi triển khai toàn cầu (Global Invariant): Cấu hình này áp dụng thống nhất trên toàn hệ thống Wings Lashes cho lộ trình thăng tiến Chuyên Viên Tự Chủ (🪶 CV / CV+).',
+      'Phạm vi triển khai toàn cầu (Global Invariant): Cấu hình này áp dụng thống nhất trên toàn hệ thống Wings Lashes cho lộ trình thăng tiến 🪶 CV (CV+).',
       'Chuẩn 6 Ải Cốt Lõi xét thăng cấp (CV ➔ CV+): (1) Sản lượng tối thiểu 330 bộ mi trong 3 tháng liền (110 bộ/tháng); (2) Tỷ lệ bảo hành Fix ≤ 1.5%; (3) Tỷ lệ Tip cao hơn tối thiểu 10% trung bình shop; (4) Kiểm định QA/QC tối thiểu 4 lần/tháng (1 lần/tuần) và bắt buộc không có bài FAILED (0 vi phạm); (5) Chỉ số gắn kết đồng đội HI ≥ 70%; (6) Tích lũy tối thiểu 20 Chuối Yêu Thương check-in trong tháng.',
-      'Ải Trùm Cuối (Thử thách tự tư vấn): 30 ngày tự chủ tư vấn tại giường với tỷ lệ chốt combo đạt tối thiểu 21% trên tập khách tiềm năng.',
+      'Ải Trùm Cuối (Thử thách tự tư vấn): 30 ngày trực tiếp tư vấn tại giường với tỷ lệ chốt combo đạt tối thiểu 21% trên tập khách tiềm năng.',
       'Đãi ngộ vượt trội khi đạt chuẩn (Combo ≥ 21%): Lương giờ tăng +2.000đ/h (27.500đ/h), nhận trọn 90% Tip khách cho (70% làm mi + 20% tư vấn), Thưởng tiền tươi Dưỡng mi Yeppeum (100k gốc / 50k KM, chuẩn 1 cây/tuần = +400k/tháng), và Thưởng hoa hồng Combo bậc thang tiền tươi (<2M: 50k, 2M-<3M: 100k, 3M-<4M: 150k, ≥4M: +50k/1M; gói 4.5M nhận 200k/combo; chuẩn 8 combo = +1.600.000đ/tháng). Tổng hoa hồng bán hàng dự kiến đạt +2.000.000đ/tháng.',
       'Chế tài nghiêm minh khi không đạt (Combo < 21%): Chuyên Viên VẪN ĐƯỢC BẢO LƯU 90% TIP (công nhận nỗ lực tư vấn). Nhưng BỊ KHÓA TOÀN BỘ PHẦN THƯỞNG KHÁC: không nhận lương giờ tăng thêm (giữ mức gốc 25.5k/h), không nhận thưởng combo (0đ), không nhận thưởng dưỡng mi (0đ).',
-      'Quy tắc Giáng cấp 2 Tháng Liền: Nếu trong 2 tháng liên tiếp tỷ lệ tự chốt combo vẫn dưới 21%, Chuyên Viên bị tước danh hiệu tự chủ và quay lại CV · Dịu Dàng, tỷ lệ Tip tụt về lại 70%, mất quyền tự tư vấn tại giường và phải chuyển khách cho sảnh.',
+      'Quy tắc Giáng cấp 2 Tháng Liền: Nếu trong 2 tháng liên tiếp tỷ lệ tự chốt combo vẫn dưới 21%, Chuyên Viên bị giáng cấp và quay lại CV, tỷ lệ Tip tụt về lại 70%, mất quyền tự tư vấn tại giường và phải chuyển khách cho sảnh.',
       'Quy tắc Combo Mi Dưới (LashesUnder) trong Tỷ lệ chốt Combo: Gói combo mi dưới khi Chuyên Viên chốt được VẪN ĐƯỢC TÍNH VÀO TỬ SỐ của tỷ lệ chốt combo (tăng thành tích bán hàng và hưởng thưởng combo). Tuy nhiên, khách hàng chỉ sở hữu gói combo mi dưới thì KHÔNG BỊ TÍNH là Combo Live; ca làm phục vụ khách này vẫn được tính vào mẫu số Not Combo Live (khách tiềm năng) để Chuyên Viên có cơ hội tư vấn tiếp gói combo mi chính.',
     ],
     rationale:
-      'Gắn kết quyền lợi tài chính đột phá với năng lực tự chủ bán combo tại giường, công nhận công sức tự tư vấn bằng việc luôn bảo lưu 90% Tip, đồng thời thiết lập kỷ luật doanh nghiệp rõ ràng qua quy tắc 2 tháng liền không đạt thì quay lại CV.',
+      'Gắn kết quyền lợi tài chính đột phá với năng lực trực tiếp bán combo tại giường, công nhận công sức tự tư vấn bằng việc luôn bảo lưu 90% Tip, đồng thời thiết lập kỷ luật doanh nghiệp rõ ràng qua quy tắc 2 tháng liền không đạt thì quay lại CV.',
     examples: [
       'Chuyên Viên phục vụ 40 khách Not Combo Live và bán được 10 combo (tỷ lệ 25% ≥ 21%): Nhận đủ lương 27.5k/h, 90% Tip, thưởng combo và thưởng dưỡng mi (+2.000.000đ hoa hồng bán hàng).',
-      'Chuyên Viên phục vụ 40 khách Not Combo Live và bán được 5 combo (tỷ lệ 12.5% < 21%): Vẫn nhận đủ 90% Tip (+560.120đ), nhưng bị khóa toàn bộ thưởng combo, lương tăng +2k/h và thưởng dưỡng mi. Nếu tháng kế tiếp vẫn < 21% (2 tháng liền), nhân viên sẽ bị giáng cấp về CV · Dịu Dàng.',
+      'Chuyên Viên phục vụ 40 khách Not Combo Live và bán được 5 combo (tỷ lệ 12.5% < 21%): Vẫn nhận đủ 90% Tip (+560.120đ), nhưng bị khóa toàn bộ thưởng combo, lương tăng +2k/h và thưởng dưỡng mi. Nếu tháng kế tiếp vẫn < 21% (2 tháng liền), nhân viên sẽ bị giáng cấp về CV.',
     ],
     tags: [
       '🪶 CV',
       'CV+',
-      'Chuyên Viên Tự Chủ',
+      'Chuyên Viên · 🪶 CV',
       'Not Combo Live',
       'Combo Live cộng dồn',
       '90% Tip',
@@ -511,7 +511,7 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     sources: [
       { label: 'Kinh Thánh mOS · Điều răn CV-002', reference: 'packages/shared/src/business-rules/mos-bible.ts' },
       {
-        label: 'Quy chế 🪶 CV Tự Chủ & DEFAULT_CAREER_PROGRESSION_CONFIG',
+        label: 'Quy chế 🪶 CV & DEFAULT_CAREER_PROGRESSION_CONFIG',
         reference: 'packages/shared/src/types/career-progression.ts',
       },
       { label: 'Mô phỏng thăng cấp Career Service', reference: 'apps/api/src/modules/career/career.service.ts' },

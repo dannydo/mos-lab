@@ -2415,7 +2415,7 @@ export class CareerProgressionService {
   }
 
   /**
-   * Tính toán chi tiết quyền lợi CV+ (lương giờ tăng, 90% tip tự chủ, thưởng combo bậc thang)
+   * Tính toán chi tiết quyền lợi CV+ (lương giờ tăng, 90% tip, thưởng combo bậc thang)
    * và áp dụng chế tài ngưỡng 20% NOT COMBO LIVE theo Kinh Thánh mOS.
    */
   static async calculateCvPlusRewardsForStaff(

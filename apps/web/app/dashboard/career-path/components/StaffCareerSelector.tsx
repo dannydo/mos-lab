@@ -59,16 +59,16 @@ export interface StaffCareerSelectorProps {
 const ROLE_TABS = [
   { key: 'ALL', label: 'Tất cả', fullLabel: 'Tất cả Chuyên Viên & KTV' },
   { key: 'KTV', label: 'KTV', fullLabel: 'KTV Thử Việc (Tập sự & Sát hạch)' },
-  { key: 'CV', label: 'CV · Dịu Dàng', fullLabel: 'Chuyên Viên Dịu Dàng' },
+  { key: 'CV', label: 'CV', fullLabel: 'Chuyên Viên Mi' },
   {
     key: 'CV_PLUS',
     label: '🪶 CV (Đang triển khai)',
-    fullLabel: 'Chuyên Viên Thanh Lịch (Đang triển khai)',
+    fullLabel: 'Chuyên Viên · 🪶 CV (Đang triển khai)',
   },
   {
     key: 'CV_PLUS_PLUS',
     label: '🪶 CV 🪶 (Nghiên cứu)',
-    fullLabel: 'Chuyên Viên Quí Phái (Đang nghiên cứu)',
+    fullLabel: 'Chuyên Viên Cấp Cao (Đang nghiên cứu)',
   },
 ];
 
@@ -388,7 +388,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
         return (
           <StatusTag
             status="processing"
-            label={compact ? 'CV' : 'CV · Dịu Dàng'}
+            label="CV"
             className="tabular-nums font-bold m-0 text-[10px] px-1.5 py-0 text-pink-600 dark:text-pink-400 border-pink-200 dark:border-pink-800 bg-pink-50 dark:bg-pink-950/40"
           />
         );
@@ -396,7 +396,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
         return (
           <StatusTag
             status="purple"
-            label={<WingRoleLabel text={compact ? '🪶 CV' : '🪶 CV · Thanh Lịch'} />}
+            label={<WingRoleLabel text="🪶 CV" />}
             className="tabular-nums font-bold m-0 text-[10px] px-1.5 py-0 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/40"
           />
         );
@@ -404,7 +404,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
         return (
           <StatusTag
             status="gold"
-            label={<WingRoleLabel text={compact ? '🪶 CV 🪶' : '🪶 CV 🪶 · Quí Phái'} />}
+            label={<WingRoleLabel text="🪶 CV 🪶" />}
             className="tabular-nums font-bold m-0 text-[10px] px-1.5 py-0 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40"
           />
         );
@@ -478,7 +478,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
               key: 'CV',
               label: (
                 <span className="font-semibold text-xs flex items-center gap-1.5 text-pink-600 dark:text-pink-400">
-                  <span>CV · Dịu Dàng</span>
+                  <span>CV</span>
                   {staff.careerRole === 'CV' && (
                     <span className="text-[10px] text-emerald-500 font-bold">✓ Hiện tại</span>
                   )}
@@ -491,7 +491,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
               label: (
                 <span className="font-semibold text-xs flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>🪶 CV · Thanh Lịch</span>
+                  <span>🪶 CV</span>
                   {staff.careerRole === 'CV_PLUS' && (
                     <span className="text-[10px] text-emerald-500 font-bold">✓ Hiện tại</span>
                   )}
@@ -504,7 +504,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
               label: (
                 <span className="font-semibold text-xs flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>🪶 CV 🪶 · Quí Phái</span>
+                  <span>🪶 CV 🪶</span>
                   {staff.careerRole === 'CV_PLUS_PLUS' && (
                     <span className="text-[10px] text-emerald-500 font-bold">✓ Hiện tại</span>
                   )}
@@ -1583,9 +1583,9 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
             {/* Action buttons for manual promotion and demotion */}
             {selectedStaff.careerRole === 'KTV' && onSetRole && (
               <Popconfirm
-                title="Đưa nhân sự này lên CV · Dịu Dàng?"
-                description={`Xác nhận thăng cấp cho ${selectedStaff.displayName} lên CV · Dịu Dàng (khi được FM / Đàn Chị bảo trợ & hoàn thành sát hạch).`}
-                okText="Lên CV · Dịu Dàng"
+                title="Đưa nhân sự này lên CV?"
+                description={`Xác nhận thăng cấp cho ${selectedStaff.displayName} lên CV (khi được FM / Đàn Chị bảo trợ & hoàn thành sát hạch).`}
+                okText="Lên CV"
                 cancelText="Hủy"
                 onConfirm={() => onSetRole(selectedStaff.id, 'CV')}
               >
@@ -1594,16 +1594,16 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
                   className="px-2.5 py-1 rounded-lg text-xs font-bold bg-pink-600 hover:bg-pink-700 text-white flex items-center gap-1 shadow-xs transition-all active:scale-95 disabled:opacity-50"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Lên CV · Dịu Dàng</span>
+                  <span>Lên CV</span>
                 </button>
               </Popconfirm>
             )}
 
             {selectedStaff.careerRole === 'CV' && onSetRole && (
               <Popconfirm
-                title="Đưa nhân sự này lên 🪶 CV · Thanh Lịch?"
-                description={`Xác nhận thăng cấp thủ công cho ${selectedStaff.displayName} lên 🪶 CV · Thanh Lịch.`}
-                okText="Lên 🪶 CV · Thanh Lịch"
+                title="Đưa nhân sự này lên 🪶 CV?"
+                description={`Xác nhận thăng cấp thủ công cho ${selectedStaff.displayName} lên 🪶 CV.`}
+                okText="Lên 🪶 CV"
                 cancelText="Hủy"
                 onConfirm={() => onSetRole(selectedStaff.id, 'CV_PLUS')}
               >
@@ -1612,7 +1612,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
                   className="px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1 shadow-xs transition-all active:scale-95 disabled:opacity-50"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Lên 🪶 CV · Thanh Lịch</span>
+                  <span>Lên 🪶 CV</span>
                 </button>
               </Popconfirm>
             )}
@@ -1621,9 +1621,9 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
               <>
                 {onSetRole && (
                   <Popconfirm
-                    title="Đưa nhân sự này lên 🪶 CV 🪶 · Quí Phái?"
-                    description={`Xác nhận thăng cấp thủ công cho ${selectedStaff.displayName} lên 🪶 CV 🪶 · Quí Phái.`}
-                    okText="Lên 🪶 CV 🪶 · Quí Phái"
+                    title="Đưa nhân sự này lên 🪶 CV 🪶?"
+                    description={`Xác nhận thăng cấp thủ công cho ${selectedStaff.displayName} lên 🪶 CV 🪶.`}
+                    okText="Lên 🪶 CV 🪶"
                     cancelText="Hủy"
                     onConfirm={() => onSetRole(selectedStaff.id, 'CV_PLUS_PLUS')}
                   >
@@ -1632,15 +1632,15 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
                       className="px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white flex items-center gap-1 shadow-xs transition-all active:scale-95 disabled:opacity-50"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
-                      <span>Lên 🪶 CV 🪶 · Quí Phái</span>
+                      <span>Lên 🪶 CV 🪶</span>
                     </button>
                   </Popconfirm>
                 )}
                 {onDemote && (
                   <Popconfirm
-                    title="Hạ cấp nhân sự về CV · Dịu Dàng?"
-                    description={`Chuyển cấp bậc của ${selectedStaff.displayName} về CV · Dịu Dàng.`}
-                    okText="Hạ về CV · Dịu Dàng"
+                    title="Hạ cấp nhân sự về CV?"
+                    description={`Chuyển cấp bậc của ${selectedStaff.displayName} về CV.`}
+                    okText="Hạ về CV"
                     cancelText="Hủy"
                     okType="danger"
                     onConfirm={() => onDemote(selectedStaff.id, 'CV')}
@@ -1650,7 +1650,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
                       className="px-2.5 py-1 rounded-lg text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50"
                     >
                       <ArrowDownCircle className="w-3.5 h-3.5" />
-                      <span>🔻 Hạ về CV · Dịu Dàng</span>
+                      <span>🔻 Hạ về CV</span>
                     </button>
                   </Popconfirm>
                 )}
@@ -1659,9 +1659,9 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
 
             {selectedStaff.careerRole === 'CV_PLUS_PLUS' && onDemote && (
               <Popconfirm
-                title="Hạ cấp nhân sự về 🪶 CV · Thanh Lịch?"
-                description={`Chuyển cấp bậc của ${selectedStaff.displayName} về 🪶 CV · Thanh Lịch.`}
-                okText="Hạ về 🪶 CV · Thanh Lịch"
+                title="Hạ cấp nhân sự về 🪶 CV?"
+                description={`Chuyển cấp bậc của ${selectedStaff.displayName} về 🪶 CV.`}
+                okText="Hạ về 🪶 CV"
                 cancelText="Hủy"
                 okType="danger"
                 onConfirm={() => onDemote(selectedStaff.id, 'CV_PLUS')}
@@ -1671,7 +1671,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
                   className="px-2.5 py-1 rounded-lg text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800 flex items-center gap-1 transition-all active:scale-95 disabled:opacity-50"
                 >
                   <ArrowDownCircle className="w-3.5 h-3.5" />
-                  <span>🔻 Hạ về 🪶 CV · Thanh Lịch</span>
+                  <span>🔻 Hạ về 🪶 CV</span>
                 </button>
               </Popconfirm>
             )}

@@ -164,7 +164,7 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
       icon: '⛑️',
       sub: 'Tập Sự & Rèn Luyện',
       title: 'Kỹ Thuật Viên Tập Sự · Probation Tech',
-      desc: 'Giai đoạn học hỏi kỹ thuật và văn hóa phục vụ Wings. Cần có sự bảo trợ và kiểm định để chính thức lên CV · Dịu Dàng.',
+      desc: 'Giai đoạn học hỏi kỹ thuật và văn hóa phục vụ Wings. Cần có sự bảo trợ và kiểm định để chính thức lên CV.',
       focus: 'Thực hành tay nghề nối mi, quy trình tiệt trùng nhíp giường và được bảo trợ uy tín',
       skills: [
         { name: 'Sát Hạch Dáng Mi', desc: 'Đúng chuẩn form mi Wings, hoàn thiện đúng SLA thời gian quy định' },
@@ -177,18 +177,18 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
       perks: [
         'Được các Đàn Chị và FM kèm cặp cầm tay chỉ việc trực tiếp tại giường',
         'Hưởng mức hỗ trợ học việc / lương thử việc theo quy chế chi nhánh',
-        'Được bảo kê nâng cấp lên CV · Dịu Dàng ngay khi hoàn thành kỳ sát hạch',
+        'Được bảo kê nâng cấp lên CV ngay khi hoàn thành kỳ sát hạch',
       ],
       gateText:
-        'Được Floor Manager hoặc Đàn Chị bảo trợ + Hoàn thành kỳ sát hạch tay nghề & an toàn QA/QC ➔ Thăng cấp chính thức thành CV · Dịu Dàng!',
+        'Được Floor Manager hoặc Đàn Chị bảo trợ + Hoàn thành kỳ sát hạch tay nghề & an toàn QA/QC ➔ Thăng cấp chính thức thành CV!',
     },
     {
       id: 'cv',
-      name: 'CV · Dịu Dàng',
+      name: 'CV',
       badge: 'Ải 1',
       icon: '👁️',
       sub: '70% Tip + Thâm Niên',
-      title: 'Chuyên Viên Dịu Dàng · Gentle Artisan',
+      title: 'Chuyên Viên Mi',
       desc: 'Đôi bàn tay mềm mại, từng sợi mi êm ru ru giấc ngủ nàng thơ. Kỹ thuật an toàn tuyệt đối tại giường.',
       focus: 'Kỹ thuật tinh xảo & An toàn tuyệt đối tại giường (3 tháng liền)',
       skills: [
@@ -202,41 +202,42 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
         'Thưởng giữ chân khách quen (Retention Bonus)',
         'Thưởng Thâm Niên: +5% đến +20% trên Thưởng CV Xoay hàng tháng',
       ],
-      gateText: `Đạt ${cvToCc.minOrders} ca mi (3 tháng liên tiếp) + Tip cao hơn TB chi nhánh ≥ ${(cvToCc.minTipRatioAboveShop * 100).toFixed(0)}% + Fix ≤ ${(cvToCc.maxFixRate * 100).toFixed(1)}% + HI ≥ ${(cvToCc.minHappinessIndex * 100).toFixed(0)}% (0 biên bản QA/QC) ➔ Mở khóa ải Trùm Cuối Tự Bán Combo (≥ ${(cvToCc.minSelfComboRate * 100).toFixed(0)}% khách của mình) để thăng cấp 🪶 CV · Thanh Lịch!`,
+      gateText: `Đạt ${cvToCc.minOrders} ca mi (3 tháng liên tiếp) + Tip cao hơn TB chi nhánh ≥ ${(cvToCc.minTipRatioAboveShop * 100).toFixed(0)}% + Fix ≤ ${(cvToCc.maxFixRate * 100).toFixed(1)}% + HI ≥ ${(cvToCc.minHappinessIndex * 100).toFixed(0)}% (0 biên bản QA/QC) ➔ Mở khóa ải Trùm Cuối Tự Bán Combo (≥ ${(cvToCc.minSelfComboRate * 100).toFixed(0)}% khách của mình) để thăng cấp 🪶 CV!`,
     },
     {
       id: 'cv_plus',
-      name: '🪶 CV · Thanh Lịch',
+      name: '🪶 CV',
       badge: 'Đang Triển Khai',
       icon: '👁️',
       sub: 'Tự Vấn + 90% Tip',
-      title: 'Chuyên Viên Thanh Lịch · Elegant Artist',
+      title: 'Chuyên Viên · 🪶 CV',
       desc: 'Sang trọng kiểu quý cô, tự tin tư vấn, đĩnh đạc và cuốn hút. Độc lập tác chiến tại giường: tự hiểu dáng mắt, tự tư vấn dáng mi & combo dưỡng mi cho khách của chính mình.',
-      focus: 'Tự chủ tư vấn trọn gói cho khách mình, chốt combo ≥ 20% trên khách Not Combo Live, chăm sóc khách ruột',
+      focus:
+        'Trực tiếp tư vấn trọn gói cho khách mình, chốt combo ≥ 20% trên khách Not Combo Live, chăm sóc khách ruột',
       skills: [
-        { name: 'Tự Chủ Tư Vấn', desc: 'Hiểu mi khách nhất, tự tư vấn dáng mi & combo mi dưỡng ≥ 20%' },
+        { name: 'Trực Tiếp Tư Vấn', desc: 'Hiểu mi khách nhất, tự tư vấn dáng mi & combo mi dưỡng ≥ 20%' },
         { name: 'Gắn Kết Khách Ruột', desc: 'Xây dựng tệp khách quen trung thành, tỷ lệ quay lại cao' },
         { name: 'Đại Sứ Google 5★', desc: 'Đạt tối thiểu 20 Google Review 5 sao/tháng từ khách hài lòng' },
       ],
       perks: [
-        'Lương giờ bậc cao: 27.5K/h (+2K/h so với CV · Dịu Dàng)',
+        'Lương giờ bậc cao: 27.5K/h (+2K/h so với CV)',
         'Hưởng trọn 90% Tiền Tip (70% Tip nối mi + 20% Tip tự tư vấn) khi tự phục vụ khách mình',
         'Điều kiện nhận hết thưởng: Bán tối thiểu 20% Combo trên khách Not Combo Live (Combo Live bán thêm cũng cộng dồn)',
         'Trường hợp bán không được (< 20% Combo): Vẫn nhận 90% Tip, không nhận thêm bất kỳ phần thưởng nào khác (lương tăng, thưởng combo = 0đ)',
-        'Quy tắc 2 Tháng Liền: 2 tháng liền không đạt chuẩn thì quay lại CV · Dịu Dàng (Tip tụt về 70%, mất quyền tự tư vấn)',
+        'Quy tắc 2 Tháng Liền: 2 tháng liền không đạt chuẩn thì quay lại CV (Tip tụt về 70%, mất quyền tự tư vấn)',
         'Hoa hồng Combo bậc thang tiền tươi: 50K - 150K - 500K/gói + Thưởng Dưỡng mi 100K/cây',
         'Thưởng Thâm Niên: +5% đến +20% trên Thưởng CV Xoay hàng tháng',
       ],
-      gateText: `Duy trì 🪶 CV · Thanh Lịch: Tự chốt combo ≥ 20% trên khách Not Combo Live + 0 vi phạm QA/QC + HI ≥ 65%. Chú ý: 2 tháng liền không đạt chuẩn thì quay lại CV · Dịu Dàng!`,
+      gateText: `Duy trì 🪶 CV: Tự chốt combo ≥ 20% trên khách Not Combo Live + 0 vi phạm QA/QC + HI ≥ 65%. Chú ý: 2 tháng liền không đạt chuẩn thì quay lại CV!`,
     },
     {
       id: 'cv_plus_plus',
-      name: '🪶 CV 🪶 · Quí Phái',
+      name: '🪶 CV 🪶',
       badge: 'Đang Nghiên Cứu',
       icon: '👁️',
       sub: 'Sảnh + Hộ 20%',
-      title: 'Chuyên Viên Quí Phái · Noble Senior Consultant',
-      desc: 'Bản lĩnh vững vàng, phong thái quý phái. Vừa tự làm khách ruột, vừa đứng sảnh đón tiếp & tư vấn giùm cho khách của Chuyên Viên CV · Dịu Dàng khi FM vắng.',
+      title: 'Chuyên Viên Cấp Cao · 🪶 CV 🪶',
+      desc: 'Bản lĩnh vững vàng, phong thái đỉnh đạc. Vừa tự làm khách ruột, vừa đứng sảnh đón tiếp & tư vấn giùm cho khách của Chuyên Viên CV khi FM vắng.',
       focus: 'Tư vấn chốt combo toàn sàn khi FM vắng, làm chủ ca trực ngày lễ, nâng đỡ đàn em',
       skills: [
         { name: 'Đàn Chị Sảnh', desc: 'Đón tiếp và tư vấn giùm cho khách của CV khác khi FM không có mặt' },
@@ -250,19 +251,19 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
         },
       ],
       perks: [
-        'Lương giờ chuyên viên bậc cao nhất: 29.5K - 30K/h (+4K/h so với CV · Dịu Dàng)',
+        'Lương giờ chuyên viên bậc cao nhất: 29.5K - 30K/h (+4K/h so với CV)',
         'Hưởng trọn 90% Tiền Tip khách mình (70% CV + 20% CC)',
-        'Hưởng 20% Tiền Tip Tư Vấn (CC Tip) khi tư vấn hộ cho khách của Chuyên Viên CV · Dịu Dàng (khi FM vắng)',
+        'Hưởng 20% Tiền Tip Tư Vấn (CC Tip) khi tư vấn hộ cho khách của Chuyên Viên CV (khi FM vắng)',
         'Hoa hồng 2.5% tư vấn giùm cho khách của các CV khác khi FM vắng',
         'Đặc quyền làm Trưởng Ca Trực Ngày Lễ: Hưởng lương lễ x3-x4 + 90% Tip ca mình làm',
         'Thưởng Thâm Niên: +5% đến +20% trên Thưởng CV Xoay',
         'Quy hoạch hạt giống số 1 để bổ nhiệm lên Floor Manager (FM) chính thức!',
       ],
-      gateText: `Duy trì 🪶 CV 🪶 · Quí Phái ≥ ${cvPlusPlusToFm?.minMonthsInRole || 3} tháng + Đạt ≥ ${cvPlusPlusToFm?.minMonthlyGoogleReviews || 30} Google Review 5★/tháng + Kiểm tra kho & CSVC hàng tuần + Tỷ lệ combo shop ≥ ${((cvPlusPlusToFm?.minShopComboRate || 0.25) * 100).toFixed(0)}% ➔ Thăng cấp Floor Manager (🪽 FM 🪽 · Nữ Thần Sàn)!`,
+      gateText: `Duy trì 🪶 CV 🪶 ≥ ${cvPlusPlusToFm?.minMonthsInRole || 3} tháng + Đạt ≥ ${cvPlusPlusToFm?.minMonthlyGoogleReviews || 30} Google Review 5★/tháng + Kiểm tra kho & CSVC hàng tuần + Tỷ lệ combo shop ≥ ${((cvPlusPlusToFm?.minShopComboRate || 0.25) * 100).toFixed(0)}% ➔ Thăng cấp Floor Manager (🪽 FM 🪽)!`,
     },
     {
       id: 'fm',
-      name: '🪽 FM 🪽 · Nữ Thần Sàn',
+      name: '🪽 FM 🪽',
       badge: 'Đang Nghiên Cứu',
       icon: '🏰',
       sub: 'Tư Vấn + Vận Hành',
@@ -285,7 +286,7 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
         'Thưởng Cán Mốc Hòa Vốn (2.0M) + Thưởng 2.0% phần doanh thu vượt mốc (DT ≥ 450M, EP ≥ 350M)',
         'Thưởng Đánh Giá Sàn (1.0M - 1.5M): Đạt chuẩn CSVC ≥ 95 điểm & shop đạt ≥ 30 Google Review 5★/tháng',
         'Thưởng Tiết Kiệm: Nhận 10% số tiền chi phí vận hành tiết kiệm được (khi kho hao hụt ≤ 0.5% & vật tư ≤ 5%)',
-        'Nghỉ lễ trọn vẹn hưởng nguyên gói lương khi đào tạo được CV++ tự chủ sảnh; chịu trách nhiệm On-Call 24/7 giải quyết sự cố',
+        'Nghỉ lễ trọn vẹn hưởng nguyên gói lương khi đào tạo được CV++ quán xuyến sảnh; chịu trách nhiệm On-Call 24/7 giải quyết sự cố',
         `Túi Chuối Thần Kỳ: Được cấp ${rewardRates.fmMonthlyBananaGrant} Chuối/tháng để thưởng nóng tức thì cho nhân viên xuất sắc`,
       ],
       gateText: `Chi nhánh đạt Target ≥ ${fmToCho.minTargetHitMonths} tháng + Giúp đỡ người có HI thấp tiến bộ + Thất thoát kho ≤ ${(fmToCho.maxInventoryLossRate * 100).toFixed(1)}% + CSVC 5 giác quan ≥ ${fmToCho.minFacilityScore}% ➔ Thăng cấp Chief Happiness Officer (CHO)!`,
@@ -343,22 +344,22 @@ export function getCareerIslands(safeConfig: CareerProgressionConfig): CareerIsl
 }
 
 export function formatCareerRoleName(role?: string | null, compact = false): string {
-  if (!role) return compact ? 'CV' : 'CV · Dịu Dàng';
+  if (!role) return 'CV';
   switch (role) {
     case 'KTV':
       return compact ? 'KTV' : 'KTV Thử Việc';
     case 'CV':
-      return compact ? 'CV' : 'CV · Dịu Dàng';
+      return 'CV';
     case 'CV_PLUS':
-      return compact ? '🪶 CV' : '🪶 CV · Thanh Lịch';
+      return '🪶 CV';
     case 'CV_PLUS_PLUS':
-      return compact ? '🪶 CV 🪶' : '🪶 CV 🪶 · Quí Phái';
+      return '🪶 CV 🪶';
     case 'MASTER_TECH':
       return 'Master Tech';
     case 'CC':
       return 'CC';
     case 'FM':
-      return compact ? '🪽 FM 🪽' : '🪽 FM 🪽 · Nữ Thần Sàn';
+      return '🪽 FM 🪽';
     case 'CHO':
       return compact ? 'CHO' : 'CHO · Mẹ Thiên Thần';
     case 'BOSS':

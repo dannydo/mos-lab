@@ -147,7 +147,7 @@ export function CareerConfigDrawer({
               {
                 label: (
                   <span className="flex items-center justify-center gap-1.5 py-1 text-xs font-bold">
-                    <span>Ải 1: CV ★ Dịu Dàng ➔ CV ★★ Thanh Lịch</span>
+                    <span>Ải 1: CV ➔ 🪶 CV</span>
                   </span>
                 ),
                 value: 'CV_TO_CV_PLUS',
@@ -155,7 +155,7 @@ export function CareerConfigDrawer({
               {
                 label: (
                   <span className="flex items-center justify-center gap-1.5 py-1 text-xs font-bold">
-                    <span>Ải 2: CV ★★ Thanh Lịch ➔ CV ★★★ Quí Phái</span>
+                    <span>Ải 2: 🪶 CV ➔ 🪶 CV 🪶</span>
                   </span>
                 ),
                 value: 'CV_PLUS_TO_CV_PLUS_PLUS',
@@ -166,12 +166,12 @@ export function CareerConfigDrawer({
 
         {activeTab === 'CV_TO_CV_PLUS' ? (
           /* ========================================================================= */
-          /* TAB 1: CV ➔ CV+ (CHUYÊN VIÊN TỰ CHỦ) */
+          /* TAB 1: CV ➔ 🪶 CV */
           /* ========================================================================= */
           <div className="space-y-4">
             <p className="text-xs text-slate-500 dark:text-slate-400 m-0">
-              Điều chỉnh trực tiếp các tiêu chuẩn thăng cấp <strong>Ải 1: CV ➔ CV+ (Chuyên Viên Tự Chủ)</strong>. Sau
-              khi lưu, toàn bộ hệ thống web và mobile sẽ áp dụng tức thì.
+              Điều chỉnh trực tiếp các tiêu chuẩn thăng cấp <strong>Ải 1: CV ➔ 🪶 CV</strong>. Sau khi lưu, toàn bộ hệ
+              thống web và mobile sẽ áp dụng tức thì.
             </p>
 
             {/* NHÓM 1: NĂNG SUẤT & KỸ THUẬT CỐT LÕI */}
@@ -825,7 +825,7 @@ export function CareerConfigDrawer({
           <div className="space-y-4">
             <p className="text-xs text-slate-500 dark:text-slate-400 m-0">
               Điều chỉnh trực tiếp các tiêu chuẩn thăng cấp <strong>Ải 2: CV+ ➔ CV++ (Đàn Chị Sảnh)</strong>. Đàn Chị
-              Sảnh tự chủ tư vấn, giữ vững tỷ lệ combo cao và hỗ trợ tư vấn chéo cho khách của các CV khác.
+              Sảnh trực tiếp tư vấn, giữ vững tỷ lệ combo cao và hỗ trợ tư vấn chéo cho khách của các CV khác.
             </p>
 
             {/* NHÓM 1: NĂNG SUẤT & KỸ THUẬT CỐT LÕI */}
