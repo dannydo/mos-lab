@@ -36417,8 +36417,8 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path.constants.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23918,
-        "lineCount": 503,
+        "sizeBytes": 23926,
+        "lineCount": 504,
         "ext": ".ts"
       }
     },
@@ -36495,8 +36495,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 142186,
-        "lineCount": 2699,
+        "sizeBytes": 142343,
+        "lineCount": 2702,
         "ext": ".tsx"
       }
     },
@@ -36508,8 +36508,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 77193,
-        "lineCount": 1692,
+        "sizeBytes": 78141,
+        "lineCount": 1707,
         "ext": ".tsx"
       }
     },
@@ -36521,8 +36521,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38154,
-        "lineCount": 891,
+        "sizeBytes": 38236,
+        "lineCount": 893,
         "ext": ".tsx"
       }
     },

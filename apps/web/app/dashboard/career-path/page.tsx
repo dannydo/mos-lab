@@ -476,7 +476,7 @@ export default function CareerPathPage() {
   const expProgressStyle = { width: `${Math.min(100, Math.round((staffRealOrders / cvToCc.minOrders) * 100))}%` };
 
   return (
-    <div className="min-h-screen bg-rose-50/40 dark:bg-slate-950 text-slate-800 dark:text-slate-100 pb-12 transition-colors duration-200">
+    <div className="min-h-screen bg-rose-50/40 dark:bg-slate-950 text-slate-800 dark:text-slate-100 pb-32 sm:pb-36 md:pb-12 transition-colors duration-200">
       <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-50" />
 
       {/* TOP COMPACT STATUS BAR (PLAYER HUD) */}
@@ -674,6 +674,7 @@ export default function CareerPathPage() {
         {/* STAFF LIST SELECTOR & AUDIT (Desktop only, Mobile uses Bottom Sheet) */}
         <div className="hidden md:block w-full space-y-3 transition-all duration-300">
           <StaffCareerSelector
+            config={safeConfig}
             staffList={staffList}
             selectedStaffId={selectedStaffId}
             onSelectStaff={handleSelectStaff}
@@ -813,6 +814,7 @@ export default function CareerPathPage() {
       >
         <div className="p-3">
           <StaffCareerSelector
+            config={safeConfig}
             staffList={staffList}
             selectedStaffId={selectedStaffId}
             onSelectStaff={(id) => {

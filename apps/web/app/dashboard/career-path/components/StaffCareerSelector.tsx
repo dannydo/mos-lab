@@ -29,7 +29,13 @@ import {
 } from 'lucide-react';
 import { StatusTag, DataTable } from '../../../../components/ui';
 import { WingRoleLabel } from './IslandGameIcon';
-import type { CareerStaffSummary, CareerRole, CareerPeriod, BananaTransactionCategory } from '@mos-lab/shared';
+import type {
+  CareerStaffSummary,
+  CareerRole,
+  CareerPeriod,
+  BananaTransactionCategory,
+  CareerProgressionConfig,
+} from '@mos-lab/shared';
 import { formatCareerRoleName } from '../career-path.constants';
 
 export type CareerSelectorMode = 'ultra_compact' | 'cards' | 'table';
@@ -54,6 +60,7 @@ export interface StaffCareerSelectorProps {
   onExpandHorizontal?: () => void;
   selectorMode?: CareerSelectorMode;
   onSelectorModeChange?: (mode: CareerSelectorMode) => void;
+  config?: CareerProgressionConfig;
 }
 
 const ROLE_TABS = [
@@ -107,6 +114,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
   onExpandHorizontal,
   selectorMode,
   onSelectorModeChange,
+  config,
 }) => {
   const [internalRoleFilter, setInternalRoleFilter] = useState('ALL');
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
@@ -290,24 +298,33 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
     }
   };
 
+  const cvReq = config?.cvToCvPlus || config?.cvToCc;
+  const minOrdersConfig = cvReq?.minOrders ?? 300;
+  const maxFixRateConfig = cvReq?.maxFixRate ?? 0.02;
+  const minTipRatioAboveShop = cvReq?.minTipRatioAboveShop ?? 0.1;
+  const minHiConfig = cvReq?.minHappinessIndex ?? 0.7;
+  const minBananaConfig = cvReq?.minBananaCount ?? 20;
+  const minComboConfig = cvReq?.minSelfComboRate ?? 0.21;
+
   const getOrdersStatus = (orders: number): MetricStatus => {
-    if (orders >= 300) return 'passed';
-    if (orders >= 240) return 'near';
+    if (orders >= minOrdersConfig) return 'passed';
+    if (orders >= Math.round(minOrdersConfig * 0.8)) return 'near';
     return 'failed';
   };
 
   const getFixStatus = (fixRate: number): MetricStatus => {
     const fixPct = Number(((fixRate || 0) * 100).toFixed(1));
-    if (fixPct <= 2.0) return 'passed';
-    if (fixPct <= 2.5) return 'near';
+    const maxFixPct = Number((maxFixRateConfig * 100).toFixed(1));
+    if (fixPct <= maxFixPct) return 'passed';
+    if (fixPct <= maxFixPct + 0.5) return 'near';
     return 'failed';
   };
 
   const getTipStatus = (staff: CareerStaffSummary): MetricStatus => {
     const tipPct = getStaffTipPercent(staff);
     const branchTipRate = staff.shopTipRate || staff.branchTipRate || 0.45;
-    const targetTipPct = Number((branchTipRate * 1.1 * 100).toFixed(1));
-    const nearTipPct = Number((branchTipRate * 0.9 * 100).toFixed(1));
+    const targetTipPct = Number((branchTipRate * (1 + minTipRatioAboveShop) * 100).toFixed(1));
+    const nearTipPct = Number((branchTipRate * (1 + minTipRatioAboveShop * 0.5) * 100).toFixed(1));
 
     if (tipPct >= targetTipPct) return 'passed';
     if (tipPct >= nearTipPct) return 'near';
@@ -324,14 +341,15 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
 
   const getHiStatus = (hi: number): MetricStatus => {
     const hiPct = Math.round((hi || 0.75) * 100);
-    if (hiPct >= 70) return 'passed';
-    if (hiPct >= 65) return 'near';
+    const targetHiPct = Math.round(minHiConfig * 100);
+    if (hiPct >= targetHiPct) return 'passed';
+    if (hiPct >= targetHiPct - 5) return 'near';
     return 'failed';
   };
 
   const getBananaCountStatus = (count: number): MetricStatus => {
-    if (count >= 20) return 'passed';
-    if (count >= 15) return 'near';
+    if (count >= minBananaConfig) return 'passed';
+    if (count >= Math.round(minBananaConfig * 0.75)) return 'near';
     return 'failed';
   };
 
@@ -347,8 +365,9 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
 
   const getComboStatus = (staff: CareerStaffSummary): MetricStatus => {
     const comboPct = getStaffComboPercent(staff);
-    if (comboPct >= 21.0) return 'passed';
-    if (comboPct >= 15.0) return 'near';
+    const targetComboPct = Number((minComboConfig * 100).toFixed(1));
+    if (comboPct >= targetComboPct) return 'passed';
+    if (comboPct >= targetComboPct * 0.7) return 'near';
     return 'failed';
   };
 
@@ -666,7 +685,9 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
-        <Tooltip title="Tip: Tỷ lệ khách tip ≥ 20K trong tháng hoàn tất gần nhất (Chuẩn vượt 10% TB chi nhánh)">
+        <Tooltip
+          title={`Tip: Tỷ lệ khách tip ≥ 20K trong tháng hoàn tất gần nhất (Chuẩn vượt ${(minTipRatioAboveShop * 100).toFixed(0)}% TB chi nhánh)`}
+        >
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <HandCoins className="w-4 h-4 text-slate-600 dark:text-slate-300" />
           </span>
@@ -682,7 +703,9 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
         const diffShop = Number(((staff.tipRatioAboveShop || 0) * 100).toFixed(0));
         const branchLabel = staff.branchName || 'Chi nhánh';
         const branchTipPct = ((staff.shopTipRate || staff.branchTipRate || 0.45) * 100).toFixed(1);
-        const targetTipPct = Number(((staff.shopTipRate || staff.branchTipRate || 0.45) * 1.1 * 100).toFixed(1));
+        const targetTipPct = Number(
+          ((staff.shopTipRate || staff.branchTipRate || 0.45) * (1 + minTipRatioAboveShop) * 100).toFixed(1)
+        );
         return (
           <Tooltip
             title={`Tip tháng hoàn tất gần nhất: ${tipPct}% (mục tiêu ≥ ${targetTipPct}% · TB ${branchLabel}: ${branchTipPct}%, ${

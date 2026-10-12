@@ -338,7 +338,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
   const branchShortName = metrics.branchCode || metrics.branchName || 'CN';
   const shopTipRate = metrics.shopTipRate ?? 0.45; // 45.0%
   const shopBonusPercent = Number((shopTipRate * minTipRatioAboveShop * 100).toFixed(1));
-  const targetTipRate = metrics.targetTipRate ?? Number((shopTipRate * (1 + minTipRatioAboveShop)).toFixed(3));
+  const targetTipRate = Number((shopTipRate * (1 + minTipRatioAboveShop)).toFixed(3));
 
   const staffTipRatePercent = Number((staffTipRate * 100).toFixed(1));
   const shopTipRatePercent = Number((shopTipRate * 100).toFixed(1));
@@ -1654,7 +1654,9 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   </div>
                   <div className="text-[11px] font-black tabular-nums text-white">{staffTipRatePercent}%</div>
                   <div className="text-[9px] font-bold text-slate-400 truncate max-w-full">
-                    {isSimTipPassed ? '✓ Tip +10%' : `Cần ${targetTipRatePercent}%`}
+                    {isSimTipPassed
+                      ? `✓ Tip +${(minTipRatioAboveShop * 100).toFixed(0)}%`
+                      : `Cần ${targetTipRatePercent}%`}
                   </div>
                   <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white/10 text-slate-400 flex items-center justify-center text-[9px] font-bold">
                     i
@@ -1746,8 +1748,8 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
               </div>
             </div>
 
-            {/* 6 QUESTS PROGRESSION CARDS (DESKTOP DETAILED LIST) */}
-            <div className="hidden md:block relative z-10 space-y-2.5 mt-3">
+            {/* 6 QUESTS PROGRESSION CARDS (DETAILED LIST) */}
+            <div className="relative z-10 space-y-2.5 mt-3">
               <div className="flex items-center justify-between text-xs font-bold text-slate-300 pb-1">
                 <span className="flex items-center gap-1.5">
                   <span>📋 TIẾN TRÌNH 6 ẢI THĂNG CẤP</span>
@@ -2652,6 +2654,9 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
           </div>
         </div>
       </div>
+
+      {/* 📱 MOBILE BOTTOM SPACER TO PREVENT STICKY BAR OVERLAP */}
+      <div className="md:hidden h-28 sm:h-32 w-full pointer-events-none" aria-hidden="true" />
 
       {/* 📱 MOBILE STICKY BOTTOM ACTION BAR (iOS Safari Safe Area) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-md border-t border-slate-800/90 px-4 py-2.5 pb-[max(14px,env(safe-area-inset-bottom))] shadow-2xl flex items-center justify-between gap-3">
