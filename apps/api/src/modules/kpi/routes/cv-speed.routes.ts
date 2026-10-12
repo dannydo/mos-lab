@@ -32,13 +32,50 @@ interface DetailCacheEntry {
 const cvDetailCache = new Map<number, DetailCacheEntry>();
 const CV_DETAIL_CACHE_TTL_MS = 5 * 60 * 1000;
 
-export function clearCvSpeedDetailCache(staffId?: number) {
+interface MatrixCacheEntry {
+  data: CvSpeedMatrix;
+  expiresAt: number;
+}
+const cvMatrixCache = new Map<string, MatrixCacheEntry>();
+const inFlightMatrixPromises = new Map<string, Promise<CvSpeedMatrix>>();
+const CV_MATRIX_CACHE_TTL_MS = 15 * 60 * 1000;
+
+interface RankingCacheEntry {
+  data: CvSpeedRanking[];
+  expiresAt: number;
+}
+const cvRankingCache = new Map<string, RankingCacheEntry>();
+const inFlightRankingPromises = new Map<string, Promise<CvSpeedRanking[]>>();
+const CV_RANKING_CACHE_TTL_MS = 15 * 60 * 1000;
+
+interface SpeedFactorsCacheEntry {
+  data: Map<number, StaffPhaseMetrics>;
+  expiresAt: number;
+}
+let speedFactorsCache: SpeedFactorsCacheEntry | null = null;
+let inFlightSpeedFactorsPromise: Promise<Map<number, StaffPhaseMetrics>> | null = null;
+const SPEED_FACTORS_CACHE_TTL_MS = 30 * 60 * 1000;
+
+interface StaffTrendsCacheEntry {
+  data: Map<number, 'improving' | 'declining' | 'stable'>;
+  expiresAt: number;
+}
+let staffTrendsCache: StaffTrendsCacheEntry | null = null;
+let inFlightStaffTrendsPromise: Promise<Map<number, 'improving' | 'declining' | 'stable'>> | null = null;
+const STAFF_TRENDS_CACHE_TTL_MS = 30 * 60 * 1000;
+
+export function clearCvSpeedCache(staffId?: number) {
   if (staffId) {
     cvDetailCache.delete(staffId);
   } else {
     cvDetailCache.clear();
   }
+  cvMatrixCache.clear();
+  cvRankingCache.clear();
+  speedFactorsCache = null;
+  staffTrendsCache = null;
 }
+export const clearCvSpeedDetailCache = clearCvSpeedCache;
 
 export async function cvSpeedRoutes(fastify: FastifyInstance) {
   const addRoute = (method: 'get' | 'post', path: string, handler: SafeAny) => {
@@ -113,84 +150,113 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
     const effectiveServiceMode: LashServiceMode =
       serviceMode === 'all' ? 'normal_clean' : (serviceMode as LashServiceMode);
 
-    try {
-      const activeCvs = await getActiveCvStaffList(fastify.prisma.crm, fastify.prisma.legacy);
-      const activeCvIds = activeCvs.map((c) => c.id);
+    const now = Date.now();
+    const cacheKey = `matrix:${effectiveServiceMode}`;
+    const cached = cvMatrixCache.get(cacheKey);
+    if (cached && cached.expiresAt > now) {
+      return reply.send(cached.data);
+    }
 
-      const dbProfiles = await fastify.prisma.crm.crmCvSpeedProfile.findMany({
-        where: {
-          staffId: { in: activeCvIds },
-          serviceMode: effectiveServiceMode,
-        },
-      });
+    const inFlight = inFlightMatrixPromises.get(cacheKey);
+    if (inFlight) {
+      const data = await inFlight;
+      return reply.send(data);
+    }
 
-      if (dbProfiles.length < activeCvs.length * STANDARD_STYLES.length * STANDARD_COUNTS.length * 0.5) {
-        fastify.log.info('[CvSpeedRoutes] dbProfiles is incomplete in /matrix, triggering background seed...');
-        runNightlyCvSpeedSeed(fastify.prisma.crm, fastify.prisma.legacy).catch((e) =>
-          fastify.log.error(e, 'Error during background seed from /matrix')
-        );
-      }
+    const computePromise = (async () => {
+      try {
+        const activeCvs = await getActiveCvStaffList(fastify.prisma.crm, fastify.prisma.legacy);
+        const activeCvIds = activeCvs.map((c) => c.id);
 
-      const speedFactorMap = await getStaffOverallSpeedFactors(fastify.prisma.legacy, activeCvIds);
-
-      const profileMap = new Map<string, CvSpeedMatrixCell>();
-      dbProfiles.forEach((p) => {
-        const key = `${p.staffId}_${p.lashStyle}_${p.lashCount}`;
-        profileMap.set(key, {
-          totalMinutes: p.totalMinutes,
-          speedRating: p.speedRating as SpeedRating,
-          modelLayer: p.modelLayer as ModelLayer,
-          sampleSize: p.sampleSize,
-          confidence: p.confidence as ConfidenceLevel,
+        const dbProfiles = await fastify.prisma.crm.crmCvSpeedProfile.findMany({
+          where: {
+            staffId: { in: activeCvIds },
+            serviceMode: effectiveServiceMode,
+          },
         });
-      });
 
-      const rows: CvSpeedMatrixRow[] = [];
-
-      for (const cv of activeCvs) {
-        const rowProfiles: Record<string, CvSpeedMatrixCell> = {};
-        const cvRatio = speedFactorMap.get(cv.id)?.ratio || 1.0;
-
-        for (const style of STANDARD_STYLES) {
-          for (const count of STANDARD_COUNTS) {
-            const key = `${cv.id}_${style}_${count}`;
-            const existing = profileMap.get(key);
-
-            if (existing) {
-              rowProfiles[`${style}_${count}`] = existing;
-            } else {
-              // Personalized in-memory fallback based on staff member's overall working speed ratio
-              const baseMin = style.includes('Volume') || style.includes('Ultralight') ? 35 : 30;
-              const bmTotal = baseMin + Math.round(count * 0.6) + (effectiveServiceMode === 'normal_removal' ? 5 : 0);
-              const estTotal = Math.round(bmTotal * cvRatio);
-              const speedRating: SpeedRating =
-                estTotal <= bmTotal * 0.95 ? 'fast' : estTotal >= bmTotal * 1.05 ? 'slow' : 'normal';
-
-              rowProfiles[`${style}_${count}`] = {
-                totalMinutes: estTotal,
-                speedRating,
-                modelLayer: 3,
-                sampleSize: 0,
-                confidence: 'low',
-              };
-            }
-          }
+        if (dbProfiles.length < activeCvs.length * STANDARD_STYLES.length * STANDARD_COUNTS.length * 0.5) {
+          fastify.log.info('[CvSpeedRoutes] dbProfiles is incomplete in /matrix, triggering background seed...');
+          runNightlyCvSpeedSeed(fastify.prisma.crm, fastify.prisma.legacy).catch((e) =>
+            fastify.log.error(e, 'Error during background seed from /matrix')
+          );
         }
 
-        rows.push({
-          staffId: cv.id,
-          staffName: cv.name,
-          avatarUrl: cv.avatarUrl,
-          profiles: rowProfiles,
+        const speedFactorMap = await getStaffOverallSpeedFactors(fastify.prisma.legacy, activeCvIds);
+
+        const profileMap = new Map<string, CvSpeedMatrixCell>();
+        dbProfiles.forEach((p) => {
+          const key = `${p.staffId}_${p.lashStyle}_${p.lashCount}`;
+          profileMap.set(key, {
+            totalMinutes: p.totalMinutes,
+            speedRating: p.speedRating as SpeedRating,
+            modelLayer: p.modelLayer as ModelLayer,
+            sampleSize: p.sampleSize,
+            confidence: p.confidence as ConfidenceLevel,
+          });
         });
+
+        const rows: CvSpeedMatrixRow[] = [];
+
+        for (const cv of activeCvs) {
+          const rowProfiles: Record<string, CvSpeedMatrixCell> = {};
+          const cvRatio = speedFactorMap.get(cv.id)?.ratio || 1.0;
+
+          for (const style of STANDARD_STYLES) {
+            for (const count of STANDARD_COUNTS) {
+              const key = `${cv.id}_${style}_${count}`;
+              const existing = profileMap.get(key);
+
+              if (existing) {
+                rowProfiles[`${style}_${count}`] = existing;
+              } else {
+                // Personalized in-memory fallback based on staff member's overall working speed ratio
+                const baseMin = style.includes('Volume') || style.includes('Ultralight') ? 35 : 30;
+                const bmTotal = baseMin + Math.round(count * 0.6) + (effectiveServiceMode === 'normal_removal' ? 5 : 0);
+                const estTotal = Math.round(bmTotal * cvRatio);
+                const speedRating: SpeedRating =
+                  estTotal <= bmTotal * 0.95 ? 'fast' : estTotal >= bmTotal * 1.05 ? 'slow' : 'normal';
+
+                rowProfiles[`${style}_${count}`] = {
+                  totalMinutes: estTotal,
+                  speedRating,
+                  modelLayer: 3,
+                  sampleSize: 0,
+                  confidence: 'low',
+                };
+              }
+            }
+          }
+
+          rows.push({
+            staffId: cv.id,
+            staffName: cv.name,
+            avatarUrl: cv.avatarUrl,
+            profiles: rowProfiles,
+          });
+        }
+
+        const response: CvSpeedMatrix = {
+          data: rows,
+          lashStyles: STANDARD_STYLES,
+          lashCounts: STANDARD_COUNTS,
+        };
+
+        cvMatrixCache.set(cacheKey, {
+          data: response,
+          expiresAt: Date.now() + CV_MATRIX_CACHE_TTL_MS,
+        });
+
+        return response;
+      } finally {
+        inFlightMatrixPromises.delete(cacheKey);
       }
+    })();
 
-      const response: CvSpeedMatrix = {
-        data: rows,
-        lashStyles: STANDARD_STYLES,
-        lashCounts: STANDARD_COUNTS,
-      };
+    inFlightMatrixPromises.set(cacheKey, computePromise);
 
+    try {
+      const response = await computePromise;
       return reply.send(response);
     } catch (err) {
       fastify.log.error(err as Error, 'Error fetching CV speed matrix');
@@ -211,108 +277,137 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
     };
 
     const countNum = typeof lashCount === 'string' ? parseInt(lashCount, 10) : lashCount;
+    const now = Date.now();
+    const cacheKey = `ranking:${lashStyle}:${countNum}:${serviceMode}`;
 
-    try {
-      const activeCvs = await getActiveCvStaffList(fastify.prisma.crm, fastify.prisma.legacy);
-      const activeCvIds = activeCvs.map((c) => c.id);
+    const cached = cvRankingCache.get(cacheKey);
+    if (cached && cached.expiresAt > now) {
+      return reply.send(cached.data);
+    }
 
-      const dbProfiles = await fastify.prisma.crm.crmCvSpeedProfile.findMany({
-        where: {
-          staffId: { in: activeCvIds },
-          lashStyle,
-          serviceMode,
-          lashCount: countNum,
-        },
-      });
+    const inFlight = inFlightRankingPromises.get(cacheKey);
+    if (inFlight) {
+      const data = await inFlight;
+      return reply.send(data);
+    }
 
-      if (dbProfiles.length < activeCvIds.length) {
-        fastify.log.info('[CvSpeedRoutes] dbProfiles incomplete in /ranking, triggering background seed...');
-        runNightlyCvSpeedSeed(fastify.prisma.crm, fastify.prisma.legacy).catch((e) =>
-          fastify.log.error(e, 'Error during background seed from /ranking')
-        );
-      }
+    const computePromise = (async () => {
+      try {
+        const activeCvs = await getActiveCvStaffList(fastify.prisma.crm, fastify.prisma.legacy);
+        const activeCvIds = activeCvs.map((c) => c.id);
 
-      const profileMap = new Map<number, SafeAny>();
-      dbProfiles.forEach((p) => profileMap.set(p.staffId, p));
+        const dbProfiles = await fastify.prisma.crm.crmCvSpeedProfile.findMany({
+          where: {
+            staffId: { in: activeCvIds },
+            lashStyle,
+            serviceMode,
+            lashCount: countNum,
+          },
+        });
 
-      // Batch query trend & overall speed factors for all staff in 1 fast parallel execution
-      const [trendMap, speedFactorMap] = await Promise.all([
-        getStaffTrendsBatch(fastify.prisma.legacy, activeCvIds),
-        getStaffOverallSpeedFactors(fastify.prisma.legacy, activeCvIds),
-      ]);
-
-      let styleMultiplier = 1.0;
-      if (lashStyle === 'Under Mink') styleMultiplier = 0.55;
-      else if (lashStyle === 'Classic') styleMultiplier = 0.95;
-      else if (lashStyle === 'Mink' || lashStyle === 'Flawless') styleMultiplier = 1.0;
-      else if (lashStyle === 'Ivylight') styleMultiplier = 1.05;
-      else if (lashStyle === 'Volume') styleMultiplier = 1.15;
-      else if (lashStyle === 'Hyperlight') styleMultiplier = 1.25;
-      else if (lashStyle === 'Ultralight') styleMultiplier = 1.35;
-
-      const baseMin = Math.round((30 + Math.round(countNum * 0.6)) * styleMultiplier);
-      const benchmarkTotal = baseMin + (serviceMode === 'normal_removal' ? 5 : 0);
-
-      const rankingEntries = [];
-
-      for (const cv of activeCvs) {
-        const dbProf = profileMap.get(cv.id);
-        let predictedTime = 60;
-        let sampleSize = 0;
-        let confidence: ConfidenceLevel = 'low';
-        let speedRating: SpeedRating = 'normal';
-
-        if (dbProf) {
-          predictedTime = dbProf.totalMinutes;
-          sampleSize = dbProf.sampleSize;
-          confidence = dbProf.confidence as ConfidenceLevel;
-          speedRating = dbProf.speedRating as SpeedRating;
-        } else {
-          // Dynamic fallback adjusted by staff member's overall 12-month historical working pace
-          const staffMetrics = speedFactorMap.get(cv.id);
-          const staffRatio = staffMetrics?.ratio || 1.0;
-          predictedTime = Math.round(benchmarkTotal * staffRatio);
-          sampleSize = 0;
-          confidence = 'low';
-          speedRating =
-            predictedTime <= benchmarkTotal * 0.95
-              ? 'fast'
-              : predictedTime >= benchmarkTotal * 1.05
-                ? 'slow'
-                : 'normal';
+        if (dbProfiles.length < activeCvIds.length) {
+          fastify.log.info('[CvSpeedRoutes] dbProfiles incomplete in /ranking, triggering background seed...');
+          runNightlyCvSpeedSeed(fastify.prisma.crm, fastify.prisma.legacy).catch((e) =>
+            fastify.log.error(e, 'Error during background seed from /ranking')
+          );
         }
 
-        const staffMetrics = speedFactorMap.get(cv.id);
-        const cleaningMinutes = Math.round(dbProf ? dbProf.cleaningMinutes : staffMetrics?.avgCleaning || 10);
-        const prepQcMinutes = Math.round(dbProf ? dbProf.prepQcMinutes : staffMetrics?.avgPrepQc || 8);
-        const extensionMinutes = Math.max(5, predictedTime - cleaningMinutes - prepQcMinutes);
+        const profileMap = new Map<number, SafeAny>();
+        dbProfiles.forEach((p) => profileMap.set(p.staffId, p));
 
-        const trend = trendMap.get(cv.id) || 'stable';
+        // Batch query trend & overall speed factors for all staff in 1 fast parallel execution
+        const [trendMap, speedFactorMap] = await Promise.all([
+          getStaffTrendsBatch(fastify.prisma.legacy, activeCvIds),
+          getStaffOverallSpeedFactors(fastify.prisma.legacy, activeCvIds),
+        ]);
 
-        rankingEntries.push({
-          staffId: cv.id,
-          staffName: cv.name,
-          avatarUrl: cv.avatarUrl,
-          predictedTime,
-          phaseBreakdown: {
-            cleaning: cleaningMinutes,
-            extension: extensionMinutes,
-            prepQc: prepQcMinutes,
-          },
-          sampleSize,
-          confidence,
-          speedRating,
-          trend,
+        let styleMultiplier = 1.0;
+        if (lashStyle === 'Under Mink') styleMultiplier = 0.55;
+        else if (lashStyle === 'Classic') styleMultiplier = 0.95;
+        else if (lashStyle === 'Mink' || lashStyle === 'Flawless') styleMultiplier = 1.0;
+        else if (lashStyle === 'Ivylight') styleMultiplier = 1.05;
+        else if (lashStyle === 'Volume') styleMultiplier = 1.15;
+        else if (lashStyle === 'Hyperlight') styleMultiplier = 1.25;
+        else if (lashStyle === 'Ultralight') styleMultiplier = 1.35;
+
+        const baseMin = Math.round((30 + Math.round(countNum * 0.6)) * styleMultiplier);
+        const benchmarkTotal = baseMin + (serviceMode === 'normal_removal' ? 5 : 0);
+
+        const rankingEntries = [];
+
+        for (const cv of activeCvs) {
+          const dbProf = profileMap.get(cv.id);
+          let predictedTime = 60;
+          let sampleSize = 0;
+          let confidence: ConfidenceLevel = 'low';
+          let speedRating: SpeedRating = 'normal';
+
+          if (dbProf) {
+            predictedTime = dbProf.totalMinutes;
+            sampleSize = dbProf.sampleSize;
+            confidence = dbProf.confidence as ConfidenceLevel;
+            speedRating = dbProf.speedRating as SpeedRating;
+          } else {
+            // Dynamic fallback adjusted by staff member's overall 12-month historical working pace
+            const staffMetrics = speedFactorMap.get(cv.id);
+            const staffRatio = staffMetrics?.ratio || 1.0;
+            predictedTime = Math.round(benchmarkTotal * staffRatio);
+            sampleSize = 0;
+            confidence = 'low';
+            speedRating =
+              predictedTime <= benchmarkTotal * 0.95
+                ? 'fast'
+                : predictedTime >= benchmarkTotal * 1.05
+                  ? 'slow'
+                  : 'normal';
+          }
+
+          const staffMetrics = speedFactorMap.get(cv.id);
+          const cleaningMinutes = Math.round(dbProf ? dbProf.cleaningMinutes : staffMetrics?.avgCleaning || 10);
+          const prepQcMinutes = Math.round(dbProf ? dbProf.prepQcMinutes : staffMetrics?.avgPrepQc || 8);
+          const extensionMinutes = Math.max(5, predictedTime - cleaningMinutes - prepQcMinutes);
+
+          const trend = trendMap.get(cv.id) || 'stable';
+
+          rankingEntries.push({
+            staffId: cv.id,
+            staffName: cv.name,
+            avatarUrl: cv.avatarUrl,
+            predictedTime,
+            phaseBreakdown: {
+              cleaning: cleaningMinutes,
+              extension: extensionMinutes,
+              prepQc: prepQcMinutes,
+            },
+            sampleSize,
+            confidence,
+            speedRating,
+            trend,
+          });
+        }
+
+        rankingEntries.sort((a, b) => a.predictedTime - b.predictedTime);
+
+        const response: CvSpeedRanking[] = rankingEntries.map((e, index) => ({
+          rank: index + 1,
+          ...e,
+        }));
+
+        cvRankingCache.set(cacheKey, {
+          data: response,
+          expiresAt: Date.now() + CV_RANKING_CACHE_TTL_MS,
         });
+
+        return response;
+      } finally {
+        inFlightRankingPromises.delete(cacheKey);
       }
+    })();
 
-      rankingEntries.sort((a, b) => a.predictedTime - b.predictedTime);
+    inFlightRankingPromises.set(cacheKey, computePromise);
 
-      const response: CvSpeedRanking[] = rankingEntries.map((e, index) => ({
-        rank: index + 1,
-        ...e,
-      }));
-
+    try {
+      const response = await computePromise;
       return reply.send(response);
     } catch (err) {
       fastify.log.error(err as Error, 'Error fetching CV speed ranking');
@@ -647,6 +742,7 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
   addRoute('post', '/seed', async (_request: SafeAny, reply: SafeAny) => {
     try {
       const result: CvSpeedSeedResult = await runNightlyCvSpeedSeed(fastify.prisma.crm, fastify.prisma.legacy);
+      clearCvSpeedCache();
       return reply.send(result);
     } catch (err) {
       fastify.log.error(err as Error, 'Error triggering CV speed seed');
@@ -709,41 +805,60 @@ async function getStaffTrendsBatch(
   const map = new Map<number, 'improving' | 'declining' | 'stable'>();
   if (!staffIds || staffIds.length === 0) return map;
 
-  try {
-    const rows = (await legacyPrisma.$queryRawUnsafe(`
-      SELECT
-        os.assigned_staff_id as staff_id,
-        AVG(CASE WHEN COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= DATE_SUB(NOW(), INTERVAL 3 MONTH) THEN (COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0) + COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0)) ELSE NULL END) as recent_avg,
-        AVG(CASE WHEN COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= DATE_SUB(NOW(), INTERVAL 6 MONTH) AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) < DATE_SUB(NOW(), INTERVAL 3 MONTH) THEN (COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0) + COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0)) ELSE NULL END) as prior_avg
-      FROM order_service os
-      JOIN \`order\` o ON os.order_id = o.id
-      JOIN report_order_service ros ON os.id = ros.order_service_id
-      LEFT JOIN report_order ro ON o.id = ro.order_id
-      WHERE o.order_state = 'Completed'
-        AND os.assigned_staff_id IN (${staffIds.join(',')})
-        AND (
-          ro.actual_booking_date_start >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-          OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 6 MONTH))
-        )
-      GROUP BY os.assigned_staff_id
-    `)) as Array<{ staff_id: number; recent_avg: number | null; prior_avg: number | null }>;
-
-    for (const r of rows) {
-      const recent = Number(r.recent_avg || 0);
-      const prior = Number(r.prior_avg || 0);
-      let trend: 'improving' | 'declining' | 'stable' = 'stable';
-      if (recent > 0 && prior > 0) {
-        const diffPercent = ((recent - prior) / prior) * 100;
-        if (diffPercent < -5) trend = 'improving';
-        else if (diffPercent > 5) trend = 'declining';
-      }
-      map.set(Number(r.staff_id), trend);
-    }
-  } catch {
-    // Return empty map on error
+  const now = Date.now();
+  if (staffTrendsCache && staffTrendsCache.expiresAt > now) {
+    return staffTrendsCache.data;
   }
 
-  return map;
+  if (inFlightStaffTrendsPromise) {
+    return await inFlightStaffTrendsPromise;
+  }
+
+  inFlightStaffTrendsPromise = (async () => {
+    try {
+      const rows = (await legacyPrisma.$queryRawUnsafe(`
+        SELECT
+          os.assigned_staff_id as staff_id,
+          AVG(CASE WHEN COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= DATE_SUB(NOW(), INTERVAL 3 MONTH) THEN (COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0) + COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0)) ELSE NULL END) as recent_avg,
+          AVG(CASE WHEN COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= DATE_SUB(NOW(), INTERVAL 6 MONTH) AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) < DATE_SUB(NOW(), INTERVAL 3 MONTH) THEN (COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0) + COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0)) ELSE NULL END) as prior_avg
+        FROM order_service os
+        JOIN \`order\` o ON os.order_id = o.id
+        JOIN report_order_service ros ON os.id = ros.order_service_id
+        LEFT JOIN report_order ro ON o.id = ro.order_id
+        WHERE o.order_state = 'Completed'
+          AND os.assigned_staff_id IN (${staffIds.join(',')})
+          AND (
+            ro.actual_booking_date_start >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+            OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 6 MONTH))
+          )
+        GROUP BY os.assigned_staff_id
+      `)) as Array<{ staff_id: number; recent_avg: number | null; prior_avg: number | null }>;
+
+      for (const r of rows) {
+        const recent = Number(r.recent_avg || 0);
+        const prior = Number(r.prior_avg || 0);
+        let trend: 'improving' | 'declining' | 'stable' = 'stable';
+        if (recent > 0 && prior > 0) {
+          const diffPercent = ((recent - prior) / prior) * 100;
+          if (diffPercent < -5) trend = 'improving';
+          else if (diffPercent > 5) trend = 'declining';
+        }
+        map.set(Number(r.staff_id), trend);
+      }
+
+      staffTrendsCache = {
+        data: map,
+        expiresAt: Date.now() + STAFF_TRENDS_CACHE_TTL_MS,
+      };
+      return map;
+    } catch {
+      return map;
+    } finally {
+      inFlightStaffTrendsPromise = null;
+    }
+  })();
+
+  return await inFlightStaffTrendsPromise;
 }
 
 async function getStaffOverallSpeedFactors(
@@ -753,46 +868,65 @@ async function getStaffOverallSpeedFactors(
   const map = new Map<number, StaffPhaseMetrics>();
   if (!staffIds || staffIds.length === 0) return map;
 
-  try {
-    const rows = (await legacyPrisma.$queryRawUnsafe(`
-      SELECT
-        sb.user_id AS staff_id,
-        ROUND(AVG(COALESCE(ros.cleaning_minute, 0))) AS avg_clean,
-        ROUND(AVG(COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0))) AS avg_prep,
-        ROUND(AVG(COALESCE(ros.servicing_minute, 0))) AS avg_ext,
-        ROUND(AVG(COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0) + COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0))) AS avg_time
-      FROM order_service os
-      JOIN \`order\` o ON os.order_id = o.id
-      JOIN report_order_service ros ON os.id = ros.order_service_id
-      LEFT JOIN report_order ro ON ro.order_id = o.id
-      JOIN staff_bonus sb ON sb.order_service_id = os.id
-      WHERE o.order_state = 'Completed'
-        AND sb.user_id IN (${staffIds.join(',')})
-        AND (COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0) + COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0)) BETWEEN 15 AND 200
-        AND (
-          ro.actual_booking_date_start >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
-          OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 12 MONTH))
-        )
-      GROUP BY sb.user_id
-    `)) as Array<{ staff_id: number; avg_clean: number; avg_prep: number; avg_ext: number; avg_time: number | null }>;
-
-    const validRows = rows.filter((r) => r.staff_id && Number(r.avg_time) > 0);
-    if (validRows.length > 0) {
-      const globalAvg = validRows.reduce((acc, r) => acc + Number(r.avg_time), 0) / validRows.length;
-      validRows.forEach((r) => {
-        const staffAvg = Number(r.avg_time);
-        const ratio = Math.max(0.75, Math.min(1.3, staffAvg / (globalAvg || 60)));
-        map.set(Number(r.staff_id), {
-          ratio,
-          avgCleaning: Math.max(3, Math.min(25, Number(r.avg_clean || 10))),
-          avgPrepQc: Math.max(3, Math.min(35, Number(r.avg_prep || 10))),
-          avgExtension: Math.max(15, Number(r.avg_ext || 45)),
-        });
-      });
-    }
-  } catch {
-    // Ignore error, fallback to empty map
+  const now = Date.now();
+  if (speedFactorsCache && speedFactorsCache.expiresAt > now) {
+    return speedFactorsCache.data;
   }
 
-  return map;
+  if (inFlightSpeedFactorsPromise) {
+    return await inFlightSpeedFactorsPromise;
+  }
+
+  inFlightSpeedFactorsPromise = (async () => {
+    try {
+      const rows = (await legacyPrisma.$queryRawUnsafe(`
+        SELECT
+          sb.user_id AS staff_id,
+          ROUND(AVG(COALESCE(ros.cleaning_minute, 0))) AS avg_clean,
+          ROUND(AVG(COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0))) AS avg_prep,
+          ROUND(AVG(COALESCE(ros.servicing_minute, 0))) AS avg_ext,
+          ROUND(AVG(COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0) + COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0))) AS avg_time
+        FROM order_service os
+        JOIN \`order\` o ON os.order_id = o.id
+        JOIN report_order_service ros ON os.id = ros.order_service_id
+        LEFT JOIN report_order ro ON ro.order_id = o.id
+        JOIN staff_bonus sb ON sb.order_service_id = os.id
+        WHERE o.order_state = 'Completed'
+          AND sb.user_id IN (${staffIds.join(',')})
+          AND (COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0) + COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0)) BETWEEN 15 AND 200
+          AND (
+            ro.actual_booking_date_start >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
+            OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 12 MONTH))
+          )
+        GROUP BY sb.user_id
+      `)) as Array<{ staff_id: number; avg_clean: number; avg_prep: number; avg_ext: number; avg_time: number | null }>;
+
+      const validRows = rows.filter((r) => r.staff_id && Number(r.avg_time) > 0);
+      if (validRows.length > 0) {
+        const globalAvg = validRows.reduce((acc, r) => acc + Number(r.avg_time), 0) / validRows.length;
+        validRows.forEach((r) => {
+          const staffAvg = Number(r.avg_time);
+          const ratio = Math.max(0.75, Math.min(1.3, staffAvg / (globalAvg || 60)));
+          map.set(Number(r.staff_id), {
+            ratio,
+            avgCleaning: Math.max(3, Math.min(25, Number(r.avg_clean || 10))),
+            avgPrepQc: Math.max(3, Math.min(35, Number(r.avg_prep || 10))),
+            avgExtension: Math.max(15, Number(r.avg_ext || 45)),
+          });
+        });
+      }
+
+      speedFactorsCache = {
+        data: map,
+        expiresAt: Date.now() + SPEED_FACTORS_CACHE_TTL_MS,
+      };
+      return map;
+    } catch {
+      return map;
+    } finally {
+      inFlightSpeedFactorsPromise = null;
+    }
+  })();
+
+  return await inFlightSpeedFactorsPromise;
 }
