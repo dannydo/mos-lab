@@ -31016,8 +31016,8 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 111061,
-        "lineCount": 2784,
+        "sizeBytes": 111093,
+        "lineCount": 2787,
         "ext": ".ts"
       }
     },
@@ -32329,8 +32329,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 135414,
-        "lineCount": 3245,
+        "sizeBytes": 135470,
+        "lineCount": 3247,
         "ext": ".ts"
       }
     },
@@ -36671,8 +36671,8 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path.constants.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20490,
-        "lineCount": 369,
+        "sizeBytes": 20489,
+        "lineCount": 368,
         "ext": ".ts"
       }
     },
@@ -36749,8 +36749,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/MobileStaffCareerSheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27167,
-        "lineCount": 606,
+        "sizeBytes": 27215,
+        "lineCount": 608,
         "ext": ".tsx"
       }
     },
@@ -36775,8 +36775,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 83393,
-        "lineCount": 1785,
+        "sizeBytes": 83582,
+        "lineCount": 1801,
         "ext": ".tsx"
       }
     },
@@ -36788,8 +36788,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38752,
-        "lineCount": 896,
+        "sizeBytes": 38740,
+        "lineCount": 895,
         "ext": ".tsx"
       }
     },
@@ -39076,8 +39076,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38744,
-        "lineCount": 846,
+        "sizeBytes": 40699,
+        "lineCount": 885,
         "ext": ".tsx"
       }
     },
@@ -39167,8 +39167,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvLiveCelebrationBanner.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22753,
-        "lineCount": 548,
+        "sizeBytes": 23468,
+        "lineCount": 558,
         "ext": ".tsx"
       }
     },
@@ -39180,8 +39180,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 75633,
-        "lineCount": 1659,
+        "sizeBytes": 77606,
+        "lineCount": 1696,
         "ext": ".tsx"
       }
     },
@@ -40220,8 +40220,8 @@
       "filePath": "apps/web/lib/api/kpi.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19338,
-        "lineCount": 503,
+        "sizeBytes": 19366,
+        "lineCount": 504,
         "ext": ".ts"
       }
     },

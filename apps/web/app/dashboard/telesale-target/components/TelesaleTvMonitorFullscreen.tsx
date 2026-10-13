@@ -500,6 +500,43 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
         />
       </div>
 
+      <div>
+        <span className={`text-xs block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+          Hình tượng MC (Persona)
+        </span>
+        <Select
+          value={voiceSettings.personaMode || 'RANDOM_MULTI'}
+          onChange={(val) => updateVoiceSettings({ personaMode: val })}
+          className="w-full"
+          getPopupContainer={(trigger) => trigger.parentElement || fullscreenContainerRef.current || document.body}
+          options={[
+            { label: '🎲 Xoay vòng 5 nhân cách (Đa dạng & nham nhở)', value: 'RANDOM_MULTI' },
+            { label: '🎪 MC Hội Chợ / BLV Sân Cỏ (Cháy & hào sảng)', value: 'MC_HOI_CHO' },
+            { label: '🎭 Cụ Tổ Drama (Xéo xắt & cà khịa đỉnh cao)', value: 'DRAMA_QUEEN' },
+            { label: '🔮 Thầy Bói Phán Số (Huyền bí & tâm linh)', value: 'THAY_BOI' },
+            { label: '📱 Gen Z Chúa Tể Meme (Die up die down & đu trend)', value: 'GEN_Z' },
+            { label: '🕶️ Tổng Tài Sến Sẩm (Ngọt ngào & nuông chiều)', value: 'TONG_TAI' },
+          ]}
+        />
+      </div>
+
+      <div>
+        <span className={`text-xs block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+          Độ nham nhở & Cà khịa
+        </span>
+        <Select
+          value={voiceSettings.edginessLevel || 'SUPER_SPICY'}
+          onChange={(val) => updateVoiceSettings({ edginessLevel: val })}
+          className="w-full"
+          getPopupContainer={(trigger) => trigger.parentElement || fullscreenContainerRef.current || document.body}
+          options={[
+            { label: '🌶️🌶️🌶️ Siêu mặn & Xéo xắt (Tối đa hài hước)', value: 'SUPER_SPICY' },
+            { label: '✨ Vui vẻ & Tươi mới (Hài hước vừa phải)', value: 'PLAYFUL' },
+            { label: '👔 Chuẩn mực & Tinh tế (Truyền thống)', value: 'CLASSIC' },
+          ]}
+        />
+      </div>
+
       <div
         className={`flex items-center justify-between border-t pt-2.5 ${isDark ? 'border-zinc-800' : 'border-slate-200'}`}
       >

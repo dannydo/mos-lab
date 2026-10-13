@@ -70,6 +70,9 @@ import type {
   TelesaleCustomerPoolResponse,
   TelesaleTvJournalOverview,
   TelesaleTvEventLog,
+  TelesaleTvPersonaDto,
+  TelesaleTvPersonaKey,
+  TelesaleTvEdginessLevel,
 } from '@mos-lab/shared';
 
 import { api } from './base';
@@ -476,8 +479,15 @@ export const kpiApi = {
       comboPackageName?: string;
       comboPrice?: number;
       cvStaffName?: string;
+      ccStaffName?: string;
       customerName?: string;
-    }): Promise<{ quote: string; source: 'gemini' | 'fallback' }> => {
+      personaKey?: string;
+      edginessLevel?: TelesaleTvEdginessLevel;
+      streakCount?: number;
+      hourOfDay?: number;
+      isMorningFirstOrder?: boolean;
+      isLateNightShift?: boolean;
+    }): Promise<{ quote: string; source: 'gemini' | 'fallback'; persona?: TelesaleTvPersonaDto }> => {
       const response = await api.post('/kpi/telesale-target/live-celebration-quote', data);
       return response.data;
     },

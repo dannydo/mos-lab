@@ -819,16 +819,37 @@ test('TelesaleTargetService.getFallbackCelebrationQuote embeds staffName and cul
   assert.ok(doneQuote.length > 20);
 });
 
-test('TelesaleTargetService.generateLiveCelebrationQuote falls back gracefully when API error or offline', async () => {
+test('TelesaleTargetService.generateLiveCelebrationQuote falls back gracefully when API error or offline and returns Persona', async () => {
   const mockFastify = { log: { warn: () => {} } } as any;
   const originalKey = process.env.GEMINI_API_KEY;
   try {
     delete process.env.GEMINI_API_KEY;
-    const res = await TelesaleTargetService.generateLiveCelebrationQuote(mockFastify, 'BOOK', 'Thanh Vũ');
+    const res = await TelesaleTargetService.generateLiveCelebrationQuote(mockFastify, 'BOOK', 'Thanh Vũ', {
+      personaKey: 'MC_HOI_CHO',
+      streakCount: 3,
+    });
     assert.equal(res.source, 'fallback');
     assert.ok(res.quote.includes('Thanh Vũ'));
+    assert.equal(res.persona.key, 'MC_HOI_CHO');
+    assert.equal(res.persona.voice, 'vi-VN-NamMinhNeural');
+    assert.equal(res.persona.sfxType, 'vuvuzela_cheer');
   } finally {
     process.env.GEMINI_API_KEY = originalKey;
+  }
+});
+
+test('TelesaleTargetService 5 Personas are all configured with valid audio presets and badges', () => {
+  const personas = Object.values(TelesaleTargetService.TV_CELEBRATION_PERSONAS);
+  assert.equal(personas.length, 5);
+  for (const p of personas) {
+    assert.ok(p.key);
+    assert.ok(p.name);
+    assert.ok(p.badge);
+    assert.ok(p.icon);
+    assert.ok(p.voice === 'vi-VN-NamMinhNeural' || p.voice === 'vi-VN-HoaiMyNeural');
+    assert.ok(p.rate.includes('%'));
+    assert.ok(p.pitch.includes('Hz'));
+    assert.ok(p.sfxType);
   }
 });
 

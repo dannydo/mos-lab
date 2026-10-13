@@ -245,7 +245,10 @@ export interface TelesaleTvEventLog {
   comboPrice?: number;
   hasTip?: boolean;
   tipAmount?: number;
-  customerPraiseNote?: string | null;
+  // Persona metadata
+  personaKey?: string | null;
+  personaName?: string | null;
+  personaIcon?: string | null;
 
   // Pipeline execution tracking
   eventReceived: boolean;
@@ -259,6 +262,22 @@ export interface TelesaleTvEventLog {
 
   status: 'SUCCESS' | 'ERROR';
   errorMessage?: string | null;
+}
+
+export type TelesaleTvPersonaKey = 'RANDOM_MULTI' | 'MC_HOI_CHO' | 'DRAMA_QUEEN' | 'THAY_BOI' | 'GEN_Z' | 'TONG_TAI';
+
+export type TelesaleTvEdginessLevel = 'SUPER_SPICY' | 'PLAYFUL' | 'CLASSIC';
+
+export interface TelesaleTvPersonaDto {
+  key: string;
+  name: string;
+  badge: string;
+  icon: string;
+  voice: string;
+  rate: string;
+  pitch: string;
+  sfxType: 'vuvuzela_cheer' | 'drama_stinger' | 'temple_bell' | 'pop_ting' | 'smooth_sax';
+  tagline: string;
 }
 
 export interface TelesaleTvJournalOverview {

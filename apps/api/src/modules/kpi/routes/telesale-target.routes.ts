@@ -149,18 +149,23 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
     socket.on('error', () => tvSockets.delete(socket));
   });
 
-  // 6. Generate Live Celebration Quote with Gemini AI & Wings Culture (Nam thần quyến rũ + Fallback)
+  // 6. Generate Live Celebration Quote with Gemini AI & Wings Culture (5 Personas + Fallback)
   fastify.post('/kpi/telesale-target/live-celebration-quote', { preHandler: [requireAuth] }, async (request, reply) => {
-    const { type, staffName, tipAmount, comboPackageName, comboPrice, cvStaffName, customerName } =
-      (request.body as {
-        type?: 'BOOK' | 'DONE' | 'CHECKIN' | 'COMBO' | 'TIP';
-        staffName?: string;
-        tipAmount?: number;
-        comboPackageName?: string;
-        comboPrice?: number;
-        cvStaffName?: string;
-        customerName?: string;
-      }) || {};
+    const {
+      type,
+      staffName,
+      tipAmount,
+      comboPackageName,
+      comboPrice,
+      cvStaffName,
+      customerName,
+      personaKey,
+      edginessLevel,
+      streakCount,
+      hourOfDay,
+      isMorningFirstOrder,
+      isLateNightShift,
+    } = (request.body as SafeAny) || {};
     const safeType = type || 'BOOK';
     const quoteOptions = {
       tipAmount,
@@ -168,6 +173,12 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
       comboPrice,
       cvStaffName,
       customerName,
+      personaKey,
+      edginessLevel,
+      streakCount,
+      hourOfDay,
+      isMorningFirstOrder,
+      isLateNightShift,
     };
     try {
       const result = await TelesaleTargetService.generateLiveCelebrationQuote(
@@ -179,25 +190,33 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
       return reply.send(result);
     } catch (err: any) {
       fastify.log.error(`Failed to generate celebration quote: ${err.message}`);
+      const fallback = TelesaleTargetService.getFallbackCelebrationQuoteWithPersona(
+        safeType,
+        staffName || 'Bạn Telesales',
+        quoteOptions
+      );
       return reply.send({
-        quote: TelesaleTargetService.getFallbackCelebrationQuote(safeType, staffName || 'Bạn Telesales', quoteOptions),
+        quote: fallback.quote,
         source: 'fallback',
+        persona: fallback.persona,
       });
     }
   });
 
-  // 7. Synthesize Studio Neural Audio for Live Celebration (Nam Minh / Hoài My)
+  // 7. Synthesize Studio Neural Audio for Live Celebration with dynamic voice, rate & pitch
   fastify.get('/kpi/telesale-target/live-celebration-audio', async (request, reply) => {
-    const query = request.query as { text?: string; voice?: string };
+    const query = request.query as { text?: string; voice?: string; rate?: string; pitch?: string };
     const text = (query.text || '').trim();
     const voice = query.voice || 'vi-VN-NamMinhNeural';
+    const rate = query.rate || '+5%';
+    const pitch = query.pitch || '+0Hz';
 
     if (!text) {
       return reply.status(400).send({ error: 'Text is required' });
     }
 
     try {
-      const audioBuffer = await TelesaleTargetService.synthesizeCelebrationAudio(text, voice);
+      const audioBuffer = await TelesaleTargetService.synthesizeCelebrationAudio(text, voice, rate, pitch);
       return reply
         .header('Content-Type', 'audio/mpeg')
         .header('Cross-Origin-Resource-Policy', 'cross-origin')

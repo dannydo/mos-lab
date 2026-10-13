@@ -489,6 +489,16 @@ export const TelesaleTvLiveCelebrationBanner: React.FC<TelesaleTvLiveCelebration
           )}
         </div>
 
+        {/* Persona Identity Badge (e.g. 🎪 MC Hội Chợ / 🎭 Cụ Tổ Drama / 🔮 Thầy Bói / 📱 Gen Z / 🕶️ Tổng Tài) */}
+        {(celebration.personaBadge || celebration.personaName) && (
+          <div className="my-2 flex items-center justify-center">
+            <span className="inline-flex items-center gap-1.5 px-4 py-1 rounded-full text-xs sm:text-sm font-black tracking-wide bg-zinc-900/90 border border-amber-400/50 text-amber-300 shadow-[0_0_16px_rgba(251,191,36,0.25)] animate-pulse">
+              <span>{celebration.personaIcon || '🎙️'}</span>
+              <span>{celebration.personaBadge || celebration.personaName}</span>
+            </span>
+          </div>
+        )}
+
         {/* 5. Celebration Quote or Dedicated Golden Customer Praise Box */}
         {celebration.customerPraiseNote ? (
           <div className="my-4 mx-auto max-w-xl p-4 sm:p-5 rounded-2xl bg-amber-950/70 border-2 border-amber-400/90 shadow-[0_0_28px_rgba(251,191,36,0.35)] backdrop-blur-md">

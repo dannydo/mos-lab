@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { Tooltip, Button, theme, Popover, Switch, Slider } from 'antd';
+import { Tooltip, Button, theme, Popover, Switch, Slider, Select } from 'antd';
 import { Tv, Calendar, Maximize2, Volume2, VolumeX, ClipboardList, Sparkles, Settings, Square } from 'lucide-react';
 import { TelesaleTargetOverview, isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { calculateShiftPacing, calculateTvMonitorMetrics } from '../utils/tv-monitor-pacing';
@@ -295,6 +295,45 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
           value={volume}
           onChange={(val) => updateSettings({ volume: val })}
           disabled={!soundEnabled}
+        />
+      </div>
+
+      {/* Select: Persona Mode */}
+      <div className={`border-t ${isDark ? 'border-zinc-800/80' : 'border-slate-200'} pt-2.5`}>
+        <span className={`text-[11px] block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+          Hình tượng MC (Persona)
+        </span>
+        <Select
+          size="small"
+          value={settings.personaMode || 'RANDOM_MULTI'}
+          onChange={(val) => updateSettings({ personaMode: val })}
+          className="w-full text-xs"
+          options={[
+            { label: '🎲 Xoay vòng 5 nhân cách (Đa dạng & nham nhở)', value: 'RANDOM_MULTI' },
+            { label: '🎪 MC Hội Chợ / BLV Sân Cỏ (Cháy & hào sảng)', value: 'MC_HOI_CHO' },
+            { label: '🎭 Cụ Tổ Drama (Xéo xắt & cà khịa đỉnh cao)', value: 'DRAMA_QUEEN' },
+            { label: '🔮 Thầy Bói Phán Số (Huyền bí & tâm linh)', value: 'THAY_BOI' },
+            { label: '📱 Gen Z Chúa Tể Meme (Die up die down & đu trend)', value: 'GEN_Z' },
+            { label: '🕶️ Tổng Tài Sến Sẩm (Ngọt ngào & nuông chiều)', value: 'TONG_TAI' },
+          ]}
+        />
+      </div>
+
+      {/* Select: Edginess Level */}
+      <div>
+        <span className={`text-[11px] block mb-1 ${isDark ? 'text-zinc-400' : 'text-slate-500'}`}>
+          Độ nham nhở & Cà khịa
+        </span>
+        <Select
+          size="small"
+          value={settings.edginessLevel || 'SUPER_SPICY'}
+          onChange={(val) => updateSettings({ edginessLevel: val })}
+          className="w-full text-xs"
+          options={[
+            { label: '🌶️🌶️🌶️ Siêu mặn & Xéo xắt (Tối đa hài hước)', value: 'SUPER_SPICY' },
+            { label: '✨ Vui vẻ & Tươi mới (Hài hước vừa phải)', value: 'PLAYFUL' },
+            { label: '👔 Chuẩn mực & Tinh tế (Truyền thống)', value: 'CLASSIC' },
+          ]}
         />
       </div>
 

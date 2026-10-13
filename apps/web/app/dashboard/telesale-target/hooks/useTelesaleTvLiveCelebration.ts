@@ -1,7 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { TelesaleTodayLiveEvent, TelesaleTvEventLog } from '@mos-lab/shared';
+import {
+  TelesaleTodayLiveEvent,
+  TelesaleTvEventLog,
+  TelesaleTvPersonaDto,
+  TelesaleTvPersonaKey,
+  TelesaleTvEdginessLevel,
+} from '@mos-lab/shared';
 import { getBestVietnameseVoice } from '../../../../components/voice-assistant/speech-utils';
 import { apiClient } from '../../../../lib/api-client';
 import { resolveApiBaseUrl } from '../../../../lib/api-base-url';
@@ -13,6 +19,8 @@ export interface TvCelebrationSettings {
   quietModeEnabled: boolean; // Manual quiet mode or during quiet hours
   voiceStyle?: 'MALE_CHARM' | 'FEMALE_SWEET' | 'BROWSER_LOCAL';
   fireworksEnabled?: boolean;
+  personaMode?: TelesaleTvPersonaKey;
+  edginessLevel?: TelesaleTvEdginessLevel;
 }
 
 export interface ActiveCelebration {
@@ -35,6 +43,14 @@ export interface ActiveCelebration {
   customerName?: string;
   assignedStaffName?: string;
   checkInStaffName?: string;
+
+  // Persona metadata
+  personaKey?: string;
+  personaName?: string;
+  personaBadge?: string;
+  personaIcon?: string;
+  sfxType?: string;
+  voiceParams?: { voice: string; rate: string; pitch: string };
 }
 
 const SETTINGS_STORAGE_KEY = 'MOS_TV_MONITOR_VOICE_SETTINGS';
@@ -46,6 +62,8 @@ const DEFAULT_SETTINGS: TvCelebrationSettings = {
   quietModeEnabled: false,
   voiceStyle: 'MALE_CHARM',
   fireworksEnabled: true,
+  personaMode: 'RANDOM_MULTI',
+  edginessLevel: 'SUPER_SPICY',
 };
 
 // Script quotes: Charming Male Voice, Playful Cà Khịa, Die Up Die Down & 4 Wings Cultural Values (Vui vẻ, Ân Cần, Chân Thành, Khoa Học)
@@ -119,7 +137,7 @@ export function formatCurrencyForSpeech(amount?: number | null): string {
 }
 
 // Synthesize pleasant celebratory chime with Web Audio API
-function playCelebratoryChime(
+export function playCelebratoryChime(
   volume = 0.9,
   kind: 'BOOK' | 'DONE' | 'CHECKIN' | 'COMBO' | 'TIP' | 'MILESTONE' = 'BOOK'
 ) {
@@ -162,6 +180,153 @@ function playCelebratoryChime(
   }
 }
 
+// Synthesize distinct Meme SFX Intro per Persona
+export function playCelebratorySFX(
+  sfxType?: string,
+  volume = 0.9,
+  kind: 'BOOK' | 'DONE' | 'CHECKIN' | 'COMBO' | 'TIP' | 'MILESTONE' = 'BOOK'
+) {
+  if (typeof window === 'undefined') return;
+  try {
+    const AudioCtx =
+      window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+
+    if (sfxType === 'vuvuzela_cheer') {
+      // 🎪 MC Hội Chợ: Stadium Horn / Vuvuzela Fanfare (B-flat 3, 233Hz, sawtooth with brass filter)
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const filter = ctx.createBiquadFilter();
+      const gain = ctx.createGain();
+
+      osc1.type = 'sawtooth';
+      osc2.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(233.08, now);
+      osc2.frequency.setValueAtTime(234.5, now);
+
+      osc1.frequency.exponentialRampToValueAtTime(466.16, now + 0.35);
+      osc2.frequency.exponentialRampToValueAtTime(468.0, now + 0.35);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(800, now);
+      filter.frequency.exponentialRampToValueAtTime(3200, now + 0.3);
+
+      gain.gain.setValueAtTime(volume * 0.45, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
+
+      osc1.connect(filter);
+      osc2.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 0.85);
+      osc2.stop(now + 0.85);
+      return;
+    }
+
+    if (sfxType === 'drama_stinger') {
+      // 🎭 Cụ Tổ Drama: Dramatic Stinger (Diminished chords sting - C# minor / diminished hit)
+      const freqs = [277.18, 329.63, 392.0, 466.16];
+      freqs.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = idx % 2 === 0 ? 'sawtooth' : 'triangle';
+        osc.frequency.setValueAtTime(freq, now);
+
+        gain.gain.setValueAtTime(volume * 0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.9);
+      });
+      return;
+    }
+
+    if (sfxType === 'temple_bell') {
+      // 🔮 Thầy Bói: Temple Tibetan singing bowl / bell (deep 174Hz Solfeggio + 528Hz shimmer)
+      const freqs = [174.0, 528.0, 1056.0];
+      freqs.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now);
+
+        const initialGain = (idx === 0 ? 0.5 : 0.2) * volume;
+        gain.gain.setValueAtTime(initialGain, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.6);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 1.6);
+      });
+      return;
+    }
+
+    if (sfxType === 'pop_ting') {
+      // 📱 Gen Z: Bubble pop sweep (200Hz -> 850Hz) + High coin ting (2093Hz C7)
+      const popOsc = ctx.createOscillator();
+      const popGain = ctx.createGain();
+      popOsc.type = 'sine';
+      popOsc.frequency.setValueAtTime(200, now);
+      popOsc.frequency.exponentialRampToValueAtTime(850, now + 0.12);
+      popGain.gain.setValueAtTime(volume * 0.4, now);
+      popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      popOsc.connect(popGain);
+      popGain.connect(ctx.destination);
+      popOsc.start(now);
+      popOsc.stop(now + 0.15);
+
+      const tingOsc = ctx.createOscillator();
+      const tingGain = ctx.createGain();
+      tingOsc.type = 'sine';
+      tingOsc.frequency.setValueAtTime(2093, now + 0.12);
+      tingGain.gain.setValueAtTime(0, now);
+      tingGain.gain.setValueAtTime(volume * 0.35, now + 0.12);
+      tingGain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+      tingOsc.connect(tingGain);
+      tingGain.connect(ctx.destination);
+      tingOsc.start(now + 0.12);
+      tingOsc.stop(now + 0.8);
+      return;
+    }
+
+    if (sfxType === 'smooth_sax') {
+      // 🕶️ Tổng Tài: Smooth jazz chords (F4, Ab4, C5, Eb5)
+      const freqs = [349.23, 415.3, 523.25, 622.25];
+      freqs.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+
+        gain.gain.setValueAtTime(volume * 0.3, now + idx * 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.1);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now + idx * 0.05);
+        osc.stop(now + 1.1);
+      });
+      return;
+    }
+
+    // Default pleasant chime
+    playCelebratoryChime(volume, kind);
+  } catch {
+    // AudioContext blocked or unsupported
+  }
+}
+
 export function useTelesaleTvLiveCelebration() {
   const [settings, setSettings] = useState<TvCelebrationSettings>(DEFAULT_SETTINGS);
   const [activeCelebration, setActiveCelebration] = useState<ActiveCelebration | null>(null);
@@ -175,6 +340,7 @@ export function useTelesaleTvLiveCelebration() {
   const isProcessingRef = useRef<boolean>(false);
   const lastSpokenTimeRef = useRef<number>(0);
   const isInitializedRef = useRef<boolean>(false);
+  const staffStreakMapRef = useRef<Map<string, number>>(new Map());
 
   // 1. Load settings from localStorage and listen to real-time updates
   useEffect(() => {
@@ -312,8 +478,8 @@ export function useTelesaleTvLiveCelebration() {
     const shouldPlaySound = settings.soundEnabled && !quiet;
 
     if (shouldPlaySound) {
-      // Play celebratory chime
-      playCelebratoryChime(settings.volume, nextEvent.kind);
+      // Play distinct Meme SFX Intro per persona
+      playCelebratorySFX(nextEvent.sfxType, settings.volume, nextEvent.kind);
     }
 
     const logBase: Omit<TelesaleTvEventLog, 'voiceTriggered' | 'voiceErrorReason' | 'status' | 'errorMessage'> = {
@@ -333,6 +499,9 @@ export function useTelesaleTvLiveCelebration() {
         nextEvent.changeResult ||
         (nextEvent.kind === 'BOOK' ? '+1 Book' : nextEvent.kind === 'DONE' ? '+1 Done' : 'Cán mốc'),
       orderId: nextEvent.orderId,
+      personaKey: nextEvent.personaKey,
+      personaName: nextEvent.personaName,
+      personaIcon: nextEvent.personaIcon,
       eventReceived: true,
       eventReceivedAt: new Date().toISOString(),
       overlayTriggered: true,
@@ -423,9 +592,15 @@ export function useTelesaleTvLiveCelebration() {
 
         (async () => {
           try {
-            const neuralVoice = settings.voiceStyle === 'FEMALE_SWEET' ? 'vi-VN-HoaiMyNeural' : 'vi-VN-NamMinhNeural';
+            const voice =
+              nextEvent.voiceParams?.voice ||
+              (settings.voiceStyle === 'FEMALE_SWEET' ? 'vi-VN-HoaiMyNeural' : 'vi-VN-NamMinhNeural');
+            const rate = nextEvent.voiceParams?.rate || '+5%';
+            const pitch = nextEvent.voiceParams?.pitch || '+0Hz';
             const baseUrl = resolveApiBaseUrl();
-            const audioUrl = `${baseUrl}/kpi/telesale-target/live-celebration-audio?text=${encodeURIComponent(nextEvent.textToSpeak)}&voice=${encodeURIComponent(neuralVoice)}`;
+            const audioUrl = `${baseUrl}/kpi/telesale-target/live-celebration-audio?text=${encodeURIComponent(
+              nextEvent.textToSpeak
+            )}&voice=${encodeURIComponent(voice)}&rate=${encodeURIComponent(rate)}&pitch=${encodeURIComponent(pitch)}`;
 
             // Fetch via CORS to completely prevent Chrome ORB (Opaque Response Blocking)
             const response = await fetch(audioUrl, {
@@ -675,18 +850,30 @@ export function useTelesaleTvLiveCelebration() {
       // Process all fresh events in sequence (không bỏ sót bất kỳ event nào)
       for (const ev of eventsToAnnounce) {
         const staffName = ev.staffName || 'Bạn Telesales';
+        const curStreak = (staffStreakMapRef.current.get(staffName) || 0) + 1;
+        staffStreakMapRef.current.set(staffName, curStreak);
+        const currentHour = new Date().getHours();
+        const baseContext = {
+          personaKey: settings.personaMode,
+          edginessLevel: settings.edginessLevel,
+          streakCount: curStreak,
+          hourOfDay: currentHour,
+          isMorningFirstOrder: currentHour < 10,
+          isLateNightShift: currentHour >= 21,
+        };
 
         if (ev.type === 'BOOK') {
           const defaultQuote = getRandomQuote(BOOK_QUOTES, staffName);
           // Fetch quote with 1500ms timeout so we don't delay celebration
           const quotePromise = Promise.race([
-            apiClient.telesaleTarget.getCelebrationQuote({ type: 'BOOK', staffName }),
+            apiClient.telesaleTarget.getCelebrationQuote({ type: 'BOOK', staffName, ...baseContext }),
             new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
           ]);
 
           quotePromise
             .then((res: SafeAny) => {
               const quote = res?.quote?.trim() || defaultQuote;
+              const persona = res?.persona;
               enqueueCelebration({
                 id: ev.id,
                 kind: 'BOOK',
@@ -698,6 +885,18 @@ export function useTelesaleTvLiveCelebration() {
                 colorTheme: 'blue',
                 changeResult: ev.changeResult,
                 orderId: ev.orderId,
+                personaKey: persona?.key,
+                personaName: persona?.name,
+                personaBadge: persona?.badge,
+                personaIcon: persona?.icon,
+                sfxType: persona?.sfxType,
+                voiceParams: persona
+                  ? {
+                      voice: persona.voice,
+                      rate: persona.rate,
+                      pitch: persona.pitch,
+                    }
+                  : undefined,
               });
             })
             .catch(() => {
@@ -717,13 +916,14 @@ export function useTelesaleTvLiveCelebration() {
         } else if (ev.type === 'CHECKIN') {
           const defaultQuote = getRandomQuote(CHECKIN_QUOTES, staffName);
           const quotePromise = Promise.race([
-            apiClient.telesaleTarget.getCelebrationQuote({ type: 'CHECKIN', staffName }),
+            apiClient.telesaleTarget.getCelebrationQuote({ type: 'CHECKIN', staffName, ...baseContext }),
             new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
           ]);
 
           quotePromise
             .then((res: SafeAny) => {
               const quote = res?.quote?.trim() || defaultQuote;
+              const persona = res?.persona;
               enqueueCelebration({
                 id: ev.id,
                 kind: 'CHECKIN',
@@ -735,6 +935,18 @@ export function useTelesaleTvLiveCelebration() {
                 colorTheme: 'emerald',
                 changeResult: ev.changeResult,
                 orderId: ev.orderId,
+                personaKey: persona?.key,
+                personaName: persona?.name,
+                personaBadge: persona?.badge,
+                personaIcon: persona?.icon,
+                sfxType: persona?.sfxType,
+                voiceParams: persona
+                  ? {
+                      voice: persona.voice,
+                      rate: persona.rate,
+                      pitch: persona.pitch,
+                    }
+                  : undefined,
               });
             })
             .catch(() => {
@@ -819,11 +1031,12 @@ export function useTelesaleTvLiveCelebration() {
                 tipAmount: ev.tipAmount,
                 cvStaffName: cvName,
                 customerName,
+                ...baseContext,
               }),
               new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
             ]);
 
-            const triggerComboTip = (quoteText: string) => {
+            const triggerComboTip = (quoteText: string, persona?: TelesaleTvPersonaDto) => {
               enqueueCelebration({
                 id: ev.id,
                 kind: 'COMBO',
@@ -842,11 +1055,23 @@ export function useTelesaleTvLiveCelebration() {
                 tipAmount: ev.tipAmount,
                 assignedStaffName: cvName,
                 checkInStaffName: ccName,
+                personaKey: persona?.key,
+                personaName: persona?.name,
+                personaBadge: persona?.badge,
+                personaIcon: persona?.icon,
+                sfxType: persona?.sfxType,
+                voiceParams: persona
+                  ? {
+                      voice: persona.voice,
+                      rate: persona.rate,
+                      pitch: persona.pitch,
+                    }
+                  : undefined,
               });
             };
 
             quotePromise
-              .then((res: SafeAny) => triggerComboTip(res?.quote?.trim() || defaultQuote))
+              .then((res: SafeAny) => triggerComboTip(res?.quote?.trim() || defaultQuote, res?.persona))
               .catch(() => triggerComboTip(defaultQuote));
           } else if (hasCombo) {
             const comboName = ev.comboPackageName || 'gói Combo làm đẹp';
@@ -869,11 +1094,12 @@ export function useTelesaleTvLiveCelebration() {
                 comboPrice: ev.comboPrice,
                 cvStaffName: cvName,
                 customerName,
+                ...baseContext,
               }),
               new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
             ]);
 
-            const triggerCombo = (quoteText: string) => {
+            const triggerCombo = (quoteText: string, persona?: TelesaleTvPersonaDto) => {
               enqueueCelebration({
                 id: ev.id,
                 kind: 'COMBO',
@@ -890,11 +1116,23 @@ export function useTelesaleTvLiveCelebration() {
                 comboPrice: ev.comboPrice,
                 assignedStaffName: cvName,
                 checkInStaffName: ccName,
+                personaKey: persona?.key,
+                personaName: persona?.name,
+                personaBadge: persona?.badge,
+                personaIcon: persona?.icon,
+                sfxType: persona?.sfxType,
+                voiceParams: persona
+                  ? {
+                      voice: persona.voice,
+                      rate: persona.rate,
+                      pitch: persona.pitch,
+                    }
+                  : undefined,
               });
             };
 
             quotePromise
-              .then((res: SafeAny) => triggerCombo(res?.quote?.trim() || defaultQuote))
+              .then((res: SafeAny) => triggerCombo(res?.quote?.trim() || defaultQuote, res?.persona))
               .catch(() => triggerCombo(defaultQuote));
           } else if (hasTip) {
             const tipSpeech = formatCurrencyForSpeech(ev.tipAmount);
@@ -915,11 +1153,12 @@ export function useTelesaleTvLiveCelebration() {
                 tipAmount: ev.tipAmount,
                 cvStaffName: cvName,
                 customerName,
+                ...baseContext,
               }),
               new Promise<null>((resolve) => setTimeout(() => resolve(null), 1500)),
             ]);
 
-            const triggerTip = (quoteText: string) => {
+            const triggerTip = (quoteText: string, persona?: TelesaleTvPersonaDto) => {
               enqueueCelebration({
                 id: ev.id,
                 kind: 'TIP',
@@ -935,11 +1174,23 @@ export function useTelesaleTvLiveCelebration() {
                 tipAmount: ev.tipAmount,
                 assignedStaffName: cvName,
                 checkInStaffName: ccName,
+                personaKey: persona?.key,
+                personaName: persona?.name,
+                personaBadge: persona?.badge,
+                personaIcon: persona?.icon,
+                sfxType: persona?.sfxType,
+                voiceParams: persona
+                  ? {
+                      voice: persona.voice,
+                      rate: persona.rate,
+                      pitch: persona.pitch,
+                    }
+                  : undefined,
               });
             };
 
             quotePromise
-              .then((res: SafeAny) => triggerTip(res?.quote?.trim() || defaultQuote))
+              .then((res: SafeAny) => triggerTip(res?.quote?.trim() || defaultQuote, res?.persona))
               .catch(() => triggerTip(defaultQuote));
           } else {
             // Đơn thường hoàn tất: Ghi nhận êm ái vào nhật ký, không làm phiền phòng trực
@@ -1103,25 +1354,55 @@ export function useTelesaleTvLiveCelebration() {
   const triggerDemoCelebration = useCallback(
     (type: 'BOOK' | 'DONE' | 'CHECKIN' | 'COMBO' | 'TIP' | 'MILESTONE' | 'CHECKIN_18') => {
       const demoId = `demo-${Date.now()}`;
+
+      const triggerWithPersona = (
+        payload: Parameters<typeof enqueueCelebration>[0],
+        resPersona?: TelesaleTvPersonaDto
+      ) => {
+        enqueueCelebration({
+          ...payload,
+          personaKey: resPersona?.key,
+          personaName: resPersona?.name,
+          personaBadge: resPersona?.badge,
+          personaIcon: resPersona?.icon,
+          sfxType: resPersona?.sfxType,
+          voiceParams: resPersona
+            ? {
+                voice: resPersona.voice,
+                rate: resPersona.rate,
+                pitch: resPersona.pitch,
+              }
+            : undefined,
+        });
+      };
+
       if (type === 'BOOK') {
         const staffName = 'Bích Phượng';
         const defaultQuote = getRandomQuote(BOOK_QUOTES, staffName);
         apiClient.telesaleTarget
-          .getCelebrationQuote({ type: 'BOOK', staffName })
+          .getCelebrationQuote({
+            type: 'BOOK',
+            staffName,
+            personaKey: settings.personaMode,
+            edginessLevel: settings.edginessLevel,
+          })
           .then((res) => {
-            enqueueCelebration({
-              id: demoId,
-              kind: 'BOOK',
-              staffName,
-              avatarUrl:
-                'https://lh3.googleusercontent.com/a/ACg8ocImU7oxC33vMir9F9rllmN4y1LVBkzJXB5ff9RCZyy-9brDnA=s96-c',
-              textToSpeak: res?.quote?.trim() || defaultQuote,
-              badgeText: '+1 BOOK (DEMO)',
-              colorTheme: 'blue',
-            });
+            triggerWithPersona(
+              {
+                id: demoId,
+                kind: 'BOOK',
+                staffName,
+                avatarUrl:
+                  'https://lh3.googleusercontent.com/a/ACg8ocImU7oxC33vMir9F9rllmN4y1LVBkzJXB5ff9RCZyy-9brDnA=s96-c',
+                textToSpeak: res?.quote?.trim() || defaultQuote,
+                badgeText: '+1 BOOK (DEMO)',
+                colorTheme: 'blue',
+              },
+              res?.persona
+            );
           })
           .catch(() => {
-            enqueueCelebration({
+            triggerWithPersona({
               id: demoId,
               kind: 'BOOK',
               staffName,
@@ -1135,63 +1416,178 @@ export function useTelesaleTvLiveCelebration() {
       } else if (type === 'CHECKIN') {
         const staffName = 'Thuý Kiều';
         const defaultQuote = getRandomQuote(CHECKIN_QUOTES, staffName);
-        enqueueCelebration({
-          id: demoId,
-          kind: 'CHECKIN',
-          staffName,
-          avatarUrl: 'https://lh3.googleusercontent.com/a/ACg8ocIDkNj8m3jfUn2iO_gmhiuLwSJ3XF2Gaqvi69RiG3-My5olzA=s96-c',
-          textToSpeak: defaultQuote,
-          badgeText: '+1 CHECK-IN (DEMO)',
-          colorTheme: 'emerald',
-        });
+        apiClient.telesaleTarget
+          .getCelebrationQuote({
+            type: 'CHECKIN',
+            staffName,
+            personaKey: settings.personaMode,
+            edginessLevel: settings.edginessLevel,
+          })
+          .then((res) => {
+            triggerWithPersona(
+              {
+                id: demoId,
+                kind: 'CHECKIN',
+                staffName,
+                avatarUrl:
+                  'https://lh3.googleusercontent.com/a/ACg8ocIDkNj8m3jfUn2iO_gmhiuLwSJ3XF2Gaqvi69RiG3-My5olzA=s96-c',
+                textToSpeak: res?.quote?.trim() || defaultQuote,
+                badgeText: '+1 CHECK-IN (DEMO)',
+                colorTheme: 'emerald',
+              },
+              res?.persona
+            );
+          })
+          .catch(() => {
+            triggerWithPersona({
+              id: demoId,
+              kind: 'CHECKIN',
+              staffName,
+              avatarUrl:
+                'https://lh3.googleusercontent.com/a/ACg8ocIDkNj8m3jfUn2iO_gmhiuLwSJ3XF2Gaqvi69RiG3-My5olzA=s96-c',
+              textToSpeak: defaultQuote,
+              badgeText: '+1 CHECK-IN (DEMO)',
+              colorTheme: 'emerald',
+            });
+          });
       } else if (type === 'COMBO') {
         const staffName = 'Bích Phượng';
         const comboName = 'Combo Nàng Thơ 5 Buổi';
         const comboPrice = 5900000;
         const priceSpeech = ` trị giá ${formatCurrencyForSpeech(comboPrice)}`;
-        enqueueCelebration({
-          id: demoId,
-          kind: 'COMBO',
-          staffName,
-          avatarUrl: 'https://lh3.googleusercontent.com/a/ACg8ocImU7oxC33vMir9F9rllmN4y1LVBkzJXB5ff9RCZyy-9brDnA=s96-c',
-          textToSpeak: `Đỉnh cao tư vấn! Chúc mừng ${staffName} vừa chốt thành công ${comboName}${priceSpeech}! Đẳng cấp và chuyên nghiệp quá em ơi!`,
-          badgeText: '✨ +CHỐT COMBO NÀNG THƠ (5.900.000đ)! (DEMO)',
-          colorTheme: 'purple',
-          hasCombo: true,
-          comboPackageName: comboName,
-          comboPrice,
-        });
+        const defaultQuote = `Đỉnh cao tư vấn! Chúc mừng ${staffName} vừa chốt thành công ${comboName}${priceSpeech}! Đẳng cấp và chuyên nghiệp quá em ơi!`;
+        apiClient.telesaleTarget
+          .getCelebrationQuote({
+            type: 'COMBO',
+            staffName,
+            comboPackageName: comboName,
+            comboPrice,
+            cvStaffName: 'Thuý Kiều',
+            personaKey: settings.personaMode,
+            edginessLevel: settings.edginessLevel,
+          })
+          .then((res) => {
+            triggerWithPersona(
+              {
+                id: demoId,
+                kind: 'COMBO',
+                staffName,
+                avatarUrl:
+                  'https://lh3.googleusercontent.com/a/ACg8ocImU7oxC33vMir9F9rllmN4y1LVBkzJXB5ff9RCZyy-9brDnA=s96-c',
+                textToSpeak: res?.quote?.trim() || defaultQuote,
+                badgeText: '✨ +CHỐT COMBO NÀNG THƠ (5.900.000đ)! (DEMO)',
+                colorTheme: 'purple',
+                hasCombo: true,
+                comboPackageName: comboName,
+                comboPrice,
+              },
+              res?.persona
+            );
+          })
+          .catch(() => {
+            triggerWithPersona({
+              id: demoId,
+              kind: 'COMBO',
+              staffName,
+              avatarUrl:
+                'https://lh3.googleusercontent.com/a/ACg8ocImU7oxC33vMir9F9rllmN4y1LVBkzJXB5ff9RCZyy-9brDnA=s96-c',
+              textToSpeak: defaultQuote,
+              badgeText: '✨ +CHỐT COMBO NÀNG THƠ (5.900.000đ)! (DEMO)',
+              colorTheme: 'purple',
+              hasCombo: true,
+              comboPackageName: comboName,
+              comboPrice,
+            });
+          });
       } else if (type === 'TIP') {
         const staffName = 'Thuý Kiều';
         const cvName = 'Thuý Kiều';
         const ccName = 'Bích Phượng';
         const tipAmount = 100000;
         const tipSpeech = formatCurrencyForSpeech(tipAmount);
-        enqueueCelebration({
-          id: demoId,
-          kind: 'TIP',
-          staffName,
-          avatarUrl: 'https://lh3.googleusercontent.com/a/ACg8ocIDkNj8m3jfUn2iO_gmhiuLwSJ3XF2Gaqvi69RiG3-My5olzA=s96-c',
-          textToSpeak: `Khách yêu vừa gửi tặng tiền tip ${tipSpeech}! Chúc mừng Chuyên Viên ${cvName} và Tư Vấn ${ccName} đã mang lại sự hài lòng tuyệt đối!`,
-          badgeText: '💛 +TIP KHÁCH THƯỞNG 100.000đ! (DEMO)',
-          colorTheme: 'gold',
-          hasTip: true,
-          tipAmount,
-          assignedStaffName: cvName,
-          checkInStaffName: ccName,
-        });
+        const defaultQuote = `Khách yêu vừa gửi tặng tiền tip ${tipSpeech}! Chúc mừng Chuyên Viên ${cvName} và Tư Vấn ${ccName} đã mang lại sự hài lòng tuyệt đối!`;
+        apiClient.telesaleTarget
+          .getCelebrationQuote({
+            type: 'TIP',
+            staffName,
+            tipAmount,
+            cvStaffName: cvName,
+            ccStaffName: ccName,
+            personaKey: settings.personaMode,
+            edginessLevel: settings.edginessLevel,
+          })
+          .then((res) => {
+            triggerWithPersona(
+              {
+                id: demoId,
+                kind: 'TIP',
+                staffName,
+                avatarUrl:
+                  'https://lh3.googleusercontent.com/a/ACg8ocIDkNj8m3jfUn2iO_gmhiuLwSJ3XF2Gaqvi69RiG3-My5olzA=s96-c',
+                textToSpeak: res?.quote?.trim() || defaultQuote,
+                badgeText: '💛 +TIP KHÁCH THƯỞNG 100.000đ! (DEMO)',
+                colorTheme: 'gold',
+                hasTip: true,
+                tipAmount,
+                assignedStaffName: cvName,
+                checkInStaffName: ccName,
+              },
+              res?.persona
+            );
+          })
+          .catch(() => {
+            triggerWithPersona({
+              id: demoId,
+              kind: 'TIP',
+              staffName,
+              avatarUrl:
+                'https://lh3.googleusercontent.com/a/ACg8ocIDkNj8m3jfUn2iO_gmhiuLwSJ3XF2Gaqvi69RiG3-My5olzA=s96-c',
+              textToSpeak: defaultQuote,
+              badgeText: '💛 +TIP KHÁCH THƯỞNG 100.000đ! (DEMO)',
+              colorTheme: 'gold',
+              hasTip: true,
+              tipAmount,
+              assignedStaffName: cvName,
+              checkInStaffName: ccName,
+            });
+          });
       } else if (type === 'DONE') {
         const staffName = 'Thuý Kiều';
         const defaultQuote = getRandomQuote(DONE_QUOTES, staffName);
-        enqueueCelebration({
-          id: demoId,
-          kind: 'DONE',
-          staffName,
-          avatarUrl: 'https://lh3.googleusercontent.com/a/ACg8ocIDkNj8m3jfUn2iO_gmhiuLwSJ3XF2Gaqvi69RiG3-My5olzA=s96-c',
-          textToSpeak: defaultQuote,
-          badgeText: '+1 DONE (DEMO)',
-          colorTheme: 'emerald',
-        });
+        apiClient.telesaleTarget
+          .getCelebrationQuote({
+            type: 'DONE',
+            staffName,
+            personaKey: settings.personaMode,
+            edginessLevel: settings.edginessLevel,
+          })
+          .then((res) => {
+            triggerWithPersona(
+              {
+                id: demoId,
+                kind: 'DONE',
+                staffName,
+                avatarUrl:
+                  'https://lh3.googleusercontent.com/a/ACg8ocIDkNj8m3jfUn2iO_gmhiuLwSJ3XF2Gaqvi69RiG3-My5olzA=s96-c',
+                textToSpeak: res?.quote?.trim() || defaultQuote,
+                badgeText: '+1 DONE (DEMO)',
+                colorTheme: 'emerald',
+              },
+              res?.persona
+            );
+          })
+          .catch(() => {
+            triggerWithPersona({
+              id: demoId,
+              kind: 'DONE',
+              staffName,
+              avatarUrl:
+                'https://lh3.googleusercontent.com/a/ACg8ocIDkNj8m3jfUn2iO_gmhiuLwSJ3XF2Gaqvi69RiG3-My5olzA=s96-c',
+              textToSpeak: defaultQuote,
+              badgeText: '+1 DONE (DEMO)',
+              colorTheme: 'emerald',
+            });
+          });
       } else if (type === 'CHECKIN_18') {
         enqueueCelebration({
           id: demoId,
@@ -1214,7 +1610,7 @@ export function useTelesaleTvLiveCelebration() {
         });
       }
     },
-    [enqueueCelebration]
+    [enqueueCelebration, settings.personaMode, settings.edginessLevel]
   );
 
   return {

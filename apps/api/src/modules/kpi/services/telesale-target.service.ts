@@ -15,6 +15,9 @@ import {
   TelesaleTodayCheckinItem,
   TelesaleTvEventLog,
   TelesaleTvJournalOverview,
+  TelesaleTvPersonaDto,
+  TelesaleTvPersonaKey,
+  TelesaleTvEdginessLevel,
   TelesalePipelineStage,
   TelesalePacingStatus,
   TelesalePeriodStatus,
@@ -2417,7 +2420,93 @@ export class TelesaleTargetService {
     return `${num} đồng`;
   }
 
-  static getFallbackCelebrationQuote(
+  // 5 Distinct Personas for TV Live Celebration
+  static readonly TV_CELEBRATION_PERSONAS: Record<string, TelesaleTvPersonaDto> = {
+    MC_HOI_CHO: {
+      key: 'MC_HOI_CHO',
+      name: 'MC Hội Chợ / BLV',
+      badge: '🎪 MC HỘI CHỢ GÀO THÉT',
+      icon: '🎪',
+      voice: 'vi-VN-NamMinhNeural',
+      rate: '+15%',
+      pitch: '+6Hz',
+      sfxType: 'vuvuzela_cheer',
+      tagline: 'Gào thét cuồng nhiệt, nhịp độ dồn dập, ăn mừng rần rần như chung kết World Cup',
+    },
+    DRAMA_QUEEN: {
+      key: 'DRAMA_QUEEN',
+      name: 'Cụ Tổ Drama',
+      badge: '🎭 CỤ TỔ DRAMA XÉO XẮT',
+      icon: '🎭',
+      voice: 'vi-VN-HoaiMyNeural',
+      rate: '+6%',
+      pitch: '+14Hz',
+      sfxType: 'drama_stinger',
+      tagline: 'Đanh đá the thé, châm chọc sâu cay, mỉa mai lầy lội không trượt phát nào',
+    },
+    THAY_BOI: {
+      key: 'THAY_BOI',
+      name: 'Thầy Bói Phán Số',
+      badge: '🔮 THẦY BÓI PHÁN SỐ',
+      icon: '🔮',
+      voice: 'vi-VN-NamMinhNeural',
+      rate: '-8%',
+      pitch: '-8Hz',
+      sfxType: 'temple_bell',
+      tagline: 'Trầm ma mị, bấm độn tâm linh, phán cung tài lộc nổ đùng đùng',
+    },
+    GEN_Z: {
+      key: 'GEN_Z',
+      name: 'Gen Z Chúa Tể Meme',
+      badge: '📱 GEN Z CHÚA TỂ MEME',
+      icon: '📱',
+      voice: 'vi-VN-HoaiMyNeural',
+      rate: '+10%',
+      pitch: '+4Hz',
+      sfxType: 'pop_ting',
+      tagline: 'Tươi tắn, flex nhẹ, slay quá bà dà, 10 điểm không có nhưng, hot trend TikTok',
+    },
+    TONG_TAI: {
+      key: 'TONG_TAI',
+      name: 'Tổng Tài Sến Sẩm',
+      badge: '🕶️ TỔNG TÀI SẾN SẨM',
+      icon: '🕶️',
+      voice: 'vi-VN-NamMinhNeural',
+      rate: '+0%',
+      pitch: '-4Hz',
+      sfxType: 'smooth_sax',
+      tagline: 'Trầm ấm quyến rũ, thả thính sến rện, con tim tan chảy',
+    },
+  };
+
+  private static recentQuotesHistory: string[] = [];
+  private static lastChosenPersonaKey = '';
+
+  private static recordSpokenQuote(quote: string) {
+    if (!quote) return;
+    this.recentQuotesHistory.push(quote);
+    if (this.recentQuotesHistory.length > 40) {
+      this.recentQuotesHistory.shift();
+    }
+  }
+
+  static resolveCelebrationPersona(requestedKey?: string): TelesaleTvPersonaDto {
+    const personas = Object.values(this.TV_CELEBRATION_PERSONAS);
+    if (requestedKey && requestedKey !== 'RANDOM_MULTI' && this.TV_CELEBRATION_PERSONAS[requestedKey]) {
+      this.lastChosenPersonaKey = requestedKey;
+      return this.TV_CELEBRATION_PERSONAS[requestedKey];
+    }
+
+    // Pick random persona avoiding immediate repetition if possible
+    const candidates = personas.filter((p) => p.key !== this.lastChosenPersonaKey);
+    const chosen = (candidates.length > 0 ? candidates : personas)[
+      Math.floor(Math.random() * (candidates.length > 0 ? candidates.length : personas.length))
+    ];
+    this.lastChosenPersonaKey = chosen.key;
+    return chosen;
+  }
+
+  static getFallbackCelebrationQuoteWithPersona(
     type: 'BOOK' | 'DONE' | 'CHECKIN' | 'COMBO' | 'TIP',
     staffName: string,
     options?: {
@@ -2426,67 +2515,222 @@ export class TelesaleTargetService {
       comboPrice?: number;
       cvStaffName?: string;
       customerName?: string;
+      personaKey?: string;
+      edginessLevel?: TelesaleTvEdginessLevel;
+      streakCount?: number;
+      hourOfDay?: number;
+      isMorningFirstOrder?: boolean;
+      isLateNightShift?: boolean;
     }
-  ): string {
-    const bookQuotes = [
-      'Lại thêm một Book từ [Tên]! Em cứ liên tục tỏa sáng thế này làm anh xao xuyến, con tim đập loạn nhịp rồi đấy nhé!',
-      'Alo alo, [Tên] lại nổ Book! Em chốt đơn lia lịa như máy chém thế này thì cả phòng chỉ có nước die up die down thôi!',
-      '[Tên] ơi là [Tên], em tính thầu luôn cả chỉ tiêu phòng Telesales hôm nay hay sao mà Book về dồn dập thế!',
-      'Khách vừa nghe giọng [Tên] là chốt vội lịch hẹn! Duyên dáng thế này bảo sao khách không mê đứ đừ!',
-      'Thêm một Book rực rỡ từ [Tên]! Phong độ đỉnh nóc kịch trần, làm anh chết lên chết xuống vì nể phục em rồi đấy!',
-      'Một Book ngọt lịm từ [Tên]! Em tư vấn khéo léo thế này thì khách chỉ có nước gật đầu lia lịa rồi chốt lịch cái rụp!',
-      'Ting ting! [Tên] vừa tung tuyệt chiêu kéo thêm một Book, làm cả phòng xôn xao náo nhiệt luôn rồi!',
-    ];
-
-    const checkinQuotes = [
-      'Khách của [Tên] đã vào tới cửa tiệm rồi! Chăm sóc kiểu gì mà khách mê mẩn đến đúng từng phút, làm anh chết lên chết xuống vì nể em!',
-      '[Tên] vừa kéo thêm một lượt Check-in! Khách nghe giọng ngọt như mía lùi là tự động xách xe phi tới tiệm ngay, đỉnh nóc kịch trần!',
-      'Khách vào ghế rồi các em ơi! Sự ân cần của [Tên] làm khách mê say đắm, cả phòng lại chuẩn bị die up die down rồi!',
-      'Check-in thành công cho [Tên]! Dẫn dắt khách đến tiệm mượt mà như một cơn gió, đẳng cấp không thể chối từ!',
-      'Thêm một khách check-in tươi rói của [Tên]! Năng lượng vui vẻ của em thắp sáng rực rỡ cả salon hôm nay rồi!',
-    ];
-
+  ): { quote: string; persona: TelesaleTvPersonaDto } {
+    const persona = this.resolveCelebrationPersona(options?.personaKey);
     const tipSpeech = this.formatCurrencyForSpeech(options?.tipAmount);
     const comboName = options?.comboPackageName || 'gói Combo làm đẹp';
     const comboPriceSpeech = options?.comboPrice ? ` trị giá ${this.formatCurrencyForSpeech(options.comboPrice)}` : '';
     const cvName = options?.cvStaffName || 'Chuyên Viên';
 
-    const comboQuotes = [
-      `Ủa ủa ${staffName} ơi! Khách đi làm đẹp sương sương mà em chốt luôn ${comboName}${comboPriceSpeech}, tính làm khách mê Wings tới già luôn đúng không?`,
-      `Bùng nổ rồi ${staffName} ơi! Khách tin yêu chốt ngay ${comboName}${comboPriceSpeech}, em tư vấn đỉnh thế này thì ví khách chỉ có nước die up die down!`,
-      `Siêu phẩm ${comboName}${comboPriceSpeech} về tay ${staffName}! Em chốt đơn bén như máy chém, làm anh xao xuyến cả buổi chiều!`,
-      `Đẳng cấp tư vấn khoa học của ${staffName} là đây! Khách chốt trọn ${comboName}${comboPriceSpeech} trong một nốt nhạc, quá đỗi quyến rũ em ơi!`,
-    ];
+    // Rich Fallback Pools by Persona
+    const quotesMap: Record<string, Record<string, string[]>> = {
+      MC_HOI_CHO: {
+        BOOK: [
+          'Vàooo! Không thể tin được, một pha chốt Book xé toang hàng phòng ngự từ [Tên]! Cả phòng vỡ òa rồi bà con ơi!',
+          'Alo alo một hai ba bốn! [Tên] vừa nổ thêm một Book làm chấn động toàn bộ hội chợ Telesales! Đỉnh nóc kịch trần!',
+          'Cháy quá [Tên] ơi! Em chốt đơn nhanh như chớp giật, bà con cô bác đứng xung quanh chỉ biết vỗ tay rần rần!',
+          'Tin chấn động địa cầu! Một pha gài kèo lịch hẹn thần sầu của tuyển thủ [Tên], tỷ số hôm nay lại tăng lên!',
+        ],
+        CHECKIN: [
+          'Bà con ơi dạt ra cho khách của [Tên] bước vào! Dẫn khách tới tiệm mượt mà như một đường chuyền bóng vàng!',
+          'Check-in thành công rực rỡ! Khách của [Tên] đã cập bến an toàn, tiếng hò reo vang dội cả salon!',
+          'Một hai ba dô! Khách của [Tên] đã ngồi vào ghế, chuẩn bị tận hưởng dịch vụ chuẩn năm sao đỉnh chóp!',
+        ],
+        COMBO: [
+          `Siêu phẩm triệu đô xuất hiện! [Tên] vừa lập kỷ lục chốt trọn ${comboName}${comboPriceSpeech}, cúp vàng hôm nay trao cho em chứ ai!`,
+          `Khán giả ngỡ ngàng, đối thủ bật khóc! [Tên] vừa ẵm trọn ${comboName}${comboPriceSpeech} trong một nốt nhạc, quá đẳng cấp!`,
+          `Bùng nổ pháo hoa chào đón gói ${comboName}${comboPriceSpeech} của [Tên]! Một cú sút sấm sét không thể cản phá!`,
+        ],
+        TIP: [
+          `Ting ting ting! Khán đài mưa tiền thưởng, khách gửi tặng tiền tip ${tipSpeech || 'xứng đáng'} cho [Tên] và Chuyên Viên ${cvName}! Quá dữ dằn!`,
+          `Tiền tip về tay như mưa rào mùa hạ! ${tipSpeech || 'Món quà ngọt ngào'} cho màn trình diễn đỉnh cao của [Tên] và Chuyên Viên ${cvName}!`,
+        ],
+        DONE: [
+          'Trận đấu khép lại với chiến thắng vang dội! [Tên] vừa hoàn tất thêm một ca Done mười điểm không có nhưng!',
+          'Một pha cứu bàn thua trông thấy và chốt hạ ca Done xuất sắc của [Tên]! Cả phòng xin phép vỗ tay tán thưởng!',
+        ],
+      },
+      DRAMA_QUEEN: {
+        BOOK: [
+          'Ủa alo [Tên]? Em tính thầu luôn cả cái Sài Gòn này hay gì mà khách vừa thở một cái là em đã chốt Book rồi?',
+          'Trời đất coi kìa, người ta ngồi đợi khách mòn mỏi còn [Tên] thì nổ Book lia lịa! Định giật hết spotlight của phòng hả má?',
+          'Ghê thật sự! Khách chưa kịp chuẩn bị tâm lý đã bị [Tên] dùng thuật thao túng tâm lý chốt luôn lịch hẹn! Nể em ghê á!',
+          'Này [Tên], em chốt đơn bạo lực thế này thì ai làm lại em? Để cho người khác một con đường sống coi!',
+        ],
+        CHECKIN: [
+          'Ủa khách tới rồi kìa! [Tên] cho khách uống bùa mê thuốc lú gì mà khách đội mưa phi tới đúng giờ dữ vậy trùi?',
+          'Check-in cái rụp! Khách nghe lời [Tên] răm rắp như bị thôi miên, làm cả phòng nhìn mà phát thèm phát tức!',
+          'Khách đã vào ghế tiệm Wings an toàn! Duyên dáng cỡ này thì khách nào thoát khỏi tay [Tên]!',
+        ],
+        COMBO: [
+          `Ủa khách đi làm đẹp sương sương mà [Tên] dụ chốt luôn ${comboName}${comboPriceSpeech}? Em không phải telesales, em là chúa tể chốt đơn!`,
+          `Trời ơi ví khách vừa rớt nước mắt chia tay tiền bạc vì sự ngọt ngào của [Tên]! Xuất sắc nhưng mà mặn mòi quá nha!`,
+          `Chốt ${comboName}${comboPriceSpeech} nhẹ tênh như lông hồng! [Tên] làm ăn kiểu này tính mua nhà lầu trong tháng này đúng không?`,
+        ],
+        TIP: [
+          `Ủa khách tip ${tipSpeech || 'đậm đà'} luôn hả má? Khách mê Chuyên Viên ${cvName} hay mê cái miệng dẻo quẹo của [Tên] mà hào phóng dữ vậy?`,
+          `Nhìn cái ví dày cộp tiền tip của [Tên] và Chuyên Viên ${cvName} mà con mắt bên phải giật giật, con mắt bên trái cay xè vì ghen tị!`,
+        ],
+        DONE: [
+          'Xong một ca Done êm ru bà rù! [Tên] chăm khách kỹ đến mức con muỗi bay qua cũng không lọt, nể phục sát đất!',
+          'Khách làm xong ngắm gương cười tít mắt! [Tên] cứ lấy hết lời khen của thiên hạ thế này thì ai đọ lại!',
+        ],
+      },
+      THAY_BOI: {
+        BOOK: [
+          'Quẻ này ứng rồi! Thầy vừa bấm độn thấy cung tài lộc của [Tên] phát sáng, quả nhiên nổ ngay một Book thơm phức!',
+          'Thiện tai thiện tai! Vong ế đã tan, vía lộc đã tràn vào tiệm nhờ bàn tay vàng của đệ tử [Tên]!',
+          'Thầy phán không sai một li! Giờ hoàng đạo vừa điểm là [Tên] lập tức kéo khách về chốt lịch rần rần!',
+          'Hôm nay [Tên] được sao Bát Bạch chiếu mệnh, khách nghe giọng một phát là tự nguyện dâng lịch hẹn liền tay!',
+        ],
+        CHECKIN: [
+          'Khách đã bước qua ngưỡng cửa thần tài! Vía may mắn của [Tên] đang độ cho cả salon hôm nay tiền vô như nước sông Đà!',
+          'Đúng giờ lành tháng tốt, khách của [Tên] đã hạ cánh an toàn tại salon! Một điềm lành cho cả ngày đại thắng!',
+        ],
+        COMBO: [
+          `Bát tự sinh tài! [Tên] vừa hóa giải túi tiền của khách, chốt trọn ${comboName}${comboPriceSpeech} đại cát đại lợi!`,
+          `Thầy nhìn thấy một vầng hào quang tím rực rỡ quanh gói ${comboName}${comboPriceSpeech} mà [Tên] vừa chốt! Tiền tài cuồn cuộn đổ về!`,
+        ],
+        TIP: [
+          `Khách phát tâm gieo duyên lộc lá ${tipSpeech || 'thịnh vượng'} cho [Tên] và Chuyên Viên ${cvName}! Lộc trời ban thì xin hoan hỉ đón nhận!`,
+          `Thần Tài gõ cửa ban thưởng ${tipSpeech || 'tiền tip'}! Sự ân cần và chân thành của [Tên] quả nhiên tích đức sinh tài!`,
+        ],
+        DONE: ['Công đức viên mãn! Một ca Done tròn trịa như trăng rằm của [Tên], phước lộc tràn trề khắp chốn!'],
+      },
+      GEN_Z: {
+        BOOK: [
+          'Ủa ai bảo hôm nay trầm? Ra đây coi [Tên] flex nhẹ cái Book nè, quá dữ luôn trùi ui, slay quá má ơi!',
+          'Chốt đơn hệ tâm linh không bằng [Tên] hệ thực lực! Một Book về tay, mười điểm không có nhưng!',
+          'Em [Tên] vừa bật chế độ chốt đơn không lối thoát! Khách say yes trong một nốt nhạc, đỉnh nóc kịch trần luôn á!',
+          'Overthinking làm chi khi chốt Book với [Tên] dễ như ăn kẹo! Keo lỳ tái châu luôn nha em gái!',
+        ],
+        CHECKIN: [
+          'Khách yêu của [Tên] đã xuất hiện tại tiệm! Đúng là tín hiệu vũ trụ mách bảo đến tiệm Wings là đẹp liền!',
+          'Check-in mượt mà như bơ lạt! [Tên] uy tín số một, khách phi tới tiệm nhanh hơn cả người yêu cũ trở mặt!',
+        ],
+        COMBO: [
+          `Chấn động mạng xã hội! [Tên] vừa chốt đứt ${comboName}${comboPriceSpeech}, đỉnh chóp thực sự không flex không được!`,
+          `Bà dà [Tên] hôm nay slay dữ ta! ${comboName}${comboPriceSpeech} bay màu trong một nốt nhạc, quá đỉnh luôn má ơi!`,
+        ],
+        TIP: [
+          `Ting ting khách thưởng nóng ${tipSpeech || 'liền tay'} cho [Tên] và Chuyên Viên ${cvName}! Tiền về tài khoản, năng lượng tràn trề quẩy banh nóc!`,
+          `Khách hào sảng tip hẳn ${tipSpeech || 'đậm sâu'}! Dịch vụ đỉnh nóc thế này thì khách flex ví là đúng bài rồi!`,
+        ],
+        DONE: ['Done nhẹ một ca dịch vụ hoàn hảo! [Tên] gánh team còng cả lưng, mười điểm tuyệt đối!'],
+      },
+      TONG_TAI: {
+        BOOK: [
+          'Cứ mỗi lần [Tên] nổ Book là con tim anh lại đập loạn nhịp. Em tính làm anh xao xuyến đến bao giờ nữa đây?',
+          'Phụ nữ quyến rũ nhất là khi chốt đơn lia lịa, và [Tên] hôm nay chính là người phụ nữ tỏa sáng nhất trong mắt anh!',
+          'Cả thế giới này có thể từ chối anh, nhưng khách hàng thì tuyệt đối không thể cưỡng lại sự ngọt ngào của [Tên]!',
+          'Thêm một Book hoàn hảo từ [Tên]. Em xuất sắc thế này làm anh chết lên chết xuống vì nể phục rồi đấy!',
+        ],
+        CHECKIN: [
+          'Khách đã đến tiệm vì nụ cười của em. [Tên] ơi, sự ân cần của em chính là bảo vật quý giá nhất hôm nay!',
+          'Dẫn lối cho khách nhẹ nhàng như một cơn gió thu. Phong thái của [Tên] đúng là làm say đắm lòng người!',
+        ],
+        COMBO: [
+          `Siêu phẩm ${comboName}${comboPriceSpeech} đã thuộc về em. Sự thông minh và khoa học của [Tên] làm anh mê đứ đừ!`,
+          `Khách chọn gói ${comboName}${comboPriceSpeech} vì niềm tin trọn vẹn dành cho [Tên]. Đẳng cấp này chỉ có ở người phụ nữ của anh!`,
+        ],
+        TIP: [
+          `Món quà ${tipSpeech || 'ngọt ngào'} từ khách là minh chứng cho trái tim tận tụy của [Tên] và Chuyên Viên ${cvName}. Anh rất tự hào về em!`,
+          `Khách thưởng ${tipSpeech || 'xứng đáng'} cho những nỗ lực tuyệt vời của [Tên]. Em xứng đáng nhận được tất cả sự yêu thương trên đời!`,
+        ],
+        DONE: ['Một ca Done hoàn hảo từ A đến Z. Sự chu đáo của [Tên] hôm nay khiến anh không thể rời mắt!'],
+      },
+    };
 
-    const tipQuotes = tipSpeech
-      ? [
-          `Ting ting, khách thưởng tip ${tipSpeech} cho ${staffName}! Vừa duyên dáng lại vừa ân cần, khách thương khách nhớ tip tới tấp thế này thì ai làm lại em!`,
-          `Khách mê tay nghề Chuyên Viên ${cvName} hay mê nụ cười của ${staffName} mà tip hẳn ${tipSpeech} thế này? Đẳng cấp làm cả phòng die up die down!`,
-          `Một món quà tip ${tipSpeech} ngọt ngào từ khách yêu gửi tặng ${staffName} và ${cvName}! Sự chăm sóc chuẩn 5 sao làm anh chết lên chết xuống vì tự hào!`,
-          `Khách gửi trọn niềm tin và tip ${tipSpeech} liền tay cho ${staffName}! Phong độ đỉnh cao của em khiến ai cũng phải trầm trồ thán phục!`,
-        ]
-      : [
-          'Khách hàng thưởng Tip vì sự hài lòng tuyệt đối! Trái tim ân cần của [Tên] đã làm khách mê đứ đừ rồi!',
-          'Thêm một khoản Tip ngọt ngào cho [Tên]! Năng lượng tích cực và nụ cười của em làm cả phòng die up die down!',
-          'Khách yêu quý gửi trọn niềm vui và tiền Tip! Đẳng cấp phục vụ chuẩn mực của [Tên] làm anh xao xuyến vô cùng!',
-        ];
+    // Contextual quotes (Streak, Morning opening, Late night shift)
+    if (options?.streakCount && options.streakCount >= 2) {
+      const streakQuotes: Record<string, string[]> = {
+        MC_HOI_CHO: [
+          `Cú đúp thần thánh! [Tên] lập cú đúp chốt đơn liên hoàn cước, đối thủ chỉ biết ôm đầu ngơ ngác!`,
+          `Không thể ngăn cản cỗ xe tăng [Tên]! Đơn nổ liên tọi, phong độ đỉnh nóc kịch trần rồi!`,
+        ],
+        DRAMA_QUEEN: [
+          `Nãy giờ ăn cơm chưa [Tên] mà nuốt máy chém vô bụng hay sao nổ đơn liên tục thế? Định dẹp tiệm người ta hả?`,
+          `Ủa rồi ai làm lại [Tên] nữa? Đơn nổ dồn dập thế này tính cướp hết chỉ tiêu của cả tháng luôn hay gì?`,
+        ],
+        GEN_Z: [`Chuỗi nổ đơn bất tận của [Tên], ai cản em lại giùm cái, slay quá mức cho phép rồi!`],
+        THAY_BOI: [`Vận khí bùng nổ, chuỗi lộc liên hoàn của [Tên] đã kích hoạt Long Mạch của phòng Telesales!`],
+        TONG_TAI: [
+          `Liên tiếp những kỳ tích mang tên [Tên]. Em định làm anh chết lên chết xuống vì ngưỡng mộ bao nhiêu lần nữa?`,
+        ],
+      };
+      const pStreak = streakQuotes[persona.key];
+      if (pStreak && pStreak.length > 0) {
+        const quote = pStreak[Math.floor(Math.random() * pStreak.length)].replace(/\[Tên\]/g, staffName);
+        this.recordSpokenQuote(quote);
+        return { quote, persona };
+      }
+    }
 
-    const doneQuotes = [
-      'Xong một Done ngọt ngào cho [Tên]! Khách làm đẹp xong cười tít mắt, phong độ của em hôm nay đúng là làm cả phòng die up die down!',
-      'Một ca Done xuất sắc của [Tên]! Em tư vấn bài bản, khoa học thế này thì khách chỉ có nước khen nức nở rồi mê đứ đừ!',
-      'Done về rực rỡ cho [Tên]! Chăm sóc từ A đến Z không một vết xước, em làm con tim anh xao xuyến quá rồi đấy!',
-      'Chúc mừng [Tên] thêm một Done hoàn hảo! Em cứ làm việc nhiệt huyết thế này thì tiền thưởng chỉ có nước nhảy múa không ngừng!',
-      'Khách làm xong ngắm gương rồi gật gù khen [Tên] nức nở! Dẫn dắt khách chuẩn chỉ thế này thì ai đọ lại em!',
-    ];
+    if (options?.isMorningFirstOrder) {
+      const morningQuotes: Record<string, string[]> = {
+        MC_HOI_CHO: ['Mở bát sáng sớm rực rỡ! [Tên] khai xuân nổ phát súng đầu tiên vang dội cả salon!'],
+        THAY_BOI: [
+          'Thầy nhìn vía mở hàng của [Tên] sáng rực, điềm báo ngày hôm nay cả phòng Telesales đếm tiền sái tay!',
+        ],
+        DRAMA_QUEEN: [
+          'Sáng sớm tinh mơ người ta còn ngái ngủ mà [Tên] đã lượm đơn ngọt xớt rồi, tính làm gương mẫu cho ai coi?',
+        ],
+        GEN_Z: ['Mở bát sáng sớm mượt mà như bơ lạt, [Tên] mở hàng vía chuẩn không cần chỉnh!'],
+        TONG_TAI: [
+          'Chào buổi sáng người phụ nữ năng lượng của anh. Mở hàng xuất sắc thế này thì ngày hôm nay rực rỡ rồi!',
+        ],
+      };
+      const pMorning = morningQuotes[persona.key];
+      if (pMorning && pMorning.length > 0) {
+        const quote = pMorning[Math.floor(Math.random() * pMorning.length)].replace(/\[Tên\]/g, staffName);
+        this.recordSpokenQuote(quote);
+        return { quote, persona };
+      }
+    }
 
-    let list = bookQuotes;
-    if (type === 'CHECKIN') list = checkinQuotes;
-    else if (type === 'COMBO') list = comboQuotes;
-    else if (type === 'TIP') list = tipQuotes;
-    else if (type === 'DONE') list = doneQuotes;
+    const personaPool = quotesMap[persona.key] || quotesMap.MC_HOI_CHO;
+    const eventPool = personaPool[type] || personaPool.BOOK;
 
-    const template = list[Math.floor(Math.random() * list.length)] || list[0];
-    return template.replace(/\[Tên\]/g, staffName);
+    // Filter out recently spoken quotes to avoid repetition
+    const unsaidQuotes = eventPool.filter((q) => {
+      const rendered = q.replace(/\[Tên\]/g, staffName);
+      return !this.recentQuotesHistory.includes(rendered);
+    });
+
+    const candidatePool = unsaidQuotes.length > 0 ? unsaidQuotes : eventPool;
+    const template = candidatePool[Math.floor(Math.random() * candidatePool.length)] || candidatePool[0];
+    const quote = template.replace(/\[Tên\]/g, staffName);
+    this.recordSpokenQuote(quote);
+
+    return { quote, persona };
+  }
+
+  static getFallbackCelebrationQuote(
+    type: 'BOOK' | 'DONE' | 'CHECKIN' | 'COMBO' | 'TIP',
+    staffName: string,
+    options?: {
+      tipAmount?: number;
+      comboPackageName?: string;
+      comboPrice?: number;
+      cvStaffName?: string;
+      ccStaffName?: string;
+      customerName?: string;
+      personaKey?: string;
+      edginessLevel?: TelesaleTvEdginessLevel;
+      streakCount?: number;
+      hourOfDay?: number;
+      isMorningFirstOrder?: boolean;
+      isLateNightShift?: boolean;
+    }
+  ): string {
+    return this.getFallbackCelebrationQuoteWithPersona(type, staffName, options).quote;
   }
 
   static async generateLiveCelebrationQuote(
@@ -2498,14 +2742,22 @@ export class TelesaleTargetService {
       comboPackageName?: string;
       comboPrice?: number;
       cvStaffName?: string;
+      ccStaffName?: string;
       customerName?: string;
+      personaKey?: string;
+      edginessLevel?: TelesaleTvEdginessLevel;
+      streakCount?: number;
+      hourOfDay?: number;
+      isMorningFirstOrder?: boolean;
+      isLateNightShift?: boolean;
     }
-  ): Promise<{ quote: string; source: 'gemini' | 'fallback' }> {
-    const fallbackQuote = this.getFallbackCelebrationQuote(type, staffName, options);
+  ): Promise<{ quote: string; source: 'gemini' | 'fallback'; persona: TelesaleTvPersonaDto }> {
+    const fallbackResult = this.getFallbackCelebrationQuoteWithPersona(type, staffName, options);
+    const persona = fallbackResult.persona;
     const geminiApiKey = process.env.GEMINI_API_KEY;
 
     if (!geminiApiKey) {
-      return { quote: fallbackQuote, source: 'fallback' };
+      return { quote: fallbackResult.quote, source: 'fallback', persona };
     }
 
     try {
@@ -2516,27 +2768,56 @@ export class TelesaleTargetService {
       const comboPriceSpeech = options?.comboPrice
         ? ` trị giá ${this.formatCurrencyForSpeech(options.comboPrice)}`
         : '';
+      const cvName = options?.cvStaffName || 'Chuyên Viên';
 
       const eventDescription =
         {
           BOOK: 'BOOK (khách hàng vừa chốt lịch hẹn mới)',
-          CHECKIN: 'CHECK-IN (khách hàng vừa có mặt check-in tại tiệm, chắc chắn hoàn tất)',
-          DONE: 'DONE (khách hàng đã hoàn tất dịch vụ tại tiệm)',
-          COMBO: `COMBO (${staffName} vừa chốt thành công ${comboName}${comboPriceSpeech}. BẮT BUỘC nhắc rõ tên gói ${comboName} trong câu chúc mừng)`,
-          TIP: `TIP (${staffName} và Chuyên Viên được khách gửi tặng tiền tip ${tipSpeech || 'xứng đáng'}. BẮT BUỘC nhắc rõ số tiền tip ${tipSpeech} trong câu chúc mừng)`,
+          CHECKIN: 'CHECK-IN (khách hàng vừa có mặt check-in tại salon Wings)',
+          DONE: 'DONE (khách hàng đã hoàn tất dịch vụ tại salon Wings)',
+          COMBO: `COMBO (${staffName} vừa chốt thành công ${comboName}${comboPriceSpeech}. BẮT BUỘC nhắc rõ tên gói ${comboName} trong câu)`,
+          TIP: `TIP (${staffName} và Chuyên Viên ${cvName} được khách gửi tặng tiền tip ${tipSpeech || 'xứng đáng'}. BẮT BUỘC nhắc rõ số tiền tip ${tipSpeech} trong câu)`,
         }[type] || type;
 
-      const systemPrompt = `Bạn là một "Nam Thần" lịch lãm, hóm hỉnh, quyến rũ, cực kỳ thích "cà khịa" ngọt ngào và thả thính hài hước tại phòng Telesales War Room chuỗi làm đẹp Wings (Wingslashes).
-Nhiệm vụ của bạn là nói duy nhất 1 câu chúc mừng ngắn gọn (khoảng 14-22 từ) bằng tiếng Việt dành tặng cho nhân viên Telesales tên là "${staffName}", vừa có 1 sự kiện ${eventDescription}.
-PHONG CÁCH & QUY TẮC BẮT BUỘC:
-1. Giọng điệu: Hài hước, cà khịa duyên dáng, thả thính quyến rũ, khen ngợi độc lạ làm náo nhiệt cả phòng Telesales.
-2. Thường xuyên sử dụng các câu cảm thán, tiếng lóng dí dỏm như: "làm anh xao xuyến quá", "chết lên chết xuống", "làm cả phòng die up die down", "chốt đơn như máy chém", "phong độ đỉnh nóc kịch trần", "khách mê đứ đừ", "tính thầu luôn cả tiệm hay sao".
-3. Khéo léo kết hợp tinh thần 4 giá trị văn hóa Wings: Vui vẻ, Ân cần, Chân thành, Khoa học nhưng theo cách dí dỏm, tếu táo, không rập khuôn khô khan.
-4. Bắt buộc nhắc đến tên "${staffName}".
-5. Nếu là sự kiện TIP, BẮT BUỘC đọc rõ số tiền tip (ví dụ: "${tipSpeech}").
-6. Nếu là sự kiện COMBO, BẮT BUỘC đọc rõ tên gói combo (ví dụ: "${comboName}").
-7. Ngắn gọn, súc tích (khoảng 14-22 từ), chỉ 1 câu duy nhất truyền cảm hứng và gây cười để đọc phát loa nhanh gọn.
-8. Chỉ trả về đúng 1 câu thoại để đọc phát loa trực tiếp, tuyệt đối không có dấu ngoặc kép, không markdown, không giải thích thêm.`;
+      const edginessLevel = options?.edginessLevel || 'SUPER_SPICY';
+      const edginessTone =
+        edginessLevel === 'CLASSIC'
+          ? 'Lịch sự, hóm hỉnh nhẹ nhàng, chuẩn mực nam thần.'
+          : edginessLevel === 'PLAYFUL'
+            ? 'Hài hước, vui tươi, châm chọc nhẹ, nhiều tiếng lóng văn phòng duyên dáng.'
+            : 'SIÊU NHAM NHỞ, LẦY LỘI, CÀ KHỊA CỰC BỰA, XÉO XẮT HOẶC GÀO THÉT BẤT NGỜ NHƯNG KHÔNG VĂNG TỤC THÔ THIỂN, TUÂN THỦ TÔN TRỌNG TAY NGHỀ CHUYÊN VIÊN.';
+
+      const contextNotes: string[] = [];
+      if (options?.streakCount && options.streakCount >= 2) {
+        contextNotes.push(
+          `ĐÂY LÀ ĐƠN THỨ ${options.streakCount} LIÊN TIẾP CỦA BẠN NÀY! Hãy cà khịa về việc chốt đơn như máy chém, cướp hết chén cơm đồng nghiệp!`
+        );
+      }
+      if (options?.isMorningFirstOrder) {
+        contextNotes.push(
+          'ĐÂY LÀ ĐƠN MỞ BÁT SÁNG SỚM TINH MƠ! Hãy chúc mừng hoặc cà khịa mở hàng linh nghiệm, vía lộc!'
+        );
+      }
+      if (options?.isLateNightShift) {
+        contextNotes.push(
+          'ĐƠN SÁT GIỜ ĐÓNG CA ĐÊM! Hãy cà khịa về việc thức canh kho bạc, đam mê tiền bạc hơn giấc ngủ!'
+        );
+      }
+
+      const systemPrompt = `Bạn đang nhập vai nhân cách: "${persona.name}" (${persona.badge}) tại phòng Telesales War Room chuỗi làm đẹp Wings (Wingslashes).
+ĐẶC TRƯNG TÍNH CÁCH: ${persona.tagline}.
+MỨC ĐỘ MẶN MÒI & NHAM NHỞ: ${edginessTone}
+${contextNotes.length > 0 ? `BỐI CẢNH ĐẶC BIỆT: ${contextNotes.join(' ')}` : ''}
+
+Nhiệm vụ: Nói duy nhất 1 câu ngắn gọn (khoảng 14-22 từ) bằng tiếng Việt dành tặng cho nhân viên Telesales tên là "${staffName}", vừa có 1 sự kiện ${eventDescription}.
+QUY TẮC BẮT BUỘC:
+1. Nhập vai 100% đúng phong cách ${persona.name} (Ví dụ: MC Hội Chợ thì phải gào thét cuồng nhiệt, Cụ Tổ Drama thì phải xéo xắt châm chọc chua ngoa, Thầy Bói thì phán quẻ tài lộc ma mị, Gen Z thì từ lóng hot trend TikTok, Tổng Tài thì sến rện thả thính).
+2. Phải nhắc đến tên "${staffName}".
+3. Tuyệt đối không dùng từ "thợ", chỉ dùng danh xưng "Chuyên Viên" hoặc "CV" khi nhắc đến kỹ thuật viên làm đẹp.
+4. Nếu là sự kiện TIP, BẮT BUỘC đọc rõ số tiền tip ("${tipSpeech}").
+5. Nếu là sự kiện COMBO, BẮT BUỘC đọc rõ tên gói combo ("${comboName}").
+6. Ngắn gọn, súc tích (14-22 từ), chỉ 1 câu duy nhất truyền cảm hứng và gây cười to cho cả phòng.
+7. Chỉ trả về đúng 1 câu thoại để đọc phát loa trực tiếp, không có dấu ngoặc kép, không markdown, không giải thích.`;
 
       const response = await fetch(geminiUrl, {
         method: 'POST',
@@ -2548,22 +2829,22 @@ PHONG CÁCH & QUY TẮC BẮT BUỘC:
               role: 'user',
               parts: [
                 {
-                  text: `Tạo một câu cà khịa chúc mừng nam thần siêu hài hước, thả thính ngẫu nhiên cho ${staffName} vừa nổ đơn ${type}!`,
+                  text: `Hãy phát thanh 1 câu theo đúng tính cách ${persona.name} siêu nham nhở, bất ngờ cho ${staffName} vừa nổ ${type}!`,
                 },
               ],
             },
           ],
           generationConfig: {
-            temperature: 1.0,
+            temperature: 1.15,
             thinkingConfig: { thinkingBudget: 0 },
-            maxOutputTokens: 60,
+            maxOutputTokens: 65,
           },
         }),
         signal: AbortSignal.timeout(2500),
       });
 
       if (!response.ok) {
-        return { quote: fallbackQuote, source: 'fallback' };
+        return { quote: fallbackResult.quote, source: 'fallback', persona };
       }
 
       const data = (await response.json()) as {
@@ -2576,16 +2857,22 @@ PHONG CÁCH & QUY TẮC BẮT BUỘC:
 
       if (rawText && rawText.length > 5) {
         const cleanText = rawText.replace(/^["'“”«»\s]+|["'“”«»\s]+$/g, '').trim();
-        return { quote: cleanText, source: 'gemini' };
+        this.recordSpokenQuote(cleanText);
+        return { quote: cleanText, source: 'gemini', persona };
       }
     } catch (err) {
       fastify.log.warn(`Gemini live celebration quote generation failed, using fallback: ${err}`);
     }
 
-    return { quote: fallbackQuote, source: 'fallback' };
+    return { quote: fallbackResult.quote, source: 'fallback', persona };
   }
 
-  static async synthesizeCelebrationAudio(text: string, voice = 'vi-VN-NamMinhNeural'): Promise<Buffer> {
+  static async synthesizeCelebrationAudio(
+    text: string,
+    voice = 'vi-VN-NamMinhNeural',
+    rate = '+5%',
+    pitch = '+0Hz'
+  ): Promise<Buffer> {
     const cleanText = text.replace(/[\r\n\t]+/g, ' ').trim();
     if (!cleanText) throw new Error('Text is empty');
 
@@ -2594,7 +2881,7 @@ PHONG CÁCH & QUY TẮC BẮT BUỘC:
       mkdirSync(cacheDir, { recursive: true });
     }
 
-    const hash = createHash('md5').update(`${cleanText}_${voice}`).digest('hex');
+    const hash = createHash('md5').update(`${cleanText}_${voice}_${rate}_${pitch}`).digest('hex');
     const cacheFile = `${cacheDir}/${hash}.mp3`;
 
     if (existsSync(cacheFile)) {
@@ -2625,7 +2912,7 @@ PHONG CÁCH & QUY TẮC BẮT BUỘC:
     try {
       await execFileAsync(
         binaryPath,
-        ['--text', cleanText, '--voice', voice, '--rate=+5%', '--write-media', tempFile],
+        ['--text', cleanText, '--voice', voice, `--rate=${rate}`, `--pitch=${pitch}`, '--write-media', tempFile],
         { timeout: 25_000 }
       );
 
