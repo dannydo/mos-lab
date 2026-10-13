@@ -3,13 +3,15 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, Slider, message, Tooltip, Switch, Avatar } from 'antd';
 import { Settings, Zap, Award, ChevronDown, UserCheck } from 'lucide-react';
-import type {
-  CareerProgressionConfig,
-  StaffCareerStatus,
-  CareerStaffSummary,
-  CareerRole,
-  CareerPeriod,
-  BananaTransactionCategory,
+import {
+  type CareerProgressionConfig,
+  type StaffCareerStatus,
+  type CareerStaffSummary,
+  type CareerRole,
+  type CareerPeriod,
+  type BananaTransactionCategory,
+  isCanonicalSuperAdminIdentity,
+  isSuperAdminRole,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
 import { useTheme } from '../../../context/ThemeContext';
@@ -30,6 +32,7 @@ export default function CareerPathPage() {
     id?: number;
     role?: string;
     username?: string;
+    email?: string;
     name?: string;
   } | null>(null);
 
@@ -43,6 +46,17 @@ export default function CareerPathPage() {
       // ignore
     }
   }, []);
+
+  const isDanny = useMemo(() => {
+    if (!currentUser) return false;
+    return (
+      isSuperAdminRole(currentUser.role) ||
+      isCanonicalSuperAdminIdentity({
+        username: currentUser.username,
+        email: currentUser.email,
+      })
+    );
+  }, [currentUser]);
 
   // State
   const [activeIsland, setActiveIsland] = useState<
@@ -359,6 +373,10 @@ export default function CareerPathPage() {
   };
 
   const handleActivateTrial = async () => {
+    if (!isDanny) {
+      message.error('Chỉ Super Admin (Danny) mới có quyền mở ải thử thách.');
+      return;
+    }
     if (!selectedStaffId) return;
     try {
       setActionLoading(true);
@@ -376,6 +394,10 @@ export default function CareerPathPage() {
   };
 
   const handlePromote = async () => {
+    if (!isDanny) {
+      message.error('Chỉ Super Admin (Danny) mới có quyền duyệt thăng hạng cho Chuyên Viên.');
+      return;
+    }
     if (!selectedStaffId || !selectedStaffStatus) return;
     try {
       setActionLoading(true);
@@ -398,6 +420,10 @@ export default function CareerPathPage() {
   };
 
   const handleSwitchSpecialist = async () => {
+    if (!isDanny) {
+      message.error('Chỉ Super Admin (Danny) mới có quyền chuyển nhánh chuyên gia.');
+      return;
+    }
     if (!selectedStaffId) return;
     try {
       setActionLoading(true);
@@ -414,6 +440,10 @@ export default function CareerPathPage() {
   };
 
   const handleSetRole = async (staffId: number, newRole: CareerRole) => {
+    if (!isDanny) {
+      message.error('Chỉ Super Admin (Danny) mới có quyền thay đổi chức danh Chuyên Viên.');
+      return;
+    }
     try {
       setActionLoading(true);
       const res = await apiClient.career.setStaffRole(staffId, newRole);
@@ -436,6 +466,10 @@ export default function CareerPathPage() {
   };
 
   const handleDemote = async (staffId: number, targetRole: CareerRole) => {
+    if (!isDanny) {
+      message.error('Chỉ Super Admin (Danny) mới có quyền hạ cấp Chuyên Viên.');
+      return;
+    }
     try {
       setActionLoading(true);
       const res = await apiClient.career.demoteStaff(staffId, targetRole);
@@ -591,11 +625,6 @@ export default function CareerPathPage() {
               );
             })()}
 
-            {/* Desktop FHD indicator */}
-            <span className="hidden xl:inline-flex text-[10px] px-2.5 py-1 rounded-xl bg-pink-500/10 dark:bg-pink-500/20 text-pink-600 dark:text-pink-300 border border-pink-500/30 font-bold">
-              🖥️ Desktop FHD Mode
-            </span>
-
             {/* Admin Config Button */}
             {['admin', 'super_admin'].includes(currentUser?.role?.toLowerCase() || '') && (
               <button
@@ -696,8 +725,8 @@ export default function CareerPathPage() {
             onRoleFilterChange={setActiveRoleFilter}
             period={selectedPeriod}
             onPeriodChange={handlePeriodChange}
-            onSetRole={handleSetRole}
-            onDemote={handleDemote}
+            onSetRole={isDanny ? handleSetRole : undefined}
+            onDemote={isDanny ? handleDemote : undefined}
             actionLoading={actionLoading}
             onOpenBananaDrawer={(staffId, cat) => openBananaDrawer(staffId, cat)}
             selectorMode={selectorMode}
@@ -725,10 +754,10 @@ export default function CareerPathPage() {
             setSliderOrders={setSliderOrders}
             sliderCombo={sliderCombo}
             setSliderCombo={setSliderCombo}
-            onActivateTrial={handleActivateTrial}
-            onPromote={handlePromote}
+            onActivateTrial={isDanny ? handleActivateTrial : undefined}
+            onPromote={isDanny ? handlePromote : undefined}
             onDemote={
-              selectedStaffStatus?.currentRole && selectedStaffStatus.currentRole !== 'CV'
+              isDanny && selectedStaffStatus?.currentRole && selectedStaffStatus.currentRole !== 'CV'
                 ? () =>
                     handleDemote(
                       selectedStaffId!,
@@ -736,8 +765,8 @@ export default function CareerPathPage() {
                     )
                 : undefined
             }
-            onSetRole={selectedStaffId ? (role) => handleSetRole(selectedStaffId, role) : undefined}
-            onSwitchSpecialist={handleSwitchSpecialist}
+            onSetRole={isDanny && selectedStaffId ? (role) => handleSetRole(selectedStaffId, role) : undefined}
+            onSwitchSpecialist={isDanny ? handleSwitchSpecialist : undefined}
             loadingAction={actionLoading}
             simulationTarget={simulationTarget}
             onSimulationTargetChange={handleSimulationTargetChange}

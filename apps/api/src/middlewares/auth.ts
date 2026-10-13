@@ -102,10 +102,13 @@ export async function requireSuperAdmin(request: FastifyRequest, reply: FastifyR
     return reply.status(401).send({ error: 'Unauthorized', message: 'Authentication required' });
   }
 
-  if (!isSuperAdminRole(user.role)) {
+  const isSuper =
+    isSuperAdminRole(user.role) || isCanonicalSuperAdminIdentity({ username: user.username, email: user.email });
+
+  if (!isSuper) {
     return reply.status(403).send({
       error: 'Forbidden',
-      message: 'Chỉ Super Admin mới có quyền truy cập khu vực này.',
+      message: 'Chỉ Super Admin (Danny) mới có quyền thực hiện thao tác này.',
     });
   }
 }

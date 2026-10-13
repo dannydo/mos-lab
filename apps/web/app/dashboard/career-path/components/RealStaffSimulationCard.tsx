@@ -2771,7 +2771,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
               </div>
 
               <div className="flex items-center gap-2">
-                {status.status !== 'TRIAL_GATE' && !status.qualifiedQuests.allPassed && (
+                {status.status !== 'TRIAL_GATE' && !status.qualifiedQuests.allPassed && onActivateTrial && (
                   <Tooltip
                     title={
                       !isQaPassed
@@ -2794,19 +2794,24 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   </Tooltip>
                 )}
 
-                {status.qualifiedQuests.allPassed && (
-                  <button
-                    type="button"
-                    onClick={onPromote}
-                    disabled={loadingAction}
-                    className="px-4 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-pink-500 via-rose-500 to-emerald-500 text-white shadow-md shadow-pink-500/25 hover:opacity-95 transition-all cursor-pointer animate-pulse inline-flex items-center gap-1.5"
-                  >
-                    <span>🎉 Duyệt Thăng Hạng</span>
-                    <WingRoleLabel text={formatCareerRoleName(status.targetRole)} />
-                  </button>
-                )}
+                {status.qualifiedQuests.allPassed &&
+                  (onPromote ? (
+                    <button
+                      type="button"
+                      onClick={onPromote}
+                      disabled={loadingAction}
+                      className="px-4 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-pink-500 via-rose-500 to-emerald-500 text-white shadow-md shadow-pink-500/25 hover:opacity-95 transition-all cursor-pointer animate-pulse inline-flex items-center gap-1.5"
+                    >
+                      <span>🎉 Duyệt Thăng Hạng</span>
+                      <WingRoleLabel text={formatCareerRoleName(status.targetRole)} />
+                    </button>
+                  ) : (
+                    <span className="text-[11px] font-semibold text-slate-400 bg-slate-800/80 px-3 py-1.5 rounded-xl border border-slate-700/50">
+                      Chờ Super Admin (Danny) duyệt
+                    </span>
+                  ))}
 
-                {isMasterTech && (
+                {isMasterTech && onSwitchSpecialist && (
                   <button
                     type="button"
                     onClick={onSwitchSpecialist}
@@ -2845,23 +2850,31 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
 
         <div className="shrink-0 flex items-center gap-2">
           {status.qualifiedQuests.allPassed ? (
-            <button
-              type="button"
-              onClick={onPromote}
-              disabled={loadingAction}
-              className="px-4 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-pink-500 via-rose-500 to-emerald-500 text-white shadow-lg shadow-pink-500/30 hover:opacity-95 transition-all cursor-pointer animate-pulse active:scale-95"
-            >
-              🎉 Duyệt Thăng Hạng
-            </button>
+            onPromote ? (
+              <button
+                type="button"
+                onClick={onPromote}
+                disabled={loadingAction}
+                className="px-4 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-pink-500 via-rose-500 to-emerald-500 text-white shadow-lg shadow-pink-500/30 hover:opacity-95 transition-all cursor-pointer animate-pulse active:scale-95"
+              >
+                🎉 Duyệt Thăng Hạng
+              </button>
+            ) : (
+              <span className="text-[11px] font-semibold text-slate-400 bg-slate-800/80 px-2.5 py-1.5 rounded-xl border border-slate-700/50">
+                Chờ Danny duyệt
+              </span>
+            )
           ) : (
-            <button
-              type="button"
-              onClick={onActivateTrial}
-              disabled={loadingAction || !isQaPassed}
-              className="px-4 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-md shadow-amber-500/20 hover:opacity-95 transition-all cursor-pointer active:scale-95 disabled:opacity-40"
-            >
-              🚀 Mở Ải 30 Ngày
-            </button>
+            onActivateTrial && (
+              <button
+                type="button"
+                onClick={onActivateTrial}
+                disabled={loadingAction || !isQaPassed}
+                className="px-4 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-md shadow-amber-500/20 hover:opacity-95 transition-all cursor-pointer active:scale-95 disabled:opacity-40"
+              >
+                🚀 Mở Ải 30 Ngày
+              </button>
+            )
           )}
         </div>
       </div>

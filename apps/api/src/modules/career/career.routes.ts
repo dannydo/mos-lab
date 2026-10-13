@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
-import { requireAuth } from '../../middlewares/auth.js';
+import { requireAuth, requireSuperAdmin } from '../../middlewares/auth.js';
 import { isAdminOrSuperAdminRole, CareerProgressionConfig, CareerPeriod } from '@mos-lab/shared';
 import { CareerProgressionService } from './career.service.js';
 
@@ -170,7 +170,7 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
   fastify.post<{ Params: { staffId: string } }>(
     '/career/staff/:staffId/trial',
     {
-      preHandler: [requireAuth],
+      preHandler: [requireAuth, requireSuperAdmin],
     },
     async (request, reply) => {
       const user = (request as any).user;
@@ -197,7 +197,7 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
   fastify.post<{ Params: { staffId: string }; Body: { newRole: any; force?: boolean } }>(
     '/career/staff/:staffId/promote',
     {
-      preHandler: [requireAuth],
+      preHandler: [requireAuth, requireSuperAdmin],
     },
     async (request, reply) => {
       const user = (request as any).user;
@@ -230,7 +230,7 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
   fastify.post<{ Params: { staffId: string }; Body: { role: any; reason?: string } }>(
     '/career/staff/:staffId/set-role',
     {
-      preHandler: [requireAuth],
+      preHandler: [requireAuth, requireSuperAdmin],
     },
     async (request, reply) => {
       const user = (request as any).user;
@@ -263,7 +263,7 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
   fastify.post<{ Params: { staffId: string }; Body: { newRole: any; reason?: string } }>(
     '/career/staff/:staffId/demote',
     {
-      preHandler: [requireAuth],
+      preHandler: [requireAuth, requireSuperAdmin],
     },
     async (request, reply) => {
       const user = (request as any).user;
@@ -296,7 +296,7 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
   fastify.post<{ Params: { staffId: string } }>(
     '/career/staff/:staffId/specialist-path',
     {
-      preHandler: [requireAuth],
+      preHandler: [requireAuth, requireSuperAdmin],
     },
     async (request, reply) => {
       const user = (request as any).user;
