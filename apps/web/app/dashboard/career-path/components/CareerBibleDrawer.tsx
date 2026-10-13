@@ -142,16 +142,16 @@ const BIBLE_TOPICS_MAP: Record<CareerBibleTopic, BibleTopicContent> = {
   },
   TIP_RATIO: {
     ruleId: 'CV-002',
-    ruleTitle: 'Ải 3: Tỷ Lệ Tip Cao Hơn Trung Bình Shop +10%',
+    ruleTitle: 'Ải 3: Tỷ Lệ Tip Cao Hơn Trung Bình Shop',
     version: '2.0.0',
     icon: <HandCoins className="w-5 h-5 text-indigo-400" />,
     subtitle: 'Thước đo tình cảm và sự hài lòng chạm đáy tim khách hàng',
     commandments: [
-      'Tỷ lệ khách boa tip của Chuyên Viên phải cao hơn tỷ lệ tip bình quân toàn salon tối thiểu 10%.',
-      'Ví dụ: Nếu trung bình salon là 40% khách tip, Chuyên Viên phải đạt từ 44% trở lên (+10% so với TB shop).',
+      'Tỷ lệ khách boa tip của Chuyên Viên phải cao hơn tỷ lệ tip bình quân toàn salon theo định mức cấu hình (mặc định +5% cho CV và +15% cho CV++).',
+      'Ví dụ: Nếu trung bình salon là 40% khách tip và chuẩn định mức là +5%, Chuyên Viên phải đạt từ 42% trở lên (40% + 5% của 40%).',
       'Khách tự nguyện tip tiền là minh chứng cao nhất cho sự chu đáo, tận tâm và tay nghề êm ái.',
     ],
-    rewardFormula: 'Tỷ lệ Tip ≥ 1.1 × Tỷ lệ Tip Trung Bình Chi Nhánh',
+    rewardFormula: 'Tỷ lệ Tip ≥ (1 + % Vượt Chuẩn Shop) × Tỷ lệ Tip Trung Bình Chi Nhánh',
     routeScope: '/dashboard/career-path',
   },
   QA: {

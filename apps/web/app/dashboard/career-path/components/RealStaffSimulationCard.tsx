@@ -120,12 +120,12 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
         minOrders: 350,
         maxFixRate: 0.015,
         minTipRatioAboveShop: 0.15,
-        minBananaCount: 60,
+        minBananaCount: 25,
         minHappinessIndex: 0.8,
         crossConsultCommissionRate: 0.025,
         maxDisciplinaryViolations: 0,
         minWeeklyQaAudits: 1,
-        minQaAudits: 12,
+        minQaAudits: 4,
         requireZeroFailedAudits: true,
         trialDurationDays: 30,
         allowSelfConsultTrial: true,
@@ -142,21 +142,21 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
       }
     : config.cvToCvPlus ||
       config.cvToCc || {
-        minOrders: 300,
+        minOrders: 330,
         minConsecutiveMonths: 3,
-        minTipRatioAboveShop: 0.1,
-        maxFixRate: 0.02,
+        minTipRatioAboveShop: 0.05,
+        maxFixRate: 0.015,
         minHappinessIndex: 0.7,
-        minBananaCount: 45,
+        minBananaCount: 20,
         maxDisciplinaryViolations: 0,
         minWeeklyQaAudits: 1,
-        minQaAudits: 12,
+        minQaAudits: 4,
         requireZeroFailedAudits: true,
         trialDurationDays: 30,
-        minSelfComboRate: 0.2,
+        minSelfComboRate: 0.21,
         allowSelfConsultTrial: true,
-        expectedSerumsPerWeek: 4,
-        expectedCombosPerMonth: 6,
+        expectedSerumsPerWeek: 1,
+        expectedCombosPerMonth: 8,
         serumOriginalPriceBonus: 100000,
         serumDiscountedPriceBonus: 50000,
         comboUnder2mBonus: 50000,
@@ -321,12 +321,12 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
 
   const metrics = status.metrics;
 
-  const targetOrders = targetReq.minOrders ?? (isTargetCvPlusPlus ? 350 : 300);
-  const targetMaxFix = targetReq.maxFixRate ?? (isTargetCvPlusPlus ? 0.015 : 0.02);
-  const minTipRatioAboveShop = targetReq.minTipRatioAboveShop ?? (isTargetCvPlusPlus ? 0.15 : 0.1);
-  const minBananaCount = targetReq.minBananaCount ?? (isTargetCvPlusPlus ? 60 : 45);
+  const targetOrders = targetReq.minOrders ?? (isTargetCvPlusPlus ? 350 : 330);
+  const targetMaxFix = targetReq.maxFixRate ?? (isTargetCvPlusPlus ? 0.015 : 0.015);
+  const minTipRatioAboveShop = targetReq.minTipRatioAboveShop ?? (isTargetCvPlusPlus ? 0.15 : 0.05);
+  const minBananaCount = targetReq.minBananaCount ?? (isTargetCvPlusPlus ? 25 : 20);
   const minHappinessIndex = targetReq.minHappinessIndex ?? (isTargetCvPlusPlus ? 0.8 : 0.7);
-  const minSelfComboRate = targetReq.minSelfComboRate ?? (isTargetCvPlusPlus ? 0.3 : 0.2);
+  const minSelfComboRate = targetReq.minSelfComboRate ?? (isTargetCvPlusPlus ? 0.3 : 0.21);
   const minSelfComboPercent = Math.round(minSelfComboRate * 100);
 
   const staffTipRate =
@@ -348,7 +348,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
   // 1. Số ca làm / 3 tháng
   const isOrdersPassed = (metrics.ordersCount || 0) >= targetOrders;
   const ordersGap = Math.max(0, targetOrders - (metrics.ordersCount || 0));
-  const ordersProgressPercent = Math.min(100, Math.round(((metrics.ordersCount || 0) / (targetOrders || 300)) * 100));
+  const ordersProgressPercent = Math.min(100, Math.round(((metrics.ordersCount || 0) / (targetOrders || 330)) * 100));
 
   // 2. Tỷ lệ fix
   const isFixPassed = (metrics.fixRate || 0) <= targetMaxFix;
@@ -1223,7 +1223,10 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                       <Eye className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                       <span className="text-xs font-bold text-white tracking-wide truncate">3. Sản lượng mi</span>
                     </div>
-                    <Tooltip title="Nhấn để xem trích lục Kinh Thánh mOS về định mức 330 bộ mi" placement="topRight">
+                    <Tooltip
+                      title={`Nhấn để xem trích lục Kinh Thánh mOS về định mức ${targetOrders} bộ mi`}
+                      placement="topRight"
+                    >
                       <button
                         type="button"
                         data-testid="info-btn-orders"
@@ -1765,14 +1768,14 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     {localOrders}/{targetOrders}
                   </div>
                   <div className="text-[9px] font-bold text-slate-400 truncate max-w-full">
-                    {isSimOrdersPassed ? '✓ 330 Mi' : `Thiếu ${Math.max(0, targetOrders - localOrders)}`}
+                    {isSimOrdersPassed ? `✓ ${targetOrders} Mi` : `Thiếu ${Math.max(0, targetOrders - localOrders)}`}
                   </div>
                   <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white/10 text-slate-400 flex items-center justify-center text-[9px] font-bold">
                     i
                   </span>
                 </button>
 
-                {/* Ải 2: Fix <= 1.5% */}
+                {/* Ải 2: Fix <= targetMaxFix */}
                 <button
                   type="button"
                   data-testid="badge-quest-fix"
@@ -1794,14 +1797,16 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     {((metrics.fixRate || 0) * 100).toFixed(1)}%
                   </div>
                   <div className="text-[9px] font-bold text-slate-400 truncate max-w-full">
-                    {isFixPassed ? '✓ Fix ≤ 1.5%' : '✕ Quá 1.5%'}
+                    {isFixPassed
+                      ? `✓ Fix ≤ ${(targetMaxFix * 100).toFixed(1)}%`
+                      : `✕ Quá ${(targetMaxFix * 100).toFixed(1)}%`}
                   </div>
                   <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white/10 text-slate-400 flex items-center justify-center text-[9px] font-bold">
                     i
                   </span>
                 </button>
 
-                {/* Ải 3: Tip >= +10% TB Shop */}
+                {/* Ải 3: Tip >= minTipRatioAboveShop TB Shop */}
                 <button
                   type="button"
                   data-testid="badge-quest-tip"
@@ -1822,7 +1827,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   <div className="text-[11px] font-black tabular-nums text-white">{staffTipRatePercent}%</div>
                   <div className="text-[9px] font-bold text-slate-400 truncate max-w-full">
                     {isSimTipPassed
-                      ? `✓ Tip +${(minTipRatioAboveShop * 100).toFixed(0)}%`
+                      ? `✓ Tip +${Math.round(minTipRatioAboveShop * 100)}%`
                       : `Cần ${targetTipRatePercent}%`}
                   </div>
                   <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white/10 text-slate-400 flex items-center justify-center text-[9px] font-bold">
@@ -1830,7 +1835,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   </span>
                 </button>
 
-                {/* Ải 4: QA 4 lần */}
+                {/* Ải 4: QA định kỳ */}
                 <button
                   type="button"
                   data-testid="badge-quest-qa"
@@ -1848,16 +1853,18 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   >
                     <ShieldCheck className="w-5 h-5" />
                   </div>
-                  <div className="text-[11px] font-black tabular-nums text-white">{totalQaAudits}/4 bài</div>
+                  <div className="text-[11px] font-black tabular-nums text-white">
+                    {totalQaAudits}/{requiredQaAudits} bài
+                  </div>
                   <div className="text-[9px] font-bold text-slate-400 truncate max-w-full">
-                    {isQaPassed ? '✓ 4 Lần QA' : 'Thiếu bài'}
+                    {isQaPassed ? `✓ ${requiredQaAudits} Lần QA` : 'Thiếu bài'}
                   </div>
                   <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white/10 text-slate-400 flex items-center justify-center text-[9px] font-bold">
                     i
                   </span>
                 </button>
 
-                {/* Ải 5: 20 Chuối */}
+                {/* Ải 5: Chuối */}
                 <button
                   type="button"
                   data-testid="badge-quest-banana"
@@ -1875,16 +1882,20 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   >
                     <span className="text-xl">🍌</span>
                   </div>
-                  <div className="text-[11px] font-black tabular-nums text-white">{bananaCount}/20</div>
+                  <div className="text-[11px] font-black tabular-nums text-white">
+                    {bananaCount}/{minBananaCount}
+                  </div>
                   <div className="text-[9px] font-bold text-slate-400 truncate max-w-full">
-                    {isBananaPassed ? '✓ 20 Chuối' : `Thiếu ${Math.max(0, 20 - bananaCount)}`}
+                    {isBananaPassed
+                      ? `✓ ${minBananaCount} Chuối`
+                      : `Thiếu ${Math.max(0, minBananaCount - bananaCount)}`}
                   </div>
                   <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white/10 text-slate-400 flex items-center justify-center text-[9px] font-bold">
                     i
                   </span>
                 </button>
 
-                {/* Ải 6: HI >= 70% */}
+                {/* Ải 6: HI */}
                 <button
                   type="button"
                   data-testid="badge-quest-hi"
@@ -1903,10 +1914,10 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                     <Heart className="w-5 h-5 fill-current/20" />
                   </div>
                   <div className="text-[11px] font-black tabular-nums text-white">
-                    {Math.round((happinessIndex || 0.75) * 100)}%
+                    {Math.round((happinessIndex || 0) * 100)}%
                   </div>
                   <div className="text-[9px] font-bold text-slate-400 truncate max-w-full">
-                    {isHiPassed ? '✓ HI ≥ 70%' : 'Thiếu HI'}
+                    {isHiPassed ? `✓ HI ≥ ${Math.round(minHappinessIndex * 100)}%` : 'Thiếu HI'}
                   </div>
                   <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-white/10 text-slate-400 flex items-center justify-center text-[9px] font-bold">
                     i
@@ -2274,7 +2285,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                       <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-[10px] space-y-1.5 shadow-2xs">
                         <div className="flex items-center justify-between font-bold text-slate-200">
                           <span className="flex items-center gap-1 text-rose-400">
-                            💡 TB {branchName} + 10% của {branchName}
+                            💡 TB {branchName} + {Math.round(minTipRatioAboveShop * 100)}% của {branchName}
                           </span>
                           <span className="text-emerald-400 font-extrabold tabular-nums">
                             ≥ {targetTipRatePercent}%
@@ -2286,7 +2297,9 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                             <div className="text-slate-200 font-black tabular-nums">{shopTipRatePercent}%</div>
                           </div>
                           <div className="bg-slate-900/60 p-1 rounded-lg">
-                            <div className="text-slate-400 text-[9px] truncate">+10% {branchShortName}</div>
+                            <div className="text-slate-400 text-[9px] truncate">
+                              +{Math.round(minTipRatioAboveShop * 100)}% {branchShortName}
+                            </div>
                             <div className="text-amber-400 font-black tabular-nums">+{shopBonusPercent}%</div>
                           </div>
                           <div className="bg-slate-900/60 p-1 rounded-lg border border-emerald-500/30">
@@ -2359,7 +2372,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                           }`}
                         />
                         <span className="font-bold text-xs sm:text-sm text-slate-100 truncate">
-                          4. QA/QC ≥ {requiredQaAudits} lần / 3T
+                          4. QA/QC ≥ {requiredQaAudits} lần / tháng
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
@@ -2391,7 +2404,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                       <div className="text-base sm:text-lg font-black text-white tabular-nums">
                         {totalQaAudits}{' '}
                         <span className="text-xs font-normal text-slate-400">
-                          / {requiredQaAudits} lần (chuẩn ≥ {requiredQaAudits}L/3T)
+                          / {requiredQaAudits} lần (chuẩn ≥ {requiredQaAudits}L/tháng)
                         </span>
                       </div>
                       <span
@@ -2658,7 +2671,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                       <div className="text-base sm:text-lg font-black text-amber-400 tabular-nums">
                         {bananaCount} 🍌{' '}
                         <span className="text-xs font-normal text-slate-400">
-                          (chuẩn ≥ {minBananaCount} Chuối / 90N)
+                          (chuẩn ≥ {minBananaCount} Chuối / tháng)
                         </span>
                       </div>
                       <span
@@ -2684,9 +2697,8 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                       <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium pt-0.5">
                         <span className="truncate">
                           {isBananaPassed
-                            ? '✓ Đạt chuẩn yêu thương'
-                            : `⚡ Thiếu ${Math.max(0, minBananaCount - bananaCount)} chuối`}{' '}
-                          (~15 chuối/tháng)
+                            ? `✓ Đạt chuẩn yêu thương (≥ ${minBananaCount} chuối)`
+                            : `⚡ Thiếu ${Math.max(0, minBananaCount - bananaCount)} chuối (chuẩn ≥ ${minBananaCount} chuối/tháng)`}
                         </span>
                         <span className="text-rose-400/80 hover:text-rose-300 text-[10px] font-semibold shrink-0">
                           Chi tiết ▾
@@ -2710,17 +2722,16 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                           <div className="font-bold text-xs mt-0.5">
                             <span className={bananaCount >= minBananaCount ? 'text-emerald-400' : 'text-amber-400'}>
                               {bananaCount >= minBananaCount
-                                ? 'Rất cao (≥ 45)'
-                                : bananaCount >= 15
-                                  ? 'Đang tích cực'
+                                ? `Đạt chuẩn (≥ ${minBananaCount})`
+                                : bananaCount >= Math.round(minBananaCount * 0.75)
+                                  ? 'Đang nỗ lực'
                                   : 'Cần gắn kết'}
                             </span>
                           </div>
                         </div>
                       </div>
                       <div className="text-[9px] text-slate-400 italic">
-                        * Chỉ đếm chuối từ thiên thần khác tặng lúc check-in (loại trừ tự tặng &amp; checkout). Định mức
-                        ~15 chuối/tháng.
+                        * Chỉ đếm chuối từ thiên thần khác tặng lúc check-in (loại trừ tự tặng &amp; checkout).
                       </div>
                       <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">
                         <span className="truncate">

@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { requireAuth, requireSuperAdmin } from '../../middlewares/auth.js';
-import { isAdminOrSuperAdminRole, CareerProgressionConfig, CareerPeriod } from '@mos-lab/shared';
+import { CareerProgressionConfig, CareerPeriod } from '@mos-lab/shared';
 import { CareerProgressionService } from './career.service.js';
 
 export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
@@ -19,23 +19,16 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
   });
 
   /**
-   * Cập nhật cấu hình lộ trình thăng tiến (Chỉ Admin / Super Admin)
+   * Cập nhật cấu hình lộ trình thăng tiến (Chỉ Super Admin - Danny)
    * PUT /api/career/config
    */
   fastify.put<{ Body: Partial<CareerProgressionConfig> }>(
     '/career/config',
     {
-      preHandler: [requireAuth],
+      preHandler: [requireAuth, requireSuperAdmin],
     },
     async (request, reply) => {
       const user = (request as any).user;
-      if (!isAdminOrSuperAdminRole(user?.role)) {
-        return reply.status(403).send({
-          success: false,
-          message: 'Chỉ Quản trị viên cấp cao mới có quyền cập nhật cấu hình lộ trình thăng tiến',
-        });
-      }
-
       try {
         const updatedConfig = await CareerProgressionService.updateConfig(
           fastify,

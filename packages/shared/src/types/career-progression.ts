@@ -267,7 +267,7 @@ export interface CareerProgressionConfig {
 const DEFAULT_CV_TO_CV_PLUS: CvToCvPlusRequirements = {
   minOrders: 330, // 330 bộ mi trong 3 tháng liền (chuẩn 110 bộ/tháng)
   minConsecutiveMonths: 3,
-  minTipRatioAboveShop: 0.1, // 10% cao hơn trung bình shop
+  minTipRatioAboveShop: 0.05, // 5% cao hơn trung bình shop
   maxFixRate: 0.015, // Tỷ lệ lỗi Fix tối đa 1.5%
   minHappinessIndex: 0.7, // Hệ thống HI tối thiểu 70% từ check-in thả tim
   minBananaCount: 20, // Chuối yêu thương nhận từ thiên thần khác lúc check-in trong tháng gần nhất (chuẩn 20 chuối/tháng)

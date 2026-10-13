@@ -73,24 +73,33 @@ test('GET /career/config returns default dynamic config successfully', async () 
   assert.equal(body.data.cvToCc.minOrders, DEFAULT_CAREER_PROGRESSION_CONFIG.cvToCc.minOrders);
 });
 
-test('PUT /career/config blocks non-admin and allows admin to update config', async () => {
+test('PUT /career/config blocks non-super-admin and allows super_admin to update config', async () => {
   const app = createTestApp();
   await app.register(careerRoutes);
 
   // 1. Technician should be blocked with 403 Forbidden
-  const blockedRes = await app.inject({
+  const technicianRes = await app.inject({
     method: 'PUT',
     url: '/career/config',
     headers: { 'x-test-role': 'technician' },
     payload: { cvToCc: { minOrders: 280 } },
   });
-  assert.equal(blockedRes.statusCode, 403);
+  assert.equal(technicianRes.statusCode, 403);
 
-  // 2. Admin should succeed with 200 OK
-  const allowedRes = await app.inject({
+  // 2. Ordinary Admin should also be blocked with 403 Forbidden (Only Super Admin / Danny can edit)
+  const adminRes = await app.inject({
     method: 'PUT',
     url: '/career/config',
     headers: { 'x-test-role': 'admin' },
+    payload: { cvToCc: { minOrders: 280 } },
+  });
+  assert.equal(adminRes.statusCode, 403);
+
+  // 3. Super Admin should succeed with 200 OK
+  const allowedRes = await app.inject({
+    method: 'PUT',
+    url: '/career/config',
+    headers: { 'x-test-role': 'super_admin' },
     payload: {
       cvToCc: {
         ...DEFAULT_CAREER_PROGRESSION_CONFIG.cvToCc,
@@ -129,6 +138,20 @@ test('GET /career/my-progression calculates technician metrics against dynamic c
   assert.equal(body.data.qualifiedQuests.foundationCompleted, false);
 });
 
+test('POST /career/staff/:id/promote rejects non-Super Admin with 403', async () => {
+  const app = createTestApp();
+  await app.register(careerRoutes);
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/career/staff/10/promote',
+    headers: { 'x-test-role': 'admin' },
+    payload: { newRole: 'CV_PLUS' },
+  });
+
+  assert.equal(res.statusCode, 403);
+});
+
 test('POST /career/staff/:id/trial rejects if QA/QC audit is not passed', async () => {
   const app = createTestApp();
   await app.register(careerRoutes);
@@ -136,7 +159,7 @@ test('POST /career/staff/:id/trial rejects if QA/QC audit is not passed', async 
   const res = await app.inject({
     method: 'POST',
     url: '/career/staff/10/trial',
-    headers: { 'x-test-role': 'admin' },
+    headers: { 'x-test-role': 'super_admin' },
   });
 
   assert.equal(res.statusCode, 400);
@@ -152,7 +175,7 @@ test('POST /career/staff/:id/promote requires QA/QC audit to be passed', async (
   const res = await app.inject({
     method: 'POST',
     url: '/career/staff/10/promote',
-    headers: { 'x-test-role': 'admin' },
+    headers: { 'x-test-role': 'super_admin' },
     payload: { newRole: 'CV_PLUS' },
   });
 

@@ -39,6 +39,6 @@ test('ordinary Admin is rejected by a Super Admin-only guard', async () => {
   assert.equal(statusCode, 403);
   assert.deepEqual(payload, {
     error: 'Forbidden',
-    message: 'Chỉ Super Admin mới có quyền truy cập khu vực này.',
+    message: 'Chỉ Super Admin (Danny) mới có quyền thực hiện thao tác này.',
   });
 });

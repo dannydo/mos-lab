@@ -7336,7 +7336,7 @@
         "path": "/api/career/my-progression",
         "module": "career",
         "handler": "inlineHandler",
-        "line": 61
+        "line": 54
       }
     },
     {
@@ -7350,7 +7350,7 @@
         "path": "/api/career/sync-prod",
         "module": "career",
         "handler": "inlineHandler",
-        "line": 108
+        "line": 101
       }
     },
     {
@@ -29911,7 +29911,7 @@
       "filePath": "apps/api/src/middlewares/auth.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 1620,
+        "sizeBytes": 1631,
         "lineCount": 45,
         "ext": ".ts"
       }
@@ -29924,8 +29924,8 @@
       "filePath": "apps/api/src/middlewares/auth.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5793,
-        "lineCount": 169,
+        "sizeBytes": 5789,
+        "lineCount": 168,
         "ext": ".ts"
       }
     },
@@ -30977,8 +30977,8 @@
       "filePath": "apps/api/src/modules/career/career.routes.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5449,
-        "lineCount": 164,
+        "sizeBytes": 6182,
+        "lineCount": 187,
         "ext": ".ts"
       }
     },
@@ -30990,8 +30990,8 @@
       "filePath": "apps/api/src/modules/career/career.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14688,
-        "lineCount": 408,
+        "sizeBytes": 14419,
+        "lineCount": 401,
         "ext": ".ts"
       }
     },
@@ -36664,6 +36664,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/career-path/career-path-fx.ts",
+      "type": "File",
+      "label": "career-path-fx.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/career-path-fx.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3615,
+        "lineCount": 127,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/career-path/career-path.constants.ts",
       "type": "File",
       "label": "career-path.constants.ts",
@@ -36697,7 +36710,7 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerBibleDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 16408,
+        "sizeBytes": 16517,
         "lineCount": 326,
         "ext": ".tsx"
       }
@@ -36710,8 +36723,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/CareerConfigDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 74808,
-        "lineCount": 1479,
+        "sizeBytes": 75795,
+        "lineCount": 1495,
         "ext": ".tsx"
       }
     },
@@ -36762,8 +36775,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 153126,
-        "lineCount": 2885,
+        "sizeBytes": 153433,
+        "lineCount": 2882,
         "ext": ".tsx"
       }
     },
@@ -36788,8 +36801,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 39653,
-        "lineCount": 925,
+        "sizeBytes": 36506,
+        "lineCount": 819,
         "ext": ".tsx"
       }
     },
@@ -89294,7 +89307,7 @@
     }
   ],
   "stats": {
-    "totalNodes": 3176,
+    "totalNodes": 3177,
     "totalEdges": 6831,
     "nodeTypeCounts": {
       "Workspace": 3,
@@ -89304,7 +89317,7 @@
       "SharedType": 1145,
       "DesignToken": 12,
       "UIComponent": 219,
-      "File": 906
+      "File": 907
     },
     "edgeTypeCounts": {
       "EXPORTS": 1321,
