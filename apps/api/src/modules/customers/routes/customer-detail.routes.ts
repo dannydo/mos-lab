@@ -8,6 +8,7 @@ import { ComboRecognitionService } from '../services/combo-recognition.service.j
 import { LashSpecificationService } from '../services/lash-specification.service.js';
 import { TeamService } from '../../teams/team.service.js';
 import { createRouteHelpers } from './helpers.js';
+import { daysSinceVisit } from '../../projections/customer-visit-projection.service.js';
 
 export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
   const { ensureTelesalesCustomerAccess, ensureTelesalesCustomerMutateAccess } = createRouteHelpers(fastify);
@@ -272,13 +273,30 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
         LIMIT 1
       `;
 
-      const result = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql, customerId);
+      const [result, lastCompletedOrder] = await Promise.all([
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql, customerId),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT COALESCE(ro.actual_booking_date_start, o.booking_date_start) as bookingDate
+           FROM \`order\` o
+           LEFT JOIN report_order ro ON o.id = ro.order_id
+           WHERE o.user_id = ? AND o.order_state = 'Completed'
+           ORDER BY COALESCE(ro.actual_booking_date_start, o.booking_date_start) DESC
+           LIMIT 1`,
+          customerId
+        ),
+      ]);
 
       if (result.length === 0) {
         return reply.status(404).send({ error: 'Not Found', message: 'Customer not found' });
       }
 
       const row = result[0];
+      const latestVisitDate =
+        lastCompletedOrder.length > 0 && lastCompletedOrder[0]?.bookingDate
+          ? lastCompletedOrder[0].bookingDate
+          : null;
+      const daysSince = latestVisitDate ? daysSinceVisit(latestVisitDate) : null;
+
       const customer = {
         id: row.id,
         name: row.name,
@@ -286,8 +304,8 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
         email: row.email,
         gender: row.gender,
         dob: row.dob ? new Date(row.dob).toISOString().split('T')[0] : null,
-        lastVisit: row.lastVisit ? new Date(row.lastVisit).toISOString() : null,
-        daysSinceLastVisit: row.daysSinceLastVisit !== null ? Number(row.daysSinceLastVisit) : null,
+        lastVisit: latestVisitDate ? new Date(latestVisitDate).toISOString() : null,
+        daysSinceLastVisit: daysSince !== null ? Number(daysSince) : null,
         bucket: row.bucket as BucketType,
         comboBalance:
           row.bucket !== 'SINGLE'
@@ -1254,6 +1272,11 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
         return sum + Number(cb.totalNormalBalanceAmount || 0) + Number(cb.totalRetainBalanceAmount || 0);
       }, 0);
 
+      const latestVisitDate =
+        completedOrders.length > 0 && completedOrders[0].bookingDate
+          ? completedOrders[0].bookingDate
+          : null;
+      const daysSince = latestVisitDate ? daysSinceVisit(latestVisitDate) : null;
       const isMaskedRole = shouldMaskCustomerPhone(request.user?.role);
 
       return {
@@ -1269,12 +1292,9 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
           email: row.email,
           gender: row.gender,
           dob: row.dob ? new Date(row.dob).toISOString().split('T')[0] : null,
-          lastVisit: row.lastVisit ? new Date(row.lastVisit).toISOString() : null,
-          lastCompletedVisit:
-            completedOrders.length > 0 && completedOrders[0].bookingDate
-              ? new Date(completedOrders[0].bookingDate).toISOString()
-              : null,
-          daysSinceLastVisit: row.daysSinceLastVisit !== null ? Number(row.daysSinceLastVisit) : null,
+          lastVisit: latestVisitDate ? new Date(latestVisitDate).toISOString() : null,
+          lastCompletedVisit: latestVisitDate ? new Date(latestVisitDate).toISOString() : null,
+          daysSinceLastVisit: daysSince !== null ? Number(daysSince) : null,
           bucket: row.bucket,
           avatar: row.avatar,
           onlineConsultant: onlineConsultantName,
@@ -1717,6 +1737,11 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
         }
       }
 
+      const latestVisitDate =
+        completedOrders.length > 0 && completedOrders[0]?.bookingDate
+          ? completedOrders[0].bookingDate
+          : null;
+      const daysSince = latestVisitDate ? daysSinceVisit(latestVisitDate) : null;
       const isMaskedRole = shouldMaskCustomerPhone(request.user?.role);
 
       return {
@@ -1732,11 +1757,9 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
           email: row.email,
           gender: row.gender,
           dob: row.dob ? new Date(row.dob).toISOString().split('T')[0] : null,
-          lastVisit: row.lastVisit ? new Date(row.lastVisit).toISOString() : null,
-          lastCompletedVisit: completedOrders[0]?.bookingDate
-            ? new Date(completedOrders[0].bookingDate).toISOString()
-            : null,
-          daysSinceLastVisit: row.daysSinceLastVisit !== null ? Number(row.daysSinceLastVisit) : null,
+          lastVisit: latestVisitDate ? new Date(latestVisitDate).toISOString() : null,
+          lastCompletedVisit: latestVisitDate ? new Date(latestVisitDate).toISOString() : null,
+          daysSinceLastVisit: daysSince !== null ? Number(daysSince) : null,
           bucket: row.bucket,
           avatar: row.avatar,
           onlineConsultant: onlineConsultantName,

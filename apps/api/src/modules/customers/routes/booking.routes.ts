@@ -276,14 +276,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         Number(finalPrice) || 0
       );
 
-      // 6. Update user's last_order_booking date
-      await fastify.prisma.legacy.$executeRawUnsafe(
-        `UPDATE user_profile SET last_order_booking = ? WHERE user_id = ?`,
-        mysqlStart,
-        finalCustomerId
-      );
-
-      // 7. Check and assign customer to the logged-in CRM staff member if not already assigned
+      // 6. Check and assign customer to the logged-in CRM staff member if not already assigned
       const existingAssignment = await fastify.prisma.crm.crmCustomerAssignment.findUnique({
         where: { legacyUserId: finalCustomerId },
       });
@@ -832,12 +825,6 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
             orderId
           );
         }
-
-        await tx.$executeRawUnsafe(
-          `UPDATE user_profile SET last_order_booking = ? WHERE user_id = ?`,
-          mysqlStart,
-          finalCustomerId
-        );
       });
 
       // 6. Audit Log Recording
