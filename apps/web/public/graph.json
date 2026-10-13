@@ -2437,7 +2437,7 @@
         "dbSource": "crm",
         "modelName": "CrmBkGame",
         "tableName": "crm_bk_games",
-        "fieldCount": 21,
+        "fieldCount": 23,
         "readOnly": false,
         "isCatalogException": false,
         "relations": [],
@@ -2477,6 +2477,24 @@
         "readOnly": false,
         "isCatalogException": false,
         "relations": ["gameId", "teamId"],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmBkGameDoneBonus",
+      "type": "PrismaModel",
+      "label": "crm.CrmBkGameDoneBonus",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmBkGameDoneBonus",
+        "tableName": "crm_bk_game_done_bonuses",
+        "fieldCount": 16,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": ["gameId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -9394,7 +9412,7 @@
         "path": "/api/kpi/bk/booking/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 55
+        "line": 50
       }
     },
     {
@@ -9408,7 +9426,7 @@
         "path": "/api/kpi/bk/booking/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 66
+        "line": 61
       }
     },
     {
@@ -9422,7 +9440,7 @@
         "path": "/api/kpi/bk/done/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 283
+        "line": 278
       }
     },
     {
@@ -9436,7 +9454,7 @@
         "path": "/api/kpi/bk/done/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 294
+        "line": 289
       }
     },
     {
@@ -9450,7 +9468,7 @@
         "path": "/api/kpi/bk/tip/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 525
+        "line": 520
       }
     },
     {
@@ -9464,7 +9482,7 @@
         "path": "/api/kpi/bk/tip/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 638
+        "line": 633
       }
     },
     {
@@ -9478,7 +9496,7 @@
         "path": "/api/kpi/bk/revenue/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 742
+        "line": 737
       }
     },
     {
@@ -9492,7 +9510,7 @@
         "path": "/api/kpi/bk/revenue/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 753
+        "line": 748
       }
     },
     {
@@ -9506,7 +9524,7 @@
         "path": "/api/kpi/bk/paystub",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 849
+        "line": 844
       }
     },
     {
@@ -9520,7 +9538,7 @@
         "path": "/api/kpi/bk/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 882
+        "line": 877
       }
     },
     {
@@ -9534,7 +9552,7 @@
         "path": "/api/kpi/bk/attendance-exception",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 916
+        "line": 911
       }
     },
     {
@@ -9548,7 +9566,7 @@
         "path": "/api/kpi/bk/attendance-exception/audit-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 971
+        "line": 966
       }
     },
     {
@@ -9562,7 +9580,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 989
+        "line": 984
       }
     },
     {
@@ -9576,7 +9594,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1034
+        "line": 1029
       }
     },
     {
@@ -9590,7 +9608,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1086
+        "line": 1081
       }
     },
     {
@@ -9604,7 +9622,21 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1098
+        "line": 1093
+      }
+    },
+    {
+      "id": "route:GET:/api/kpi/bk/games/:id/done-bonuses",
+      "type": "FastifyRoute",
+      "label": "GET /api/kpi/bk/games/:id/done-bonuses",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/kpi/bk/games/:id/done-bonuses",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 1114
       }
     },
     {
@@ -9618,7 +9650,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1119
+        "line": 1137
       }
     },
     {
@@ -9632,7 +9664,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1137
+        "line": 1155
       }
     },
     {
@@ -9646,7 +9678,7 @@
         "path": "/api/kpi/bk/games/:id/finalize",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1158
+        "line": 1176
       }
     },
     {
@@ -9660,7 +9692,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1179
+        "line": 1197
       }
     },
     {
@@ -9674,7 +9706,7 @@
         "path": "/api/kpi/cc-paystub",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 75
+        "line": 71
       }
     },
     {
@@ -9688,7 +9720,7 @@
         "path": "/api/kpi/cc-work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 800
+        "line": 796
       }
     },
     {
@@ -9702,7 +9734,7 @@
         "path": "/api/kpi/cc-payroll-allowance",
         "module": "kpi",
         "handler": "preHandler",
-        "line": 1082
+        "line": 1078
       }
     },
     {
@@ -9716,7 +9748,7 @@
         "path": "/api/kpi/cc-allowances",
         "module": "kpi",
         "handler": "preHandler",
-        "line": 1083
+        "line": 1079
       }
     },
     {
@@ -9730,7 +9762,7 @@
         "path": "/api/kpi/cc-allowances/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1086
+        "line": 1082
       }
     },
     {
@@ -9744,7 +9776,7 @@
         "path": "/api/kpi/cc-allowances",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1110
+        "line": 1106
       }
     },
     {
@@ -9758,7 +9790,7 @@
         "path": "/api/kpi/cc-legacy-sync",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1143
+        "line": 1139
       }
     },
     {
@@ -16720,6 +16752,66 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "BkGameTeam",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BkGameDoneBonusConditionType",
+      "type": "SharedType",
+      "label": "BkGameDoneBonusConditionType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk-game.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BkGameDoneBonusConditionType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BkGameDoneBonusRule",
+      "type": "SharedType",
+      "label": "BkGameDoneBonusRule",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk-game.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BkGameDoneBonusRule",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BkGameDoneBonusRecord",
+      "type": "SharedType",
+      "label": "BkGameDoneBonusRecord",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk-game.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BkGameDoneBonusRecord",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BkGameDoneBonusStaffSummary",
+      "type": "SharedType",
+      "label": "BkGameDoneBonusStaffSummary",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk-game.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BkGameDoneBonusStaffSummary",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:BkGameDoneBonusesSummary",
+      "type": "SharedType",
+      "label": "BkGameDoneBonusesSummary",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bk-game.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "BkGameDoneBonusesSummary",
         "package": "@mos-lab/shared"
       }
     },
@@ -29768,8 +29860,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13550033,
-        "lineCount": 294836,
+        "sizeBytes": 13630091,
+        "lineCount": 296794,
         "ext": ".ts"
       }
     },
@@ -31185,8 +31277,8 @@
       "filePath": "apps/api/src/modules/customers/customer-last-visit-invariant.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3167,
-        "lineCount": 82,
+        "sizeBytes": 3034,
+        "lineCount": 77,
         "ext": ".ts"
       }
     },
@@ -31224,7 +31316,7 @@
       "filePath": "apps/api/src/modules/customers/customer-phone-masking.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2341,
+        "sizeBytes": 2318,
         "lineCount": 52,
         "ext": ".ts"
       }
@@ -31926,8 +32018,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 47313,
-        "lineCount": 1195,
+        "sizeBytes": 48131,
+        "lineCount": 1213,
         "ext": ".ts"
       }
     },
@@ -31939,8 +32031,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cc-paystub.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 50117,
-        "lineCount": 1248,
+        "sizeBytes": 50079,
+        "lineCount": 1244,
         "ext": ".ts"
       }
     },
@@ -32134,8 +32226,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-game.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 8461,
-        "lineCount": 245,
+        "sizeBytes": 11142,
+        "lineCount": 318,
         "ext": ".ts"
       }
     },
@@ -32147,8 +32239,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-game.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 23269,
-        "lineCount": 669,
+        "sizeBytes": 34551,
+        "lineCount": 952,
         "ext": ".ts"
       }
     },
@@ -32173,8 +32265,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-salary.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 22704,
-        "lineCount": 657,
+        "sizeBytes": 22629,
+        "lineCount": 655,
         "ext": ".ts"
       }
     },
@@ -32329,8 +32421,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 135488,
-        "lineCount": 3249,
+        "sizeBytes": 135685,
+        "lineCount": 3252,
         "ext": ".ts"
       }
     },
@@ -34227,8 +34319,8 @@
       "filePath": "apps/api/src/scripts/data-migrations/20260915100000_add_phuong_giao_to_bk_control.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2408,
-        "lineCount": 62,
+        "sizeBytes": 2479,
+        "lineCount": 64,
         "ext": ".ts"
       }
     },
@@ -36079,6 +36171,32 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/bk/components/BkDoneBonusConfigTable.tsx",
+      "type": "File",
+      "label": "BkDoneBonusConfigTable.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/BkDoneBonusConfigTable.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 14402,
+        "lineCount": 346,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/BkDoneBonusDetailsDrawer.tsx",
+      "type": "File",
+      "label": "BkDoneBonusDetailsDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/BkDoneBonusDetailsDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 10314,
+        "lineCount": 297,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/bk/components/BkDoneTab.tsx",
       "type": "File",
       "label": "BkDoneTab.tsx",
@@ -36112,8 +36230,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameCreateModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38362,
-        "lineCount": 934,
+        "sizeBytes": 38840,
+        "lineCount": 944,
         "ext": ".tsx"
       }
     },
@@ -36138,8 +36256,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameEditModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7883,
-        "lineCount": 197,
+        "sizeBytes": 8714,
+        "lineCount": 216,
         "ext": ".tsx"
       }
     },
@@ -36177,8 +36295,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkGameTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 44280,
-        "lineCount": 928,
+        "sizeBytes": 49829,
+        "lineCount": 1050,
         "ext": ".tsx"
       }
     },
@@ -36231,6 +36349,19 @@
       "metadata": {
         "sizeBytes": 22817,
         "lineCount": 604,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/bk/components/__tests__/BkDoneBonus.test.tsx",
+      "type": "File",
+      "label": "BkDoneBonus.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/bk/components/__tests__/BkDoneBonus.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5200,
+        "lineCount": 171,
         "ext": ".tsx"
       }
     },
@@ -37373,7 +37504,7 @@
       "filePath": "apps/web/app/dashboard/customers/components/CustomerTable.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26895,
+        "sizeBytes": 26985,
         "lineCount": 671,
         "ext": ".tsx"
       }
@@ -40233,8 +40364,8 @@
       "filePath": "apps/web/lib/api/kpi.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19366,
-        "lineCount": 504,
+        "sizeBytes": 19607,
+        "lineCount": 509,
         "ext": ".ts"
       }
     },
@@ -40831,8 +40962,8 @@
       "filePath": "packages/shared/src/types/bk-game.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 6640,
-        "lineCount": 198,
+        "sizeBytes": 9027,
+        "lineCount": 292,
         "ext": ".ts"
       }
     },
@@ -40883,7 +41014,7 @@
       "filePath": "packages/shared/src/types/campaign.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 14167,
+        "sizeBytes": 14221,
         "lineCount": 552,
         "ext": ".ts"
       }
@@ -41429,7 +41560,7 @@
       "filePath": "packages/shared/src/utils/phone.test.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2851,
+        "sizeBytes": 2828,
         "lineCount": 64,
         "ext": ".ts"
       }
@@ -42436,6 +42567,13 @@
     {
       "id": "edge:prisma:crm:CrmBkGameParticipant:ws:apps/api",
       "source": "prisma:crm:CrmBkGameParticipant",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmBkGameDoneBonus:ws:apps/api",
+      "source": "prisma:crm:CrmBkGameDoneBonus",
       "target": "ws:apps/api",
       "type": "EXPORTS",
       "label": "DEFINED_IN"
@@ -45943,6 +46081,13 @@
     {
       "id": "edge:route:GET:/api/kpi/bk/games/:id:ws:apps/api",
       "source": "route:GET:/api/kpi/bk/games/:id",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/kpi/bk/games/:id/done-bonuses:ws:apps/api",
+      "source": "route:GET:/api/kpi/bk/games/:id/done-bonuses",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -49779,6 +49924,41 @@
     {
       "id": "edge:type:@mos-lab/shared:BkGameTeam:ws:packages/shared",
       "source": "type:@mos-lab/shared:BkGameTeam",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BkGameDoneBonusConditionType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BkGameDoneBonusConditionType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BkGameDoneBonusRule:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BkGameDoneBonusRule",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BkGameDoneBonusRecord:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BkGameDoneBonusRecord",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BkGameDoneBonusStaffSummary:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BkGameDoneBonusStaffSummary",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:BkGameDoneBonusesSummary:ws:packages/shared",
+      "source": "type:@mos-lab/shared:BkGameDoneBonusesSummary",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -60739,6 +60919,20 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/BkDoneBonusConfigTable.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/BkDoneBonusConfigTable.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/BkDoneBonusDetailsDrawer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/BkDoneBonusDetailsDrawer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/bk/components/BkDoneTab.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/bk/components/BkDoneTab.tsx",
       "target": "ws:packages/shared",
@@ -60797,6 +60991,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/bk/components/BkTipTab.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/bk/components/BkTipTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/bk/components/__tests__/BkDoneBonus.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/bk/components/__tests__/BkDoneBonus.test.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -64029,6 +64230,13 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
+      "id": "edge:file:apps/api/src/modules/kpi/routes/bk.routes.ts:prisma:crm:CrmBkGameDoneBonus",
+      "source": "file:apps/api/src/modules/kpi/routes/bk.routes.ts",
+      "target": "prisma:crm:CrmBkGameDoneBonus",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/kpi/routes/cc-paystub.routes.ts:prisma:crm:CrmCvPayrollAllowance",
       "source": "file:apps/api/src/modules/kpi/routes/cc-paystub.routes.ts",
       "target": "prisma:crm:CrmCvPayrollAllowance",
@@ -64172,6 +64380,13 @@
       "id": "edge:file:apps/api/src/modules/kpi/services/bk-game.service.ts:prisma:crm:CrmBkGame",
       "source": "file:apps/api/src/modules/kpi/services/bk-game.service.ts",
       "target": "prisma:crm:CrmBkGame",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/bk-game.service.ts:prisma:crm:CrmBkGameDoneBonus",
+      "source": "file:apps/api/src/modules/kpi/services/bk-game.service.ts",
+      "target": "prisma:crm:CrmBkGameDoneBonus",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -69475,6 +69690,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/architecture:route:GET:/api/kpi/bk/games/:id/done-bonuses",
+      "source": "page:/dashboard/architecture",
+      "target": "route:GET:/api/kpi/bk/games/:id/done-bonuses",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/architecture:route:POST:/api/kpi/bk/games",
       "source": "page:/dashboard/architecture",
       "target": "route:POST:/api/kpi/bk/games",
@@ -70521,6 +70743,13 @@
       "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/bk/games/:id",
       "source": "page:/dashboard/cc",
       "target": "route:GET:/api/kpi/bk/games/:id",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
+      "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/bk/games/:id/done-bonuses",
+      "source": "page:/dashboard/cc",
+      "target": "route:GET:/api/kpi/bk/games/:id/done-bonuses",
       "type": "API_CALL",
       "label": "CALLS kpi.getCcXoayReport"
     },
@@ -71851,6 +72080,13 @@
       "id": "edge:page:/dashboard/design-system:route:GET:/api/kpi/bk/games/:id",
       "source": "page:/dashboard/design-system",
       "target": "route:GET:/api/kpi/bk/games/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:GET:/api/kpi/bk/games/:id/done-bonuses",
+      "source": "page:/dashboard/design-system",
+      "target": "route:GET:/api/kpi/bk/games/:id/done-bonuses",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -75414,6 +75650,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/bk/games/:id",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/kpi/bk/games/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/bk/games/:id/done-bonuses",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/kpi/bk/games/:id/done-bonuses",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -80101,6 +80344,13 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/bk/games/:id/done-bonuses",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/kpi/bk/games/:id/done-bonuses",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/kpi/bk/games",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/kpi/bk/games",
@@ -84308,6 +84558,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/kpi/bk/games/:id/done-bonuses",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:GET:/api/kpi/bk/games/:id/done-bonuses",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/kpi/bk/games",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:POST:/api/kpi/bk/games",
@@ -87850,6 +88107,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/bk/games/:id/done-bonuses",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/kpi/bk/games/:id/done-bonuses",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/kpi/bk/games",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/kpi/bk/games",
@@ -89307,31 +89571,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3177,
-    "totalEdges": 6831,
+    "totalNodes": 3187,
+    "totalEdges": 6850,
     "nodeTypeCounts": {
       "Workspace": 3,
-      "PrismaModel": 164,
-      "FastifyRoute": 669,
+      "PrismaModel": 165,
+      "FastifyRoute": 670,
       "Component": 58,
-      "SharedType": 1145,
+      "SharedType": 1150,
       "DesignToken": 12,
       "UIComponent": 219,
-      "File": 907
+      "File": 910
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1321,
-      "HANDLES_ROUTE": 669,
+      "EXPORTS": 1327,
+      "HANDLES_ROUTE": 670,
       "RENDERS": 277,
       "USES_TOKEN": 221,
-      "IMPORTS": 479,
-      "QUERIES_MODEL": 385,
-      "API_CALL": 3479
+      "IMPORTS": 482,
+      "QUERIES_MODEL": 387,
+      "API_CALL": 3486
     },
-    "fastifyRouteCount": 674,
-    "prismaModelCount": 164,
+    "fastifyRouteCount": 675,
+    "prismaModelCount": 165,
     "nextPageCount": 58,
-    "sharedTypeCount": 1145
+    "sharedTypeCount": 1150
   },
   "routes": [
     {
@@ -92646,6 +92910,13 @@
       "moduleName": "kpi"
     },
     {
+      "method": "GET",
+      "path": "/api/kpi/bk/games/:id/done-bonuses",
+      "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
       "method": "POST",
       "path": "/api/kpi/bk/games",
       "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
@@ -95255,7 +95526,7 @@
       "dbSource": "crm",
       "modelName": "CrmBkGame",
       "tableName": "crm_bk_games",
-      "fieldCount": 21,
+      "fieldCount": 23,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []
@@ -95277,6 +95548,15 @@
       "readOnly": false,
       "isCatalogException": false,
       "relations": ["gameId", "teamId"]
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmBkGameDoneBonus",
+      "tableName": "crm_bk_game_done_bonuses",
+      "fieldCount": 16,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": ["gameId"]
     },
     {
       "dbSource": "crm",

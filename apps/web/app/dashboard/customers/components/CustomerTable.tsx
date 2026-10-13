@@ -340,7 +340,7 @@ const CustomerTable = React.memo(
           key: 'lastCallDate',
           render: (_: SafeAny, record: Customer) => {
             if (!record.lastCall?.createdAt) return '-';
-            return dayjs(record.lastCall.createdAt).format('DD/MM/YYYY HH:mm');
+            return <span className="tabular-nums">{dayjs(record.lastCall.createdAt).format('DD/MM/YYYY HH:mm')}</span>;
           },
         },
         {
@@ -348,7 +348,7 @@ const CustomerTable = React.memo(
           key: 'lastCallDuration',
           render: (_: SafeAny, record: Customer) => {
             if (record.lastCall?.durationSec === undefined || record.lastCall?.durationSec === null) return '-';
-            return formatDuration(record.lastCall.durationSec);
+            return <span className="tabular-nums font-mono">{formatDuration(record.lastCall.durationSec)}</span>;
           },
         },
         {
