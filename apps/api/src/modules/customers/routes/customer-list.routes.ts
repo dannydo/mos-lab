@@ -13,6 +13,7 @@ import {
   createRouteHelpers,
   buildSearchCondition,
 } from './helpers.js';
+import { daysSinceVisit } from '../../projections/customer-visit-projection.service.js';
 
 export async function registerCustomerListRoutes(fastify: FastifyInstance) {
   const { getNewLocaUserIds } = createRouteHelpers(fastify);
@@ -1216,13 +1217,15 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         customerIds.length > 0
           ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
               `SELECT
-                 user_id as userId,
-                 COALESCE(SUM(total_price), 0) as totalSpent,
+                 o.user_id as userId,
+                 COALESCE(SUM(o.total_price), 0) as totalSpent,
                  COUNT(*) as totalVisits,
-                 SUM(CASE WHEN promotion_id IS NOT NULL OR selected_promotion_id IS NOT NULL THEN 1 ELSE 0 END) as totalPromotionsUsed
-               FROM \`order\`
-               WHERE order_state = 'Completed' AND user_id IN (${customerIds.join(',')})
-               GROUP BY user_id`
+                 SUM(CASE WHEN o.promotion_id IS NOT NULL OR o.selected_promotion_id IS NOT NULL THEN 1 ELSE 0 END) as totalPromotionsUsed,
+                 COALESCE(MAX(ro.actual_booking_date_start), MAX(o.booking_date_start)) as lastVisitAt
+               FROM \`order\` o
+               LEFT JOIN report_order ro ON o.id = ro.order_id
+               WHERE o.order_state = 'Completed' AND o.user_id IN (${customerIds.join(',')})
+               GROUP BY o.user_id`
             )
           : Promise.resolve([]),
         customerIds.length > 0
@@ -1267,6 +1270,16 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         row.totalVisits = orderMetric?.totalVisits || 0;
         row.totalPromotionsUsed = orderMetric?.totalPromotionsUsed || 0;
         row.totalReferrals = referralMetric?.totalReferrals || 0;
+        if (orderMetric && Number(orderMetric.totalVisits) > 0 && orderMetric.lastVisitAt) {
+          row.lastVisit = orderMetric.lastVisitAt;
+          row.daysSinceLastVisit = daysSinceVisit(orderMetric.lastVisitAt);
+        } else if (orderMetric && Number(orderMetric.totalVisits) === 0) {
+          row.lastVisit = null;
+          row.daysSinceLastVisit = null;
+        } else if (!orderMetric) {
+          row.lastVisit = null;
+          row.daysSinceLastVisit = null;
+        }
         row.bucket = !balanceMetric
           ? 'SINGLE'
           : Number(balanceMetric.live_count || 0) > 0
@@ -1603,7 +1616,10 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
           dob: row.dob ? new Date(row.dob).toISOString().split('T')[0] : null,
           age: row.age !== null && row.age !== undefined ? Number(row.age) : null,
           lastVisit: row.lastVisit ? new Date(row.lastVisit).toISOString() : null,
-          daysSinceLastVisit: row.daysSinceLastVisit !== null ? Number(row.daysSinceLastVisit) : null,
+          daysSinceLastVisit:
+            row.daysSinceLastVisit !== null && row.daysSinceLastVisit !== undefined
+              ? Number(row.daysSinceLastVisit)
+              : null,
           totalSpent: Math.round(Number(row.totalSpent || 0)),
           totalVisits: Number(row.totalVisits || 0),
           totalPromotionsUsed: Number(row.totalPromotionsUsed || 0),

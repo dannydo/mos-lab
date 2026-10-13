@@ -86,7 +86,11 @@ export const ProfileDetailsCard: React.FC<ProfileDetailsCardProps> = React.memo(
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ color: mutedTextColor }}>Số ngày chưa quay lại:</span>
-            <span style={{ fontWeight: 'bold', color: dangerTextColor }}>{customer.daysSinceLastVisit || 0} ngày</span>
+            <span style={{ fontWeight: 'bold', color: dangerTextColor }}>
+              {customer.daysSinceLastVisit !== null && customer.daysSinceLastVisit !== undefined
+                ? `${customer.daysSinceLastVisit} ngày`
+                : 'Chưa từng đến'}
+            </span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ color: mutedTextColor }}>Phụ trách (OC):</span>
