@@ -54,13 +54,23 @@ const migration: DataMigration = {
 
         let serviceId: number;
         if (existing.length === 0) {
+          const [templateRows] = await targetConn.execute<RowDataPacket[]>(
+            `SELECT client_id, client_business_id, profile_attribute_set_id, customer_survey_set_id, staff_survey_set_id FROM service WHERE client_id IS NOT NULL LIMIT 1`
+          );
+          const clientId = templateRows[0]?.client_id ?? 11;
+          const clientBusinessId = templateRows[0]?.client_business_id ?? 1;
+          const profileAttrId = templateRows[0]?.profile_attribute_set_id ?? 1;
+          const customerSurveyId = templateRows[0]?.customer_survey_set_id ?? 1;
+          const staffSurveyId = templateRows[0]?.staff_survey_set_id ?? 4;
+
           const [insertRes] = await targetConn.execute<ResultSetHeader>(
             `INSERT INTO service (
               client_id, client_business_id, service_key, service_type, service_group,
               duration_minute, duration_minute_standard, remind_interval_day, last_day_required,
               position, is_temporary, is_disabled, date_created, date_updated,
               profile_attribute_set_id, customer_survey_set_id, staff_survey_set_id
-            ) VALUES (1, 1, 'lash-lift', 'Normal', 'LashLift', 60, 60, 0, 0, 1, 0, 0, NOW(), NOW(), 1, 1, 4)`
+            ) VALUES (?, ?, 'lash-lift', 'Normal', 'LashLift', 60, 60, 0, 0, 1, 0, 0, NOW(), NOW(), ?, ?, ?)`,
+            [clientId, clientBusinessId, profileAttrId, customerSurveyId, staffSurveyId]
           );
           serviceId = Number(insertRes.insertId);
 

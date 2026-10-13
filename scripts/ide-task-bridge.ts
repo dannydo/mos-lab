@@ -167,7 +167,12 @@ async function handleWaitAndDeploy(
   }
 
   try {
-    execFileSync('git', ['-C', mainRepo, 'checkout', 'main'], { stdio: 'inherit' });
+    const currentBranch = execFileSync('git', ['-C', mainRepo, 'rev-parse', '--abbrev-ref', 'HEAD'], {
+      encoding: 'utf8',
+    }).trim();
+    if (currentBranch !== 'main') {
+      execFileSync('git', ['-C', mainRepo, 'checkout', 'main'], { stdio: 'inherit' });
+    }
     try {
       execFileSync('git', ['-C', mainRepo, 'pull', '--ff-only'], { stdio: 'inherit' });
     } catch {
