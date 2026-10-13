@@ -8,11 +8,11 @@ const migration: DataMigration = {
     // Read-only safety checks
   },
   async up(connection: PoolConnection) {
-    // 1. Record configuration in crm_configs table in CRM DB
+    // 1. Record configuration in crm_config table in CRM DB
     await connection.execute(
-      `INSERT INTO crm_configs (\`key\`, \`value\`, date_created, date_updated)
-       VALUES ('LASH_LIFT_SERVICE_CONFIG', ?, NOW(), NOW())
-       ON DUPLICATE KEY UPDATE \`value\` = VALUES(\`value\`), date_updated = NOW()`,
+      `INSERT INTO crm_config (\`key\`, \`value\`, \`updated_at\`)
+       VALUES ('LASH_LIFT_SERVICE_CONFIG', ?, NOW())
+       ON DUPLICATE KEY UPDATE \`value\` = VALUES(\`value\`), \`updated_at\` = NOW()`,
       [
         JSON.stringify({
           serviceKey: 'lash-lift',
