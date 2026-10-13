@@ -36,7 +36,15 @@ export default function OmiCallProfileControl() {
     setOmicallReady,
     floatingLauncherVisible,
     setFloatingLauncherVisible,
+    canAccessOmiCall,
+    isAdmin,
+    adminOmiCallEnabled,
+    setAdminOmiCallEnabled,
   } = useOmiCall();
+
+  if (!canAccessOmiCall) {
+    return null;
+  }
 
   const status = getCallStatus({ isRegistered, omicallReady, callState });
   const statusColor =

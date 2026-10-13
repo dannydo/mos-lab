@@ -178,6 +178,11 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
     setOmicallReady,
     floatingLauncherVisible,
     setFloatingLauncherVisible,
+    canAccessOmiCall,
+    isGrowthMember,
+    isAdmin,
+    adminOmiCallEnabled,
+    setAdminOmiCallEnabled,
   } = useOmiCall();
 
   const { preferences, ready: bugReportReady, setVisible: setBugReportVisible } = useBugReportLauncherPreferences();
@@ -317,56 +322,100 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
       {/* Section 1: Quick Toggles (OmiCall & UI Launchers) */}
       <div className="p-2 space-y-1">
         <div className="px-2 pt-1 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-          Tổng đài & Tiện ích
+          {canAccessOmiCall ? 'Tổng đài & Tiện ích' : 'Tiện ích'}
         </div>
 
-        {/* OmiCall Ready Toggle */}
-        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-          <div className="flex items-center gap-2.5 min-w-0 pr-2">
-            <span
-              className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${callStatus.iconBg}`}
-              style={{ color: callStatus.iconColor }}
-            >
-              <PhoneCall size={15} />
-            </span>
-            <div className="min-w-0">
-              <div className="text-[13px] font-medium leading-tight text-slate-800 dark:text-slate-200">
-                Nhận cuộc gọi tổng đài
-              </div>
-              <div
-                className="mt-0.5 flex items-center gap-1.5 text-[11px] leading-tight"
-                style={{ color: token.colorTextSecondary }}
+        {/* Admin Unified OmiCall Master Toggle (Off by default, can turn On anytime) */}
+        {isAdmin && (
+          <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+            <div className="flex items-center gap-2.5 min-w-0 pr-2">
+              <span
+                className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                  adminOmiCallEnabled ? 'bg-emerald-500/15 text-emerald-500' : 'bg-slate-500/10 text-slate-400'
+                }`}
               >
-                <span className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${callStatus.dotClass}`} />
-                <span className="truncate">{callStatus.text}</span>
+                <PhoneCall size={15} />
+              </span>
+              <div className="min-w-0">
+                <div className="text-[13px] font-medium leading-tight text-slate-800 dark:text-slate-200">
+                  Bật công cụ OmiCall tổng đài
+                </div>
+                <div
+                  className="mt-0.5 flex items-center gap-1.5 text-[11px] leading-tight"
+                  style={{ color: token.colorTextSecondary }}
+                >
+                  <span
+                    className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${
+                      adminOmiCallEnabled ? 'bg-emerald-500' : 'bg-slate-400'
+                    }`}
+                  />
+                  <span className="truncate">
+                    {adminOmiCallEnabled ? 'Đang bật · Đã kết nối tổng đài & nút gọi' : 'Đang tắt (mặc định)'}
+                  </span>
+                </div>
               </div>
             </div>
+            <Switch
+              size="small"
+              checked={adminOmiCallEnabled}
+              aria-label="Bật công cụ OmiCall tổng đài cho Admin"
+              onChange={(checked) => setAdminOmiCallEnabled(checked)}
+            />
           </div>
-          <Switch
-            size="small"
-            checked={omicallReady}
-            aria-label="Bật nhận cuộc gọi tổng đài OmiCall"
-            onChange={(checked) => setOmicallReady(checked)}
-          />
-        </div>
+        )}
 
-        {/* Floating Call Launcher Toggle */}
-        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-          <div className="flex items-center gap-2.5 min-w-0 pr-2">
-            <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-500/10 text-slate-500 dark:text-slate-400">
-              <Radio size={15} />
-            </span>
-            <div className="min-w-0 text-[13px] font-medium leading-tight text-slate-800 dark:text-slate-200 truncate">
-              Nút gọi nổi màn hình
+        {/* Growth & Booking Toggles (Only visible for Growth department members, non-admin) */}
+        {!isAdmin && isGrowthMember && (
+          <>
+            {/* OmiCall Ready Toggle */}
+            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+              <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                <span
+                  className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${callStatus.iconBg}`}
+                  style={{ color: callStatus.iconColor }}
+                >
+                  <PhoneCall size={15} />
+                </span>
+                <div className="min-w-0">
+                  <div className="text-[13px] font-medium leading-tight text-slate-800 dark:text-slate-200">
+                    Nhận cuộc gọi tổng đài
+                  </div>
+                  <div
+                    className="mt-0.5 flex items-center gap-1.5 text-[11px] leading-tight"
+                    style={{ color: token.colorTextSecondary }}
+                  >
+                    <span className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${callStatus.dotClass}`} />
+                    <span className="truncate">{callStatus.text}</span>
+                  </div>
+                </div>
+              </div>
+              <Switch
+                size="small"
+                checked={omicallReady}
+                aria-label="Bật nhận cuộc gọi tổng đài OmiCall"
+                onChange={(checked) => setOmicallReady(checked)}
+              />
             </div>
-          </div>
-          <Switch
-            size="small"
-            checked={floatingLauncherVisible}
-            aria-label="Hiển thị nút gọi nổi OmiCall"
-            onChange={setFloatingLauncherVisible}
-          />
-        </div>
+
+            {/* Floating Call Launcher Toggle */}
+            <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+              <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-500/10 text-slate-500 dark:text-slate-400">
+                  <Radio size={15} />
+                </span>
+                <div className="min-w-0 text-[13px] font-medium leading-tight text-slate-800 dark:text-slate-200 truncate">
+                  Nút gọi nổi màn hình
+                </div>
+              </div>
+              <Switch
+                size="small"
+                checked={floatingLauncherVisible}
+                aria-label="Hiển thị nút gọi nổi OmiCall"
+                onChange={setFloatingLauncherVisible}
+              />
+            </div>
+          </>
+        )}
 
         {/* Bug Report Launcher Toggle */}
         <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors">

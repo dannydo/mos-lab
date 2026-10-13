@@ -155,6 +155,9 @@ export interface Staff {
   offDays?: string[] | null;
   off_days?: string[] | null;
   offDaysList?: string[] | null;
+  // Department & OmiCall Access Controls
+  isGrowthMember?: boolean;
+  canAccessOmiCall?: boolean;
 }
 
 export interface SendOnboardingEmailRequest {

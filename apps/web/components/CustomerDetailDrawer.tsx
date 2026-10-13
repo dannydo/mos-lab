@@ -85,7 +85,8 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
 }) => {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
-  const { makeCall } = useOmiCall();
+  const { makeCall, canAccessOmiCall, isAdmin, adminOmiCallEnabled } = useOmiCall();
+  const canMakeCall = canAccessOmiCall && (!isAdmin || adminOmiCallEnabled);
   const mutedTextColor = themeMode === 'dark' ? '#cbd5e1' : '#475569';
   const responsiveTier = useResponsiveTier();
   const isCompactTier = responsiveTier === 'mobile' || responsiveTier === 'tablet';
@@ -464,9 +465,9 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                         return (
                           <div key={phoneObj.id} className="inline-flex items-center gap-1">
                             <span
-                              className={`inline-flex items-center gap-1.5 select-text ${phoneObj.is_disabled ? 'opacity-50 line-through' : ''} ${!isMaskedRole ? 'cursor-pointer hover:underline' : ''}`}
+                              className={`inline-flex items-center gap-1.5 select-text ${phoneObj.is_disabled ? 'opacity-50 line-through' : ''} ${!isMaskedRole && canMakeCall ? 'cursor-pointer hover:underline' : ''}`}
                               onClick={() => {
-                                if (!isMaskedRole && !phoneObj.is_disabled) {
+                                if (!isMaskedRole && !phoneObj.is_disabled && canMakeCall) {
                                   makeCall(
                                     phoneObj.phone_number,
                                     customer.name,
@@ -493,9 +494,9 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                     ) : customer.phone ? (
                       <div className="inline-flex items-center gap-1">
                         <span
-                          className={`inline-flex items-center gap-1.5 select-text ${!isMaskedRole ? 'cursor-pointer hover:underline' : ''}`}
+                          className={`inline-flex items-center gap-1.5 select-text ${!isMaskedRole && canMakeCall ? 'cursor-pointer hover:underline' : ''}`}
                           onClick={() => {
-                            if (!isMaskedRole) {
+                            if (!isMaskedRole && canMakeCall) {
                               makeCall(customer.phone, customer.name, customer.id, customer.avatar || undefined);
                             }
                           }}

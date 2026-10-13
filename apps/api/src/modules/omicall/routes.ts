@@ -1,8 +1,10 @@
 import { FastifyInstance } from 'fastify';
 import { Prisma } from '../../generated/crm-client/index.js';
 import { requireAuth, requireRole, JwtUserPayload } from '../../middlewares/auth.js';
+import { isAdminOrSuperAdminRole, isCanonicalSuperAdminIdentity, isSuperAdminRole } from '@mos-lab/shared';
 import { encrypt, decrypt } from '../../utils/crypto.js';
 import { triggerImmediateAnalysis } from './analyzer.js';
+import { TeamService } from '../teams/team.service.js';
 
 export async function omicallRoutes(fastify: FastifyInstance) {
   // POST /api/omicall/webhook
@@ -277,6 +279,22 @@ export async function omicallRoutes(fastify: FastifyInstance) {
   fastify.get('/omicall/sip-config', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as JwtUserPayload;
     try {
+      const isSuperAdmin =
+        isSuperAdminRole(user.role) || isCanonicalSuperAdminIdentity({ username: user.username, email: user.email });
+      const isAdmin = isAdminOrSuperAdminRole(user.role) || isSuperAdmin;
+      const normalizedRole = String(user.role || '').toLowerCase();
+      const isGrowth =
+        normalizedRole === 'telesales' ||
+        normalizedRole === 'booker' ||
+        (await TeamService.isActiveCrmStaffMemberInDepartment(fastify, 'GROWTH', user.id));
+
+      if (!isAdmin && !isGrowth) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Tài khoản không thuộc bộ phận Growth & Booking để truy cập OmiCall',
+        });
+      }
+
       const config = await fastify.prisma.crm.crmOmicallConfig.findUnique({
         where: { staffId: user.id },
         select: { extension: true, phoneNumber: true, sipPassword: true },

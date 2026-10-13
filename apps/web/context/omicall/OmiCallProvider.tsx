@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { apiClient } from '../../lib/api-client';
 import { message, notification } from 'antd';
 import { CallState, CurrentCall, OmiCallContextType } from './types';
+import { isCanonicalSuperAdminIdentity, isSuperAdminRole } from '@mos-lab/shared';
 import {
   useAudioManager,
   playRingtone,
@@ -35,14 +36,21 @@ const OmiCallContext = createContext<OmiCallContextType | undefined>(undefined);
 
 const FLOATING_LAUNCHER_VISIBILITY_KEY = 'mos_omicall_floating_launcher_visible';
 
+function getCurrentStoredUser() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('mos_user');
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 function getFloatingLauncherVisibilityKey() {
   if (typeof window === 'undefined') return FLOATING_LAUNCHER_VISIBILITY_KEY;
 
   try {
-    const currentUser = JSON.parse(localStorage.getItem('mos_user') || 'null') as {
-      id?: string | number;
-      username?: string;
-    } | null;
+    const currentUser = getCurrentStoredUser();
     const identity = currentUser?.id ?? currentUser?.username;
     return identity ? `${FLOATING_LAUNCHER_VISIBILITY_KEY}:${identity}` : FLOATING_LAUNCHER_VISIBILITY_KEY;
   } catch {
@@ -55,7 +63,52 @@ function readFloatingLauncherVisibility() {
   return localStorage.getItem(getFloatingLauncherVisibilityKey()) !== 'false';
 }
 
+function getAdminOmiCallEnabledKey(): string {
+  if (typeof window === 'undefined') return 'mos_admin_omicall_enabled';
+  try {
+    const currentUser = getCurrentStoredUser();
+    const identity = currentUser?.id ?? currentUser?.username;
+    return identity ? `mos_admin_omicall_enabled:${identity}` : 'mos_admin_omicall_enabled';
+  } catch {
+    return 'mos_admin_omicall_enabled';
+  }
+}
+
+function readAdminOmiCallEnabled(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem(getAdminOmiCallEnabledKey()) === 'true';
+}
+
 export function OmiCallProvider({ children }: { children: React.ReactNode }) {
+  const [currentUser, setCurrentUser] = useState<SafeAny>(() => getCurrentStoredUser());
+
+  useEffect(() => {
+    const syncUser = () => {
+      setCurrentUser(getCurrentStoredUser());
+    };
+    window.addEventListener('storage', syncUser);
+    window.addEventListener('mos_user_updated', syncUser);
+    return () => {
+      window.removeEventListener('storage', syncUser);
+      window.removeEventListener('mos_user_updated', syncUser);
+    };
+  }, []);
+
+  const isAdmin = Boolean(
+    currentUser &&
+    (isSuperAdminRole(currentUser.role) ||
+      isCanonicalSuperAdminIdentity({ username: currentUser.username, email: currentUser.email }))
+  );
+  const isGrowthMember = Boolean(
+    currentUser &&
+    (currentUser.isGrowthMember === true || currentUser.role === 'telesales' || currentUser.role === 'booker')
+  );
+  const canAccessOmiCall = isAdmin || isGrowthMember;
+
+  const [adminOmiCallEnabled, setAdminOmiCallEnabledState] = useState<boolean>(() => {
+    return readAdminOmiCallEnabled();
+  });
+
   const [sdkLoaded, setSdkLoaded] = useState(false);
   const [isSdkReady, setIsSdkReady] = useState(false);
   const isSdkReadyRef = useRef(false);
@@ -73,13 +126,21 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
   const simulatedTimerRef = useRef<SafeAny>(null);
   const [omicallReady, setOmicallReadyState] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
+      if (!canAccessOmiCall) return false;
+      if (isAdmin && !readAdminOmiCallEnabled()) return false;
       return localStorage.getItem('mos_omicall_auto_init') === 'true';
     }
     return false;
   });
-  const [floatingLauncherVisible, setFloatingLauncherVisibleState] = useState<boolean>(readFloatingLauncherVisibility);
+  const [floatingLauncherVisible, setFloatingLauncherVisibleState] = useState<boolean>(() => {
+    if (!canAccessOmiCall) return false;
+    if (isAdmin) return readAdminOmiCallEnabled() && readFloatingLauncherVisibility();
+    return readFloatingLauncherVisibility();
+  });
   const [shouldInit, setShouldInit] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
+      if (!canAccessOmiCall) return false;
+      if (isAdmin && !readAdminOmiCallEnabled()) return false;
       const t = localStorage.getItem('mos_token');
       const r = localStorage.getItem('mos_omicall_auto_init') === 'true';
       return !!(t && r);
@@ -118,8 +179,45 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const setAdminOmiCallEnabled = useCallback((enabled: boolean) => {
+    setAdminOmiCallEnabledState(enabled);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(getAdminOmiCallEnabledKey(), String(enabled));
+    }
+    setFloatingLauncherVisibleState(enabled);
+    if (enabled) {
+      setOmicallReadyState(true);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mos_omicall_auto_init', 'true');
+      }
+      setShouldInit(true);
+    } else {
+      setOmicallReadyState(false);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mos_omicall_auto_init', 'false');
+      }
+      if (window.OMICallSDK && (window as SafeAny).__omicall_initialized) {
+        try {
+          window.OMICallSDK.unregister();
+        } catch (e) {
+          console.warn('[OmiCallContext] Failed to unregister on admin toggle off:', e);
+        }
+      }
+      setIsRegistered(false);
+      setShouldInit(false);
+    }
+  }, []);
+
   // Set ready status helper
   const setOmicallReady = (ready: boolean) => {
+    if (!canAccessOmiCall) return;
+    if (isAdmin && ready && !adminOmiCallEnabled) {
+      setAdminOmiCallEnabledState(true);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(getAdminOmiCallEnabledKey(), 'true');
+      }
+      setFloatingLauncherVisibleState(true);
+    }
     setOmicallReadyState(ready);
     if (typeof window !== 'undefined') {
       localStorage.setItem('mos_omicall_auto_init', String(ready));
@@ -138,16 +236,22 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         }
         setIsRegistered(false);
         setShouldInit(false);
+      } else {
+        setShouldInit(true);
       }
     }
   };
 
-  const setFloatingLauncherVisible = useCallback((visible: boolean) => {
-    setFloatingLauncherVisibleState(visible);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(getFloatingLauncherVisibilityKey(), String(visible));
-    }
-  }, []);
+  const setFloatingLauncherVisible = useCallback(
+    (visible: boolean) => {
+      if (!canAccessOmiCall) return;
+      setFloatingLauncherVisibleState(visible);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(getFloatingLauncherVisibilityKey(), String(visible));
+      }
+    },
+    [canAccessOmiCall]
+  );
 
   // Call States
   const [callState, setCallState] = useState<CallState>('idle');
@@ -817,6 +921,14 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
 
   // 5. Calling Actions
   const makeCall = async (phone: string, name?: string, customerId?: number, avatar?: string, planId?: number) => {
+    if (!canAccessOmiCall) {
+      message.warning('Chỉ bộ phận Growth & Booking mới có quyền thực hiện cuộc gọi tổng đài.');
+      return;
+    }
+    if (isAdmin && !adminOmiCallEnabled) {
+      message.info('Vui lòng bật công cụ OmiCall trong menu cá nhân trước khi thực hiện cuộc gọi.');
+      return;
+    }
     if (isTabMuted) {
       message.warning('Có cuộc gọi đang diễn ra trên một tab khác.');
       return;
@@ -1155,6 +1267,11 @@ export function OmiCallProvider({ children }: { children: React.ReactNode }) {
         setOmicallReady,
         floatingLauncherVisible,
         setFloatingLauncherVisible,
+        canAccessOmiCall,
+        isGrowthMember,
+        isAdmin,
+        adminOmiCallEnabled,
+        setAdminOmiCallEnabled,
         lastRegisterEvent,
         isCallLogModalOpen,
         callLogCustomerInfo,

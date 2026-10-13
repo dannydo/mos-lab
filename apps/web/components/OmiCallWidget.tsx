@@ -55,6 +55,9 @@ export default function OmiCallWidget() {
     setOmicallReady,
     floatingLauncherVisible,
     lastRegisterEvent,
+    canAccessOmiCall,
+    isAdmin,
+    adminOmiCallEnabled,
   } = useOmiCall();
 
   const { themeMode } = useTheme();
@@ -92,6 +95,14 @@ export default function OmiCallWidget() {
       setWidgetMinimized(true);
     }
   }, [callState, setWidgetMinimized]);
+
+  // Permission guard: Only Growth & Booking or Admin (when turned on) can render OmiCall widget
+  if (!canAccessOmiCall) {
+    return null;
+  }
+  if (isAdmin && !adminOmiCallEnabled && callState === 'idle') {
+    return null;
+  }
 
   // Format call duration (seconds to MM:SS)
   const formatDuration = (secs: number) => {

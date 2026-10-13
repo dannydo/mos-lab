@@ -1,15 +1,44 @@
 import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcrypt';
 import { requireAuth, JwtUserPayload } from '../../middlewares/auth.js';
-import { isCanonicalSuperAdminIdentity, isSuperAdminRole, LoginRequest, LoginResponse } from '@mos-lab/shared';
+import {
+  isAdminOrSuperAdminRole,
+  isCanonicalSuperAdminIdentity,
+  isSuperAdminRole,
+  LoginRequest,
+  LoginResponse,
+} from '@mos-lab/shared';
 import { GoogleIdentityError, verifyGoogleCredential } from './google-identity.service.js';
 import { evaluateImpersonationPolicy } from './impersonation-policy.js';
+import { TeamService } from '../teams/team.service.js';
 
 const IMPERSONATION_SESSION_MINUTES = 30;
 
 export async function authRoutes(fastify: FastifyInstance) {
+  // Helper to resolve whether a staff member belongs to Growth & Booking or has OmiCall access
+  const resolveGrowthAndOmiCallAccess = async (staffMember: SafeAny) => {
+    const isSuperAdmin =
+      isSuperAdminRole(staffMember.role) ||
+      isCanonicalSuperAdminIdentity({ username: staffMember.username, email: staffMember.email });
+    const isAdmin = isAdminOrSuperAdminRole(staffMember.role) || isSuperAdmin;
+    const normalizedRole = String(staffMember.role || '').toLowerCase();
+    const isTelesalesRole = normalizedRole === 'telesales' || normalizedRole === 'booker';
+    const isGrowthTeamMember = await TeamService.isActiveCrmStaffMemberInDepartment(fastify, 'GROWTH', staffMember.id);
+    const isGrowthMember = isTelesalesRole || isGrowthTeamMember;
+    const canAccessOmiCall = isAdmin || isGrowthMember;
+    return { isGrowthMember, canAccessOmiCall, isAdmin };
+  };
+
   // Helper to resolve auto init based on staff & role
   const resolveOmicallAutoInit = async (staffMember: SafeAny) => {
+    const access = await resolveGrowthAndOmiCallAccess(staffMember);
+    if (!access.canAccessOmiCall) return false;
+
+    // Admin is off by default unless explicitly configured true on their staff record
+    if (access.isAdmin && staffMember.omicallAutoInit !== true) {
+      return false;
+    }
+
     if (staffMember.omicallAutoInit === true) return true;
     if (staffMember.omicallAutoInit === false) return false;
 
@@ -87,6 +116,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           data: { lastLoginAt: now, lastActiveAt: now },
         });
 
+        const access = await resolveGrowthAndOmiCallAccess(updatedStaff);
         const response: LoginResponse = {
           token,
           user: {
@@ -96,6 +126,8 @@ export async function authRoutes(fastify: FastifyInstance) {
             role: updatedStaff.role as SafeAny,
             isActive: updatedStaff.isActive,
             omicallAutoInit: updatedStaff.omicallAutoInit,
+            isGrowthMember: access.isGrowthMember,
+            canAccessOmiCall: access.canAccessOmiCall,
             createdAt: updatedStaff.createdAt.toISOString(),
             lastLoginAt: updatedStaff.lastLoginAt ? updatedStaff.lastLoginAt.toISOString() : null,
             lastActiveAt: updatedStaff.lastActiveAt ? updatedStaff.lastActiveAt.toISOString() : null,
@@ -260,6 +292,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           data: { lastLoginAt: now, lastActiveAt: now },
         });
 
+        const access = await resolveGrowthAndOmiCallAccess(updatedStaff);
         const response: LoginResponse = {
           token,
           user: {
@@ -270,6 +303,8 @@ export async function authRoutes(fastify: FastifyInstance) {
             isActive: updatedStaff.isActive,
             avatarUrl: updatedStaff.avatarUrl,
             omicallAutoInit: updatedStaff.omicallAutoInit,
+            isGrowthMember: access.isGrowthMember,
+            canAccessOmiCall: access.canAccessOmiCall,
             createdAt: updatedStaff.createdAt.toISOString(),
             lastLoginAt: updatedStaff.lastLoginAt ? updatedStaff.lastLoginAt.toISOString() : null,
             lastActiveAt: updatedStaff.lastActiveAt ? updatedStaff.lastActiveAt.toISOString() : null,
@@ -320,6 +355,7 @@ export async function authRoutes(fastify: FastifyInstance) {
           });
         }
 
+        const access = await resolveGrowthAndOmiCallAccess(staff);
         return {
           user: {
             id: staff.id,
@@ -329,6 +365,8 @@ export async function authRoutes(fastify: FastifyInstance) {
             isActive: staff.isActive,
             avatarUrl: staff.avatarUrl,
             omicallAutoInit: staff.omicallAutoInit,
+            isGrowthMember: access.isGrowthMember,
+            canAccessOmiCall: access.canAccessOmiCall,
             createdAt: staff.createdAt.toISOString(),
             lastLoginAt: staff.lastLoginAt ? staff.lastLoginAt.toISOString() : null,
             lastActiveAt: staff.lastActiveAt ? staff.lastActiveAt.toISOString() : null,
@@ -434,6 +472,7 @@ export async function authRoutes(fastify: FastifyInstance) {
 
         const token = fastify.jwt.sign(payload, { expiresIn: `${IMPERSONATION_SESSION_MINUTES}m` });
 
+        const access = await resolveGrowthAndOmiCallAccess(targetStaff);
         return {
           token,
           user: {
@@ -444,6 +483,8 @@ export async function authRoutes(fastify: FastifyInstance) {
             isActive: targetStaff.isActive,
             avatarUrl: targetStaff.avatarUrl,
             omicallAutoInit: targetStaff.omicallAutoInit,
+            isGrowthMember: access.isGrowthMember,
+            canAccessOmiCall: access.canAccessOmiCall,
             createdAt: targetStaff.createdAt.toISOString(),
           },
           resolvedOmicallAutoInit: await resolveOmicallAutoInit(targetStaff),

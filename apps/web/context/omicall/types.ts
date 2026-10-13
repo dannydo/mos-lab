@@ -69,6 +69,13 @@ export interface OmiCallContextType {
   openCallLogModal: (info: { legacyUserId: number; customerName: string; planId?: number | null }) => void;
   closeCallLogModal: () => void;
 
+  // Department & Role Access Controls
+  canAccessOmiCall: boolean;
+  isGrowthMember: boolean;
+  isAdmin: boolean;
+  adminOmiCallEnabled: boolean;
+  setAdminOmiCallEnabled: (enabled: boolean) => void;
+
   // Share AI analysis wrapup polling properties
   resolvedLog: SafeAny;
   setResolvedLog: (log: SafeAny) => void;

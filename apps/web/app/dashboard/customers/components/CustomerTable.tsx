@@ -70,7 +70,8 @@ const CustomerTable = React.memo(
   ) {
     const { themeMode } = useTheme();
     const { token } = theme.useToken();
-    const { makeCall } = useOmiCall();
+    const { makeCall, canAccessOmiCall, isAdmin, adminOmiCallEnabled } = useOmiCall();
+    const canMakeCall = canAccessOmiCall && (!isAdmin || adminOmiCallEnabled);
     const isManagerOrAdmin = canManageCustomerAllocation(currentUser?.role);
 
     const getOperationalStatus = React.useCallback((record: Customer): { label: string; tone: OperationalTone } => {
@@ -244,16 +245,22 @@ const CustomerTable = React.memo(
                     style={{ fontSize: '12px', color: themeMode === 'dark' ? '#D4A84B' : '#855b0e', fontWeight: '500' }}
                     className="flex items-center gap-1 mt-0.5 tabular-nums"
                   >
-                    <span
-                      className="hover:underline cursor-pointer flex items-center gap-1"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        makeCall(record.phone, record.name, record.id, record.avatar || undefined);
-                      }}
-                    >
-                      <PhoneOutlined style={{ fontSize: '10px' }} />
-                      <span>{record.phone}</span>
-                    </span>
+                    {canMakeCall ? (
+                      <span
+                        className="hover:underline cursor-pointer flex items-center gap-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          makeCall(record.phone, record.name, record.id, record.avatar || undefined);
+                        }}
+                      >
+                        <PhoneOutlined style={{ fontSize: '10px' }} />
+                        <span>{record.phone}</span>
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 select-text">
+                        <span>{record.phone}</span>
+                      </span>
+                    )}
                     <CopyPhoneButton phone={record.phone} size="xs" />
                   </div>
                 )}
@@ -597,7 +604,7 @@ const CustomerTable = React.memo(
                 </div>
 
                 <div className="customer-mobile-card-actions" onClick={(event) => event.stopPropagation()}>
-                  {record.phone && (
+                  {record.phone && canMakeCall && (
                     <Button
                       type="primary"
                       icon={<PhoneOutlined />}
