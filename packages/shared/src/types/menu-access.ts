@@ -93,6 +93,13 @@ export const MENU_ACCESS_DEFINITIONS: readonly MenuAccessDefinition[] = [
     groupLabel: 'Trang chủ',
     path: '/dashboard/schedule-calendar',
   },
+  {
+    key: 'branches',
+    label: 'Chi nhánh',
+    groupKey: 'home',
+    groupLabel: 'Trang chủ',
+    path: '/dashboard/branches',
+  },
 
   {
     key: 'customers-all',
@@ -221,6 +228,13 @@ export const MENU_ACCESS_DEFINITIONS: readonly MenuAccessDefinition[] = [
     groupKey: 'operations',
     groupLabel: 'Vận hành cuộc gọi',
     path: '/dashboard/calls',
+  },
+  {
+    key: 'telesale-target',
+    label: 'Mục Tiêu Telesales T10',
+    groupKey: 'operations',
+    groupLabel: 'Vận hành cuộc gọi',
+    path: '/dashboard/telesale-target',
   },
   {
     key: 'omicall',

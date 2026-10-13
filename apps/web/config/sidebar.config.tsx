@@ -94,7 +94,7 @@ export function getSidebarGroups(
       path: '/dashboard/pilot-dark-lashes',
     },
     {
-      key: 'telesale-target-lab',
+      key: 'telesale-target',
       label: 'Mục Tiêu Telesales T10',
       icon: <AppIcon icon={Target} size="sm" className="text-amber-500" />,
       path: '/dashboard/telesale-target',
@@ -443,7 +443,7 @@ export function getSidebarGroups(
         path: '/dashboard/bk',
       },
       {
-        key: 'telesale-target-report',
+        key: 'telesale-target',
         label: 'Mục Tiêu Telesales T10',
         icon: <AppIcon icon={Target} size="sm" className="text-amber-500" />,
         path: '/dashboard/telesale-target',
