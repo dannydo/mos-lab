@@ -1138,4 +1138,109 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể lấy danh sách phụ cấp.' });
     }
   });
+
+  // GET /api/kpi/cc-legacy-sync - Single Source of Truth adapter for iOS App (WingsLashes backend)
+  fastify.get('/kpi/cc-legacy-sync', async (request, reply) => {
+    const { key, staff_user_id, userId, staffId, date_from, dateFrom, date_to, dateTo } = request.query as {
+      key?: string;
+      staff_user_id?: string;
+      userId?: string;
+      staffId?: string;
+      date_from?: string;
+      dateFrom?: string;
+      date_to?: string;
+      dateTo?: string;
+    };
+
+    // Verify key if provided or internal caller
+    const hasValidKey = key === 'FDC0D0A177694777A';
+    if (!hasValidKey && !request.headers.authorization) {
+      return reply.status(401).send({ error: 'Unauthorized', message: 'API key không hợp lệ.' });
+    }
+
+    const targetStaffId = Number(staff_user_id || userId || staffId);
+    if (!targetStaffId || isNaN(targetStaffId)) {
+      return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu staff_user_id.' });
+    }
+
+    const defaultStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA');
+    const defaultEnd = new Date().toLocaleDateString('en-CA');
+    const startPart = normalizeDatePart(date_from || dateFrom, defaultStart);
+    const endPart = normalizeDatePart(date_to || dateTo, defaultEnd);
+
+    try {
+      const [xoayRes, dailyRes, tipRows] = await Promise.all([
+        CcKpiService.getCcXoayReport(fastify, {
+          dateFrom: startPart,
+          dateTo: endPart,
+          consultantId: String(targetStaffId),
+          limit: 999999,
+        }),
+        CcKpiService.getCcDailySalesBonus(fastify, {
+          dateFrom: startPart,
+          dateTo: endPart,
+          consultantId: String(targetStaffId),
+        }),
+        fastify.prisma.legacy.$queryRawUnsafe<Array<{ totalTip: number }>>(`
+          SELECT COALESCE(SUM(st.tip_amount), 0) as totalTip
+          FROM staff_tip st
+          JOIN \`order\` o ON o.id = st.order_id
+          LEFT JOIN report_order ro ON ro.order_id = o.id
+          WHERE st.user_id = ${targetStaffId}
+            AND o.order_state = 'Completed'
+            AND ${buildCashTipCurrencyPredicate('st')}
+            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00'
+            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
+        `),
+      ]);
+
+      const xoayRows = xoayRes.data.filter((r) => Number(r.consultantId) === targetStaffId);
+      const rawXoayVnd = Math.round(xoayRows.reduce((sum, r) => sum + Number(r.consultantBonus || 0), 0));
+
+      const dailyRows = dailyRes.data.filter((r) => Number(r.user_id) === targetStaffId);
+      const dailyBonusVnd = Math.round(dailyRows.reduce((sum, r) => sum + Number(r.daily_bonus || 0), 0));
+
+      const cap = calculateWheelBonusCap(dailyBonusVnd, rawXoayVnd);
+      const effectiveXoayVnd = cap.effectiveWheelBonus;
+      const heldXoayVnd = Math.max(0, cap.rawWheelBonus - effectiveXoayVnd);
+
+      const cashTipVnd = Math.round(Number(tipRows[0]?.totalTip || 0));
+      const rateVal = dailyBonusVnd > 0 ? (rawXoayVnd / dailyBonusVnd).toFixed(2) : '0';
+
+      return reply.send({
+        status: 'success',
+        data: {
+          staff_id: targetStaffId,
+          date_from: startPart,
+          date_to: endPart,
+          raw_xoay_bonus: rawXoayVnd,
+          effective_xoay_bonus: effectiveXoayVnd,
+          held_xoay_bonus: heldXoayVnd,
+          daily_bonus: dailyBonusVnd,
+          tip_bonus: cashTipVnd,
+          wheel_cap_percent: cap.wheelCapPercent,
+          cap_status: cap.capStatus,
+          ios_payload: {
+            bonus: {
+              '2': {
+                all: { total_bonus_amount: String(effectiveXoayVnd) },
+                current: { total_bonus_amount: String(effectiveXoayVnd) },
+                holding: { total_bonus_amount: String(heldXoayVnd) },
+              },
+            },
+            combo_bonus_amount: String(dailyBonusVnd),
+            servicing_combo_bonus_rate: String(rateVal),
+            holding_bonus_state:
+              cap.capStatus === 'HARDCAPPED' ? 'error' : cap.capStatus === 'WARNING' ? 'warning' : '',
+            tip: {
+              '2': { total_tip_amount: String(cashTipVnd) },
+            },
+          },
+        },
+      });
+    } catch (err) {
+      fastify.log.error(err as Error, 'Error in cc-legacy-sync');
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể tính toán số liệu CC.' });
+    }
+  });
 }
