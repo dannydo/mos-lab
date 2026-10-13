@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { maskPhoneNumber, shouldMaskCustomerPhone, CV_AND_FACILITY_ROLES } from './phone.js';
+import { maskPhoneNumber, shouldMaskCustomerPhone } from './phone.js';
 
 describe('Phone Masking & Invariant Tests', () => {
   it('should identify CV and facility roles that must be masked', () => {

@@ -135,7 +135,7 @@ export interface CampaignSharedPoolDetailedLog {
   previousClaimedByStaffName?: string | null;
   nextClaimedByStaffName?: string | null;
   note: string | null;
-  metadata?: any;
+  metadata?: Record<string, unknown> | null;
   result?: string | null;
   isDrifted?: boolean;
   canRestore?: boolean;
@@ -180,7 +180,7 @@ export interface SharedPoolRecoveryResponse {
   driftDetected?: boolean;
   currentStatus?: string;
   targetPreviousStatus?: string;
-  customer?: any;
+  customer?: Record<string, unknown> | null;
 }
 
 export type CampaignPromotionType =
