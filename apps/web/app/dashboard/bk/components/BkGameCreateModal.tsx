@@ -23,10 +23,12 @@ import type {
   Staff,
   TeamListResponse,
   BkGameScoringRule,
+  BkGameDoneBonusRule,
 } from '@mos-lab/shared';
 import { removeVietnameseTones, BK_GAME_SCORING_RULES, BK_BOOKING_CHANNELS } from '@mos-lab/shared';
 import { AdaptiveModal, AppIcon } from '~/components/ui';
 import { apiClient } from '~/lib/api-client';
+import BkDoneBonusConfigTable from './BkDoneBonusConfigTable';
 
 interface BkGameCreateModalProps {
   open: boolean;
@@ -55,6 +57,7 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
   const [allStaffList, setAllStaffList] = useState<StaffProfileOption[]>([]);
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>('ALL');
   const [staffLoading, setStaffLoading] = useState(false);
+  const [doneBonusRules, setDoneBonusRules] = useState<BkGameDoneBonusRule[]>([]);
 
   const watchedMetricType = (Form.useWatch('metricType', form) || 'BOOKINGS') as BkGameMetricType;
   const currentScoringRule = BK_GAME_SCORING_RULES[watchedMetricType] || BK_GAME_SCORING_RULES.BOOKINGS;
@@ -257,6 +260,7 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
         rewardPool: values.rewardPool || 0,
         rewardDescription: values.rewardDescription,
         penaltyDescription: values.penaltyDescription,
+        doneBonusConfig: doneBonusRules.length > 0 ? doneBonusRules : null,
         winnerCriteria: 'TOP_1',
       };
 
@@ -282,6 +286,7 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
       onSuccess(res.game);
       onClose();
       form.resetFields();
+      setDoneBonusRules([]);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Không thể tạo game. Vui lòng thử lại.';
       message.error(msg);
@@ -758,6 +763,11 @@ export default function BkGameCreateModal({ open, onClose, onSuccess }: BkGameCr
           >
             <Input placeholder="Ví dụ: Bao trà sữa, Hát 1 bài..." />
           </Form.Item>
+        </div>
+
+        {/* Cấu hình Thưởng Bonus / Done theo Dịch vụ */}
+        <div className="my-2">
+          <BkDoneBonusConfigTable value={doneBonusRules} onChange={setDoneBonusRules} />
         </div>
 
         {/* Bộ lọc vai trò & bộ phận */}

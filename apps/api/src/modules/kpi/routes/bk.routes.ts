@@ -1115,6 +1115,29 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // GET /kpi/bk/games/:id/done-bonuses
+  fastify.get('/kpi/bk/games/:id/done-bonuses', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const gameId = parseInt(id, 10);
+      if (isNaN(gameId)) {
+        return reply.status(400).send({ error: 'Bad Request', message: 'ID Game không hợp lệ.' });
+      }
+
+      await BkGameService.syncGameDoneBonuses(fastify, gameId);
+
+      const bonuses = await fastify.prisma.crm.crmBkGameDoneBonus.findMany({
+        where: { gameId },
+        orderBy: [{ orderCompletedAt: 'desc' }, { id: 'desc' }],
+      });
+
+      return reply.send({ data: bonuses, total: bonuses.length });
+    } catch (err: SafeAny) {
+      fastify.log.error(err as SafeAny, 'Error fetching BK game done bonuses');
+      return reply.status(500).send({ error: 'Internal Server Error', message: 'Lỗi tải danh sách Bonus Done.' });
+    }
+  });
+
   // POST /kpi/bk/games
   fastify.post('/kpi/bk/games', { preHandler: [requireAuth] }, async (request, reply) => {
     try {

@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { FastifyInstance } from 'fastify';
-import { BkGameParticipant } from '@mos-lab/shared';
+import { BkGameParticipant, DEFAULT_BK_LASH_LIFT_BONUS_RULES, BkGameDoneBonusRule } from '@mos-lab/shared';
 import {
   BkGameService,
   formatIctDateTime,
   formatIctDate,
   parseAllowedBookingChannels,
   buildBookingChannelFilter,
+  parseDoneBonusConfig,
 } from './bk-game.service.js';
 
 test('Game BK target progress calculates accurately with a 100% cap', () => {
@@ -207,6 +208,7 @@ test('BkGameService.updateGame updates allowedBookingChannels and config fields'
             startDate: new Date(now.getTime() - 86400000),
             endDate: new Date(now.getTime() + 86400000),
             allowedBookingChannels: null,
+            doneBonusConfig: null,
             participants: [],
             teams: [],
           }),
@@ -224,9 +226,12 @@ test('BkGameService.updateGame updates allowedBookingChannels and config fields'
             };
           },
         },
+        crmBkGameDoneBonus: {
+          findMany: async () => [],
+        },
       },
     },
-    log: { info: () => {} },
+    log: { info: () => {}, warn: () => {} },
   } as unknown as FastifyInstance;
 
   const result = await BkGameService.updateGame(mockFastify, 3, {
@@ -240,5 +245,73 @@ test('BkGameService.updateGame updates allowedBookingChannels and config fields'
   assert.equal(data?.title, '[BK_LÔNG][T9] CUỘC ĐUA KỲ THÚ');
   assert.equal(data?.allowedBookingChannels, '["GB"]');
   assert.equal(data?.targetScore, 50);
+});
+
+test('parseDoneBonusConfig parses JSON and handles null/empty cases', () => {
+  const rules: BkGameDoneBonusRule[] = [
+    {
+      id: 'r1',
+      serviceName: 'LASH LIFT',
+      conditionType: 'EXACT_PAY',
+      minPaid: 990000,
+      maxPaid: 990000,
+      bonusAmount: 99000,
+    },
+  ];
+
+  const jsonStr = JSON.stringify(rules);
+  const parsed = parseDoneBonusConfig(jsonStr);
+  assert.equal(parsed?.length, 1);
+  assert.equal(parsed?.[0].bonusAmount, 99000);
+
+  // Array input
+  assert.equal(parseDoneBonusConfig(rules)?.length, 1);
+  // Null/undefined/empty input
+  assert.equal(parseDoneBonusConfig(null), null);
+  assert.equal(parseDoneBonusConfig(''), null);
+  assert.equal(parseDoneBonusConfig('[]'), null);
+});
+
+test('Game BK Done Bonus matching: LASH LIFT 4 tiered rules calculate exact expected bonuses', () => {
+  const rules = DEFAULT_BK_LASH_LIFT_BONUS_RULES;
+
+  const matchBonus = (svcName: string, actualPaid: number, originalPrice: number = 990000) => {
+    let best = 0;
+    for (const rule of rules) {
+      const isSvcMatch = svcName.toUpperCase().includes(rule.serviceName.toUpperCase());
+      if (!isSvcMatch) continue;
+
+      let cond = false;
+      if (rule.conditionType === 'FREE') cond = actualPaid === 0;
+      else if (rule.conditionType === 'EXACT_PAY') cond = Math.abs(actualPaid - (rule.minPaid ?? 0)) < 100;
+      else if (rule.conditionType === 'PROMO_PERCENT') {
+        if (rule.minPaid !== undefined && rule.maxPaid !== undefined) {
+          cond = actualPaid >= rule.minPaid && actualPaid <= rule.maxPaid;
+        } else if (rule.promoPercent !== undefined && originalPrice > 0) {
+          const disc = Math.round(((originalPrice - actualPaid) / originalPrice) * 100);
+          cond = Math.abs(disc - rule.promoPercent) <= 5;
+        }
+      }
+      if (cond && rule.bonusAmount > best) {
+        best = rule.bonusAmount;
+      }
+    }
+    return best;
+  };
+
+  // Case 1: Thanh toán 990.000đ -> Bonus 99.000đ
+  assert.equal(matchBonus('Lash Lift', 990000), 99000);
+
+  // Case 2: Thanh toán 693.000đ (Promo 30%) -> Bonus 35.000đ
+  assert.equal(matchBonus('Lash Lift', 693000), 35000);
+
+  // Case 3: Thanh toán 495.000đ (Promo 50%) -> Bonus 15.000đ
+  assert.equal(matchBonus('Lash Lift', 495000), 15000);
+
+  // Case 4: Miễn phí (Promo 100%) -> Bonus 1.000đ
+  assert.equal(matchBonus('Lash Lift', 0), 1000);
+
+  // Case 5: Dịch vụ khác không khớp -> 0đ
+  assert.equal(matchBonus('Classic Set', 550000), 0);
 });
 

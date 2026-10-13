@@ -21,6 +21,7 @@ import type {
   BkGameCreateInput,
   BkGameUpdateInput,
   BkGameDetailResponse,
+  BkGameDoneBonusRecord,
   BkGameFinalizeInput,
   BkGameListResponse,
   CcConfigResponse,
@@ -410,6 +411,10 @@ export const kpiApi = {
     },
     getGameDetail: async (id: number): Promise<BkGameDetailResponse> => {
       const response = await api.get(`/kpi/bk/games/${id}`);
+      return response.data;
+    },
+    getGameDoneBonuses: async (id: number): Promise<{ data: BkGameDoneBonusRecord[]; total: number }> => {
+      const response = await api.get(`/kpi/bk/games/${id}/done-bonuses`);
       return response.data;
     },
     createGame: async (data: BkGameCreateInput): Promise<{ success: boolean; game: BkGame }> => {

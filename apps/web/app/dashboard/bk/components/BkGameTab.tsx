@@ -13,6 +13,7 @@ import BkAvatar from './BkAvatar';
 import BkGameCreateModal from './BkGameCreateModal';
 import BkGameEditModal from './BkGameEditModal';
 import BkGameFinalizeModal from './BkGameFinalizeModal';
+import BkDoneBonusDetailsDrawer from './BkDoneBonusDetailsDrawer';
 
 type GameMetric = 'calls' | 'pickups' | 'bookings' | 'done';
 
@@ -59,6 +60,8 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [finalizeModalOpen, setFinalizeModalOpen] = useState(false);
+  const [doneBonusDrawerOpen, setDoneBonusDrawerOpen] = useState(false);
+  const [selectedBonusStaffId, setSelectedBonusStaffId] = useState<number | null>(null);
 
   // Countdown timer in seconds
   const [secondsRemaining, setSecondsRemaining] = useState<number>(0);
@@ -213,6 +216,33 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
         }
       : null);
 
+  const hasDoneBonusConfig = Boolean(
+    activeGame?.doneBonusConfig &&
+      (Array.isArray(activeGame.doneBonusConfig) ? activeGame.doneBonusConfig.length > 0 : true)
+  );
+  const totalDoneBonusAmount = gameDetail?.doneBonusesSummary?.totalDoneBonus ?? 0;
+  const totalDoneBonusBookings = gameDetail?.doneBonusesSummary?.totalDoneBookings ?? 0;
+
+  const staffDoneBonusMap = useMemo(() => {
+    const map = new Map<number, { doneCount: number; totalBonus: number }>();
+    if (gameDetail?.doneBonusesSummary?.staffBonuses) {
+      gameDetail.doneBonusesSummary.staffBonuses.forEach((s) => {
+        map.set(s.staffId, { doneCount: s.doneCount, totalBonus: s.totalBonus });
+      });
+    }
+    if (gameDetail?.leaderboard) {
+      gameDetail.leaderboard.forEach((p) => {
+        if (p.staffId && !map.has(p.staffId)) {
+          map.set(p.staffId, {
+            doneCount: p.doneBookingsCount || 0,
+            totalBonus: p.totalDoneBonus || 0,
+          });
+        }
+      });
+    }
+    return map;
+  }, [gameDetail]);
+
   return (
     <div className="space-y-4">
       {/* Informational Alert if no active campaign is running */}
@@ -282,6 +312,19 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
               className="font-medium"
             >
               Chỉnh sửa Game
+            </Button>
+          )}
+
+          {activeGame && hasDoneBonusConfig && (
+            <Button
+              icon={<AppIcon icon={Sparkles} size="sm" className="text-amber-500" />}
+              onClick={() => {
+                setSelectedBonusStaffId(null);
+                setDoneBonusDrawerOpen(true);
+              }}
+              className="font-medium !text-emerald-700 dark:!text-emerald-300 !border-emerald-300 dark:!border-emerald-700 hover:!bg-emerald-50 dark:hover:!bg-emerald-950/30"
+            >
+              Chi Tiết Bonus/Done
             </Button>
           )}
 
@@ -401,8 +444,12 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
               </div>
             </div>
 
-            {/* 4 Summary Stat Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6 pt-6 border-t border-white/10">
+            {/* Summary Stat Cards */}
+            <div
+              className={`grid grid-cols-2 ${
+                hasDoneBonusConfig ? 'lg:grid-cols-5' : 'md:grid-cols-4'
+              } gap-3 mt-6 pt-6 border-t border-white/10`}
+            >
               <div className="bg-white/5 backdrop-blur-sm p-3.5 rounded-xl border border-white/10">
                 <div className="text-xs text-slate-400 uppercase font-medium flex items-center justify-between">
                   <span>Mục Tiêu KPI</span>
@@ -429,6 +476,33 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                   {activeGame.entryFee > 0 ? `Cược: ${activeGame.entryFee.toLocaleString('vi-VN')}đ` : 'Miễn phí'}
                 </div>
               </div>
+
+              {hasDoneBonusConfig && (
+                <div className="bg-emerald-950/40 backdrop-blur-sm p-3.5 rounded-xl border border-emerald-500/30">
+                  <div className="text-xs text-emerald-300 uppercase font-medium flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <AppIcon icon={Sparkles} size="sm" className="text-amber-400" />
+                      <span>Thưởng Bonus/Done</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedBonusStaffId(null);
+                        setDoneBonusDrawerOpen(true);
+                      }}
+                      className="text-[10px] text-emerald-300 hover:text-emerald-100 underline decoration-dotted cursor-pointer"
+                    >
+                      Đối soát
+                    </button>
+                  </div>
+                  <div className="text-xl font-bold mt-1 text-emerald-400 tabular-nums">
+                    {totalDoneBonusAmount.toLocaleString('vi-VN')} đ
+                  </div>
+                  <div className="text-xs text-slate-300 mt-0.5">
+                    {totalDoneBonusBookings} đơn Done đạt thưởng
+                  </div>
+                </div>
+              )}
 
               <div className="bg-white/5 backdrop-blur-sm p-3.5 rounded-xl border border-white/10">
                 <div className="text-xs text-slate-400 uppercase font-medium">Dẫn Đầu (Top 1)</div>
@@ -826,6 +900,8 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
               pickups: 'secondary',
               bookings: 'secondary',
               done: 'secondary',
+              doneBonusCount: 'secondary',
+              totalDoneBonus: 'primary',
             }}
             columns={[
               {
@@ -881,6 +957,44 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
                 align: 'right',
                 render: (value) => <span className="tabular-nums">{value}</span>,
               },
+              ...(hasDoneBonusConfig
+                ? [
+                    {
+                      title: 'Done Thưởng',
+                      key: 'doneBonusCount',
+                      align: 'right' as const,
+                      render: (_: unknown, record: BkBookingLeaderboardEntry) => {
+                        const stat = staffDoneBonusMap.get(record.bookerId) || { doneCount: 0, totalBonus: 0 };
+                        return (
+                          <span className="tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
+                            {stat.doneCount}
+                          </span>
+                        );
+                      },
+                    },
+                    {
+                      title: 'Thưởng Bonus/Done',
+                      key: 'totalDoneBonus',
+                      align: 'right' as const,
+                      render: (_: unknown, record: BkBookingLeaderboardEntry) => {
+                        const stat = staffDoneBonusMap.get(record.bookerId) || { doneCount: 0, totalBonus: 0 };
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedBonusStaffId(record.bookerId);
+                              setDoneBonusDrawerOpen(true);
+                            }}
+                            className="inline-flex items-center gap-1 font-bold text-xs text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer tabular-nums"
+                            title="Bấm để xem đối soát chi tiết đơn thưởng"
+                          >
+                            <span>+{stat.totalBonus.toLocaleString('vi-VN')} đ</span>
+                          </button>
+                        );
+                      },
+                    },
+                  ]
+                : []),
             ]}
           />
         )}
@@ -922,6 +1036,14 @@ export default function BkGameTab({ dateRange, comparisonMode }: BkGameTabProps)
           }}
         />
       )}
+
+      {/* DRAWER: DONE BONUS DETAILS AUDIT */}
+      <BkDoneBonusDetailsDrawer
+        open={doneBonusDrawerOpen}
+        onClose={() => setDoneBonusDrawerOpen(false)}
+        gameDetail={gameDetail}
+        initialStaffId={selectedBonusStaffId}
+      />
     </div>
   );
 }

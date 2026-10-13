@@ -3305,12 +3305,14 @@ model CrmBkGame {
   penaltyDescription String?   @map("penalty_description") @db.Text
   winnerCriteria     String    @default("TOP_1") @map("winner_criteria") @db.VarChar(50)
   announcedResults   String?   @map("announced_results") @db.LongText
+  doneBonusConfig    String?   @map("done_bonus_config") @db.LongText
   createdByStaffId   Int       @map("created_by_staff_id")
   createdAt          DateTime  @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt          DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
 
   participants       CrmBkGameParticipant[]
   teams              CrmBkGameTeam[]
+  doneBonuses        CrmBkGameDoneBonus[]
 
   @@index([status])
   @@index([startDate, endDate])
@@ -3357,6 +3359,31 @@ model CrmBkGameParticipant {
   @@index([gameId])
   @@index([staffId])
   @@map("crm_bk_game_participants")
+}
+
+model CrmBkGameDoneBonus {
+  id               Int       @id @default(autoincrement())
+  gameId           Int       @map("game_id")
+  orderId          Int       @map("order_id")
+  orderServiceId   Int?      @map("order_service_id")
+  staffId          Int       @map("staff_id")
+  serviceId        Int?      @map("service_id")
+  serviceName      String    @map("service_name") @db.VarChar(255)
+  originalPrice    Float     @default(0) @map("original_price")
+  actualPaid       Float     @default(0) @map("actual_paid")
+  discountAmount   Float     @default(0) @map("discount_amount")
+  conditionApplied String?   @map("condition_applied") @db.VarChar(255)
+  bonusAmount      Int       @default(0) @map("bonus_amount")
+  orderCompletedAt DateTime? @map("order_completed_at") @db.DateTime(0)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.DateTime(0)
+
+  game CrmBkGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, orderId], map: "uniq_game_order")
+  @@index([gameId, staffId])
+  @@index([orderId])
+  @@map("crm_bk_game_done_bonuses")
 }
 
 // AI Assistant Private Workspace (MOS-FEAT-47)
