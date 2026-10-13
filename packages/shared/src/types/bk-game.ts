@@ -23,6 +23,8 @@ export interface BkGameParticipant {
   penaltyNote?: string | null;
   status: BkGameParticipantStatus;
   targetProgressPercent?: number;
+  doneBookingsCount?: number;
+  totalDoneBonus?: number;
 }
 
 export interface BkGameTeam {
@@ -33,6 +35,51 @@ export interface BkGameTeam {
   score: number;
   rank?: number | null;
   participants?: BkGameParticipant[];
+}
+
+export type BkGameDoneBonusConditionType = 'EXACT_PAY' | 'AMOUNT_RANGE' | 'PROMO_PERCENT' | 'FREE' | 'ANY';
+
+export interface BkGameDoneBonusRule {
+  id: string;
+  serviceId?: number | null;
+  serviceName: string;
+  conditionType: BkGameDoneBonusConditionType;
+  conditionLabel?: string;
+  minPaid?: number;
+  maxPaid?: number;
+  promoPercent?: number;
+  bonusAmount: number;
+}
+
+export interface BkGameDoneBonusRecord {
+  id: number;
+  gameId: number;
+  orderId: number;
+  orderServiceId?: number | null;
+  staffId: number;
+  staffName?: string;
+  serviceId?: number | null;
+  serviceName: string;
+  originalPrice: number;
+  actualPaid: number;
+  discountAmount: number;
+  conditionApplied?: string | null;
+  bonusAmount: number;
+  orderCompletedAt?: string | null;
+  createdAt: string;
+}
+
+export interface BkGameDoneBonusStaffSummary {
+  staffId: number;
+  staffName: string;
+  doneCount: number;
+  totalBonus: number;
+}
+
+export interface BkGameDoneBonusesSummary {
+  totalDoneBookings: number;
+  totalDoneBonus: number;
+  staffBonuses: BkGameDoneBonusStaffSummary[];
 }
 
 export interface BkGame {
@@ -52,6 +99,7 @@ export interface BkGame {
   winnerCriteria: BkGameWinnerCriteria;
   announcedResults?: string | null;
   allowedBookingChannels?: string[] | null;
+  doneBonusConfig?: BkGameDoneBonusRule[] | null;
   createdByStaffId: number;
   createdAt: string;
   updatedAt: string;
@@ -65,6 +113,7 @@ export interface BkGameCreateInput {
   gameType: BkGameType;
   metricType: BkGameMetricType;
   allowedBookingChannels?: string[];
+  doneBonusConfig?: BkGameDoneBonusRule[] | null;
   targetScore?: number;
   startDate: string;
   endDate: string;
@@ -82,6 +131,7 @@ export interface BkGameUpdateInput {
   description?: string;
   targetScore?: number;
   allowedBookingChannels?: string[] | null;
+  doneBonusConfig?: BkGameDoneBonusRule[] | null;
   rewardPool?: number;
   rewardDescription?: string;
   penaltyDescription?: string;
@@ -103,6 +153,8 @@ export interface BkGameDetailResponse {
   game: BkGame;
   leaderboard: BkGameParticipant[];
   teams?: BkGameTeam[];
+  doneBonuses?: BkGameDoneBonusRecord[];
+  doneBonusesSummary?: BkGameDoneBonusesSummary;
   stats: {
     totalParticipants: number;
     totalTeams: number;
@@ -194,4 +246,46 @@ export const BK_BOOKING_CHANNELS = [
 ] as const;
 
 export type BkBookingChannel = (typeof BK_BOOKING_CHANNELS)[number]['value'];
+
+export const DEFAULT_BK_LASH_LIFT_BONUS_RULES: BkGameDoneBonusRule[] = [
+  {
+    id: 'lash-lift-full',
+    serviceName: 'LASH LIFT',
+    conditionType: 'EXACT_PAY',
+    conditionLabel: 'Thanh toán 990.000đ (Nguyên giá)',
+    minPaid: 990000,
+    maxPaid: 990000,
+    bonusAmount: 99000,
+  },
+  {
+    id: 'lash-lift-promo-30',
+    serviceName: 'LASH LIFT',
+    conditionType: 'PROMO_PERCENT',
+    conditionLabel: 'Thanh toán 693.000đ (Promo 30%)',
+    minPaid: 650000,
+    maxPaid: 700000,
+    promoPercent: 30,
+    bonusAmount: 35000,
+  },
+  {
+    id: 'lash-lift-promo-50',
+    serviceName: 'LASH LIFT',
+    conditionType: 'PROMO_PERCENT',
+    conditionLabel: 'Thanh toán 495.000đ (Promo 50%)',
+    minPaid: 450000,
+    maxPaid: 500000,
+    promoPercent: 50,
+    bonusAmount: 15000,
+  },
+  {
+    id: 'lash-lift-free',
+    serviceName: 'LASH LIFT',
+    conditionType: 'FREE',
+    conditionLabel: 'Miễn phí (Promo 100%)',
+    minPaid: 0,
+    maxPaid: 0,
+    promoPercent: 100,
+    bonusAmount: 1000,
+  },
+];
 

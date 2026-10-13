@@ -3,9 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { Form, Input, InputNumber, Select, Tooltip, message } from 'antd';
 import { Info, Sparkles } from 'lucide-react';
-import { BkGame, BK_BOOKING_CHANNELS } from '@mos-lab/shared';
+import { BkGame, BkGameDoneBonusRule, BK_BOOKING_CHANNELS } from '@mos-lab/shared';
 import { apiClient } from '~/lib/api-client';
 import { AdaptiveModal, AppIcon } from '~/components/ui';
+import BkDoneBonusConfigTable from './BkDoneBonusConfigTable';
 
 interface BkGameEditModalProps {
   open: boolean;
@@ -17,6 +18,7 @@ interface BkGameEditModalProps {
 export default function BkGameEditModal({ open, game, onClose, onSuccess }: BkGameEditModalProps) {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [doneBonusRules, setDoneBonusRules] = useState<BkGameDoneBonusRule[]>([]);
 
   useEffect(() => {
     if (open && game) {
@@ -29,6 +31,17 @@ export default function BkGameEditModal({ open, game, onClose, onSuccess }: BkGa
         rewardDescription: game.rewardDescription || '',
         penaltyDescription: game.penaltyDescription || '',
       });
+      let initialRules: BkGameDoneBonusRule[] = [];
+      if (Array.isArray(game.doneBonusConfig)) {
+        initialRules = game.doneBonusConfig;
+      } else if (typeof game.doneBonusConfig === 'string') {
+        try {
+          initialRules = JSON.parse(game.doneBonusConfig);
+        } catch {
+          initialRules = [];
+        }
+      }
+      setDoneBonusRules(initialRules);
     }
   }, [open, game, form]);
 
@@ -52,6 +65,7 @@ export default function BkGameEditModal({ open, game, onClose, onSuccess }: BkGa
         rewardPool: values.rewardPool,
         rewardDescription: values.rewardDescription,
         penaltyDescription: values.penaltyDescription,
+        doneBonusConfig: doneBonusRules.length > 0 ? doneBonusRules : null,
       });
       message.success('Cập nhật cấu hình Game BK thành công!');
       onSuccess();
@@ -190,6 +204,11 @@ export default function BkGameEditModal({ open, game, onClose, onSuccess }: BkGa
         >
           <Input.TextArea rows={2} placeholder="Hình phạt hài hước..." />
         </Form.Item>
+
+        {/* Cấu hình Thưởng Bonus / Done theo Dịch vụ */}
+        <div className="my-2">
+          <BkDoneBonusConfigTable value={doneBonusRules} onChange={setDoneBonusRules} />
+        </div>
       </Form>
     </AdaptiveModal>
   );
