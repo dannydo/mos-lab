@@ -60,7 +60,7 @@ const migration: DataMigration = {
               duration_minute, duration_minute_standard, remind_interval_day, last_day_required,
               position, is_temporary, is_disabled, date_created, date_updated,
               profile_attribute_set_id, customer_survey_set_id, staff_survey_set_id
-            ) VALUES (1, 1, 'lash-lift', 'Normal', 'LashLift', 60, 60, 0, 0, 1, 0, 0, NOW(), NOW(), 0, 0, 0)`
+            ) VALUES (1, 1, 'lash-lift', 'Normal', 'LashLift', 60, 60, 0, 0, 1, 0, 0, NOW(), NOW(), 1, 1, 4)`
           );
           serviceId = Number(insertRes.insertId);
 
@@ -79,7 +79,7 @@ const migration: DataMigration = {
               per_normal_price, per_retain_price, normal_last_day_required, retain_last_day_required,
               expiry_after_day, limit_share_count, position,
               is_contract_required, is_same_count, is_old_user_disabled, is_disabled
-            ) VALUES (?, 2, 'single', 'single', 'Single', 990000, ?, '', 1, 0, 0, 0, 990000, 990000, 0, 0, 0, 0, 1, 0, 0, 0, 0)`,
+            ) VALUES (?, 2, 'single', 'Single', 'Single', 990000, ?, '', 1, 0, 0, 0, 990000, 990000, 0, 0, 0, 0, 1, 0, 0, 0, 0)`,
             [serviceId, String(serviceId)]
           );
         } else {
