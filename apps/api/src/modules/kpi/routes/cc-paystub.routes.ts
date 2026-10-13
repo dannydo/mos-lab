@@ -1188,7 +1188,8 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
           LEFT JOIN report_order ro ON ro.order_id = o.id
           WHERE st.user_id = ${targetStaffId}
             AND o.order_state = 'Completed'
-            AND ${buildCashTipCurrencyPredicate('st')}
+            AND st.is_academy = 0
+            AND st.tip_currency_id IN (1, 2)
             AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00'
             AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
         `),
