@@ -16,7 +16,6 @@ import {
   TelesaleTvEventLog,
   TelesaleTvJournalOverview,
   TelesaleTvPersonaDto,
-  TelesaleTvPersonaKey,
   TelesaleTvEdginessLevel,
   TelesalePipelineStage,
   TelesalePacingStatus,
@@ -762,10 +761,9 @@ export class TelesaleTargetService {
               this.overviewComputedAt.set(cacheKey, Date.now());
               fastify.cache?.set(cacheKey, freshOverview, 300_000);
               return freshOverview;
-            } catch (err: any) {
-              fastify.log?.warn?.(
-                `[TelesaleTarget] Background SWR revalidation failed for ${month}: ${err?.message || err}`
-              );
+            } catch (err: unknown) {
+              const errMsg = err instanceof Error ? err.message : String(err);
+              fastify.log?.warn?.(`[TelesaleTarget] Background SWR revalidation failed for ${month}: ${errMsg}`);
               return cached;
             } finally {
               this.inFlightOverviewPromises.delete(cacheKey);
@@ -1826,7 +1824,9 @@ export class TelesaleTargetService {
         try {
           const cd = new Date(checkinTimestamp);
           checkinTimeDisplay = `${String(cd.getHours()).padStart(2, '0')}:${String(cd.getMinutes()).padStart(2, '0')}`;
-        } catch {}
+        } catch {
+          // ignore parsing errors and use fallback
+        }
 
         return {
           orderId: ordId,
@@ -2291,8 +2291,8 @@ export class TelesaleTargetService {
     limit = 50,
     offset = 0
   ): Promise<TelesaleCustomerPoolResponse> {
-    let dayMin = 0;
-    let dayMax = 30;
+    let dayMin: number;
+    let dayMax: number;
     if (stageKey === '0_30') {
       dayMin = 0;
       dayMax = 30;
@@ -2928,13 +2928,16 @@ QUY TẮC BẮT BUỘC:
           return audioBuf;
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (existsSync(tempFile)) {
         try {
           unlinkSync(tempFile);
-        } catch {}
+        } catch {
+          // ignore cleanup failure
+        }
       }
-      throw new Error(`Edge TTS synthesis failed: ${err.message}`, { cause: err });
+      const errMsg = err instanceof Error ? err.message : String(err);
+      throw new Error(`Edge TTS synthesis failed: ${errMsg}`, { cause: err });
     }
 
     throw new Error('No audio produced by Edge TTS');

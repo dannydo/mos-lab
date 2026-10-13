@@ -1,13 +1,10 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
 import {
-  BkBookingLeaderboardEntry,
   BkBookingRecord,
-  BkDoneLeaderboardEntry,
   BkDoneRecord,
   BkTipLeaderboardEntry,
   BkTipRecord,
-  BkRevenueLeaderboardEntry,
   BkRevenueRecord,
   BkSalaryConfig,
   BkGameCreateInput,
@@ -28,8 +25,6 @@ import {
 import {
   getActiveBkTelesalesIds,
   getBkSalaryConfig,
-  getMilestoneBonus,
-  getMissedRateBonus,
   getRevCommissionRate,
   computeBkOrderCheckins,
   getBkPaystubData,

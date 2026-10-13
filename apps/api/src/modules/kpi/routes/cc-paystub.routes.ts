@@ -7,11 +7,7 @@ import {
   SafeAny,
   calculateWheelBonusCap,
 } from '@mos-lab/shared';
-import {
-  buildCashTipCurrencyPredicate,
-  CcKpiService,
-  summarizeCcLedgerXoayForPaystub,
-} from '../services/cc-kpi.service.js';
+import { CcKpiService, summarizeCcLedgerXoayForPaystub } from '../services/cc-kpi.service.js';
 import { TeamService } from '../../teams/team.service.js';
 import { StaffOffDayService } from '../../staff/services/staff-off-day.service.js';
 import { HolidayWorkService } from '../../holiday-work/holiday-work.service.js';

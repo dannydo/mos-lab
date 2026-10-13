@@ -7,8 +7,6 @@ import {
   computeBkOrderCheckins,
   fetchBkAttendanceMap,
   fetchBkExceptionAdjustedAttendanceMap,
-  fetchTelesalesAttendanceAuditLogs,
-  fetchTelesalesAttendanceExceptions,
   getActiveBkTelesalesIds,
   getBkWorkDaysOverrides,
   getMissedRateBonus,
