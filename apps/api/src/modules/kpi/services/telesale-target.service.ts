@@ -410,7 +410,7 @@ export class TelesaleTargetService {
 
     // Invalidate cached overview for this month
     fastify.cache?.invalidatePattern(`^kpi:telesale-target:overview:${config.month}`);
-    this.inFlightOverviewPromises.delete(`kpi:telesale-target:overview:${config.month}`);
+    this.invalidateOverviewCache(config.month);
 
     return cleanConfig;
   }
@@ -451,7 +451,7 @@ export class TelesaleTargetService {
 
     // Invalidate cached overview for this month
     fastify.cache?.invalidatePattern(`^kpi:telesale-target:overview:${month}`);
-    this.inFlightOverviewPromises.delete(`kpi:telesale-target:overview:${month}`);
+    this.invalidateOverviewCache(month);
 
     return updatedConfig;
   }
@@ -717,7 +717,19 @@ export class TelesaleTargetService {
     };
   }
 
+  private static overviewComputedAt = new Map<string, number>();
   private static inFlightOverviewPromises = new Map<string, Promise<TelesaleTargetOverview>>();
+
+  static invalidateOverviewCache(month?: string): void {
+    if (month) {
+      const cacheKey = `kpi:telesale-target:overview:${month}`;
+      this.overviewComputedAt.delete(cacheKey);
+      this.inFlightOverviewPromises.delete(cacheKey);
+    } else {
+      this.overviewComputedAt.clear();
+      this.inFlightOverviewPromises.clear();
+    }
+  }
 
   static async getOverview(
     fastify: FastifyInstance,
@@ -726,21 +738,57 @@ export class TelesaleTargetService {
     options?: { skipCache?: boolean }
   ): Promise<TelesaleTargetOverview> {
     const cacheKey = `kpi:telesale-target:overview:${month}`;
+    const now = Date.now();
+
     if (!options?.skipCache) {
       const cached = fastify.cache?.get<TelesaleTargetOverview>(cacheKey);
       if (cached) {
+        const computedAt = this.overviewComputedAt.get(cacheKey) || now;
+        const age = now - computedAt;
+
+        // 1. FRESH (< 60s): Trả về ngay lập tức, không cần revalidate
+        if (age < 60_000) {
+          return cached;
+        }
+
+        // 2. STALE-WHILE-REVALIDATE (60s - 300s): Trả về ngay (0ms) và revalidate ngầm trong background
+        if (!this.inFlightOverviewPromises.has(cacheKey)) {
+          const revalidatePromise = (async () => {
+            try {
+              const freshOverview = await this.computeOverview(fastify, month, _currentStaffId);
+              this.overviewComputedAt.set(cacheKey, Date.now());
+              fastify.cache?.set(cacheKey, freshOverview, 300_000);
+              return freshOverview;
+            } catch (err: any) {
+              fastify.log?.warn?.(
+                `[TelesaleTarget] Background SWR revalidation failed for ${month}: ${err?.message || err}`
+              );
+              return cached;
+            } finally {
+              this.inFlightOverviewPromises.delete(cacheKey);
+            }
+          })();
+          this.inFlightOverviewPromises.set(cacheKey, revalidatePromise);
+        }
+
         return cached;
       }
+
+      // 3. Single-flight in-progress deduplication cho cold-start
       const inFlight = this.inFlightOverviewPromises.get(cacheKey);
       if (inFlight) {
         return await inFlight;
       }
+    } else {
+      this.invalidateOverviewCache(month);
     }
 
+    // 4. Cold-start hoặc skipCache: Tính toán và lưu cache
     const computePromise = (async () => {
       try {
         const overview = await this.computeOverview(fastify, month, _currentStaffId);
-        fastify.cache?.set(cacheKey, overview, 15_000);
+        this.overviewComputedAt.set(cacheKey, Date.now());
+        fastify.cache?.set(cacheKey, overview, 300_000);
         return overview;
       } finally {
         this.inFlightOverviewPromises.delete(cacheKey);
