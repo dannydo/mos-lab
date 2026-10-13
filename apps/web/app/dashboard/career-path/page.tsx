@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Card, Slider, message, Tooltip, Switch, Avatar } from 'antd';
-import { Settings, Zap, Award, ChevronDown } from 'lucide-react';
+import { Settings, Zap, Award, ChevronDown, UserCheck } from 'lucide-react';
 import type {
   CareerProgressionConfig,
   StaffCareerStatus,
@@ -17,6 +17,7 @@ import { AdaptiveDrawer } from '../../../components/ui/AdaptiveOverlay';
 import { CareerConfigDrawer } from './components/CareerConfigDrawer';
 import { BananaTransactionDrawer } from './components/BananaTransactionDrawer';
 import { StaffCareerSelector, type CareerSelectorMode } from './components/StaffCareerSelector';
+import { MobileStaffCareerSheet } from './components/MobileStaffCareerSheet';
 import { RealStaffSimulationCard } from './components/RealStaffSimulationCard';
 import { CareerRealmEncyclopedia } from './components/CareerRealmEncyclopedia';
 import { CareerBibleDrawer, type CareerBibleTopic } from './components/CareerBibleDrawer';
@@ -801,52 +802,43 @@ export default function CareerPathPage() {
       {/* 📱 MOBILE STAFF SELECTOR BOTTOM SHEET */}
       <AdaptiveDrawer
         title={
-          <div className="flex items-center gap-2">
-            <span className="text-base">👩‍🦰</span>
-            <span className="font-black text-base">Chọn Chuyên Viên</span>
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-pink-500/15 text-pink-600 dark:text-pink-400 border border-pink-500/25 flex items-center justify-center shrink-0">
+                <UserCheck className="w-3.5 h-3.5" />
+              </div>
+              <span className="font-black text-sm">Chọn Chuyên Viên</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-pink-500 text-white tabular-nums shadow-xs">
+                {
+                  staffList.filter(
+                    (s) =>
+                      ['lt', 'technician', 'cv', 'ktv'].includes((s.role || '').toLowerCase()) ||
+                      ['KTV', 'CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole)
+                  ).length
+                }{' '}
+                CV
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-normal m-0 mt-0.5">
+              Chạm để xem hồ sơ và kích hoạt thử thách
+            </p>
           </div>
         }
         placement="bottom"
-        height="80vh"
+        height="85vh"
         open={isMobileStaffDrawerOpen}
         onClose={() => setIsMobileStaffDrawerOpen(false)}
         destroyOnHidden
       >
-        <div className="p-3">
-          <StaffCareerSelector
-            config={safeConfig}
-            staffList={staffList}
-            selectedStaffId={selectedStaffId}
-            onSelectStaff={(id) => {
-              handleSelectStaff(id);
-              setIsMobileStaffDrawerOpen(false);
-            }}
-            onSyncProd={handleSyncProd}
-            syncing={syncingProd}
-            lastSyncedAt={lastSyncedAt}
-            activeRoleFilter={activeRoleFilter}
-            onRoleFilterChange={setActiveRoleFilter}
-            period={selectedPeriod}
-            onPeriodChange={handlePeriodChange}
-            onSetRole={handleSetRole}
-            onDemote={handleDemote}
-            actionLoading={actionLoading}
-            onOpenBananaDrawer={(staffId, cat) => openBananaDrawer(staffId, cat)}
-            selectorMode={selectorMode}
-            onSelectorModeChange={(mode) => {
-              setSelectorMode(mode);
-              setIsStaffSelectorCollapsed(mode !== 'table');
-            }}
-            isCollapsedHorizontal={selectorMode !== 'table'}
-            onCollapseHorizontal={() => {
-              setIsStaffSelectorCollapsed(true);
-            }}
-            onExpandHorizontal={() => {
-              setSelectorMode('table');
-              setIsStaffSelectorCollapsed(false);
-            }}
-          />
-        </div>
+        <MobileStaffCareerSheet
+          config={safeConfig}
+          staffList={staffList}
+          selectedStaffId={selectedStaffId}
+          onSelectStaff={(id) => {
+            handleSelectStaff(id);
+          }}
+          onClose={() => setIsMobileStaffDrawerOpen(false)}
+        />
       </AdaptiveDrawer>
 
       {/* ACTIVE REALM LORE & SKILL ENCYCLOPEDIA DRAWER */}

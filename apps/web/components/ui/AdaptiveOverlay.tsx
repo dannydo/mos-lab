@@ -23,6 +23,7 @@ export interface AdaptiveDrawerProps extends DrawerProps {
 export function AdaptiveDrawer({ intent = 'detail', className = '', width, closable, ...props }: AdaptiveDrawerProps) {
   const tier = useResponsiveTier();
   const isMobile = tier === 'mobile';
+  const isBottom = props.placement === 'bottom';
 
   // Invariant: Nút đóng [✕] của mọi Drawer bắt buộc nằm ở góc trên bên phải (placement: 'end')
   const mergedClosable =
@@ -36,9 +37,12 @@ export function AdaptiveDrawer({ intent = 'detail', className = '', width, closa
     <Drawer
       {...props}
       closable={mergedClosable}
-      width={isMobile ? '100vw' : (width ?? getOverlayWidth(tier, intent))}
-      placement={isMobile ? 'right' : props.placement}
-      className={`adaptive-overlay ${isMobile ? 'adaptive-overlay-mobile-fullscreen' : ''} ${className}`}
+      width={isBottom ? undefined : isMobile ? '100vw' : (width ?? getOverlayWidth(tier, intent))}
+      height={isBottom ? (props.height ?? (isMobile ? '80vh' : '80vh')) : props.height}
+      placement={isMobile ? (isBottom ? 'bottom' : 'right') : props.placement}
+      className={`adaptive-overlay ${
+        isMobile ? (isBottom ? 'adaptive-overlay-mobile-bottom-sheet' : 'adaptive-overlay-mobile-fullscreen') : ''
+      } ${className}`}
     />
   );
 }

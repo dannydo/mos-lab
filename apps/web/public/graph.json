@@ -5530,7 +5530,7 @@
         "path": "/api/auth/login",
         "module": "auth",
         "handler": "inlineHandler",
-        "line": 57
+        "line": 53
       }
     },
     {
@@ -5544,7 +5544,7 @@
         "path": "/api/auth/google",
         "module": "auth",
         "handler": "inlineHandler",
-        "line": 154
+        "line": 150
       }
     },
     {
@@ -5558,7 +5558,7 @@
         "path": "/api/auth/me",
         "module": "auth",
         "handler": "preHandler",
-        "line": 337
+        "line": 333
       }
     },
     {
@@ -5572,7 +5572,7 @@
         "path": "/api/auth/impersonate",
         "module": "auth",
         "handler": "preHandler",
-        "line": 391
+        "line": 387
       }
     },
     {
@@ -5586,7 +5586,7 @@
         "path": "/api/auth/impersonate/exit",
         "module": "auth",
         "handler": "preHandler",
-        "line": 511
+        "line": 507
       }
     },
     {
@@ -8162,7 +8162,7 @@
         "path": "/api/customers/booking/:id/promotions",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 408
+        "line": 401
       }
     },
     {
@@ -8176,7 +8176,7 @@
         "path": "/api/customers/booking/:id/reschedule-eligibility",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 455
+        "line": 448
       }
     },
     {
@@ -8190,7 +8190,7 @@
         "path": "/api/customers/booking/:id",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 487
+        "line": 480
       }
     },
     {
@@ -8204,7 +8204,7 @@
         "path": "/api/customers/booking/:id",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 870
+        "line": 857
       }
     },
     {
@@ -8218,7 +8218,7 @@
         "path": "/api/customers/booking-slots",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 963
+        "line": 950
       }
     },
     {
@@ -8372,7 +8372,7 @@
         "path": "/api/customers/:id",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 17
+        "line": 18
       }
     },
     {
@@ -8386,7 +8386,7 @@
         "path": "/api/customers/bulk-delete",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 88
+        "line": 89
       }
     },
     {
@@ -8400,7 +8400,7 @@
         "path": "/api/customers/:id/restore",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 165
+        "line": 166
       }
     },
     {
@@ -8414,7 +8414,7 @@
         "path": "/api/customers/:id",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 237
+        "line": 238
       }
     },
     {
@@ -8428,7 +8428,7 @@
         "path": "/api/customers/:id/history",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 316
+        "line": 334
       }
     },
     {
@@ -8442,7 +8442,7 @@
         "path": "/api/customers/:id",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 365
+        "line": 383
       }
     },
     {
@@ -8456,7 +8456,7 @@
         "path": "/api/customers/:id/detailed",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 497
+        "line": 515
       }
     },
     {
@@ -8470,7 +8470,7 @@
         "path": "/api/customers/:id/summary",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1456
+        "line": 1476
       }
     },
     {
@@ -8484,7 +8484,7 @@
         "path": "/api/customers/:id/bookings",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1789
+        "line": 1812
       }
     },
     {
@@ -8498,7 +8498,7 @@
         "path": "/api/customers/:id/calls",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 2011
+        "line": 2034
       }
     },
     {
@@ -8512,7 +8512,7 @@
         "path": "/api/customers",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 22
+        "line": 23
       }
     },
     {
@@ -8526,7 +8526,7 @@
         "path": "/api/customers/random-ids",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1658
+        "line": 1674
       }
     },
     {
@@ -9748,6 +9748,20 @@
       }
     },
     {
+      "id": "route:GET:/api/kpi/cc-legacy-sync",
+      "type": "FastifyRoute",
+      "label": "GET /api/kpi/cc-legacy-sync",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/cc-paystub.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/kpi/cc-legacy-sync",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 1143
+      }
+    },
+    {
       "id": "route:GET:/api/kpi/cc-tip/leaderboard",
       "type": "FastifyRoute",
       "label": "GET /api/kpi/cc-tip/leaderboard",
@@ -10472,7 +10486,7 @@
         "path": "/api/omicall/logs/latest",
         "module": "omicall",
         "handler": "inlineHandler",
-        "line": 337
+        "line": 336
       }
     },
     {
@@ -10486,7 +10500,7 @@
         "path": "/api/omicall/config/:staffId",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 418
+        "line": 417
       }
     },
     {
@@ -10500,7 +10514,7 @@
         "path": "/api/omicall/logs",
         "module": "omicall",
         "handler": "inlineHandler",
-        "line": 443
+        "line": 442
       }
     },
     {
@@ -10514,7 +10528,7 @@
         "path": "/api/omicall/logs/:id/play",
         "module": "omicall",
         "handler": "inlineHandler",
-        "line": 537
+        "line": 536
       }
     },
     {
@@ -10528,7 +10542,7 @@
         "path": "/api/omicall/logs/:id/verify",
         "module": "omicall",
         "handler": "preHandler",
-        "line": 593
+        "line": 592
       }
     },
     {
@@ -10542,7 +10556,7 @@
         "path": "/api/omicall/diagnostic",
         "module": "omicall",
         "handler": "inlineHandler",
-        "line": 692
+        "line": 691
       }
     },
     {
@@ -30408,8 +30422,8 @@
       "filePath": "apps/api/src/modules/auth/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 19364,
-        "lineCount": 557,
+        "sizeBytes": 19340,
+        "lineCount": 553,
         "ext": ".ts"
       }
     },
@@ -31116,6 +31130,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/customers/customer-last-visit-invariant.test.ts",
+      "type": "File",
+      "label": "customer-last-visit-invariant.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/customer-last-visit-invariant.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3167,
+        "lineCount": 82,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/customers/customer-list-sort.test.ts",
       "type": "File",
       "label": "customer-list-sort.test.ts",
@@ -31201,8 +31228,8 @@
       "filePath": "apps/api/src/modules/customers/routes/booking.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 50087,
-        "lineCount": 1196,
+        "sizeBytes": 49680,
+        "lineCount": 1183,
         "ext": ".ts"
       }
     },
@@ -31227,8 +31254,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-detail.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 88164,
-        "lineCount": 2077,
+        "sizeBytes": 89265,
+        "lineCount": 2100,
         "ext": ".ts"
       }
     },
@@ -31240,8 +31267,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-list.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 85807,
-        "lineCount": 2084,
+        "sizeBytes": 86645,
+        "lineCount": 2100,
         "ext": ".ts"
       }
     },
@@ -31851,8 +31878,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cc-paystub.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 45596,
-        "lineCount": 1142,
+        "sizeBytes": 50117,
+        "lineCount": 1248,
         "ext": ".ts"
       }
     },
@@ -32241,8 +32268,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 119257,
-        "lineCount": 2914,
+        "sizeBytes": 121052,
+        "lineCount": 2962,
         "ext": ".ts"
       }
     },
@@ -32371,8 +32398,8 @@
       "filePath": "apps/api/src/modules/omicall/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 27183,
-        "lineCount": 720,
+        "sizeBytes": 27175,
+        "lineCount": 719,
         "ext": ".ts"
       }
     },
@@ -34375,6 +34402,19 @@
       "metadata": {
         "sizeBytes": 12524,
         "lineCount": 310,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/scripts/reconcile-customer-last-order-booking.ts",
+      "type": "File",
+      "label": "reconcile-customer-last-order-booking.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/scripts/reconcile-customer-last-order-booking.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 5076,
+        "lineCount": 125,
         "ext": ".ts"
       }
     },
@@ -36628,6 +36668,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/career-path/components/MobileStaffCareerSheet.tsx",
+      "type": "File",
+      "label": "MobileStaffCareerSheet.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/career-path/components/MobileStaffCareerSheet.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 24329,
+        "lineCount": 567,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "type": "File",
       "label": "RealStaffSimulationCard.tsx",
@@ -36661,8 +36714,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38236,
-        "lineCount": 893,
+        "sizeBytes": 38158,
+        "lineCount": 885,
         "ext": ".tsx"
       }
     },
@@ -45873,6 +45926,13 @@
     {
       "id": "edge:route:GET:/api/kpi/cc-allowances:ws:apps/api",
       "source": "route:GET:/api/kpi/cc-allowances",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/kpi/cc-legacy-sync:ws:apps/api",
+      "source": "route:GET:/api/kpi/cc-legacy-sync",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -60823,6 +60883,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/career-path/components/MobileStaffCareerSheet.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/career-path/components/MobileStaffCareerSheet.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "target": "ws:packages/shared",
@@ -70399,6 +70466,13 @@
       "label": "CALLS kpi.getCcXoayReport"
     },
     {
+      "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/cc-legacy-sync",
+      "source": "page:/dashboard/cc",
+      "target": "route:GET:/api/kpi/cc-legacy-sync",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
       "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/cc-tip/leaderboard",
       "source": "page:/dashboard/cc",
       "target": "route:GET:/api/kpi/cc-tip/leaderboard",
@@ -75285,6 +75359,13 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/cc-legacy-sync",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/kpi/cc-legacy-sync",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/cc-tip/leaderboard",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/kpi/cc-tip/leaderboard",
@@ -79957,6 +80038,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/cc-allowances",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/kpi/cc-allowances",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/cc-legacy-sync",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/kpi/cc-legacy-sync",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -87703,6 +87791,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/cc-legacy-sync",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/kpi/cc-legacy-sync",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/cc-tip/leaderboard",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/kpi/cc-tip/leaderboard",
@@ -89083,28 +89178,28 @@
     }
   ],
   "stats": {
-    "totalNodes": 3166,
-    "totalEdges": 6819,
+    "totalNodes": 3170,
+    "totalEdges": 6825,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 164,
-      "FastifyRoute": 668,
+      "FastifyRoute": 669,
       "Component": 58,
       "SharedType": 1142,
       "DesignToken": 12,
       "UIComponent": 218,
-      "File": 901
+      "File": 904
     },
     "edgeTypeCounts": {
       "EXPORTS": 1318,
-      "HANDLES_ROUTE": 668,
+      "HANDLES_ROUTE": 669,
       "RENDERS": 276,
       "USES_TOKEN": 220,
-      "IMPORTS": 477,
+      "IMPORTS": 478,
       "QUERIES_MODEL": 385,
-      "API_CALL": 3475
+      "API_CALL": 3479
     },
-    "fastifyRouteCount": 673,
+    "fastifyRouteCount": 674,
     "prismaModelCount": 164,
     "nextPageCount": 58,
     "sharedTypeCount": 1142
@@ -92487,6 +92582,13 @@
     {
       "method": "GET",
       "path": "/api/kpi/cc-allowances",
+      "filePath": "apps/api/src/modules/kpi/routes/cc-paystub.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "GET",
+      "path": "/api/kpi/cc-legacy-sync",
       "filePath": "apps/api/src/modules/kpi/routes/cc-paystub.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "kpi"
