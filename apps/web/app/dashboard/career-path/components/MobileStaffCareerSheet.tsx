@@ -56,11 +56,20 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
 
   // Benchmarks from config
   const cvReq = config?.cvToCvPlus || config?.cvToCc;
-  const minOrdersConfig = cvReq?.minOrders ?? 300;
-  const maxFixRateConfig = cvReq?.maxFixRate ?? 0.02;
-  const minTipRatioAboveShop = cvReq?.minTipRatioAboveShop ?? 0.1;
+  const minOrdersConfig = cvReq?.minOrders ?? 330;
+  const maxFixRateConfig = cvReq?.maxFixRate ?? 0.015;
+  const minTipRatioAboveShop = cvReq?.minTipRatioAboveShop ?? 0.05;
   const minBananaConfig = cvReq?.minBananaCount ?? 20;
-  const minComboConfig = cvReq?.minSelfComboRate ?? 0.21;
+  const minComboConfig = cvReq?.minSelfComboRate ?? 0.2;
+  const minQaAuditsConfig = cvReq?.minQaAudits ?? 4;
+  const minHiConfig = cvReq?.minHappinessIndex ?? 0.7;
+
+  const getStaffBenchmarkReq = (staff?: CareerStaffSummary) => {
+    if (staff?.careerRole === 'CV_PLUS') {
+      return config?.cvPlusToCvPlusPlus || config?.cvToCvPlus || config?.cvToCc;
+    }
+    return config?.cvToCvPlus || config?.cvToCc;
+  };
 
   // Metric calculation helpers
   const getStaffTipPercent = (staff: CareerStaffSummary): number => {
@@ -88,49 +97,57 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
     return Number(((staff.selfComboRate || 0) * 100).toFixed(1));
   };
 
-  const getOrdersStatus = (orders: number): MetricStatus => {
-    if (orders >= minOrdersConfig) return 'passed';
-    if (orders >= Math.round(minOrdersConfig * 0.8)) return 'near';
+  const getOrdersStatus = (orders: number, targetOrders = minOrdersConfig): MetricStatus => {
+    if (orders >= targetOrders) return 'passed';
+    if (orders >= Math.round(targetOrders * 0.8)) return 'near';
     return 'failed';
   };
 
-  const getFixStatus = (fixRate: number): MetricStatus => {
+  const getFixStatus = (fixRate: number, targetMaxFix = maxFixRateConfig): MetricStatus => {
     const fixPct = Number(((fixRate || 0) * 100).toFixed(1));
-    const maxFixPct = Number((maxFixRateConfig * 100).toFixed(1));
+    const maxFixPct = Number((targetMaxFix * 100).toFixed(1));
     if (fixPct <= maxFixPct) return 'passed';
     if (fixPct <= maxFixPct + 0.5) return 'near';
     return 'failed';
   };
 
-  const getTipStatus = (staff: CareerStaffSummary): MetricStatus => {
+  const getTipStatus = (staff: CareerStaffSummary, targetRatioAboveShop = minTipRatioAboveShop): MetricStatus => {
     const tipPct = getStaffTipPercent(staff);
     const branchTipRate = staff.shopTipRate || staff.branchTipRate || 0.45;
-    const targetTipPct = Number((branchTipRate * (1 + minTipRatioAboveShop) * 100).toFixed(1));
-    const nearTipPct = Number((branchTipRate * (1 + minTipRatioAboveShop * 0.5) * 100).toFixed(1));
+    const targetTipPct = Number((branchTipRate * (1 + targetRatioAboveShop) * 100).toFixed(1));
+    const nearTipPct = Number((branchTipRate * (1 + targetRatioAboveShop * 0.5) * 100).toFixed(1));
     if (tipPct >= targetTipPct) return 'passed';
     if (tipPct >= nearTipPct) return 'near';
     return 'failed';
   };
 
-  const getQaStatus = (staff: CareerStaffSummary): MetricStatus => {
+  const getQaStatus = (staff: CareerStaffSummary, targetAudits = minQaAuditsConfig): MetricStatus => {
     if (staff.hasFailedQaAudit) return 'failed';
     const audits = getQaAuditsCount(staff);
-    if (audits >= 4) return 'passed';
-    if (audits >= 3) return 'near';
+    if (audits >= targetAudits) return 'passed';
+    if (audits >= Math.max(1, targetAudits - 1)) return 'near';
     return 'failed';
   };
 
-  const getComboStatus = (staff: CareerStaffSummary): MetricStatus => {
+  const getComboStatus = (staff: CareerStaffSummary, targetCombo = minComboConfig): MetricStatus => {
     const comboPct = getStaffComboPercent(staff);
-    const targetComboPct = Number((minComboConfig * 100).toFixed(1));
+    const targetComboPct = Number((targetCombo * 100).toFixed(1));
     if (comboPct >= targetComboPct) return 'passed';
     if (comboPct >= targetComboPct * 0.7) return 'near';
     return 'failed';
   };
 
-  const getBananaStatus = (count: number): MetricStatus => {
-    if (count >= minBananaConfig) return 'passed';
-    if (count >= Math.round(minBananaConfig * 0.75)) return 'near';
+  const getBananaStatus = (count: number, targetBanana = minBananaConfig): MetricStatus => {
+    if (count >= targetBanana) return 'passed';
+    if (count >= Math.round(targetBanana * 0.75)) return 'near';
+    return 'failed';
+  };
+
+  const getHiStatus = (hi: number, targetHi = minHiConfig): MetricStatus => {
+    const hiPct = Math.round((hi || 0.75) * 100);
+    const targetHiPct = Math.round(targetHi * 100);
+    if (hiPct >= targetHiPct) return 'passed';
+    if (hiPct >= targetHiPct - 5) return 'near';
     return 'failed';
   };
 
@@ -138,12 +155,21 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
     if (['CV_PLUS', 'CV_PLUS_PLUS', 'MASTER_TECH'].includes(staff.careerRole)) {
       return 'passed';
     }
-    const sOrders = getOrdersStatus(staff.ordersCount || 0);
-    const sFix = getFixStatus(staff.fixRate || 0);
-    const sTip = getTipStatus(staff);
-    const sQa = getQaStatus(staff);
-    const sCombo = getComboStatus(staff);
-    const sBanana = getBananaStatus(staff.bananaCount || 0);
+
+    const req = getStaffBenchmarkReq(staff);
+    const targetOrders = req?.minOrders ?? minOrdersConfig;
+    const targetFix = req?.maxFixRate ?? maxFixRateConfig;
+    const targetTip = req?.minTipRatioAboveShop ?? minTipRatioAboveShop;
+    const targetQa = req?.minQaAudits ?? minQaAuditsConfig;
+    const targetBanana = req?.minBananaCount ?? minBananaConfig;
+    const targetCombo = req?.minSelfComboRate ?? minComboConfig;
+
+    const sOrders = getOrdersStatus(staff.ordersCount || 0, targetOrders);
+    const sFix = getFixStatus(staff.fixRate || 0, targetFix);
+    const sTip = getTipStatus(staff, targetTip);
+    const sQa = getQaStatus(staff, targetQa);
+    const sCombo = getComboStatus(staff, targetCombo);
+    const sBanana = getBananaStatus(staff.bananaCount || 0, targetBanana);
 
     const list = [sOrders, sFix, sTip, sQa, sCombo, sBanana];
     const passed = list.filter((s) => s === 'passed').length;
@@ -216,13 +242,18 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
     }
   };
 
-  // Base CV/KTV filter
+  // Base CV/KTV filter (sắp xếp theo số bộ mi ordersCount giảm dần)
   const baseStaffList = useMemo(() => {
-    return staffList.filter((s) => {
+    const list = staffList.filter((s) => {
       const isCv =
         ['lt', 'technician', 'cv', 'ktv'].includes((s.role || '').toLowerCase()) ||
         ['KTV', 'CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole);
       return isCv;
+    });
+    return [...list].sort((a, b) => {
+      const diff = (b.ordersCount || 0) - (a.ordersCount || 0);
+      if (diff !== 0) return diff;
+      return (a.displayName || '').localeCompare(b.displayName || '');
     });
   }, [staffList]);
 
@@ -244,7 +275,7 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
     return counts;
   }, [baseStaffList]);
 
-  // Filtered by Search & Role
+  // Filtered by Search & Role (bảo đảm luôn order by số bộ mi ordersCount giảm dần)
   const filteredStaff = useMemo(() => {
     let result = baseStaffList;
 
@@ -262,7 +293,11 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
       });
     }
 
-    return result;
+    return [...result].sort((a, b) => {
+      const diff = (b.ordersCount || 0) - (a.ordersCount || 0);
+      if (diff !== 0) return diff;
+      return (a.displayName || '').localeCompare(b.displayName || '');
+    });
   }, [baseStaffList, activeRoleFilter, searchQuery]);
 
   // Auto-scroll to selected staff when sheet opens
@@ -377,12 +412,22 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
             const comboRate = getStaffComboPercent(staff);
             const bananaBalance = getBananaBalance(staff);
 
-            const sOrders = getOrdersStatus(staff.ordersCount || 0);
-            const sFix = getFixStatus(staff.fixRate || 0);
-            const sTip = getTipStatus(staff);
-            const sQa = getQaStatus(staff);
-            const sCombo = getComboStatus(staff);
-            const sBanana = getBananaStatus(staff.bananaCount || 0);
+            const req = getStaffBenchmarkReq(staff);
+            const targetOrders = req?.minOrders ?? minOrdersConfig;
+            const targetFix = req?.maxFixRate ?? maxFixRateConfig;
+            const targetMaxFixPct = Number((targetFix * 100).toFixed(1));
+            const targetTipRatio = req?.minTipRatioAboveShop ?? minTipRatioAboveShop;
+            const targetQaAudits = req?.minQaAudits ?? minQaAuditsConfig;
+            const targetCombo = req?.minSelfComboRate ?? minComboConfig;
+            const targetComboPct = Number((targetCombo * 100).toFixed(1));
+            const targetBanana = req?.minBananaCount ?? minBananaConfig;
+
+            const sOrders = getOrdersStatus(staff.ordersCount || 0, targetOrders);
+            const sFix = getFixStatus(staff.fixRate || 0, targetFix);
+            const sTip = getTipStatus(staff, targetTipRatio);
+            const sQa = getQaStatus(staff, targetQaAudits);
+            const sCombo = getComboStatus(staff, targetCombo);
+            const sBanana = getBananaStatus(staff.bananaCount || 0, targetBanana);
 
             return (
               <div
@@ -481,7 +526,7 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
                   {/* 1. Bộ mi */}
                   <div
                     className={`rounded-lg py-1 border transition-all ${getBadgeClass(sOrders)}`}
-                    title={`Bộ mi: ${staff.ordersCount || 0}/300 (90 ngày qua)`}
+                    title={`Bộ mi: ${staff.ordersCount || 0}/${targetOrders} (90 ngày qua, chuẩn ≥ ${targetOrders} bộ)`}
                   >
                     <div className="text-[8px] opacity-75 font-sans leading-none mb-0.5">Bộ mi</div>
                     <div className="flex items-center justify-center gap-0.5 truncate px-0.5">
@@ -493,7 +538,7 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
                   {/* 2. Sửa / Bảo hành */}
                   <div
                     className={`rounded-lg py-1 border transition-all ${getBadgeClass(sFix)}`}
-                    title={`Tỷ lệ sửa mi: ${fixRate}% (chuẩn ≤ 2.0%)`}
+                    title={`Tỷ lệ sửa mi: ${fixRate}% (chuẩn ≤ ${targetMaxFixPct}%)`}
                   >
                     <div className="text-[8px] opacity-75 font-sans leading-none mb-0.5">Fix</div>
                     <div className="flex items-center justify-center gap-0.5 truncate px-0.5">
@@ -505,7 +550,7 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
                   {/* 3. Tip ≥ 20K */}
                   <div
                     className={`rounded-lg py-1 border transition-all ${getBadgeClass(sTip)}`}
-                    title={`Tỷ lệ tip ≥ 20K: ${tipRate}%`}
+                    title={`Tỷ lệ tip ≥ 20K: ${tipRate}% (chuẩn vượt ${(targetTipRatio * 100).toFixed(0)}% TB chi nhánh)`}
                   >
                     <div className="text-[8px] opacity-75 font-sans leading-none mb-0.5">Tip</div>
                     <div className="flex items-center justify-center gap-0.5 truncate px-0.5">
@@ -517,19 +562,21 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
                   {/* 4. Audit QA */}
                   <div
                     className={`rounded-lg py-1 border transition-all ${getBadgeClass(sQa)}`}
-                    title={`Audit QA hàng tuần: ${qaAudits}/4`}
+                    title={`Audit QA hàng tuần: ${qaAudits}/${targetQaAudits} (chuẩn ≥ ${targetQaAudits} lần/tháng)`}
                   >
                     <div className="text-[8px] opacity-75 font-sans leading-none mb-0.5">QA</div>
                     <div className="flex items-center justify-center gap-0.5 truncate px-0.5">
                       <ShieldCheck className="w-2.5 h-2.5 shrink-0" />
-                      <span>{qaAudits}/4</span>
+                      <span>
+                        {qaAudits}/{targetQaAudits}
+                      </span>
                     </div>
                   </div>
 
                   {/* 5. Combo & SP */}
                   <div
                     className={`rounded-lg py-1 border transition-all ${getBadgeClass(sCombo)}`}
-                    title={`Tỷ lệ Combo & SP: ${comboRate}%`}
+                    title={`Tỷ lệ Combo & SP: ${comboRate}% (chuẩn ≥ ${targetComboPct}%)`}
                   >
                     <div className="text-[8px] opacity-75 font-sans leading-none mb-0.5">Combo</div>
                     <div className="flex items-center justify-center gap-0.5 truncate px-0.5">
@@ -541,7 +588,7 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
                   {/* 6. Chuối */}
                   <div
                     className={`rounded-lg py-1 border transition-all ${getBadgeClass(sBanana)}`}
-                    title={`Số dư Chuối: ${bananaBalance.toLocaleString('vi-VN')} Chuối`}
+                    title={`Số dư Chuối: ${bananaBalance.toLocaleString('vi-VN')} 🍌 (chuẩn không âm ≥ 0)`}
                   >
                     <div className="text-[8px] opacity-75 font-sans leading-none mb-0.5">Chuối</div>
                     <div className="flex items-center justify-center gap-0.5 truncate px-0.5">

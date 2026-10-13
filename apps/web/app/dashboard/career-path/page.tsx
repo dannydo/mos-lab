@@ -152,13 +152,23 @@ export default function CareerPathPage() {
 
         if (fetchedStaffList.status === 'fulfilled' && fetchedStaffList.value?.length > 0) {
           const list = fetchedStaffList.value;
-          setStaffList(list);
 
-          // Auto select first technician or staff member
+          // 1. Sắp xếp danh sách Chuyên Viên theo số bộ mi (ordersCount) giảm dần (DESC), tie-break theo tên
+          const sortedList = [...list].sort((a, b) => {
+            const diff = (b.ordersCount || 0) - (a.ordersCount || 0);
+            if (diff !== 0) return diff;
+            return (a.displayName || '').localeCompare(b.displayName || '');
+          });
+          setStaffList(sortedList);
+
+          // 2. Tự chọn người có số bộ mi cao nhất (ưu tiên trong nhóm CV/CV+/CV++)
+          const cvPool = sortedList.filter((s) => ['CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole));
+          const targetPool = cvPool.length > 0 ? cvPool : sortedList;
+          const highestOrdersStaff = targetPool[0];
+
           const defaultStaff =
-            (selectedStaffId ? list.find((s) => s.id === selectedStaffId) : null) ||
-            list.find((s) => ['CV', 'CV_PLUS', 'CV_PLUS_PLUS'].includes(s.careerRole)) ||
-            list[0];
+            (selectedStaffId ? sortedList.find((s) => s.id === selectedStaffId) : null) || highestOrdersStaff;
+
           if (defaultStaff) {
             setSelectedStaffId(defaultStaff.id);
             const defaultTarget = defaultStaff.careerRole === 'CV_PLUS' ? 'CV_PLUS_PLUS' : 'CV_PLUS';

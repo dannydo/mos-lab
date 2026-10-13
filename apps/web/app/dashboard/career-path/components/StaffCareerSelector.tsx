@@ -229,7 +229,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
   );
 
   const filteredStaff = useMemo(() => {
-    return staffList.filter((s) => {
+    const list = staffList.filter((s) => {
       // Bắt buộc chỉ lọc lấy CV (Chuyên viên) & KTV theo danh sách báo cáo
       const isCv =
         ['lt', 'technician', 'cv', 'ktv'].includes((s.role || '').toLowerCase()) ||
@@ -242,6 +242,13 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
       if (currentFilter === 'CV_PLUS') return s.careerRole === 'CV_PLUS';
       if (currentFilter === 'CV_PLUS_PLUS') return s.careerRole === 'CV_PLUS_PLUS';
       return true;
+    });
+
+    // 1. Luôn sắp xếp danh sách theo số bộ mi (ordersCount) giảm dần (DESC)
+    return [...list].sort((a, b) => {
+      const diff = (b.ordersCount || 0) - (a.ordersCount || 0);
+      if (diff !== 0) return diff;
+      return (a.displayName || '').localeCompare(b.displayName || '');
     });
   }, [staffList, currentFilter]);
 
@@ -299,57 +306,65 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
   };
 
   const cvReq = config?.cvToCvPlus || config?.cvToCc;
-  const minOrdersConfig = cvReq?.minOrders ?? 300;
-  const maxFixRateConfig = cvReq?.maxFixRate ?? 0.02;
-  const minTipRatioAboveShop = cvReq?.minTipRatioAboveShop ?? 0.1;
+  const minOrdersConfig = cvReq?.minOrders ?? 330;
+  const maxFixRateConfig = cvReq?.maxFixRate ?? 0.015;
+  const minTipRatioAboveShop = cvReq?.minTipRatioAboveShop ?? 0.05;
   const minHiConfig = cvReq?.minHappinessIndex ?? 0.7;
   const minBananaConfig = cvReq?.minBananaCount ?? 20;
-  const minComboConfig = cvReq?.minSelfComboRate ?? 0.21;
+  const minComboConfig = cvReq?.minSelfComboRate ?? 0.2;
+  const minQaAuditsConfig = cvReq?.minQaAudits ?? 4;
 
-  const getOrdersStatus = (orders: number): MetricStatus => {
-    if (orders >= minOrdersConfig) return 'passed';
-    if (orders >= Math.round(minOrdersConfig * 0.8)) return 'near';
+  const getStaffBenchmarkReq = (staff?: CareerStaffSummary) => {
+    if (staff?.careerRole === 'CV_PLUS') {
+      return config?.cvPlusToCvPlusPlus || config?.cvToCvPlus || config?.cvToCc;
+    }
+    return config?.cvToCvPlus || config?.cvToCc;
+  };
+
+  const getOrdersStatus = (orders: number, targetOrders = minOrdersConfig): MetricStatus => {
+    if (orders >= targetOrders) return 'passed';
+    if (orders >= Math.round(targetOrders * 0.8)) return 'near';
     return 'failed';
   };
 
-  const getFixStatus = (fixRate: number): MetricStatus => {
+  const getFixStatus = (fixRate: number, targetMaxFix = maxFixRateConfig): MetricStatus => {
     const fixPct = Number(((fixRate || 0) * 100).toFixed(1));
-    const maxFixPct = Number((maxFixRateConfig * 100).toFixed(1));
+    const maxFixPct = Number((targetMaxFix * 100).toFixed(1));
     if (fixPct <= maxFixPct) return 'passed';
     if (fixPct <= maxFixPct + 0.5) return 'near';
     return 'failed';
   };
 
-  const getTipStatus = (staff: CareerStaffSummary): MetricStatus => {
+  const getTipStatus = (staff: CareerStaffSummary, targetRatioAboveShop = minTipRatioAboveShop): MetricStatus => {
     const tipPct = getStaffTipPercent(staff);
     const branchTipRate = staff.shopTipRate || staff.branchTipRate || 0.45;
-    const targetTipPct = Number((branchTipRate * (1 + minTipRatioAboveShop) * 100).toFixed(1));
-    const nearTipPct = Number((branchTipRate * (1 + minTipRatioAboveShop * 0.5) * 100).toFixed(1));
+    const targetTipPct = Number((branchTipRate * (1 + targetRatioAboveShop) * 100).toFixed(1));
+    const nearTipPct = Number((branchTipRate * (1 + targetRatioAboveShop * 0.5) * 100).toFixed(1));
 
     if (tipPct >= targetTipPct) return 'passed';
     if (tipPct >= nearTipPct) return 'near';
     return 'failed';
   };
 
-  const getQaStatus = (staff: CareerStaffSummary): MetricStatus => {
+  const getQaStatus = (staff: CareerStaffSummary, targetAudits = minQaAuditsConfig): MetricStatus => {
     if (staff.hasFailedQaAudit) return 'failed';
     const audits = getQaAuditsCount(staff);
-    if (audits >= 4) return 'passed';
-    if (audits >= 3) return 'near';
+    if (audits >= targetAudits) return 'passed';
+    if (audits >= Math.max(1, targetAudits - 1)) return 'near';
     return 'failed';
   };
 
-  const getHiStatus = (hi: number): MetricStatus => {
+  const getHiStatus = (hi: number, targetHi = minHiConfig): MetricStatus => {
     const hiPct = Math.round((hi || 0.75) * 100);
-    const targetHiPct = Math.round(minHiConfig * 100);
+    const targetHiPct = Math.round(targetHi * 100);
     if (hiPct >= targetHiPct) return 'passed';
     if (hiPct >= targetHiPct - 5) return 'near';
     return 'failed';
   };
 
-  const getBananaCountStatus = (count: number): MetricStatus => {
-    if (count >= minBananaConfig) return 'passed';
-    if (count >= Math.round(minBananaConfig * 0.75)) return 'near';
+  const getBananaCountStatus = (count: number, targetBanana = minBananaConfig): MetricStatus => {
+    if (count >= targetBanana) return 'passed';
+    if (count >= Math.round(targetBanana * 0.75)) return 'near';
     return 'failed';
   };
 
@@ -363,9 +378,9 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
     return Number(((staff.selfComboRate || 0) * 100).toFixed(1));
   };
 
-  const getComboStatus = (staff: CareerStaffSummary): MetricStatus => {
+  const getComboStatus = (staff: CareerStaffSummary, targetCombo = minComboConfig): MetricStatus => {
     const comboPct = getStaffComboPercent(staff);
-    const targetComboPct = Number((minComboConfig * 100).toFixed(1));
+    const targetComboPct = Number((targetCombo * 100).toFixed(1));
     if (comboPct >= targetComboPct) return 'passed';
     if (comboPct >= targetComboPct * 0.7) return 'near';
     return 'failed';
@@ -376,12 +391,20 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
       return 'passed';
     }
 
-    const sOrders = getOrdersStatus(staff.ordersCount || 0);
-    const sFix = getFixStatus(staff.fixRate || 0);
-    const sTip = getTipStatus(staff);
-    const sQa = getQaStatus(staff);
-    const sHi = getHiStatus(staff.happinessIndex || 0.75);
-    const sBanana = getBananaCountStatus(staff.bananaCount || 0);
+    const req = getStaffBenchmarkReq(staff);
+    const targetOrders = req?.minOrders ?? minOrdersConfig;
+    const targetFix = req?.maxFixRate ?? maxFixRateConfig;
+    const targetTip = req?.minTipRatioAboveShop ?? minTipRatioAboveShop;
+    const targetQa = req?.minQaAudits ?? minQaAuditsConfig;
+    const targetHi = req?.minHappinessIndex ?? minHiConfig;
+    const targetBanana = req?.minBananaCount ?? minBananaConfig;
+
+    const sOrders = getOrdersStatus(staff.ordersCount || 0, targetOrders);
+    const sFix = getFixStatus(staff.fixRate || 0, targetFix);
+    const sTip = getTipStatus(staff, targetTip);
+    const sQa = getQaStatus(staff, targetQa);
+    const sHi = getHiStatus(staff.happinessIndex || 0.75, targetHi);
+    const sBanana = getBananaCountStatus(staff.bananaCount || 0, targetBanana);
     const sBalance = getBananaBalanceStatus(getBananaBalance(staff));
 
     const list = [sOrders, sFix, sTip, sQa, sHi, sBanana, sBalance];
@@ -625,7 +648,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
-        <Tooltip title="Bộ mi: Số ca hoàn thành trong 90 ngày qua (Chuẩn ≥ 300 bộ)">
+        <Tooltip title={`Bộ mi: Số ca hoàn thành trong 90 ngày qua (Chuẩn ≥ ${minOrdersConfig} bộ)`}>
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <Eye className="w-4 h-4 text-slate-600 dark:text-slate-300" />
           </span>
@@ -635,12 +658,17 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
       dataIndex: 'ordersCount',
       width: 64,
       align: 'center',
+      defaultSortOrder: 'descend',
       sorter: (a, b) => (a.ordersCount || 0) - (b.ordersCount || 0),
-      render: (ordersCount: number) => {
+      render: (ordersCount: number, staff: CareerStaffSummary) => {
+        const req = getStaffBenchmarkReq(staff);
+        const targetOrders = req?.minOrders ?? minOrdersConfig;
         const count = ordersCount || 0;
-        const status = getOrdersStatus(count);
+        const status = getOrdersStatus(count, targetOrders);
         return (
-          <Tooltip title={`${count}/300 bộ mi (90 ngày qua) · ${getStatusLabel(status)}`}>
+          <Tooltip
+            title={`${count}/${targetOrders} bộ mi (90 ngày qua, chuẩn ≥ ${targetOrders} bộ) · ${getStatusLabel(status)}`}
+          >
             <span
               className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${getStatusBadgeClass(
                 status
@@ -654,7 +682,9 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
-        <Tooltip title="Fix: Tỷ lệ sửa mi / bảo hành trong tháng hoàn tất gần nhất (Chuẩn ≤ 2.0%)">
+        <Tooltip
+          title={`Fix: Tỷ lệ sửa mi / bảo hành trong tháng hoàn tất gần nhất (Chuẩn ≤ ${(maxFixRateConfig * 100).toFixed(1)}%)`}
+        >
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <Bug className="w-4 h-4 text-slate-600 dark:text-slate-300" />
           </span>
@@ -665,12 +695,15 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
       width: 64,
       align: 'center',
       sorter: (a, b) => (a.fixRate || 0) - (b.fixRate || 0),
-      render: (fixRate: number) => {
+      render: (fixRate: number, staff: CareerStaffSummary) => {
+        const req = getStaffBenchmarkReq(staff);
+        const targetMaxFix = req?.maxFixRate ?? maxFixRateConfig;
         const fixPct = Number(((fixRate || 0) * 100).toFixed(1));
-        const status = getFixStatus(fixRate || 0);
+        const maxFixPct = Number((targetMaxFix * 100).toFixed(1));
+        const status = getFixStatus(fixRate || 0, targetMaxFix);
         return (
           <Tooltip
-            title={`Tỷ lệ bảo hành / sửa: ${fixPct}% tháng hoàn tất gần nhất (chuẩn ≤ 2.0%) · ${getStatusLabel(status)}`}
+            title={`Tỷ lệ bảo hành / sửa: ${fixPct}% tháng hoàn tất gần nhất (chuẩn ≤ ${maxFixPct}%) · ${getStatusLabel(status)}`}
           >
             <span
               className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${getStatusBadgeClass(
@@ -698,19 +731,21 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
       align: 'center',
       sorter: (a, b) => getStaffTipPercent(a) - getStaffTipPercent(b),
       render: (_, staff) => {
+        const req = getStaffBenchmarkReq(staff);
+        const targetTipRatio = req?.minTipRatioAboveShop ?? minTipRatioAboveShop;
         const tipPct = getStaffTipPercent(staff);
-        const status = getTipStatus(staff);
+        const status = getTipStatus(staff, targetTipRatio);
         const diffShop = Number(((staff.tipRatioAboveShop || 0) * 100).toFixed(0));
         const branchLabel = staff.branchName || 'Chi nhánh';
         const branchTipPct = ((staff.shopTipRate || staff.branchTipRate || 0.45) * 100).toFixed(1);
         const targetTipPct = Number(
-          ((staff.shopTipRate || staff.branchTipRate || 0.45) * (1 + minTipRatioAboveShop) * 100).toFixed(1)
+          ((staff.shopTipRate || staff.branchTipRate || 0.45) * (1 + targetTipRatio) * 100).toFixed(1)
         );
         return (
           <Tooltip
-            title={`Tip tháng hoàn tất gần nhất: ${tipPct}% (mục tiêu ≥ ${targetTipPct}% · TB ${branchLabel}: ${branchTipPct}%, ${
+            title={`Tip tháng hoàn tất gần nhất: ${tipPct}% (mục tiêu ≥ ${targetTipPct}% · TB ${branchLabel}: ${branchTipPct}%, vượt chuẩn ${
               diffShop >= 0 ? `+${diffShop}%` : `${diffShop}%`
-            }) · ${getStatusLabel(status)}`}
+            } so với TB) · ${getStatusLabel(status)}`}
           >
             <span
               className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${getStatusBadgeClass(
@@ -725,7 +760,9 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
-        <Tooltip title="QA & QC: Kiểm định định kỳ trong tháng hoàn tất gần nhất (Chuẩn ≥ 4 lần/tháng và không vi phạm FAILED)">
+        <Tooltip
+          title={`QA & QC: Kiểm định định kỳ trong tháng hoàn tất gần nhất (Chuẩn ≥ ${minQaAuditsConfig} lần/tháng và không vi phạm FAILED)`}
+        >
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <ShieldCheck className="w-4 h-4 text-slate-600 dark:text-slate-300" />
           </span>
@@ -736,14 +773,16 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
       align: 'center',
       sorter: (a, b) => getQaAuditsCount(a) - getQaAuditsCount(b),
       render: (_, staff) => {
+        const req = getStaffBenchmarkReq(staff);
+        const targetQaAudits = req?.minQaAudits ?? minQaAuditsConfig;
         const audits = getQaAuditsCount(staff);
-        const status = getQaStatus(staff);
+        const status = getQaStatus(staff, targetQaAudits);
         return (
           <Tooltip
             title={
               staff.hasFailedQaAudit
                 ? '✕ Có biên bản vi phạm QA'
-                : `${audits}/4 lần kiểm định tác phong & vệ sinh tháng hoàn tất gần nhất · ${getStatusLabel(status)}`
+                : `${audits}/${targetQaAudits} lần kiểm định tác phong & vệ sinh tháng hoàn tất gần nhất (chuẩn ≥ ${targetQaAudits} lần) · ${getStatusLabel(status)}`
             }
           >
             <span
@@ -751,7 +790,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
                 status
               )}`}
             >
-              {audits}/4
+              {audits}/{targetQaAudits}
             </span>
           </Tooltip>
         );
@@ -759,7 +798,9 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
-        <Tooltip title="HI: Chỉ số Hạnh Phúc trong tháng hoàn tất gần nhất (Chuẩn ≥ 70%)">
+        <Tooltip
+          title={`HI: Chỉ số Hạnh Phúc trong tháng hoàn tất gần nhất (Chuẩn ≥ ${(minHiConfig * 100).toFixed(0)}%)`}
+        >
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <Heart className="w-4 h-4 text-slate-600 dark:text-slate-300" />
           </span>
@@ -770,12 +811,15 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
       width: 62,
       align: 'center',
       sorter: (a, b) => (a.happinessIndex || 0) - (b.happinessIndex || 0),
-      render: (happinessIndex: number) => {
+      render: (happinessIndex: number, staff: CareerStaffSummary) => {
+        const req = getStaffBenchmarkReq(staff);
+        const targetHi = req?.minHappinessIndex ?? minHiConfig;
+        const targetHiPct = Math.round(targetHi * 100);
         const hiPct = Math.round((happinessIndex || 0.75) * 100);
-        const status = getHiStatus(happinessIndex || 0.75);
+        const status = getHiStatus(happinessIndex || 0.75, targetHi);
         return (
           <Tooltip
-            title={`Chỉ số Hạnh Phúc HI tháng hoàn tất gần nhất: ${hiPct}% (chuẩn ≥ 70%) · ${getStatusLabel(status)}`}
+            title={`Chỉ số Hạnh Phúc HI tháng hoàn tất gần nhất: ${hiPct}% (chuẩn ≥ ${targetHiPct}%) · ${getStatusLabel(status)}`}
           >
             <span
               className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${getStatusBadgeClass(
@@ -790,7 +834,9 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
-        <Tooltip title="Chuối yêu thương: Check-in nhận từ đồng đội trong tháng hoàn tất gần nhất (Chuẩn ≥ 20 🍌)">
+        <Tooltip
+          title={`Chuối yêu thương: Check-in nhận từ đồng đội trong tháng hoàn tất gần nhất (Chuẩn ≥ ${minBananaConfig} 🍌)`}
+        >
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <Banana className="w-4 h-4 text-amber-500" />
           </span>
@@ -802,10 +848,14 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
       align: 'center',
       sorter: (a, b) => (a.bananaCount || 0) - (b.bananaCount || 0),
       render: (bananaCount: number, staff: CareerStaffSummary) => {
+        const req = getStaffBenchmarkReq(staff);
+        const targetBanana = req?.minBananaCount ?? minBananaConfig;
         const count = bananaCount || 0;
-        const status = getBananaCountStatus(count);
+        const status = getBananaCountStatus(count, targetBanana);
         return (
-          <Tooltip title={`${count}/20 chuối Check-in tính điểm · ${getStatusLabel(status)} (Nhấn để xem danh sách)`}>
+          <Tooltip
+            title={`${count}/${targetBanana} chuối Check-in tính điểm (chuẩn ≥ ${targetBanana} 🍌) · ${getStatusLabel(status)} (Nhấn để xem danh sách)`}
+          >
             <button
               type="button"
               onClick={(e) => {
@@ -824,7 +874,9 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
     },
     {
       title: (
-        <Tooltip title="Combo: Tỷ lệ chốt Combo trên khách Not Combo Live (Ải Trùm Cuối · Chuẩn ≥ 21%)">
+        <Tooltip
+          title={`Combo: Tỷ lệ chốt Combo trên khách Not Combo Live (Ải Trùm Cuối · Chuẩn ≥ ${(minComboConfig * 100).toFixed(1)}%)`}
+        >
           <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <Gem className="w-4 h-4 text-pink-500 dark:text-pink-400" />
           </span>
@@ -836,11 +888,14 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
       align: 'center',
       sorter: (a, b) => (a.selfComboRate || 0) - (b.selfComboRate || 0),
       render: (_, staff) => {
+        const req = getStaffBenchmarkReq(staff);
+        const targetCombo = req?.minSelfComboRate ?? minComboConfig;
+        const targetComboPct = Number((targetCombo * 100).toFixed(1));
         const comboPct = getStaffComboPercent(staff);
-        const status = getComboStatus(staff);
+        const status = getComboStatus(staff, targetCombo);
         return (
           <Tooltip
-            title={`Tỷ lệ bán Combo: ${comboPct}% trên khách Not Combo Live (chuẩn ≥ 21%) · ${getStatusLabel(status)}`}
+            title={`Tỷ lệ bán Combo: ${comboPct}% trên khách Not Combo Live (chuẩn ≥ ${targetComboPct}%) · ${getStatusLabel(status)}`}
           >
             <span
               className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold tabular-nums border ${getStatusBadgeClass(
@@ -1390,6 +1445,30 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
               const hiPct = Math.round((staff.happinessIndex || 0.75) * 100);
               const balance = getBananaBalance(staff);
 
+              const req = getStaffBenchmarkReq(staff);
+              const targetOrders = req?.minOrders ?? minOrdersConfig;
+              const targetFix = req?.maxFixRate ?? maxFixRateConfig;
+              const targetMaxFixPct = Number((targetFix * 100).toFixed(1));
+              const targetTipRatio = req?.minTipRatioAboveShop ?? minTipRatioAboveShop;
+              const targetQaAudits = req?.minQaAudits ?? minQaAuditsConfig;
+              const targetHi = req?.minHappinessIndex ?? minHiConfig;
+              const targetHiPct = Math.round(targetHi * 100);
+              const targetBanana = req?.minBananaCount ?? minBananaConfig;
+              const targetCombo = req?.minSelfComboRate ?? minComboConfig;
+              const targetComboPct = Number((targetCombo * 100).toFixed(1));
+              const branchTipPct = ((staff.shopTipRate || staff.branchTipRate || 0.45) * 100).toFixed(1);
+              const targetTipPct = Number(
+                ((staff.shopTipRate || staff.branchTipRate || 0.45) * (1 + targetTipRatio) * 100).toFixed(1)
+              );
+
+              const sOrders = getOrdersStatus(staff.ordersCount || 0, targetOrders);
+              const sFix = getFixStatus(staff.fixRate || 0, targetFix);
+              const sTip = getTipStatus(staff, targetTipRatio);
+              const sQa = getQaStatus(staff, targetQaAudits);
+              const sHi = getHiStatus(staff.happinessIndex || 0.75, targetHi);
+              const sBanana = getBananaCountStatus(staff.bananaCount || 0, targetBanana);
+              const sCombo = getComboStatus(staff, targetCombo);
+
               return (
                 <div
                   key={staff.id}
@@ -1462,40 +1541,47 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
                   <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-200/60 dark:border-slate-800/80 text-[10px]">
                     <div
                       className={`flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-full border tabular-nums font-bold ${getStatusBadgeClass(
-                        getOrdersStatus(staff.ordersCount || 0)
+                        sOrders
                       )}`}
+                      title={`Bộ mi: ${staff.ordersCount || 0}/${targetOrders} (90 ngày qua, chuẩn ≥ ${targetOrders} bộ) · ${getStatusLabel(sOrders)}`}
                     >
                       <Eye className="w-2.5 h-2.5" />
                       <span>{staff.ordersCount || 0}</span>
                     </div>
                     <div
                       className={`flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-full border tabular-nums font-bold ${getStatusBadgeClass(
-                        getFixStatus(staff.fixRate || 0)
+                        sFix
                       )}`}
+                      title={`Tỷ lệ sửa mi: ${fixPct}% (chuẩn ≤ ${targetMaxFixPct}%) · ${getStatusLabel(sFix)}`}
                     >
                       <Bug className="w-2.5 h-2.5" />
                       <span>{fixPct}%</span>
                     </div>
                     <div
                       className={`flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-full border tabular-nums font-bold ${getStatusBadgeClass(
-                        getTipStatus(staff)
+                        sTip
                       )}`}
+                      title={`Tỷ lệ tip ≥ 20K: ${tipPct}% (mục tiêu ≥ ${targetTipPct}% · TB: ${branchTipPct}%) · ${getStatusLabel(sTip)}`}
                     >
                       <HandCoins className="w-2.5 h-2.5" />
                       <span>{tipPct}%</span>
                     </div>
                     <div
                       className={`flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-full border tabular-nums font-bold ${getStatusBadgeClass(
-                        getQaStatus(staff)
+                        sQa
                       )}`}
+                      title={`Kiểm định QA: ${audits}/${targetQaAudits} lần/tháng (chuẩn ≥ ${targetQaAudits} lần) · ${getStatusLabel(sQa)}`}
                     >
                       <ShieldCheck className="w-2.5 h-2.5" />
-                      <span>{audits}/4</span>
+                      <span>
+                        {audits}/{targetQaAudits}
+                      </span>
                     </div>
                     <div
                       className={`flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-full border tabular-nums font-bold ${getStatusBadgeClass(
-                        getHiStatus(staff.happinessIndex || 0.75)
+                        sHi
                       )}`}
+                      title={`Chỉ số Hạnh Phúc HI: ${hiPct}% (chuẩn ≥ ${targetHiPct}%) · ${getStatusLabel(sHi)}`}
                     >
                       <Heart className="w-2.5 h-2.5" />
                       <span>{hiPct}%</span>
@@ -1507,18 +1593,18 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
                         onOpenBananaDrawer?.(staff.id, 'CHECKIN');
                       }}
                       className={`flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-full border tabular-nums font-bold hover:scale-105 active:scale-95 transition-transform cursor-pointer ${getStatusBadgeClass(
-                        getBananaCountStatus(staff.bananaCount || 0)
+                        sBanana
                       )}`}
-                      title="Bấm để xem danh sách Chuối Check-in"
+                      title={`${staff.bananaCount || 0}/${targetBanana} chuối Check-in (chuẩn ≥ ${targetBanana} 🍌) · ${getStatusLabel(sBanana)}`}
                     >
                       <Banana className="w-2.5 h-2.5" />
                       <span>{staff.bananaCount || 0}</span>
                     </button>
                     <div
                       className={`flex items-center justify-center gap-1 px-1.5 py-0.5 rounded-full border tabular-nums font-bold ${getStatusBadgeClass(
-                        getComboStatus(staff)
+                        sCombo
                       )}`}
-                      title={`Tỷ lệ bán Combo: ${getStaffComboPercent(staff)}% trên khách Not Combo Live (Chuẩn ≥ 21%)`}
+                      title={`Tỷ lệ bán Combo: ${getStaffComboPercent(staff)}% trên khách Not Combo Live (chuẩn ≥ ${targetComboPct}%) · ${getStatusLabel(sCombo)}`}
                     >
                       <Gem className="w-2.5 h-2.5 text-pink-500 dark:text-pink-400" />
                       <span>{getStaffComboPercent(staff)}%</span>

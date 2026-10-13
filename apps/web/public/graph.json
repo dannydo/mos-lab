@@ -10220,7 +10220,7 @@
         "path": "/api/kpi/telesale-target/live-celebration-audio",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 190
+        "line": 207
       }
     },
     {
@@ -10234,7 +10234,7 @@
         "path": "/api/kpi/telesale-target/tv-journal",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 215
+        "line": 234
       }
     },
     {
@@ -10248,7 +10248,7 @@
         "path": "/api/kpi/telesale-target/tv-journal/sync",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 236
+        "line": 255
       }
     },
     {
@@ -26576,6 +26576,42 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:TelesaleTvPersonaKey",
+      "type": "SharedType",
+      "label": "TelesaleTvPersonaKey",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-target.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleTvPersonaKey",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TelesaleTvEdginessLevel",
+      "type": "SharedType",
+      "label": "TelesaleTvEdginessLevel",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-target.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleTvEdginessLevel",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TelesaleTvPersonaDto",
+      "type": "SharedType",
+      "label": "TelesaleTvPersonaDto",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-target.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleTvPersonaDto",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:TelesaleTvJournalOverview",
       "type": "SharedType",
       "label": "TelesaleTvJournalOverview",
@@ -30980,8 +31016,8 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 110618,
-        "lineCount": 2777,
+        "sizeBytes": 111061,
+        "lineCount": 2784,
         "ext": ".ts"
       }
     },
@@ -31318,7 +31354,7 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-services.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3805,
+        "sizeBytes": 3803,
         "lineCount": 139,
         "ext": ".ts"
       }
@@ -31617,8 +31653,8 @@
       "filePath": "apps/api/src/modules/customers/services/customer-service-filter-catalog.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3001,
-        "lineCount": 98,
+        "sizeBytes": 3000,
+        "lineCount": 97,
         "ext": ".ts"
       }
     },
@@ -32046,8 +32082,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9662,
-        "lineCount": 247,
+        "sizeBytes": 9949,
+        "lineCount": 266,
         "ext": ".ts"
       }
     },
@@ -32280,8 +32316,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 54314,
-        "lineCount": 1532,
+        "sizeBytes": 55103,
+        "lineCount": 1553,
         "ext": ".ts"
       }
     },
@@ -32293,8 +32329,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 121052,
-        "lineCount": 2962,
+        "sizeBytes": 135414,
+        "lineCount": 3245,
         "ext": ".ts"
       }
     },
@@ -34256,8 +34292,8 @@
       "filePath": "apps/api/src/scripts/data-migrations/20261013160000_seed_lash_lift_service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4519,
-        "lineCount": 106,
+        "sizeBytes": 5225,
+        "lineCount": 116,
         "ext": ".ts"
       }
     },
@@ -36635,8 +36671,8 @@
       "filePath": "apps/web/app/dashboard/career-path/career-path.constants.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23950,
-        "lineCount": 504,
+        "sizeBytes": 20490,
+        "lineCount": 369,
         "ext": ".ts"
       }
     },
@@ -36713,8 +36749,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/MobileStaffCareerSheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24239,
-        "lineCount": 561,
+        "sizeBytes": 27167,
+        "lineCount": 606,
         "ext": ".tsx"
       }
     },
@@ -36726,8 +36762,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/RealStaffSimulationCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 152143,
-        "lineCount": 2869,
+        "sizeBytes": 152424,
+        "lineCount": 2871,
         "ext": ".tsx"
       }
     },
@@ -36739,8 +36775,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 78150,
-        "lineCount": 1715,
+        "sizeBytes": 83393,
+        "lineCount": 1785,
         "ext": ".tsx"
       }
     },
@@ -36752,8 +36788,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 38158,
-        "lineCount": 885,
+        "sizeBytes": 38752,
+        "lineCount": 896,
         "ext": ".tsx"
       }
     },
@@ -39196,8 +39232,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 52545,
-        "lineCount": 1233,
+        "sizeBytes": 66454,
+        "lineCount": 1629,
         "ext": ".ts"
       }
     },
@@ -40184,8 +40220,8 @@
       "filePath": "apps/web/lib/api/kpi.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19032,
-        "lineCount": 494,
+        "sizeBytes": 19338,
+        "lineCount": 503,
         "ext": ".ts"
       }
     },
@@ -41341,8 +41377,8 @@
       "filePath": "packages/shared/src/types/telesale-target.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 8504,
-        "lineCount": 329,
+        "sizeBytes": 9058,
+        "lineCount": 354,
         "ext": ".ts"
       }
     },
@@ -55477,6 +55513,27 @@
     {
       "id": "edge:type:@mos-lab/shared:TelesaleTvEventLog:ws:packages/shared",
       "source": "type:@mos-lab/shared:TelesaleTvEventLog",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TelesaleTvPersonaKey:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleTvPersonaKey",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TelesaleTvEdginessLevel:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleTvEdginessLevel",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TelesaleTvPersonaDto:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleTvPersonaDto",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -89237,20 +89294,20 @@
     }
   ],
   "stats": {
-    "totalNodes": 3173,
-    "totalEdges": 6828,
+    "totalNodes": 3176,
+    "totalEdges": 6831,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 164,
       "FastifyRoute": 669,
       "Component": 58,
-      "SharedType": 1142,
+      "SharedType": 1145,
       "DesignToken": 12,
       "UIComponent": 219,
       "File": 906
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1318,
+      "EXPORTS": 1321,
       "HANDLES_ROUTE": 669,
       "RENDERS": 277,
       "USES_TOKEN": 221,
@@ -89261,7 +89318,7 @@
     "fastifyRouteCount": 674,
     "prismaModelCount": 164,
     "nextPageCount": 58,
-    "sharedTypeCount": 1142
+    "sharedTypeCount": 1145
   },
   "routes": [
     {

@@ -676,21 +676,23 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
 
   return (
     <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl border border-rose-100/70 dark:border-slate-800 p-3 sm:p-5 shadow-sm mb-6 transition-all duration-200">
-      {/* 📱 MOBILE ULTRA-COMPACT UNIFIED ROUTE & BENEFIT BAR (< md): Combines route, gain & badges */}
-      <div className="md:hidden flex items-center justify-between gap-1.5 pb-2 mb-2 border-b border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-1.5 text-xs font-bold shrink-0">
-          <span className="text-slate-800 dark:text-slate-200 inline-flex items-center">
-            <WingRoleLabel text={formatCareerRoleName(status.currentRole, true)} iconSize={11} />
-          </span>
-          <span className="text-pink-500 font-black">➔</span>
-          <span className="text-rose-500 dark:text-rose-400 font-black inline-flex items-center">
-            <WingRoleLabel text={formatCareerRoleName(status.targetRole, true)} iconSize={11} />
-          </span>
-          <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-400 font-mono">
+      {/* 📱 MOBILE PROMINENT ROUTE & BENEFIT BAR (< md): Combines larger route, gain & badges */}
+      <div className="md:hidden flex items-center justify-between gap-2 pb-3 mb-3.5 border-b border-slate-200/80 dark:border-slate-800 flex-wrap sm:flex-nowrap">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          <div className="flex items-center gap-1.5 text-base sm:text-lg font-black tracking-tight">
+            <span className="text-slate-900 dark:text-white inline-flex items-center">
+              <WingRoleLabel text={formatCareerRoleName(status.currentRole, true)} iconSize={15} />
+            </span>
+            <span className="text-pink-500 font-black text-sm sm:text-base">➔</span>
+            <span className="text-rose-500 dark:text-rose-400 font-black inline-flex items-center">
+              <WingRoleLabel text={formatCareerRoleName(status.targetRole, true)} iconSize={15} />
+            </span>
+          </div>
+          <span className="text-sm sm:text-base font-black text-emerald-600 dark:text-emerald-400 font-mono tabular-nums tracking-tight">
             (+{isComboTargetHit ? formatVnd(totalSimulatedGain) : formatVnd(effectiveTipGain)}/thg)
           </span>
         </div>
-        <div className="shrink-0 flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold tabular-nums">
+        <div className="shrink-0 flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold tabular-nums shadow-2xs">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
           <span>
             {passedQuestsCount}/6 ải ({xpPercent}%)
@@ -740,6 +742,9 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                 <strong className="text-rose-600 dark:text-rose-400 font-bold inline-flex items-center">
                   <WingRoleLabel text={formatCareerRoleName(status.targetRole)} />
                 </strong>
+              </span>
+              <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 font-mono tabular-nums ml-1">
+                (+{isComboTargetHit ? formatVnd(totalSimulatedGain) : formatVnd(effectiveTipGain)}/thg)
               </span>
             </div>
           </div>
@@ -1392,7 +1397,7 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                         </div>
                         <div>• Lương giờ thực tế: {formatVnd(actualHourlyRate)} / giờ.</div>
                         <div>• Thưởng thực tế: Thưởng vòng xoay + năng suất.</div>
-                        <div>• Tỷ lệ Tip: Nhận 70% Tip do khách cho (bị trừ 30% tư vấn).</div>
+                        <div>• Tỷ lệ Tip: Nhận 70% Tip do khách cho.</div>
                         <div>• Quyền tư vấn: Chưa có quyền độc quyền chốt combo.</div>
                         {actualMonthLabel && (
                           <div className="text-emerald-300 pt-1">
@@ -1433,14 +1438,11 @@ export const RealStaffSimulationCard: React.FC<RealStaffSimulationCardProps> = (
                   </li>
                   <li className="flex justify-between">
                     <span className="text-slate-400">• Tiền Tip nhận (70%):</span>
-                    <strong className="text-slate-200 tabular-nums">
-                      {formatVnd(actualTipAmount)}{' '}
-                      <span className="text-[10px] text-slate-400 font-normal">(-30% tư vấn)</span>
-                    </strong>
+                    <strong className="text-slate-200 tabular-nums">{formatVnd(actualTipAmount)}</strong>
                   </li>
                   <li className="flex justify-between">
                     <span className="text-slate-400">• Quyền chốt Combo:</span>
-                    <strong className="text-rose-400">Không có (phụ thuộc sảnh)</strong>
+                    <strong className="text-rose-400">Không có (phụ thuộc CC, 🪶CV🪶)</strong>
                   </li>
                   {actualAllowanceAmount !== 0 && (
                     <li className="flex justify-between text-[10.5px]">

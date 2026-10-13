@@ -656,7 +656,7 @@ export class CareerProgressionService {
       Math.round((periodEnd.getTime() - periodStart.getTime()) / (7 * 24 * 60 * 60 * 1000))
     );
 
-    return crmStaffList.map((staff) => {
+    const result = crmStaffList.map((staff) => {
       const legacyId = staff.legacyStaffId || staff.id;
       const staffOrders90d = ordersMap[legacyId]?.orders90d || 0;
       const staffOrdersPeriod = ordersMap[legacyId]?.ordersPeriod || 0;
@@ -754,7 +754,10 @@ export class CareerProgressionService {
         legacyStaffId: staff.legacyStaffId,
         ordersCount: staffOrders90d, // Riêng số bộ mi: luôn luôn giữ ở 90 ngày qua
         periodOrders: staffOrdersPeriod,
-        targetOrders: 300, // Chuẩn 90 ngày: ≥ 300 bộ
+        targetOrders:
+          (careerRole === 'CV_PLUS'
+            ? config.cvPlusToCvPlusPlus?.minOrders
+            : config.cvToCvPlus?.minOrders || config.cvToCc?.minOrders) ?? 330,
         period: periodConfig.period,
         fixRate, // Bug trong kỳ được chọn
         totalTip,
@@ -825,6 +828,13 @@ export class CareerProgressionService {
           return periodAudits.length;
         })(),
       };
+    });
+
+    // 1. Order by số bộ mi (ordersCount DESC) theo chuẩn nghiệp vụ, tie-break theo tên Chuyên Viên
+    return result.sort((a, b) => {
+      const diff = (b.ordersCount || 0) - (a.ordersCount || 0);
+      if (diff !== 0) return diff;
+      return (a.displayName || '').localeCompare(b.displayName || '');
     });
   }
 
@@ -1700,11 +1710,11 @@ export class CareerProgressionService {
       trialStartedAt: progression?.trialStartedAt?.toISOString() || null,
       trialEndsAt: progression?.trialEndsAt?.toISOString() || null,
       period: periodConfig.period,
-      targetOrders: 300,
+      targetOrders: minOrders,
       metrics: {
-        ordersCount, // Luôn luôn giữ ở 90 ngày qua (chuẩn ≥ 300 bộ)
+        ordersCount, // Luôn luôn giữ ở 90 ngày qua (chuẩn ≥ 330 bộ)
         periodOrders,
-        targetOrders: 300,
+        targetOrders: minOrders,
         period: periodConfig.period,
         fixCount,
         fixRate,
