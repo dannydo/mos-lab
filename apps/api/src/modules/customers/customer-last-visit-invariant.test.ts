@@ -30,15 +30,10 @@ test('customer with zero completed visits resolves daysSinceLastVisit to null, n
   assert.equal(daysSince, null);
 
   // In list mapper:
-  let listLastVisit: string | Date | null = null;
-  let listDaysSince: number | null = null;
-  if (orderMetric && Number(orderMetric.totalVisits) > 0 && orderMetric.lastVisitAt) {
-    listLastVisit = orderMetric.lastVisitAt;
-    listDaysSince = daysSinceVisit(orderMetric.lastVisitAt);
-  } else {
-    listLastVisit = null;
-    listDaysSince = null;
-  }
+  const [listLastVisit, listDaysSince] =
+    orderMetric && Number(orderMetric.totalVisits) > 0 && orderMetric.lastVisitAt
+      ? [orderMetric.lastVisitAt, daysSinceVisit(orderMetric.lastVisitAt)]
+      : [null, null];
 
   assert.equal(listLastVisit, null);
   assert.equal(listDaysSince, null);

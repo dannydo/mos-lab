@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { maskPhoneNumber, shouldMaskCustomerPhone, CV_AND_FACILITY_ROLES } from '@mos-lab/shared';
+import { maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
 
 describe('Customer Phone Masking Backend Tests', () => {
   it('should verify CV and facility staff roles trigger phone masking', () => {
