@@ -20,7 +20,9 @@ export function parseLashSpecs(serviceKey: string, serviceName: string): ParsedL
 
   // Determine lash style from service_key prefix
   let lashStyle = 'Classic';
-  if (key.startsWith('ivylight-') || combined.includes('ivylight')) {
+  if (key.startsWith('lash-lift') || combined.includes('lash lift') || combined.includes('uốn mi')) {
+    lashStyle = 'Lash Lift';
+  } else if (key.startsWith('ivylight-') || combined.includes('ivylight')) {
     lashStyle = 'Ivylight';
   } else if (key.startsWith('flawless-') || combined.includes('flawless')) {
     lashStyle = 'Flawless';

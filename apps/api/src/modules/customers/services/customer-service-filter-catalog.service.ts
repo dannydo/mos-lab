@@ -131,6 +131,11 @@ const LASH_FAMILY_DEFINITIONS: readonly LashFamilyDefinition[] = [
     label: 'Flawless Under Mink (tất cả biến thể)',
     namePrefixes: ['flawless under mink', 'new flawless under mink'],
   },
+  {
+    key: 'lash-lift',
+    label: 'Lash Lift (Uốn mi)',
+    namePrefixes: ['lash lift', 'lash-lift', 'uốn mi', 'uon mi'],
+  },
 ];
 
 const normalizeCatalogName = (value: string | null | undefined): string =>

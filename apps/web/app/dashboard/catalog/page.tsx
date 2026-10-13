@@ -97,6 +97,7 @@ const inferLashStyle = (serviceKey?: string, serviceName?: string): string | nul
     return null;
   }
   const combined = `${key} ${name}`;
+  if (key.startsWith('lash-lift') || combined.includes('lash lift') || combined.includes('uốn mi')) return 'Lash Lift';
   if (key.startsWith('ivylight-') || combined.includes('ivylight')) return 'Ivylight';
   if (
     key.startsWith('flawless-') ||
@@ -142,6 +143,7 @@ const getLashStyleTagColor = (style?: string) => {
   if (lower.includes('flawless')) return 'gold';
   if (lower.includes('volume')) return 'blue';
   if (lower.includes('under')) return 'volcano';
+  if (lower.includes('lift')) return 'gold';
   return 'geekblue';
 };
 
@@ -211,7 +213,7 @@ export default function CatalogPage() {
   const [productSearch, setProductSearch] = useState('');
 
   // Dynamic Metadata Options (Master Services only)
-  const [dynamicGroups, setDynamicGroups] = useState<string[]>(['LashesTop', 'LashesUnder', 'Product']);
+  const [dynamicGroups, setDynamicGroups] = useState<string[]>(['LashesTop', 'LashesUnder', 'LashLift', 'Product']);
   const [dynamicTypes, setDynamicTypes] = useState<string[]>(['Normal', 'Retain', 'Removal']);
 
   // Stats
@@ -1838,6 +1840,7 @@ export default function CatalogPage() {
                     const labels: Record<string, string> = {
                       LashesTop: 'LashesTop (Mi trên)',
                       LashesUnder: 'LashesUnder (Mi dưới)',
+                      LashLift: 'LashLift (Uốn mi)',
                       Product: 'Product (Giỏ hàng)',
                     };
                     return { value: g, label: labels[g] || g };

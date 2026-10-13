@@ -8596,7 +8596,7 @@
         "path": "/api/customers/service-filter-options",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 161
+        "line": 185
       }
     },
     {
@@ -8610,7 +8610,7 @@
         "path": "/api/customers/staff",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 175
+        "line": 199
       }
     },
     {
@@ -8624,7 +8624,7 @@
         "path": "/api/customers/promotions",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 319
+        "line": 343
       }
     },
     {
@@ -8638,7 +8638,7 @@
         "path": "/api/customers/referrals",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 338
+        "line": 362
       }
     },
     {
@@ -8652,7 +8652,7 @@
         "path": "/api/customers/create-options",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 504
+        "line": 528
       }
     },
     {
@@ -8666,7 +8666,7 @@
         "path": "/api/customers/create",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 551
+        "line": 575
       }
     },
     {
@@ -27452,6 +27452,18 @@
       }
     },
     {
+      "id": "uicomp:lashLiftService.test",
+      "type": "UIComponent",
+      "label": "<lashLiftService.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/booking/lashLiftService.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "lashLiftService.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:updateBookingPayload.test",
       "type": "UIComponent",
       "label": "<updateBookingPayload.test />",
@@ -31020,8 +31032,8 @@
       "filePath": "apps/api/src/modules/catalog/services/lash-benchmark.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 24245,
-        "lineCount": 595,
+        "sizeBytes": 24385,
+        "lineCount": 597,
         "ext": ".ts"
       }
     },
@@ -31280,8 +31292,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-meta.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 24847,
-        "lineCount": 610,
+        "sizeBytes": 26082,
+        "lineCount": 634,
         "ext": ".ts"
       }
     },
@@ -31295,6 +31307,19 @@
       "metadata": {
         "sizeBytes": 15344,
         "lineCount": 390,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/customers/routes/customer-services.test.ts",
+      "type": "File",
+      "label": "customer-services.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/customer-services.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3805,
+        "lineCount": 139,
         "ext": ".ts"
       }
     },
@@ -31592,8 +31617,8 @@
       "filePath": "apps/api/src/modules/customers/services/customer-service-filter-catalog.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2006,
-        "lineCount": 67,
+        "sizeBytes": 3001,
+        "lineCount": 98,
         "ext": ".ts"
       }
     },
@@ -31605,8 +31630,8 @@
       "filePath": "apps/api/src/modules/customers/services/customer-service-filter-catalog.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7284,
-        "lineCount": 194,
+        "sizeBytes": 7418,
+        "lineCount": 199,
         "ext": ".ts"
       }
     },
@@ -34224,6 +34249,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/scripts/data-migrations/20261013160000_seed_lash_lift_service.ts",
+      "type": "File",
+      "label": "20261013160000_seed_lash_lift_service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/scripts/data-migrations/20261013160000_seed_lash_lift_service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 4519,
+        "lineCount": 106,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/scripts/data-migrations/types.ts",
       "type": "File",
       "label": "types.ts",
@@ -36675,8 +36713,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/MobileStaffCareerSheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24329,
-        "lineCount": 567,
+        "sizeBytes": 24239,
+        "lineCount": 561,
         "ext": ".tsx"
       }
     },
@@ -36831,8 +36869,8 @@
       "filePath": "apps/web/app/dashboard/catalog/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 74848,
-        "lineCount": 2046,
+        "sizeBytes": 75082,
+        "lineCount": 2049,
         "ext": ".tsx"
       }
     },
@@ -40822,8 +40860,8 @@
       "filePath": "packages/shared/src/types/catalog.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 12811,
-        "lineCount": 458,
+        "sizeBytes": 12850,
+        "lineCount": 459,
         "ext": ".ts"
       }
     },
@@ -56207,6 +56245,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:lashLiftService.test:ws:apps/web",
+      "source": "uicomp:lashLiftService.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:lashLiftService.test:token:color:primary",
+      "source": "uicomp:lashLiftService.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:updateBookingPayload.test:ws:apps/web",
       "source": "uicomp:updateBookingPayload.test",
       "target": "ws:apps/web",
@@ -59275,6 +59327,13 @@
     {
       "id": "edge:file:apps/api/src/modules/customers/routes/customer-notes.routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/customers/routes/customer-notes.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/customer-services.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/customer-services.test.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -89178,8 +89237,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 3170,
-    "totalEdges": 6825,
+    "totalNodes": 3173,
+    "totalEdges": 6828,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 164,
@@ -89187,15 +89246,15 @@
       "Component": 58,
       "SharedType": 1142,
       "DesignToken": 12,
-      "UIComponent": 218,
-      "File": 904
+      "UIComponent": 219,
+      "File": 906
     },
     "edgeTypeCounts": {
       "EXPORTS": 1318,
       "HANDLES_ROUTE": 669,
-      "RENDERS": 276,
-      "USES_TOKEN": 220,
-      "IMPORTS": 478,
+      "RENDERS": 277,
+      "USES_TOKEN": 221,
+      "IMPORTS": 479,
       "QUERIES_MODEL": 385,
       "API_CALL": 3479
     },

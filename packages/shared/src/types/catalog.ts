@@ -11,10 +11,10 @@ export type ServiceType = (typeof SERVICE_TYPES)[number];
 export const CATALOG_SERVICE_MASTER_TYPES = ['Normal', 'Retain', 'Removal'] as const;
 export type CatalogServiceMasterType = (typeof CATALOG_SERVICE_MASTER_TYPES)[number];
 
-export const SERVICE_GROUPS = ['Lashes', 'LashesTop', 'LashesUnder', 'Sauna', 'Product', 'combo'] as const;
+export const SERVICE_GROUPS = ['Lashes', 'LashesTop', 'LashesUnder', 'LashLift', 'Sauna', 'Product', 'combo'] as const;
 export type ServiceGroup = (typeof SERVICE_GROUPS)[number];
 
-export const CATALOG_SERVICE_MASTER_GROUPS = ['LashesTop', 'LashesUnder'] as const;
+export const CATALOG_SERVICE_MASTER_GROUPS = ['LashesTop', 'LashesUnder', 'LashLift'] as const;
 export type CatalogServiceMasterGroup = (typeof CATALOG_SERVICE_MASTER_GROUPS)[number];
 
 export const SERVICE_PRICE_TYPES = ['Single', 'Combo', 'Log', 'Fix', 'Adjust'] as const;
@@ -349,6 +349,7 @@ export const LASH_STYLES = [
   'Ivylight 4L',
   'Ivylight 5L',
   'Under Mink',
+  'Lash Lift',
 ] as const;
 export type LashStyle = (typeof LASH_STYLES)[number];
 

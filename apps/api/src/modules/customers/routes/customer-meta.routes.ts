@@ -123,7 +123,7 @@ export async function registerCustomerMetaRoutes(fastify: FastifyInstance) {
           s.duration_minute_standard as duration
         FROM service s
         JOIN service_language sl ON s.id = sl.service_id
-        LEFT JOIN service_price sp ON s.id = sp.service_id AND sp.service_price_package_key = 'single' AND sp.is_disabled = 0
+        LEFT JOIN service_price sp ON s.id = sp.service_id AND sp.service_price_package_key = 'single' AND sp.is_disabled = 0 AND (sp.currency_id = 2 OR sp.currency_id IS NULL)
         WHERE s.is_disabled = 0 
           AND s.is_temporary = 0
           AND sl.language_id = 1
@@ -144,6 +144,30 @@ export async function registerCustomerMetaRoutes(fastify: FastifyInstance) {
         price: s.price !== null && s.price !== undefined ? Number(s.price) : 0,
         duration: s.duration !== null && s.duration !== undefined ? Number(s.duration) : 90,
       }));
+
+      // Ensure LASH LIFT is present even if legacy DB hasn't completed migration in dev/test
+      const hasLashLift = mappedServices.some(
+        (s) => s.name.toLowerCase().includes('lash lift') || s.name.toLowerCase().includes('uốn mi')
+      );
+      if (!hasLashLift) {
+        const liftInDb = await fastify.prisma.legacy
+          .$queryRawUnsafe<SafeAny[]>(
+            `SELECT s.id, sl.service_name as name, COALESCE(sp.service_price, 990000) as price, COALESCE(s.duration_minute_standard, 60) as duration
+             FROM service s
+             LEFT JOIN service_language sl ON s.id = sl.service_id AND sl.language_id = 1
+             LEFT JOIN service_price sp ON s.id = sp.service_id AND sp.service_price_package_key = 'single' AND sp.is_disabled = 0
+             WHERE s.service_key = 'lash-lift' LIMIT 1`
+          )
+          .catch(() => []);
+        if (liftInDb.length > 0) {
+          mappedServices.unshift({
+            id: Number(liftInDb[0].id),
+            name: liftInDb[0].name || 'LASH LIFT (Uốn mi)',
+            price: Number(liftInDb[0].price || 990000),
+            duration: Number(liftInDb[0].duration || 60),
+          });
+        }
+      }
 
       const finalServices = [{ id: 0, name: 'Any Lashes / Any Services', price: 0, duration: 90 }, ...mappedServices];
 

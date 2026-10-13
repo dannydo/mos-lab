@@ -64,3 +64,33 @@ test('expands a HyperLight category to eligible single lash services only', () =
     emptyCategoryKeys: [],
   });
 });
+
+test('resolves Lash Lift category properly from catalog options', async () => {
+  const fastify = {
+    prisma: {
+      legacy: {
+        $queryRawUnsafe: async () => [
+          {
+            id: 999,
+            name: 'LASH LIFT (Uốn mi)',
+            serviceKey: 'lash-lift',
+            serviceType: 'Normal',
+            serviceGroup: 'LashLift',
+            singlePrice: 990000,
+          },
+        ],
+      },
+    },
+  };
+
+  const result = await CustomerServiceFilterCatalogService.getOptions(fastify as never);
+  assert.equal(result.services.length, 1);
+  assert.equal(result.services[0].id, 999);
+  assert.equal(result.services[0].name, 'LASH LIFT (Uốn mi)');
+  assert.equal(result.services[0].singlePrice, 990000);
+  assert.equal(result.services[0].serviceGroup, 'LashLift');
+
+  const liftCategory = result.categories.find((c) => c.key === 'lash-lift');
+  assert.ok(liftCategory, 'lash-lift category should be present');
+  assert.deepEqual(liftCategory?.serviceIds, [999]);
+});

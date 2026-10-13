@@ -19,7 +19,10 @@ export const getStoreFullAddress = (store: SafeAny): string => {
   return String(store);
 };
 
-export const FALLBACK_SERVICES = [{ id: 0, name: 'Any Lashes / Any Services', price: 0, duration: 90 }];
+export const FALLBACK_SERVICES = [
+  { id: 0, name: 'Any Lashes / Any Services', price: 0, duration: 90 },
+  { id: 99999, name: 'LASH LIFT (Uốn mi)', price: 990000, duration: 60 },
+];
 
 export const CHANNELS = [
   { key: 'FB', label: 'FB (Facebook)' },
