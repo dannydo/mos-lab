@@ -294,61 +294,6 @@ function buildDefaultConversations(): MosChatConversation[] {
         },
       ],
     },
-    {
-      id: 'dm-tuyetnhi',
-      type: 'dm',
-      name: 'Tuyết Nhi',
-      subtitle: 'Telesales Booker',
-      roleTag: 'Telesales',
-      color: '#ec4899',
-      avatar: 'TN',
-      unreadCount: 1,
-      updatedAt: nowIso,
-      messages: [
-        {
-          id: 'msg-seed-tn-1',
-          conversationId: 'dm-tuyetnhi',
-          senderId: 'staff-tn',
-          senderName: 'Tuyết Nhi',
-          senderRole: 'Telesales',
-          senderAvatar: 'TN',
-          roleColor: '#0ea5e9',
-          text: 'Anh Danny ơi, chị Lê Hoàng Yến xin dời sang 17:30 và giữ nguyên Chuyên Viên Ngọc Ánh (CV+), em chốt lịch nhé anh?',
-          timeLabel: '14:50',
-          createdAt: nowIso,
-          reactions: {},
-          taskId: 'task-seed-103',
-          thread: [],
-        },
-      ],
-    },
-    {
-      id: 'dm-hamy',
-      type: 'dm',
-      name: 'Hà My',
-      subtitle: 'Tư Vấn (CC)',
-      roleTag: 'Tư Vấn (CC)',
-      color: '#a855f7',
-      avatar: 'HM',
-      unreadCount: 0,
-      updatedAt: nowIso,
-      messages: [
-        {
-          id: 'msg-seed-hm-1',
-          conversationId: 'dm-hamy',
-          senderId: 'staff-hm',
-          senderName: 'Hà My',
-          senderRole: 'Tư Vấn (CC)',
-          senderAvatar: 'HM',
-          roleColor: '#10b981',
-          text: 'Tỷ lệ gia hạn gói Combo ca sáng nay đạt 68% rồi anh Danny.',
-          timeLabel: '14:20',
-          createdAt: nowIso,
-          reactions: { '❤️': 1 },
-          thread: [],
-        },
-      ],
-    },
   ];
 }
 
@@ -381,21 +326,6 @@ function buildDefaultTasks(): MosChatTaskItem[] {
       creatorName: 'Chuyên Viên Minh Thư',
       priority: 'HIGH',
       remindAt: new Date(now + 900 * 1000).toISOString(),
-      done: false,
-      fired: false,
-      createdAt: new Date(now).toISOString(),
-    },
-    {
-      id: 'task-seed-103',
-      conversationId: 'dm-tuyetnhi',
-      conversationName: 'Tuyết Nhi',
-      sourceMessageId: 'msg-seed-tn-1',
-      sourceAuthorName: 'Tuyết Nhi',
-      title: 'Xác nhận dời lịch 17:30 cho KH Lê Hoàng Yến cùng Chuyên Viên Ngọc Ánh',
-      assigneeName: 'Danny Do',
-      creatorName: 'Tuyết Nhi',
-      priority: 'URGENT',
-      remindAt: new Date(now + 90 * 1000).toISOString(),
       done: false,
       fired: false,
       createdAt: new Date(now).toISOString(),
@@ -530,6 +460,186 @@ function isDannyOrSuperAdminUser(user?: JwtUserPayload): boolean {
     .toLowerCase()
     .trim();
   return uname === 'danny' || uname.includes('danny') || role === 'super_admin' || role === 'admin';
+}
+
+function resolveUserStaffId(user: JwtUserPayload | undefined, staffDirectory: MosChatStaffMember[]): number {
+  if (!user) return 0;
+  const directId = Number(user.id);
+  if (Number.isFinite(directId) && directId > 0) return directId;
+  const uname = String(user.username || '')
+    .toLowerCase()
+    .trim();
+  if (uname) {
+    const matched = staffDirectory.find(
+      (s) =>
+        String(s.username || '')
+          .toLowerCase()
+          .trim() === uname
+    );
+    if (matched && matched.id > 0) return matched.id;
+  }
+  return 0;
+}
+
+/**
+ * Resolves the exact participant staff IDs for a Direct Message (`type === 'dm'`).
+ * - Self-chat (`isSelf: true` or `dm-self-<id>`): returns `[ownerStaffId]` (1 person).
+ * - 1-1 Direct Message: returns `[staffIdA, staffIdB]` (strictly 2 people).
+ * - Legacy DMs without `memberIds`: infers from `participantStaffId` + numeric message `senderId`s (or Danny's ID for earlier 1-1 DMs).
+ */
+function resolveDmParticipantIds(conv: MosChatConversation, staffDirectory: MosChatStaffMember[]): number[] {
+  if (conv.type !== 'dm') {
+    return Array.isArray(conv.memberIds) ? conv.memberIds.map(Number).filter((n) => Number.isFinite(n) && n > 0) : [];
+  }
+  const convIdStr = String(conv.id || '');
+  if (conv.isSelf || convIdStr.startsWith('dm-self-')) {
+    const selfId =
+      Number(conv.participantStaffId) ||
+      Number(convIdStr.replace(/^dm-self-/, '')) ||
+      (Array.isArray(conv.memberIds) ? Number(conv.memberIds[0]) : 0) ||
+      0;
+    return Number.isFinite(selfId) && selfId > 0 ? [selfId] : [];
+  }
+
+  // Filter out fake seed DMs ('dm-tuyetnhi', 'dm-hamy') that have no real 2-person participant pair
+  if (convIdStr === 'dm-tuyetnhi' || convIdStr === 'dm-hamy') {
+    return [];
+  }
+
+  const explicitIds = Array.isArray(conv.memberIds)
+    ? Array.from(new Set(conv.memberIds.map(Number).filter((n) => Number.isFinite(n) && n > 0)))
+    : [];
+  if (explicitIds.length === 2) {
+    return explicitIds;
+  }
+
+  const pairMatch = convIdStr.match(/^dm-pair-(\d+)-(\d+)$/);
+  if (pairMatch) {
+    const a = Number(pairMatch[1]);
+    const b = Number(pairMatch[2]);
+    if (a > 0 && b > 0 && a !== b) {
+      return [a, b];
+    }
+  }
+
+  const inferredSet = new Set<number>(explicitIds);
+  const partId = Number(conv.participantStaffId);
+  if (Number.isFinite(partId) && partId > 0) {
+    inferredSet.add(partId);
+  }
+  for (const m of conv.messages || []) {
+    const sid = Number(m.senderId);
+    if (Number.isFinite(sid) && sid > 0) {
+      inferredSet.add(sid);
+    }
+  }
+  if (inferredSet.size === 1 && Number.isFinite(partId) && partId > 0) {
+    const dannyStaff = staffDirectory.find(
+      (s) =>
+        String(s.username || '')
+          .toLowerCase()
+          .trim() === 'danny' ||
+        String(s.role || '')
+          .toLowerCase()
+          .trim() === 'super_admin'
+    );
+    if (dannyStaff && dannyStaff.id > 0 && !inferredSet.has(dannyStaff.id)) {
+      inferredSet.add(dannyStaff.id);
+    }
+  }
+  const result = Array.from(inferredSet);
+  return result.length === 2 ? result : [];
+}
+
+/**
+ * Strict Direct Message Privacy Invariant:
+ * - A 1-1 Direct Message (`type === 'dm'`) is ONLY visible to the 2 people in that DM (`dmIds.includes(myStaffId)`).
+ * - A Self-Chat (`isSelf`) is ONLY visible to that 1 owner.
+ * - No other user (not even another Admin) can see someone else's Direct Message.
+ */
+function canUserAccessConversation(
+  conv: MosChatConversation,
+  user: JwtUserPayload | undefined,
+  staffDirectory: MosChatStaffMember[]
+): boolean {
+  const myStaffId = resolveUserStaffId(user, staffDirectory);
+  if (conv.type === 'dm') {
+    const convIdStr = String(conv.id || '');
+    if (conv.isSelf || convIdStr.startsWith('dm-self-')) {
+      const selfIds = resolveDmParticipantIds(conv, staffDirectory);
+      return myStaffId > 0 && selfIds.length === 1 && selfIds[0] === myStaffId;
+    }
+    const dmIds = resolveDmParticipantIds(conv, staffDirectory);
+    return myStaffId > 0 && dmIds.length === 2 && dmIds.includes(myStaffId);
+  }
+  return true;
+}
+
+/**
+ * Personalizes a 1-1 Direct Message for the requesting user so that:
+ * - Person A sees Person B's name, role, avatar, and `participantStaffId: B`.
+ * - Person B sees Person A's name, role, avatar, and `participantStaffId: A`.
+ */
+function formatConversationForUser(
+  conv: MosChatConversation,
+  user: JwtUserPayload | undefined,
+  staffDirectory: MosChatStaffMember[]
+): MosChatConversation {
+  if (conv.type !== 'dm') return conv;
+  const convIdStr = String(conv.id || '');
+  if (conv.isSelf || convIdStr.startsWith('dm-self-')) {
+    const selfIds = resolveDmParticipantIds(conv, staffDirectory);
+    return {
+      ...conv,
+      isSelf: true,
+      memberIds: selfIds,
+      memberCount: 1,
+    };
+  }
+  const myStaffId = resolveUserStaffId(user, staffDirectory);
+  const dmIds = resolveDmParticipantIds(conv, staffDirectory);
+  const peerId = dmIds.find((id) => id !== myStaffId) ?? dmIds[0] ?? Number(conv.participantStaffId);
+  const peerStaff = staffDirectory.find((s) => s.id === Number(peerId));
+  const peerRole = peerStaff ? getRoleDisplayLabel(peerStaff.role) : null;
+
+  return {
+    ...conv,
+    name: peerStaff ? peerStaff.displayName || peerStaff.username : conv.name,
+    subtitle: peerRole ? peerRole.label : conv.subtitle,
+    roleTag: peerRole ? peerRole.label : conv.roleTag,
+    avatar: peerStaff ? peerStaff.avatarUrl || getInitials(peerStaff.displayName, peerStaff.username) : conv.avatar,
+    participantStaffId: Number(peerId) || conv.participantStaffId,
+    memberIds: dmIds,
+    memberCount: 2,
+  };
+}
+
+function filterAndFormatConversationsForUser(
+  conversations: MosChatConversation[],
+  user: JwtUserPayload | undefined,
+  staffDirectory: MosChatStaffMember[]
+): MosChatConversation[] {
+  return conversations
+    .filter((c) => canUserAccessConversation(c, user, staffDirectory))
+    .map((c) => formatConversationForUser(c, user, staffDirectory));
+}
+
+function filterTasksForUser(
+  tasks: MosChatTaskItem[],
+  allConversations: MosChatConversation[],
+  user: JwtUserPayload | undefined,
+  staffDirectory: MosChatStaffMember[]
+): MosChatTaskItem[] {
+  const convMap = new Map<string, MosChatConversation>();
+  for (const c of allConversations) {
+    convMap.set(c.id, c);
+  }
+  return tasks.filter((t) => {
+    if (t.conversationId === 'dm-tuyetnhi' || t.conversationId === 'dm-hamy') return false;
+    const conv = convMap.get(t.conversationId);
+    if (!conv) return true;
+    return canUserAccessConversation(conv, user, staffDirectory);
+  });
 }
 
 function evaluateCanUserAccessMosChat(
@@ -923,11 +1033,14 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           } satisfies MosChatBootstrapResponse;
         }
 
+        const userConversations = filterAndFormatConversationsForUser(conversations, user, staffDirectory);
+        const userTasks = filterTasksForUser(tasks, conversations, user, staffDirectory);
+
         const payload: MosChatBootstrapResponse = {
           version,
           unchanged: false,
-          conversations,
-          tasks,
+          conversations: userConversations,
+          tasks: userTasks,
           staffDirectory,
           accessConfig,
           canAccessChat,
@@ -1101,10 +1214,19 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu nội dung tin nhắn hoặc hình ảnh' });
       }
 
-      const { conversations } = await loadChatState(fastify);
+      const [{ conversations }, staffDirectory] = await Promise.all([
+        loadChatState(fastify),
+        loadStaffDirectoryCached(fastify),
+      ]);
       const conv = conversations.find((c) => c.id === body.conversationId);
       if (!conv) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy cuộc hội thoại' });
+      }
+      if (!canUserAccessConversation(conv, user, staffDirectory)) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Tin nhắn trực tiếp (Direct Message) chỉ hiển thị cho 2 người tham gia.',
+        });
       }
 
       const staffRecord = await fastify.prisma.crm.crmStaff.findUnique({
@@ -1145,7 +1267,11 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       conv.updatedAt = now.toISOString();
       await saveConversations(fastify, conversations);
 
-      return { success: true, message: newMessage, conversation: conv };
+      return {
+        success: true,
+        message: newMessage,
+        conversation: formatConversationForUser(conv, user, staffDirectory),
+      };
     }
   );
 
@@ -1164,11 +1290,20 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu nội dung phản hồi luồng' });
       }
 
-      const { conversations } = await loadChatState(fastify);
+      const [{ conversations }, staffDirectory] = await Promise.all([
+        loadChatState(fastify),
+        loadStaffDirectoryCached(fastify),
+      ]);
       const conv = conversations.find((c) => c.id === body.conversationId);
       const msg = conv?.messages.find((m) => m.id === body.messageId);
       if (!conv || !msg) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tin nhắn gốc' });
+      }
+      if (!canUserAccessConversation(conv, user, staffDirectory)) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Tin nhắn trực tiếp (Direct Message) chỉ hiển thị cho 2 người tham gia.',
+        });
       }
 
       const staffRecord = await fastify.prisma.crm.crmStaff.findUnique({
@@ -1206,15 +1341,24 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       preHandler: [requireAuth],
     },
     async (request, reply) => {
-      const user = (request as any).user as { id?: number | string } | undefined;
+      const user = (request as SafeAny).user as JwtUserPayload | undefined;
       const userKey = String(user?.id ?? 'me');
       const { messageId } = request.params as { messageId: string };
       const { conversationId, emoji } = request.body as { conversationId: string; emoji: string };
-      const { conversations } = await loadChatState(fastify);
+      const [{ conversations }, staffDirectory] = await Promise.all([
+        loadChatState(fastify),
+        loadStaffDirectoryCached(fastify),
+      ]);
       const conv = conversations.find((c) => c.id === conversationId);
       const msg = conv?.messages.find((m) => m.id === messageId);
       if (!conv || !msg) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tin nhắn' });
+      }
+      if (!canUserAccessConversation(conv, user, staffDirectory)) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Tin nhắn trực tiếp (Direct Message) chỉ hiển thị cho 2 người tham gia.',
+        });
       }
       msg.reactions = msg.reactions || {};
       msg.reactionUsers = msg.reactionUsers || {};
@@ -1259,13 +1403,23 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       preHandler: [requireAuth],
     },
     async (request, reply) => {
+      const user = (request as SafeAny).user as JwtUserPayload | undefined;
       const { messageId } = request.params as { messageId: string };
       const { conversationId } = request.body as { conversationId: string };
-      const { conversations } = await loadChatState(fastify);
+      const [{ conversations }, staffDirectory] = await Promise.all([
+        loadChatState(fastify),
+        loadStaffDirectoryCached(fastify),
+      ]);
       const conv = conversations.find((c) => c.id === conversationId);
       const msg = conv?.messages.find((m) => m.id === messageId);
       if (!conv || !msg) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tin nhắn' });
+      }
+      if (!canUserAccessConversation(conv, user, staffDirectory)) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Tin nhắn trực tiếp (Direct Message) chỉ hiển thị cho 2 người tham gia.',
+        });
       }
       msg.pinned = !msg.pinned;
       await saveConversations(fastify, conversations);
@@ -1287,10 +1441,19 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu tiêu đề công việc' });
       }
 
-      const { conversations, tasks } = await loadChatState(fastify);
+      const [{ conversations, tasks }, staffDirectory] = await Promise.all([
+        loadChatState(fastify),
+        loadStaffDirectoryCached(fastify),
+      ]);
       const conv = conversations.find((c) => c.id === body.conversationId);
       if (!conv) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy cuộc hội thoại' });
+      }
+      if (!canUserAccessConversation(conv, user, staffDirectory)) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Tin nhắn trực tiếp (Direct Message) chỉ hiển thị cho 2 người tham gia.',
+        });
       }
 
       const staffRecord = await fastify.prisma.crm.crmStaff.findUnique({
@@ -1351,7 +1514,11 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       tasks.unshift(newTask);
       await Promise.all([saveConversations(fastify, conversations), saveTasks(fastify, tasks)]);
 
-      return { success: true, task: newTask, conversation: conv };
+      return {
+        success: true,
+        task: newTask,
+        conversation: formatConversationForUser(conv, user, staffDirectory),
+      };
     }
   );
 
@@ -1424,20 +1591,28 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       const user = request.user as JwtUserPayload;
       const body = request.body as CreateMosChatConversationRequest;
       const rawName = String(body?.name || '').trim();
-      const { conversations } = await loadChatState(fastify);
+      const [{ conversations }, staffDirectory] = await Promise.all([
+        loadChatState(fastify),
+        loadStaffDirectoryCached(fastify),
+      ]);
+      const myStaffId = resolveUserStaffId(user, staffDirectory);
       const now = new Date();
 
       // 1. Self Chat ("Chat với chính tôi" / Ghi chú cá nhân)
-      if (body.isSelf) {
-        const selfId = `dm-self-${user.id}`;
+      if (body.isSelf || (body.type === 'dm' && Number(body.participantStaffId) === myStaffId && myStaffId > 0)) {
+        const selfOwnerId = myStaffId || Number(user.id) || 0;
+        const selfId = `dm-self-${selfOwnerId}`;
         const existingSelf = conversations.find(
-          (c) => c.id === selfId || (c.type === 'dm' && c.isSelf && c.participantStaffId === Number(user.id))
+          (c) => c.id === selfId || (c.type === 'dm' && c.isSelf && Number(c.participantStaffId) === selfOwnerId)
         );
         if (existingSelf) {
-          return { success: true, conversation: existingSelf };
+          return {
+            success: true,
+            conversation: formatConversationForUser(existingSelf, user, staffDirectory),
+          };
         }
         const selfStaff = await fastify.prisma.crm.crmStaff.findUnique({
-          where: { id: Number(user.id) || 0 },
+          where: { id: selfOwnerId },
           select: { id: true, displayName: true, username: true, role: true, avatarUrl: true },
         });
         const displayName = selfStaff?.displayName || user.username || 'Tôi';
@@ -1450,7 +1625,8 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           color: '#6366f1',
           avatar: 'ME',
           isSelf: true,
-          participantStaffId: Number(user.id),
+          participantStaffId: selfOwnerId,
+          memberIds: selfOwnerId > 0 ? [selfOwnerId] : [],
           memberCount: 1,
           unreadCount: 0,
           updatedAt: now.toISOString(),
@@ -1474,72 +1650,120 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         };
         conversations.unshift(selfConv);
         await saveConversations(fastify, conversations);
-        return { success: true, conversation: selfConv };
+        return {
+          success: true,
+          conversation: formatConversationForUser(selfConv, user, staffDirectory),
+        };
       }
 
       if (!rawName) {
         return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu tên cuộc trò chuyện' });
       }
 
-      // 2. Direct 1-1 Chat with another colleague
-      if (body.type === 'dm' && body.participantStaffId) {
-        const existingDm = conversations.find(
-          (c) => c.type === 'dm' && (c.participantStaffId === body.participantStaffId || c.name === rawName)
-        );
-        if (existingDm) {
-          return { success: true, conversation: existingDm };
+      // 2. Direct 1-1 Chat between strictly 2 participants: [myStaffId, peerStaffId]
+      if (body.type === 'dm') {
+        let peerStaffId = Number(body.participantStaffId) || 0;
+        if (peerStaffId <= 0 && rawName) {
+          const matchedPeer = staffDirectory.find(
+            (s) =>
+              String(s.displayName || '')
+                .toLowerCase()
+                .trim() === rawName.toLowerCase() ||
+              String(s.username || '')
+                .toLowerCase()
+                .trim() === rawName.toLowerCase()
+          );
+          if (matchedPeer) peerStaffId = matchedPeer.id;
         }
+        if (myStaffId <= 0 || peerStaffId <= 0) {
+          return reply.status(400).send({
+            error: 'Bad Request',
+            message: 'Cần xác định rõ 2 thành viên tham gia cuộc trò chuyện trực tiếp 1-1.',
+          });
+        }
+        const pairIds = [Math.min(myStaffId, peerStaffId), Math.max(myStaffId, peerStaffId)];
+        const existingDm = conversations.find((c) => {
+          if (c.type !== 'dm' || c.isSelf) return false;
+          const cIds = resolveDmParticipantIds(c, staffDirectory);
+          return cIds.length === 2 && cIds.includes(myStaffId) && cIds.includes(peerStaffId);
+        });
+        if (existingDm) {
+          existingDm.memberIds = pairIds;
+          existingDm.memberCount = 2;
+          await saveConversations(fastify, conversations);
+          return {
+            success: true,
+            conversation: formatConversationForUser(existingDm, user, staffDirectory),
+          };
+        }
+
+        const peerStaff = staffDirectory.find((s) => s.id === peerStaffId);
+        const peerRole = peerStaff ? getRoleDisplayLabel(peerStaff.role) : { label: '1-1', color: '#10b981' };
+        const dmConv: MosChatConversation = {
+          id: `dm-pair-${pairIds[0]}-${pairIds[1]}`,
+          type: 'dm',
+          name: peerStaff?.displayName || rawName,
+          subtitle: body.subtitle || peerRole.label || 'Trò chuyện trực tiếp 1-1',
+          roleTag: peerRole.label || '1-1',
+          color: peerRole.color || '#10b981',
+          avatar: peerStaff?.avatarUrl || getInitials(peerStaff?.displayName || rawName, peerStaff?.username),
+          memberCount: 2,
+          participantStaffId: peerStaffId,
+          memberIds: pairIds,
+          unreadCount: 0,
+          updatedAt: now.toISOString(),
+          messages: [],
+        };
+
+        conversations.unshift(dmConv);
+        await saveConversations(fastify, conversations);
+        return {
+          success: true,
+          conversation: formatConversationForUser(dmConv, user, staffDirectory),
+        };
       }
 
-      const id =
-        body.type === 'space'
-          ? `space-${crypto.randomUUID().slice(0, 8)}`
-          : `dm-${body.participantStaffId || crypto.randomUUID().slice(0, 8)}`;
-
-      const normalizedName = body.type === 'space' ? rawName.toLowerCase().replace(/\s+/g, '-') : rawName;
+      const id = `space-${crypto.randomUUID().slice(0, 8)}`;
+      const normalizedName = rawName.toLowerCase().replace(/\s+/g, '-');
 
       // Collect initial member IDs for Space
       let initialMemberIds: number[] = [];
       let initialMembers: MosChatStaffMember[] = [];
-      if (body.type === 'space') {
-        const set = new Set<number>();
-        if (user.id) set.add(Number(user.id));
-        if (Array.isArray(body.memberIds)) {
-          body.memberIds.forEach((mId) => {
-            const num = Number(mId);
-            if (num > 0) set.add(num);
-          });
-        }
-        initialMemberIds = Array.from(set);
-        if (initialMemberIds.length > 0) {
-          const staffRows = await fastify.prisma.crm.crmStaff.findMany({
-            where: { id: { in: initialMemberIds } },
-            select: { id: true, username: true, displayName: true, role: true, avatarUrl: true },
-          });
-          initialMembers = staffRows.map((s) => ({
-            id: s.id,
-            username: s.username,
-            displayName: s.displayName || s.username,
-            role: s.role,
-            avatarUrl: s.avatarUrl,
-            isOnline: true,
-          }));
-        }
+      const set = new Set<number>();
+      if (myStaffId > 0) set.add(myStaffId);
+      if (Array.isArray(body.memberIds)) {
+        body.memberIds.forEach((mId) => {
+          const num = Number(mId);
+          if (num > 0) set.add(num);
+        });
+      }
+      initialMemberIds = Array.from(set);
+      if (initialMemberIds.length > 0) {
+        const staffRows = await fastify.prisma.crm.crmStaff.findMany({
+          where: { id: { in: initialMemberIds } },
+          select: { id: true, username: true, displayName: true, role: true, avatarUrl: true },
+        });
+        initialMembers = staffRows.map((s) => ({
+          id: s.id,
+          username: s.username,
+          displayName: s.displayName || s.username,
+          role: s.role,
+          avatarUrl: s.avatarUrl,
+          isOnline: true,
+        }));
       }
 
       const newConv: MosChatConversation = {
         id,
-        type: body.type || 'space',
+        type: 'space',
         name: normalizedName,
-        subtitle:
-          body.subtitle || (body.type === 'space' ? 'Không gian phối hợp trên mOS' : 'Trò chuyện trực tiếp 1-1'),
-        roleTag: body.type === 'space' ? String(initialMemberIds.length || 1) : '1-1',
-        color: body.type === 'space' ? '#3b82f6' : '#10b981',
+        subtitle: body.subtitle || 'Không gian phối hợp trên mOS',
+        roleTag: String(initialMemberIds.length || 1),
+        color: '#3b82f6',
         avatar: getInitials(rawName, user.username),
-        memberCount: body.type === 'space' ? Math.max(1, initialMemberIds.length) : 1,
-        participantStaffId: body.participantStaffId,
-        memberIds: body.type === 'space' ? initialMemberIds : undefined,
-        members: body.type === 'space' ? initialMembers : undefined,
+        memberCount: Math.max(1, initialMemberIds.length),
+        memberIds: initialMemberIds,
+        members: initialMembers,
         unreadCount: 0,
         updatedAt: now.toISOString(),
         messages: [],

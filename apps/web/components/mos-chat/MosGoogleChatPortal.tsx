@@ -423,61 +423,6 @@ const FALLBACK_CONVERSATIONS: MosChatConversation[] = [
       },
     ],
   },
-  {
-    id: 'dm-tuyetnhi',
-    type: 'dm',
-    name: 'Tuyết Nhi',
-    subtitle: 'Telesales Booker',
-    roleTag: 'Telesales',
-    color: '#ec4899',
-    avatar: 'TN',
-    unreadCount: 1,
-    updatedAt: new Date().toISOString(),
-    messages: [
-      {
-        id: 'msg-seed-tn-1',
-        conversationId: 'dm-tuyetnhi',
-        senderId: 'staff-tn',
-        senderName: 'Tuyết Nhi',
-        senderRole: 'Telesales',
-        senderAvatar: 'TN',
-        roleColor: '#0ea5e9',
-        text: 'Anh Danny ơi, chị Lê Hoàng Yến xin dời sang 17:30 và giữ nguyên Chuyên Viên Ngọc Ánh (CV+), em chốt lịch nhé anh?',
-        timeLabel: '14:50',
-        createdAt: new Date().toISOString(),
-        reactions: {},
-        taskId: 'task-seed-103',
-        thread: [],
-      },
-    ],
-  },
-  {
-    id: 'dm-hamy',
-    type: 'dm',
-    name: 'Hà My',
-    subtitle: 'Tư Vấn (CC)',
-    roleTag: 'Tư Vấn (CC)',
-    color: '#a855f7',
-    avatar: 'HM',
-    unreadCount: 0,
-    updatedAt: new Date().toISOString(),
-    messages: [
-      {
-        id: 'msg-seed-hm-1',
-        conversationId: 'dm-hamy',
-        senderId: 'staff-hm',
-        senderName: 'Hà My',
-        senderRole: 'Tư Vấn (CC)',
-        senderAvatar: 'HM',
-        roleColor: '#10b981',
-        text: 'Tỷ lệ gia hạn gói Combo ca sáng nay đạt 68% rồi anh Danny.',
-        timeLabel: '14:20',
-        createdAt: new Date().toISOString(),
-        reactions: { '❤️': 1 },
-        thread: [],
-      },
-    ],
-  },
 ];
 
 const FALLBACK_TASKS: MosChatTaskItem[] = [
@@ -507,21 +452,6 @@ const FALLBACK_TASKS: MosChatTaskItem[] = [
     creatorName: 'Chuyên Viên Minh Thư',
     priority: 'HIGH',
     remindAt: new Date(Date.now() + 900 * 1000).toISOString(),
-    done: false,
-    fired: false,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'task-seed-103',
-    conversationId: 'dm-tuyetnhi',
-    conversationName: 'Tuyết Nhi',
-    sourceMessageId: 'msg-seed-tn-1',
-    sourceAuthorName: 'Tuyết Nhi',
-    title: 'Xác nhận dời lịch 17:30 cho KH Lê Hoàng Yến (CV Ngọc Ánh)',
-    assigneeName: 'Danny Do',
-    creatorName: 'Tuyết Nhi',
-    priority: 'URGENT',
-    remindAt: new Date(Date.now() + 75 * 1000).toISOString(),
     done: false,
     fired: false,
     createdAt: new Date().toISOString(),
@@ -1274,7 +1204,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       if (res?.version) {
         lastVersionRef.current = res.version;
       }
-      if (res?.conversations?.length) {
+      if (Array.isArray(res?.conversations)) {
         setConversations(res.conversations);
       }
       if (res?.tasks) {
@@ -1516,6 +1446,43 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     lightboxImage,
   ]);
 
+  /**
+   * Strict Direct Message Privacy Guard:
+   * - A 1-1 Direct Message (`type === 'dm'`) is ONLY visible to the 2 participants (`memberIds.includes(myStaffId)`).
+   * - A Self-Chat (`isSelf`) is ONLY visible to its single owner.
+   * - Other users are strictly prevented from seeing someone else's Direct Message.
+   */
+  const isConversationVisibleToCurrentUser = useCallback(
+    (conv: MosChatConversation): boolean => {
+      if (conv.type !== 'dm') return true;
+      if (conv.id === AI_COPILOT_CONV_ID) return canUseAiCopilot;
+      const myStaffId = Number(currentUserStaffMember.id) || Number(currentUser?.id) || 0;
+      if (myStaffId <= 0) return false;
+      const convIdStr = String(conv.id || '');
+      if (convIdStr === 'dm-tuyetnhi' || convIdStr === 'dm-hamy') return false;
+      if (conv.isSelf || convIdStr.startsWith('dm-self-')) {
+        return Number(conv.participantStaffId) === myStaffId || convIdStr === `dm-self-${myStaffId}`;
+      }
+      if (Array.isArray(conv.memberIds) && conv.memberIds.length > 0) {
+        const nums = conv.memberIds.map(Number).filter((n) => Number.isFinite(n) && n > 0);
+        return nums.length === 2 && nums.includes(myStaffId);
+      }
+      const pairMatch = convIdStr.match(/^dm-pair-(\d+)-(\d+)$/);
+      if (pairMatch) {
+        const a = Number(pairMatch[1]);
+        const b = Number(pairMatch[2]);
+        return a === myStaffId || b === myStaffId;
+      }
+      return Number(conv.participantStaffId) === myStaffId;
+    },
+    [canUseAiCopilot, currentUserStaffMember.id, currentUser?.id]
+  );
+
+  const visibleConversations = useMemo(
+    () => conversations.filter(isConversationVisibleToCurrentUser),
+    [conversations, isConversationVisibleToCurrentUser]
+  );
+
   // Listen to global custom event 'mos-chat:open' (e.g. clicking an online colleague avatar on Header)
   useEffect(() => {
     const handleGlobalChatOpen = async (ev: Event) => {
@@ -1526,16 +1493,26 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         customerCard?: MosChatCustomerCard;
       }>;
       const detail = customEv.detail || {};
-      if (detail.conversationId && conversations.some((c) => c.id === detail.conversationId)) {
+      if (detail.conversationId && visibleConversations.some((c) => c.id === detail.conversationId)) {
         setActiveConvId(detail.conversationId);
         setActiveSubtab('chat');
         return;
       }
-      if (detail.participantName) {
-        const normalizedTarget = removeVietnameseTones(detail.participantName.toLowerCase());
-        const matched = conversations.find(
-          (c) => c.type === 'dm' && removeVietnameseTones(c.name.toLowerCase()).includes(normalizedTarget)
-        );
+      if (detail.participantName || detail.participantStaffId) {
+        const myStaffId = Number(currentUserStaffMember.id) || Number(currentUser?.id) || 0;
+        const targetPeerId = Number(detail.participantStaffId) || 0;
+        const normalizedTarget = detail.participantName
+          ? removeVietnameseTones(detail.participantName.toLowerCase())
+          : '';
+        const matched = visibleConversations.find((c) => {
+          if (c.type !== 'dm' || c.isSelf) return false;
+          if (targetPeerId > 0 && myStaffId > 0 && Array.isArray(c.memberIds)) {
+            const nums = c.memberIds.map(Number);
+            if (nums.includes(myStaffId) && nums.includes(targetPeerId)) return true;
+          }
+          if (targetPeerId > 0 && Number(c.participantStaffId) === targetPeerId) return true;
+          return Boolean(normalizedTarget && removeVietnameseTones(c.name.toLowerCase()).includes(normalizedTarget));
+        });
         if (matched) {
           setActiveConvId(matched.id);
           setActiveSubtab('chat');
@@ -1544,7 +1521,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         try {
           const created = await apiClient.chat.createConversation({
             type: 'dm',
-            name: detail.participantName,
+            name: detail.participantName || 'Trò chuyện 1-1',
             participantStaffId: detail.participantStaffId,
           });
           if (created?.conversation) {
@@ -1558,14 +1535,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     };
     window.addEventListener('mos-chat:open', handleGlobalChatOpen);
     return () => window.removeEventListener('mos-chat:open', handleGlobalChatOpen);
-  }, [conversations, notifyLivePeers]);
+  }, [visibleConversations, currentUserStaffMember.id, currentUser?.id, notifyLivePeers]);
 
   // Report unread & active task counts up to Header
   useEffect(() => {
-    const totalUnread = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+    const totalUnread = visibleConversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
     const openTaskCount = tasks.filter((t) => !t.done).length;
     onUnreadCountChange?.(totalUnread, openTaskCount);
-  }, [conversations, tasks, onUnreadCountChange]);
+  }, [visibleConversations, tasks, onUnreadCountChange]);
 
   const triggerTaskReminderAlert = useCallback(
     async (task: MosChatTaskItem) => {
@@ -1574,7 +1551,6 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         playWebAudioReminderChime();
       }
       setActiveAlertTask(task);
-
       const nowStr = dayjs().format('HH:mm');
       const reminderMsg: MosChatMessage = {
         id: `msg-rem-${Date.now()}`,
@@ -1642,12 +1618,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     if (activeConvId === AI_COPILOT_CONV_ID && aiCopilotConversation) {
       return aiCopilotConversation;
     }
-    return conversations.find((c) => c.id === activeConvId) || aiCopilotConversation || conversations[0];
-  }, [conversations, activeConvId, aiCopilotConversation]);
+    return visibleConversations.find((c) => c.id === activeConvId) || aiCopilotConversation || visibleConversations[0];
+  }, [visibleConversations, activeConvId, aiCopilotConversation]);
 
   const filteredConversations = useMemo(() => {
     const q = removeVietnameseTones(searchQuery.trim().toLowerCase());
-    return conversations.filter((c) => {
+    return visibleConversations.filter((c) => {
       if (sidebarFilter === 'unread' && !c.unreadCount) return false;
       if (sidebarFilter === 'spaces' && c.type !== 'space') return false;
       if (!q) return true;
@@ -1655,7 +1631,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       const inMsg = c.messages.some((m) => removeVietnameseTones(m.text.toLowerCase()).includes(q));
       return inName || inMsg;
     });
-  }, [conversations, sidebarFilter, searchQuery]);
+  }, [visibleConversations, sidebarFilter, searchQuery]);
 
   const dmList = useMemo(() => {
     const baseDms = filteredConversations.filter((c) => c.type === 'dm');
@@ -2327,7 +2303,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const handleSelectSelfChat = async () => {
     setNewRoomModalOpen(false);
     const selfId = `dm-self-${currentUser?.id || 'me'}`;
-    const existing = conversations.find((c) => c.id === selfId || (c.type === 'dm' && c.isSelf));
+    const existing = visibleConversations.find((c) => c.id === selfId || (c.type === 'dm' && c.isSelf));
     if (existing) {
       setActiveConvId(existing.id);
       setActiveSubtab('chat');
@@ -2352,9 +2328,16 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   const handleSelectColleague = async (colleague: MosChatStaffMember) => {
     setNewRoomModalOpen(false);
-    const existing = conversations.find(
-      (c) => c.type === 'dm' && (c.participantStaffId === colleague.id || c.name === colleague.displayName)
-    );
+    const myStaffId = Number(currentUserStaffMember.id) || Number(currentUser?.id) || 0;
+    const peerId = Number(colleague.id) || 0;
+    const existing = visibleConversations.find((c) => {
+      if (c.type !== 'dm' || c.isSelf) return false;
+      if (myStaffId > 0 && peerId > 0 && Array.isArray(c.memberIds)) {
+        const nums = c.memberIds.map(Number);
+        if (nums.includes(myStaffId) && nums.includes(peerId)) return true;
+      }
+      return Number(c.participantStaffId) === peerId || c.name === colleague.displayName;
+    });
     if (existing) {
       setActiveConvId(existing.id);
       setActiveSubtab('chat');
