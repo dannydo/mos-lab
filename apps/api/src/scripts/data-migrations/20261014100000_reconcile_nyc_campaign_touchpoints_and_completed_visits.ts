@@ -44,8 +44,8 @@ const migration: DataMigration = {
     ];
 
     await connection.execute(
-      `INSERT INTO crm_config (\`key\`, \`value\`, created_at, updated_at)
-       VALUES ('NYC_TOUCHPOINTS_CONFIG', ?, NOW(), NOW())
+      `INSERT INTO crm_config (\`key\`, \`value\`, updated_at)
+       VALUES ('NYC_TOUCHPOINTS_CONFIG', ?, NOW())
        ON DUPLICATE KEY UPDATE \`value\` = VALUES(\`value\`), updated_at = NOW()`,
       [JSON.stringify(configObj)]
     );
