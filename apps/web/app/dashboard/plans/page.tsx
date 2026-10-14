@@ -327,6 +327,12 @@ export default function PlansPage() {
         width: 180,
         render: (days: number | null, record: CustomerWeeklyProgress) => {
           const cust = record.customer;
+          const daysDisplay = (
+            <span className="tabular-nums font-semibold">
+              {days !== null ? `${days} ngày` : <Text style={{ color: '#888' }}>Chưa từng đến</Text>}
+            </span>
+          );
+
           // 1. check callback date ("có hẹn gọi lại")
           const hasCallback = cust.callbackDate
             ? new Date(cust.callbackDate) >= new Date(new Date().setHours(0, 0, 0, 0))
@@ -334,9 +340,12 @@ export default function PlansPage() {
           if (hasCallback) {
             const callbackFormatted = dayjs(cust.callbackDate).format('DD/MM/YYYY');
             return (
-              <span style={{ color: themeMode === 'dark' ? '#ffd666' : '#d4b106', fontWeight: 'bold' }}>
-                🕒 Hẹn gọi lại: {callbackFormatted}
-              </span>
+              <div className="flex flex-col">
+                {daysDisplay}
+                <span style={{ color: themeMode === 'dark' ? '#ffd666' : '#d4b106', fontWeight: 'bold', fontSize: '11px' }}>
+                  🕒 Hẹn gọi lại: {callbackFormatted}
+                </span>
+              </div>
             );
           }
 
@@ -348,9 +357,12 @@ export default function PlansPage() {
             if (isBooked) {
               const bookingFormatted = dayjs(cust.lastBookingDate).format('DD/MM/YYYY');
               return (
-                <span style={{ color: themeMode === 'dark' ? '#73d13d' : '#389e0d', fontWeight: 'bold' }}>
-                  📅 Booked: {bookingFormatted}
-                </span>
+                <div className="flex flex-col">
+                  {daysDisplay}
+                  <span style={{ color: themeMode === 'dark' ? '#73d13d' : '#389e0d', fontWeight: 'bold', fontSize: '11px' }}>
+                    📅 Booked: {bookingFormatted}
+                  </span>
+                </div>
               );
             }
           }
@@ -367,7 +379,7 @@ export default function PlansPage() {
               state !== 'CheckOut' &&
               state !== 'ServiceStart';
             if (isMissed) {
-              let missedDays = days;
+              let missedDays = days ?? 0;
               if (cust.lastBookingDate) {
                 const bookingDate = new Date(cust.lastBookingDate);
                 const today = new Date();
@@ -377,15 +389,18 @@ export default function PlansPage() {
                 missedDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
               }
               return (
-                <span style={{ color: themeMode === 'dark' ? '#ff7875' : '#cf1322', fontWeight: 'bold' }}>
-                  ⚠️ Missed: {missedDays} ngày
-                </span>
+                <div className="flex flex-col">
+                  {daysDisplay}
+                  <span style={{ color: themeMode === 'dark' ? '#ff7875' : '#cf1322', fontWeight: 'bold', fontSize: '11px' }}>
+                    ⚠️ Missed: {missedDays} ngày
+                  </span>
+                </div>
               );
             }
           }
 
           // 4. normal daysSinceLastVisit ("số dương -> chưa ghé x days, bình thường")
-          return days !== null ? `${days} ngày` : <Text style={{ color: '#888' }}>Chưa từng đến</Text>;
+          return daysDisplay;
         },
       },
       // Monday to Sunday dynamic columns

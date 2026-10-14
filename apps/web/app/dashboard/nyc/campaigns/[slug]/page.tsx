@@ -1605,15 +1605,25 @@ export default function CampaignDetailPage() {
       key: 'daysSinceLastVisit',
       width: 130,
       render: (_: any, record: any) => {
+        const days = record.daysSinceLastVisit;
+        const daysDisplay = days !== null && days !== undefined ? (
+          <span className="tabular-nums font-semibold text-xs">{days} ngày</span>
+        ) : (
+          <span className="text-gray-400 italic text-xs">Chưa tới</span>
+        );
+
         const hasCallback = record.callbackDate
           ? new Date(record.callbackDate) >= new Date(new Date().setHours(0, 0, 0, 0))
           : false;
         if (hasCallback) {
           const callbackFormatted = dayjs(record.callbackDate).format('DD/MM/YYYY');
           return (
-            <span style={{ color: themeMode === 'dark' ? '#ffd666' : '#855b00', fontWeight: 'bold', fontSize: '11px' }}>
-              🕒 Hẹn gọi: {callbackFormatted}
-            </span>
+            <div className="flex flex-col">
+              {daysDisplay}
+              <span style={{ color: themeMode === 'dark' ? '#ffd666' : '#855b00', fontWeight: 'bold', fontSize: '11px' }}>
+                🕒 Hẹn gọi: {callbackFormatted}
+              </span>
+            </div>
           );
         }
 
@@ -1626,11 +1636,14 @@ export default function CampaignDetailPage() {
           if (isBooked) {
             const bookingFormatted = dayjs(lastBookingDate).format('DD/MM/YYYY');
             return (
-              <span
-                style={{ color: themeMode === 'dark' ? '#95de64' : '#237804', fontWeight: 'bold', fontSize: '11px' }}
-              >
-                📅 Booked: {bookingFormatted}
-              </span>
+              <div className="flex flex-col">
+                {daysDisplay}
+                <span
+                  style={{ color: themeMode === 'dark' ? '#95de64' : '#237804', fontWeight: 'bold', fontSize: '11px' }}
+                >
+                  📅 Booked: {bookingFormatted}
+                </span>
+              </div>
             );
           }
         }
@@ -1655,21 +1668,19 @@ export default function CampaignDetailPage() {
               missedDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
             }
             return (
-              <span
-                style={{ color: themeMode === 'dark' ? '#ff7875' : '#cf1322', fontWeight: 'bold', fontSize: '11px' }}
-              >
-                ⚠️ Missed: {missedDays}n
-              </span>
+              <div className="flex flex-col">
+                {daysDisplay}
+                <span
+                  style={{ color: themeMode === 'dark' ? '#ff7875' : '#cf1322', fontWeight: 'bold', fontSize: '11px' }}
+                >
+                  ⚠️ Missed: {missedDays}n
+                </span>
+              </div>
             );
           }
         }
 
-        const days = record.daysSinceLastVisit;
-        return days !== null && days !== undefined ? (
-          <span className="tabular-nums font-semibold text-xs">{days} ngày</span>
-        ) : (
-          <span className="text-gray-400 italic text-xs">Chưa tới</span>
-        );
+        return daysDisplay;
       },
     },
     {

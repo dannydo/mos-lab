@@ -528,7 +528,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
       ) {
         innerWhereClauses.push(`EXISTS (
           SELECT 1 FROM \`order\` o_visit_stats
-          WHERE o_visit_stats.user_id = u.id
+          WHERE o_visit_stats.user_id = u.id AND o_visit_stats.order_state = 'Completed'
         )`);
       }
 
@@ -1199,9 +1199,9 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
       const defaultConfigs: Record<string, SafeAny[]> = {
         NYC_30: [
           { key: 'now', daysMin: 0, daysMax: 1 },
-          { key: '3', daysMin: 3, daysMax: 3 },
-          { key: '7', daysMin: 7, daysMax: 7 },
-          { key: '17', daysMin: 17, daysMax: 17 },
+          { key: '3', daysMin: 2, daysMax: 3 },
+          { key: '7', daysMin: 14, daysMax: 14 },
+          { key: '17', daysMin: 19, daysMax: 19 },
           { key: '21', daysMin: 21, daysMax: 21 },
         ],
         NYC_60: [

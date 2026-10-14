@@ -137,13 +137,22 @@ export const getNycColumns = ({
             ? ('descend' as const)
             : null,
       render: (days: number | null, record: Customer) => {
+        const daysDisplay = (
+          <span className="tabular-nums font-semibold">
+            {days !== null ? `${days} ngày` : <Text style={{ color: 'var(--client-desc-color)' }}>Chưa từng đến</Text>}
+          </span>
+        );
+
         const hasCallback = record.callbackDate ? new Date(record.callbackDate) >= todayStart : false;
         if (hasCallback) {
           const callbackFormatted = dayjs(record.callbackDate).format('DD/MM/YYYY');
           return (
-            <span style={{ color: themeMode === 'dark' ? '#ffd666' : '#855b00', fontWeight: 'bold' }}>
-              🕒 Hẹn gọi lại: {callbackFormatted}
-            </span>
+            <div className="flex flex-col">
+              {daysDisplay}
+              <span style={{ color: themeMode === 'dark' ? '#ffd666' : '#855b00', fontWeight: 'bold', fontSize: '11px' }}>
+                🕒 Hẹn gọi lại: {callbackFormatted}
+              </span>
+            </div>
           );
         }
 
@@ -154,9 +163,12 @@ export const getNycColumns = ({
           if (isBooked) {
             const bookingFormatted = dayjs(record.lastBookingDate).format('DD/MM/YYYY');
             return (
-              <span style={{ color: themeMode === 'dark' ? '#95de64' : '#237804', fontWeight: 'bold' }}>
-                📅 Booked: {bookingFormatted}
-              </span>
+              <div className="flex flex-col">
+                {daysDisplay}
+                <span style={{ color: themeMode === 'dark' ? '#95de64' : '#237804', fontWeight: 'bold', fontSize: '11px' }}>
+                  📅 Booked: {bookingFormatted}
+                </span>
+              </div>
             );
           }
         }
@@ -181,18 +193,17 @@ export const getNycColumns = ({
               missedDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
             }
             return (
-              <span style={{ color: themeMode === 'dark' ? '#ff7875' : '#cf1322', fontWeight: 'bold' }}>
-                ⚠️ Missed: {missedDays} ngày
-              </span>
+              <div className="flex flex-col">
+                {daysDisplay}
+                <span style={{ color: themeMode === 'dark' ? '#ff7875' : '#cf1322', fontWeight: 'bold', fontSize: '11px' }}>
+                  ⚠️ Missed: {missedDays} ngày
+                </span>
+              </div>
             );
           }
         }
 
-        return days !== null ? (
-          `${days} ngày`
-        ) : (
-          <Text style={{ color: 'var(--client-desc-color)' }}>Chưa từng đến</Text>
-        );
+        return daysDisplay;
       },
     },
     {

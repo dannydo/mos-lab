@@ -480,10 +480,10 @@ export function useNycData(options?: UseNycDataOptions) {
   const resetConfigDefaults = async () => {
     const defaultConfigs: TabConfigs = {
       NYC_30: [
-        { key: 'now', label: 'Chạm Now', daysMin: 0, daysMax: 1, color: 'blue' },
-        { key: '3', label: 'Chạm 3', daysMin: 3, daysMax: 3, color: 'cyan' },
-        { key: '7', label: 'Chạm 7', daysMin: 7, daysMax: 7, color: 'green' },
-        { key: '17', label: 'Chạm 17', daysMin: 17, daysMax: 17, color: 'orange' },
+        { key: 'now', label: 'Chăm sóc 24h', daysMin: 0, daysMax: 1, color: 'blue' },
+        { key: '3', label: 'Bảo hành kiểu Úc', daysMin: 2, daysMax: 3, color: 'cyan' },
+        { key: '7', label: 'Chạm 14', daysMin: 14, daysMax: 14, color: 'green' },
+        { key: '17', label: 'Chạm 19', daysMin: 19, daysMax: 19, color: 'orange' },
         { key: '21', label: 'Chạm 21', daysMin: 21, daysMax: 21, color: 'red' },
       ],
       NYC_60: [

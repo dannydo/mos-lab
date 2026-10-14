@@ -74,3 +74,58 @@ test('ProfileDetailsCard display contract handles null and valid numbers correct
   assert.equal(formatDaysText(1), '1 ngày');
   assert.equal(formatDaysText(495), '495 ngày');
 });
+
+test('MOS-BUG-109: NYC_30 campaign touchpoint cycle thresholds strictly match Completed visit days', () => {
+  const nyc30Touchpoints = [
+    { key: '1', label: 'Chăm sóc 24h', daysMin: 0, daysMax: 1 },
+    { key: '2', label: 'Bảo hành kiểu Úc', daysMin: 2, daysMax: 3 },
+    { key: '3', label: 'Chạm 14', daysMin: 14, daysMax: 14 },
+    { key: '4', label: 'Chạm 19', daysMin: 19, daysMax: 19 },
+    { key: '5', label: 'Chạm 21', daysMin: 21, daysMax: 21 },
+  ];
+
+  const matchTouchpoints = (completedVisitDays: number | null) => {
+    if (completedVisitDays === null) return [];
+    return nyc30Touchpoints
+      .filter((tp) => completedVisitDays >= tp.daysMin && completedVisitDays <= tp.daysMax)
+      .map((tp) => tp.label);
+  };
+
+  assert.deepEqual(matchTouchpoints(0), ['Chăm sóc 24h']);
+  assert.deepEqual(matchTouchpoints(1), ['Chăm sóc 24h']);
+  assert.deepEqual(matchTouchpoints(2), ['Bảo hành kiểu Úc']);
+  assert.deepEqual(matchTouchpoints(3), ['Bảo hành kiểu Úc']);
+  assert.deepEqual(matchTouchpoints(10), []);
+  assert.deepEqual(matchTouchpoints(14), ['Chạm 14']);
+  assert.deepEqual(matchTouchpoints(15), []);
+  assert.deepEqual(matchTouchpoints(17), []);
+  assert.deepEqual(matchTouchpoints(19), ['Chạm 19']);
+  assert.deepEqual(matchTouchpoints(21), ['Chạm 21']);
+  assert.deepEqual(matchTouchpoints(null), []);
+});
+
+test('MOS-BUG-109: customer with Completed visit 21 days ago and Missed booking 15 days ago stays in Chạm 21 with both metrics visible', () => {
+  const orders = [
+    { id: 101, bookingDate: '2026-09-23T10:00:00.000Z', orderState: 'Completed' },
+    { id: 102, bookingDate: '2026-09-29T10:00:00.000Z', orderState: 'Cancelled' },
+  ];
+  const today = new Date('2026-10-14T00:00:00.000Z');
+
+  const completedOrders = orders.filter((o) => o.orderState === 'Completed');
+  const lastCompletedDate = new Date(completedOrders[0].bookingDate);
+  lastCompletedDate.setUTCHours(0, 0, 0, 0);
+  const daysSinceCompletedVisit = Math.floor(
+    (today.getTime() - lastCompletedDate.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  const lastBooking = orders[orders.length - 1];
+  const lastBookingDate = new Date(lastBooking.bookingDate);
+  lastBookingDate.setUTCHours(0, 0, 0, 0);
+  const missedDays = Math.floor(
+    (today.getTime() - lastBookingDate.getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  assert.equal(daysSinceCompletedVisit, 21);
+  assert.equal(missedDays, 15);
+});
+

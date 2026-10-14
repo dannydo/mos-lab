@@ -751,7 +751,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
       ) {
         innerWhereClauses.push(`EXISTS (
           SELECT 1 FROM \`order\` o_visit
-          WHERE o_visit.user_id = u.id
+          WHERE o_visit.user_id = u.id AND o_visit.order_state = 'Completed'
         )`);
       }
 
@@ -1974,7 +1974,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
       ) {
         innerWhereClauses.push(`EXISTS (
           SELECT 1 FROM \`order\` o_visit_rand
-          WHERE o_visit_rand.user_id = u.id
+          WHERE o_visit_rand.user_id = u.id AND o_visit_rand.order_state = 'Completed'
         )`);
       }
       if (totalSpentMin !== undefined && totalSpentMin !== '') {
