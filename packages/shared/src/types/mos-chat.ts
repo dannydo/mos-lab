@@ -109,12 +109,32 @@ export interface MosChatStaffMember {
   teamCodes?: string[];
 }
 
+export interface MosChatAccessConfig {
+  allowAllStaff: boolean;
+  allowedGroupKeys: string[];
+  allowedStaffIds: number[];
+  aiCopilotAllowedGroupKeys?: string[];
+  aiCopilotAllowedStaffIds?: number[];
+  updatedAt?: string;
+  updatedBy?: string;
+}
+
+export interface UpdateMosChatAccessConfigRequest {
+  allowAllStaff?: boolean;
+  allowedGroupKeys?: string[];
+  allowedStaffIds?: number[];
+  aiCopilotAllowedGroupKeys?: string[];
+  aiCopilotAllowedStaffIds?: number[];
+}
+
 export interface MosChatBootstrapResponse {
   version?: number;
   unchanged?: boolean;
   conversations: MosChatConversation[];
   tasks: MosChatTaskItem[];
   staffDirectory: MosChatStaffMember[];
+  accessConfig?: MosChatAccessConfig;
+  canAccessChat?: boolean;
 }
 
 export interface CreateMosChatMessageRequest {

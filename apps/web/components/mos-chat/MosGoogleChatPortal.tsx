@@ -51,6 +51,7 @@ import {
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import type {
+  MosChatAccessConfig,
   MosChatConversation,
   MosChatCustomerCard,
   MosChatImageAttachment,
@@ -70,15 +71,6 @@ import { speakText, stopSpeaking } from '../voice-assistant/speech-utils';
 
 export const AI_COPILOT_CONV_ID = 'dm-wings-ai-copilot';
 const AI_COPILOT_GROUP_ACCESS_KEY = 'mos_chat_ai_copilot_allowed_groups_v1';
-
-const AI_COPILOT_GROUP_OPTIONS = [
-  { role: 'super_admin', label: 'Super Admin', color: '#d4a84b' },
-  { role: 'admin', label: 'Quản trị viên (Admin)', color: '#a855f7' },
-  { role: 'manager', label: 'Quản lý (Manager / OC)', color: '#3b82f6' },
-  { role: 'cc', label: 'Tư Vấn Viên (CC)', color: '#10b981' },
-  { role: 'telesales', label: 'Đội ngũ Booker & Telesales', color: '#0ea5e9' },
-  { role: 'cv', label: 'Chuyên Viên Kỹ Thuật (CV)', color: '#14b8a6' },
-] as const;
 
 const AI_QUICK_PROMPTS = [
   {
@@ -288,6 +280,7 @@ export interface MosGoogleChatPortalProps {
   onClose: () => void;
   onToggle: () => void;
   currentUser?: SafeAny;
+  onAccessChange?: (canAccess: boolean) => void;
   onUnreadCountChange?: (unreadCount: number, activeTaskCount: number) => void;
 }
 
@@ -732,6 +725,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   onClose,
   onToggle,
   currentUser,
+  onAccessChange,
   onUnreadCountChange,
 }) => {
   const { themeMode } = useTheme();
@@ -913,11 +907,29 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     };
   }, [isResizingTarget, persistPersonalLayout]);
 
-  // ================= WINGS AI COPILOT ACCESS CONTROL & PRIVATE 1-1 STATE =================
-  const isDannyAccount = useMemo(
-    () => isCanonicalSuperAdminIdentity({ username: currentUser?.username, email: currentUser?.email }),
-    [currentUser?.username, currentUser?.email]
-  );
+  // ================= MOS CHAT & WINGS AI COPILOT ACCESS CONTROL (DEPARTMENT / TEAM / INDIVIDUAL) =================
+  const isDannyAccount = useMemo(() => {
+    const isCanon = isCanonicalSuperAdminIdentity({ username: currentUser?.username, email: currentUser?.email });
+    const roleLower = String(currentUser?.role || '')
+      .toLowerCase()
+      .trim();
+    return isCanon || roleLower === 'super_admin' || roleLower === 'admin';
+  }, [currentUser?.username, currentUser?.email, currentUser?.role]);
+
+  const [accessConfig, setAccessConfig] = useState<MosChatAccessConfig>({
+    allowAllStaff: false,
+    allowedGroupKeys: ['TEAM_ADMIN_MANAGER'],
+    allowedStaffIds: [],
+    aiCopilotAllowedGroupKeys: [],
+    aiCopilotAllowedStaffIds: [],
+  });
+  const [serverCanAccessChat, setServerCanAccessChat] = useState<boolean | null>(null);
+  const [accessConfigModalOpen, setAccessConfigModalOpen] = useState<boolean>(false);
+  const [accessConfigTab, setAccessConfigTab] = useState<'chat' | 'ai'>('chat');
+  const [accessStaffSearch, setAccessStaffSearch] = useState<string>('');
+  const [accessGroupFilter, setAccessGroupFilter] = useState<string>('ALL');
+  const [savingAccessConfig, setSavingAccessConfig] = useState<boolean>(false);
+
   const [allowedAiGroups, setAllowedAiGroups] = useState<string[]>([]);
   const aiPersonalStorageKey = useMemo(
     () => `mos_chat_ai_private_conv_v1_${currentUser?.id || currentUser?.username || 'default'}`,
@@ -1006,20 +1018,112 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     }
   }, [aiPersonalStorageKey, aiSessionId, aiMessages]);
 
-  const toggleAiGroupAccess = useCallback((roleKey: string) => {
-    setAllowedAiGroups((prev) => {
-      const next = prev.includes(roleKey) ? prev.filter((r) => r !== roleKey) : [...prev, roleKey];
-      try {
-        window.localStorage.setItem(AI_COPILOT_GROUP_ACCESS_KEY, JSON.stringify(next));
-      } catch {
-        // ignore
+  const currentUserStaffMember = useMemo<MosChatStaffMember>(() => {
+    const myId = Number(currentUser?.id);
+    const uname = String(currentUser?.username || '')
+      .toLowerCase()
+      .trim();
+    const found = staffDirectory.find(
+      (s) =>
+        (Number.isFinite(myId) && myId > 0 && s.id === myId) ||
+        (uname &&
+          String(s.username || '')
+            .toLowerCase()
+            .trim() === uname)
+    );
+    if (found) return found;
+    return {
+      id: Number.isFinite(myId) ? myId : 0,
+      username: currentUser?.username || '',
+      displayName: currentUser?.displayName || currentUser?.username || '',
+      role: currentUser?.role || '',
+      departmentCodes: [],
+      teamCodes: [],
+    };
+  }, [currentUser?.id, currentUser?.username, currentUser?.displayName, currentUser?.role, staffDirectory]);
+
+  const isStaffMemberAllowedInChat = useCallback(
+    (
+      member: MosChatStaffMember,
+      cfg: MosChatAccessConfig = accessConfig
+    ): {
+      allowed: boolean;
+      reason: 'admin' | 'all' | 'individual' | 'group' | 'none';
+      matchedGroups: SpaceDepartmentOrTeamGroup[];
+    } => {
+      const roleLower = String(member.role || '')
+        .toLowerCase()
+        .trim();
+      const unameLower = String(member.username || '')
+        .toLowerCase()
+        .trim();
+      if (unameLower === 'danny' || roleLower === 'super_admin' || roleLower === 'admin') {
+        return { allowed: true, reason: 'admin', matchedGroups: [] };
       }
-      return next;
-    });
-  }, []);
+      if (cfg.allowAllStaff) {
+        return { allowed: true, reason: 'all', matchedGroups: [] };
+      }
+      const isIndividual = member.id > 0 && (cfg.allowedStaffIds || []).includes(member.id);
+      const matchedGroups = SPACE_DEPARTMENT_AND_TEAM_GROUPS.filter(
+        (g) => (cfg.allowedGroupKeys || []).includes(g.key) && matchesStaffGroup(member, g.key)
+      );
+      if (isIndividual) {
+        return { allowed: true, reason: 'individual', matchedGroups };
+      }
+      if (matchedGroups.length > 0) {
+        return { allowed: true, reason: 'group', matchedGroups };
+      }
+      return { allowed: false, reason: 'none', matchedGroups: [] };
+    },
+    [accessConfig]
+  );
+
+  const isStaffMemberAllowedInAi = useCallback(
+    (
+      member: MosChatStaffMember,
+      cfg: MosChatAccessConfig = accessConfig
+    ): {
+      allowed: boolean;
+      reason: 'admin' | 'individual' | 'group' | 'none';
+      matchedGroups: SpaceDepartmentOrTeamGroup[];
+    } => {
+      const roleLower = String(member.role || '')
+        .toLowerCase()
+        .trim();
+      const unameLower = String(member.username || '')
+        .toLowerCase()
+        .trim();
+      if (unameLower === 'danny' || roleLower === 'super_admin' || roleLower === 'admin') {
+        return { allowed: true, reason: 'admin', matchedGroups: [] };
+      }
+      const isIndividual = member.id > 0 && (cfg.aiCopilotAllowedStaffIds || []).includes(member.id);
+      const matchedGroups = SPACE_DEPARTMENT_AND_TEAM_GROUPS.filter(
+        (g) => (cfg.aiCopilotAllowedGroupKeys || []).includes(g.key) && matchesStaffGroup(member, g.key)
+      );
+      if (isIndividual) {
+        return { allowed: true, reason: 'individual', matchedGroups };
+      }
+      if (matchedGroups.length > 0) {
+        return { allowed: true, reason: 'group', matchedGroups };
+      }
+      return { allowed: false, reason: 'none', matchedGroups: [] };
+    },
+    [accessConfig]
+  );
+
+  const canUserAccessChat = useMemo(() => {
+    if (isDannyAccount) return true;
+    if (serverCanAccessChat !== null) return serverCanAccessChat;
+    return isStaffMemberAllowedInChat(currentUserStaffMember, accessConfig).allowed;
+  }, [isDannyAccount, serverCanAccessChat, isStaffMemberAllowedInChat, currentUserStaffMember, accessConfig]);
+
+  useEffect(() => {
+    onAccessChange?.(canUserAccessChat);
+  }, [canUserAccessChat, onAccessChange]);
 
   const canUseAiCopilot = useMemo(() => {
     if (isDannyAccount) return true;
+    if (isStaffMemberAllowedInAi(currentUserStaffMember, accessConfig).allowed) return true;
     const r = String(currentUser?.role || '')
       .trim()
       .toLowerCase();
@@ -1030,7 +1134,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     if (r === 'oc' && allowedAiGroups.includes('manager')) return true;
     if ((r === 'ktv' || r === 'technician') && allowedAiGroups.includes('cv')) return true;
     return false;
-  }, [isDannyAccount, currentUser?.role, allowedAiGroups]);
+  }, [
+    isDannyAccount,
+    isStaffMemberAllowedInAi,
+    currentUserStaffMember,
+    accessConfig,
+    currentUser?.role,
+    allowedAiGroups,
+  ]);
 
   // 1-second timer while AI is thinking
   useEffect(() => {
@@ -1117,12 +1228,46 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     } catch (_) {}
   }, []);
 
+  const persistAccessConfig = useCallback(
+    async (next: MosChatAccessConfig, showToast = false) => {
+      setAccessConfig(next);
+      setSavingAccessConfig(true);
+      try {
+        const res = await apiClient.chat.updateAccessConfig({
+          allowAllStaff: next.allowAllStaff,
+          allowedGroupKeys: next.allowedGroupKeys,
+          allowedStaffIds: next.allowedStaffIds,
+          aiCopilotAllowedGroupKeys: next.aiCopilotAllowedGroupKeys,
+          aiCopilotAllowedStaffIds: next.aiCopilotAllowedStaffIds,
+        });
+        if (res?.accessConfig) {
+          setAccessConfig(res.accessConfig);
+        }
+        notifyLivePeers();
+        if (showToast) {
+          antdMessage.success('Đã lưu cấu hình phân quyền mOS Chat');
+        }
+      } catch (err: SafeAny) {
+        antdMessage.error(err?.response?.data?.message || 'Không thể lưu cấu hình phân quyền mOS Chat');
+      } finally {
+        setSavingAccessConfig(false);
+      }
+    },
+    [notifyLivePeers]
+  );
+
   const fetchBootstrap = useCallback(async (forceFull = false) => {
     try {
       const res = await apiClient.chat.bootstrap(
         { sinceVersion: forceFull ? undefined : lastVersionRef.current || undefined },
         { isPolling: true }
       );
+      if (res?.accessConfig) {
+        setAccessConfig(res.accessConfig);
+      }
+      if (typeof res?.canAccessChat === 'boolean') {
+        setServerCanAccessChat(res.canAccessChat);
+      }
       if (res?.unchanged) {
         return;
       }
@@ -1240,6 +1385,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       activeSubtab === 'chat' &&
       !taskModalOpen &&
       !newRoomModalOpen &&
+      !spaceMembersModalOpen &&
+      !accessConfigModalOpen &&
       !driveLinkModalOpen &&
       !lightboxImage
     ) {
@@ -1248,13 +1395,31 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       }, 60);
       return () => clearTimeout(t);
     }
-  }, [open, activeConvId, activeSubtab, taskModalOpen, newRoomModalOpen, driveLinkModalOpen, lightboxImage]);
+  }, [
+    open,
+    activeConvId,
+    activeSubtab,
+    taskModalOpen,
+    newRoomModalOpen,
+    spaceMembersModalOpen,
+    accessConfigModalOpen,
+    driveLinkModalOpen,
+    lightboxImage,
+  ]);
 
   // Smart click-anywhere-on-screen to auto-focus chat composer (ignores links, buttons, inputs, modals, and text selection)
   useEffect(() => {
     const hasExpandedDock = dockedConvIds.some((id) => !collapsedDockIds[id]);
     if (!open && !hasExpandedDock) return;
-    if (taskModalOpen || newRoomModalOpen || driveLinkModalOpen || lightboxImage) return;
+    if (
+      taskModalOpen ||
+      newRoomModalOpen ||
+      spaceMembersModalOpen ||
+      accessConfigModalOpen ||
+      driveLinkModalOpen ||
+      lightboxImage
+    )
+      return;
 
     const INTERACTIVE_SELECTOR = [
       'a',
@@ -1345,6 +1510,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     collapsedDockIds,
     taskModalOpen,
     newRoomModalOpen,
+    spaceMembersModalOpen,
+    accessConfigModalOpen,
     driveLinkModalOpen,
     lightboxImage,
   ]);
@@ -2440,6 +2607,237 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     );
   };
 
+  const [brokenAvatarUrls, setBrokenAvatarUrls] = useState<Record<string, boolean>>({});
+
+  const normalizeAvatarImageUrl = useCallback(
+    (raw?: string | null): string | null => {
+      if (!raw || typeof raw !== 'string') return null;
+      const trimmed = raw.trim();
+      if (!trimmed) return null;
+      const isLikelyImageUrl =
+        trimmed.startsWith('http://') ||
+        trimmed.startsWith('https://') ||
+        trimmed.startsWith('/api/') ||
+        trimmed.startsWith('/uploads/') ||
+        trimmed.startsWith('data:image/') ||
+        /\.(?:jpg|jpeg|png|webp|gif|svg)(?:\?|$)/i.test(trimmed);
+      if (!isLikelyImageUrl) return null;
+      const normalized = resolveMediaUrl(
+        trimmed.replace(/^https?:\/\/(s|api|www)?\.?wingslashes\.com/, 'https://cdn.wingslashes.com')
+      );
+      if (!normalized || brokenAvatarUrls[normalized]) return null;
+      return normalized;
+    },
+    [brokenAvatarUrls]
+  );
+
+  const resolveUserAvatarUrl = useCallback(
+    ({
+      staffId,
+      name,
+      username,
+      rawAvatar,
+    }: {
+      staffId?: number | string | null;
+      name?: string | null;
+      username?: string | null;
+      rawAvatar?: string | null;
+    }): string | null => {
+      const direct = normalizeAvatarImageUrl(rawAvatar);
+      if (direct) return direct;
+
+      const cleanName = String(name || '')
+        .replace(/\s*\(Ghi chú cho tôi\)\s*$/i, '')
+        .replace(/^Chuyên Viên\s+/i, '')
+        .trim()
+        .toLowerCase();
+      const cleanUser = String(username || '')
+        .trim()
+        .toLowerCase();
+      const myId = currentUser?.id;
+      const myName = String(currentUser?.displayName || '')
+        .trim()
+        .toLowerCase();
+      const myUser = String(currentUser?.username || '')
+        .trim()
+        .toLowerCase();
+
+      const isMeMatch =
+        staffId === 'me' ||
+        (myId && staffId && String(staffId) === String(myId)) ||
+        (cleanName && myName && cleanName === myName) ||
+        (cleanUser && myUser && cleanUser === myUser);
+
+      if (isMeMatch) {
+        const myDirectAvatar = normalizeAvatarImageUrl(currentUser?.avatarUrl || currentUser?.avatar);
+        if (myDirectAvatar) return myDirectAvatar;
+      }
+
+      if (staffDirectory.length > 0) {
+        const matchedStaff = staffDirectory.find((s) => {
+          if (staffId && Number(s.id) === Number(staffId)) return true;
+          if (isMeMatch && myId && Number(s.id) === Number(myId)) return true;
+          const sName = String(s.displayName || '')
+            .trim()
+            .toLowerCase();
+          const sUser = String(s.username || '')
+            .trim()
+            .toLowerCase();
+          if (cleanName && sName && (sName === cleanName || sName.endsWith(` ${cleanName}`))) return true;
+          if (cleanUser && sUser && sUser === cleanUser) return true;
+          return false;
+        });
+        if (matchedStaff?.avatarUrl) {
+          const dirAvatar = normalizeAvatarImageUrl(matchedStaff.avatarUrl);
+          if (dirAvatar) return dirAvatar;
+        }
+      }
+
+      return null;
+    },
+    [normalizeAvatarImageUrl, currentUser, staffDirectory]
+  );
+
+  const getAvatarInitials = useCallback((name?: string | null, fallback?: string | null): string => {
+    const cleanFallback = String(fallback || '').trim();
+    if (cleanFallback && cleanFallback.length <= 3 && !cleanFallback.includes('/') && !cleanFallback.includes('.')) {
+      return cleanFallback.toUpperCase();
+    }
+    const clean = String(name || '')
+      .replace(/\s*\(Ghi chú cho tôi\)\s*$/i, '')
+      .replace(/^Chuyên Viên\s+/i, '')
+      .trim();
+    if (!clean) return 'NV';
+    const parts = clean.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0] || ''}${parts[parts.length - 1][0] || ''}`.toUpperCase();
+    }
+    return clean.slice(0, 2).toUpperCase();
+  }, []);
+
+  const isMessageFromCurrentUser = useCallback(
+    (m: {
+      senderId?: number | string | null;
+      senderName?: string | null;
+      isAiBot?: boolean;
+      isSystemReminder?: boolean;
+    }): boolean => {
+      if (
+        m.isAiBot ||
+        m.isSystemReminder ||
+        m.senderId === 'wings-ai-copilot' ||
+        m.senderId === 'system' ||
+        m.senderId === 'system-reminder'
+      ) {
+        return false;
+      }
+      if (m.senderId === 'me') return true;
+      if (currentUser?.id && m.senderId && String(m.senderId) === String(currentUser.id)) {
+        return true;
+      }
+      const senderClean = String(m.senderName || '')
+        .trim()
+        .toLowerCase();
+      const myNameClean = String(currentUser?.displayName || '')
+        .trim()
+        .toLowerCase();
+      const myUserClean = String(currentUser?.username || '')
+        .trim()
+        .toLowerCase();
+      if (
+        senderClean &&
+        ((myNameClean && senderClean === myNameClean) || (myUserClean && senderClean === myUserClean))
+      ) {
+        return true;
+      }
+      if (!currentUser?.id && senderClean === 'danny do') {
+        return true;
+      }
+      return false;
+    },
+    [currentUser?.id, currentUser?.displayName, currentUser?.username]
+  );
+
+  const renderUserAvatarNode = ({
+    staffId,
+    name,
+    username,
+    rawAvatar,
+    avatarUrl,
+    bgColor = '#3b82f6',
+    bgStyle,
+    sizeClass = 'w-8 h-8',
+    roundedClass = 'rounded-full',
+    textSizeClass = 'text-[11px]',
+    textClass,
+    textColor = '#ffffff',
+    isOnline,
+    onlineDot,
+    isAiBot,
+    isSelfBookmark,
+  }: {
+    staffId?: number | string | null;
+    name?: string | null;
+    username?: string | null;
+    rawAvatar?: string | null;
+    avatarUrl?: string | null;
+    bgColor?: string;
+    bgStyle?: string;
+    sizeClass?: string;
+    roundedClass?: string;
+    textSizeClass?: string;
+    textClass?: string;
+    textColor?: string;
+    isOnline?: boolean;
+    onlineDot?: boolean;
+    isAiBot?: boolean;
+    isSelfBookmark?: boolean;
+  }) => {
+    const effectiveRawAvatar = rawAvatar ?? avatarUrl ?? null;
+    const effectiveTextSize = textClass || textSizeClass;
+    const effectiveOnline = Boolean(isOnline ?? onlineDot);
+    const effectiveBg = bgStyle || bgColor;
+    const resolvedImgUrl = isAiBot
+      ? null
+      : resolveUserAvatarUrl({ staffId, name, username, rawAvatar: effectiveRawAvatar });
+    const initials = getAvatarInitials(name, effectiveRawAvatar);
+
+    return (
+      <div
+        className={`${sizeClass} ${roundedClass} flex items-center justify-center ${effectiveTextSize} font-extrabold shrink-0 relative select-none`}
+        style={{
+          color: textColor,
+          background: isAiBot
+            ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 55%, #d4a84b 100%)'
+            : isSelfBookmark && !resolvedImgUrl
+              ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)'
+              : effectiveBg,
+        }}
+      >
+        {isAiBot ? (
+          <Bot size={15} />
+        ) : resolvedImgUrl ? (
+          <img
+            src={resolvedImgUrl}
+            alt={name || username || 'User avatar'}
+            className={`w-full h-full object-cover ${roundedClass} block`}
+            onError={() => setBrokenAvatarUrls((prev) => ({ ...prev, [resolvedImgUrl]: true }))}
+          />
+        ) : isSelfBookmark ? (
+          <Bookmark size={14} />
+        ) : (
+          <span>{initials}</span>
+        )}
+        {effectiveOnline && (
+          <span
+            className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 z-10"
+            style={{ border: `1.5px solid ${surfaceBg}` }}
+          />
+        )}
+      </div>
+    );
+  };
+
   const renderStagedAttachmentsStrip = (
     items: MosChatImageAttachment[],
     scope: 'main' | 'thread' | 'dock',
@@ -2621,6 +3019,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     </div>
   );
 
+  if (!canUserAccessChat) {
+    return null;
+  }
+
   return (
     <>
       {/* Hidden File Input for Local Drive & Google Drive Desktop Upload */}
@@ -2654,7 +3056,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           }`,
           boxShadow: isDark ? '0 24px 56px rgba(0, 0, 0, 0.65)' : '0 20px 48px rgba(15, 23, 42, 0.15)',
           display: 'flex',
-          zIndex: 1025,
+          zIndex: 995,
           transform: open ? 'translateX(0)' : 'translateX(104%)',
           transition: isResizingTarget
             ? 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)'
@@ -2765,42 +3167,79 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               gap: 8,
             }}
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-1.5">
               <Tooltip title="Đổi trạng thái: Đang hoạt động / Không làm phiền (Tắt chuông)">
                 <button
                   type="button"
                   onClick={() => setPresence((p) => (p === 'active' ? 'dnd' : 'active'))}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold cursor-pointer"
+                  className="inline-flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full text-[11px] font-semibold cursor-pointer min-w-0"
                   style={{
                     background: surfaceRaised,
                     border: `1px solid ${borderColor}`,
                     color: token.colorText,
                   }}
                 >
+                  {renderUserAvatarNode({
+                    staffId: currentUser?.id || 'me',
+                    name: currentUser?.displayName || currentUser?.username || 'Danny Do',
+                    username: currentUser?.username,
+                    rawAvatar: currentUser?.avatarUrl || currentUser?.avatar,
+                    bgColor: '#d4a84b',
+                    sizeClass: 'w-5 h-5',
+                    textSizeClass: 'text-[9.5px]',
+                  })}
                   <span
-                    className="inline-block w-2 h-2 rounded-full"
+                    className="inline-block w-2 h-2 rounded-full shrink-0"
                     style={{ background: presence === 'active' ? '#22c55e' : '#ef4444' }}
                   />
-                  <span>{presence === 'active' ? 'Đang hoạt động' : 'Không làm phiền'}</span>
-                  <ChevronDown size={13} />
+                  <span className="truncate">{presence === 'active' ? 'Đang hoạt động' : 'Không làm phiền'}</span>
+                  <ChevronDown size={13} className="shrink-0" />
                 </button>
               </Tooltip>
 
-              <Tooltip title="Tạo cuộc trò chuyện hoặc Space mới">
-                <button
-                  type="button"
-                  aria-label="Tạo cuộc trò chuyện hoặc Space mới"
-                  onClick={() => setNewRoomModalOpen(true)}
-                  className="inline-flex items-center justify-center w-7 h-7 rounded-lg cursor-pointer"
-                  style={{
-                    background: surfaceRaised,
-                    border: `1px solid ${borderColor}`,
-                    color: token.colorTextSecondary,
-                  }}
-                >
-                  <Plus size={15} />
-                </button>
-              </Tooltip>
+              <div className="flex items-center gap-1 shrink-0">
+                {isDannyAccount && (
+                  <Tooltip title="Phân quyền Đội nhóm & Cá nhân vào mOS Chat">
+                    <button
+                      type="button"
+                      aria-label="Phân quyền Đội nhóm & Cá nhân vào mOS Chat"
+                      onClick={() => {
+                        setAccessConfigTab('chat');
+                        setAccessConfigModalOpen(true);
+                      }}
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-lg cursor-pointer shrink-0 transition-colors"
+                      style={{
+                        background:
+                          accessConfig.allowAllStaff ||
+                          accessConfig.allowedGroupKeys.length > 0 ||
+                          accessConfig.allowedStaffIds.length > 0
+                            ? 'rgba(139, 92, 246, 0.16)'
+                            : surfaceRaised,
+                        border: `1px solid ${borderColor}`,
+                        color: '#a78bfa',
+                      }}
+                    >
+                      <ShieldCheck size={14} />
+                    </button>
+                  </Tooltip>
+                )}
+
+                <Tooltip title="Tạo cuộc trò chuyện hoặc Space mới">
+                  <button
+                    type="button"
+                    aria-label="Tạo cuộc trò chuyện hoặc Space mới"
+                    onClick={() => setNewRoomModalOpen(true)}
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-lg cursor-pointer shrink-0"
+                    style={{
+                      background: surfaceRaised,
+                      border: `1px solid ${borderColor}`,
+                      color: token.colorTextSecondary,
+                    }}
+                  >
+                    <Plus size={15} />
+                  </button>
+                </Tooltip>
+              </div>
             </div>
 
             {/* Search Input */}
@@ -2948,28 +3387,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         : '1px solid transparent',
                   }}
                 >
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-extrabold text-white shrink-0 relative"
-                    style={{
-                      background: isAiConv
-                        ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 55%, #d4a84b 100%)'
-                        : isSelfConv
-                          ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)'
-                          : conv.color || '#ec4899',
-                    }}
-                  >
-                    {isAiConv ? (
-                      <Bot size={16} />
-                    ) : isSelfConv ? (
-                      <Bookmark size={15} />
-                    ) : (
-                      conv.avatar || conv.name.slice(0, 2).toUpperCase()
-                    )}
-                    <span
-                      className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500"
-                      style={{ border: `1.5px solid ${surfaceBg}` }}
-                    />
-                  </div>
+                  {renderUserAvatarNode({
+                    staffId: isSelfConv ? currentUser?.id || 'me' : conv.participantStaffId,
+                    name: conv.name,
+                    rawAvatar: conv.avatar,
+                    bgColor: conv.color || '#ec4899',
+                    sizeClass: 'w-8 h-8',
+                    roundedClass: 'rounded-full',
+                    isOnline: true,
+                    isAiBot: isAiConv,
+                    isSelfBookmark: isSelfConv,
+                  })}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1">
                       <div className="flex items-center gap-1.5 min-w-0">
@@ -3149,25 +3577,31 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             style={{ background: surfaceBg, borderBottom: `1px solid ${borderColor}` }}
           >
             <div className="flex items-center gap-2 min-w-0">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center font-extrabold text-xs shrink-0"
-                style={{
-                  background:
-                    activeConversation?.id === AI_COPILOT_CONV_ID
-                      ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 55%, #d4a84b 100%)'
-                      : `${activeConversation?.color || '#10b981'}24`,
-                  color:
-                    activeConversation?.id === AI_COPILOT_CONV_ID ? '#ffffff' : activeConversation?.color || '#10b981',
-                }}
-              >
-                {activeConversation?.id === AI_COPILOT_CONV_ID ? (
-                  <Bot size={16} />
-                ) : activeConversation?.type === 'space' ? (
+              {activeConversation?.type === 'space' ? (
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center font-extrabold text-xs shrink-0"
+                  style={{
+                    background: `${activeConversation?.color || '#10b981'}24`,
+                    color: activeConversation?.color || '#10b981',
+                  }}
+                >
                   <Hash size={16} />
-                ) : (
-                  activeConversation?.avatar || activeConversation?.name.slice(0, 2).toUpperCase()
-                )}
-              </div>
+                </div>
+              ) : (
+                renderUserAvatarNode({
+                  staffId: activeConversation?.isSelf
+                    ? currentUser?.id || 'me'
+                    : activeConversation?.participantStaffId,
+                  name: activeConversation?.name,
+                  rawAvatar: activeConversation?.avatar,
+                  bgColor: activeConversation?.color || '#10b981',
+                  sizeClass: 'w-8 h-8',
+                  roundedClass: 'rounded-full',
+                  isOnline: activeConversation?.id !== AI_COPILOT_CONV_ID,
+                  isAiBot: activeConversation?.id === AI_COPILOT_CONV_ID,
+                  isSelfBookmark: Boolean(activeConversation?.isSelf || activeConversation?.id.startsWith('dm-self-')),
+                })
+              )}
               <div className="min-w-0 flex items-center gap-1.5">
                 <span className="font-extrabold text-[13.5px] truncate">{activeConversation?.name}</span>
                 {activeConversation?.roleTag && (
@@ -3275,71 +3709,28 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               )}
 
               {isDannyAccount && (
-                <Popover
-                  trigger="click"
-                  placement="bottomRight"
-                  content={
-                    <div className="w-72 p-1" data-no-chat-autofocus="true">
-                      <div
-                        className="flex items-center gap-1.5 text-[12px] font-extrabold mb-1"
-                        style={{ color: '#a78bfa' }}
-                      >
-                        <ShieldCheck size={15} />
-                        <span>Phân quyền Nhóm dùng Wings AI Copilot</span>
-                      </div>
-                      <div className="text-[11px] text-slate-400 mb-2 leading-snug">
-                        Mặc định chỉ mở cho tài khoản <strong>Danny</strong>. Khi cần mở rộng cho nhóm nhân sự nào, anh
-                        bật nhóm đó bên dưới:
-                      </div>
-                      <div className="space-y-1">
-                        {AI_COPILOT_GROUP_OPTIONS.map((grp) => {
-                          const enabled = allowedAiGroups.includes(grp.role);
-                          return (
-                            <button
-                              key={grp.role}
-                              type="button"
-                              onClick={() => toggleAiGroupAccess(grp.role)}
-                              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[12px] font-semibold cursor-pointer transition-colors"
-                              style={{
-                                background: enabled ? 'rgba(139, 92, 246, 0.14)' : surfaceRaised,
-                                border: `1px solid ${enabled ? 'rgba(139, 92, 246, 0.4)' : borderColor}`,
-                                color: token.colorText,
-                              }}
-                            >
-                              <span className="flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full" style={{ background: grp.color }} />
-                                <span>{grp.label}</span>
-                              </span>
-                              <span
-                                className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full text-[10px] font-bold"
-                                style={{
-                                  background: enabled ? 'rgba(16, 185, 129, 0.18)' : 'rgba(148, 163, 184, 0.15)',
-                                  color: enabled ? '#10b981' : '#94a3b8',
-                                }}
-                              >
-                                {enabled ? 'Đã mở' : 'Đang tắt'}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  }
-                >
-                  <Tooltip title="Phân quyền Nhóm sử dụng Wings AI Copilot (Chỉ Danny)">
-                    <button
-                      type="button"
-                      aria-label="Phân quyền Nhóm sử dụng Wings AI Copilot"
-                      className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer"
-                      style={{
-                        background: allowedAiGroups.length > 0 ? 'rgba(139, 92, 246, 0.16)' : 'transparent',
-                        color: allowedAiGroups.length > 0 ? '#a78bfa' : token.colorTextSecondary,
-                      }}
-                    >
-                      <ShieldCheck size={15} />
-                    </button>
-                  </Tooltip>
-                </Popover>
+                <Tooltip title="Phân quyền Đội nhóm & Cá nhân vào mOS Chat & AI">
+                  <button
+                    type="button"
+                    aria-label="Phân quyền Đội nhóm & Cá nhân vào mOS Chat & AI"
+                    onClick={() => {
+                      setAccessConfigTab(activeConversation?.id === AI_COPILOT_CONV_ID ? 'ai' : 'chat');
+                      setAccessConfigModalOpen(true);
+                    }}
+                    className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer transition-colors"
+                    style={{
+                      background:
+                        accessConfig.allowAllStaff ||
+                        accessConfig.allowedGroupKeys.length > 0 ||
+                        accessConfig.allowedStaffIds.length > 0
+                          ? 'rgba(139, 92, 246, 0.16)'
+                          : 'transparent',
+                      color: '#a78bfa',
+                    }}
+                  >
+                    <ShieldCheck size={15} />
+                  </button>
+                </Tooltip>
               )}
 
               <Tooltip title="Đóng / Mở cột Luồng trả lời (Threads)">
@@ -3424,14 +3815,25 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               <div className="flex-1 overflow-y-auto py-3">
                 {activeConversation?.messages.map((m, idx) => {
                   const linkedTask = tasks.find((t) => t.id === m.taskId || t.sourceMessageId === m.id);
+                  const isMine = isMessageFromCurrentUser(m);
                   const prevMsg = idx > 0 ? activeConversation.messages[idx - 1] : null;
+                  const prevIsMine = prevMsg ? isMessageFromCurrentUser(prevMsg) : false;
                   const isCont = Boolean(
-                    prevMsg && prevMsg.senderName === m.senderName && !prevMsg.isSystemReminder && !m.isSystemReminder
+                    prevMsg &&
+                    prevMsg.senderName === m.senderName &&
+                    prevIsMine === isMine &&
+                    !prevMsg.isSystemReminder &&
+                    !m.isSystemReminder
                   );
+                  const isAiMessage = Boolean(m.isAiBot || m.senderId === 'wings-ai-copilot');
+
                   return (
                     <div
                       key={m.id}
+                      data-message-side={isMine ? 'right' : 'left'}
                       className={`group relative flex items-start gap-2.5 px-4 ${
+                        isMine ? 'flex-row-reverse' : 'flex-row'
+                      } ${
                         isCont ? 'py-0.5' : 'pt-2.5 pb-1'
                       } transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.03]`}
                       style={{
@@ -3439,33 +3841,44 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       }}
                     >
                       {isCont ? (
-                        <div className="w-8 shrink-0 text-right pr-0.5 pt-0.5 select-none">
+                        <div
+                          className={`w-8 shrink-0 ${
+                            isMine ? 'text-left pl-0.5' : 'text-right pr-0.5'
+                          } pt-1 select-none`}
+                        >
                           <span className="opacity-0 group-hover:opacity-100 text-[9.5px] text-slate-400 tabular-nums transition-opacity">
                             {m.timeLabel}
                           </span>
                         </div>
                       ) : (
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-extrabold text-white shrink-0 mt-0.5"
-                          style={{
-                            background:
-                              m.isAiBot || m.senderId === 'wings-ai-copilot'
-                                ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 55%, #d4a84b 100%)'
-                                : m.roleColor || '#3b82f6',
-                          }}
-                        >
-                          {m.isAiBot || m.senderId === 'wings-ai-copilot' ? (
-                            <Bot size={15} />
-                          ) : (
-                            m.senderAvatar || m.senderName.slice(0, 2).toUpperCase()
-                          )}
+                        <div className="mt-0.5 shrink-0">
+                          {renderUserAvatarNode({
+                            staffId: isMine ? currentUser?.id || m.senderId : m.senderId,
+                            name: m.senderName,
+                            rawAvatar: m.senderAvatar,
+                            bgColor: m.roleColor || (isMine ? '#d4a84b' : '#3b82f6'),
+                            sizeClass: 'w-8 h-8',
+                            roundedClass: 'rounded-full',
+                            isAiBot: isAiMessage,
+                          })}
                         </div>
                       )}
 
-                      <div className="flex-1 min-w-0">
+                      <div className={`flex-1 min-w-0 flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
                         {!isCont && (
-                          <div className="flex items-center gap-1.5 mb-0.5">
+                          <div className={`flex items-center gap-1.5 mb-1 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
                             <span className="text-[12.5px] font-bold">{m.senderName}</span>
+                            {isMine && (
+                              <span
+                                className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full text-[9px] font-extrabold"
+                                style={{
+                                  background: 'rgba(212, 168, 75, 0.2)',
+                                  color: '#d4a84b',
+                                }}
+                              >
+                                Bạn
+                              </span>
+                            )}
                             <span
                               className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded text-[9.5px] font-bold"
                               style={{
@@ -3489,7 +3902,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         {/* Collapsible AI Reasoning (<thinking>) Block */}
                         {m.aiThinking && (
                           <div
-                            className="mb-1.5 rounded-lg overflow-hidden"
+                            className="mb-1.5 rounded-lg overflow-hidden w-full max-w-[88%]"
                             style={{
                               background: isDark ? 'rgba(139, 92, 246, 0.08)' : 'rgba(139, 92, 246, 0.06)',
                               border: '1px solid rgba(139, 92, 246, 0.25)',
@@ -3509,7 +3922,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             </button>
                             {expandedThinkingIds[m.id] && (
                               <div
-                                className="px-2.5 pb-2 pt-1 text-[11.5px] leading-relaxed whitespace-pre-wrap"
+                                className="px-2.5 pb-2 pt-1 text-[11.5px] leading-relaxed whitespace-pre-wrap text-left"
                                 style={{
                                   color: token.colorTextSecondary,
                                   borderTop: '1px dashed rgba(139, 92, 246, 0.2)',
@@ -3521,7 +3934,30 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           </div>
                         )}
 
-                        {m.text && <div className="text-[13px] leading-relaxed whitespace-pre-wrap">{m.text}</div>}
+                        {m.text && (
+                          <div
+                            className={`inline-block text-left px-3.5 py-2 rounded-2xl ${
+                              isMine ? 'rounded-tr-sm' : 'rounded-tl-sm'
+                            } text-[13px] leading-relaxed whitespace-pre-wrap break-words max-w-[85%]`}
+                            style={{
+                              background: isMine
+                                ? isDark
+                                  ? 'rgba(212, 168, 75, 0.16)'
+                                  : 'rgba(212, 168, 75, 0.14)'
+                                : surfaceRaised,
+                              border: `1px solid ${
+                                isMine
+                                  ? isDark
+                                    ? 'rgba(212, 168, 75, 0.38)'
+                                    : 'rgba(212, 168, 75, 0.35)'
+                                  : borderColor
+                              }`,
+                              color: token.colorText,
+                            }}
+                          >
+                            {m.text}
+                          </div>
+                        )}
 
                         {/* Suggested AI Action Button (e.g. APPLY_FILTER) */}
                         {m.aiAction && (
@@ -3549,7 +3985,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         )}
 
                         {/* Quick Voice Read-Aloud & Copy Bar for AI Bot Replies */}
-                        {(m.isAiBot || m.senderId === 'wings-ai-copilot') && m.text && (
+                        {isAiMessage && m.text && (
                           <div className="mt-1.5 flex items-center gap-1.5">
                             <Tooltip
                               title={speakingMsgId === m.id ? 'Dừng đọc giọng nói' : 'Đọc câu trả lời bằng giọng nói'}
@@ -3598,7 +4034,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         {/* Smart Customer Card */}
                         {m.customerCard && (
                           <div
-                            className="mt-1.5 px-2.5 py-2 rounded-lg flex items-center justify-between gap-2"
+                            className="mt-1.5 px-2.5 py-2 rounded-lg flex items-center justify-between gap-2 text-left max-w-[85%]"
                             style={{
                               background: surfaceBg,
                               border: `1px solid ${borderStrong}`,
@@ -3630,7 +4066,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         {/* Inline Task & Reminder Card */}
                         {linkedTask && (
                           <div
-                            className="mt-1.5 px-2.5 py-2 rounded-lg flex items-center justify-between gap-2"
+                            className="mt-1.5 px-2.5 py-2 rounded-lg flex items-center justify-between gap-2 text-left max-w-[85%]"
                             style={{
                               background: surfaceBg,
                               border: `1px solid ${linkedTask.done ? 'rgba(16, 185, 129, 0.4)' : 'rgba(212, 168, 75, 0.45)'}`,
@@ -3703,7 +4139,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         )}
 
                         {/* Unified Message Footer: Reaction Pills + Adjacent Quick Emoji & Action Set */}
-                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 min-h-[26px]">
+                        <div
+                          className={`mt-1 flex flex-wrap items-center gap-1.5 min-h-[26px] ${
+                            isMine ? 'flex-row-reverse justify-start' : 'justify-start'
+                          }`}
+                        >
                           {m.reactions &&
                             Object.entries(m.reactions)
                               .filter(([, count]) => count > 0)
@@ -3766,7 +4206,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               );
                             })}
 
-                            <Popover trigger="click" placement="topLeft" content={renderReactionPickerContent(m.id, m)}>
+                            <Popover
+                              trigger="click"
+                              placement={isMine ? 'topRight' : 'topLeft'}
+                              content={renderReactionPickerContent(m.id, m)}
+                            >
                               <Tooltip title="Chọn thêm biểu tượng cảm xúc (Wings & phổ biến)">
                                 <button
                                   type="button"
@@ -4189,9 +4633,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 className="p-2.5 rounded-lg text-[12px]"
                 style={{ background: surfaceRaised, borderLeft: '3px solid #d4a84b' }}
               >
-                <div className="font-bold mb-0.5">
-                  {activeThreadMessage.senderName} ·{' '}
-                  <span className="text-slate-400 text-[10.5px] tabular-nums">{activeThreadMessage.timeLabel}</span>
+                <div className="flex items-center gap-1.5 font-bold mb-1">
+                  {renderUserAvatarNode({
+                    name: activeThreadMessage.senderName,
+                    avatarUrl: activeThreadMessage.senderAvatar,
+                    sizeClass: 'w-5 h-5',
+                    textClass: 'text-[9px]',
+                  })}
+                  <span className="truncate">{activeThreadMessage.senderName}</span>
+                  <span className="text-slate-400 text-[10.5px] tabular-nums">· {activeThreadMessage.timeLabel}</span>
                 </div>
                 {activeThreadMessage.text && <div>{activeThreadMessage.text}</div>}
                 {renderMessageAttachments(activeThreadMessage.attachments, true)}
@@ -4201,19 +4651,47 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 {activeThreadMessage.thread?.length || 0} câu trả lời
               </div>
 
-              {(activeThreadMessage.thread || []).map((r) => (
-                <div
-                  key={r.id}
-                  className="p-2 rounded-lg text-[12px]"
-                  style={{ background: canvasBg, border: `1px solid ${borderColor}` }}
-                >
-                  <div className="font-bold text-[11px] mb-0.5">
-                    {r.senderName} · <span className="text-slate-400 tabular-nums">{r.timeLabel}</span>
+              {(activeThreadMessage.thread || []).map((r) => {
+                const isReplyMine = isMessageFromCurrentUser(r);
+                return (
+                  <div key={r.id} className={`flex gap-2 items-start ${isReplyMine ? 'flex-row-reverse' : 'flex-row'}`}>
+                    {renderUserAvatarNode({
+                      name: r.senderName,
+                      avatarUrl: r.senderAvatar,
+                      sizeClass: 'w-6 h-6 mt-0.5',
+                      textClass: 'text-[9.5px]',
+                      bgStyle: isReplyMine ? 'linear-gradient(135deg, #d4a84b 0%, #b45309 100%)' : '#2563eb',
+                      textColor: isReplyMine ? '#000' : '#fff',
+                    })}
+                    <div
+                      className={`max-w-[82%] p-2 rounded-xl text-[12px] ${
+                        isReplyMine ? 'rounded-tr-sm text-right' : 'rounded-tl-sm text-left'
+                      }`}
+                      style={{
+                        background: isReplyMine
+                          ? isDark
+                            ? 'rgba(212, 168, 75, 0.16)'
+                            : 'rgba(245, 158, 11, 0.14)'
+                          : canvasBg,
+                        border: `1px solid ${
+                          isReplyMine ? (isDark ? 'rgba(212, 168, 75, 0.35)' : 'rgba(217, 119, 6, 0.3)') : borderColor
+                        }`,
+                      }}
+                    >
+                      <div
+                        className={`font-bold text-[10.5px] mb-0.5 flex items-center gap-1 ${
+                          isReplyMine ? 'justify-end' : 'justify-start'
+                        }`}
+                      >
+                        <span style={{ color: isReplyMine ? '#d4a84b' : token.colorText }}>{r.senderName}</span>
+                        <span className="text-slate-400 tabular-nums">· {r.timeLabel}</span>
+                      </div>
+                      {r.text && <div className="text-left break-words">{r.text}</div>}
+                      {renderMessageAttachments(r.attachments, true)}
+                    </div>
                   </div>
-                  {r.text && <div>{r.text}</div>}
-                  {renderMessageAttachments(r.attachments, true)}
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="p-2.5" style={{ borderTop: `1px solid ${borderColor}` }}>
@@ -4286,7 +4764,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
       {/* ================= MINI DOCKED POP-OUT CHAT WINDOWS (BOTTOM RIGHT LIKE GMAIL) ================= */}
       {dockedConvIds.length > 0 && (
-        <div className="fixed bottom-0 right-5 flex items-end gap-2.5 z-[1020]" style={{ pointerEvents: 'none' }}>
+        <div className="fixed bottom-0 right-5 flex items-end gap-2.5 z-[990]" style={{ pointerEvents: 'none' }}>
           {dockedConvIds.map((cid) => {
             const conv = conversations.find((c) => c.id === cid);
             if (!conv) return null;
@@ -4312,7 +4790,18 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   style={{ background: surfaceRaised, borderBottom: `1px solid ${borderColor}` }}
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                    {conv.type === 'dm' ? (
+                      renderUserAvatarNode({
+                        staffId: conv.participantStaffId,
+                        name: conv.name,
+                        avatarUrl: conv.avatar,
+                        sizeClass: 'w-5 h-5',
+                        textClass: 'text-[9px]',
+                        isOnline: true,
+                      })
+                    ) : (
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                    )}
                     <span className="text-[12px] font-extrabold truncate">{conv.name}</span>
                   </div>
                   <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
@@ -4355,31 +4844,65 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 {!isCollapsed && (
                   <div className="h-[280px] flex flex-col" style={{ background: canvasBg }}>
                     <div className="flex-1 overflow-y-auto p-2.5 space-y-2">
-                      {recentMsgs.map((m) => (
-                        <div
-                          key={m.id}
-                          className="p-2 rounded-lg text-[12px]"
-                          style={{ background: surfaceBg, border: `1px solid ${borderColor}` }}
-                        >
-                          <div className="flex items-center justify-between mb-0.5">
-                            <span className="text-[10.5px] font-bold" style={{ color: '#d4a84b' }}>
-                              {m.senderName} · <span className="tabular-nums">{m.timeLabel}</span>
-                            </span>
-                            <Tooltip title="Tạo Task & Nhắc hẹn">
-                              <button
-                                type="button"
-                                onClick={() => openTaskModalFromMessage(m)}
-                                className="w-5 h-5 rounded inline-flex items-center justify-center cursor-pointer"
-                                style={{ color: '#d4a84b' }}
+                      {recentMsgs.map((m) => {
+                        const isDockMine = isMessageFromCurrentUser(m);
+                        return (
+                          <div
+                            key={m.id}
+                            className={`flex gap-1.5 items-start ${isDockMine ? 'flex-row-reverse' : 'flex-row'}`}
+                          >
+                            {renderUserAvatarNode({
+                              name: m.senderName,
+                              avatarUrl: m.senderAvatar,
+                              sizeClass: 'w-6 h-6 mt-0.5',
+                              textClass: 'text-[9.5px]',
+                              bgStyle: isDockMine ? 'linear-gradient(135deg, #d4a84b 0%, #b45309 100%)' : '#2563eb',
+                              textColor: isDockMine ? '#000' : '#fff',
+                            })}
+                            <div
+                              className={`max-w-[82%] p-2 rounded-xl text-[12px] ${
+                                isDockMine ? 'rounded-tr-sm' : 'rounded-tl-sm'
+                              }`}
+                              style={{
+                                background: isDockMine
+                                  ? isDark
+                                    ? 'rgba(212, 168, 75, 0.16)'
+                                    : 'rgba(245, 158, 11, 0.14)'
+                                  : surfaceBg,
+                                border: `1px solid ${
+                                  isDockMine
+                                    ? isDark
+                                      ? 'rgba(212, 168, 75, 0.35)'
+                                      : 'rgba(217, 119, 6, 0.3)'
+                                    : borderColor
+                                }`,
+                              }}
+                            >
+                              <div
+                                className={`flex items-center justify-between gap-2 mb-0.5 ${
+                                  isDockMine ? 'flex-row-reverse' : 'flex-row'
+                                }`}
                               >
-                                <AlarmClockPlus size={12} />
-                              </button>
-                            </Tooltip>
+                                <span className="text-[10.5px] font-bold" style={{ color: '#d4a84b' }}>
+                                  {m.senderName} · <span className="tabular-nums">{m.timeLabel}</span>
+                                </span>
+                                <Tooltip title="Tạo Task & Nhắc hẹn">
+                                  <button
+                                    type="button"
+                                    onClick={() => openTaskModalFromMessage(m)}
+                                    className="w-5 h-5 rounded inline-flex items-center justify-center cursor-pointer"
+                                    style={{ color: '#d4a84b' }}
+                                  >
+                                    <AlarmClockPlus size={12} />
+                                  </button>
+                                </Tooltip>
+                              </div>
+                              {m.text && <div className="break-words">{m.text}</div>}
+                              {renderMessageAttachments(m.attachments, true)}
+                            </div>
                           </div>
-                          {m.text && <div>{m.text}</div>}
-                          {renderMessageAttachments(m.attachments, true)}
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                     <div className="p-2" style={{ background: surfaceBg, borderTop: `1px solid ${borderColor}` }}>
                       {renderStagedAttachmentsStrip(dockStaged, 'dock', cid)}
@@ -4530,6 +5053,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       {/* ================= MODAL: MESSAGE TO TASK -> REMINDER ================= */}
       <Modal
         open={taskModalOpen}
+        zIndex={1350}
         onCancel={() => setTaskModalOpen(false)}
         onOk={handleConfirmCreateTask}
         okText="Lưu & Hẹn giờ"
@@ -4609,6 +5133,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       {/* ================= MODAL: CREATE NEW SPACE OR DM ================= */}
       <Modal
         open={newRoomModalOpen}
+        zIndex={1350}
         onCancel={() => {
           setNewRoomModalOpen(false);
           setRoomSearchQuery('');
@@ -4720,12 +5245,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 borderColor: 'rgba(99, 102, 241, 0.28)',
               }}
             >
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-white shrink-0 shadow-sm"
-                style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' }}
-              >
-                <Bookmark size={18} />
-              </div>
+              {renderUserAvatarNode({
+                name: currentUser?.displayName || currentUser?.username || 'Tôi',
+                avatarUrl: currentUser?.avatarUrl,
+                staffId: currentUser?.id ? Number(currentUser.id) : null,
+                sizeClass: 'w-10 h-10',
+                textClass: 'text-[13px]',
+                bgStyle: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                onlineDot: true,
+              })}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-extrabold text-[13px] text-indigo-400">
@@ -4768,20 +5296,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         className="flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-colors hover:bg-slate-500/10"
                         style={{ border: `1px solid ${borderColor}` }}
                       >
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white shrink-0 relative"
-                          style={{ background: isAdm ? '#a855f7' : '#3b82f6' }}
-                        >
-                          {m.displayName
-                            ? m.displayName.slice(0, 2).toUpperCase()
-                            : m.username.slice(0, 2).toUpperCase()}
-                          {m.isOnline && (
-                            <span
-                              className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500"
-                              style={{ border: `1.5px solid ${surfaceBg}` }}
-                            />
-                          )}
-                        </div>
+                        {renderUserAvatarNode({
+                          name: m.displayName || m.username,
+                          avatarUrl: m.avatarUrl,
+                          staffId: m.id,
+                          sizeClass: 'w-8 h-8',
+                          textClass: 'text-xs',
+                          bgStyle: isAdm ? '#a855f7' : '#3b82f6',
+                          onlineDot: Boolean(m.isOnline),
+                        })}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <span className="font-bold text-[12.5px] truncate">{m.displayName || m.username}</span>
@@ -4992,6 +5515,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   .map((m) => {
                     const isSelected = selectedMemberIds.includes(m.id);
                     const isMe = Number(m.id) === Number(currentUser?.id);
+                    const isAdm = m.role?.toLowerCase().includes('admin');
                     return (
                       <div
                         key={m.id}
@@ -5006,12 +5530,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         }`}
                       >
                         <div
-                          className={`w-4 h-4 rounded flex items-center justify-center border text-white ${
+                          className={`w-4 h-4 rounded flex items-center justify-center border text-white shrink-0 ${
                             isSelected || isMe ? 'bg-blue-500 border-blue-500' : 'border-slate-400'
                           }`}
                         >
                           {(isSelected || isMe) && <Check size={11} strokeWidth={3} />}
                         </div>
+                        {renderUserAvatarNode({
+                          name: m.displayName || m.username,
+                          avatarUrl: m.avatarUrl,
+                          staffId: m.id,
+                          sizeClass: 'w-6 h-6',
+                          textClass: 'text-[10px]',
+                          bgStyle: isAdm ? '#a855f7' : '#3b82f6',
+                          onlineDot: Boolean(m.isOnline),
+                        })}
                         <div className="flex-1 min-w-0 flex items-center justify-between">
                           <span className="text-xs font-semibold truncate">
                             {m.displayName || m.username} {isMe && '(Bạn - Trưởng nhóm)'}
@@ -5030,6 +5563,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       {/* ================= MODAL: SPACE MEMBERS MANAGEMENT (GOOGLE CHAT WORKSPACE STYLE) ================= */}
       <Modal
         open={spaceMembersModalOpen}
+        zIndex={1350}
         onCancel={() => setSpaceMembersModalOpen(false)}
         footer={null}
         title={
@@ -5140,14 +5674,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       style={{ background: surfaceRaised, borderColor }}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white shrink-0"
-                          style={{ background: isAdm ? '#a855f7' : '#3b82f6' }}
-                        >
-                          {m.displayName
-                            ? m.displayName.slice(0, 2).toUpperCase()
-                            : m.username.slice(0, 2).toUpperCase()}
-                        </div>
+                        {renderUserAvatarNode({
+                          name: m.displayName || m.username,
+                          avatarUrl: m.avatarUrl,
+                          staffId: m.id,
+                          sizeClass: 'w-8 h-8',
+                          textClass: 'text-xs',
+                          bgStyle: isAdm ? '#a855f7' : '#3b82f6',
+                          onlineDot: Boolean(m.isOnline),
+                        })}
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
                             <span className="font-bold text-[12.5px] truncate">{m.displayName || m.username}</span>
@@ -5192,6 +5727,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       {/* ================= MODAL: ATTACH IMAGE FROM GOOGLE DRIVE / LOCAL DRIVE ================= */}
       <Modal
         open={driveLinkModalOpen}
+        zIndex={1350}
         onCancel={() => setDriveLinkModalOpen(false)}
         onOk={handleConfirmDriveLink}
         okText="Đính kèm hình Drive"
@@ -5240,6 +5776,686 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             </button>
           </div>
         </div>
+      </Modal>
+
+      {/* ================= MOS CHAT & WINGS AI COPILOT ACCESS CONTROL MODAL (DEPARTMENT / TEAM / INDIVIDUAL) ================= */}
+      <Modal
+        open={accessConfigModalOpen}
+        zIndex={1350}
+        onCancel={() => setAccessConfigModalOpen(false)}
+        footer={null}
+        width={680}
+        destroyOnClose
+        title={
+          <div className="flex items-center justify-between pr-6">
+            <div className="flex items-center gap-2 text-[14px] font-extrabold">
+              <ShieldCheck size={17} className="text-violet-400" />
+              <span>Phân quyền truy cập mOS Chat & Wings AI Copilot</span>
+            </div>
+            {savingAccessConfig && (
+              <span className="text-[11px] font-bold text-amber-400 animate-pulse">Đang lưu cấu hình...</span>
+            )}
+          </div>
+        }
+      >
+        {(() => {
+          const isChatTab = accessConfigTab === 'chat';
+          const activeGroupKeys = isChatTab
+            ? accessConfig.allowedGroupKeys || []
+            : accessConfig.aiCopilotAllowedGroupKeys || [];
+          const activeStaffIds = isChatTab
+            ? accessConfig.allowedStaffIds || []
+            : accessConfig.aiCopilotAllowedStaffIds || [];
+
+          const toggleGroupKey = (groupKey: string) => {
+            const exists = activeGroupKeys.includes(groupKey);
+            const nextGroups = exists ? activeGroupKeys.filter((k) => k !== groupKey) : [...activeGroupKeys, groupKey];
+            if (isChatTab) {
+              void persistAccessConfig(
+                {
+                  ...accessConfig,
+                  allowAllStaff: false,
+                  allowedGroupKeys: nextGroups,
+                },
+                true
+              );
+            } else {
+              void persistAccessConfig(
+                {
+                  ...accessConfig,
+                  aiCopilotAllowedGroupKeys: nextGroups,
+                },
+                true
+              );
+            }
+          };
+
+          const toggleIndividualStaff = (staffId: number) => {
+            if (!staffId || staffId <= 0) return;
+            const exists = activeStaffIds.includes(staffId);
+            const nextStaffIds = exists ? activeStaffIds.filter((id) => id !== staffId) : [...activeStaffIds, staffId];
+            if (isChatTab) {
+              void persistAccessConfig(
+                {
+                  ...accessConfig,
+                  allowedStaffIds: nextStaffIds,
+                },
+                true
+              );
+            } else {
+              void persistAccessConfig(
+                {
+                  ...accessConfig,
+                  aiCopilotAllowedStaffIds: nextStaffIds,
+                },
+                true
+              );
+            }
+          };
+
+          const totalAllowedCount = staffDirectory.filter((m) =>
+            isChatTab
+              ? isStaffMemberAllowedInChat(m, accessConfig).allowed
+              : isStaffMemberAllowedInAi(m, accessConfig).allowed
+          ).length;
+
+          const q = removeVietnameseTones(accessStaffSearch.trim().toLowerCase());
+          const filteredStaffForAccess = staffDirectory.filter((m) => {
+            if (accessGroupFilter === 'ALLOWED_ONLY') {
+              const allowed = isChatTab
+                ? isStaffMemberAllowedInChat(m, accessConfig).allowed
+                : isStaffMemberAllowedInAi(m, accessConfig).allowed;
+              if (!allowed) return false;
+            } else if (accessGroupFilter === 'INDIVIDUAL_ONLY') {
+              if (!activeStaffIds.includes(m.id)) return false;
+            } else if (accessGroupFilter !== 'ALL') {
+              if (!matchesStaffGroup(m, accessGroupFilter)) return false;
+            }
+            if (!q) return true;
+            const hay = removeVietnameseTones(`${m.displayName} ${m.username} ${m.role}`.toLowerCase());
+            return hay.includes(q);
+          });
+
+          return (
+            <div className="space-y-3.5 pt-2">
+              {/* Top Mode Switcher: mOS Chat Access vs Wings AI Copilot Access */}
+              <div
+                className="grid grid-cols-2 gap-2 p-1 rounded-xl"
+                style={{ background: surfaceRaised, border: `1px solid ${borderStrong}` }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setAccessConfigTab('chat')}
+                  className="h-9 rounded-lg px-3 flex items-center justify-center gap-2 text-[12px] font-extrabold cursor-pointer transition-all"
+                  style={{
+                    background: isChatTab ? 'linear-gradient(135deg, #d4a84b, #b8860b)' : 'transparent',
+                    color: isChatTab ? '#090d16' : token.colorTextSecondary,
+                  }}
+                >
+                  <MessageSquare size={14} />
+                  <span>
+                    Quyền vào mOS Chat (
+                    {staffDirectory.filter((m) => isStaffMemberAllowedInChat(m, accessConfig).allowed).length}/
+                    {staffDirectory.length})
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAccessConfigTab('ai')}
+                  className="h-9 rounded-lg px-3 flex items-center justify-center gap-2 text-[12px] font-extrabold cursor-pointer transition-all"
+                  style={{
+                    background: !isChatTab ? 'linear-gradient(135deg, #8b5cf6, #6366f1)' : 'transparent',
+                    color: !isChatTab ? '#ffffff' : token.colorTextSecondary,
+                  }}
+                >
+                  <Bot size={15} />
+                  <span>
+                    Quyền dùng Wings AI Copilot (
+                    {staffDirectory.filter((m) => isStaffMemberAllowedInAi(m, accessConfig).allowed).length}/
+                    {staffDirectory.length})
+                  </span>
+                </button>
+              </div>
+
+              {/* Quick Presets Bar */}
+              <div
+                className="p-2.5 rounded-xl flex flex-wrap items-center justify-between gap-2"
+                style={{
+                  background: isChatTab ? 'rgba(212, 168, 75, 0.08)' : 'rgba(139, 92, 246, 0.08)',
+                  border: isChatTab ? '1px solid rgba(212, 168, 75, 0.28)' : '1px solid rgba(139, 92, 246, 0.28)',
+                }}
+              >
+                <div className="text-[11.5px] leading-relaxed" style={{ color: token.colorText }}>
+                  {isChatTab ? (
+                    <>
+                      Chọn <b>Bộ phận / Đội nhóm</b> hoặc <b>Cá nhân</b> được phép nhìn thấy biểu tượng và truy cập{' '}
+                      <b>mOS Chat</b>. (Admin & Danny luôn có toàn quyền).
+                    </>
+                  ) : (
+                    <>
+                      Chọn <b>Bộ phận / Đội nhóm</b> hoặc <b>Cá nhân</b> được phép chat 1-1 với{' '}
+                      <b>🤖 Wings AI Copilot</b> và gọi <code>@AI</code> trong nhóm Space.
+                    </>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {isChatTab ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void persistAccessConfig(
+                            {
+                              ...accessConfig,
+                              allowAllStaff: false,
+                              allowedGroupKeys: [],
+                              allowedStaffIds: [],
+                            },
+                            true
+                          )
+                        }
+                        className="h-7 px-2.5 rounded-lg text-[11px] font-extrabold cursor-pointer transition-all"
+                        style={{
+                          background:
+                            !accessConfig.allowAllStaff &&
+                            accessConfig.allowedGroupKeys.length === 0 &&
+                            accessConfig.allowedStaffIds.length === 0
+                              ? '#d4a84b'
+                              : surfaceBg,
+                          color:
+                            !accessConfig.allowAllStaff &&
+                            accessConfig.allowedGroupKeys.length === 0 &&
+                            accessConfig.allowedStaffIds.length === 0
+                              ? '#090d16'
+                              : token.colorTextSecondary,
+                          border: `1px solid ${borderStrong}`,
+                        }}
+                      >
+                        👑 Chỉ Admin / Danny
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void persistAccessConfig(
+                            {
+                              ...accessConfig,
+                              allowAllStaff: false,
+                              allowedGroupKeys: ['TEAM_ADMIN_MANAGER'],
+                            },
+                            true
+                          )
+                        }
+                        className="h-7 px-2.5 rounded-lg text-[11px] font-extrabold cursor-pointer transition-all"
+                        style={{
+                          background:
+                            !accessConfig.allowAllStaff &&
+                            accessConfig.allowedGroupKeys.length === 1 &&
+                            accessConfig.allowedGroupKeys[0] === 'TEAM_ADMIN_MANAGER'
+                              ? '#f59e0b'
+                              : surfaceBg,
+                          color:
+                            !accessConfig.allowAllStaff &&
+                            accessConfig.allowedGroupKeys.length === 1 &&
+                            accessConfig.allowedGroupKeys[0] === 'TEAM_ADMIN_MANAGER'
+                              ? '#090d16'
+                              : token.colorTextSecondary,
+                          border: `1px solid ${borderStrong}`,
+                        }}
+                      >
+                        🛡️ Ban Quản Trị & Manager
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void persistAccessConfig(
+                            {
+                              ...accessConfig,
+                              allowAllStaff: !accessConfig.allowAllStaff,
+                            },
+                            true
+                          )
+                        }
+                        className="h-7 px-2.5 rounded-lg text-[11px] font-extrabold cursor-pointer transition-all"
+                        style={{
+                          background: accessConfig.allowAllStaff ? '#10b981' : surfaceBg,
+                          color: accessConfig.allowAllStaff ? '#052e16' : token.colorTextSecondary,
+                          border: `1px solid ${accessConfig.allowAllStaff ? '#10b981' : borderStrong}`,
+                        }}
+                      >
+                        🌐 {accessConfig.allowAllStaff ? 'Đang mở Toàn hệ thống (ON)' : 'Mở Toàn hệ thống'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void persistAccessConfig(
+                            {
+                              ...accessConfig,
+                              aiCopilotAllowedGroupKeys: [],
+                              aiCopilotAllowedStaffIds: [],
+                            },
+                            true
+                          )
+                        }
+                        className="h-7 px-2.5 rounded-lg text-[11px] font-extrabold cursor-pointer transition-all"
+                        style={{
+                          background:
+                            (accessConfig.aiCopilotAllowedGroupKeys || []).length === 0 &&
+                            (accessConfig.aiCopilotAllowedStaffIds || []).length === 0
+                              ? '#8b5cf6'
+                              : surfaceBg,
+                          color:
+                            (accessConfig.aiCopilotAllowedGroupKeys || []).length === 0 &&
+                            (accessConfig.aiCopilotAllowedStaffIds || []).length === 0
+                              ? '#ffffff'
+                              : token.colorTextSecondary,
+                          border: `1px solid ${borderStrong}`,
+                        }}
+                      >
+                        👑 Chỉ Admin / Danny
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void persistAccessConfig(
+                            {
+                              ...accessConfig,
+                              aiCopilotAllowedGroupKeys: SPACE_DEPARTMENT_AND_TEAM_GROUPS.map((g) => g.key),
+                            },
+                            true
+                          )
+                        }
+                        className="h-7 px-2.5 rounded-lg text-[11px] font-extrabold cursor-pointer transition-all"
+                        style={{
+                          background:
+                            (accessConfig.aiCopilotAllowedGroupKeys || []).length ===
+                            SPACE_DEPARTMENT_AND_TEAM_GROUPS.length
+                              ? '#10b981'
+                              : surfaceBg,
+                          color:
+                            (accessConfig.aiCopilotAllowedGroupKeys || []).length ===
+                            SPACE_DEPARTMENT_AND_TEAM_GROUPS.length
+                              ? '#052e16'
+                              : token.colorTextSecondary,
+                          border: `1px solid ${borderStrong}`,
+                        }}
+                      >
+                        🤖 Mở AI cho tất cả Đội nhóm
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* SECTION 1: EXISTING DEPARTMENT & TEAM GROUPS CONFIGURATION */}
+              <div
+                className="p-3 rounded-xl space-y-2.5"
+                style={{ background: surfaceRaised, border: `1px solid ${borderStrong}` }}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-500">
+                    1. Phân quyền theo Cấu hình Bộ Phận & Đội Nhóm có sẵn ({activeGroupKeys.length}/
+                    {SPACE_DEPARTMENT_AND_TEAM_GROUPS.length} nhóm đang bật)
+                  </span>
+                  {activeGroupKeys.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isChatTab) {
+                          void persistAccessConfig(
+                            { ...accessConfig, allowAllStaff: false, allowedGroupKeys: [] },
+                            true
+                          );
+                        } else {
+                          void persistAccessConfig({ ...accessConfig, aiCopilotAllowedGroupKeys: [] }, true);
+                        }
+                      }}
+                      className="text-[10.5px] font-bold text-rose-400 hover:underline cursor-pointer"
+                    >
+                      Bỏ chọn tất cả nhóm
+                    </button>
+                  )}
+                </div>
+
+                {/* 4 Core Departments */}
+                <div>
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                    4 Bộ phận cốt lõi (Core Departments)
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {SPACE_DEPARTMENT_AND_TEAM_GROUPS.filter((g) => g.category === 'department').map((group) => {
+                      const count = staffDirectory.filter((m) => matchesStaffGroup(m, group.key)).length;
+                      const isEnabled =
+                        (isChatTab && accessConfig.allowAllStaff) || activeGroupKeys.includes(group.key);
+                      return (
+                        <button
+                          key={group.key}
+                          type="button"
+                          onClick={() => toggleGroupKey(group.key)}
+                          className="px-2.5 py-2 rounded-lg text-left flex items-center justify-between gap-2 cursor-pointer transition-all"
+                          style={{
+                            background: isEnabled ? `${group.color}1f` : surfaceBg,
+                            border: isEnabled ? `1.5px solid ${group.color}` : `1px solid ${borderStrong}`,
+                          }}
+                        >
+                          <div className="min-w-0 flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: group.color }} />
+                            <div className="min-w-0">
+                              <div
+                                className="text-[11.5px] font-extrabold truncate"
+                                style={{ color: isEnabled ? group.color : token.colorText }}
+                              >
+                                {group.label}
+                              </div>
+                              <div className="text-[10px] text-slate-400 truncate">{group.defaultSubtitle}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span
+                              className="px-1.5 py-0.5 rounded text-[10px] font-extrabold tabular-nums"
+                              style={{
+                                background: isEnabled ? group.color : 'rgba(148,163,184,0.16)',
+                                color: isEnabled ? '#090d16' : token.colorTextSecondary,
+                              }}
+                            >
+                              {count} người
+                            </span>
+                            {isEnabled && <Check size={14} style={{ color: group.color }} />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 8 Specialized Teams */}
+                <div className="pt-1">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                    8 Đội chuyên môn (Specialized Teams)
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {SPACE_DEPARTMENT_AND_TEAM_GROUPS.filter((g) => g.category === 'team').map((group) => {
+                      const count = staffDirectory.filter((m) => matchesStaffGroup(m, group.key)).length;
+                      const isEnabled =
+                        (isChatTab && accessConfig.allowAllStaff) || activeGroupKeys.includes(group.key);
+                      return (
+                        <button
+                          key={group.key}
+                          type="button"
+                          onClick={() => toggleGroupKey(group.key)}
+                          className="px-2.5 py-1.5 rounded-lg text-left flex items-center justify-between gap-2 cursor-pointer transition-all"
+                          style={{
+                            background: isEnabled ? `${group.color}1f` : surfaceBg,
+                            border: isEnabled ? `1.5px solid ${group.color}` : `1px solid ${borderStrong}`,
+                          }}
+                        >
+                          <div className="min-w-0 flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: group.color }} />
+                            <span
+                              className="text-[11px] font-bold truncate"
+                              style={{ color: isEnabled ? group.color : token.colorText }}
+                            >
+                              {group.label}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <span
+                              className="px-1.5 py-0.2 rounded text-[9.5px] font-extrabold tabular-nums"
+                              style={{
+                                background: isEnabled ? group.color : 'rgba(148,163,184,0.16)',
+                                color: isEnabled ? '#090d16' : token.colorTextSecondary,
+                              }}
+                            >
+                              {count}
+                            </span>
+                            {isEnabled && <Check size={13} style={{ color: group.color }} />}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 2: INDIVIDUAL STAFF OVERRIDE & LIVE ACCESS STATUS */}
+              <div
+                className="p-3 rounded-xl space-y-2.5"
+                style={{ background: surfaceRaised, border: `1px solid ${borderStrong}` }}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-violet-400">
+                    2. Phân quyền Đặc cách theo Cá Nhân ({activeStaffIds.length} cá nhân đặc cách · Tổng{' '}
+                    {totalAllowedCount}/{staffDirectory.length} nhân sự được mở)
+                  </span>
+                  {activeStaffIds.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isChatTab) {
+                          void persistAccessConfig({ ...accessConfig, allowedStaffIds: [] }, true);
+                        } else {
+                          void persistAccessConfig({ ...accessConfig, aiCopilotAllowedStaffIds: [] }, true);
+                        }
+                      }}
+                      className="text-[10.5px] font-bold text-rose-400 hover:underline cursor-pointer shrink-0"
+                    >
+                      Xóa chọn cá nhân ({activeStaffIds.length})
+                    </button>
+                  )}
+                </div>
+
+                {/* Search + Filter Pills */}
+                <div className="flex flex-col gap-2">
+                  <Input
+                    value={accessStaffSearch}
+                    onChange={(e) => setAccessStaffSearch(e.target.value)}
+                    placeholder="Tìm cá nhân theo tên, username hoặc chức danh..."
+                    prefix={<Search size={13} className="text-slate-400" />}
+                    allowClear
+                  />
+                  <div className="flex items-center gap-1 overflow-x-auto pb-1">
+                    {[
+                      { key: 'ALL', label: `Tất cả (${staffDirectory.length})` },
+                      { key: 'ALLOWED_ONLY', label: `Đang có quyền (${totalAllowedCount})` },
+                      { key: 'INDIVIDUAL_ONLY', label: `Đặc cách cá nhân (${activeStaffIds.length})` },
+                      ...SPACE_DEPARTMENT_AND_TEAM_GROUPS.map((g) => ({
+                        key: g.key,
+                        label: g.shortLabel,
+                      })),
+                    ].map((pill) => {
+                      const active = accessGroupFilter === pill.key;
+                      return (
+                        <button
+                          key={pill.key}
+                          type="button"
+                          onClick={() => setAccessGroupFilter(pill.key)}
+                          className="h-6 px-2 rounded-full text-[10px] font-extrabold whitespace-nowrap cursor-pointer shrink-0 transition-all"
+                          style={{
+                            background: active ? '#d4a84b' : surfaceBg,
+                            color: active ? '#090d16' : token.colorTextSecondary,
+                            border: `1px solid ${active ? '#d4a84b' : borderStrong}`,
+                          }}
+                        >
+                          {pill.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Staff Member Rows */}
+                <div
+                  className="max-h-[230px] overflow-y-auto rounded-lg divide-y"
+                  style={{
+                    background: surfaceBg,
+                    border: `1px solid ${borderStrong}`,
+                    borderColor: borderStrong,
+                  }}
+                >
+                  {filteredStaffForAccess.length === 0 ? (
+                    <div className="py-6 text-center text-[11.5px] text-slate-400">
+                      Không tìm thấy nhân sự phù hợp với bộ lọc.
+                    </div>
+                  ) : (
+                    filteredStaffForAccess.map((member) => {
+                      const status = isChatTab
+                        ? isStaffMemberAllowedInChat(member, accessConfig)
+                        : isStaffMemberAllowedInAi(member, accessConfig);
+                      const isIndividualSelected = activeStaffIds.includes(member.id);
+                      const rLower = String(member.role || '').toLowerCase();
+                      const roleColor = rLower.includes('admin')
+                        ? '#d4a84b'
+                        : rLower.includes('manager') || rLower.includes('oc')
+                          ? '#a855f7'
+                          : rLower.includes('cc') || rLower.includes('tư vấn')
+                            ? '#10b981'
+                            : rLower.includes('telesale') || rLower.includes('booker')
+                              ? '#0ea5e9'
+                              : '#3b82f6';
+
+                      return (
+                        <div
+                          key={member.id}
+                          className="px-3 py-2 flex items-center justify-between gap-2 hover:bg-amber-500/5 transition-colors"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            {renderUserAvatarNode({
+                              name: member.displayName || member.username,
+                              avatarUrl: member.avatarUrl,
+                              staffId: member.id,
+                              sizeClass: 'w-8 h-8',
+                              textClass: 'text-xs',
+                              bgStyle: roleColor,
+                              onlineDot: Boolean(member.isOnline),
+                            })}
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[12px] font-bold truncate" style={{ color: token.colorText }}>
+                                  {member.displayName}
+                                </span>
+                                <span className="text-[10.5px] text-slate-400">@{member.username}</span>
+                                <span
+                                  className="px-1.5 py-0.2 rounded text-[9.5px] font-extrabold"
+                                  style={{ background: `${roleColor}20`, color: roleColor }}
+                                >
+                                  {member.role}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                                {status.reason === 'admin' && (
+                                  <span className="text-[10px] font-extrabold text-amber-400">
+                                    👑 Luôn mở (Admin / Super Admin)
+                                  </span>
+                                )}
+                                {status.reason === 'all' && (
+                                  <span className="text-[10px] font-bold text-emerald-400">
+                                    🌐 Đang mở theo chế độ Toàn hệ thống
+                                  </span>
+                                )}
+                                {status.reason === 'group' && (
+                                  <span className="text-[10px] font-bold text-emerald-400">
+                                    ✓ Đã mở theo nhóm: {status.matchedGroups.map((g) => g.shortLabel).join(', ')}
+                                  </span>
+                                )}
+                                {status.reason === 'individual' && (
+                                  <span className="text-[10px] font-bold text-violet-400">
+                                    ★ Được cấp quyền Đặc cách Cá nhân
+                                    {status.matchedGroups.length > 0
+                                      ? ` (+ nhóm ${status.matchedGroups.map((g) => g.shortLabel).join(', ')})`
+                                      : ''}
+                                  </span>
+                                )}
+                                {status.reason === 'none' && (
+                                  <span className="text-[10px] text-slate-400">🔒 Chưa cấp quyền truy cập</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="shrink-0">
+                            {status.reason === 'admin' ? (
+                              <span
+                                className="h-7 px-2.5 rounded-lg inline-flex items-center gap-1 text-[10.5px] font-extrabold"
+                                style={{
+                                  background: 'rgba(212, 168, 75, 0.16)',
+                                  color: '#d4a84b',
+                                  border: '1px solid rgba(212, 168, 75, 0.35)',
+                                }}
+                              >
+                                <Check size={12} /> Mặc định
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => toggleIndividualStaff(member.id)}
+                                className="h-7 px-2.5 rounded-lg inline-flex items-center gap-1 text-[11px] font-extrabold cursor-pointer transition-all"
+                                style={{
+                                  background: isIndividualSelected
+                                    ? 'linear-gradient(135deg, #8b5cf6, #6366f1)'
+                                    : status.allowed
+                                      ? 'rgba(16, 185, 129, 0.14)'
+                                      : surfaceRaised,
+                                  color: isIndividualSelected
+                                    ? '#ffffff'
+                                    : status.allowed
+                                      ? '#10b981'
+                                      : token.colorTextSecondary,
+                                  border: isIndividualSelected
+                                    ? '1px solid #8b5cf6'
+                                    : status.allowed
+                                      ? '1px solid rgba(16, 185, 129, 0.35)'
+                                      : `1px solid ${borderStrong}`,
+                                }}
+                              >
+                                {isIndividualSelected ? (
+                                  <>
+                                    <Check size={12} />
+                                    <span>Đã cấp cá nhân</span>
+                                  </>
+                                ) : status.allowed ? (
+                                  <>
+                                    <Check size={12} />
+                                    <span>Đã mở theo Đội (+ Cá nhân)</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <UserPlus size={12} />
+                                    <span>+ Cấp quyền cá nhân</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* Footer Summary */}
+              <div className="flex items-center justify-between pt-1">
+                <div className="text-[11px] text-slate-400">
+                  Mọi thay đổi được lưu tự động lên máy chủ và đồng bộ tức thì cho các thành viên.
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAccessConfigModalOpen(false)}
+                  className="h-8 px-4 rounded-lg text-[12px] font-extrabold cursor-pointer"
+                  style={{
+                    background: 'linear-gradient(135deg, #d4a84b, #b8860b)',
+                    color: '#090d16',
+                  }}
+                >
+                  Hoàn tất
+                </button>
+              </div>
+            </div>
+          );
+        })()}
       </Modal>
 
       {/* ================= FULL-SCREEN HIGH-RES IMAGE LIGHTBOX ZOOM VIEWER ================= */}

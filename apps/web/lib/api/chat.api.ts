@@ -3,11 +3,13 @@ import type {
   CreateMosChatMessageRequest,
   CreateMosChatTaskRequest,
   CreateMosChatThreadReplyRequest,
+  MosChatAccessConfig,
   MosChatBootstrapResponse,
   MosChatConversation,
   MosChatMessage,
   MosChatTaskItem,
   MosChatThreadReply,
+  UpdateMosChatAccessConfigRequest,
   UploadMosChatImageRequest,
   UploadMosChatImageResponse,
 } from '@mos-lab/shared';
@@ -26,6 +28,18 @@ export const chatApi = {
         options
       );
       return res;
+    },
+    getAccessConfig: async (
+      options?: ApiRequestOptions
+    ): Promise<{ success: boolean; accessConfig: MosChatAccessConfig; canAccessChat: boolean }> => {
+      return dedupeApiGet('/chat/access-config', undefined, 2500, options);
+    },
+    updateAccessConfig: async (
+      payload: UpdateMosChatAccessConfigRequest
+    ): Promise<{ success: boolean; accessConfig: MosChatAccessConfig }> => {
+      const res = await api.put('/chat/access-config', payload);
+      invalidateApiGetCache(['/chat/bootstrap', '/chat/access-config']);
+      return res.data;
     },
     uploadImage: async (payload: UploadMosChatImageRequest): Promise<UploadMosChatImageResponse> => {
       const res = await api.post('/chat/upload-image', payload);

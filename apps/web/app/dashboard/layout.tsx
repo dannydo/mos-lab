@@ -110,6 +110,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   });
   const [mosChatUnreadCount, setMosChatUnreadCount] = useState(4);
   const [mosChatTaskCount, setMosChatTaskCount] = useState(2);
+  const [canAccessMosChat, setCanAccessMosChat] = useState(false);
+  const effectiveCanAccessMosChat = isAdminOrSuperAdminRole(user?.role) || canAccessMosChat;
 
   useEffect(() => {
     try {
@@ -838,7 +840,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </Dropdown>
                 )}
 
-                {isAdminOrSuperAdminRole(user?.role) && (
+                {effectiveCanAccessMosChat && (
                   <HeaderActionIndicator variant="count" count={mosChatUnreadCount}>
                     <HeaderIconButton
                       action="mos-chat"
@@ -1441,12 +1443,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           onDateChange={(d) => setCvDrawerDate(d)}
         />
         <AvatarPromptModal currentUser={user} onAvatarUpdated={handleAvatarUpdated} />
-        {isAdminOrSuperAdminRole(user?.role) && (
+        {(hasAuthenticatedUser || isAdminOrSuperAdminRole(user?.role)) && (
           <MosGoogleChatPortal
             open={isMosChatOpen}
             onClose={() => setIsMosChatOpen(false)}
             onToggle={() => setIsMosChatOpen((prev) => !prev)}
             currentUser={user}
+            onAccessChange={setCanAccessMosChat}
             onUnreadCountChange={(unread, tasks) => {
               setMosChatUnreadCount(unread);
               setMosChatTaskCount(tasks);

@@ -7,6 +7,7 @@ import {
   CreateMosChatMessageRequest,
   CreateMosChatTaskRequest,
   CreateMosChatThreadReplyRequest,
+  MosChatAccessConfig,
   MosChatBootstrapResponse,
   MosChatConversation,
   MosChatImageAttachment,
@@ -14,6 +15,7 @@ import {
   MosChatStaffMember,
   MosChatTaskItem,
   SafeAny,
+  UpdateMosChatAccessConfigRequest,
   UploadMosChatImageRequest,
   UploadMosChatImageResponse,
 } from '@mos-lab/shared';
@@ -21,6 +23,7 @@ import { requireAuth, JwtUserPayload } from '../../middlewares/auth.js';
 
 const CHAT_CONVERSATIONS_CONFIG_KEY = 'mos_chat:conversations_v1';
 const CHAT_TASKS_CONFIG_KEY = 'mos_chat:tasks_v1';
+const CHAT_ACCESS_CONFIG_KEY = 'mos_chat:access_config_v1';
 const MAX_CHAT_IMAGE_BYTES = 8 * 1024 * 1024; // 8 MB max per image
 const CHAT_IMAGE_BODY_LIMIT = 15 * 1024 * 1024; // 15 MB body limit for base64 payload
 
@@ -405,9 +408,177 @@ const MAX_TASKS_RETENTION = 200;
 const STAFF_DIRECTORY_CACHE_TTL_MS = 60_000;
 const STATE_DB_SYNC_TTL_MS = 30_000;
 
+function buildDefaultAccessConfig(): MosChatAccessConfig {
+  return {
+    allowAllStaff: false,
+    allowedGroupKeys: ['TEAM_ADMIN_MANAGER'],
+    allowedStaffIds: [],
+    aiCopilotAllowedGroupKeys: [],
+    aiCopilotAllowedStaffIds: [],
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function normalizeAccessConfig(raw: SafeAny): MosChatAccessConfig {
+  const def = buildDefaultAccessConfig();
+  if (!raw || typeof raw !== 'object') return def;
+  return {
+    allowAllStaff: Boolean(raw.allowAllStaff),
+    allowedGroupKeys: Array.isArray(raw.allowedGroupKeys)
+      ? Array.from(
+          new Set(
+            raw.allowedGroupKeys.filter((g: unknown): g is string => typeof g === 'string' && g.trim().length > 0)
+          )
+        )
+      : def.allowedGroupKeys,
+    allowedStaffIds: Array.isArray(raw.allowedStaffIds)
+      ? Array.from(
+          new Set(
+            raw.allowedStaffIds.map((id: unknown) => Number(id)).filter((id: number) => Number.isFinite(id) && id > 0)
+          )
+        )
+      : [],
+    aiCopilotAllowedGroupKeys: Array.isArray(raw.aiCopilotAllowedGroupKeys)
+      ? Array.from(
+          new Set(
+            raw.aiCopilotAllowedGroupKeys.filter(
+              (g: unknown): g is string => typeof g === 'string' && g.trim().length > 0
+            )
+          )
+        )
+      : [],
+    aiCopilotAllowedStaffIds: Array.isArray(raw.aiCopilotAllowedStaffIds)
+      ? Array.from(
+          new Set(
+            raw.aiCopilotAllowedStaffIds
+              .map((id: unknown) => Number(id))
+              .filter((id: number) => Number.isFinite(id) && id > 0)
+          )
+        )
+      : [],
+    updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : def.updatedAt,
+    updatedBy: typeof raw.updatedBy === 'string' ? raw.updatedBy : undefined,
+  };
+}
+
+function matchesStaffGroupBackend(member: MosChatStaffMember, groupKey: string): boolean {
+  const role = String(member.role || '')
+    .toLowerCase()
+    .trim();
+  const depts = (member.departmentCodes || []).map((d) => d.toUpperCase());
+  const teams = (member.teamCodes || []).map((t) => t.toUpperCase());
+
+  switch (groupKey) {
+    case 'DEPT_SHOP':
+      return (
+        depts.includes('SHOP') || ['cc', 'coca', 'consultant', 'cv', 'lt', 'technician', 'ktv', 'qa_qc'].includes(role)
+      );
+    case 'DEPT_GROWTH':
+      return depts.includes('GROWTH') || ['telesales', 'booker', 'oc', 'ls', 'cs', 'control'].includes(role);
+    case 'DEPT_ACADEMY':
+      return depts.includes('ACADEMY') || ['teacher', 'ht'].includes(role);
+    case 'DEPT_BACK_OFFICE':
+      return (
+        depts.includes('BACK_OFFICE') ||
+        [
+          'super_admin',
+          'admin',
+          'boss',
+          'manager',
+          'fm',
+          'cho',
+          'staff',
+          'office-cleaner',
+          'security-guard',
+          'rnd',
+        ].includes(role)
+      );
+    case 'TEAM_ADMIN_MANAGER':
+      return teams.includes('ADMIN_MANAGER') || ['super_admin', 'admin', 'boss', 'manager', 'fm', 'cho'].includes(role);
+    case 'TEAM_CC':
+      return teams.includes('CC') || ['cc', 'coca', 'consultant'].includes(role);
+    case 'TEAM_CV':
+      return teams.includes('CV') || ['cv', 'lt', 'technician', 'ktv'].includes(role);
+    case 'TEAM_TELESALES':
+      return (
+        teams.includes('BK_TELESALES') || teams.includes('BK') || ['telesales', 'booker', 'oc', 'ls'].includes(role)
+      );
+    case 'TEAM_CS_CONTROL':
+      return (
+        teams.includes('BK_CS_CONTROL') ||
+        teams.includes('BK_CS') ||
+        teams.includes('BK_CONTROL') ||
+        ['cs', 'control'].includes(role)
+      );
+    case 'TEAM_ACADEMY':
+      return teams.includes('ACADEMY') || teams.includes('MARKETING_SALES') || ['teacher', 'ht'].includes(role);
+    case 'TEAM_QA_QC':
+      return teams.some((t) => t.startsWith('QA_QC')) || ['qa_qc'].includes(role);
+    case 'TEAM_INTERNAL':
+      return teams.includes('BACK_OFFICE_STAFF') || ['staff', 'office-cleaner', 'security-guard', 'rnd'].includes(role);
+    default:
+      return false;
+  }
+}
+
+function isDannyOrSuperAdminUser(user?: JwtUserPayload): boolean {
+  if (!user) return false;
+  const uname = String(user.username || '')
+    .toLowerCase()
+    .trim();
+  const role = String(user.role || '')
+    .toLowerCase()
+    .trim();
+  return uname === 'danny' || uname.includes('danny') || role === 'super_admin' || role === 'admin';
+}
+
+function evaluateCanUserAccessMosChat(
+  user: JwtUserPayload | undefined,
+  staffDirectory: MosChatStaffMember[],
+  accessConfig: MosChatAccessConfig
+): boolean {
+  if (!user) return false;
+  // Danny and Admin/SuperAdmin always have access so they can manage configuration
+  if (isDannyOrSuperAdminUser(user)) return true;
+  if (accessConfig.allowAllStaff) return true;
+
+  const myStaffId = Number(user.id);
+  if (Number.isFinite(myStaffId) && myStaffId > 0 && accessConfig.allowedStaffIds.includes(myStaffId)) {
+    return true;
+  }
+
+  const unameClean = String(user.username || '')
+    .toLowerCase()
+    .trim();
+  const matchedMember: MosChatStaffMember = staffDirectory.find(
+    (s) =>
+      (Number.isFinite(myStaffId) && myStaffId > 0 && s.id === myStaffId) ||
+      (unameClean &&
+        String(s.username || '')
+          .toLowerCase()
+          .trim() === unameClean)
+  ) || {
+    id: myStaffId || 0,
+    username: user.username || '',
+    displayName: user.displayName || user.username || '',
+    role: user.role || '',
+    departmentCodes: [],
+    teamCodes: [],
+  };
+
+  for (const grpKey of accessConfig.allowedGroupKeys) {
+    if (matchesStaffGroupBackend(matchedMember, grpKey)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 let memoryChatCache: {
   conversations: MosChatConversation[];
   tasks: MosChatTaskItem[];
+  accessConfig: MosChatAccessConfig;
   version: number;
   lastSyncedFromDbAt: number;
 } | null = null;
@@ -433,6 +604,7 @@ function trimTasksRetention(tasks: MosChatTaskItem[]): MosChatTaskItem[] {
 async function loadChatState(fastify: FastifyInstance): Promise<{
   conversations: MosChatConversation[];
   tasks: MosChatTaskItem[];
+  accessConfig: MosChatAccessConfig;
   version: number;
 }> {
   const now = Date.now();
@@ -440,13 +612,15 @@ async function loadChatState(fastify: FastifyInstance): Promise<{
     return memoryChatCache;
   }
 
-  const [convRecord, taskRecord] = await Promise.all([
+  const [convRecord, taskRecord, accessRecord] = await Promise.all([
     fastify.prisma.crm.crmConfig.findUnique({ where: { key: CHAT_CONVERSATIONS_CONFIG_KEY } }),
     fastify.prisma.crm.crmConfig.findUnique({ where: { key: CHAT_TASKS_CONFIG_KEY } }),
+    fastify.prisma.crm.crmConfig.findUnique({ where: { key: CHAT_ACCESS_CONFIG_KEY } }),
   ]);
 
   let conversations: MosChatConversation[] | null = null;
   let tasks: MosChatTaskItem[] | null = null;
+  let accessConfig: MosChatAccessConfig | null = null;
 
   if (convRecord?.value) {
     try {
@@ -463,6 +637,13 @@ async function loadChatState(fastify: FastifyInstance): Promise<{
       if (Array.isArray(parsed)) {
         tasks = trimTasksRetention(parsed);
       }
+    } catch (_) {}
+  }
+
+  if (accessRecord?.value) {
+    try {
+      const parsed = JSON.parse(accessRecord.value);
+      accessConfig = normalizeAccessConfig(parsed);
     } catch (_) {}
   }
 
@@ -484,20 +665,49 @@ async function loadChatState(fastify: FastifyInstance): Promise<{
     });
   }
 
+  if (!accessConfig) {
+    accessConfig = buildDefaultAccessConfig();
+  }
+
   const latestVersion = Math.max(
     convRecord?.updatedAt ? new Date(convRecord.updatedAt).getTime() : 0,
     taskRecord?.updatedAt ? new Date(taskRecord.updatedAt).getTime() : 0,
+    accessRecord?.updatedAt ? new Date(accessRecord.updatedAt).getTime() : 0,
     memoryChatCache?.version || 1
   );
 
   memoryChatCache = {
     conversations,
     tasks,
+    accessConfig,
     version: latestVersion,
     lastSyncedFromDbAt: now,
   };
 
   return memoryChatCache;
+}
+
+async function saveAccessConfig(fastify: FastifyInstance, accessConfig: MosChatAccessConfig) {
+  const normalized = normalizeAccessConfig(accessConfig);
+  const nextVersion = Date.now();
+  if (memoryChatCache) {
+    memoryChatCache.accessConfig = normalized;
+    memoryChatCache.version = nextVersion;
+    memoryChatCache.lastSyncedFromDbAt = nextVersion;
+  }
+  writeChain = writeChain
+    .then(async () => {
+      await fastify.prisma.crm.crmConfig.upsert({
+        where: { key: CHAT_ACCESS_CONFIG_KEY },
+        update: { value: JSON.stringify(normalized) },
+        create: { key: CHAT_ACCESS_CONFIG_KEY, value: JSON.stringify(normalized) },
+      });
+    })
+    .catch((err) => {
+      fastify.log.error('saveAccessConfig error:', err);
+    });
+  await writeChain;
+  return normalized;
 }
 
 async function saveConversations(fastify: FastifyInstance, conversations: MosChatConversation[]) {
@@ -581,6 +791,37 @@ async function loadStaffDirectoryCached(fastify: FastifyInstance): Promise<MosCh
       .catch(() => []),
   ]);
 
+  // Fallback to legacy user_profile avatar for staff who haven't uploaded a custom CRM avatar yet
+  const legacyAvatarMap = new Map<number, string>();
+  const candidateLegacyIds = rawStaff
+    .filter((s) => !s.avatarUrl && s.legacyStaffId && Number(s.legacyStaffId) > 0)
+    .map((s) => Number(s.legacyStaffId));
+
+  if (candidateLegacyIds.length > 0 && fastify.prisma?.legacy?.$queryRawUnsafe) {
+    try {
+      const legacyProfiles = await fastify.prisma.legacy.$queryRawUnsafe<
+        Array<{ user_id: number | string; avatarUrl: string | null }>
+      >(
+        `SELECT user_id, COALESCE(NULLIF(avatar, ''), NULLIF(avatar_internal, '')) as avatarUrl
+         FROM \`user_profile\`
+         WHERE user_id IN (${candidateLegacyIds.join(',')})`
+      );
+      for (const p of legacyProfiles || []) {
+        const uid = Number(p.user_id);
+        const rawUrl = String(p.avatarUrl || '').trim();
+        if (uid > 0 && rawUrl) {
+          const normalizedUrl =
+            rawUrl.startsWith('http://') || rawUrl.startsWith('https://') || rawUrl.startsWith('/api/')
+              ? rawUrl.replace(/^https?:\/\/(s|api|www)?\.?wingslashes\.com/, 'https://cdn.wingslashes.com')
+              : `https://cdn.wingslashes.com/${rawUrl.replace(/^\/+/, '')}`;
+          legacyAvatarMap.set(uid, normalizedUrl);
+        }
+      }
+    } catch {
+      // ignore legacy avatar lookup failure in test/offline mode
+    }
+  }
+
   const staffDirectory: MosChatStaffMember[] = rawStaff.map((s) => {
     const deptSet = new Set<string>();
     const teamSet = new Set<string>();
@@ -632,12 +873,14 @@ async function loadStaffDirectoryCached(fastify: FastifyInstance): Promise<MosCh
       }
     }
 
+    const fallbackLegacyAvatar = s.legacyStaffId ? legacyAvatarMap.get(Number(s.legacyStaffId)) || null : null;
+
     return {
       id: s.id,
       username: s.username,
       displayName: s.displayName || s.username,
       role: s.role,
-      avatarUrl: s.avatarUrl,
+      avatarUrl: s.avatarUrl || fallbackLegacyAvatar,
       isOnline: Boolean(s.lastActiveAt && nowMs - new Date(s.lastActiveAt).getTime() < 10 * 60 * 1000),
       departmentCodes: Array.from(deptSet),
       teamCodes: Array.from(teamSet),
@@ -659,10 +902,13 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       try {
+        const user = (request as SafeAny).user as JwtUserPayload | undefined;
         const query = (request.query || {}) as { sinceVersion?: string };
         const clientVersion = Number(query.sinceVersion) || 0;
 
-        const { conversations, tasks, version } = await loadChatState(fastify);
+        const { conversations, tasks, accessConfig, version } = await loadChatState(fastify);
+        const staffDirectory = await loadStaffDirectoryCached(fastify);
+        const canAccessChat = evaluateCanUserAccessMosChat(user, staffDirectory, accessConfig);
 
         // Zero-DB, Zero-Payload Short-Circuit when nothing changed!
         if (clientVersion > 0 && clientVersion === version) {
@@ -672,10 +918,10 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
             conversations: [],
             tasks: [],
             staffDirectory: [],
+            accessConfig,
+            canAccessChat,
           } satisfies MosChatBootstrapResponse;
         }
-
-        const staffDirectory = await loadStaffDirectoryCached(fastify);
 
         const payload: MosChatBootstrapResponse = {
           version,
@@ -683,11 +929,88 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           conversations,
           tasks,
           staffDirectory,
+          accessConfig,
+          canAccessChat,
         };
         return payload;
       } catch (err: SafeAny) {
         fastify.log.error('Chat bootstrap error:', err);
         return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể tải dữ liệu mOS Chat' });
+      }
+    }
+  );
+
+  // GET /api/chat/access-config
+  fastify.get(
+    '/chat/access-config',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const user = (request as SafeAny).user as JwtUserPayload | undefined;
+        const { accessConfig } = await loadChatState(fastify);
+        const staffDirectory = await loadStaffDirectoryCached(fastify);
+        const canAccessChat = evaluateCanUserAccessMosChat(user, staffDirectory, accessConfig);
+        return {
+          success: true,
+          accessConfig,
+          canAccessChat,
+        };
+      } catch (err: SafeAny) {
+        fastify.log.error('Get chat access config error:', err);
+        return reply
+          .status(500)
+          .send({ error: 'Internal Server Error', message: 'Không thể tải cấu hình truy cập mOS Chat' });
+      }
+    }
+  );
+
+  // PUT /api/chat/access-config
+  fastify.put(
+    '/chat/access-config',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const user = (request as SafeAny).user as JwtUserPayload | undefined;
+        if (!isDannyOrSuperAdminUser(user)) {
+          return reply.status(403).send({
+            error: 'Forbidden',
+            message: 'Chỉ quản trị viên cấp cao (Danny / Admin) mới được phép thay đổi phân quyền truy cập mOS Chat.',
+          });
+        }
+        const body = (request.body || {}) as UpdateMosChatAccessConfigRequest;
+        const { accessConfig: current } = await loadChatState(fastify);
+
+        const nextConfig: MosChatAccessConfig = normalizeAccessConfig({
+          ...current,
+          allowAllStaff: body.allowAllStaff !== undefined ? Boolean(body.allowAllStaff) : current.allowAllStaff,
+          allowedGroupKeys: body.allowedGroupKeys !== undefined ? body.allowedGroupKeys : current.allowedGroupKeys,
+          allowedStaffIds: body.allowedStaffIds !== undefined ? body.allowedStaffIds : current.allowedStaffIds,
+          aiCopilotAllowedGroupKeys:
+            body.aiCopilotAllowedGroupKeys !== undefined
+              ? body.aiCopilotAllowedGroupKeys
+              : current.aiCopilotAllowedGroupKeys,
+          aiCopilotAllowedStaffIds:
+            body.aiCopilotAllowedStaffIds !== undefined
+              ? body.aiCopilotAllowedStaffIds
+              : current.aiCopilotAllowedStaffIds,
+          updatedAt: new Date().toISOString(),
+          updatedBy: user?.displayName || user?.username || 'Danny',
+        });
+
+        const saved = await saveAccessConfig(fastify, nextConfig);
+        return {
+          success: true,
+          accessConfig: saved,
+        };
+      } catch (err: SafeAny) {
+        fastify.log.error('Update chat access config error:', err);
+        return reply
+          .status(500)
+          .send({ error: 'Internal Server Error', message: 'Không thể lưu cấu hình phân quyền mOS Chat' });
       }
     }
   );
@@ -786,7 +1109,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
 
       const staffRecord = await fastify.prisma.crm.crmStaff.findUnique({
         where: { id: Number(user.id) || 0 },
-        select: { displayName: true, username: true, role: true },
+        select: { displayName: true, username: true, role: true, avatarUrl: true },
       });
 
       const senderName = staffRecord?.displayName || user.username || 'mOS User';
@@ -804,7 +1127,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         senderId: isAiBot ? 'wings-ai-copilot' : user.id,
         senderName: isAiBot ? '🤖 Wings AI Copilot' : senderName,
         senderRole: isAiBot ? 'AI Copilot' : roleInfo.label,
-        senderAvatar: isAiBot ? 'AI' : getInitials(senderName, user.username),
+        senderAvatar: isAiBot ? 'AI' : staffRecord?.avatarUrl || getInitials(senderName, user.username),
         roleColor: isAiBot ? '#8b5cf6' : roleInfo.color,
         text: fallbackText,
         timeLabel: formatTimeLabel(now),
@@ -850,7 +1173,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
 
       const staffRecord = await fastify.prisma.crm.crmStaff.findUnique({
         where: { id: Number(user.id) || 0 },
-        select: { displayName: true, username: true, role: true },
+        select: { displayName: true, username: true, role: true, avatarUrl: true },
       });
       const senderName = staffRecord?.displayName || user.username || 'mOS User';
       const roleInfo = getRoleDisplayLabel(staffRecord?.role || user.role);
@@ -862,7 +1185,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         senderId: user.id,
         senderName,
         senderRole: roleInfo.label,
-        senderAvatar: getInitials(senderName, user.username),
+        senderAvatar: staffRecord?.avatarUrl || getInitials(senderName, user.username),
         text,
         attachments: attachments.length > 0 ? attachments : undefined,
         timeLabel: formatTimeLabel(now),
