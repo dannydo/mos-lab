@@ -139,20 +139,6 @@ export function ThemeProvider({ children, defaultIsAdmin }: { children: React.Re
 
   const coreTheme = mergedThemeRegistry[coreThemeId] ?? coreThemeRegistry[DEFAULT_CORE_THEME_ID];
 
-  const availableCoreThemes = React.useMemo<AvailableThemeItem[]>(() => {
-    return Object.values(mergedThemeRegistry).map((def) => {
-      const activeColors = def.modes[def.defaultMode].colors;
-      return {
-        id: def.id,
-        label: def.label,
-        description: def.description,
-        base: def.defaultMode,
-        isCustom: Boolean(customThemes[def.id]),
-        colors: activeColors,
-      };
-    });
-  }, [mergedThemeRegistry, customThemes]);
-
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
     const saved = safeStorage.getItem('mos_theme') as ThemeMode;
     if (saved === 'light' || saved === 'dark') {
@@ -160,6 +146,20 @@ export function ThemeProvider({ children, defaultIsAdmin }: { children: React.Re
     }
     return coreTheme.defaultMode;
   });
+
+  const availableCoreThemes = React.useMemo<AvailableThemeItem[]>(() => {
+    return Object.values(mergedThemeRegistry).map((def) => {
+      const modeDef = def.modes[themeMode] ?? def.modes[def.defaultMode];
+      return {
+        id: def.id,
+        label: def.label,
+        description: def.description,
+        base: themeMode,
+        isCustom: Boolean(customThemes[def.id]),
+        colors: modeDef.colors,
+      };
+    });
+  }, [mergedThemeRegistry, customThemes, themeMode]);
   const [mounted, setMounted] = useState(false);
   const [desktopDensity, setDesktopDensityState] = useState<DesktopDensity>(() => {
     const saved = safeStorage.getItem(DESKTOP_DENSITY_STORAGE_KEY);
@@ -268,12 +268,11 @@ export function ThemeProvider({ children, defaultIsAdmin }: { children: React.Re
     if (!target) return;
     setCoreThemeIdState(themeId);
     safeStorage.setItem(CORE_THEME_STORAGE_KEY, themeId);
-    setThemeMode(target.defaultMode);
-    safeStorage.setItem('mos_theme', target.defaultMode);
 
+    // Unified Mode Rule: Always preserve the current screen's themeMode (dark stays dark, light stays light)
     if (typeof document !== 'undefined') {
       const root = document.documentElement;
-      if (target.defaultMode === 'light') {
+      if (themeMode === 'light') {
         root.classList.remove('dark-theme', 'dark');
         root.classList.add('light-theme');
       } else {
@@ -285,7 +284,7 @@ export function ThemeProvider({ children, defaultIsAdmin }: { children: React.Re
       });
       root.classList.add(`theme-${target.id}`);
       root.dataset.theme = target.id;
-      root.dataset.themeBase = target.defaultMode;
+      root.dataset.themeBase = themeMode;
     }
   };
 

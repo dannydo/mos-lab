@@ -27,7 +27,9 @@ export function ThemeSelector({ isAdmin }: { isAdmin?: boolean } = {}) {
       key: 'header-label',
       type: 'group' as const,
       label: (
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Chọn Phong Cách Giao Diện</span>
+        <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+          Chọn Phong Cách Giao Diện · {themeMode === 'dark' ? 'Nền Tối' : 'Nền Sáng'}
+        </span>
       ),
       children: availableCoreThemes.map((themeItem) => {
         const isActive = themeItem.id === themeId;
@@ -59,7 +61,9 @@ export function ThemeSelector({ isAdmin }: { isAdmin?: boolean } = {}) {
           ),
           onClick: () => {
             setCoreThemeId(themeItem.id);
-            message.success(`Đã kích hoạt theme "${themeItem.label}"`);
+            message.success(
+              `Đã kích hoạt theme "${themeItem.label}" (${themeMode === 'dark' ? 'Nền Tối' : 'Nền Sáng'})`
+            );
           },
         };
       }),

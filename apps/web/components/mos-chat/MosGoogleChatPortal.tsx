@@ -1,0 +1,5538 @@
+'use client';
+
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Tooltip, Modal, Input, Select, Popover, Popconfirm, message as antdMessage, theme } from 'antd';
+import {
+  MessageSquare,
+  MessageSquareReply,
+  AlarmClock,
+  AlarmClockPlus,
+  BellRing,
+  Pin,
+  SmilePlus,
+  SendHorizontal,
+  UserRoundPlus,
+  AtSign,
+  Minimize2,
+  Maximize2,
+  X,
+  Plus,
+  Hash,
+  Inbox,
+  Mail,
+  CheckSquare,
+  Check,
+  Clock,
+  ExternalLink,
+  Search,
+  ChevronDown,
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  Minus,
+  ImagePlus,
+  HardDrive,
+  Loader2,
+  ZoomIn,
+  ZoomOut,
+  RotateCw,
+  Bot,
+  Sparkles,
+  ShieldCheck,
+  Sliders,
+  Trash2,
+  Volume2,
+  VolumeX,
+  Copy,
+  Users,
+  UserMinus,
+  UserPlus,
+  Bookmark,
+} from 'lucide-react';
+import dayjs from 'dayjs';
+import type {
+  MosChatConversation,
+  MosChatCustomerCard,
+  MosChatImageAttachment,
+  MosChatImageMimeType,
+  MosChatMessage,
+  MosChatPresenceStatus,
+  MosChatStaffMember,
+  MosChatTaskItem,
+  MosChatTaskPriority,
+  SafeAny,
+} from '@mos-lab/shared';
+import { isCanonicalSuperAdminIdentity, removeVietnameseTones } from '@mos-lab/shared';
+import { useTheme } from '../../context/ThemeContext';
+import { apiClient } from '../../lib/api-client';
+import { resolveMediaUrl } from '../../lib/api-base-url';
+import { speakText, stopSpeaking } from '../voice-assistant/speech-utils';
+
+export const AI_COPILOT_CONV_ID = 'dm-wings-ai-copilot';
+const AI_COPILOT_GROUP_ACCESS_KEY = 'mos_chat_ai_copilot_allowed_groups_v1';
+
+const AI_COPILOT_GROUP_OPTIONS = [
+  { role: 'super_admin', label: 'Super Admin', color: '#d4a84b' },
+  { role: 'admin', label: 'Quản trị viên (Admin)', color: '#a855f7' },
+  { role: 'manager', label: 'Quản lý (Manager / OC)', color: '#3b82f6' },
+  { role: 'cc', label: 'Tư Vấn Viên (CC)', color: '#10b981' },
+  { role: 'telesales', label: 'Đội ngũ Booker & Telesales', color: '#0ea5e9' },
+  { role: 'cv', label: 'Chuyên Viên Kỹ Thuật (CV)', color: '#14b8a6' },
+] as const;
+
+const AI_QUICK_PROMPTS = [
+  {
+    label: 'Giải thích nhóm khách (Buckets)',
+    prompt: 'Giải thích các nhóm khách hàng COMBO_LIVE, NOT_COMBO_LIVE, COMBO_DEAD và SINGLE trong hệ thống mOS.',
+  },
+  {
+    label: 'Lọc khách NYC 60 chi tiêu > 1tr',
+    prompt:
+      'Lọc giúp tôi các khách hàng NYC 60 (31 đến 60 ngày chưa ghé) có tổng chi tiêu trên 1 triệu đồng để gọi nhắc dặm mi.',
+  },
+  {
+    label: 'Khách hàng được giao cho tôi',
+    prompt: 'Lọc danh sách khách hàng đang được phân bổ cho riêng tôi.',
+  },
+  {
+    label: 'Tư vấn quy trình CSKH dặm mi',
+    prompt: 'Tư vấn quy trình và thời điểm gọi chăm sóc khách hàng dặm mi chuẩn để tối ưu tỷ lệ quay lại.',
+  },
+] as const;
+
+interface SpaceDepartmentOrTeamGroup {
+  key: string;
+  category: 'department' | 'team';
+  label: string;
+  shortLabel: string;
+  color: string;
+  defaultSlug: string;
+  defaultSubtitle: string;
+}
+
+const SPACE_DEPARTMENT_AND_TEAM_GROUPS: SpaceDepartmentOrTeamGroup[] = [
+  // 4 Core Departments (Bộ phận)
+  {
+    key: 'DEPT_SHOP',
+    category: 'department',
+    label: '🏢 Shop Operations',
+    shortLabel: 'Shop Ops',
+    color: '#d4a72c',
+    defaultSlug: 'shop-operations',
+    defaultSubtitle: 'Không gian vận hành cửa hàng · Tư Vấn CC · Chuyên Viên Mi · QA/QC',
+  },
+  {
+    key: 'DEPT_GROWTH',
+    category: 'department',
+    label: '📈 Growth & Booking',
+    shortLabel: 'Growth & Booking',
+    color: '#fa8c16',
+    defaultSlug: 'growth-booking',
+    defaultSubtitle: 'Không gian điều phối lịch hẹn · Telesales · Booker · CS & Control',
+  },
+  {
+    key: 'DEPT_ACADEMY',
+    category: 'department',
+    label: '🎓 Academy & Marketing',
+    shortLabel: 'Academy',
+    color: '#a855f7',
+    defaultSlug: 'academy-marketing',
+    defaultSubtitle: 'Không gian đào tạo Academy · Giảng Viên · Marketing & Sales',
+  },
+  {
+    key: 'DEPT_BACK_OFFICE',
+    category: 'department',
+    label: '🛡️ Back Office & Quản Trị',
+    shortLabel: 'Back Office',
+    color: '#3b82f6',
+    defaultSlug: 'back-office-quan-tri',
+    defaultSubtitle: 'Không gian điều hành Ban Quản Trị · Quản lý · Nội bộ',
+  },
+  // 8 Specialized Teams / Roles (Nhóm chuyên môn)
+  {
+    key: 'TEAM_ADMIN_MANAGER',
+    category: 'team',
+    label: '👑 Ban Quản Trị & Manager',
+    shortLabel: 'Admin / Manager',
+    color: '#d4a84b',
+    defaultSlug: 'ban-quan-tri-manager',
+    defaultSubtitle: 'Không gian trao đổi Ban Giám Đốc, Admin và Quản lý',
+  },
+  {
+    key: 'TEAM_CC',
+    category: 'team',
+    label: '💬 Tư Vấn Viên (CC)',
+    shortLabel: 'Tư vấn CC',
+    color: '#10b981',
+    defaultSlug: 'tu-van-cc',
+    defaultSubtitle: 'Không gian phối hợp đội ngũ Tư Vấn Viên Client Consultant',
+  },
+  {
+    key: 'TEAM_CV',
+    category: 'team',
+    label: '✨ Chuyên Viên Mi (CV)',
+    shortLabel: 'Chuyên Viên Mi',
+    color: '#14b8a6',
+    defaultSlug: 'chuyen-vien-mi-cv',
+    defaultSubtitle: 'Không gian trao đổi đội ngũ Chuyên Viên Kỹ Thuật & Nghệ Nhân Mi',
+  },
+  {
+    key: 'TEAM_TELESALES',
+    category: 'team',
+    label: '📞 Telesales & Booker',
+    shortLabel: 'Telesales / Booker',
+    color: '#0ea5e9',
+    defaultSlug: 'telesales-booker',
+    defaultSubtitle: 'Không gian chiến dịch gọi chăm sóc khách & đặt lịch Booker',
+  },
+  {
+    key: 'TEAM_CS_CONTROL',
+    category: 'team',
+    label: '🎧 CS & Control',
+    shortLabel: 'CS & Control',
+    color: '#f59e0b',
+    defaultSlug: 'cs-control',
+    defaultSubtitle: 'Không gian chăm sóc khách hàng CS & Điều phối Control',
+  },
+  {
+    key: 'TEAM_ACADEMY',
+    category: 'team',
+    label: '🎓 Giảng Viên Academy',
+    shortLabel: 'Giảng viên',
+    color: '#8b5cf6',
+    defaultSlug: 'giang-vien-academy',
+    defaultSubtitle: 'Không gian chuyên môn đội ngũ Giảng Viên & Đào tạo',
+  },
+  {
+    key: 'TEAM_QA_QC',
+    category: 'team',
+    label: '🏅 QA / QC',
+    shortLabel: 'QA / QC',
+    color: '#ec4899',
+    defaultSlug: 'qa-qc-chat-luong',
+    defaultSubtitle: 'Không gian kiểm soát chất lượng dịch vụ & trải nghiệm khách hàng',
+  },
+  {
+    key: 'TEAM_INTERNAL',
+    category: 'team',
+    label: '🏠 Vận Hành / Nội Bộ',
+    shortLabel: 'Vận hành',
+    color: '#64748b',
+    defaultSlug: 'van-hanh-noi-bo',
+    defaultSubtitle: 'Không gian phối hợp vận hành nội bộ & hậu cần',
+  },
+];
+
+function matchesStaffGroup(member: MosChatStaffMember, groupKey: string): boolean {
+  const role = String(member.role || '')
+    .toLowerCase()
+    .trim();
+  const depts = (member.departmentCodes || []).map((d) => d.toUpperCase());
+  const teams = (member.teamCodes || []).map((t) => t.toUpperCase());
+
+  switch (groupKey) {
+    case 'DEPT_SHOP':
+      return (
+        depts.includes('SHOP') || ['cc', 'coca', 'consultant', 'cv', 'lt', 'technician', 'ktv', 'qa_qc'].includes(role)
+      );
+    case 'DEPT_GROWTH':
+      return depts.includes('GROWTH') || ['telesales', 'booker', 'oc', 'ls', 'cs', 'control'].includes(role);
+    case 'DEPT_ACADEMY':
+      return depts.includes('ACADEMY') || ['teacher', 'ht'].includes(role);
+    case 'DEPT_BACK_OFFICE':
+      return (
+        depts.includes('BACK_OFFICE') ||
+        [
+          'super_admin',
+          'admin',
+          'boss',
+          'manager',
+          'fm',
+          'cho',
+          'staff',
+          'office-cleaner',
+          'security-guard',
+          'rnd',
+        ].includes(role)
+      );
+    case 'TEAM_ADMIN_MANAGER':
+      return teams.includes('ADMIN_MANAGER') || ['super_admin', 'admin', 'boss', 'manager', 'fm', 'cho'].includes(role);
+    case 'TEAM_CC':
+      return teams.includes('CC') || ['cc', 'coca', 'consultant'].includes(role);
+    case 'TEAM_CV':
+      return teams.includes('CV') || ['cv', 'lt', 'technician', 'ktv'].includes(role);
+    case 'TEAM_TELESALES':
+      return (
+        teams.includes('BK_TELESALES') || teams.includes('BK') || ['telesales', 'booker', 'oc', 'ls'].includes(role)
+      );
+    case 'TEAM_CS_CONTROL':
+      return (
+        teams.includes('BK_CS_CONTROL') ||
+        teams.includes('BK_CS') ||
+        teams.includes('BK_CONTROL') ||
+        ['cs', 'control'].includes(role)
+      );
+    case 'TEAM_ACADEMY':
+      return teams.includes('ACADEMY') || teams.includes('MARKETING_SALES') || ['teacher', 'ht'].includes(role);
+    case 'TEAM_QA_QC':
+      return teams.some((t) => t.startsWith('QA_QC')) || ['qa_qc'].includes(role);
+    case 'TEAM_INTERNAL':
+      return teams.includes('BACK_OFFICE_STAFF') || ['staff', 'office-cleaner', 'security-guard', 'rnd'].includes(role);
+    default:
+      return false;
+  }
+}
+
+export interface MosGoogleChatPortalProps {
+  open: boolean;
+  onClose: () => void;
+  onToggle: () => void;
+  currentUser?: SafeAny;
+  onUnreadCountChange?: (unreadCount: number, activeTaskCount: number) => void;
+}
+
+const FALLBACK_CONVERSATIONS: MosChatConversation[] = [
+  {
+    id: 'space-cc',
+    type: 'space',
+    name: 'tư-vấn-cc-ca-hôm-nay',
+    subtitle: 'Phối hợp đón khách giữa Telesales Booker · Tư Vấn CC · Chuyên Viên Mi',
+    roleTag: '12',
+    color: '#10b981',
+    memberCount: 12,
+    unreadCount: 2,
+    updatedAt: new Date().toISOString(),
+    messages: [
+      {
+        id: 'msg-seed-1',
+        conversationId: 'space-cc',
+        senderId: 'staff-tn',
+        senderName: 'Tuyết Nhi',
+        senderRole: 'Telesales',
+        senderAvatar: 'TN',
+        roleColor: '#0ea5e9',
+        text: 'Chị Nguyễn Bích Ngọc (VIP Diamond) vừa báo sẽ tới sớm lúc 15:15 hôm nay để nối mi Anime Thiết Kế.',
+        timeLabel: '14:42',
+        createdAt: new Date().toISOString(),
+        pinned: true,
+        reactions: { '❤️': 3, '🔥': 2 },
+        customerCard: {
+          name: 'Chị Nguyễn Bích Ngọc',
+          meta: 'VIP Diamond · 15:15 hôm nay',
+          cvName: 'Chuyên Viên Minh Thư (CV+)',
+        },
+        thread: [
+          {
+            id: 'th-seed-1',
+            senderId: 'staff-hm',
+            senderName: 'Hà My',
+            senderRole: 'Tư Vấn (CC)',
+            senderAvatar: 'HM',
+            text: 'Quầy CC tầng 1 đã nhận thông tin đón chị Ngọc.',
+            timeLabel: '14:43',
+            createdAt: new Date().toISOString(),
+          },
+          {
+            id: 'th-seed-2',
+            senderId: 'staff-mt',
+            senderName: 'Chuyên Viên Minh Thư',
+            senderRole: 'Chuyên Viên Tự Chủ (CV+)',
+            senderAvatar: 'MT',
+            text: 'Giường VIP 02 đã khử khuẩn sẵn sàng đón khách.',
+            timeLabel: '14:44',
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      },
+      {
+        id: 'msg-seed-2',
+        conversationId: 'space-cc',
+        senderId: 'staff-hm',
+        senderName: 'Hà My',
+        senderRole: 'Tư Vấn (CC)',
+        senderAvatar: 'HM',
+        roleColor: '#10b981',
+        text: 'Nhờ chuẩn bị sẵn trà hoa cúc & kiểm tra hồ sơ dáng mi cũ của chị Ngọc trước 15:00.',
+        timeLabel: '14:44',
+        createdAt: new Date().toISOString(),
+        reactions: { '👍': 2 },
+        taskId: 'task-seed-101',
+        thread: [],
+      },
+      {
+        id: 'msg-seed-3',
+        conversationId: 'space-cc',
+        senderId: 'staff-mt',
+        senderName: 'Chuyên Viên Minh Thư',
+        senderRole: 'Chuyên Viên Tự Chủ (CV+)',
+        senderAvatar: 'MT',
+        roleColor: '#14b8a6',
+        text: 'Em vừa xong ca trước, khay dụng cụ mi thiết kế đã khử khuẩn đầy đủ.',
+        timeLabel: '14:46',
+        createdAt: new Date().toISOString(),
+        reactions: { '🎉': 4 },
+        thread: [],
+      },
+    ],
+  },
+  {
+    id: 'space-telesales',
+    type: 'space',
+    name: 'telesales-booker',
+    subtitle: 'Chiến dịch gọi chăm sóc khách Combo Live & Khách cũ quay lại',
+    roleTag: '8',
+    color: '#f59e0b',
+    memberCount: 8,
+    unreadCount: 0,
+    updatedAt: new Date().toISOString(),
+    messages: [
+      {
+        id: 'msg-seed-tele-1',
+        conversationId: 'space-telesales',
+        senderId: 'staff-tn',
+        senderName: 'Tuyết Nhi',
+        senderRole: 'Telesales',
+        senderAvatar: 'TN',
+        roleColor: '#0ea5e9',
+        text: 'Ca chiều còn 3 khung 16:30 của Chuyên Viên Kỹ Thuật, ưu tiên gọi tệp khách gần hạn dặm mi.',
+        timeLabel: '14:15',
+        createdAt: new Date().toISOString(),
+        reactions: { '🔥': 5 },
+        thread: [],
+      },
+    ],
+  },
+  {
+    id: 'space-cv',
+    type: 'space',
+    name: 'chuyên-viên-mi-tầng-1',
+    subtitle: 'Kênh điều phối tua và chuẩn bị dụng cụ của đội ngũ Chuyên Viên Mi',
+    roleTag: '15',
+    color: '#14b8a6',
+    memberCount: 15,
+    unreadCount: 0,
+    updatedAt: new Date().toISOString(),
+    messages: [
+      {
+        id: 'msg-seed-cv-1',
+        conversationId: 'space-cv',
+        senderId: 'staff-mt',
+        senderName: 'Chuyên Viên Minh Thư',
+        senderRole: 'Chuyên Viên Tự Chủ (CV+)',
+        senderAvatar: 'MT',
+        roleColor: '#14b8a6',
+        text: 'Nhờ kho bổ sung thêm 5 khay mi cong C 0.07 dài 11mm lên tủ Chuyên Viên tầng 1 trước 16:00.',
+        timeLabel: '13:50',
+        createdAt: new Date().toISOString(),
+        reactions: { '👍': 3 },
+        taskId: 'task-seed-102',
+        thread: [],
+      },
+    ],
+  },
+  {
+    id: 'dm-tuyetnhi',
+    type: 'dm',
+    name: 'Tuyết Nhi',
+    subtitle: 'Telesales Booker',
+    roleTag: 'Telesales',
+    color: '#ec4899',
+    avatar: 'TN',
+    unreadCount: 1,
+    updatedAt: new Date().toISOString(),
+    messages: [
+      {
+        id: 'msg-seed-tn-1',
+        conversationId: 'dm-tuyetnhi',
+        senderId: 'staff-tn',
+        senderName: 'Tuyết Nhi',
+        senderRole: 'Telesales',
+        senderAvatar: 'TN',
+        roleColor: '#0ea5e9',
+        text: 'Anh Danny ơi, chị Lê Hoàng Yến xin dời sang 17:30 và giữ nguyên Chuyên Viên Ngọc Ánh (CV+), em chốt lịch nhé anh?',
+        timeLabel: '14:50',
+        createdAt: new Date().toISOString(),
+        reactions: {},
+        taskId: 'task-seed-103',
+        thread: [],
+      },
+    ],
+  },
+  {
+    id: 'dm-hamy',
+    type: 'dm',
+    name: 'Hà My',
+    subtitle: 'Tư Vấn (CC)',
+    roleTag: 'Tư Vấn (CC)',
+    color: '#a855f7',
+    avatar: 'HM',
+    unreadCount: 0,
+    updatedAt: new Date().toISOString(),
+    messages: [
+      {
+        id: 'msg-seed-hm-1',
+        conversationId: 'dm-hamy',
+        senderId: 'staff-hm',
+        senderName: 'Hà My',
+        senderRole: 'Tư Vấn (CC)',
+        senderAvatar: 'HM',
+        roleColor: '#10b981',
+        text: 'Tỷ lệ gia hạn gói Combo ca sáng nay đạt 68% rồi anh Danny.',
+        timeLabel: '14:20',
+        createdAt: new Date().toISOString(),
+        reactions: { '❤️': 1 },
+        thread: [],
+      },
+    ],
+  },
+];
+
+const FALLBACK_TASKS: MosChatTaskItem[] = [
+  {
+    id: 'task-seed-101',
+    conversationId: 'space-cc',
+    conversationName: 'tư-vấn-cc-ca-hôm-nay',
+    sourceMessageId: 'msg-seed-2',
+    sourceAuthorName: 'Hà My',
+    title: 'Chuẩn bị trà hoa cúc & kiểm tra hồ sơ dáng mi chị Bích Ngọc',
+    assigneeName: 'Hà My (CC)',
+    creatorName: 'Danny Do',
+    priority: 'URGENT',
+    remindAt: new Date(Date.now() + 185 * 1000).toISOString(),
+    done: false,
+    fired: false,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'task-seed-102',
+    conversationId: 'space-cv',
+    conversationName: 'chuyên-viên-mi-tầng-1',
+    sourceMessageId: 'msg-seed-cv-1',
+    sourceAuthorName: 'Chuyên Viên Minh Thư',
+    title: 'Bổ sung 5 khay mi cong C 0.07 dài 11mm lên tủ Chuyên Viên tầng 1',
+    assigneeName: 'Khánh Linh (CS)',
+    creatorName: 'Chuyên Viên Minh Thư',
+    priority: 'HIGH',
+    remindAt: new Date(Date.now() + 900 * 1000).toISOString(),
+    done: false,
+    fired: false,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'task-seed-103',
+    conversationId: 'dm-tuyetnhi',
+    conversationName: 'Tuyết Nhi',
+    sourceMessageId: 'msg-seed-tn-1',
+    sourceAuthorName: 'Tuyết Nhi',
+    title: 'Xác nhận dời lịch 17:30 cho KH Lê Hoàng Yến (CV Ngọc Ánh)',
+    assigneeName: 'Danny Do',
+    creatorName: 'Tuyết Nhi',
+    priority: 'URGENT',
+    remindAt: new Date(Date.now() + 75 * 1000).toISOString(),
+    done: false,
+    fired: false,
+    createdAt: new Date().toISOString(),
+  },
+];
+
+const SAMPLE_CUSTOMER_CARDS: MosChatCustomerCard[] = [
+  {
+    name: 'Chị Nguyễn Bích Ngọc',
+    meta: 'VIP Diamond · 15:15 hôm nay',
+    cvName: 'Chuyên Viên Minh Thư (CV+)',
+  },
+  {
+    name: 'Chị Trần Bảo Trân',
+    meta: 'Khách Mới · 16:15 Mi Thiết Kế',
+    cvName: 'Chuyên Viên Thanh Tâm (CV)',
+  },
+  {
+    name: 'Chị Lê Hoàng Yến',
+    meta: 'Cần xác nhận · 17:30 hôm nay',
+    cvName: 'Chuyên Viên Ngọc Ánh (CV+)',
+  },
+];
+
+const REMINDER_PRESETS = [
+  { label: '5 giây (Test)', seconds: 5 },
+  { label: '15 phút', seconds: 900 },
+  { label: '30 phút', seconds: 1800 },
+  { label: '1 giờ', seconds: 3600 },
+  { label: '17:30 hôm nay', seconds: 7200 },
+  { label: '09:00 sáng mai', seconds: 86400 },
+];
+
+function playWebAudioReminderChime() {
+  try {
+    const AudioCtx = window.AudioContext || (window as SafeAny).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    [587.33, 880, 1174.66].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.1, ctx.currentTime + idx * 0.11);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.11 + 0.42);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + idx * 0.11);
+      osc.stop(ctx.currentTime + idx * 0.11 + 0.44);
+    });
+  } catch (_) {}
+}
+
+function formatCountdown(remindAtIso: string, nowMs: number): string {
+  const diffSec = Math.max(0, Math.floor((new Date(remindAtIso).getTime() - nowMs) / 1000));
+  if (diffSec <= 0) return '00:00';
+  const mins = Math.floor(diffSec / 60);
+  const secs = diffSec % 60;
+  if (mins >= 60) {
+    return `${Math.floor(mins / 60)}h${String(mins % 60).padStart(2, '0')}p`;
+  }
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function parseGoogleDriveImageFromText(rawText: string): MosChatImageAttachment | null {
+  const trimmed = String(rawText || '').trim();
+  if (!trimmed) return null;
+  const match =
+    trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]{15,})/) ||
+    trimmed.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]{15,})/) ||
+    trimmed.match(/drive\.google\.com\/uc\?(?:export=\w+&)?id=([a-zA-Z0-9_-]{15,})/) ||
+    trimmed.match(/drive\.google\.com\/thumbnail\?id=([a-zA-Z0-9_-]{15,})/);
+  if (!match) return null;
+  const fileId = match[1];
+  return {
+    id: `drive-${fileId.slice(0, 8)}-${Date.now()}`,
+    url: `https://drive.google.com/thumbnail?id=${fileId}&sz=w1600`,
+    name: `Google-Drive-${fileId.slice(0, 6)}.jpg`,
+    mimeType: 'image/jpeg',
+    sizeBytes: 0,
+    source: 'drive',
+  };
+}
+
+async function readOrCompressImagePayload(
+  file: File
+): Promise<{ dataBase64: string; mimeType: MosChatImageMimeType; width?: number; height?: number }> {
+  if (file.type === 'image/gif') {
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('Không thể đọc ảnh GIF'));
+      reader.readAsDataURL(file);
+    });
+    return {
+      dataBase64: dataUrl.replace(/^data:image\/gif;base64,/i, ''),
+      mimeType: 'image/gif',
+    };
+  }
+
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new window.Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error('Không thể giải mã hình ảnh'));
+      el.src = objectUrl;
+    });
+
+    const maxDim = 1600;
+    let width = img.naturalWidth || img.width || 800;
+    let height = img.naturalHeight || img.height || 600;
+    if (width > maxDim || height > maxDim) {
+      const ratio = Math.min(maxDim / width, maxDim / height);
+      width = Math.max(1, Math.round(width * ratio));
+      height = Math.max(1, Math.round(height * ratio));
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Không khởi tạo được bộ nén ảnh');
+    ctx.drawImage(img, 0, 0, width, height);
+
+    let targetMime: MosChatImageMimeType = file.type === 'image/png' ? 'image/png' : 'image/webp';
+    let dataUrl = canvas.toDataURL(targetMime, 0.86);
+    if (!dataUrl.startsWith(`data:${targetMime};base64,`)) {
+      targetMime = 'image/jpeg';
+      dataUrl = canvas.toDataURL('image/jpeg', 0.86);
+    }
+
+    // If PNG is still > 2.5MB (e.g. Retina screenshot), compress to WebP/JPEG
+    if (targetMime === 'image/png' && dataUrl.length > 3_200_000) {
+      targetMime = 'image/webp';
+      dataUrl = canvas.toDataURL('image/webp', 0.86);
+      if (!dataUrl.startsWith('data:image/webp;base64,')) {
+        targetMime = 'image/jpeg';
+        dataUrl = canvas.toDataURL('image/jpeg', 0.86);
+      }
+    }
+
+    return {
+      dataBase64: dataUrl.replace(/^data:image\/(?:jpeg|png|webp);base64,/i, ''),
+      mimeType: targetMime,
+      width,
+      height,
+    };
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+const GOOGLE_CHAT_QUICK_EMOJIS = ['🪽', '💎', '❤️', '👍', '✅'] as const;
+
+const WINGS_SIGNATURE_EMOJIS = [
+  '🪽',
+  '🪶',
+  '🥚',
+  '🐣',
+  '🐥',
+  '🐔',
+  '🍗',
+  '👼',
+  '🍌',
+  '💎',
+  '👀',
+  '🔮',
+  '💃',
+  '💰',
+  '©️',
+  '👍',
+  '✅',
+  '🟢',
+  '⚫',
+] as const;
+
+const GOOGLE_CHAT_REACTION_EMOJIS = [
+  '❤️',
+  '🔥',
+  '😂',
+  '🎉',
+  '👏',
+  '🙏',
+  '💯',
+  '🚀',
+  '😍',
+  '🥰',
+  '😎',
+  '🤩',
+  '🤝',
+  '💪',
+  '✨',
+  '🌸',
+  '👑',
+  '🫡',
+] as const;
+
+export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
+  open,
+  onClose,
+  onToggle,
+  currentUser,
+  onUnreadCountChange,
+}) => {
+  const { themeMode } = useTheme();
+  const { token } = theme.useToken();
+  const isDark = themeMode === 'dark';
+
+  const [conversations, setConversations] = useState<MosChatConversation[]>(FALLBACK_CONVERSATIONS);
+  const [tasks, setTasks] = useState<MosChatTaskItem[]>(FALLBACK_TASKS);
+  const [staffDirectory, setStaffDirectory] = useState<MosChatStaffMember[]>([]);
+  const personalLayoutStorageKey = useMemo(() => {
+    let resolvedKey = String(currentUser?.id || currentUser?.username || '').trim();
+    if (!resolvedKey && typeof window !== 'undefined') {
+      try {
+        const storedUser = window.localStorage.getItem('mos_user');
+        if (storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          resolvedKey = String(parsedUser?.id || parsedUser?.username || '').trim();
+        }
+      } catch {
+        // ignore parse error
+      }
+    }
+    return `mos_chat_personal_layout_v2_${resolvedKey || 'default'}`;
+  }, [currentUser?.id, currentUser?.username]);
+
+  const readStoredPersonalLayout = useCallback((storageKey: string) => {
+    const defaults = { panelWidth: 840, sidebarWidth: 264, maximized: false, activeConvId: 'space-cc' };
+    if (typeof window === 'undefined') return defaults;
+    try {
+      const legacyKey = storageKey.replace('mos_chat_personal_layout_v2_', 'mos_chat_personal_layout_v1_');
+      const raw =
+        window.localStorage.getItem(storageKey) ||
+        window.localStorage.getItem('mos_chat_personal_layout_v2_global') ||
+        window.localStorage.getItem(legacyKey) ||
+        window.localStorage.getItem('mos_chat_personal_layout_v1_default');
+      if (!raw) return defaults;
+      const parsed = JSON.parse(raw) as {
+        panelWidth?: number;
+        sidebarWidth?: number;
+        maximized?: boolean;
+        activeConvId?: string;
+      };
+      const maxAllowed = Math.max(520, (window.innerWidth || 1920) - 56);
+      return {
+        panelWidth:
+          typeof parsed.panelWidth === 'number' && Number.isFinite(parsed.panelWidth)
+            ? Math.max(520, Math.min(maxAllowed, Math.round(parsed.panelWidth)))
+            : defaults.panelWidth,
+        sidebarWidth:
+          typeof parsed.sidebarWidth === 'number' && Number.isFinite(parsed.sidebarWidth)
+            ? Math.max(190, Math.min(460, Math.round(parsed.sidebarWidth)))
+            : defaults.sidebarWidth,
+        maximized: typeof parsed.maximized === 'boolean' ? parsed.maximized : defaults.maximized,
+        activeConvId:
+          typeof parsed.activeConvId === 'string' && parsed.activeConvId ? parsed.activeConvId : defaults.activeConvId,
+      };
+    } catch {
+      return defaults;
+    }
+  }, []);
+
+  const [activeConvId, setActiveConvId] = useState<string>(
+    () => readStoredPersonalLayout(personalLayoutStorageKey).activeConvId
+  );
+  const [activeSubtab, setActiveSubtab] = useState<'chat' | 'tasks' | 'pinned'>('chat');
+  const [sidebarFilter, setSidebarFilter] = useState<'all' | 'unread' | 'spaces'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [maximized, setMaximized] = useState<boolean>(
+    () => readStoredPersonalLayout(personalLayoutStorageKey).maximized
+  );
+  const [panelWidth, setPanelWidth] = useState<number>(
+    () => readStoredPersonalLayout(personalLayoutStorageKey).panelWidth
+  );
+  const [sidebarWidth, setSidebarWidth] = useState<number>(
+    () => readStoredPersonalLayout(personalLayoutStorageKey).sidebarWidth
+  );
+  const [isResizingTarget, setIsResizingTarget] = useState<'panel' | 'sidebar' | null>(null);
+  const [hoverResizeHandle, setHoverResizeHandle] = useState<'panel' | 'sidebar' | null>(null);
+  const [presence, setPresence] = useState<MosChatPresenceStatus>('active');
+
+  const panelWidthRef = useRef<number>(panelWidth);
+  const sidebarWidthRef = useRef<number>(sidebarWidth);
+  const maximizedRef = useRef<boolean>(maximized);
+  const activeConvIdRef = useRef<string>(activeConvId);
+
+  useEffect(() => {
+    panelWidthRef.current = panelWidth;
+  }, [panelWidth]);
+  useEffect(() => {
+    sidebarWidthRef.current = sidebarWidth;
+  }, [sidebarWidth]);
+  useEffect(() => {
+    maximizedRef.current = maximized;
+  }, [maximized]);
+  useEffect(() => {
+    activeConvIdRef.current = activeConvId;
+  }, [activeConvId]);
+
+  const persistPersonalLayout = useCallback(
+    (patch?: Partial<{ panelWidth: number; sidebarWidth: number; maximized: boolean; activeConvId: string }>) => {
+      if (typeof window === 'undefined') return;
+      const next = {
+        panelWidth: patch?.panelWidth ?? panelWidthRef.current,
+        sidebarWidth: patch?.sidebarWidth ?? sidebarWidthRef.current,
+        maximized: patch?.maximized ?? maximizedRef.current,
+        activeConvId: patch?.activeConvId ?? activeConvIdRef.current,
+        updatedAt: Date.now(),
+      };
+      try {
+        const serialized = JSON.stringify(next);
+        window.localStorage.setItem(personalLayoutStorageKey, serialized);
+        window.localStorage.setItem('mos_chat_personal_layout_v2_global', serialized);
+      } catch {
+        // ignore storage quota error
+      }
+    },
+    [personalLayoutStorageKey]
+  );
+
+  // Sync layout when personalLayoutStorageKey resolves to a specific user without ever overwriting stored values
+  useEffect(() => {
+    const stored = readStoredPersonalLayout(personalLayoutStorageKey);
+    setPanelWidth(stored.panelWidth);
+    setSidebarWidth(stored.sidebarWidth);
+    setMaximized(stored.maximized);
+    if (stored.activeConvId) {
+      setActiveConvId(stored.activeConvId);
+    }
+  }, [personalLayoutStorageKey, readStoredPersonalLayout]);
+
+  // Persist activeConvId when user switches conversations
+  useEffect(() => {
+    persistPersonalLayout({ activeConvId });
+  }, [activeConvId, persistPersonalLayout]);
+
+  // Interactive drag-resize handler for main chat panel (left edge) and conversation sidebar divider
+  useEffect(() => {
+    if (!isResizingTarget) return;
+
+    const prevCursor = document.body.style.cursor;
+    const prevUserSelect = document.body.style.userSelect;
+    document.body.style.cursor = isResizingTarget === 'panel' ? 'ew-resize' : 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (isResizingTarget === 'panel') {
+        const maxAllowed = Math.max(520, window.innerWidth - 56);
+        const nextWidth = Math.max(520, Math.min(maxAllowed, window.innerWidth - e.clientX));
+        const rounded = Math.round(nextWidth);
+        panelWidthRef.current = rounded;
+        setPanelWidth(rounded);
+        persistPersonalLayout({ panelWidth: rounded, maximized: false });
+      } else if (isResizingTarget === 'sidebar') {
+        const effectivePanelWidth = maximizedRef.current
+          ? Math.max(520, window.innerWidth - 224)
+          : panelWidthRef.current;
+        const panelLeftEdge = window.innerWidth - effectivePanelWidth;
+        const maxSidebarAllowed = Math.min(460, Math.max(190, effectivePanelWidth - 320));
+        const nextSidebarWidth = Math.max(190, Math.min(maxSidebarAllowed, e.clientX - panelLeftEdge));
+        const rounded = Math.round(nextSidebarWidth);
+        sidebarWidthRef.current = rounded;
+        setSidebarWidth(rounded);
+        persistPersonalLayout({ sidebarWidth: rounded });
+      }
+    };
+
+    const handleMouseUp = () => {
+      persistPersonalLayout();
+      setIsResizingTarget(null);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.body.style.cursor = prevCursor;
+      document.body.style.userSelect = prevUserSelect;
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizingTarget, persistPersonalLayout]);
+
+  // ================= WINGS AI COPILOT ACCESS CONTROL & PRIVATE 1-1 STATE =================
+  const isDannyAccount = useMemo(
+    () => isCanonicalSuperAdminIdentity({ username: currentUser?.username, email: currentUser?.email }),
+    [currentUser?.username, currentUser?.email]
+  );
+  const [allowedAiGroups, setAllowedAiGroups] = useState<string[]>([]);
+  const aiPersonalStorageKey = useMemo(
+    () => `mos_chat_ai_private_conv_v1_${currentUser?.id || currentUser?.username || 'default'}`,
+    [currentUser?.id, currentUser?.username]
+  );
+  const [aiSessionId, setAiSessionId] = useState<string | null>(null);
+  const [aiMessages, setAiMessages] = useState<MosChatMessage[]>([]);
+  const [aiThinkingActive, setAiThinkingActive] = useState<boolean>(false);
+  const [aiElapsedSec, setAiElapsedSec] = useState<number>(0);
+  const [expandedThinkingIds, setExpandedThinkingIds] = useState<Record<string, boolean>>({});
+  const [appliedActionIds, setAppliedActionIds] = useState<Record<string, boolean>>({});
+  const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
+  const aiHydratedRef = useRef<boolean>(false);
+
+  const buildInitialAiWelcomeMessage = useCallback((): MosChatMessage => {
+    const userDisplayName = currentUser?.displayName || currentUser?.username || 'Anh Danny';
+    return {
+      id: 'msg-ai-welcome',
+      conversationId: AI_COPILOT_CONV_ID,
+      senderId: 'wings-ai-copilot',
+      senderName: '🤖 Wings AI Copilot',
+      senderRole: 'AI Copilot',
+      senderAvatar: 'AI',
+      roleColor: '#8b5cf6',
+      isAiBot: true,
+      text:
+        `Xin chào ${userDisplayName}! Tôi là **Wings AI Copilot** đã được tích hợp trực tiếp vào **mOS Chat**.\n` +
+        '• **Kênh 1-1 riêng tư**: Mọi trao đổi và phân tích dữ liệu tại đây chỉ một mình bạn nhìn thấy.\n' +
+        '• **Gọi @AI trong #Space**: Gõ `@AI` hoặc `@copilot` kèm câu hỏi trong bất kỳ nhóm Space nào để tôi phân tích và trả lời công khai cho cả nhóm.',
+      timeLabel: dayjs().format('HH:mm'),
+      createdAt: new Date().toISOString(),
+      reactions: {},
+      thread: [],
+    };
+  }, [currentUser?.displayName, currentUser?.username]);
+
+  // Hydrate allowed AI groups + personal private 1-1 AI chat history
+  useEffect(() => {
+    aiHydratedRef.current = false;
+    try {
+      const rawGroups = window.localStorage.getItem(AI_COPILOT_GROUP_ACCESS_KEY);
+      if (rawGroups) {
+        const parsedGroups = JSON.parse(rawGroups);
+        if (Array.isArray(parsedGroups)) {
+          setAllowedAiGroups(parsedGroups.filter((g): g is string => typeof g === 'string'));
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    try {
+      const rawAi = window.localStorage.getItem(aiPersonalStorageKey);
+      if (rawAi) {
+        const parsedAi = JSON.parse(rawAi) as {
+          sessionId?: string | null;
+          messages?: MosChatMessage[];
+        };
+        if (parsedAi.sessionId) setAiSessionId(parsedAi.sessionId);
+        if (Array.isArray(parsedAi.messages) && parsedAi.messages.length > 0) {
+          setAiMessages(parsedAi.messages);
+          aiHydratedRef.current = true;
+          return;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    setAiMessages([buildInitialAiWelcomeMessage()]);
+    aiHydratedRef.current = true;
+  }, [aiPersonalStorageKey, buildInitialAiWelcomeMessage]);
+
+  useEffect(() => {
+    if (!aiHydratedRef.current) return;
+    try {
+      window.localStorage.setItem(
+        aiPersonalStorageKey,
+        JSON.stringify({
+          sessionId: aiSessionId,
+          messages: aiMessages.slice(-80),
+          updatedAt: Date.now(),
+        })
+      );
+    } catch {
+      // ignore
+    }
+  }, [aiPersonalStorageKey, aiSessionId, aiMessages]);
+
+  const toggleAiGroupAccess = useCallback((roleKey: string) => {
+    setAllowedAiGroups((prev) => {
+      const next = prev.includes(roleKey) ? prev.filter((r) => r !== roleKey) : [...prev, roleKey];
+      try {
+        window.localStorage.setItem(AI_COPILOT_GROUP_ACCESS_KEY, JSON.stringify(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }, []);
+
+  const canUseAiCopilot = useMemo(() => {
+    if (isDannyAccount) return true;
+    const r = String(currentUser?.role || '')
+      .trim()
+      .toLowerCase();
+    if (!r) return false;
+    if (allowedAiGroups.includes(r)) return true;
+    if (r === 'booker' && allowedAiGroups.includes('telesales')) return true;
+    if (r === 'consultant' && allowedAiGroups.includes('cc')) return true;
+    if (r === 'oc' && allowedAiGroups.includes('manager')) return true;
+    if ((r === 'ktv' || r === 'technician') && allowedAiGroups.includes('cv')) return true;
+    return false;
+  }, [isDannyAccount, currentUser?.role, allowedAiGroups]);
+
+  // 1-second timer while AI is thinking
+  useEffect(() => {
+    if (!aiThinkingActive) {
+      setAiElapsedSec(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setAiElapsedSec((s) => s + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [aiThinkingActive]);
+
+  // Side Thread Pane state
+  const [threadOpen, setThreadOpen] = useState(false);
+  const [activeThreadMsgId, setActiveThreadMsgId] = useState<string | null>('msg-seed-1');
+  const [threadInput, setThreadInput] = useState('');
+  const [threadAttachments, setThreadAttachments] = useState<MosChatImageAttachment[]>([]);
+
+  // Composer state
+  const [composerText, setComposerText] = useState('');
+  const [stagedAttachments, setStagedAttachments] = useState<MosChatImageAttachment[]>([]);
+  const [sampleCardIndex, setSampleCardIndex] = useState(0);
+
+  // Mini Docked Pop-out Windows (Bottom right like Gmail)
+  const [dockedConvIds, setDockedConvIds] = useState<string[]>([]);
+  const [collapsedDockIds, setCollapsedDockIds] = useState<Record<string, boolean>>({});
+  const [dockInputs, setDockInputs] = useState<Record<string, string>>({});
+  const [dockAttachments, setDockAttachments] = useState<Record<string, MosChatImageAttachment[]>>({});
+
+  // Image Upload / Google Drive Modal / Full-Screen Lightbox state
+  const [uploadingCount, setUploadingCount] = useState<number>(0);
+  const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
+  const [driveLinkModalOpen, setDriveLinkModalOpen] = useState<boolean>(false);
+  const [driveLinkInput, setDriveLinkInput] = useState<string>('');
+  const [lightboxImage, setLightboxImage] = useState<{
+    items: Array<{ id: string; url: string; name: string }>;
+    currentIndex: number;
+    zoom: number;
+    rotate: number;
+  } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const uploadTargetRef = useRef<{ scope: 'main' | 'thread' | 'dock'; convId?: string }>({ scope: 'main' });
+
+  // Task & Reminder Creation Modal state
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [taskModalSourceMsg, setTaskModalSourceMsg] = useState<MosChatMessage | null>(null);
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskAssignee, setTaskAssignee] = useState('Hà My (CC)');
+  const [taskPriority, setTaskPriority] = useState<MosChatTaskPriority>('HIGH');
+  const [taskRemindSeconds, setTaskRemindSeconds] = useState<number>(5);
+
+  // New Space / DM Modal
+  const [newRoomModalOpen, setNewRoomModalOpen] = useState(false);
+  const [newRoomType, setNewRoomType] = useState<'space' | 'dm'>('space');
+  const [newRoomName, setNewRoomName] = useState('');
+  const [newRoomSubtitle, setNewRoomSubtitle] = useState('');
+  const [selectedMemberIds, setSelectedMemberIds] = useState<number[]>([]);
+  const [roomSearchQuery, setRoomSearchQuery] = useState('');
+  const [roomGroupFilter, setRoomGroupFilter] = useState<string>('ALL');
+
+  // Space Members Management Modal
+  const [spaceMembersModalOpen, setSpaceMembersModalOpen] = useState(false);
+  const [addMemberSelectedStaffId, setAddMemberSelectedStaffId] = useState<number | null>(null);
+
+  // Live Reminder Alert Toast & IME Composition Guards
+  const [activeAlertTask, setActiveAlertTask] = useState<MosChatTaskItem | null>(null);
+  const [nowMs, setNowMs] = useState<number>(() => Date.now());
+  const firedTaskIdsRef = useRef<Set<string>>(new Set());
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const composerInputRef = useRef<HTMLInputElement | null>(null);
+  const threadInputRef = useRef<HTMLInputElement | null>(null);
+  const dockInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const isComposingRef = useRef<boolean>(false);
+  const lastCompositionEndMsRef = useRef<number>(0);
+  const lastSentRef = useRef<{ text: string; time: number }>({ text: '', time: 0 });
+  const broadcastChannelRef = useRef<BroadcastChannel | null>(null);
+
+  const lastVersionRef = useRef<number>(0);
+
+  const notifyLivePeers = useCallback(() => {
+    try {
+      broadcastChannelRef.current?.postMessage({ type: 'MOS_CHAT_SYNC', ts: Date.now() });
+    } catch (_) {}
+  }, []);
+
+  const fetchBootstrap = useCallback(async (forceFull = false) => {
+    try {
+      const res = await apiClient.chat.bootstrap(
+        { sinceVersion: forceFull ? undefined : lastVersionRef.current || undefined },
+        { isPolling: true }
+      );
+      if (res?.unchanged) {
+        return;
+      }
+      if (res?.version) {
+        lastVersionRef.current = res.version;
+      }
+      if (res?.conversations?.length) {
+        setConversations(res.conversations);
+      }
+      if (res?.tasks) {
+        setTasks(res.tasks);
+      }
+      if (res?.staffDirectory) {
+        setStaffDirectory(res.staffDirectory);
+      }
+    } catch (_) {
+      // Fallback state already initialized
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchBootstrap();
+    const pollIntervalMs = open || dockedConvIds.length > 0 ? 4000 : 25000;
+    const interval = setInterval(() => {
+      if (typeof document === 'undefined' || document.visibilityState === 'visible') {
+        fetchBootstrap();
+      }
+    }, pollIntervalMs);
+    return () => clearInterval(interval);
+  }, [fetchBootstrap, open, dockedConvIds.length]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') return;
+    const channel = new BroadcastChannel('mos_google_chat_live_v1');
+    broadcastChannelRef.current = channel;
+    channel.onmessage = () => {
+      fetchBootstrap(true);
+    };
+    return () => {
+      channel.close();
+      broadcastChannelRef.current = null;
+    };
+  }, [fetchBootstrap]);
+
+  // Global keyboard shortcut Cmd/Ctrl + J & Lightbox Esc / ArrowLeft / ArrowRight / Zoom controls
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (lightboxImage) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          setLightboxImage(null);
+          return;
+        }
+        if (e.key === 'ArrowLeft' && lightboxImage.items.length > 1) {
+          e.preventDefault();
+          setLightboxImage((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  currentIndex: (prev.currentIndex - 1 + prev.items.length) % prev.items.length,
+                  zoom: 1,
+                  rotate: 0,
+                }
+              : null
+          );
+          return;
+        }
+        if (e.key === 'ArrowRight' && lightboxImage.items.length > 1) {
+          e.preventDefault();
+          setLightboxImage((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  currentIndex: (prev.currentIndex + 1) % prev.items.length,
+                  zoom: 1,
+                  rotate: 0,
+                }
+              : null
+          );
+          return;
+        }
+        if (e.key === '+' || e.key === '=') {
+          e.preventDefault();
+          setLightboxImage((prev) =>
+            prev ? { ...prev, zoom: Math.min(4, Number((prev.zoom + 0.25).toFixed(2))) } : null
+          );
+          return;
+        }
+        if (e.key === '-') {
+          e.preventDefault();
+          setLightboxImage((prev) =>
+            prev ? { ...prev, zoom: Math.max(0.5, Number((prev.zoom - 0.25).toFixed(2))) } : null
+          );
+          return;
+        }
+        if (e.key === '0') {
+          e.preventDefault();
+          setLightboxImage((prev) => (prev ? { ...prev, zoom: 1, rotate: 0 } : null));
+          return;
+        }
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') {
+        e.preventDefault();
+        onToggle();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onToggle, lightboxImage]);
+
+  // Auto-focus composer input when chat opens or switches room
+  useEffect(() => {
+    if (
+      open &&
+      activeSubtab === 'chat' &&
+      !taskModalOpen &&
+      !newRoomModalOpen &&
+      !driveLinkModalOpen &&
+      !lightboxImage
+    ) {
+      const t = setTimeout(() => {
+        composerInputRef.current?.focus();
+      }, 60);
+      return () => clearTimeout(t);
+    }
+  }, [open, activeConvId, activeSubtab, taskModalOpen, newRoomModalOpen, driveLinkModalOpen, lightboxImage]);
+
+  // Smart click-anywhere-on-screen to auto-focus chat composer (ignores links, buttons, inputs, modals, and text selection)
+  useEffect(() => {
+    const hasExpandedDock = dockedConvIds.some((id) => !collapsedDockIds[id]);
+    if (!open && !hasExpandedDock) return;
+    if (taskModalOpen || newRoomModalOpen || driveLinkModalOpen || lightboxImage) return;
+
+    const INTERACTIVE_SELECTOR = [
+      'a',
+      'button',
+      'input',
+      'textarea',
+      'select',
+      'label',
+      'summary',
+      '[role="button"]',
+      '[role="link"]',
+      '[role="menuitem"]',
+      '[role="option"]',
+      '[role="tab"]',
+      '[role="switch"]',
+      '[role="checkbox"]',
+      '[role="combobox"]',
+      '[role="dialog"]',
+      '[contenteditable="true"]',
+      '[data-no-chat-autofocus="true"]',
+      '.ant-modal',
+      '.ant-drawer',
+      '.ant-select',
+      '.ant-select-dropdown',
+      '.ant-picker',
+      '.ant-picker-dropdown',
+      '.ant-dropdown',
+      '.ant-popover',
+      '.ant-popconfirm',
+      '.ant-tooltip',
+      '.ant-pagination',
+      '.ant-tabs-tab',
+      '.ant-table-thead th.ant-table-column-has-sorters',
+      '.ant-checkbox-wrapper',
+      '.ant-radio-wrapper',
+      '.ant-switch',
+      '.ant-upload',
+    ].join(', ');
+
+    const handleGlobalMouseUp = (e: MouseEvent) => {
+      if (e.button !== 0) return;
+      // Preserve text selection if the user dragged to highlight text
+      const selection = window.getSelection()?.toString().trim();
+      if (selection && selection.length > 0) return;
+
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      // Do not hijack clicks on links, buttons, inputs, or interactive controls
+      if (target.closest(INTERACTIVE_SELECTOR)) return;
+
+      // 1. If clicked inside a Mini Dock window, focus that dock's input
+      const dockEl = target.closest('[data-dock-conv-id]') as HTMLElement | null;
+      if (dockEl) {
+        const dockConvId = dockEl.getAttribute('data-dock-conv-id');
+        if (dockConvId && dockInputRefs.current[dockConvId]) {
+          dockInputRefs.current[dockConvId]?.focus();
+          return;
+        }
+      }
+
+      // 2. If clicked inside the Side Thread pane, focus the thread input
+      if (open && threadOpen && target.closest('[data-chat-thread-pane="true"]')) {
+        threadInputRef.current?.focus();
+        return;
+      }
+
+      // 3. If main chat panel is open on 'chat' tab, focus the main composer input
+      if (open && activeSubtab === 'chat') {
+        composerInputRef.current?.focus();
+        return;
+      }
+
+      // 4. Fallback: if main chat panel is closed but an expanded Mini Dock window exists, focus the latest expanded dock input
+      const activeDockId = [...dockedConvIds].reverse().find((id) => !collapsedDockIds[id]);
+      if (activeDockId && dockInputRefs.current[activeDockId]) {
+        dockInputRefs.current[activeDockId]?.focus();
+      }
+    };
+
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, [
+    open,
+    activeSubtab,
+    threadOpen,
+    dockedConvIds,
+    collapsedDockIds,
+    taskModalOpen,
+    newRoomModalOpen,
+    driveLinkModalOpen,
+    lightboxImage,
+  ]);
+
+  // Listen to global custom event 'mos-chat:open' (e.g. clicking an online colleague avatar on Header)
+  useEffect(() => {
+    const handleGlobalChatOpen = async (ev: Event) => {
+      const customEv = ev as CustomEvent<{
+        conversationId?: string;
+        participantStaffId?: number;
+        participantName?: string;
+        customerCard?: MosChatCustomerCard;
+      }>;
+      const detail = customEv.detail || {};
+      if (detail.conversationId && conversations.some((c) => c.id === detail.conversationId)) {
+        setActiveConvId(detail.conversationId);
+        setActiveSubtab('chat');
+        return;
+      }
+      if (detail.participantName) {
+        const normalizedTarget = removeVietnameseTones(detail.participantName.toLowerCase());
+        const matched = conversations.find(
+          (c) => c.type === 'dm' && removeVietnameseTones(c.name.toLowerCase()).includes(normalizedTarget)
+        );
+        if (matched) {
+          setActiveConvId(matched.id);
+          setActiveSubtab('chat');
+          return;
+        }
+        try {
+          const created = await apiClient.chat.createConversation({
+            type: 'dm',
+            name: detail.participantName,
+            participantStaffId: detail.participantStaffId,
+          });
+          if (created?.conversation) {
+            setConversations((prev) => [created.conversation, ...prev.filter((x) => x.id !== created.conversation.id)]);
+            setActiveConvId(created.conversation.id);
+            setActiveSubtab('chat');
+            notifyLivePeers();
+          }
+        } catch (_) {}
+      }
+    };
+    window.addEventListener('mos-chat:open', handleGlobalChatOpen);
+    return () => window.removeEventListener('mos-chat:open', handleGlobalChatOpen);
+  }, [conversations, notifyLivePeers]);
+
+  // Report unread & active task counts up to Header
+  useEffect(() => {
+    const totalUnread = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+    const openTaskCount = tasks.filter((t) => !t.done).length;
+    onUnreadCountChange?.(totalUnread, openTaskCount);
+  }, [conversations, tasks, onUnreadCountChange]);
+
+  const triggerTaskReminderAlert = useCallback(
+    async (task: MosChatTaskItem) => {
+      firedTaskIdsRef.current.add(task.id);
+      if (presence !== 'dnd') {
+        playWebAudioReminderChime();
+      }
+      setActiveAlertTask(task);
+
+      const nowStr = dayjs().format('HH:mm');
+      const reminderMsg: MosChatMessage = {
+        id: `msg-rem-${Date.now()}`,
+        conversationId: task.conversationId,
+        senderId: 'system-reminder',
+        senderName: 'mOS Reminder',
+        senderRole: 'Auto',
+        senderAvatar: 'AL',
+        roleColor: '#f59e0b',
+        text: `Đến giờ nhắc việc: "${task.title}" (@${task.assigneeName})`,
+        timeLabel: nowStr,
+        createdAt: new Date().toISOString(),
+        taskId: task.id,
+        isSystemReminder: true,
+        reactions: {},
+        thread: [],
+      };
+
+      setConversations((prev) =>
+        prev.map((c) => (c.id === task.conversationId ? { ...c, messages: [...c.messages, reminderMsg] } : c))
+      );
+
+      try {
+        await apiClient.chat.updateTask(task.id, { triggerReminderNow: true });
+        notifyLivePeers();
+      } catch (_) {}
+    },
+    [presence, notifyLivePeers]
+  );
+
+  // 1-second ticker for live task countdowns
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const currentNow = Date.now();
+      setNowMs(currentNow);
+      tasks.forEach((t) => {
+        if (!t.done && !t.fired && !firedTaskIdsRef.current.has(t.id)) {
+          const remainMs = new Date(t.remindAt).getTime() - currentNow;
+          if (remainMs <= 0) {
+            triggerTaskReminderAlert(t);
+          }
+        }
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [tasks, triggerTaskReminderAlert]);
+
+  const aiCopilotConversation = useMemo<MosChatConversation | null>(() => {
+    if (!canUseAiCopilot) return null;
+    return {
+      id: AI_COPILOT_CONV_ID,
+      type: 'dm',
+      name: '🤖 Wings AI Copilot',
+      subtitle: 'Trợ lý AI Đa Nhiệm · Tra cứu dữ liệu & Phân tích riêng tư',
+      roleTag: 'AI Copilot',
+      color: '#8b5cf6',
+      avatar: 'AI',
+      unreadCount: 0,
+      messages: aiMessages,
+      updatedAt: new Date().toISOString(),
+    };
+  }, [canUseAiCopilot, aiMessages]);
+
+  const activeConversation = useMemo(() => {
+    if (activeConvId === AI_COPILOT_CONV_ID && aiCopilotConversation) {
+      return aiCopilotConversation;
+    }
+    return conversations.find((c) => c.id === activeConvId) || aiCopilotConversation || conversations[0];
+  }, [conversations, activeConvId, aiCopilotConversation]);
+
+  const filteredConversations = useMemo(() => {
+    const q = removeVietnameseTones(searchQuery.trim().toLowerCase());
+    return conversations.filter((c) => {
+      if (sidebarFilter === 'unread' && !c.unreadCount) return false;
+      if (sidebarFilter === 'spaces' && c.type !== 'space') return false;
+      if (!q) return true;
+      const inName = removeVietnameseTones(c.name.toLowerCase()).includes(q);
+      const inMsg = c.messages.some((m) => removeVietnameseTones(m.text.toLowerCase()).includes(q));
+      return inName || inMsg;
+    });
+  }, [conversations, sidebarFilter, searchQuery]);
+
+  const dmList = useMemo(() => {
+    const baseDms = filteredConversations.filter((c) => c.type === 'dm');
+    if (!aiCopilotConversation || sidebarFilter === 'spaces' || sidebarFilter === 'unread') {
+      return baseDms;
+    }
+    const q = removeVietnameseTones(searchQuery.trim().toLowerCase());
+    if (
+      q &&
+      !removeVietnameseTones(aiCopilotConversation.name.toLowerCase()).includes(q) &&
+      !aiCopilotConversation.messages.some((m) => removeVietnameseTones(m.text.toLowerCase()).includes(q))
+    ) {
+      return baseDms;
+    }
+    return [aiCopilotConversation, ...baseDms];
+  }, [filteredConversations, aiCopilotConversation, sidebarFilter, searchQuery]);
+
+  const spaceList = useMemo(() => filteredConversations.filter((c) => c.type === 'space'), [filteredConversations]);
+
+  const selectConversation = (convId: string) => {
+    setActiveConvId(convId);
+    setActiveSubtab('chat');
+    if (convId !== AI_COPILOT_CONV_ID) {
+      setConversations((prev) => prev.map((c) => (c.id === convId ? { ...c, unreadCount: 0 } : c)));
+    }
+  };
+
+  const appendAttachmentToTarget = useCallback(
+    (attachment: MosChatImageAttachment, scope: 'main' | 'thread' | 'dock', convId?: string) => {
+      if (scope === 'thread') {
+        setThreadAttachments((prev) => [...prev, attachment].slice(-8));
+        return;
+      }
+      if (scope === 'dock' && convId) {
+        setDockAttachments((prev) => ({
+          ...prev,
+          [convId]: [...(prev[convId] || []), attachment].slice(-8),
+        }));
+        return;
+      }
+      setStagedAttachments((prev) => [...prev, attachment].slice(-8));
+    },
+    []
+  );
+
+  const removeStagedAttachment = useCallback((attId: string, scope: 'main' | 'thread' | 'dock', convId?: string) => {
+    if (scope === 'thread') {
+      setThreadAttachments((prev) => prev.filter((a) => a.id !== attId));
+      return;
+    }
+    if (scope === 'dock' && convId) {
+      setDockAttachments((prev) => ({
+        ...prev,
+        [convId]: (prev[convId] || []).filter((a) => a.id !== attId),
+      }));
+      return;
+    }
+    setStagedAttachments((prev) => prev.filter((a) => a.id !== attId));
+  }, []);
+
+  const handleProcessImageFiles = useCallback(
+    async (
+      files: FileList | File[],
+      source: 'clipboard' | 'drive' | 'upload',
+      scope: 'main' | 'thread' | 'dock' = 'main',
+      convId?: string
+    ) => {
+      const imageFiles = Array.from(files).filter((f) => f.type.startsWith('image/'));
+      if (imageFiles.length === 0) return;
+
+      setUploadingCount((c) => c + imageFiles.length);
+      for (const file of imageFiles.slice(0, 6)) {
+        try {
+          const compressed = await readOrCompressImagePayload(file);
+          const uploaded = await apiClient.chat.uploadImage({
+            dataBase64: compressed.dataBase64,
+            mimeType: compressed.mimeType,
+            fileName: file.name || `paste-${Date.now()}.webp`,
+            width: compressed.width,
+            height: compressed.height,
+            source,
+          });
+          if (uploaded?.attachment) {
+            appendAttachmentToTarget(uploaded.attachment, scope, convId);
+          }
+        } catch (err: SafeAny) {
+          antdMessage.error(err?.response?.data?.message || err?.message || 'Không thể tải ảnh lên.');
+        } finally {
+          setUploadingCount((c) => Math.max(0, c - 1));
+        }
+      }
+    },
+    [appendAttachmentToTarget]
+  );
+
+  const handleClipboardPaste = useCallback(
+    (
+      e: React.ClipboardEvent<HTMLInputElement | HTMLElement>,
+      scope: 'main' | 'thread' | 'dock' = 'main',
+      convId?: string
+    ) => {
+      const items = e.clipboardData?.items;
+      if (items && items.length > 0) {
+        const pastedImages: File[] = [];
+        for (let i = 0; i < items.length; i += 1) {
+          const item = items[i];
+          if (item.type.startsWith('image/')) {
+            const file = item.getAsFile();
+            if (file) pastedImages.push(file);
+          }
+        }
+        if (pastedImages.length > 0) {
+          e.preventDefault();
+          void handleProcessImageFiles(pastedImages, 'clipboard', scope, convId);
+          return;
+        }
+      }
+
+      // Also detect pasted Google Drive image link directly from clipboard text
+      const pastedText = e.clipboardData?.getData('text/plain') || '';
+      const driveAttachment = parseGoogleDriveImageFromText(pastedText);
+      if (driveAttachment) {
+        appendAttachmentToTarget(driveAttachment, scope, convId);
+        antdMessage.success('Đã tự động đính kèm hình ảnh từ Google Drive');
+      }
+    },
+    [handleProcessImageFiles, appendAttachmentToTarget]
+  );
+
+  const triggerFilePicker = (scope: 'main' | 'thread' | 'dock' = 'main', convId?: string) => {
+    uploadTargetRef.current = { scope, convId };
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleConfirmDriveLink = () => {
+    const driveAtt = parseGoogleDriveImageFromText(driveLinkInput);
+    if (!driveAtt) {
+      antdMessage.warning('Vui lòng dán link hình ảnh Google Drive hợp lệ (drive.google.com/file/d/...)');
+      return;
+    }
+    const target = uploadTargetRef.current;
+    appendAttachmentToTarget(driveAtt, target.scope, target.convId);
+    setDriveLinkInput('');
+    setDriveLinkModalOpen(false);
+    antdMessage.success('Đã đính kèm ảnh từ Google Drive');
+  };
+
+  const convertAttachmentToDataUrl = useCallback(
+    async (attachment?: MosChatImageAttachment): Promise<string | undefined> => {
+      if (!attachment?.url) return undefined;
+      try {
+        const resolvedUrl = resolveMediaUrl(attachment.url);
+        const resp = await fetch(resolvedUrl);
+        if (!resp.ok) return undefined;
+        const blob = await resp.blob();
+        return await new Promise<string | undefined>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(typeof reader.result === 'string' ? reader.result : undefined);
+          reader.onerror = () => resolve(undefined);
+          reader.readAsDataURL(blob);
+        });
+      } catch {
+        return undefined;
+      }
+    },
+    []
+  );
+
+  const handleClearAiChat = useCallback(() => {
+    setAiSessionId(null);
+    setAiMessages([buildInitialAiWelcomeMessage()]);
+    antdMessage.success('Đã làm mới phiên hội thoại riêng tư với Wings AI Copilot');
+  }, [buildInitialAiWelcomeMessage]);
+
+  const handleExecuteAiAction = useCallback((action: NonNullable<MosChatMessage['aiAction']>, msgId: string) => {
+    if (typeof window !== 'undefined' && action.payload) {
+      window.dispatchEvent(new CustomEvent('mos-ai-copilot-apply-customer-filter', { detail: action.payload }));
+    }
+    setAppliedActionIds((prev) => ({ ...prev, [msgId]: true }));
+    antdMessage.success(`Đã kích hoạt: ${action.label}`);
+  }, []);
+
+  const handleSpeakAiMessage = useCallback(
+    (msg: MosChatMessage) => {
+      if (speakingMsgId === msg.id) {
+        stopSpeaking();
+        setSpeakingMsgId(null);
+        return;
+      }
+      stopSpeaking();
+      setSpeakingMsgId(msg.id);
+      speakText(msg.text, {
+        onEnd: () => {
+          setSpeakingMsgId((prev) => (prev === msg.id ? null : prev));
+        },
+      });
+    },
+    [speakingMsgId]
+  );
+
+  const handleSendMessage = async (
+    targetConvId: string,
+    rawText: string,
+    customerCard?: MosChatCustomerCard | null,
+    attachments?: MosChatImageAttachment[]
+  ) => {
+    const text = rawText.trim();
+    const cleanAttachments = attachments && attachments.length > 0 ? attachments : undefined;
+    if (!text && !customerCard && !cleanAttachments) return;
+
+    // Guard against macOS Vietnamese IME (Telex/VNI) flushing the last syllable on Enter
+    const now = Date.now();
+    if (
+      !customerCard &&
+      !cleanAttachments &&
+      now - lastSentRef.current.time < 1200 &&
+      (lastSentRef.current.text === text || lastSentRef.current.text.endsWith(` ${text}`))
+    ) {
+      return;
+    }
+    lastSentRef.current = { text, time: now };
+
+    const senderName = currentUser?.displayName || currentUser?.username || 'Danny Do';
+    const optimisticId = `msg-${now}`;
+    const optimisticMsg: MosChatMessage = {
+      id: optimisticId,
+      conversationId: targetConvId,
+      senderId: currentUser?.id || 'me',
+      senderName,
+      senderRole: 'Super Admin',
+      senderAvatar: senderName.slice(0, 2).toUpperCase(),
+      roleColor: '#d4a84b',
+      text: text || (customerCard ? `Hỗ trợ hồ sơ ${customerCard.name}` : ''),
+      timeLabel: dayjs().format('HH:mm'),
+      createdAt: new Date().toISOString(),
+      customerCard: customerCard || null,
+      attachments: cleanAttachments,
+      reactions: {},
+      thread: [],
+    };
+
+    // CASE 1: Private 1-1 Chat with 🤖 Wings AI Copilot (100% personal)
+    if (targetConvId === AI_COPILOT_CONV_ID) {
+      setAiMessages((prev) => [...prev, optimisticMsg]);
+      setAiThinkingActive(true);
+      try {
+        const imageDataUrl = await convertAttachmentToDataUrl(cleanAttachments?.[0]);
+        const promptForAi =
+          text ||
+          (customerCard
+            ? `Phân tích hồ sơ khách hàng ${customerCard.name} (${customerCard.meta})`
+            : 'Phân tích hình ảnh đính kèm này giúp tôi.');
+        const aiRes = await apiClient.ai.sendMessage({
+          sessionId: aiSessionId || undefined,
+          message: promptForAi,
+          scope: 'mos-chat-private',
+          imageDataUrl,
+          context: {
+            page: 'mos-chat-private',
+            userName: senderName,
+            myRole: currentUser?.role || 'super_admin',
+          },
+        });
+        if (aiRes?.session?.id) {
+          setAiSessionId(aiRes.session.id);
+        }
+        const botMsg: MosChatMessage = {
+          id: aiRes?.message?.id || `msg-ai-${Date.now()}`,
+          conversationId: AI_COPILOT_CONV_ID,
+          senderId: 'wings-ai-copilot',
+          senderName: '🤖 Wings AI Copilot',
+          senderRole: 'AI Copilot',
+          senderAvatar: 'AI',
+          roleColor: '#8b5cf6',
+          isAiBot: true,
+          text: aiRes?.message?.content || 'Tôi đã xử lý yêu cầu của bạn.',
+          aiThinking: aiRes?.message?.thinking || null,
+          aiAction: aiRes?.message?.suggestedAction || null,
+          timeLabel: dayjs().format('HH:mm'),
+          createdAt: new Date().toISOString(),
+          reactions: {},
+          thread: [],
+        };
+        setAiMessages((prev) => [...prev, botMsg]);
+      } catch (err: SafeAny) {
+        const fallbackErr: MosChatMessage = {
+          id: `msg-ai-err-${Date.now()}`,
+          conversationId: AI_COPILOT_CONV_ID,
+          senderId: 'wings-ai-copilot',
+          senderName: '🤖 Wings AI Copilot',
+          senderRole: 'AI Copilot',
+          senderAvatar: 'AI',
+          roleColor: '#8b5cf6',
+          isAiBot: true,
+          text: err?.response?.data?.message || 'Hiện kết nối AI đang bận, bạn vui lòng thử lại sau giây lát nhé.',
+          timeLabel: dayjs().format('HH:mm'),
+          createdAt: new Date().toISOString(),
+          reactions: {},
+          thread: [],
+        };
+        setAiMessages((prev) => [...prev, fallbackErr]);
+      } finally {
+        setAiThinkingActive(false);
+      }
+      return;
+    }
+
+    // CASE 2: Standard Space / 1-1 Conversation (plus @AI / @copilot trigger for authorized users)
+    setConversations((prev) =>
+      prev.map((c) => (c.id === targetConvId ? { ...c, messages: [...c.messages, optimisticMsg] } : c))
+    );
+
+    try {
+      const res = await apiClient.chat.sendMessage({
+        conversationId: targetConvId,
+        text: optimisticMsg.text,
+        customerCard: customerCard || null,
+        attachments: cleanAttachments,
+      });
+      if (res?.conversation) {
+        setConversations((prev) => prev.map((c) => (c.id === targetConvId ? res.conversation : c)));
+      }
+      notifyLivePeers();
+    } catch (_) {}
+
+    // If user is authorized to use AI Copilot and tagged @AI or @copilot in the message, invoke AI and post reply publicly to this room!
+    if (canUseAiCopilot && /(?:^|\s)@(?:ai|copilot)\b/i.test(text)) {
+      const cleanedPrompt =
+        text.replace(/(?:^|\s)@(?:ai|copilot)\b/gi, '').trim() || 'Hãy phân tích nội dung trên giúp nhóm.';
+      setAiThinkingActive(true);
+      try {
+        const imageDataUrl = await convertAttachmentToDataUrl(cleanAttachments?.[0]);
+        const aiRes = await apiClient.ai.sendMessage({
+          sessionId: aiSessionId || undefined,
+          message: cleanedPrompt,
+          scope: `mos-chat-space:${targetConvId}`,
+          imageDataUrl,
+          context: {
+            page: `mos-chat-space:${targetConvId}`,
+            userName: senderName,
+            myRole: currentUser?.role || 'super_admin',
+          },
+        });
+        if (aiRes?.session?.id) {
+          setAiSessionId(aiRes.session.id);
+        }
+        const aiReplyText = aiRes?.message?.content || 'Tôi đã phân tích xong thông tin cho nhóm.';
+        const postedAi = await apiClient.chat.sendMessage({
+          conversationId: targetConvId,
+          text: aiReplyText,
+          isAiBot: true,
+          aiThinking: aiRes?.message?.thinking || null,
+          aiAction: aiRes?.message?.suggestedAction || null,
+        });
+        if (postedAi?.conversation) {
+          setConversations((prev) => prev.map((c) => (c.id === targetConvId ? postedAi.conversation : c)));
+        }
+        notifyLivePeers();
+      } catch (_) {
+        // ignore space AI error
+      } finally {
+        setAiThinkingActive(false);
+      }
+    }
+  };
+
+  const handleSendMain = async () => {
+    if (!activeConversation) return;
+    const text = composerText;
+    const attachmentsToSend = stagedAttachments;
+    if (!text.trim() && attachmentsToSend.length === 0) return;
+
+    setComposerText('');
+    setStagedAttachments([]);
+    if (composerInputRef.current) {
+      composerInputRef.current.value = '';
+    }
+    await handleSendMessage(activeConversation.id, text, null, attachmentsToSend);
+  };
+
+  const handleSendQuickCustomerCard = async () => {
+    if (!activeConversation) return;
+    const card = SAMPLE_CUSTOMER_CARDS[sampleCardIndex % SAMPLE_CUSTOMER_CARDS.length];
+    setSampleCardIndex((prev) => prev + 1);
+    await handleSendMessage(activeConversation.id, `Lưu ý hỗ trợ chu đáo khách hàng ${card.name}:`, card);
+    antdMessage.success(`Đã đính kèm thẻ khách hàng ${card.name}`);
+  };
+
+  const currentUserReactionKey = String(currentUser?.id || 'me');
+
+  const hasUserReacted = (m: MosChatMessage | undefined, emoji: string): boolean => {
+    if (!m) return false;
+    const count = m.reactions?.[emoji] || 0;
+    if (count <= 0) return false;
+    const users = m.reactionUsers?.[emoji];
+    if (!Array.isArray(users)) {
+      // Legacy reaction before per-user tracking — treat as reacted so clicking undoes it
+      return true;
+    }
+    return users.map(String).includes(currentUserReactionKey);
+  };
+
+  const applyReactionToggleToMessage = (m: MosChatMessage, emoji: string): MosChatMessage => {
+    const nextReactions = { ...(m.reactions || {}) };
+    const nextReactionUsers = { ...(m.reactionUsers || {}) };
+    const existingUsers = nextReactionUsers[emoji];
+    const currentCount = nextReactions[emoji] || 0;
+
+    if (Array.isArray(existingUsers)) {
+      const normalized = existingUsers.map(String);
+      if (normalized.includes(currentUserReactionKey)) {
+        const remaining = normalized.filter((u) => u !== currentUserReactionKey);
+        if (remaining.length === 0) {
+          delete nextReactions[emoji];
+          delete nextReactionUsers[emoji];
+        } else {
+          nextReactionUsers[emoji] = remaining;
+          nextReactions[emoji] = remaining.length;
+        }
+      } else {
+        const updated = [...normalized, currentUserReactionKey];
+        nextReactionUsers[emoji] = updated;
+        nextReactions[emoji] = updated.length;
+      }
+    } else if (currentCount > 0) {
+      // Legacy reaction without per-user tracking (e.g. inflated count): clicking undoes/clears it
+      delete nextReactions[emoji];
+      delete nextReactionUsers[emoji];
+    } else {
+      nextReactionUsers[emoji] = [currentUserReactionKey];
+      nextReactions[emoji] = 1;
+    }
+
+    return {
+      ...m,
+      reactions: nextReactions,
+      reactionUsers: nextReactionUsers,
+    };
+  };
+
+  const handleToggleReaction = async (msgId: string, emoji: string) => {
+    if (!activeConversation) return;
+    if (activeConversation.id === AI_COPILOT_CONV_ID) {
+      setAiMessages((prev) => prev.map((m) => (m.id === msgId ? applyReactionToggleToMessage(m, emoji) : m)));
+      return;
+    }
+    const targetConvId = activeConversation.id;
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id !== targetConvId) return c;
+        return {
+          ...c,
+          messages: c.messages.map((m) => (m.id === msgId ? applyReactionToggleToMessage(m, emoji) : m)),
+        };
+      })
+    );
+    try {
+      const res = await apiClient.chat.reactToMessage(msgId, targetConvId, emoji);
+      if (res?.reactions) {
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.id !== targetConvId) return c;
+            return {
+              ...c,
+              messages: c.messages.map((m) =>
+                m.id === msgId
+                  ? {
+                      ...m,
+                      reactions: res.reactions,
+                      reactionUsers: res.reactionUsers ?? m.reactionUsers,
+                    }
+                  : m
+              ),
+            };
+          })
+        );
+      }
+      notifyLivePeers();
+    } catch (_) {}
+  };
+
+  const handleTogglePin = async (msgId: string) => {
+    if (!activeConversation) return;
+    if (activeConversation.id === AI_COPILOT_CONV_ID) {
+      setAiMessages((prev) => prev.map((m) => (m.id === msgId ? { ...m, pinned: !m.pinned } : m)));
+      return;
+    }
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id !== activeConversation.id) return c;
+        return {
+          ...c,
+          messages: c.messages.map((m) => (m.id === msgId ? { ...m, pinned: !m.pinned } : m)),
+        };
+      })
+    );
+    try {
+      await apiClient.chat.togglePinMessage(msgId, activeConversation.id);
+    } catch (_) {}
+  };
+
+  const handleOpenThread = (msgId: string) => {
+    setActiveThreadMsgId(msgId);
+    setThreadOpen(true);
+  };
+
+  const handleSendThreadReply = async () => {
+    const text = threadInput.trim();
+    const attachmentsToSend = threadAttachments;
+    if ((!text && attachmentsToSend.length === 0) || !activeConversation || !activeThreadMsgId) return;
+    setThreadInput('');
+    setThreadAttachments([]);
+
+    const senderName = currentUser?.displayName || 'Danny Do';
+    const newReply = {
+      id: `th-${Date.now()}`,
+      senderId: currentUser?.id || 'me',
+      senderName,
+      senderRole: 'Super Admin',
+      senderAvatar: 'DD',
+      text,
+      attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
+      timeLabel: dayjs().format('HH:mm'),
+      createdAt: new Date().toISOString(),
+    };
+
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id !== activeConversation.id) return c;
+        return {
+          ...c,
+          messages: c.messages.map((m) =>
+            m.id === activeThreadMsgId ? { ...m, thread: [...(m.thread || []), newReply] } : m
+          ),
+        };
+      })
+    );
+
+    try {
+      await apiClient.chat.sendThreadReply({
+        conversationId: activeConversation.id,
+        messageId: activeThreadMsgId,
+        text,
+        attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
+      });
+      notifyLivePeers();
+    } catch (_) {}
+  };
+
+  const openTaskModalFromMessage = (msg: MosChatMessage | null) => {
+    setTaskModalSourceMsg(msg);
+    setTaskTitle(msg ? msg.text : composerText.trim() || 'Kiểm tra lịch hẹn & chuẩn bị đón khách VIP');
+    setTaskRemindSeconds(5);
+    setTaskModalOpen(true);
+  };
+
+  const handleConfirmCreateTask = async () => {
+    const cleanTitle = taskTitle.trim();
+    if (!cleanTitle || !activeConversation) return;
+
+    const tempTaskId = `task-${Date.now()}`;
+    const remindAt = new Date(Date.now() + taskRemindSeconds * 1000).toISOString();
+    const newTask: MosChatTaskItem = {
+      id: tempTaskId,
+      conversationId: activeConversation.id,
+      conversationName: activeConversation.name,
+      sourceMessageId: taskModalSourceMsg?.id || null,
+      sourceAuthorName: taskModalSourceMsg?.senderName || currentUser?.displayName || 'Danny Do',
+      title: cleanTitle,
+      assigneeName: taskAssignee,
+      creatorName: currentUser?.displayName || 'Danny Do',
+      priority: taskPriority,
+      remindAt,
+      done: false,
+      fired: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    setTasks((prev) => [newTask, ...prev]);
+    if (taskModalSourceMsg) {
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === activeConversation.id
+            ? {
+                ...c,
+                messages: c.messages.map((m) => (m.id === taskModalSourceMsg.id ? { ...m, taskId: tempTaskId } : m)),
+              }
+            : c
+        )
+      );
+    } else {
+      const taskMsg: MosChatMessage = {
+        id: `msg-task-${Date.now()}`,
+        conversationId: activeConversation.id,
+        senderId: currentUser?.id || 'me',
+        senderName: currentUser?.displayName || 'Danny Do',
+        senderRole: 'Super Admin',
+        senderAvatar: 'DD',
+        roleColor: '#d4a84b',
+        text: `Giao việc cho ${taskAssignee}:`,
+        timeLabel: dayjs().format('HH:mm'),
+        createdAt: new Date().toISOString(),
+        taskId: tempTaskId,
+        reactions: {},
+        thread: [],
+      };
+      setConversations((prev) =>
+        prev.map((c) => (c.id === activeConversation.id ? { ...c, messages: [...c.messages, taskMsg] } : c))
+      );
+    }
+
+    setTaskModalOpen(false);
+    antdMessage.success(`Đã tạo Task & bật nhắc hẹn (${taskAssignee})`);
+
+    try {
+      await apiClient.chat.createTask({
+        conversationId: activeConversation.id,
+        sourceMessageId: taskModalSourceMsg?.id || null,
+        title: cleanTitle,
+        assigneeName: taskAssignee,
+        priority: taskPriority,
+        remindInSeconds: taskRemindSeconds,
+      });
+    } catch (_) {}
+  };
+
+  const handleToggleTaskDone = async (taskId: string) => {
+    let nextDone = true;
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== taskId) return t;
+        nextDone = !t.done;
+        return { ...t, done: nextDone };
+      })
+    );
+    if (activeAlertTask?.id === taskId) {
+      setActiveAlertTask(null);
+    }
+    try {
+      await apiClient.chat.updateTask(taskId, { done: nextDone });
+    } catch (_) {}
+  };
+
+  const handleSnoozeTask = async (taskId: string, snoozeSec = 600) => {
+    const nextRemindAt = new Date(Date.now() + snoozeSec * 1000).toISOString();
+    firedTaskIdsRef.current.delete(taskId);
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, remindAt: nextRemindAt, fired: false, done: false } : t))
+    );
+    setActiveAlertTask(null);
+    antdMessage.info('Đã dời lịch nhắc lại sau 10 phút');
+    try {
+      await apiClient.chat.updateTask(taskId, { snoozeSeconds: snoozeSec });
+    } catch (_) {}
+  };
+
+  const handlePopOutToMiniDock = () => {
+    if (!activeConversation) return;
+    setDockedConvIds((prev) => {
+      const next = prev.includes(activeConversation.id) ? prev : [...prev, activeConversation.id];
+      return next.slice(-2);
+    });
+    onClose();
+  };
+
+  const handleSelectSelfChat = async () => {
+    setNewRoomModalOpen(false);
+    const selfId = `dm-self-${currentUser?.id || 'me'}`;
+    const existing = conversations.find((c) => c.id === selfId || (c.type === 'dm' && c.isSelf));
+    if (existing) {
+      setActiveConvId(existing.id);
+      setActiveSubtab('chat');
+      return;
+    }
+    try {
+      const res = await apiClient.chat.createConversation({
+        type: 'dm',
+        name: `${currentUser?.displayName || currentUser?.username || 'Tôi'} (Ghi chú cho tôi)`,
+        isSelf: true,
+      });
+      if (res?.conversation) {
+        setConversations((prev) => [res.conversation, ...prev.filter((c) => c.id !== res.conversation.id)]);
+        setActiveConvId(res.conversation.id);
+        setActiveSubtab('chat');
+        notifyLivePeers();
+      }
+    } catch (_) {
+      antdMessage.error('Không thể tạo không gian ghi chú cá nhân');
+    }
+  };
+
+  const handleSelectColleague = async (colleague: MosChatStaffMember) => {
+    setNewRoomModalOpen(false);
+    const existing = conversations.find(
+      (c) => c.type === 'dm' && (c.participantStaffId === colleague.id || c.name === colleague.displayName)
+    );
+    if (existing) {
+      setActiveConvId(existing.id);
+      setActiveSubtab('chat');
+      return;
+    }
+    try {
+      const res = await apiClient.chat.createConversation({
+        type: 'dm',
+        name: colleague.displayName,
+        participantStaffId: colleague.id,
+      });
+      if (res?.conversation) {
+        setConversations((prev) => [res.conversation, ...prev.filter((c) => c.id !== res.conversation.id)]);
+        setActiveConvId(res.conversation.id);
+        setActiveSubtab('chat');
+        notifyLivePeers();
+      }
+    } catch (_) {
+      antdMessage.error('Không thể mở cuộc trò chuyện');
+    }
+  };
+
+  const handleCreateSpace = async () => {
+    const cleanName = newRoomName.trim();
+    if (!cleanName) {
+      antdMessage.warning('Vui lòng nhập tên Không gian (Space)');
+      return;
+    }
+    setNewRoomModalOpen(false);
+    setNewRoomName('');
+    setNewRoomSubtitle('');
+    const memberIds = [...selectedMemberIds];
+    setSelectedMemberIds([]);
+    try {
+      const res = await apiClient.chat.createConversation({
+        type: 'space',
+        name: cleanName,
+        subtitle: newRoomSubtitle.trim() || undefined,
+        memberIds,
+      });
+      if (res?.conversation) {
+        setConversations((prev) => [res.conversation, ...prev.filter((c) => c.id !== res.conversation.id)]);
+        setActiveConvId(res.conversation.id);
+        setActiveSubtab('chat');
+        notifyLivePeers();
+      }
+    } catch (_) {
+      antdMessage.error('Không thể tạo Không gian');
+    }
+  };
+
+  const handleToggleDepartmentOrTeam = (group: SpaceDepartmentOrTeamGroup) => {
+    const groupMembers = staffDirectory.filter((m) => matchesStaffGroup(m, group.key));
+    if (groupMembers.length === 0) {
+      antdMessage.info(`Hiện chưa có nhân sự thuộc ${group.label}`);
+      return;
+    }
+    const groupIds = groupMembers.map((m) => m.id);
+    const allSelected = groupIds.every((id) => selectedMemberIds.includes(id));
+
+    if (allSelected) {
+      const myId = Number(currentUser?.id);
+      setSelectedMemberIds((prev) => prev.filter((id) => id === myId || !groupIds.includes(id)));
+    } else {
+      setSelectedMemberIds((prev) => Array.from(new Set([...prev, ...groupIds])));
+      if (!newRoomName.trim()) {
+        setNewRoomName(group.defaultSlug);
+      }
+      if (!newRoomSubtitle.trim()) {
+        setNewRoomSubtitle(group.defaultSubtitle);
+      }
+    }
+  };
+
+  const handleAddMemberToSpace = async (staffId: number) => {
+    if (!activeConversation || activeConversation.type !== 'space') return;
+    try {
+      const res = await apiClient.chat.addMember(activeConversation.id, staffId);
+      if (res?.conversation) {
+        setConversations((prev) => prev.map((c) => (c.id === res.conversation.id ? res.conversation : c)));
+        notifyLivePeers();
+        antdMessage.success('Đã thêm thành viên vào Không gian');
+      }
+    } catch (err: SafeAny) {
+      antdMessage.error(err?.message || 'Không thể thêm thành viên');
+    }
+  };
+
+  const handleBulkAddGroupToSpace = async (group: SpaceDepartmentOrTeamGroup) => {
+    if (!activeConversation || activeConversation.type !== 'space') return;
+    const existingIds = new Set(activeConversation.memberIds || []);
+    const missingIds = staffDirectory
+      .filter((m) => matchesStaffGroup(m, group.key) && !existingIds.has(m.id))
+      .map((m) => m.id);
+    if (missingIds.length === 0) {
+      antdMessage.info(`Tất cả thành viên của ${group.label} đã có mặt trong Không gian này`);
+      return;
+    }
+    try {
+      const res = await apiClient.chat.addMember(activeConversation.id, missingIds);
+      if (res?.conversation) {
+        setConversations((prev) => prev.map((c) => (c.id === res.conversation.id ? res.conversation : c)));
+        notifyLivePeers();
+        antdMessage.success(`Đã thêm ${missingIds.length} thành viên thuộc ${group.label} vào Không gian`);
+      }
+    } catch (err: SafeAny) {
+      antdMessage.error(err?.message || 'Không thể thêm nhóm thành viên');
+    }
+  };
+
+  const handleRemoveMemberFromSpace = async (staffId: number) => {
+    if (!activeConversation || activeConversation.type !== 'space') return;
+    try {
+      const res = await apiClient.chat.removeMember(activeConversation.id, staffId);
+      if (res?.conversation) {
+        setConversations((prev) => prev.map((c) => (c.id === res.conversation.id ? res.conversation : c)));
+        notifyLivePeers();
+        antdMessage.success('Đã xóa thành viên khỏi Không gian');
+      }
+    } catch (err: SafeAny) {
+      antdMessage.error(err?.message || 'Không thể xóa thành viên');
+    }
+  };
+
+  const activeThreadMessage = useMemo(() => {
+    if (!activeConversation) return null;
+    return (
+      activeConversation.messages.find((m) => m.id === activeThreadMsgId) || activeConversation.messages[0] || null
+    );
+  }, [activeConversation, activeThreadMsgId]);
+
+  const assigneeOptions = useMemo(() => {
+    const defaults = [
+      { value: 'Danny Do', label: 'Danny Do (Tôi)' },
+      { value: 'Hà My (CC)', label: 'Hà My (Tư Vấn CC)' },
+      { value: 'Tuyết Nhi', label: 'Tuyết Nhi (Telesales)' },
+      { value: 'Chuyên Viên Minh Thư (CV+)', label: 'Chuyên Viên Minh Thư (CV+)' },
+      { value: 'Khánh Linh (CS)', label: 'Khánh Linh (CSKH)' },
+    ];
+    const existingSet = new Set(defaults.map((d) => d.value));
+    staffDirectory.forEach((s) => {
+      if (!existingSet.has(s.displayName)) {
+        existingSet.add(s.displayName);
+        defaults.push({ value: s.displayName, label: `${s.displayName} (${s.role})` });
+      }
+    });
+    return defaults;
+  }, [staffDirectory]);
+
+  const surfaceBg = isDark ? '#111827' : '#ffffff';
+  const surfaceRaised = isDark ? '#1a2333' : '#f8fafc';
+  const canvasBg = isDark ? '#0d1322' : '#ffffff';
+  const borderColor = isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0';
+  const borderStrong = isDark ? 'rgba(255, 255, 255, 0.15)' : '#cbd5e1';
+
+  const openLightbox = useCallback((attachments: MosChatImageAttachment[], initialIndex = 0) => {
+    if (!attachments || attachments.length === 0) return;
+    const normalized = attachments.map((att, idx) => ({
+      id: att.id || `img-${idx}`,
+      url: resolveMediaUrl(att.url),
+      name: att.name || `Hình đính kèm ${idx + 1}`,
+    }));
+    const safeIdx = Math.max(0, Math.min(initialIndex, normalized.length - 1));
+    setLightboxImage({
+      items: normalized,
+      currentIndex: safeIdx,
+      zoom: 1,
+      rotate: 0,
+    });
+  }, []);
+
+  const renderMessageAttachments = (attachments?: MosChatImageAttachment[], compact = false) => {
+    if (!attachments || attachments.length === 0) return null;
+    const total = attachments.length;
+    return (
+      <div className="mt-1.5 flex flex-wrap gap-2">
+        {attachments.map((att, idx) => {
+          const fullUrl = resolveMediaUrl(att.url);
+          return (
+            <Tooltip
+              key={att.id}
+              title={
+                total > 1
+                  ? `Nhấn để phóng to (${idx + 1}/${total} · Dùng phím ← → để chuyển hình)`
+                  : 'Nhấn để phóng to xem chi tiết'
+              }
+            >
+              <button
+                type="button"
+                data-no-chat-autofocus="true"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openLightbox(attachments, idx);
+                }}
+                className="relative rounded-xl overflow-hidden group/img cursor-zoom-in text-left block p-0"
+                style={{
+                  border: `1px solid ${borderStrong}`,
+                  background: surfaceRaised,
+                  maxWidth: compact ? 180 : 280,
+                }}
+              >
+                <img
+                  src={fullUrl}
+                  alt={att.name || 'Hình đính kèm'}
+                  style={{
+                    maxHeight: compact ? 120 : 200,
+                    maxWidth: compact ? 180 : 280,
+                    objectFit: 'cover',
+                    display: 'block',
+                  }}
+                />
+                <span className="opacity-0 group-hover/img:opacity-100 transition-opacity absolute inset-0 bg-black/35 flex items-center justify-center pointer-events-none">
+                  <span
+                    className="w-8 h-8 rounded-full inline-flex items-center justify-center shadow-lg"
+                    style={{
+                      background: 'rgba(15, 23, 42, 0.88)',
+                      color: '#fbbf24',
+                      border: '1px solid rgba(251, 191, 36, 0.45)',
+                    }}
+                  >
+                    <ZoomIn size={15} />
+                  </span>
+                </span>
+                {total > 1 && (
+                  <span
+                    className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full text-[9.5px] font-extrabold tabular-nums pointer-events-none"
+                    style={{
+                      background: 'rgba(15, 23, 42, 0.82)',
+                      color: '#f8fafc',
+                      border: '1px solid rgba(255, 255, 255, 0.16)',
+                    }}
+                  >
+                    {idx + 1}/{total}
+                  </span>
+                )}
+                {att.source === 'drive' && (
+                  <span
+                    className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded text-[9.5px] font-bold inline-flex items-center gap-1 pointer-events-none"
+                    style={{ background: 'rgba(15, 23, 42, 0.82)', color: '#fbbf24' }}
+                  >
+                    <HardDrive size={10} />
+                    <span>Drive</span>
+                  </span>
+                )}
+              </button>
+            </Tooltip>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const renderStagedAttachmentsStrip = (
+    items: MosChatImageAttachment[],
+    scope: 'main' | 'thread' | 'dock',
+    convId?: string
+  ) => {
+    const showUploading = scope === 'main' && uploadingCount > 0;
+    if (items.length === 0 && !showUploading) return null;
+    return (
+      <div className="flex items-center gap-2 pb-2 overflow-x-auto">
+        {items.map((att, idx) => (
+          <div
+            key={att.id}
+            data-no-chat-autofocus="true"
+            className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 group/stage"
+            style={{ border: `1px solid ${borderStrong}`, background: surfaceRaised }}
+          >
+            <Tooltip title="Nhấn để phóng to xem chi tiết">
+              <button
+                type="button"
+                data-no-chat-autofocus="true"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openLightbox(items, idx);
+                }}
+                className="w-full h-full block p-0 cursor-zoom-in relative"
+              >
+                <img src={resolveMediaUrl(att.url)} alt={att.name} className="w-full h-full object-cover block" />
+                <span className="opacity-0 group-hover/stage:opacity-100 transition-opacity absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none">
+                  <ZoomIn size={14} className="text-amber-400" />
+                </span>
+              </button>
+            </Tooltip>
+            <span
+              className="absolute bottom-0.5 left-0.5 px-1 py-0.2 rounded text-[8.5px] font-bold leading-tight pointer-events-none"
+              style={{ background: 'rgba(0,0,0,0.75)', color: '#fbbf24' }}
+            >
+              {att.source === 'clipboard' ? '⌘V' : att.source === 'drive' ? 'Drive' : 'Ảnh'}
+            </span>
+            <Tooltip title="Bỏ hình này">
+              <button
+                type="button"
+                aria-label="Bỏ hình đính kèm"
+                data-no-chat-autofocus="true"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeStagedAttachment(att.id, scope, convId);
+                }}
+                className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/80 text-white inline-flex items-center justify-center cursor-pointer hover:bg-rose-500 z-10"
+              >
+                <X size={10} />
+              </button>
+            </Tooltip>
+          </div>
+        ))}
+        {showUploading && (
+          <div
+            className="h-14 px-3 rounded-lg inline-flex items-center gap-1.5 text-[11px] font-semibold shrink-0"
+            style={{ border: `1px dashed ${borderStrong}`, background: surfaceRaised, color: '#d4a84b' }}
+          >
+            <Loader2 size={14} className="animate-spin" />
+            <span>Đang tải ảnh ({uploadingCount})...</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderReactionPickerContent = (msgId: string, msgObj?: MosChatMessage) => (
+    <div
+      data-no-chat-autofocus="true"
+      onClick={(e) => e.stopPropagation()}
+      className="p-1.5 space-y-2 select-none"
+      style={{ width: 316 }}
+    >
+      <div>
+        <div className="px-1 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-amber-500">
+          Nhóm Wings Đặc Trưng
+        </div>
+        <div className="grid grid-cols-9 gap-1">
+          {WINGS_SIGNATURE_EMOJIS.map((emoji) => {
+            const reactedByMe = hasUserReacted(msgObj, emoji);
+            return (
+              <Tooltip
+                key={`wings-${emoji}`}
+                title={reactedByMe ? `Đã thả ${emoji} · Nhấn để gỡ (Undo)` : `Thả ${emoji}`}
+              >
+                <button
+                  type="button"
+                  onClick={() => handleToggleReaction(msgId, emoji)}
+                  className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-[18px] cursor-pointer transition-transform hover:scale-125 hover:bg-black/5 dark:hover:bg-white/10"
+                  style={{
+                    background: reactedByMe ? 'rgba(212, 168, 75, 0.22)' : 'transparent',
+                    boxShadow: reactedByMe ? 'inset 0 0 0 1px rgba(212, 168, 75, 0.55)' : 'none',
+                  }}
+                >
+                  {emoji}
+                </button>
+              </Tooltip>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ borderTop: `1px solid ${borderColor}` }} className="pt-1.5">
+        <div className="px-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Cảm xúc phổ biến</div>
+        <div className="grid grid-cols-9 gap-1">
+          {GOOGLE_CHAT_REACTION_EMOJIS.map((emoji) => {
+            const reactedByMe = hasUserReacted(msgObj, emoji);
+            return (
+              <Tooltip
+                key={`gchat-${emoji}`}
+                title={reactedByMe ? `Đã thả ${emoji} · Nhấn để gỡ (Undo)` : `Thả ${emoji}`}
+              >
+                <button
+                  type="button"
+                  onClick={() => handleToggleReaction(msgId, emoji)}
+                  className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-[18px] cursor-pointer transition-transform hover:scale-125 hover:bg-black/5 dark:hover:bg-white/10"
+                  style={{
+                    background: reactedByMe ? 'rgba(212, 168, 75, 0.22)' : 'transparent',
+                    boxShadow: reactedByMe ? 'inset 0 0 0 1px rgba(212, 168, 75, 0.55)' : 'none',
+                  }}
+                >
+                  {emoji}
+                </button>
+              </Tooltip>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderComposerEmojiPickerContent = () => (
+    <div
+      data-no-chat-autofocus="true"
+      onClick={(e) => e.stopPropagation()}
+      className="p-1.5 space-y-2 select-none"
+      style={{ width: 316 }}
+    >
+      <div>
+        <div className="px-1 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-amber-500">
+          Chèn biểu tượng Wings
+        </div>
+        <div className="grid grid-cols-9 gap-1">
+          {WINGS_SIGNATURE_EMOJIS.map((emoji) => (
+            <button
+              key={`comp-wings-${emoji}`}
+              type="button"
+              onClick={() => {
+                setComposerText((prev) => `${prev}${emoji}`);
+                composerInputRef.current?.focus();
+              }}
+              className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-[18px] cursor-pointer transition-transform hover:scale-125 hover:bg-black/5 dark:hover:bg-white/10"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ borderTop: `1px solid ${borderColor}` }} className="pt-1.5">
+        <div className="px-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Cảm xúc phổ biến</div>
+        <div className="grid grid-cols-9 gap-1">
+          {GOOGLE_CHAT_REACTION_EMOJIS.map((emoji) => (
+            <button
+              key={`comp-gchat-${emoji}`}
+              type="button"
+              onClick={() => {
+                setComposerText((prev) => `${prev}${emoji}`);
+                composerInputRef.current?.focus();
+              }}
+              className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-[18px] cursor-pointer transition-transform hover:scale-125 hover:bg-black/5 dark:hover:bg-white/10"
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Hidden File Input for Local Drive & Google Drive Desktop Upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          if (e.target.files && e.target.files.length > 0) {
+            const target = uploadTargetRef.current;
+            void handleProcessImageFiles(e.target.files, 'upload', target.scope, target.convId);
+          }
+        }}
+      />
+
+      {/* ================= GOOGLE CHAT RIGHT WORKSPACE PANEL (FHD, VECTOR ICONS + TOOLTIPS) ================= */}
+      <section
+        aria-label="mOS Google Chat Workspace"
+        style={{
+          position: 'fixed',
+          top: 52,
+          right: 0,
+          bottom: 0,
+          width: maximized ? 'calc(100vw - 224px)' : panelWidth,
+          maxWidth: 'calc(100vw - 56px)',
+          background: surfaceBg,
+          borderLeft: `1px solid ${
+            isResizingTarget === 'panel' || hoverResizeHandle === 'panel' ? '#d4a84b' : borderStrong
+          }`,
+          boxShadow: isDark ? '0 24px 56px rgba(0, 0, 0, 0.65)' : '0 20px 48px rgba(15, 23, 42, 0.15)',
+          display: 'flex',
+          zIndex: 1025,
+          transform: open ? 'translateX(0)' : 'translateX(104%)',
+          transition: isResizingTarget
+            ? 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)'
+            : 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), width 0.2s ease',
+        }}
+      >
+        {/* LEFT EDGE RESIZE HANDLE (Drag to resize chat panel width, double-click to reset) */}
+        <Tooltip
+          title="Kéo sang trái/phải để thay đổi kích thước khung Chat (Tự động lưu riêng cho bạn · Nhấp đúp để đặt lại 840px)"
+          placement="left"
+          mouseEnterDelay={0.5}
+        >
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Kéo để thay đổi chiều rộng khung Chat"
+            data-no-chat-autofocus="true"
+            onMouseEnter={() => setHoverResizeHandle('panel')}
+            onMouseLeave={() => setHoverResizeHandle((prev) => (prev === 'panel' ? null : prev))}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (maximized && typeof window !== 'undefined') {
+                const maxAllowed = Math.max(520, window.innerWidth - 56);
+                const nextW = Math.max(520, Math.min(maxAllowed, Math.round(window.innerWidth - e.clientX)));
+                maximizedRef.current = false;
+                panelWidthRef.current = nextW;
+                setMaximized(false);
+                setPanelWidth(nextW);
+                persistPersonalLayout({ maximized: false, panelWidth: nextW });
+              }
+              setIsResizingTarget('panel');
+            }}
+            onDoubleClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              maximizedRef.current = false;
+              panelWidthRef.current = 840;
+              setMaximized(false);
+              setPanelWidth(840);
+              persistPersonalLayout({ maximized: false, panelWidth: 840 });
+            }}
+            style={{
+              position: 'absolute',
+              top: 0,
+              bottom: 0,
+              left: -5,
+              width: 10,
+              cursor: 'ew-resize',
+              zIndex: 35,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <div
+              className="rounded-full transition-all"
+              style={{
+                width: isResizingTarget === 'panel' || hoverResizeHandle === 'panel' ? 4 : 2,
+                height: isResizingTarget === 'panel' || hoverResizeHandle === 'panel' ? 56 : 36,
+                background:
+                  isResizingTarget === 'panel' || hoverResizeHandle === 'panel'
+                    ? '#d4a84b'
+                    : isDark
+                      ? 'rgba(148, 163, 184, 0.32)'
+                      : 'rgba(100, 116, 139, 0.28)',
+                boxShadow: isResizingTarget === 'panel' ? '0 0 10px rgba(212, 168, 75, 0.65)' : 'none',
+              }}
+            />
+            {isResizingTarget === 'panel' && (
+              <div
+                className="px-2 py-0.5 rounded-md text-[11px] font-bold tabular-nums shadow-lg pointer-events-none"
+                style={{
+                  position: 'absolute',
+                  left: -64,
+                  background: '#111827',
+                  color: '#d4a84b',
+                  border: '1px solid rgba(212, 168, 75, 0.45)',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {panelWidth}px
+              </div>
+            )}
+          </div>
+        </Tooltip>
+
+        {/* LEFT COLUMN: NAVIGATION, FILTERS, 1-1 & SPACES */}
+        <div
+          style={{
+            position: 'relative',
+            width: sidebarWidth,
+            borderRight: `1px solid ${
+              isResizingTarget === 'sidebar' || hoverResizeHandle === 'sidebar' ? '#d4a84b' : borderColor
+            }`,
+            display: 'flex',
+            flexDirection: 'column',
+            background: surfaceBg,
+            flexShrink: 0,
+          }}
+        >
+          <div
+            style={{
+              padding: 10,
+              borderBottom: `1px solid ${borderColor}`,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <Tooltip title="Đổi trạng thái: Đang hoạt động / Không làm phiền (Tắt chuông)">
+                <button
+                  type="button"
+                  onClick={() => setPresence((p) => (p === 'active' ? 'dnd' : 'active'))}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold cursor-pointer"
+                  style={{
+                    background: surfaceRaised,
+                    border: `1px solid ${borderColor}`,
+                    color: token.colorText,
+                  }}
+                >
+                  <span
+                    className="inline-block w-2 h-2 rounded-full"
+                    style={{ background: presence === 'active' ? '#22c55e' : '#ef4444' }}
+                  />
+                  <span>{presence === 'active' ? 'Đang hoạt động' : 'Không làm phiền'}</span>
+                  <ChevronDown size={13} />
+                </button>
+              </Tooltip>
+
+              <Tooltip title="Tạo cuộc trò chuyện hoặc Space mới">
+                <button
+                  type="button"
+                  aria-label="Tạo cuộc trò chuyện hoặc Space mới"
+                  onClick={() => setNewRoomModalOpen(true)}
+                  className="inline-flex items-center justify-center w-7 h-7 rounded-lg cursor-pointer"
+                  style={{
+                    background: surfaceRaised,
+                    border: `1px solid ${borderColor}`,
+                    color: token.colorTextSecondary,
+                  }}
+                >
+                  <Plus size={15} />
+                </button>
+              </Tooltip>
+            </div>
+
+            {/* Search Input */}
+            <div
+              className="flex items-center gap-2 px-2.5 h-8 rounded-lg"
+              style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+            >
+              <Search size={14} style={{ color: token.colorTextTertiary }} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Tìm đồng nghiệp, #Space..."
+                className="w-full bg-transparent border-0 outline-none text-[12px]"
+                style={{ color: token.colorText }}
+              />
+            </div>
+
+            {/* Icon-only Filter Bar with Tooltips */}
+            <div
+              className="grid grid-cols-4 gap-1 p-1 rounded-lg"
+              style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+            >
+              <Tooltip title="Tất cả hội thoại">
+                <button
+                  type="button"
+                  aria-label="Tất cả hội thoại"
+                  onClick={() => {
+                    setSidebarFilter('all');
+                    setActiveSubtab('chat');
+                  }}
+                  className="h-7 rounded-md inline-flex items-center justify-center gap-1 text-[11px] font-bold cursor-pointer"
+                  style={{
+                    background: sidebarFilter === 'all' && activeSubtab !== 'tasks' ? surfaceBg : 'transparent',
+                    color: sidebarFilter === 'all' && activeSubtab !== 'tasks' ? '#d4a84b' : token.colorTextSecondary,
+                  }}
+                >
+                  <Inbox size={14} />
+                </button>
+              </Tooltip>
+
+              <Tooltip title="Tin nhắn chưa đọc">
+                <button
+                  type="button"
+                  aria-label="Tin nhắn chưa đọc"
+                  onClick={() => {
+                    setSidebarFilter('unread');
+                    setActiveSubtab('chat');
+                  }}
+                  className="h-7 rounded-md inline-flex items-center justify-center gap-1 text-[11px] font-bold cursor-pointer tabular-nums"
+                  style={{
+                    background: sidebarFilter === 'unread' ? surfaceBg : 'transparent',
+                    color: sidebarFilter === 'unread' ? '#d4a84b' : token.colorTextSecondary,
+                  }}
+                >
+                  <Mail size={14} />
+                  <span>{conversations.reduce((s, c) => s + (c.unreadCount || 0), 0)}</span>
+                </button>
+              </Tooltip>
+
+              <Tooltip title="Nhóm & Phòng ban (#Spaces)">
+                <button
+                  type="button"
+                  aria-label="Nhóm & Phòng ban (#Spaces)"
+                  onClick={() => {
+                    setSidebarFilter('spaces');
+                    setActiveSubtab('chat');
+                  }}
+                  className="h-7 rounded-md inline-flex items-center justify-center gap-1 text-[11px] font-bold cursor-pointer"
+                  style={{
+                    background: sidebarFilter === 'spaces' ? surfaceBg : 'transparent',
+                    color: sidebarFilter === 'spaces' ? '#d4a84b' : token.colorTextSecondary,
+                  }}
+                >
+                  <Hash size={14} />
+                </button>
+              </Tooltip>
+
+              <Tooltip title="Kho Công việc & Nhắc hẹn (Tasks)">
+                <button
+                  type="button"
+                  aria-label="Kho Công việc & Nhắc hẹn (Tasks)"
+                  onClick={() => setActiveSubtab('tasks')}
+                  className="h-7 rounded-md inline-flex items-center justify-center gap-1 text-[11px] font-bold cursor-pointer tabular-nums"
+                  style={{
+                    background: activeSubtab === 'tasks' ? surfaceBg : 'transparent',
+                    color: activeSubtab === 'tasks' ? '#d4a84b' : token.colorTextSecondary,
+                  }}
+                >
+                  <AlarmClock size={14} />
+                  <span>{tasks.filter((t) => !t.done).length}</span>
+                </button>
+              </Tooltip>
+            </div>
+          </div>
+
+          {/* Scrollable List of 1-1 & Spaces */}
+          <div className="flex-1 overflow-y-auto p-1.5">
+            <div className="flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <span>Trực tiếp (1-1)</span>
+              <Tooltip title="Bắt đầu Chat 1-1 mới">
+                <button
+                  type="button"
+                  aria-label="Bắt đầu Chat 1-1 mới"
+                  onClick={() => {
+                    setNewRoomType('dm');
+                    setNewRoomModalOpen(true);
+                  }}
+                  className="w-5 h-5 rounded inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
+                >
+                  <Plus size={13} />
+                </button>
+              </Tooltip>
+            </div>
+
+            {dmList.map((conv) => {
+              const isAiConv = conv.id === AI_COPILOT_CONV_ID;
+              const isSelfConv = Boolean(conv.isSelf || conv.id.startsWith('dm-self-'));
+              const lastMsg = conv.messages[conv.messages.length - 1];
+              const isSelected = conv.id === activeConversation?.id;
+              const previewText =
+                lastMsg?.text ||
+                (lastMsg?.attachments?.length ? `Hình ảnh (${lastMsg.attachments.length})` : conv.subtitle);
+              return (
+                <div
+                  key={conv.id}
+                  onClick={() => selectConversation(conv.id)}
+                  className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg cursor-pointer mb-0.5 transition-colors"
+                  style={{
+                    background: isSelected
+                      ? isAiConv
+                        ? 'rgba(139, 92, 246, 0.18)'
+                        : isSelfConv
+                          ? 'rgba(99, 102, 241, 0.18)'
+                          : 'rgba(59, 130, 246, 0.14)'
+                      : isAiConv
+                        ? 'rgba(139, 92, 246, 0.07)'
+                        : isSelfConv
+                          ? 'rgba(99, 102, 241, 0.06)'
+                          : 'transparent',
+                    border: isAiConv
+                      ? '1px solid rgba(139, 92, 246, 0.28)'
+                      : isSelfConv
+                        ? '1px solid rgba(99, 102, 241, 0.25)'
+                        : '1px solid transparent',
+                  }}
+                >
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-extrabold text-white shrink-0 relative"
+                    style={{
+                      background: isAiConv
+                        ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 55%, #d4a84b 100%)'
+                        : isSelfConv
+                          ? 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)'
+                          : conv.color || '#ec4899',
+                    }}
+                  >
+                    {isAiConv ? (
+                      <Bot size={16} />
+                    ) : isSelfConv ? (
+                      <Bookmark size={15} />
+                    ) : (
+                      conv.avatar || conv.name.slice(0, 2).toUpperCase()
+                    )}
+                    <span
+                      className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500"
+                      style={{ border: `1.5px solid ${surfaceBg}` }}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span
+                          className={`text-[12.5px] truncate ${conv.unreadCount || isAiConv || isSelfConv ? 'font-extrabold' : 'font-semibold'}`}
+                          style={{
+                            color: isAiConv
+                              ? isDark
+                                ? '#c4b5fd'
+                                : '#6d28d9'
+                              : isSelfConv
+                                ? isDark
+                                  ? '#a5b4fc'
+                                  : '#4338ca'
+                                : undefined,
+                          }}
+                        >
+                          {conv.name}
+                        </span>
+                        {isSelfConv && (
+                          <span className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-500/20 text-indigo-400 shrink-0">
+                            Bạn
+                          </span>
+                        )}
+                      </div>
+                      {isAiConv ? (
+                        <span
+                          className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+                          style={{ background: 'rgba(139, 92, 246, 0.18)', color: '#a78bfa' }}
+                        >
+                          Riêng tư
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-slate-400 tabular-nums shrink-0">
+                          {lastMsg?.timeLabel || ''}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[11px] text-slate-400 truncate">{previewText}</span>
+                      {conv.unreadCount > 0 && (
+                        <span className="inline-flex items-center justify-center px-1.5 h-4 rounded-full bg-rose-500 text-white text-[10px] font-extrabold tabular-nums">
+                          {conv.unreadCount}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className="flex items-center justify-between px-2 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <span>Spaces</span>
+              <Tooltip title="Tạo Space nhóm mới">
+                <button
+                  type="button"
+                  aria-label="Tạo Space nhóm mới"
+                  onClick={() => {
+                    setNewRoomType('space');
+                    setNewRoomModalOpen(true);
+                  }}
+                  className="w-5 h-5 rounded inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
+                >
+                  <Plus size={13} />
+                </button>
+              </Tooltip>
+            </div>
+
+            {spaceList.map((conv) => {
+              const lastMsg = conv.messages[conv.messages.length - 1];
+              const isSelected = conv.id === activeConversation?.id;
+              const previewText =
+                lastMsg?.text ||
+                (lastMsg?.attachments?.length ? `Hình ảnh (${lastMsg.attachments.length})` : conv.subtitle);
+              return (
+                <div
+                  key={conv.id}
+                  onClick={() => selectConversation(conv.id)}
+                  className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg cursor-pointer mb-0.5 transition-colors"
+                  style={{
+                    background: isSelected ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
+                  }}
+                >
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ background: `${conv.color}22`, color: conv.color }}
+                  >
+                    <Hash size={16} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <span
+                        className={`text-[12.5px] truncate ${conv.unreadCount ? 'font-extrabold' : 'font-semibold'}`}
+                      >
+                        {conv.name}
+                      </span>
+                      <span className="text-[10px] text-slate-400 tabular-nums shrink-0">
+                        {lastMsg?.timeLabel || ''}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[11px] text-slate-400 truncate">{previewText}</span>
+                      {conv.unreadCount > 0 && (
+                        <span className="inline-flex items-center justify-center px-1.5 h-4 rounded-full bg-rose-500 text-white text-[10px] font-extrabold tabular-nums">
+                          {conv.unreadCount}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* SIDEBAR DIVIDER RESIZE HANDLE (Drag to resize sidebar width, double-click to reset) */}
+          <Tooltip
+            title="Kéo để thay đổi độ rộng cột danh sách (Nhấp đúp để đặt lại 264px)"
+            placement="right"
+            mouseEnterDelay={0.5}
+          >
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Kéo để thay đổi chiều rộng cột danh sách"
+              data-no-chat-autofocus="true"
+              onMouseEnter={() => setHoverResizeHandle('sidebar')}
+              onMouseLeave={() => setHoverResizeHandle((prev) => (prev === 'sidebar' ? null : prev))}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsResizingTarget('sidebar');
+              }}
+              onDoubleClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                sidebarWidthRef.current = 264;
+                setSidebarWidth(264);
+                persistPersonalLayout({ sidebarWidth: 264 });
+              }}
+              style={{
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                right: -4,
+                width: 8,
+                cursor: 'col-resize',
+                zIndex: 25,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {isResizingTarget === 'sidebar' && (
+                <div
+                  className="px-2 py-0.5 rounded-md text-[11px] font-bold tabular-nums shadow-lg pointer-events-none"
+                  style={{
+                    position: 'absolute',
+                    left: 10,
+                    background: '#111827',
+                    color: '#d4a84b',
+                    border: '1px solid rgba(212, 168, 75, 0.45)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {sidebarWidth}px
+                </div>
+              )}
+            </div>
+          </Tooltip>
+        </div>
+
+        {/* CENTER COLUMN: CONVERSATION STREAM / TASKS HUB */}
+        <div className="flex-1 flex flex-col min-w-0" style={{ background: canvasBg }}>
+          {/* Conversation Header */}
+          <div
+            className="h-[52px] px-3 flex items-center justify-between gap-2 shrink-0"
+            style={{ background: surfaceBg, borderBottom: `1px solid ${borderColor}` }}
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center font-extrabold text-xs shrink-0"
+                style={{
+                  background:
+                    activeConversation?.id === AI_COPILOT_CONV_ID
+                      ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 55%, #d4a84b 100%)'
+                      : `${activeConversation?.color || '#10b981'}24`,
+                  color:
+                    activeConversation?.id === AI_COPILOT_CONV_ID ? '#ffffff' : activeConversation?.color || '#10b981',
+                }}
+              >
+                {activeConversation?.id === AI_COPILOT_CONV_ID ? (
+                  <Bot size={16} />
+                ) : activeConversation?.type === 'space' ? (
+                  <Hash size={16} />
+                ) : (
+                  activeConversation?.avatar || activeConversation?.name.slice(0, 2).toUpperCase()
+                )}
+              </div>
+              <div className="min-w-0 flex items-center gap-1.5">
+                <span className="font-extrabold text-[13.5px] truncate">{activeConversation?.name}</span>
+                {activeConversation?.roleTag && (
+                  <span
+                    className="inline-flex items-center justify-center leading-none py-1 px-2 rounded-full text-[10px] font-bold tabular-nums"
+                    style={{
+                      background:
+                        activeConversation.id === AI_COPILOT_CONV_ID
+                          ? 'rgba(139, 92, 246, 0.16)'
+                          : 'rgba(16, 185, 129, 0.14)',
+                      color: activeConversation.id === AI_COPILOT_CONV_ID ? '#a78bfa' : '#10b981',
+                    }}
+                  >
+                    {activeConversation.roleTag}
+                  </span>
+                )}
+                {activeConversation?.type === 'space' && (
+                  <Tooltip title="Xem và quản lý thành viên Không gian (Thêm / Xóa như Google Chat)">
+                    <button
+                      type="button"
+                      onClick={() => setSpaceMembersModalOpen(true)}
+                      className="inline-flex items-center gap-1.5 h-6 px-2 rounded-full text-[11px] font-bold transition-colors cursor-pointer hover:opacity-90 ml-1"
+                      style={{
+                        background: 'rgba(59, 130, 246, 0.15)',
+                        color: '#3b82f6',
+                        border: '1px solid rgba(59, 130, 246, 0.25)',
+                      }}
+                    >
+                      <Users size={12} />
+                      <span className="tabular-nums">
+                        {activeConversation.memberCount || activeConversation.memberIds?.length || 1} thành viên
+                      </span>
+                    </button>
+                  </Tooltip>
+                )}
+              </div>
+            </div>
+
+            {/* Sub-tabs: Chat | Tasks | Pinned */}
+            <div
+              className="flex items-center gap-0.5 p-1 rounded-lg"
+              style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+            >
+              <Tooltip title="Luồng trò chuyện">
+                <button
+                  type="button"
+                  onClick={() => setActiveSubtab('chat')}
+                  className="h-7 px-2.5 rounded-md inline-flex items-center gap-1.5 text-[11.5px] font-bold cursor-pointer"
+                  style={{
+                    background: activeSubtab === 'chat' ? surfaceBg : 'transparent',
+                    color: activeSubtab === 'chat' ? '#d4a84b' : token.colorTextSecondary,
+                  }}
+                >
+                  <MessageSquare size={14} />
+                  <span>Chat</span>
+                </button>
+              </Tooltip>
+
+              <Tooltip title="Công việc & Nhắc hẹn từ tin nhắn">
+                <button
+                  type="button"
+                  onClick={() => setActiveSubtab('tasks')}
+                  className="h-7 px-2.5 rounded-md inline-flex items-center gap-1.5 text-[11.5px] font-bold cursor-pointer tabular-nums"
+                  style={{
+                    background: activeSubtab === 'tasks' ? surfaceBg : 'transparent',
+                    color: activeSubtab === 'tasks' ? '#d4a84b' : token.colorTextSecondary,
+                  }}
+                >
+                  <CheckSquare size={14} />
+                  <span>Tasks</span>
+                  <span className="text-amber-500">{tasks.filter((t) => !t.done).length}</span>
+                </button>
+              </Tooltip>
+
+              <Tooltip title="Tin nhắn đã ghim">
+                <button
+                  type="button"
+                  onClick={() => setActiveSubtab('pinned')}
+                  className="h-7 px-2 rounded-md inline-flex items-center gap-1 text-[11.5px] font-bold cursor-pointer tabular-nums"
+                  style={{
+                    background: activeSubtab === 'pinned' ? surfaceBg : 'transparent',
+                    color: activeSubtab === 'pinned' ? '#d4a84b' : token.colorTextSecondary,
+                  }}
+                >
+                  <Pin size={14} />
+                  <span>{activeConversation?.messages.filter((m) => m.pinned).length || 0}</span>
+                </button>
+              </Tooltip>
+            </div>
+
+            {/* 100% Icon-only Window Controls (Right-aligned close button invariant) */}
+            <div className="flex items-center gap-1">
+              {activeConversation?.id === AI_COPILOT_CONV_ID && (
+                <Tooltip title="Làm mới phiên hội thoại riêng tư với Wings AI Copilot">
+                  <button
+                    type="button"
+                    aria-label="Làm mới phiên hội thoại AI"
+                    onClick={handleClearAiChat}
+                    className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-rose-500/15 hover:text-rose-400"
+                    style={{ color: token.colorTextSecondary }}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </Tooltip>
+              )}
+
+              {isDannyAccount && (
+                <Popover
+                  trigger="click"
+                  placement="bottomRight"
+                  content={
+                    <div className="w-72 p-1" data-no-chat-autofocus="true">
+                      <div
+                        className="flex items-center gap-1.5 text-[12px] font-extrabold mb-1"
+                        style={{ color: '#a78bfa' }}
+                      >
+                        <ShieldCheck size={15} />
+                        <span>Phân quyền Nhóm dùng Wings AI Copilot</span>
+                      </div>
+                      <div className="text-[11px] text-slate-400 mb-2 leading-snug">
+                        Mặc định chỉ mở cho tài khoản <strong>Danny</strong>. Khi cần mở rộng cho nhóm nhân sự nào, anh
+                        bật nhóm đó bên dưới:
+                      </div>
+                      <div className="space-y-1">
+                        {AI_COPILOT_GROUP_OPTIONS.map((grp) => {
+                          const enabled = allowedAiGroups.includes(grp.role);
+                          return (
+                            <button
+                              key={grp.role}
+                              type="button"
+                              onClick={() => toggleAiGroupAccess(grp.role)}
+                              className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[12px] font-semibold cursor-pointer transition-colors"
+                              style={{
+                                background: enabled ? 'rgba(139, 92, 246, 0.14)' : surfaceRaised,
+                                border: `1px solid ${enabled ? 'rgba(139, 92, 246, 0.4)' : borderColor}`,
+                                color: token.colorText,
+                              }}
+                            >
+                              <span className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full" style={{ background: grp.color }} />
+                                <span>{grp.label}</span>
+                              </span>
+                              <span
+                                className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                style={{
+                                  background: enabled ? 'rgba(16, 185, 129, 0.18)' : 'rgba(148, 163, 184, 0.15)',
+                                  color: enabled ? '#10b981' : '#94a3b8',
+                                }}
+                              >
+                                {enabled ? 'Đã mở' : 'Đang tắt'}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  }
+                >
+                  <Tooltip title="Phân quyền Nhóm sử dụng Wings AI Copilot (Chỉ Danny)">
+                    <button
+                      type="button"
+                      aria-label="Phân quyền Nhóm sử dụng Wings AI Copilot"
+                      className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer"
+                      style={{
+                        background: allowedAiGroups.length > 0 ? 'rgba(139, 92, 246, 0.16)' : 'transparent',
+                        color: allowedAiGroups.length > 0 ? '#a78bfa' : token.colorTextSecondary,
+                      }}
+                    >
+                      <ShieldCheck size={15} />
+                    </button>
+                  </Tooltip>
+                </Popover>
+              )}
+
+              <Tooltip title="Đóng / Mở cột Luồng trả lời (Threads)">
+                <button
+                  type="button"
+                  aria-label="Đóng / Mở cột Luồng trả lời"
+                  onClick={() => setThreadOpen((p) => !p)}
+                  className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer"
+                  style={{
+                    background: threadOpen ? 'rgba(212, 168, 75, 0.16)' : 'transparent',
+                    color: threadOpen ? '#d4a84b' : token.colorTextSecondary,
+                  }}
+                >
+                  <MessageSquareReply size={15} />
+                </button>
+              </Tooltip>
+
+              <Tooltip title={maximized ? 'Thu hẹp khung Chat' : 'Phóng to toàn màn hình'}>
+                <button
+                  type="button"
+                  aria-label="Phóng to / Thu hẹp khung Chat"
+                  onClick={() => {
+                    const nextVal = !maximized;
+                    maximizedRef.current = nextVal;
+                    setMaximized(nextVal);
+                    persistPersonalLayout({ maximized: nextVal });
+                  }}
+                  className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-white/10"
+                  style={{ color: token.colorTextSecondary }}
+                >
+                  {maximized ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+                </button>
+              </Tooltip>
+
+              <Tooltip title="Đóng mOS Chat (⌘J)">
+                <button
+                  type="button"
+                  aria-label="Đóng mOS Chat"
+                  onClick={onClose}
+                  className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-rose-500/15 hover:text-rose-400"
+                  style={{ color: token.colorTextSecondary }}
+                >
+                  <X size={16} />
+                </button>
+              </Tooltip>
+            </div>
+          </div>
+
+          {/* VIEW 1: GOOGLE CHAT LEFT-ALIGNED STREAM */}
+          {activeSubtab === 'chat' && (
+            <div
+              className="flex-1 flex flex-col min-h-0 relative"
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (!isDraggingOver) setIsDraggingOver(true);
+              }}
+              onDragLeave={(e) => {
+                if (e.currentTarget === e.target) setIsDraggingOver(false);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDraggingOver(false);
+                if (e.dataTransfer?.files?.length) {
+                  void handleProcessImageFiles(e.dataTransfer.files, 'upload', 'main');
+                }
+              }}
+            >
+              {isDraggingOver && (
+                <div
+                  className="absolute inset-2 rounded-xl z-20 flex flex-col items-center justify-center gap-1.5 pointer-events-none"
+                  style={{
+                    background: 'rgba(15, 23, 42, 0.84)',
+                    border: '2px dashed #d4a84b',
+                    color: '#fbbf24',
+                  }}
+                >
+                  <ImagePlus size={28} />
+                  <span className="text-[13px] font-bold">Thả hình ảnh từ máy tính hoặc Google Drive vào đây</span>
+                </div>
+              )}
+
+              <div className="flex-1 overflow-y-auto py-3">
+                {activeConversation?.messages.map((m, idx) => {
+                  const linkedTask = tasks.find((t) => t.id === m.taskId || t.sourceMessageId === m.id);
+                  const prevMsg = idx > 0 ? activeConversation.messages[idx - 1] : null;
+                  const isCont = Boolean(
+                    prevMsg && prevMsg.senderName === m.senderName && !prevMsg.isSystemReminder && !m.isSystemReminder
+                  );
+                  return (
+                    <div
+                      key={m.id}
+                      className={`group relative flex items-start gap-2.5 px-4 ${
+                        isCont ? 'py-0.5' : 'pt-2.5 pb-1'
+                      } transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.03]`}
+                      style={{
+                        background: linkedTask ? 'rgba(212, 168, 75, 0.06)' : undefined,
+                      }}
+                    >
+                      {isCont ? (
+                        <div className="w-8 shrink-0 text-right pr-0.5 pt-0.5 select-none">
+                          <span className="opacity-0 group-hover:opacity-100 text-[9.5px] text-slate-400 tabular-nums transition-opacity">
+                            {m.timeLabel}
+                          </span>
+                        </div>
+                      ) : (
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-extrabold text-white shrink-0 mt-0.5"
+                          style={{
+                            background:
+                              m.isAiBot || m.senderId === 'wings-ai-copilot'
+                                ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 55%, #d4a84b 100%)'
+                                : m.roleColor || '#3b82f6',
+                          }}
+                        >
+                          {m.isAiBot || m.senderId === 'wings-ai-copilot' ? (
+                            <Bot size={15} />
+                          ) : (
+                            m.senderAvatar || m.senderName.slice(0, 2).toUpperCase()
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex-1 min-w-0">
+                        {!isCont && (
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="text-[12.5px] font-bold">{m.senderName}</span>
+                            <span
+                              className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded text-[9.5px] font-bold"
+                              style={{
+                                background: `${m.roleColor || '#d4a84b'}22`,
+                                color: m.roleColor || '#d4a84b',
+                              }}
+                            >
+                              {m.senderRole}
+                            </span>
+                            <span className="text-[10.5px] text-slate-400 tabular-nums">{m.timeLabel}</span>
+                            {m.pinned && (
+                              <Tooltip title="Đã ghim">
+                                <span className="inline-flex text-amber-400">
+                                  <Pin size={12} />
+                                </span>
+                              </Tooltip>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Collapsible AI Reasoning (<thinking>) Block */}
+                        {m.aiThinking && (
+                          <div
+                            className="mb-1.5 rounded-lg overflow-hidden"
+                            style={{
+                              background: isDark ? 'rgba(139, 92, 246, 0.08)' : 'rgba(139, 92, 246, 0.06)',
+                              border: '1px solid rgba(139, 92, 246, 0.25)',
+                            }}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => setExpandedThinkingIds((prev) => ({ ...prev, [m.id]: !prev[m.id] }))}
+                              className="w-full px-2.5 py-1 flex items-center justify-between text-[11px] font-bold cursor-pointer"
+                              style={{ color: isDark ? '#c4b5fd' : '#6d28d9' }}
+                            >
+                              <span className="inline-flex items-center gap-1.5">
+                                <Sparkles size={12} />
+                                <span>Quá trình suy luận của Wings AI</span>
+                              </span>
+                              {expandedThinkingIds[m.id] ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                            </button>
+                            {expandedThinkingIds[m.id] && (
+                              <div
+                                className="px-2.5 pb-2 pt-1 text-[11.5px] leading-relaxed whitespace-pre-wrap"
+                                style={{
+                                  color: token.colorTextSecondary,
+                                  borderTop: '1px dashed rgba(139, 92, 246, 0.2)',
+                                }}
+                              >
+                                {m.aiThinking}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {m.text && <div className="text-[13px] leading-relaxed whitespace-pre-wrap">{m.text}</div>}
+
+                        {/* Suggested AI Action Button (e.g. APPLY_FILTER) */}
+                        {m.aiAction && (
+                          <div className="mt-2">
+                            <button
+                              type="button"
+                              onClick={() => m.aiAction && handleExecuteAiAction(m.aiAction, m.id)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11.5px] font-bold cursor-pointer transition-all"
+                              style={{
+                                background: appliedActionIds[m.id]
+                                  ? 'rgba(16, 185, 129, 0.16)'
+                                  : 'rgba(139, 92, 246, 0.16)',
+                                border: `1px solid ${
+                                  appliedActionIds[m.id] ? 'rgba(16, 185, 129, 0.4)' : 'rgba(139, 92, 246, 0.4)'
+                                }`,
+                                color: appliedActionIds[m.id] ? '#10b981' : '#a78bfa',
+                              }}
+                            >
+                              {appliedActionIds[m.id] ? <Check size={13} /> : <Sliders size={13} />}
+                              <span>
+                                {appliedActionIds[m.id] ? `Đã áp dụng: ${m.aiAction.label}` : m.aiAction.label}
+                              </span>
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Quick Voice Read-Aloud & Copy Bar for AI Bot Replies */}
+                        {(m.isAiBot || m.senderId === 'wings-ai-copilot') && m.text && (
+                          <div className="mt-1.5 flex items-center gap-1.5">
+                            <Tooltip
+                              title={speakingMsgId === m.id ? 'Dừng đọc giọng nói' : 'Đọc câu trả lời bằng giọng nói'}
+                            >
+                              <button
+                                type="button"
+                                aria-label="Đọc câu trả lời AI"
+                                onClick={() => handleSpeakAiMessage(m)}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold cursor-pointer"
+                                style={{
+                                  background: speakingMsgId === m.id ? 'rgba(139, 92, 246, 0.2)' : surfaceRaised,
+                                  border: `1px solid ${borderColor}`,
+                                  color: speakingMsgId === m.id ? '#a78bfa' : token.colorTextSecondary,
+                                }}
+                              >
+                                {speakingMsgId === m.id ? <VolumeX size={12} /> : <Volume2 size={12} />}
+                                <span>{speakingMsgId === m.id ? 'Đang đọc' : 'Nghe'}</span>
+                              </button>
+                            </Tooltip>
+
+                            <Tooltip title="Sao chép nội dung">
+                              <button
+                                type="button"
+                                aria-label="Sao chép nội dung AI"
+                                onClick={() => {
+                                  void navigator.clipboard?.writeText(m.text);
+                                  antdMessage.success('Đã sao chép nội dung câu trả lời AI');
+                                }}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold cursor-pointer"
+                                style={{
+                                  background: surfaceRaised,
+                                  border: `1px solid ${borderColor}`,
+                                  color: token.colorTextSecondary,
+                                }}
+                              >
+                                <Copy size={11} />
+                                <span>Sao chép</span>
+                              </button>
+                            </Tooltip>
+                          </div>
+                        )}
+
+                        {/* Inline Image Attachments with Lightbox Preview */}
+                        {renderMessageAttachments(m.attachments)}
+
+                        {/* Smart Customer Card */}
+                        {m.customerCard && (
+                          <div
+                            className="mt-1.5 px-2.5 py-2 rounded-lg flex items-center justify-between gap-2"
+                            style={{
+                              background: surfaceBg,
+                              border: `1px solid ${borderStrong}`,
+                              borderLeft: '3px solid #3b82f6',
+                            }}
+                          >
+                            <div className="min-w-0">
+                              <div className="text-[12px] font-bold truncate">
+                                {m.customerCard.name} · <span style={{ color: '#d4a84b' }}>{m.customerCard.meta}</span>
+                              </div>
+                              {m.customerCard.cvName && (
+                                <div className="text-[11px] text-slate-400 truncate">{m.customerCard.cvName}</div>
+                              )}
+                            </div>
+                            <Tooltip title="Mở hồ sơ khách hàng">
+                              <button
+                                type="button"
+                                aria-label="Mở hồ sơ khách hàng"
+                                onClick={() => antdMessage.info(`Đã mở hồ sơ: ${m.customerCard?.name}`)}
+                                className="w-7 h-7 rounded-md inline-flex items-center justify-center shrink-0 cursor-pointer"
+                                style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                              >
+                                <ExternalLink size={14} />
+                              </button>
+                            </Tooltip>
+                          </div>
+                        )}
+
+                        {/* Inline Task & Reminder Card */}
+                        {linkedTask && (
+                          <div
+                            className="mt-1.5 px-2.5 py-2 rounded-lg flex items-center justify-between gap-2"
+                            style={{
+                              background: surfaceBg,
+                              border: `1px solid ${linkedTask.done ? 'rgba(16, 185, 129, 0.4)' : 'rgba(212, 168, 75, 0.45)'}`,
+                              borderLeft: `3px solid ${linkedTask.done ? '#10b981' : '#d4a84b'}`,
+                              opacity: linkedTask.done ? 0.8 : 1,
+                            }}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Tooltip title={linkedTask.done ? 'Mở lại Task' : 'Đánh dấu hoàn thành'}>
+                                <button
+                                  type="button"
+                                  aria-label="Đánh dấu hoàn thành Task"
+                                  onClick={() => handleToggleTaskDone(linkedTask.id)}
+                                  className="w-4 h-4 rounded flex items-center justify-center shrink-0 cursor-pointer"
+                                  style={{
+                                    border: `1.75px solid ${linkedTask.done ? '#10b981' : '#d4a84b'}`,
+                                    background: linkedTask.done ? '#10b981' : 'transparent',
+                                    color: '#000',
+                                  }}
+                                >
+                                  {linkedTask.done && <Check size={11} strokeWidth={3} />}
+                                </button>
+                              </Tooltip>
+                              <div className="min-w-0">
+                                <div
+                                  className={`text-[12px] font-bold truncate ${linkedTask.done ? 'line-through' : ''}`}
+                                >
+                                  {linkedTask.title}
+                                </div>
+                                <div className="text-[10.5px] text-slate-400 flex items-center gap-2">
+                                  <span>{linkedTask.assigneeName}</span>
+                                  <span>· {linkedTask.priority}</span>
+                                  <span className="text-amber-500 font-bold tabular-nums">
+                                    {linkedTask.done ? 'Xong' : formatCountdown(linkedTask.remindAt, nowMs)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <Tooltip title="Test nổ chuông nhắc hẹn ngay">
+                              <button
+                                type="button"
+                                aria-label="Test nổ chuông nhắc hẹn ngay"
+                                onClick={() => triggerTaskReminderAlert(linkedTask)}
+                                className="w-7 h-7 rounded-md inline-flex items-center justify-center shrink-0 cursor-pointer"
+                                style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                              >
+                                <BellRing size={14} className="text-amber-400" />
+                              </button>
+                            </Tooltip>
+                          </div>
+                        )}
+
+                        {/* Thread Chip */}
+                        {m.thread && m.thread.length > 0 && (
+                          <Tooltip title="Xem luồng trả lời bên phải">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenThread(m.id)}
+                              className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold cursor-pointer tabular-nums"
+                              style={{
+                                background: 'rgba(59, 130, 246, 0.14)',
+                                border: '1px solid rgba(59, 130, 246, 0.3)',
+                                color: '#60a5fa',
+                              }}
+                            >
+                              <MessageSquareReply size={13} />
+                              <span>{m.thread.length} trả lời</span>
+                            </button>
+                          </Tooltip>
+                        )}
+
+                        {/* Unified Message Footer: Reaction Pills + Adjacent Quick Emoji & Action Set */}
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 min-h-[26px]">
+                          {m.reactions &&
+                            Object.entries(m.reactions)
+                              .filter(([, count]) => count > 0)
+                              .map(([emoji, count]) => {
+                                const reactedByMe = hasUserReacted(m, emoji);
+                                return (
+                                  <Tooltip
+                                    key={emoji}
+                                    title={
+                                      reactedByMe
+                                        ? `Bạn đã thả ${emoji} · Nhấn để gỡ cảm xúc (Undo)`
+                                        : `Nhấn để thả cùng ${emoji}`
+                                    }
+                                  >
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleReaction(m.id, emoji)}
+                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11.5px] font-bold cursor-pointer tabular-nums transition-all hover:scale-105"
+                                      style={{
+                                        background: reactedByMe ? 'rgba(212, 168, 75, 0.16)' : surfaceRaised,
+                                        border: `1px solid ${reactedByMe ? 'rgba(212, 168, 75, 0.55)' : borderColor}`,
+                                        color: reactedByMe ? '#d4a84b' : token.colorText,
+                                      }}
+                                    >
+                                      <span>{emoji}</span>
+                                      <span>{count}</span>
+                                    </button>
+                                  </Tooltip>
+                                );
+                              })}
+
+                          {/* Adjacent Quick Emoji & Action Bar (placed right next to reaction pills) */}
+                          <div
+                            className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 pointer-events-none group-hover:pointer-events-auto focus-within:pointer-events-auto transition-opacity inline-flex items-center gap-0.5 px-1 py-0.5 rounded-full shadow-sm"
+                            style={{
+                              background: surfaceRaised,
+                              border: `1px solid ${borderStrong}`,
+                            }}
+                          >
+                            {GOOGLE_CHAT_QUICK_EMOJIS.map((emoji) => {
+                              const reactedByMe = hasUserReacted(m, emoji);
+                              return (
+                                <Tooltip
+                                  key={emoji}
+                                  title={reactedByMe ? `Đã thả ${emoji} · Nhấn để gỡ (Undo)` : `Thả nhanh ${emoji}`}
+                                >
+                                  <button
+                                    type="button"
+                                    aria-label={reactedByMe ? `Gỡ cảm xúc ${emoji}` : `Thả nhanh ${emoji}`}
+                                    onClick={() => handleToggleReaction(m.id, emoji)}
+                                    className="w-6 h-6 rounded-full inline-flex items-center justify-center text-[13px] hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-transform hover:scale-110"
+                                    style={{
+                                      background: reactedByMe ? 'rgba(212, 168, 75, 0.22)' : 'transparent',
+                                      boxShadow: reactedByMe ? 'inset 0 0 0 1px rgba(212, 168, 75, 0.55)' : 'none',
+                                    }}
+                                  >
+                                    {emoji}
+                                  </button>
+                                </Tooltip>
+                              );
+                            })}
+
+                            <Popover trigger="click" placement="topLeft" content={renderReactionPickerContent(m.id, m)}>
+                              <Tooltip title="Chọn thêm biểu tượng cảm xúc (Wings & phổ biến)">
+                                <button
+                                  type="button"
+                                  aria-label="Chọn biểu tượng cảm xúc"
+                                  className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+                                  style={{ color: token.colorTextSecondary }}
+                                >
+                                  <SmilePlus size={13} />
+                                </button>
+                              </Tooltip>
+                            </Popover>
+
+                            <span className="w-px h-3.5 mx-0.5" style={{ background: borderStrong }} />
+
+                            <Tooltip title="Trả lời theo luồng (Thread)">
+                              <button
+                                type="button"
+                                aria-label="Trả lời theo luồng"
+                                onClick={() => handleOpenThread(m.id)}
+                                className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+                                style={{ color: token.colorTextSecondary }}
+                              >
+                                <MessageSquareReply size={13} />
+                              </button>
+                            </Tooltip>
+
+                            <Tooltip title="Tạo Task & Hẹn giờ nhắc từ tin nhắn">
+                              <button
+                                type="button"
+                                aria-label="Tạo Task & Hẹn giờ nhắc từ tin nhắn"
+                                onClick={() => openTaskModalFromMessage(m)}
+                                className="w-6 h-6 rounded-full inline-flex items-center justify-center cursor-pointer"
+                                style={{
+                                  background: 'rgba(212, 168, 75, 0.16)',
+                                  color: '#d4a84b',
+                                }}
+                              >
+                                <AlarmClockPlus size={13} />
+                              </button>
+                            </Tooltip>
+
+                            <Tooltip title={m.pinned ? 'Bỏ ghim' : 'Ghim tin nhắn'}>
+                              <button
+                                type="button"
+                                aria-label="Ghim tin nhắn"
+                                onClick={() => handleTogglePin(m.id)}
+                                className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+                                style={{ color: m.pinned ? '#d4a84b' : token.colorTextSecondary }}
+                              >
+                                <Pin size={13} />
+                              </button>
+                            </Tooltip>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {aiThinkingActive && (
+                  <div className="px-4 py-2 flex items-center gap-2.5">
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0"
+                      style={{
+                        background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 55%, #d4a84b 100%)',
+                      }}
+                    >
+                      <Loader2 size={15} className="animate-spin" />
+                    </div>
+                    <div
+                      className="px-3 py-1.5 rounded-xl text-[12px] font-semibold inline-flex items-center gap-2 tabular-nums"
+                      style={{
+                        background: 'rgba(139, 92, 246, 0.12)',
+                        border: '1px solid rgba(139, 92, 246, 0.3)',
+                        color: isDark ? '#c4b5fd' : '#6d28d9',
+                      }}
+                    >
+                      <Sparkles size={13} />
+                      <span>Wings AI Copilot đang suy luận & phân tích dữ liệu... ({aiElapsedSec}s)</span>
+                    </div>
+                  </div>
+                )}
+
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Clean Single-Line Composer with Staging Thumbnails, AI Quick Prompts & Icon-only Toolbar */}
+              <div className="p-3" style={{ background: surfaceBg, borderTop: `1px solid ${borderColor}` }}>
+                {activeConversation?.id === AI_COPILOT_CONV_ID && (
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-1 no-scrollbar">
+                    {AI_QUICK_PROMPTS.map((item) => (
+                      <button
+                        key={item.label}
+                        type="button"
+                        disabled={aiThinkingActive}
+                        onClick={() => void handleSendMessage(AI_COPILOT_CONV_ID, item.prompt)}
+                        className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold cursor-pointer transition-colors hover:scale-[1.02]"
+                        style={{
+                          background: isDark ? 'rgba(139, 92, 246, 0.14)' : 'rgba(139, 92, 246, 0.09)',
+                          border: '1px solid rgba(139, 92, 246, 0.32)',
+                          color: isDark ? '#c4b5fd' : '#6d28d9',
+                        }}
+                      >
+                        <Sparkles size={11} />
+                        <span>{item.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {renderStagedAttachmentsStrip(stagedAttachments, 'main')}
+
+                <div
+                  className="h-10 rounded-full pl-3.5 pr-1.5 flex items-center gap-1"
+                  style={{ background: surfaceRaised, border: `1px solid ${borderStrong}` }}
+                >
+                  <input
+                    ref={composerInputRef}
+                    type="text"
+                    value={composerText}
+                    onChange={(e) => setComposerText(e.target.value)}
+                    onPaste={(e) => handleClipboardPaste(e, 'main')}
+                    onCompositionStart={() => {
+                      isComposingRef.current = true;
+                    }}
+                    onCompositionEnd={() => {
+                      lastCompositionEndMsRef.current = Date.now();
+                      setTimeout(() => {
+                        isComposingRef.current = false;
+                      }, 50);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        if (
+                          e.nativeEvent.isComposing ||
+                          isComposingRef.current ||
+                          e.keyCode === 229 ||
+                          Date.now() - lastCompositionEndMsRef.current < 60
+                        ) {
+                          return;
+                        }
+                        e.preventDefault();
+                        handleSendMain();
+                      }
+                    }}
+                    placeholder={
+                      activeConversation?.id === AI_COPILOT_CONV_ID
+                        ? 'Hỏi Wings AI Copilot, Paste hình (⌘V) hoặc yêu cầu phân tích khách hàng...'
+                        : canUseAiCopilot
+                          ? 'Nhắn tin, gõ @AI để gọi Copilot, Paste hình (⌘V)...'
+                          : 'Nhắn tin, Paste hình (⌘V) hoặc dán link Google Drive...'
+                    }
+                    className="flex-1 bg-transparent border-0 outline-none text-[12.5px]"
+                    style={{ color: token.colorText }}
+                  />
+
+                  <Popover trigger="click" placement="topRight" content={renderComposerEmojiPickerContent()}>
+                    <Tooltip title="Chèn biểu tượng cảm xúc Wings">
+                      <button
+                        type="button"
+                        aria-label="Chèn biểu tượng cảm xúc Wings"
+                        className="w-7 h-7 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
+                        style={{ color: token.colorTextSecondary }}
+                      >
+                        <SmilePlus size={15} />
+                      </button>
+                    </Tooltip>
+                  </Popover>
+
+                  <Tooltip title="Tải hình từ Ổ đĩa / Google Drive Desktop hoặc Paste ảnh (⌘V)">
+                    <button
+                      type="button"
+                      aria-label="Tải hình từ ổ đĩa hoặc Google Drive"
+                      onClick={() => triggerFilePicker('main')}
+                      className="w-7 h-7 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
+                      style={{ color: token.colorTextSecondary }}
+                    >
+                      <ImagePlus size={15} />
+                    </button>
+                  </Tooltip>
+
+                  <Tooltip title="Đính kèm hình từ link Google Drive">
+                    <button
+                      type="button"
+                      aria-label="Đính kèm hình từ link Google Drive"
+                      onClick={() => {
+                        uploadTargetRef.current = { scope: 'main' };
+                        setDriveLinkModalOpen(true);
+                      }}
+                      className="w-7 h-7 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
+                      style={{ color: token.colorTextSecondary }}
+                    >
+                      <HardDrive size={15} />
+                    </button>
+                  </Tooltip>
+
+                  <Tooltip title="Đính kèm thẻ Khách hàng / Booking mOS">
+                    <button
+                      type="button"
+                      aria-label="Đính kèm thẻ Khách hàng"
+                      onClick={handleSendQuickCustomerCard}
+                      className="w-7 h-7 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
+                      style={{ color: token.colorTextSecondary }}
+                    >
+                      <UserRoundPlus size={15} />
+                    </button>
+                  </Tooltip>
+
+                  {canUseAiCopilot && activeConversation?.id !== AI_COPILOT_CONV_ID && (
+                    <Tooltip title="Gọi @AI để Wings AI Copilot phân tích & trả lời công khai vào nhóm này">
+                      <button
+                        type="button"
+                        aria-label="Gọi @AI Copilot trong nhóm"
+                        onClick={() => {
+                          setComposerText((prev) => (prev.includes('@AI') ? prev : `@AI ${prev}`));
+                          composerInputRef.current?.focus();
+                        }}
+                        className="w-7 h-7 rounded-full inline-flex items-center justify-center hover:bg-purple-500/15 cursor-pointer"
+                        style={{ color: '#a78bfa' }}
+                      >
+                        <Bot size={15} />
+                      </button>
+                    </Tooltip>
+                  )}
+
+                  <Tooltip title="Nhắc tên đồng nghiệp (@)">
+                    <button
+                      type="button"
+                      aria-label="Nhắc tên đồng nghiệp"
+                      onClick={() => setComposerText((prev) => `${prev}@Hà My `)}
+                      className="w-7 h-7 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
+                      style={{ color: token.colorTextSecondary }}
+                    >
+                      <AtSign size={15} />
+                    </button>
+                  </Tooltip>
+
+                  <Tooltip title="Giao Task & Cài nhắc hẹn mới">
+                    <button
+                      type="button"
+                      aria-label="Giao Task & Cài nhắc hẹn mới"
+                      onClick={() => openTaskModalFromMessage(null)}
+                      className="w-7 h-7 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
+                      style={{ color: '#d4a84b' }}
+                    >
+                      <AlarmClockPlus size={15} />
+                    </button>
+                  </Tooltip>
+
+                  <Tooltip title="Gửi tin nhắn (Enter)">
+                    <button
+                      type="button"
+                      aria-label="Gửi tin nhắn"
+                      onClick={handleSendMain}
+                      className="w-7 h-7 rounded-full inline-flex items-center justify-center cursor-pointer"
+                      style={{ background: '#d4a84b', color: '#000' }}
+                    >
+                      <SendHorizontal size={14} />
+                    </button>
+                  </Tooltip>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* VIEW 2: TASKS & REMINDERS HUB */}
+          {activeSubtab === 'tasks' && (
+            <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[13.5px] font-extrabold">Công việc & Nhắc hẹn từ Tin nhắn</span>
+                <div className="flex items-center gap-1.5">
+                  <Tooltip title="Test nổ chuông nhắc hẹn ngay">
+                    <button
+                      type="button"
+                      aria-label="Test nổ chuông nhắc hẹn ngay"
+                      onClick={() => {
+                        const firstOpen = tasks.find((t) => !t.done) || tasks[0];
+                        if (firstOpen) triggerTaskReminderAlert(firstOpen);
+                      }}
+                      className="w-7 h-7 rounded-lg inline-flex items-center justify-center cursor-pointer"
+                      style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                    >
+                      <BellRing size={14} className="text-amber-400" />
+                    </button>
+                  </Tooltip>
+                  <Tooltip title="Tạo Task mới">
+                    <button
+                      type="button"
+                      aria-label="Tạo Task mới"
+                      onClick={() => openTaskModalFromMessage(null)}
+                      className="w-7 h-7 rounded-lg inline-flex items-center justify-center cursor-pointer"
+                      style={{ background: '#d4a84b', color: '#000' }}
+                    >
+                      <Plus size={15} />
+                    </button>
+                  </Tooltip>
+                </div>
+              </div>
+
+              {tasks.map((t) => (
+                <div
+                  key={t.id}
+                  className="p-2.5 rounded-lg flex items-center justify-between gap-2"
+                  style={{
+                    background: surfaceBg,
+                    border: `1px solid ${t.done ? 'rgba(16, 185, 129, 0.35)' : 'rgba(212, 168, 75, 0.45)'}`,
+                    borderLeft: `3px solid ${t.done ? '#10b981' : '#d4a84b'}`,
+                  }}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleTaskDone(t.id)}
+                      className="w-4 h-4 rounded flex items-center justify-center shrink-0 cursor-pointer"
+                      style={{
+                        border: `1.75px solid ${t.done ? '#10b981' : '#d4a84b'}`,
+                        background: t.done ? '#10b981' : 'transparent',
+                        color: '#000',
+                      }}
+                    >
+                      {t.done && <Check size={11} strokeWidth={3} />}
+                    </button>
+                    <div className="min-w-0">
+                      <div className={`text-[12.5px] font-bold truncate ${t.done ? 'line-through opacity-70' : ''}`}>
+                        {t.title}
+                      </div>
+                      <div className="text-[11px] text-slate-400 flex items-center gap-2">
+                        <span>{t.assigneeName}</span>
+                        <span>· #{t.conversationName}</span>
+                        <span className="text-amber-500 font-bold tabular-nums">
+                          {t.done ? 'Xong' : formatCountdown(t.remindAt, nowMs)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Tooltip title="Test nổ chuông nhắc">
+                      <button
+                        type="button"
+                        onClick={() => triggerTaskReminderAlert(t)}
+                        className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer"
+                        style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                      >
+                        <BellRing size={13} className="text-amber-400" />
+                      </button>
+                    </Tooltip>
+                    <Tooltip title="Mở cuộc trò chuyện gốc">
+                      <button
+                        type="button"
+                        onClick={() => selectConversation(t.conversationId)}
+                        className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer"
+                        style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                      >
+                        <ExternalLink size={13} />
+                      </button>
+                    </Tooltip>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* VIEW 3: PINNED MESSAGES */}
+          {activeSubtab === 'pinned' && (
+            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+              <div className="text-[13.5px] font-extrabold mb-2">Tin nhắn đã ghim</div>
+              {activeConversation?.messages
+                .filter((m) => m.pinned)
+                .map((m) => (
+                  <div
+                    key={m.id}
+                    className="p-2.5 rounded-lg text-[12.5px]"
+                    style={{
+                      background: surfaceBg,
+                      border: `1px solid ${borderStrong}`,
+                      borderLeft: '3px solid #d4a84b',
+                    }}
+                  >
+                    <div className="text-[11px] font-bold mb-1">
+                      {m.senderName} · <span className="text-slate-400 tabular-nums">{m.timeLabel}</span>
+                    </div>
+                    {m.text && <div>{m.text}</div>}
+                    {renderMessageAttachments(m.attachments, true)}
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT SIDE THREAD PANE (Google Spaces Threading) */}
+        {threadOpen && activeThreadMessage && (
+          <aside
+            data-chat-thread-pane="true"
+            className="w-[264px] flex flex-col shrink-0"
+            style={{ background: surfaceBg, borderLeft: `1px solid ${borderColor}` }}
+          >
+            <div
+              className="h-[52px] px-3 flex items-center justify-between text-[12.5px] font-extrabold"
+              style={{ borderBottom: `1px solid ${borderColor}` }}
+            >
+              <span className="flex items-center gap-1.5">
+                <MessageSquareReply size={14} />
+                <span>Luồng trả lời</span>
+              </span>
+              <Tooltip title="Đóng luồng">
+                <button
+                  type="button"
+                  aria-label="Đóng luồng"
+                  onClick={() => setThreadOpen(false)}
+                  className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer"
+                  style={{ color: token.colorTextSecondary }}
+                >
+                  <X size={15} />
+                </button>
+              </Tooltip>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
+              <div
+                className="p-2.5 rounded-lg text-[12px]"
+                style={{ background: surfaceRaised, borderLeft: '3px solid #d4a84b' }}
+              >
+                <div className="font-bold mb-0.5">
+                  {activeThreadMessage.senderName} ·{' '}
+                  <span className="text-slate-400 text-[10.5px] tabular-nums">{activeThreadMessage.timeLabel}</span>
+                </div>
+                {activeThreadMessage.text && <div>{activeThreadMessage.text}</div>}
+                {renderMessageAttachments(activeThreadMessage.attachments, true)}
+              </div>
+
+              <div className="text-[10.5px] font-bold uppercase text-slate-400 tabular-nums">
+                {activeThreadMessage.thread?.length || 0} câu trả lời
+              </div>
+
+              {(activeThreadMessage.thread || []).map((r) => (
+                <div
+                  key={r.id}
+                  className="p-2 rounded-lg text-[12px]"
+                  style={{ background: canvasBg, border: `1px solid ${borderColor}` }}
+                >
+                  <div className="font-bold text-[11px] mb-0.5">
+                    {r.senderName} · <span className="text-slate-400 tabular-nums">{r.timeLabel}</span>
+                  </div>
+                  {r.text && <div>{r.text}</div>}
+                  {renderMessageAttachments(r.attachments, true)}
+                </div>
+              ))}
+            </div>
+
+            <div className="p-2.5" style={{ borderTop: `1px solid ${borderColor}` }}>
+              {renderStagedAttachmentsStrip(threadAttachments, 'thread')}
+              <div className="flex items-center gap-1">
+                <input
+                  ref={threadInputRef}
+                  type="text"
+                  value={threadInput}
+                  onChange={(e) => setThreadInput(e.target.value)}
+                  onPaste={(e) => handleClipboardPaste(e, 'thread')}
+                  onCompositionStart={() => {
+                    isComposingRef.current = true;
+                  }}
+                  onCompositionEnd={() => {
+                    lastCompositionEndMsRef.current = Date.now();
+                    setTimeout(() => {
+                      isComposingRef.current = false;
+                    }, 50);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      if (
+                        e.nativeEvent.isComposing ||
+                        isComposingRef.current ||
+                        e.keyCode === 229 ||
+                        Date.now() - lastCompositionEndMsRef.current < 60
+                      ) {
+                        return;
+                      }
+                      e.preventDefault();
+                      handleSendThreadReply();
+                    }
+                  }}
+                  placeholder="Trả lời hoặc Paste hình (⌘V)..."
+                  className="flex-1 h-8 rounded-full px-3 text-[12px] outline-none"
+                  style={{
+                    background: surfaceRaised,
+                    border: `1px solid ${borderStrong}`,
+                    color: token.colorText,
+                  }}
+                />
+                <Tooltip title="Tải hình vào luồng">
+                  <button
+                    type="button"
+                    aria-label="Tải hình vào luồng"
+                    onClick={() => triggerFilePicker('thread')}
+                    className="w-7 h-7 rounded-full inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10"
+                    style={{ color: token.colorTextSecondary }}
+                  >
+                    <ImagePlus size={14} />
+                  </button>
+                </Tooltip>
+                <Tooltip title="Gửi vào luồng">
+                  <button
+                    type="button"
+                    aria-label="Gửi vào luồng"
+                    onClick={handleSendThreadReply}
+                    className="w-7 h-7 rounded-full inline-flex items-center justify-center shrink-0 cursor-pointer"
+                    style={{ background: '#d4a84b', color: '#000' }}
+                  >
+                    <SendHorizontal size={13} />
+                  </button>
+                </Tooltip>
+              </div>
+            </div>
+          </aside>
+        )}
+      </section>
+
+      {/* ================= MINI DOCKED POP-OUT CHAT WINDOWS (BOTTOM RIGHT LIKE GMAIL) ================= */}
+      {dockedConvIds.length > 0 && (
+        <div className="fixed bottom-0 right-5 flex items-end gap-2.5 z-[1020]" style={{ pointerEvents: 'none' }}>
+          {dockedConvIds.map((cid) => {
+            const conv = conversations.find((c) => c.id === cid);
+            if (!conv) return null;
+            const isCollapsed = Boolean(collapsedDockIds[cid]);
+            const recentMsgs = conv.messages.slice(-4);
+            const dockStaged = dockAttachments[cid] || [];
+            return (
+              <div
+                key={cid}
+                data-dock-conv-id={cid}
+                className="w-[312px] rounded-t-xl overflow-hidden flex flex-col shadow-2xl"
+                style={{
+                  background: surfaceBg,
+                  border: `1px solid ${borderStrong}`,
+                  borderBottom: 'none',
+                  pointerEvents: 'auto',
+                }}
+              >
+                <div
+                  data-no-chat-autofocus="true"
+                  onClick={() => setCollapsedDockIds((p) => ({ ...p, [cid]: !p[cid] }))}
+                  className="h-9 px-2.5 flex items-center justify-between cursor-pointer"
+                  style={{ background: surfaceRaised, borderBottom: `1px solid ${borderColor}` }}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                    <span className="text-[12px] font-extrabold truncate">{conv.name}</span>
+                  </div>
+                  <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                    <Tooltip title="Mở rộng vào Bảng Chat">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          selectConversation(cid);
+                          onToggle();
+                        }}
+                        className="w-6 h-6 rounded inline-flex items-center justify-center cursor-pointer"
+                        style={{ color: token.colorTextSecondary }}
+                      >
+                        <Maximize2 size={13} />
+                      </button>
+                    </Tooltip>
+                    <Tooltip title="Thu gọn / Bung ra">
+                      <button
+                        type="button"
+                        onClick={() => setCollapsedDockIds((p) => ({ ...p, [cid]: !p[cid] }))}
+                        className="w-6 h-6 rounded inline-flex items-center justify-center cursor-pointer"
+                        style={{ color: token.colorTextSecondary }}
+                      >
+                        <Minus size={13} />
+                      </button>
+                    </Tooltip>
+                    <Tooltip title="Đóng cửa sổ nhỏ">
+                      <button
+                        type="button"
+                        onClick={() => setDockedConvIds((prev) => prev.filter((id) => id !== cid))}
+                        className="w-6 h-6 rounded inline-flex items-center justify-center cursor-pointer"
+                        style={{ color: token.colorTextSecondary }}
+                      >
+                        <X size={13} />
+                      </button>
+                    </Tooltip>
+                  </div>
+                </div>
+
+                {!isCollapsed && (
+                  <div className="h-[280px] flex flex-col" style={{ background: canvasBg }}>
+                    <div className="flex-1 overflow-y-auto p-2.5 space-y-2">
+                      {recentMsgs.map((m) => (
+                        <div
+                          key={m.id}
+                          className="p-2 rounded-lg text-[12px]"
+                          style={{ background: surfaceBg, border: `1px solid ${borderColor}` }}
+                        >
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-[10.5px] font-bold" style={{ color: '#d4a84b' }}>
+                              {m.senderName} · <span className="tabular-nums">{m.timeLabel}</span>
+                            </span>
+                            <Tooltip title="Tạo Task & Nhắc hẹn">
+                              <button
+                                type="button"
+                                onClick={() => openTaskModalFromMessage(m)}
+                                className="w-5 h-5 rounded inline-flex items-center justify-center cursor-pointer"
+                                style={{ color: '#d4a84b' }}
+                              >
+                                <AlarmClockPlus size={12} />
+                              </button>
+                            </Tooltip>
+                          </div>
+                          {m.text && <div>{m.text}</div>}
+                          {renderMessageAttachments(m.attachments, true)}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="p-2" style={{ background: surfaceBg, borderTop: `1px solid ${borderColor}` }}>
+                      {renderStagedAttachmentsStrip(dockStaged, 'dock', cid)}
+                      <div className="flex items-center gap-1">
+                        <input
+                          ref={(el) => {
+                            dockInputRefs.current[cid] = el;
+                          }}
+                          type="text"
+                          value={dockInputs[cid] || ''}
+                          onChange={(e) => setDockInputs((p) => ({ ...p, [cid]: e.target.value }))}
+                          onPaste={(e) => handleClipboardPaste(e, 'dock', cid)}
+                          onCompositionStart={() => {
+                            isComposingRef.current = true;
+                          }}
+                          onCompositionEnd={() => {
+                            lastCompositionEndMsRef.current = Date.now();
+                            setTimeout(() => {
+                              isComposingRef.current = false;
+                            }, 50);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              if (
+                                e.nativeEvent.isComposing ||
+                                isComposingRef.current ||
+                                e.keyCode === 229 ||
+                                Date.now() - lastCompositionEndMsRef.current < 60
+                              ) {
+                                return;
+                              }
+                              e.preventDefault();
+                              const val = dockInputs[cid] || '';
+                              const atts = dockAttachments[cid] || [];
+                              setDockInputs((p) => ({ ...p, [cid]: '' }));
+                              setDockAttachments((p) => ({ ...p, [cid]: [] }));
+                              handleSendMessage(cid, val, null, atts);
+                            }
+                          }}
+                          placeholder="Nhắn nhanh hoặc Paste hình (⌘V)..."
+                          className="flex-1 h-7 rounded-full px-2.5 text-[12px] outline-none"
+                          style={{
+                            background: surfaceRaised,
+                            border: `1px solid ${borderColor}`,
+                            color: token.colorText,
+                          }}
+                        />
+                        <Tooltip title="Tải hình lên">
+                          <button
+                            type="button"
+                            onClick={() => triggerFilePicker('dock', cid)}
+                            className="w-7 h-7 rounded-full inline-flex items-center justify-center cursor-pointer hover:bg-white/10"
+                            style={{ color: token.colorTextSecondary }}
+                          >
+                            <ImagePlus size={13} />
+                          </button>
+                        </Tooltip>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const val = dockInputs[cid] || '';
+                            const atts = dockAttachments[cid] || [];
+                            setDockInputs((p) => ({ ...p, [cid]: '' }));
+                            setDockAttachments((p) => ({ ...p, [cid]: [] }));
+                            handleSendMessage(cid, val, null, atts);
+                          }}
+                          className="w-7 h-7 rounded-full inline-flex items-center justify-center cursor-pointer"
+                          style={{ background: '#d4a84b', color: '#000' }}
+                        >
+                          <SendHorizontal size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ================= LIVE REMINDER ALERT TOAST POPUP ================= */}
+      {activeAlertTask && (
+        <div
+          role="alert"
+          className="fixed top-16 right-5 w-[356px] rounded-xl p-3.5 shadow-2xl z-[1100]"
+          style={{
+            background: surfaceBg,
+            border: '1.5px solid #d4a84b',
+          }}
+        >
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="flex items-center gap-1.5 text-[12px] font-extrabold text-amber-400">
+              <BellRing size={14} />
+              <span>NHẮC HẸN CÔNG VIỆC</span>
+            </span>
+            <Tooltip title="Đóng">
+              <button
+                type="button"
+                onClick={() => setActiveAlertTask(null)}
+                className="w-6 h-6 rounded inline-flex items-center justify-center cursor-pointer"
+                style={{ color: token.colorTextSecondary }}
+              >
+                <X size={14} />
+              </button>
+            </Tooltip>
+          </div>
+          <div className="text-[13px] font-bold mb-1">{activeAlertTask.title}</div>
+          <div className="text-[11px] text-slate-400 mb-2.5">
+            {activeAlertTask.assigneeName} · #{activeAlertTask.conversationName}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => handleToggleTaskDone(activeAlertTask.id)}
+              className="flex-1 h-8 rounded-lg bg-emerald-500 text-black font-extrabold text-[12px] inline-flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Check size={14} />
+              <span>Hoàn thành</span>
+            </button>
+            <Tooltip title="Nhắc lại sau 10 phút (Snooze)">
+              <button
+                type="button"
+                onClick={() => handleSnoozeTask(activeAlertTask.id, 600)}
+                className="w-8 h-8 rounded-lg inline-flex items-center justify-center cursor-pointer"
+                style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+              >
+                <Clock size={14} />
+              </button>
+            </Tooltip>
+            <Tooltip title="Mở cuộc trò chuyện">
+              <button
+                type="button"
+                onClick={() => {
+                  selectConversation(activeAlertTask.conversationId);
+                  setActiveAlertTask(null);
+                }}
+                className="w-8 h-8 rounded-lg inline-flex items-center justify-center cursor-pointer"
+                style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+              >
+                <ExternalLink size={14} />
+              </button>
+            </Tooltip>
+          </div>
+        </div>
+      )}
+
+      {/* ================= MODAL: MESSAGE TO TASK -> REMINDER ================= */}
+      <Modal
+        open={taskModalOpen}
+        onCancel={() => setTaskModalOpen(false)}
+        onOk={handleConfirmCreateTask}
+        okText="Lưu & Hẹn giờ"
+        cancelText="Hủy"
+        title={
+          <span className="flex items-center gap-2 text-[14px] font-bold">
+            <AlarmClockPlus size={16} className="text-amber-500" />
+            <span>Giao Task & Hẹn Giờ Nhắc</span>
+          </span>
+        }
+        width={440}
+      >
+        <div className="space-y-3 py-1">
+          {taskModalSourceMsg && (
+            <div
+              className="p-2 rounded-lg text-[11.5px]"
+              style={{ background: surfaceRaised, borderLeft: '3px solid #d4a84b' }}
+            >
+              <strong>{taskModalSourceMsg.senderName}:</strong> &ldquo;{taskModalSourceMsg.text}&rdquo;
+            </div>
+          )}
+
+          <div>
+            <div className="text-[11px] font-bold text-slate-400 mb-1">Tên công việc</div>
+            <Input value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            <div>
+              <div className="text-[11px] font-bold text-slate-400 mb-1">Người phụ trách</div>
+              <Select
+                className="w-full"
+                value={taskAssignee}
+                onChange={setTaskAssignee}
+                options={assigneeOptions}
+                showSearch
+              />
+            </div>
+            <div>
+              <div className="text-[11px] font-bold text-slate-400 mb-1">Mức ưu tiên</div>
+              <Select
+                className="w-full"
+                value={taskPriority}
+                onChange={setTaskPriority}
+                options={[
+                  { value: 'URGENT', label: 'Khẩn cấp' },
+                  { value: 'HIGH', label: 'Quan trọng' },
+                  { value: 'NORMAL', label: 'Bình thường' },
+                ]}
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[11px] font-bold text-slate-400 mb-1">Hẹn giờ nhắc (Reminder)</div>
+            <div className="grid grid-cols-3 gap-1.5">
+              {REMINDER_PRESETS.map((preset) => (
+                <button
+                  key={preset.seconds}
+                  type="button"
+                  onClick={() => setTaskRemindSeconds(preset.seconds)}
+                  className="h-8 rounded-lg text-[11.5px] font-semibold cursor-pointer"
+                  style={{
+                    background: taskRemindSeconds === preset.seconds ? 'rgba(212, 168, 75, 0.18)' : surfaceRaised,
+                    border: `1px solid ${taskRemindSeconds === preset.seconds ? '#d4a84b' : borderColor}`,
+                    color: taskRemindSeconds === preset.seconds ? '#d4a84b' : token.colorText,
+                  }}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ================= MODAL: CREATE NEW SPACE OR DM ================= */}
+      <Modal
+        open={newRoomModalOpen}
+        onCancel={() => {
+          setNewRoomModalOpen(false);
+          setRoomSearchQuery('');
+          setRoomGroupFilter('ALL');
+          setSelectedMemberIds([]);
+        }}
+        footer={
+          newRoomType === 'space' ? (
+            <div className="flex items-center justify-between pt-2">
+              <span className="text-[12px] text-slate-400 font-medium tabular-nums">
+                Đã chọn: <strong className="text-emerald-500">{selectedMemberIds.length}</strong> thành viên
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewRoomModalOpen(false);
+                    setRoomSearchQuery('');
+                    setRoomGroupFilter('ALL');
+                    setSelectedMemberIds([]);
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer"
+                  style={{ background: surfaceRaised, border: `1px solid ${borderColor}`, color: token.colorText }}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateSpace}
+                  className="px-4 py-1.5 rounded-lg text-xs font-bold text-white cursor-pointer"
+                  style={{ background: '#3b82f6' }}
+                >
+                  Tạo Space
+                </button>
+              </div>
+            </div>
+          ) : null
+        }
+        title={
+          <span className="text-[15px] font-extrabold flex items-center gap-2">
+            {newRoomType === 'space' ? (
+              <>
+                <Hash size={18} className="text-blue-500" />
+                <span>Tạo Không gian làm việc mới (Space)</span>
+              </>
+            ) : (
+              <>
+                <MessageSquare size={18} className="text-emerald-500" />
+                <span>Bắt đầu cuộc trò chuyện 1-1</span>
+              </>
+            )}
+          </span>
+        }
+        width={520}
+      >
+        {newRoomType === 'dm' ? (
+          <div className="space-y-3 py-2">
+            {/* Search Input */}
+            <Input
+              prefix={<Search size={14} className="text-slate-400 mr-1" />}
+              value={roomSearchQuery}
+              onChange={(e) => setRoomSearchQuery(e.target.value)}
+              placeholder="Tìm theo tên hoặc username đồng nghiệp..."
+              allowClear
+            />
+
+            {/* Quick Department / Team Filter Pills for 1-1 Directory */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-1">
+              <button
+                type="button"
+                onClick={() => setRoomGroupFilter('ALL')}
+                className="px-2 py-1 rounded-full text-[10.5px] font-bold shrink-0 cursor-pointer transition-colors"
+                style={{
+                  background: roomGroupFilter === 'ALL' ? '#3b82f6' : surfaceRaised,
+                  color: roomGroupFilter === 'ALL' ? '#ffffff' : token.colorTextSecondary,
+                  border: `1px solid ${roomGroupFilter === 'ALL' ? '#3b82f6' : borderColor}`,
+                }}
+              >
+                Tất cả ({staffDirectory.length})
+              </button>
+              {SPACE_DEPARTMENT_AND_TEAM_GROUPS.map((grp) => {
+                const count = staffDirectory.filter((m) => matchesStaffGroup(m, grp.key)).length;
+                if (count === 0) return null;
+                const active = roomGroupFilter === grp.key;
+                return (
+                  <button
+                    key={grp.key}
+                    type="button"
+                    onClick={() => setRoomGroupFilter(active ? 'ALL' : grp.key)}
+                    className="px-2 py-1 rounded-full text-[10.5px] font-bold shrink-0 cursor-pointer transition-colors"
+                    style={{
+                      background: active ? `${grp.color}28` : surfaceRaised,
+                      color: active ? grp.color : token.colorTextSecondary,
+                      border: `1px solid ${active ? grp.color : borderColor}`,
+                    }}
+                  >
+                    {grp.label} ({count})
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Self Chat Option ("Chat với chính tôi") */}
+            <div
+              onClick={handleSelectSelfChat}
+              className="flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-colors border"
+              style={{
+                background: 'rgba(99, 102, 241, 0.08)',
+                borderColor: 'rgba(99, 102, 241, 0.28)',
+              }}
+            >
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-white shrink-0 shadow-sm"
+                style={{ background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)' }}
+              >
+                <Bookmark size={18} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-extrabold text-[13px] text-indigo-400">
+                    {currentUser?.displayName || currentUser?.username || 'Tôi'} (Bạn)
+                  </span>
+                  <span className="inline-flex items-center justify-center leading-none px-2 py-0.5 rounded-full text-[9.5px] font-extrabold bg-indigo-500/20 text-indigo-400">
+                    Ghi chú cho tôi
+                  </span>
+                </div>
+                <div className="text-[11.5px] text-slate-400 truncate mt-0.5">
+                  Lưu trữ tin nhắn, ảnh, tài liệu và tạo task nhắc hẹn riêng tư
+                </div>
+              </div>
+            </div>
+
+            {/* Colleagues List */}
+            <div>
+              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 px-1">
+                Danh bạ đồng nghiệp ({staffDirectory.length})
+              </div>
+              <div className="max-h-64 overflow-y-auto space-y-1 pr-1">
+                {staffDirectory
+                  .filter((m) => {
+                    if (Number(m.id) === Number(currentUser?.id)) return false;
+                    if (roomGroupFilter !== 'ALL' && !matchesStaffGroup(m, roomGroupFilter)) return false;
+                    if (!roomSearchQuery.trim()) return true;
+                    const q = roomSearchQuery.toLowerCase();
+                    return (
+                      m.displayName?.toLowerCase().includes(q) ||
+                      m.username?.toLowerCase().includes(q) ||
+                      m.role?.toLowerCase().includes(q)
+                    );
+                  })
+                  .map((m) => {
+                    const isAdm = m.role?.toLowerCase().includes('admin');
+                    return (
+                      <div
+                        key={m.id}
+                        onClick={() => handleSelectColleague(m)}
+                        className="flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-colors hover:bg-slate-500/10"
+                        style={{ border: `1px solid ${borderColor}` }}
+                      >
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white shrink-0 relative"
+                          style={{ background: isAdm ? '#a855f7' : '#3b82f6' }}
+                        >
+                          {m.displayName
+                            ? m.displayName.slice(0, 2).toUpperCase()
+                            : m.username.slice(0, 2).toUpperCase()}
+                          {m.isOnline && (
+                            <span
+                              className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500"
+                              style={{ border: `1.5px solid ${surfaceBg}` }}
+                            />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-[12.5px] truncate">{m.displayName || m.username}</span>
+                            <span
+                              className="text-[9.5px] font-bold px-1.5 py-0.5 rounded leading-none shrink-0"
+                              style={{
+                                background: isAdm ? 'rgba(168, 85, 247, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                                color: isAdm ? '#c084fc' : '#60a5fa',
+                              }}
+                            >
+                              {m.role || 'Nhân sự'}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-400 truncate">@{m.username}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3 py-2">
+            <div>
+              <div className="text-[11px] font-bold text-slate-400 mb-1">Tên Không gian (Space) *</div>
+              <Input
+                value={newRoomName}
+                onChange={(e) => setNewRoomName(e.target.value)}
+                placeholder="VD: ke-hoach-tuan-moi, chien-dich-tet"
+              />
+            </div>
+
+            <div>
+              <div className="text-[11px] font-bold text-slate-400 mb-1">Mục đích hoạt động (Tùy chọn)</div>
+              <Input
+                value={newRoomSubtitle}
+                onChange={(e) => setNewRoomSubtitle(e.target.value)}
+                placeholder="VD: Không gian trao đổi ban quản trị và trưởng bộ phận"
+              />
+            </div>
+
+            {/* ================= 1-CLICK DEPARTMENT & TEAM / GROUP SELECTOR ================= */}
+            <div
+              className="p-2.5 rounded-xl space-y-2"
+              style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <Users size={13} />
+                  <span>Chọn nhanh theo Bộ phận (Department) & Nhóm</span>
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedMemberIds(staffDirectory.map((s) => s.id))}
+                    className="text-[10.5px] font-bold px-2 py-0.5 rounded bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 cursor-pointer"
+                  >
+                    Chọn tất cả ({staffDirectory.length})
+                  </button>
+                  {selectedMemberIds.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const myId = Number(currentUser?.id);
+                        setSelectedMemberIds(myId ? [myId] : []);
+                      }}
+                      className="text-[10.5px] font-bold px-2 py-0.5 rounded bg-rose-500/15 text-rose-400 hover:bg-rose-500/25 cursor-pointer"
+                    >
+                      Bỏ chọn
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Row 1: 4 Core Departments */}
+              <div>
+                <div className="text-[10px] font-bold text-slate-400 mb-1">Bộ phận (Department):</div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {SPACE_DEPARTMENT_AND_TEAM_GROUPS.filter((g) => g.category === 'department').map((dept) => {
+                    const deptMembers = staffDirectory.filter((m) => matchesStaffGroup(m, dept.key));
+                    const total = deptMembers.length;
+                    const selectedCount = deptMembers.filter((m) => selectedMemberIds.includes(m.id)).length;
+                    const isAllSelected = total > 0 && selectedCount === total;
+                    const isPartial = selectedCount > 0 && selectedCount < total;
+
+                    return (
+                      <button
+                        key={dept.key}
+                        type="button"
+                        onClick={() => handleToggleDepartmentOrTeam(dept)}
+                        className="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left cursor-pointer transition-all"
+                        style={{
+                          background: isAllSelected ? `${dept.color}24` : isPartial ? `${dept.color}12` : canvasBg,
+                          border: `1px solid ${isAllSelected || isPartial ? dept.color : borderColor}`,
+                        }}
+                      >
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span
+                            className="w-3.5 h-3.5 rounded flex items-center justify-center shrink-0 text-white"
+                            style={{
+                              background: isAllSelected || isPartial ? dept.color : 'transparent',
+                              border: `1px solid ${isAllSelected || isPartial ? dept.color : '#64748b'}`,
+                            }}
+                          >
+                            {isAllSelected ? (
+                              <Check size={10} strokeWidth={3} />
+                            ) : isPartial ? (
+                              <Minus size={10} strokeWidth={3} />
+                            ) : null}
+                          </span>
+                          <span className="text-[11.5px] font-bold truncate" style={{ color: token.colorText }}>
+                            {dept.label}
+                          </span>
+                        </div>
+                        <span
+                          className="text-[10.5px] font-extrabold tabular-nums ml-1.5 shrink-0"
+                          style={{ color: isAllSelected || isPartial ? dept.color : token.colorTextSecondary }}
+                        >
+                          {selectedCount}/{total}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Row 2: 8 Specialized Teams / Role Groups */}
+              <div>
+                <div className="text-[10px] font-bold text-slate-400 mb-1">Nhóm chuyên môn (Team / Chức danh):</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {SPACE_DEPARTMENT_AND_TEAM_GROUPS.filter((g) => g.category === 'team').map((team) => {
+                    const teamMembers = staffDirectory.filter((m) => matchesStaffGroup(m, team.key));
+                    const total = teamMembers.length;
+                    if (total === 0) return null;
+                    const selectedCount = teamMembers.filter((m) => selectedMemberIds.includes(m.id)).length;
+                    const isAllSelected = total > 0 && selectedCount === total;
+                    const isPartial = selectedCount > 0 && selectedCount < total;
+
+                    return (
+                      <button
+                        key={team.key}
+                        type="button"
+                        onClick={() => handleToggleDepartmentOrTeam(team)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold cursor-pointer transition-all"
+                        style={{
+                          background: isAllSelected ? `${team.color}28` : isPartial ? `${team.color}14` : canvasBg,
+                          border: `1px solid ${isAllSelected || isPartial ? team.color : borderColor}`,
+                          color: isAllSelected || isPartial ? team.color : token.colorText,
+                        }}
+                      >
+                        {isAllSelected && <Check size={11} strokeWidth={3} />}
+                        <span>{team.label}</span>
+                        <span className="text-[10px] opacity-80 tabular-nums">
+                          ({selectedCount}/{total})
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                  Chọn thành viên tham gia nhóm
+                </span>
+                <span className="text-[11px] text-slate-400 tabular-nums">
+                  {selectedMemberIds.length}/{staffDirectory.length} người
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 mb-2">
+                <Input
+                  prefix={<Search size={13} className="text-slate-400 mr-1" />}
+                  value={roomSearchQuery}
+                  onChange={(e) => setRoomSearchQuery(e.target.value)}
+                  placeholder="Tìm thành viên..."
+                  size="small"
+                  className="flex-1"
+                  allowClear
+                />
+                <Select
+                  size="small"
+                  value={roomGroupFilter}
+                  onChange={setRoomGroupFilter}
+                  className="w-44"
+                  options={[
+                    { value: 'ALL', label: `Tất cả bộ phận (${staffDirectory.length})` },
+                    ...SPACE_DEPARTMENT_AND_TEAM_GROUPS.map((g) => ({
+                      value: g.key,
+                      label: `${g.label} (${staffDirectory.filter((m) => matchesStaffGroup(m, g.key)).length})`,
+                    })),
+                  ]}
+                />
+              </div>
+              <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
+                {staffDirectory
+                  .filter((m) => {
+                    if (roomGroupFilter !== 'ALL' && !matchesStaffGroup(m, roomGroupFilter)) return false;
+                    if (!roomSearchQuery.trim()) return true;
+                    const q = roomSearchQuery.toLowerCase();
+                    return (
+                      m.displayName?.toLowerCase().includes(q) ||
+                      m.username?.toLowerCase().includes(q) ||
+                      m.role?.toLowerCase().includes(q)
+                    );
+                  })
+                  .map((m) => {
+                    const isSelected = selectedMemberIds.includes(m.id);
+                    const isMe = Number(m.id) === Number(currentUser?.id);
+                    return (
+                      <div
+                        key={m.id}
+                        onClick={() => {
+                          if (isMe) return;
+                          setSelectedMemberIds((prev) =>
+                            prev.includes(m.id) ? prev.filter((id) => id !== m.id) : [...prev, m.id]
+                          );
+                        }}
+                        className={`flex items-center gap-2 p-1.5 rounded-lg cursor-pointer transition-colors border ${
+                          isSelected ? 'border-blue-500/50 bg-blue-500/10' : 'border-transparent hover:bg-slate-500/10'
+                        }`}
+                      >
+                        <div
+                          className={`w-4 h-4 rounded flex items-center justify-center border text-white ${
+                            isSelected || isMe ? 'bg-blue-500 border-blue-500' : 'border-slate-400'
+                          }`}
+                        >
+                          {(isSelected || isMe) && <Check size={11} strokeWidth={3} />}
+                        </div>
+                        <div className="flex-1 min-w-0 flex items-center justify-between">
+                          <span className="text-xs font-semibold truncate">
+                            {m.displayName || m.username} {isMe && '(Bạn - Trưởng nhóm)'}
+                          </span>
+                          <span className="text-[10px] text-slate-400 ml-1 shrink-0">{m.role}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* ================= MODAL: SPACE MEMBERS MANAGEMENT (GOOGLE CHAT WORKSPACE STYLE) ================= */}
+      <Modal
+        open={spaceMembersModalOpen}
+        onCancel={() => setSpaceMembersModalOpen(false)}
+        footer={null}
+        title={
+          <div className="flex items-center gap-2">
+            <Users size={18} className="text-blue-500" />
+            <span className="text-[15px] font-extrabold">Thành viên Không gian · #{activeConversation?.name}</span>
+          </div>
+        }
+        width={520}
+      >
+        <div className="space-y-4 py-2">
+          {/* Add member section */}
+          <div className="p-3 rounded-xl border space-y-2.5" style={{ background: surfaceRaised, borderColor }}>
+            <div className="text-[11.5px] font-bold text-slate-300 flex items-center gap-1.5">
+              <UserPlus size={14} className="text-emerald-500" />
+              <span>Thêm thành viên hoặc cả Bộ phận / Nhóm vào Không gian</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select
+                showSearch
+                className="flex-1"
+                placeholder="Chọn đồng nghiệp để thêm..."
+                value={addMemberSelectedStaffId}
+                onChange={setAddMemberSelectedStaffId}
+                filterOption={(input, option) =>
+                  ((option?.label as string) || '').toLowerCase().includes(input.toLowerCase())
+                }
+                options={staffDirectory
+                  .filter((s) => !activeConversation?.memberIds?.includes(s.id))
+                  .map((s) => ({
+                    value: s.id,
+                    label: `${s.displayName || s.username} (${s.role || 'NV'})`,
+                  }))}
+              />
+              <button
+                type="button"
+                disabled={!addMemberSelectedStaffId}
+                onClick={async () => {
+                  if (addMemberSelectedStaffId) {
+                    await handleAddMemberToSpace(addMemberSelectedStaffId);
+                    setAddMemberSelectedStaffId(null);
+                  }
+                }}
+                className="h-8 px-3 rounded-lg text-xs font-bold text-white transition-opacity disabled:opacity-40 cursor-pointer"
+                style={{ background: '#10b981' }}
+              >
+                Thêm
+              </button>
+            </div>
+
+            {/* 1-Click Add Entire Department / Team into Existing Space */}
+            <div className="pt-1 border-t" style={{ borderColor }}>
+              <div className="text-[10.5px] font-bold text-slate-400 mb-1.5">
+                Thêm nhanh cả Bộ phận (Department) / Nhóm:
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {SPACE_DEPARTMENT_AND_TEAM_GROUPS.map((grp) => {
+                  const existingSet = new Set(activeConversation?.memberIds || []);
+                  const missingCount = staffDirectory.filter(
+                    (m) => matchesStaffGroup(m, grp.key) && !existingSet.has(m.id)
+                  ).length;
+                  if (missingCount === 0) return null;
+                  return (
+                    <button
+                      key={grp.key}
+                      type="button"
+                      onClick={() => handleBulkAddGroupToSpace(grp)}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10.5px] font-bold cursor-pointer transition-all hover:opacity-90"
+                      style={{
+                        background: `${grp.color}18`,
+                        border: `1px solid ${grp.color}66`,
+                        color: grp.color,
+                      }}
+                    >
+                      <Plus size={11} />
+                      <span>{grp.label}</span>
+                      <span className="tabular-nums opacity-85">(+{missingCount})</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Current members list */}
+          <div>
+            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+              <span>Danh sách thành viên hiện tại</span>
+              <span className="text-emerald-400 font-extrabold tabular-nums">
+                {activeConversation?.memberCount || activeConversation?.memberIds?.length || 1} người
+              </span>
+            </div>
+
+            <div className="max-h-72 overflow-y-auto space-y-1.5 pr-1">
+              {staffDirectory
+                .filter(
+                  (s) =>
+                    activeConversation?.memberIds?.includes(s.id) ||
+                    activeConversation?.members?.some((m) => m.id === s.id)
+                )
+                .map((m) => {
+                  const isMe = Number(m.id) === Number(currentUser?.id);
+                  const isAdm = m.role?.toLowerCase().includes('admin');
+                  return (
+                    <div
+                      key={m.id}
+                      className="flex items-center justify-between p-2 rounded-lg border transition-colors"
+                      style={{ background: surfaceRaised, borderColor }}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white shrink-0"
+                          style={{ background: isAdm ? '#a855f7' : '#3b82f6' }}
+                        >
+                          {m.displayName
+                            ? m.displayName.slice(0, 2).toUpperCase()
+                            : m.username.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-[12.5px] truncate">{m.displayName || m.username}</span>
+                            {isMe && (
+                              <span className="text-[9.5px] font-extrabold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">
+                                Bạn
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[11px] text-slate-400">{m.role || 'Nhân sự'}</span>
+                        </div>
+                      </div>
+
+                      {/* Remove button */}
+                      {!isMe && (
+                        <Popconfirm
+                          title="Xóa thành viên"
+                          description={`Bạn có chắc muốn xóa ${m.displayName || m.username} khỏi Không gian này?`}
+                          onConfirm={() => handleRemoveMemberFromSpace(m.id)}
+                          okText="Xóa"
+                          cancelText="Hủy"
+                          okButtonProps={{ danger: true }}
+                        >
+                          <button
+                            type="button"
+                            aria-label={`Xóa ${m.displayName || m.username} khỏi nhóm`}
+                            className="h-7 px-2 rounded-md inline-flex items-center gap-1 text-[11px] font-bold text-rose-400 hover:bg-rose-500/10 cursor-pointer transition-colors"
+                          >
+                            <UserMinus size={13} />
+                            <span>Xóa</span>
+                          </button>
+                        </Popconfirm>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ================= MODAL: ATTACH IMAGE FROM GOOGLE DRIVE / LOCAL DRIVE ================= */}
+      <Modal
+        open={driveLinkModalOpen}
+        onCancel={() => setDriveLinkModalOpen(false)}
+        onOk={handleConfirmDriveLink}
+        okText="Đính kèm hình Drive"
+        cancelText="Đóng"
+        title={
+          <span className="flex items-center gap-2 text-[14px] font-bold">
+            <HardDrive size={16} className="text-amber-500" />
+            <span>Tải hình từ Google Drive / Ổ đĩa</span>
+          </span>
+        }
+        width={430}
+      >
+        <div className="space-y-3 py-1">
+          <div>
+            <div className="text-[11px] font-bold text-slate-400 mb-1">
+              Cách 1: Dán đường dẫn hình ảnh trên Google Drive
+            </div>
+            <Input
+              value={driveLinkInput}
+              onChange={(e) => setDriveLinkInput(e.target.value)}
+              onPressEnter={handleConfirmDriveLink}
+              placeholder="https://drive.google.com/file/d/..."
+            />
+          </div>
+
+          <div className="pt-1">
+            <div className="text-[11px] font-bold text-slate-400 mb-1.5">
+              Cách 2: Chọn tệp hình từ Google Drive Desktop / Máy tính
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setDriveLinkModalOpen(false);
+                const target = uploadTargetRef.current;
+                triggerFilePicker(target.scope, target.convId);
+              }}
+              className="w-full h-9 rounded-lg inline-flex items-center justify-center gap-2 text-[12px] font-bold cursor-pointer"
+              style={{
+                background: surfaceRaised,
+                border: `1px dashed ${borderStrong}`,
+                color: '#d4a84b',
+              }}
+            >
+              <ImagePlus size={15} />
+              <span>Chọn tệp ảnh từ Ổ đĩa / Google Drive...</span>
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ================= FULL-SCREEN HIGH-RES IMAGE LIGHTBOX ZOOM VIEWER ================= */}
+      {lightboxImage &&
+        (() => {
+          const totalItems = lightboxImage.items.length;
+          const currentItem = lightboxImage.items[lightboxImage.currentIndex] || lightboxImage.items[0];
+          if (!currentItem) return null;
+
+          const goPrev = () => {
+            setLightboxImage((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    currentIndex: (prev.currentIndex - 1 + prev.items.length) % prev.items.length,
+                    zoom: 1,
+                    rotate: 0,
+                  }
+                : null
+            );
+          };
+
+          const goNext = () => {
+            setLightboxImage((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    currentIndex: (prev.currentIndex + 1) % prev.items.length,
+                    zoom: 1,
+                    rotate: 0,
+                  }
+                : null
+            );
+          };
+
+          return (
+            <div
+              role="dialog"
+              aria-label="Xem phóng to hình ảnh"
+              data-no-chat-autofocus="true"
+              onClick={() => setLightboxImage(null)}
+              onWheel={(e) => {
+                e.preventDefault();
+                const delta = e.deltaY < 0 ? 0.25 : -0.25;
+                setLightboxImage((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        zoom: Math.min(4, Math.max(0.5, Number((prev.zoom + delta).toFixed(2)))),
+                      }
+                    : null
+                );
+              }}
+              className="fixed inset-0 z-[2200] flex flex-col items-center justify-center select-none"
+              style={{
+                background: 'rgba(2, 6, 23, 0.92)',
+                backdropFilter: 'blur(8px)',
+              }}
+            >
+              {/* Top Floating Lightbox Toolbar */}
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="fixed top-4 left-1/2 -translate-x-1/2 z-[2210] flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-2xl"
+                style={{
+                  background: 'rgba(15, 23, 42, 0.92)',
+                  border: '1px solid rgba(255, 255, 255, 0.16)',
+                  color: '#f8fafc',
+                }}
+              >
+                {totalItems > 1 && (
+                  <div className="flex items-center gap-1 pr-2 border-r border-white/15">
+                    <Tooltip title="Hình trước (Phím ←)">
+                      <button
+                        type="button"
+                        aria-label="Hình trước"
+                        onClick={goPrev}
+                        className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-white/15 cursor-pointer text-white"
+                      >
+                        <ChevronLeft size={15} />
+                      </button>
+                    </Tooltip>
+                    <span className="px-1.5 text-[11.5px] font-extrabold tabular-nums" style={{ color: '#fbbf24' }}>
+                      {lightboxImage.currentIndex + 1} / {totalItems}
+                    </span>
+                    <Tooltip title="Hình tiếp theo (Phím →)">
+                      <button
+                        type="button"
+                        aria-label="Hình tiếp theo"
+                        onClick={goNext}
+                        className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-white/15 cursor-pointer text-white"
+                      >
+                        <ChevronRight size={15} />
+                      </button>
+                    </Tooltip>
+                  </div>
+                )}
+
+                <span className="text-[12px] font-bold max-w-[200px] truncate pr-2 border-r border-white/15">
+                  {currentItem.name}
+                </span>
+
+                <Tooltip title="Thu nhỏ (-)">
+                  <button
+                    type="button"
+                    aria-label="Thu nhỏ"
+                    onClick={() =>
+                      setLightboxImage((prev) =>
+                        prev ? { ...prev, zoom: Math.max(0.5, Number((prev.zoom - 0.25).toFixed(2))) } : null
+                      )
+                    }
+                    className="w-7 h-7 rounded-full inline-flex items-center justify-center hover:bg-white/15 cursor-pointer text-white"
+                  >
+                    <ZoomOut size={15} />
+                  </button>
+                </Tooltip>
+
+                <Tooltip title="Nhấn để đưa về 100%">
+                  <button
+                    type="button"
+                    onClick={() => setLightboxImage((prev) => (prev ? { ...prev, zoom: 1, rotate: 0 } : null))}
+                    className="px-2 h-6 rounded-md text-[11.5px] font-extrabold tabular-nums hover:bg-white/15 cursor-pointer"
+                    style={{ color: '#fbbf24' }}
+                  >
+                    {Math.round(lightboxImage.zoom * 100)}%
+                  </button>
+                </Tooltip>
+
+                <Tooltip title="Phóng to (+ hoặc lăn chuột)">
+                  <button
+                    type="button"
+                    aria-label="Phóng to"
+                    onClick={() =>
+                      setLightboxImage((prev) =>
+                        prev ? { ...prev, zoom: Math.min(4, Number((prev.zoom + 0.25).toFixed(2))) } : null
+                      )
+                    }
+                    className="w-7 h-7 rounded-full inline-flex items-center justify-center hover:bg-white/15 cursor-pointer text-white"
+                  >
+                    <ZoomIn size={15} />
+                  </button>
+                </Tooltip>
+
+                <Tooltip title="Xoay ảnh 90°">
+                  <button
+                    type="button"
+                    aria-label="Xoay ảnh 90 độ"
+                    onClick={() =>
+                      setLightboxImage((prev) => (prev ? { ...prev, rotate: (prev.rotate + 90) % 360 } : null))
+                    }
+                    className="w-7 h-7 rounded-full inline-flex items-center justify-center hover:bg-white/15 cursor-pointer text-white"
+                  >
+                    <RotateCw size={14} />
+                  </button>
+                </Tooltip>
+
+                <Tooltip title="Mở ảnh gốc trong tab mới">
+                  <a
+                    href={currentItem.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Mở ảnh gốc trong tab mới"
+                    className="w-7 h-7 rounded-full inline-flex items-center justify-center hover:bg-white/15 cursor-pointer text-white"
+                  >
+                    <ExternalLink size={14} />
+                  </a>
+                </Tooltip>
+
+                <Tooltip title="Đóng (Esc)">
+                  <button
+                    type="button"
+                    aria-label="Đóng trình xem ảnh"
+                    onClick={() => setLightboxImage(null)}
+                    className="w-7 h-7 rounded-full inline-flex items-center justify-center bg-rose-500/20 hover:bg-rose-500 text-rose-300 hover:text-white cursor-pointer ml-1"
+                  >
+                    <X size={15} />
+                  </button>
+                </Tooltip>
+              </div>
+
+              {/* Large Left / Right Side Navigation Buttons when Reply has 2+ Images */}
+              {totalItems > 1 && (
+                <>
+                  <Tooltip
+                    title={`Hình trước (${((lightboxImage.currentIndex - 1 + totalItems) % totalItems) + 1}/${totalItems}) · Phím ←`}
+                  >
+                    <button
+                      type="button"
+                      aria-label="Hình trước"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        goPrev();
+                      }}
+                      className="fixed left-5 top-1/2 -translate-y-1/2 z-[2210] w-11 h-11 rounded-full inline-flex items-center justify-center cursor-pointer transition-transform hover:scale-105 shadow-2xl"
+                      style={{
+                        background: 'rgba(15, 23, 42, 0.88)',
+                        border: '1px solid rgba(251, 191, 36, 0.45)',
+                        color: '#fbbf24',
+                      }}
+                    >
+                      <ChevronLeft size={22} />
+                    </button>
+                  </Tooltip>
+
+                  <Tooltip
+                    title={`Hình tiếp theo (${((lightboxImage.currentIndex + 1) % totalItems) + 1}/${totalItems}) · Phím →`}
+                  >
+                    <button
+                      type="button"
+                      aria-label="Hình tiếp theo"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        goNext();
+                      }}
+                      className="fixed right-5 top-1/2 -translate-y-1/2 z-[2210] w-11 h-11 rounded-full inline-flex items-center justify-center cursor-pointer transition-transform hover:scale-105 shadow-2xl"
+                      style={{
+                        background: 'rgba(15, 23, 42, 0.88)',
+                        border: '1px solid rgba(251, 191, 36, 0.45)',
+                        color: '#fbbf24',
+                      }}
+                    >
+                      <ChevronRight size={22} />
+                    </button>
+                  </Tooltip>
+                </>
+              )}
+
+              {/* Zoomable Image Canvas */}
+              <div className="w-full h-full flex items-center justify-center overflow-auto p-8">
+                <img
+                  src={currentItem.url}
+                  alt={currentItem.name}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLightboxImage((prev) => (prev ? { ...prev, zoom: prev.zoom > 1 ? 1 : 2 } : null));
+                  }}
+                  className={`max-w-[90vw] ${
+                    totalItems > 1 ? 'max-h-[78vh]' : 'max-h-[86vh]'
+                  } object-contain rounded-lg shadow-2xl transition-transform duration-150 ${
+                    lightboxImage.zoom > 1 ? 'cursor-zoom-out' : 'cursor-zoom-in'
+                  }`}
+                  style={{
+                    transform: `scale(${lightboxImage.zoom}) rotate(${lightboxImage.rotate}deg)`,
+                    transformOrigin: 'center center',
+                  }}
+                />
+              </div>
+
+              {/* Bottom Thumbnail Filmstrip for Multi-Image Replies */}
+              {totalItems > 1 && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[2210] flex items-center gap-2 px-3 py-2 rounded-2xl shadow-2xl max-w-[90vw] overflow-x-auto"
+                  style={{
+                    background: 'rgba(15, 23, 42, 0.92)',
+                    border: '1px solid rgba(255, 255, 255, 0.16)',
+                  }}
+                >
+                  {lightboxImage.items.map((item, idx) => {
+                    const isActive = idx === lightboxImage.currentIndex;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() =>
+                          setLightboxImage((prev) => (prev ? { ...prev, currentIndex: idx, zoom: 1, rotate: 0 } : null))
+                        }
+                        className="relative w-12 h-12 rounded-lg overflow-hidden shrink-0 cursor-pointer transition-all"
+                        style={{
+                          border: isActive ? '2px solid #fbbf24' : '1px solid rgba(255, 255, 255, 0.2)',
+                          opacity: isActive ? 1 : 0.55,
+                          transform: isActive ? 'scale(1.06)' : 'scale(1)',
+                        }}
+                      >
+                        <img src={item.url} alt={item.name} className="w-full h-full object-cover block" />
+                        <span
+                          className="absolute bottom-0 right-0 px-1 text-[8.5px] font-extrabold tabular-nums"
+                          style={{
+                            background: isActive ? '#fbbf24' : 'rgba(0,0,0,0.75)',
+                            color: isActive ? '#000' : '#fff',
+                          }}
+                        >
+                          {idx + 1}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+    </>
+  );
+};
+
+export default MosGoogleChatPortal;

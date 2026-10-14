@@ -187,26 +187,36 @@ describe('ThemeProvider multi-theme engine', () => {
     expect(screen.getByTestId('theme-id')).toHaveTextContent('mos');
   });
 
-  it('switches to Warm Ivory, updates dataset and sets light base', async () => {
+  it('switches to Warm Ivory while preserving current dark/light screen mode', async () => {
     render(
       <ThemeProvider>
         <ThemeProbe />
       </ThemeProvider>
     );
 
+    // Default screen mode is dark -> Warm Ivory applies its dark palette
     fireEvent.click(screen.getByRole('button', { name: 'Set Ivory' }));
 
     expect(screen.getByTestId('theme-id')).toHaveTextContent('ivory');
-    expect(screen.getByTestId('theme-mode')).toHaveTextContent('light');
+    expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark');
     await waitFor(() => {
       expect(document.documentElement.dataset.theme).toBe('ivory');
+      expect(document.documentElement.dataset.themeBase).toBe('dark');
+      expect(document.documentElement.style.getPropertyValue('--background')).toBe('#141210');
+      expect(document.documentElement.style.getPropertyValue('--color-gold')).toBe('#d4a359');
+    });
+
+    // Toggle screen to light -> Warm Ivory automatically switches to its light palette
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle Mode' }));
+    expect(screen.getByTestId('theme-mode')).toHaveTextContent('light');
+    await waitFor(() => {
       expect(document.documentElement.dataset.themeBase).toBe('light');
       expect(document.documentElement.style.getPropertyValue('--background')).toBe('#f6f3ee');
       expect(document.documentElement.style.getPropertyValue('--color-gold')).toBe('#9e6e24');
     });
   });
 
-  it('switches to Midnight Royal, updates dataset and sets dark base', async () => {
+  it('switches to Midnight Royal and preserves current dark/light screen mode', async () => {
     render(
       <ThemeProvider>
         <ThemeProbe />
@@ -223,28 +233,47 @@ describe('ThemeProvider multi-theme engine', () => {
       expect(document.documentElement.style.getPropertyValue('--background')).toBe('#070a13');
       expect(document.documentElement.style.getPropertyValue('--color-gold')).toBe('#38bdf8');
     });
+
+    // Toggle screen to light -> Midnight Royal switches to its light palette
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle Mode' }));
+    expect(screen.getByTestId('theme-mode')).toHaveTextContent('light');
+    await waitFor(() => {
+      expect(document.documentElement.dataset.themeBase).toBe('light');
+      expect(document.documentElement.style.getPropertyValue('--background')).toBe('#f0f6ff');
+      expect(document.documentElement.style.getPropertyValue('--color-gold')).toBe('#0284c7');
+    });
   });
 
-  it('switches to Blush Blossom (Hồng Phấn), updates dataset and sets light base', async () => {
+  it('switches to Blush Blossom (Hồng Phấn) while preserving current dark/light screen mode', async () => {
     render(
       <ThemeProvider>
         <ThemeProbe />
       </ThemeProvider>
     );
 
+    // On dark screen -> Blush Blossom applies its dark palette
     fireEvent.click(screen.getByRole('button', { name: 'Set Blush' }));
 
     expect(screen.getByTestId('theme-id')).toHaveTextContent('blush');
-    expect(screen.getByTestId('theme-mode')).toHaveTextContent('light');
+    expect(screen.getByTestId('theme-mode')).toHaveTextContent('dark');
     await waitFor(() => {
       expect(document.documentElement.dataset.theme).toBe('blush');
+      expect(document.documentElement.dataset.themeBase).toBe('dark');
+      expect(document.documentElement.style.getPropertyValue('--background')).toBe('#181116');
+      expect(document.documentElement.style.getPropertyValue('--color-gold')).toBe('#f472b6');
+    });
+
+    // Toggle screen to light -> Blush Blossom switches to its light palette
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle Mode' }));
+    expect(screen.getByTestId('theme-mode')).toHaveTextContent('light');
+    await waitFor(() => {
       expect(document.documentElement.dataset.themeBase).toBe('light');
       expect(document.documentElement.style.getPropertyValue('--background')).toBe('#fdf4f6');
       expect(document.documentElement.style.getPropertyValue('--color-gold')).toBe('#d85a85');
     });
   });
 
-  it('switches to Wings Golden Amber (Hoàng Kim Wings), updates dataset and sets dark base', async () => {
+  it('switches to Wings Golden Amber (Hoàng Kim Wings) and preserves current dark/light screen mode', async () => {
     render(
       <ThemeProvider>
         <ThemeProbe />
@@ -260,6 +289,15 @@ describe('ThemeProvider multi-theme engine', () => {
       expect(document.documentElement.dataset.themeBase).toBe('dark');
       expect(document.documentElement.style.getPropertyValue('--background')).toBe('#0d0c0a');
       expect(document.documentElement.style.getPropertyValue('--color-gold')).toBe('#fbad18');
+    });
+
+    // Toggle screen to light -> Wings Golden Amber stays on wings and switches to light palette
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle Mode' }));
+    expect(screen.getByTestId('theme-mode')).toHaveTextContent('light');
+    await waitFor(() => {
+      expect(document.documentElement.dataset.themeBase).toBe('light');
+      expect(document.documentElement.style.getPropertyValue('--background')).toBe('#faf7f2');
+      expect(document.documentElement.style.getPropertyValue('--color-gold')).toBe('#b87400');
     });
   });
 

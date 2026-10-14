@@ -25,6 +25,7 @@ interface ThemeStudioModalProps {
 export function ThemeStudioModal({ open, onClose }: ThemeStudioModalProps) {
   const {
     themeId,
+    themeMode,
     availableCoreThemes,
     setCoreThemeId,
     saveCustomTheme,
@@ -58,11 +59,13 @@ export function ThemeStudioModal({ open, onClose }: ThemeStudioModalProps) {
   const [extractedHexes, setExtractedHexes] = useState<string[]>([]);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Sync with current theme on open
+  // Sync with current theme and active screen mode on open
   useEffect(() => {
     if (open && activeThemeDefinition) {
-      const mode = activeThemeDefinition.defaultMode;
-      const current = activeThemeDefinition.modes[mode].colors;
+      const mode = themeMode;
+      const current = (
+        activeThemeDefinition.modes[mode] ?? activeThemeDefinition.modes[activeThemeDefinition.defaultMode]
+      ).colors;
       setBaseMode(mode);
       setPrimary(current.primary);
       setBgLayout(current.bgLayout);
@@ -74,7 +77,7 @@ export function ThemeStudioModal({ open, onClose }: ThemeStudioModalProps) {
       setCustomLabel(`${activeThemeDefinition.label} (Bản sao)`);
       setCustomId(`custom-${Date.now().toString(36)}`);
     }
-  }, [open, activeThemeDefinition]);
+  }, [open, activeThemeDefinition, themeMode]);
 
   if (!canManageThemes) {
     return (

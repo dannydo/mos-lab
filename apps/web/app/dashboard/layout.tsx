@@ -25,6 +25,7 @@ import {
   Clock3,
   EllipsisVertical,
   Menu,
+  MessageSquare,
   Moon,
   Phone,
   Search,
@@ -60,6 +61,7 @@ const OmiCallWidget = dynamic(() => import('../../components/OmiCallWidget'), { 
 import UserProfileDropdown from '../../components/layout/UserProfileDropdown';
 const AvatarPromptModal = dynamic(() => import('../../components/avatar/AvatarPromptModal'), { ssr: false });
 const MosBibleDrawer = dynamic(() => import('../../components/mos-bible/MosBibleDrawer'), { ssr: false });
+const MosGoogleChatPortal = dynamic(() => import('../../components/mos-chat/MosGoogleChatPortal'), { ssr: false });
 import SidebarNav from '../../components/layout/SidebarNav';
 import HeaderLeftToolbar from '../../components/layout/HeaderLeftToolbar';
 import { HeaderActionIndicator } from '../../components/ui/HeaderActionIndicator';
@@ -98,6 +100,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [deployedAt, setDeployedAt] = useState<string | null>(null);
   const [isMosBibleOpen, setIsMosBibleOpen] = useState(false);
   const [targetBibleCommandmentId, setTargetBibleCommandmentId] = useState<string | undefined>();
+  const [isMosChatOpen, setIsMosChatOpen] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return window.localStorage.getItem('mos_chat_is_open_v1') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [mosChatUnreadCount, setMosChatUnreadCount] = useState(4);
+  const [mosChatTaskCount, setMosChatTaskCount] = useState(2);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('mos_chat_is_open_v1', String(isMosChatOpen));
+    } catch {
+      // ignore storage quota error
+    }
+  }, [isMosChatOpen]);
 
   useEffect(() => {
     const handleOpenBible = (event: Event) => {
@@ -798,13 +818,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   onClick={() => setIsMosBibleOpen(true)}
                 />
 
-                <HeaderIconButton
-                  action="daily-calls"
-                  label={dailyCallsCount > 0 ? `Cuộc gọi hôm nay, ${dailyCallsCount} cuộc` : 'Cuộc gọi hôm nay'}
-                  icon={Phone}
-                  onClick={() => setIsDailyCallsOpen(true)}
-                />
-
                 {isMobileTier && (
                   <Dropdown menu={mobileUtilityMenu} placement="bottomRight" arrow>
                     <HeaderActionIndicator
@@ -825,16 +838,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </Dropdown>
                 )}
 
-                <div className="dashboard-desktop-only">
-                  <ThemeSelector isAdmin={isAdminOrSuperAdminRole(user?.role)} />
-                </div>
-                <HeaderIconButton
-                  action="theme"
-                  label={themeMode === 'dark' ? 'Chuyển sang giao diện Sáng' : 'Chuyển sang giao diện Tối'}
-                  icon={themeMode === 'dark' ? Sun : Moon}
-                  onClick={toggleTheme}
-                  aria-pressed={themeMode === 'dark'}
-                />
+                {isAdminOrSuperAdminRole(user?.role) && (
+                  <HeaderActionIndicator variant="count" count={mosChatUnreadCount}>
+                    <HeaderIconButton
+                      action="mos-chat"
+                      label={
+                        mosChatUnreadCount > 0
+                          ? `mOS Google Chat & Spaces (⌘J) · ${mosChatUnreadCount} tin chưa đọc · ${mosChatTaskCount} nhắc hẹn`
+                          : 'mOS Google Chat & Spaces (⌘J)'
+                      }
+                      icon={MessageSquare}
+                      tone={isMosChatOpen ? 'accent' : 'quiet'}
+                      aria-pressed={isMosChatOpen}
+                      onClick={() => setIsMosChatOpen((prev) => !prev)}
+                    />
+                  </HeaderActionIndicator>
+                )}
+
                 <UserProfileDropdown
                   user={user}
                   isImpersonating={isImpersonating}
@@ -847,6 +867,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   }}
                   onLogout={handleLogout}
                   onAvatarUpdated={handleAvatarUpdated}
+                  themeMode={themeMode}
+                  onToggleTheme={toggleTheme}
+                  dailyCallsCount={dailyCallsCount}
+                  onOpenDailyCalls={() => setIsDailyCallsOpen(true)}
                 />
               </div>
             </Header>
@@ -1417,6 +1441,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           onDateChange={(d) => setCvDrawerDate(d)}
         />
         <AvatarPromptModal currentUser={user} onAvatarUpdated={handleAvatarUpdated} />
+        {isAdminOrSuperAdminRole(user?.role) && (
+          <MosGoogleChatPortal
+            open={isMosChatOpen}
+            onClose={() => setIsMosChatOpen(false)}
+            onToggle={() => setIsMosChatOpen((prev) => !prev)}
+            currentUser={user}
+            onUnreadCountChange={(unread, tasks) => {
+              setMosChatUnreadCount(unread);
+              setMosChatTaskCount(tasks);
+            }}
+          />
+        )}
       </OmiCallProvider>
     </SeasonalAccentProvider>
   );

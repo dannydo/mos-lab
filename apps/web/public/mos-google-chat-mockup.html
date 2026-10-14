@@ -1,0 +1,2913 @@
+<!doctype html>
+<html lang="vi" class="dark-theme">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>mOS Chat — Google Chat FHD (Vector Icons, Instant Tooltips, Threads & Task Reminders)</title>
+    <style>
+      :root {
+        --bg-app: #090d16;
+        --bg-surface: #111827;
+        --bg-surface-raised: #1a2333;
+        --bg-surface-hover: rgba(255, 255, 255, 0.055);
+        --bg-chat-canvas: #0d1322;
+        --bg-msg-hover: rgba(255, 255, 255, 0.03);
+        --bg-msg-highlight: rgba(212, 168, 75, 0.08);
+        --border-color: rgba(255, 255, 255, 0.08);
+        --border-strong: rgba(255, 255, 255, 0.15);
+        --text-primary: #f1f5f9;
+        --text-secondary: #94a3b8;
+        --text-muted: #64748b;
+        --wings-gold: #d4a84b;
+        --wings-gold-light: #f3cc73;
+        --wings-gold-bg: rgba(212, 168, 75, 0.14);
+        --google-blue: #3b82f6;
+        --google-blue-bg: rgba(59, 130, 246, 0.14);
+        --emerald: #10b981;
+        --emerald-bg: rgba(16, 185, 129, 0.14);
+        --amber: #f59e0b;
+        --amber-bg: rgba(245, 158, 11, 0.14);
+        --rose: #f43f5e;
+        --rose-bg: rgba(244, 63, 94, 0.14);
+        --shadow-xl: 0 24px 56px rgba(0, 0, 0, 0.62);
+        --shadow-pop: 0 10px 28px rgba(0, 0, 0, 0.45);
+        --tooltip-bg: #020617;
+        --tooltip-text: #f8fafc;
+      }
+
+      html.light-theme {
+        --bg-app: #f1f5f9;
+        --bg-surface: #ffffff;
+        --bg-surface-raised: #f8fafc;
+        --bg-surface-hover: rgba(15, 23, 42, 0.05);
+        --bg-chat-canvas: #ffffff;
+        --bg-msg-hover: #f8fafd;
+        --bg-msg-highlight: #fefce8;
+        --border-color: #e2e8f0;
+        --border-strong: #cbd5e1;
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --text-muted: #64748b;
+        --wings-gold: #b45309;
+        --wings-gold-light: #d97706;
+        --wings-gold-bg: rgba(217, 119, 6, 0.1);
+        --shadow-xl: 0 20px 48px rgba(15, 23, 42, 0.14);
+        --shadow-pop: 0 10px 26px rgba(15, 23, 42, 0.12);
+        --tooltip-bg: #0f172a;
+        --tooltip-text: #ffffff;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Google Sans', Roboto, sans-serif;
+        background: var(--bg-app);
+        color: var(--text-primary);
+        height: 100dvh;
+        width: 100vw;
+        overflow: hidden;
+        display: flex;
+        user-select: none;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .tabular-nums {
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
+      }
+
+      /* ================= VECTOR ICON PRIMITIVE (AppIcon Contract) ================= */
+      .mos-icon {
+        width: 17px;
+        height: 17px;
+        stroke: currentColor;
+        stroke-width: 1.85;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
+        flex-shrink: 0;
+        display: block;
+      }
+      .mos-icon--sm {
+        width: 15px;
+        height: 15px;
+      }
+      .mos-icon--lg {
+        width: 19px;
+        height: 19px;
+      }
+
+      /* ================= SQUARE ICON-ONLY BUTTON PRIMITIVE (IconButton / HeaderIconButton) ================= */
+      .icon-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--text-secondary);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        position: relative;
+        transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+        flex-shrink: 0;
+      }
+      .icon-btn:hover {
+        background: var(--bg-surface-hover);
+        color: var(--text-primary);
+      }
+      .icon-btn--surface {
+        background: var(--bg-surface-raised);
+        border-color: var(--border-color);
+      }
+      .icon-btn--surface:hover {
+        border-color: var(--border-strong);
+      }
+      .icon-btn--accent {
+        background: var(--wings-gold-bg);
+        border-color: rgba(212, 168, 75, 0.3);
+        color: var(--wings-gold-light);
+      }
+      html.light-theme .icon-btn--accent {
+        color: var(--wings-gold);
+      }
+      .icon-btn--accent:hover,
+      .icon-btn.active {
+        background: var(--wings-gold);
+        color: #000000 !important;
+        border-color: var(--wings-gold);
+      }
+      .icon-btn--blue.active {
+        background: var(--google-blue-bg);
+        color: #60a5fa !important;
+        border-color: rgba(59, 130, 246, 0.45);
+      }
+      html.light-theme .icon-btn--blue.active {
+        color: #2563eb !important;
+      }
+      .icon-btn--sm {
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
+      }
+
+      /* ================= GLOBAL INSTANT FLOATING TOOLTIP ================= */
+      #globalTooltip {
+        position: fixed;
+        z-index: 9999;
+        background: var(--tooltip-bg);
+        color: var(--tooltip-text);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        padding: 5px 9px;
+        border-radius: 6px;
+        font-size: 11.5px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        transform: translateY(3px);
+        transition: opacity 0.1s ease, transform 0.1s ease;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      #globalTooltip.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      .kbd-hint {
+        font-size: 10px;
+        padding: 1px 4px;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.14);
+        color: #cbd5e1;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+
+      /* ================= LEFT SIDEBAR (mOS Shell FHD) ================= */
+      .mos-sider {
+        width: 224px;
+        background: var(--bg-surface);
+        border-right: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+        z-index: 20;
+      }
+      .mos-logo {
+        height: 52px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        font-weight: 800;
+        font-size: 14.5px;
+        letter-spacing: 0.08em;
+        color: var(--wings-gold);
+        border-bottom: 1px solid var(--border-color);
+      }
+      .mos-nav {
+        padding: 10px 8px;
+        flex: 1;
+      }
+      .mos-nav-group {
+        font-size: 9.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+        padding: 10px 10px 5px;
+      }
+      .mos-nav-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 36px;
+        padding: 0 10px;
+        border-radius: 8px;
+        font-size: 12.5px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        cursor: pointer;
+        margin-bottom: 2px;
+        transition: all 0.14s ease;
+      }
+      .mos-nav-item__left {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-width: 0;
+      }
+      .mos-nav-item:hover {
+        background: var(--bg-surface-hover);
+        color: var(--text-primary);
+      }
+      .mos-nav-item.active {
+        background: var(--wings-gold);
+        color: #000000;
+        font-weight: 700;
+      }
+
+      /* ================= MAIN WORKSPACE & HEADER (FHD) ================= */
+      .mos-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        position: relative;
+      }
+      .mos-header {
+        height: 52px;
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        z-index: 40;
+      }
+      .header-cluster {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* Counter Badge on Icon Button */
+      .icon-badge {
+        position: absolute;
+        top: -4px;
+        right: -4px;
+        height: 16px;
+        min-width: 16px;
+        padding: 0 4px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        border: 1.5px solid var(--bg-surface);
+      }
+      .icon-badge--emerald {
+        background: #10b981;
+        color: #000;
+      }
+      .icon-badge--danger {
+        background: #ef4444;
+        color: #fff;
+      }
+      .icon-dot-amber {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #fbbf24;
+        border: 1.5px solid var(--bg-surface);
+      }
+
+      /* Online Staff Avatar Bubbles */
+      .online-stack {
+        display: flex;
+        align-items: center;
+        margin-right: 4px;
+      }
+      .online-bubble {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 2px solid var(--bg-surface);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10.5px;
+        font-weight: 700;
+        color: #fff;
+        margin-left: -7px;
+        position: relative;
+        cursor: pointer;
+        transition: transform 0.14s ease;
+      }
+      .online-bubble:first-child {
+        margin-left: 0;
+      }
+      .online-bubble:hover {
+        transform: translateY(-2px) scale(1.06);
+        z-index: 30 !important;
+      }
+      .online-dot {
+        position: absolute;
+        bottom: -1px;
+        right: -1px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #22c55e;
+        border: 1.5px solid var(--bg-surface);
+      }
+
+      /* Compact Avatar Trigger */
+      .avatar-btn {
+        height: 34px;
+        padding: 0 8px 0 3px;
+        border-radius: 999px;
+        border: 1px solid var(--border-color);
+        background: var(--bg-surface-raised);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        color: var(--text-primary);
+      }
+      .avatar-btn:hover {
+        border-color: var(--wings-gold);
+      }
+      .avatar-circle {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #d4a84b, #b45309);
+        color: #000;
+        font-weight: 800;
+        font-size: 11px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Avatar Dropdown */
+      .avatar-dropdown {
+        position: absolute;
+        top: 48px;
+        right: 16px;
+        width: 260px;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-strong);
+        border-radius: 12px;
+        box-shadow: var(--shadow-pop);
+        padding: 8px;
+        z-index: 120;
+        display: none;
+      }
+      .avatar-dropdown.open {
+        display: block;
+      }
+      .dropdown-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        color: var(--text-primary);
+        cursor: pointer;
+      }
+      .dropdown-row:hover {
+        background: var(--bg-surface-hover);
+      }
+
+      /* ================= BACKGROUND WORKSPACE (FHD TABLE) ================= */
+      .mos-workspace {
+        flex: 1;
+        padding: 16px 20px;
+        overflow-y: auto;
+      }
+
+      .fhd-subheader {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      .stat-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        padding: 12px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .stat-label {
+        font-size: 11px;
+        color: var(--text-secondary);
+        margin-bottom: 4px;
+      }
+      .stat-value {
+        font-size: 20px;
+        font-weight: 800;
+      }
+
+      .data-table-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .table-toolbar {
+        height: 44px;
+        padding: 0 14px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      table.mos-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12.5px;
+      }
+      table.mos-table th {
+        text-align: left;
+        padding: 9px 14px;
+        font-size: 10.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+        background: var(--bg-surface-raised);
+        border-bottom: 1px solid var(--border-color);
+      }
+      table.mos-table td {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
+      }
+      table.mos-table tr:hover td {
+        background: var(--bg-surface-hover);
+      }
+
+      .status-tag {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        gap: 5px;
+      }
+
+      /* ================= 🌟 GOOGLE CHAT RIGHT WORKSPACE PANEL (FHD OPTIMIZED) 🌟 ================= */
+      .gchat-panel {
+        position: fixed;
+        top: 52px;
+        right: 0;
+        bottom: 0;
+        width: 840px;
+        max-width: calc(100vw - 224px);
+        background: var(--bg-surface);
+        border-left: 1px solid var(--border-strong);
+        box-shadow: var(--shadow-xl);
+        display: flex;
+        z-index: 85;
+        transform: translateX(102%);
+        transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), width 0.2s ease;
+      }
+      .gchat-panel.open {
+        transform: translateX(0);
+      }
+      .gchat-panel.maximized {
+        width: calc(100vw - 224px);
+      }
+
+      /* Left Column: Conversations & Icon Filter Bar */
+      .gchat-sidebar {
+        width: 264px;
+        border-right: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-surface);
+        flex-shrink: 0;
+      }
+      .gchat-sidebar-top {
+        padding: 10px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .gchat-top-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .gchat-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: var(--bg-surface-raised);
+        border: 1px solid var(--border-color);
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        color: var(--text-primary);
+      }
+      .gchat-search-box {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        background: var(--bg-surface-raised);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        height: 32px;
+        padding: 0 10px;
+      }
+      .gchat-search-box input {
+        border: none;
+        background: transparent;
+        color: var(--text-primary);
+        font-size: 12px;
+        width: 100%;
+        outline: none;
+      }
+
+      /* Icon-only Filter Rail (Minimal text, high tooltip clarity) */
+      .gchat-icon-filters {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
+        background: var(--bg-surface-raised);
+        padding: 3px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+      }
+      .gchat-filter-btn {
+        height: 28px;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        color: var(--text-secondary);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+        position: relative;
+      }
+      .gchat-filter-btn:hover {
+        color: var(--text-primary);
+      }
+      .gchat-filter-btn.active {
+        background: var(--bg-surface);
+        color: var(--wings-gold);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+      }
+
+      .gchat-list-scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding: 6px;
+      }
+      .gchat-section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 8px 4px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+      }
+      .gchat-conv-item {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 7px 8px;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-bottom: 2px;
+        transition: background 0.12s ease;
+      }
+      .gchat-conv-item:hover {
+        background: var(--bg-surface-hover);
+      }
+      .gchat-conv-item.active {
+        background: var(--google-blue-bg);
+      }
+      .gchat-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 800;
+        color: #fff;
+        flex-shrink: 0;
+        position: relative;
+      }
+      .gchat-space-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .gchat-conv-body {
+        flex: 1;
+        min-width: 0;
+      }
+      .gchat-conv-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 4px;
+      }
+      .gchat-conv-name {
+        font-size: 12.5px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .gchat-conv-item.unread .gchat-conv-name {
+        font-weight: 800;
+        color: var(--text-primary);
+      }
+      .gchat-conv-time {
+        font-size: 10px;
+        color: var(--text-muted);
+        flex-shrink: 0;
+      }
+      .gchat-conv-preview {
+        font-size: 11px;
+        color: var(--text-secondary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* Center Column: Main Conversation & Left-Aligned Google Chat Stream */
+      .gchat-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-chat-canvas);
+        min-width: 0;
+      }
+      .gchat-conv-header {
+        height: 52px;
+        padding: 0 12px;
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      .gchat-header-info {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        min-width: 0;
+      }
+
+      /* Icon-first Subtabs */
+      .gchat-subtabs {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        background: var(--bg-surface-raised);
+        padding: 3px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+      }
+      .gchat-subtab {
+        height: 28px;
+        padding: 0 9px;
+        border-radius: 6px;
+        font-size: 11.5px;
+        font-weight: 700;
+        color: var(--text-secondary);
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .gchat-subtab.active {
+        background: var(--bg-surface);
+        color: var(--wings-gold);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+
+      .gchat-window-controls {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      /* 🌟 GOOGLE CHAT LEFT-ALIGNED STREAM 🌟 */
+      .gchat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 12px 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .date-divider {
+        text-align: center;
+        margin: 6px 0 10px;
+      }
+      .date-divider span {
+        background: var(--bg-surface-raised);
+        border: 1px solid var(--border-color);
+        color: var(--text-muted);
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 10px;
+        border-radius: 999px;
+      }
+
+      .msg-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 6px 16px;
+        position: relative;
+        transition: background 0.1s ease;
+      }
+      .msg-row:hover {
+        background: var(--bg-msg-hover);
+      }
+      .msg-row.has-task {
+        background: var(--bg-msg-highlight);
+      }
+
+      .msg-content-col {
+        flex: 1;
+        min-width: 0;
+      }
+      .msg-meta {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 3px;
+      }
+      .msg-sender {
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+      .msg-role-tag {
+        font-size: 9.5px;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-weight: 700;
+      }
+      .msg-time {
+        font-size: 10.5px;
+        color: var(--text-muted);
+      }
+      .msg-text {
+        font-size: 13px;
+        line-height: 1.46;
+        color: var(--text-primary);
+      }
+
+      /* 🌟 ICON-ONLY HOVER ACTION BAR (100% Vector Icons + Instant Tooltips) 🌟 */
+      .msg-hover-bar {
+        position: absolute;
+        top: -12px;
+        right: 16px;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-strong);
+        border-radius: 8px;
+        padding: 2px;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(3px);
+        transition: all 0.12s ease;
+        z-index: 15;
+      }
+      .msg-row:hover .msg-hover-bar {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(0);
+      }
+
+      /* Thread Summary Button under message (Google Spaces style) */
+      .thread-chip {
+        margin-top: 5px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 8px;
+        border-radius: 6px;
+        background: var(--google-blue-bg);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        color: #60a5fa;
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      html.light-theme .thread-chip {
+        color: #2563eb;
+      }
+
+      /* Reactions */
+      .msg-reactions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-top: 5px;
+      }
+      .reaction-chip {
+        background: var(--bg-surface-raised);
+        border: 1px solid var(--border-color);
+        border-radius: 999px;
+        padding: 1px 7px;
+        font-size: 11px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+      }
+      .reaction-chip:hover {
+        border-color: var(--wings-gold);
+      }
+
+      /* Compact Inline Task Card */
+      .inline-task-card {
+        margin-top: 6px;
+        background: var(--bg-surface);
+        border: 1px solid rgba(212, 168, 75, 0.45);
+        border-left: 3px solid var(--wings-gold);
+        border-radius: 8px;
+        padding: 7px 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .inline-task-card.done {
+        border-color: rgba(16, 185, 129, 0.4);
+        border-left-color: var(--emerald);
+        opacity: 0.8;
+      }
+      .task-check-box {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        border: 1.75px solid var(--wings-gold);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+      .inline-task-card.done .task-check-box {
+        background: var(--emerald);
+        border-color: var(--emerald);
+        color: #000;
+      }
+
+      /* Compact Smart Customer Card */
+      .mos-smart-card {
+        margin-top: 6px;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-strong);
+        border-left: 3px solid var(--google-blue);
+        border-radius: 8px;
+        padding: 7px 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      /* Composer (Single clean bar with Icon-only tools) */
+      .gchat-composer {
+        padding: 10px 14px;
+        background: var(--bg-surface);
+        border-top: 1px solid var(--border-color);
+      }
+      .composer-bar {
+        height: 40px;
+        background: var(--bg-surface-raised);
+        border: 1px solid var(--border-strong);
+        border-radius: 999px;
+        padding: 0 6px 0 14px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .composer-bar:focus-within {
+        border-color: var(--wings-gold);
+      }
+      .composer-input {
+        flex: 1;
+        border: none;
+        background: transparent;
+        color: var(--text-primary);
+        font-size: 12.5px;
+        outline: none;
+      }
+
+      /* ================= 🌟 GOOGLE CHAT SIDE THREAD PANEL 🌟 ================= */
+      .gchat-thread-pane {
+        width: 268px;
+        border-left: 1px solid var(--border-color);
+        background: var(--bg-surface);
+        display: none;
+        flex-direction: column;
+        flex-shrink: 0;
+      }
+      .gchat-thread-pane.open {
+        display: flex;
+      }
+      .thread-pane-header {
+        height: 52px;
+        padding: 0 12px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 12.5px;
+        font-weight: 800;
+      }
+
+      /* ================= 🌟 MINI DOCKED POP-OUT WINDOWS (BOTTOM RIGHT) 🌟 ================= */
+      .dock-tray {
+        position: fixed;
+        bottom: 0;
+        right: 20px;
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+        z-index: 90;
+        pointer-events: none;
+      }
+      .mini-dock-window {
+        width: 316px;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-strong);
+        border-bottom: none;
+        border-radius: 10px 10px 0 0;
+        box-shadow: var(--shadow-pop);
+        display: flex;
+        flex-direction: column;
+        pointer-events: auto;
+        overflow: hidden;
+      }
+      .mini-dock-header {
+        height: 38px;
+        padding: 0 10px;
+        background: var(--bg-surface-raised);
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+      }
+      .mini-dock-body {
+        height: 290px;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-chat-canvas);
+      }
+      .mini-dock-window.collapsed .mini-dock-body {
+        display: none;
+      }
+
+      /* ================= MODAL: CREATE TASK & REMINDER ================= */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.65);
+        backdrop-filter: blur(3px);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 200;
+      }
+      .modal-backdrop.open {
+        display: flex;
+      }
+      .task-modal {
+        width: 440px;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-strong);
+        border-radius: 14px;
+        box-shadow: var(--shadow-xl);
+        overflow: hidden;
+      }
+      .task-modal-header {
+        height: 48px;
+        padding: 0 16px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--wings-gold-bg);
+        font-weight: 800;
+        font-size: 13.5px;
+      }
+      .task-modal-body {
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .form-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-secondary);
+        margin-bottom: 4px;
+        display: block;
+      }
+      .form-input,
+      .form-select {
+        width: 100%;
+        height: 34px;
+        padding: 0 10px;
+        border-radius: 8px;
+        border: 1px solid var(--border-strong);
+        background: var(--bg-surface-raised);
+        color: var(--text-primary);
+        font-size: 12.5px;
+        outline: none;
+      }
+      .preset-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+      }
+      .preset-btn {
+        height: 32px;
+        border-radius: 7px;
+        border: 1px solid var(--border-color);
+        background: var(--bg-surface-raised);
+        color: var(--text-primary);
+        font-size: 11.5px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+      }
+      .preset-btn:hover,
+      .preset-btn.selected {
+        border-color: var(--wings-gold);
+        background: var(--wings-gold-bg);
+        color: var(--wings-gold-light);
+      }
+      html.light-theme .preset-btn.selected {
+        color: var(--wings-gold);
+      }
+
+      /* LIVE REMINDER TOAST */
+      .reminder-alert-toast {
+        position: fixed;
+        top: 62px;
+        right: 20px;
+        width: 360px;
+        background: var(--bg-surface);
+        border: 1.5px solid var(--wings-gold);
+        border-radius: 12px;
+        box-shadow: var(--shadow-xl);
+        padding: 12px 14px;
+        z-index: 300;
+        display: none;
+      }
+      .reminder-alert-toast.open {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- GLOBAL INSTANT TOOLTIP -->
+    <div id="globalTooltip"></div>
+
+    <!-- ================= LEFT SIDEBAR (mOS FHD Shell) ================= -->
+    <aside class="mos-sider">
+      <div class="mos-logo">
+        <span>WINGS LASHES</span>
+        <span class="status-tag" style="background: var(--wings-gold-bg); color: var(--wings-gold); font-size: 9.5px;">mOS</span>
+      </div>
+      <div class="mos-nav">
+        <div class="mos-nav-group">Vận hành</div>
+        <div class="mos-nav-item active" onclick="switchMosPage('telesales', this)">
+          <span class="mos-nav-item__left"><span data-icon="phone"></span><span>Khách hàng</span></span>
+          <span class="tabular-nums" style="font-size: 11px; opacity: 0.8;">128</span>
+        </div>
+        <div class="mos-nav-item" onclick="switchMosPage('schedule', this)">
+          <span class="mos-nav-item__left"><span data-icon="calendar"></span><span>Điều phối CV</span></span>
+          <span class="tabular-nums" style="font-size: 11px; color: var(--emerald);">12</span>
+        </div>
+        <div class="mos-nav-item" onclick="switchMosPage('kpi', this)">
+          <span class="mos-nav-item__left"><span data-icon="barChart"></span><span>Lương & Tip CC</span></span>
+        </div>
+        <div class="mos-nav-group">Tương tác</div>
+        <div class="mos-nav-item" onclick="openChatPanel('tasks')">
+          <span class="mos-nav-item__left"><span data-icon="checkSquare"></span><span>Tasks & Nhắc hẹn</span></span>
+          <span id="sidebarTaskBadge" class="tabular-nums" style="font-size: 11px; color: var(--amber); font-weight: 700;">3</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ================= MAIN WORKSPACE + HEADER ================= -->
+    <div class="mos-main">
+      <!-- TOP HEADER: 100% ICON-ONLY + TOOLTIPS -->
+      <header class="mos-header">
+        <div class="header-cluster">
+          <button
+            class="icon-btn icon-btn--accent"
+            data-tooltip="Lịch CV & Hàng chờ tua real-time (12 CV đang làm)"
+            onclick="showQuickToast('Đã mở Lịch Chuyên Viên (12 CV đang làm việc)')"
+          >
+            <span data-icon="users"></span>
+            <span class="icon-badge icon-badge--emerald tabular-nums">12</span>
+          </button>
+          <button
+            class="icon-btn icon-btn--accent"
+            data-tooltip="Book lịch hẹn mới"
+            data-kbd="B"
+            onclick="showQuickToast('Đã mở Booking Wizard')"
+          >
+            <span data-icon="calendarPlus"></span>
+          </button>
+        </div>
+
+        <div class="header-cluster">
+          <!-- Online Colleagues Stack (Click to 1-1 Chat) -->
+          <div class="online-stack">
+            <div
+              class="online-bubble"
+              style="background: linear-gradient(135deg, #ec4899, #db2777); z-index: 4;"
+              data-tooltip="Chat 1-1: Tuyết Nhi (Telesales)"
+              onclick="selectConversation('dm-tuyetnhi', true)"
+            >
+              TN<span class="online-dot"></span>
+            </div>
+            <div
+              class="online-bubble"
+              style="background: linear-gradient(135deg, #a855f7, #9333ea); z-index: 3;"
+              data-tooltip="Chat 1-1: Hà My (Tư Vấn CC)"
+              onclick="selectConversation('dm-hamy', true)"
+            >
+              HM<span class="online-dot"></span>
+            </div>
+            <div
+              class="online-bubble"
+              style="background: linear-gradient(135deg, #10b981, #059669); z-index: 2;"
+              data-tooltip="Chat 1-1: Chuyên Viên Minh Thư (CV+)"
+              onclick="selectConversation('dm-minhthu', true)"
+            >
+              MT<span class="online-dot"></span>
+            </div>
+          </div>
+
+          <button
+            class="icon-btn icon-btn--surface"
+            data-tooltip="Kinh Thánh mOS theo trang hiện tại"
+            onclick="showQuickToast('Đã mở Kinh Thánh mOS')"
+          >
+            <span data-icon="bookOpen"></span>
+          </button>
+
+          <!-- 🌟 GOOGLE CHAT ICON LAUNCHER RIGHT NEXT TO AVATAR (ICON-ONLY + BADGE + TOOLTIP) 🌟 -->
+          <button
+            id="headerChatBtn"
+            class="icon-btn icon-btn--surface icon-btn--blue active"
+            data-tooltip="mOS Google Chat & Spaces"
+            data-kbd="⌘J"
+            onclick="toggleChatPanel()"
+          >
+            <span data-icon="messageSquare"></span>
+            <span id="headerUnreadBadge" class="icon-badge icon-badge--danger tabular-nums">4</span>
+            <span class="icon-dot-amber"></span>
+          </button>
+
+          <!-- 🌟 USER AVATAR (Theme & Daily Calls tucked cleanly inside) 🌟 -->
+          <div
+            class="avatar-btn"
+            data-tooltip="Tài khoản, Giao diện Sáng/Tối & Cuộc gọi hôm nay"
+            onclick="toggleAvatarDropdown(event)"
+          >
+            <div class="avatar-circle">DD</div>
+            <span data-icon="chevronDown" class="mos-icon--sm" style="color: var(--text-secondary);"></span>
+          </div>
+
+          <div id="avatarDropdown" class="avatar-dropdown" onclick="event.stopPropagation()">
+            <div style="padding: 6px 10px 8px; border-bottom: 1px solid var(--border-color); margin-bottom: 4px;">
+              <div style="font-weight: 800; font-size: 12.5px;">Danny Do</div>
+              <div style="font-size: 10.5px; color: var(--wings-gold);">Super Admin</div>
+            </div>
+            <div class="dropdown-row" onclick="toggleThemeMode()">
+              <span style="display:flex; align-items:center; gap:8px;"><span data-icon="sunMoon"></span><span>Giao diện</span></span>
+              <span id="themeStatusLabel" class="status-tag" style="background: var(--wings-gold-bg); color: var(--wings-gold);">Dark</span>
+            </div>
+            <div class="dropdown-row" onclick="showQuickToast('Đã mở Drawer Cuộc gọi hôm nay (18 cuộc)')">
+              <span style="display:flex; align-items:center; gap:8px;"><span data-icon="phoneCall"></span><span>Cuộc gọi hôm nay</span></span>
+              <span class="status-tag tabular-nums" style="background: var(--emerald-bg); color: var(--emerald);">18</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- BACKGROUND mOS FHD WORKSPACE -->
+      <main class="mos-workspace">
+        <div class="fhd-subheader">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <h2 id="mosPageTitle" style="font-size: 15px; font-weight: 800;">Danh sách Khách hàng & Lịch hẹn hôm nay</h2>
+            <span class="status-tag tabular-nums" style="background: var(--emerald-bg); color: var(--emerald);">Live FHD</span>
+          </div>
+
+          <!-- Compact Icon Quick-Test Bar with Tooltips -->
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 11px; color: var(--text-muted); margin-right: 4px;">Test nhanh:</span>
+            <button
+              class="icon-btn icon-btn--surface"
+              data-tooltip="Đóng / Mở Bảng Google Chat"
+              data-kbd="⌘J"
+              onclick="toggleChatPanel()"
+            >
+              <span data-icon="messageSquare"></span>
+            </button>
+            <button
+              class="icon-btn icon-btn--surface"
+              data-tooltip="Thu nhỏ cuộc chat xuống góc dưới (Mini Pop-out)"
+              onclick="popOutCurrentToMiniDock()"
+            >
+              <span data-icon="minimize2"></span>
+            </button>
+            <button
+              class="icon-btn icon-btn--surface"
+              data-tooltip="Mở Modal Tạo Task & Nhắc hẹn từ tin nhắn"
+              data-kbd="T"
+              onclick="openTaskModalFromMsg('msg-2')"
+            >
+              <span data-icon="alarmPlus"></span>
+            </button>
+            <button
+              class="icon-btn icon-btn--accent"
+              data-tooltip="Giả lập tới giờ nhắc hẹn (Nổ chuông + Popup + Bot)"
+              onclick="triggerSimulatedReminderNow()"
+            >
+              <span data-icon="bellRing"></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div>
+              <div class="stat-label">Khách cần gọi</div>
+              <div class="stat-value tabular-nums">128</div>
+            </div>
+            <span class="icon-btn icon-btn--surface" style="pointer-events:none;"><span data-icon="phone"></span></span>
+          </div>
+          <div class="stat-card">
+            <div>
+              <div class="stat-label">Chuyên Viên trong ca</div>
+              <div class="stat-value tabular-nums" style="color: var(--emerald);">12</div>
+            </div>
+            <span class="icon-btn icon-btn--surface" style="pointer-events:none;"><span data-icon="users"></span></span>
+          </div>
+          <div class="stat-card">
+            <div>
+              <div class="stat-label">Tin chưa đọc</div>
+              <div class="stat-value tabular-nums" style="color: #60a5fa;">4</div>
+            </div>
+            <span class="icon-btn icon-btn--surface" style="pointer-events:none;"><span data-icon="messageSquare"></span></span>
+          </div>
+          <div class="stat-card">
+            <div>
+              <div class="stat-label">Tasks đang hẹn giờ</div>
+              <div id="statTaskCount" class="stat-value tabular-nums" style="color: var(--amber);">3</div>
+            </div>
+            <span class="icon-btn icon-btn--surface" style="pointer-events:none;"><span data-icon="alarmClock"></span></span>
+          </div>
+        </div>
+
+        <div class="data-table-card">
+          <div class="table-toolbar">
+            <span style="font-weight: 700; font-size: 13px;">Khách hàng sắp đến ca</span>
+            <span style="font-size: 11.5px; color: var(--text-muted);">Dùng nút icon bên phải mỗi dòng để gửi nhanh thẻ KH vào phòng Chat</span>
+          </div>
+          <table class="mos-table">
+            <thead>
+              <tr>
+                <th>Khách hàng</th>
+                <th>Hạng</th>
+                <th>Giờ hẹn</th>
+                <th>Chuyên Viên</th>
+                <th>Tư Vấn (CC)</th>
+                <th style="text-align: right;">Tác vụ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div style="font-weight: 700;">Chị Nguyễn Bích Ngọc</div>
+                  <div style="font-size: 11px; color: var(--text-secondary);" class="tabular-nums">0908 ••• 412</div>
+                </td>
+                <td><span class="status-tag" style="background: var(--wings-gold-bg); color: var(--wings-gold);">VIP Diamond</span></td>
+                <td class="tabular-nums" style="font-weight: 700; color: var(--emerald);">15:15</td>
+                <td>Chuyên Viên Minh Thư (CV+)</td>
+                <td>Hà My (CC)</td>
+                <td style="text-align: right;">
+                  <button
+                    class="icon-btn icon-btn--surface icon-btn--sm"
+                    data-tooltip="Gửi thẻ Khách hàng vào Chat đang mở"
+                    onclick="sendCustomerCardToCurrentChat('Chị Nguyễn Bích Ngọc', 'VIP Diamond · 15:15', 'Chuyên Viên Minh Thư (CV+)')"
+                  >
+                    <span data-icon="share" class="mos-icon--sm"></span>
+                  </button>
+                  <button
+                    class="icon-btn icon-btn--surface icon-btn--sm"
+                    data-tooltip="Mở hồ sơ khách hàng"
+                    onclick="showQuickToast('Đã mở hồ sơ Chị Nguyễn Bích Ngọc')"
+                  >
+                    <span data-icon="externalLink" class="mos-icon--sm"></span>
+                  </button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="font-weight: 700;">Chị Trần Bảo Trân</div>
+                  <div style="font-size: 11px; color: var(--text-secondary);" class="tabular-nums">0912 ••• 889</div>
+                </td>
+                <td><span class="status-tag" style="background: var(--google-blue-bg); color: #60a5fa;">Khách Mới</span></td>
+                <td class="tabular-nums" style="font-weight: 700; color: var(--amber);">16:15</td>
+                <td>Chuyên Viên Thanh Tâm (CV)</td>
+                <td>Hà My (CC)</td>
+                <td style="text-align: right;">
+                  <button
+                    class="icon-btn icon-btn--surface icon-btn--sm"
+                    data-tooltip="Gửi thẻ Khách hàng vào Chat đang mở"
+                    onclick="sendCustomerCardToCurrentChat('Chị Trần Bảo Trân', 'Khách Mới · 16:15', 'Chuyên Viên Thanh Tâm (CV)')"
+                  >
+                    <span data-icon="share" class="mos-icon--sm"></span>
+                  </button>
+                  <button
+                    class="icon-btn icon-btn--surface icon-btn--sm"
+                    data-tooltip="Mở hồ sơ khách hàng"
+                    onclick="showQuickToast('Đã mở hồ sơ Chị Trần Bảo Trân')"
+                  >
+                    <span data-icon="externalLink" class="mos-icon--sm"></span>
+                  </button>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div style="font-weight: 700;">Chị Lê Hoàng Yến</div>
+                  <div style="font-size: 11px; color: var(--text-secondary);" class="tabular-nums">0989 ••• 204</div>
+                </td>
+                <td><span class="status-tag" style="background: var(--rose-bg); color: var(--rose);">Cần xác nhận</span></td>
+                <td class="tabular-nums" style="font-weight: 700;">17:30</td>
+                <td>Chuyên Viên Ngọc Ánh (CV+)</td>
+                <td>Tuyết Nhi</td>
+                <td style="text-align: right;">
+                  <button
+                    class="icon-btn icon-btn--surface icon-btn--sm"
+                    data-tooltip="Gửi thẻ Khách hàng vào Chat đang mở"
+                    onclick="sendCustomerCardToCurrentChat('Chị Lê Hoàng Yến', 'Cần xác nhận · 17:30', 'Chuyên Viên Ngọc Ánh (CV+)')"
+                  >
+                    <span data-icon="share" class="mos-icon--sm"></span>
+                  </button>
+                  <button
+                    class="icon-btn icon-btn--surface icon-btn--sm"
+                    data-tooltip="Mở hồ sơ khách hàng"
+                    onclick="showQuickToast('Đã mở hồ sơ Chị Lê Hoàng Yến')"
+                  >
+                    <span data-icon="externalLink" class="mos-icon--sm"></span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+
+    <!-- ================= 🌟 GOOGLE CHAT WORKSPACE PANEL (FHD, VECTOR ICONS + TOOLTIPS) 🌟 ================= -->
+    <section id="gchatPanel" class="gchat-panel open">
+      <!-- LEFT SIDEBAR -->
+      <div class="gchat-sidebar">
+        <div class="gchat-sidebar-top">
+          <div class="gchat-top-row">
+            <div
+              class="gchat-status-pill"
+              data-tooltip="Đổi trạng thái: Đang hoạt động / Không làm phiền"
+              onclick="togglePresenceStatus()"
+            >
+              <span id="presenceDot" style="width:8px; height:8px; border-radius:50%; background:#22c55e;"></span>
+              <span id="presenceLabel">Đang hoạt động</span>
+              <span data-icon="chevronDown" class="mos-icon--sm"></span>
+            </div>
+            <button
+              class="icon-btn icon-btn--surface icon-btn--sm"
+              data-tooltip="Tạo cuộc trò chuyện hoặc Space mới"
+              onclick="promptNewGroupOrDm()"
+            >
+              <span data-icon="plus" class="mos-icon--sm"></span>
+            </button>
+          </div>
+
+          <div class="gchat-search-box">
+            <span data-icon="search" class="mos-icon--sm" style="color: var(--text-muted);"></span>
+            <input id="chatSearchInput" type="text" placeholder="Tìm người, #Space, task..." oninput="renderSidebarLists()" />
+          </div>
+
+          <!-- ICON-ONLY FILTER BAR WITH TOOLTIPS -->
+          <div class="gchat-icon-filters">
+            <button
+              class="gchat-filter-btn active"
+              data-tooltip="Tất cả hội thoại"
+              onclick="setSidebarFilter('all', this)"
+            >
+              <span data-icon="inbox" class="mos-icon--sm"></span>
+            </button>
+            <button
+              class="gchat-filter-btn"
+              data-tooltip="Chưa đọc"
+              onclick="setSidebarFilter('unread', this)"
+            >
+              <span data-icon="mailUnread" class="mos-icon--sm"></span>
+              <span id="filterUnreadCount" class="tabular-nums">4</span>
+            </button>
+            <button
+              class="gchat-filter-btn"
+              data-tooltip="Nhóm & Phòng ban (#Spaces)"
+              onclick="setSidebarFilter('spaces', this)"
+            >
+              <span data-icon="hash" class="mos-icon--sm"></span>
+            </button>
+            <button
+              class="gchat-filter-btn"
+              data-tooltip="Kho Công việc & Nhắc hẹn (Tasks)"
+              onclick="openTasksHubView(this)"
+            >
+              <span data-icon="alarmClock" class="mos-icon--sm"></span>
+              <span id="pillTaskCount" class="tabular-nums">3</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="gchat-list-scroll">
+          <div class="gchat-section-header">
+            <span>Trực tiếp (1-1)</span>
+            <button class="icon-btn icon-btn--sm" data-tooltip="Chat 1-1 mới" onclick="promptNewGroupOrDm()">
+              <span data-icon="plus" class="mos-icon--sm"></span>
+            </button>
+          </div>
+          <div id="dmListContainer"></div>
+
+          <div class="gchat-section-header" style="margin-top: 6px;">
+            <span>Spaces</span>
+            <button class="icon-btn icon-btn--sm" data-tooltip="Tạo Space mới" onclick="promptNewGroupOrDm()">
+              <span data-icon="plus" class="mos-icon--sm"></span>
+            </button>
+          </div>
+          <div id="spaceListContainer"></div>
+        </div>
+      </div>
+
+      <!-- CENTER CONVERSATION AREA -->
+      <div class="gchat-main">
+        <div class="gchat-conv-header">
+          <div class="gchat-header-info">
+            <div id="activeConvBadge" class="gchat-space-icon" style="background: rgba(16, 185, 129, 0.16); color: #10b981;">
+              <span data-icon="hash"></span>
+            </div>
+            <div style="min-width: 0;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span id="activeConvTitle" style="font-weight: 800; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">tư-vấn-cc-ca-hôm-nay</span>
+                <span id="activeConvRoleTag" class="status-tag" style="background: var(--emerald-bg); color: var(--emerald); font-size: 10px;">12</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Compact Icon + Short Badge Sub-tabs -->
+          <div class="gchat-subtabs">
+            <button id="subtabChat" class="gchat-subtab active" data-tooltip="Luồng trò chuyện" onclick="switchConvSubtab('chat')">
+              <span data-icon="messageSquare" class="mos-icon--sm"></span>
+              <span>Chat</span>
+            </button>
+            <button id="subtabTasks" class="gchat-subtab" data-tooltip="Công việc & Nhắc hẹn của phòng" onclick="switchConvSubtab('tasks')">
+              <span data-icon="checkSquare" class="mos-icon--sm"></span>
+              <span>Tasks</span>
+              <span id="convTaskCount" class="tabular-nums" style="color: var(--amber);">1</span>
+            </button>
+            <button id="subtabPinned" class="gchat-subtab" data-tooltip="Tin nhắn đã ghim" onclick="switchConvSubtab('pinned')">
+              <span data-icon="pin" class="mos-icon--sm"></span>
+              <span id="convPinCount" class="tabular-nums">1</span>
+            </button>
+          </div>
+
+          <!-- 100% ICON-ONLY WINDOW CONTROLS WITH TOOLTIPS -->
+          <div class="gchat-window-controls">
+            <button
+              id="toggleThreadBtn"
+              class="icon-btn icon-btn--sm"
+              data-tooltip="Đóng / Mở cột Luồng trả lời (Threads)"
+              onclick="toggleThreadPane()"
+            >
+              <span data-icon="messageReply" class="mos-icon--sm"></span>
+            </button>
+            <button
+              class="icon-btn icon-btn--sm"
+              data-tooltip="Thu nhỏ xuống góc dưới màn hình (Pop-out)"
+              onclick="popOutCurrentToMiniDock()"
+            >
+              <span data-icon="minimize2" class="mos-icon--sm"></span>
+            </button>
+            <button
+              class="icon-btn icon-btn--sm"
+              data-tooltip="Phóng to / Thu hẹp khung Chat"
+              onclick="toggleMaximizeChat()"
+            >
+              <span data-icon="maximize2" class="mos-icon--sm"></span>
+            </button>
+            <button
+              class="icon-btn icon-btn--sm"
+              data-tooltip="Đóng mOS Chat"
+              data-kbd="Esc"
+              onclick="toggleChatPanel()"
+            >
+              <span data-icon="x" class="mos-icon--sm"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- VIEW 1: CHAT STREAM -->
+        <div id="chatStreamView" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+          <div id="messagesContainer" class="gchat-messages"></div>
+
+          <!-- Clean Google Chat Composer with Icon-only Toolbar -->
+          <div class="gchat-composer">
+            <div class="composer-bar">
+              <input
+                id="mainChatInput"
+                class="composer-input"
+                type="text"
+                placeholder="Nhắn tin... (Rê chuột lên tin nhắn để tạo Task / Nhắc hẹn)"
+                onkeydown="if(event.key==='Enter') sendMainMessage()"
+              />
+              <button
+                class="icon-btn icon-btn--sm"
+                data-tooltip="Đính kèm thẻ Khách hàng / Booking mOS"
+                onclick="sendCustomerCardToCurrentChat('Chị Nguyễn Bích Ngọc', 'VIP Diamond · 15:15', 'Chuyên Viên Minh Thư (CV+)')"
+              >
+                <span data-icon="userPlus" class="mos-icon--sm"></span>
+              </button>
+              <button
+                class="icon-btn icon-btn--sm"
+                data-tooltip="Nhắc tên đồng nghiệp (@)"
+                onclick="insertMention('@Hà My ')"
+              >
+                <span data-icon="atSign" class="mos-icon--sm"></span>
+              </button>
+              <button
+                class="icon-btn icon-btn--sm"
+                data-tooltip="Tạo Task & Hẹn giờ mới"
+                data-kbd="T"
+                onclick="openQuickTaskFromComposer()"
+              >
+                <span data-icon="alarmPlus" class="mos-icon--sm"></span>
+              </button>
+              <button
+                class="icon-btn icon-btn--accent icon-btn--sm"
+                data-tooltip="Gửi tin nhắn"
+                data-kbd="Enter"
+                onclick="sendMainMessage()"
+              >
+                <span data-icon="send" class="mos-icon--sm"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- VIEW 2: TASKS & REMINDERS HUB -->
+        <div id="tasksBoardView" style="display: none; flex: 1; overflow-y: auto; padding: 14px 16px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <span style="font-size: 13.5px; font-weight: 800;">Công việc & Nhắc hẹn từ Tin nhắn</span>
+            <div style="display: flex; gap: 6px;">
+              <button
+                class="icon-btn icon-btn--surface icon-btn--sm"
+                data-tooltip="Test nổ chuông nhắc hẹn ngay"
+                onclick="triggerSimulatedReminderNow()"
+              >
+                <span data-icon="bellRing" class="mos-icon--sm"></span>
+              </button>
+              <button
+                class="icon-btn icon-btn--accent icon-btn--sm"
+                data-tooltip="Tạo Task mới"
+                onclick="openQuickTaskFromComposer()"
+              >
+                <span data-icon="plus" class="mos-icon--sm"></span>
+              </button>
+            </div>
+          </div>
+          <div id="tasksListContainer" style="display: flex; flex-direction: column; gap: 8px;"></div>
+        </div>
+
+        <!-- VIEW 3: PINNED MESSAGES -->
+        <div id="pinnedBoardView" style="display: none; flex: 1; overflow-y: auto; padding: 14px 16px;">
+          <div style="font-size: 13.5px; font-weight: 800; margin-bottom: 10px;">Tin nhắn đã ghim</div>
+          <div id="pinnedListContainer" style="display: flex; flex-direction: column; gap: 8px;"></div>
+        </div>
+      </div>
+
+      <!-- 🌟 RIGHT SIDE THREAD PANE (Google Chat Spaces Threading) 🌟 -->
+      <aside id="threadPane" class="gchat-thread-pane">
+        <div class="thread-pane-header">
+          <span style="display:flex; align-items:center; gap:6px;">
+            <span data-icon="messageReply" class="mos-icon--sm"></span>
+            <span>Luồng trả lời (Thread)</span>
+          </span>
+          <button class="icon-btn icon-btn--sm" data-tooltip="Đóng luồng" onclick="closeThreadPane()">
+            <span data-icon="x" class="mos-icon--sm"></span>
+          </button>
+        </div>
+        <div id="threadMessagesList" style="flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px;"></div>
+        <div style="padding: 10px; border-top: 1px solid var(--border-color); display: flex; gap: 6px;">
+          <input
+            id="threadReplyInput"
+            type="text"
+            placeholder="Trả lời trong luồng..."
+            style="flex: 1; height: 32px; background: var(--bg-surface-raised); border: 1px solid var(--border-strong); border-radius: 999px; padding: 0 12px; color: var(--text-primary); font-size: 12px; outline: none;"
+            onkeydown="if(event.key==='Enter') sendThreadReply()"
+          />
+          <button class="icon-btn icon-btn--accent icon-btn--sm" data-tooltip="Gửi vào luồng" onclick="sendThreadReply()">
+            <span data-icon="send" class="mos-icon--sm"></span>
+          </button>
+        </div>
+      </aside>
+    </section>
+
+    <!-- ================= 🌟 MINI DOCKED POP-OUT CHAT TRAY (BOTTOM RIGHT) 🌟 ================= -->
+    <div id="miniDockTray" class="dock-tray"></div>
+
+    <!-- ================= 🌟 MODAL: MESSAGE TO TASK -> REMINDER 🌟 ================= -->
+    <div id="taskModalBackdrop" class="modal-backdrop">
+      <div class="task-modal">
+        <div class="task-modal-header">
+          <span style="display: flex; align-items: center; gap: 7px;">
+            <span data-icon="alarmPlus"></span>
+            <span>Giao Task & Hẹn Giờ Nhắc</span>
+          </span>
+          <button class="icon-btn icon-btn--sm" data-tooltip="Đóng" onclick="closeTaskModal()">
+            <span data-icon="x" class="mos-icon--sm"></span>
+          </button>
+        </div>
+        <div class="task-modal-body">
+          <div id="taskSourceQuote" style="font-size: 11px; color: var(--text-secondary); background: var(--bg-surface-raised); padding: 7px 10px; border-radius: 7px; border-left: 3px solid var(--wings-gold);"></div>
+
+          <div>
+            <label class="form-label">Tên công việc</label>
+            <input id="taskTitleInput" class="form-input" type="text" />
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div>
+              <label class="form-label">Người phụ trách</label>
+              <select id="taskAssigneeSelect" class="form-select">
+                <option value="Danny Do">Danny Do (Tôi)</option>
+                <option value="Hà My (CC)" selected>Hà My (Tư Vấn CC)</option>
+                <option value="Tuyết Nhi">Tuyết Nhi (Telesales)</option>
+                <option value="Chuyên Viên Minh Thư (CV+)">Chuyên Viên Minh Thư (CV+)</option>
+                <option value="Khánh Linh (CS)">Khánh Linh (CSKH)</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Ưu tiên</label>
+              <select id="taskPrioritySelect" class="form-select">
+                <option value="Khẩn cấp">Khẩn cấp</option>
+                <option value="Quan trọng" selected>Quan trọng</option>
+                <option value="Bình thường">Bình thường</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="form-label">Hẹn giờ nhắc (Reminder)</label>
+            <div class="preset-grid">
+              <button type="button" class="preset-btn selected" onclick="selectReminderPreset(5, '5 giây (Demo)', this)">
+                5 giây (Test)
+              </button>
+              <button type="button" class="preset-btn" onclick="selectReminderPreset(900, '15 phút', this)">
+                15 phút
+              </button>
+              <button type="button" class="preset-btn" onclick="selectReminderPreset(1800, '30 phút', this)">
+                30 phút
+              </button>
+              <button type="button" class="preset-btn" onclick="selectReminderPreset(3600, '1 giờ', this)">
+                1 giờ
+              </button>
+              <button type="button" class="preset-btn" onclick="selectReminderPreset(7200, 'Cuối ca 17:30', this)">
+                17:30 hôm nay
+              </button>
+              <button type="button" class="preset-btn" onclick="selectReminderPreset(86400, '9:00 Sáng mai', this)">
+                09:00 mai
+              </button>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 2px;">
+            <button class="preset-btn" style="padding: 0 12px;" onclick="closeTaskModal()">Hủy</button>
+            <button
+              class="preset-btn selected"
+              style="padding: 0 14px; background: var(--wings-gold); color: #000; font-weight: 800;"
+              onclick="confirmCreateTaskFromMessage()"
+            >
+              Lưu & Hẹn giờ
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 🌟 LIVE REMINDER ALERT TOAST POPUP 🌟 ================= -->
+    <div id="reminderAlertToast" class="reminder-alert-toast">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+        <div style="display: flex; align-items: center; gap: 6px; font-weight: 800; color: var(--wings-gold-light); font-size: 12.5px;">
+          <span data-icon="bellRing" class="mos-icon--sm"></span>
+          <span>NHẮC HẸN CÔNG VIỆC</span>
+        </div>
+        <button class="icon-btn icon-btn--sm" data-tooltip="Đóng" onclick="dismissReminderToast()">
+          <span data-icon="x" class="mos-icon--sm"></span>
+        </button>
+      </div>
+      <div id="reminderToastTitle" style="font-size: 13px; font-weight: 700; margin-bottom: 3px;"></div>
+      <div id="reminderToastMeta" style="font-size: 11px; color: var(--text-secondary); margin-bottom: 10px;"></div>
+      <div style="display: flex; gap: 6px;">
+        <button
+          class="preset-btn selected"
+          style="flex: 1; background: var(--emerald); border-color: var(--emerald); color: #000; font-weight: 800;"
+          data-tooltip="Đánh dấu hoàn thành ngay"
+          onclick="completeActiveToastTask()"
+        >
+          <span data-icon="check" class="mos-icon--sm"></span>
+          <span>Hoàn thành</span>
+        </button>
+        <button
+          class="icon-btn icon-btn--surface"
+          data-tooltip="Nhắc lại sau 10 phút (Snooze)"
+          onclick="snoozeActiveToastTask()"
+        >
+          <span data-icon="clock" class="mos-icon--sm"></span>
+        </button>
+        <button
+          class="icon-btn icon-btn--surface"
+          data-tooltip="Mở tin nhắn gốc"
+          onclick="jumpToActiveToastConversation()"
+        >
+          <span data-icon="externalLink" class="mos-icon--sm"></span>
+        </button>
+      </div>
+    </div>
+
+    <div id="quickToast" style="position:fixed; bottom: 16px; left: 240px; background: var(--bg-surface); border: 1px solid var(--wings-gold); color: var(--text-primary); padding: 8px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; box-shadow: var(--shadow-pop); display: none; z-index: 250;"></div>
+
+    <script>
+      // ================= CRISP LUCIDE VECTOR SVG REGISTRY =================
+      const ICONS = {
+        messageSquare: `<svg class="mos-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+        messageReply: `<svg class="mos-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="m10 7-3 3 3 3"/><path d="M17 13v-1a2 2 0 0 0-2-2H7"/></svg>`,
+        users: `<svg class="mos-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+        calendarPlus: `<svg class="mos-icon" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M10 16h4"/><path d="M12 14v4"/></svg>`,
+        calendar: `<svg class="mos-icon" viewBox="0 0 24 24"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>`,
+        bookOpen: `<svg class="mos-icon" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
+        phone: `<svg class="mos-icon" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`,
+        phoneCall: `<svg class="mos-icon" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/><path d="M14.05 2a9 9 0 0 1 8 7.94"/><path d="M14.05 6A5 5 0 0 1 18 10"/></svg>`,
+        barChart: `<svg class="mos-icon" viewBox="0 0 24 24"><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></svg>`,
+        checkSquare: `<svg class="mos-icon" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/></svg>`,
+        alarmClock: `<svg class="mos-icon" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/><path d="M6.38 18.7 4 21"/><path d="M17.64 18.67 20 21"/></svg>`,
+        alarmPlus: `<svg class="mos-icon" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M5 3 2 6"/><path d="m22 6-3-3"/><path d="M6.38 18.7 4 21"/><path d="M17.64 18.67 20 21"/><path d="M12 10v6"/><path d="M9 13h6"/></svg>`,
+        bellRing: `<svg class="mos-icon" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="M4 2C2.8 3.7 2 5.7 2 8"/><path d="M22 8c0-2.3-.8-4.3-2-6"/></svg>`,
+        search: `<svg class="mos-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>`,
+        plus: `<svg class="mos-icon" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>`,
+        hash: `<svg class="mos-icon" viewBox="0 0 24 24"><line x1="4" x2="20" y1="9" y2="9"/><line x1="4" x2="20" y1="15" y2="15"/><line x1="10" x2="8" y1="3" y2="21"/><line x1="16" x2="14" y1="3" y2="21"/></svg>`,
+        pin: `<svg class="mos-icon" viewBox="0 0 24 24"><line x1="12" x2="12" y1="17" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>`,
+        minimize2: `<svg class="mos-icon" viewBox="0 0 24 24"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" x2="21" y1="10" y2="3"/><line x1="3" x2="10" y1="21" y2="14"/></svg>`,
+        maximize2: `<svg class="mos-icon" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" y2="10"/><line x1="3" x2="10" y1="21" y2="14"/></svg>`,
+        x: `<svg class="mos-icon" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`,
+        send: `<svg class="mos-icon" viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>`,
+        userPlus: `<svg class="mos-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>`,
+        atSign: `<svg class="mos-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8"/></svg>`,
+        smilePlus: `<svg class="mos-icon" viewBox="0 0 24 24"><path d="M22 11v1a10 10 0 1 1-9-10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/><path d="M16 5h6"/><path d="M19 2v6"/></svg>`,
+        share: `<svg class="mos-icon" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>`,
+        externalLink: `<svg class="mos-icon" viewBox="0 0 24 24"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>`,
+        chevronDown: `<svg class="mos-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>`,
+        sunMoon: `<svg class="mos-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/></svg>`,
+        inbox: `<svg class="mos-icon" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>`,
+        mailUnread: `<svg class="mos-icon" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`,
+        check: `<svg class="mos-icon" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>`,
+        clock: `<svg class="mos-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+        minus: `<svg class="mos-icon" viewBox="0 0 24 24"><path d="M5 12h14"/></svg>`,
+      };
+
+      function hydrateIcons(root = document) {
+        root.querySelectorAll('[data-icon]').forEach((el) => {
+          const name = el.getAttribute('data-icon');
+          if (ICONS[name]) el.innerHTML = ICONS[name];
+        });
+      }
+
+      // ================= INSTANT TOOLTIP ENGINE =================
+      const tooltipEl = document.getElementById('globalTooltip');
+      document.addEventListener('mouseover', (e) => {
+        const target = e.target.closest('[data-tooltip]');
+        if (!target) {
+          tooltipEl.classList.remove('visible');
+          return;
+        }
+        const label = target.getAttribute('data-tooltip');
+        const kbd = target.getAttribute('data-kbd');
+        tooltipEl.innerHTML = `<span>${label}</span>${kbd ? `<span class="kbd-hint">${kbd}</span>` : ''}`;
+        const rect = target.getBoundingClientRect();
+        let top = rect.bottom + 7;
+        let left = rect.left + rect.width / 2 - tooltipEl.offsetWidth / 2;
+        if (top + 32 > window.innerHeight) top = rect.top - 32;
+        if (left < 8) left = 8;
+        if (left + tooltipEl.offsetWidth > window.innerWidth - 8) {
+          left = window.innerWidth - tooltipEl.offsetWidth - 8;
+        }
+        tooltipEl.style.top = `${top}px`;
+        tooltipEl.style.left = `${left}px`;
+        tooltipEl.classList.add('visible');
+      });
+      document.addEventListener('mouseout', (e) => {
+        if (e.target.closest('[data-tooltip]')) {
+          tooltipEl.classList.remove('visible');
+        }
+      });
+
+      // ================= DATA STORE =================
+      const conversations = {
+        'space-cc': {
+          id: 'space-cc',
+          type: 'space',
+          name: 'tư-vấn-cc-ca-hôm-nay',
+          members: 12,
+          unread: 2,
+          color: '#10b981',
+          messages: [
+            {
+              id: 'msg-1',
+              sender: 'Tuyết Nhi',
+              role: 'Telesales',
+              roleColor: '#0ea5e9',
+              avatar: 'TN',
+              time: '14:42',
+              text: 'Chị Nguyễn Bích Ngọc (VIP Diamond) vừa báo sẽ tới sớm lúc 15:15 để nối mi Anime Thiết Kế.',
+              customerCard: {
+                name: 'Chị Nguyễn Bích Ngọc',
+                meta: 'VIP Diamond · 15:15 hôm nay',
+                cv: 'Chuyên Viên Minh Thư (CV+)',
+              },
+              reactions: { '❤️': 3, '🔥': 2 },
+              pinned: true,
+              thread: [
+                { sender: 'Hà My', time: '14:43', text: 'Quầy CC tầng 1 đã nhận thông tin đón chị Ngọc.' },
+                { sender: 'Chuyên Viên Minh Thư', time: '14:44', text: 'Giường VIP 02 đã sẵn sàng đón khách.' },
+              ],
+            },
+            {
+              id: 'msg-2',
+              sender: 'Hà My',
+              role: 'Tư Vấn (CC)',
+              roleColor: '#10b981',
+              avatar: 'HM',
+              time: '14:44',
+              text: 'Nhờ chuẩn bị sẵn trà hoa cúc & kiểm tra hồ sơ dáng mi cũ của chị Ngọc trước 15:00.',
+              reactions: { '👍': 2 },
+              taskId: 'task-101',
+              thread: [],
+            },
+            {
+              id: 'msg-3',
+              sender: 'Chuyên Viên Minh Thư',
+              role: 'Chuyên Viên Tự Chủ (CV+)',
+              roleColor: '#14b8a6',
+              avatar: 'MT',
+              time: '14:46',
+              text: 'Em vừa xong ca trước, khay mi thiết kế đã khử khuẩn đầy đủ.',
+              reactions: { '🎉': 4 },
+              thread: [],
+            },
+          ],
+        },
+        'space-telesales': {
+          id: 'space-telesales',
+          type: 'space',
+          name: 'telesales-booker',
+          members: 8,
+          unread: 0,
+          color: '#f59e0b',
+          messages: [
+            {
+              id: 'msg-tele-1',
+              sender: 'Tuyết Nhi',
+              role: 'Telesales',
+              roleColor: '#0ea5e9',
+              avatar: 'TN',
+              time: '14:15',
+              text: 'Ca chiều còn 3 khung 16:30 của Chuyên Viên Kỹ Thuật, ưu tiên gọi tệp khách gần hạn dặm mi.',
+              reactions: { '🔥': 5 },
+              thread: [],
+            },
+          ],
+        },
+        'space-cv': {
+          id: 'space-cv',
+          type: 'space',
+          name: 'chuyên-viên-mi-tầng-1',
+          members: 15,
+          unread: 0,
+          color: '#14b8a6',
+          messages: [
+            {
+              id: 'msg-cv-1',
+              sender: 'Chuyên Viên Minh Thư',
+              role: 'Chuyên Viên Tự Chủ (CV+)',
+              roleColor: '#14b8a6',
+              avatar: 'MT',
+              time: '13:50',
+              text: 'Nhờ kho bổ sung thêm 5 khay mi cong C 0.07 dài 11mm lên tủ Chuyên Viên tầng 1 trước 16:00.',
+              reactions: { '👍': 3 },
+              taskId: 'task-102',
+              thread: [],
+            },
+          ],
+        },
+        'dm-tuyetnhi': {
+          id: 'dm-tuyetnhi',
+          type: 'dm',
+          name: 'Tuyết Nhi',
+          role: 'Telesales',
+          unread: 2,
+          color: '#ec4899',
+          avatar: 'TN',
+          messages: [
+            {
+              id: 'msg-tn-1',
+              sender: 'Tuyết Nhi',
+              role: 'Telesales',
+              roleColor: '#0ea5e9',
+              avatar: 'TN',
+              time: '14:50',
+              text: 'Anh Danny ơi, chị Lê Hoàng Yến xin dời sang 17:30 và giữ nguyên Chuyên Viên Ngọc Ánh (CV+), em chốt lịch nhé anh?',
+              reactions: {},
+              taskId: 'task-103',
+              thread: [],
+            },
+          ],
+        },
+        'dm-hamy': {
+          id: 'dm-hamy',
+          type: 'dm',
+          name: 'Hà My',
+          role: 'Tư Vấn (CC)',
+          unread: 0,
+          color: '#a855f7',
+          avatar: 'HM',
+          messages: [
+            {
+              id: 'msg-hm-1',
+              sender: 'Hà My',
+              role: 'Tư Vấn (CC)',
+              roleColor: '#10b981',
+              avatar: 'HM',
+              time: '14:20',
+              text: 'Tỷ lệ gia hạn gói Combo ca sáng nay đạt 68% rồi anh Danny.',
+              reactions: { '❤️': 1 },
+              thread: [],
+            },
+          ],
+        },
+        'dm-minhthu': {
+          id: 'dm-minhthu',
+          type: 'dm',
+          name: 'Chuyên Viên Minh Thư',
+          role: 'Chuyên Viên Tự Chủ (CV+)',
+          unread: 0,
+          color: '#10b981',
+          avatar: 'MT',
+          messages: [
+            {
+              id: 'msg-mt-1',
+              sender: 'Chuyên Viên Minh Thư',
+              role: 'Chuyên Viên Tự Chủ (CV+)',
+              roleColor: '#14b8a6',
+              avatar: 'MT',
+              time: '13:30',
+              text: 'Mẫu mi thiết kế mới khách khen nhẹ mắt và giữ form tốt lắm ạ.',
+              reactions: { '🎉': 2 },
+              thread: [],
+            },
+          ],
+        },
+      };
+
+      let tasks = [
+        {
+          id: 'task-101',
+          convId: 'space-cc',
+          msgId: 'msg-2',
+          title: 'Chuẩn bị trà hoa cúc & kiểm tra hồ sơ dáng mi chị Bích Ngọc',
+          assignee: 'Hà My (CC)',
+          priority: 'Khẩn cấp',
+          remainingSec: 185,
+          done: false,
+        },
+        {
+          id: 'task-102',
+          convId: 'space-cv',
+          msgId: 'msg-cv-1',
+          title: 'Bổ sung 5 khay mi cong C 0.07 dài 11mm lên tủ tầng 1',
+          assignee: 'Khánh Linh (CS)',
+          priority: 'Quan trọng',
+          remainingSec: 940,
+          done: false,
+        },
+        {
+          id: 'task-103',
+          convId: 'dm-tuyetnhi',
+          msgId: 'msg-tn-1',
+          title: 'Xác nhận dời lịch 17:30 cho KH Lê Hoàng Yến (CV Ngọc Ánh)',
+          assignee: 'Danny Do',
+          priority: 'Khẩn cấp',
+          remainingSec: 75,
+          done: false,
+        },
+      ];
+
+      let activeConvId = 'space-cc';
+      let activeSubtab = 'chat';
+      let sidebarFilter = 'all';
+      let pendingTaskMsgId = null;
+      let selectedReminderSec = 5;
+      let activeThreadMsgId = 'msg-1';
+      let dockedConvIds = ['dm-tuyetnhi'];
+      let activeToastTaskId = null;
+      let isDoNotDisturb = false;
+
+      function playReminderChime() {
+        if (isDoNotDisturb) return;
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          [587.33, 880, 1174.66].forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.11, ctx.currentTime + idx * 0.11);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.11 + 0.42);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(ctx.currentTime + idx * 0.11);
+            osc.stop(ctx.currentTime + idx * 0.11 + 0.44);
+          });
+        } catch (_) {}
+      }
+
+      function formatSeconds(sec) {
+        if (sec <= 0) return '00:00';
+        const m = Math.floor(sec / 60);
+        const s = sec % 60;
+        if (m >= 60) return `${Math.floor(m / 60)}h${m % 60}p`;
+        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      }
+
+      function renderSidebarLists() {
+        const q = (document.getElementById('chatSearchInput').value || '').toLowerCase().trim();
+        const dmContainer = document.getElementById('dmListContainer');
+        const spaceContainer = document.getElementById('spaceListContainer');
+        dmContainer.innerHTML = '';
+        spaceContainer.innerHTML = '';
+
+        let totalUnread = 0;
+
+        Object.values(conversations).forEach((conv) => {
+          totalUnread += conv.unread || 0;
+          if (q && !conv.name.toLowerCase().includes(q)) return;
+          if (sidebarFilter === 'unread' && !conv.unread) return;
+          if (sidebarFilter === 'spaces' && conv.type !== 'space') return;
+
+          const lastMsg = conv.messages[conv.messages.length - 1];
+          const item = document.createElement('div');
+          item.className = `gchat-conv-item ${conv.id === activeConvId ? 'active' : ''} ${conv.unread ? 'unread' : ''}`;
+          item.onclick = () => selectConversation(conv.id, false);
+
+          const badgeHtml =
+            conv.type === 'space'
+              ? `<div class="gchat-space-icon" style="background:${conv.color}22; color:${conv.color};">${ICONS.hash}</div>`
+              : `<div class="gchat-avatar" style="background:${conv.color};">${conv.avatar}<span class="online-dot"></span></div>`;
+
+          item.innerHTML = `
+            ${badgeHtml}
+            <div class="gchat-conv-body">
+              <div class="gchat-conv-top">
+                <span class="gchat-conv-name">${conv.name}</span>
+                <span class="gchat-conv-time tabular-nums">${lastMsg ? lastMsg.time : ''}</span>
+              </div>
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:4px;">
+                <span class="gchat-conv-preview">${lastMsg ? lastMsg.text : ''}</span>
+                ${conv.unread ? `<span class="status-tag tabular-nums" style="background:#ef4444;color:#fff;padding:1px 5px;font-size:10px;">${conv.unread}</span>` : ''}
+              </div>
+            </div>
+          `;
+
+          if (conv.type === 'dm') dmContainer.appendChild(item);
+          else spaceContainer.appendChild(item);
+        });
+
+        const unreadBadge = document.getElementById('headerUnreadBadge');
+        unreadBadge.textContent = totalUnread;
+        unreadBadge.style.display = totalUnread > 0 ? 'inline-flex' : 'none';
+        document.getElementById('filterUnreadCount').textContent = totalUnread;
+
+        const openTasksCount = tasks.filter((t) => !t.done).length;
+        document.getElementById('pillTaskCount').textContent = openTasksCount;
+        document.getElementById('sidebarTaskBadge').textContent = openTasksCount;
+        document.getElementById('statTaskCount').textContent = openTasksCount;
+      }
+
+      function selectConversation(convId, ensurePanelOpen) {
+        activeConvId = convId;
+        if (conversations[convId]) conversations[convId].unread = 0;
+        if (ensurePanelOpen) {
+          document.getElementById('gchatPanel').classList.add('open');
+          document.getElementById('headerChatBtn').classList.add('active');
+        }
+        switchConvSubtab('chat');
+        renderSidebarLists();
+        renderActiveConversation();
+      }
+
+      function renderActiveConversation() {
+        const conv = conversations[activeConvId];
+        if (!conv) return;
+
+        document.getElementById('activeConvTitle').textContent = conv.name;
+        document.getElementById('activeConvRoleTag').textContent = conv.type === 'space' ? `${conv.members}` : conv.role;
+        const badgeEl = document.getElementById('activeConvBadge');
+        badgeEl.innerHTML = conv.type === 'space' ? ICONS.hash : `<span style="font-weight:800;font-size:11px;">${conv.avatar}</span>`;
+        badgeEl.style.background = conv.color + '26';
+        badgeEl.style.color = conv.color;
+
+        const convTasks = tasks.filter((t) => t.convId === activeConvId && !t.done);
+        document.getElementById('convTaskCount').textContent = convTasks.length;
+        document.getElementById('convPinCount').textContent = conv.messages.filter((m) => m.pinned).length;
+
+        const container = document.getElementById('messagesContainer');
+        container.innerHTML = `<div class="date-divider"><span>Hôm nay</span></div>`;
+
+        conv.messages.forEach((m) => {
+          const linkedTask = tasks.find((t) => t.id === m.taskId || t.msgId === m.id);
+          const row = document.createElement('div');
+          row.className = `msg-row ${linkedTask ? 'has-task' : ''}`;
+          row.id = m.id;
+
+          let customerCardHtml = '';
+          if (m.customerCard) {
+            customerCardHtml = `
+              <div class="mos-smart-card">
+                <div style="min-width:0;">
+                  <div style="font-size:12px; font-weight:700;">${m.customerCard.name} · <span style="color:var(--wings-gold);">${m.customerCard.meta}</span></div>
+                  <div style="font-size:11px; color:var(--text-secondary);">${m.customerCard.cv}</div>
+                </div>
+                <button class="icon-btn icon-btn--surface icon-btn--sm" data-tooltip="Mở Hồ sơ Khách hàng" onclick="showQuickToast('Đã mở Hồ sơ: ${m.customerCard.name}')">
+                  ${ICONS.externalLink}
+                </button>
+              </div>
+            `;
+          }
+
+          let taskCardHtml = '';
+          if (linkedTask) {
+            taskCardHtml = `
+              <div class="inline-task-card ${linkedTask.done ? 'done' : ''}">
+                <div style="display:flex; gap:8px; align-items:center; min-width:0;">
+                  <div class="task-check-box" data-tooltip="Đánh dấu hoàn thành" onclick="toggleTaskDone('${linkedTask.id}')">
+                    ${linkedTask.done ? ICONS.check : ''}
+                  </div>
+                  <div style="min-width:0;">
+                    <div style="font-size:12px; font-weight:700; ${linkedTask.done ? 'text-decoration:line-through;' : ''}">${linkedTask.title}</div>
+                    <div style="font-size:10.5px; color:var(--text-secondary); display:flex; align-items:center; gap:8px;">
+                      <span>${linkedTask.assignee}</span>
+                      <span>· ${linkedTask.priority}</span>
+                      <span class="tabular-nums" style="color:var(--amber); font-weight:700;">
+                        ${linkedTask.done ? 'Xong' : formatSeconds(linkedTask.remainingSec)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <button class="icon-btn icon-btn--surface icon-btn--sm" data-tooltip="Test nổ chuông nhắc hẹn" onclick="triggerSpecificTaskReminder('${linkedTask.id}')">
+                  ${ICONS.bellRing}
+                </button>
+              </div>
+            `;
+          }
+
+          let threadChipHtml = '';
+          if (m.thread && m.thread.length > 0) {
+            threadChipHtml = `
+              <div class="thread-chip" data-tooltip="Xem luồng trả lời bên phải" onclick="openThreadForMsg('${m.id}')">
+                ${ICONS.messageReply}
+                <span class="tabular-nums">${m.thread.length} trả lời</span>
+              </div>
+            `;
+          }
+
+          let reactionsHtml = '';
+          if (m.reactions && Object.keys(m.reactions).length > 0) {
+            reactionsHtml = `<div class="msg-reactions">
+              ${Object.entries(m.reactions)
+                .map(
+                  ([emoji, count]) =>
+                    `<span class="reaction-chip tabular-nums" data-tooltip="Bày tỏ cảm xúc" onclick="toggleReaction('${m.id}', '${emoji}')">${emoji} ${count}</span>`
+                )
+                .join('')}
+            </div>`;
+          }
+
+          row.innerHTML = `
+            <div class="gchat-avatar" style="background:${m.roleColor || '#3b82f6'};">${m.avatar || 'DD'}</div>
+            <div class="msg-content-col">
+              <div class="msg-meta">
+                <span class="msg-sender">${m.sender}</span>
+                <span class="msg-role-tag" style="background:${m.roleColor || '#d4a84b'}22; color:${m.roleColor || '#d4a84b'};">${m.role}</span>
+                <span class="msg-time tabular-nums">${m.time}</span>
+                ${m.pinned ? `<span style="color:var(--wings-gold); display:inline-flex;" data-tooltip="Đã ghim">${ICONS.pin}</span>` : ''}
+              </div>
+              <div class="msg-text">${m.text}</div>
+              ${customerCardHtml}
+              ${taskCardHtml}
+              ${threadChipHtml}
+              ${reactionsHtml}
+            </div>
+
+            <!-- 100% VECTOR ICON HOVER ACTION PILL WITH INSTANT TOOLTIPS -->
+            <div class="msg-hover-bar">
+              <button class="icon-btn icon-btn--sm" data-tooltip="Thả tim" onclick="toggleReaction('${m.id}', '❤️')">
+                ${ICONS.smilePlus}
+              </button>
+              <button class="icon-btn icon-btn--sm" data-tooltip="Trả lời theo luồng (Thread)" onclick="openThreadForMsg('${m.id}')">
+                ${ICONS.messageReply}
+              </button>
+              <button class="icon-btn icon-btn--accent icon-btn--sm" data-tooltip="Tạo Task & Hẹn giờ nhắc từ tin nhắn" data-kbd="T" onclick="openTaskModalFromMsg('${m.id}')">
+                ${ICONS.alarmPlus}
+              </button>
+              <button class="icon-btn icon-btn--sm" data-tooltip="Ghim / Bỏ ghim" onclick="togglePinMessage('${m.id}')">
+                ${ICONS.pin}
+              </button>
+            </div>
+          `;
+          container.appendChild(row);
+        });
+
+        container.scrollTop = container.scrollHeight;
+        renderThreadPane();
+        renderTasksBoard();
+        renderPinnedBoard();
+        renderMiniDocks();
+      }
+
+      // ================= SIDE THREAD PANE (GOOGLE SPACES) =================
+      function openThreadForMsg(msgId) {
+        activeThreadMsgId = msgId;
+        document.getElementById('threadPane').classList.add('open');
+        document.getElementById('toggleThreadBtn').classList.add('active');
+        renderThreadPane();
+        document.getElementById('threadReplyInput').focus();
+      }
+
+      function toggleThreadPane() {
+        const pane = document.getElementById('threadPane');
+        pane.classList.toggle('open');
+        document.getElementById('toggleThreadBtn').classList.toggle('active', pane.classList.contains('open'));
+        if (pane.classList.contains('open')) renderThreadPane();
+      }
+
+      function closeThreadPane() {
+        document.getElementById('threadPane').classList.remove('open');
+        document.getElementById('toggleThreadBtn').classList.remove('active');
+      }
+
+      function renderThreadPane() {
+        const conv = conversations[activeConvId];
+        const msg = conv?.messages.find((m) => m.id === activeThreadMsgId) || conv?.messages[0];
+        const list = document.getElementById('threadMessagesList');
+        if (!msg || !list) return;
+
+        const replies = msg.thread || [];
+        list.innerHTML = `
+          <div style="padding:8px 10px; background:var(--bg-surface-raised); border-left:3px solid var(--wings-gold); border-radius:7px; font-size:12px;">
+            <div style="font-weight:700; margin-bottom:2px;">${msg.sender} · <span style="color:var(--text-muted); font-size:10.5px;">${msg.time}</span></div>
+            <div>${msg.text}</div>
+          </div>
+          <div style="font-size:10.5px; color:var(--text-muted); font-weight:700; text-transform:uppercase;">${replies.length} câu trả lời</div>
+          ${replies
+            .map(
+              (r) => `
+            <div style="padding:7px 9px; background:var(--bg-chat-canvas); border:1px solid var(--border-color); border-radius:7px; font-size:12px;">
+              <div style="font-weight:700; font-size:11px; margin-bottom:2px;">${r.sender} · <span style="color:var(--text-muted);">${r.time}</span></div>
+              <div>${r.text}</div>
+            </div>
+          `
+            )
+            .join('')}
+        `;
+      }
+
+      function sendThreadReply() {
+        const input = document.getElementById('threadReplyInput');
+        const text = input.value.trim();
+        if (!text) return;
+        input.value = '';
+        const conv = conversations[activeConvId];
+        const msg = conv?.messages.find((m) => m.id === activeThreadMsgId) || conv?.messages[0];
+        if (!msg) return;
+        msg.thread = msg.thread || [];
+        msg.thread.push({ sender: 'Danny Do', time: 'Vừa xong', text });
+        renderActiveConversation();
+      }
+
+      // ================= TASKS & PINNED BOARDS =================
+      function renderTasksBoard() {
+        const list = document.getElementById('tasksListContainer');
+        if (!list) return;
+        list.innerHTML = '';
+        tasks.forEach((t) => {
+          const conv = conversations[t.convId];
+          const card = document.createElement('div');
+          card.className = `inline-task-card ${t.done ? 'done' : ''}`;
+          card.innerHTML = `
+            <div style="display:flex; gap:9px; align-items:center; min-width:0;">
+              <div class="task-check-box" data-tooltip="Hoàn thành" onclick="toggleTaskDone('${t.id}')">${t.done ? ICONS.check : ''}</div>
+              <div style="min-width:0;">
+                <div style="font-size:12.5px; font-weight:700; ${t.done ? 'text-decoration:line-through;' : ''}">${t.title}</div>
+                <div style="font-size:11px; color:var(--text-secondary); display:flex; gap:8px;">
+                  <span>${t.assignee}</span>
+                  <span>· ${conv ? conv.name : ''}</span>
+                  <span class="tabular-nums" style="color:var(--amber); font-weight:700;">${t.done ? 'Xong' : formatSeconds(t.remainingSec)}</span>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex; gap:4px;">
+              <button class="icon-btn icon-btn--surface icon-btn--sm" data-tooltip="Test nổ chuông nhắc" onclick="triggerSpecificTaskReminder('${t.id}')">${ICONS.bellRing}</button>
+              <button class="icon-btn icon-btn--surface icon-btn--sm" data-tooltip="Mở hội thoại" onclick="selectConversation('${t.convId}', true)">${ICONS.externalLink}</button>
+            </div>
+          `;
+          list.appendChild(card);
+        });
+      }
+
+      function renderPinnedBoard() {
+        const list = document.getElementById('pinnedListContainer');
+        if (!list) return;
+        const conv = conversations[activeConvId];
+        const pinnedMsgs = conv ? conv.messages.filter((m) => m.pinned) : [];
+        list.innerHTML = pinnedMsgs.length
+          ? pinnedMsgs
+              .map(
+                (m) => `
+              <div style="background:var(--bg-surface); border:1px solid var(--border-strong); border-left:3px solid var(--wings-gold); border-radius:8px; padding:10px; font-size:12.5px;">
+                <div style="font-size:11px; font-weight:700; margin-bottom:3px;">${m.sender} · <span style="color:var(--text-muted);">${m.time}</span></div>
+                <div>${m.text}</div>
+              </div>`
+              )
+              .join('')
+          : `<div style="color:var(--text-muted); font-size:12px;">Chưa có tin nhắn ghim.</div>`;
+      }
+
+      // ================= MINI DOCKED POP-OUT WINDOWS =================
+      function popOutCurrentToMiniDock() {
+        if (!dockedConvIds.includes(activeConvId)) {
+          dockedConvIds.push(activeConvId);
+          if (dockedConvIds.length > 2) dockedConvIds.shift();
+        }
+        document.getElementById('gchatPanel').classList.remove('open');
+        document.getElementById('headerChatBtn').classList.remove('active');
+        renderMiniDocks();
+      }
+
+      function renderMiniDocks() {
+        const tray = document.getElementById('miniDockTray');
+        tray.innerHTML = '';
+
+        dockedConvIds.forEach((cid) => {
+          const conv = conversations[cid];
+          if (!conv) return;
+          const win = document.createElement('div');
+          win.className = `mini-dock-window ${conv.dockCollapsed ? 'collapsed' : ''}`;
+          const recentMsgs = conv.messages.slice(-4);
+
+          win.innerHTML = `
+            <div class="mini-dock-header" onclick="toggleDockCollapse('${cid}')">
+              <div style="display:flex; align-items:center; gap:7px; min-width:0;">
+                <span style="width:7px; height:7px; border-radius:50%; background:#22c55e;"></span>
+                <span style="font-size:12px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${conv.name}</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:2px;" onclick="event.stopPropagation()">
+                <button class="icon-btn icon-btn--sm" data-tooltip="Mở rộng vào Bảng Chat" onclick="selectConversation('${cid}', true)">${ICONS.maximize2}</button>
+                <button class="icon-btn icon-btn--sm" data-tooltip="Thu gọn / Bung ra" onclick="toggleDockCollapse('${cid}')">${ICONS.minus}</button>
+                <button class="icon-btn icon-btn--sm" data-tooltip="Đóng cửa sổ nhỏ" onclick="closeMiniDock('${cid}')">${ICONS.x}</button>
+              </div>
+            </div>
+            <div class="mini-dock-body">
+              <div style="flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:8px;">
+                ${recentMsgs
+                  .map(
+                    (m) => `
+                  <div style="background:var(--bg-surface); border:1px solid var(--border-color); border-radius:8px; padding:7px 9px; font-size:12px; position:relative;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:2px;">
+                      <span style="font-size:10.5px; font-weight:700; color:var(--wings-gold);">${m.sender} · ${m.time}</span>
+                      <button class="icon-btn icon-btn--sm" style="width:22px;height:22px;" data-tooltip="Tạo Task & Nhắc hẹn" onclick="openTaskModalFromMsg('${m.id}')">${ICONS.alarmPlus}</button>
+                    </div>
+                    <div>${m.text}</div>
+                  </div>
+                `
+                  )
+                  .join('')}
+              </div>
+              <div style="padding:7px; background:var(--bg-surface); border-top:1px solid var(--border-color); display:flex; gap:5px;">
+                <input
+                  id="dockInput-${cid}"
+                  type="text"
+                  placeholder="Nhắn nhanh..."
+                  style="flex:1; height:30px; background:var(--bg-surface-raised); border:1px solid var(--border-color); border-radius:999px; padding:0 10px; color:var(--text-primary); font-size:12px; outline:none;"
+                  onkeydown="if(event.key==='Enter') sendDockMessage('${cid}')"
+                />
+                <button class="icon-btn icon-btn--accent icon-btn--sm" data-tooltip="Gửi" onclick="sendDockMessage('${cid}')">${ICONS.send}</button>
+              </div>
+            </div>
+          `;
+          tray.appendChild(win);
+        });
+      }
+
+      function toggleDockCollapse(cid) {
+        const conv = conversations[cid];
+        if (!conv) return;
+        conv.dockCollapsed = !conv.dockCollapsed;
+        renderMiniDocks();
+      }
+
+      function closeMiniDock(cid) {
+        dockedConvIds = dockedConvIds.filter((id) => id !== cid);
+        renderMiniDocks();
+      }
+
+      function sendDockMessage(cid) {
+        const input = document.getElementById(`dockInput-${cid}`);
+        if (!input || !input.value.trim()) return;
+        const text = input.value.trim();
+        input.value = '';
+        appendMessageToConv(cid, text);
+      }
+
+      // ================= SENDING & INTERACTIONS =================
+      function sendMainMessage() {
+        const input = document.getElementById('mainChatInput');
+        const text = input.value.trim();
+        if (!text) return;
+        input.value = '';
+        appendMessageToConv(activeConvId, text);
+      }
+
+      function appendMessageToConv(cid, text, extra = {}) {
+        const conv = conversations[cid];
+        if (!conv) return;
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        conv.messages.push({
+          id: 'msg-' + Date.now(),
+          sender: 'Danny Do',
+          role: 'Super Admin',
+          roleColor: '#d4a84b',
+          avatar: 'DD',
+          time: timeStr,
+          text,
+          reactions: {},
+          thread: [],
+          ...extra,
+        });
+        renderSidebarLists();
+        renderActiveConversation();
+      }
+
+      function sendCustomerCardToCurrentChat(name, meta, cv) {
+        document.getElementById('gchatPanel').classList.add('open');
+        appendMessageToConv(activeConvId, `Hỗ trợ hồ sơ khách hàng ${name}:`, {
+          customerCard: { name, meta, cv },
+        });
+        showQuickToast(`Đã gửi thẻ khách hàng ${name} vào Chat`);
+      }
+
+      function toggleReaction(msgId, emoji) {
+        const conv = conversations[activeConvId];
+        const msg = conv?.messages.find((m) => m.id === msgId);
+        if (!msg) return;
+        msg.reactions = msg.reactions || {};
+        msg.reactions[emoji] = (msg.reactions[emoji] || 0) + 1;
+        renderActiveConversation();
+      }
+
+      function togglePinMessage(msgId) {
+        const conv = conversations[activeConvId];
+        const msg = conv?.messages.find((m) => m.id === msgId);
+        if (!msg) return;
+        msg.pinned = !msg.pinned;
+        renderActiveConversation();
+      }
+
+      // ================= MESSAGE TO TASK -> REMINDER =================
+      function openTaskModalFromMsg(msgId) {
+        let foundMsg = null;
+        let foundConv = null;
+        Object.values(conversations).forEach((c) => {
+          const m = c.messages.find((x) => x.id === msgId);
+          if (m) {
+            foundMsg = m;
+            foundConv = c;
+          }
+        });
+        if (!foundMsg) return;
+
+        pendingTaskMsgId = msgId;
+        activeConvId = foundConv.id;
+        document.getElementById('taskSourceQuote').innerHTML = `<strong>${foundMsg.sender} (${foundMsg.time}):</strong> "${foundMsg.text}"`;
+        document.getElementById('taskTitleInput').value = foundMsg.text;
+        document.getElementById('taskModalBackdrop').classList.add('open');
+      }
+
+      function openQuickTaskFromComposer() {
+        const draft = document.getElementById('mainChatInput').value.trim();
+        pendingTaskMsgId = null;
+        document.getElementById('taskSourceQuote').innerHTML = `Phòng: <strong>#${conversations[activeConvId].name}</strong>`;
+        document.getElementById('taskTitleInput').value = draft || 'Kiểm tra lịch hẹn & chuẩn bị đón khách VIP';
+        document.getElementById('taskModalBackdrop').classList.add('open');
+      }
+
+      function closeTaskModal() {
+        document.getElementById('taskModalBackdrop').classList.remove('open');
+      }
+
+      function selectReminderPreset(sec, label, btnEl) {
+        selectedReminderSec = sec;
+        document.querySelectorAll('.preset-grid .preset-btn').forEach((b) => b.classList.remove('selected'));
+        btnEl.classList.add('selected');
+      }
+
+      function confirmCreateTaskFromMessage() {
+        const title = document.getElementById('taskTitleInput').value.trim();
+        const assignee = document.getElementById('taskAssigneeSelect').value;
+        const priority = document.getElementById('taskPrioritySelect').value;
+        if (!title) return;
+
+        const newTaskId = 'task-' + Date.now();
+        let targetMsgId = pendingTaskMsgId;
+
+        if (!targetMsgId) {
+          const conv = conversations[activeConvId];
+          const msgId = 'msg-task-' + Date.now();
+          conv.messages.push({
+            id: msgId,
+            sender: 'Danny Do',
+            role: 'Super Admin',
+            roleColor: '#d4a84b',
+            avatar: 'DD',
+            time: 'Vừa xong',
+            text: `Giao việc cho ${assignee}:`,
+            taskId: newTaskId,
+            reactions: {},
+            thread: [],
+          });
+          targetMsgId = msgId;
+        } else {
+          const conv = conversations[activeConvId];
+          const msg = conv?.messages.find((m) => m.id === targetMsgId);
+          if (msg) msg.taskId = newTaskId;
+        }
+
+        tasks.unshift({
+          id: newTaskId,
+          convId: activeConvId,
+          msgId: targetMsgId,
+          title,
+          assignee,
+          priority,
+          remainingSec: selectedReminderSec,
+          done: false,
+          fired: false,
+        });
+
+        closeTaskModal();
+        renderSidebarLists();
+        renderActiveConversation();
+      }
+
+      function toggleTaskDone(taskId) {
+        const t = tasks.find((x) => x.id === taskId);
+        if (!t) return;
+        t.done = !t.done;
+        renderSidebarLists();
+        renderActiveConversation();
+      }
+
+      setInterval(() => {
+        let needsUpdate = false;
+        tasks.forEach((t) => {
+          if (!t.done && t.remainingSec > 0) {
+            t.remainingSec -= 1;
+            needsUpdate = true;
+            if (t.remainingSec === 0 && !t.fired) {
+              t.fired = true;
+              fireTaskReminderAlert(t);
+            }
+          }
+        });
+        if (needsUpdate) renderActiveConversation();
+      }, 1000);
+
+      function fireTaskReminderAlert(task) {
+        activeToastTaskId = task.id;
+        playReminderChime();
+        const conv = conversations[task.convId];
+        document.getElementById('reminderToastTitle').textContent = task.title;
+        document.getElementById('reminderToastMeta').innerHTML = `${task.assignee} · ${task.priority} · #${conv ? conv.name : ''}`;
+        document.getElementById('reminderAlertToast').classList.add('open');
+
+        if (conv) {
+          conv.messages.push({
+            id: 'msg-rem-' + Date.now(),
+            sender: 'mOS Reminder',
+            role: 'Auto',
+            roleColor: '#f59e0b',
+            avatar: 'AL',
+            time: 'Đúng giờ',
+            text: `Đến giờ nhắc việc: "${task.title}" (@${task.assignee})`,
+            taskId: task.id,
+            reactions: {},
+            thread: [],
+          });
+          renderActiveConversation();
+        }
+      }
+
+      function triggerSpecificTaskReminder(taskId) {
+        const t = tasks.find((x) => x.id === taskId);
+        if (t) {
+          t.remainingSec = 0;
+          fireTaskReminderAlert(t);
+        }
+      }
+
+      function triggerSimulatedReminderNow() {
+        const firstOpen = tasks.find((t) => !t.done) || tasks[0];
+        if (firstOpen) {
+          firstOpen.done = false;
+          firstOpen.remainingSec = 0;
+          fireTaskReminderAlert(firstOpen);
+        }
+      }
+
+      function dismissReminderToast() {
+        document.getElementById('reminderAlertToast').classList.remove('open');
+      }
+
+      function completeActiveToastTask() {
+        if (activeToastTaskId) {
+          const t = tasks.find((x) => x.id === activeToastTaskId);
+          if (t) t.done = true;
+        }
+        dismissReminderToast();
+        renderSidebarLists();
+        renderActiveConversation();
+      }
+
+      function snoozeActiveToastTask() {
+        if (activeToastTaskId) {
+          const t = tasks.find((x) => x.id === activeToastTaskId);
+          if (t) {
+            t.remainingSec = 600;
+            t.fired = false;
+          }
+        }
+        dismissReminderToast();
+        renderActiveConversation();
+      }
+
+      function jumpToActiveToastConversation() {
+        if (activeToastTaskId) {
+          const t = tasks.find((x) => x.id === activeToastTaskId);
+          if (t) selectConversation(t.convId, true);
+        }
+        dismissReminderToast();
+      }
+
+      // ================= UI CONTROLS =================
+      function toggleChatPanel() {
+        const panel = document.getElementById('gchatPanel');
+        const btn = document.getElementById('headerChatBtn');
+        panel.classList.toggle('open');
+        btn.classList.toggle('active', panel.classList.contains('open'));
+      }
+
+      function openChatPanel(subtab = 'chat') {
+        document.getElementById('gchatPanel').classList.add('open');
+        document.getElementById('headerChatBtn').classList.add('active');
+        switchConvSubtab(subtab);
+      }
+
+      function toggleMaximizeChat() {
+        document.getElementById('gchatPanel').classList.toggle('maximized');
+      }
+
+      function switchConvSubtab(tab) {
+        activeSubtab = tab;
+        document.getElementById('subtabChat').classList.toggle('active', tab === 'chat');
+        document.getElementById('subtabTasks').classList.toggle('active', tab === 'tasks');
+        document.getElementById('subtabPinned').classList.toggle('active', tab === 'pinned');
+
+        document.getElementById('chatStreamView').style.display = tab === 'chat' ? 'flex' : 'none';
+        document.getElementById('tasksBoardView').style.display = tab === 'tasks' ? 'block' : 'none';
+        document.getElementById('pinnedBoardView').style.display = tab === 'pinned' ? 'block' : 'none';
+      }
+
+      function setSidebarFilter(filter, btnEl) {
+        sidebarFilter = filter;
+        document.querySelectorAll('.gchat-filter-btn').forEach((b) => b.classList.remove('active'));
+        btnEl.classList.add('active');
+        switchConvSubtab('chat');
+        renderSidebarLists();
+      }
+
+      function openTasksHubView(btnEl) {
+        document.querySelectorAll('.gchat-filter-btn').forEach((b) => b.classList.remove('active'));
+        btnEl.classList.add('active');
+        switchConvSubtab('tasks');
+      }
+
+      function togglePresenceStatus() {
+        isDoNotDisturb = !isDoNotDisturb;
+        document.getElementById('presenceDot').style.background = isDoNotDisturb ? '#ef4444' : '#22c55e';
+        document.getElementById('presenceLabel').textContent = isDoNotDisturb ? 'Không làm phiền' : 'Đang hoạt động';
+      }
+
+      function toggleAvatarDropdown(ev) {
+        ev.stopPropagation();
+        document.getElementById('avatarDropdown').classList.toggle('open');
+      }
+
+      window.addEventListener('click', () => {
+        document.getElementById('avatarDropdown').classList.remove('open');
+      });
+
+      function toggleThemeMode() {
+        const html = document.documentElement;
+        const isDark = html.classList.contains('dark-theme');
+        html.classList.toggle('dark-theme', !isDark);
+        html.classList.toggle('light-theme', isDark);
+        document.getElementById('themeStatusLabel').textContent = isDark ? 'Light' : 'Dark';
+      }
+
+      function insertMention(text) {
+        const input = document.getElementById('mainChatInput');
+        input.value += text;
+        input.focus();
+      }
+
+      function promptNewGroupOrDm() {
+        const name = prompt('Nhập tên Space mới hoặc tên đồng nghiệp:');
+        if (!name || !name.trim()) return;
+        const id = 'space-' + Date.now();
+        conversations[id] = {
+          id,
+          type: 'space',
+          name: name.trim().toLowerCase().replace(/\s+/g, '-'),
+          members: 1,
+          unread: 0,
+          color: '#3b82f6',
+          messages: [
+            {
+              id: 'msg-init-' + Date.now(),
+              sender: 'Danny Do',
+              role: 'Super Admin',
+              roleColor: '#d4a84b',
+              avatar: 'DD',
+              time: 'Vừa xong',
+              text: `Đã khởi tạo #${name.trim()}`,
+              reactions: {},
+              thread: [],
+            },
+          ],
+        };
+        selectConversation(id, true);
+      }
+
+      function switchMosPage(pageKey, el) {
+        document.querySelectorAll('.mos-nav-item').forEach((i) => i.classList.remove('active'));
+        el.classList.add('active');
+        const titleMap = {
+          telesales: 'Danh sách Khách hàng & Lịch hẹn hôm nay',
+          schedule: 'Điều phối Chuyên Viên Mi & Hàng chờ Tua Real-time',
+          kpi: 'Bảng Lương Live Paystub & Thưởng Tip Tư Vấn (CC)',
+        };
+        document.getElementById('mosPageTitle').textContent = titleMap[pageKey] || titleMap.telesales;
+      }
+
+      function showQuickToast(msg) {
+        const el = document.getElementById('quickToast');
+        el.textContent = msg;
+        el.style.display = 'block';
+        clearTimeout(window.__toastTimer);
+        window.__toastTimer = setTimeout(() => {
+          el.style.display = 'none';
+        }, 2600);
+      }
+
+      window.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') {
+          e.preventDefault();
+          toggleChatPanel();
+        } else if (e.key === 'Escape') {
+          closeTaskModal();
+        }
+      });
+
+      // Hydrate all SVG icons & initialize
+      hydrateIcons();
+      renderSidebarLists();
+      renderActiveConversation();
+    </script>
+  </body>
+</html>

@@ -43,6 +43,7 @@ export interface AiAssistantChatRequest {
   sessionId?: string;
   message: string;
   scope?: string;
+  imageDataUrl?: string;
   context?: AiChatContext;
 }
 

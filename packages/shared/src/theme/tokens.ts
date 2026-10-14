@@ -603,7 +603,8 @@ export function defineTheme(input: ThemePresetInput): CoreThemeDefinition {
 export const builtInThemes: Record<string, CoreThemeDefinition> = {
   [DEFAULT_CORE_THEME_ID]: {
     id: DEFAULT_CORE_THEME_ID,
-    label: 'mOS Obsidian Gold (Tối)',
+    label: 'mOS Obsidian Gold (Hoàng Kim Cổ Điển)',
+    description: 'Tone vàng Obsidian đặc trưng của mOS, đồng bộ tự động theo nền Sáng / Tối',
     defaultMode: 'dark',
     typography: themeTokens.typography,
     radii: themeTokens.radii,
@@ -654,7 +655,7 @@ export const builtInThemes: Record<string, CoreThemeDefinition> = {
   },
   'mos-light': {
     id: 'mos-light',
-    label: 'mOS Modern Slate (Sáng)',
+    label: 'mOS Modern Slate (Xanh Slate Hiện Đại)',
     description: 'Giao diện Slate thanh lịch chuẩn SaaS quốc tế, phong cách Stripe & Linear',
     defaultMode: 'light',
     typography: themeTokens.typography,

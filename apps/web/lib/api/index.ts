@@ -12,11 +12,13 @@ import { qaShopApi } from './qa-shop.api';
 import { aiApi } from './ai.api';
 import { pilotApi } from './pilot.api';
 import { careerApi } from './career.api';
+import { chatApi } from './chat.api';
 
 export * from './base';
 export * from './ai.api';
 export * from './pilot.api';
 export * from './career.api';
+export * from './chat.api';
 
 export const apiClient = {
   ...payrollApi,
@@ -33,6 +35,7 @@ export const apiClient = {
   ...aiApi,
   ...pilotApi,
   ...careerApi,
+  ...chatApi,
   cs: {
     ...telecomApi.cs,
     ...kpiApi.cs,

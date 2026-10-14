@@ -13,19 +13,17 @@ import {
   UserRound,
   Camera,
   Sparkles,
-  Bot,
+  Sun,
+  Moon,
+  Phone,
 } from 'lucide-react';
-import type { SafeAny } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, type SafeAny } from '@mos-lab/shared';
 import { useOmiCall } from '../../context/OmiCallContext';
 import { useBugReportLauncherPreferences } from '../bug-reports/useBugReportLauncherPreferences';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 import { resolveMediaUrl } from '../../lib/api-client';
-import {
-  readAiCopilotVisible,
-  persistAiCopilotVisible,
-  subscribeAiCopilotVisibility,
-} from '../../lib/ai-assistant-launcher';
 import AvatarCropModal from '../avatar/AvatarCropModal';
+import { ThemeSelector } from '../theme/ThemeSelector';
 
 interface UserProfileDropdownProps {
   user: SafeAny;
@@ -36,6 +34,10 @@ interface UserProfileDropdownProps {
   onOpenTelesalesDashboard: () => void;
   onLogout: () => Promise<void> | void;
   onAvatarUpdated?: (newAvatarUrl: string) => void;
+  themeMode?: 'light' | 'dark';
+  onToggleTheme?: () => void;
+  dailyCallsCount?: number;
+  onOpenDailyCalls?: () => void;
 }
 
 function getRoleBadge(role?: string | null, token?: SafeAny) {
@@ -164,6 +166,10 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   onOpenTelesalesDashboard,
   onLogout,
   onAvatarUpdated,
+  themeMode,
+  onToggleTheme,
+  dailyCallsCount = 0,
+  onOpenDailyCalls,
 }) => {
   const [open, setOpen] = useState(false);
   const [isAvatarCropOpen, setIsAvatarCropOpen] = useState(false);
@@ -186,18 +192,6 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   } = useOmiCall();
 
   const { preferences, ready: bugReportReady, setVisible: setBugReportVisible } = useBugReportLauncherPreferences();
-
-  const [aiCopilotVisible, setAiCopilotVisible] = useState(() => readAiCopilotVisible());
-  React.useEffect(() => {
-    return subscribeAiCopilotVisibility(() => {
-      setAiCopilotVisible(readAiCopilotVisible());
-    });
-  }, []);
-
-  const handleToggleAiCopilot = (checked: boolean) => {
-    persistAiCopilotVisible(checked);
-    setAiCopilotVisible(checked);
-  };
 
   const roleBadge = getRoleBadge(user?.role, token);
   const callStatus = getCallStatusInfo({ isRegistered, omicallReady, callState });
@@ -435,24 +429,6 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
             onChange={setBugReportVisible}
           />
         </div>
-
-        {/* Wings AI Copilot Toggle */}
-        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-          <div className="flex items-center gap-2.5 min-w-0 pr-2">
-            <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-              <Bot size={15} />
-            </span>
-            <div className="min-w-0 text-[13px] font-medium leading-tight text-slate-800 dark:text-slate-200 truncate">
-              Trợ Lý Thông Minh Wings AI
-            </div>
-          </div>
-          <Switch
-            size="small"
-            checked={aiCopilotVisible}
-            aria-label="Bật/tắt Trợ Lý Thông Minh Wings AI"
-            onChange={handleToggleAiCopilot}
-          />
-        </div>
       </div>
 
       {/* Section 2: Display Density & Tools */}
@@ -478,6 +454,58 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
             ]}
           />
         </div>
+
+        {/* Theme Mode & Theme Studio */}
+        {onToggleTheme && (
+          <div className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-xl transition-colors hover:bg-black/5 dark:hover:bg-white/5">
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              className="flex items-center gap-2.5 text-[13px] font-medium text-slate-800 dark:text-slate-200 cursor-pointer"
+            >
+              {themeMode === 'dark' ? (
+                <Sun size={16} className="text-amber-500 shrink-0" />
+              ) : (
+                <Moon size={16} className="text-indigo-500 shrink-0" />
+              )}
+              <span>Giao diện: {themeMode === 'dark' ? 'Tối (Dark)' : 'Sáng (Light)'}</span>
+            </button>
+            <div className="flex items-center gap-1.5">
+              <ThemeSelector isAdmin={isAdminOrSuperAdminRole(user?.role)} />
+              <Switch
+                size="small"
+                checked={themeMode === 'dark'}
+                aria-label="Chuyển đổi giao diện Sáng/Tối"
+                onChange={() => onToggleTheme()}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Daily Calls History Button */}
+        {onOpenDailyCalls && (
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              onOpenDailyCalls();
+            }}
+            className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+          >
+            <span className="flex items-center gap-2.5 text-[13px] font-medium text-slate-800 dark:text-slate-200">
+              <Phone size={16} className="text-emerald-500 shrink-0" />
+              Cuộc gọi hôm nay
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              {dailyCallsCount > 0 && (
+                <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-bold tabular-nums bg-emerald-500/15 text-emerald-500 border border-emerald-500/25">
+                  {dailyCallsCount} cuộc
+                </span>
+              )}
+              <ChevronRight size={14} className="text-slate-400 shrink-0" />
+            </span>
+          </button>
+        )}
 
         {/* Change Avatar Button */}
         <button

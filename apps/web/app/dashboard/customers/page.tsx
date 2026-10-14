@@ -38,9 +38,6 @@ const AssignmentHistoryDrawer = dynamic(
   () => import('./components/AssignmentHistoryDrawer').then((m) => m.AssignmentHistoryDrawer),
   { ssr: false }
 );
-const AIAssistantWidget = dynamic(() => import('./components/AIAssistantWidget').then((m) => m.AIAssistantWidget), {
-  ssr: false,
-});
 
 const PRESET_FILTERS = [
   {
@@ -184,6 +181,17 @@ function CustomersPageContent() {
     data.setSortField(value);
     data.setCurrentPage(1);
   };
+
+  React.useEffect(() => {
+    const handleApplyAiFilter = (e: Event) => {
+      const custom = e as CustomEvent<Record<string, unknown>>;
+      if (custom?.detail && typeof custom.detail === 'object') {
+        data.applyFilterFromJson(custom.detail);
+      }
+    };
+    window.addEventListener('mos-ai-copilot-apply-customer-filter', handleApplyAiFilter);
+    return () => window.removeEventListener('mos-ai-copilot-apply-customer-filter', handleApplyAiFilter);
+  }, [data]);
 
   return (
     <ResourceListPage
@@ -597,16 +605,6 @@ function CustomersPageContent() {
 
       {/* SMS MODAL */}
       <SMSModal open={smsModalVisible} onClose={() => setSmsModalVisible(false)} customer={data.selectedCustomer} />
-
-      {/* AI Assistant Private Workspace Copilot */}
-      <AIAssistantWidget
-        themeMode={themeMode}
-        currentFilterCriteria={data.getCurrentFilterCriteria()}
-        onApplyFilter={(criteria) => {
-          data.applyFilterFromJson(criteria);
-        }}
-        currentUser={data.currentUser}
-      />
     </ResourceListPage>
   );
 }
