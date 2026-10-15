@@ -99,6 +99,11 @@ describe('bookingCampaignScope (MOS-BUG-110)', () => {
       expect(defaultPromo).toBeNull();
     });
 
+    it('returns null when campaignPromotions array is empty', () => {
+      expect(resolveDefaultCampaignPromotion(true, [])).toBeNull();
+      expect(resolveDefaultCampaignPromotion(false, [])).toBeNull();
+    });
+
     it('auto-selects first eligible percentage discount promotion when booking inside campaign', () => {
       // In campaign (hasCampaignScope = true)
       const defaultPromo = resolveDefaultCampaignPromotion(true, mockComebackPromotionContext);
