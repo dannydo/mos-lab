@@ -600,10 +600,11 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
 
       // 3. Fetch Completed Orders for financial and frequency metrics
       const completedOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT o.id, o.order_key as orderKey, o.booking_date_start as bookingDate, o.total_price as totalPrice, o.assigned_staff_id as technicianId, o.created_staff_id as createdStaffId
+        `SELECT o.id, o.order_key as orderKey, COALESCE(ro.actual_booking_date_start, o.booking_date_start) as bookingDate, o.total_price as totalPrice, o.assigned_staff_id as technicianId, o.created_staff_id as createdStaffId
          FROM \`order\` o
+         LEFT JOIN report_order ro ON o.id = ro.order_id
          WHERE o.user_id = ? AND o.order_state = 'Completed'
-         ORDER BY o.booking_date_start DESC`,
+         ORDER BY COALESCE(ro.actual_booking_date_start, o.booking_date_start) DESC`,
         customerId
       );
 
@@ -1567,10 +1568,11 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(customerSql, customerId),
         fastify.prisma.legacy.user_contact.findMany({ where: { user_id: customerId } }),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          `SELECT o.id, o.booking_date_start as bookingDate, o.total_price as totalPrice
+          `SELECT o.id, COALESCE(ro.actual_booking_date_start, o.booking_date_start) as bookingDate, o.total_price as totalPrice
            FROM \`order\` o
+           LEFT JOIN report_order ro ON o.id = ro.order_id
            WHERE o.user_id = ? AND o.order_state = 'Completed'
-           ORDER BY o.booking_date_start DESC`,
+           ORDER BY COALESCE(ro.actual_booking_date_start, o.booking_date_start) DESC`,
           customerId
         ),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(

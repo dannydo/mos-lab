@@ -1165,7 +1165,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         )`,
         `EXISTS (
           SELECT 1 FROM \`order\` o
-          WHERE o.user_id = u.id
+          WHERE o.user_id = u.id AND o.order_state = 'Completed'
         )`,
         `NOT EXISTS (
           SELECT 1 FROM user_service_balance usb
@@ -1260,7 +1260,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         FROM (
           SELECT
             u.id,
-            DATEDIFF(NOW(), up.last_order_booking) as daysSinceLastVisit
+            DATEDIFF(CURDATE(), up.last_order_booking) as daysSinceLastVisit
           FROM user u
           LEFT JOIN user_profile up ON u.id = up.user_id
           ${innerWhereString}

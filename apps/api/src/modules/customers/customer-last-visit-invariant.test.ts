@@ -124,3 +124,27 @@ test('MOS-BUG-109: customer with Completed visit 21 days ago and Missed booking 
   assert.equal(daysSinceCompletedVisit, 21);
   assert.equal(missedDays, 15);
 });
+<<<<<<< HEAD
+=======
+
+test('MOS-BUG-109: evening Completed visits (>= 17:00 ICT) return exact touchpoint day count (21, 19, 14, 0) instead of shifting -1 day', () => {
+  const nowOnOct14Ict = new Date('2026-10-14T11:30:00.000Z'); // 18:30 ICT on 2026-10-14
+
+  // Customers from reopen screenshot #166 in Chạm 21 (visited 2026-09-23 after 17:00)
+  assert.equal(daysSinceVisit(new Date('2026-09-23T17:28:00.000Z'), nowOnOct14Ict), 21);
+  assert.equal(daysSinceVisit(new Date('2026-09-23T17:35:09.000Z'), nowOnOct14Ict), 21);
+  assert.equal(daysSinceVisit(new Date('2026-09-23T18:05:23.000Z'), nowOnOct14Ict), 21);
+  assert.equal(daysSinceVisit(new Date('2026-09-23T18:56:04.000Z'), nowOnOct14Ict), 21);
+
+  // Chạm 19 evening visit (2026-09-25 18:34:31)
+  assert.equal(daysSinceVisit(new Date('2026-09-25T18:34:31.000Z'), nowOnOct14Ict), 19);
+
+  // Chạm 14 evening visit (2026-09-30 20:07:52)
+  assert.equal(daysSinceVisit(new Date('2026-09-30T20:07:52.000Z'), nowOnOct14Ict), 14);
+
+  // Chăm sóc 24h evening visit today (2026-10-14 18:30:00)
+  assert.equal(daysSinceVisit(new Date('2026-10-14T18:30:00.000Z'), nowOnOct14Ict), 0);
+});
+
+
+>>>>>>> 08600e8d99d8c7047aa0f5fcbb7d995b6cd982df

@@ -1221,7 +1221,8 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
                  COALESCE(SUM(o.total_price), 0) as totalSpent,
                  COUNT(*) as totalVisits,
                  SUM(CASE WHEN o.promotion_id IS NOT NULL OR o.selected_promotion_id IS NOT NULL THEN 1 ELSE 0 END) as totalPromotionsUsed,
-                 COALESCE(MAX(ro.actual_booking_date_start), MAX(o.booking_date_start)) as lastVisitAt
+                 COALESCE(MAX(ro.actual_booking_date_start), MAX(o.booking_date_start)) as lastVisitAt,
+                 DATEDIFF(CURDATE(), COALESCE(MAX(ro.actual_booking_date_start), MAX(o.booking_date_start))) as daysSinceLastVisit
                FROM \`order\` o
                LEFT JOIN report_order ro ON o.id = ro.order_id
                WHERE o.order_state = 'Completed' AND o.user_id IN (${customerIds.join(',')})
@@ -1272,7 +1273,10 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         row.totalReferrals = referralMetric?.totalReferrals || 0;
         if (orderMetric && Number(orderMetric.totalVisits) > 0 && orderMetric.lastVisitAt) {
           row.lastVisit = orderMetric.lastVisitAt;
-          row.daysSinceLastVisit = daysSinceVisit(orderMetric.lastVisitAt);
+          row.daysSinceLastVisit =
+            orderMetric.daysSinceLastVisit !== null && orderMetric.daysSinceLastVisit !== undefined
+              ? Number(orderMetric.daysSinceLastVisit)
+              : daysSinceVisit(orderMetric.lastVisitAt);
         } else if (orderMetric && Number(orderMetric.totalVisits) === 0) {
           row.lastVisit = null;
           row.daysSinceLastVisit = null;
