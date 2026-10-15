@@ -10,7 +10,7 @@ test('daysSinceVisit calculates accurate day difference from completed booking d
   const expectedDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
   assert.equal(expectedDays, 494); // Depending on exact hours: 494 or 495 days
 
-  const calculatedDays = daysSinceVisit(pastVisit);
+  const calculatedDays = daysSinceVisit(pastVisit, fixedNow);
   assert.ok(typeof calculatedDays === 'number');
   assert.ok(calculatedDays >= 494 && calculatedDays <= 496);
 });
@@ -114,18 +114,13 @@ test('MOS-BUG-109: customer with Completed visit 21 days ago and Missed booking 
   const completedOrders = orders.filter((o) => o.orderState === 'Completed');
   const lastCompletedDate = new Date(completedOrders[0].bookingDate);
   lastCompletedDate.setUTCHours(0, 0, 0, 0);
-  const daysSinceCompletedVisit = Math.floor(
-    (today.getTime() - lastCompletedDate.getTime()) / (1000 * 60 * 60 * 24)
-  );
+  const daysSinceCompletedVisit = Math.floor((today.getTime() - lastCompletedDate.getTime()) / (1000 * 60 * 60 * 24));
 
   const lastBooking = orders[orders.length - 1];
   const lastBookingDate = new Date(lastBooking.bookingDate);
   lastBookingDate.setUTCHours(0, 0, 0, 0);
-  const missedDays = Math.floor(
-    (today.getTime() - lastBookingDate.getTime()) / (1000 * 60 * 60 * 24)
-  );
+  const missedDays = Math.floor((today.getTime() - lastBookingDate.getTime()) / (1000 * 60 * 60 * 24));
 
   assert.equal(daysSinceCompletedVisit, 21);
   assert.equal(missedDays, 15);
 });
-

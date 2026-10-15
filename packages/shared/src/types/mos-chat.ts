@@ -202,7 +202,8 @@ export interface CreateMosChatTaskRequest {
   assigneeId?: number | string;
   assigneeName: string;
   priority: MosChatTaskPriority;
-  remindInSeconds: number;
+  remindInSeconds?: number;
+  remindAt?: string;
 }
 
 export interface CreateMosChatConversationRequest {

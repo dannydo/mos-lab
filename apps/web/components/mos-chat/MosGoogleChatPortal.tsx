@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Tooltip, Modal, Input, Select, Popover, Popconfirm, message as antdMessage, theme } from 'antd';
+import { Tooltip, Modal, Input, Select, Popover, Popconfirm, DatePicker, message as antdMessage, theme } from 'antd';
 import {
   MessageSquare,
   MessageSquareReply,
   AlarmClock,
   AlarmClockPlus,
+  Calendar,
   BellRing,
   Pin,
   SmilePlus,
@@ -492,13 +493,41 @@ const SAMPLE_CUSTOMER_CARDS: MosChatCustomerCard[] = [
   },
 ];
 
-const REMINDER_PRESETS = [
-  { label: '5 giây (Test)', seconds: 5 },
-  { label: '15 phút', seconds: 900 },
-  { label: '30 phút', seconds: 1800 },
-  { label: '1 giờ', seconds: 3600 },
-  { label: '17:30 hôm nay', seconds: 7200 },
-  { label: '09:00 sáng mai', seconds: 86400 },
+interface ReminderPreset {
+  id: string;
+  label: string;
+  seconds: number;
+  getSeconds: () => number;
+}
+
+const REMINDER_PRESETS: ReminderPreset[] = [
+  { id: '5s', label: '5 giây (Test)', seconds: 5, getSeconds: () => 5 },
+  { id: '15m', label: '15 phút', seconds: 900, getSeconds: () => 900 },
+  { id: '30m', label: '30 phút', seconds: 1800, getSeconds: () => 1800 },
+  { id: '1h', label: '1 giờ', seconds: 3600, getSeconds: () => 3600 },
+  {
+    id: '1730',
+    label: '17:30 hôm nay',
+    seconds: 7200,
+    getSeconds: () => {
+      const now = dayjs();
+      let target = now.hour(17).minute(30).second(0);
+      if (target.isBefore(now)) {
+        target = target.add(1, 'day');
+      }
+      return Math.max(10, target.diff(now, 'second'));
+    },
+  },
+  {
+    id: '0900',
+    label: '09:00 sáng mai',
+    seconds: 86400,
+    getSeconds: () => {
+      const now = dayjs();
+      const target = now.add(1, 'day').hour(9).minute(0).second(0);
+      return Math.max(10, target.diff(now, 'second'));
+    },
+  },
 ];
 
 function playWebAudioReminderChime() {
@@ -751,6 +780,23 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [isResizingTarget, setIsResizingTarget] = useState<'panel' | 'sidebar' | null>(null);
   const [hoverResizeHandle, setHoverResizeHandle] = useState<'panel' | 'sidebar' | null>(null);
   const [presence, setPresence] = useState<MosChatPresenceStatus>('active');
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth <= 768;
+    }
+    return false;
+  });
+  const [mobileActiveView, setMobileActiveView] = useState<'inbox' | 'conversation' | 'thread'>('inbox');
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const panelWidthRef = useRef<number>(panelWidth);
   const sidebarWidthRef = useRef<number>(sidebarWidth);
@@ -1138,7 +1184,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [taskTitle, setTaskTitle] = useState('');
   const [taskAssignee, setTaskAssignee] = useState('Hà My (CC)');
   const [taskPriority, setTaskPriority] = useState<MosChatTaskPriority>('HIGH');
+  const [taskRemindMode, setTaskRemindMode] = useState<'preset' | 'custom'>('preset');
+  const [selectedPresetId, setSelectedPresetId] = useState<string>('5s');
   const [taskRemindSeconds, setTaskRemindSeconds] = useState<number>(5);
+  const [customRemindDate, setCustomRemindDate] = useState<dayjs.Dayjs | null>(null);
 
   // New Space / DM Modal
   const [newRoomModalOpen, setNewRoomModalOpen] = useState(false);
@@ -1705,6 +1754,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       if (detail.conversationId && visibleConversations.some((c) => c.id === detail.conversationId)) {
         setActiveConvId(detail.conversationId);
         setActiveSubtab('chat');
+        if (isMobile) setMobileActiveView('conversation');
         return;
       }
       if (detail.participantName || detail.participantStaffId) {
@@ -1725,6 +1775,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         if (matched) {
           setActiveConvId(matched.id);
           setActiveSubtab('chat');
+          if (isMobile) setMobileActiveView('conversation');
           return;
         }
         try {
@@ -1737,6 +1788,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             setConversations((prev) => [created.conversation, ...prev.filter((x) => x.id !== created.conversation.id)]);
             setActiveConvId(created.conversation.id);
             setActiveSubtab('chat');
+            if (isMobile) setMobileActiveView('conversation');
             notifyLivePeers();
           }
         } catch (_) {}
@@ -1979,6 +2031,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const selectConversation = (convId: string) => {
     setActiveConvId(convId);
     setActiveSubtab('chat');
+    if (isMobile) {
+      setMobileActiveView('conversation');
+    }
     if (convId !== AI_COPILOT_CONV_ID) {
       setConversations((prev) => prev.map((c) => (c.id === convId ? { ...c, unreadCount: 0 } : c)));
     }
@@ -2776,6 +2831,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const handleOpenThread = (msgId: string) => {
     setActiveThreadMsgId(msgId);
     setThreadOpen(true);
+    if (isMobile) {
+      setMobileActiveView('thread');
+    }
   };
 
   const handleSendThreadReply = async () => {
@@ -2824,7 +2882,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const openTaskModalFromMessage = (msg: MosChatMessage | null) => {
     setTaskModalSourceMsg(msg);
     setTaskTitle(msg ? msg.text : composerText.trim() || 'Kiểm tra lịch hẹn & chuẩn bị đón khách VIP');
+    setTaskRemindMode('preset');
+    setSelectedPresetId('5s');
     setTaskRemindSeconds(5);
+    setCustomRemindDate(dayjs().add(1, 'hour').minute(0).second(0));
     setTaskModalOpen(true);
   };
 
@@ -2832,8 +2893,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     const cleanTitle = taskTitle.trim();
     if (!cleanTitle || !activeConversation) return;
 
+    let remindAtIso: string;
+    let remindSecondsToSend: number;
+
+    if (taskRemindMode === 'custom' && customRemindDate && customRemindDate.isValid()) {
+      remindAtIso = customRemindDate.toISOString();
+      const diffSec = customRemindDate.diff(dayjs(), 'second');
+      remindSecondsToSend = Math.max(3, diffSec);
+    } else {
+      remindAtIso = new Date(Date.now() + taskRemindSeconds * 1000).toISOString();
+      remindSecondsToSend = taskRemindSeconds;
+    }
+
     const tempTaskId = `task-${Date.now()}`;
-    const remindAt = new Date(Date.now() + taskRemindSeconds * 1000).toISOString();
     const newTask: MosChatTaskItem = {
       id: tempTaskId,
       conversationId: activeConversation.id,
@@ -2844,7 +2916,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       assigneeName: taskAssignee,
       creatorName: currentUser?.displayName || 'Danny Do',
       priority: taskPriority,
-      remindAt,
+      remindAt: remindAtIso,
       done: false,
       fired: false,
       createdAt: new Date().toISOString(),
@@ -2893,8 +2965,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         title: cleanTitle,
         assigneeName: taskAssignee,
         priority: taskPriority,
-        remindInSeconds: taskRemindSeconds,
+        remindInSeconds: remindSecondsToSend,
+        remindAt: remindAtIso,
       });
+      notifyLivePeers();
     } catch (_) {}
   };
 
@@ -2944,6 +3018,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     if (existing) {
       setActiveConvId(existing.id);
       setActiveSubtab('chat');
+      if (isMobile) setMobileActiveView('conversation');
       return;
     }
     try {
@@ -2956,6 +3031,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         setConversations((prev) => [res.conversation, ...prev.filter((c) => c.id !== res.conversation.id)]);
         setActiveConvId(res.conversation.id);
         setActiveSubtab('chat');
+        if (isMobile) setMobileActiveView('conversation');
         notifyLivePeers();
       }
     } catch (_) {
@@ -2978,6 +3054,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     if (existing) {
       setActiveConvId(existing.id);
       setActiveSubtab('chat');
+      if (isMobile) setMobileActiveView('conversation');
       return;
     }
     try {
@@ -2990,6 +3067,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         setConversations((prev) => [res.conversation, ...prev.filter((c) => c.id !== res.conversation.id)]);
         setActiveConvId(res.conversation.id);
         setActiveSubtab('chat');
+        if (isMobile) setMobileActiveView('conversation');
         notifyLivePeers();
       }
     } catch (_) {
@@ -3019,6 +3097,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         setConversations((prev) => [res.conversation, ...prev.filter((c) => c.id !== res.conversation.id)]);
         setActiveConvId(res.conversation.id);
         setActiveSubtab('chat');
+        if (isMobile) setMobileActiveView('conversation');
         notifyLivePeers();
       }
     } catch (_) {
@@ -3665,18 +3744,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         aria-label="mOS Google Chat Workspace"
         style={{
           position: 'fixed',
-          top: 52,
+          top: isMobile ? 0 : 52,
           right: 0,
           bottom: 0,
-          width: maximized ? 'calc(100vw - 224px)' : panelWidth,
-          maxWidth: 'calc(100vw - 56px)',
+          left: isMobile ? 0 : undefined,
+          width: isMobile ? '100vw' : maximized ? 'calc(100vw - 224px)' : panelWidth,
+          maxWidth: isMobile ? '100vw' : 'calc(100vw - 56px)',
           background: surfaceBg,
-          borderLeft: `1px solid ${
-            isResizingTarget === 'panel' || hoverResizeHandle === 'panel' ? '#d4a84b' : borderStrong
-          }`,
+          borderLeft: isMobile
+            ? 'none'
+            : `1px solid ${isResizingTarget === 'panel' || hoverResizeHandle === 'panel' ? '#d4a84b' : borderStrong}`,
           boxShadow: isDark ? '0 24px 56px rgba(0, 0, 0, 0.65)' : '0 20px 48px rgba(15, 23, 42, 0.15)',
           display: 'flex',
-          zIndex: 995,
+          zIndex: isMobile ? 1200 : 995,
           transform: open ? 'translateX(0)' : 'translateX(104%)',
           transition: isResizingTarget
             ? 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)'
@@ -3684,95 +3764,99 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         }}
       >
         {/* LEFT EDGE RESIZE HANDLE (Drag to resize chat panel width, double-click to reset) */}
-        <Tooltip
-          title="Kéo sang trái/phải để thay đổi kích thước khung Chat (Tự động lưu riêng cho bạn · Nhấp đúp để đặt lại 840px)"
-          placement="left"
-          mouseEnterDelay={0.5}
-        >
-          <div
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Kéo để thay đổi chiều rộng khung Chat"
-            data-no-chat-autofocus="true"
-            onMouseEnter={() => setHoverResizeHandle('panel')}
-            onMouseLeave={() => setHoverResizeHandle((prev) => (prev === 'panel' ? null : prev))}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (maximized && typeof window !== 'undefined') {
-                const maxAllowed = Math.max(520, window.innerWidth - 56);
-                const nextW = Math.max(520, Math.min(maxAllowed, Math.round(window.innerWidth - e.clientX)));
-                maximizedRef.current = false;
-                panelWidthRef.current = nextW;
-                setMaximized(false);
-                setPanelWidth(nextW);
-                persistPersonalLayout({ maximized: false, panelWidth: nextW });
-              }
-              setIsResizingTarget('panel');
-            }}
-            onDoubleClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              maximizedRef.current = false;
-              panelWidthRef.current = 840;
-              setMaximized(false);
-              setPanelWidth(840);
-              persistPersonalLayout({ maximized: false, panelWidth: 840 });
-            }}
-            style={{
-              position: 'absolute',
-              top: 0,
-              bottom: 0,
-              left: -5,
-              width: 10,
-              cursor: 'ew-resize',
-              zIndex: 35,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+        {!isMobile && (
+          <Tooltip
+            title="Kéo sang trái/phải để thay đổi kích thước khung Chat (Tự động lưu riêng cho bạn · Nhấp đúp để đặt lại 840px)"
+            placement="left"
+            mouseEnterDelay={0.5}
           >
             <div
-              className="rounded-full transition-all"
-              style={{
-                width: isResizingTarget === 'panel' || hoverResizeHandle === 'panel' ? 4 : 2,
-                height: isResizingTarget === 'panel' || hoverResizeHandle === 'panel' ? 56 : 36,
-                background:
-                  isResizingTarget === 'panel' || hoverResizeHandle === 'panel'
-                    ? '#d4a84b'
-                    : isDark
-                      ? 'rgba(148, 163, 184, 0.32)'
-                      : 'rgba(100, 116, 139, 0.28)',
-                boxShadow: isResizingTarget === 'panel' ? '0 0 10px rgba(212, 168, 75, 0.65)' : 'none',
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Kéo để thay đổi chiều rộng khung Chat"
+              data-no-chat-autofocus="true"
+              onMouseEnter={() => setHoverResizeHandle('panel')}
+              onMouseLeave={() => setHoverResizeHandle((prev) => (prev === 'panel' ? null : prev))}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (maximized && typeof window !== 'undefined') {
+                  const maxAllowed = Math.max(520, window.innerWidth - 56);
+                  const nextW = Math.max(520, Math.min(maxAllowed, Math.round(window.innerWidth - e.clientX)));
+                  maximizedRef.current = false;
+                  panelWidthRef.current = nextW;
+                  setMaximized(false);
+                  setPanelWidth(nextW);
+                  persistPersonalLayout({ maximized: false, panelWidth: nextW });
+                }
+                setIsResizingTarget('panel');
               }}
-            />
-            {isResizingTarget === 'panel' && (
+              onDoubleClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                maximizedRef.current = false;
+                panelWidthRef.current = 840;
+                setMaximized(false);
+                setPanelWidth(840);
+                persistPersonalLayout({ maximized: false, panelWidth: 840 });
+              }}
+              style={{
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                left: -5,
+                width: 10,
+                cursor: 'ew-resize',
+                zIndex: 35,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
               <div
-                className="px-2 py-0.5 rounded-md text-[11px] font-bold tabular-nums shadow-lg pointer-events-none"
+                className="rounded-full transition-all"
                 style={{
-                  position: 'absolute',
-                  left: -64,
-                  background: '#111827',
-                  color: '#d4a84b',
-                  border: '1px solid rgba(212, 168, 75, 0.45)',
-                  whiteSpace: 'nowrap',
+                  width: isResizingTarget === 'panel' || hoverResizeHandle === 'panel' ? 4 : 2,
+                  height: isResizingTarget === 'panel' || hoverResizeHandle === 'panel' ? 56 : 36,
+                  background:
+                    isResizingTarget === 'panel' || hoverResizeHandle === 'panel'
+                      ? '#d4a84b'
+                      : isDark
+                        ? 'rgba(148, 163, 184, 0.32)'
+                        : 'rgba(100, 116, 139, 0.28)',
+                  boxShadow: isResizingTarget === 'panel' ? '0 0 10px rgba(212, 168, 75, 0.65)' : 'none',
                 }}
-              >
-                {panelWidth}px
-              </div>
-            )}
-          </div>
-        </Tooltip>
+              />
+              {isResizingTarget === 'panel' && (
+                <div
+                  className="px-2 py-0.5 rounded-md text-[11px] font-bold tabular-nums shadow-lg pointer-events-none"
+                  style={{
+                    position: 'absolute',
+                    left: -64,
+                    background: '#111827',
+                    color: '#d4a84b',
+                    border: '1px solid rgba(212, 168, 75, 0.45)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {panelWidth}px
+                </div>
+              )}
+            </div>
+          </Tooltip>
+        )}
 
         {/* LEFT COLUMN: NAVIGATION, FILTERS, 1-1 & SPACES */}
         <div
           style={{
             position: 'relative',
-            width: sidebarWidth,
-            borderRight: `1px solid ${
-              isResizingTarget === 'sidebar' || hoverResizeHandle === 'sidebar' ? '#d4a84b' : borderColor
-            }`,
-            display: 'flex',
+            width: isMobile ? '100%' : sidebarWidth,
+            borderRight: isMobile
+              ? 'none'
+              : `1px solid ${
+                  isResizingTarget === 'sidebar' || hoverResizeHandle === 'sidebar' ? '#d4a84b' : borderColor
+                }`,
+            display: isMobile && mobileActiveView !== 'inbox' ? 'none' : 'flex',
             flexDirection: 'column',
             background: surfaceBg,
             flexShrink: 0,
@@ -3888,6 +3972,22 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     <Plus size={15} />
                   </button>
                 </Tooltip>
+
+                {isMobile && (
+                  <button
+                    type="button"
+                    aria-label="Đóng mOS Chat"
+                    onClick={onClose}
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-lg cursor-pointer shrink-0 transition-colors"
+                    style={{
+                      background: surfaceRaised,
+                      border: `1px solid ${borderColor}`,
+                      color: token.colorTextSecondary,
+                    }}
+                  >
+                    <X size={15} />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -4614,70 +4714,89 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           </div>
 
           {/* SIDEBAR DIVIDER RESIZE HANDLE (Drag to resize sidebar width, double-click to reset) */}
-          <Tooltip
-            title="Kéo để thay đổi độ rộng cột danh sách (Nhấp đúp để đặt lại 264px)"
-            placement="right"
-            mouseEnterDelay={0.5}
-          >
-            <div
-              role="separator"
-              aria-orientation="vertical"
-              aria-label="Kéo để thay đổi chiều rộng cột danh sách"
-              data-no-chat-autofocus="true"
-              onMouseEnter={() => setHoverResizeHandle('sidebar')}
-              onMouseLeave={() => setHoverResizeHandle((prev) => (prev === 'sidebar' ? null : prev))}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setIsResizingTarget('sidebar');
-              }}
-              onDoubleClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                sidebarWidthRef.current = 264;
-                setSidebarWidth(264);
-                persistPersonalLayout({ sidebarWidth: 264 });
-              }}
-              style={{
-                position: 'absolute',
-                top: 0,
-                bottom: 0,
-                right: -4,
-                width: 8,
-                cursor: 'col-resize',
-                zIndex: 25,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
+          {!isMobile && (
+            <Tooltip
+              title="Kéo để thay đổi độ rộng cột danh sách (Nhấp đúp để đặt lại 264px)"
+              placement="right"
+              mouseEnterDelay={0.5}
             >
-              {isResizingTarget === 'sidebar' && (
-                <div
-                  className="px-2 py-0.5 rounded-md text-[11px] font-bold tabular-nums shadow-lg pointer-events-none"
-                  style={{
-                    position: 'absolute',
-                    left: 10,
-                    background: '#111827',
-                    color: '#d4a84b',
-                    border: '1px solid rgba(212, 168, 75, 0.45)',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {sidebarWidth}px
-                </div>
-              )}
-            </div>
-          </Tooltip>
+              <div
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="Kéo để thay đổi chiều rộng cột danh sách"
+                data-no-chat-autofocus="true"
+                onMouseEnter={() => setHoverResizeHandle('sidebar')}
+                onMouseLeave={() => setHoverResizeHandle((prev) => (prev === 'sidebar' ? null : prev))}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsResizingTarget('sidebar');
+                }}
+                onDoubleClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  sidebarWidthRef.current = 264;
+                  setSidebarWidth(264);
+                  persistPersonalLayout({ sidebarWidth: 264 });
+                }}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  bottom: 0,
+                  right: -4,
+                  width: 8,
+                  cursor: 'col-resize',
+                  zIndex: 25,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {isResizingTarget === 'sidebar' && (
+                  <div
+                    className="px-2 py-0.5 rounded-md text-[11px] font-bold tabular-nums shadow-lg pointer-events-none"
+                    style={{
+                      position: 'absolute',
+                      left: 10,
+                      background: '#111827',
+                      color: '#d4a84b',
+                      border: '1px solid rgba(212, 168, 75, 0.45)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {sidebarWidth}px
+                  </div>
+                )}
+              </div>
+            </Tooltip>
+          )}
         </div>
 
         {/* CENTER COLUMN: CONVERSATION STREAM / TASKS HUB */}
-        <div className="flex-1 flex flex-col min-w-0" style={{ background: canvasBg }}>
+        <div
+          className="flex-1 flex flex-col min-w-0"
+          style={{
+            background: canvasBg,
+            display: isMobile && mobileActiveView !== 'conversation' ? 'none' : 'flex',
+          }}
+        >
           {/* Conversation Header */}
           <div
             className="h-[52px] px-3 flex items-center justify-between gap-2 shrink-0"
             style={{ background: surfaceBg, borderBottom: `1px solid ${borderColor}` }}
           >
             <div className="flex items-center gap-2 min-w-0">
+              {isMobile && (
+                <button
+                  type="button"
+                  aria-label="Quay lại danh sách hội thoại"
+                  onClick={() => setMobileActiveView('inbox')}
+                  className="w-7 h-7 -ml-1 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-white/10 shrink-0"
+                  style={{ color: token.colorText }}
+                >
+                  <ChevronLeft size={20} />
+                </button>
+              )}
               {activeConversation?.type === 'space' ? (
                 <div
                   className="w-8 h-8 rounded-lg flex items-center justify-center font-extrabold text-xs shrink-0"
@@ -4849,22 +4968,24 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 </button>
               </Tooltip>
 
-              <Tooltip title={maximized ? 'Thu hẹp khung Chat' : 'Phóng to toàn màn hình'}>
-                <button
-                  type="button"
-                  aria-label="Phóng to / Thu hẹp khung Chat"
-                  onClick={() => {
-                    const nextVal = !maximized;
-                    maximizedRef.current = nextVal;
-                    setMaximized(nextVal);
-                    persistPersonalLayout({ maximized: nextVal });
-                  }}
-                  className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-white/10"
-                  style={{ color: token.colorTextSecondary }}
-                >
-                  {maximized ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
-                </button>
-              </Tooltip>
+              {!isMobile && (
+                <Tooltip title={maximized ? 'Thu hẹp khung Chat' : 'Phóng to toàn màn hình'}>
+                  <button
+                    type="button"
+                    aria-label="Phóng to / Thu hẹp khung Chat"
+                    onClick={() => {
+                      const nextVal = !maximized;
+                      maximizedRef.current = nextVal;
+                      setMaximized(nextVal);
+                      persistPersonalLayout({ maximized: nextVal });
+                    }}
+                    className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-white/10"
+                    style={{ color: token.colorTextSecondary }}
+                  >
+                    {maximized ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+                  </button>
+                </Tooltip>
+              )}
 
               <Tooltip title="Đóng mOS Chat (⌘J)">
                 <button
@@ -5458,11 +5579,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       }
                     }}
                     placeholder={
-                      activeConversation?.id === AI_COPILOT_CONV_ID
-                        ? 'Hỏi Wings AI Copilot, Paste hình (⌘V) hoặc yêu cầu phân tích khách hàng...'
-                        : canUseAiCopilot
-                          ? 'Nhắn tin, gõ @AI để gọi Copilot, Paste hình (⌘V)...'
-                          : 'Nhắn tin, Paste hình (⌘V) hoặc dán link Google Drive...'
+                      isMobile
+                        ? 'Nhắn tin...'
+                        : activeConversation?.id === AI_COPILOT_CONV_ID
+                          ? 'Hỏi Wings AI Copilot, Paste hình (⌘V) hoặc yêu cầu phân tích khách hàng...'
+                          : canUseAiCopilot
+                            ? 'Nhắn tin, gõ @AI để gọi Copilot, Paste hình (⌘V)...'
+                            : 'Nhắn tin, Paste hình (⌘V) hoặc dán link Google Drive...'
                     }
                     className="flex-1 bg-transparent border-0 outline-none text-[12.5px]"
                     style={{ color: token.colorText }}
@@ -5705,22 +5828,45 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         {threadOpen && activeThreadMessage && (
           <aside
             data-chat-thread-pane="true"
-            className="w-[264px] flex flex-col shrink-0"
-            style={{ background: surfaceBg, borderLeft: `1px solid ${borderColor}` }}
+            className={`${isMobile ? 'absolute inset-0 z-30 w-full' : 'w-[264px]'} flex flex-col shrink-0`}
+            style={{
+              background: surfaceBg,
+              borderLeft: isMobile ? 'none' : `1px solid ${borderColor}`,
+              display: isMobile && mobileActiveView !== 'thread' ? 'none' : 'flex',
+            }}
           >
             <div
               className="h-[52px] px-3 flex items-center justify-between text-[12.5px] font-extrabold"
               style={{ borderBottom: `1px solid ${borderColor}` }}
             >
-              <span className="flex items-center gap-1.5">
-                <MessageSquareReply size={14} />
-                <span>Luồng trả lời</span>
-              </span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                {isMobile && (
+                  <button
+                    type="button"
+                    aria-label="Quay lại hội thoại"
+                    onClick={() => {
+                      setThreadOpen(false);
+                      setMobileActiveView('conversation');
+                    }}
+                    className="w-7 h-7 -ml-1 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-white/10 shrink-0"
+                    style={{ color: token.colorText }}
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                )}
+                <span className="flex items-center gap-1.5 truncate">
+                  <MessageSquareReply size={14} className="shrink-0" />
+                  <span>Luồng trả lời</span>
+                </span>
+              </div>
               <Tooltip title="Đóng luồng">
                 <button
                   type="button"
                   aria-label="Đóng luồng"
-                  onClick={() => setThreadOpen(false)}
+                  onClick={() => {
+                    setThreadOpen(false);
+                    if (isMobile) setMobileActiveView('conversation');
+                  }}
                   className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer"
                   style={{ color: token.colorTextSecondary }}
                 >
@@ -5864,7 +6010,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       </section>
 
       {/* ================= MINI DOCKED POP-OUT CHAT WINDOWS (BOTTOM RIGHT LIKE GMAIL) ================= */}
-      {dockedConvIds.length > 0 && (
+      {!isMobile && dockedConvIds.length > 0 && (
         <div className="fixed bottom-0 right-5 flex items-end gap-2.5 z-[990]" style={{ pointerEvents: 'none' }}>
           {dockedConvIds.map((cid) => {
             const conv = conversations.find((c) => c.id === cid);
@@ -6165,7 +6311,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             <span>Giao Task & Hẹn Giờ Nhắc</span>
           </span>
         }
-        width={440}
+        width={isMobile ? 'calc(100vw - 24px)' : 440}
       >
         <div className="space-y-3 py-1">
           {taskModalSourceMsg && (
@@ -6191,6 +6337,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 onChange={setTaskAssignee}
                 options={assigneeOptions}
                 showSearch
+                placeholder="Tìm hoặc chọn người phụ trách..."
+                filterOption={(input, option) => {
+                  const normInput = removeVietnameseTones(input.trim().toLowerCase());
+                  if (!normInput) return true;
+                  const normLabel = removeVietnameseTones(String(option?.label || '').toLowerCase());
+                  const normValue = removeVietnameseTones(String(option?.value || '').toLowerCase());
+                  return normLabel.includes(normInput) || normValue.includes(normInput);
+                }}
               />
             </div>
             <div>
@@ -6209,24 +6363,133 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           </div>
 
           <div>
-            <div className="text-[11px] font-bold text-slate-400 mb-1">Hẹn giờ nhắc (Reminder)</div>
-            <div className="grid grid-cols-3 gap-1.5">
-              {REMINDER_PRESETS.map((preset) => (
-                <button
-                  key={preset.seconds}
-                  type="button"
-                  onClick={() => setTaskRemindSeconds(preset.seconds)}
-                  className="h-8 rounded-lg text-[11.5px] font-semibold cursor-pointer"
-                  style={{
-                    background: taskRemindSeconds === preset.seconds ? 'rgba(212, 168, 75, 0.18)' : surfaceRaised,
-                    border: `1px solid ${taskRemindSeconds === preset.seconds ? '#d4a84b' : borderColor}`,
-                    color: taskRemindSeconds === preset.seconds ? '#d4a84b' : token.colorText,
-                  }}
-                >
-                  {preset.label}
-                </button>
-              ))}
+            <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 mb-1.5">
+              <span>Hẹn giờ nhắc (Reminder)</span>
+              {taskRemindMode === 'custom' && customRemindDate && (
+                <span className="text-amber-500 font-semibold tabular-nums text-[10.5px]">
+                  {customRemindDate.isAfter(dayjs())
+                    ? `Nhắc lúc: ${customRemindDate.format('HH:mm DD/MM')}`
+                    : 'Chọn thời gian tương lai'}
+                </span>
+              )}
             </div>
+
+            {/* Presets Grid */}
+            <div className="grid grid-cols-3 gap-1.5 mb-2">
+              {REMINDER_PRESETS.map((preset) => {
+                const isSelected = taskRemindMode === 'preset' && selectedPresetId === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => {
+                      setTaskRemindMode('preset');
+                      setSelectedPresetId(preset.id);
+                      setTaskRemindSeconds(preset.getSeconds());
+                    }}
+                    className="h-8 rounded-lg text-[11.5px] font-semibold cursor-pointer transition-colors"
+                    style={{
+                      background: isSelected ? 'rgba(212, 168, 75, 0.18)' : surfaceRaised,
+                      border: `1px solid ${isSelected ? '#d4a84b' : borderColor}`,
+                      color: isSelected ? '#d4a84b' : token.colorText,
+                    }}
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
+
+              {/* Custom Date & Time Option */}
+              <button
+                type="button"
+                onClick={() => {
+                  setTaskRemindMode('custom');
+                  if (!customRemindDate) {
+                    setCustomRemindDate(dayjs().add(1, 'hour').minute(0).second(0));
+                  }
+                }}
+                className="h-8 rounded-lg text-[11.5px] font-bold cursor-pointer transition-colors col-span-3 flex items-center justify-center gap-1.5"
+                style={{
+                  background: taskRemindMode === 'custom' ? 'rgba(212, 168, 75, 0.18)' : surfaceRaised,
+                  border: `1px solid ${taskRemindMode === 'custom' ? '#d4a84b' : borderColor}`,
+                  color: taskRemindMode === 'custom' ? '#d4a84b' : token.colorText,
+                }}
+              >
+                <Calendar size={13} />
+                <span>Tùy chỉnh ngày & giờ nhắc hẹn (như ý)</span>
+              </button>
+            </div>
+
+            {/* Custom Date & Time Picker */}
+            {taskRemindMode === 'custom' && (
+              <div
+                className="p-2.5 rounded-lg space-y-2"
+                style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+              >
+                <div className="flex items-center gap-2">
+                  <DatePicker
+                    showTime={{ format: 'HH:mm' }}
+                    format="DD/MM/YYYY HH:mm"
+                    value={customRemindDate}
+                    onChange={(val) => setCustomRemindDate(val)}
+                    disabledDate={(current) => current && current < dayjs().startOf('day')}
+                    className="w-full h-8 text-[12px]"
+                    placeholder="Chọn ngày và giờ nhắc hẹn..."
+                  />
+                </div>
+
+                {/* Quick Add Helper Chips */}
+                <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                  <span className="text-[10px] text-slate-400 mr-0.5">Nhanh:</span>
+                  {[
+                    { label: '+10 phút', get: () => dayjs().add(10, 'minute') },
+                    { label: '+30 phút', get: () => dayjs().add(30, 'minute') },
+                    { label: '+1 giờ', get: () => dayjs().add(1, 'hour') },
+                    { label: '+2 giờ', get: () => dayjs().add(2, 'hour') },
+                    {
+                      label: '17:30 hôm nay',
+                      get: () => {
+                        const t = dayjs().hour(17).minute(30).second(0);
+                        return t.isBefore(dayjs()) ? t.add(1, 'day') : t;
+                      },
+                    },
+                    {
+                      label: '09:00 sáng mai',
+                      get: () => dayjs().add(1, 'day').hour(9).minute(0).second(0),
+                    },
+                    {
+                      label: '14:00 chiều mai',
+                      get: () => dayjs().add(1, 'day').hour(14).minute(0).second(0),
+                    },
+                  ].map((chip) => (
+                    <button
+                      key={chip.label}
+                      type="button"
+                      onClick={() => setCustomRemindDate(chip.get())}
+                      className="px-2 py-0.5 rounded text-[10.5px] cursor-pointer hover:opacity-80 transition-opacity tabular-nums"
+                      style={{
+                        background: 'rgba(212, 168, 75, 0.12)',
+                        color: '#d4a84b',
+                        border: '1px solid rgba(212, 168, 75, 0.25)',
+                      }}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Live preview banner */}
+                {customRemindDate && (
+                  <div className="text-[11px] text-emerald-400 font-medium flex items-center gap-1.5 pt-0.5">
+                    <Clock size={12} className="shrink-0 text-emerald-400" />
+                    <span>
+                      Sẽ nhắc hẹn vào lúc{' '}
+                      <strong className="text-emerald-300">{customRemindDate.format('HH:mm - DD/MM/YYYY')}</strong>
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </Modal>
@@ -6288,7 +6551,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             )}
           </span>
         }
-        width={520}
+        width={isMobile ? 'calc(100vw - 24px)' : 520}
       >
         {newRoomType === 'dm' ? (
           <div className="space-y-3 py-2">
@@ -6381,12 +6644,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     if (Number(m.id) === Number(currentUser?.id)) return false;
                     if (roomGroupFilter !== 'ALL' && !matchesStaffGroup(m, roomGroupFilter)) return false;
                     if (!roomSearchQuery.trim()) return true;
-                    const q = roomSearchQuery.toLowerCase();
-                    return (
-                      m.displayName?.toLowerCase().includes(q) ||
-                      m.username?.toLowerCase().includes(q) ||
-                      m.role?.toLowerCase().includes(q)
-                    );
+                    const q = removeVietnameseTones(roomSearchQuery.trim().toLowerCase());
+                    const name = removeVietnameseTones((m.displayName || '').toLowerCase());
+                    const user = removeVietnameseTones((m.username || '').toLowerCase());
+                    const role = removeVietnameseTones((m.role || '').toLowerCase());
+                    return name.includes(q) || user.includes(q) || role.includes(q);
                   })
                   .map((m) => {
                     const isAdm = m.role?.toLowerCase().includes('admin');
@@ -6606,12 +6868,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   .filter((m) => {
                     if (roomGroupFilter !== 'ALL' && !matchesStaffGroup(m, roomGroupFilter)) return false;
                     if (!roomSearchQuery.trim()) return true;
-                    const q = roomSearchQuery.toLowerCase();
-                    return (
-                      m.displayName?.toLowerCase().includes(q) ||
-                      m.username?.toLowerCase().includes(q) ||
-                      m.role?.toLowerCase().includes(q)
-                    );
+                    const q = removeVietnameseTones(roomSearchQuery.trim().toLowerCase());
+                    const name = removeVietnameseTones((m.displayName || '').toLowerCase());
+                    const user = removeVietnameseTones((m.username || '').toLowerCase());
+                    const role = removeVietnameseTones((m.role || '').toLowerCase());
+                    return name.includes(q) || user.includes(q) || role.includes(q);
                   })
                   .map((m) => {
                     const isSelected = selectedMemberIds.includes(m.id);
@@ -6673,7 +6934,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             <span className="text-[15px] font-extrabold">Thành viên Không gian · #{activeConversation?.name}</span>
           </div>
         }
-        width={520}
+        width={isMobile ? 'calc(100vw - 24px)' : 520}
       >
         <div className="space-y-4 py-2">
           {/* Add member section */}
@@ -6689,9 +6950,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 placeholder="Chọn đồng nghiệp để thêm..."
                 value={addMemberSelectedStaffId}
                 onChange={setAddMemberSelectedStaffId}
-                filterOption={(input, option) =>
-                  ((option?.label as string) || '').toLowerCase().includes(input.toLowerCase())
-                }
+                filterOption={(input, option) => {
+                  const normInput = removeVietnameseTones(input.trim().toLowerCase());
+                  if (!normInput) return true;
+                  const normLabel = removeVietnameseTones(String(option?.label || '').toLowerCase());
+                  return normLabel.includes(normInput);
+                }}
                 options={staffDirectory
                   .filter((s) => !activeConversation?.memberIds?.includes(s.id))
                   .map((s) => ({
@@ -6839,7 +7103,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             <span>Tải hình từ Google Drive / Ổ đĩa</span>
           </span>
         }
-        width={430}
+        width={isMobile ? 'calc(100vw - 24px)' : 430}
       >
         <div className="space-y-3 py-1">
           <div>
@@ -6885,7 +7149,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         zIndex={1350}
         onCancel={() => setAccessConfigModalOpen(false)}
         footer={null}
-        width={680}
+        width={isMobile ? 'calc(100vw - 24px)' : 680}
         destroyOnClose
         title={
           <div className="flex items-center justify-between pr-6">
@@ -7857,7 +8121,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           setQuickCreateSectionTargetConvId(null);
         }}
         footer={null}
-        width={420}
+        width={isMobile ? 'calc(100vw - 24px)' : 420}
         centered
         zIndex={1130}
         title={
@@ -7936,7 +8200,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           setEditingSectionId(null);
         }}
         footer={null}
-        width={680}
+        width={isMobile ? 'calc(100vw - 24px)' : 680}
         centered
         zIndex={1120}
         title={

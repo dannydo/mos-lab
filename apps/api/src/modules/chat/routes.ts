@@ -1684,7 +1684,14 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         });
       }
 
-      const remindInSec = Math.max(3, Number(body.remindInSeconds) || 900);
+      let remindAtDate: Date;
+      if (body.remindAt && !isNaN(new Date(body.remindAt).getTime())) {
+        remindAtDate = new Date(body.remindAt);
+      } else {
+        const remindInSec = Math.max(3, Number(body.remindInSeconds) || 900);
+        remindAtDate = new Date(now.getTime() + remindInSec * 1000);
+      }
+
       const newTask: MosChatTaskItem = {
         id: taskId,
         conversationId: conv.id,
@@ -1696,7 +1703,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         assigneeName: body.assigneeName || creatorName,
         creatorName,
         priority: body.priority || 'HIGH',
-        remindAt: new Date(now.getTime() + remindInSec * 1000).toISOString(),
+        remindAt: remindAtDate.toISOString(),
         done: false,
         fired: false,
         createdAt: now.toISOString(),

@@ -7942,7 +7942,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1717
+        "line": 1724
       }
     },
     {
@@ -7956,7 +7956,7 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1776
+        "line": 1783
       }
     },
     {
@@ -7970,7 +7970,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1970
+        "line": 1977
       }
     },
     {
@@ -7984,7 +7984,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2068
+        "line": 2075
       }
     },
     {
@@ -31671,8 +31671,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 77910,
-        "lineCount": 2133,
+        "sizeBytes": 78123,
+        "lineCount": 2140,
         "ext": ".ts"
       }
     },
@@ -31788,7 +31788,7 @@
       "filePath": "apps/api/src/modules/customers/customer-last-visit-invariant.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5468,
+        "sizeBytes": 5478,
         "lineCount": 132,
         "ext": ".ts"
       }
@@ -41837,8 +41837,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 5317,
-        "lineCount": 227,
+        "sizeBytes": 5339,
+        "lineCount": 228,
         "ext": ".ts"
       }
     },
