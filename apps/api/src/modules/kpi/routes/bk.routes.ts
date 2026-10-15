@@ -561,26 +561,26 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           SELECT 
             o.id,
             o.created_staff_id,
-            st.customer_tip_100
+            MAX(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE st.tip_amount END) as customer_tip_100
           FROM \`order\` o
+          JOIN staff_tip st ON st.order_id = o.id AND st.tip_amount > 0
           LEFT JOIN report_order ro ON o.id = ro.order_id
-          JOIN (
-            SELECT 
-              order_id, 
-              MAX(CASE WHEN tip_percentage > 0 THEN tip_amount / (tip_percentage / 100) ELSE tip_amount END) as customer_tip_100
-            FROM staff_tip
-            WHERE tip_amount > 0
-            GROUP BY order_id
-          ) st ON st.order_id = o.id
           WHERE o.order_state = 'Completed'
             AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
             AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
             ${storeFilter}
+          GROUP BY o.id, o.created_staff_id
         ) o ON o.created_staff_id = up.user_id
         WHERE up.user_id IN (${bkIdsStr})
         GROUP BY up.user_id, up.full_name, up.avatar, cs.client_store_key
         ORDER BY totalCustomerTip DESC
       `;
+
+      const cacheKey = `bk:tip:leaderboard:${startPart}:${endPart}:${storeId || 'ALL'}`;
+      const cached = fastify.cache?.get<SafeAny>(cacheKey);
+      if (cached) {
+        return cached;
+      }
 
       const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql);
 
@@ -614,7 +614,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         };
       });
 
-      return {
+      const responsePayload = {
         leaderboard,
         summary: {
           totalBookingsCount: grandTotalBookings,
@@ -623,6 +623,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           totalBkTipBonus: grandTotalBkTipBonus,
         },
       };
+      fastify.cache?.set(cacheKey, responsePayload, 120_000);
+      return responsePayload;
     } catch (err: SafeAny) {
       fastify.log.error(err as SafeAny, 'Error fetching BK tip leaderboard');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Lỗi tải Leaderboard BK Tip.' });
@@ -668,28 +670,28 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
           COALESCE(up_b.full_name, 'Booker') as bookerName,
           up_b.avatar as bookerAvatar,
-          COALESCE(st.customer_tip_100, 0) as totalCustomerTip
+          COALESCE(MAX(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE st.tip_amount END), 0) as totalCustomerTip
         FROM \`order\` o
+        JOIN staff_tip st ON st.order_id = o.id AND st.tip_amount > 0
+        LEFT JOIN report_order ro ON o.id = ro.order_id
         LEFT JOIN \`user_profile\` up_c ON up_c.user_id = o.user_id
         LEFT JOIN \`user_profile\` up_b ON up_b.user_id = o.created_staff_id
         LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-        JOIN (
-          SELECT 
-            order_id, 
-            MAX(CASE WHEN tip_percentage > 0 THEN tip_amount / (tip_percentage / 100) ELSE tip_amount END) as customer_tip_100
-          FROM staff_tip
-          WHERE tip_amount > 0
-          GROUP BY order_id
-        ) st ON st.order_id = o.id
-        LEFT JOIN report_order ro ON o.id = ro.order_id
         WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
           AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
           AND o.order_state = 'Completed'
           ${bookerFilter}
           ${storeFilter}
-        ORDER BY COALESCE(ro.actual_booking_date_start, o.booking_date_start) DESC
+        GROUP BY o.id, ro.actual_booking_date_start, o.booking_date_start, up_c.full_name, up_c.avatar, cs.client_store_key, up_b.full_name, up_b.avatar
+        ORDER BY checkinTime DESC
         LIMIT 500
       `;
+
+      const cacheKey = `bk:tip:details:${startPart}:${endPart}:${bookerId || 'ALL'}:${storeId || 'ALL'}`;
+      const cached = fastify.cache?.get<SafeAny>(cacheKey);
+      if (cached) {
+        return cached;
+      }
 
       const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql);
 
@@ -717,7 +719,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         };
       });
 
-      return {
+      const responsePayload = {
         data,
         total: data.length,
         summary: {
@@ -727,6 +729,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           totalBkTipBonus: totalBkTipBonusSum,
         },
       };
+      fastify.cache?.set(cacheKey, responsePayload, 120_000);
+      return responsePayload;
     } catch (err: SafeAny) {
       fastify.log.error(err as SafeAny, 'Error fetching BK tip details');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Lỗi tải chi tiết BK Tip.' });

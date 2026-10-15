@@ -70,13 +70,20 @@ describe('bookingCampaignScope (MOS-BUG-110)', () => {
   });
 
   describe('resolveEligibleCampaignPromotions', () => {
-    it('returns empty array when booking outside campaign, even if customer has active promotions on server', () => {
-      // Customer has active Come Back promotion on server, but booking is started from NYC Main (initialCampaignPromotions is undefined)
+    it('returns customer campaign promotions even when booking started outside campaign (e.g. NYC Main)', () => {
+      // Customer has active Come Back promotion on server, booking started from NYC Main (initialCampaignPromotions is undefined)
       const resolved = resolveEligibleCampaignPromotions(undefined, mockComebackPromotionContext);
-      expect(resolved).toEqual([]);
+      expect(resolved).toEqual(mockComebackPromotionContext);
+      expect(resolved[0].campaignId).toBe(7);
+      expect(resolved[0].promotions[0].name).toBe('Wellcome Back 30%');
     });
 
-    it('restricts promotions strictly to the current active campaign when booking inside campaign', () => {
+    it('returns empty array when customer has no active campaign memberships on server', () => {
+      expect(resolveEligibleCampaignPromotions(undefined, [])).toEqual([]);
+      expect(resolveEligibleCampaignPromotions(undefined, null)).toEqual([]);
+    });
+
+    it('prioritizes/restricts promotions strictly to the active campaign when booking initiated from inside that campaign', () => {
       // Booking initiated from Campaign 7 (Come Back), server returns multiple memberships (Campaign 7 and Campaign 19)
       const livePromotions = [...mockComebackPromotionContext, ...mockOtherCampaignPromotionContext];
       const resolved = resolveEligibleCampaignPromotions(mockComebackPromotionContext, livePromotions);
@@ -93,20 +100,14 @@ describe('bookingCampaignScope (MOS-BUG-110)', () => {
   });
 
   describe('resolveDefaultCampaignPromotion', () => {
-    it('never auto-selects campaign promotion when booking outside campaign', () => {
-      // Out of campaign (hasCampaignScope = false)
-      const defaultPromo = resolveDefaultCampaignPromotion(false, mockComebackPromotionContext);
-      expect(defaultPromo).toBeNull();
+    it('returns null when campaignPromotions array is empty or undefined', () => {
+      expect(resolveDefaultCampaignPromotion([])).toBeNull();
+      expect(resolveDefaultCampaignPromotion(null)).toBeNull();
+      expect(resolveDefaultCampaignPromotion(undefined)).toBeNull();
     });
 
-    it('returns null when campaignPromotions array is empty', () => {
-      expect(resolveDefaultCampaignPromotion(true, [])).toBeNull();
-      expect(resolveDefaultCampaignPromotion(false, [])).toBeNull();
-    });
-
-    it('auto-selects first eligible percentage discount promotion when booking inside campaign', () => {
-      // In campaign (hasCampaignScope = true)
-      const defaultPromo = resolveDefaultCampaignPromotion(true, mockComebackPromotionContext);
+    it('auto-selects first eligible percentage discount promotion when customer has campaign promotions', () => {
+      const defaultPromo = resolveDefaultCampaignPromotion(mockComebackPromotionContext);
       expect(defaultPromo).not.toBeNull();
       expect(defaultPromo?.id).toBe(69);
       expect(defaultPromo?.name).toBe('Wellcome Back 30%');

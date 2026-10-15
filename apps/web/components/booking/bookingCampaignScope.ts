@@ -1,9 +1,8 @@
 import type { CustomerCampaignPromotionInfo, CustomerCampaignPromotionItem } from '@mos-lab/shared';
 
 /**
- * Checks whether a booking is initiated within an explicit campaign context.
- * Bookings created outside campaigns (such as NYC Main, Customer List, Appointments)
- * must NEVER display or auto-apply campaign promotions.
+ * Checks whether the initial booking context has explicit campaign promotions provided
+ * (e.g. when launched directly from a specific Campaign Detail page).
  */
 export function isBookingWithinCampaignScope(
   initialCampaignPromotions?: CustomerCampaignPromotionInfo[] | null
@@ -12,39 +11,38 @@ export function isBookingWithinCampaignScope(
 }
 
 /**
- * Resolves the campaign promotions eligible for the current booking wizard session.
- * - Out-of-campaign bookings: always returns an empty list.
- * - In-campaign bookings: strictly scopes promotions to the campaign ID that initiated the booking.
+ * Resolves the campaign promotions eligible for the current customer:
+ * - If the customer has active campaign memberships returned by the server (liveCustomerPromotions),
+ *   they are ALWAYS eligible to receive the promotion, regardless of where the booking was initiated
+ *   (NYC Main, Customer List, Appointments, or Campaign Page).
+ * - If launched from a specific campaign page, promotions from that campaign are prioritized/scoped.
+ * - If customer has no campaign memberships, returns empty array.
  */
 export function resolveEligibleCampaignPromotions(
   initialCampaignPromotions?: CustomerCampaignPromotionInfo[] | null,
   liveCustomerPromotions?: CustomerCampaignPromotionInfo[] | null
 ): CustomerCampaignPromotionInfo[] {
-  if (!isBookingWithinCampaignScope(initialCampaignPromotions)) {
-    return [];
-  }
-
-  const allowedCampaignId = initialCampaignPromotions![0]?.campaignId;
-  if (!allowedCampaignId) return [];
-
   if (liveCustomerPromotions && liveCustomerPromotions.length > 0) {
-    const scoped = liveCustomerPromotions.filter((camp) => camp.campaignId === allowedCampaignId);
-    if (scoped.length > 0) return scoped;
+    if (initialCampaignPromotions && initialCampaignPromotions.length > 0) {
+      const allowedCampaignId = initialCampaignPromotions[0]?.campaignId;
+      const scoped = liveCustomerPromotions.filter((camp) => camp.campaignId === allowedCampaignId);
+      if (scoped.length > 0) return scoped;
+    }
+    return liveCustomerPromotions;
   }
 
-  return initialCampaignPromotions!;
+  return initialCampaignPromotions || [];
 }
 
 /**
- * Resolves the default selected promotion.
- * - Out-of-campaign bookings: MUST NEVER auto-select any campaign promotion (returns null).
- * - In-campaign bookings: auto-selects the first non-fixed-price promotion of that campaign.
+ * Resolves the default selected promotion for a customer in a campaign:
+ * - Any customer enrolled in a campaign will have their first eligible promotion auto-applied.
+ * - Returns null when no campaign promotions are available for the customer.
  */
 export function resolveDefaultCampaignPromotion(
-  hasCampaignScope: boolean,
-  campaignPromotions: CustomerCampaignPromotionInfo[]
+  campaignPromotions?: CustomerCampaignPromotionInfo[] | null
 ): CustomerCampaignPromotionItem | null {
-  if (!hasCampaignScope || !campaignPromotions || campaignPromotions.length === 0) {
+  if (!campaignPromotions || campaignPromotions.length === 0) {
     return null;
   }
 

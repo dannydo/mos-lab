@@ -2318,6 +2318,8 @@ export class CampaignService {
 
   private static inFlightCampaignStatsPromises = new Map<string, Promise<CampaignStatsResponse>>();
   private static inFlightSharedPoolOverviewPromises = new Map<string, Promise<SharedPoolOverviewStats>>();
+  private static campaignStatsComputedAt = new Map<string, number>();
+  private static sharedPoolOverviewComputedAt = new Map<string, number>();
 
   static invalidateCampaignCache(fastify: FastifyInstance, campaignId?: number): void {
     if (campaignId) {
@@ -2333,17 +2335,32 @@ export class CampaignService {
           this.inFlightSharedPoolOverviewPromises.delete(key);
         }
       }
+      for (const key of this.campaignStatsComputedAt.keys()) {
+        if (key.startsWith(`campaign:stats:${campaignId}:`)) {
+          this.campaignStatsComputedAt.delete(key);
+        }
+      }
+      for (const key of this.sharedPoolOverviewComputedAt.keys()) {
+        if (key.startsWith(`campaign:shared-pool:overview:${campaignId}:`)) {
+          this.sharedPoolOverviewComputedAt.delete(key);
+        }
+      }
     } else {
       fastify.cache?.invalidatePattern(`^campaign:stats:`);
       fastify.cache?.invalidatePattern(`^campaign:shared-pool:overview:`);
       this.inFlightCampaignStatsPromises.clear();
       this.inFlightSharedPoolOverviewPromises.clear();
+      this.campaignStatsComputedAt.clear();
+      this.sharedPoolOverviewComputedAt.clear();
     }
   }
 
   /**
    * Header metrics for campaign (total customers, booked count, booked rate, touchpoint logs count, revenue).
-   * Features a 15-second in-memory cache + Single-Flight in-flight promise sharing to absorb high polling frequency.
+   * Features Stale-While-Revalidate (SWR):
+   * - Fresh (< 60s): Returns directly from RAM (< 5ms).
+   * - Stale (60s - 300s): Returns instant cached data (0ms) and triggers background revalidation.
+   * - Cache Miss: Single-Flight promise deduplication.
    */
   static async getCampaignStats(
     fastify: FastifyInstance,
@@ -2352,11 +2369,44 @@ export class CampaignService {
     options?: { skipCache?: boolean }
   ): Promise<CampaignStatsResponse> {
     const cacheKey = `campaign:stats:${campaignId}:${restrictToAssignedStaffId || 'ALL'}`;
+    const now = Date.now();
+
     if (!options?.skipCache) {
       const cached = fastify.cache?.get<CampaignStatsResponse>(cacheKey);
       if (cached) {
+        const computedAt = this.campaignStatsComputedAt.get(cacheKey) || now;
+        const age = now - computedAt;
+
+        // 1. FRESH (< 60s): Return directly from RAM, no background revalidation needed
+        if (age < 60_000) {
+          return cached;
+        }
+
+        // 2. STALE-WHILE-REVALIDATE (60s - 300s): Return immediately (0ms) and revalidate in background
+        if (!this.inFlightCampaignStatsPromises.has(cacheKey)) {
+          const revalidatePromise = (async () => {
+            try {
+              const freshStats = await this.computeCampaignStats(fastify, campaignId, restrictToAssignedStaffId);
+              this.campaignStatsComputedAt.set(cacheKey, Date.now());
+              fastify.cache?.set(cacheKey, freshStats, 300_000);
+              return freshStats;
+            } catch (err: unknown) {
+              const errMsg = err instanceof Error ? err.message : String(err);
+              fastify.log?.warn?.(
+                `[CampaignStats] Background SWR revalidation failed for campaign ${campaignId}: ${errMsg}`
+              );
+              return cached;
+            } finally {
+              this.inFlightCampaignStatsPromises.delete(cacheKey);
+            }
+          })();
+          this.inFlightCampaignStatsPromises.set(cacheKey, revalidatePromise);
+        }
+
         return cached;
       }
+
+      // 3. CACHE MISS: Single-flight deduplication
       const inFlight = this.inFlightCampaignStatsPromises.get(cacheKey);
       if (inFlight) {
         return await inFlight;
@@ -2366,7 +2416,8 @@ export class CampaignService {
     const computePromise = (async () => {
       try {
         const stats = await this.computeCampaignStats(fastify, campaignId, restrictToAssignedStaffId);
-        fastify.cache?.set(cacheKey, stats, 15_000);
+        this.campaignStatsComputedAt.set(cacheKey, Date.now());
+        fastify.cache?.set(cacheKey, stats, 300_000);
         return stats;
       } finally {
         this.inFlightCampaignStatsPromises.delete(cacheKey);
@@ -2832,7 +2883,10 @@ export class CampaignService {
 
   /**
    * Get Shared Pool Overview Stats: active batch metrics, campaign metrics, burn rate, and early warning levels.
-   * Features a 15-second in-memory cache + Single-Flight in-flight promise sharing to absorb high polling frequency.
+   * Features Stale-While-Revalidate (SWR):
+   * - Fresh (< 60s): Returns directly from RAM (< 5ms).
+   * - Stale (60s - 300s): Returns instant cached data (0ms) and triggers background revalidation.
+   * - Cache Miss: Single-Flight promise deduplication.
    */
   static async getSharedPoolOverview(
     fastify: FastifyInstance,
@@ -2842,11 +2896,44 @@ export class CampaignService {
   ): Promise<SharedPoolOverviewStats> {
     const batchKeyPart = batchNumberParam !== undefined ? String(batchNumberParam) : 'DEFAULT';
     const cacheKey = `campaign:shared-pool:overview:${campaignId}:${batchKeyPart}`;
+    const now = Date.now();
+
     if (!options?.skipCache) {
       const cached = fastify.cache?.get<SharedPoolOverviewStats>(cacheKey);
       if (cached) {
+        const computedAt = this.sharedPoolOverviewComputedAt.get(cacheKey) || now;
+        const age = now - computedAt;
+
+        // 1. FRESH (< 60s): Return directly from RAM, no background revalidation needed
+        if (age < 60_000) {
+          return cached;
+        }
+
+        // 2. STALE-WHILE-REVALIDATE (60s - 300s): Return immediately (0ms) and revalidate in background
+        if (!this.inFlightSharedPoolOverviewPromises.has(cacheKey)) {
+          const revalidatePromise = (async () => {
+            try {
+              const freshOverview = await this.computeSharedPoolOverview(fastify, campaignId, batchNumberParam);
+              this.sharedPoolOverviewComputedAt.set(cacheKey, Date.now());
+              fastify.cache?.set(cacheKey, freshOverview, 300_000);
+              return freshOverview;
+            } catch (err: unknown) {
+              const errMsg = err instanceof Error ? err.message : String(err);
+              fastify.log?.warn?.(
+                `[SharedPoolOverview] Background SWR revalidation failed for campaign ${campaignId}: ${errMsg}`
+              );
+              return cached;
+            } finally {
+              this.inFlightSharedPoolOverviewPromises.delete(cacheKey);
+            }
+          })();
+          this.inFlightSharedPoolOverviewPromises.set(cacheKey, revalidatePromise);
+        }
+
         return cached;
       }
+
+      // 3. CACHE MISS: Single-flight deduplication
       const inFlight = this.inFlightSharedPoolOverviewPromises.get(cacheKey);
       if (inFlight) {
         return await inFlight;
@@ -2856,7 +2943,8 @@ export class CampaignService {
     const computePromise = (async () => {
       try {
         const overview = await this.computeSharedPoolOverview(fastify, campaignId, batchNumberParam);
-        fastify.cache?.set(cacheKey, overview, 15_000);
+        this.sharedPoolOverviewComputedAt.set(cacheKey, Date.now());
+        fastify.cache?.set(cacheKey, overview, 300_000);
         return overview;
       } finally {
         this.inFlightSharedPoolOverviewPromises.delete(cacheKey);
