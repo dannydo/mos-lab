@@ -44,6 +44,11 @@ import { AdaptiveDrawer, AdaptiveModal } from './ui/AdaptiveOverlay';
 import { CopyPhoneButton } from './ui';
 import { useResponsiveTier } from '../hooks/useResponsiveTier';
 import { notifyBookingMutation, toBookingCustomerId } from '../lib/booking-events';
+import {
+  isBookingWithinCampaignScope,
+  resolveEligibleCampaignPromotions,
+  resolveDefaultCampaignPromotion,
+} from './booking/bookingCampaignScope';
 
 const { TextArea } = Input;
 
@@ -483,23 +488,21 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
 
   const fetchCustomerCampaignPromotions = useCallback(
     async (customerId: number) => {
-      if (!customerId) {
+      // Out-of-campaign bookings (e.g. NYC Main, Customers list, Appointments) must NEVER
+      // fetch, display, or auto-apply campaign promotions (MOS-BUG-110).
+      if (!customerId || !isBookingWithinCampaignScope(initialCampaignPromotions)) {
         setCustomerCampaignPromotions([]);
         setSelectedCampaignPromotion(null);
         return;
       }
+
       setLoadingCampaignPromotions(true);
       try {
         const data = await apiClient.campaigns.getCustomerActivePromotions(customerId);
-        // A booking launched from an active campaign row already carries a
-        // membership-scoped context. Prefer the live API, then retain that
-        // context when the secondary endpoint has not yet returned a promotion.
-        const campPromos = data && data.length > 0 ? data : initialCampaignPromotions || [];
+        const campPromos = resolveEligibleCampaignPromotions(initialCampaignPromotions, data);
         setCustomerCampaignPromotions(campPromos);
 
-        const defaultPromotion = campPromos
-          .flatMap((campaign) => campaign.promotions || [])
-          .find((promotion) => promotion.type !== 'FIXED_FINAL_PRICE');
+        const defaultPromotion = resolveDefaultCampaignPromotion(true, campPromos);
         if (defaultPromotion) {
           setSelectedCampaignPromotion(defaultPromotion);
           setSelectedPromotion(null);
@@ -508,10 +511,15 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
         }
       } catch (err) {
         console.error('[BookingWizard] Failed to fetch customer campaign promotions:', err);
-        // A campaign page has already proven the customer is a member. Keep that
-        // short-lived UI context if the secondary lookup fails; the booking API is
-        // still authoritative and rejects any stale/invalid selection.
-        setCustomerCampaignPromotions(initialCampaignPromotions || []);
+        const campPromos = resolveEligibleCampaignPromotions(initialCampaignPromotions, null);
+        setCustomerCampaignPromotions(campPromos);
+        const defaultPromotion = resolveDefaultCampaignPromotion(true, campPromos);
+        if (defaultPromotion) {
+          setSelectedCampaignPromotion(defaultPromotion);
+          setSelectedPromotion(null);
+        } else {
+          setSelectedCampaignPromotion(null);
+        }
       } finally {
         setLoadingCampaignPromotions(false);
       }
@@ -524,19 +532,20 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
   // the membership-scoped context becomes available. The API remains the source
   // of truth when a booking is submitted.
   useEffect(() => {
-    if (!open || isNewLead || !initialCampaignPromotions?.length) return;
-    setCustomerCampaignPromotions((current) => (current.length > 0 ? current : initialCampaignPromotions));
+    if (!open || isNewLead || !isBookingWithinCampaignScope(initialCampaignPromotions)) return;
+    setCustomerCampaignPromotions((current) => (current.length > 0 ? current : initialCampaignPromotions!));
   }, [initialCampaignPromotions, isNewLead, open]);
 
   useEffect(() => {
     const targetCustId = selectedCustomer?.legacyUserId || selectedCustomer?.id;
-    if (open && selectedCustomer && targetCustId && !isNewLead) {
+    const hasCampaignScope = isBookingWithinCampaignScope(initialCampaignPromotions);
+    if (open && selectedCustomer && targetCustId && !isNewLead && hasCampaignScope) {
       fetchCustomerCampaignPromotions(targetCustId);
     } else {
       setCustomerCampaignPromotions([]);
       setSelectedCampaignPromotion(null);
     }
-  }, [selectedCustomer, isNewLead, open, fetchCustomerCampaignPromotions]);
+  }, [selectedCustomer, isNewLead, open, initialCampaignPromotions, fetchCustomerCampaignPromotions]);
 
   useEffect(() => {
     if (
