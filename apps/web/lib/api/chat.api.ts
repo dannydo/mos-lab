@@ -9,6 +9,7 @@ import type {
   MosChatMessage,
   MosChatTaskItem,
   MosChatThreadReply,
+  MosChatUserSidebarPrefs,
   UpdateMosChatAccessConfigRequest,
   UploadMosChatImageRequest,
   UploadMosChatImageResponse,
@@ -39,6 +40,13 @@ export const chatApi = {
     ): Promise<{ success: boolean; accessConfig: MosChatAccessConfig }> => {
       const res = await api.put('/chat/access-config', payload);
       invalidateApiGetCache(['/chat/bootstrap', '/chat/access-config']);
+      return res.data;
+    },
+    updateUserPrefs: async (
+      payload: Partial<MosChatUserSidebarPrefs>
+    ): Promise<{ success: boolean; userPrefs: MosChatUserSidebarPrefs }> => {
+      const res = await api.put('/chat/user-prefs', payload);
+      invalidateApiGetCache(['/chat/bootstrap']);
       return res.data;
     },
     uploadImage: async (payload: UploadMosChatImageRequest): Promise<UploadMosChatImageResponse> => {

@@ -127,6 +127,28 @@ export interface UpdateMosChatAccessConfigRequest {
   aiCopilotAllowedStaffIds?: number[];
 }
 
+export interface MosChatCustomSection {
+  id: string;
+  name: string;
+  conversationIds: string[];
+  collapsed?: boolean;
+  unreadOnly?: boolean;
+}
+
+export interface MosChatUserSidebarPrefs {
+  pinnedIds: string[];
+  mutedIds: string[];
+  hiddenIds: string[];
+  manualUnreadIds: string[];
+  readMessageCountByConv?: Record<string, number>;
+  collapsedSections: Record<string, boolean>;
+  unreadOnlySections: Record<string, boolean>;
+  sectionOrder: string[];
+  customSections: MosChatCustomSection[];
+  conversationOrder: Record<string, string[]>;
+  updatedAt?: string;
+}
+
 export interface MosChatBootstrapResponse {
   version?: number;
   unchanged?: boolean;
@@ -135,6 +157,7 @@ export interface MosChatBootstrapResponse {
   staffDirectory: MosChatStaffMember[];
   accessConfig?: MosChatAccessConfig;
   canAccessChat?: boolean;
+  userPrefs?: MosChatUserSidebarPrefs;
 }
 
 export interface CreateMosChatMessageRequest {

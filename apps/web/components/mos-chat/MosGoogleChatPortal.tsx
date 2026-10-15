@@ -48,11 +48,26 @@ import {
   UserMinus,
   UserPlus,
   Bookmark,
+  MoreVertical,
+  PinOff,
+  Bell,
+  BellOff,
+  Eye,
+  EyeOff,
+  FolderPlus,
+  FolderKanban,
+  ArrowUp,
+  ArrowDown,
+  RotateCcw,
+  LogOut,
+  MailOpen,
+  Pencil,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import type {
   MosChatAccessConfig,
   MosChatConversation,
+  MosChatCustomSection,
   MosChatCustomerCard,
   MosChatImageAttachment,
   MosChatImageMimeType,
@@ -61,6 +76,7 @@ import type {
   MosChatStaffMember,
   MosChatTaskItem,
   MosChatTaskPriority,
+  MosChatUserSidebarPrefs,
   SafeAny,
 } from '@mos-lab/shared';
 import { isCanonicalSuperAdminIdentity, removeVietnameseTones } from '@mos-lab/shared';
@@ -1137,6 +1153,105 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [spaceMembersModalOpen, setSpaceMembersModalOpen] = useState(false);
   const [addMemberSelectedStaffId, setAddMemberSelectedStaffId] = useState<number | null>(null);
 
+  // Personal Sidebar Customization (Google Chat Workspace style - per individual user)
+  const userSidebarPrefsStorageKey = useMemo(() => {
+    let resolvedKey = String(currentUser?.id || currentUser?.username || '').trim();
+    if (!resolvedKey && typeof window !== 'undefined') {
+      try {
+        const storedUser = window.localStorage.getItem('mos_user');
+        if (storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          resolvedKey = String(parsedUser?.id || parsedUser?.username || '').trim();
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return `mos_chat_user_sidebar_prefs_v1_${resolvedKey || 'default'}`;
+  }, [currentUser?.id, currentUser?.username]);
+
+  const readStoredUserSidebarPrefs = useCallback((storageKey: string): MosChatUserSidebarPrefs => {
+    const defaults: MosChatUserSidebarPrefs = {
+      pinnedIds: [],
+      mutedIds: [],
+      hiddenIds: [],
+      manualUnreadIds: [],
+      readMessageCountByConv: {},
+      collapsedSections: {},
+      unreadOnlySections: {},
+      sectionOrder: ['dm', 'spaces'],
+      customSections: [],
+      conversationOrder: {},
+    };
+    if (typeof window === 'undefined') return defaults;
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      if (!raw) return defaults;
+      const parsed = JSON.parse(raw) as Partial<MosChatUserSidebarPrefs>;
+      return {
+        pinnedIds: Array.isArray(parsed.pinnedIds) ? parsed.pinnedIds : [],
+        mutedIds: Array.isArray(parsed.mutedIds) ? parsed.mutedIds : [],
+        hiddenIds: Array.isArray(parsed.hiddenIds) ? parsed.hiddenIds : [],
+        manualUnreadIds: Array.isArray(parsed.manualUnreadIds) ? parsed.manualUnreadIds : [],
+        readMessageCountByConv:
+          parsed.readMessageCountByConv && typeof parsed.readMessageCountByConv === 'object'
+            ? parsed.readMessageCountByConv
+            : {},
+        collapsedSections:
+          parsed.collapsedSections && typeof parsed.collapsedSections === 'object' ? parsed.collapsedSections : {},
+        unreadOnlySections:
+          parsed.unreadOnlySections && typeof parsed.unreadOnlySections === 'object' ? parsed.unreadOnlySections : {},
+        sectionOrder:
+          Array.isArray(parsed.sectionOrder) && parsed.sectionOrder.length > 0 ? parsed.sectionOrder : ['dm', 'spaces'],
+        customSections: (() => {
+          const raw = Array.isArray(parsed.customSections) ? parsed.customSections : [];
+          const seenN = new Set<string>();
+          const seenI = new Set<string>();
+          const clean: MosChatCustomSection[] = [];
+          for (const s of raw) {
+            if (!s || typeof s.id !== 'string' || typeof s.name !== 'string') continue;
+            const norm = s.name.trim().toLowerCase();
+            if (!norm || seenN.has(norm) || seenI.has(s.id)) continue;
+            seenN.add(norm);
+            seenI.add(s.id);
+            clean.push({
+              id: s.id,
+              name: s.name.trim(),
+              conversationIds: Array.isArray(s.conversationIds) ? s.conversationIds : [],
+              collapsed: Boolean(s.collapsed),
+              unreadOnly: Boolean(s.unreadOnly),
+            });
+          }
+          return clean;
+        })(),
+        conversationOrder:
+          parsed.conversationOrder && typeof parsed.conversationOrder === 'object' ? parsed.conversationOrder : {},
+        updatedAt: parsed.updatedAt,
+      };
+    } catch {
+      return defaults;
+    }
+  }, []);
+
+  const [userPrefs, setUserPrefs] = useState<MosChatUserSidebarPrefs>(() =>
+    readStoredUserSidebarPrefs(userSidebarPrefsStorageKey)
+  );
+  const [sidebarCustomizeModalOpen, setSidebarCustomizeModalOpen] = useState(false);
+  const [sidebarCustomizeTab, setSidebarCustomizeTab] = useState<'sections' | 'conversations'>('sections');
+  const [newSectionNameInput, setNewSectionNameInput] = useState('');
+  const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+  const [editingSectionName, setEditingSectionName] = useState('');
+  const [openConvMenuId, setOpenConvMenuId] = useState<string | null>(null);
+  const [openSectionMenuId, setOpenSectionMenuId] = useState<string | null>(null);
+  const [quickCreateSectionModalOpen, setQuickCreateSectionModalOpen] = useState(false);
+  const [quickCreateSectionName, setQuickCreateSectionName] = useState('');
+  const [quickCreateSectionTargetConvId, setQuickCreateSectionTargetConvId] = useState<string | null>(null);
+  const isSubmittingSectionRef = useRef(false);
+
+  useEffect(() => {
+    setUserPrefs(readStoredUserSidebarPrefs(userSidebarPrefsStorageKey));
+  }, [userSidebarPrefsStorageKey, readStoredUserSidebarPrefs]);
+
   // Live Reminder Alert Toast & IME Composition Guards
   const [activeAlertTask, setActiveAlertTask] = useState<MosChatTaskItem | null>(null);
   const [nowMs, setNowMs] = useState<number>(() => Date.now());
@@ -1157,6 +1272,45 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       broadcastChannelRef.current?.postMessage({ type: 'MOS_CHAT_SYNC', ts: Date.now() });
     } catch (_) {}
   }, []);
+
+  const updateUserSidebarPrefs = useCallback(
+    (updater: (prev: MosChatUserSidebarPrefs) => MosChatUserSidebarPrefs) => {
+      setUserPrefs((prev) => {
+        const computed = updater(prev);
+        // Strict deduplication of custom sections by ID and normalized name
+        const seenN = new Set<string>();
+        const seenI = new Set<string>();
+        const cleanCustom: MosChatCustomSection[] = [];
+        (computed.customSections || []).forEach((s) => {
+          const norm = (s.name || '').trim().toLowerCase();
+          if (!norm || seenN.has(norm) || seenI.has(s.id)) return;
+          seenN.add(norm);
+          seenI.add(s.id);
+          cleanCustom.push(s);
+        });
+        const customIds = cleanCustom.map((s) => s.id);
+        const mergedSectionOrder = Array.from(
+          new Set([...customIds, ...(computed.sectionOrder || []), 'dm', 'spaces'])
+        ).filter((id) => id === 'dm' || id === 'spaces' || customIds.includes(id));
+        const next: MosChatUserSidebarPrefs = {
+          ...computed,
+          customSections: cleanCustom,
+          sectionOrder: mergedSectionOrder,
+          updatedAt: new Date().toISOString(),
+        };
+        if (typeof window !== 'undefined') {
+          try {
+            window.localStorage.setItem(userSidebarPrefsStorageKey, JSON.stringify(next));
+          } catch {
+            // ignore
+          }
+        }
+        apiClient.chat.updateUserPrefs(next).catch(() => {});
+        return next;
+      });
+    },
+    [userSidebarPrefsStorageKey]
+  );
 
   const persistAccessConfig = useCallback(
     async (next: MosChatAccessConfig, showToast = false) => {
@@ -1186,37 +1340,62 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     [notifyLivePeers]
   );
 
-  const fetchBootstrap = useCallback(async (forceFull = false) => {
-    try {
-      const res = await apiClient.chat.bootstrap(
-        { sinceVersion: forceFull ? undefined : lastVersionRef.current || undefined },
-        { isPolling: true }
-      );
-      if (res?.accessConfig) {
-        setAccessConfig(res.accessConfig);
+  const fetchBootstrap = useCallback(
+    async (forceFull = false) => {
+      try {
+        const res = await apiClient.chat.bootstrap(
+          { sinceVersion: forceFull ? undefined : lastVersionRef.current || undefined },
+          { isPolling: true }
+        );
+        if (res?.accessConfig) {
+          setAccessConfig(res.accessConfig);
+        }
+        if (typeof res?.canAccessChat === 'boolean') {
+          setServerCanAccessChat(res.canAccessChat);
+        }
+        if (res?.userPrefs) {
+          setUserPrefs((prev) => {
+            const serverTs = res.userPrefs?.updatedAt ? new Date(res.userPrefs.updatedAt).getTime() : 0;
+            const localTs = prev.updatedAt ? new Date(prev.updatedAt).getTime() : 0;
+            const hasServerCustomizations =
+              (res.userPrefs?.pinnedIds?.length || 0) > 0 ||
+              (res.userPrefs?.mutedIds?.length || 0) > 0 ||
+              (res.userPrefs?.hiddenIds?.length || 0) > 0 ||
+              (res.userPrefs?.customSections?.length || 0) > 0;
+            if ((!prev.updatedAt && hasServerCustomizations) || (serverTs > localTs && hasServerCustomizations)) {
+              if (typeof window !== 'undefined') {
+                try {
+                  window.localStorage.setItem(userSidebarPrefsStorageKey, JSON.stringify(res.userPrefs));
+                } catch {
+                  // ignore
+                }
+              }
+              return res.userPrefs!;
+            }
+            return prev;
+          });
+        }
+        if (res?.unchanged) {
+          return;
+        }
+        if (res?.version) {
+          lastVersionRef.current = res.version;
+        }
+        if (Array.isArray(res?.conversations)) {
+          setConversations(res.conversations);
+        }
+        if (res?.tasks) {
+          setTasks(res.tasks);
+        }
+        if (res?.staffDirectory) {
+          setStaffDirectory(res.staffDirectory);
+        }
+      } catch (_) {
+        // Fallback state already initialized
       }
-      if (typeof res?.canAccessChat === 'boolean') {
-        setServerCanAccessChat(res.canAccessChat);
-      }
-      if (res?.unchanged) {
-        return;
-      }
-      if (res?.version) {
-        lastVersionRef.current = res.version;
-      }
-      if (Array.isArray(res?.conversations)) {
-        setConversations(res.conversations);
-      }
-      if (res?.tasks) {
-        setTasks(res.tasks);
-      }
-      if (res?.staffDirectory) {
-        setStaffDirectory(res.staffDirectory);
-      }
-    } catch (_) {
-      // Fallback state already initialized
-    }
-  }, []);
+    },
+    [userSidebarPrefsStorageKey]
+  );
 
   useEffect(() => {
     fetchBootstrap();
@@ -1317,6 +1496,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       !newRoomModalOpen &&
       !spaceMembersModalOpen &&
       !accessConfigModalOpen &&
+      !sidebarCustomizeModalOpen &&
+      !quickCreateSectionModalOpen &&
       !driveLinkModalOpen &&
       !lightboxImage
     ) {
@@ -1333,6 +1514,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     newRoomModalOpen,
     spaceMembersModalOpen,
     accessConfigModalOpen,
+    sidebarCustomizeModalOpen,
+    quickCreateSectionModalOpen,
     driveLinkModalOpen,
     lightboxImage,
   ]);
@@ -1346,6 +1529,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       newRoomModalOpen ||
       spaceMembersModalOpen ||
       accessConfigModalOpen ||
+      sidebarCustomizeModalOpen ||
+      quickCreateSectionModalOpen ||
       driveLinkModalOpen ||
       lightboxImage
     )
@@ -1442,6 +1627,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     newRoomModalOpen,
     spaceMembersModalOpen,
     accessConfigModalOpen,
+    sidebarCustomizeModalOpen,
+    quickCreateSectionModalOpen,
     driveLinkModalOpen,
     lightboxImage,
   ]);
@@ -1481,6 +1668,28 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const visibleConversations = useMemo(
     () => conversations.filter(isConversationVisibleToCurrentUser),
     [conversations, isConversationVisibleToCurrentUser]
+  );
+
+  const getEffectiveUnreadCount = useCallback(
+    (conv: MosChatConversation): number => {
+      const manualUnread = (userPrefs.manualUnreadIds || []).includes(conv.id);
+      if (manualUnread) return Math.max(1, conv.unreadCount || 0);
+      return conv.unreadCount || 0;
+    },
+    [userPrefs.manualUnreadIds]
+  );
+
+  const isConversationHiddenByUser = useCallback(
+    (conv: MosChatConversation): boolean => {
+      if (!(userPrefs.hiddenIds || []).includes(conv.id)) return false;
+      const hiddenAtMsgCount = userPrefs.readMessageCountByConv?.[conv.id];
+      if (typeof hiddenAtMsgCount === 'number' && conv.messages.length > hiddenAtMsgCount) {
+        // New message arrived since the user hid this conversation -> auto-resurface like Google Chat!
+        return false;
+      }
+      return true;
+    },
+    [userPrefs.hiddenIds, userPrefs.readMessageCountByConv]
   );
 
   // Listen to global custom event 'mos-chat:open' (e.g. clicking an online colleague avatar on Header)
@@ -1539,15 +1748,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   // Report unread & active task counts up to Header
   useEffect(() => {
-    const totalUnread = visibleConversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
+    const totalUnread = visibleConversations.reduce((sum, c) => {
+      if ((userPrefs.mutedIds || []).includes(c.id)) return sum;
+      return sum + getEffectiveUnreadCount(c);
+    }, 0);
     const openTaskCount = tasks.filter((t) => !t.done).length;
     onUnreadCountChange?.(totalUnread, openTaskCount);
-  }, [visibleConversations, tasks, onUnreadCountChange]);
+  }, [visibleConversations, tasks, userPrefs.mutedIds, getEffectiveUnreadCount, onUnreadCountChange]);
 
   const triggerTaskReminderAlert = useCallback(
     async (task: MosChatTaskItem) => {
       firedTaskIdsRef.current.add(task.id);
-      if (presence !== 'dnd') {
+      const isConvMuted = (userPrefs.mutedIds || []).includes(task.conversationId);
+      if (presence !== 'dnd' && !isConvMuted) {
         playWebAudioReminderChime();
       }
       setActiveAlertTask(task);
@@ -1578,7 +1791,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         notifyLivePeers();
       } catch (_) {}
     },
-    [presence, notifyLivePeers]
+    [presence, userPrefs.mutedIds, notifyLivePeers]
   );
 
   // 1-second ticker for live task countdowns
@@ -1621,35 +1834,147 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     return visibleConversations.find((c) => c.id === activeConvId) || aiCopilotConversation || visibleConversations[0];
   }, [visibleConversations, activeConvId, aiCopilotConversation]);
 
+  const allUserConversations = useMemo<MosChatConversation[]>(() => {
+    return aiCopilotConversation ? [aiCopilotConversation, ...visibleConversations] : [...visibleConversations];
+  }, [aiCopilotConversation, visibleConversations]);
+
   const filteredConversations = useMemo(() => {
     const q = removeVietnameseTones(searchQuery.trim().toLowerCase());
-    return visibleConversations.filter((c) => {
-      if (sidebarFilter === 'unread' && !c.unreadCount) return false;
+    return allUserConversations.filter((c) => {
+      if (!q && isConversationHiddenByUser(c)) return false;
+      const effUnread = getEffectiveUnreadCount(c);
+      if (sidebarFilter === 'unread' && effUnread <= 0) return false;
       if (sidebarFilter === 'spaces' && c.type !== 'space') return false;
       if (!q) return true;
       const inName = removeVietnameseTones(c.name.toLowerCase()).includes(q);
       const inMsg = c.messages.some((m) => removeVietnameseTones(m.text.toLowerCase()).includes(q));
       return inName || inMsg;
     });
-  }, [visibleConversations, sidebarFilter, searchQuery]);
+  }, [allUserConversations, isConversationHiddenByUser, getEffectiveUnreadCount, sidebarFilter, searchQuery]);
 
-  const dmList = useMemo(() => {
-    const baseDms = filteredConversations.filter((c) => c.type === 'dm');
-    if (!aiCopilotConversation || sidebarFilter === 'spaces' || sidebarFilter === 'unread') {
-      return baseDms;
-    }
-    const q = removeVietnameseTones(searchQuery.trim().toLowerCase());
-    if (
-      q &&
-      !removeVietnameseTones(aiCopilotConversation.name.toLowerCase()).includes(q) &&
-      !aiCopilotConversation.messages.some((m) => removeVietnameseTones(m.text.toLowerCase()).includes(q))
-    ) {
-      return baseDms;
-    }
-    return [aiCopilotConversation, ...baseDms];
-  }, [filteredConversations, aiCopilotConversation, sidebarFilter, searchQuery]);
+  const sortConversationsForSection = useCallback(
+    (items: MosChatConversation[], sectionId: string): MosChatConversation[] => {
+      const pinnedSet = new Set(userPrefs.pinnedIds || []);
+      const orderArr = userPrefs.conversationOrder?.[sectionId] || [];
+      const orderMap = new Map<string, number>();
+      orderArr.forEach((id, idx) => orderMap.set(id, idx));
 
-  const spaceList = useMemo(() => filteredConversations.filter((c) => c.type === 'space'), [filteredConversations]);
+      return [...items].sort((a, b) => {
+        const aPinned = pinnedSet.has(a.id) ? 1 : 0;
+        const bPinned = pinnedSet.has(b.id) ? 1 : 0;
+        if (aPinned !== bPinned) return bPinned - aPinned;
+        const aOrder = orderMap.has(a.id) ? orderMap.get(a.id)! : 9999;
+        const bOrder = orderMap.has(b.id) ? orderMap.get(b.id)! : 9999;
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        if (a.id === AI_COPILOT_CONV_ID) return -1;
+        if (b.id === AI_COPILOT_CONV_ID) return 1;
+        return 0;
+      });
+    },
+    [userPrefs.pinnedIds, userPrefs.conversationOrder]
+  );
+
+  // Compute Google Chat Workspace sections (Custom Sections + DIRECT MESSAGES + SPACES)
+  const sidebarSections = useMemo(() => {
+    const rawCustomSecs = userPrefs.customSections || [];
+    const seenSecNames = new Set<string>();
+    const seenSecIds = new Set<string>();
+    const customSecs: MosChatCustomSection[] = [];
+    rawCustomSecs.forEach((s) => {
+      const normName = (s.name || '').trim().toLowerCase();
+      if (!normName || seenSecNames.has(normName) || seenSecIds.has(s.id)) return;
+      seenSecNames.add(normName);
+      seenSecIds.add(s.id);
+      customSecs.push(s);
+    });
+
+    const assignedToCustom = new Set<string>();
+    customSecs.forEach((s) => {
+      (s.conversationIds || []).forEach((cid) => assignedToCustom.add(cid));
+    });
+
+    const customIds = customSecs.map((s) => s.id);
+    const orderedSectionIds = Array.from(
+      new Set([...(userPrefs.sectionOrder || []), ...customIds, 'dm', 'spaces'])
+    ).filter((id) => id === 'dm' || id === 'spaces' || customIds.includes(id));
+
+    const isSearching = searchQuery.trim().length > 0;
+
+    return orderedSectionIds
+      .map((secId) => {
+        if (secId === 'dm') {
+          if (sidebarFilter === 'spaces') return null;
+          const rawItems = filteredConversations.filter((c) => c.type === 'dm' && !assignedToCustom.has(c.id));
+          const sorted = sortConversationsForSection(rawItems, 'dm');
+          const unreadOnly = Boolean(userPrefs.unreadOnlySections?.['dm']);
+          const displayItems =
+            unreadOnly && !isSearching
+              ? sorted.filter((c) => getEffectiveUnreadCount(c) > 0 || c.id === activeConversation?.id)
+              : sorted;
+          return {
+            id: 'dm',
+            title: 'DIRECT MESSAGES',
+            isCustom: false,
+            items: displayItems,
+            totalCount: sorted.length,
+            unreadCount: sorted.reduce((s, c) => s + getEffectiveUnreadCount(c), 0),
+            collapsed: Boolean(userPrefs.collapsedSections?.['dm']),
+            unreadOnly,
+          };
+        }
+        if (secId === 'spaces') {
+          const rawItems = filteredConversations.filter((c) => c.type === 'space' && !assignedToCustom.has(c.id));
+          const sorted = sortConversationsForSection(rawItems, 'spaces');
+          const unreadOnly = Boolean(userPrefs.unreadOnlySections?.['spaces']);
+          const displayItems =
+            unreadOnly && !isSearching
+              ? sorted.filter((c) => getEffectiveUnreadCount(c) > 0 || c.id === activeConversation?.id)
+              : sorted;
+          return {
+            id: 'spaces',
+            title: 'SPACES',
+            isCustom: false,
+            items: displayItems,
+            totalCount: sorted.length,
+            unreadCount: sorted.reduce((s, c) => s + getEffectiveUnreadCount(c), 0),
+            collapsed: Boolean(userPrefs.collapsedSections?.['spaces']),
+            unreadOnly,
+          };
+        }
+        const customSec = customSecs.find((s) => s.id === secId);
+        if (!customSec) return null;
+        const idSet = new Set(customSec.conversationIds || []);
+        const rawItems = filteredConversations.filter((c) => idSet.has(c.id));
+        const sorted = sortConversationsForSection(rawItems, customSec.id);
+        const unreadOnly = Boolean(userPrefs.unreadOnlySections?.[customSec.id] || customSec.unreadOnly);
+        const displayItems =
+          unreadOnly && !isSearching
+            ? sorted.filter((c) => getEffectiveUnreadCount(c) > 0 || c.id === activeConversation?.id)
+            : sorted;
+        return {
+          id: customSec.id,
+          title: customSec.name,
+          isCustom: true,
+          items: displayItems,
+          totalCount: sorted.length,
+          unreadCount: sorted.reduce((s, c) => s + getEffectiveUnreadCount(c), 0),
+          collapsed: Boolean(userPrefs.collapsedSections?.[customSec.id] ?? customSec.collapsed),
+          unreadOnly,
+        };
+      })
+      .filter((sec): sec is NonNullable<typeof sec> => Boolean(sec));
+  }, [
+    userPrefs.customSections,
+    userPrefs.sectionOrder,
+    userPrefs.unreadOnlySections,
+    userPrefs.collapsedSections,
+    searchQuery,
+    sidebarFilter,
+    filteredConversations,
+    sortConversationsForSection,
+    getEffectiveUnreadCount,
+    activeConversation?.id,
+  ]);
 
   const selectConversation = (convId: string) => {
     setActiveConvId(convId);
@@ -1657,7 +1982,319 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     if (convId !== AI_COPILOT_CONV_ID) {
       setConversations((prev) => prev.map((c) => (c.id === convId ? { ...c, unreadCount: 0 } : c)));
     }
+    const targetConv = allUserConversations.find((c) => c.id === convId);
+    if ((userPrefs.manualUnreadIds || []).includes(convId) || (userPrefs.hiddenIds || []).includes(convId)) {
+      updateUserSidebarPrefs((prev) => ({
+        ...prev,
+        manualUnreadIds: (prev.manualUnreadIds || []).filter((id) => id !== convId),
+        hiddenIds: (prev.hiddenIds || []).filter((id) => id !== convId),
+        readMessageCountByConv: {
+          ...(prev.readMessageCountByConv || {}),
+          [convId]: targetConv?.messages?.length || 0,
+        },
+      }));
+    }
   };
+
+  // ================= GOOGLE CHAT WORKSPACE PERSONAL SIDEBAR ACTIONS =================
+  const togglePinConversation = useCallback(
+    (convId: string) => {
+      updateUserSidebarPrefs((prev) => {
+        const exists = (prev.pinnedIds || []).includes(convId);
+        const nextPinned = exists
+          ? (prev.pinnedIds || []).filter((id) => id !== convId)
+          : [convId, ...(prev.pinnedIds || [])];
+        antdMessage.success(exists ? 'Đã bỏ ghim cuộc trò chuyện' : 'Đã ghim cuộc trò chuyện lên đầu mục');
+        return { ...prev, pinnedIds: nextPinned };
+      });
+    },
+    [updateUserSidebarPrefs]
+  );
+
+  const toggleMuteConversation = useCallback(
+    (convId: string) => {
+      updateUserSidebarPrefs((prev) => {
+        const exists = (prev.mutedIds || []).includes(convId);
+        const nextMuted = exists
+          ? (prev.mutedIds || []).filter((id) => id !== convId)
+          : [...(prev.mutedIds || []), convId];
+        antdMessage.success(exists ? 'Đã bật lại thông báo' : 'Đã tắt thông báo cuộc trò chuyện này');
+        return { ...prev, mutedIds: nextMuted };
+      });
+    },
+    [updateUserSidebarPrefs]
+  );
+
+  const toggleManualUnreadConversation = useCallback(
+    (conv: MosChatConversation) => {
+      const currentlyUnread = getEffectiveUnreadCount(conv) > 0;
+      if (currentlyUnread) {
+        setConversations((prev) => prev.map((c) => (c.id === conv.id ? { ...c, unreadCount: 0 } : c)));
+        updateUserSidebarPrefs((prev) => ({
+          ...prev,
+          manualUnreadIds: (prev.manualUnreadIds || []).filter((id) => id !== conv.id),
+          readMessageCountByConv: {
+            ...(prev.readMessageCountByConv || {}),
+            [conv.id]: conv.messages.length,
+          },
+        }));
+        antdMessage.success('Đã đánh dấu đã đọc');
+      } else {
+        updateUserSidebarPrefs((prev) => ({
+          ...prev,
+          manualUnreadIds: Array.from(new Set([...(prev.manualUnreadIds || []), conv.id])),
+        }));
+        antdMessage.success('Đã đánh dấu chưa đọc');
+      }
+    },
+    [getEffectiveUnreadCount, updateUserSidebarPrefs]
+  );
+
+  const toggleHideConversation = useCallback(
+    (conv: MosChatConversation) => {
+      updateUserSidebarPrefs((prev) => {
+        const isHidden = (prev.hiddenIds || []).includes(conv.id);
+        const nextHidden = isHidden
+          ? (prev.hiddenIds || []).filter((id) => id !== conv.id)
+          : Array.from(new Set([...(prev.hiddenIds || []), conv.id]));
+        antdMessage.success(
+          isHidden
+            ? `Đã hiển thị lại "${conv.name}" trên danh sách`
+            : `Đã ẩn "${conv.name}" khỏi danh sách (tự hiện lại khi có tin nhắn mới)`
+        );
+        return {
+          ...prev,
+          hiddenIds: nextHidden,
+          readMessageCountByConv: {
+            ...(prev.readMessageCountByConv || {}),
+            [conv.id]: conv.messages.length,
+          },
+        };
+      });
+    },
+    [updateUserSidebarPrefs]
+  );
+
+  const moveConversationToSection = useCallback(
+    (convId: string, targetSectionId: string) => {
+      updateUserSidebarPrefs((prev) => {
+        const nextCustom = (prev.customSections || []).map((sec) => {
+          const filtered = (sec.conversationIds || []).filter((id) => id !== convId);
+          if (sec.id === targetSectionId) {
+            return { ...sec, conversationIds: [convId, ...filtered] };
+          }
+          return { ...sec, conversationIds: filtered };
+        });
+        return {
+          ...prev,
+          customSections: nextCustom,
+          hiddenIds: (prev.hiddenIds || []).filter((id) => id !== convId),
+        };
+      });
+      antdMessage.success('Đã chuyển cuộc trò chuyện sang mục mới');
+    },
+    [updateUserSidebarPrefs]
+  );
+
+  const moveConversationOrderInSection = useCallback(
+    (convId: string, sectionId: string, direction: 'up' | 'down', currentItems: MosChatConversation[]) => {
+      const currentIds = currentItems.map((c) => c.id);
+      const idx = currentIds.indexOf(convId);
+      if (idx === -1) return;
+      const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= currentIds.length) return;
+      const nextOrder = [...currentIds];
+      const temp = nextOrder[idx];
+      nextOrder[idx] = nextOrder[swapIdx];
+      nextOrder[swapIdx] = temp;
+      updateUserSidebarPrefs((prev) => ({
+        ...prev,
+        conversationOrder: {
+          ...(prev.conversationOrder || {}),
+          [sectionId]: nextOrder,
+        },
+      }));
+    },
+    [updateUserSidebarPrefs]
+  );
+
+  const toggleCollapseSection = useCallback(
+    (sectionId: string) => {
+      updateUserSidebarPrefs((prev) => ({
+        ...prev,
+        collapsedSections: {
+          ...(prev.collapsedSections || {}),
+          [sectionId]: !prev.collapsedSections?.[sectionId],
+        },
+      }));
+    },
+    [updateUserSidebarPrefs]
+  );
+
+  const toggleUnreadOnlySection = useCallback(
+    (sectionId: string) => {
+      updateUserSidebarPrefs((prev) => {
+        const nextVal = !prev.unreadOnlySections?.[sectionId];
+        antdMessage.info(
+          nextVal ? 'Chỉ hiển thị cuộc trò chuyện chưa đọc trong mục này' : 'Hiển thị tất cả trong mục này'
+        );
+        return {
+          ...prev,
+          unreadOnlySections: {
+            ...(prev.unreadOnlySections || {}),
+            [sectionId]: nextVal,
+          },
+        };
+      });
+    },
+    [updateUserSidebarPrefs]
+  );
+
+  const handleCreateCustomSection = useCallback(
+    (rawName: string, targetConvId?: string | null) => {
+      const clean = rawName.trim();
+      if (!clean) {
+        antdMessage.warning('Vui lòng nhập tên mục tuỳ chỉnh');
+        return;
+      }
+      if (isSubmittingSectionRef.current) return;
+      isSubmittingSectionRef.current = true;
+      setTimeout(() => {
+        isSubmittingSectionRef.current = false;
+      }, 500);
+
+      let created = false;
+      updateUserSidebarPrefs((prev) => {
+        const existing = (prev.customSections || []).find((s) => s.name.trim().toLowerCase() === clean.toLowerCase());
+        if (existing) {
+          antdMessage.warning(`Mục "${clean}" đã tồn tại!`);
+          return prev;
+        }
+        created = true;
+        const newSecId = `sec-custom-${Date.now()}`;
+        const cleanedCustom = (prev.customSections || []).map((s) =>
+          targetConvId ? { ...s, conversationIds: (s.conversationIds || []).filter((id) => id !== targetConvId) } : s
+        );
+        const newSec: MosChatCustomSection = {
+          id: newSecId,
+          name: clean,
+          conversationIds: targetConvId ? [targetConvId] : [],
+          collapsed: false,
+          unreadOnly: false,
+        };
+        return {
+          ...prev,
+          customSections: [newSec, ...cleanedCustom],
+          sectionOrder: [newSecId, ...(prev.sectionOrder || ['dm', 'spaces'])],
+        };
+      });
+      if (created) {
+        antdMessage.success(`Đã tạo mục "${clean}"`);
+      }
+    },
+    [updateUserSidebarPrefs]
+  );
+
+  const handleRenameCustomSection = useCallback(
+    (sectionId: string, rawName: string) => {
+      const clean = rawName.trim();
+      if (!clean) return;
+      updateUserSidebarPrefs((prev) => ({
+        ...prev,
+        customSections: (prev.customSections || []).map((s) => (s.id === sectionId ? { ...s, name: clean } : s)),
+      }));
+      setEditingSectionId(null);
+      setEditingSectionName('');
+      antdMessage.success('Đã đổi tên mục tuỳ chỉnh');
+    },
+    [updateUserSidebarPrefs]
+  );
+
+  const handleDeleteCustomSection = useCallback(
+    (sectionId: string) => {
+      updateUserSidebarPrefs((prev) => ({
+        ...prev,
+        customSections: (prev.customSections || []).filter((s) => s.id !== sectionId),
+        sectionOrder: (prev.sectionOrder || []).filter((id) => id !== sectionId),
+      }));
+      antdMessage.success('Đã xoá mục tuỳ chỉnh (các cuộc trò chuyện đã trở về mục mặc định)');
+    },
+    [updateUserSidebarPrefs]
+  );
+
+  const handleMoveSectionOrder = useCallback(
+    (sectionId: string, direction: 'up' | 'down') => {
+      updateUserSidebarPrefs((prev) => {
+        const customIds = (prev.customSections || []).map((s) => s.id);
+        const order = Array.from(new Set([...(prev.sectionOrder || []), ...customIds, 'dm', 'spaces'])).filter(
+          (id) => id === 'dm' || id === 'spaces' || customIds.includes(id)
+        );
+        const idx = order.indexOf(sectionId);
+        if (idx === -1) return prev;
+        const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+        if (swapIdx < 0 || swapIdx >= order.length) return prev;
+        const nextOrder = [...order];
+        const tmp = nextOrder[idx];
+        nextOrder[idx] = nextOrder[swapIdx];
+        nextOrder[swapIdx] = tmp;
+        return {
+          ...prev,
+          sectionOrder: nextOrder,
+        };
+      });
+    },
+    [updateUserSidebarPrefs]
+  );
+
+  const handleResetSidebarPrefs = useCallback(() => {
+    updateUserSidebarPrefs(() => ({
+      pinnedIds: [],
+      mutedIds: [],
+      hiddenIds: [],
+      manualUnreadIds: [],
+      readMessageCountByConv: {},
+      collapsedSections: {},
+      unreadOnlySections: {},
+      sectionOrder: ['dm', 'spaces'],
+      customSections: [],
+      conversationOrder: {},
+    }));
+    antdMessage.success('Đã khôi phục bố cục danh sách về mặc định');
+  }, [updateUserSidebarPrefs]);
+
+  const handleLeaveOrJoinSpace = useCallback(
+    async (conv: MosChatConversation) => {
+      if (conv.type !== 'space') return;
+      const myStaffId = Number(currentUserStaffMember.id) || Number(currentUser?.id) || 0;
+      if (myStaffId <= 0) return;
+      const isMember = (conv.memberIds || []).map(Number).includes(myStaffId);
+      try {
+        if (isMember) {
+          const res = await apiClient.chat.removeMember(conv.id, myStaffId);
+          if (res?.conversation) {
+            setConversations((prev) => prev.map((c) => (c.id === conv.id ? res.conversation : c)));
+          }
+          toggleHideConversation(conv);
+          notifyLivePeers();
+          antdMessage.success(`Đã rời khỏi #${conv.name}`);
+        } else {
+          const res = await apiClient.chat.addMember(conv.id, myStaffId);
+          if (res?.conversation) {
+            setConversations((prev) => prev.map((c) => (c.id === conv.id ? res.conversation : c)));
+          }
+          updateUserSidebarPrefs((prev) => ({
+            ...prev,
+            hiddenIds: (prev.hiddenIds || []).filter((id) => id !== conv.id),
+          }));
+          notifyLivePeers();
+          antdMessage.success(`Đã tham gia #${conv.name}`);
+        }
+      } catch (_) {
+        antdMessage.error('Không thể cập nhật trạng thái thành viên Space');
+      }
+    },
+    [currentUserStaffMember.id, currentUser?.id, toggleHideConversation, updateUserSidebarPrefs, notifyLivePeers]
+  );
 
   const appendAttachmentToTarget = useCallback(
     (attachment: MosChatImageAttachment, scope: 'main' | 'thread' | 'dock', convId?: string) => {
@@ -3207,6 +3844,35 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   </Tooltip>
                 )}
 
+                <Tooltip title="Tuỳ chỉnh danh sách cá nhân (Mục tuỳ chỉnh / Ghim / Ẩn - Giống Google Chat Workspace)">
+                  <button
+                    type="button"
+                    aria-label="Tuỳ chỉnh danh sách cá nhân"
+                    onClick={() => {
+                      setSidebarCustomizeTab('sections');
+                      setSidebarCustomizeModalOpen(true);
+                    }}
+                    className="inline-flex items-center justify-center w-7 h-7 rounded-lg cursor-pointer shrink-0 transition-colors"
+                    style={{
+                      background:
+                        (userPrefs.customSections?.length || 0) > 0 ||
+                        (userPrefs.pinnedIds?.length || 0) > 0 ||
+                        (userPrefs.hiddenIds?.length || 0) > 0
+                          ? 'rgba(212, 168, 75, 0.16)'
+                          : surfaceRaised,
+                      border: `1px solid ${borderColor}`,
+                      color:
+                        (userPrefs.customSections?.length || 0) > 0 ||
+                        (userPrefs.pinnedIds?.length || 0) > 0 ||
+                        (userPrefs.hiddenIds?.length || 0) > 0
+                          ? '#d4a84b'
+                          : token.colorTextSecondary,
+                    }}
+                  >
+                    <FolderKanban size={14} />
+                  </button>
+                </Tooltip>
+
                 <Tooltip title="Tạo cuộc trò chuyện hoặc Space mới">
                   <button
                     type="button"
@@ -3279,7 +3945,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   }}
                 >
                   <Mail size={14} />
-                  <span>{conversations.reduce((s, c) => s + (c.unreadCount || 0), 0)}</span>
+                  <span>
+                    {visibleConversations.reduce((s, c) => {
+                      if ((userPrefs.mutedIds || []).includes(c.id)) return s;
+                      return s + getEffectiveUnreadCount(c);
+                    }, 0)}
+                  </span>
                 </button>
               </Tooltip>
 
@@ -3319,180 +3990,627 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             </div>
           </div>
 
-          {/* Scrollable List of 1-1 & Spaces */}
-          <div className="flex-1 overflow-y-auto p-1.5">
-            <div className="flex items-center justify-between px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              <span>Trực tiếp (1-1)</span>
-              <Tooltip title="Bắt đầu Chat 1-1 mới">
-                <button
-                  type="button"
-                  aria-label="Bắt đầu Chat 1-1 mới"
-                  onClick={() => {
-                    setNewRoomType('dm');
-                    setNewRoomModalOpen(true);
-                  }}
-                  className="w-5 h-5 rounded inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
-                >
-                  <Plus size={13} />
-                </button>
-              </Tooltip>
-            </div>
-
-            {dmList.map((conv) => {
-              const isAiConv = conv.id === AI_COPILOT_CONV_ID;
-              const isSelfConv = Boolean(conv.isSelf || conv.id.startsWith('dm-self-'));
-              const lastMsg = conv.messages[conv.messages.length - 1];
-              const isSelected = conv.id === activeConversation?.id;
-              const previewText =
-                lastMsg?.text ||
-                (lastMsg?.attachments?.length ? `Hình ảnh (${lastMsg.attachments.length})` : conv.subtitle);
-              return (
+          {/* Scrollable List of Custom Sections, DIRECT MESSAGES & SPACES (Google Chat Workspace Per-User Layout) */}
+          <div className="flex-1 overflow-y-auto p-1.5 space-y-1">
+            {sidebarSections.map((sec, secIdx) => {
+              const isSectionMenuOpen = openSectionMenuId === sec.id;
+              const sectionMenuContent = (
                 <div
-                  key={conv.id}
-                  onClick={() => selectConversation(conv.id)}
-                  className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg cursor-pointer mb-0.5 transition-colors"
-                  style={{
-                    background: isSelected
-                      ? isAiConv
-                        ? 'rgba(139, 92, 246, 0.18)'
-                        : isSelfConv
-                          ? 'rgba(99, 102, 241, 0.18)'
-                          : 'rgba(59, 130, 246, 0.14)'
-                      : isAiConv
-                        ? 'rgba(139, 92, 246, 0.07)'
-                        : isSelfConv
-                          ? 'rgba(99, 102, 241, 0.06)'
-                          : 'transparent',
-                    border: isAiConv
-                      ? '1px solid rgba(139, 92, 246, 0.28)'
-                      : isSelfConv
-                        ? '1px solid rgba(99, 102, 241, 0.25)'
-                        : '1px solid transparent',
-                  }}
+                  data-no-chat-autofocus="true"
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-56 py-1 select-none text-[12px]"
                 >
-                  {renderUserAvatarNode({
-                    staffId: isSelfConv ? currentUser?.id || 'me' : conv.participantStaffId,
-                    name: conv.name,
-                    rawAvatar: conv.avatar,
-                    bgColor: conv.color || '#ec4899',
-                    sizeClass: 'w-8 h-8',
-                    roundedClass: 'rounded-full',
-                    isOnline: true,
-                    isAiBot: isAiConv,
-                    isSelfBookmark: isSelfConv,
-                  })}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span
-                          className={`text-[12.5px] truncate ${conv.unreadCount || isAiConv || isSelfConv ? 'font-extrabold' : 'font-semibold'}`}
-                          style={{
-                            color: isAiConv
-                              ? isDark
-                                ? '#c4b5fd'
-                                : '#6d28d9'
-                              : isSelfConv
-                                ? isDark
-                                  ? '#a5b4fc'
-                                  : '#4338ca'
-                                : undefined,
-                          }}
-                        >
-                          {conv.name}
-                        </span>
-                        {isSelfConv && (
-                          <span className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-500/20 text-indigo-400 shrink-0">
-                            Bạn
-                          </span>
-                        )}
-                      </div>
-                      {isAiConv ? (
-                        <span
-                          className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full text-[9px] font-bold"
-                          style={{ background: 'rgba(139, 92, 246, 0.18)', color: '#a78bfa' }}
-                        >
-                          Riêng tư
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-slate-400 tabular-nums shrink-0">
-                          {lastMsg?.timeLabel || ''}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-[11px] text-slate-400 truncate">{previewText}</span>
-                      {conv.unreadCount > 0 && (
-                        <span className="inline-flex items-center justify-center px-1.5 h-4 rounded-full bg-rose-500 text-white text-[10px] font-extrabold tabular-nums">
-                          {conv.unreadCount}
-                        </span>
-                      )}
-                    </div>
+                  <div className="px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
+                    Tuỳ chỉnh mục · {sec.title}
                   </div>
-                </div>
-              );
-            })}
-
-            <div className="flex items-center justify-between px-2 pt-2.5 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              <span>Spaces</span>
-              <Tooltip title="Tạo Space nhóm mới">
-                <button
-                  type="button"
-                  aria-label="Tạo Space nhóm mới"
-                  onClick={() => {
-                    setNewRoomType('space');
-                    setNewRoomModalOpen(true);
-                  }}
-                  className="w-5 h-5 rounded inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
-                >
-                  <Plus size={13} />
-                </button>
-              </Tooltip>
-            </div>
-
-            {spaceList.map((conv) => {
-              const lastMsg = conv.messages[conv.messages.length - 1];
-              const isSelected = conv.id === activeConversation?.id;
-              const previewText =
-                lastMsg?.text ||
-                (lastMsg?.attachments?.length ? `Hình ảnh (${lastMsg.attachments.length})` : conv.subtitle);
-              return (
-                <div
-                  key={conv.id}
-                  onClick={() => selectConversation(conv.id)}
-                  className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg cursor-pointer mb-0.5 transition-colors"
-                  style={{
-                    background: isSelected ? 'rgba(59, 130, 246, 0.14)' : 'transparent',
-                  }}
-                >
-                  <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ background: `${conv.color}22`, color: conv.color }}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      toggleUnreadOnlySection(sec.id);
+                      setOpenSectionMenuId(null);
+                    }}
+                    className="w-full px-2.5 py-1.5 flex items-center justify-between gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left"
+                    style={{ color: token.colorText }}
                   >
-                    <Hash size={16} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1">
-                      <span
-                        className={`text-[12.5px] truncate ${conv.unreadCount ? 'font-extrabold' : 'font-semibold'}`}
+                    <span className="inline-flex items-center gap-2">
+                      <Mail size={13} className="text-amber-500" />
+                      <span>Chỉ hiện tin chưa đọc</span>
+                    </span>
+                    {sec.unreadOnly && <Check size={13} className="text-emerald-500" />}
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={secIdx === 0}
+                    onClick={() => {
+                      handleMoveSectionOrder(sec.id, 'up');
+                      setOpenSectionMenuId(null);
+                    }}
+                    className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ color: token.colorText }}
+                  >
+                    <ArrowUp size={13} />
+                    <span>Di chuyển mục lên trên</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={secIdx === sidebarSections.length - 1}
+                    onClick={() => {
+                      handleMoveSectionOrder(sec.id, 'down');
+                      setOpenSectionMenuId(null);
+                    }}
+                    className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ color: token.colorText }}
+                  >
+                    <ArrowDown size={13} />
+                    <span>Di chuyển mục xuống dưới</span>
+                  </button>
+
+                  <div className="my-1" style={{ borderTop: `1px solid ${borderColor}` }} />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenSectionMenuId(null);
+                      setQuickCreateSectionTargetConvId(null);
+                      setQuickCreateSectionName('');
+                      setQuickCreateSectionModalOpen(true);
+                    }}
+                    className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left"
+                    style={{ color: token.colorText }}
+                  >
+                    <FolderPlus size={13} className="text-sky-400" />
+                    <span>Tạo mục tuỳ chỉnh mới...</span>
+                  </button>
+
+                  {sec.isCustom && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOpenSectionMenuId(null);
+                          setEditingSectionId(sec.id);
+                          setEditingSectionName(sec.title);
+                          setSidebarCustomizeTab('sections');
+                          setSidebarCustomizeModalOpen(true);
+                        }}
+                        className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left"
+                        style={{ color: token.colorText }}
                       >
-                        {conv.name}
-                      </span>
-                      <span className="text-[10px] text-slate-400 tabular-nums shrink-0">
-                        {lastMsg?.timeLabel || ''}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-[11px] text-slate-400 truncate">{previewText}</span>
-                      {conv.unreadCount > 0 && (
-                        <span className="inline-flex items-center justify-center px-1.5 h-4 rounded-full bg-rose-500 text-white text-[10px] font-extrabold tabular-nums">
-                          {conv.unreadCount}
+                        <Pencil size={13} />
+                        <span>Đổi tên mục...</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleDeleteCustomSection(sec.id);
+                          setOpenSectionMenuId(null);
+                        }}
+                        className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-rose-500/10 cursor-pointer text-left text-rose-500"
+                      >
+                        <Trash2 size={13} />
+                        <span>Xoá mục tuỳ chỉnh</span>
+                      </button>
+                    </>
+                  )}
+
+                  <div className="my-1" style={{ borderTop: `1px solid ${borderColor}` }} />
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenSectionMenuId(null);
+                      setSidebarCustomizeTab('sections');
+                      setSidebarCustomizeModalOpen(true);
+                    }}
+                    className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left font-semibold"
+                    style={{ color: '#d4a84b' }}
+                  >
+                    <FolderKanban size={13} />
+                    <span>Quản lý tất cả mục & Đã ẩn...</span>
+                  </button>
+                </div>
+              );
+
+              return (
+                <div key={sec.id} className="mb-1">
+                  {/* Section Header */}
+                  <div className="group/sec flex items-center justify-between px-1.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider text-slate-400 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                    <button
+                      type="button"
+                      onClick={() => toggleCollapseSection(sec.id)}
+                      className="flex items-center gap-1 min-w-0 flex-1 text-left cursor-pointer"
+                      style={{ color: sec.isCustom ? '#d4a84b' : undefined }}
+                    >
+                      {sec.collapsed ? (
+                        <ChevronRight size={13} className="shrink-0" />
+                      ) : (
+                        <ChevronDown size={13} className="shrink-0" />
+                      )}
+                      <span className="truncate">{sec.title}</span>
+                      {sec.unreadOnly && (
+                        <span className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full text-[8.5px] font-extrabold bg-amber-500/20 text-amber-400 shrink-0">
+                          Chưa đọc
                         </span>
                       )}
+                      {sec.collapsed && sec.unreadCount > 0 ? (
+                        <span className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[9px] font-extrabold tabular-nums shrink-0">
+                          {sec.unreadCount}
+                        </span>
+                      ) : sec.collapsed && sec.totalCount > 0 ? (
+                        <span className="text-[9.5px] text-slate-500 tabular-nums shrink-0">({sec.totalCount})</span>
+                      ) : null}
+                    </button>
+
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <Popover
+                        open={isSectionMenuOpen}
+                        onOpenChange={(v) => setOpenSectionMenuId(v ? sec.id : null)}
+                        trigger="click"
+                        placement="bottomRight"
+                        zIndex={1150}
+                        content={sectionMenuContent}
+                      >
+                        <Tooltip title={`Tuỳ chỉnh mục ${sec.title}`}>
+                          <button
+                            type="button"
+                            aria-label={`Tuỳ chỉnh mục ${sec.title}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-5 h-5 rounded inline-flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer opacity-70 group-hover/sec:opacity-100"
+                          >
+                            <MoreVertical size={12} />
+                          </button>
+                        </Tooltip>
+                      </Popover>
+
+                      <Tooltip
+                        title={
+                          sec.id === 'dm'
+                            ? 'Bắt đầu Chat 1-1 mới'
+                            : sec.id === 'spaces'
+                              ? 'Tạo Space nhóm mới'
+                              : `Thêm cuộc trò chuyện vào ${sec.title}`
+                        }
+                      >
+                        <button
+                          type="button"
+                          aria-label={
+                            sec.id === 'dm'
+                              ? 'Bắt đầu Chat 1-1 mới'
+                              : sec.id === 'spaces'
+                                ? 'Tạo Space nhóm mới'
+                                : `Thêm cuộc trò chuyện vào ${sec.title}`
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (sec.id === 'dm') {
+                              setNewRoomType('dm');
+                              setNewRoomModalOpen(true);
+                            } else if (sec.id === 'spaces') {
+                              setNewRoomType('space');
+                              setNewRoomModalOpen(true);
+                            } else {
+                              setSidebarCustomizeTab('conversations');
+                              setSidebarCustomizeModalOpen(true);
+                            }
+                          }}
+                          className="w-5 h-5 rounded inline-flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 cursor-pointer"
+                        >
+                          <Plus size={13} />
+                        </button>
+                      </Tooltip>
                     </div>
                   </div>
+
+                  {/* Section Items */}
+                  {!sec.collapsed &&
+                    (sec.items.length === 0 ? (
+                      <div className="px-2.5 py-1.5 text-[11px] text-slate-500 italic">
+                        {sec.unreadOnly
+                          ? 'Không có tin nhắn chưa đọc trong mục này'
+                          : sec.isCustom
+                            ? 'Mục trống · Nhấn ⋮ trên cuộc trò chuyện để chuyển vào đây'
+                            : 'Chưa có cuộc trò chuyện'}
+                      </div>
+                    ) : (
+                      sec.items.map((conv, itemIdx) => {
+                        const isAiConv = conv.id === AI_COPILOT_CONV_ID;
+                        const isSelfConv = Boolean(conv.isSelf || conv.id.startsWith('dm-self-'));
+                        const isSpace = conv.type === 'space';
+                        const lastMsg = conv.messages[conv.messages.length - 1];
+                        const isSelected = conv.id === activeConversation?.id;
+                        const isPinned = (userPrefs.pinnedIds || []).includes(conv.id);
+                        const isMuted = (userPrefs.mutedIds || []).includes(conv.id);
+                        const effUnread = getEffectiveUnreadCount(conv);
+                        const isConvMenuOpen = openConvMenuId === conv.id;
+                        const currentCustomSec = (userPrefs.customSections || []).find((cs) =>
+                          (cs.conversationIds || []).includes(conv.id)
+                        );
+                        const previewText =
+                          lastMsg?.text ||
+                          (lastMsg?.attachments?.length ? `Hình ảnh (${lastMsg.attachments.length})` : conv.subtitle);
+
+                        const convMenuContent = (
+                          <div
+                            data-no-chat-autofocus="true"
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-60 py-1 select-none text-[12px]"
+                          >
+                            <div className="px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 truncate">
+                              {isSpace ? `#${conv.name}` : conv.name}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                togglePinConversation(conv.id);
+                                setOpenConvMenuId(null);
+                              }}
+                              className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left"
+                              style={{ color: token.colorText }}
+                            >
+                              {isPinned ? (
+                                <PinOff size={13} className="text-amber-500" />
+                              ) : (
+                                <Pin size={13} className="text-amber-500" />
+                              )}
+                              <span>{isPinned ? 'Bỏ ghim khỏi đầu mục' : 'Ghim lên đầu mục (Pin)'}</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                toggleManualUnreadConversation(conv);
+                                setOpenConvMenuId(null);
+                              }}
+                              className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left"
+                              style={{ color: token.colorText }}
+                            >
+                              {effUnread > 0 ? <MailOpen size={13} /> : <Mail size={13} className="text-rose-500" />}
+                              <span>{effUnread > 0 ? 'Đánh dấu đã đọc' : 'Đánh dấu chưa đọc'}</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                toggleMuteConversation(conv.id);
+                                setOpenConvMenuId(null);
+                              }}
+                              className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left"
+                              style={{ color: token.colorText }}
+                            >
+                              {isMuted ? (
+                                <Bell size={13} className="text-emerald-500" />
+                              ) : (
+                                <BellOff size={13} className="text-slate-400" />
+                              )}
+                              <span>{isMuted ? 'Bật thông báo' : 'Tắt thông báo (Mute)'}</span>
+                            </button>
+
+                            <div className="my-1" style={{ borderTop: `1px solid ${borderColor}` }} />
+
+                            <div className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                              Chuyển tới mục (Google Chat Sections)
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                moveConversationToSection(conv.id, 'default');
+                                setOpenConvMenuId(null);
+                              }}
+                              className="w-full px-2.5 py-1.5 flex items-center justify-between gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left"
+                              style={{ color: token.colorText }}
+                            >
+                              <span className="truncate">
+                                {isSpace ? 'SPACES (Mặc định)' : 'DIRECT MESSAGES (Mặc định)'}
+                              </span>
+                              {!currentCustomSec && <Check size={13} className="text-emerald-500 shrink-0" />}
+                            </button>
+
+                            {(userPrefs.customSections || []).map((cs) => (
+                              <button
+                                key={cs.id}
+                                type="button"
+                                onClick={() => {
+                                  moveConversationToSection(conv.id, cs.id);
+                                  setOpenConvMenuId(null);
+                                }}
+                                className="w-full px-2.5 py-1.5 flex items-center justify-between gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left"
+                                style={{ color: token.colorText }}
+                              >
+                                <span className="truncate">📁 {cs.name}</span>
+                                {currentCustomSec?.id === cs.id && (
+                                  <Check size={13} className="text-emerald-500 shrink-0" />
+                                )}
+                              </button>
+                            ))}
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setOpenConvMenuId(null);
+                                setQuickCreateSectionTargetConvId(conv.id);
+                                setQuickCreateSectionName('');
+                                setQuickCreateSectionModalOpen(true);
+                              }}
+                              className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left text-sky-400 font-semibold"
+                            >
+                              <FolderPlus size={13} />
+                              <span>+ Tạo mục mới & chuyển vào...</span>
+                            </button>
+
+                            <div className="my-1" style={{ borderTop: `1px solid ${borderColor}` }} />
+
+                            <div className="grid grid-cols-2 gap-1 px-1">
+                              <button
+                                type="button"
+                                disabled={itemIdx === 0}
+                                onClick={() => {
+                                  moveConversationOrderInSection(conv.id, sec.id, 'up', sec.items);
+                                  setOpenConvMenuId(null);
+                                }}
+                                className="px-2 py-1 flex items-center justify-center gap-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-[11px] disabled:opacity-40 disabled:cursor-not-allowed"
+                                style={{ color: token.colorText }}
+                              >
+                                <ArrowUp size={12} />
+                                <span>Lên trên</span>
+                              </button>
+                              <button
+                                type="button"
+                                disabled={itemIdx === sec.items.length - 1}
+                                onClick={() => {
+                                  moveConversationOrderInSection(conv.id, sec.id, 'down', sec.items);
+                                  setOpenConvMenuId(null);
+                                }}
+                                className="px-2 py-1 flex items-center justify-center gap-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-[11px] disabled:opacity-40 disabled:cursor-not-allowed"
+                                style={{ color: token.colorText }}
+                              >
+                                <ArrowDown size={12} />
+                                <span>Xuống dưới</span>
+                              </button>
+                            </div>
+
+                            <div className="my-1" style={{ borderTop: `1px solid ${borderColor}` }} />
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDockedConvIds((prev) => {
+                                  const next = prev.includes(conv.id) ? prev : [...prev, conv.id];
+                                  return next.slice(-2);
+                                });
+                                setOpenConvMenuId(null);
+                              }}
+                              className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left"
+                              style={{ color: token.colorText }}
+                            >
+                              <ExternalLink size={13} />
+                              <span>Mở cửa sổ thu nhỏ (Mini Dock)</span>
+                            </button>
+
+                            {!isAiConv && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  toggleHideConversation(conv);
+                                  setOpenConvMenuId(null);
+                                }}
+                                className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left text-amber-500"
+                              >
+                                <EyeOff size={13} />
+                                <span>Ẩn khỏi danh sách của tôi</span>
+                              </button>
+                            )}
+
+                            {isSpace && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  void handleLeaveOrJoinSpace(conv);
+                                  setOpenConvMenuId(null);
+                                }}
+                                className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-rose-500/10 cursor-pointer text-left text-rose-500"
+                              >
+                                <LogOut size={13} />
+                                <span>Rời khỏi Space này</span>
+                              </button>
+                            )}
+                          </div>
+                        );
+
+                        return (
+                          <div
+                            key={conv.id}
+                            onClick={() => selectConversation(conv.id)}
+                            className="group/conv relative flex items-center gap-2.5 px-2 py-1.5 rounded-lg cursor-pointer mb-0.5 transition-colors"
+                            style={{
+                              background: isSelected
+                                ? isAiConv
+                                  ? 'rgba(139, 92, 246, 0.18)'
+                                  : isSelfConv
+                                    ? 'rgba(99, 102, 241, 0.18)'
+                                    : 'rgba(59, 130, 246, 0.14)'
+                                : isAiConv
+                                  ? 'rgba(139, 92, 246, 0.07)'
+                                  : isSelfConv
+                                    ? 'rgba(99, 102, 241, 0.06)'
+                                    : 'transparent',
+                              border: isAiConv
+                                ? '1px solid rgba(139, 92, 246, 0.28)'
+                                : isSelfConv
+                                  ? '1px solid rgba(99, 102, 241, 0.25)'
+                                  : '1px solid transparent',
+                              opacity: isMuted && !isSelected ? 0.72 : 1,
+                            }}
+                          >
+                            {isSpace ? (
+                              <div
+                                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                                style={{ background: `${conv.color}22`, color: conv.color }}
+                              >
+                                <Hash size={16} />
+                              </div>
+                            ) : (
+                              renderUserAvatarNode({
+                                staffId: isSelfConv ? currentUser?.id || 'me' : conv.participantStaffId,
+                                name: conv.name,
+                                rawAvatar: conv.avatar,
+                                bgColor: conv.color || '#ec4899',
+                                sizeClass: 'w-8 h-8',
+                                roundedClass: 'rounded-full',
+                                isOnline: true,
+                                isAiBot: isAiConv,
+                                isSelfBookmark: isSelfConv,
+                              })
+                            )}
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-1">
+                                <div className="flex items-center gap-1 min-w-0">
+                                  <span
+                                    className={`text-[12.5px] truncate ${
+                                      effUnread > 0 || isAiConv || isSelfConv ? 'font-extrabold' : 'font-semibold'
+                                    }`}
+                                    style={{
+                                      color: isAiConv
+                                        ? isDark
+                                          ? '#c4b5fd'
+                                          : '#6d28d9'
+                                        : isSelfConv
+                                          ? isDark
+                                            ? '#a5b4fc'
+                                            : '#4338ca'
+                                          : undefined,
+                                    }}
+                                  >
+                                    {conv.name}
+                                  </span>
+                                  {isSelfConv && (
+                                    <span className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-500/20 text-indigo-400 shrink-0">
+                                      Bạn
+                                    </span>
+                                  )}
+                                  {isPinned && (
+                                    <Tooltip title="Đã ghim lên đầu mục">
+                                      <Pin size={11} className="text-amber-400 shrink-0" />
+                                    </Tooltip>
+                                  )}
+                                  {isMuted && (
+                                    <Tooltip title="Đang tắt thông báo">
+                                      <BellOff size={11} className="text-slate-400 shrink-0" />
+                                    </Tooltip>
+                                  )}
+                                </div>
+
+                                {/* Right side: Time / Badge OR Hover Quick Action Buttons (Pin + More ⋮) */}
+                                <div className="flex items-center gap-0.5 shrink-0">
+                                  <div
+                                    className={`${
+                                      isConvMenuOpen ? 'hidden' : 'flex group-hover/conv:hidden'
+                                    } items-center gap-1`}
+                                  >
+                                    {isAiConv ? (
+                                      <span
+                                        className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+                                        style={{ background: 'rgba(139, 92, 246, 0.18)', color: '#a78bfa' }}
+                                      >
+                                        Riêng tư
+                                      </span>
+                                    ) : (
+                                      <span className="text-[10px] text-slate-400 tabular-nums shrink-0">
+                                        {lastMsg?.timeLabel || ''}
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div
+                                    onClick={(e) => e.stopPropagation()}
+                                    className={`${
+                                      isConvMenuOpen ? 'flex' : 'hidden group-hover/conv:flex'
+                                    } items-center gap-0.5`}
+                                  >
+                                    <Tooltip title={isPinned ? 'Bỏ ghim' : 'Ghim lên đầu'}>
+                                      <button
+                                        type="button"
+                                        aria-label={isPinned ? 'Bỏ ghim' : 'Ghim lên đầu'}
+                                        onClick={() => togglePinConversation(conv.id)}
+                                        className="w-5 h-5 rounded inline-flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/15 cursor-pointer"
+                                        style={{ color: isPinned ? '#d4a84b' : token.colorTextSecondary }}
+                                      >
+                                        <Pin size={11} />
+                                      </button>
+                                    </Tooltip>
+
+                                    <Popover
+                                      open={isConvMenuOpen}
+                                      onOpenChange={(v) => setOpenConvMenuId(v ? conv.id : null)}
+                                      trigger="click"
+                                      placement="bottomRight"
+                                      zIndex={1150}
+                                      content={convMenuContent}
+                                    >
+                                      <Tooltip title="Tuỳ chọn cuộc trò chuyện (Ghim / Chuyển mục / Tắt thông báo / Ẩn)">
+                                        <button
+                                          type="button"
+                                          aria-label="Tuỳ chọn cuộc trò chuyện"
+                                          className="w-5 h-5 rounded inline-flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/15 cursor-pointer"
+                                          style={{ color: token.colorTextSecondary }}
+                                        >
+                                          <MoreVertical size={12} />
+                                        </button>
+                                      </Tooltip>
+                                    </Popover>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-between gap-1">
+                                <span
+                                  className={`text-[11px] truncate ${
+                                    effUnread > 0 ? 'font-bold text-slate-200 dark:text-slate-200' : 'text-slate-400'
+                                  }`}
+                                >
+                                  {previewText}
+                                </span>
+                                {effUnread > 0 && (
+                                  <span className="inline-flex items-center justify-center px-1.5 h-4 rounded-full bg-rose-500 text-white text-[10px] font-extrabold tabular-nums shrink-0">
+                                    {effUnread}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ))}
                 </div>
               );
             })}
+
+            {/* Hidden Conversations / Quick Customize Footer */}
+            <div className="pt-2 px-1.5 flex items-center justify-between gap-1 border-t border-white/5">
+              <button
+                type="button"
+                onClick={() => {
+                  setSidebarCustomizeTab((userPrefs.hiddenIds?.length || 0) > 0 ? 'conversations' : 'sections');
+                  setSidebarCustomizeModalOpen(true);
+                }}
+                className="w-full py-1.5 px-2 rounded-lg flex items-center justify-between gap-1.5 text-[11px] font-semibold cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                style={{ color: token.colorTextSecondary }}
+              >
+                <span className="inline-flex items-center gap-1.5 truncate">
+                  <FolderKanban size={13} className="text-amber-500 shrink-0" />
+                  <span className="truncate">Tuỳ chỉnh mục & danh sách</span>
+                </span>
+                {(userPrefs.hiddenIds?.length || 0) > 0 && (
+                  <span className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full text-[9.5px] font-bold bg-amber-500/20 text-amber-400 tabular-nums shrink-0">
+                    {userPrefs.hiddenIds.length} đang ẩn
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* SIDEBAR DIVIDER RESIZE HANDLE (Drag to resize sidebar width, double-click to reset) */}
@@ -3587,9 +4705,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               )}
               <div className="min-w-0 flex items-center gap-1.5">
                 <span className="font-extrabold text-[13.5px] truncate">{activeConversation?.name}</span>
-                {activeConversation?.roleTag && (
+                {activeConversation?.roleTag && activeConversation?.type !== 'space' && (
                   <span
-                    className="inline-flex items-center justify-center leading-none py-1 px-2 rounded-full text-[10px] font-bold tabular-nums"
+                    className="inline-flex items-center justify-center leading-none py-1 px-2 rounded-full text-[10px] font-bold tabular-nums shrink-0"
                     style={{
                       background:
                         activeConversation.id === AI_COPILOT_CONV_ID
@@ -3602,21 +4720,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   </span>
                 )}
                 {activeConversation?.type === 'space' && (
-                  <Tooltip title="Xem và quản lý thành viên Không gian (Thêm / Xóa như Google Chat)">
+                  <Tooltip
+                    title={`Xem và quản lý thành viên Không gian (${activeConversation.memberCount || activeConversation.memberIds?.length || 1} thành viên)`}
+                  >
                     <button
                       type="button"
+                      aria-label="Quản lý thành viên Không gian"
                       onClick={() => setSpaceMembersModalOpen(true)}
-                      className="inline-flex items-center gap-1.5 h-6 px-2 rounded-full text-[11px] font-bold transition-colors cursor-pointer hover:opacity-90 ml-1"
+                      className="inline-flex items-center justify-center w-6 h-6 rounded-full transition-colors cursor-pointer hover:opacity-90 ml-0.5 shrink-0"
                       style={{
                         background: 'rgba(59, 130, 246, 0.15)',
                         color: '#3b82f6',
                         border: '1px solid rgba(59, 130, 246, 0.25)',
                       }}
                     >
-                      <Users size={12} />
-                      <span className="tabular-nums">
-                        {activeConversation.memberCount || activeConversation.memberIds?.length || 1} thành viên
-                      </span>
+                      <Users size={13} />
                     </button>
                   </Tooltip>
                 )}
@@ -6730,6 +7848,470 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             </div>
           );
         })()}
+
+      {/* ================= QUICK CREATE CUSTOM SECTION MODAL ================= */}
+      <Modal
+        open={quickCreateSectionModalOpen}
+        onCancel={() => {
+          setQuickCreateSectionModalOpen(false);
+          setQuickCreateSectionTargetConvId(null);
+        }}
+        footer={null}
+        width={420}
+        centered
+        zIndex={1130}
+        title={
+          <div className="flex items-center gap-2">
+            <FolderPlus size={16} className="text-sky-400" />
+            <span className="font-extrabold text-[14px]">Tạo mục tuỳ chỉnh mới (Google Chat Section)</span>
+          </div>
+        }
+      >
+        <div className="space-y-3 pt-2">
+          <div className="text-[12px] text-slate-400">
+            Tạo mục riêng để nhóm các cuộc trò chuyện 1-1 hoặc #Spaces quan trọng theo ý của bạn (ví dụ:{' '}
+            <span className="font-semibold text-amber-400">⭐ Ưu tiên</span>,{' '}
+            <span className="font-semibold text-amber-400">📌 Ca hôm nay</span>,{' '}
+            <span className="font-semibold text-amber-400">Khách VIP</span>).
+          </div>
+          <Input
+            value={quickCreateSectionName}
+            onChange={(e) => setQuickCreateSectionName(e.target.value)}
+            placeholder="Nhập tên mục tuỳ chỉnh..."
+            maxLength={40}
+            autoFocus
+            onPressEnter={(e) => {
+              e.preventDefault();
+              const name = quickCreateSectionName.trim();
+              if (!name) return;
+              setQuickCreateSectionName('');
+              setQuickCreateSectionModalOpen(false);
+              const target = quickCreateSectionTargetConvId;
+              setQuickCreateSectionTargetConvId(null);
+              handleCreateCustomSection(name, target);
+            }}
+          />
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                setQuickCreateSectionModalOpen(false);
+                setQuickCreateSectionTargetConvId(null);
+                setQuickCreateSectionName('');
+              }}
+              className="px-3 py-1.5 rounded-lg text-[12px] font-semibold cursor-pointer"
+              style={{
+                background: surfaceRaised,
+                border: `1px solid ${borderColor}`,
+                color: token.colorTextSecondary,
+              }}
+            >
+              Huỷ
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                const name = quickCreateSectionName.trim();
+                if (!name) return;
+                setQuickCreateSectionName('');
+                setQuickCreateSectionModalOpen(false);
+                const target = quickCreateSectionTargetConvId;
+                setQuickCreateSectionTargetConvId(null);
+                handleCreateCustomSection(name, target);
+              }}
+              className="px-3.5 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer bg-amber-500 text-slate-950 hover:bg-amber-400"
+            >
+              Tạo mục
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ================= PERSONAL SIDEBAR CUSTOMIZATION MODAL (GOOGLE CHAT WORKSPACE) ================= */}
+      <Modal
+        open={sidebarCustomizeModalOpen}
+        onCancel={() => {
+          setSidebarCustomizeModalOpen(false);
+          setEditingSectionId(null);
+        }}
+        footer={null}
+        width={680}
+        centered
+        zIndex={1120}
+        title={
+          <div className="flex items-center justify-between pr-6">
+            <div className="flex items-center gap-2">
+              <FolderKanban size={17} style={{ color: '#d4a84b' }} />
+              <span className="font-extrabold text-[14.5px]">Tuỳ chỉnh Danh sách Cá nhân (Google Chat Workspace)</span>
+            </div>
+            <span className="inline-flex items-center justify-center leading-none py-1 px-2.5 rounded-full text-[10.5px] font-bold bg-amber-500/15 text-amber-400">
+              Lưu riêng cho {currentUser?.displayName || currentUser?.username || 'bạn'}
+            </span>
+          </div>
+        }
+      >
+        <div className="space-y-3 pt-2">
+          {/* Sub-navigation Tabs */}
+          <div className="flex items-center justify-between gap-2">
+            <div
+              className="inline-flex p-1 rounded-xl gap-1"
+              style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+            >
+              <button
+                type="button"
+                onClick={() => setSidebarCustomizeTab('sections')}
+                className="px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer transition-colors inline-flex items-center gap-1.5"
+                style={{
+                  background: sidebarCustomizeTab === 'sections' ? surfaceBg : 'transparent',
+                  color: sidebarCustomizeTab === 'sections' ? '#d4a84b' : token.colorTextSecondary,
+                }}
+              >
+                <FolderKanban size={14} />
+                <span>1. Quản lý Mục & Thứ tự ({sidebarSections.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSidebarCustomizeTab('conversations')}
+                className="px-3 py-1.5 rounded-lg text-[12px] font-bold cursor-pointer transition-colors inline-flex items-center gap-1.5"
+                style={{
+                  background: sidebarCustomizeTab === 'conversations' ? surfaceBg : 'transparent',
+                  color: sidebarCustomizeTab === 'conversations' ? '#d4a84b' : token.colorTextSecondary,
+                }}
+              >
+                <Sliders size={14} />
+                <span>
+                  2. Quản lý DIRECT MESSAGES & SPACES ({allUserConversations.length})
+                  {(userPrefs.hiddenIds?.length || 0) > 0 ? ` · ${userPrefs.hiddenIds.length} đang ẩn` : ''}
+                </span>
+              </button>
+            </div>
+
+            <Popconfirm
+              title="Khôi phục bố cục danh sách về mặc định?"
+              description="Các mục tuỳ chỉnh, ghim và danh sách ẩn của bạn sẽ được đặt lại."
+              onConfirm={handleResetSidebarPrefs}
+              okText="Đặt lại"
+              cancelText="Huỷ"
+            >
+              <button
+                type="button"
+                className="px-2.5 py-1.5 rounded-lg text-[11.5px] font-semibold inline-flex items-center gap-1 cursor-pointer hover:bg-rose-500/10 text-rose-400"
+                style={{ border: `1px solid ${borderColor}` }}
+              >
+                <RotateCcw size={12} />
+                <span>Đặt lại mặc định</span>
+              </button>
+            </Popconfirm>
+          </div>
+
+          {sidebarCustomizeTab === 'sections' ? (
+            <div className="space-y-3">
+              {/* Create new Custom Section Bar */}
+              <div
+                className="p-3 rounded-xl space-y-2"
+                style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+              >
+                <div className="text-[12px] font-bold flex items-center gap-1.5">
+                  <FolderPlus size={14} className="text-sky-400" />
+                  <span>Tạo mục tuỳ chỉnh mới (Giống Custom Sections trên Google Chat)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={newSectionNameInput}
+                    onChange={(e) => setNewSectionNameInput(e.target.value)}
+                    placeholder="Ví dụ: ⭐ Quan trọng, 📌 Ca làm việc hôm nay, Dự án VIP..."
+                    maxLength={40}
+                    onPressEnter={(e) => {
+                      e.preventDefault();
+                      const name = newSectionNameInput.trim();
+                      if (!name) return;
+                      setNewSectionNameInput('');
+                      handleCreateCustomSection(name);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const name = newSectionNameInput.trim();
+                      if (!name) return;
+                      setNewSectionNameInput('');
+                      handleCreateCustomSection(name);
+                    }}
+                    className="px-3.5 h-8 rounded-lg text-[12px] font-bold cursor-pointer bg-amber-500 text-slate-950 hover:bg-amber-400 shrink-0 inline-flex items-center gap-1"
+                  >
+                    <Plus size={14} />
+                    <span>Thêm mục</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Ordered Sections List */}
+              <div className="space-y-1.5 max-h-[340px] overflow-y-auto pr-1">
+                {sidebarSections.map((sec, idx) => {
+                  const isEditing = editingSectionId === sec.id;
+                  return (
+                    <div
+                      key={sec.id}
+                      className="px-3 py-2.5 rounded-xl flex items-center justify-between gap-2"
+                      style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                    >
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="w-5 h-5 rounded-md inline-flex items-center justify-center text-[11px] font-extrabold bg-amber-500/15 text-amber-400 tabular-nums shrink-0">
+                          {idx + 1}
+                        </span>
+                        {isEditing ? (
+                          <div className="flex items-center gap-1.5 flex-1">
+                            <Input
+                              size="small"
+                              value={editingSectionName}
+                              onChange={(e) => setEditingSectionName(e.target.value)}
+                              onPressEnter={() => handleRenameCustomSection(sec.id, editingSectionName)}
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRenameCustomSection(sec.id, editingSectionName)}
+                              className="px-2 py-1 rounded bg-emerald-500 text-white text-[11px] font-bold cursor-pointer"
+                            >
+                              Lưu
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingSectionId(null)}
+                              className="px-2 py-1 rounded text-[11px] text-slate-400 cursor-pointer"
+                            >
+                              Huỷ
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-extrabold text-[12.5px] uppercase tracking-wide truncate">
+                                {sec.title}
+                              </span>
+                              <span
+                                className="inline-flex items-center justify-center leading-none py-0.5 px-2 rounded-full text-[10px] font-bold tabular-nums"
+                                style={{
+                                  background: sec.isCustom ? 'rgba(212, 168, 75, 0.16)' : 'rgba(59, 130, 246, 0.14)',
+                                  color: sec.isCustom ? '#d4a84b' : '#60a5fa',
+                                }}
+                              >
+                                {sec.isCustom ? 'Mục tuỳ chỉnh' : 'Mặc định'} · {sec.totalCount} hội thoại
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Tooltip title="Chỉ hiện cuộc trò chuyện có tin chưa đọc trong mục này">
+                          <button
+                            type="button"
+                            onClick={() => toggleUnreadOnlySection(sec.id)}
+                            className="px-2 py-1 rounded-md text-[11px] font-semibold cursor-pointer inline-flex items-center gap-1"
+                            style={{
+                              background: sec.unreadOnly ? 'rgba(245, 158, 11, 0.18)' : surfaceBg,
+                              border: `1px solid ${sec.unreadOnly ? 'rgba(245, 158, 11, 0.45)' : borderColor}`,
+                              color: sec.unreadOnly ? '#fbbf24' : token.colorTextSecondary,
+                            }}
+                          >
+                            <Mail size={12} />
+                            <span>{sec.unreadOnly ? 'Chỉ chưa đọc' : 'Hiện tất cả'}</span>
+                          </button>
+                        </Tooltip>
+
+                        <Tooltip title="Di chuyển mục lên">
+                          <button
+                            type="button"
+                            disabled={idx === 0}
+                            onClick={() => handleMoveSectionOrder(sec.id, 'up')}
+                            className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed"
+                            style={{ background: surfaceBg, border: `1px solid ${borderColor}` }}
+                          >
+                            <ArrowUp size={13} />
+                          </button>
+                        </Tooltip>
+
+                        <Tooltip title="Di chuyển mục xuống">
+                          <button
+                            type="button"
+                            disabled={idx === sidebarSections.length - 1}
+                            onClick={() => handleMoveSectionOrder(sec.id, 'down')}
+                            className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed"
+                            style={{ background: surfaceBg, border: `1px solid ${borderColor}` }}
+                          >
+                            <ArrowDown size={13} />
+                          </button>
+                        </Tooltip>
+
+                        {sec.isCustom && (
+                          <>
+                            <Tooltip title="Đổi tên mục">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingSectionId(sec.id);
+                                  setEditingSectionName(sec.title);
+                                }}
+                                className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer"
+                                style={{ background: surfaceBg, border: `1px solid ${borderColor}` }}
+                              >
+                                <Pencil size={13} />
+                              </button>
+                            </Tooltip>
+                            <Tooltip title="Xoá mục tuỳ chỉnh">
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCustomSection(sec.id)}
+                                className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer text-rose-500 hover:bg-rose-500/10"
+                                style={{ background: surfaceBg, border: `1px solid ${borderColor}` }}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </Tooltip>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-[410px] overflow-y-auto pr-1">
+              {allUserConversations.map((conv) => {
+                const isAiConv = conv.id === AI_COPILOT_CONV_ID;
+                const isSpace = conv.type === 'space';
+                const isPinned = (userPrefs.pinnedIds || []).includes(conv.id);
+                const isMuted = (userPrefs.mutedIds || []).includes(conv.id);
+                const isHidden = (userPrefs.hiddenIds || []).includes(conv.id);
+                const assignedSec = (userPrefs.customSections || []).find((s) =>
+                  (s.conversationIds || []).includes(conv.id)
+                );
+
+                return (
+                  <div
+                    key={conv.id}
+                    className="px-3 py-2 rounded-xl flex items-center justify-between gap-2"
+                    style={{
+                      background: surfaceRaised,
+                      border: `1px solid ${borderColor}`,
+                      opacity: isHidden ? 0.65 : 1,
+                    }}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      {isSpace ? (
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                          style={{ background: `${conv.color}22`, color: conv.color }}
+                        >
+                          <Hash size={15} />
+                        </div>
+                      ) : (
+                        renderUserAvatarNode({
+                          staffId: conv.isSelf ? currentUser?.id || 'me' : conv.participantStaffId,
+                          name: conv.name,
+                          rawAvatar: conv.avatar,
+                          bgColor: conv.color || '#ec4899',
+                          sizeClass: 'w-8 h-8',
+                          roundedClass: 'rounded-full',
+                          isAiBot: isAiConv,
+                          isSelfBookmark: Boolean(conv.isSelf),
+                        })
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-[12.5px] truncate">{conv.name}</span>
+                          <span className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full text-[9.5px] font-bold bg-slate-500/15 text-slate-400 shrink-0">
+                            {isSpace ? 'SPACE' : 'DIRECT MESSAGE'}
+                          </span>
+                          {isHidden && (
+                            <span className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full text-[9.5px] font-bold bg-amber-500/20 text-amber-400 shrink-0">
+                              Đang ẩn
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-400 truncate">{conv.subtitle}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {/* Section selector dropdown */}
+                      <Select
+                        size="small"
+                        value={assignedSec ? assignedSec.id : 'default'}
+                        onChange={(val) => moveConversationToSection(conv.id, val)}
+                        style={{ width: 155 }}
+                        options={[
+                          {
+                            value: 'default',
+                            label: isSpace ? 'Mục: SPACES' : 'Mục: DIRECT MESSAGES',
+                          },
+                          ...(userPrefs.customSections || []).map((cs) => ({
+                            value: cs.id,
+                            label: `📁 ${cs.name}`,
+                          })),
+                        ]}
+                      />
+
+                      <Tooltip title={isPinned ? 'Bỏ ghim' : 'Ghim lên đầu mục'}>
+                        <button
+                          type="button"
+                          onClick={() => togglePinConversation(conv.id)}
+                          className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer"
+                          style={{
+                            background: isPinned ? 'rgba(212, 168, 75, 0.2)' : surfaceBg,
+                            border: `1px solid ${isPinned ? '#d4a84b' : borderColor}`,
+                            color: isPinned ? '#d4a84b' : token.colorTextSecondary,
+                          }}
+                        >
+                          <Pin size={13} />
+                        </button>
+                      </Tooltip>
+
+                      <Tooltip title={isMuted ? 'Bật thông báo' : 'Tắt thông báo'}>
+                        <button
+                          type="button"
+                          onClick={() => toggleMuteConversation(conv.id)}
+                          className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer"
+                          style={{
+                            background: isMuted ? 'rgba(239, 68, 68, 0.16)' : surfaceBg,
+                            border: `1px solid ${isMuted ? 'rgba(239, 68, 68, 0.4)' : borderColor}`,
+                            color: isMuted ? '#f87171' : token.colorTextSecondary,
+                          }}
+                        >
+                          {isMuted ? <BellOff size={13} /> : <Bell size={13} />}
+                        </button>
+                      </Tooltip>
+
+                      {!isAiConv && (
+                        <Tooltip title={isHidden ? 'Hiện lại trên danh sách' : 'Ẩn khỏi danh sách'}>
+                          <button
+                            type="button"
+                            onClick={() => toggleHideConversation(conv)}
+                            className="px-2 h-7 rounded-md inline-flex items-center justify-center gap-1 text-[11px] font-semibold cursor-pointer"
+                            style={{
+                              background: isHidden ? 'rgba(16, 185, 129, 0.16)' : surfaceBg,
+                              border: `1px solid ${isHidden ? 'rgba(16, 185, 129, 0.4)' : borderColor}`,
+                              color: isHidden ? '#34d399' : token.colorTextSecondary,
+                            }}
+                          >
+                            {isHidden ? <Eye size={13} /> : <EyeOff size={13} />}
+                            <span>{isHidden ? 'Hiện lại' : 'Ẩn'}</span>
+                          </button>
+                        </Tooltip>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </Modal>
     </>
   );
 };

@@ -10,10 +10,12 @@ import {
   MosChatAccessConfig,
   MosChatBootstrapResponse,
   MosChatConversation,
+  MosChatCustomSection,
   MosChatImageAttachment,
   MosChatImageMimeType,
   MosChatStaffMember,
   MosChatTaskItem,
+  MosChatUserSidebarPrefs,
   SafeAny,
   UpdateMosChatAccessConfigRequest,
   UploadMosChatImageRequest,
@@ -24,6 +26,7 @@ import { requireAuth, JwtUserPayload } from '../../middlewares/auth.js';
 const CHAT_CONVERSATIONS_CONFIG_KEY = 'mos_chat:conversations_v1';
 const CHAT_TASKS_CONFIG_KEY = 'mos_chat:tasks_v1';
 const CHAT_ACCESS_CONFIG_KEY = 'mos_chat:access_config_v1';
+const CHAT_USER_PREFS_CONFIG_KEY = 'mos_chat:user_prefs_v1';
 const MAX_CHAT_IMAGE_BYTES = 8 * 1024 * 1024; // 8 MB max per image
 const CHAT_IMAGE_BODY_LIMIT = 15 * 1024 * 1024; // 15 MB body limit for base64 payload
 
@@ -685,10 +688,113 @@ function evaluateCanUserAccessMosChat(
   return false;
 }
 
+function buildDefaultUserSidebarPrefs(): MosChatUserSidebarPrefs {
+  return {
+    pinnedIds: [],
+    mutedIds: [],
+    hiddenIds: [],
+    manualUnreadIds: [],
+    readMessageCountByConv: {},
+    collapsedSections: {},
+    unreadOnlySections: {},
+    sectionOrder: ['dm', 'spaces'],
+    customSections: [],
+    conversationOrder: {},
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function normalizeUserSidebarPrefs(raw: SafeAny): MosChatUserSidebarPrefs {
+  const def = buildDefaultUserSidebarPrefs();
+  if (!raw || typeof raw !== 'object') return def;
+  const cleanStrList = (arr: unknown): string[] =>
+    Array.isArray(arr)
+      ? Array.from(new Set(arr.filter((x): x is string => typeof x === 'string' && x.trim().length > 0)))
+      : [];
+  const cleanBoolMap = (obj: unknown): Record<string, boolean> => {
+    if (!obj || typeof obj !== 'object') return {};
+    const out: Record<string, boolean> = {};
+    for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+      if (typeof v === 'boolean') out[k] = v;
+    }
+    return out;
+  };
+  const cleanNumMap = (obj: unknown): Record<string, number> => {
+    if (!obj || typeof obj !== 'object') return {};
+    const out: Record<string, number> = {};
+    for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+      const n = Number(v);
+      if (Number.isFinite(n) && n >= 0) out[k] = n;
+    }
+    return out;
+  };
+  const rawCustomSections: MosChatCustomSection[] = Array.isArray(raw.customSections)
+    ? raw.customSections
+        .filter((s: SafeAny) => s && typeof s.id === 'string' && typeof s.name === 'string' && s.name.trim().length > 0)
+        .slice(0, 20)
+        .map((s: SafeAny) => ({
+          id: String(s.id).trim(),
+          name: String(s.name).trim().slice(0, 48),
+          conversationIds: cleanStrList(s.conversationIds),
+          collapsed: Boolean(s.collapsed),
+          unreadOnly: Boolean(s.unreadOnly),
+        }))
+    : [];
+
+  const seenIds = new Set<string>();
+  const seenNames = new Set<string>();
+  const customSections: MosChatCustomSection[] = [];
+  for (const s of rawCustomSections) {
+    const normName = s.name.toLowerCase();
+    if (seenIds.has(s.id) || seenNames.has(normName)) {
+      continue;
+    }
+    seenIds.add(s.id);
+    seenNames.add(normName);
+    customSections.push(s);
+  }
+  const conversationOrder: Record<string, string[]> = {};
+  if (raw.conversationOrder && typeof raw.conversationOrder === 'object') {
+    for (const [k, v] of Object.entries(raw.conversationOrder as Record<string, unknown>)) {
+      conversationOrder[k] = cleanStrList(v);
+    }
+  }
+  const sectionOrderRaw = cleanStrList(raw.sectionOrder);
+  const customIds = customSections.map((s) => s.id);
+  const baseOrder = sectionOrderRaw.length > 0 ? sectionOrderRaw : ['dm', 'spaces'];
+  const mergedSectionOrder = Array.from(new Set([...customIds, ...baseOrder, 'dm', 'spaces'])).filter(
+    (id) => id === 'dm' || id === 'spaces' || customIds.includes(id)
+  );
+
+  return {
+    pinnedIds: cleanStrList(raw.pinnedIds),
+    mutedIds: cleanStrList(raw.mutedIds),
+    hiddenIds: cleanStrList(raw.hiddenIds),
+    manualUnreadIds: cleanStrList(raw.manualUnreadIds),
+    readMessageCountByConv: cleanNumMap(raw.readMessageCountByConv),
+    collapsedSections: cleanBoolMap(raw.collapsedSections),
+    unreadOnlySections: cleanBoolMap(raw.unreadOnlySections),
+    sectionOrder: mergedSectionOrder,
+    customSections,
+    conversationOrder,
+    updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : def.updatedAt,
+  };
+}
+
+function resolveUserPrefKey(user: JwtUserPayload | undefined, staffDirectory: MosChatStaffMember[]): string {
+  const sid = resolveUserStaffId(user, staffDirectory);
+  if (sid > 0) return `staff_${sid}`;
+  const uname = String(user?.username || '')
+    .toLowerCase()
+    .trim();
+  return uname ? `user_${uname}` : 'default';
+}
+
 let memoryChatCache: {
   conversations: MosChatConversation[];
   tasks: MosChatTaskItem[];
   accessConfig: MosChatAccessConfig;
+  userPrefsByUserKey: Record<string, MosChatUserSidebarPrefs>;
   version: number;
   lastSyncedFromDbAt: number;
 } | null = null;
@@ -715,6 +821,7 @@ async function loadChatState(fastify: FastifyInstance): Promise<{
   conversations: MosChatConversation[];
   tasks: MosChatTaskItem[];
   accessConfig: MosChatAccessConfig;
+  userPrefsByUserKey: Record<string, MosChatUserSidebarPrefs>;
   version: number;
 }> {
   const now = Date.now();
@@ -722,15 +829,17 @@ async function loadChatState(fastify: FastifyInstance): Promise<{
     return memoryChatCache;
   }
 
-  const [convRecord, taskRecord, accessRecord] = await Promise.all([
+  const [convRecord, taskRecord, accessRecord, prefsRecord] = await Promise.all([
     fastify.prisma.crm.crmConfig.findUnique({ where: { key: CHAT_CONVERSATIONS_CONFIG_KEY } }),
     fastify.prisma.crm.crmConfig.findUnique({ where: { key: CHAT_TASKS_CONFIG_KEY } }),
     fastify.prisma.crm.crmConfig.findUnique({ where: { key: CHAT_ACCESS_CONFIG_KEY } }),
+    fastify.prisma.crm.crmConfig.findUnique({ where: { key: CHAT_USER_PREFS_CONFIG_KEY } }),
   ]);
 
   let conversations: MosChatConversation[] | null = null;
   let tasks: MosChatTaskItem[] | null = null;
   let accessConfig: MosChatAccessConfig | null = null;
+  const userPrefsByUserKey: Record<string, MosChatUserSidebarPrefs> = {};
 
   if (convRecord?.value) {
     try {
@@ -754,6 +863,17 @@ async function loadChatState(fastify: FastifyInstance): Promise<{
     try {
       const parsed = JSON.parse(accessRecord.value);
       accessConfig = normalizeAccessConfig(parsed);
+    } catch (_) {}
+  }
+
+  if (prefsRecord?.value) {
+    try {
+      const parsed = JSON.parse(prefsRecord.value);
+      if (parsed && typeof parsed === 'object') {
+        for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+          userPrefsByUserKey[k] = normalizeUserSidebarPrefs(v);
+        }
+      }
     } catch (_) {}
   }
 
@@ -783,6 +903,7 @@ async function loadChatState(fastify: FastifyInstance): Promise<{
     convRecord?.updatedAt ? new Date(convRecord.updatedAt).getTime() : 0,
     taskRecord?.updatedAt ? new Date(taskRecord.updatedAt).getTime() : 0,
     accessRecord?.updatedAt ? new Date(accessRecord.updatedAt).getTime() : 0,
+    prefsRecord?.updatedAt ? new Date(prefsRecord.updatedAt).getTime() : 0,
     memoryChatCache?.version || 1
   );
 
@@ -790,11 +911,45 @@ async function loadChatState(fastify: FastifyInstance): Promise<{
     conversations,
     tasks,
     accessConfig,
+    userPrefsByUserKey,
     version: latestVersion,
     lastSyncedFromDbAt: now,
   };
 
   return memoryChatCache;
+}
+
+async function saveUserSidebarPrefs(
+  fastify: FastifyInstance,
+  userPrefKey: string,
+  prefs: MosChatUserSidebarPrefs
+): Promise<MosChatUserSidebarPrefs> {
+  const state = await loadChatState(fastify);
+  const normalized = normalizeUserSidebarPrefs({
+    ...prefs,
+    updatedAt: new Date().toISOString(),
+  });
+  state.userPrefsByUserKey[userPrefKey] = normalized;
+  const nextVersion = Date.now();
+  if (memoryChatCache) {
+    memoryChatCache.userPrefsByUserKey[userPrefKey] = normalized;
+    memoryChatCache.version = nextVersion;
+    memoryChatCache.lastSyncedFromDbAt = nextVersion;
+  }
+  const snapshot = { ...state.userPrefsByUserKey };
+  writeChain = writeChain
+    .then(async () => {
+      await fastify.prisma.crm.crmConfig.upsert({
+        where: { key: CHAT_USER_PREFS_CONFIG_KEY },
+        update: { value: JSON.stringify(snapshot) },
+        create: { key: CHAT_USER_PREFS_CONFIG_KEY, value: JSON.stringify(snapshot) },
+      });
+    })
+    .catch((err) => {
+      fastify.log.error('saveUserSidebarPrefs error:', err);
+    });
+  await writeChain;
+  return normalized;
 }
 
 async function saveAccessConfig(fastify: FastifyInstance, accessConfig: MosChatAccessConfig) {
@@ -1016,9 +1171,11 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         const query = (request.query || {}) as { sinceVersion?: string };
         const clientVersion = Number(query.sinceVersion) || 0;
 
-        const { conversations, tasks, accessConfig, version } = await loadChatState(fastify);
+        const { conversations, tasks, accessConfig, userPrefsByUserKey, version } = await loadChatState(fastify);
         const staffDirectory = await loadStaffDirectoryCached(fastify);
         const canAccessChat = evaluateCanUserAccessMosChat(user, staffDirectory, accessConfig);
+        const userPrefKey = resolveUserPrefKey(user, staffDirectory);
+        const userPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
 
         // Zero-DB, Zero-Payload Short-Circuit when nothing changed!
         if (clientVersion > 0 && clientVersion === version) {
@@ -1030,6 +1187,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
             staffDirectory: [],
             accessConfig,
             canAccessChat,
+            userPrefs,
           } satisfies MosChatBootstrapResponse;
         }
 
@@ -1044,11 +1202,44 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           staffDirectory,
           accessConfig,
           canAccessChat,
+          userPrefs,
         };
         return payload;
       } catch (err: SafeAny) {
         fastify.log.error('Chat bootstrap error:', err);
         return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể tải dữ liệu mOS Chat' });
+      }
+    }
+  );
+
+  // PUT /api/chat/user-prefs (Personal Sidebar Customization for any authenticated user)
+  fastify.put(
+    '/chat/user-prefs',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const user = (request as SafeAny).user as JwtUserPayload | undefined;
+        const staffDirectory = await loadStaffDirectoryCached(fastify);
+        const userPrefKey = resolveUserPrefKey(user, staffDirectory);
+        const body = (request.body || {}) as Partial<MosChatUserSidebarPrefs>;
+        const { userPrefsByUserKey } = await loadChatState(fastify);
+        const current = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
+        const saved = await saveUserSidebarPrefs(fastify, userPrefKey, {
+          ...current,
+          ...body,
+          updatedAt: new Date().toISOString(),
+        });
+        return {
+          success: true,
+          userPrefs: saved,
+        };
+      } catch (err: SafeAny) {
+        fastify.log.error('Update chat user prefs error:', err);
+        return reply
+          .status(500)
+          .send({ error: 'Internal Server Error', message: 'Không thể lưu tuỳ chỉnh cá nhân mOS Chat' });
       }
     }
   );
