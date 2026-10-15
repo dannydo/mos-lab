@@ -38,11 +38,41 @@ function ictDateKey(value: Date): string {
   return `${byType.get('year')}-${byType.get('month')}-${byType.get('day')}`;
 }
 
+/**
+ * Extract the calendar date (YYYY-MM-DD) for a visit timestamp.
+ *
+ * Legacy MySQL DATETIME columns (`order.booking_date_start`, `report_order.actual_booking_date_start`,
+ * `user_profile.last_order_booking`) store wall-clock Vietnam time (`Asia/Ho_Chi_Minh`) without
+ * a timezone offset, and Prisma serializes those wall-clock fields into UTC Date components
+ * (e.g. '2026-09-23 18:05:23' -> 2026-09-23T18:05:23.000Z). Applying a second +07:00 shift
+ * would push any visit at or after 17:00 into the next calendar day and make `daysSinceVisit`
+ * 1 day smaller than MySQL `DATEDIFF(CURDATE(), ...)`.
+ */
+function visitDateKey(lastVisitAt: Date | string): string | null {
+  if (typeof lastVisitAt === 'string') {
+    const trimmed = lastVisitAt.trim();
+    const datePrefix = /^(\d{4}-\d{2}-\d{2})(?:[T\s](\d{2}:\d{2}:\d{2}(?:\.\d+)?)(Z|[+-]\d{2}:?\d{2})?)?$/.exec(
+      trimmed
+    );
+    if (datePrefix) {
+      const [, ymd, , tz] = datePrefix;
+      if (!tz || tz === 'Z' || tz === '+07:00' || tz === '+0700') {
+        return ymd;
+      }
+    }
+    const parsed = new Date(trimmed);
+    return Number.isNaN(parsed.getTime()) ? null : ictDateKey(parsed);
+  }
+  if (Number.isNaN(lastVisitAt.getTime())) return null;
+  return lastVisitAt.toISOString().slice(0, 10);
+}
+
 /** Date-only difference in the business timezone, matching the legacy DATEDIFF intent. */
 export function daysSinceVisit(lastVisitAt: Date | string | null, now = new Date()): number | null {
-  const parsed = lastVisitAt instanceof Date ? lastVisitAt : lastVisitAt ? new Date(lastVisitAt) : null;
-  if (!parsed || Number.isNaN(parsed.getTime())) return null;
-  const from = Date.parse(`${ictDateKey(parsed)}T00:00:00.000Z`);
+  if (!lastVisitAt || Number.isNaN(now.getTime())) return null;
+  const fromDateKey = visitDateKey(lastVisitAt);
+  if (!fromDateKey) return null;
+  const from = Date.parse(`${fromDateKey}T00:00:00.000Z`);
   const to = Date.parse(`${ictDateKey(now)}T00:00:00.000Z`);
   return Math.floor((to - from) / 86_400_000);
 }
