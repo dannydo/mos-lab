@@ -44,9 +44,7 @@ const migration: DataMigration = {
     if (configRows[0]?.value) {
       try {
         list = JSON.parse(configRows[0].value);
-      } catch {
-        // Fallback to default list if JSON parsing fails
-      }
+      } catch {}
     }
     if (!list.includes(52454)) {
       list.push(52454);
