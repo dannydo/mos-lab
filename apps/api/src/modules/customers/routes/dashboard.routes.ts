@@ -11,10 +11,10 @@ import { CvAttendanceService } from '../services/cv-attendance.service.js';
 import { TeamService } from '../../teams/team.service.js';
 
 interface DashboardTodayResult {
-  branchesData: any;
-  bookingsCombo: any[];
-  bookingsOc: any[];
-  bookingsOther: any[];
+  branchesData: Record<string, SafeAny>;
+  bookingsCombo: SafeAny[];
+  bookingsOc: SafeAny[];
+  bookingsOther: SafeAny[];
 }
 
 interface DashboardTodayCacheEntry {
