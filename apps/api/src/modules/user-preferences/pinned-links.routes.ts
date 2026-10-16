@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth, JwtUserPayload } from '../../middlewares/auth.js';
-import { PinnedLinkItem, SafeAny } from '@mos-lab/shared';
+import { PinnedLinkItem } from '@mos-lab/shared';
 import crypto from 'crypto';
 
 const MAX_PINNED_LINKS = 12;
@@ -202,7 +202,9 @@ export async function pinnedLinksRoutes(fastify: FastifyInstance) {
           try {
             const parsed = JSON.parse(record.value);
             if (Array.isArray(parsed)) currentItems = parsed;
-          } catch (_) {}
+          } catch {
+            // Ignore invalid JSON and retain default empty array
+          }
         }
 
         // Check if already pinned by menuKey or URL
@@ -306,7 +308,9 @@ export async function pinnedLinksRoutes(fastify: FastifyInstance) {
           try {
             const parsed = JSON.parse(record.value);
             if (Array.isArray(parsed)) currentItems = parsed;
-          } catch (_) {}
+          } catch {
+            // Ignore invalid JSON and retain default empty array
+          }
         }
 
         // Filter out item by ID or menuKey
