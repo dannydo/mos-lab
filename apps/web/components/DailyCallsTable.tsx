@@ -341,7 +341,7 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
           }
 
           return days !== null && days !== undefined ? (
-            `${days} ngày`
+            <span className="tabular-nums">{days} ngày</span>
           ) : (
             <Text style={{ color: 'var(--client-desc-color)' }}>Chưa từng đến</Text>
           );
@@ -373,7 +373,7 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
         dataIndex: 'createdAt',
         key: 'lastCall',
         width: 90,
-        render: (dateStr: string) => dayjs(dateStr).format('HH:mm'),
+        render: (dateStr: string) => <span className="tabular-nums">{dayjs(dateStr).format('HH:mm')}</span>,
       },
       {
         title: 'SL Booker (Thời lượng)',
@@ -392,6 +392,7 @@ export default function DailyCallsTable({ initialScope = 'all', isDrawerMode = f
             borderStyle: 'solid',
             padding: '2px 8px',
             fontSize: '13px',
+            fontVariantNumeric: 'tabular-nums',
           };
 
           if (seconds === 0) {

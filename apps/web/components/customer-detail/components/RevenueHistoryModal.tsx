@@ -157,6 +157,7 @@ export const RevenueHistoryModal: React.FC<RevenueHistoryModalProps> = ({
         {items.map((item, idx) => (
           <div key={idx} style={{ fontSize: '11px', lineHeight: '1.3' }}>
             <div
+              className="tabular-nums"
               style={{
                 fontWeight: 'bold',
                 color: themeMode === 'dark' ? '#fbbf24' : '#d97706',
