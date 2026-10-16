@@ -30,6 +30,7 @@ interface DetailCacheEntry {
   expiresAt: number;
 }
 const cvDetailCache = new Map<number, DetailCacheEntry>();
+const inFlightDetailPromises = new Map<number, Promise<CvSpeedDetail>>();
 const CV_DETAIL_CACHE_TTL_MS = 5 * 60 * 1000;
 
 interface MatrixCacheEntry {
@@ -54,7 +55,7 @@ interface SpeedFactorsCacheEntry {
 }
 let speedFactorsCache: SpeedFactorsCacheEntry | null = null;
 let inFlightSpeedFactorsPromise: Promise<Map<number, StaffPhaseMetrics>> | null = null;
-const SPEED_FACTORS_CACHE_TTL_MS = 30 * 60 * 1000;
+const SPEED_FACTORS_CACHE_TTL_MS = 60 * 60 * 1000;
 
 interface StaffTrendsCacheEntry {
   data: Map<number, 'improving' | 'declining' | 'stable'>;
@@ -67,8 +68,10 @@ const STAFF_TRENDS_CACHE_TTL_MS = 30 * 60 * 1000;
 export function clearCvSpeedCache(staffId?: number) {
   if (staffId) {
     cvDetailCache.delete(staffId);
+    inFlightDetailPromises.delete(staffId);
   } else {
     cvDetailCache.clear();
+    inFlightDetailPromises.clear();
   }
   cvMatrixCache.clear();
   cvRankingCache.clear();
@@ -473,7 +476,13 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
       return reply.send(cached.data);
     }
 
-    try {
+    const inFlight = inFlightDetailPromises.get(cvId);
+    if (inFlight) {
+      const data = await inFlight;
+      return reply.send(data);
+    }
+
+    const computePromise = (async () => {
       const staffProfilePromise = fastify.prisma.legacy.$queryRawUnsafe(`
         SELECT full_name, avatar FROM user_profile WHERE user_id = ${cvId} LIMIT 1
       `) as Promise<Array<{ full_name: string | null; avatar: string | null }>>;
@@ -498,6 +507,7 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
         LEFT JOIN service_language sl ON s.id = sl.service_id AND sl.language_id = 1
         LEFT JOIN report_order ro ON o.id = ro.order_id
         WHERE o.order_state = 'Completed'
+          AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
           AND (
             os.assigned_staff_id = ${cvId}
             OR EXISTS (SELECT 1 FROM staff_bonus sb WHERE sb.order_service_id = os.id AND sb.user_id = ${cvId})
@@ -531,11 +541,11 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
         JOIN report_order_service ros ON os.id = ros.order_service_id
         LEFT JOIN report_order ro ON o.id = ro.order_id
         WHERE o.order_state = 'Completed'
+          AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
           AND (
             os.assigned_staff_id = ${cvId}
             OR EXISTS (SELECT 1 FROM staff_bonus sb WHERE sb.order_service_id = os.id AND sb.user_id = ${cvId})
           )
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
         GROUP BY month_str
         ORDER BY month_str ASC
       `) as Promise<Array<{ month_str: string; avg_time: number }>>;
@@ -620,13 +630,21 @@ export async function cvSpeedRoutes(fastify: FastifyInstance) {
 
       cvDetailCache.set(cvId, {
         data: response,
-        expiresAt: now + CV_DETAIL_CACHE_TTL_MS,
+        expiresAt: Date.now() + CV_DETAIL_CACHE_TTL_MS,
       });
 
+      return response;
+    })();
+
+    inFlightDetailPromises.set(cvId, computePromise);
+    try {
+      const response = await computePromise;
       return reply.send(response);
     } catch (err) {
       fastify.log.error(err as Error, 'Error fetching CV speed detail');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể tải chi tiết tốc độ CV.' });
+    } finally {
+      inFlightDetailPromises.delete(cvId);
     }
   });
 
@@ -892,12 +910,9 @@ async function getStaffOverallSpeedFactors(
         LEFT JOIN report_order ro ON ro.order_id = o.id
         JOIN staff_bonus sb ON sb.order_service_id = os.id
         WHERE o.order_state = 'Completed'
+          AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 3 MONTH)
           AND sb.user_id IN (${staffIds.join(',')})
           AND (COALESCE(ros.cleaning_minute, 0) + COALESCE(ros.servicing_minute, 0) + COALESCE(ros.preparation_minute, 0) + COALESCE(ros.pre_servicing_minute, 0)) BETWEEN 15 AND 200
-          AND (
-            ro.actual_booking_date_start >= DATE_SUB(NOW(), INTERVAL 12 MONTH)
-            OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= DATE_SUB(NOW(), INTERVAL 12 MONTH))
-          )
         GROUP BY sb.user_id
       `)) as Array<{ staff_id: number; avg_clean: number; avg_prep: number; avg_ext: number; avg_time: number | null }>;
 

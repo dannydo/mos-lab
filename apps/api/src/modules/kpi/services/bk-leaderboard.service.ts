@@ -17,6 +17,8 @@ import {
 } from './bk-salary.service.js';
 import { bookingMissedSqlCondition } from './bk-booking.service.js';
 
+const inFlightDoneLeaderboardPromises = new Map<string, Promise<BkDoneLeaderboardResult>>();
+
 export interface BkBookingLeaderboardParams {
   dateFrom?: string;
   dateTo?: string;
@@ -296,25 +298,29 @@ export class BkLeaderboardService {
     if (!skipCache) {
       const cached = fastify.cache?.get<BkDoneLeaderboardResult>(cacheKey);
       if (cached) return cached;
+
+      const inFlight = inFlightDoneLeaderboardPromises.get(cacheKey);
+      if (inFlight) return inFlight;
     }
 
-    const config = await getBkSalaryConfig(fastify);
+    const compute = async (): Promise<BkDoneLeaderboardResult> => {
+      const config = await getBkSalaryConfig(fastify);
 
-    let storeFilter = '';
-    if (storeId && storeId !== 'ALL') {
-      storeFilter = `AND UPPER(cs.client_store_key) = '${storeId.toUpperCase()}'`;
-    }
+      let storeFilter = '';
+      if (storeId && storeId !== 'ALL') {
+        storeFilter = `AND UPPER(cs.client_store_key) = '${storeId.toUpperCase()}'`;
+      }
 
-    // Compute Check-in bonuses per Booker (matching salary-calculator.ts and /dashboard/kpi)
-    const { clientBonusMap, singleDoneMap, comboLiveDoneMap } = await computeBkOrderCheckins(
-      fastify,
-      startPart,
-      endPart,
-      activeTelesalesIds,
-      storeFilter
-    );
+      // Compute Check-in bonuses per Booker (matching salary-calculator.ts and /dashboard/kpi)
+      const { clientBonusMap, singleDoneMap, comboLiveDoneMap } = await computeBkOrderCheckins(
+        fastify,
+        startPart,
+        endPart,
+        activeTelesalesIds,
+        storeFilter
+      );
 
-    const sql = `
+      const sql = `
       SELECT 
         up.user_id as bookerId,
         up.full_name as displayName,
@@ -337,12 +343,12 @@ export class BkLeaderboardService {
       ORDER BY doneCount DESC
     `;
 
-    let comboStoreFilter = '';
-    if (storeId && storeId !== 'ALL') {
-      comboStoreFilter = `AND o.client_store_id IN (SELECT id FROM client_store WHERE UPPER(client_store_key) = '${storeId.toUpperCase()}')`;
-    }
+      let comboStoreFilter = '';
+      if (storeId && storeId !== 'ALL') {
+        comboStoreFilter = `AND o.client_store_id IN (SELECT id FROM client_store WHERE UPPER(client_store_key) = '${storeId.toUpperCase()}')`;
+      }
 
-    const comboSoldSql = `
+      const comboSoldSql = `
       SELECT 
         o.created_staff_id as bookerId,
         COALESCE(SUM(osc.quantity), 0) as comboSoldQty,
@@ -361,129 +367,141 @@ export class BkLeaderboardService {
       GROUP BY o.created_staff_id
     `;
 
-    const [rows, comboSoldRows] = await Promise.all([
-      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql),
-      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboSoldSql),
-    ]);
+      const [rows, comboSoldRows] = await Promise.all([
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboSoldSql),
+      ]);
 
-    const comboSoldMap = new Map<number, { qty: number; revenue: number }>();
-    comboSoldRows.forEach((r) => {
-      comboSoldMap.set(Number(r.bookerId), {
-        qty: Number(r.comboSoldQty || 0),
-        revenue: Number(r.comboSoldRevenue || 0),
+      const comboSoldMap = new Map<number, { qty: number; revenue: number }>();
+      comboSoldRows.forEach((r) => {
+        comboSoldMap.set(Number(r.bookerId), {
+          qty: Number(r.comboSoldQty || 0),
+          revenue: Number(r.comboSoldRevenue || 0),
+        });
       });
-    });
 
-    let grandTotalDone = 0;
-    let grandTotalMissed = 0;
-    let grandTotalDoneBonus = 0;
-    let grandTotalSingleDone = 0;
-    let grandTotalComboLiveDone = 0;
-    let grandTotalComboSold = 0;
-    let grandTotalComboRevenue = 0;
+      let grandTotalDone = 0;
+      let grandTotalMissed = 0;
+      let grandTotalDoneBonus = 0;
+      let grandTotalSingleDone = 0;
+      let grandTotalComboLiveDone = 0;
+      let grandTotalComboSold = 0;
+      let grandTotalComboRevenue = 0;
 
-    const entries: BkDoneLeaderboardEntry[] = rows.map((r) => {
-      const bookerId = Number(r.bookerId);
-      const doneCount = Number(r.doneCount || 0);
-      const missedCount = Number(r.missedCount || 0);
-      const totalCount = Number(r.totalCount || 0);
-      const doneRatePercent = totalCount > 0 ? Number(((doneCount / totalCount) * 100).toFixed(1)) : 0;
-      const missedRatePercent = totalCount > 0 ? Number(((missedCount / totalCount) * 100).toFixed(1)) : 0;
+      const entries: BkDoneLeaderboardEntry[] = rows.map((r) => {
+        const bookerId = Number(r.bookerId);
+        const doneCount = Number(r.doneCount || 0);
+        const missedCount = Number(r.missedCount || 0);
+        const totalCount = Number(r.totalCount || 0);
+        const doneRatePercent = totalCount > 0 ? Number(((doneCount / totalCount) * 100).toFixed(1)) : 0;
+        const missedRatePercent = totalCount > 0 ? Number(((missedCount / totalCount) * 100).toFixed(1)) : 0;
 
-      const singleDoneCount = singleDoneMap.get(bookerId) || 0;
-      const comboLiveDoneCount = comboLiveDoneMap.get(bookerId) || 0;
-      const comboInfo = comboSoldMap.get(bookerId) || { qty: 0, revenue: 0 };
-      const comboSoldCount = comboInfo.qty;
-      const comboRevenue = comboInfo.revenue;
-      const singleToComboRate = singleDoneCount > 0 ? Number(((comboSoldCount / singleDoneCount) * 100).toFixed(1)) : 0;
+        const singleDoneCount = singleDoneMap.get(bookerId) || 0;
+        const comboLiveDoneCount = comboLiveDoneMap.get(bookerId) || 0;
+        const comboInfo = comboSoldMap.get(bookerId) || { qty: 0, revenue: 0 };
+        const comboSoldCount = comboInfo.qty;
+        const comboRevenue = comboInfo.revenue;
+        const singleToComboRate =
+          singleDoneCount > 0 ? Number(((comboSoldCount / singleDoneCount) * 100).toFixed(1)) : 0;
 
-      const basicBonus = clientBonusMap.get(bookerId) || 0;
-      const promoBonus = 0;
+        const basicBonus = clientBonusMap.get(bookerId) || 0;
+        const promoBonus = 0;
 
-      // Invariant BK-005: Rank & Milestone bonus for Booker is strictly calculated on singleDoneCount
-      const milestoneBonus = getMilestoneBonus(singleDoneCount, config.doneBonusTiers);
-      const minDoneForMissed = config.minDoneForMissedBonus ?? 100;
-      const effectiveDone = singleDoneCount > 0 ? singleDoneCount : doneCount;
-      const penaltyBonus = getMissedRateBonus(
-        missedRatePercent,
-        config.missedBonusTiers,
-        effectiveDone,
-        minDoneForMissed
-      );
+        // Invariant BK-005: Rank & Milestone bonus for Booker is strictly calculated on singleDoneCount
+        const milestoneBonus = getMilestoneBonus(singleDoneCount, config.doneBonusTiers);
+        const minDoneForMissed = config.minDoneForMissedBonus ?? 100;
+        const effectiveDone = singleDoneCount > 0 ? singleDoneCount : doneCount;
+        const penaltyBonus = getMissedRateBonus(
+          missedRatePercent,
+          config.missedBonusTiers,
+          effectiveDone,
+          minDoneForMissed
+        );
 
-      const totalDoneBonus = basicBonus + promoBonus + milestoneBonus + penaltyBonus;
+        const totalDoneBonus = basicBonus + promoBonus + milestoneBonus + penaltyBonus;
 
-      grandTotalDone += doneCount;
-      grandTotalMissed += missedCount;
-      grandTotalDoneBonus += totalDoneBonus;
-      grandTotalSingleDone += singleDoneCount;
-      grandTotalComboLiveDone += comboLiveDoneCount;
-      grandTotalComboSold += comboSoldCount;
-      grandTotalComboRevenue += comboRevenue;
+        grandTotalDone += doneCount;
+        grandTotalMissed += missedCount;
+        grandTotalDoneBonus += totalDoneBonus;
+        grandTotalSingleDone += singleDoneCount;
+        grandTotalComboLiveDone += comboLiveDoneCount;
+        grandTotalComboSold += comboSoldCount;
+        grandTotalComboRevenue += comboRevenue;
 
-      return {
-        rank: 1, // assigned after sorting
-        bookerId,
-        displayName: String(r.displayName || `BK #${r.bookerId}`),
-        avatar: r.avatar ? String(r.avatar) : null,
-        store: String(r.store || 'PXL'),
-        doneCount,
-        missedCount,
-        doneRatePercent,
-        missedRatePercent,
-        basicBonus,
-        promoBonus,
-        milestoneBonus,
-        penaltyBonus,
-        totalDoneBonus,
-        singleDoneCount,
-        comboLiveDoneCount,
-        comboSoldCount,
-        comboRevenue,
-        singleToComboRate,
+        return {
+          rank: 1, // assigned after sorting
+          bookerId,
+          displayName: String(r.displayName || `BK #${r.bookerId}`),
+          avatar: r.avatar ? String(r.avatar) : null,
+          store: String(r.store || 'PXL'),
+          doneCount,
+          missedCount,
+          doneRatePercent,
+          missedRatePercent,
+          basicBonus,
+          promoBonus,
+          milestoneBonus,
+          penaltyBonus,
+          totalDoneBonus,
+          singleDoneCount,
+          comboLiveDoneCount,
+          comboSoldCount,
+          comboRevenue,
+          singleToComboRate,
+        };
+      });
+
+      // Invariant BK-005: Sort primarily by singleDoneCount DESC, then doneCount DESC
+      entries.sort((a, b) => (b.singleDoneCount ?? 0) - (a.singleDoneCount ?? 0) || b.doneCount - a.doneCount);
+      entries.forEach((e, idx) => {
+        e.rank = idx + 1;
+      });
+
+      const avgDoneRate =
+        entries.length > 0
+          ? Number((entries.reduce((acc, l) => acc + l.doneRatePercent, 0) / entries.length).toFixed(1))
+          : 0;
+
+      const avgMissedRate =
+        entries.length > 0
+          ? Number((entries.reduce((acc, l) => acc + l.missedRatePercent, 0) / entries.length).toFixed(1))
+          : 0;
+
+      const grandSingleToComboRate =
+        grandTotalSingleDone > 0 ? Number(((grandTotalComboSold / grandTotalSingleDone) * 100).toFixed(1)) : 0;
+
+      const payload: BkDoneLeaderboardResult = {
+        leaderboard: entries,
+        summary: {
+          totalDone: grandTotalDone,
+          totalMissed: grandTotalMissed,
+          avgDoneRate,
+          avgMissedRate,
+          totalDoneBonus: grandTotalDoneBonus,
+          totalSingleDone: grandTotalSingleDone,
+          totalComboLiveDone: grandTotalComboLiveDone,
+          totalComboSold: grandTotalComboSold,
+          comboRevenue: grandTotalComboRevenue,
+          singleToComboRate: grandSingleToComboRate,
+        },
       };
-    });
 
-    // Invariant BK-005: Sort primarily by singleDoneCount DESC, then doneCount DESC
-    entries.sort((a, b) => (b.singleDoneCount ?? 0) - (a.singleDoneCount ?? 0) || b.doneCount - a.doneCount);
-    entries.forEach((e, idx) => {
-      e.rank = idx + 1;
-    });
+      if (!skipCache) {
+        fastify.cache?.set(cacheKey, payload, 120_000);
+      }
 
-    const avgDoneRate =
-      entries.length > 0
-        ? Number((entries.reduce((acc, l) => acc + l.doneRatePercent, 0) / entries.length).toFixed(1))
-        : 0;
-
-    const avgMissedRate =
-      entries.length > 0
-        ? Number((entries.reduce((acc, l) => acc + l.missedRatePercent, 0) / entries.length).toFixed(1))
-        : 0;
-
-    const grandSingleToComboRate =
-      grandTotalSingleDone > 0 ? Number(((grandTotalComboSold / grandTotalSingleDone) * 100).toFixed(1)) : 0;
-
-    const payload: BkDoneLeaderboardResult = {
-      leaderboard: entries,
-      summary: {
-        totalDone: grandTotalDone,
-        totalMissed: grandTotalMissed,
-        avgDoneRate,
-        avgMissedRate,
-        totalDoneBonus: grandTotalDoneBonus,
-        totalSingleDone: grandTotalSingleDone,
-        totalComboLiveDone: grandTotalComboLiveDone,
-        totalComboSold: grandTotalComboSold,
-        comboRevenue: grandTotalComboRevenue,
-        singleToComboRate: grandSingleToComboRate,
-      },
+      return payload;
     };
 
     if (!skipCache) {
-      fastify.cache?.set(cacheKey, payload, 60_000);
+      const promise = compute().finally(() => {
+        inFlightDoneLeaderboardPromises.delete(cacheKey);
+      });
+      inFlightDoneLeaderboardPromises.set(cacheKey, promise);
+      return promise;
     }
 
-    return payload;
+    return compute();
   }
 
   /**

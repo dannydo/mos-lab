@@ -45,6 +45,8 @@ import {
 } from '../services/bk-booking.service.js';
 import { BkLeaderboardService } from '../services/bk-leaderboard.service.js';
 
+const inFlightDoneDetailsPromises = new Map<string, Promise<SafeAny>>();
+
 export async function registerBkRoutes(fastify: FastifyInstance) {
   // 1. Booking Leaderboard
   fastify.get('/kpi/bk/booking/leaderboard', { preHandler: [requireAuth] }, async (request, reply) => {
@@ -300,14 +302,34 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
     const startPart = startStr.includes('T') ? startStr.split('T')[0] : startStr;
     const endPart = endStr.includes('T') ? endStr.split('T')[0] : endStr;
 
-    try {
+    const requestedStatus = (status || 'ALL').toUpperCase();
+    const statusParam = ['ALL', 'COMPLETED', 'SINGLE', 'COMBO_LIVE', 'COMBO_SOLD', 'MISSED', 'TIP', 'COMBO'].includes(
+      requestedStatus
+    )
+      ? requestedStatus
+      : 'ALL';
+
+    const canViewPhone = !shouldMaskCustomerPhone(request.user?.role);
+    const cacheKey = `bk:done:details:${startPart}:${endPart}:${bookerId || 'ALL'}:${storeId || 'ALL'}:${statusParam}:${canViewPhone ? 'full' : 'masked'}`;
+
+    const cached = fastify.cache?.get<SafeAny>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const inFlight = inFlightDoneDetailsPromises.get(cacheKey);
+    if (inFlight) {
+      return inFlight;
+    }
+
+    const compute = async () => {
       const activeTelesalesIds = await getActiveBkTelesalesIds(fastify);
       if (activeTelesalesIds.length === 0) {
-        return reply.send({
+        return {
           data: [],
           total: 0,
           summary: { totalDone: 0, avgDoneRate: 0, totalDoneBonus: 0 },
-        });
+        };
       }
 
       let targetBkIds = activeTelesalesIds;
@@ -315,11 +337,11 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       if (bookerId && bookerId !== 'ALL') {
         const requestedBookerId = Number(bookerId);
         if (!activeTelesalesIds.includes(requestedBookerId)) {
-          return reply.send({
+          return {
             data: [],
             total: 0,
             summary: { totalDone: 0, avgDoneRate: 0, totalDoneBonus: 0 },
-          });
+          };
         }
         targetBkIds = [requestedBookerId];
         bookerFilter = `AND o.created_staff_id = ${requestedBookerId}`;
@@ -331,13 +353,6 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       if (storeId && storeId !== 'ALL') {
         storeFilter = `AND UPPER(cs.client_store_key) = '${storeId.toUpperCase()}'`;
       }
-
-      const requestedStatus = (status || 'ALL').toUpperCase();
-      const statusParam = ['ALL', 'COMPLETED', 'SINGLE', 'COMBO_LIVE', 'COMBO_SOLD', 'MISSED', 'TIP', 'COMBO'].includes(
-        requestedStatus
-      )
-        ? requestedStatus
-        : 'ALL';
       let stateCondition = '';
       let dateField = 'COALESCE(ro.actual_booking_date_start, o.booking_date_start)';
 
@@ -496,7 +511,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
 
       const singleToComboRate = totalSingleDone > 0 ? Number(((totalComboSold / totalSingleDone) * 100).toFixed(1)) : 0;
 
-      return {
+      const payload = {
         data,
         total: data.length,
         summary: {
@@ -510,6 +525,17 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           singleToComboRate,
         },
       };
+
+      fastify.cache?.set(cacheKey, payload, 120_000);
+      return payload;
+    };
+
+    try {
+      const promise = compute().finally(() => {
+        inFlightDoneDetailsPromises.delete(cacheKey);
+      });
+      inFlightDoneDetailsPromises.set(cacheKey, promise);
+      return await promise;
     } catch (err: SafeAny) {
       fastify.log.error(err as SafeAny, 'Error fetching BK done details');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Lỗi tải chi tiết Done.' });
