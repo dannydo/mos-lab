@@ -13,7 +13,7 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
   // 1. Get Overview Metrics
   fastify.get('/kpi/telesale-target', { preHandler: [requireAuth] }, async (request, reply) => {
     const { month, skipCache } = request.query as { month?: string; skipCache?: string | boolean };
-    const user = (request as any).user;
+    const user = (request as SafeAny).user;
     const currentStaffId = user?.staffId || user?.id;
 
     try {
@@ -21,7 +21,7 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
         skipCache: skipCache === 'true' || skipCache === true,
       });
       return reply.send(data);
-    } catch (err: any) {
+    } catch (err: SafeAny) {
       fastify.log.error(`Failed to get telesale target overview: ${err.message}`);
       return reply.status(500).send({ error: err.message || 'Internal Server Error' });
     }
@@ -32,7 +32,7 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
     try {
       const months = await TelesaleTargetService.listConfiguredMonths(fastify);
       return reply.send({ months });
-    } catch (err: any) {
+    } catch (err: SafeAny) {
       fastify.log.error(`Failed to list telesale months: ${err.message}`);
       return reply.status(500).send({ error: err.message || 'Internal Server Error' });
     }
@@ -51,7 +51,7 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
 
       const cloned = await TelesaleTargetService.cloneConfig(fastify, sourceMonth, targetMonth, Boolean(overwrite));
       return reply.send({ success: true, config: cloned });
-    } catch (err: any) {
+    } catch (err: SafeAny) {
       fastify.log.error(`Failed to clone telesale target config: ${err.message}`);
       return reply.status(400).send({ error: err.message });
     }
@@ -68,7 +68,7 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
 
       const saved = await TelesaleTargetService.saveConfig(fastify, body);
       return reply.send({ success: true, config: saved });
-    } catch (err: any) {
+    } catch (err: SafeAny) {
       fastify.log.error(`Failed to save telesale target config: ${err.message}`);
       return reply.status(400).send({ error: err.message });
     }
@@ -85,7 +85,7 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
 
       const updated = await TelesaleTargetService.selectTeam(fastify, month, teamCode);
       return reply.send({ success: true, config: updated });
-    } catch (err: any) {
+    } catch (err: SafeAny) {
       fastify.log.error(`Failed to select team for telesale target: ${err.message}`);
       return reply.status(400).send({ error: err.message });
     }
@@ -117,14 +117,14 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
         parsedOffset
       );
       return reply.send(pool);
-    } catch (err: any) {
+    } catch (err: SafeAny) {
       fastify.log.error(`Failed to get customer pool: ${err.message}`);
       return reply.status(500).send({ error: err.message || 'Internal Server Error' });
     }
   });
 
   // 5. Realtime WebSocket stream for TV Monitor Live Celebration & Pacing
-  const tvSockets = new Set<any>();
+  const tvSockets = new Set<SafeAny>();
 
   fastify.get('/kpi/telesale-target/stream', { websocket: true }, (socket) => {
     tvSockets.add(socket);
@@ -134,7 +134,7 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
       // ignore
     }
 
-    socket.on('message', (raw: any) => {
+    socket.on('message', (raw: SafeAny) => {
       try {
         const msg = JSON.parse(raw.toString());
         if (msg.type === 'PING') {
@@ -188,7 +188,7 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
         quoteOptions
       );
       return reply.send(result);
-    } catch (err: any) {
+    } catch (err: SafeAny) {
       fastify.log.error(`Failed to generate celebration quote: ${err.message}`);
       const fallback = TelesaleTargetService.getFallbackCelebrationQuoteWithPersona(
         safeType,
@@ -224,7 +224,7 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
         .header('Accept-Ranges', 'bytes')
         .header('Cache-Control', 'public, max-age=86400')
         .send(audioBuffer);
-    } catch (err: any) {
+    } catch (err: SafeAny) {
       fastify.log.error(`Failed to synthesize celebration audio: ${err.message}`);
       return reply.status(500).send({ error: 'Failed to synthesize celebration audio' });
     }
@@ -232,7 +232,7 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
 
   // 8. TV Monitor Live Journal (Nhật ký TV Monitor - Manager/Admin Only)
   fastify.get('/kpi/telesale-target/tv-journal', { preHandler: [requireAuth] }, async (request, reply) => {
-    const user = (request as any).user;
+    const user = (request as SafeAny).user;
     const isManagerOrAdmin = isAdminOrSuperAdminRole(user?.role) || user?.role === 'manager';
 
     if (!isManagerOrAdmin) {
@@ -245,7 +245,7 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
     try {
       const journal = await TelesaleTargetService.getTvJournal(fastify, date);
       return reply.send(journal);
-    } catch (err: any) {
+    } catch (err: SafeAny) {
       fastify.log.error(`Failed to get TV journal: ${err.message}`);
       return reply.status(500).send({ error: err.message || 'Internal Server Error' });
     }
@@ -257,7 +257,7 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
     try {
       const result = TelesaleTargetService.recordTvJournalSync(records || []);
       return reply.send(result);
-    } catch (err: any) {
+    } catch (err: SafeAny) {
       fastify.log.error(`Failed to sync TV journal execution status: ${err.message}`);
       return reply.status(500).send({ error: err.message || 'Internal Server Error' });
     }

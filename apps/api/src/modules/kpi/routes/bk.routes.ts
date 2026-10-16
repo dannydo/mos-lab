@@ -337,8 +337,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       }
 
       let targetBkIds = activeTelesalesIds;
-      let bookerFilter = '';
-      if (bookerId && bookerId !== 'ALL') {
+      const isSpecificBooker = Boolean(bookerId && bookerId !== 'ALL');
+      if (isSpecificBooker) {
         const requestedBookerId = Number(bookerId);
         if (!activeTelesalesIds.includes(requestedBookerId)) {
           return {
@@ -348,10 +348,11 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           };
         }
         targetBkIds = [requestedBookerId];
-        bookerFilter = `AND o.created_staff_id = ${requestedBookerId}`;
-      } else {
-        bookerFilter = `AND o.created_staff_id IN (${targetBkIds.join(',')})`;
       }
+
+      const bookerFilter = isSpecificBooker
+        ? `AND o.created_staff_id = ${Number(bookerId)}`
+        : `AND o.created_staff_id IN (${targetBkIds.join(',')})`;
 
       let storeFilter = '';
       if (storeId && storeId !== 'ALL') {
