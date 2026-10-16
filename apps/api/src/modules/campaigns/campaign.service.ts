@@ -2377,18 +2377,18 @@ export class CampaignService {
         const computedAt = this.campaignStatsComputedAt.get(cacheKey) || now;
         const age = now - computedAt;
 
-        // 1. FRESH (< 60s): Return directly from RAM, no background revalidation needed
-        if (age < 60_000) {
+        // 1. FRESH (< 300s / 5m): Return directly from RAM, no background revalidation needed
+        if (age < 300_000) {
           return cached;
         }
 
-        // 2. STALE-WHILE-REVALIDATE (60s - 300s): Return immediately (0ms) and revalidate in background
+        // 2. STALE-WHILE-REVALIDATE (5m - 30m): Return immediately (0ms) and revalidate in background
         if (!this.inFlightCampaignStatsPromises.has(cacheKey)) {
           const revalidatePromise = (async () => {
             try {
               const freshStats = await this.computeCampaignStats(fastify, campaignId, restrictToAssignedStaffId);
               this.campaignStatsComputedAt.set(cacheKey, Date.now());
-              fastify.cache?.set(cacheKey, freshStats, 300_000);
+              fastify.cache?.set(cacheKey, freshStats, 1_800_000);
               return freshStats;
             } catch (err: unknown) {
               const errMsg = err instanceof Error ? err.message : String(err);
@@ -2417,7 +2417,7 @@ export class CampaignService {
       try {
         const stats = await this.computeCampaignStats(fastify, campaignId, restrictToAssignedStaffId);
         this.campaignStatsComputedAt.set(cacheKey, Date.now());
-        fastify.cache?.set(cacheKey, stats, 300_000);
+        fastify.cache?.set(cacheKey, stats, 1_800_000);
         return stats;
       } finally {
         this.inFlightCampaignStatsPromises.delete(cacheKey);
@@ -2479,21 +2479,44 @@ export class CampaignService {
     // Calculate completed bookings and revenue for campaign customers after addedAt
     // Use SQL aggregate instead of fetching all rows into memory
     const customerAddedMap = new Map(customers.map((c) => [c.legacyUserId, c.addedAt]));
-    const idListStr = customerIds.join(',');
 
-    const orderAgg: Array<{ userId: number; cnt: number; rev: number; minDate: Date | null }> =
-      customerIds.length > 0
-        ? await fastify.prisma.legacy.$queryRawUnsafe(`
-            SELECT
-              user_id AS userId,
-              COUNT(id) AS cnt,
-              COALESCE(SUM(total_price), 0) AS rev,
-              MIN(date_created) AS minDate
-            FROM \`order\`
-            WHERE user_id IN (${idListStr}) AND order_state = 'Completed'
-            GROUP BY user_id
-          `)
-        : [];
+    let minOrderDate: Date | null = campaign.startDate || campaign.createdAt || null;
+    for (const c of customers) {
+      if (c.addedAt && (!minOrderDate || c.addedAt < minOrderDate)) {
+        minOrderDate = c.addedAt;
+      }
+    }
+    const minDateStr = minOrderDate
+      ? new Date(minOrderDate).toISOString().replace('T', ' ').slice(0, 19)
+      : '2026-01-01 00:00:00';
+
+    // Chunk customerIds into batches of 500 to keep IN (...) lists performant and avoid lock contention
+    const CHUNK_SIZE = 500;
+    const chunks: number[][] = [];
+    for (let i = 0; i < customerIds.length; i += CHUNK_SIZE) {
+      chunks.push(customerIds.slice(i, i + CHUNK_SIZE));
+    }
+
+    const orderAggResults = await Promise.all(
+      chunks.map((chunk) => {
+        const idListStr = chunk.join(',');
+        return fastify.prisma.legacy.$queryRawUnsafe<
+          Array<{ userId: number; cnt: number; rev: number; minDate: Date | null }>
+        >(`
+          SELECT
+            user_id AS userId,
+            COUNT(id) AS cnt,
+            COALESCE(SUM(total_price), 0) AS rev,
+            MIN(date_created) AS minDate
+          FROM \`order\`
+          WHERE user_id IN (${idListStr})
+            AND order_state = 'Completed'
+            AND date_created >= '${minDateStr}'
+          GROUP BY user_id
+        `);
+      })
+    );
+    const orderAgg = orderAggResults.flat();
 
     const bookedUserSet = new Set<number>();
     let campaignRevenue = 0;
@@ -2904,18 +2927,18 @@ export class CampaignService {
         const computedAt = this.sharedPoolOverviewComputedAt.get(cacheKey) || now;
         const age = now - computedAt;
 
-        // 1. FRESH (< 60s): Return directly from RAM, no background revalidation needed
-        if (age < 60_000) {
+        // 1. FRESH (< 180s / 3m): Return directly from RAM, no background revalidation needed
+        if (age < 180_000) {
           return cached;
         }
 
-        // 2. STALE-WHILE-REVALIDATE (60s - 300s): Return immediately (0ms) and revalidate in background
+        // 2. STALE-WHILE-REVALIDATE (3m - 30m): Return immediately (0ms) and revalidate in background
         if (!this.inFlightSharedPoolOverviewPromises.has(cacheKey)) {
           const revalidatePromise = (async () => {
             try {
               const freshOverview = await this.computeSharedPoolOverview(fastify, campaignId, batchNumberParam);
               this.sharedPoolOverviewComputedAt.set(cacheKey, Date.now());
-              fastify.cache?.set(cacheKey, freshOverview, 300_000);
+              fastify.cache?.set(cacheKey, freshOverview, 1_800_000);
               return freshOverview;
             } catch (err: unknown) {
               const errMsg = err instanceof Error ? err.message : String(err);
@@ -2944,7 +2967,7 @@ export class CampaignService {
       try {
         const overview = await this.computeSharedPoolOverview(fastify, campaignId, batchNumberParam);
         this.sharedPoolOverviewComputedAt.set(cacheKey, Date.now());
-        fastify.cache?.set(cacheKey, overview, 300_000);
+        fastify.cache?.set(cacheKey, overview, 1_800_000);
         return overview;
       } finally {
         this.inFlightSharedPoolOverviewPromises.delete(cacheKey);

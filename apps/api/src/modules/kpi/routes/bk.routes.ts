@@ -46,6 +46,10 @@ import {
 import { BkLeaderboardService } from '../services/bk-leaderboard.service.js';
 
 const inFlightDoneDetailsPromises = new Map<string, Promise<SafeAny>>();
+const inFlightTipLeaderboardPromises = new Map<string, Promise<SafeAny>>();
+const inFlightTipDetailsPromises = new Map<string, Promise<SafeAny>>();
+const bkTipLeaderboardComputedAt = new Map<string, number>();
+const bkTipDetailsComputedAt = new Map<string, number>();
 
 export async function registerBkRoutes(fastify: FastifyInstance) {
   // 1. Booking Leaderboard
@@ -572,85 +576,135 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         storeFilter = `AND UPPER(cs.client_store_key) = '${storeId.toUpperCase()}'`;
       }
 
-      const sql = `
-        SELECT 
-          up.user_id as bookerId,
-          up.full_name as displayName,
-          up.avatar as avatar,
-          UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
-          COUNT(DISTINCT o.id) as totalBookingsCount,
-          COUNT(DISTINCT CASE WHEN o.customer_tip_100 > 0 THEN o.id END) as tippedBookingsCount,
-          COALESCE(SUM(o.customer_tip_100), 0) as totalCustomerTip
-        FROM \`user_profile\` up
-        LEFT JOIN \`client_store\` cs ON cs.id = up.client_store_id
-        LEFT JOIN (
+      const computeLeaderboard = async () => {
+        const sql = `
           SELECT 
-            o.id,
-            o.created_staff_id,
-            MAX(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE st.tip_amount END) as customer_tip_100
-          FROM \`order\` o
-          JOIN staff_tip st ON st.order_id = o.id AND st.tip_amount > 0
-          LEFT JOIN report_order ro ON o.id = ro.order_id
-          WHERE o.order_state = 'Completed'
-            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
-            AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
-            ${storeFilter}
-          GROUP BY o.id, o.created_staff_id
-        ) o ON o.created_staff_id = up.user_id
-        WHERE up.user_id IN (${bkIdsStr})
-        GROUP BY up.user_id, up.full_name, up.avatar, cs.client_store_key
-        ORDER BY totalCustomerTip DESC
-      `;
+            up.user_id as bookerId,
+            up.full_name as displayName,
+            up.avatar as avatar,
+            UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
+            COUNT(DISTINCT o.id) as totalBookingsCount,
+            COUNT(DISTINCT CASE WHEN o.customer_tip_100 > 0 THEN o.id END) as tippedBookingsCount,
+            COALESCE(SUM(o.customer_tip_100), 0) as totalCustomerTip
+          FROM \`user_profile\` up
+          LEFT JOIN \`client_store\` cs ON cs.id = up.client_store_id
+          LEFT JOIN (
+            SELECT 
+              o.id,
+              o.created_staff_id,
+              MAX(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE st.tip_amount END) as customer_tip_100
+            FROM \`order\` o
+            JOIN staff_tip st ON st.order_id = o.id AND st.tip_amount > 0
+            LEFT JOIN report_order ro ON o.id = ro.order_id
+            WHERE o.order_state = 'Completed'
+              AND (
+                (ro.actual_booking_date_start >= '${startPart} 00:00:00' AND ro.actual_booking_date_start <= '${endPart} 23:59:59')
+                OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${startPart} 00:00:00' AND o.booking_date_start <= '${endPart} 23:59:59')
+              )
+              ${storeFilter}
+            GROUP BY o.id, o.created_staff_id
+          ) o ON o.created_staff_id = up.user_id
+          WHERE up.user_id IN (${bkIdsStr})
+          GROUP BY up.user_id, up.full_name, up.avatar, cs.client_store_key
+          ORDER BY totalCustomerTip DESC
+        `;
+
+        const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql);
+
+        let rank = 1;
+        let grandTotalBookings = 0;
+        let grandTippedBookings = 0;
+        let grandTotalCustomerTip = 0;
+        let grandTotalBkTipBonus = 0;
+
+        const leaderboard: BkTipLeaderboardEntry[] = rows.map((r) => {
+          const totalBookingsCount = Number(r.totalBookingsCount || 0);
+          const tippedBookingsCount = Number(r.tippedBookingsCount || 0);
+          const totalCustomerTip = Number(r.totalCustomerTip || 0);
+          const totalBkTipBonus = Math.round((totalCustomerTip * (config.tipsPercent || 7)) / 100);
+
+          grandTotalBookings += totalBookingsCount;
+          grandTippedBookings += tippedBookingsCount;
+          grandTotalCustomerTip += totalCustomerTip;
+          grandTotalBkTipBonus += totalBkTipBonus;
+
+          return {
+            rank: rank++,
+            bookerId: Number(r.bookerId),
+            displayName: String(r.displayName || `BK #${r.bookerId}`),
+            avatar: r.avatar ? String(r.avatar) : null,
+            store: String(r.store || 'PXL'),
+            totalBookingsCount,
+            tippedBookingsCount,
+            totalCustomerTip,
+            totalBkTipBonus,
+          };
+        });
+
+        return {
+          leaderboard,
+          summary: {
+            totalBookingsCount: grandTotalBookings,
+            tippedBookingsCount: grandTippedBookings,
+            totalCustomerTip: grandTotalCustomerTip,
+            totalBkTipBonus: grandTotalBkTipBonus,
+          },
+        };
+      };
 
       const cacheKey = `bk:tip:leaderboard:${startPart}:${endPart}:${storeId || 'ALL'}`;
+      const now = Date.now();
+
       const cached = fastify.cache?.get<SafeAny>(cacheKey);
       if (cached) {
+        const computedAt = bkTipLeaderboardComputedAt.get(cacheKey) || now;
+        const age = now - computedAt;
+
+        // 1. FRESH (< 120s / 2m): Return directly from RAM
+        if (age < 120_000) {
+          return cached;
+        }
+
+        // 2. STALE-WHILE-REVALIDATE (2m - 10m): Return immediately (0ms) and revalidate in background
+        if (!inFlightTipLeaderboardPromises.has(cacheKey)) {
+          const revalidatePromise = (async () => {
+            try {
+              const fresh = await computeLeaderboard();
+              bkTipLeaderboardComputedAt.set(cacheKey, Date.now());
+              fastify.cache?.set(cacheKey, fresh, 600_000);
+              return fresh;
+            } catch (err: SafeAny) {
+              fastify.log.warn({ err }, '[BkTipLeaderboard] Background revalidation failed');
+              return cached;
+            } finally {
+              inFlightTipLeaderboardPromises.delete(cacheKey);
+            }
+          })();
+          inFlightTipLeaderboardPromises.set(cacheKey, revalidatePromise);
+        }
+
         return cached;
       }
 
-      const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql);
+      // 3. CACHE MISS: Single-flight deduplication
+      const inFlight = inFlightTipLeaderboardPromises.get(cacheKey);
+      if (inFlight) {
+        return await inFlight;
+      }
 
-      let rank = 1;
-      let grandTotalBookings = 0;
-      let grandTippedBookings = 0;
-      let grandTotalCustomerTip = 0;
-      let grandTotalBkTipBonus = 0;
+      const computePromise = (async () => {
+        try {
+          const fresh = await computeLeaderboard();
+          bkTipLeaderboardComputedAt.set(cacheKey, Date.now());
+          fastify.cache?.set(cacheKey, fresh, 600_000);
+          return fresh;
+        } finally {
+          inFlightTipLeaderboardPromises.delete(cacheKey);
+        }
+      })();
 
-      const leaderboard: BkTipLeaderboardEntry[] = rows.map((r) => {
-        const totalBookingsCount = Number(r.totalBookingsCount || 0);
-        const tippedBookingsCount = Number(r.tippedBookingsCount || 0);
-        const totalCustomerTip = Number(r.totalCustomerTip || 0);
-        const totalBkTipBonus = Math.round((totalCustomerTip * (config.tipsPercent || 7)) / 100);
-
-        grandTotalBookings += totalBookingsCount;
-        grandTippedBookings += tippedBookingsCount;
-        grandTotalCustomerTip += totalCustomerTip;
-        grandTotalBkTipBonus += totalBkTipBonus;
-
-        return {
-          rank: rank++,
-          bookerId: Number(r.bookerId),
-          displayName: String(r.displayName || `BK #${r.bookerId}`),
-          avatar: r.avatar ? String(r.avatar) : null,
-          store: String(r.store || 'PXL'),
-          totalBookingsCount,
-          tippedBookingsCount,
-          totalCustomerTip,
-          totalBkTipBonus,
-        };
-      });
-
-      const responsePayload = {
-        leaderboard,
-        summary: {
-          totalBookingsCount: grandTotalBookings,
-          tippedBookingsCount: grandTippedBookings,
-          totalCustomerTip: grandTotalCustomerTip,
-          totalBkTipBonus: grandTotalBkTipBonus,
-        },
-      };
-      fastify.cache?.set(cacheKey, responsePayload, 120_000);
-      return responsePayload;
+      inFlightTipLeaderboardPromises.set(cacheKey, computePromise);
+      return await computePromise;
     } catch (err: SafeAny) {
       fastify.log.error(err as SafeAny, 'Error fetching BK tip leaderboard');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Lỗi tải Leaderboard BK Tip.' });
@@ -687,76 +741,126 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         storeFilter = `AND UPPER(cs.client_store_key) = '${storeId.toUpperCase()}'`;
       }
 
-      const sql = `
-        SELECT 
-          o.id as orderId,
-          COALESCE(ro.actual_booking_date_start, o.booking_date_start) as checkinTime,
-          COALESCE(up_c.full_name, 'Khách hàng') as clientName,
-          up_c.avatar as clientAvatar,
-          UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
-          COALESCE(up_b.full_name, 'Booker') as bookerName,
-          up_b.avatar as bookerAvatar,
-          COALESCE(MAX(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE st.tip_amount END), 0) as totalCustomerTip
-        FROM \`order\` o
-        JOIN staff_tip st ON st.order_id = o.id AND st.tip_amount > 0
-        LEFT JOIN report_order ro ON o.id = ro.order_id
-        LEFT JOIN \`user_profile\` up_c ON up_c.user_id = o.user_id
-        LEFT JOIN \`user_profile\` up_b ON up_b.user_id = o.created_staff_id
-        LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
-        WHERE COALESCE(ro.actual_booking_date_start, o.booking_date_start) >= '${startPart} 00:00:00' 
-          AND COALESCE(ro.actual_booking_date_start, o.booking_date_start) <= '${endPart} 23:59:59'
-          AND o.order_state = 'Completed'
-          ${bookerFilter}
-          ${storeFilter}
-        GROUP BY o.id, ro.actual_booking_date_start, o.booking_date_start, up_c.full_name, up_c.avatar, cs.client_store_key, up_b.full_name, up_b.avatar
-        ORDER BY checkinTime DESC
-        LIMIT 500
-      `;
+      const computeDetails = async () => {
+        const sql = `
+          SELECT 
+            o.id as orderId,
+            COALESCE(ro.actual_booking_date_start, o.booking_date_start) as checkinTime,
+            COALESCE(up_c.full_name, 'Khách hàng') as clientName,
+            up_c.avatar as clientAvatar,
+            UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
+            COALESCE(up_b.full_name, 'Booker') as bookerName,
+            up_b.avatar as bookerAvatar,
+            COALESCE(MAX(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE st.tip_amount END), 0) as totalCustomerTip
+          FROM \`order\` o
+          JOIN staff_tip st ON st.order_id = o.id AND st.tip_amount > 0
+          LEFT JOIN report_order ro ON o.id = ro.order_id
+          LEFT JOIN \`user_profile\` up_c ON up_c.user_id = o.user_id
+          LEFT JOIN \`user_profile\` up_b ON up_b.user_id = o.created_staff_id
+          LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
+          WHERE o.order_state = 'Completed'
+            AND (
+              (ro.actual_booking_date_start >= '${startPart} 00:00:00' AND ro.actual_booking_date_start <= '${endPart} 23:59:59')
+              OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${startPart} 00:00:00' AND o.booking_date_start <= '${endPart} 23:59:59')
+            )
+            ${bookerFilter}
+            ${storeFilter}
+          GROUP BY o.id, ro.actual_booking_date_start, o.booking_date_start, up_c.full_name, up_c.avatar, cs.client_store_key, up_b.full_name, up_b.avatar
+          ORDER BY checkinTime DESC
+          LIMIT 500
+        `;
+
+        const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql);
+
+        let totalCustomerTipSum = 0;
+        let totalBkTipBonusSum = 0;
+
+        const data: BkTipRecord[] = rows.map((r) => {
+          const totalCustomerTip = Number(r.totalCustomerTip || 0);
+          const bkTipAmount = Math.round((totalCustomerTip * (config.tipsPercent || 7)) / 100);
+
+          totalCustomerTipSum += totalCustomerTip;
+          totalBkTipBonusSum += bkTipAmount;
+
+          return {
+            orderId: Number(r.orderId),
+            checkinTime: r.checkinTime ? new Date(r.checkinTime).toISOString() : '',
+            clientName: String(r.clientName),
+            clientAvatar: r.clientAvatar ? String(r.clientAvatar) : null,
+            store: String(r.store),
+            bookerName: String(r.bookerName),
+            bookerAvatar: r.bookerAvatar ? String(r.bookerAvatar) : null,
+            totalCustomerTip,
+            bkTipAmount,
+            bkTipPercentage: config.tipsPercent || 7,
+          };
+        });
+
+        return {
+          data,
+          total: data.length,
+          summary: {
+            totalBookingsCount: data.length,
+            tippedBookingsCount: data.length,
+            totalCustomerTip: totalCustomerTipSum,
+            totalBkTipBonus: totalBkTipBonusSum,
+          },
+        };
+      };
 
       const cacheKey = `bk:tip:details:${startPart}:${endPart}:${bookerId || 'ALL'}:${storeId || 'ALL'}`;
+      const now = Date.now();
+
       const cached = fastify.cache?.get<SafeAny>(cacheKey);
       if (cached) {
+        const computedAt = bkTipDetailsComputedAt.get(cacheKey) || now;
+        const age = now - computedAt;
+
+        // 1. FRESH (< 120s / 2m): Return directly from RAM
+        if (age < 120_000) {
+          return cached;
+        }
+
+        // 2. STALE-WHILE-REVALIDATE (2m - 10m): Return immediately (0ms) and revalidate in background
+        if (!inFlightTipDetailsPromises.has(cacheKey)) {
+          const revalidatePromise = (async () => {
+            try {
+              const fresh = await computeDetails();
+              bkTipDetailsComputedAt.set(cacheKey, Date.now());
+              fastify.cache?.set(cacheKey, fresh, 600_000);
+              return fresh;
+            } catch (err: SafeAny) {
+              fastify.log.warn({ err }, '[BkTipDetails] Background revalidation failed');
+              return cached;
+            } finally {
+              inFlightTipDetailsPromises.delete(cacheKey);
+            }
+          })();
+          inFlightTipDetailsPromises.set(cacheKey, revalidatePromise);
+        }
+
         return cached;
       }
 
-      const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql);
+      // 3. CACHE MISS: Single-flight deduplication
+      const inFlight = inFlightTipDetailsPromises.get(cacheKey);
+      if (inFlight) {
+        return await inFlight;
+      }
 
-      let totalCustomerTipSum = 0;
-      let totalBkTipBonusSum = 0;
+      const computePromise = (async () => {
+        try {
+          const fresh = await computeDetails();
+          bkTipDetailsComputedAt.set(cacheKey, Date.now());
+          fastify.cache?.set(cacheKey, fresh, 600_000);
+          return fresh;
+        } finally {
+          inFlightTipDetailsPromises.delete(cacheKey);
+        }
+      })();
 
-      const data: BkTipRecord[] = rows.map((r) => {
-        const totalCustomerTip = Number(r.totalCustomerTip || 0);
-        const bkTipAmount = Math.round((totalCustomerTip * (config.tipsPercent || 7)) / 100);
-
-        totalCustomerTipSum += totalCustomerTip;
-        totalBkTipBonusSum += bkTipAmount;
-
-        return {
-          orderId: Number(r.orderId),
-          checkinTime: r.checkinTime ? new Date(r.checkinTime).toISOString() : '',
-          clientName: String(r.clientName),
-          clientAvatar: r.clientAvatar ? String(r.clientAvatar) : null,
-          store: String(r.store),
-          bookerName: String(r.bookerName),
-          bookerAvatar: r.bookerAvatar ? String(r.bookerAvatar) : null,
-          totalCustomerTip,
-          bkTipAmount,
-          bkTipPercentage: config.tipsPercent || 7,
-        };
-      });
-
-      const responsePayload = {
-        data,
-        total: data.length,
-        summary: {
-          totalBookingsCount: data.length,
-          tippedBookingsCount: data.length,
-          totalCustomerTip: totalCustomerTipSum,
-          totalBkTipBonus: totalBkTipBonusSum,
-        },
-      };
-      fastify.cache?.set(cacheKey, responsePayload, 120_000);
-      return responsePayload;
+      inFlightTipDetailsPromises.set(cacheKey, computePromise);
+      return await computePromise;
     } catch (err: SafeAny) {
       fastify.log.error(err as SafeAny, 'Error fetching BK tip details');
       return reply.status(500).send({ error: 'Internal Server Error', message: 'Lỗi tải chi tiết BK Tip.' });
