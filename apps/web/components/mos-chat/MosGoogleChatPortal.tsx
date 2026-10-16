@@ -788,9 +788,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   });
   const [mobileActiveView, setMobileActiveView] = useState<'inbox' | 'conversation' | 'thread'>('inbox');
   const [mobileActionOpen, setMobileActionOpen] = useState<boolean>(false);
+  const [mobileActiveMsgId, setMobileActiveMsgId] = useState<string | null>(null);
+  const [heartFlyMsgId, setHeartFlyMsgId] = useState<string | null>(null);
+  const lastTapRef = useRef<{ msgId: string; time: number }>({ msgId: '', time: 0 });
 
   useEffect(() => {
     setMobileActionOpen(false);
+    setMobileActiveMsgId(null);
   }, [activeConvId]);
 
   useEffect(() => {
@@ -2838,6 +2842,32 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     setThreadOpen(true);
     if (isMobile) {
       setMobileActiveView('thread');
+    }
+  };
+
+  const handleMessageTap = (msgId: string, e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('a') || target.closest('input')) {
+      return;
+    }
+    const now = Date.now();
+    if (lastTapRef.current.msgId === msgId && now - lastTapRef.current.time < 380) {
+      // Double tap detected: Instant Heart reaction toggle
+      handleToggleReaction(msgId, '❤️');
+      setHeartFlyMsgId(msgId);
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        try {
+          navigator.vibrate?.(25);
+        } catch (_) {}
+      }
+      setTimeout(() => setHeartFlyMsgId((cur) => (cur === msgId ? null : cur)), 850);
+      lastTapRef.current = { msgId: '', time: 0 };
+    } else {
+      // Single tap: toggle mobile reaction bar
+      lastTapRef.current = { msgId, time: now };
+      if (isMobile) {
+        setMobileActiveMsgId((prev) => (prev === msgId ? null : msgId));
+      }
     }
   };
 
@@ -5163,9 +5193,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
                         {m.text && (
                           <div
-                            className={`inline-block text-left px-3.5 py-2 rounded-2xl ${
+                            onClick={(e) => handleMessageTap(m.id, e)}
+                            className={`relative inline-block text-left px-3.5 py-2 rounded-2xl ${
                               isMine ? 'rounded-tr-sm' : 'rounded-tl-sm'
-                            } text-[13px] leading-relaxed whitespace-pre-wrap break-words max-w-[85%]`}
+                            } text-[13px] leading-relaxed whitespace-pre-wrap break-words max-w-[85%] cursor-pointer select-none active:scale-[0.985] transition-all`}
                             style={{
                               background: isMine
                                 ? isDark
@@ -5183,6 +5214,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             }}
                           >
                             {m.text}
+
+                            {/* Floating Heart Burst on Double-Tap */}
+                            {heartFlyMsgId === m.id && (
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30 select-none overflow-hidden">
+                                <span className="text-[38px] drop-shadow-xl animate-heart-burst leading-none">❤️</span>
+                              </div>
+                            )}
                           </div>
                         )}
 
@@ -5404,10 +5442,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
                           {/* Adjacent Quick Emoji & Action Bar (placed right next to reaction pills) */}
                           <div
-                            className="opacity-0 group-hover:opacity-100 focus-within:opacity-100 pointer-events-none group-hover:pointer-events-auto focus-within:pointer-events-auto transition-opacity inline-flex items-center gap-0.5 px-1 py-0.5 rounded-full shadow-sm"
+                            className={`${
+                              mobileActiveMsgId === m.id
+                                ? 'opacity-100 pointer-events-auto scale-100 ring-1 ring-amber-500/50 shadow-md'
+                                : 'opacity-0 pointer-events-none'
+                            } group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-all inline-flex items-center gap-0.5 px-1 py-0.5 rounded-full shadow-sm`}
                             style={{
                               background: surfaceRaised,
-                              border: `1px solid ${borderStrong}`,
+                              border: `1px solid ${mobileActiveMsgId === m.id ? 'rgba(212, 168, 75, 0.6)' : borderStrong}`,
                             }}
                           >
                             {GOOGLE_CHAT_QUICK_EMOJIS.map((emoji) => {

@@ -237,11 +237,12 @@ export class AgChatBridgeService {
 
       await execFile(command, args, { timeout: AGENTAPI_TIMEOUT_MS, env });
     } else {
-      // Spawn new conversation
       const titleArg = title ? [`--title=${title}`] : ['--title=[mOS Copilot]'];
+      const model = process.env.MOS_AG_MODEL?.trim();
+      const modelArg = model ? [`--model=${model}`] : [];
       const args = command.endsWith('language_server')
-        ? ['agentapi', 'new-conversation', '--model=flash', ...titleArg, prompt]
-        : ['new-conversation', '--model=flash', ...titleArg, prompt];
+        ? ['agentapi', 'new-conversation', ...modelArg, ...titleArg, prompt]
+        : ['new-conversation', ...modelArg, ...titleArg, prompt];
 
       const { stdout } = await execFile(command, args, { timeout: AGENTAPI_TIMEOUT_MS, env });
       try {
