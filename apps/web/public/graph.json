@@ -7788,7 +7788,7 @@
         "path": "/api/chat/bootstrap",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1165
+        "line": 1168
       }
     },
     {
@@ -7802,7 +7802,7 @@
         "path": "/api/chat/user-prefs",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1218
+        "line": 1232
       }
     },
     {
@@ -7816,7 +7816,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1250
+        "line": 1264
       }
     },
     {
@@ -7830,7 +7830,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1276
+        "line": 1290
       }
     },
     {
@@ -7844,7 +7844,7 @@
         "path": "/api/chat/upload-image",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1325
+        "line": 1339
       }
     },
     {
@@ -7858,7 +7858,7 @@
         "path": "/api/chat/media/:fileName",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1371
+        "line": 1385
       }
     },
     {
@@ -7872,7 +7872,7 @@
         "path": "/api/chat/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1396
+        "line": 1410
       }
     },
     {
@@ -7886,7 +7886,7 @@
         "path": "/api/chat/threads",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1472
+        "line": 1486
       }
     },
     {
@@ -7900,7 +7900,7 @@
         "path": "/api/chat/messages/:messageId/reaction",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1531
+        "line": 1549
       }
     },
     {
@@ -7914,7 +7914,7 @@
         "path": "/api/chat/messages/:messageId/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1593
+        "line": 1611
       }
     },
     {
@@ -7928,7 +7928,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1624
+        "line": 1642
       }
     },
     {
@@ -7942,7 +7942,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1709
+        "line": 1727
       }
     },
     {
@@ -7956,7 +7956,7 @@
         "path": "/api/chat/tasks",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1783
+        "line": 1801
       }
     },
     {
@@ -7970,7 +7970,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1885
+        "line": 1903
       }
     },
     {
@@ -7984,7 +7984,7 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1944
+        "line": 1962
       }
     },
     {
@@ -7998,7 +7998,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2138
+        "line": 2156
       }
     },
     {
@@ -8012,7 +8012,35 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2236
+        "line": 2254
+      }
+    },
+    {
+      "id": "route:POST:/api/chat/missions",
+      "type": "FastifyRoute",
+      "label": "POST /api/chat/missions",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/chat/missions",
+        "module": "chat",
+        "handler": "inlineHandler",
+        "line": 2321
+      }
+    },
+    {
+      "id": "route:POST:/api/chat/missions/:reportId/action",
+      "type": "FastifyRoute",
+      "label": "POST /api/chat/missions/:reportId/action",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/chat/missions/:reportId/action",
+        "module": "chat",
+        "handler": "inlineHandler",
+        "line": 2382
       }
     },
     {
@@ -24710,6 +24738,30 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:MosChatMissionStage",
+      "type": "SharedType",
+      "label": "MosChatMissionStage",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatMissionStage",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatMissionSummary",
+      "type": "SharedType",
+      "label": "MosChatMissionSummary",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatMissionSummary",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:MosChatThreadReply",
       "type": "SharedType",
       "label": "MosChatThreadReply",
@@ -24946,6 +24998,66 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "RemoveMosChatMemberRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatMissionActionType",
+      "type": "SharedType",
+      "label": "MosChatMissionActionType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatMissionActionType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreateMosChatMissionRequest",
+      "type": "SharedType",
+      "label": "CreateMosChatMissionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreateMosChatMissionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreateMosChatMissionResponse",
+      "type": "SharedType",
+      "label": "CreateMosChatMissionResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreateMosChatMissionResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ActionMosChatMissionRequest",
+      "type": "SharedType",
+      "label": "ActionMosChatMissionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ActionMosChatMissionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ActionMosChatMissionResponse",
+      "type": "SharedType",
+      "label": "ActionMosChatMissionResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ActionMosChatMissionResponse",
         "package": "@mos-lab/shared"
       }
     },
@@ -31764,6 +31876,32 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/chat/chat-mission-bridge.service.test.ts",
+      "type": "File",
+      "label": "chat-mission-bridge.service.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-mission-bridge.service.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 4945,
+        "lineCount": 127,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/chat-mission-bridge.service.ts",
+      "type": "File",
+      "label": "chat-mission-bridge.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-mission-bridge.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 45626,
+        "lineCount": 1184,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/chat/routes.ts",
       "type": "File",
       "label": "routes.ts",
@@ -31771,8 +31909,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 84761,
-        "lineCount": 2301,
+        "sizeBytes": 89564,
+        "lineCount": 2433,
         "ext": ".ts"
       }
     },
@@ -37296,7 +37434,7 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/FrontendTelemetryDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 71479,
+        "sizeBytes": 71489,
         "lineCount": 1449,
         "ext": ".tsx"
       }
@@ -37400,7 +37538,7 @@
       "filePath": "apps/web/app/dashboard/bug-reports/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15962,
+        "sizeBytes": 15992,
         "lineCount": 379,
         "ext": ".tsx"
       }
@@ -40962,8 +41100,8 @@
       "filePath": "apps/web/lib/api/chat.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6113,
-        "lineCount": 160,
+        "sizeBytes": 6876,
+        "lineCount": 179,
         "ext": ".ts"
       }
     },
@@ -41391,8 +41529,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 113346,
-        "lineCount": 1618,
+        "sizeBytes": 117010,
+        "lineCount": 1647,
         "ext": ".ts"
       }
     },
@@ -41937,8 +42075,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 6210,
-        "lineCount": 262,
+        "sizeBytes": 9116,
+        "lineCount": 375,
         "ext": ".ts"
       }
     },
@@ -45926,6 +46064,20 @@
     {
       "id": "edge:route:DELETE:/api/chat/conversations/:id/members/:staffId:ws:apps/api",
       "source": "route:DELETE:/api/chat/conversations/:id/members/:staffId",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/chat/missions:ws:apps/api",
+      "source": "route:POST:/api/chat/missions",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/chat/missions/:reportId/action:ws:apps/api",
+      "source": "route:POST:/api/chat/missions/:reportId/action",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -55199,6 +55351,20 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:MosChatMissionStage:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatMissionStage",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatMissionSummary:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatMissionSummary",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:MosChatThreadReply:ws:packages/shared",
       "source": "type:@mos-lab/shared:MosChatThreadReply",
       "target": "ws:packages/shared",
@@ -55334,6 +55500,41 @@
     {
       "id": "edge:type:@mos-lab/shared:RemoveMosChatMemberRequest:ws:packages/shared",
       "source": "type:@mos-lab/shared:RemoveMosChatMemberRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatMissionActionType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatMissionActionType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CreateMosChatMissionRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CreateMosChatMissionRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CreateMosChatMissionResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CreateMosChatMissionResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ActionMosChatMissionRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ActionMosChatMissionRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ActionMosChatMissionResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ActionMosChatMissionResponse",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -60484,6 +60685,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/chat/chat-mission-bridge.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-mission-bridge.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/chat/routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/chat/routes.ts",
       "target": "ws:packages/shared",
@@ -64435,6 +64643,34 @@
       "id": "edge:file:apps/api/src/modules/catalog/services/lash-benchmark.service.ts:prisma:crm:CrmLashTypeBenchmark",
       "source": "file:apps/api/src/modules/catalog/services/lash-benchmark.service.ts",
       "target": "prisma:crm:CrmLashTypeBenchmark",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/chat-mission-bridge.service.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/chat/chat-mission-bridge.service.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/chat-mission-bridge.service.ts:prisma:crm:CrmBugReport",
+      "source": "file:apps/api/src/modules/chat/chat-mission-bridge.service.ts",
+      "target": "prisma:crm:CrmBugReport",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/chat-mission-bridge.service.ts:prisma:crm:CrmBugReportAttachment",
+      "source": "file:apps/api/src/modules/chat/chat-mission-bridge.service.ts",
+      "target": "prisma:crm:CrmBugReportAttachment",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/chat-mission-bridge.service.ts:prisma:crm:CrmInboxImplementationJob",
+      "source": "file:apps/api/src/modules/chat/chat-mission-bridge.service.ts",
+      "target": "prisma:crm:CrmInboxImplementationJob",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -76010,6 +76246,20 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/chat/missions",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/chat/missions",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/chat/missions/:reportId/action",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/chat/missions/:reportId/action",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/cs/happy-calls",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/cs/happy-calls",
@@ -80817,6 +81067,20 @@
       "target": "route:DELETE:/api/chat/conversations/:id/members/:staffId",
       "type": "API_CALL",
       "label": "CALLS customers.getStaff"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/chat/missions",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/chat/missions",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/chat/missions/:reportId/action",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/chat/missions/:reportId/action",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
     },
     {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/cs/happy-calls",
@@ -88778,6 +89042,20 @@
       "label": "CALLS teams.updateMembers"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/chat/missions",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/chat/missions",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/chat/missions/:reportId/action",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/chat/missions/:reportId/action",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/cs/happy-calls",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/cs/happy-calls",
@@ -91166,31 +91444,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3238,
-    "totalEdges": 6985,
+    "totalNodes": 3249,
+    "totalEdges": 7005,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 165,
-      "FastifyRoute": 687,
+      "FastifyRoute": 689,
       "Component": 58,
-      "SharedType": 1177,
+      "SharedType": 1184,
       "DesignToken": 12,
       "UIComponent": 222,
-      "File": 914
+      "File": 916
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1354,
-      "HANDLES_ROUTE": 687,
+      "EXPORTS": 1361,
+      "HANDLES_ROUTE": 689,
       "RENDERS": 280,
       "USES_TOKEN": 224,
-      "IMPORTS": 484,
-      "QUERIES_MODEL": 390,
-      "API_CALL": 3566
+      "IMPORTS": 485,
+      "QUERIES_MODEL": 394,
+      "API_CALL": 3572
     },
-    "fastifyRouteCount": 692,
+    "fastifyRouteCount": 694,
     "prismaModelCount": 165,
     "nextPageCount": 58,
-    "sharedTypeCount": 1177
+    "sharedTypeCount": 1184
   },
   "routes": [
     {
@@ -93695,6 +93973,20 @@
     {
       "method": "DELETE",
       "path": "/api/chat/conversations/:id/members/:staffId",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "chat"
+    },
+    {
+      "method": "POST",
+      "path": "/api/chat/missions",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "chat"
+    },
+    {
+      "method": "POST",
+      "path": "/api/chat/missions/:reportId/action",
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "chat"

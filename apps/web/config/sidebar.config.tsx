@@ -485,7 +485,7 @@ export function getSidebarGroups(
     if (isAdmin) {
       systemGroupItems.push({
         key: 'bug-reports',
-        label: 'mOS Inbox',
+        label: 'mOS Mission',
         icon: <AppIcon icon={MessageSquareWarning} size="sm" />,
         badgeCount: bugInboxApprovalCount,
         path: '/dashboard/bug-reports',

@@ -90,14 +90,14 @@ export default function BugReportsPage() {
   const emptyInboxMessage = isEmptyBecauseOfFilters ? (
     <BugReportFilterEmptyState labels={appliedFilterLabels} onClear={inbox.clearFilters} />
   ) : (
-    'Chưa có yêu cầu trong mOS Inbox.'
+    'Chưa có nhiệm vụ trong mOS Mission.'
   );
 
   return (
     <>
       <ResourceListPage<BugReportSummary>
-        title="mOS Inbox"
-        subtitle="AI làm rõ với người yêu cầu; Danny quyết định cuối cùng trước khi lỗi hoặc chức năng được đưa vào hàng triển khai."
+        title="mOS Mission"
+        subtitle="Trung tâm điều phối AI thực thi kỹ thuật: kết nối 2 chiều với mOS Chat, AI làm rõ với người yêu cầu và Danny duyệt cổng triển khai."
         icon={<AppIcon icon={MessageSquareWarning} size="lg" />}
         headerActions={
           <Space size={4}>
@@ -203,7 +203,7 @@ export default function BugReportsPage() {
           ),
           actions: (
             <Button
-              aria-label="Tải lại mOS Inbox"
+              aria-label="Tải lại mOS Mission"
               icon={<AppIcon icon={RefreshCw} size="sm" />}
               loading={inbox.loading}
               onClick={() => void inbox.refresh()}
@@ -212,7 +212,7 @@ export default function BugReportsPage() {
             </Button>
           ),
           activeFilterCount,
-          filterTitle: 'Lọc mOS Inbox',
+          filterTitle: 'Lọc mOS Mission',
         }}
         metrics={{
           columns: 6,
@@ -279,9 +279,9 @@ export default function BugReportsPage() {
           ],
         }}
         tableSection={{
-          title: `Danh sách · ${inbox.total.toLocaleString('vi-VN')} yêu cầu`,
+          title: `Danh sách · ${inbox.total.toLocaleString('vi-VN')} nhiệm vụ`,
           state: inbox.error ? 'error' : undefined,
-          stateTitle: 'Không thể tải mOS Inbox',
+          stateTitle: 'Không thể tải mOS Mission',
           stateDescription: inbox.error,
           stateExtra: (
             <Button icon={<AppIcon icon={RefreshCw} size="sm" />} onClick={() => void inbox.refresh()}>

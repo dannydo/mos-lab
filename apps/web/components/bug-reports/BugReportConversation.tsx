@@ -310,7 +310,7 @@ export function BugReportConversation({
 
       {isReadOnly ? (
         <Text type="secondary">
-          {locked ? 'Ticket đã kết thúc; hội thoại đang ở chế độ chỉ đọc.' : 'mOS Inbox chỉ phục vụ theo dõi.'}
+          {locked ? 'Ticket đã kết thúc; hội thoại đang ở chế độ chỉ đọc.' : 'mOS Mission chỉ phục vụ theo dõi.'}
         </Text>
       ) : (
         <div className="rounded-xl border p-3" style={{ borderColor: token.colorBorderSecondary }}>

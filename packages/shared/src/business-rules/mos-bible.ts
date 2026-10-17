@@ -1560,6 +1560,35 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       { label: 'mOS Chat API Routes', reference: 'apps/api/src/modules/chat/routes.ts' },
     ],
   },
+  {
+    id: 'UI-009',
+    book: 'SYSTEM',
+    title: 'Kết nối 2 chiều khép kín giữa mOS Chat và mOS Mission (Giao việc AG & Báo tiến độ ngôn ngữ con người)',
+    summary:
+      'Super Admin chọn lọc tin nhắn, luồng thảo luận (Thread) hoặc Task từ mOS Chat để đẩy 1 chạm sang mOS Mission cho AG lập trình; tiến độ được dịch sang ngôn ngữ đời thường ngay trong Thread mOS Chat kèm điều khiển duyệt nhanh và nghiệm thu tại chỗ.',
+    commandments: [
+      'Đổi tên hiển thị mOS Inbox thành mOS Mission để phân biệt rõ ràng: mOS Chat là kênh giao tiếp hàng ngày, còn mOS Mission là trung tâm nhiệm vụ kỹ thuật nơi AG thực thi code, kiểm thử và triển khai.',
+      'Chỉ duy nhất Super Admin Danny mới thấy và sử dụng được nút [Giao mOS Mission] trên Tin nhắn, Thread và Thẻ Task trong mOS Chat (backend khóa chặt quyền Super Admin Danny). Khi anh Danny bấm giao từ Chat, hệ thống tự động gom trọn Tin nhắn gốc + toàn bộ phản hồi trong Thread + tất cả hình ảnh đính kèm và tự động duyệt Cổng 1 (APPROVED) để AG bắt đầu làm ngay.',
+      'Tiến độ trong Thread mOS Chat hiển thị qua Thẻ Tiến Độ Sống (Live Mission Card) ghim đầu Thread và chỉ bắn tin nhắn tự động ở 4 cột mốc chính (Đã nhận việc -> Cần hỏi thêm / Đã làm xong bản thử nghiệm -> Đã lên web mời kiểm tra -> Hoàn tất) bằng ngôn ngữ con người dễ hiểu, tuyệt đối không lộ thuật ngữ kỹ thuật khô khan cho nhân sự.',
+      'Đồng bộ 2 chiều khép kín: Nhân sự nhắn thêm chữ hoặc ảnh vào Thread mOS Chat sẽ tự động đồng bộ sang bình luận của mOS Mission để AG đọc; khi tính năng đã lên web, nhân sự bấm [Đã đúng ý] ngay trong Thread sẽ tự động hoàn tất Mission và đánh dấu Done luôn cho Task trong mOS Chat.',
+      'Riêng tài khoản Super Admin Danny nhìn thấy nút [Duyệt Commit] và [Duyệt Deploy] trực tiếp trên Thẻ Mission ngay trong Thread mOS Chat để phê duyệt tức thì mà không phải chuyển tab qua lại.',
+    ],
+    rationale:
+      'Loại bỏ hoàn toàn sự rời rạc giữa kênh giao tiếp nội bộ (mOS Chat) và quy trình phát triển tự động của AG (mOS Mission), giúp Super Admin Danny điều phối công việc ngay tại luồng trò chuyện và giúp nhân sự theo dõi, nghiệm thu tính năng bằng ngôn ngữ tự nhiên.',
+    examples: [
+      'Bảo Hân nhắn tin "Bổ sung tệp khách hàng bảo lưu" kèm 2 ảnh chụp màn hình cô Giáng Hương, chị Mai và anh Danny chốt tên "Combo Elsa" trong Thread: Anh Danny bấm [Giao mOS Mission], hệ thống gom trọn 4 bình luận + 2 ảnh sang mOS Mission, cập nhật tiến độ trong Thread cho Bảo Hân và cho phép Bảo Hân bấm [Đã đúng ý] ngay khi lên sóng.',
+    ],
+    tags: ['mOS Mission', 'mOS Chat', 'mOS Inbox', 'thread', 'task', 'AG', 'ngôn ngữ con người', 'Combo Elsa'],
+    routeScopes: ['/dashboard', '/dashboard/bug-reports'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-10-17',
+    sources: [
+      { label: 'mOS Chat Portal', reference: 'apps/web/components/mos-chat/MosGoogleChatPortal.tsx' },
+      { label: 'mOS Chat & Mission Bridge Routes', reference: 'apps/api/src/modules/chat/routes.ts' },
+      { label: 'mOS Mission Page', reference: 'apps/web/app/dashboard/bug-reports/page.tsx' },
+    ],
+  },
 ];
 
 export function getMosBibleBook(bookKey: MosBibleBookKey): MosBibleBook {

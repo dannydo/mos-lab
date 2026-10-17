@@ -677,7 +677,7 @@ export function MyBugReportsPanel({
                   </summary>
                   <div className="border-t px-4 py-3" style={{ borderColor: token.colorBorderSecondary }}>
                     <Text type="secondary" className="block text-sm">
-                      Lịch sử kỹ thuật, audit và workflow nội bộ được xem trong mOS Inbox để không làm rối màn hình
+                      Lịch sử kỹ thuật, audit và workflow nội bộ được xem trong mOS Mission để không làm rối màn hình
                       người báo.
                     </Text>
                     <Button

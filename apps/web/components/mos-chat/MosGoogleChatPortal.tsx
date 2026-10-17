@@ -74,6 +74,9 @@ import {
   Quote,
   Code,
   Type,
+  Rocket,
+  CheckCircle2,
+  RefreshCw,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import type {
@@ -85,6 +88,8 @@ import type {
   MosChatImageAttachment,
   MosChatImageMimeType,
   MosChatMessage,
+  MosChatMissionActionType,
+  MosChatMissionSummary,
   MosChatThreadReply,
   MosChatPresenceStatus,
   MosChatStaffMember,
@@ -979,6 +984,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     return isCanon || roleLower === 'super_admin' || roleLower === 'admin';
   }, [currentUser?.username, currentUser?.email, currentUser?.role]);
 
+  // Chỉ duy nhất Super Admin Danny mới thấy và sử dụng nút gửi task vào mOS Mission (Điều răn UI-009)
+  const isStrictDannySuperAdmin = useMemo(() => {
+    const isCanon = isCanonicalSuperAdminIdentity({ username: currentUser?.username, email: currentUser?.email });
+    const roleLower = String(currentUser?.role || '')
+      .toLowerCase()
+      .trim();
+    return (roleLower === 'super_admin' && isCanon) || isCanon || Number(currentUser?.id) === 1;
+  }, [currentUser?.id, currentUser?.username, currentUser?.email, currentUser?.role]);
+
   const [accessConfig, setAccessConfig] = useState<MosChatAccessConfig>({
     allowAllStaff: false,
     allowedGroupKeys: ['TEAM_ADMIN_MANAGER'],
@@ -1261,6 +1275,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [selectedPresetId, setSelectedPresetId] = useState<string>('5s');
   const [taskRemindSeconds, setTaskRemindSeconds] = useState<number>(5);
   const [customRemindDate, setCustomRemindDate] = useState<dayjs.Dayjs | null>(null);
+
+  // mOS Mission Dispatch & Inline Action state (2-way bridge between mOS Chat & mOS Mission)
+  const [missionModalOpen, setMissionModalOpen] = useState(false);
+  const [missionSourceMsg, setMissionSourceMsg] = useState<MosChatMessage | null>(null);
+  const [missionSourceTask, setMissionSourceTask] = useState<MosChatTaskItem | null>(null);
+  const [missionSourceConvId, setMissionSourceConvId] = useState<string>('');
+  const [missionTitle, setMissionTitle] = useState('');
+  const [missionType, setMissionType] = useState<'BUG' | 'FEATURE'>('FEATURE');
+  const [missionNote, setMissionNote] = useState('');
+  const [isDispatchingMission, setIsDispatchingMission] = useState(false);
+  const [missionActionLoadingKey, setMissionActionLoadingKey] = useState<string | null>(null);
+  const [missionReopenInputOpenByReportId, setMissionReopenInputOpenByReportId] = useState<Record<number, boolean>>({});
+  const [missionReopenFeedbackByReportId, setMissionReopenFeedbackByReportId] = useState<Record<number, string>>({});
 
   // New Space / DM Modal
   const [newRoomModalOpen, setNewRoomModalOpen] = useState(false);
@@ -3508,6 +3535,474 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const canvasBg = isDark ? '#0d1322' : '#ffffff';
   const borderColor = isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0';
   const borderStrong = isDark ? 'rgba(255, 255, 255, 0.15)' : '#cbd5e1';
+
+  const openMissionModalFromChat = (
+    msg: MosChatMessage | null,
+    task?: MosChatTaskItem | null,
+    convIdOverride?: string
+  ) => {
+    if (!isStrictDannySuperAdmin) {
+      return;
+    }
+
+    const targetConvId = convIdOverride || task?.conversationId || msg?.conversationId || activeConversation?.id || '';
+    const targetConv = conversations.find((c) => c.id === targetConvId) || activeConversation;
+    const resolvedMsg =
+      msg ||
+      (task?.sourceMessageId ? targetConv?.messages.find((m) => m.id === task.sourceMessageId) || null : null) ||
+      (task ? targetConv?.messages.find((m) => m.taskId === task.id) || null : null);
+
+    const existingMission = resolvedMsg?.mission || task?.mission;
+    if (existingMission && resolvedMsg) {
+      if (targetConvId && targetConvId !== activeConversation?.id) {
+        selectConversation(targetConvId);
+      }
+      handleOpenThread(resolvedMsg.id);
+      return;
+    }
+
+    const baseRaw = String(task?.title || resolvedMsg?.text || '').trim();
+    const firstLine = (baseRaw.split('\n')[0] || 'Yêu cầu từ mOS Chat').trim().slice(0, 140);
+    const lowerAll = `${baseRaw} ${(resolvedMsg?.thread || []).map((r) => r.text).join(' ')}`.toLowerCase();
+    const isLikelyBug = /(lỗi|sai|hư|không bấm|không chạy|trắng trang|crash|500|404)/i.test(lowerAll);
+
+    setMissionSourceMsg(resolvedMsg);
+    setMissionSourceTask(task || null);
+    setMissionSourceConvId(targetConvId);
+    setMissionTitle(firstLine || 'Nâng cấp tính năng từ mOS Chat');
+    setMissionType(isLikelyBug ? 'BUG' : 'FEATURE');
+    setMissionNote('');
+    setMissionModalOpen(true);
+  };
+
+  const handleConfirmDispatchMission = async () => {
+    if (!isStrictDannySuperAdmin) {
+      antdMessage.error('Chỉ Super Admin Danny mới có quyền gửi công việc vào mOS Mission.');
+      return;
+    }
+
+    const convId = missionSourceConvId || activeConversation?.id || '';
+    const msgId = missionSourceMsg?.id || missionSourceTask?.sourceMessageId || '';
+    if (!convId || !msgId) {
+      antdMessage.warning('Không tìm thấy tin nhắn gốc để đóng gói ngữ cảnh giao việc cho AG.');
+      return;
+    }
+
+    setIsDispatchingMission(true);
+    try {
+      const res = await apiClient.chat.createMission({
+        conversationId: convId,
+        messageId: msgId,
+        taskId: missionSourceTask?.id || missionSourceMsg?.taskId || null,
+        title: missionTitle.trim() || undefined,
+        type: missionType,
+        note: missionNote.trim() || undefined,
+        pageUrl: typeof window !== 'undefined' ? window.location.pathname : '/dashboard',
+      });
+
+      if (res?.mission) {
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.id !== convId) return c;
+            return {
+              ...c,
+              messages: c.messages.map((m) => (m.id === msgId ? res.message || { ...m, mission: res.mission } : m)),
+            };
+          })
+        );
+        if (res.task) {
+          setTasks((prev) => prev.map((t) => (t.id === res.task?.id ? res.task : t)));
+        }
+        setMissionModalOpen(false);
+        if (convId !== activeConversation?.id) {
+          selectConversation(convId);
+        }
+        handleOpenThread(msgId);
+        notifyLivePeers();
+        antdMessage.success(
+          `🚀 Đã giao mOS Mission #${res.mission.missionKey} (${res.mission.missionCode}) & tự động duyệt Cổng 1 cho AG!`
+        );
+      }
+    } catch (err: SafeAny) {
+      antdMessage.error(err?.response?.data?.message || err?.message || 'Không thể giao nhiệm vụ sang mOS Mission.');
+    } finally {
+      setIsDispatchingMission(false);
+    }
+  };
+
+  const handleMissionInlineAction = async (
+    mission: MosChatMissionSummary,
+    action: MosChatMissionActionType,
+    feedback?: string
+  ) => {
+    const loadingKey = `${mission.reportId}:${action}`;
+    setMissionActionLoadingKey(loadingKey);
+    try {
+      const res = await apiClient.chat.missionAction(mission.reportId, {
+        conversationId: mission.conversationId,
+        messageId: mission.messageId,
+        taskId: mission.taskId || null,
+        action,
+        feedback,
+      });
+
+      if (res?.mission) {
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.id !== mission.conversationId) return c;
+            return {
+              ...c,
+              messages: c.messages.map((m) =>
+                m.id === mission.messageId ? res.message || { ...m, mission: res.mission } : m
+              ),
+            };
+          })
+        );
+        if (res.task) {
+          setTasks((prev) => prev.map((t) => (t.id === res.task?.id ? res.task : t)));
+        } else if (action === 'REPORTER_ACCEPT' && mission.taskId) {
+          setTasks((prev) =>
+            prev.map((t) => (t.id === mission.taskId ? { ...t, done: true, mission: res.mission } : t))
+          );
+        }
+        setMissionReopenInputOpenByReportId((prev) => ({ ...prev, [mission.reportId]: false }));
+        setMissionReopenFeedbackByReportId((prev) => ({ ...prev, [mission.reportId]: '' }));
+        notifyLivePeers();
+
+        if (action === 'APPROVE_COMMIT') {
+          antdMessage.success(`✅ Đã duyệt Commit (Cổng 2) cho #${mission.missionKey}!`);
+        } else if (action === 'APPROVE_DEPLOY') {
+          antdMessage.success(`🚀 Đã duyệt Deploy lên Web (Cổng 3) cho #${mission.missionKey}!`);
+        } else if (action === 'REPORTER_ACCEPT') {
+          antdMessage.success(`🎉 Đã xác nhận nghiệm thu #${mission.missionKey} & tự động hoàn tất Task!`);
+        } else if (action === 'REPORTER_REOPEN') {
+          antdMessage.info(`🔄 Đã gửi yêu cầu chỉnh sửa thêm cho AG trên #${mission.missionKey}!`);
+        }
+      }
+    } catch (err: SafeAny) {
+      antdMessage.error(
+        err?.response?.data?.message || err?.message || 'Không thể thực thi thao tác trên mOS Mission.'
+      );
+    } finally {
+      setMissionActionLoadingKey(null);
+    }
+  };
+
+  const renderLiveMissionCard = (
+    mission: MosChatMissionSummary,
+    msg?: MosChatMessage | null,
+    mode: 'thread' | 'inline' | 'task' = 'inline'
+  ) => {
+    const stageColors: Record<
+      MosChatMissionSummary['stage'],
+      { accent: string; bg: string; border: string; badgeBg: string }
+    > = {
+      RECEIVED: {
+        accent: '#60a5fa',
+        bg: isDark ? 'rgba(30, 58, 138, 0.18)' : 'rgba(239, 246, 255, 0.92)',
+        border: 'rgba(59, 130, 246, 0.38)',
+        badgeBg: 'rgba(59, 130, 246, 0.16)',
+      },
+      NEEDS_INFO: {
+        accent: '#f59e0b',
+        bg: isDark ? 'rgba(120, 53, 15, 0.2)' : 'rgba(255, 251, 235, 0.95)',
+        border: 'rgba(245, 158, 11, 0.45)',
+        badgeBg: 'rgba(245, 158, 11, 0.18)',
+      },
+      BUILDING: {
+        accent: '#a78bfa',
+        bg: isDark ? 'rgba(76, 29, 149, 0.18)' : 'rgba(245, 243, 255, 0.95)',
+        border: 'rgba(139, 92, 246, 0.4)',
+        badgeBg: 'rgba(139, 92, 246, 0.16)',
+      },
+      AWAITING_RELEASE: {
+        accent: '#d4a84b',
+        bg: isDark ? 'rgba(120, 83, 15, 0.2)' : 'rgba(254, 249, 195, 0.45)',
+        border: 'rgba(212, 168, 75, 0.5)',
+        badgeBg: 'rgba(212, 168, 75, 0.2)',
+      },
+      READY_FOR_REVIEW: {
+        accent: '#10b981',
+        bg: isDark ? 'rgba(6, 78, 59, 0.22)' : 'rgba(236, 253, 245, 0.95)',
+        border: 'rgba(16, 185, 129, 0.48)',
+        badgeBg: 'rgba(16, 185, 129, 0.18)',
+      },
+      COMPLETED: {
+        accent: '#10b981',
+        bg: isDark ? 'rgba(6, 78, 59, 0.14)' : 'rgba(240, 253, 244, 0.85)',
+        border: 'rgba(16, 185, 129, 0.35)',
+        badgeBg: 'rgba(16, 185, 129, 0.14)',
+      },
+      NOT_PROCEEDING: {
+        accent: '#94a3b8',
+        bg: isDark ? 'rgba(30, 41, 59, 0.28)' : 'rgba(248, 250, 252, 0.92)',
+        border: 'rgba(148, 163, 184, 0.4)',
+        badgeBg: 'rgba(148, 163, 184, 0.16)',
+      },
+    };
+
+    const palette = stageColors[mission.stage] || stageColors.RECEIVED;
+    const steps = [
+      { idx: 1, label: '1. Tiếp nhận' },
+      { idx: 2, label: '2. AG đang làm' },
+      { idx: 3, label: '3. Nghiệm thu' },
+      { idx: 4, label: '4. Hoàn tất' },
+    ];
+    const isReopenOpen = Boolean(missionReopenInputOpenByReportId[mission.reportId]);
+    const reopenText = missionReopenFeedbackByReportId[mission.reportId] || '';
+
+    return (
+      <div
+        data-no-chat-autofocus="true"
+        onClick={(e) => e.stopPropagation()}
+        className={`rounded-xl p-2.5 text-left space-y-2 transition-all ${
+          mode === 'inline' ? 'mt-1.5 w-full max-w-[88%]' : 'w-full'
+        }`}
+        style={{
+          background: palette.bg,
+          border: `1px solid ${palette.border}`,
+          borderLeft: `3.5px solid ${palette.accent}`,
+        }}
+      >
+        {/* Top Header Row: Mission Code + Stage Pill + Link to mOS Mission */}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+            <span
+              className="inline-flex items-center justify-center leading-none gap-1 px-2 py-1 rounded-md text-[10.5px] font-extrabold tracking-tight"
+              style={{
+                background: 'rgba(212, 168, 75, 0.2)',
+                color: '#d4a84b',
+                border: '1px solid rgba(212, 168, 75, 0.4)',
+              }}
+            >
+              <Rocket size={11} />
+              <span>mOS MISSION · #{mission.missionKey}</span>
+            </span>
+            <span
+              className="inline-flex items-center justify-center leading-none px-2 py-1 rounded-md text-[10.5px] font-bold"
+              style={{
+                background: palette.badgeBg,
+                color: palette.accent,
+              }}
+            >
+              {mission.stageLabel}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0">
+            {mode !== 'thread' && msg && (
+              <Tooltip title="Mở luồng trao đổi & theo dõi trực tiếp với AG">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (mission.conversationId && mission.conversationId !== activeConversation?.id) {
+                      selectConversation(mission.conversationId);
+                    }
+                    handleOpenThread(msg.id);
+                  }}
+                  className="h-6 px-2 rounded-md inline-flex items-center gap-1 text-[10.5px] font-bold cursor-pointer hover:opacity-90"
+                  style={{
+                    background: surfaceRaised,
+                    border: `1px solid ${borderColor}`,
+                    color: token.colorText,
+                  }}
+                >
+                  <MessageSquareReply size={11} className="text-amber-400" />
+                  <span>Luồng</span>
+                </button>
+              </Tooltip>
+            )}
+            <Tooltip title="Xem chi tiết kỹ thuật trên bảng điều khiển mOS Mission">
+              <a
+                href={`/dashboard/bug-reports?reportId=${mission.reportId}`}
+                onClick={(e) => e.stopPropagation()}
+                className="h-6 px-2 rounded-md inline-flex items-center gap-1 text-[10.5px] font-bold no-underline hover:opacity-90"
+                style={{
+                  background: surfaceRaised,
+                  border: `1px solid ${borderColor}`,
+                  color: '#d4a84b',
+                }}
+              >
+                <span>{mission.missionCode}</span>
+                <ExternalLink size={10} />
+              </a>
+            </Tooltip>
+          </div>
+        </div>
+
+        {/* Mission Title */}
+        <div className="text-[12.5px] font-extrabold leading-snug" style={{ color: token.colorText }}>
+          {mission.title}
+        </div>
+
+        {/* 4-Step Human Progress Bar */}
+        <div className="grid grid-cols-4 gap-1 pt-0.5">
+          {steps.map((s) => {
+            const active = mission.stepIndex >= s.idx;
+            const current = mission.stepIndex === s.idx;
+            return (
+              <div key={s.idx} className="space-y-1">
+                <div
+                  className="h-1.5 rounded-full transition-all"
+                  style={{
+                    background: active ? palette.accent : isDark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.12)',
+                    boxShadow: current ? `0 0 8px ${palette.accent}` : 'none',
+                  }}
+                />
+                <div
+                  className="text-[9.5px] font-bold truncate tabular-nums"
+                  style={{
+                    color: active ? palette.accent : token.colorTextSecondary,
+                    opacity: active ? 1 : 0.65,
+                  }}
+                >
+                  {s.label}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Plain Human Language Explanation for Staff & Super Admin */}
+        <div
+          className="text-[11.5px] leading-relaxed rounded-lg px-2.5 py-1.5"
+          style={{
+            background: isDark ? 'rgba(15, 23, 42, 0.55)' : 'rgba(255, 255, 255, 0.78)',
+            border: `1px solid ${borderColor}`,
+            color: token.colorText,
+          }}
+        >
+          {mission.humanStatusSummary}
+        </div>
+
+        {/* Super Admin Inline Gate Controls (Gate 2 Commit & Gate 3 Deploy) */}
+        {isStrictDannySuperAdmin && (mission.canSuperAdminApproveCommit || mission.canSuperAdminApproveDeploy) && (
+          <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+            {mission.canSuperAdminApproveCommit && (
+              <button
+                type="button"
+                disabled={missionActionLoadingKey === `${mission.reportId}:APPROVE_COMMIT`}
+                onClick={() => void handleMissionInlineAction(mission, 'APPROVE_COMMIT')}
+                className="h-7 px-3 rounded-lg text-[11.5px] font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+                style={{
+                  background: '#d4a84b',
+                  color: '#000',
+                }}
+              >
+                {missionActionLoadingKey === `${mission.reportId}:APPROVE_COMMIT` ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <CheckCircle2 size={13} />
+                )}
+                <span>✅ Duyệt Commit (Cổng 2)</span>
+              </button>
+            )}
+
+            {mission.canSuperAdminApproveDeploy && (
+              <button
+                type="button"
+                disabled={missionActionLoadingKey === `${mission.reportId}:APPROVE_DEPLOY`}
+                onClick={() => void handleMissionInlineAction(mission, 'APPROVE_DEPLOY')}
+                className="h-7 px-3 rounded-lg text-[11.5px] font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+                style={{
+                  background: '#10b981',
+                  color: '#000',
+                }}
+              >
+                {missionActionLoadingKey === `${mission.reportId}:APPROVE_DEPLOY` ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <Rocket size={13} />
+                )}
+                <span>🚀 Duyệt Deploy lên Web (Cổng 3)</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Reporter / Staff & Super Admin Inline Acceptance Controls (Stage READY_FOR_REVIEW) */}
+        {mission.canReporterAccept && (
+          <div className="space-y-1.5 pt-0.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                type="button"
+                disabled={missionActionLoadingKey === `${mission.reportId}:REPORTER_ACCEPT`}
+                onClick={() => void handleMissionInlineAction(mission, 'REPORTER_ACCEPT')}
+                className="h-7 px-3 rounded-lg text-[11.5px] font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+                style={{
+                  background: '#10b981',
+                  color: '#000',
+                }}
+              >
+                {missionActionLoadingKey === `${mission.reportId}:REPORTER_ACCEPT` ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <Check size={13} strokeWidth={3} />
+                )}
+                <span>✅ Đã đúng ý (Hoàn tất)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setMissionReopenInputOpenByReportId((prev) => ({
+                    ...prev,
+                    [mission.reportId]: !prev[mission.reportId],
+                  }))
+                }
+                className="h-7 px-2.5 rounded-lg text-[11.5px] font-bold inline-flex items-center gap-1.5 cursor-pointer"
+                style={{
+                  background: surfaceRaised,
+                  border: `1px solid ${borderStrong}`,
+                  color: '#f59e0b',
+                }}
+              >
+                <RefreshCw size={12} />
+                <span>🔄 Cần chỉnh thêm</span>
+              </button>
+            </div>
+
+            {isReopenOpen && (
+              <div className="flex items-center gap-1.5 pt-1">
+                <input
+                  type="text"
+                  value={reopenText}
+                  onChange={(e) =>
+                    setMissionReopenFeedbackByReportId((prev) => ({
+                      ...prev,
+                      [mission.reportId]: e.target.value,
+                    }))
+                  }
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && reopenText.trim()) {
+                      e.preventDefault();
+                      void handleMissionInlineAction(mission, 'REPORTER_REOPEN', reopenText.trim());
+                    }
+                  }}
+                  placeholder="Nhập điểm cần AG chỉnh lại (VD: Thêm cột tổng số buổi còn lại)..."
+                  className="flex-1 h-7 px-2.5 rounded-lg text-[11.5px] outline-none"
+                  style={{
+                    background: surfaceBg,
+                    border: `1px solid ${borderStrong}`,
+                    color: token.colorText,
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={!reopenText.trim() || missionActionLoadingKey === `${mission.reportId}:REPORTER_REOPEN`}
+                  onClick={() => void handleMissionInlineAction(mission, 'REPORTER_REOPEN', reopenText.trim())}
+                  className="h-7 px-2.5 rounded-lg text-[11px] font-extrabold cursor-pointer disabled:opacity-50 shrink-0"
+                  style={{ background: '#f59e0b', color: '#000' }}
+                >
+                  Gửi cho AG
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const openLightbox = useCallback((attachments: MosChatImageAttachment[], initialIndex = 0) => {
     if (!attachments || attachments.length === 0) return;
@@ -6365,6 +6860,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           </div>
                         )}
 
+                        {/* Live mOS Mission Card (Synced 2-way with AG & mOS Mission) */}
+                        {(m.mission || linkedTask?.mission) &&
+                          renderLiveMissionCard((m.mission || linkedTask?.mission)!, m, 'inline')}
+
                         {/* Thread Chip */}
                         {m.thread && m.thread.length > 0 && (
                           <Tooltip title="Xem luồng trả lời bên phải">
@@ -6501,6 +7000,32 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                 <AlarmClockPlus size={13} />
                               </button>
                             </Tooltip>
+
+                            {isStrictDannySuperAdmin && (
+                              <Tooltip
+                                title={
+                                  m.mission || linkedTask?.mission
+                                    ? `Mở tiến độ mOS Mission #${(m.mission || linkedTask?.mission)?.missionKey}`
+                                    : '🚀 Giao mOS Mission cho AG lập trình (Đóng gói trọn luồng & hình ảnh)'
+                                }
+                              >
+                                <button
+                                  type="button"
+                                  aria-label="Giao mOS Mission cho AG"
+                                  onClick={() => openMissionModalFromChat(m, linkedTask)}
+                                  className="w-6 h-6 rounded-full inline-flex items-center justify-center cursor-pointer transition-transform hover:scale-110"
+                                  style={{
+                                    background:
+                                      m.mission || linkedTask?.mission
+                                        ? 'rgba(16, 185, 129, 0.2)'
+                                        : 'rgba(139, 92, 246, 0.2)',
+                                    color: m.mission || linkedTask?.mission ? '#10b981' : '#a78bfa',
+                                  }}
+                                >
+                                  <Rocket size={13} />
+                                </button>
+                              </Tooltip>
+                            )}
 
                             <Tooltip title={m.pinned ? 'Bỏ ghim' : 'Ghim tin nhắn'}>
                               <button
@@ -7110,66 +7635,101 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 </div>
               </div>
 
-              {tasks.map((t) => (
-                <div
-                  key={t.id}
-                  className="p-2.5 rounded-lg flex items-center justify-between gap-2"
-                  style={{
-                    background: surfaceBg,
-                    border: `1px solid ${t.done ? 'rgba(16, 185, 129, 0.35)' : 'rgba(212, 168, 75, 0.45)'}`,
-                    borderLeft: `3px solid ${t.done ? '#10b981' : '#d4a84b'}`,
-                  }}
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <button
-                      type="button"
-                      onClick={() => handleToggleTaskDone(t.id)}
-                      className="w-4 h-4 rounded flex items-center justify-center shrink-0 cursor-pointer"
-                      style={{
-                        border: `1.75px solid ${t.done ? '#10b981' : '#d4a84b'}`,
-                        background: t.done ? '#10b981' : 'transparent',
-                        color: '#000',
-                      }}
-                    >
-                      {t.done && <Check size={11} strokeWidth={3} />}
-                    </button>
-                    <div className="min-w-0">
-                      <div className={`text-[12.5px] font-bold truncate ${t.done ? 'line-through opacity-70' : ''}`}>
-                        {t.title}
+              {tasks.map((t) => {
+                const taskConv = conversations.find((c) => c.id === t.conversationId);
+                const taskSourceMsg =
+                  taskConv?.messages.find((m) => m.id === t.sourceMessageId || m.taskId === t.id) || null;
+                const taskMission = t.mission || taskSourceMsg?.mission || null;
+                return (
+                  <div
+                    key={t.id}
+                    className="p-2.5 rounded-lg space-y-2"
+                    style={{
+                      background: surfaceBg,
+                      border: `1px solid ${t.done ? 'rgba(16, 185, 129, 0.35)' : 'rgba(212, 168, 75, 0.45)'}`,
+                      borderLeft: `3px solid ${t.done ? '#10b981' : '#d4a84b'}`,
+                    }}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleTaskDone(t.id)}
+                          className="w-4 h-4 rounded flex items-center justify-center shrink-0 cursor-pointer"
+                          style={{
+                            border: `1.75px solid ${t.done ? '#10b981' : '#d4a84b'}`,
+                            background: t.done ? '#10b981' : 'transparent',
+                            color: '#000',
+                          }}
+                        >
+                          {t.done && <Check size={11} strokeWidth={3} />}
+                        </button>
+                        <div className="min-w-0">
+                          <div
+                            className={`text-[12.5px] font-bold truncate ${t.done ? 'line-through opacity-70' : ''}`}
+                          >
+                            {t.title}
+                          </div>
+                          <div className="text-[11px] text-slate-400 flex items-center gap-2 flex-wrap">
+                            <span>{t.assigneeName}</span>
+                            <span>· #{t.conversationName}</span>
+                            <span className="text-amber-500 font-bold tabular-nums">
+                              {t.done ? 'Xong' : formatCountdown(t.remindAt, nowMs)}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-[11px] text-slate-400 flex items-center gap-2">
-                        <span>{t.assigneeName}</span>
-                        <span>· #{t.conversationName}</span>
-                        <span className="text-amber-500 font-bold tabular-nums">
-                          {t.done ? 'Xong' : formatCountdown(t.remindAt, nowMs)}
-                        </span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {isStrictDannySuperAdmin && taskSourceMsg && (
+                          <Tooltip
+                            title={
+                              taskMission
+                                ? `Xem mOS Mission #${taskMission.missionKey}`
+                                : '🚀 Giao Task này qua mOS Mission để AG code'
+                            }
+                          >
+                            <button
+                              type="button"
+                              onClick={() => openMissionModalFromChat(taskSourceMsg, t, t.conversationId)}
+                              className="h-7 px-2 rounded-md inline-flex items-center gap-1 text-[11px] font-bold cursor-pointer"
+                              style={{
+                                background: taskMission ? 'rgba(16, 185, 129, 0.16)' : 'rgba(139, 92, 246, 0.18)',
+                                border: `1px solid ${taskMission ? 'rgba(16, 185, 129, 0.4)' : 'rgba(139, 92, 246, 0.45)'}`,
+                                color: taskMission ? '#10b981' : '#c4b5fd',
+                              }}
+                            >
+                              <Rocket size={12} />
+                              <span>{taskMission ? `#${taskMission.missionKey}` : 'Giao AG'}</span>
+                            </button>
+                          </Tooltip>
+                        )}
+                        <Tooltip title="Test nổ chuông nhắc">
+                          <button
+                            type="button"
+                            onClick={() => triggerTaskReminderAlert(t)}
+                            className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer"
+                            style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                          >
+                            <BellRing size={13} className="text-amber-400" />
+                          </button>
+                        </Tooltip>
+                        <Tooltip title="Mở cuộc trò chuyện gốc">
+                          <button
+                            type="button"
+                            onClick={() => selectConversation(t.conversationId)}
+                            className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer"
+                            style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                          >
+                            <ExternalLink size={13} />
+                          </button>
+                        </Tooltip>
                       </div>
                     </div>
+
+                    {taskMission && renderLiveMissionCard(taskMission, taskSourceMsg, 'task')}
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <Tooltip title="Test nổ chuông nhắc">
-                      <button
-                        type="button"
-                        onClick={() => triggerTaskReminderAlert(t)}
-                        className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer"
-                        style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
-                      >
-                        <BellRing size={13} className="text-amber-400" />
-                      </button>
-                    </Tooltip>
-                    <Tooltip title="Mở cuộc trò chuyện gốc">
-                      <button
-                        type="button"
-                        onClick={() => selectConversation(t.conversationId)}
-                        className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer"
-                        style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
-                      >
-                        <ExternalLink size={13} />
-                      </button>
-                    </Tooltip>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
@@ -7311,6 +7871,30 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 )}
               </div>
               <div className="flex items-center gap-1">
+                {isStrictDannySuperAdmin && !activeThreadMessage.mission && (
+                  <Tooltip title="Đóng gói trọn luồng này (tin nhắn gốc + câu trả lời + hình ảnh) giao cho AG lập trình">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        openMissionModalFromChat(
+                          activeThreadMessage,
+                          tasks.find(
+                            (t) => t.id === activeThreadMessage.taskId || t.sourceMessageId === activeThreadMessage.id
+                          ) || null
+                        )
+                      }
+                      className="h-7 px-2.5 rounded-md inline-flex items-center gap-1 text-[11px] font-extrabold cursor-pointer transition-all hover:scale-[1.02]"
+                      style={{
+                        background: 'rgba(139, 92, 246, 0.2)',
+                        border: '1px solid rgba(139, 92, 246, 0.45)',
+                        color: '#c4b5fd',
+                      }}
+                    >
+                      <Rocket size={12} />
+                      <span>Giao mOS Mission</span>
+                    </button>
+                  </Tooltip>
+                )}
                 {/* Nút phóng to / thu gọn nhanh luồng trả lời trên màn hình lớn */}
                 {!isMobile && (
                   <Tooltip title={threadWidth >= 560 ? 'Thu gọn luồng về 440px' : 'Mở rộng luồng sang 620px (FHD)'}>
@@ -7368,6 +7952,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 )}
                 {renderMessageAttachments(activeThreadMessage.attachments, true)}
               </div>
+
+              {/* Pinned Live mOS Mission Card at the top of the Thread */}
+              {activeThreadMessage.mission &&
+                renderLiveMissionCard(activeThreadMessage.mission, activeThreadMessage, 'thread')}
 
               <div className="text-[10.5px] font-bold uppercase text-slate-400 tabular-nums">
                 {activeThreadMessage.thread?.length || 0} câu trả lời
@@ -8141,6 +8729,124 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 )}
               </div>
             )}
+          </div>
+        </div>
+      </Modal>
+
+      {/* ================= MODAL: GIAO mOS MISSION CHO AG (1-CLICK DISPATCH) ================= */}
+      <Modal
+        open={missionModalOpen && isStrictDannySuperAdmin}
+        zIndex={1360}
+        onCancel={() => !isDispatchingMission && setMissionModalOpen(false)}
+        footer={
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <span className="text-[11px] text-slate-400">
+              ⚡ Tự động duyệt Cổng 1 & đồng bộ 2 chiều ngay trong luồng Chat
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={isDispatchingMission}
+                onClick={() => setMissionModalOpen(false)}
+                className="px-3 py-1.5 rounded-lg text-[12px] font-semibold cursor-pointer"
+                style={{ background: surfaceRaised, border: `1px solid ${borderColor}`, color: token.colorText }}
+              >
+                Huỷ
+              </button>
+              <button
+                type="button"
+                disabled={isDispatchingMission || !missionTitle.trim()}
+                onClick={() => void handleConfirmDispatchMission()}
+                className="px-4 py-1.5 rounded-lg text-[12px] font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50"
+                style={{ background: '#10b981', color: '#000' }}
+              >
+                {isDispatchingMission ? <Loader2 size={14} className="animate-spin" /> : <Rocket size={14} />}
+                <span>{isDispatchingMission ? 'Đang đóng gói...' : '🚀 Giao ngay cho AG'}</span>
+              </button>
+            </div>
+          </div>
+        }
+        title={
+          <span className="flex items-center gap-2 text-[14.5px] font-extrabold">
+            <Rocket size={17} className="text-purple-400" />
+            <span>Giao mOS Mission cho AG Lập Trình</span>
+          </span>
+        }
+        width={isMobile ? 'calc(100vw - 24px)' : 480}
+      >
+        <div className="space-y-3 py-1">
+          {missionSourceMsg && (
+            <div
+              className="p-2.5 rounded-xl text-[12px] space-y-1.5"
+              style={{
+                background: surfaceRaised,
+                border: `1px solid ${borderStrong}`,
+                borderLeft: '3.5px solid #a78bfa',
+              }}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-bold text-purple-400">
+                  📦 Gói ngữ cảnh tự động từ {missionSourceMsg.senderName}
+                </span>
+                <span className="text-[10.5px] text-slate-400 tabular-nums">
+                  {1 + (missionSourceMsg.thread?.length || 0)} tin nhắn ·{' '}
+                  {(missionSourceMsg.attachments?.length || 0) +
+                    (missionSourceMsg.thread || []).reduce((acc, r) => acc + (r.attachments?.length || 0), 0)}{' '}
+                  hình ảnh
+                </span>
+              </div>
+              <div className="text-[11.5px] opacity-90 line-clamp-3 whitespace-pre-wrap">
+                &ldquo;{missionSourceMsg.text}&rdquo;
+              </div>
+            </div>
+          )}
+
+          <div>
+            <div className="text-[11px] font-bold text-slate-400 mb-1">Tiêu đề mOS Mission</div>
+            <Input
+              value={missionTitle}
+              onChange={(e) => setMissionTitle(e.target.value)}
+              placeholder="Nhập tiêu đề nhiệm vụ cho AG..."
+            />
+          </div>
+
+          <div>
+            <div className="text-[11px] font-bold text-slate-400 mb-1">Phân loại nhiệm vụ</div>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { key: 'FEATURE' as const, label: '✨ Tính năng / Nâng cấp mới', color: '#a78bfa' },
+                { key: 'BUG' as const, label: '🐞 Sửa lỗi vận hành (Bug)', color: '#f43f5e' },
+              ].map((opt) => {
+                const active = missionType === opt.key;
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setMissionType(opt.key)}
+                    className="h-9 px-3 rounded-lg text-[12px] font-bold flex items-center justify-center cursor-pointer transition-all"
+                    style={{
+                      background: active ? `${opt.color}22` : surfaceRaised,
+                      border: `1.5px solid ${active ? opt.color : borderColor}`,
+                      color: active ? opt.color : token.colorText,
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[11px] font-bold text-slate-400 mb-1">
+              Chỉ đạo thêm của Super Admin Danny cho AG (Tuỳ chọn)
+            </div>
+            <Input.TextArea
+              rows={2}
+              value={missionNote}
+              onChange={(e) => setMissionNote(e.target.value)}
+              placeholder="VD: Áp dụng đúng quy chuẩn Combo Elsa của Bảo Hân, giữ nguyên layout bảng..."
+            />
           </div>
         </div>
       </Modal>

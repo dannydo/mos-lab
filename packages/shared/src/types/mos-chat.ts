@@ -30,6 +30,51 @@ export interface MosChatMessageEditHistoryItem {
   editorName?: string;
 }
 
+export type MosChatMissionStage =
+  'RECEIVED' | 'NEEDS_INFO' | 'BUILDING' | 'AWAITING_RELEASE' | 'READY_FOR_REVIEW' | 'COMPLETED' | 'NOT_PROCEEDING';
+
+export interface MosChatMissionSummary {
+  reportId: number;
+  key: string;
+  missionKey: string;
+  missionCode: string;
+  requestType: 'BUG' | 'FEATURE';
+  title: string;
+  status: string;
+  clarificationStatus: string;
+  stage: MosChatMissionStage;
+  stepIndex: 1 | 2 | 3 | 4;
+  humanBadge: string;
+  stageLabel: string;
+  humanSummary: string;
+  humanStatusSummary: string;
+  clarificationQuestion?: string | null;
+  releaseUrl?: string | null;
+  reporterName?: string | null;
+  reporterStaffId?: number | null;
+  conversationId?: string;
+  messageId?: string;
+  taskId?: string | null;
+  updatedAt: string;
+  canSuperAdminApproveCommit?: boolean;
+  canSuperAdminApproveDeploy?: boolean;
+  canReporterAccept?: boolean;
+  superAdminActions?: {
+    canApproveImplementation: boolean;
+    canApproveCommit: boolean;
+    canApproveDeploy: boolean;
+    canConfirmClose: boolean;
+    activeJobId?: string | null;
+    executionPhase?: string | null;
+    changedFilesCount?: number;
+    diffStat?: string | null;
+    agentSummary?: string | null;
+  };
+  reporterActions?: {
+    canAcceptOrReopen: boolean;
+  };
+}
+
 export interface MosChatThreadReply {
   id: string;
   senderId: number | string;
@@ -48,6 +93,10 @@ export interface MosChatThreadReply {
   deletedBy?: string | number | null;
   deletedByName?: string | null;
   originalText?: string;
+  isMissionMilestone?: boolean;
+  missionStage?: MosChatMissionStage | null;
+  missionId?: number | null;
+  syncedCommentId?: number | null;
 }
 
 export interface MosChatMessage {
@@ -67,6 +116,11 @@ export interface MosChatMessage {
   customerCard?: MosChatCustomerCard | null;
   attachments?: MosChatImageAttachment[];
   taskId?: string | null;
+  missionId?: number | null;
+  missionKey?: string | null;
+  mission?: MosChatMissionSummary | null;
+  missionSyncedStage?: MosChatMissionStage | null;
+  missionSyncedCommentIds?: number[];
   thread?: MosChatThreadReply[];
   isSystemReminder?: boolean;
   isAiBot?: boolean;
@@ -101,6 +155,9 @@ export interface MosChatTaskItem {
   done: boolean;
   fired?: boolean;
   createdAt: string;
+  missionId?: number | null;
+  missionKey?: string | null;
+  mission?: MosChatMissionSummary | null;
 }
 
 export interface MosChatConversation {
@@ -258,4 +315,52 @@ export interface AddMosChatMemberRequest {
 export interface RemoveMosChatMemberRequest {
   conversationId: string;
   staffId: number;
+}
+
+export type MosChatMissionActionType =
+  | 'APPROVE_IMPLEMENTATION'
+  | 'APPROVE_COMMIT'
+  | 'APPROVE_DEPLOY'
+  | 'ACCEPT_RESULT'
+  | 'REQUEST_REWORK'
+  | 'REPORTER_ACCEPT'
+  | 'REPORTER_REOPEN';
+
+export interface CreateMosChatMissionRequest {
+  conversationId: string;
+  messageId?: string | null;
+  taskId?: string | null;
+  requestType?: 'BUG' | 'FEATURE';
+  type?: 'BUG' | 'FEATURE';
+  priority?: 'P0' | 'P1' | 'P2' | 'P3';
+  dannyNote?: string | null;
+  note?: string | null;
+  titleOverride?: string | null;
+  title?: string | null;
+  pageUrl?: string | null;
+}
+
+export interface CreateMosChatMissionResponse {
+  success: boolean;
+  mission: MosChatMissionSummary;
+  message?: MosChatMessage;
+  task?: MosChatTaskItem | null;
+}
+
+export interface ActionMosChatMissionRequest {
+  conversationId?: string;
+  messageId?: string | null;
+  taskId?: string | null;
+  action: MosChatMissionActionType;
+  note?: string | null;
+  feedback?: string | null;
+}
+
+export interface ActionMosChatMissionResponse {
+  success: boolean;
+  mission: MosChatMissionSummary;
+  message?: MosChatMessage | null;
+  statusMessage?: string;
+  task?: MosChatTaskItem | null;
+  systemReply?: MosChatThreadReply | null;
 }

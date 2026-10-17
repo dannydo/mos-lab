@@ -140,7 +140,7 @@ describe('UI primitives', () => {
     );
   });
 
-  it('shows every admin the mOS Inbox while preserving Danny’s final-decision badge', () => {
+  it('shows every admin the mOS Mission while preserving Danny’s final-decision badge', () => {
     const adminSystemGroup = getSidebarGroups('admin', [], true, {}, [], false, {}, {}, {}, 3).find(
       (group) => group.groupKey === 'grp-system'
     );
@@ -158,7 +158,7 @@ describe('UI primitives', () => {
     ).find((group) => group.groupKey === 'grp-system');
 
     const expectedInbox = {
-      label: 'mOS Inbox',
+      label: 'mOS Mission',
       badgeCount: 3,
       path: '/dashboard/bug-reports',
     };

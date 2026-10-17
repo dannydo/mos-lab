@@ -3,8 +3,10 @@ import crypto from 'crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
 import {
+  ActionMosChatMissionRequest,
   CreateMosChatConversationRequest,
   CreateMosChatMessageRequest,
+  CreateMosChatMissionRequest,
   CreateMosChatTaskRequest,
   CreateMosChatThreadReplyRequest,
   DeleteMosChatMessageRequest,
@@ -24,6 +26,7 @@ import {
   UploadMosChatImageResponse,
 } from '@mos-lab/shared';
 import { requireAuth, JwtUserPayload } from '../../middlewares/auth.js';
+import { ChatMissionBridgeService } from './chat-mission-bridge.service.js';
 
 const CHAT_CONVERSATIONS_CONFIG_KEY = 'mos_chat:conversations_v1';
 const CHAT_TASKS_CONFIG_KEY = 'mos_chat:tasks_v1';
@@ -1173,14 +1176,25 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         const query = (request.query || {}) as { sinceVersion?: string };
         const clientVersion = Number(query.sinceVersion) || 0;
 
-        const { conversations, tasks, accessConfig, userPrefsByUserKey, version } = await loadChatState(fastify);
+        const state = await loadChatState(fastify);
+        const { conversations, tasks, accessConfig, userPrefsByUserKey } = state;
+        const missionMutated = await ChatMissionBridgeService.syncLinkedMissionsIntoChatState(
+          fastify,
+          conversations,
+          tasks
+        );
+        if (missionMutated) {
+          await Promise.all([saveConversations(fastify, conversations), saveTasks(fastify, tasks)]);
+        }
+        const version = memoryChatCache?.version || state.version;
+
         const staffDirectory = await loadStaffDirectoryCached(fastify);
         const canAccessChat = evaluateCanUserAccessMosChat(user, staffDirectory, accessConfig);
         const userPrefKey = resolveUserPrefKey(user, staffDirectory);
         const userPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
 
         // Zero-DB, Zero-Payload Short-Circuit when nothing changed!
-        if (clientVersion > 0 && clientVersion === version) {
+        if (!missionMutated && clientVersion > 0 && clientVersion === version) {
           return {
             version,
             unchanged: true,
@@ -1521,6 +1535,10 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       };
       msg.thread.push(replyItem);
       conv.updatedAt = now.toISOString();
+
+      if (msg.missionId) {
+        await ChatMissionBridgeService.syncChatReplyToMission(fastify, user, msg, replyItem, mosChatMediaRoot());
+      }
 
       await saveConversations(fastify, conversations);
       return { success: true, reply: replyItem, message: msg };
@@ -2295,6 +2313,119 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
 
       await saveConversations(fastify, conversations);
       return { success: true, conversation: conv };
+    }
+  );
+
+  // POST /api/chat/missions (1-Click Dispatch from mOS Chat Message/Thread/Task to mOS Mission for AG)
+  // Exclusively restricted to Super Admin Danny
+  fastify.post(
+    '/chat/missions',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const user = request.user as JwtUserPayload;
+        const body = (request.body || {}) as CreateMosChatMissionRequest;
+        if (!body.conversationId || (!body.messageId && !body.taskId)) {
+          return reply.status(400).send({
+            error: 'Bad Request',
+            message: 'Thiếu thông tin cuộc trò chuyện hoặc tin nhắn gốc để tạo mOS Mission.',
+          });
+        }
+
+        const [{ conversations, tasks }, staffDirectory] = await Promise.all([
+          loadChatState(fastify),
+          loadStaffDirectoryCached(fastify),
+        ]);
+        const conv = conversations.find((c) => c.id === body.conversationId);
+        if (!conv) {
+          return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy cuộc hội thoại' });
+        }
+        if (!canUserAccessConversation(conv, user, staffDirectory)) {
+          return reply.status(403).send({
+            error: 'Forbidden',
+            message: 'Bạn không có quyền truy cập cuộc hội thoại này.',
+          });
+        }
+
+        const result = await ChatMissionBridgeService.createMissionFromChat(
+          fastify,
+          user,
+          body,
+          conversations,
+          tasks,
+          staffDirectory,
+          mosChatMediaRoot()
+        );
+
+        await Promise.all([saveConversations(fastify, conversations), saveTasks(fastify, tasks)]);
+
+        return {
+          success: true,
+          mission: result.mission,
+          message: result.message,
+          task: result.task,
+        };
+      } catch (err: SafeAny) {
+        fastify.log.error('Create mOS Mission from chat error:', err);
+        const statusCode = Number(err?.statusCode) || 400;
+        return reply.status(statusCode).send({
+          error: statusCode === 403 ? 'Forbidden' : 'Bad Request',
+          message: err?.message || 'Không thể giao nhiệm vụ sang mOS Mission.',
+        });
+      }
+    }
+  );
+
+  // POST /api/chat/missions/:reportId/action (Inline Super Admin & Reporter actions directly inside mOS Chat)
+  fastify.post(
+    '/chat/missions/:reportId/action',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const user = request.user as JwtUserPayload;
+        const { reportId: rawReportId } = request.params as { reportId: string };
+        const reportId = Number(rawReportId);
+        if (!reportId || reportId <= 0) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'Mã mOS Mission không hợp lệ.' });
+        }
+
+        const body = (request.body || {}) as ActionMosChatMissionRequest;
+        if (!body.action) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu hành động thực thi mOS Mission.' });
+        }
+
+        const { conversations, tasks } = await loadChatState(fastify);
+        const result = await ChatMissionBridgeService.executeMissionActionFromChat(
+          fastify,
+          user,
+          reportId,
+          body,
+          conversations,
+          tasks
+        );
+
+        await Promise.all([saveConversations(fastify, conversations), saveTasks(fastify, tasks)]);
+
+        return {
+          success: true,
+          mission: result.mission,
+          message: result.message,
+          statusMessage: result.statusMessage,
+          task: result.task,
+          systemReply: result.systemReply,
+        };
+      } catch (err: SafeAny) {
+        fastify.log.error('Execute mOS Mission action from chat error:', err);
+        const statusCode = Number(err?.statusCode) || 400;
+        return reply.status(statusCode).send({
+          error: statusCode === 403 ? 'Forbidden' : 'Bad Request',
+          message: err?.message || 'Không thể thực thi thao tác trên mOS Mission.',
+        });
+      }
     }
   );
 }

@@ -714,7 +714,7 @@ export function BugReportSurface() {
           tabBarExtraContent={
             <div className="flex items-center gap-1">
               {canViewInbox ? (
-                <IconButton label="Mở mOS Inbox" icon={Inbox} tone="text" href="/dashboard/bug-reports" />
+                <IconButton label="Mở mOS Mission" icon={Inbox} tone="text" href="/dashboard/bug-reports" />
               ) : null}
             </div>
           }

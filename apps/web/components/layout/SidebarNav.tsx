@@ -483,7 +483,7 @@ export default function SidebarNav({
       (item) =>
         ({
           key: `pinned-${item.id}`,
-          label: item.title,
+          label: item.title === 'mOS Inbox' ? 'mOS Mission' : item.title,
           path: item.url,
           icon: getResolvedPinnedIcon(item, true),
           isExternal: item.isExternal,

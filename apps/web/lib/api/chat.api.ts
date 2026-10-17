@@ -1,6 +1,10 @@
 import type {
+  ActionMosChatMissionRequest,
+  ActionMosChatMissionResponse,
   CreateMosChatConversationRequest,
   CreateMosChatMessageRequest,
+  CreateMosChatMissionRequest,
+  CreateMosChatMissionResponse,
   CreateMosChatTaskRequest,
   CreateMosChatThreadReplyRequest,
   DeleteMosChatMessageRequest,
@@ -12,6 +16,7 @@ import type {
   MosChatTaskItem,
   MosChatThreadReply,
   MosChatUserSidebarPrefs,
+  SafeAny,
   UpdateMosChatAccessConfigRequest,
   UploadMosChatImageRequest,
   UploadMosChatImageResponse,
@@ -153,6 +158,19 @@ export const chatApi = {
         `/chat/conversations/${encodeURIComponent(conversationId)}/members/${encodeURIComponent(String(staffId))}`
       );
       invalidateApiGetCache(['/chat/bootstrap']);
+      return res.data;
+    },
+    createMission: async (payload: CreateMosChatMissionRequest): Promise<CreateMosChatMissionResponse> => {
+      const res = await api.post('/chat/missions', payload);
+      invalidateApiGetCache(['/chat/bootstrap', '/bug-reports/inbox']);
+      return res.data;
+    },
+    missionAction: async (
+      reportId: number,
+      payload: ActionMosChatMissionRequest
+    ): Promise<ActionMosChatMissionResponse> => {
+      const res = await api.post(`/chat/missions/${encodeURIComponent(String(reportId))}/action`, payload);
+      invalidateApiGetCache(['/chat/bootstrap', '/bug-reports/inbox']);
       return res.data;
     },
   },

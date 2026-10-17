@@ -1255,7 +1255,7 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
                       <div className="text-xs text-emerald-700 dark:text-emerald-400">
                         Ticket{' '}
                         <strong>{dispatchResult?.key || activeIssue.resolutionNotes?.match(/BUG-\d+/)?.[0]}</strong> đã
-                        được cấp quyền implementation. AG đang tự động nhận task và xử lý theo chu trình mOS Inbox.
+                        được cấp quyền implementation. AG đang tự động nhận task và xử lý theo chu trình mOS Mission.
                       </div>
                       <div className="pt-1">
                         <Button
@@ -1267,18 +1267,18 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
                             window.open(`/dashboard/bug-reports?search=${key || ''}`, '_blank');
                           }}
                         >
-                          Mở Ticket trong mOS Inbox <AppIcon icon={ExternalLink} size="sm" />
+                          Mở Ticket trong mOS Mission <AppIcon icon={ExternalLink} size="sm" />
                         </Button>
                       </div>
                     </div>
                   ) : (
                     <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 dark:border-slate-800">
                       <div className="text-xs text-slate-500">
-                        Bấm duyệt để AG tự động mở ticket mOS Inbox, nhận handoff và giải quyết vấn đề.
+                        Bấm duyệt để AG tự động mở ticket mOS Mission, nhận handoff và giải quyết vấn đề.
                       </div>
                       <Popconfirm
                         title="Duyệt &amp; Kích hoạt AG Xử lý Tự động?"
-                        description="AG sẽ tự động tạo ticket trong mOS Inbox, duyệt implementation và sẵn sàng nhận handoff để sửa code &amp; chạy test."
+                        description="AG sẽ tự động tạo ticket trong mOS Mission, duyệt implementation và sẵn sàng nhận handoff để sửa code &amp; chạy test."
                         onConfirm={handleAgDispatch}
                         okText="Duyệt cho AG"
                         cancelText="Hủy"
@@ -1321,7 +1321,7 @@ export function FrontendTelemetryDrawer({ open, onClose }: { open: boolean; onCl
               extra={
                 <Popconfirm
                   title="Chuyển thành Bug Report chính thức?"
-                  description="Sự cố này sẽ được tạo thành một Ticket trong mOS Inbox để AI Worker / Kỹ thuật viên triển khai bản vá."
+                  description="Sự cố này sẽ được tạo thành một Ticket trong mOS Mission để AI Worker / Kỹ thuật viên triển khai bản vá."
                   onConfirm={handleConvertToBugReport}
                   okText="Tạo Bug Report"
                   cancelText="Hủy"
