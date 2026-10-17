@@ -8698,7 +8698,7 @@
         "path": "/api/customers/:id/summary",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1476
+        "line": 1477
       }
     },
     {
@@ -8712,7 +8712,7 @@
         "path": "/api/customers/:id/bookings",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1812
+        "line": 1814
       }
     },
     {
@@ -8726,7 +8726,7 @@
         "path": "/api/customers/:id/calls",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 2034
+        "line": 2036
       }
     },
     {
@@ -8754,7 +8754,7 @@
         "path": "/api/customers/random-ids",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1674
+        "line": 1678
       }
     },
     {
@@ -8992,7 +8992,7 @@
         "path": "/api/customers/nyc-stats",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1096
+        "line": 1279
       }
     },
     {
@@ -9034,7 +9034,7 @@
         "path": "/api/nyc/config",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 16
+        "line": 44
       }
     },
     {
@@ -9048,7 +9048,7 @@
         "path": "/api/nyc/config",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 67
+        "line": 95
       }
     },
     {
@@ -9062,7 +9062,7 @@
         "path": "/api/loca/config",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 125
+        "line": 153
       }
     },
     {
@@ -9076,7 +9076,7 @@
         "path": "/api/loca/config",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 162
+        "line": 190
       }
     },
     {
@@ -9090,7 +9090,7 @@
         "path": "/api/dashboard/vat-config",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 211
+        "line": 239
       }
     },
     {
@@ -9104,7 +9104,7 @@
         "path": "/api/dashboard/vat-config",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 229
+        "line": 257
       }
     },
     {
@@ -9118,7 +9118,7 @@
         "path": "/api/dashboard/today",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 267
+        "line": 1405
       }
     },
     {
@@ -9132,7 +9132,7 @@
         "path": "/api/dashboard/today/revenue-hourly",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1393
+        "line": 1488
       }
     },
     {
@@ -9146,7 +9146,7 @@
         "path": "/api/dashboard/today/revenue-detail",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1757
+        "line": 1852
       }
     },
     {
@@ -9622,7 +9622,7 @@
         "path": "/api/kpi/bk/booking/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 50
+        "line": 56
       }
     },
     {
@@ -9636,7 +9636,7 @@
         "path": "/api/kpi/bk/booking/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 61
+        "line": 67
       }
     },
     {
@@ -9650,7 +9650,7 @@
         "path": "/api/kpi/bk/done/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 278
+        "line": 284
       }
     },
     {
@@ -9664,7 +9664,7 @@
         "path": "/api/kpi/bk/done/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 289
+        "line": 295
       }
     },
     {
@@ -9678,7 +9678,7 @@
         "path": "/api/kpi/bk/tip/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 520
+        "line": 551
       }
     },
     {
@@ -9692,7 +9692,7 @@
         "path": "/api/kpi/bk/tip/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 633
+        "line": 716
       }
     },
     {
@@ -9706,7 +9706,7 @@
         "path": "/api/kpi/bk/revenue/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 737
+        "line": 872
       }
     },
     {
@@ -9720,7 +9720,7 @@
         "path": "/api/kpi/bk/revenue/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 748
+        "line": 883
       }
     },
     {
@@ -9734,7 +9734,7 @@
         "path": "/api/kpi/bk/paystub",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 844
+        "line": 979
       }
     },
     {
@@ -9748,7 +9748,7 @@
         "path": "/api/kpi/bk/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 877
+        "line": 1012
       }
     },
     {
@@ -9762,7 +9762,7 @@
         "path": "/api/kpi/bk/attendance-exception",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 911
+        "line": 1046
       }
     },
     {
@@ -9776,7 +9776,7 @@
         "path": "/api/kpi/bk/attendance-exception/audit-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 966
+        "line": 1101
       }
     },
     {
@@ -9790,7 +9790,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 984
+        "line": 1119
       }
     },
     {
@@ -9804,7 +9804,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1029
+        "line": 1164
       }
     },
     {
@@ -9818,7 +9818,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1081
+        "line": 1216
       }
     },
     {
@@ -9832,7 +9832,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1093
+        "line": 1228
       }
     },
     {
@@ -9846,7 +9846,7 @@
         "path": "/api/kpi/bk/games/:id/done-bonuses",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1114
+        "line": 1249
       }
     },
     {
@@ -9860,7 +9860,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1137
+        "line": 1272
       }
     },
     {
@@ -9874,7 +9874,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1155
+        "line": 1290
       }
     },
     {
@@ -9888,7 +9888,7 @@
         "path": "/api/kpi/bk/games/:id/finalize",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1176
+        "line": 1311
       }
     },
     {
@@ -9902,7 +9902,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1197
+        "line": 1332
       }
     },
     {
@@ -12590,7 +12590,7 @@
         "path": "/api/user-preferences/pinned-links/:id",
         "module": "user-preferences",
         "handler": "preHandler",
-        "line": 277
+        "line": 279
       }
     },
     {
@@ -27106,6 +27106,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:TelesaleDailySnapshotItem",
+      "type": "SharedType",
+      "label": "TelesaleDailySnapshotItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-target.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleDailySnapshotItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:TelesaleTodayBookItem",
       "type": "SharedType",
       "label": "TelesaleTodayBookItem",
@@ -28038,6 +28050,30 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "TechnicianSelector",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:bookingCampaignScope.test",
+      "type": "UIComponent",
+      "label": "<bookingCampaignScope.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/booking/bookingCampaignScope.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "bookingCampaignScope.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:bookingCampaignScope",
+      "type": "UIComponent",
+      "label": "<bookingCampaignScope />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/booking/bookingCampaignScope.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "bookingCampaignScope",
         "isPrimitive": false
       }
     },
@@ -30878,8 +30914,8 @@
       "filePath": "apps/api/src/modules/ai/ag-chat-bridge.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 15825,
-        "lineCount": 458,
+        "sizeBytes": 15897,
+        "lineCount": 459,
         "ext": ".ts"
       }
     },
@@ -31541,8 +31577,8 @@
       "filePath": "apps/api/src/modules/campaigns/campaign.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 179499,
-        "lineCount": 5089,
+        "sizeBytes": 184204,
+        "lineCount": 5200,
         "ext": ".ts"
       }
     },
@@ -31788,8 +31824,8 @@
       "filePath": "apps/api/src/modules/customers/customer-last-visit-invariant.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5478,
-        "lineCount": 132,
+        "sizeBytes": 6580,
+        "lineCount": 146,
         "ext": ".ts"
       }
     },
@@ -31905,8 +31941,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-detail.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 89265,
-        "lineCount": 2100,
+        "sizeBytes": 89541,
+        "lineCount": 2102,
         "ext": ".ts"
       }
     },
@@ -31918,8 +31954,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-list.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 86726,
-        "lineCount": 2100,
+        "sizeBytes": 87029,
+        "lineCount": 2104,
         "ext": ".ts"
       }
     },
@@ -31970,8 +32006,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-stats.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 53080,
-        "lineCount": 1300,
+        "sizeBytes": 55248,
+        "lineCount": 1366,
         "ext": ".ts"
       }
     },
@@ -31996,8 +32032,8 @@
       "filePath": "apps/api/src/modules/customers/routes/dashboard.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 82154,
-        "lineCount": 2015,
+        "sizeBytes": 85212,
+        "lineCount": 2110,
         "ext": ".ts"
       }
     },
@@ -32529,8 +32565,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 48131,
-        "lineCount": 1213,
+        "sizeBytes": 53499,
+        "lineCount": 1348,
         "ext": ".ts"
       }
     },
@@ -32620,8 +32656,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cv-speed.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 35973,
-        "lineCount": 933,
+        "sizeBytes": 36396,
+        "lineCount": 948,
         "ext": ".ts"
       }
     },
@@ -32685,7 +32721,7 @@
       "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9949,
+        "sizeBytes": 10005,
         "lineCount": 266,
         "ext": ".ts"
       }
@@ -32763,8 +32799,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-leaderboard.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 24132,
-        "lineCount": 646,
+        "sizeBytes": 24924,
+        "lineCount": 664,
         "ext": ".ts"
       }
     },
@@ -32932,8 +32968,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 135685,
-        "lineCount": 3252,
+        "sizeBytes": 139776,
+        "lineCount": 3349,
         "ext": ".ts"
       }
     },
@@ -33686,8 +33722,8 @@
       "filePath": "apps/api/src/modules/projections/customer-visit-projection.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 821,
-        "lineCount": 20,
+        "sizeBytes": 1932,
+        "lineCount": 39,
         "ext": ".ts"
       }
     },
@@ -33699,8 +33735,8 @@
       "filePath": "apps/api/src/modules/projections/customer-visit-projection.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13855,
-        "lineCount": 363,
+        "sizeBytes": 15107,
+        "lineCount": 393,
         "ext": ".ts"
       }
     },
@@ -33985,8 +34021,8 @@
       "filePath": "apps/api/src/modules/user-preferences/pinned-links.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10780,
-        "lineCount": 347,
+        "sizeBytes": 10917,
+        "lineCount": 351,
         "ext": ".ts"
       }
     },
@@ -39666,8 +39702,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/RealisticCardFireworks.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 14637,
-        "lineCount": 476,
+        "sizeBytes": 15436,
+        "lineCount": 493,
         "ext": ".tsx"
       }
     },
@@ -39731,8 +39767,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitor.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6638,
-        "lineCount": 200,
+        "sizeBytes": 8170,
+        "lineCount": 246,
         "ext": ".tsx"
       }
     },
@@ -39744,8 +39780,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 40699,
-        "lineCount": 885,
+        "sizeBytes": 46763,
+        "lineCount": 1005,
         "ext": ".tsx"
       }
     },
@@ -39809,8 +39845,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvJournalModal.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 32176,
-        "lineCount": 816,
+        "sizeBytes": 32351,
+        "lineCount": 824,
         "ext": ".tsx"
       }
     },
@@ -39900,8 +39936,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/hooks/useTelesaleTvLiveCelebration.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 66454,
-        "lineCount": 1629,
+        "sizeBytes": 66773,
+        "lineCount": 1644,
         "ext": ".ts"
       }
     },
@@ -39913,8 +39949,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 28075,
-        "lineCount": 652,
+        "sizeBytes": 28126,
+        "lineCount": 653,
         "ext": ".tsx"
       }
     },
@@ -42071,8 +42107,8 @@
       "filePath": "packages/shared/src/types/telesale-target.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 9044,
-        "lineCount": 348,
+        "sizeBytes": 9429,
+        "lineCount": 363,
         "ext": ".ts"
       }
     },
@@ -56499,6 +56535,13 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:TelesaleDailySnapshotItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleDailySnapshotItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:TelesaleTodayBookItem:ws:packages/shared",
       "source": "type:@mos-lab/shared:TelesaleTodayBookItem",
       "target": "ws:packages/shared",
@@ -57278,6 +57321,34 @@
     {
       "id": "edge:uicomp:TechnicianSelector:token:color:primary",
       "source": "uicomp:TechnicianSelector",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:bookingCampaignScope.test:ws:apps/web",
+      "source": "uicomp:bookingCampaignScope.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:bookingCampaignScope.test:token:color:primary",
+      "source": "uicomp:bookingCampaignScope.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:bookingCampaignScope:ws:apps/web",
+      "source": "uicomp:bookingCampaignScope",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:bookingCampaignScope:token:color:primary",
+      "source": "uicomp:bookingCampaignScope",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -90912,23 +90983,23 @@
     }
   ],
   "stats": {
-    "totalNodes": 3230,
-    "totalEdges": 6963,
+    "totalNodes": 3233,
+    "totalEdges": 6968,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 165,
       "FastifyRoute": 685,
       "Component": 58,
-      "SharedType": 1173,
+      "SharedType": 1174,
       "DesignToken": 12,
-      "UIComponent": 220,
+      "UIComponent": 222,
       "File": 914
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1350,
+      "EXPORTS": 1351,
       "HANDLES_ROUTE": 685,
-      "RENDERS": 278,
-      "USES_TOKEN": 222,
+      "RENDERS": 280,
+      "USES_TOKEN": 224,
       "IMPORTS": 484,
       "QUERIES_MODEL": 390,
       "API_CALL": 3554
@@ -90936,7 +91007,7 @@
     "fastifyRouteCount": 690,
     "prismaModelCount": 165,
     "nextPageCount": 58,
-    "sharedTypeCount": 1173
+    "sharedTypeCount": 1174
   },
   "routes": [
     {

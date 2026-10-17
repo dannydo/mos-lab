@@ -119,22 +119,18 @@ function TelesaleTargetContent() {
 
   // Live Voice Celebration hook active on page level (MOS-FEAT-83)
   const liveCelebration = useTelesaleTvLiveCelebration();
+  const { ingestLiveEvents, checkMilestones } = liveCelebration;
 
   // Ingest live events & check milestones whenever overview is updated
   useEffect(() => {
     if (!overview) return;
     if (overview.todayLiveEvents) {
-      liveCelebration.ingestLiveEvents(overview.todayLiveEvents);
+      ingestLiveEvents(overview.todayLiveEvents);
     }
     const pacing = calculateShiftPacing(new Date());
     const metrics = calculateTvMonitorMetrics(overview.teamDaily, pacing);
-    liveCelebration.checkMilestones(
-      overview.teamDaily.date,
-      metrics.bookActual,
-      metrics.doneActual,
-      metrics.checkinActual
-    );
-  }, [overview, liveCelebration]);
+    checkMilestones(overview.teamDaily.date, metrics.bookActual, metrics.doneActual, metrics.checkinActual);
+  }, [overview, ingestLiveEvents, checkMilestones]);
 
   useEffect(() => {
     fetchOverview(selectedMonth);
@@ -551,8 +547,8 @@ function TelesaleTargetContent() {
 
           {/* CỘT 2 (42% Width = col-span-5): CHIẾN TRƯỜNG & TÁC CHIẾN HÔM NAY */}
           <div className="lg:col-span-5 flex flex-col justify-between gap-3 h-full overflow-hidden">
-            {/* Box 2: TV Monitor Hôm Nay (Top 42%) */}
-            <div className="h-[42%] overflow-hidden">
+            {/* Box 2: TV Monitor Hôm Nay (Top 51%) */}
+            <div className="h-[51%] overflow-hidden">
               <TelesaleTodayTvMonitorCard
                 overview={overview}
                 isTvOpen={tvModeOpen}
@@ -561,8 +557,8 @@ function TelesaleTargetContent() {
               />
             </div>
 
-            {/* Box 4: Hành Động Mỗi Ngày (Bottom 56%) */}
-            <div className="h-[56%] overflow-hidden">
+            {/* Box 4: Hành Động Mỗi Ngày (Bottom 47%) */}
+            <div className="h-[47%] overflow-hidden">
               <DailyActionSchedule
                 overview={overview}
                 isTvOpen={tvModeOpen}

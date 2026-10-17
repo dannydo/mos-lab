@@ -2,8 +2,19 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Tooltip, Button, theme, Popover, Switch, Slider, Select } from 'antd';
-import { Tv, Calendar, Maximize2, Volume2, VolumeX, ClipboardList, Sparkles, Settings, Square } from 'lucide-react';
-import { TelesaleTargetOverview, isAdminOrSuperAdminRole } from '@mos-lab/shared';
+import {
+  Tv,
+  Calendar,
+  Maximize2,
+  Volume2,
+  VolumeX,
+  ClipboardList,
+  Sparkles,
+  Settings,
+  Square,
+  History,
+} from 'lucide-react';
+import { TelesaleTargetOverview, isAdminOrSuperAdminRole, TelesaleDailySnapshotItem } from '@mos-lab/shared';
 import { calculateShiftPacing, calculateTvMonitorMetrics } from '../utils/tv-monitor-pacing';
 import { TelesaleTvJournalModal } from './TelesaleTvJournalModal';
 import { SemicircleGauge } from './SemicircleGauge';
@@ -16,6 +27,24 @@ const getProgressTier = (percent: number): 'rose' | 'amber' | 'emerald' => {
   if (percent < 80) return 'rose';
   if (percent < 100) return 'amber';
   return 'emerald';
+};
+
+const getMiniTierBadgeClass = (tier: 'rose' | 'amber' | 'emerald', isDark = true) => {
+  switch (tier) {
+    case 'emerald':
+      return isDark
+        ? 'text-emerald-300 bg-emerald-950/80 border border-emerald-500/60 font-bold'
+        : 'text-emerald-800 bg-emerald-100 border border-emerald-300 font-bold';
+    case 'amber':
+      return isDark
+        ? 'text-amber-300 bg-amber-950/80 border border-amber-500/60 font-bold'
+        : 'text-amber-800 bg-amber-100 border border-amber-300 font-bold';
+    case 'rose':
+    default:
+      return isDark
+        ? 'text-rose-300 bg-rose-950/80 border border-rose-500/60 font-bold'
+        : 'text-rose-800 bg-rose-100 border border-rose-300 font-bold';
+  }
 };
 
 const getCardTierStyles = (tier: 'rose' | 'amber' | 'emerald', isDark = true) => {
@@ -84,7 +113,13 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
   const { teamDaily } = overview;
   const [now, setNow] = useState<Date>(new Date());
   const [journalOpen, setJournalOpen] = useState<boolean>(false);
+  const [journalDate, setJournalDate] = useState<string>(teamDaily.date);
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
+
+  const handleOpenJournalForDate = useCallback((dateStr: string) => {
+    setJournalDate(dateStr);
+    setJournalOpen(true);
+  }, []);
 
   // Fallback local settings if liveCelebration is not provided
   const [localSettings, setLocalSettings] = useState<TvCelebrationSettings>({
@@ -215,6 +250,12 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
   const bookStyles = getCardTierStyles(bookTier, isDark);
   const checkinStyles = getCardTierStyles(checkinTier, isDark);
   const doneStyles = getCardTierStyles(doneTier, isDark);
+
+  const pastDailySnapshots: TelesaleDailySnapshotItem[] = useMemo(() => {
+    const list = overview.dailySnapshots && overview.dailySnapshots.length > 0 ? overview.dailySnapshots : [];
+    // Loại trừ ngày hôm nay vì đã có 2 đồng hồ lớn ở trên
+    return list.filter((item) => item.date !== teamDaily.date && !item.isToday);
+  }, [overview.dailySnapshots, teamDaily.date]);
 
   // Popover configuration content for fireworks and sound
   const settingsPopoverContent = (
@@ -463,7 +504,7 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
             }`
       }`}
     >
-      <TelesaleTvJournalModal open={journalOpen} onClose={() => setJournalOpen(false)} />
+      <TelesaleTvJournalModal open={journalOpen} onClose={() => setJournalOpen(false)} initialDate={journalDate} />
 
       {/* 1. Header Bar */}
       <div>
@@ -602,7 +643,10 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
                   type="button"
                   data-testid="tv-journal-card-button"
                   aria-label="Nhật ký TV"
-                  onClick={() => setJournalOpen(true)}
+                  onClick={() => {
+                    setJournalDate(teamDaily.date);
+                    setJournalOpen(true);
+                  }}
                   className={`w-7 h-7 rounded-lg border flex items-center justify-center transition-all cursor-pointer shrink-0 ${
                     isDark
                       ? 'border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:text-amber-300 hover:bg-zinc-800 hover:border-zinc-700'
@@ -861,6 +905,93 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
               </span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* 2.5 Dải Snapshot Các Ngày Qua (Từ hôm qua về đầu tháng) - Rõ nét, dễ đọc, 7 ngày qua trên FHD */}
+      <div className="mt-2 pt-1 border-t border-dashed border-zinc-800/60 dark:border-zinc-800/80">
+        <div className="flex items-center justify-between text-[10px] font-mono text-zinc-300 dark:text-zinc-300 px-0.5 mb-1.5 font-semibold">
+          <span className="flex items-center gap-1.5">
+            <History className="w-3 h-3 text-amber-400" />
+            <span className="text-zinc-200 dark:text-zinc-200 font-bold tracking-wide">
+              SNAPSHOT CÁC NGÀY QUA ({overview.month})
+            </span>
+          </span>
+          <span className="text-zinc-400 dark:text-zinc-400 text-[9px]">
+            Hiển thị 7 ngày gần nhất · Bấm xem chi tiết
+          </span>
+        </div>
+
+        <div
+          data-testid="tv-daily-snapshots-list"
+          className={`max-h-[165px] overflow-y-auto space-y-1 pr-0.5 rounded-xl p-1.5 border transition-all ${
+            isDark
+              ? 'bg-black/40 border-zinc-800/80 scrollbar-thin scrollbar-thumb-zinc-700'
+              : 'bg-slate-50 border-slate-200 scrollbar-thin scrollbar-thumb-slate-300'
+          }`}
+        >
+          {pastDailySnapshots.length === 0 ? (
+            <div className="text-center py-4 text-xs text-zinc-400 font-mono">
+              Chưa có dữ liệu các ngày trước trong tháng này
+            </div>
+          ) : (
+            pastDailySnapshots.map((item) => (
+              <Tooltip
+                key={item.date}
+                placement="top"
+                title={`Ngày ${item.date}: Book ${item.bookActual}/${item.bookTarget} (${item.bookPercent}%), Check-in ${item.checkinActual}/${item.checkinTarget} (${item.checkinPercent}%). Bấm để mở nhật ký chi tiết.`}
+              >
+                <div
+                  onClick={() => handleOpenJournalForDate(item.date)}
+                  className={`flex items-center justify-between text-[10.5px] font-mono tabular-nums px-2 py-1 rounded-lg cursor-pointer transition-all border ${
+                    isDark
+                      ? 'bg-zinc-900/80 border-zinc-800 text-zinc-100 hover:border-amber-500/60 hover:bg-zinc-800/90'
+                      : 'bg-white border-slate-200 text-slate-800 hover:border-amber-400 hover:bg-amber-50/50 shadow-xs'
+                  }`}
+                >
+                  {/* Cột 1: Ngày */}
+                  <div className="flex items-center gap-1.5 shrink-0 min-w-[75px]">
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                        item.bookTier === 'emerald' && item.checkinTier === 'emerald'
+                          ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.7)]'
+                          : item.bookTier === 'rose' || item.checkinTier === 'rose'
+                            ? 'bg-rose-400 shadow-[0_0_6px_rgba(251,113,133,0.7)]'
+                            : 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.7)]'
+                      }`}
+                    />
+                    <span className="text-[11px] font-bold text-zinc-100 dark:text-zinc-100">{item.dayDisplay}</span>
+                  </div>
+
+                  {/* Cột 2: Book */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-[10px] text-zinc-400 dark:text-zinc-400 font-medium">Book:</span>
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${getMiniTierBadgeClass(
+                        item.bookTier,
+                        isDark
+                      )}`}
+                    >
+                      {item.bookActual}/{item.bookTarget} ({item.bookPercent}%)
+                    </span>
+                  </div>
+
+                  {/* Cột 3: Check-in */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-[10px] text-zinc-400 dark:text-zinc-400 font-medium">In:</span>
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${getMiniTierBadgeClass(
+                        item.checkinTier,
+                        isDark
+                      )}`}
+                    >
+                      {item.checkinActual}/{item.checkinTarget} ({item.checkinPercent}%)
+                    </span>
+                  </div>
+                </div>
+              </Tooltip>
+            ))
+          )}
         </div>
       </div>
 

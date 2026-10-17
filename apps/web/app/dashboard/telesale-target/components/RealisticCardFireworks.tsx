@@ -274,20 +274,24 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const getDimensions = () => {
+    const dimensionsRef = {
+      w: container.clientWidth || 360,
+      h: container.clientHeight || 180,
+      dpr: Math.min(window.devicePixelRatio || 1, 2),
+    };
+
+    const updateSize = () => {
       const rect = container.getBoundingClientRect();
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const w = Math.round(rect.width) || container.clientWidth || 360;
       const h = Math.round(rect.height) || container.clientHeight || 180;
+      dimensionsRef.w = w;
+      dimensionsRef.h = h;
+      dimensionsRef.dpr = dpr;
       if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
         canvas.width = w * dpr;
         canvas.height = h * dpr;
       }
-      return { w, h, dpr };
-    };
-
-    const updateSize = () => {
-      getDimensions();
     };
 
     updateSize();
@@ -299,9 +303,10 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
 
     const rockets: Rocket[] = [];
     let particles: Particle[] = [];
+    let isAutoStopped = false;
 
     const launchSafely = () => {
-      const { w, h } = getDimensions();
+      const { w, h } = dimensionsRef;
       if (w > 30 && h > 30) {
         rockets.push(createRocket(w, h));
         return true;
@@ -311,19 +316,21 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
 
     let initialTimer: NodeJS.Timeout | null = null;
     let frenzyBurstTimer: NodeJS.Timeout | null = null;
+    let autoStopTimer: NodeJS.Timeout | null = null;
 
     // Launcher cadence with breathing room between rockets
     const scheduleNextLaunch = () => {
-      if (!active) return;
+      if (!active || isAutoStopped) return;
       const delay = isFrenzy
         ? 800 + Math.random() * 600 // Frenzy burst: launches every 0.8s - 1.4s
         : 3500 + Math.random() * 2500; // Ambient mode: launches every 3.5s - 6.0s (clear & calm)
 
       launchTimerRef.current = setTimeout(() => {
+        if (isAutoStopped) return;
         launchSafely();
         if (isFrenzy && Math.random() > 0.4) {
           frenzyBurstTimer = setTimeout(() => {
-            launchSafely();
+            if (!isAutoStopped) launchSafely();
           }, 240);
         }
         scheduleNextLaunch();
@@ -335,10 +342,18 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
         launchSafely();
       }, 50);
       scheduleNextLaunch();
+
+      // Auto-stop launching after 12s (or 8s for frenzy) to avoid burning CPU 24/7 in background
+      autoStopTimer = setTimeout(
+        () => {
+          isAutoStopped = true;
+        },
+        isFrenzy ? 8000 : 12000
+      );
     }
 
     const render = () => {
-      const { w, h, dpr } = getDimensions();
+      const { w, h, dpr } = dimensionsRef;
 
       // 100% Guaranteed Full Bitmap Clear on every frame (zero trail accumulation)
       ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -441,9 +456,13 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
 
       ctx.restore();
 
-      // Keep rendering as long as there are rockets, particles, or active state
-      if (active || rockets.length > 0 || particles.length > 0) {
+      // Keep rendering as long as not auto-stopped with active, or while lingering sparks are still alive
+      const shouldKeepRendering = (!isAutoStopped && active) || rockets.length > 0 || particles.length > 0;
+      if (shouldKeepRendering) {
         animFrameRef.current = requestAnimationFrame(render);
+      } else {
+        // Complete rest: clear canvas to 0 overhead
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
       }
     };
 
@@ -452,6 +471,7 @@ export const RealisticCardFireworks: React.FC<RealisticCardFireworksProps> = ({
     return () => {
       if (initialTimer) clearTimeout(initialTimer);
       if (frenzyBurstTimer) clearTimeout(frenzyBurstTimer);
+      if (autoStopTimer) clearTimeout(autoStopTimer);
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       if (launchTimerRef.current) clearTimeout(launchTimerRef.current);
       resizeObserver.disconnect();

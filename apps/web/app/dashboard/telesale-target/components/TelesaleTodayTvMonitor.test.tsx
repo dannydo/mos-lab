@@ -139,6 +139,52 @@ describe('TelesaleTodayTvMonitorCard', () => {
     fireEvent.click(openTvButton);
     expect(handleOpenFullscreen).toHaveBeenCalledTimes(1);
   });
+
+  it('renders daily snapshots strip with subtle styling and handles date click for journal', () => {
+    const overviewWithSnapshots: TelesaleTargetOverview = {
+      ...mockOverview,
+      dailySnapshots: [
+        {
+          date: '2026-10-06',
+          dayDisplay: 'Hôm nay (06/10)',
+          bookActual: 19,
+          bookTarget: 25,
+          bookPercent: 76,
+          bookTier: 'rose',
+          checkinActual: 14,
+          checkinTarget: 18,
+          checkinPercent: 78,
+          checkinTier: 'rose',
+          isToday: true,
+        },
+        {
+          date: '2026-10-05',
+          dayDisplay: '05/10',
+          bookActual: 27,
+          bookTarget: 25,
+          bookPercent: 108,
+          bookTier: 'emerald',
+          checkinActual: 18,
+          checkinTarget: 18,
+          checkinPercent: 100,
+          checkinTier: 'emerald',
+          isToday: false,
+        },
+      ],
+    };
+
+    render(<TelesaleTodayTvMonitorCard overview={overviewWithSnapshots} />);
+
+    expect(screen.getByText(/SNAPSHOT CÁC NGÀY QUA/i)).toBeInTheDocument();
+    expect(screen.queryByText('Hôm nay (06/10)')).not.toBeInTheDocument();
+    expect(screen.getByText('05/10')).toBeInTheDocument();
+    expect(screen.getByText('27/25 (108%)')).toBeInTheDocument();
+    expect(screen.getByText('18/18 (100%)')).toBeInTheDocument();
+
+    // Click on 05/10 row opens journal
+    fireEvent.click(screen.getByText('05/10'));
+    expect(screen.getByText(/NHẬT KÝ TV MONITOR · GIÁM SÁT LIVE EVENTS/i)).toBeInTheDocument();
+  });
 });
 
 describe('TelesaleTvMonitorFullscreen', () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   TelesaleTodayLiveEvent,
   TelesaleTvEventLog,
@@ -1613,16 +1613,31 @@ export function useTelesaleTvLiveCelebration() {
     [enqueueCelebration, settings.personaMode, settings.edginessLevel]
   );
 
-  return {
-    settings,
-    updateSettings,
-    activeCelebration,
-    isSpeaking,
-    isFadingOut,
-    isQuietHours: isQuietHours(),
-    ingestLiveEvents,
-    checkMilestones,
-    triggerDemoCelebration,
-    recordEventLog,
-  };
+  const quietHours = isQuietHours();
+  return useMemo(
+    () => ({
+      settings,
+      updateSettings,
+      activeCelebration,
+      isSpeaking,
+      isFadingOut,
+      isQuietHours: quietHours,
+      ingestLiveEvents,
+      checkMilestones,
+      triggerDemoCelebration,
+      recordEventLog,
+    }),
+    [
+      settings,
+      updateSettings,
+      activeCelebration,
+      isSpeaking,
+      isFadingOut,
+      quietHours,
+      ingestLiveEvents,
+      checkMilestones,
+      triggerDemoCelebration,
+      recordEventLog,
+    ]
+  );
 }

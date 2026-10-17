@@ -25,6 +25,7 @@ import {
   TelesaleDailyActionOverview,
   SafeAny,
   TELESALES_EXECUTIVE_STANDARDS,
+  TelesaleDailySnapshotItem,
 } from '@mos-lab/shared';
 import { BkLeaderboardService } from './bk-leaderboard.service.js';
 import { ComboRecognitionService } from '../../customers/services/combo-recognition.service.js';
@@ -871,6 +872,42 @@ export class TelesaleTargetService {
       GROUP BY o.created_staff_id
     `;
 
+    const dailyBookGroupSql = `
+      SELECT 
+        DATE_FORMAT(o.date_created, '%Y-%m-%d') as bookDate,
+        COUNT(DISTINCT o.id) as totalBookings
+      FROM \`order\` o
+      WHERE o.created_staff_id IN (${candidateIdsStr})
+        AND o.date_created >= '${startDateTimeStr}'
+        AND o.date_created <= '${endDateTimeStr}'
+      GROUP BY DATE_FORMAT(o.date_created, '%Y-%m-%d')
+    `;
+
+    const dailyCheckinGroupSql = `
+      SELECT 
+        DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start, o.date_created), '%Y-%m-%d') as checkinDate,
+        COUNT(DISTINCT o.id) as totalCheckins
+      FROM \`order\` o
+      LEFT JOIN report_order ro ON ro.order_id = o.id
+      WHERE o.created_staff_id IN (${candidateIdsStr})
+        AND (
+          (ro.actual_booking_date_start >= '${startDateTimeStr}' AND ro.actual_booking_date_start <= '${endDateTimeStr}')
+          OR (
+            ro.actual_booking_date_start IS NULL 
+            AND (
+              o.order_state NOT IN ('New', 'Confirmed', 'Missed', 'Cancelled')
+              OR EXISTS (SELECT 1 FROM order_service os WHERE os.order_id = o.id AND os.check_in_staff_id IS NOT NULL)
+            )
+            AND (
+              (o.booking_date_start >= '${startDateTimeStr}' AND o.booking_date_start <= '${endDateTimeStr}')
+              OR (o.booking_date_start IS NULL AND o.date_created >= '${startDateTimeStr}' AND o.date_created <= '${endDateTimeStr}')
+            )
+          )
+        )
+        AND o.order_state NOT IN ('Cancelled', 'Missed')
+      GROUP BY DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start, o.date_created), '%Y-%m-%d')
+    `;
+
     // 1. Fetch Month, Today metrics, and month orders in parallel (Single Source of Truth)
     const [
       _monthBookingRes,
@@ -881,6 +918,8 @@ export class TelesaleTargetService {
       teamMonthIncomingActual,
       rawMonthOrders,
       rawComboSoldRows,
+      rawDailyBookRows,
+      rawDailyCheckinRows,
     ] = await Promise.all([
       BkLeaderboardService.getBookingLeaderboard(fastify, {
         dateFrom: startDateStr,
@@ -919,7 +958,23 @@ export class TelesaleTargetService {
       }),
       fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(monthOrdersSql).catch(() => []),
       fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboSoldSql).catch(() => []),
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(dailyBookGroupSql).catch(() => []),
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(dailyCheckinGroupSql).catch(() => []),
     ]);
+
+    const dailyBookMap = new Map<string, number>();
+    for (const r of rawDailyBookRows || []) {
+      if (r && r.bookDate) {
+        dailyBookMap.set(String(r.bookDate), Number(r.totalBookings || 0));
+      }
+    }
+
+    const dailyCheckinMap = new Map<string, number>();
+    for (const r of rawDailyCheckinRows || []) {
+      if (r && r.checkinDate) {
+        dailyCheckinMap.set(String(r.checkinDate), Number(r.totalCheckins || 0));
+      }
+    }
 
     const comboSoldMap = new Map<number, number>();
     const comboRevenueMap = new Map<number, number>();
@@ -2206,6 +2261,47 @@ export class TelesaleTargetService {
       totalBookingsToday: teamDailyBookActual,
     };
 
+    const dailySnapshots: TelesaleDailySnapshotItem[] = [];
+    const isCurrentMonth = todayStr.startsWith(month);
+    // Loại trừ ngày hôm nay (chỉ lấy các ngày đã qua từ hôm qua trở về trước vì hôm nay đã có ở 2 đồng hồ trên)
+    const maxDayNum = isCurrentMonth ? parseInt(todayStr.slice(8, 10), 10) - 1 : lastDayOfMonth;
+    const targetDailyBook = config.dailyBookTarget || 25;
+    const targetDailyCheckin = config.dailyDoneTarget || 18;
+
+    for (let day = 1; day <= maxDayNum; day++) {
+      const dayPad = String(day).padStart(2, '0');
+      const dateStr = `${month}-${dayPad}`;
+
+      const bookActual = dailyBookMap.get(dateStr) || 0;
+      const checkinActual = dailyCheckinMap.get(dateStr) || 0;
+
+      const bookPercent = targetDailyBook > 0 ? Math.round((bookActual / targetDailyBook) * 100) : 0;
+      const checkinPercent = targetDailyCheckin > 0 ? Math.round((checkinActual / targetDailyCheckin) * 100) : 0;
+
+      const getTier = (pct: number): 'rose' | 'amber' | 'emerald' => {
+        if (pct < 80) return 'rose';
+        if (pct < 100) return 'amber';
+        return 'emerald';
+      };
+
+      dailySnapshots.push({
+        date: dateStr,
+        dayDisplay: `${dayPad}/${monthNumStr}`,
+        bookActual,
+        bookTarget: targetDailyBook,
+        bookPercent,
+        bookTier: getTier(bookPercent),
+        checkinActual,
+        checkinTarget: targetDailyCheckin,
+        checkinPercent,
+        checkinTier: getTier(checkinPercent),
+        isToday: false,
+      });
+    }
+
+    // Sắp xếp mới nhất lên đầu (từ hôm qua lùi dần về ngày 01)
+    dailySnapshots.sort((a, b) => b.date.localeCompare(a.date));
+
     const overview: TelesaleTargetOverview = {
       month,
       teamCode: config.teamCode,
@@ -2279,6 +2375,7 @@ export class TelesaleTargetService {
       todayLiveEvents,
       todayBookList,
       todayCheckinList,
+      dailySnapshots,
     };
 
     return overview;

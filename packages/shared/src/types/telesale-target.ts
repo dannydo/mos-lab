@@ -167,6 +167,21 @@ export interface TelesaleTargetOverview {
   todayLiveEvents?: TelesaleTodayLiveEvent[];
   todayBookList?: TelesaleTodayBookItem[];
   todayCheckinList?: TelesaleTodayCheckinItem[];
+  dailySnapshots?: TelesaleDailySnapshotItem[];
+}
+
+export interface TelesaleDailySnapshotItem {
+  date: string;
+  dayDisplay: string;
+  bookActual: number;
+  bookTarget: number;
+  bookPercent: number;
+  bookTier: 'rose' | 'amber' | 'emerald';
+  checkinActual: number;
+  checkinTarget: number;
+  checkinPercent: number;
+  checkinTier: 'rose' | 'amber' | 'emerald';
+  isToday?: boolean;
 }
 
 export interface TelesaleTodayBookItem {

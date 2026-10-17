@@ -407,7 +407,7 @@ export const DailyActionSchedule: React.FC<DailyActionScheduleProps> = ({
             <span className="col-span-2 text-right">Trạng Thái</span>
           </div>
 
-          <div className="space-y-0.5 max-h-[175px] overflow-y-auto scrollbar-thin pr-0.5">
+          <div className="space-y-0.5 max-h-[125px] overflow-y-auto scrollbar-thin pr-0.5">
             {[...staffActions]
               .sort((a, b) => {
                 if (a.isWorkingToday && !b.isWorkingToday) return -1;

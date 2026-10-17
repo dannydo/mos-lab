@@ -29,6 +29,7 @@ interface TelesaleTvJournalModalProps {
   onClose: () => void;
   staffList?: Array<{ legacyStaffId: number; name: string }>;
   zIndex?: number;
+  initialDate?: string;
 }
 
 export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({
@@ -36,12 +37,19 @@ export const TelesaleTvJournalModal: React.FC<TelesaleTvJournalModalProps> = ({
   onClose,
   staffList = [],
   zIndex = 100005,
+  initialDate,
 }) => {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
-  const [selectedDate, setSelectedDate] = useState<string>(() => dayjs().format('YYYY-MM-DD'));
+  const [selectedDate, setSelectedDate] = useState<string>(() => initialDate || dayjs().format('YYYY-MM-DD'));
   const [loading, setLoading] = useState<boolean>(false);
   const [journalData, setJournalData] = useState<TelesaleTvJournalOverview | null>(null);
+
+  useEffect(() => {
+    if (open && initialDate) {
+      setSelectedDate(initialDate);
+    }
+  }, [open, initialDate]);
 
   // Filters
   const [staffFilter, setStaffFilter] = useState<string>('ALL');
