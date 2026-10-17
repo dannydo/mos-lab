@@ -740,7 +740,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   }, [currentUser?.id, currentUser?.username]);
 
   const readStoredPersonalLayout = useCallback((storageKey: string) => {
-    const defaults = { panelWidth: 840, sidebarWidth: 264, maximized: false, activeConvId: 'space-cc' };
+    const defaults = {
+      panelWidth: 840,
+      sidebarWidth: 264,
+      threadWidth: 440,
+      maximized: false,
+      activeConvId: 'space-cc',
+    };
     if (typeof window === 'undefined') return defaults;
     try {
       const legacyKey = storageKey.replace('mos_chat_personal_layout_v2_', 'mos_chat_personal_layout_v1_');
@@ -749,14 +755,28 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         window.localStorage.getItem('mos_chat_personal_layout_v2_global') ||
         window.localStorage.getItem(legacyKey) ||
         window.localStorage.getItem('mos_chat_personal_layout_v1_default');
-      if (!raw) return defaults;
+      const storedThread = Number(window.localStorage.getItem('mos_chat_thread_width_v1'));
+      if (!raw) {
+        if (Number.isFinite(storedThread) && storedThread > 0) {
+          return { ...defaults, threadWidth: Math.max(300, Math.min(850, Math.round(storedThread))) };
+        }
+        return defaults;
+      }
       const parsed = JSON.parse(raw) as {
         panelWidth?: number;
         sidebarWidth?: number;
+        threadWidth?: number;
         maximized?: boolean;
         activeConvId?: string;
       };
       const maxAllowed = Math.max(520, (window.innerWidth || 1920) - 56);
+      const rawThread =
+        typeof parsed.threadWidth === 'number' && Number.isFinite(parsed.threadWidth)
+          ? parsed.threadWidth
+          : Number.isFinite(storedThread) && storedThread > 0
+            ? storedThread
+            : defaults.threadWidth;
+
       return {
         panelWidth:
           typeof parsed.panelWidth === 'number' && Number.isFinite(parsed.panelWidth)
@@ -766,6 +786,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           typeof parsed.sidebarWidth === 'number' && Number.isFinite(parsed.sidebarWidth)
             ? Math.max(190, Math.min(460, Math.round(parsed.sidebarWidth)))
             : defaults.sidebarWidth,
+        threadWidth: Math.max(300, Math.min(850, Math.round(rawThread))),
         maximized: typeof parsed.maximized === 'boolean' ? parsed.maximized : defaults.maximized,
         activeConvId:
           typeof parsed.activeConvId === 'string' && parsed.activeConvId ? parsed.activeConvId : defaults.activeConvId,
@@ -790,8 +811,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [sidebarWidth, setSidebarWidth] = useState<number>(
     () => readStoredPersonalLayout(personalLayoutStorageKey).sidebarWidth
   );
-  const [isResizingTarget, setIsResizingTarget] = useState<'panel' | 'sidebar' | null>(null);
-  const [hoverResizeHandle, setHoverResizeHandle] = useState<'panel' | 'sidebar' | null>(null);
+  const [threadWidth, setThreadWidth] = useState<number>(
+    () => readStoredPersonalLayout(personalLayoutStorageKey).threadWidth
+  );
+  const [isResizingTarget, setIsResizingTarget] = useState<'panel' | 'sidebar' | 'thread' | null>(null);
+  const [hoverResizeHandle, setHoverResizeHandle] = useState<'panel' | 'sidebar' | 'thread' | null>(null);
   const [presence, setPresence] = useState<MosChatPresenceStatus>('active');
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -822,6 +846,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   const panelWidthRef = useRef<number>(panelWidth);
   const sidebarWidthRef = useRef<number>(sidebarWidth);
+  const threadWidthRef = useRef<number>(threadWidth);
   const maximizedRef = useRef<boolean>(maximized);
   const activeConvIdRef = useRef<string>(activeConvId);
 
@@ -832,6 +857,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     sidebarWidthRef.current = sidebarWidth;
   }, [sidebarWidth]);
   useEffect(() => {
+    threadWidthRef.current = threadWidth;
+  }, [threadWidth]);
+  useEffect(() => {
     maximizedRef.current = maximized;
   }, [maximized]);
   useEffect(() => {
@@ -839,11 +867,20 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   }, [activeConvId]);
 
   const persistPersonalLayout = useCallback(
-    (patch?: Partial<{ panelWidth: number; sidebarWidth: number; maximized: boolean; activeConvId: string }>) => {
+    (
+      patch?: Partial<{
+        panelWidth: number;
+        sidebarWidth: number;
+        threadWidth: number;
+        maximized: boolean;
+        activeConvId: string;
+      }>
+    ) => {
       if (typeof window === 'undefined') return;
       const next = {
         panelWidth: patch?.panelWidth ?? panelWidthRef.current,
         sidebarWidth: patch?.sidebarWidth ?? sidebarWidthRef.current,
+        threadWidth: patch?.threadWidth ?? threadWidthRef.current,
         maximized: patch?.maximized ?? maximizedRef.current,
         activeConvId: patch?.activeConvId ?? activeConvIdRef.current,
         updatedAt: Date.now(),
@@ -852,6 +889,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         const serialized = JSON.stringify(next);
         window.localStorage.setItem(personalLayoutStorageKey, serialized);
         window.localStorage.setItem('mos_chat_personal_layout_v2_global', serialized);
+        window.localStorage.setItem('mos_chat_thread_width_v1', String(next.threadWidth));
       } catch {
         // ignore storage quota error
       }
@@ -864,6 +902,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     const stored = readStoredPersonalLayout(personalLayoutStorageKey);
     setPanelWidth(stored.panelWidth);
     setSidebarWidth(stored.sidebarWidth);
+    setThreadWidth(stored.threadWidth);
     setMaximized(stored.maximized);
     if (stored.activeConvId) {
       setActiveConvId(stored.activeConvId);
@@ -903,6 +942,16 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         sidebarWidthRef.current = rounded;
         setSidebarWidth(rounded);
         persistPersonalLayout({ sidebarWidth: rounded });
+      } else if (isResizingTarget === 'thread') {
+        const effectivePanelWidth = maximizedRef.current
+          ? Math.max(520, window.innerWidth - 224)
+          : panelWidthRef.current;
+        const maxThreadAllowed = Math.min(850, Math.max(340, effectivePanelWidth - sidebarWidthRef.current - 320));
+        const nextThreadWidth = Math.max(300, Math.min(maxThreadAllowed, window.innerWidth - e.clientX));
+        const rounded = Math.round(nextThreadWidth);
+        threadWidthRef.current = rounded;
+        setThreadWidth(rounded);
+        persistPersonalLayout({ threadWidth: rounded });
       }
     };
 
@@ -7155,13 +7204,85 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         {threadOpen && activeThreadMessage && (
           <aside
             data-chat-thread-pane="true"
-            className={`${isMobile ? 'absolute inset-0 z-30 w-full' : 'w-[264px]'} flex flex-col shrink-0`}
+            className={`${isMobile ? 'absolute inset-0 z-30 w-full' : ''} flex flex-col shrink-0 relative`}
             style={{
+              width: isMobile ? '100%' : threadWidth,
               background: surfaceBg,
-              borderLeft: isMobile ? 'none' : `1px solid ${borderColor}`,
+              borderLeft: isMobile
+                ? 'none'
+                : `1px solid ${
+                    isResizingTarget === 'thread' || hoverResizeHandle === 'thread' ? '#d4a84b' : borderColor
+                  }`,
               display: isMobile && mobileActiveView !== 'thread' ? 'none' : 'flex',
+              transition: isResizingTarget === 'thread' ? 'none' : 'width 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
           >
+            {/* THREAD PANE RESIZE DIVIDER (Drag to resize & persistent width) */}
+            {!isMobile && (
+              <Tooltip title="Kéo sang trái/phải để đổi độ rộng luồng · Nhấp đúp để đặt lại 440px">
+                <div
+                  role="separator"
+                  aria-orientation="vertical"
+                  aria-label="Kéo để thay đổi độ rộng luồng trả lời"
+                  data-no-chat-autofocus="true"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsResizingTarget('thread');
+                  }}
+                  onDoubleClick={(e) => {
+                    e.preventDefault();
+                    setThreadWidth(440);
+                    persistPersonalLayout({ threadWidth: 440 });
+                  }}
+                  onMouseEnter={() => setHoverResizeHandle('thread')}
+                  onMouseLeave={() => setHoverResizeHandle((prev) => (prev === 'thread' ? null : prev))}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    bottom: 0,
+                    left: -5,
+                    width: 10,
+                    cursor: 'col-resize',
+                    zIndex: 25,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <div
+                    className="rounded-full transition-all"
+                    style={{
+                      width: isResizingTarget === 'thread' || hoverResizeHandle === 'thread' ? 3.5 : 1.5,
+                      height: isResizingTarget === 'thread' || hoverResizeHandle === 'thread' ? 64 : 36,
+                      background:
+                        isResizingTarget === 'thread' || hoverResizeHandle === 'thread'
+                          ? '#d4a84b'
+                          : isDark
+                            ? 'rgba(148, 163, 184, 0.35)'
+                            : 'rgba(100, 116, 139, 0.3)',
+                      boxShadow: isResizingTarget === 'thread' ? '0 0 10px rgba(212, 168, 75, 0.65)' : 'none',
+                    }}
+                  />
+                  {isResizingTarget === 'thread' && (
+                    <div
+                      className="px-2 py-0.5 rounded-md text-[11px] font-bold tabular-nums shadow-lg pointer-events-none"
+                      style={{
+                        position: 'absolute',
+                        right: 14,
+                        background: '#111827',
+                        color: '#d4a84b',
+                        border: '1px solid rgba(212, 168, 75, 0.45)',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {threadWidth}px
+                    </div>
+                  )}
+                </div>
+              </Tooltip>
+            )}
+
             <div
               className="h-[52px] px-3 flex items-center justify-between text-[12.5px] font-extrabold"
               style={{ borderBottom: `1px solid ${borderColor}` }}
@@ -7182,24 +7303,47 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   </button>
                 )}
                 <span className="flex items-center gap-1.5 truncate">
-                  <MessageSquareReply size={14} className="shrink-0" />
+                  <MessageSquareReply size={14} className="shrink-0 text-amber-500" />
                   <span>Luồng trả lời</span>
                 </span>
+                {!isMobile && (
+                  <span className="text-[10px] text-slate-400 tabular-nums font-normal ml-1">({threadWidth}px)</span>
+                )}
               </div>
-              <Tooltip title="Đóng luồng">
-                <button
-                  type="button"
-                  aria-label="Đóng luồng"
-                  onClick={() => {
-                    setThreadOpen(false);
-                    if (isMobile) setMobileActiveView('conversation');
-                  }}
-                  className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer"
-                  style={{ color: token.colorTextSecondary }}
-                >
-                  <X size={15} />
-                </button>
-              </Tooltip>
+              <div className="flex items-center gap-1">
+                {/* Nút phóng to / thu gọn nhanh luồng trả lời trên màn hình lớn */}
+                {!isMobile && (
+                  <Tooltip title={threadWidth >= 560 ? 'Thu gọn luồng về 440px' : 'Mở rộng luồng sang 620px (FHD)'}>
+                    <button
+                      type="button"
+                      aria-label="Mở rộng hoặc thu gọn luồng"
+                      onClick={() => {
+                        const targetWidth = threadWidth >= 560 ? 440 : 620;
+                        setThreadWidth(targetWidth);
+                        persistPersonalLayout({ threadWidth: targetWidth });
+                      }}
+                      className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-white/10 transition-colors"
+                      style={{ color: token.colorTextSecondary }}
+                    >
+                      {threadWidth >= 560 ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+                    </button>
+                  </Tooltip>
+                )}
+                <Tooltip title="Đóng luồng">
+                  <button
+                    type="button"
+                    aria-label="Đóng luồng"
+                    onClick={() => {
+                      setThreadOpen(false);
+                      if (isMobile) setMobileActiveView('conversation');
+                    }}
+                    className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-white/10"
+                    style={{ color: token.colorTextSecondary }}
+                  >
+                    <X size={15} />
+                  </button>
+                </Tooltip>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
