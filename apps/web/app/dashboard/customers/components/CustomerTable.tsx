@@ -224,6 +224,24 @@ const CustomerTable = React.memo(
                   <div style={{ fontWeight: '600', color: token.colorText }} className="hover:underline transition-all">
                     {text}
                   </div>
+                  {record.bucket === 'COMBO_ELSA' && (
+                    <Tooltip
+                      title={
+                        <div>
+                          <div>❄️ <strong>Bảo lưu Combo Elsa</strong></div>
+                          {record.elsaReservation?.reason && <div>Lý do: {record.elsaReservation.reason}</div>}
+                          {record.elsaReservation?.endDate && (
+                            <div>Hạn: {dayjs(record.elsaReservation.endDate).format('DD/MM/YYYY')}</div>
+                          )}
+                          {record.elsaReservation?.reminderDate && (
+                            <div>Nhắc CS: {dayjs(record.elsaReservation.reminderDate).format('DD/MM/YYYY')}</div>
+                          )}
+                        </div>
+                      }
+                    >
+                      <Tag color="cyan">❄️ Elsa</Tag>
+                    </Tooltip>
+                  )}
                   {record.isForeign && (
                     <Tag
                       color="purple"

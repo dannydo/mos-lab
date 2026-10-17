@@ -258,6 +258,7 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
           up.last_order_booking as lastVisit,
           DATEDIFF(NOW(), up.last_order_booking) as daysSinceLastVisit,
           CASE
+            WHEN elsa_res.id IS NOT NULL THEN 'COMBO_ELSA'
             WHEN usb.id IS NULL THEN 'SINGLE'
             WHEN (usb.normal_count + usb.retain_count) > 0 AND (usb.date_expired IS NULL OR usb.date_expired > NOW()) THEN 'COMBO_LIVE'
             ELSE 'COMBO_DEAD'
@@ -269,11 +270,12 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
         LEFT JOIN user_profile up ON u.id = up.user_id
         LEFT JOIN user_contact uc ON u.id = uc.user_id AND uc.is_disabled = 0
         LEFT JOIN user_service_balance usb ON u.id = usb.user_id
+        LEFT JOIN mos_lab.crm_customer_elsa_reservations elsa_res ON elsa_res.legacy_user_id = u.id AND elsa_res.status = 'ACTIVE' AND (elsa_res.end_date IS NULL OR elsa_res.end_date >= NOW())
         WHERE u.id = ?
         LIMIT 1
       `;
 
-      const [result, lastCompletedOrder] = await Promise.all([
+      const [result, lastCompletedOrder, elsaReservation] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql, customerId),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT COALESCE(ro.actual_booking_date_start, o.booking_date_start) as bookingDate
@@ -284,6 +286,14 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
            LIMIT 1`,
           customerId
         ),
+        fastify.prisma.crm.crmCustomerElsaReservation.findFirst({
+          where: {
+            legacyUserId: customerId,
+            status: 'ACTIVE',
+            OR: [{ endDate: null }, { endDate: { gte: new Date() } }],
+          },
+          orderBy: { id: 'desc' },
+        }),
       ]);
 
       if (result.length === 0) {
@@ -317,6 +327,24 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
             : null,
         avatar: row.avatar,
         isDeleted: row.isDeleted === 1,
+        elsaReservation: elsaReservation
+          ? {
+              id: elsaReservation.id,
+              legacyUserId: elsaReservation.legacyUserId,
+              status: elsaReservation.status,
+              reservationType: elsaReservation.reservationType,
+              reason: elsaReservation.reason,
+              startDate: elsaReservation.startDate.toISOString(),
+              endDate: elsaReservation.endDate ? elsaReservation.endDate.toISOString() : null,
+              reminderDate: elsaReservation.reminderDate ? elsaReservation.reminderDate.toISOString() : null,
+              reminderNote: elsaReservation.reminderNote,
+              isReminderDismissed: elsaReservation.isReminderDismissed,
+              createdByStaffId: elsaReservation.createdByStaffId,
+              createdByStaffName: elsaReservation.createdByStaffName,
+              createdAt: elsaReservation.createdAt.toISOString(),
+              updatedAt: elsaReservation.updatedAt.toISOString(),
+            }
+          : null,
       };
 
       return customer;
@@ -573,6 +601,7 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
           up.last_order_booking as lastVisit,
           DATEDIFF(NOW(), up.last_order_booking) as daysSinceLastVisit,
           CASE
+            WHEN elsa_res.id IS NOT NULL THEN 'COMBO_ELSA'
             WHEN usb.id IS NULL THEN 'SINGLE'
             WHEN (usb.normal_count + usb.retain_count) > 0 AND (usb.date_expired IS NULL OR usb.date_expired > NOW()) THEN 'COMBO_LIVE'
             ELSE 'COMBO_DEAD'
@@ -584,10 +613,21 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
         LEFT JOIN user_profile up ON u.id = up.user_id
         LEFT JOIN user_contact uc ON u.id = uc.user_id AND uc.is_disabled = 0
         LEFT JOIN user_service_balance usb ON u.id = usb.user_id
+        LEFT JOIN mos_lab.crm_customer_elsa_reservations elsa_res ON elsa_res.legacy_user_id = u.id AND elsa_res.status = 'ACTIVE' AND (elsa_res.end_date IS NULL OR elsa_res.end_date >= NOW())
         WHERE u.id = ?
         LIMIT 1
       `;
-      const customerResult = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(customerSql, resolvedCustomerId);
+      const [customerResult, elsaReservation] = await Promise.all([
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(customerSql, resolvedCustomerId),
+        fastify.prisma.crm.crmCustomerElsaReservation.findFirst({
+          where: {
+            legacyUserId: resolvedCustomerId,
+            status: 'ACTIVE',
+            OR: [{ endDate: null }, { endDate: { gte: new Date() } }],
+          },
+          orderBy: { id: 'desc' },
+        }),
+      ]);
       if (customerResult.length === 0) {
         return reply.status(404).send({ error: 'Not Found', message: 'Customer not found' });
       }
@@ -1303,6 +1343,24 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
           isDeleted: row.isDeleted === 1,
           isForeign: resolveIsForeign(row.is_foreign, row.is_foreign_overridden, row.phone),
           isForeignOverridden: Boolean(row.is_foreign_overridden),
+          elsaReservation: elsaReservation
+            ? {
+                id: elsaReservation.id,
+                legacyUserId: elsaReservation.legacyUserId,
+                status: elsaReservation.status,
+                reservationType: elsaReservation.reservationType,
+                reason: elsaReservation.reason,
+                startDate: elsaReservation.startDate.toISOString(),
+                endDate: elsaReservation.endDate ? elsaReservation.endDate.toISOString() : null,
+                reminderDate: elsaReservation.reminderDate ? elsaReservation.reminderDate.toISOString() : null,
+                reminderNote: elsaReservation.reminderNote,
+                isReminderDismissed: elsaReservation.isReminderDismissed,
+                createdByStaffId: elsaReservation.createdByStaffId,
+                createdByStaffName: elsaReservation.createdByStaffName,
+                createdAt: elsaReservation.createdAt.toISOString(),
+                updatedAt: elsaReservation.updatedAt.toISOString(),
+              }
+            : null,
         },
         stats: {
           totalSpent: totalSpent,
@@ -1537,6 +1595,7 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
           up.last_order_booking as lastVisit,
           DATEDIFF(NOW(), up.last_order_booking) as daysSinceLastVisit,
           CASE
+            WHEN elsa_res.id IS NOT NULL THEN 'COMBO_ELSA'
             WHEN usb.id IS NULL THEN 'SINGLE'
             WHEN (usb.normal_count + usb.retain_count) > 0 AND (usb.date_expired IS NULL OR usb.date_expired > NOW()) THEN 'COMBO_LIVE'
             ELSE 'COMBO_DEAD'
@@ -1548,6 +1607,7 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
         LEFT JOIN user_profile up ON u.id = up.user_id
         LEFT JOIN user_contact uc ON u.id = uc.user_id AND uc.is_disabled = 0
         LEFT JOIN user_service_balance usb ON u.id = usb.user_id
+        LEFT JOIN mos_lab.crm_customer_elsa_reservations elsa_res ON elsa_res.legacy_user_id = u.id AND elsa_res.status = 'ACTIVE' AND (elsa_res.end_date IS NULL OR elsa_res.end_date >= NOW())
         WHERE u.id = ?
         LIMIT 1
       `;
@@ -1563,6 +1623,7 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
         timelineCount,
         referrerRow,
         referredUsers,
+        elsaReservation,
         activeComboBalances,
       ] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(customerSql, customerId),
@@ -1607,6 +1668,14 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
            ORDER BY u.id DESC`,
           customerId
         ),
+        fastify.prisma.crm.crmCustomerElsaReservation.findFirst({
+          where: {
+            legacyUserId: customerId,
+            status: 'ACTIVE',
+            OR: [{ endDate: null }, { endDate: { gte: new Date() } }],
+          },
+          orderBy: { id: 'desc' },
+        }),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
           `SELECT
              CONCAT('usb_', usb.id) as id,
@@ -1769,6 +1838,24 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
           isDeleted: row.isDeleted === 1,
           isForeign: resolveIsForeign(row.is_foreign, row.is_foreign_overridden, row.phone),
           isForeignOverridden: Boolean(row.is_foreign_overridden),
+          elsaReservation: elsaReservation
+            ? {
+                id: elsaReservation.id,
+                legacyUserId: elsaReservation.legacyUserId,
+                status: elsaReservation.status,
+                reservationType: elsaReservation.reservationType,
+                reason: elsaReservation.reason,
+                startDate: elsaReservation.startDate.toISOString(),
+                endDate: elsaReservation.endDate ? elsaReservation.endDate.toISOString() : null,
+                reminderDate: elsaReservation.reminderDate ? elsaReservation.reminderDate.toISOString() : null,
+                reminderNote: elsaReservation.reminderNote,
+                isReminderDismissed: elsaReservation.isReminderDismissed,
+                createdByStaffId: elsaReservation.createdByStaffId,
+                createdByStaffName: elsaReservation.createdByStaffName,
+                createdAt: elsaReservation.createdAt.toISOString(),
+                updatedAt: elsaReservation.updatedAt.toISOString(),
+              }
+            : null,
         },
         stats: {
           totalSpent,

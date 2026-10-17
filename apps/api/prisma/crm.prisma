@@ -3690,3 +3690,30 @@ model CrmCvPayrollAllowance {
   @@index([staffId, month], map: "crm_cv_payroll_allowance_staff_month_idx")
   @@map("crm_cv_payroll_allowances")
 }
+
+model CrmCustomerElsaReservation {
+  id                  Int       @id @default(autoincrement())
+  legacyUserId        Int       @map("legacy_user_id")
+  status              String    @default("ACTIVE") @db.VarChar(20) // ACTIVE, RELEASED, CANCELLED
+  reservationType     String    @default("FIXED_TERM") @map("reservation_type") @db.VarChar(30) // FIXED_TERM, INDEFINITE
+  reason              String    @db.VarChar(500)
+  startDate           DateTime  @default(now()) @map("start_date")
+  endDate             DateTime? @map("end_date")
+  reminderDate        DateTime? @map("reminder_date")
+  reminderNote        String?   @map("reminder_note") @db.Text
+  isReminderDismissed Boolean   @default(false) @map("is_reminder_dismissed")
+  createdByStaffId    Int?      @map("created_by_staff_id")
+  createdByStaffName  String?   @map("created_by_staff_name") @db.VarChar(100)
+  releasedAt          DateTime? @map("released_at")
+  releasedByStaffId   Int?      @map("released_by_staff_id")
+  releasedByStaffName String?   @map("released_by_staff_name") @db.VarChar(100)
+  releaseNote         String?   @map("release_note") @db.Text
+  createdAt           DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([legacyUserId, status], map: "elsa_user_status_idx")
+  @@index([status, endDate], map: "elsa_status_end_idx")
+  @@index([status, reminderDate], map: "elsa_status_reminder_idx")
+  @@map("crm_customer_elsa_reservations")
+}
+

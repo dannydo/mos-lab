@@ -13,11 +13,13 @@ import type {
   CreateCallRequest,
   CreateCustomerInput,
   CreateCustomerResponse,
+  CreateElsaReservationInput,
   Customer,
   CustomerAllocationBatch,
   CustomerAllocationItem,
   CustomerAssignmentTimelineItem,
   CustomerCreationOptionsResponse,
+  CustomerElsaReservation,
   CustomerHistoryEntry,
   CustomerServiceFilterOptionsResponse,
   CustomerStatsResponse,
@@ -38,6 +40,7 @@ import type {
   RandomIdsResponse,
   RecallAllocationBatchDto,
   Referral,
+  ReleaseElsaReservationInput,
   RevokePreviewResponse,
   SaveMissedLogInput,
   Service,
@@ -90,6 +93,39 @@ export const customersApi = {
     },
     getDetails: async (id: number): Promise<Customer> => {
       const response = await api.get(`/customers/${id}`);
+      return response.data;
+    },
+    reserveElsa: async (
+      id: number,
+      data: CreateElsaReservationInput
+    ): Promise<{ success: boolean; data: CustomerElsaReservation; message: string }> => {
+      const response = await api.post(`/customers/${id}/elsa-reservation`, data);
+      return response.data;
+    },
+    updateElsa: async (
+      id: number,
+      data: Partial<CreateElsaReservationInput> & { isReminderDismissed?: boolean }
+    ): Promise<{ success: boolean; data: CustomerElsaReservation; message: string }> => {
+      const response = await api.put(`/customers/${id}/elsa-reservation`, data);
+      return response.data;
+    },
+    releaseElsa: async (
+      id: number,
+      data?: ReleaseElsaReservationInput
+    ): Promise<{ success: boolean; message: string }> => {
+      const response = await api.post(`/customers/${id}/elsa-reservation/release`, data || {});
+      return response.data;
+    },
+    getElsaReservation: async (
+      id: number
+    ): Promise<{ success: boolean; data: { active: CustomerElsaReservation | null; history: CustomerElsaReservation[] } }> => {
+      const response = await api.get(`/customers/${id}/elsa-reservation`);
+      return response.data;
+    },
+    getElsaReminders: async (
+      daysAhead = 7
+    ): Promise<{ success: boolean; data: CustomerElsaReservation[]; total: number }> => {
+      const response = await api.get('/customers/elsa/reminders', { params: { daysAhead } });
       return response.data;
     },
     toggleTouchpoint: async (data: {

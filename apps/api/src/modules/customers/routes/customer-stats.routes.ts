@@ -387,6 +387,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         allowedUserIds !== null && allowedUserIds.length > 0 ? `WHERE user_id IN (${allowedUserIds.join(',')})` : '';
 
       let statsInnerJoins = 'LEFT JOIN user_profile up ON u.id = up.user_id';
+      statsInnerJoins += ` LEFT JOIN mos_lab.crm_customer_elsa_reservations elsa_res ON elsa_res.legacy_user_id = u.id AND elsa_res.status = 'ACTIVE' AND (elsa_res.end_date IS NULL OR elsa_res.end_date >= NOW())`;
       statsInnerJoins += ` LEFT JOIN (
         SELECT 
           user_id,
@@ -483,14 +484,16 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
       // 2. Filter by Bucket (Optimized using usb_agg joins)
       const bStrStats = bucket as string;
       if (bStrStats && bStrStats !== 'ALL') {
-        if (bStrStats === 'SINGLE') {
-          innerWhereClauses.push('usb_agg.user_id IS NULL');
+        if (bStrStats === 'COMBO_ELSA') {
+          innerWhereClauses.push('elsa_res.id IS NOT NULL');
+        } else if (bStrStats === 'SINGLE') {
+          innerWhereClauses.push('elsa_res.id IS NULL AND usb_agg.user_id IS NULL');
         } else if (bStrStats === 'COMBO_LIVE') {
-          innerWhereClauses.push('usb_agg.live_count > 0');
+          innerWhereClauses.push('elsa_res.id IS NULL AND usb_agg.live_count > 0');
         } else if (bStrStats === 'COMBO_DEAD') {
-          innerWhereClauses.push('usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0');
+          innerWhereClauses.push('elsa_res.id IS NULL AND usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0');
         } else if (bStrStats === 'NOT_COMBO_LIVE') {
-          innerWhereClauses.push('(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
+          innerWhereClauses.push('elsa_res.id IS NULL AND (usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
           innerWhereClauses.push(`EXISTS (
             SELECT 1 FROM user_contact uc_v
             WHERE uc_v.user_id = u.id AND uc_v.is_disabled = 0 AND uc_v.phone_number IS NOT NULL AND TRIM(uc_v.phone_number) != ''
@@ -738,13 +741,14 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
       const statsSql = `
         SELECT 
           CASE
+            WHEN elsa_res.id IS NOT NULL THEN 'COMBO_ELSA'
             WHEN usb_agg.user_id IS NULL THEN 'SINGLE'
             WHEN usb_agg.live_count > 0 THEN 'COMBO_LIVE'
             ELSE 'COMBO_DEAD'
           END as bucket,
           COUNT(*) as count,
-          SUM(CASE WHEN usb_agg.live_count > 0 AND usb_agg.expiryDate IS NOT NULL AND DATEDIFF(usb_agg.expiryDate, NOW()) BETWEEN 0 AND 30 THEN 1 ELSE 0 END) as hsd30Count,
-          SUM(CASE WHEN usb_agg.live_count > 0 AND (COALESCE(usb_agg.normalCount, 0) + COALESCE(usb_agg.retainCount, 0)) = 1 THEN 1 ELSE 0 END) as lsd1Count
+          SUM(CASE WHEN elsa_res.id IS NULL AND usb_agg.live_count > 0 AND usb_agg.expiryDate IS NOT NULL AND DATEDIFF(usb_agg.expiryDate, NOW()) BETWEEN 0 AND 30 THEN 1 ELSE 0 END) as hsd30Count,
+          SUM(CASE WHEN elsa_res.id IS NULL AND usb_agg.live_count > 0 AND (COALESCE(usb_agg.normalCount, 0) + COALESCE(usb_agg.retainCount, 0)) = 1 THEN 1 ELSE 0 END) as lsd1Count
         FROM user u
         ${statsInnerJoins}
         ${innerWhereString}
@@ -758,6 +762,7 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         comboLive: 0,
         comboDead: 0,
         single: 0,
+        comboElsa: 0,
         notComboLive: 0,
         hsd30: 0,
         lsd1: 0,
@@ -773,9 +778,10 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         }
         if (row.bucket === 'COMBO_DEAD') stats.comboDead = count;
         if (row.bucket === 'SINGLE') stats.single = count;
+        if (row.bucket === 'COMBO_ELSA') stats.comboElsa = count;
       });
 
-      stats.notComboLive = stats.total - stats.comboLive;
+      stats.notComboLive = stats.total - stats.comboLive - stats.comboElsa;
 
       fastify.cache.set(cacheKey, stats, 120000);
       return stats;

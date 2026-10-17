@@ -923,6 +923,36 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'ELSA-001',
+    book: 'CUSTOMER',
+    title: 'Bảo lưu Combo Elsa — Đóng băng tạm thời, chăm sóc đặc biệt',
+    summary:
+      'Khách hàng có lý do công tác, thai sản hoặc diện ưu tiên đặc biệt được bảo lưu gói combo vào tệp Combo Elsa; không hiển thị ở Single hay Combo Live, bắt buộc có thời hạn và reminder chăm sóc.',
+    commandments: [
+      'Khi bảo lưu gói combo, khách hàng được chuyển hoàn toàn sang tệp riêng biệt "Combo Elsa" (COMBO_ELSA), không hiển thị tại Single hay Combo Live.',
+      'Tệp Combo Elsa bắt buộc phải có thời hạn bảo lưu (hoặc vô thời hạn cho diện đặc biệt như khách PXL) và ngày nhắc lịch (reminder) để Telesales/CS chăm sóc đặc biệt.',
+      'Khi hết thời hạn bảo lưu hoặc được mở lại (Released), combo được rã đông và khách hàng trở lại trạng thái hiển thị theo số dư combo thực tế.',
+      'Bộ lọc danh sách khách hàng và thống kê tabs phân tách rõ ràng tab Combo Elsa độc lập khỏi Combo Live, Not Combo Live, Combo Dead và Single.',
+    ],
+    rationale:
+      'Gói combo của khách có lý do chính đáng cần được bảo lưu thay vì để trôi hết hạn; tệp Elsa giúp theo dõi sát sao tiến độ và kích hoạt lại đúng hẹn mà không làm nhiễu số liệu Combo Live vận hành.',
+    examples: [
+      'Cô Giáng Hương (0903706199) hoặc Chị Mai (0908969386) đi công tác/diện PXL được đưa vào tệp Combo Elsa kèm reminder chăm sóc khi về SG.',
+    ],
+    tags: ['Combo Elsa', 'Bảo lưu', 'Frozen', 'COMBO_ELSA', 'Reminder', 'Chăm sóc đặc biệt'],
+    routeScopes: ['/dashboard/customers', '/dashboard/loca', '/dashboard/nyc'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-10-18',
+    sources: [
+      { label: 'Quy tắc tệp khách hàng bảo lưu Combo Elsa', reference: 'mOS Inbox · MOS-BUG-111' },
+      {
+        label: 'Service bảo lưu Combo Elsa',
+        reference: 'apps/api/src/modules/customers/routes/customer-elsa.routes.ts',
+      },
+    ],
+  },
+  {
     id: 'PEOPLE-001',
     book: 'PEOPLE',
     title: 'Ngày OFF cố định phải xem từ lịch gốc',

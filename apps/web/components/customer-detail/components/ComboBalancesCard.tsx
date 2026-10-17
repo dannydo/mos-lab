@@ -1,11 +1,18 @@
 import React, { useState } from 'react';
-import { Card, Space, Button, Tooltip } from 'antd';
+import { Card, Space, Button, Tooltip, Tag, Popconfirm, message } from 'antd';
 import { InboxOutlined, SunOutlined, SyncOutlined, CopyOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import { CopyComboModal } from './CopyComboModal';
+import { ElsaReservationModal } from './ElsaReservationModal';
+import { apiClient } from '../../../lib/api-client';
+import { Customer } from '@mos-lab/shared';
 
 interface ComboBalancesCardProps {
   comboBalances: SafeAny[];
   customerName?: string;
+  customerId?: number;
+  customer?: Customer;
+  onRefreshCustomer?: () => void;
   themeMode: 'light' | 'dark';
   getComboDisplayInfo: (
     serviceName: string,
@@ -18,14 +25,46 @@ interface ComboBalancesCardProps {
 }
 
 export const ComboBalancesCard: React.FC<ComboBalancesCardProps> = React.memo(
-  ({ comboBalances, customerName, themeMode, getComboDisplayInfo, onOpenComboModal }) => {
+  ({
+    comboBalances,
+    customerName,
+    customerId,
+    customer,
+    onRefreshCustomer,
+    themeMode,
+    getComboDisplayInfo,
+    onOpenComboModal,
+  }) => {
     const [selectedCopyCombo, setSelectedCopyCombo] = useState<SafeAny | null>(null);
     const [isCopyModalOpen, setIsCopyModalOpen] = useState<boolean>(false);
+    const [isElsaModalOpen, setIsElsaModalOpen] = useState<boolean>(false);
+    const [releaseLoading, setReleaseLoading] = useState<boolean>(false);
+
     const mutedTextColor = themeMode === 'dark' ? '#cbd5e1' : '#475569';
     const warningTextColor = themeMode === 'dark' ? '#fbbf24' : '#92400e';
     const infoTextColor = themeMode === 'dark' ? '#60a5fa' : '#1d4ed8';
 
     const activeCombos = comboBalances.filter((cb: SafeAny) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0);
+    const effectiveCustomerId = customerId || customer?.id;
+    const isElsaActive =
+      customer?.bucket === 'COMBO_ELSA' ||
+      (customer?.elsaReservation && customer.elsaReservation.status === 'ACTIVE');
+
+    const handleReleaseElsa = async () => {
+      if (!effectiveCustomerId) return;
+      try {
+        setReleaseLoading(true);
+        await apiClient.customers.releaseElsa(effectiveCustomerId, {
+          releaseNote: 'Mở lại combo (Rã đông)',
+        });
+        message.success('Đã mở lại gói combo (Rã đông Elsa) thành công');
+        onRefreshCustomer?.();
+      } catch (err: SafeAny) {
+        message.error(err?.response?.data?.message || 'Có lỗi xảy ra khi rã đông combo');
+      } finally {
+        setReleaseLoading(false);
+      }
+    };
 
     return (
       <>
@@ -35,6 +74,26 @@ export const ComboBalancesCard: React.FC<ComboBalancesCardProps> = React.memo(
               <InboxOutlined /> GÓI COMBO ĐANG CHẠY
             </span>
           }
+          extra={
+            effectiveCustomerId ? (
+              <Space>
+                {!isElsaActive ? (
+                  <Button
+                    size="small"
+                    onClick={() => setIsElsaModalOpen(true)}
+                    style={{
+                      borderColor: '#38bdf8',
+                      color: '#0284c7',
+                      fontSize: '12px',
+                      borderRadius: '6px',
+                    }}
+                  >
+                    ❄️ Bảo lưu Elsa
+                  </Button>
+                ) : null}
+              </Space>
+            ) : null
+          }
           size="small"
           styles={{ body: { padding: '16px' } }}
           style={{
@@ -42,6 +101,88 @@ export const ComboBalancesCard: React.FC<ComboBalancesCardProps> = React.memo(
             borderColor: themeMode === 'dark' ? '#334155' : '#e5e7eb',
           }}
         >
+          {isElsaActive && (
+            <div
+              style={{
+                background: themeMode === 'dark' ? 'rgba(2, 132, 199, 0.15)' : '#f0f9ff',
+                border: '1px solid #38bdf8',
+                borderRadius: '8px',
+                padding: '12px',
+                marginBottom: activeCombos.length > 0 ? '12px' : 0,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '16px' }}>❄️</span>
+                  <span style={{ fontWeight: 700, color: '#0284c7', fontSize: '13px' }}>
+                    ĐANG BẢO LƯU COMBO ELSA
+                  </span>
+                  <Tag color="cyan" style={{ marginLeft: 4, fontWeight: 600 }}>
+                    {customer?.elsaReservation?.reservationType === 'INDEFINITE'
+                      ? 'Vô thời hạn (PXL)'
+                      : 'Có thời hạn'}
+                  </Tag>
+                </div>
+                <Space size={6}>
+                  <Button
+                    size="small"
+                    type="link"
+                    onClick={() => setIsElsaModalOpen(true)}
+                    style={{ padding: '0 4px', fontSize: '12px', color: '#0284c7' }}
+                  >
+                    Chỉnh sửa
+                  </Button>
+                  <Popconfirm
+                    title="Rã đông và mở lại combo?"
+                    description="Khách hàng sẽ quay lại tệp Combo bình thường."
+                    onConfirm={handleReleaseElsa}
+                    okText="Rã đông"
+                    cancelText="Hủy"
+                    okButtonProps={{ loading: releaseLoading }}
+                  >
+                    <Button size="small" type="primary" danger ghost style={{ fontSize: '12px' }}>
+                      Rã đông combo
+                    </Button>
+                  </Popconfirm>
+                </Space>
+              </div>
+              {customer?.elsaReservation && (
+                <div
+                  style={{
+                    marginTop: '8px',
+                    fontSize: '12px',
+                    color: themeMode === 'dark' ? '#cbd5e1' : '#334155',
+                  }}
+                >
+                  <div>
+                    <strong>Lý do:</strong> {customer.elsaReservation.reason}
+                  </div>
+                  {customer.elsaReservation.endDate && (
+                    <div>
+                      <strong>Hạn bảo lưu:</strong>{' '}
+                      {dayjs(customer.elsaReservation.endDate).format('DD/MM/YYYY')}
+                    </div>
+                  )}
+                  {customer.elsaReservation.reminderDate && (
+                    <div style={{ color: '#d97706', fontWeight: 600, marginTop: '2px' }}>
+                      🕒 <strong>Ngày nhắc CS:</strong>{' '}
+                      {dayjs(customer.elsaReservation.reminderDate).format('DD/MM/YYYY')}
+                      {customer.elsaReservation.reminderNote && ` — ${customer.elsaReservation.reminderNote}`}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {activeCombos.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {activeCombos.map((cb: SafeAny) => {
@@ -240,6 +381,18 @@ export const ComboBalancesCard: React.FC<ComboBalancesCardProps> = React.memo(
           }
           themeMode={themeMode}
         />
+
+        {effectiveCustomerId && (
+          <ElsaReservationModal
+            open={isElsaModalOpen}
+            onClose={() => setIsElsaModalOpen(false)}
+            customerId={effectiveCustomerId}
+            customerName={customerName || customer?.name || ''}
+            currentReservation={customer?.elsaReservation}
+            onSuccess={() => onRefreshCustomer?.()}
+            themeMode={themeMode}
+          />
+        )}
       </>
     );
   }

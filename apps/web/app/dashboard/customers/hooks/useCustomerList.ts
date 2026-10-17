@@ -29,6 +29,7 @@ export const useCustomerList = (
     comboDead: 0,
     single: 0,
     notComboLive: 0,
+    comboElsa: 0,
   });
 
   const listCacheRef = useRef<Map<string, { data: Customer[]; total: number; timestamp: number }>>(new Map());
@@ -139,8 +140,16 @@ export const useCustomerList = (
         }
 
         const data = await apiClient.customers.getStats(params, { signal: abortController.signal });
-        setStats(data);
-        statsCacheRef.current.set(cacheKey, { stats: data, timestamp: Date.now() });
+        const normalizedStats = {
+          total: data.total,
+          comboLive: data.comboLive,
+          comboDead: data.comboDead,
+          single: data.single,
+          notComboLive: data.notComboLive,
+          comboElsa: data.comboElsa ?? 0,
+        };
+        setStats(normalizedStats);
+        statsCacheRef.current.set(cacheKey, { stats: normalizedStats, timestamp: Date.now() });
         if (statsCacheRef.current.size > 50) {
           const oldest = statsCacheRef.current.keys().next().value;
           if (oldest) statsCacheRef.current.delete(oldest);

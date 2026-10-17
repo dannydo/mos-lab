@@ -1,6 +1,6 @@
 import { CallLog } from './call';
 
-export type BucketType = 'COMBO_LIVE' | 'COMBO_DEAD' | 'SINGLE';
+export type BucketType = 'COMBO_LIVE' | 'COMBO_DEAD' | 'SINGLE' | 'COMBO_ELSA';
 
 /** Status assigned by WingsLashes at the time a service was booked. */
 export type BookingUserServiceType =
@@ -105,6 +105,40 @@ export interface Customer {
     ccOutName?: string;
     cvName?: string;
   } | null;
+  elsaReservation?: CustomerElsaReservation | null;
+}
+
+export interface CustomerElsaReservation {
+  id: number;
+  legacyUserId: number;
+  status: 'ACTIVE' | 'RELEASED' | 'CANCELLED';
+  reservationType: 'FIXED_TERM' | 'INDEFINITE';
+  reason: string;
+  startDate: string;
+  endDate: string | null;
+  reminderDate: string | null;
+  reminderNote: string | null;
+  isReminderDismissed: boolean;
+  createdByStaffId: number | null;
+  createdByStaffName: string | null;
+  releasedAt?: string | null;
+  releasedByStaffId?: number | null;
+  releasedByStaffName?: string | null;
+  releaseNote?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateElsaReservationInput {
+  reason: string;
+  reservationType?: 'FIXED_TERM' | 'INDEFINITE';
+  endDate?: string | null;
+  reminderDate: string;
+  reminderNote?: string | null;
+}
+
+export interface ReleaseElsaReservationInput {
+  releaseNote?: string | null;
 }
 
 export interface CustomerStats {
@@ -112,6 +146,7 @@ export interface CustomerStats {
   comboLive: number;
   comboDead: number;
   single: number;
+  comboElsa?: number;
 }
 
 /**
@@ -259,6 +294,7 @@ export interface CustomerStatsResponse {
   comboDead: number;
   single: number;
   notComboLive: number;
+  comboElsa?: number;
   hsd30?: number;
   lsd1?: number;
 }

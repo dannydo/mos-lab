@@ -829,6 +829,9 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
                   <ComboBalancesCard
                     comboBalances={comboBalances}
                     customerName={customer?.name || ''}
+                    customerId={customer?.id}
+                    customer={customer}
+                    onRefreshCustomer={refreshAllDetails}
                     themeMode={themeMode}
                     getComboDisplayInfo={getComboDisplayInfo}
                     onOpenComboModal={() => {

@@ -12,6 +12,7 @@ import { registerCustomerNotesRoutes } from './routes/customer-notes.routes.js';
 import { registerCustomerAllocationRoutes } from './routes/customer-allocation.routes.js';
 import { registerAppointmentsRoutes } from './routes/appointments.routes.js';
 import { registerCvStatusRoutes } from './routes/cv-status.routes.js';
+import { registerCustomerElsaRoutes } from './routes/customer-elsa.routes.js';
 
 export { resolveEffectiveAssignedStaffId } from './routes/helpers.js';
 
@@ -32,4 +33,5 @@ export async function customerRoutes(fastify: FastifyInstance) {
   await registerCustomerAllocationRoutes(fastify);
   await registerAppointmentsRoutes(fastify);
   await registerCvStatusRoutes(fastify);
+  await registerCustomerElsaRoutes(fastify);
 }

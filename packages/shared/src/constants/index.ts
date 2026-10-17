@@ -18,6 +18,11 @@ export const BUCKET_DETAILS: Record<BucketType, { label: string; color: string; 
     color: '#FAAD14', // Yellow/Gold
     description: 'Khách hàng lẻ, chưa từng mua combo gói dịch vụ nào.',
   },
+  COMBO_ELSA: {
+    label: 'Combo Elsa',
+    color: '#0284c7', // Frozen Ice Cyan/Sky Blue
+    description: 'Khách hàng bảo lưu combo (Elsa), có thời hạn và lịch nhắc chăm sóc đặc biệt.',
+  },
 };
 
 export const ROLE_PERMISSIONS: Record<UserRole, { viewKPI: boolean; viewTeamKPI: boolean; manageStaff: boolean }> = {

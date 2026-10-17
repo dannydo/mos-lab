@@ -135,6 +135,7 @@ function CustomersPageContent() {
   const getTabLabel = (key: string, baseLabel: string, count: number) => {
     const colorByTab: Record<string, string> = {
       COMBO_LIVE: token.colorSuccess,
+      COMBO_ELSA: token.cyan || token.colorInfo,
       NOT_COMBO_LIVE: token.colorInfo,
       COMBO_DEAD: token.colorError,
       SINGLE: token.colorPrimary,
@@ -433,6 +434,10 @@ function CustomersPageContent() {
           {
             key: 'COMBO_LIVE',
             label: getTabLabel('COMBO_LIVE', 'Combo Live', data.stats.comboLive),
+          },
+          {
+            key: 'COMBO_ELSA',
+            label: getTabLabel('COMBO_ELSA', '❄️ Combo Elsa', data.stats.comboElsa),
           },
           {
             key: 'NOT_COMBO_LIVE',

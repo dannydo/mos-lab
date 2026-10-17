@@ -374,6 +374,10 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
              WHERE (normal_count + retain_count) > 0
                AND (service_group IS NULL OR service_group != 'LashesUnder')
                AND (date_expired IS NULL OR date_expired > NOW())
+               AND user_id NOT IN (
+                 SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
+                 WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
+               )
                ${usbScopeFilter}`
           )
         ).map((r) => Number(r.user_id));
@@ -405,6 +409,46 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
           }
         } else {
           allowedUserIds = comboLiveUserIds;
+        }
+      } else if (bucket === 'COMBO_ELSA') {
+        const elsaScopeFilter =
+          allowedUserIds !== null && allowedUserIds.length > 0 ? `AND legacy_user_id IN (${allowedUserIds.join(',')})` : '';
+        const elsaUserIds = (
+          await fastify.prisma.crm.$queryRawUnsafe<{ legacy_user_id: number }[]>(
+            `SELECT DISTINCT legacy_user_id
+             FROM crm_customer_elsa_reservations
+             WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
+               ${elsaScopeFilter}`
+          )
+        ).map((r) => Number(r.legacy_user_id));
+
+        if (elsaUserIds.length === 0) {
+          return {
+            data: [],
+            pagination: {
+              total: 0,
+              page: pageNum,
+              limit: limitNum,
+              pages: 0,
+            },
+          };
+        }
+        if (allowedUserIds !== null) {
+          const elsaSet = new Set(elsaUserIds);
+          allowedUserIds = allowedUserIds.filter((id) => elsaSet.has(id));
+          if (allowedUserIds.length === 0) {
+            return {
+              data: [],
+              pagination: {
+                total: 0,
+                page: pageNum,
+                limit: limitNum,
+                pages: 0,
+              },
+            };
+          }
+        } else {
+          allowedUserIds = elsaUserIds;
         }
       }
 
@@ -708,12 +752,28 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
       if (bStr && bStr !== 'ALL') {
         if (bStr === 'SINGLE') {
           innerWhereClauses.push('usb_agg.user_id IS NULL');
+          innerWhereClauses.push(`u.id NOT IN (
+            SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
+            WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
+          )`);
         } else if (bStr === 'COMBO_LIVE') {
           innerWhereClauses.push('usb_agg.live_count > 0');
+          innerWhereClauses.push(`u.id NOT IN (
+            SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
+            WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
+          )`);
         } else if (bStr === 'COMBO_DEAD') {
           innerWhereClauses.push('usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0');
+          innerWhereClauses.push(`u.id NOT IN (
+            SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
+            WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
+          )`);
         } else if (bStr === 'NOT_COMBO_LIVE') {
           innerWhereClauses.push('(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
+          innerWhereClauses.push(`u.id NOT IN (
+            SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
+            WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
+          )`);
           innerWhereClauses.push(`EXISTS (
             SELECT 1 FROM user_contact uc_v
             WHERE uc_v.user_id = u.id AND uc_v.is_disabled = 0 AND uc_v.phone_number IS NOT NULL AND TRIM(uc_v.phone_number) != ''
@@ -721,6 +781,11 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
           innerWhereClauses.push(`EXISTS (
             SELECT 1 FROM \`order\` o_v
             WHERE o_v.user_id = u.id
+          )`);
+        } else if (bStr === 'COMBO_ELSA') {
+          innerWhereClauses.push(`u.id IN (
+            SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
+            WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
           )`);
         } else if (bStr === 'NEW_LOCA') {
           const newLocaUserIds = await resolveNewLocaUserIds();
@@ -1122,6 +1187,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         pageOrderMetrics,
         pageReferralMetrics,
         pageBalanceMetrics,
+        elsaReservations,
       ] = await Promise.all([
         customerIds.length > 0
           ? fastify.prisma.crm.crmCustomerAssignment.findMany({
@@ -1253,11 +1319,27 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
                GROUP BY user_id`
             )
           : Promise.resolve([]),
+        customerIds.length > 0
+          ? fastify.prisma.crm.crmCustomerElsaReservation.findMany({
+              where: {
+                legacyUserId: { in: customerIds },
+                status: 'ACTIVE',
+                OR: [{ endDate: null }, { endDate: { gte: new Date() } }],
+              },
+              orderBy: { id: 'desc' },
+            })
+          : Promise.resolve([]),
       ]);
 
       const orderMetricMap = new Map(pageOrderMetrics.map((metric) => [Number(metric.userId), metric]));
       const referralMetricMap = new Map(pageReferralMetrics.map((metric) => [Number(metric.userId), metric]));
       const balanceMetricMap = new Map(pageBalanceMetrics.map((metric) => [Number(metric.userId), metric]));
+      const elsaReservationMap = new Map<number, SafeAny>();
+      elsaReservations.forEach((er) => {
+        if (!elsaReservationMap.has(er.legacyUserId)) {
+          elsaReservationMap.set(er.legacyUserId, er);
+        }
+      });
 
       // Keep the response's numeric and bucket semantics identical to the former
       // outer joins while limiting metric aggregation to this response page.
@@ -1266,6 +1348,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         const orderMetric = orderMetricMap.get(customerId);
         const referralMetric = referralMetricMap.get(customerId);
         const balanceMetric = balanceMetricMap.get(customerId);
+        const elsaRes = elsaReservationMap.get(customerId);
 
         row.totalSpent = orderMetric?.totalSpent || 0;
         row.totalVisits = orderMetric?.totalVisits || 0;
@@ -1284,11 +1367,37 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
           row.lastVisit = null;
           row.daysSinceLastVisit = null;
         }
-        row.bucket = !balanceMetric
-          ? 'SINGLE'
-          : Number(balanceMetric.live_count || 0) > 0
-            ? 'COMBO_LIVE'
-            : 'COMBO_DEAD';
+
+        if (elsaRes) {
+          row.bucket = 'COMBO_ELSA';
+          row.elsaReservation = {
+            id: elsaRes.id,
+            legacyUserId: elsaRes.legacyUserId,
+            status: elsaRes.status,
+            reservationType: elsaRes.reservationType,
+            reason: elsaRes.reason,
+            startDate: elsaRes.startDate ? new Date(elsaRes.startDate).toISOString() : null,
+            endDate: elsaRes.endDate ? new Date(elsaRes.endDate).toISOString() : null,
+            reminderDate: elsaRes.reminderDate ? new Date(elsaRes.reminderDate).toISOString() : null,
+            reminderNote: elsaRes.reminderNote,
+            isReminderDismissed: elsaRes.isReminderDismissed,
+            createdByStaffId: elsaRes.createdByStaffId,
+            createdByStaffName: elsaRes.createdByStaffName,
+            releasedAt: elsaRes.releasedAt ? new Date(elsaRes.releasedAt).toISOString() : null,
+            releasedByStaffId: elsaRes.releasedByStaffId,
+            releasedByStaffName: elsaRes.releasedByStaffName,
+            releaseNote: elsaRes.releaseNote,
+            createdAt: new Date(elsaRes.createdAt).toISOString(),
+            updatedAt: new Date(elsaRes.updatedAt).toISOString(),
+          };
+        } else {
+          row.elsaReservation = null;
+          row.bucket = !balanceMetric
+            ? 'SINGLE'
+            : Number(balanceMetric.live_count || 0) > 0
+              ? 'COMBO_LIVE'
+              : 'COMBO_DEAD';
+        }
         row.normalCount = balanceMetric?.normalCount || 0;
         row.retainCount = balanceMetric?.retainCount || 0;
         row.expiryDate = balanceMetric?.expiryDate || null;
@@ -1639,6 +1748,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
                   expiryDate: row.expiryDate ? new Date(row.expiryDate).toISOString() : null,
                 }
               : null,
+          elsaReservation: row.elsaReservation || null,
           assignedStaff: assigned,
           // `assignedAt` is a current-owner field. Historical allocation evidence stays
           // isolated in `lastAllocation`, so an unassigned customer never looks owned.
@@ -1947,15 +2057,36 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
       if (bucket && bucket !== 'ALL') {
         if (bucket === 'SINGLE') {
           innerWhereClauses.push('usb_agg.user_id IS NULL');
+          innerWhereClauses.push(`u.id NOT IN (
+            SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
+            WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
+          )`);
         } else if (bucket === 'COMBO_LIVE') {
           innerWhereClauses.push('usb_agg.live_count > 0');
+          innerWhereClauses.push(`u.id NOT IN (
+            SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
+            WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
+          )`);
         } else if (bucket === 'COMBO_DEAD') {
           innerWhereClauses.push('usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0');
+          innerWhereClauses.push(`u.id NOT IN (
+            SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
+            WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
+          )`);
         } else if (bucket === 'NOT_COMBO_LIVE') {
           innerWhereClauses.push('(usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
+          innerWhereClauses.push(`u.id NOT IN (
+            SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
+            WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
+          )`);
           innerWhereClauses.push(`EXISTS (
             SELECT 1 FROM \`order\` o_rand
             WHERE o_rand.user_id = u.id
+          )`);
+        } else if (bucket === 'COMBO_ELSA') {
+          innerWhereClauses.push(`u.id IN (
+            SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
+            WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
           )`);
         }
       }
