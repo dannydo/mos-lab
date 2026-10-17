@@ -23,6 +23,13 @@ export interface MosChatCustomerCard {
   phone?: string;
 }
 
+export interface MosChatMessageEditHistoryItem {
+  text: string;
+  editedAt: string;
+  editedBy?: string | number;
+  editorName?: string;
+}
+
 export interface MosChatThreadReply {
   id: string;
   senderId: number | string;
@@ -33,6 +40,14 @@ export interface MosChatThreadReply {
   timeLabel: string;
   createdAt: string;
   attachments?: MosChatImageAttachment[];
+  editedAt?: string | null;
+  editedBy?: string | number | null;
+  editHistory?: MosChatMessageEditHistoryItem[];
+  isDeleted?: boolean;
+  deletedAt?: string | null;
+  deletedBy?: string | number | null;
+  deletedByName?: string | null;
+  originalText?: string;
 }
 
 export interface MosChatMessage {
@@ -61,6 +76,14 @@ export interface MosChatMessage {
     label: string;
     payload: Record<string, unknown>;
   } | null;
+  editedAt?: string | null;
+  editedBy?: string | number | null;
+  editHistory?: MosChatMessageEditHistoryItem[];
+  isDeleted?: boolean;
+  deletedAt?: string | null;
+  deletedBy?: string | number | null;
+  deletedByName?: string | null;
+  originalText?: string;
 }
 
 export interface MosChatTaskItem {
@@ -172,6 +195,17 @@ export interface CreateMosChatMessageRequest {
     label: string;
     payload: Record<string, unknown>;
   } | null;
+}
+
+export interface EditMosChatMessageRequest {
+  conversationId: string;
+  text: string;
+  replyId?: string;
+}
+
+export interface DeleteMosChatMessageRequest {
+  conversationId: string;
+  replyId?: string;
 }
 
 export interface CreateMosChatThreadReplyRequest {

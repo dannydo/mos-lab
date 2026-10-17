@@ -3,6 +3,8 @@ import type {
   CreateMosChatMessageRequest,
   CreateMosChatTaskRequest,
   CreateMosChatThreadReplyRequest,
+  DeleteMosChatMessageRequest,
+  EditMosChatMessageRequest,
   MosChatAccessConfig,
   MosChatBootstrapResponse,
   MosChatConversation,
@@ -89,6 +91,25 @@ export const chatApi = {
     ): Promise<{ success: boolean; pinned: boolean }> => {
       const res = await api.post(`/chat/messages/${encodeURIComponent(messageId)}/pin`, {
         conversationId,
+      });
+      invalidateApiGetCache(['/chat/bootstrap']);
+      return res.data;
+    },
+    editMessage: async (
+      messageId: string,
+      payload: EditMosChatMessageRequest
+    ): Promise<{ success: boolean; message: MosChatMessage; target?: SafeAny }> => {
+      const res = await api.put(`/chat/messages/${encodeURIComponent(messageId)}`, payload);
+      invalidateApiGetCache(['/chat/bootstrap']);
+      return res.data;
+    },
+    deleteMessage: async (
+      messageId: string,
+      payload: DeleteMosChatMessageRequest
+    ): Promise<{ success: boolean; message: MosChatMessage; target?: SafeAny }> => {
+      const res = await api.delete(`/chat/messages/${encodeURIComponent(messageId)}`, {
+        data: payload,
+        params: payload,
       });
       invalidateApiGetCache(['/chat/bootstrap']);
       return res.data;

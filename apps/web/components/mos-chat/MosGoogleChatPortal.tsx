@@ -63,9 +63,21 @@ import {
   LogOut,
   MailOpen,
   Pencil,
+  History,
+  Bold,
+  Italic,
+  Strikethrough,
+  Underline,
+  List,
+  ListOrdered,
+  ListTodo,
+  Quote,
+  Code,
+  Type,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import type {
+  MosChatMessageEditHistoryItem,
   MosChatAccessConfig,
   MosChatConversation,
   MosChatCustomSection,
@@ -73,6 +85,7 @@ import type {
   MosChatImageAttachment,
   MosChatImageMimeType,
   MosChatMessage,
+  MosChatThreadReply,
   MosChatPresenceStatus,
   MosChatStaffMember,
   MosChatTaskItem,
@@ -1166,6 +1179,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [composerText, setComposerText] = useState('');
   const [stagedAttachments, setStagedAttachments] = useState<MosChatImageAttachment[]>([]);
   const [sampleCardIndex, setSampleCardIndex] = useState(0);
+  const [formatBarOpenMain, setFormatBarOpenMain] = useState(false);
+  const [formatBarOpenThread, setFormatBarOpenThread] = useState(false);
 
   // Mini Docked Pop-out Windows (Bottom right like Gmail)
   const [dockedConvIds, setDockedConvIds] = useState<string[]>([]);
@@ -1315,13 +1330,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [nowMs, setNowMs] = useState<number>(() => Date.now());
   const firedTaskIdsRef = useRef<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const composerInputRef = useRef<HTMLInputElement | null>(null);
-  const threadInputRef = useRef<HTMLInputElement | null>(null);
-  const dockInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const composerInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const threadInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const dockInputRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
   const isComposingRef = useRef<boolean>(false);
   const lastCompositionEndMsRef = useRef<number>(0);
   const lastSentRef = useRef<{ text: string; time: number }>({ text: '', time: 0 });
   const broadcastChannelRef = useRef<BroadcastChannel | null>(null);
+
+  // Inline Message Edit & Delete History States
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState<string>('');
+  const [isSavingEdit, setIsSavingEdit] = useState<boolean>(false);
+  const [historyModalMessage, setHistoryModalMessage] = useState<MosChatMessage | MosChatThreadReply | null>(null);
+  const [historyModalOpen, setHistoryModalOpen] = useState<boolean>(false);
 
   const lastVersionRef = useRef<number>(0);
 
@@ -2837,6 +2860,195 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     } catch (_) {}
   };
 
+  const handleStartEdit = (msg: MosChatMessage, replyId?: string) => {
+    if (replyId) {
+      const reply = msg.thread?.find((r) => r.id === replyId);
+      if (reply) {
+        setEditingMessageId(msg.id);
+        setEditingReplyId(replyId);
+        setEditingText(reply.text);
+      }
+    } else {
+      setEditingMessageId(msg.id);
+      setEditingReplyId(null);
+      setEditingText(msg.text);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditingReplyId(null);
+    setEditingText('');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingMessageId || !activeConversation) return;
+    const trimmed = editingText.trim();
+    if (!trimmed) {
+      antdMessage.warning('Nội dung tin nhắn không được để trống');
+      return;
+    }
+
+    setIsSavingEdit(true);
+    const now = new Date();
+    const myId = currentUser?.id || 'me';
+    const myName = currentUser?.displayName || currentUser?.username || 'Bạn';
+    const editMsgId = editingMessageId;
+    const editRepId = editingReplyId;
+
+    if (activeConversation.id === AI_COPILOT_CONV_ID) {
+      setAiMessages((prev) =>
+        prev.map((m) => {
+          if (m.id !== editMsgId) return m;
+          const oldHistory = m.editHistory || [];
+          return {
+            ...m,
+            editHistory: [
+              ...oldHistory,
+              { text: m.text, editedAt: now.toISOString(), editedBy: myId, editorName: myName },
+            ],
+            text: trimmed,
+            editedAt: now.toISOString(),
+            editedBy: myId,
+          };
+        })
+      );
+      handleCancelEdit();
+      setIsSavingEdit(false);
+      antdMessage.success('Đã lưu chỉnh sửa tin nhắn');
+      return;
+    }
+
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id !== activeConversation.id) return c;
+        return {
+          ...c,
+          messages: c.messages.map((m) => {
+            if (m.id !== editMsgId) return m;
+            if (editRepId) {
+              return {
+                ...m,
+                thread: (m.thread || []).map((r) => {
+                  if (r.id !== editRepId) return r;
+                  const oldHistory = r.editHistory || [];
+                  return {
+                    ...r,
+                    editHistory: [
+                      ...oldHistory,
+                      { text: r.text, editedAt: now.toISOString(), editedBy: myId, editorName: myName },
+                    ],
+                    text: trimmed,
+                    editedAt: now.toISOString(),
+                    editedBy: myId,
+                  };
+                }),
+              };
+            }
+            const oldHistory = m.editHistory || [];
+            return {
+              ...m,
+              editHistory: [
+                ...oldHistory,
+                { text: m.text, editedAt: now.toISOString(), editedBy: myId, editorName: myName },
+              ],
+              text: trimmed,
+              editedAt: now.toISOString(),
+              editedBy: myId,
+            };
+          }),
+        };
+      })
+    );
+
+    try {
+      await apiClient.chat.editMessage(editMsgId, {
+        conversationId: activeConversation.id,
+        text: trimmed,
+        replyId: editRepId || undefined,
+      });
+      notifyLivePeers();
+      antdMessage.success('Đã lưu chỉnh sửa tin nhắn');
+    } catch (err: SafeAny) {
+      antdMessage.error(err?.response?.data?.message || 'Lỗi khi cập nhật tin nhắn');
+    } finally {
+      setIsSavingEdit(false);
+      handleCancelEdit();
+    }
+  };
+
+  const handleDeleteMessage = async (msgId: string, replyId?: string) => {
+    if (!activeConversation) return;
+    const now = new Date();
+    const myId = currentUser?.id || 'me';
+    const myName = currentUser?.displayName || currentUser?.username || 'Bạn';
+
+    if (activeConversation.id === AI_COPILOT_CONV_ID) {
+      setAiMessages((prev) =>
+        prev.map((m) => {
+          if (m.id !== msgId) return m;
+          return {
+            ...m,
+            originalText: m.originalText || m.text,
+            isDeleted: true,
+            deletedAt: now.toISOString(),
+            deletedBy: myId,
+            deletedByName: myName,
+          };
+        })
+      );
+      antdMessage.success('Đã xoá tin nhắn (lịch sử đã được lưu lại)');
+      return;
+    }
+
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id !== activeConversation.id) return c;
+        return {
+          ...c,
+          messages: c.messages.map((m) => {
+            if (m.id !== msgId) return m;
+            if (replyId) {
+              return {
+                ...m,
+                thread: (m.thread || []).map((r) => {
+                  if (r.id !== replyId) return r;
+                  return {
+                    ...r,
+                    originalText: r.originalText || r.text,
+                    isDeleted: true,
+                    deletedAt: now.toISOString(),
+                    deletedBy: myId,
+                    deletedByName: myName,
+                  };
+                }),
+              };
+            }
+            return {
+              ...m,
+              originalText: m.originalText || m.text,
+              isDeleted: true,
+              deletedAt: now.toISOString(),
+              deletedBy: myId,
+              deletedByName: myName,
+            };
+          }),
+        };
+      })
+    );
+
+    try {
+      await apiClient.chat.deleteMessage(msgId, {
+        conversationId: activeConversation.id,
+        replyId: replyId || undefined,
+      });
+      notifyLivePeers();
+      antdMessage.success('Đã xoá tin nhắn (lịch sử đã được lưu lại)');
+    } catch (err: SafeAny) {
+      antdMessage.error(err?.response?.data?.message || 'Lỗi khi xoá tin nhắn');
+    }
+  };
+
   const handleOpenThread = (msgId: string) => {
     setActiveThreadMsgId(msgId);
     setThreadOpen(true);
@@ -2877,6 +3089,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     if ((!text && attachmentsToSend.length === 0) || !activeConversation || !activeThreadMsgId) return;
     setThreadInput('');
     setThreadAttachments([]);
+    if (threadInputRef.current) {
+      threadInputRef.current.value = '';
+      threadInputRef.current.style.height = 'auto';
+    }
 
     const senderName = currentUser?.displayName || 'Danny Do';
     const newReply = {
@@ -3340,6 +3556,619 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       </div>
     );
   };
+
+  /**
+   * Tokenizer phân tích inline markup an toàn thành React Nodes:
+   * **đậm**, *nghiêng*, ~~gạch ngang~~, <u>gạch chân</u>, `code`, https://..., @mentions
+   */
+  const parseInlineRichText = useCallback((text: string, keyPrefix = 'inline'): React.ReactNode[] => {
+    if (!text) return [];
+    const regex =
+      /(\*\*(.+?)\*\*)|(~~(.+?)~~)|(<u>(.+?)<\/u>)|(`([^`]+)`)|\*([^*\n]+)\*|(https?:\/\/[^\s<]+)|(@[a-zA-Z0-9_\u00C0-\u1EF9]+(?:\s[a-zA-Z0-9_\u00C0-\u1EF9]+)?)/gu;
+
+    const elements: React.ReactNode[] = [];
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    let i = 0;
+
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        elements.push(text.substring(lastIndex, match.index));
+      }
+
+      const fullMatch = match[0];
+      const key = `${keyPrefix}-${i++}`;
+
+      if (fullMatch.startsWith('**') && fullMatch.endsWith('**')) {
+        elements.push(
+          <strong key={key} className="font-bold text-amber-500/90 dark:text-amber-400">
+            {fullMatch.slice(2, -2)}
+          </strong>
+        );
+      } else if (fullMatch.startsWith('~~') && fullMatch.endsWith('~~')) {
+        elements.push(
+          <del key={key} className="line-through opacity-70">
+            {fullMatch.slice(2, -2)}
+          </del>
+        );
+      } else if (fullMatch.startsWith('<u>') && fullMatch.endsWith('</u>')) {
+        elements.push(
+          <u key={key} className="underline underline-offset-2">
+            {fullMatch.slice(3, -4)}
+          </u>
+        );
+      } else if (fullMatch.startsWith('`') && fullMatch.endsWith('`')) {
+        elements.push(
+          <code
+            key={key}
+            className="px-1.5 py-0.5 rounded text-[11.5px] font-mono bg-black/15 dark:bg-white/10 text-amber-600 dark:text-amber-300"
+          >
+            {fullMatch.slice(1, -1)}
+          </code>
+        );
+      } else if (fullMatch.startsWith('*') && fullMatch.endsWith('*')) {
+        elements.push(
+          <em key={key} className="italic opacity-90">
+            {fullMatch.slice(1, -1)}
+          </em>
+        );
+      } else if (fullMatch.startsWith('http://') || fullMatch.startsWith('https://')) {
+        elements.push(
+          <a
+            key={key}
+            href={fullMatch}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-blue-500 dark:text-blue-400 hover:underline inline-flex items-center gap-0.5 break-all font-medium"
+          >
+            <span>{fullMatch}</span>
+            <ExternalLink size={10} className="inline shrink-0 opacity-70" />
+          </a>
+        );
+      } else if (fullMatch.startsWith('@')) {
+        const isAi = fullMatch.toUpperCase() === '@AI';
+        elements.push(
+          <span
+            key={key}
+            className={`inline-flex items-center px-1.5 py-0.2 rounded-md font-semibold text-[11px] ${
+              isAi
+                ? 'bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/30'
+                : 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+            }`}
+          >
+            {fullMatch}
+          </span>
+        );
+      } else {
+        elements.push(fullMatch);
+      }
+
+      lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < text.length) {
+      elements.push(text.substring(lastIndex));
+    }
+
+    return elements.length > 0 ? elements : [text];
+  }, []);
+
+  /**
+   * Bộ Renderer chuẩn Rich Text phong cách Apple Notes cho bong bóng chat:
+   * Hỗ trợ Headings (#, ##, ###), Checklist Todo (- [ ] / - [x]), Bullet (- / *), Number (1.),
+   * Blockquote (>), Code Block (```), Inline styles.
+   */
+  const renderRichTextMessage = useCallback(
+    (rawText?: string | null, _isMine = false): React.ReactNode => {
+      if (!rawText) return null;
+
+      const lines = rawText.split('\n');
+      const result: React.ReactNode[] = [];
+      let inCodeBlock = false;
+      let codeBlockLang = '';
+      let codeBlockLines: string[] = [];
+
+      for (let idx = 0; idx < lines.length; idx++) {
+        const line = lines[idx];
+
+        // Code block fences
+        if (line.trim().startsWith('```')) {
+          if (inCodeBlock) {
+            const codeContent = codeBlockLines.join('\n');
+            result.push(
+              <div
+                key={`cb-${idx}`}
+                className="my-2 rounded-xl overflow-hidden border border-white/10 shadow-sm bg-neutral-900 text-neutral-100 text-[11.5px] font-mono select-text"
+              >
+                <div className="flex items-center justify-between px-3 py-1 bg-neutral-800/80 border-b border-white/5 text-[10px] text-neutral-400">
+                  <span className="font-semibold">{codeBlockLang || 'Code'}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void navigator.clipboard?.writeText(codeContent);
+                      antdMessage.success('Đã sao chép mã code');
+                    }}
+                    className="hover:text-amber-400 cursor-pointer inline-flex items-center gap-1"
+                  >
+                    <Copy size={11} />
+                    <span>Sao chép</span>
+                  </button>
+                </div>
+                <pre className="p-3 overflow-x-auto leading-relaxed m-0">
+                  <code>{codeContent}</code>
+                </pre>
+              </div>
+            );
+            inCodeBlock = false;
+            codeBlockLines = [];
+            codeBlockLang = '';
+          } else {
+            inCodeBlock = true;
+            codeBlockLang = line.trim().slice(3).trim();
+            codeBlockLines = [];
+          }
+          continue;
+        }
+
+        if (inCodeBlock) {
+          codeBlockLines.push(line);
+          continue;
+        }
+
+        const trimmed = line.trim();
+
+        // Heading 1: # Title
+        if (line.startsWith('# ')) {
+          result.push(
+            <div
+              key={`h1-${idx}`}
+              className="text-[15px] font-bold text-amber-500 dark:text-amber-400 tracking-tight mt-1.5 mb-1"
+            >
+              {parseInlineRichText(line.slice(2), `h1-${idx}`)}
+            </div>
+          );
+          continue;
+        }
+
+        // Heading 2: ## Subtitle
+        if (line.startsWith('## ')) {
+          result.push(
+            <div key={`h2-${idx}`} className="text-[13.5px] font-bold opacity-90 mt-1 mb-0.5">
+              {parseInlineRichText(line.slice(3), `h2-${idx}`)}
+            </div>
+          );
+          continue;
+        }
+
+        // Heading 3: ### Heading
+        if (line.startsWith('### ')) {
+          result.push(
+            <div key={`h3-${idx}`} className="text-[12.5px] font-semibold opacity-85 mt-1 mb-0.5">
+              {parseInlineRichText(line.slice(4), `h3-${idx}`)}
+            </div>
+          );
+          continue;
+        }
+
+        // Blockquote: > text
+        if (line.startsWith('> ') || line === '>') {
+          result.push(
+            <blockquote
+              key={`quote-${idx}`}
+              className="my-1 pl-2.5 py-0.5 border-l-2 border-amber-500/70 italic text-[12.5px] opacity-90 rounded-r bg-amber-500/5"
+            >
+              {parseInlineRichText(line.replace(/^>\s?/, ''), `q-${idx}`)}
+            </blockquote>
+          );
+          continue;
+        }
+
+        // Apple Notes Checklist / Todo: - [ ] or - [x]
+        if (/^-\s?\[([ xX])\]\s/.test(trimmed)) {
+          const isChecked = trimmed.startsWith('- [x]') || trimmed.startsWith('- [X]');
+          const content = trimmed.replace(/^-\s?\[([ xX])\]\s/, '');
+          result.push(
+            <div key={`todo-${idx}`} className="flex items-start gap-2 my-0.5 text-[12.5px]">
+              <span
+                className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-all ${
+                  isChecked
+                    ? 'bg-amber-500 text-black font-bold'
+                    : 'border-2 border-amber-500/70 hover:border-amber-400'
+                }`}
+              >
+                {isChecked ? <Check size={11} strokeWidth={3} /> : null}
+              </span>
+              <span className={`flex-1 break-words ${isChecked ? 'line-through opacity-60' : ''}`}>
+                {parseInlineRichText(content, `t-${idx}`)}
+              </span>
+            </div>
+          );
+          continue;
+        }
+
+        // Bullet List: - item or * item
+        if (/^[-*]\s/.test(trimmed)) {
+          const content = trimmed.replace(/^[-*]\s/, '');
+          result.push(
+            <div key={`bullet-${idx}`} className="flex items-start gap-1.5 my-0.5 text-[12.5px]">
+              <span className="text-amber-500 shrink-0 select-none font-bold">•</span>
+              <span className="flex-1 break-words">{parseInlineRichText(content, `b-${idx}`)}</span>
+            </div>
+          );
+          continue;
+        }
+
+        // Numbered List: 1. item
+        const numMatch = trimmed.match(/^(\d+)\.\s(.*)$/);
+        if (numMatch) {
+          const num = numMatch[1];
+          const content = numMatch[2];
+          result.push(
+            <div key={`num-${idx}`} className="flex items-start gap-1.5 my-0.5 text-[12.5px]">
+              <span className="text-amber-500 shrink-0 tabular-nums select-none font-semibold text-[11.5px] min-w-[14px]">
+                {num}.
+              </span>
+              <span className="flex-1 break-words">{parseInlineRichText(content, `n-${idx}`)}</span>
+            </div>
+          );
+          continue;
+        }
+
+        // Blank lines or standard text
+        if (line === '') {
+          result.push(<div key={`blank-${idx}`} className="h-2" />);
+        } else {
+          result.push(
+            <div key={`p-${idx}`} className="break-words leading-relaxed">
+              {parseInlineRichText(line, `p-${idx}`)}
+            </div>
+          );
+        }
+      }
+
+      if (inCodeBlock && codeBlockLines.length > 0) {
+        const codeContent = codeBlockLines.join('\n');
+        result.push(
+          <pre
+            key="cb-unclosed"
+            className="p-3 my-2 rounded-xl bg-neutral-900 text-neutral-100 text-[11.5px] font-mono overflow-x-auto leading-relaxed border border-white/10 select-text"
+          >
+            <code>{codeContent}</code>
+          </pre>
+        );
+      }
+
+      return <div className="space-y-0.5">{result}</div>;
+    },
+    [parseInlineRichText]
+  );
+
+  /**
+   * Áp dụng cú pháp định dạng Apple Notes vào textarea tại vị trí con trỏ chuột
+   */
+  const handleApplyFormat = useCallback(
+    (
+      formatType:
+        | 'bold'
+        | 'italic'
+        | 'strike'
+        | 'underline'
+        | 'h1'
+        | 'h2'
+        | 'todo'
+        | 'bullet'
+        | 'number'
+        | 'quote'
+        | 'code'
+        | 'codeblock',
+      scope: 'main' | 'thread'
+    ) => {
+      const textarea = scope === 'main' ? composerInputRef.current : threadInputRef.current;
+      const currentValue = scope === 'main' ? composerText : threadInput;
+      const setValue = scope === 'main' ? setComposerText : setThreadInput;
+
+      if (!textarea) return;
+
+      const start = textarea.selectionStart ?? currentValue.length;
+      const end = textarea.selectionEnd ?? currentValue.length;
+      const selectedText = currentValue.substring(start, end);
+
+      let replacement = '';
+      let cursorOffset = 0;
+
+      switch (formatType) {
+        case 'bold':
+          replacement = selectedText ? `**${selectedText}**` : '**chữ đậm**';
+          cursorOffset = selectedText ? replacement.length : 2;
+          break;
+        case 'italic':
+          replacement = selectedText ? `*${selectedText}*` : '*chữ nghiêng*';
+          cursorOffset = selectedText ? replacement.length : 1;
+          break;
+        case 'strike':
+          replacement = selectedText ? `~~${selectedText}~~` : '~~gạch ngang~~';
+          cursorOffset = selectedText ? replacement.length : 2;
+          break;
+        case 'underline':
+          replacement = selectedText ? `<u>${selectedText}</u>` : '<u>gạch chân</u>';
+          cursorOffset = selectedText ? replacement.length : 3;
+          break;
+        case 'code':
+          replacement = selectedText ? `\`${selectedText}\`` : '`mã code`';
+          cursorOffset = selectedText ? replacement.length : 1;
+          break;
+        case 'codeblock':
+          replacement = selectedText ? `\`\`\`\n${selectedText}\n\`\`\`` : '```\n// Mã lập trình\n```';
+          cursorOffset = selectedText ? replacement.length : 4;
+          break;
+        case 'h1': {
+          const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
+          const prefix = currentValue.substring(0, lineStart);
+          const rest = currentValue.substring(lineStart);
+          const newText = `${prefix}# ${rest}`;
+          setValue(newText);
+          setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(start + 2, end + 2);
+          }, 0);
+          return;
+        }
+        case 'h2': {
+          const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
+          const prefix = currentValue.substring(0, lineStart);
+          const rest = currentValue.substring(lineStart);
+          const newText = `${prefix}## ${rest}`;
+          setValue(newText);
+          setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(start + 3, end + 3);
+          }, 0);
+          return;
+        }
+        case 'todo': {
+          const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
+          const prefix = currentValue.substring(0, lineStart);
+          const rest = currentValue.substring(lineStart);
+          const newText = `${prefix}- [ ] ${rest}`;
+          setValue(newText);
+          setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(start + 6, end + 6);
+          }, 0);
+          return;
+        }
+        case 'bullet': {
+          const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
+          const prefix = currentValue.substring(0, lineStart);
+          const rest = currentValue.substring(lineStart);
+          const newText = `${prefix}- ${rest}`;
+          setValue(newText);
+          setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(start + 2, end + 2);
+          }, 0);
+          return;
+        }
+        case 'number': {
+          const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
+          const prefix = currentValue.substring(0, lineStart);
+          const rest = currentValue.substring(lineStart);
+          const newText = `${prefix}1. ${rest}`;
+          setValue(newText);
+          setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(start + 3, end + 3);
+          }, 0);
+          return;
+        }
+        case 'quote': {
+          const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
+          const prefix = currentValue.substring(0, lineStart);
+          const rest = currentValue.substring(lineStart);
+          const newText = `${prefix}> ${rest}`;
+          setValue(newText);
+          setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(start + 2, end + 2);
+          }, 0);
+          return;
+        }
+      }
+
+      const newValue = currentValue.substring(0, start) + replacement + currentValue.substring(end);
+      setValue(newValue);
+      setTimeout(() => {
+        textarea.focus();
+        if (selectedText) {
+          textarea.setSelectionRange(start, start + replacement.length);
+        } else {
+          textarea.setSelectionRange(start + cursorOffset, start + cursorOffset);
+        }
+      }, 0);
+    },
+    [composerText, threadInput]
+  );
+
+  /**
+   * Thanh công cụ định dạng Apple Notes (phù hợp iPhone & Desktop)
+   */
+  const renderAppleNotesFormatToolbar = useCallback(
+    (scope: 'main' | 'thread') => {
+      const isMain = scope === 'main';
+      const close = () => {
+        if (isMain) setFormatBarOpenMain(false);
+        else setFormatBarOpenThread(false);
+      };
+
+      return (
+        <div
+          className="flex items-center gap-1 px-2 py-1.5 overflow-x-auto no-scrollbar rounded-xl mb-1.5 shadow-md border animate-in slide-in-from-bottom-2 duration-150 select-none"
+          style={{
+            background: isDark ? 'rgba(28, 28, 30, 0.96)' : 'rgba(242, 242, 247, 0.96)',
+            backdropFilter: 'blur(16px)',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.1)',
+          }}
+        >
+          {/* Label Badge Apple Notes */}
+          <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded text-amber-500 bg-amber-500/10 shrink-0 font-serif">
+            Aa Notes
+          </span>
+
+          <div className="h-4 w-[1px] bg-white/10 shrink-0 mx-0.5" />
+
+          {/* Bold button */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => handleApplyFormat('bold', scope)}
+            title="In đậm (⌘B / **text**)"
+            className="min-w-[36px] h-[34px] px-2 rounded-lg flex items-center justify-center font-bold text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
+            style={{ color: token.colorText }}
+          >
+            <Bold size={15} strokeWidth={2.5} />
+          </button>
+
+          {/* Italic button */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => handleApplyFormat('italic', scope)}
+            title="In nghiêng (⌘I / *text*)"
+            className="min-w-[36px] h-[34px] px-2 rounded-lg flex items-center justify-center italic text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
+            style={{ color: token.colorText }}
+          >
+            <Italic size={15} />
+          </button>
+
+          {/* Strikethrough button */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => handleApplyFormat('strike', scope)}
+            title="Gạch ngang (~~text~~)"
+            className="min-w-[36px] h-[34px] px-2 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
+            style={{ color: token.colorText }}
+          >
+            <Strikethrough size={15} />
+          </button>
+
+          {/* Underline button */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => handleApplyFormat('underline', scope)}
+            title="Gạch chân (<u>text</u>)"
+            className="min-w-[36px] h-[34px] px-2 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
+            style={{ color: token.colorText }}
+          >
+            <Underline size={15} />
+          </button>
+
+          <div className="h-4 w-[1px] bg-white/10 shrink-0 mx-0.5" />
+
+          {/* H1 Heading button */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => handleApplyFormat('h1', scope)}
+            title="Tiêu đề lớn (# Title)"
+            className="min-w-[38px] h-[34px] px-2 rounded-lg flex items-center justify-center font-bold text-[12px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer text-amber-500"
+          >
+            H1
+          </button>
+
+          {/* H2 Heading button */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => handleApplyFormat('h2', scope)}
+            title="Tiêu đề phụ (## Subhead)"
+            className="min-w-[38px] h-[34px] px-2 rounded-lg flex items-center justify-center font-semibold text-[11px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer opacity-90"
+            style={{ color: token.colorText }}
+          >
+            H2
+          </button>
+
+          <div className="h-4 w-[1px] bg-white/10 shrink-0 mx-0.5" />
+
+          {/* Checklist / Todo button */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => handleApplyFormat('todo', scope)}
+            title="Việc cần làm (- [ ] Việc)"
+            className="min-w-[36px] h-[34px] px-2 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer text-amber-500"
+          >
+            <ListTodo size={16} />
+          </button>
+
+          {/* Bullet List button */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => handleApplyFormat('bullet', scope)}
+            title="Danh sách gạch đầu dòng (- Mục)"
+            className="min-w-[36px] h-[34px] px-2 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
+            style={{ color: token.colorText }}
+          >
+            <List size={16} />
+          </button>
+
+          {/* Numbered List button */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => handleApplyFormat('number', scope)}
+            title="Danh sách đánh số (1. Mục)"
+            className="min-w-[36px] h-[34px] px-2 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
+            style={{ color: token.colorText }}
+          >
+            <ListOrdered size={16} />
+          </button>
+
+          {/* Quote button */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => handleApplyFormat('quote', scope)}
+            title="Trích dẫn (> Trích dẫn)"
+            className="min-w-[36px] h-[34px] px-2 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
+            style={{ color: token.colorText }}
+          >
+            <Quote size={15} />
+          </button>
+
+          {/* Code button */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => handleApplyFormat('code', scope)}
+            title="Khối mã code (`code` hoặc ```)"
+            className="min-w-[36px] h-[34px] px-2 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer font-mono"
+            style={{ color: token.colorText }}
+          >
+            <Code size={15} />
+          </button>
+
+          <div className="h-4 w-[1px] bg-white/10 shrink-0 mx-0.5" />
+
+          {/* Close button */}
+          <button
+            type="button"
+            onClick={close}
+            title="Đóng thanh định dạng"
+            className="min-w-[32px] h-[34px] px-1.5 rounded-lg flex items-center justify-center text-[12px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer opacity-70 hover:opacity-100"
+            style={{ color: token.colorTextSecondary }}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      );
+    },
+    [handleApplyFormat, isDark, token.colorText, token.colorTextSecondary]
+  );
 
   const [brokenAvatarUrls, setBrokenAvatarUrls] = useState<Record<string, boolean>>({});
 
@@ -5191,7 +6020,93 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           </div>
                         )}
 
-                        {m.text && (
+                        {/* Message Content: Inline Edit Mode vs Soft-Deleted vs Normal Text Bubble */}
+                        {editingMessageId === m.id && !editingReplyId ? (
+                          <div
+                            className="w-full max-w-[85%] rounded-2xl p-2.5 space-y-2 select-text"
+                            style={{ background: surfaceRaised, border: '1.5px solid #d4a84b' }}
+                          >
+                            <textarea
+                              autoFocus
+                              value={editingText}
+                              onChange={(e) => setEditingText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Escape') {
+                                  e.preventDefault();
+                                  handleCancelEdit();
+                                } else if (e.key === 'Enter' && !e.shiftKey) {
+                                  if (
+                                    e.nativeEvent.isComposing ||
+                                    isComposingRef.current ||
+                                    e.keyCode === 229 ||
+                                    Date.now() - lastCompositionEndMsRef.current < 60
+                                  ) {
+                                    return;
+                                  }
+                                  e.preventDefault();
+                                  handleSaveEdit();
+                                }
+                              }}
+                              rows={3}
+                              className="w-full bg-transparent border-0 outline-none text-[13px] leading-relaxed resize-y p-1"
+                              style={{ color: token.colorText }}
+                            />
+                            <div className="flex items-center justify-between pt-1 border-t border-white/10 text-[11px]">
+                              <span className="text-slate-400">Shift+Enter: xuống dòng · Esc: huỷ · Enter: lưu</span>
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={handleCancelEdit}
+                                  className="px-2.5 py-1 rounded-md cursor-pointer hover:bg-white/10"
+                                  style={{ color: token.colorTextSecondary }}
+                                >
+                                  Huỷ
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={isSavingEdit || !editingText.trim()}
+                                  onClick={handleSaveEdit}
+                                  className="px-3 py-1 rounded-md font-bold cursor-pointer disabled:opacity-50"
+                                  style={{ background: '#d4a84b', color: '#000' }}
+                                >
+                                  {isSavingEdit ? 'Đang lưu...' : 'Lưu thay đổi'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : m.isDeleted ? (
+                          <div
+                            className={`relative inline-block text-left px-3.5 py-2 rounded-2xl ${
+                              isMine ? 'rounded-tr-sm' : 'rounded-tl-sm'
+                            } text-[12.5px] italic max-w-[85%] select-none transition-all`}
+                            style={{
+                              background: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.04)',
+                              border: `1px dashed ${borderColor}`,
+                              color: token.colorTextSecondary,
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="opacity-75">💬 Tin nhắn này đã bị xoá</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setHistoryModalMessage(m);
+                                  setHistoryModalOpen(true);
+                                }}
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold not-italic hover:underline cursor-pointer"
+                                style={{ color: '#d4a84b' }}
+                              >
+                                <History size={12} />
+                                <span>Xem lịch sử</span>
+                              </button>
+                            </div>
+                            {m.deletedByName && (
+                              <div className="text-[10px] text-slate-400 not-italic mt-0.5 tabular-nums">
+                                Bởi {m.deletedByName} · {m.deletedAt ? dayjs(m.deletedAt).format('HH:mm') : m.timeLabel}
+                              </div>
+                            )}
+                          </div>
+                        ) : m.text ? (
                           <div
                             onClick={(e) => handleMessageTap(m.id, e)}
                             className={`relative inline-block text-left px-3.5 py-2 rounded-2xl ${
@@ -5213,7 +6128,24 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               color: token.colorText,
                             }}
                           >
-                            {m.text}
+                            {renderRichTextMessage(m.text, isMine)}
+
+                            {/* Edited Badge with Clickable Audit History */}
+                            {m.editHistory && m.editHistory.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setHistoryModalMessage(m);
+                                  setHistoryModalOpen(true);
+                                }}
+                                className="inline-flex items-center gap-0.5 text-[10.5px] font-medium text-amber-500/80 hover:text-amber-400 hover:underline cursor-pointer select-none ml-1.5 align-baseline"
+                                title="Xem lịch sử chỉnh sửa"
+                              >
+                                <History size={10} />
+                                <span>(đã chỉnh sửa)</span>
+                              </button>
+                            )}
 
                             {/* Floating Heart Burst on Double-Tap */}
                             {heartFlyMsgId === m.id && (
@@ -5222,7 +6154,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               </div>
                             )}
                           </div>
-                        )}
+                        ) : null}
 
                         {/* Suggested AI Action Button (e.g. APPLY_FILTER) */}
                         {m.aiAction && (
@@ -5532,6 +6464,61 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                 <Pin size={13} />
                               </button>
                             </Tooltip>
+
+                            {/* Edit Message Button (if author or admin, and not deleted) */}
+                            {(isMine || isDannyAccount) && !m.isDeleted && (
+                              <Tooltip title="Chỉnh sửa tin nhắn">
+                                <button
+                                  type="button"
+                                  aria-label="Chỉnh sửa tin nhắn"
+                                  onClick={() => handleStartEdit(m)}
+                                  className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+                                  style={{ color: token.colorTextSecondary }}
+                                >
+                                  <Pencil size={13} />
+                                </button>
+                              </Tooltip>
+                            )}
+
+                            {/* Delete Message Button (Popconfirm, soft delete with history) */}
+                            {(isMine || isDannyAccount) && !m.isDeleted && (
+                              <Popconfirm
+                                title="Xoá tin nhắn này?"
+                                description="Nội dung sẽ bị ẩn nhưng toàn bộ lịch sử chỉnh sửa & xoá vẫn được lưu lại an toàn."
+                                onConfirm={() => handleDeleteMessage(m.id)}
+                                okText="Xoá"
+                                cancelText="Huỷ"
+                                okButtonProps={{ danger: true }}
+                              >
+                                <Tooltip title="Xoá tin nhắn (lưu lại lịch sử)">
+                                  <button
+                                    type="button"
+                                    aria-label="Xoá tin nhắn"
+                                    className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-rose-500/15 cursor-pointer hover:text-rose-400"
+                                    style={{ color: token.colorTextSecondary }}
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </Tooltip>
+                              </Popconfirm>
+                            )}
+
+                            {/* View History Button (if edited or deleted) */}
+                            {(m.isDeleted || (m.editHistory && m.editHistory.length > 0)) && (
+                              <Tooltip title="Xem lịch sử chỉnh sửa & xoá">
+                                <button
+                                  type="button"
+                                  aria-label="Xem lịch sử chỉnh sửa & xoá"
+                                  onClick={() => {
+                                    setHistoryModalMessage(m);
+                                    setHistoryModalOpen(true);
+                                  }}
+                                  className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-amber-500/15 cursor-pointer text-amber-400"
+                                >
+                                  <History size={13} />
+                                </button>
+                              </Tooltip>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -5724,8 +6711,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       </div>
                     )}
 
+                    {/* Apple Notes Style Format Toolbar for Mobile */}
+                    {formatBarOpenMain && renderAppleNotesFormatToolbar('main')}
+
                     {/* Mobile Main Row */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       {/* [+] Action expander button (34x34px, 15px icon) */}
                       <button
                         type="button"
@@ -5741,16 +6731,35 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         {mobileActionOpen ? <X size={15} /> : <Plus size={15} />}
                       </button>
 
+                      {/* [Aa] Apple Notes Format Button for Mobile (34x34px) */}
+                      <button
+                        type="button"
+                        aria-label="Định dạng chữ Apple Notes"
+                        onClick={() => setFormatBarOpenMain((prev) => !prev)}
+                        className="w-[34px] h-[34px] rounded-full flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-sm overflow-hidden"
+                        style={{
+                          background: formatBarOpenMain ? '#d4a84b' : surfaceRaised,
+                          border: `1px solid ${formatBarOpenMain ? '#d4a84b' : borderStrong}`,
+                          color: formatBarOpenMain ? '#000' : token.colorTextSecondary,
+                        }}
+                      >
+                        <span className="font-serif font-bold text-[13px] tracking-tight">Aa</span>
+                      </button>
+
                       {/* Text Input Pill (38px min-height) */}
                       <div
-                        className="flex-1 min-h-[38px] rounded-2xl px-3 flex items-center gap-1.5"
+                        className="flex-1 min-h-[38px] max-h-[120px] rounded-2xl px-3 py-1 flex items-center gap-1.5"
                         style={{ background: surfaceRaised, border: `1px solid ${borderStrong}` }}
                       >
-                        <input
+                        <textarea
                           ref={composerInputRef}
-                          type="text"
+                          rows={1}
                           value={composerText}
-                          onChange={(e) => setComposerText(e.target.value)}
+                          onChange={(e) => {
+                            setComposerText(e.target.value);
+                            e.target.style.height = 'auto';
+                            e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                          }}
                           onPaste={(e) => handleClipboardPaste(e, 'main')}
                           onCompositionStart={() => {
                             isComposingRef.current = true;
@@ -5762,6 +6771,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             }, 50);
                           }}
                           onKeyDown={(e) => {
+                            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+                              e.preventDefault();
+                              handleApplyFormat('bold', 'main');
+                              return;
+                            }
+                            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'i') {
+                              e.preventDefault();
+                              handleApplyFormat('italic', 'main');
+                              return;
+                            }
+                            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'u') {
+                              e.preventDefault();
+                              handleApplyFormat('underline', 'main');
+                              return;
+                            }
                             if (e.key === 'Enter' && !e.shiftKey) {
                               if (
                                 e.nativeEvent.isComposing ||
@@ -5775,9 +6799,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               handleSendMain();
                             }
                           }}
-                          placeholder="Nhắn tin..."
-                          className="flex-1 bg-transparent border-0 outline-none text-[13.5px]"
-                          style={{ color: token.colorText }}
+                          placeholder="Nhắn tin... (Shift+Enter để xuống dòng)"
+                          className="flex-1 bg-transparent border-0 outline-none text-[13.5px] resize-none leading-relaxed py-1"
+                          style={{ color: token.colorText, maxHeight: 110 }}
                         />
 
                         <Popover trigger="click" placement="topRight" content={renderComposerEmojiPickerContent()}>
@@ -5811,154 +6835,192 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   </div>
                 ) : (
                   /* Desktop Layout with spacious 32px buttons and 17px icons */
-                  <div
-                    className="h-11 rounded-full pl-4 pr-1.5 flex items-center gap-1.5"
-                    style={{ background: surfaceRaised, border: `1px solid ${borderStrong}` }}
-                  >
-                    <input
-                      ref={composerInputRef}
-                      type="text"
-                      value={composerText}
-                      onChange={(e) => setComposerText(e.target.value)}
-                      onPaste={(e) => handleClipboardPaste(e, 'main')}
-                      onCompositionStart={() => {
-                        isComposingRef.current = true;
-                      }}
-                      onCompositionEnd={() => {
-                        lastCompositionEndMsRef.current = Date.now();
-                        setTimeout(() => {
-                          isComposingRef.current = false;
-                        }, 50);
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          if (
-                            e.nativeEvent.isComposing ||
-                            isComposingRef.current ||
-                            e.keyCode === 229 ||
-                            Date.now() - lastCompositionEndMsRef.current < 60
-                          ) {
+                  <div className="space-y-1.5">
+                    {formatBarOpenMain && renderAppleNotesFormatToolbar('main')}
+                    <div
+                      className="min-h-[44px] max-h-[140px] rounded-2xl pl-4 pr-1.5 py-1.5 flex items-end gap-1.5 transition-all"
+                      style={{ background: surfaceRaised, border: `1px solid ${borderStrong}` }}
+                    >
+                      <textarea
+                        ref={composerInputRef}
+                        rows={1}
+                        value={composerText}
+                        onChange={(e) => {
+                          setComposerText(e.target.value);
+                          e.target.style.height = 'auto';
+                          e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                        }}
+                        onPaste={(e) => handleClipboardPaste(e, 'main')}
+                        onCompositionStart={() => {
+                          isComposingRef.current = true;
+                        }}
+                        onCompositionEnd={() => {
+                          lastCompositionEndMsRef.current = Date.now();
+                          setTimeout(() => {
+                            isComposingRef.current = false;
+                          }, 50);
+                        }}
+                        onKeyDown={(e) => {
+                          if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+                            e.preventDefault();
+                            handleApplyFormat('bold', 'main');
                             return;
                           }
-                          e.preventDefault();
-                          handleSendMain();
+                          if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'i') {
+                            e.preventDefault();
+                            handleApplyFormat('italic', 'main');
+                            return;
+                          }
+                          if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'u') {
+                            e.preventDefault();
+                            handleApplyFormat('underline', 'main');
+                            return;
+                          }
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            if (
+                              e.nativeEvent.isComposing ||
+                              isComposingRef.current ||
+                              e.keyCode === 229 ||
+                              Date.now() - lastCompositionEndMsRef.current < 60
+                            ) {
+                              return;
+                            }
+                            e.preventDefault();
+                            handleSendMain();
+                          }
+                        }}
+                        placeholder={
+                          activeConversation?.id === AI_COPILOT_CONV_ID
+                            ? 'Hỏi Wings AI Copilot, Paste hình (⌘V) hoặc yêu cầu phân tích khách hàng... (Shift+Enter để xuống dòng)'
+                            : canUseAiCopilot
+                              ? 'Nhắn tin, gõ @AI để gọi Copilot, Paste hình (⌘V)... (Shift+Enter để xuống dòng)'
+                              : 'Nhắn tin, Paste hình (⌘V) hoặc dán link Google Drive... (Shift+Enter để xuống dòng)'
                         }
-                      }}
-                      placeholder={
-                        activeConversation?.id === AI_COPILOT_CONV_ID
-                          ? 'Hỏi Wings AI Copilot, Paste hình (⌘V) hoặc yêu cầu phân tích khách hàng...'
-                          : canUseAiCopilot
-                            ? 'Nhắn tin, gõ @AI để gọi Copilot, Paste hình (⌘V)...'
-                            : 'Nhắn tin, Paste hình (⌘V) hoặc dán link Google Drive...'
-                      }
-                      className="flex-1 bg-transparent border-0 outline-none text-[13px]"
-                      style={{ color: token.colorText }}
-                    />
+                        className="flex-1 bg-transparent border-0 outline-none text-[13px] resize-none leading-relaxed py-1.5 self-center"
+                        style={{ color: token.colorText, maxHeight: 120 }}
+                      />
 
-                    <Popover trigger="click" placement="topRight" content={renderComposerEmojiPickerContent()}>
-                      <Tooltip title="Chèn biểu tượng cảm xúc Wings">
+                      {/* [Aa] Apple Notes Format Button for Desktop */}
+                      <Tooltip title="Định dạng chữ phong cách Apple Notes (Aa)">
                         <button
                           type="button"
-                          aria-label="Chèn biểu tượng cảm xúc Wings"
+                          aria-label="Định dạng chữ Apple Notes"
+                          onClick={() => setFormatBarOpenMain((prev) => !prev)}
+                          className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer transition-all"
+                          style={{
+                            background: formatBarOpenMain ? '#d4a84b' : 'transparent',
+                            color: formatBarOpenMain ? '#000' : token.colorTextSecondary,
+                          }}
+                        >
+                          <span className="font-serif font-bold text-[13px] tracking-tight">Aa</span>
+                        </button>
+                      </Tooltip>
+
+                      <Popover trigger="click" placement="topRight" content={renderComposerEmojiPickerContent()}>
+                        <Tooltip title="Chèn biểu tượng cảm xúc Wings">
+                          <button
+                            type="button"
+                            aria-label="Chèn biểu tượng cảm xúc Wings"
+                            className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
+                            style={{ color: token.colorTextSecondary }}
+                          >
+                            <SmilePlus size={17} />
+                          </button>
+                        </Tooltip>
+                      </Popover>
+
+                      <Tooltip title="Tải hình từ Ổ đĩa / Google Drive Desktop hoặc Paste ảnh (⌘V)">
+                        <button
+                          type="button"
+                          aria-label="Tải hình từ ổ đĩa hoặc Google Drive"
+                          onClick={() => triggerFilePicker('main')}
                           className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
                           style={{ color: token.colorTextSecondary }}
                         >
-                          <SmilePlus size={17} />
+                          <ImagePlus size={17} />
                         </button>
                       </Tooltip>
-                    </Popover>
 
-                    <Tooltip title="Tải hình từ Ổ đĩa / Google Drive Desktop hoặc Paste ảnh (⌘V)">
-                      <button
-                        type="button"
-                        aria-label="Tải hình từ ổ đĩa hoặc Google Drive"
-                        onClick={() => triggerFilePicker('main')}
-                        className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
-                        style={{ color: token.colorTextSecondary }}
-                      >
-                        <ImagePlus size={17} />
-                      </button>
-                    </Tooltip>
-
-                    <Tooltip title="Đính kèm hình từ link Google Drive">
-                      <button
-                        type="button"
-                        aria-label="Đính kèm hình từ link Google Drive"
-                        onClick={() => {
-                          uploadTargetRef.current = { scope: 'main' };
-                          setDriveLinkModalOpen(true);
-                        }}
-                        className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
-                        style={{ color: token.colorTextSecondary }}
-                      >
-                        <HardDrive size={17} />
-                      </button>
-                    </Tooltip>
-
-                    <Tooltip title="Đính kèm thẻ Khách hàng / Booking mOS">
-                      <button
-                        type="button"
-                        aria-label="Đính kèm thẻ Khách hàng"
-                        onClick={handleSendQuickCustomerCard}
-                        className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
-                        style={{ color: token.colorTextSecondary }}
-                      >
-                        <UserRoundPlus size={17} />
-                      </button>
-                    </Tooltip>
-
-                    {canUseAiCopilot && activeConversation?.id !== AI_COPILOT_CONV_ID && (
-                      <Tooltip title="Gọi @AI để Wings AI Copilot phân tích & trả lời công khai vào nhóm này">
+                      <Tooltip title="Đính kèm hình từ link Google Drive">
                         <button
                           type="button"
-                          aria-label="Gọi @AI Copilot trong nhóm"
+                          aria-label="Đính kèm hình từ link Google Drive"
                           onClick={() => {
-                            setComposerText((prev) => (prev.includes('@AI') ? prev : `@AI ${prev}`));
-                            composerInputRef.current?.focus();
+                            uploadTargetRef.current = { scope: 'main' };
+                            setDriveLinkModalOpen(true);
                           }}
-                          className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-purple-500/15 cursor-pointer"
-                          style={{ color: '#a78bfa' }}
+                          className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
+                          style={{ color: token.colorTextSecondary }}
                         >
-                          <Bot size={17} />
+                          <HardDrive size={17} />
                         </button>
                       </Tooltip>
-                    )}
 
-                    <Tooltip title="Nhắc tên đồng nghiệp (@)">
-                      <button
-                        type="button"
-                        aria-label="Nhắc tên đồng nghiệp"
-                        onClick={() => setComposerText((prev) => `${prev}@Hà My `)}
-                        className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
-                        style={{ color: token.colorTextSecondary }}
-                      >
-                        <AtSign size={17} />
-                      </button>
-                    </Tooltip>
+                      <Tooltip title="Đính kèm thẻ Khách hàng / Booking mOS">
+                        <button
+                          type="button"
+                          aria-label="Đính kèm thẻ Khách hàng"
+                          onClick={handleSendQuickCustomerCard}
+                          className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
+                          style={{ color: token.colorTextSecondary }}
+                        >
+                          <UserRoundPlus size={17} />
+                        </button>
+                      </Tooltip>
 
-                    <Tooltip title="Giao Task & Cài nhắc hẹn mới">
-                      <button
-                        type="button"
-                        aria-label="Giao Task & Cài nhắc hẹn mới"
-                        onClick={() => openTaskModalFromMessage(null)}
-                        className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
-                        style={{ color: '#d4a84b' }}
-                      >
-                        <AlarmClockPlus size={17} />
-                      </button>
-                    </Tooltip>
+                      {canUseAiCopilot && activeConversation?.id !== AI_COPILOT_CONV_ID && (
+                        <Tooltip title="Gọi @AI để Wings AI Copilot phân tích & trả lời công khai vào nhóm này">
+                          <button
+                            type="button"
+                            aria-label="Gọi @AI Copilot trong nhóm"
+                            onClick={() => {
+                              setComposerText((prev) => (prev.includes('@AI') ? prev : `@AI ${prev}`));
+                              composerInputRef.current?.focus();
+                            }}
+                            className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-purple-500/15 cursor-pointer"
+                            style={{ color: '#a78bfa' }}
+                          >
+                            <Bot size={17} />
+                          </button>
+                        </Tooltip>
+                      )}
 
-                    <Tooltip title="Gửi tin nhắn (Enter)">
-                      <button
-                        type="button"
-                        aria-label="Gửi tin nhắn"
-                        onClick={handleSendMain}
-                        className="w-8 h-8 rounded-full inline-flex items-center justify-center cursor-pointer shadow-sm"
-                        style={{ background: '#d4a84b', color: '#000' }}
-                      >
-                        <SendHorizontal size={16} />
-                      </button>
-                    </Tooltip>
+                      <Tooltip title="Nhắc tên đồng nghiệp (@)">
+                        <button
+                          type="button"
+                          aria-label="Nhắc tên đồng nghiệp"
+                          onClick={() => setComposerText((prev) => `${prev}@Hà My `)}
+                          className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
+                          style={{ color: token.colorTextSecondary }}
+                        >
+                          <AtSign size={17} />
+                        </button>
+                      </Tooltip>
+
+                      <Tooltip title="Giao Task & Cài nhắc hẹn mới">
+                        <button
+                          type="button"
+                          aria-label="Giao Task & Cài nhắc hẹn mới"
+                          onClick={() => openTaskModalFromMessage(null)}
+                          className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
+                          style={{ color: '#d4a84b' }}
+                        >
+                          <AlarmClockPlus size={17} />
+                        </button>
+                      </Tooltip>
+
+                      <Tooltip title="Gửi tin nhắn (Enter)">
+                        <button
+                          type="button"
+                          aria-label="Gửi tin nhắn"
+                          onClick={handleSendMain}
+                          className="w-8 h-8 rounded-full inline-flex items-center justify-center cursor-pointer shadow-sm"
+                          style={{ background: '#d4a84b', color: '#000' }}
+                        >
+                          <SendHorizontal size={16} />
+                        </button>
+                      </Tooltip>
+                    </div>
                   </div>
                 )}
               </div>
@@ -6155,7 +7217,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   <span className="truncate">{activeThreadMessage.senderName}</span>
                   <span className="text-slate-400 text-[10.5px] tabular-nums">· {activeThreadMessage.timeLabel}</span>
                 </div>
-                {activeThreadMessage.text && <div>{activeThreadMessage.text}</div>}
+                {activeThreadMessage.text && (
+                  <div className="text-[13px] leading-relaxed break-words">
+                    {renderRichTextMessage(activeThreadMessage.text)}
+                  </div>
+                )}
                 {renderMessageAttachments(activeThreadMessage.attachments, true)}
               </div>
 
@@ -6176,7 +7242,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       textColor: isReplyMine ? '#000' : '#fff',
                     })}
                     <div
-                      className={`max-w-[82%] p-2 rounded-xl text-[12px] ${
+                      className={`max-w-[85%] p-2 rounded-xl text-[12px] group relative ${
                         isReplyMine ? 'rounded-tr-sm text-right' : 'rounded-tl-sm text-left'
                       }`}
                       style={{
@@ -6197,23 +7263,157 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       >
                         <span style={{ color: isReplyMine ? '#d4a84b' : token.colorText }}>{r.senderName}</span>
                         <span className="text-slate-400 tabular-nums">· {r.timeLabel}</span>
+                        {r.editHistory && r.editHistory.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setHistoryModalMessage(r as SafeAny);
+                              setHistoryModalOpen(true);
+                            }}
+                            className="text-[9.5px] text-amber-500/80 hover:text-amber-400 hover:underline cursor-pointer select-none"
+                            title="Xem lịch sử chỉnh sửa"
+                          >
+                            (đã sửa)
+                          </button>
+                        )}
                       </div>
-                      {r.text && <div className="text-left break-words">{r.text}</div>}
+
+                      {/* Reply Content: Inline Edit vs Deleted vs Normal Text */}
+                      {editingMessageId === activeThreadMessage.id && editingReplyId === r.id ? (
+                        <div className="space-y-1.5 pt-1 text-left">
+                          <textarea
+                            autoFocus
+                            value={editingText}
+                            onChange={(e) => setEditingText(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Escape') {
+                                e.preventDefault();
+                                handleCancelEdit();
+                              } else if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSaveEdit();
+                              }
+                            }}
+                            rows={2}
+                            className="w-full bg-transparent border border-amber-500/50 rounded-lg p-1 text-[12px] outline-none"
+                            style={{ color: token.colorText }}
+                          />
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className="text-slate-400">Shift+Enter: dòng mới</span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={handleCancelEdit}
+                                className="px-1.5 py-0.5 rounded cursor-pointer hover:bg-white/10"
+                                style={{ color: token.colorTextSecondary }}
+                              >
+                                Huỷ
+                              </button>
+                              <button
+                                type="button"
+                                disabled={isSavingEdit || !editingText.trim()}
+                                onClick={handleSaveEdit}
+                                className="px-2 py-0.5 rounded font-bold cursor-pointer"
+                                style={{ background: '#d4a84b', color: '#000' }}
+                              >
+                                {isSavingEdit ? 'Lưu...' : 'Lưu'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : r.isDeleted ? (
+                        <div className="italic opacity-70 text-[11.5px] flex items-center gap-1 text-left">
+                          <span>💬 Tin nhắn trong luồng đã bị xoá</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setHistoryModalMessage(r as SafeAny);
+                              setHistoryModalOpen(true);
+                            }}
+                            className="text-[10px] text-amber-500 hover:underline not-italic font-bold cursor-pointer"
+                          >
+                            Xem
+                          </button>
+                        </div>
+                      ) : (
+                        r.text && (
+                          <div className="text-left break-words leading-relaxed">
+                            {renderRichTextMessage(r.text, isReplyMine)}
+                          </div>
+                        )
+                      )}
+
                       {renderMessageAttachments(r.attachments, true)}
+
+                      {/* Reply Hover Action Toolbar */}
+                      <div
+                        className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-3.5 right-1 flex items-center gap-0.5 px-1 py-0.5 rounded-full shadow-sm"
+                        style={{ background: surfaceRaised, border: `1px solid ${borderStrong}` }}
+                      >
+                        {(isReplyMine || isDannyAccount) && !r.isDeleted && (
+                          <Tooltip title="Chỉnh sửa">
+                            <button
+                              type="button"
+                              onClick={() => handleStartEdit(activeThreadMessage, r.id)}
+                              className="w-5 h-5 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
+                              style={{ color: token.colorTextSecondary }}
+                            >
+                              <Pencil size={11} />
+                            </button>
+                          </Tooltip>
+                        )}
+                        {(isReplyMine || isDannyAccount) && !r.isDeleted && (
+                          <Popconfirm
+                            title="Xoá câu trả lời này?"
+                            onConfirm={() => handleDeleteMessage(activeThreadMessage.id, r.id)}
+                            okText="Xoá"
+                            cancelText="Huỷ"
+                            okButtonProps={{ danger: true }}
+                          >
+                            <Tooltip title="Xoá">
+                              <button
+                                type="button"
+                                className="w-5 h-5 rounded-full inline-flex items-center justify-center hover:bg-rose-500/15 cursor-pointer text-rose-400"
+                              >
+                                <Trash2 size={11} />
+                              </button>
+                            </Tooltip>
+                          </Popconfirm>
+                        )}
+                        {(r.isDeleted || (r.editHistory && r.editHistory.length > 0)) && (
+                          <Tooltip title="Lịch sử">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setHistoryModalMessage(r as SafeAny);
+                                setHistoryModalOpen(true);
+                              }}
+                              className="w-5 h-5 rounded-full inline-flex items-center justify-center text-amber-400 cursor-pointer hover:bg-amber-500/10"
+                            >
+                              <History size={11} />
+                            </button>
+                          </Tooltip>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            <div className="p-2.5" style={{ borderTop: `1px solid ${borderColor}` }}>
+            <div className="p-2.5 space-y-1.5" style={{ borderTop: `1px solid ${borderColor}` }}>
               {renderStagedAttachmentsStrip(threadAttachments, 'thread')}
-              <div className="flex items-center gap-1">
-                <input
+              {formatBarOpenThread && renderAppleNotesFormatToolbar('thread')}
+              <div className="flex items-end gap-1">
+                <textarea
                   ref={threadInputRef}
-                  type="text"
+                  rows={1}
                   value={threadInput}
-                  onChange={(e) => setThreadInput(e.target.value)}
+                  onChange={(e) => {
+                    setThreadInput(e.target.value);
+                    e.target.style.height = 'auto';
+                    e.target.style.height = `${Math.min(e.target.scrollHeight, 100)}px`;
+                  }}
                   onPaste={(e) => handleClipboardPaste(e, 'thread')}
                   onCompositionStart={() => {
                     isComposingRef.current = true;
@@ -6225,6 +7425,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     }, 50);
                   }}
                   onKeyDown={(e) => {
+                    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+                      e.preventDefault();
+                      handleApplyFormat('bold', 'thread');
+                      return;
+                    }
+                    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'i') {
+                      e.preventDefault();
+                      handleApplyFormat('italic', 'thread');
+                      return;
+                    }
+                    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'u') {
+                      e.preventDefault();
+                      handleApplyFormat('underline', 'thread');
+                      return;
+                    }
                     if (e.key === 'Enter' && !e.shiftKey) {
                       if (
                         e.nativeEvent.isComposing ||
@@ -6238,14 +7453,29 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       handleSendThreadReply();
                     }
                   }}
-                  placeholder="Trả lời hoặc Paste hình (⌘V)..."
-                  className="flex-1 min-h-[38px] rounded-2xl px-3.5 text-[13px] outline-none"
+                  placeholder="Trả lời... (Shift+Enter để xuống dòng)"
+                  className="flex-1 min-h-[38px] max-h-[100px] rounded-2xl px-3.5 py-2 text-[13px] outline-none resize-none leading-relaxed"
                   style={{
                     background: surfaceRaised,
                     border: `1px solid ${borderStrong}`,
                     color: token.colorText,
                   }}
                 />
+                {/* [Aa] Apple Notes Format Button in Thread */}
+                <Tooltip title="Định dạng chữ phong cách Apple Notes (Aa)">
+                  <button
+                    type="button"
+                    aria-label="Định dạng chữ Apple Notes trong luồng"
+                    onClick={() => setFormatBarOpenThread((prev) => !prev)}
+                    className="w-9 h-9 rounded-full inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10 active:scale-95 transition-all"
+                    style={{
+                      background: formatBarOpenThread ? '#d4a84b' : 'transparent',
+                      color: formatBarOpenThread ? '#000' : token.colorTextSecondary,
+                    }}
+                  >
+                    <span className="font-serif font-bold text-[13px] tracking-tight">Aa</span>
+                  </button>
+                </Tooltip>
                 <Tooltip title="Tải hình vào luồng">
                   <button
                     type="button"
@@ -6409,7 +7639,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                   </button>
                                 </Tooltip>
                               </div>
-                              {m.text && <div className="break-words">{m.text}</div>}
+                              {m.text && (
+                                <div className="break-words leading-relaxed text-[12px]">
+                                  {renderRichTextMessage(m.text, isDockMine)}
+                                </div>
+                              )}
                               {renderMessageAttachments(m.attachments, true)}
                             </div>
                           </div>
@@ -6419,13 +7653,18 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     <div className="p-2" style={{ background: surfaceBg, borderTop: `1px solid ${borderColor}` }}>
                       {renderStagedAttachmentsStrip(dockStaged, 'dock', cid)}
                       <div className="flex items-center gap-1">
-                        <input
+                        <textarea
                           ref={(el) => {
                             dockInputRefs.current[cid] = el;
                           }}
-                          type="text"
+                          rows={1}
                           value={dockInputs[cid] || ''}
-                          onChange={(e) => setDockInputs((p) => ({ ...p, [cid]: e.target.value }))}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setDockInputs((p) => ({ ...p, [cid]: val }));
+                            e.target.style.height = 'auto';
+                            e.target.style.height = `${Math.min(e.target.scrollHeight, 80)}px`;
+                          }}
                           onPaste={(e) => handleClipboardPaste(e, 'dock', cid)}
                           onCompositionStart={() => {
                             isComposingRef.current = true;
@@ -6451,11 +7690,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               const atts = dockAttachments[cid] || [];
                               setDockInputs((p) => ({ ...p, [cid]: '' }));
                               setDockAttachments((p) => ({ ...p, [cid]: [] }));
+                              if (dockInputRefs.current[cid]) {
+                                dockInputRefs.current[cid]!.style.height = 'auto';
+                              }
                               handleSendMessage(cid, val, null, atts);
                             }
                           }}
-                          placeholder="Nhắn nhanh hoặc Paste hình (⌘V)..."
-                          className="flex-1 h-7 rounded-full px-2.5 text-[12px] outline-none"
+                          placeholder="Nhắn nhanh... (Shift+Enter xuống dòng)"
+                          className="flex-1 min-h-[28px] max-h-[80px] rounded-xl px-2.5 py-1 text-[12px] outline-none resize-none leading-relaxed"
                           style={{
                             background: surfaceRaised,
                             border: `1px solid ${borderColor}`,
@@ -8840,6 +10082,177 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             </div>
           )}
         </div>
+      </Modal>
+
+      {/* ================= MESSAGE AUDIT & EDIT/DELETE HISTORY MODAL ================= */}
+      <Modal
+        open={historyModalOpen}
+        onCancel={() => {
+          setHistoryModalOpen(false);
+          setHistoryModalMessage(null);
+        }}
+        footer={null}
+        title={
+          <div className="flex items-center gap-2 text-[14px] font-extrabold" style={{ color: '#d4a84b' }}>
+            <History size={16} />
+            <span>Lịch sử chỉnh sửa & xoá tin nhắn</span>
+          </div>
+        }
+        width={560}
+        centered
+        destroyOnClose
+      >
+        {historyModalMessage && (
+          <div className="py-2 space-y-4">
+            {/* Message Metadata Header */}
+            <div
+              className="p-3 rounded-xl flex items-center justify-between"
+              style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+            >
+              <div className="flex items-center gap-2.5">
+                {renderUserAvatarNode({
+                  staffId: historyModalMessage.senderId,
+                  name: historyModalMessage.senderName,
+                  rawAvatar: historyModalMessage.senderAvatar,
+                  sizeClass: 'w-8 h-8',
+                  roundedClass: 'rounded-full',
+                })}
+                <div>
+                  <div className="text-[13px] font-bold" style={{ color: token.colorText }}>
+                    {historyModalMessage.senderName}
+                  </div>
+                  <div className="text-[11px] text-slate-400 tabular-nums">
+                    Gửi ban đầu lúc{' '}
+                    {historyModalMessage.createdAt
+                      ? dayjs(historyModalMessage.createdAt).format('HH:mm · DD/MM/YYYY')
+                      : historyModalMessage.timeLabel}
+                  </div>
+                </div>
+              </div>
+
+              {historyModalMessage.isDeleted ? (
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                  Đã xoá
+                </span>
+              ) : historyModalMessage.editHistory && historyModalMessage.editHistory.length > 0 ? (
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                  Đã sửa {historyModalMessage.editHistory.length} lần
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                  Bản gốc
+                </span>
+              )}
+            </div>
+
+            {/* If Deleted: Notice Card */}
+            {historyModalMessage.isDeleted && (
+              <div
+                className="p-3 rounded-xl border border-rose-500/30 text-[12px] space-y-1"
+                style={{ background: isDark ? 'rgba(239, 68, 68, 0.08)' : 'rgba(239, 68, 68, 0.05)' }}
+              >
+                <div className="font-bold text-rose-400 flex items-center gap-1.5">
+                  <Trash2 size={13} />
+                  <span>Tin nhắn đã bị xoá</span>
+                </div>
+                <div className="text-slate-400 tabular-nums">
+                  Người xoá:{' '}
+                  <span className="font-semibold text-white/90">
+                    {historyModalMessage.deletedByName || 'Người dùng'}
+                  </span>{' '}
+                  lúc{' '}
+                  {historyModalMessage.deletedAt
+                    ? dayjs(historyModalMessage.deletedAt).format('HH:mm:ss · DD/MM/YYYY')
+                    : '—'}
+                </div>
+              </div>
+            )}
+
+            {/* Version Timeline */}
+            <div className="space-y-3">
+              <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                Nhật ký các phiên bản ({1 + (historyModalMessage.editHistory?.length || 0)} phiên bản)
+              </div>
+
+              {/* Current Version / Content before deletion */}
+              <div
+                className="p-3 rounded-xl space-y-1.5"
+                style={{
+                  background: isDark ? 'rgba(212, 168, 75, 0.08)' : 'rgba(212, 168, 75, 0.06)',
+                  border: '1px solid rgba(212, 168, 75, 0.3)',
+                }}
+              >
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-extrabold" style={{ color: '#d4a84b' }}>
+                    {historyModalMessage.isDeleted ? 'Nội dung trước khi xoá' : 'Phiên bản hiện tại (Mới nhất)'}
+                  </span>
+                  <span className="text-slate-400 tabular-nums">
+                    {historyModalMessage.editedAt
+                      ? dayjs(historyModalMessage.editedAt).format('HH:mm:ss · DD/MM/YYYY')
+                      : historyModalMessage.createdAt
+                        ? dayjs(historyModalMessage.createdAt).format('HH:mm:ss · DD/MM/YYYY')
+                        : ''}
+                  </span>
+                </div>
+                <div
+                  className="text-[13px] leading-relaxed whitespace-pre-wrap break-words"
+                  style={{ color: token.colorText }}
+                >
+                  {historyModalMessage.text || historyModalMessage.originalText || '(Không có nội dung văn bản)'}
+                </div>
+              </div>
+
+              {/* Historical Edits (from newest to oldest) */}
+              {historyModalMessage.editHistory && historyModalMessage.editHistory.length > 0 && (
+                <div className="space-y-2.5">
+                  {[...historyModalMessage.editHistory].reverse().map((item, idx) => {
+                    const versionNum = historyModalMessage.editHistory!.length - idx;
+                    return (
+                      <div
+                        key={idx}
+                        className="p-3 rounded-xl space-y-1.5"
+                        style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                      >
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-bold text-slate-300">Phiên bản #{versionNum} (Trước khi sửa)</span>
+                          <span className="text-slate-400 tabular-nums">
+                            {dayjs(item.editedAt).format('HH:mm:ss · DD/MM/YYYY')}
+                            {item.editorName && ` · Sửa bởi ${item.editorName}`}
+                          </span>
+                        </div>
+                        <div className="text-[12.5px] leading-relaxed whitespace-pre-wrap break-words text-slate-300">
+                          {item.text || '(Tin nhắn trống)'}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Initial Original Version if different and preserved */}
+              {historyModalMessage.originalText &&
+                historyModalMessage.originalText !== historyModalMessage.text &&
+                (!historyModalMessage.editHistory || historyModalMessage.editHistory.length === 0) && (
+                  <div
+                    className="p-3 rounded-xl space-y-1.5"
+                    style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                  >
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-bold text-slate-400">Nội dung gốc ban đầu</span>
+                      <span className="text-slate-400 tabular-nums">
+                        {historyModalMessage.createdAt
+                          ? dayjs(historyModalMessage.createdAt).format('HH:mm:ss · DD/MM/YYYY')
+                          : ''}
+                      </span>
+                    </div>
+                    <div className="text-[12.5px] leading-relaxed whitespace-pre-wrap break-words text-slate-300">
+                      {historyModalMessage.originalText}
+                    </div>
+                  </div>
+                )}
+            </div>
+          </div>
+        )}
       </Modal>
     </>
   );
