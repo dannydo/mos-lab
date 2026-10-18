@@ -351,16 +351,6 @@ const FALLBACK_CONVERSATIONS: MosChatConversation[] = [
         },
         thread: [
           {
-            id: 'th-seed-1',
-            senderId: 'staff-hm',
-            senderName: 'Hà My',
-            senderRole: 'Tư Vấn (CC)',
-            senderAvatar: 'HM',
-            text: 'Quầy CC tầng 1 đã nhận thông tin đón chị Ngọc.',
-            timeLabel: '14:43',
-            createdAt: new Date().toISOString(),
-          },
-          {
             id: 'th-seed-2',
             senderId: 'staff-mt',
             senderName: 'Chuyên Viên Minh Thư',
@@ -371,21 +361,6 @@ const FALLBACK_CONVERSATIONS: MosChatConversation[] = [
             createdAt: new Date().toISOString(),
           },
         ],
-      },
-      {
-        id: 'msg-seed-2',
-        conversationId: 'space-cc',
-        senderId: 'staff-hm',
-        senderName: 'Hà My',
-        senderRole: 'Tư Vấn (CC)',
-        senderAvatar: 'HM',
-        roleColor: '#10b981',
-        text: 'Nhờ chuẩn bị sẵn trà hoa cúc & kiểm tra hồ sơ dáng mi cũ của chị Ngọc trước 15:00.',
-        timeLabel: '14:44',
-        createdAt: new Date().toISOString(),
-        reactions: { '👍': 2 },
-        taskId: 'task-seed-101',
-        thread: [],
       },
       {
         id: 'msg-seed-3',
@@ -453,45 +428,13 @@ const FALLBACK_CONVERSATIONS: MosChatConversation[] = [
         timeLabel: '13:50',
         createdAt: new Date().toISOString(),
         reactions: { '👍': 3 },
-        taskId: 'task-seed-102',
         thread: [],
       },
     ],
   },
 ];
 
-const FALLBACK_TASKS: MosChatTaskItem[] = [
-  {
-    id: 'task-seed-101',
-    conversationId: 'space-cc',
-    conversationName: 'tư-vấn-cc-ca-hôm-nay',
-    sourceMessageId: 'msg-seed-2',
-    sourceAuthorName: 'Hà My',
-    title: 'Chuẩn bị trà hoa cúc & kiểm tra hồ sơ dáng mi chị Bích Ngọc',
-    assigneeName: 'Hà My (CC)',
-    creatorName: 'Danny Do',
-    priority: 'URGENT',
-    remindAt: new Date(Date.now() + 185 * 1000).toISOString(),
-    done: false,
-    fired: false,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'task-seed-102',
-    conversationId: 'space-cv',
-    conversationName: 'chuyên-viên-mi-tầng-1',
-    sourceMessageId: 'msg-seed-cv-1',
-    sourceAuthorName: 'Chuyên Viên Minh Thư',
-    title: 'Bổ sung 5 khay mi cong C 0.07 dài 11mm lên tủ Chuyên Viên tầng 1',
-    assigneeName: 'Khánh Linh (CS)',
-    creatorName: 'Chuyên Viên Minh Thư',
-    priority: 'HIGH',
-    remindAt: new Date(Date.now() + 900 * 1000).toISOString(),
-    done: false,
-    fired: false,
-    createdAt: new Date().toISOString(),
-  },
-];
+const FALLBACK_TASKS: MosChatTaskItem[] = [];
 
 const SAMPLE_CUSTOMER_CARDS: MosChatCustomerCard[] = [
   {
@@ -519,7 +462,7 @@ interface ReminderPreset {
 }
 
 const REMINDER_PRESETS: ReminderPreset[] = [
-  { id: '5s', label: '5 giây (Test)', seconds: 5, getSeconds: () => 5 },
+  { id: 'none', label: 'Không hẹn giờ', seconds: 0, getSeconds: () => 0 },
   { id: '15m', label: '15 phút', seconds: 900, getSeconds: () => 900 },
   { id: '30m', label: '30 phút', seconds: 1800, getSeconds: () => 1800 },
   { id: '1h', label: '1 giờ', seconds: 3600, getSeconds: () => 3600 },
@@ -533,7 +476,7 @@ const REMINDER_PRESETS: ReminderPreset[] = [
       if (target.isBefore(now)) {
         target = target.add(1, 'day');
       }
-      return Math.max(10, target.diff(now, 'second'));
+      return Math.max(60, target.diff(now, 'second'));
     },
   },
   {
@@ -543,7 +486,7 @@ const REMINDER_PRESETS: ReminderPreset[] = [
     getSeconds: () => {
       const now = dayjs();
       const target = now.add(1, 'day').hour(9).minute(0).second(0);
-      return Math.max(10, target.diff(now, 'second'));
+      return Math.max(60, target.diff(now, 'second'));
     },
   },
 ];
@@ -1089,8 +1032,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 .replace(/\n{3,}/g, '\n\n')
                 .trim();
               const existingActions =
-                m.aiActions ||
-                (m.aiAction?.actions ? m.aiAction.actions : m.aiAction ? [m.aiAction] : []);
+                m.aiActions || (m.aiAction?.actions ? m.aiAction.actions : m.aiAction ? [m.aiAction] : []);
               const allActions = [...existingActions, ...actionMatches].filter(
                 (act, index, self) =>
                   index ===
@@ -1309,11 +1251,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [taskModalSourceMsg, setTaskModalSourceMsg] = useState<MosChatMessage | null>(null);
   const [taskTitle, setTaskTitle] = useState('');
-  const [taskAssignee, setTaskAssignee] = useState('Danny Do');
+  const [taskAssignee, setTaskAssignee] = useState<string>('');
   const [taskPriority, setTaskPriority] = useState<MosChatTaskPriority>('HIGH');
   const [taskRemindMode, setTaskRemindMode] = useState<'preset' | 'custom'>('preset');
-  const [selectedPresetId, setSelectedPresetId] = useState<string>('5s');
-  const [taskRemindSeconds, setTaskRemindSeconds] = useState<number>(5);
+  const [selectedPresetId, setSelectedPresetId] = useState<string>('none');
+  const [taskRemindSeconds, setTaskRemindSeconds] = useState<number>(0);
   const [customRemindDate, setCustomRemindDate] = useState<dayjs.Dayjs | null>(null);
 
   // mOS Mission Dispatch & Inline Action state (2-way bridge between mOS Chat & mOS Mission)
@@ -1955,13 +1897,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
     for (const raw of tasks) {
       if (!raw || !raw.id || !String(raw.title || '').trim()) continue;
+      if (String(raw.id).startsWith('task-seed-')) continue;
+      const missionIdNum = raw.missionId && Number(raw.missionId) > 0 ? Number(raw.missionId) : 0;
+      if (
+        !missionIdNum &&
+        (String(raw.assigneeName || '').includes('Hà My') || String(raw.sourceAuthorName || '').includes('Hà My'))
+      ) {
+        continue;
+      }
+
       const convId = String(raw.conversationId || '').trim();
       const msgId = raw.sourceMessageId ? String(raw.sourceMessageId).trim() : '';
       const normTitle = String(raw.title || '')
         .trim()
         .toLowerCase()
         .replace(/\s+/g, ' ');
-      const missionIdNum = raw.missionId && Number(raw.missionId) > 0 ? Number(raw.missionId) : 0;
 
       const msgKey = convId && msgId ? `${convId}::msg::${msgId}` : '';
       const titleKey = convId && normTitle ? `${convId}::title::${normTitle}` : '';
@@ -1986,7 +1936,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           existing.sourceMessageId = msgId;
           if (msgKey) byMsgKey.set(msgKey, existing);
         }
-        if (existing.assigneeName === 'Hà My (CC)' && raw.assigneeName && raw.assigneeName !== 'Hà My (CC)') {
+        if (
+          String(existing.assigneeName || '').includes('Hà My') &&
+          raw.assigneeName &&
+          !String(raw.assigneeName).includes('Hà My')
+        ) {
           existing.assigneeName = raw.assigneeName;
           existing.assigneeId = raw.assigneeId ?? existing.assigneeId;
         }
@@ -1994,6 +1948,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       }
 
       const cloned: MosChatTaskItem = { ...raw };
+      if (String(cloned.assigneeName || '').includes('Hà My')) {
+        cloned.assigneeName = cloned.creatorName || 'Chưa phân công';
+        cloned.assigneeId = undefined;
+      }
       out.push(cloned);
       byId.set(cloned.id, cloned);
       if (msgKey) byMsgKey.set(msgKey, cloned);
@@ -2021,27 +1979,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         playWebAudioReminderChime();
       }
       setActiveAlertTask(task);
-      const nowStr = dayjs().format('HH:mm');
-      const reminderMsg: MosChatMessage = {
-        id: `msg-rem-${Date.now()}`,
-        conversationId: task.conversationId,
-        senderId: 'system-reminder',
-        senderName: 'mOS Reminder',
-        senderRole: 'Auto',
-        senderAvatar: 'AL',
-        roleColor: '#f59e0b',
-        text: `Đến giờ nhắc việc: "${task.title}" (@${task.assigneeName})`,
-        timeLabel: nowStr,
-        createdAt: new Date().toISOString(),
-        taskId: task.id,
-        isSystemReminder: true,
-        reactions: {},
-        thread: [],
-      };
-
-      setConversations((prev) =>
-        prev.map((c) => (c.id === task.conversationId ? { ...c, messages: [...c.messages, reminderMsg] } : c))
-      );
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, fired: true } : t)));
 
       try {
         await apiClient.chat.updateTask(task.id, { triggerReminderNow: true });
@@ -2707,11 +2645,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   }, [buildInitialAiWelcomeMessage]);
 
   const handleExecuteAiAction = useCallback(
-    (
-      action: { type: string; label: string; payload: Record<string, unknown> },
-      msgId: string,
-      actionKey?: string
-    ) => {
+    (action: { type: string; label: string; payload: Record<string, unknown> }, msgId: string, actionKey?: string) => {
       if (typeof window !== 'undefined' && action.payload) {
         window.dispatchEvent(new CustomEvent('mos-ai-copilot-apply-customer-filter', { detail: action.payload }));
       }
@@ -3340,20 +3274,37 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     setTaskTitle(
       existingTask?.title || (msg ? msg.text : composerText.trim() || 'Kiểm tra lịch hẹn & chuẩn bị đón khách VIP')
     );
-    setTaskAssignee(existingTask?.assigneeName || currentUser?.displayName || 'Danny Do');
+    const existingAssignee =
+      existingTask?.assigneeName &&
+      !String(existingTask.assigneeName).includes('Hà My') &&
+      existingTask.assigneeName !== 'Chưa phân công'
+        ? existingTask.assigneeName
+        : '';
+    setTaskAssignee(existingAssignee);
     if (existingTask?.priority) {
       setTaskPriority(existingTask.priority);
     }
     setTaskRemindMode('preset');
-    setSelectedPresetId('5s');
-    setTaskRemindSeconds(5);
+    setSelectedPresetId('none');
+    setTaskRemindSeconds(0);
     setCustomRemindDate(dayjs().add(1, 'hour').minute(0).second(0));
     setTaskModalOpen(true);
   };
 
   const handleConfirmCreateTask = async () => {
     const cleanTitle = taskTitle.trim();
+    const cleanAssignee = taskAssignee.trim();
     if (!cleanTitle || !activeConversation) return;
+    if (!cleanAssignee) {
+      antdMessage.warning('Vui lòng chọn Người phụ trách công việc từ danh sách nhân sự đang hoạt động');
+      return;
+    }
+
+    const matchedAssignee = staffDirectory.find(
+      (s) => s.displayName === cleanAssignee || `${s.displayName} (${s.role})` === cleanAssignee
+    );
+    const resolvedAssigneeName = matchedAssignee?.displayName || cleanAssignee;
+    const isNoReminder = taskRemindMode === 'preset' && (selectedPresetId === 'none' || taskRemindSeconds <= 0);
 
     let remindAtIso: string;
     let remindSecondsToSend: number;
@@ -3361,7 +3312,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     if (taskRemindMode === 'custom' && customRemindDate && customRemindDate.isValid()) {
       remindAtIso = customRemindDate.toISOString();
       const diffSec = customRemindDate.diff(dayjs(), 'second');
-      remindSecondsToSend = Math.max(3, diffSec);
+      remindSecondsToSend = Math.max(60, diffSec);
+    } else if (isNoReminder) {
+      remindAtIso = new Date().toISOString();
+      remindSecondsToSend = 0;
     } else {
       remindAtIso = new Date(Date.now() + taskRemindSeconds * 1000).toISOString();
       remindSecondsToSend = taskRemindSeconds;
@@ -3385,12 +3339,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       sourceAuthorName:
         taskModalSourceMsg?.senderName || existingTask?.sourceAuthorName || currentUser?.displayName || 'Danny Do',
       title: cleanTitle,
-      assigneeName: taskAssignee,
+      assigneeId: matchedAssignee?.id,
+      assigneeName: resolvedAssigneeName,
       creatorName: currentUser?.displayName || 'Danny Do',
       priority: taskPriority,
       remindAt: remindAtIso,
       done: false,
-      fired: false,
+      fired: isNoReminder,
       createdAt: existingTask?.createdAt || new Date().toISOString(),
     };
 
@@ -3420,7 +3375,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         senderRole: 'Super Admin',
         senderAvatar: 'DD',
         roleColor: '#d4a84b',
-        text: `Giao việc cho ${taskAssignee}:`,
+        text: `Giao việc cho ${resolvedAssigneeName}:`,
         timeLabel: dayjs().format('HH:mm'),
         createdAt: new Date().toISOString(),
         taskId: tempTaskId,
@@ -3434,7 +3389,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
     setTaskModalOpen(false);
     antdMessage.success(
-      existingTask ? `Đã cập nhật Task & nhắc hẹn (${taskAssignee})` : `Đã tạo Task & bật nhắc hẹn (${taskAssignee})`
+      existingTask
+        ? `Đã cập nhật Task (${resolvedAssigneeName})`
+        : isNoReminder
+          ? `Đã giao Task cho ${resolvedAssigneeName}`
+          : `Đã giao Task & bật nhắc hẹn (${resolvedAssigneeName})`
     );
 
     try {
@@ -3442,7 +3401,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         conversationId: activeConversation.id,
         sourceMessageId: taskModalSourceMsg?.id || existingTask?.sourceMessageId || null,
         title: cleanTitle,
-        assigneeName: taskAssignee,
+        assigneeId: matchedAssignee?.id,
+        assigneeName: resolvedAssigneeName,
         priority: taskPriority,
         remindInSeconds: remindSecondsToSend,
         remindAt: remindAtIso,
@@ -3668,21 +3628,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   }, [activeConversation, activeThreadMsgId]);
 
   const assigneeOptions = useMemo(() => {
-    const defaults = [
-      { value: 'Danny Do', label: 'Danny Do (Tôi)' },
-      { value: 'Hà My (CC)', label: 'Hà My (Tư Vấn CC)' },
-      { value: 'Tuyết Nhi', label: 'Tuyết Nhi (Telesales)' },
-      { value: 'Chuyên Viên Minh Thư (CV+)', label: 'Chuyên Viên Minh Thư (CV+)' },
-      { value: 'Khánh Linh (CS)', label: 'Khánh Linh (CSKH)' },
-    ];
-    const existingSet = new Set(defaults.map((d) => d.value));
+    const out: { value: string; label: string }[] = [];
+    const existingSet = new Set<string>();
     staffDirectory.forEach((s) => {
-      if (!existingSet.has(s.displayName)) {
+      if (s.displayName && !existingSet.has(s.displayName)) {
         existingSet.add(s.displayName);
-        defaults.push({ value: s.displayName, label: `${s.displayName} (${s.role})` });
+        out.push({ value: s.displayName, label: `${s.displayName} (${s.role})` });
       }
     });
-    return defaults;
+    return out;
   }, [staffDirectory]);
 
   const surfaceBg = isDark ? '#111827' : '#ffffff';
@@ -6605,688 +6559,696 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               )}
 
               <div className="flex-1 overflow-y-auto py-3">
-                {activeConversation?.messages.map((m, idx) => {
-                  const linkedTask = uniqueTasks.find((t) => t.id === m.taskId || t.sourceMessageId === m.id);
-                  const isMine = isMessageFromCurrentUser(m);
-                  const prevMsg = idx > 0 ? activeConversation.messages[idx - 1] : null;
-                  const prevIsMine = prevMsg ? isMessageFromCurrentUser(prevMsg) : false;
-                  const isCont = Boolean(
-                    prevMsg &&
-                    prevMsg.senderName === m.senderName &&
-                    prevIsMine === isMine &&
-                    !prevMsg.isSystemReminder &&
-                    !m.isSystemReminder
-                  );
-                  const isAiMessage = Boolean(m.isAiBot || m.senderId === 'wings-ai-copilot');
+                {(activeConversation?.messages || [])
+                  .filter(
+                    (m) =>
+                      !m.isSystemReminder &&
+                      m.senderId !== 'system-reminder' &&
+                      m.senderName !== 'mOS Reminder' &&
+                      !String(m.text || '').startsWith('Đến giờ nhắc việc:') &&
+                      m.senderName !== 'Hà My'
+                  )
+                  .map((m, idx, filteredMessages) => {
+                    const linkedTask = uniqueTasks.find((t) => t.id === m.taskId || t.sourceMessageId === m.id);
+                    const isMine = isMessageFromCurrentUser(m);
+                    const prevMsg = idx > 0 ? filteredMessages[idx - 1] : null;
+                    const prevIsMine = prevMsg ? isMessageFromCurrentUser(prevMsg) : false;
+                    const isCont = Boolean(
+                      prevMsg &&
+                      prevMsg.senderName === m.senderName &&
+                      prevIsMine === isMine &&
+                      !prevMsg.isSystemReminder &&
+                      !m.isSystemReminder
+                    );
+                    const isAiMessage = Boolean(m.isAiBot || m.senderId === 'wings-ai-copilot');
 
-                  return (
-                    <div
-                      key={m.id}
-                      data-message-side={isMine ? 'right' : 'left'}
-                      className={`group relative flex items-start gap-2.5 px-4 ${
-                        isMine ? 'flex-row-reverse' : 'flex-row'
-                      } ${
-                        isCont ? 'py-0.5' : 'pt-2.5 pb-1'
-                      } transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.03]`}
-                      style={{
-                        background: linkedTask ? 'rgba(212, 168, 75, 0.06)' : undefined,
-                      }}
-                    >
-                      {isCont ? (
-                        <div
-                          className={`w-8 shrink-0 ${
-                            isMine ? 'text-left pl-0.5' : 'text-right pr-0.5'
-                          } pt-1 select-none`}
-                        >
-                          <span className="opacity-0 group-hover:opacity-100 text-[9.5px] text-slate-400 tabular-nums transition-opacity">
-                            {m.timeLabel}
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="mt-0.5 shrink-0">
-                          {renderUserAvatarNode({
-                            staffId: isMine ? currentUser?.id || m.senderId : m.senderId,
-                            name: m.senderName,
-                            rawAvatar: m.senderAvatar,
-                            bgColor: m.roleColor || (isMine ? '#d4a84b' : '#3b82f6'),
-                            sizeClass: 'w-8 h-8',
-                            roundedClass: 'rounded-full',
-                            isAiBot: isAiMessage,
-                          })}
-                        </div>
-                      )}
-
-                      <div className={`flex-1 min-w-0 flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
-                        {!isCont && (
-                          <div className={`flex items-center gap-1.5 mb-1 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
-                            <span className="text-[12.5px] font-bold">{m.senderName}</span>
-                            {isMine && (
-                              <span
-                                className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full text-[9px] font-extrabold"
-                                style={{
-                                  background: 'rgba(212, 168, 75, 0.2)',
-                                  color: '#d4a84b',
-                                }}
-                              >
-                                Bạn
-                              </span>
-                            )}
-                            <span
-                              className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded text-[9.5px] font-bold"
-                              style={{
-                                background: `${m.roleColor || '#d4a84b'}22`,
-                                color: m.roleColor || '#d4a84b',
-                              }}
-                            >
-                              {m.senderRole}
+                    return (
+                      <div
+                        key={m.id}
+                        data-message-side={isMine ? 'right' : 'left'}
+                        className={`group relative flex items-start gap-2.5 px-4 ${
+                          isMine ? 'flex-row-reverse' : 'flex-row'
+                        } ${
+                          isCont ? 'py-0.5' : 'pt-2.5 pb-1'
+                        } transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.03]`}
+                        style={{
+                          background: linkedTask ? 'rgba(212, 168, 75, 0.06)' : undefined,
+                        }}
+                      >
+                        {isCont ? (
+                          <div
+                            className={`w-8 shrink-0 ${
+                              isMine ? 'text-left pl-0.5' : 'text-right pr-0.5'
+                            } pt-1 select-none`}
+                          >
+                            <span className="opacity-0 group-hover:opacity-100 text-[9.5px] text-slate-400 tabular-nums transition-opacity">
+                              {m.timeLabel}
                             </span>
-                            <span className="text-[10.5px] text-slate-400 tabular-nums">{m.timeLabel}</span>
-                            {m.pinned && (
-                              <Tooltip title="Đã ghim">
-                                <span className="inline-flex text-amber-400">
-                                  <Pin size={12} />
-                                </span>
-                              </Tooltip>
-                            )}
+                          </div>
+                        ) : (
+                          <div className="mt-0.5 shrink-0">
+                            {renderUserAvatarNode({
+                              staffId: isMine ? currentUser?.id || m.senderId : m.senderId,
+                              name: m.senderName,
+                              rawAvatar: m.senderAvatar,
+                              bgColor: m.roleColor || (isMine ? '#d4a84b' : '#3b82f6'),
+                              sizeClass: 'w-8 h-8',
+                              roundedClass: 'rounded-full',
+                              isAiBot: isAiMessage,
+                            })}
                           </div>
                         )}
 
-                        {/* Collapsible AI Reasoning (<thinking>) Block */}
-                        {m.aiThinking && (
-                          <div
-                            className="mb-1.5 rounded-lg overflow-hidden w-full max-w-[88%]"
-                            style={{
-                              background: isDark ? 'rgba(139, 92, 246, 0.08)' : 'rgba(139, 92, 246, 0.06)',
-                              border: '1px solid rgba(139, 92, 246, 0.25)',
-                            }}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => setExpandedThinkingIds((prev) => ({ ...prev, [m.id]: !prev[m.id] }))}
-                              className="w-full px-2.5 py-1 flex items-center justify-between text-[11px] font-bold cursor-pointer"
-                              style={{ color: isDark ? '#c4b5fd' : '#6d28d9' }}
+                        <div className={`flex-1 min-w-0 flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
+                          {!isCont && (
+                            <div
+                              className={`flex items-center gap-1.5 mb-1 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
                             >
-                              <span className="inline-flex items-center gap-1.5">
-                                <Sparkles size={12} />
-                                <span>Quá trình suy luận của Wings AI</span>
-                              </span>
-                              {expandedThinkingIds[m.id] ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                            </button>
-                            {expandedThinkingIds[m.id] && (
-                              <div
-                                className="px-2.5 pb-2 pt-1 text-[11.5px] leading-relaxed whitespace-pre-wrap text-left"
-                                style={{
-                                  color: token.colorTextSecondary,
-                                  borderTop: '1px dashed rgba(139, 92, 246, 0.2)',
-                                }}
-                              >
-                                {m.aiThinking}
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Message Content: Inline Edit Mode vs Soft-Deleted vs Normal Text Bubble */}
-                        {editingMessageId === m.id && !editingReplyId ? (
-                          <div
-                            className="w-full max-w-[85%] rounded-2xl p-2.5 space-y-2 select-text"
-                            style={{ background: surfaceRaised, border: '1.5px solid #d4a84b' }}
-                          >
-                            <textarea
-                              autoFocus
-                              value={editingText}
-                              onChange={(e) => setEditingText(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Escape') {
-                                  e.preventDefault();
-                                  handleCancelEdit();
-                                } else if (e.key === 'Enter' && !e.shiftKey) {
-                                  if (
-                                    e.nativeEvent.isComposing ||
-                                    isComposingRef.current ||
-                                    e.keyCode === 229 ||
-                                    Date.now() - lastCompositionEndMsRef.current < 60
-                                  ) {
-                                    return;
-                                  }
-                                  e.preventDefault();
-                                  handleSaveEdit();
-                                }
-                              }}
-                              rows={3}
-                              className="w-full bg-transparent border-0 outline-none text-[13px] leading-relaxed resize-y p-1"
-                              style={{ color: token.colorText }}
-                            />
-                            <div className="flex items-center justify-between pt-1 border-t border-white/10 text-[11px]">
-                              <span className="text-slate-400">Shift+Enter: xuống dòng · Esc: huỷ · Enter: lưu</span>
-                              <div className="flex items-center gap-1.5">
-                                <button
-                                  type="button"
-                                  onClick={handleCancelEdit}
-                                  className="px-2.5 py-1 rounded-md cursor-pointer hover:bg-white/10"
-                                  style={{ color: token.colorTextSecondary }}
-                                >
-                                  Huỷ
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={isSavingEdit || !editingText.trim()}
-                                  onClick={handleSaveEdit}
-                                  className="px-3 py-1 rounded-md font-bold cursor-pointer disabled:opacity-50"
-                                  style={{ background: '#d4a84b', color: '#000' }}
-                                >
-                                  {isSavingEdit ? 'Đang lưu...' : 'Lưu thay đổi'}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        ) : m.isDeleted ? (
-                          <div
-                            className={`relative inline-block text-left px-3.5 py-2 rounded-2xl ${
-                              isMine ? 'rounded-tr-sm' : 'rounded-tl-sm'
-                            } text-[12.5px] italic max-w-[85%] select-none transition-all`}
-                            style={{
-                              background: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.04)',
-                              border: `1px dashed ${borderColor}`,
-                              color: token.colorTextSecondary,
-                            }}
-                          >
-                            <div className="flex items-center gap-2">
-                              <span className="opacity-75">💬 Tin nhắn này đã bị xoá</span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setHistoryModalMessage(m);
-                                  setHistoryModalOpen(true);
-                                }}
-                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold not-italic hover:underline cursor-pointer"
-                                style={{ color: '#d4a84b' }}
-                              >
-                                <History size={12} />
-                                <span>Xem lịch sử</span>
-                              </button>
-                            </div>
-                            {m.deletedByName && (
-                              <div className="text-[10px] text-slate-400 not-italic mt-0.5 tabular-nums">
-                                Bởi {m.deletedByName} · {m.deletedAt ? dayjs(m.deletedAt).format('HH:mm') : m.timeLabel}
-                              </div>
-                            )}
-                          </div>
-                        ) : m.text ? (
-                          <div
-                            onClick={(e) => handleMessageTap(m.id, e)}
-                            className={`relative inline-block text-left px-3.5 py-2 rounded-2xl ${
-                              isMine ? 'rounded-tr-sm' : 'rounded-tl-sm'
-                            } text-[13px] leading-relaxed whitespace-pre-wrap break-words max-w-[85%] cursor-pointer select-none active:scale-[0.985] transition-all`}
-                            style={{
-                              background: isMine
-                                ? isDark
-                                  ? 'rgba(212, 168, 75, 0.16)'
-                                  : 'rgba(212, 168, 75, 0.14)'
-                                : surfaceRaised,
-                              border: `1px solid ${
-                                isMine
-                                  ? isDark
-                                    ? 'rgba(212, 168, 75, 0.38)'
-                                    : 'rgba(212, 168, 75, 0.35)'
-                                  : borderColor
-                              }`,
-                              color: token.colorText,
-                            }}
-                          >
-                            {renderRichTextMessage(m.text, isMine)}
-
-                            {/* Edited Badge with Clickable Audit History */}
-                            {m.editHistory && m.editHistory.length > 0 && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setHistoryModalMessage(m);
-                                  setHistoryModalOpen(true);
-                                }}
-                                className="inline-flex items-center gap-0.5 text-[10.5px] font-medium text-amber-500/80 hover:text-amber-400 hover:underline cursor-pointer select-none ml-1.5 align-baseline"
-                                title="Xem lịch sử chỉnh sửa"
-                              >
-                                <History size={10} />
-                                <span>(đã chỉnh sửa)</span>
-                              </button>
-                            )}
-
-                            {/* Floating Heart Burst on Double-Tap */}
-                            {heartFlyMsgId === m.id && (
-                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30 select-none overflow-hidden">
-                                <span className="text-[38px] drop-shadow-xl animate-heart-burst leading-none">❤️</span>
-                              </div>
-                            )}
-                          </div>
-                        ) : null}
-
-                        {/* Suggested AI Action Button(s) (e.g. APPLY_FILTER) */}
-                        {(() => {
-                          const actionsList =
-                            m.aiActions && m.aiActions.length > 0
-                              ? m.aiActions
-                              : m.aiAction?.actions && m.aiAction.actions.length > 0
-                                ? m.aiAction.actions
-                                : m.aiAction
-                                  ? [m.aiAction]
-                                  : [];
-                          if (!actionsList || actionsList.length === 0) return null;
-
-                          return (
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {actionsList.map((action, actionIdx) => {
-                                const actionKey = `${m.id}-${actionIdx}`;
-                                const isApplied = Boolean(
-                                  appliedActionIds[actionKey] ||
-                                    (actionIdx === 0 && appliedActionIds[m.id])
-                                );
-                                return (
-                                  <button
-                                    key={actionKey}
-                                    type="button"
-                                    onClick={() => {
-                                      handleExecuteAiAction(action, m.id, actionKey);
-                                    }}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11.5px] font-bold cursor-pointer transition-all active:scale-95"
-                                    style={{
-                                      background: isApplied
-                                        ? 'rgba(16, 185, 129, 0.16)'
-                                        : 'rgba(139, 92, 246, 0.16)',
-                                      border: `1px solid ${
-                                        isApplied
-                                          ? 'rgba(16, 185, 129, 0.4)'
-                                          : 'rgba(139, 92, 246, 0.4)'
-                                      }`,
-                                      color: isApplied ? '#10b981' : '#a78bfa',
-                                    }}
-                                  >
-                                    {isApplied ? <Check size={13} /> : <Sliders size={13} />}
-                                    <span>
-                                      {isApplied ? `Đã áp dụng: ${action.label}` : action.label}
-                                    </span>
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          );
-                        })()}
-
-                        {/* Quick Voice Read-Aloud & Copy Bar for AI Bot Replies */}
-                        {isAiMessage && m.text && (
-                          <div className="mt-1.5 flex items-center gap-1.5">
-                            <Tooltip
-                              title={speakingMsgId === m.id ? 'Dừng đọc giọng nói' : 'Đọc câu trả lời bằng giọng nói'}
-                            >
-                              <button
-                                type="button"
-                                aria-label="Đọc câu trả lời AI"
-                                onClick={() => handleSpeakAiMessage(m)}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold cursor-pointer"
-                                style={{
-                                  background: speakingMsgId === m.id ? 'rgba(139, 92, 246, 0.2)' : surfaceRaised,
-                                  border: `1px solid ${borderColor}`,
-                                  color: speakingMsgId === m.id ? '#a78bfa' : token.colorTextSecondary,
-                                }}
-                              >
-                                {speakingMsgId === m.id ? <VolumeX size={12} /> : <Volume2 size={12} />}
-                                <span>{speakingMsgId === m.id ? 'Đang đọc' : 'Nghe'}</span>
-                              </button>
-                            </Tooltip>
-
-                            <Tooltip title="Sao chép nội dung">
-                              <button
-                                type="button"
-                                aria-label="Sao chép nội dung AI"
-                                onClick={() => {
-                                  void navigator.clipboard?.writeText(m.text);
-                                  antdMessage.success('Đã sao chép nội dung câu trả lời AI');
-                                }}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold cursor-pointer"
-                                style={{
-                                  background: surfaceRaised,
-                                  border: `1px solid ${borderColor}`,
-                                  color: token.colorTextSecondary,
-                                }}
-                              >
-                                <Copy size={11} />
-                                <span>Sao chép</span>
-                              </button>
-                            </Tooltip>
-                          </div>
-                        )}
-
-                        {/* Inline Image Attachments with Lightbox Preview */}
-                        {renderMessageAttachments(m.attachments)}
-
-                        {/* Smart Customer Card */}
-                        {m.customerCard && (
-                          <div
-                            className="mt-1.5 px-2.5 py-2 rounded-lg flex items-center justify-between gap-2 text-left max-w-[85%]"
-                            style={{
-                              background: surfaceBg,
-                              border: `1px solid ${borderStrong}`,
-                              borderLeft: '3px solid #3b82f6',
-                            }}
-                          >
-                            <div className="min-w-0">
-                              <div className="text-[12px] font-bold truncate">
-                                {m.customerCard.name} · <span style={{ color: '#d4a84b' }}>{m.customerCard.meta}</span>
-                              </div>
-                              {m.customerCard.cvName && (
-                                <div className="text-[11px] text-slate-400 truncate">{m.customerCard.cvName}</div>
-                              )}
-                            </div>
-                            <Tooltip title="Mở hồ sơ khách hàng">
-                              <button
-                                type="button"
-                                aria-label="Mở hồ sơ khách hàng"
-                                onClick={() => antdMessage.info(`Đã mở hồ sơ: ${m.customerCard?.name}`)}
-                                className="w-7 h-7 rounded-md inline-flex items-center justify-center shrink-0 cursor-pointer"
-                                style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
-                              >
-                                <ExternalLink size={14} />
-                              </button>
-                            </Tooltip>
-                          </div>
-                        )}
-
-                        {/* Inline Task & Reminder Card */}
-                        {linkedTask && (
-                          <div
-                            className="mt-1.5 px-2.5 py-2 rounded-lg flex items-center justify-between gap-2 text-left max-w-[85%]"
-                            style={{
-                              background: surfaceBg,
-                              border: `1px solid ${linkedTask.done ? 'rgba(16, 185, 129, 0.4)' : 'rgba(212, 168, 75, 0.45)'}`,
-                              borderLeft: `3px solid ${linkedTask.done ? '#10b981' : '#d4a84b'}`,
-                              opacity: linkedTask.done ? 0.8 : 1,
-                            }}
-                          >
-                            <div className="flex items-center gap-2 min-w-0">
-                              <Tooltip title={linkedTask.done ? 'Mở lại Task' : 'Đánh dấu hoàn thành'}>
-                                <button
-                                  type="button"
-                                  aria-label="Đánh dấu hoàn thành Task"
-                                  onClick={() => handleToggleTaskDone(linkedTask.id)}
-                                  className="w-4 h-4 rounded flex items-center justify-center shrink-0 cursor-pointer"
+                              <span className="text-[12.5px] font-bold">{m.senderName}</span>
+                              {isMine && (
+                                <span
+                                  className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full text-[9px] font-extrabold"
                                   style={{
-                                    border: `1.75px solid ${linkedTask.done ? '#10b981' : '#d4a84b'}`,
-                                    background: linkedTask.done ? '#10b981' : 'transparent',
-                                    color: '#000',
+                                    background: 'rgba(212, 168, 75, 0.2)',
+                                    color: '#d4a84b',
                                   }}
                                 >
-                                  {linkedTask.done && <Check size={11} strokeWidth={3} />}
-                                </button>
-                              </Tooltip>
-                              <div className="min-w-0">
-                                <div
-                                  className={`text-[12px] font-bold truncate ${linkedTask.done ? 'line-through' : ''}`}
-                                >
-                                  {linkedTask.title}
-                                </div>
-                                <div className="text-[10.5px] text-slate-400 flex items-center gap-2">
-                                  <span>{linkedTask.assigneeName}</span>
-                                  <span>· {linkedTask.priority}</span>
-                                  <span className="text-amber-500 font-bold tabular-nums">
-                                    {linkedTask.done ? 'Xong' : formatCountdown(linkedTask.remindAt, nowMs)}
+                                  Bạn
+                                </span>
+                              )}
+                              <span
+                                className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded text-[9.5px] font-bold"
+                                style={{
+                                  background: `${m.roleColor || '#d4a84b'}22`,
+                                  color: m.roleColor || '#d4a84b',
+                                }}
+                              >
+                                {m.senderRole}
+                              </span>
+                              <span className="text-[10.5px] text-slate-400 tabular-nums">{m.timeLabel}</span>
+                              {m.pinned && (
+                                <Tooltip title="Đã ghim">
+                                  <span className="inline-flex text-amber-400">
+                                    <Pin size={12} />
                                   </span>
+                                </Tooltip>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Collapsible AI Reasoning (<thinking>) Block */}
+                          {m.aiThinking && (
+                            <div
+                              className="mb-1.5 rounded-lg overflow-hidden w-full max-w-[88%]"
+                              style={{
+                                background: isDark ? 'rgba(139, 92, 246, 0.08)' : 'rgba(139, 92, 246, 0.06)',
+                                border: '1px solid rgba(139, 92, 246, 0.25)',
+                              }}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => setExpandedThinkingIds((prev) => ({ ...prev, [m.id]: !prev[m.id] }))}
+                                className="w-full px-2.5 py-1 flex items-center justify-between text-[11px] font-bold cursor-pointer"
+                                style={{ color: isDark ? '#c4b5fd' : '#6d28d9' }}
+                              >
+                                <span className="inline-flex items-center gap-1.5">
+                                  <Sparkles size={12} />
+                                  <span>Quá trình suy luận của Wings AI</span>
+                                </span>
+                                {expandedThinkingIds[m.id] ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                              </button>
+                              {expandedThinkingIds[m.id] && (
+                                <div
+                                  className="px-2.5 pb-2 pt-1 text-[11.5px] leading-relaxed whitespace-pre-wrap text-left"
+                                  style={{
+                                    color: token.colorTextSecondary,
+                                    borderTop: '1px dashed rgba(139, 92, 246, 0.2)',
+                                  }}
+                                >
+                                  {m.aiThinking}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Message Content: Inline Edit Mode vs Soft-Deleted vs Normal Text Bubble */}
+                          {editingMessageId === m.id && !editingReplyId ? (
+                            <div
+                              className="w-full max-w-[85%] rounded-2xl p-2.5 space-y-2 select-text"
+                              style={{ background: surfaceRaised, border: '1.5px solid #d4a84b' }}
+                            >
+                              <textarea
+                                autoFocus
+                                value={editingText}
+                                onChange={(e) => setEditingText(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Escape') {
+                                    e.preventDefault();
+                                    handleCancelEdit();
+                                  } else if (e.key === 'Enter' && !e.shiftKey) {
+                                    if (
+                                      e.nativeEvent.isComposing ||
+                                      isComposingRef.current ||
+                                      e.keyCode === 229 ||
+                                      Date.now() - lastCompositionEndMsRef.current < 60
+                                    ) {
+                                      return;
+                                    }
+                                    e.preventDefault();
+                                    handleSaveEdit();
+                                  }
+                                }}
+                                rows={3}
+                                className="w-full bg-transparent border-0 outline-none text-[13px] leading-relaxed resize-y p-1"
+                                style={{ color: token.colorText }}
+                              />
+                              <div className="flex items-center justify-between pt-1 border-t border-white/10 text-[11px]">
+                                <span className="text-slate-400">Shift+Enter: xuống dòng · Esc: huỷ · Enter: lưu</span>
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    type="button"
+                                    onClick={handleCancelEdit}
+                                    className="px-2.5 py-1 rounded-md cursor-pointer hover:bg-white/10"
+                                    style={{ color: token.colorTextSecondary }}
+                                  >
+                                    Huỷ
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={isSavingEdit || !editingText.trim()}
+                                    onClick={handleSaveEdit}
+                                    className="px-3 py-1 rounded-md font-bold cursor-pointer disabled:opacity-50"
+                                    style={{ background: '#d4a84b', color: '#000' }}
+                                  >
+                                    {isSavingEdit ? 'Đang lưu...' : 'Lưu thay đổi'}
+                                  </button>
                                 </div>
                               </div>
                             </div>
-                            <Tooltip title="Test nổ chuông nhắc hẹn ngay">
-                              <button
-                                type="button"
-                                aria-label="Test nổ chuông nhắc hẹn ngay"
-                                onClick={() => triggerTaskReminderAlert(linkedTask)}
-                                className="w-7 h-7 rounded-md inline-flex items-center justify-center shrink-0 cursor-pointer"
-                                style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
-                              >
-                                <BellRing size={14} className="text-amber-400" />
-                              </button>
-                            </Tooltip>
-                          </div>
-                        )}
-
-                        {/* Live mOS Mission Card (Synced 2-way with AG & mOS Mission) */}
-                        {(m.mission || linkedTask?.mission) &&
-                          renderLiveMissionCard((m.mission || linkedTask?.mission)!, m, 'inline')}
-
-                        {/* Thread Chip */}
-                        {m.thread && m.thread.length > 0 && (
-                          <Tooltip title="Xem luồng trả lời bên phải">
-                            <button
-                              type="button"
-                              onClick={() => handleOpenThread(m.id)}
-                              className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold cursor-pointer tabular-nums"
+                          ) : m.isDeleted ? (
+                            <div
+                              className={`relative inline-block text-left px-3.5 py-2 rounded-2xl ${
+                                isMine ? 'rounded-tr-sm' : 'rounded-tl-sm'
+                              } text-[12.5px] italic max-w-[85%] select-none transition-all`}
                               style={{
-                                background: 'rgba(59, 130, 246, 0.14)',
-                                border: '1px solid rgba(59, 130, 246, 0.3)',
-                                color: '#60a5fa',
+                                background: isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.04)',
+                                border: `1px dashed ${borderColor}`,
+                                color: token.colorTextSecondary,
                               }}
                             >
-                              <MessageSquareReply size={13} />
-                              <span>{m.thread.length} trả lời</span>
-                            </button>
-                          </Tooltip>
-                        )}
+                              <div className="flex items-center gap-2">
+                                <span className="opacity-75">💬 Tin nhắn này đã bị xoá</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setHistoryModalMessage(m);
+                                    setHistoryModalOpen(true);
+                                  }}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold not-italic hover:underline cursor-pointer"
+                                  style={{ color: '#d4a84b' }}
+                                >
+                                  <History size={12} />
+                                  <span>Xem lịch sử</span>
+                                </button>
+                              </div>
+                              {m.deletedByName && (
+                                <div className="text-[10px] text-slate-400 not-italic mt-0.5 tabular-nums">
+                                  Bởi {m.deletedByName} ·{' '}
+                                  {m.deletedAt ? dayjs(m.deletedAt).format('HH:mm') : m.timeLabel}
+                                </div>
+                              )}
+                            </div>
+                          ) : m.text ? (
+                            <div
+                              onClick={(e) => handleMessageTap(m.id, e)}
+                              className={`relative inline-block text-left px-3.5 py-2 rounded-2xl ${
+                                isMine ? 'rounded-tr-sm' : 'rounded-tl-sm'
+                              } text-[13px] leading-relaxed whitespace-pre-wrap break-words max-w-[85%] cursor-pointer select-none active:scale-[0.985] transition-all`}
+                              style={{
+                                background: isMine
+                                  ? isDark
+                                    ? 'rgba(212, 168, 75, 0.16)'
+                                    : 'rgba(212, 168, 75, 0.14)'
+                                  : surfaceRaised,
+                                border: `1px solid ${
+                                  isMine
+                                    ? isDark
+                                      ? 'rgba(212, 168, 75, 0.38)'
+                                      : 'rgba(212, 168, 75, 0.35)'
+                                    : borderColor
+                                }`,
+                                color: token.colorText,
+                              }}
+                            >
+                              {renderRichTextMessage(m.text, isMine)}
 
-                        {/* Unified Message Footer: Reaction Pills + Adjacent Quick Emoji & Action Set */}
-                        <div
-                          className={`mt-1 flex flex-wrap items-center gap-1.5 min-h-[26px] ${
-                            isMine ? 'flex-row-reverse justify-start' : 'justify-start'
-                          }`}
-                        >
-                          {m.reactions &&
-                            Object.entries(m.reactions)
-                              .filter(([, count]) => count > 0)
-                              .map(([emoji, count]) => {
+                              {/* Edited Badge with Clickable Audit History */}
+                              {m.editHistory && m.editHistory.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setHistoryModalMessage(m);
+                                    setHistoryModalOpen(true);
+                                  }}
+                                  className="inline-flex items-center gap-0.5 text-[10.5px] font-medium text-amber-500/80 hover:text-amber-400 hover:underline cursor-pointer select-none ml-1.5 align-baseline"
+                                  title="Xem lịch sử chỉnh sửa"
+                                >
+                                  <History size={10} />
+                                  <span>(đã chỉnh sửa)</span>
+                                </button>
+                              )}
+
+                              {/* Floating Heart Burst on Double-Tap */}
+                              {heartFlyMsgId === m.id && (
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30 select-none overflow-hidden">
+                                  <span className="text-[38px] drop-shadow-xl animate-heart-burst leading-none">
+                                    ❤️
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          ) : null}
+
+                          {/* Suggested AI Action Button(s) (e.g. APPLY_FILTER) */}
+                          {(() => {
+                            const actionsList =
+                              m.aiActions && m.aiActions.length > 0
+                                ? m.aiActions
+                                : m.aiAction?.actions && m.aiAction.actions.length > 0
+                                  ? m.aiAction.actions
+                                  : m.aiAction
+                                    ? [m.aiAction]
+                                    : [];
+                            if (!actionsList || actionsList.length === 0) return null;
+
+                            return (
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {actionsList.map((action, actionIdx) => {
+                                  const actionKey = `${m.id}-${actionIdx}`;
+                                  const isApplied = Boolean(
+                                    appliedActionIds[actionKey] || (actionIdx === 0 && appliedActionIds[m.id])
+                                  );
+                                  return (
+                                    <button
+                                      key={actionKey}
+                                      type="button"
+                                      onClick={() => {
+                                        handleExecuteAiAction(action, m.id, actionKey);
+                                      }}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11.5px] font-bold cursor-pointer transition-all active:scale-95"
+                                      style={{
+                                        background: isApplied ? 'rgba(16, 185, 129, 0.16)' : 'rgba(139, 92, 246, 0.16)',
+                                        border: `1px solid ${
+                                          isApplied ? 'rgba(16, 185, 129, 0.4)' : 'rgba(139, 92, 246, 0.4)'
+                                        }`,
+                                        color: isApplied ? '#10b981' : '#a78bfa',
+                                      }}
+                                    >
+                                      {isApplied ? <Check size={13} /> : <Sliders size={13} />}
+                                      <span>{isApplied ? `Đã áp dụng: ${action.label}` : action.label}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })()}
+
+                          {/* Quick Voice Read-Aloud & Copy Bar for AI Bot Replies */}
+                          {isAiMessage && m.text && (
+                            <div className="mt-1.5 flex items-center gap-1.5">
+                              <Tooltip
+                                title={speakingMsgId === m.id ? 'Dừng đọc giọng nói' : 'Đọc câu trả lời bằng giọng nói'}
+                              >
+                                <button
+                                  type="button"
+                                  aria-label="Đọc câu trả lời AI"
+                                  onClick={() => handleSpeakAiMessage(m)}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold cursor-pointer"
+                                  style={{
+                                    background: speakingMsgId === m.id ? 'rgba(139, 92, 246, 0.2)' : surfaceRaised,
+                                    border: `1px solid ${borderColor}`,
+                                    color: speakingMsgId === m.id ? '#a78bfa' : token.colorTextSecondary,
+                                  }}
+                                >
+                                  {speakingMsgId === m.id ? <VolumeX size={12} /> : <Volume2 size={12} />}
+                                  <span>{speakingMsgId === m.id ? 'Đang đọc' : 'Nghe'}</span>
+                                </button>
+                              </Tooltip>
+
+                              <Tooltip title="Sao chép nội dung">
+                                <button
+                                  type="button"
+                                  aria-label="Sao chép nội dung AI"
+                                  onClick={() => {
+                                    void navigator.clipboard?.writeText(m.text);
+                                    antdMessage.success('Đã sao chép nội dung câu trả lời AI');
+                                  }}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold cursor-pointer"
+                                  style={{
+                                    background: surfaceRaised,
+                                    border: `1px solid ${borderColor}`,
+                                    color: token.colorTextSecondary,
+                                  }}
+                                >
+                                  <Copy size={11} />
+                                  <span>Sao chép</span>
+                                </button>
+                              </Tooltip>
+                            </div>
+                          )}
+
+                          {/* Inline Image Attachments with Lightbox Preview */}
+                          {renderMessageAttachments(m.attachments)}
+
+                          {/* Smart Customer Card */}
+                          {m.customerCard && (
+                            <div
+                              className="mt-1.5 px-2.5 py-2 rounded-lg flex items-center justify-between gap-2 text-left max-w-[85%]"
+                              style={{
+                                background: surfaceBg,
+                                border: `1px solid ${borderStrong}`,
+                                borderLeft: '3px solid #3b82f6',
+                              }}
+                            >
+                              <div className="min-w-0">
+                                <div className="text-[12px] font-bold truncate">
+                                  {m.customerCard.name} ·{' '}
+                                  <span style={{ color: '#d4a84b' }}>{m.customerCard.meta}</span>
+                                </div>
+                                {m.customerCard.cvName && (
+                                  <div className="text-[11px] text-slate-400 truncate">{m.customerCard.cvName}</div>
+                                )}
+                              </div>
+                              <Tooltip title="Mở hồ sơ khách hàng">
+                                <button
+                                  type="button"
+                                  aria-label="Mở hồ sơ khách hàng"
+                                  onClick={() => antdMessage.info(`Đã mở hồ sơ: ${m.customerCard?.name}`)}
+                                  className="w-7 h-7 rounded-md inline-flex items-center justify-center shrink-0 cursor-pointer"
+                                  style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                                >
+                                  <ExternalLink size={14} />
+                                </button>
+                              </Tooltip>
+                            </div>
+                          )}
+
+                          {/* Inline Task & Reminder Card */}
+                          {linkedTask && (
+                            <div
+                              className="mt-1.5 px-2.5 py-2 rounded-lg flex items-center justify-between gap-2 text-left max-w-[85%]"
+                              style={{
+                                background: surfaceBg,
+                                border: `1px solid ${linkedTask.done ? 'rgba(16, 185, 129, 0.4)' : 'rgba(212, 168, 75, 0.45)'}`,
+                                borderLeft: `3px solid ${linkedTask.done ? '#10b981' : '#d4a84b'}`,
+                                opacity: linkedTask.done ? 0.8 : 1,
+                              }}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Tooltip title={linkedTask.done ? 'Mở lại Task' : 'Đánh dấu hoàn thành'}>
+                                  <button
+                                    type="button"
+                                    aria-label="Đánh dấu hoàn thành Task"
+                                    onClick={() => handleToggleTaskDone(linkedTask.id)}
+                                    className="w-4 h-4 rounded flex items-center justify-center shrink-0 cursor-pointer"
+                                    style={{
+                                      border: `1.75px solid ${linkedTask.done ? '#10b981' : '#d4a84b'}`,
+                                      background: linkedTask.done ? '#10b981' : 'transparent',
+                                      color: '#000',
+                                    }}
+                                  >
+                                    {linkedTask.done && <Check size={11} strokeWidth={3} />}
+                                  </button>
+                                </Tooltip>
+                                <div className="min-w-0">
+                                  <div
+                                    className={`text-[12px] font-bold truncate ${linkedTask.done ? 'line-through' : ''}`}
+                                  >
+                                    {linkedTask.title}
+                                  </div>
+                                  <div className="text-[10.5px] text-slate-400 flex items-center gap-2">
+                                    <span>{linkedTask.assigneeName}</span>
+                                    <span>· {linkedTask.priority}</span>
+                                    <span className="text-amber-500 font-bold tabular-nums">
+                                      {linkedTask.done ? 'Xong' : formatCountdown(linkedTask.remindAt, nowMs)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              <Tooltip title="Test nổ chuông nhắc hẹn ngay">
+                                <button
+                                  type="button"
+                                  aria-label="Test nổ chuông nhắc hẹn ngay"
+                                  onClick={() => triggerTaskReminderAlert(linkedTask)}
+                                  className="w-7 h-7 rounded-md inline-flex items-center justify-center shrink-0 cursor-pointer"
+                                  style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                                >
+                                  <BellRing size={14} className="text-amber-400" />
+                                </button>
+                              </Tooltip>
+                            </div>
+                          )}
+
+                          {/* Live mOS Mission Card (Synced 2-way with AG & mOS Mission) */}
+                          {(m.mission || linkedTask?.mission) &&
+                            renderLiveMissionCard((m.mission || linkedTask?.mission)!, m, 'inline')}
+
+                          {/* Thread Chip */}
+                          {m.thread && m.thread.length > 0 && (
+                            <Tooltip title="Xem luồng trả lời bên phải">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenThread(m.id)}
+                                className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold cursor-pointer tabular-nums"
+                                style={{
+                                  background: 'rgba(59, 130, 246, 0.14)',
+                                  border: '1px solid rgba(59, 130, 246, 0.3)',
+                                  color: '#60a5fa',
+                                }}
+                              >
+                                <MessageSquareReply size={13} />
+                                <span>{m.thread.length} trả lời</span>
+                              </button>
+                            </Tooltip>
+                          )}
+
+                          {/* Unified Message Footer: Reaction Pills + Adjacent Quick Emoji & Action Set */}
+                          <div
+                            className={`mt-1 flex flex-wrap items-center gap-1.5 min-h-[26px] ${
+                              isMine ? 'flex-row-reverse justify-start' : 'justify-start'
+                            }`}
+                          >
+                            {m.reactions &&
+                              Object.entries(m.reactions)
+                                .filter(([, count]) => count > 0)
+                                .map(([emoji, count]) => {
+                                  const reactedByMe = hasUserReacted(m, emoji);
+                                  return (
+                                    <Tooltip
+                                      key={emoji}
+                                      title={
+                                        reactedByMe
+                                          ? `Bạn đã thả ${emoji} · Nhấn để gỡ cảm xúc (Undo)`
+                                          : `Nhấn để thả cùng ${emoji}`
+                                      }
+                                    >
+                                      <button
+                                        type="button"
+                                        onClick={() => handleToggleReaction(m.id, emoji)}
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11.5px] font-bold cursor-pointer tabular-nums transition-all hover:scale-105"
+                                        style={{
+                                          background: reactedByMe ? 'rgba(212, 168, 75, 0.16)' : surfaceRaised,
+                                          border: `1px solid ${reactedByMe ? 'rgba(212, 168, 75, 0.55)' : borderColor}`,
+                                          color: reactedByMe ? '#d4a84b' : token.colorText,
+                                        }}
+                                      >
+                                        <span>{emoji}</span>
+                                        <span>{count}</span>
+                                      </button>
+                                    </Tooltip>
+                                  );
+                                })}
+
+                            {/* Adjacent Quick Emoji & Action Bar (placed right next to reaction pills) */}
+                            <div
+                              className={`${
+                                mobileActiveMsgId === m.id
+                                  ? 'opacity-100 pointer-events-auto scale-100 ring-1 ring-amber-500/50 shadow-md'
+                                  : 'opacity-0 pointer-events-none'
+                              } group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-all inline-flex items-center gap-0.5 px-1 py-0.5 rounded-full shadow-sm`}
+                              style={{
+                                background: surfaceRaised,
+                                border: `1px solid ${mobileActiveMsgId === m.id ? 'rgba(212, 168, 75, 0.6)' : borderStrong}`,
+                              }}
+                            >
+                              {GOOGLE_CHAT_QUICK_EMOJIS.map((emoji) => {
                                 const reactedByMe = hasUserReacted(m, emoji);
                                 return (
                                   <Tooltip
                                     key={emoji}
-                                    title={
-                                      reactedByMe
-                                        ? `Bạn đã thả ${emoji} · Nhấn để gỡ cảm xúc (Undo)`
-                                        : `Nhấn để thả cùng ${emoji}`
-                                    }
+                                    title={reactedByMe ? `Đã thả ${emoji} · Nhấn để gỡ (Undo)` : `Thả nhanh ${emoji}`}
                                   >
                                     <button
                                       type="button"
+                                      aria-label={reactedByMe ? `Gỡ cảm xúc ${emoji}` : `Thả nhanh ${emoji}`}
                                       onClick={() => handleToggleReaction(m.id, emoji)}
-                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11.5px] font-bold cursor-pointer tabular-nums transition-all hover:scale-105"
+                                      className="w-6 h-6 rounded-full inline-flex items-center justify-center text-[13px] hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-transform hover:scale-110"
                                       style={{
-                                        background: reactedByMe ? 'rgba(212, 168, 75, 0.16)' : surfaceRaised,
-                                        border: `1px solid ${reactedByMe ? 'rgba(212, 168, 75, 0.55)' : borderColor}`,
-                                        color: reactedByMe ? '#d4a84b' : token.colorText,
+                                        background: reactedByMe ? 'rgba(212, 168, 75, 0.22)' : 'transparent',
+                                        boxShadow: reactedByMe ? 'inset 0 0 0 1px rgba(212, 168, 75, 0.55)' : 'none',
                                       }}
                                     >
-                                      <span>{emoji}</span>
-                                      <span>{count}</span>
+                                      {emoji}
                                     </button>
                                   </Tooltip>
                                 );
                               })}
 
-                          {/* Adjacent Quick Emoji & Action Bar (placed right next to reaction pills) */}
-                          <div
-                            className={`${
-                              mobileActiveMsgId === m.id
-                                ? 'opacity-100 pointer-events-auto scale-100 ring-1 ring-amber-500/50 shadow-md'
-                                : 'opacity-0 pointer-events-none'
-                            } group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-all inline-flex items-center gap-0.5 px-1 py-0.5 rounded-full shadow-sm`}
-                            style={{
-                              background: surfaceRaised,
-                              border: `1px solid ${mobileActiveMsgId === m.id ? 'rgba(212, 168, 75, 0.6)' : borderStrong}`,
-                            }}
-                          >
-                            {GOOGLE_CHAT_QUICK_EMOJIS.map((emoji) => {
-                              const reactedByMe = hasUserReacted(m, emoji);
-                              return (
-                                <Tooltip
-                                  key={emoji}
-                                  title={reactedByMe ? `Đã thả ${emoji} · Nhấn để gỡ (Undo)` : `Thả nhanh ${emoji}`}
-                                >
+                              <Popover
+                                trigger="click"
+                                placement={isMine ? 'topRight' : 'topLeft'}
+                                content={renderReactionPickerContent(m.id, m)}
+                              >
+                                <Tooltip title="Chọn thêm biểu tượng cảm xúc (Wings & phổ biến)">
                                   <button
                                     type="button"
-                                    aria-label={reactedByMe ? `Gỡ cảm xúc ${emoji}` : `Thả nhanh ${emoji}`}
-                                    onClick={() => handleToggleReaction(m.id, emoji)}
-                                    className="w-6 h-6 rounded-full inline-flex items-center justify-center text-[13px] hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-transform hover:scale-110"
-                                    style={{
-                                      background: reactedByMe ? 'rgba(212, 168, 75, 0.22)' : 'transparent',
-                                      boxShadow: reactedByMe ? 'inset 0 0 0 1px rgba(212, 168, 75, 0.55)' : 'none',
-                                    }}
-                                  >
-                                    {emoji}
-                                  </button>
-                                </Tooltip>
-                              );
-                            })}
-
-                            <Popover
-                              trigger="click"
-                              placement={isMine ? 'topRight' : 'topLeft'}
-                              content={renderReactionPickerContent(m.id, m)}
-                            >
-                              <Tooltip title="Chọn thêm biểu tượng cảm xúc (Wings & phổ biến)">
-                                <button
-                                  type="button"
-                                  aria-label="Chọn biểu tượng cảm xúc"
-                                  className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
-                                  style={{ color: token.colorTextSecondary }}
-                                >
-                                  <SmilePlus size={13} />
-                                </button>
-                              </Tooltip>
-                            </Popover>
-
-                            <span className="w-px h-3.5 mx-0.5" style={{ background: borderStrong }} />
-
-                            <Tooltip title="Trả lời theo luồng (Thread)">
-                              <button
-                                type="button"
-                                aria-label="Trả lời theo luồng"
-                                onClick={() => handleOpenThread(m.id)}
-                                className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
-                                style={{ color: token.colorTextSecondary }}
-                              >
-                                <MessageSquareReply size={13} />
-                              </button>
-                            </Tooltip>
-
-                            <Tooltip title="Tạo Task & Hẹn giờ nhắc từ tin nhắn">
-                              <button
-                                type="button"
-                                aria-label="Tạo Task & Hẹn giờ nhắc từ tin nhắn"
-                                onClick={() => openTaskModalFromMessage(m)}
-                                className="w-6 h-6 rounded-full inline-flex items-center justify-center cursor-pointer"
-                                style={{
-                                  background: 'rgba(212, 168, 75, 0.16)',
-                                  color: '#d4a84b',
-                                }}
-                              >
-                                <AlarmClockPlus size={13} />
-                              </button>
-                            </Tooltip>
-
-                            {isStrictDannySuperAdmin && (
-                              <Tooltip
-                                title={
-                                  m.mission || linkedTask?.mission
-                                    ? `Mở tiến độ mOS Mission #${(m.mission || linkedTask?.mission)?.missionKey}`
-                                    : '🚀 Giao mOS Mission cho AG lập trình (Đóng gói trọn luồng & hình ảnh)'
-                                }
-                              >
-                                <button
-                                  type="button"
-                                  aria-label="Giao mOS Mission cho AG"
-                                  onClick={() => openMissionModalFromChat(m, linkedTask)}
-                                  className="w-6 h-6 rounded-full inline-flex items-center justify-center cursor-pointer transition-transform hover:scale-110"
-                                  style={{
-                                    background:
-                                      m.mission || linkedTask?.mission
-                                        ? 'rgba(16, 185, 129, 0.2)'
-                                        : 'rgba(139, 92, 246, 0.2)',
-                                    color: m.mission || linkedTask?.mission ? '#10b981' : '#a78bfa',
-                                  }}
-                                >
-                                  <Rocket size={13} />
-                                </button>
-                              </Tooltip>
-                            )}
-
-                            <Tooltip title={m.pinned ? 'Bỏ ghim' : 'Ghim tin nhắn'}>
-                              <button
-                                type="button"
-                                aria-label="Ghim tin nhắn"
-                                onClick={() => handleTogglePin(m.id)}
-                                className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
-                                style={{ color: m.pinned ? '#d4a84b' : token.colorTextSecondary }}
-                              >
-                                <Pin size={13} />
-                              </button>
-                            </Tooltip>
-
-                            {/* Edit Message Button (if author or admin, and not deleted) */}
-                            {(isMine || isDannyAccount) && !m.isDeleted && (
-                              <Tooltip title="Chỉnh sửa tin nhắn">
-                                <button
-                                  type="button"
-                                  aria-label="Chỉnh sửa tin nhắn"
-                                  onClick={() => handleStartEdit(m)}
-                                  className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
-                                  style={{ color: token.colorTextSecondary }}
-                                >
-                                  <Pencil size={13} />
-                                </button>
-                              </Tooltip>
-                            )}
-
-                            {/* Delete Message Button (Popconfirm, soft delete with history) */}
-                            {(isMine || isDannyAccount) && !m.isDeleted && (
-                              <Popconfirm
-                                title="Xoá tin nhắn này?"
-                                description="Nội dung sẽ bị ẩn nhưng toàn bộ lịch sử chỉnh sửa & xoá vẫn được lưu lại an toàn."
-                                onConfirm={() => handleDeleteMessage(m.id)}
-                                okText="Xoá"
-                                cancelText="Huỷ"
-                                okButtonProps={{ danger: true }}
-                              >
-                                <Tooltip title="Xoá tin nhắn (lưu lại lịch sử)">
-                                  <button
-                                    type="button"
-                                    aria-label="Xoá tin nhắn"
-                                    className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-rose-500/15 cursor-pointer hover:text-rose-400"
+                                    aria-label="Chọn biểu tượng cảm xúc"
+                                    className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
                                     style={{ color: token.colorTextSecondary }}
                                   >
-                                    <Trash2 size={13} />
+                                    <SmilePlus size={13} />
                                   </button>
                                 </Tooltip>
-                              </Popconfirm>
-                            )}
+                              </Popover>
 
-                            {/* View History Button (if edited or deleted) */}
-                            {(m.isDeleted || (m.editHistory && m.editHistory.length > 0)) && (
-                              <Tooltip title="Xem lịch sử chỉnh sửa & xoá">
+                              <span className="w-px h-3.5 mx-0.5" style={{ background: borderStrong }} />
+
+                              <Tooltip title="Trả lời theo luồng (Thread)">
                                 <button
                                   type="button"
-                                  aria-label="Xem lịch sử chỉnh sửa & xoá"
-                                  onClick={() => {
-                                    setHistoryModalMessage(m);
-                                    setHistoryModalOpen(true);
-                                  }}
-                                  className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-amber-500/15 cursor-pointer text-amber-400"
+                                  aria-label="Trả lời theo luồng"
+                                  onClick={() => handleOpenThread(m.id)}
+                                  className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+                                  style={{ color: token.colorTextSecondary }}
                                 >
-                                  <History size={13} />
+                                  <MessageSquareReply size={13} />
                                 </button>
                               </Tooltip>
-                            )}
+
+                              <Tooltip title="Tạo Task & Hẹn giờ nhắc từ tin nhắn">
+                                <button
+                                  type="button"
+                                  aria-label="Tạo Task & Hẹn giờ nhắc từ tin nhắn"
+                                  onClick={() => openTaskModalFromMessage(m)}
+                                  className="w-6 h-6 rounded-full inline-flex items-center justify-center cursor-pointer"
+                                  style={{
+                                    background: 'rgba(212, 168, 75, 0.16)',
+                                    color: '#d4a84b',
+                                  }}
+                                >
+                                  <AlarmClockPlus size={13} />
+                                </button>
+                              </Tooltip>
+
+                              {isStrictDannySuperAdmin && (
+                                <Tooltip
+                                  title={
+                                    m.mission || linkedTask?.mission
+                                      ? `Mở tiến độ mOS Mission #${(m.mission || linkedTask?.mission)?.missionKey}`
+                                      : '🚀 Giao mOS Mission cho AG lập trình (Đóng gói trọn luồng & hình ảnh)'
+                                  }
+                                >
+                                  <button
+                                    type="button"
+                                    aria-label="Giao mOS Mission cho AG"
+                                    onClick={() => openMissionModalFromChat(m, linkedTask)}
+                                    className="w-6 h-6 rounded-full inline-flex items-center justify-center cursor-pointer transition-transform hover:scale-110"
+                                    style={{
+                                      background:
+                                        m.mission || linkedTask?.mission
+                                          ? 'rgba(16, 185, 129, 0.2)'
+                                          : 'rgba(139, 92, 246, 0.2)',
+                                      color: m.mission || linkedTask?.mission ? '#10b981' : '#a78bfa',
+                                    }}
+                                  >
+                                    <Rocket size={13} />
+                                  </button>
+                                </Tooltip>
+                              )}
+
+                              <Tooltip title={m.pinned ? 'Bỏ ghim' : 'Ghim tin nhắn'}>
+                                <button
+                                  type="button"
+                                  aria-label="Ghim tin nhắn"
+                                  onClick={() => handleTogglePin(m.id)}
+                                  className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+                                  style={{ color: m.pinned ? '#d4a84b' : token.colorTextSecondary }}
+                                >
+                                  <Pin size={13} />
+                                </button>
+                              </Tooltip>
+
+                              {/* Edit Message Button (if author or admin, and not deleted) */}
+                              {(isMine || isDannyAccount) && !m.isDeleted && (
+                                <Tooltip title="Chỉnh sửa tin nhắn">
+                                  <button
+                                    type="button"
+                                    aria-label="Chỉnh sửa tin nhắn"
+                                    onClick={() => handleStartEdit(m)}
+                                    className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+                                    style={{ color: token.colorTextSecondary }}
+                                  >
+                                    <Pencil size={13} />
+                                  </button>
+                                </Tooltip>
+                              )}
+
+                              {/* Delete Message Button (Popconfirm, soft delete with history) */}
+                              {(isMine || isDannyAccount) && !m.isDeleted && (
+                                <Popconfirm
+                                  title="Xoá tin nhắn này?"
+                                  description="Nội dung sẽ bị ẩn nhưng toàn bộ lịch sử chỉnh sửa & xoá vẫn được lưu lại an toàn."
+                                  onConfirm={() => handleDeleteMessage(m.id)}
+                                  okText="Xoá"
+                                  cancelText="Huỷ"
+                                  okButtonProps={{ danger: true }}
+                                >
+                                  <Tooltip title="Xoá tin nhắn (lưu lại lịch sử)">
+                                    <button
+                                      type="button"
+                                      aria-label="Xoá tin nhắn"
+                                      className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-rose-500/15 cursor-pointer hover:text-rose-400"
+                                      style={{ color: token.colorTextSecondary }}
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </Tooltip>
+                                </Popconfirm>
+                              )}
+
+                              {/* View History Button (if edited or deleted) */}
+                              {(m.isDeleted || (m.editHistory && m.editHistory.length > 0)) && (
+                                <Tooltip title="Xem lịch sử chỉnh sửa & xoá">
+                                  <button
+                                    type="button"
+                                    aria-label="Xem lịch sử chỉnh sửa & xoá"
+                                    onClick={() => {
+                                      setHistoryModalMessage(m);
+                                      setHistoryModalOpen(true);
+                                    }}
+                                    className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-amber-500/15 cursor-pointer text-amber-400"
+                                  >
+                                    <History size={13} />
+                                  </button>
+                                </Tooltip>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
 
                 {aiThinkingActive && (
                   <div className="px-4 py-2 flex items-center gap-2.5">
@@ -7432,7 +7394,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         <button
                           type="button"
                           onClick={() => {
-                            setComposerText((prev) => `${prev}@Hà My `);
+                            setComposerText((prev) => `${prev}${prev.endsWith(' ') || !prev ? '' : ' '}@`);
                             setMobileActionOpen(false);
                             composerInputRef.current?.focus();
                           }}
@@ -7751,7 +7713,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         <button
                           type="button"
                           aria-label="Nhắc tên đồng nghiệp"
-                          onClick={() => setComposerText((prev) => `${prev}@Hà My `)}
+                          onClick={() => {
+                            setComposerText((prev) => `${prev}${prev.endsWith(' ') || !prev ? '' : ' '}@`);
+                            composerInputRef.current?.focus();
+                          }}
                           className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
                           style={{ color: token.colorTextSecondary }}
                         >
@@ -8730,7 +8695,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         zIndex={1350}
         onCancel={() => setTaskModalOpen(false)}
         onOk={handleConfirmCreateTask}
-        okText="Lưu & Hẹn giờ"
+        okText={taskRemindMode === 'preset' && selectedPresetId === 'none' ? 'Lưu Task' : 'Lưu & Hẹn giờ'}
         cancelText="Hủy"
         title={
           <span className="flex items-center gap-2 text-[14px] font-bold">
@@ -8757,14 +8722,18 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
           <div className="grid grid-cols-2 gap-2.5">
             <div>
-              <div className="text-[11px] font-bold text-slate-400 mb-1">Người phụ trách</div>
+              <div className="text-[11px] font-bold text-slate-400 mb-1">
+                Người phụ trách <span className="text-rose-400">*</span>
+              </div>
               <Select
                 className="w-full"
-                value={taskAssignee}
-                onChange={setTaskAssignee}
+                value={taskAssignee || undefined}
+                onChange={(val) => setTaskAssignee(val || '')}
                 options={assigneeOptions}
                 showSearch
-                placeholder="Tìm hoặc chọn người phụ trách..."
+                allowClear
+                status={!taskAssignee ? 'warning' : undefined}
+                placeholder="Chọn nhân sự phụ trách..."
                 filterOption={(input, option) => {
                   const normInput = removeVietnameseTones(input.trim().toLowerCase());
                   if (!normInput) return true;

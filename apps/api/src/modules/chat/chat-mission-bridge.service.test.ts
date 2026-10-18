@@ -183,4 +183,86 @@ describe('ChatMissionBridgeService.buildMissionSummaryFromReport', () => {
     assert.equal(result.tasks[0]?.missionId, 113);
     assert.equal(result.tasks[0]?.assigneeName, 'Danny Do');
   });
+
+  it('strips resigned mock staff (Hà My) tasks and mOS Reminder spam messages from conversations', () => {
+    const tasks = [
+      {
+        id: 'task-seed-1',
+        conversationId: 'space-cc',
+        conversationName: '# tu-van-cc',
+        sourceMessageId: 'msg-cc-1',
+        sourceAuthorName: 'Hà My',
+        title: 'Theo dõi khách chị Lan Anh sau trải nghiệm dịch vụ Mi Thiết Kế',
+        assigneeName: 'Hà My (CC)',
+        creatorName: 'Danny Do',
+        priority: 'URGENT' as const,
+        remindAt: '2026-10-18T01:30:00Z',
+        done: false,
+        fired: true,
+        createdAt: '2026-10-18T01:25:00Z',
+      },
+      {
+        id: 'task-real-1',
+        conversationId: 'dm-13-1',
+        conversationName: 'Bảo Hân',
+        sourceMessageId: 'msg-real-1',
+        sourceAuthorName: 'Bảo Hân',
+        title: 'Kiểm tra lịch hẹn CV trống khung giờ 14h',
+        assigneeName: 'Bảo Hân',
+        creatorName: 'Danny Do',
+        priority: 'HIGH' as const,
+        remindAt: '2026-10-18T10:00:00Z',
+        done: false,
+        fired: true,
+        createdAt: '2026-10-18T09:00:00Z',
+      },
+    ];
+
+    const conversations = [
+      {
+        id: 'dm-13-1',
+        type: 'dm' as const,
+        name: 'Bảo Hân',
+        avatar: 'BH',
+        color: '#38bdf8',
+        unreadCount: 0,
+        updatedAt: '2026-10-18T09:00:00Z',
+        messages: [
+          {
+            id: 'msg-real-1',
+            conversationId: 'dm-13-1',
+            senderId: 13,
+            senderName: 'Bảo Hân',
+            senderRole: 'Admin',
+            senderAvatar: 'BH',
+            roleColor: '#38bdf8',
+            text: 'Kiểm tra lịch hẹn CV trống khung giờ 14h',
+            timeLabel: '09:00',
+            createdAt: '2026-10-18T09:00:00Z',
+          },
+          {
+            id: 'msg-rem-1',
+            conversationId: 'dm-13-1',
+            senderId: 'system-reminder',
+            senderName: 'mOS Reminder',
+            senderRole: 'Auto',
+            senderAvatar: 'AL',
+            roleColor: '#f59e0b',
+            text: 'Đến giờ nhắc việc: "Kiểm tra lịch hẹn CV..." (@Hà My (CC))',
+            timeLabel: '09:01',
+            createdAt: '2026-10-18T09:01:00Z',
+            isSystemReminder: true,
+          },
+        ],
+      },
+    ];
+
+    const result = deduplicateTasks(tasks, conversations);
+    assert.equal(result.changed, true);
+    assert.equal(result.convChanged, true);
+    assert.equal(result.tasks.length, 1);
+    assert.equal(result.tasks[0]?.id, 'task-real-1');
+    assert.equal(conversations[0]?.messages.length, 1);
+    assert.equal(conversations[0]?.messages[0]?.id, 'msg-real-1');
+  });
 });

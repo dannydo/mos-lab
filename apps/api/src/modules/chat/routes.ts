@@ -195,16 +195,6 @@ function buildDefaultConversations(): MosChatConversation[] {
           },
           thread: [
             {
-              id: 'th-seed-1',
-              senderId: 'staff-hm',
-              senderName: 'Hà My',
-              senderRole: 'Tư Vấn (CC)',
-              senderAvatar: 'HM',
-              text: 'Quầy CC tầng 1 đã nhận thông tin đón chị Ngọc.',
-              timeLabel: '14:43',
-              createdAt: nowIso,
-            },
-            {
               id: 'th-seed-2',
               senderId: 'staff-mt',
               senderName: 'Chuyên Viên Minh Thư',
@@ -215,21 +205,6 @@ function buildDefaultConversations(): MosChatConversation[] {
               createdAt: nowIso,
             },
           ],
-        },
-        {
-          id: 'msg-seed-2',
-          conversationId: 'space-cc',
-          senderId: 'staff-hm',
-          senderName: 'Hà My',
-          senderRole: 'Tư Vấn (CC)',
-          senderAvatar: 'HM',
-          roleColor: '#10b981',
-          text: 'Nhờ chuẩn bị sẵn trà hoa cúc & kiểm tra hồ sơ dáng mi cũ của chị Ngọc trước 15:00.',
-          timeLabel: '14:44',
-          createdAt: nowIso,
-          reactions: { '👍': 2 },
-          taskId: 'task-seed-101',
-          thread: [],
         },
         {
           id: 'msg-seed-3',
@@ -297,7 +272,6 @@ function buildDefaultConversations(): MosChatConversation[] {
           timeLabel: '13:50',
           createdAt: nowIso,
           reactions: { '👍': 3 },
-          taskId: 'task-seed-102',
           thread: [],
         },
       ],
@@ -306,39 +280,7 @@ function buildDefaultConversations(): MosChatConversation[] {
 }
 
 function buildDefaultTasks(): MosChatTaskItem[] {
-  const now = Date.now();
-  return [
-    {
-      id: 'task-seed-101',
-      conversationId: 'space-cc',
-      conversationName: 'tư-vấn-cc-ca-hôm-nay',
-      sourceMessageId: 'msg-seed-2',
-      sourceAuthorName: 'Hà My',
-      title: 'Chuẩn bị trà hoa cúc & kiểm tra hồ sơ dáng mi chị Bích Ngọc',
-      assigneeName: 'Hà My (CC)',
-      creatorName: 'Danny Do',
-      priority: 'URGENT',
-      remindAt: new Date(now + 180 * 1000).toISOString(),
-      done: false,
-      fired: false,
-      createdAt: new Date(now).toISOString(),
-    },
-    {
-      id: 'task-seed-102',
-      conversationId: 'space-cv',
-      conversationName: 'chuyên-viên-mi-tầng-1',
-      sourceMessageId: 'msg-seed-cv-1',
-      sourceAuthorName: 'Chuyên Viên Minh Thư',
-      title: 'Bổ sung 5 khay mi cong C 0.07 dài 11mm lên tủ Chuyên Viên tầng 1',
-      assigneeName: 'Khánh Linh (CS)',
-      creatorName: 'Chuyên Viên Minh Thư',
-      priority: 'HIGH',
-      remindAt: new Date(now + 900 * 1000).toISOString(),
-      done: false,
-      fired: false,
-      createdAt: new Date(now).toISOString(),
-    },
-  ];
+  return [];
 }
 
 const MAX_MESSAGES_PER_CONVERSATION = 150;
@@ -845,17 +787,32 @@ export function deduplicateTasks(
       changed = true;
       continue;
     }
+    const rawId = String(raw.id).trim();
+    const rawAssignee = String(raw.assigneeName || '').trim();
+    const rawAuthor = String(raw.sourceAuthorName || '').trim();
+    const missionIdNum = raw.missionId && Number(raw.missionId) > 0 ? Number(raw.missionId) : 0;
+
+    // Remove legacy seed tasks and any standalone tasks referencing resigned/mock staff Hà My
+    if (
+      rawId.startsWith('task-seed-') ||
+      raw.sourceMessageId === 'msg-seed-2' ||
+      raw.sourceMessageId === 'msg-seed-cv-1' ||
+      ((rawAssignee.includes('Hà My') || rawAuthor.includes('Hà My')) && missionIdNum <= 0)
+    ) {
+      changed = true;
+      continue;
+    }
+
     const convId = String(raw.conversationId || '').trim();
     const msgId = raw.sourceMessageId ? String(raw.sourceMessageId).trim() : '';
     const normTitle = normalizeTaskTitleKey(raw.title);
-    const missionIdNum = raw.missionId && Number(raw.missionId) > 0 ? Number(raw.missionId) : 0;
 
     const msgKey = convId && msgId ? `${convId}::msg::${msgId}` : '';
     const titleKey = convId && normTitle ? `${convId}::title::${normTitle}` : '';
     const mKey = missionIdNum > 0 ? `mission::${missionIdNum}` : '';
 
     const existing =
-      byId.get(raw.id) ||
+      byId.get(rawId) ||
       (msgKey ? byMsgKey.get(msgKey) : undefined) ||
       (mKey ? byMissionKey.get(mKey) : undefined) ||
       (titleKey ? byTitleKey.get(titleKey) : undefined);
@@ -874,14 +831,26 @@ export function deduplicateTasks(
         existing.sourceMessageId = msgId;
         if (msgKey) byMsgKey.set(msgKey, existing);
       }
-      if (existing.assigneeName === 'Hà My (CC)' && raw.assigneeName && raw.assigneeName !== 'Hà My (CC)') {
-        existing.assigneeName = raw.assigneeName;
+      if (existing.assigneeName.includes('Hà My') && rawAssignee && !rawAssignee.includes('Hà My')) {
+        existing.assigneeName = rawAssignee;
         existing.assigneeId = raw.assigneeId ?? existing.assigneeId;
       }
       continue;
     }
 
-    const cloned: MosChatTaskItem = { ...raw };
+    const sanitizedAssignee = rawAssignee.includes('Hà My')
+      ? raw.creatorName && !raw.creatorName.includes('Hà My')
+        ? raw.creatorName
+        : 'Danny Do'
+      : rawAssignee;
+    if (sanitizedAssignee !== raw.assigneeName) {
+      changed = true;
+    }
+
+    const cloned: MosChatTaskItem = {
+      ...raw,
+      assigneeName: sanitizedAssignee,
+    };
     deduped.push(cloned);
     byId.set(cloned.id, cloned);
     if (msgKey) byMsgKey.set(msgKey, cloned);
@@ -892,11 +861,46 @@ export function deduplicateTasks(
   let convChanged = false;
   if (Array.isArray(conversations) && conversations.length > 0) {
     for (const c of conversations) {
-      for (const m of c.messages || []) {
+      if (!Array.isArray(c.messages)) continue;
+      const beforeLen = c.messages.length;
+      c.messages = c.messages.filter((m) => {
+        if (!m) return false;
+        const text = String(m.text || '').trim();
+        // Strip automated mOS Reminder spam messages and mock Hà My messages
+        if (
+          m.senderId === 'system-reminder' ||
+          m.senderName === 'mOS Reminder' ||
+          text.startsWith('Đến giờ nhắc việc:') ||
+          m.id === 'msg-seed-2' ||
+          m.senderId === 'staff-hm' ||
+          m.senderName === 'Hà My' ||
+          text.includes('Giao việc cho Hà My')
+        ) {
+          return false;
+        }
+        if (Array.isArray(m.thread) && m.thread.length > 0) {
+          const origThreadLen = m.thread.length;
+          m.thread = m.thread.filter(
+            (th) => th.id !== 'th-seed-1' && th.senderId !== 'staff-hm' && th.senderName !== 'Hà My'
+          );
+          if (m.thread.length !== origThreadLen) {
+            convChanged = true;
+          }
+        }
+        return true;
+      });
+      if (c.messages.length !== beforeLen) {
+        convChanged = true;
+      }
+
+      for (const m of c.messages) {
         const msgKey = `${c.id}::msg::${m.id}`;
         const canonicalTask = byMsgKey.get(msgKey);
         if (canonicalTask && m.taskId !== canonicalTask.id) {
           m.taskId = canonicalTask.id;
+          convChanged = true;
+        } else if (!canonicalTask && m.taskId && !byId.has(m.taskId)) {
+          delete m.taskId;
           convChanged = true;
         }
       }
@@ -1935,6 +1939,37 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         });
       }
 
+      const rawAssigneeName = String(body.assigneeName || '').trim();
+      const rawAssigneeId = Number(body.assigneeId) || 0;
+      if (!rawAssigneeName && rawAssigneeId <= 0) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'Vui lòng chọn Người phụ trách từ danh sách nhân sự đang hoạt động.',
+        });
+      }
+
+      const normAssignee = rawAssigneeName.toLowerCase();
+      const matchedAssignee = staffDirectory.find(
+        (s) =>
+          (rawAssigneeId > 0 && s.id === rawAssigneeId) ||
+          (normAssignee &&
+            (String(s.displayName || '')
+              .trim()
+              .toLowerCase() === normAssignee ||
+              String(s.username || '')
+                .trim()
+                .toLowerCase() === normAssignee))
+      );
+      if (!matchedAssignee) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'Người phụ trách không hợp lệ hoặc đã nghỉ việc. Vui lòng chọn nhân sự đang hoạt động.',
+        });
+      }
+
+      const canonicalAssigneeId = matchedAssignee.id;
+      const canonicalAssigneeName = matchedAssignee.displayName || matchedAssignee.username;
+
       const staffRecord = await fastify.prisma.crm.crmStaff.findUnique({
         where: { id: Number(user.id) || 0 },
         select: { displayName: true, username: true, role: true },
@@ -1943,12 +1978,17 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       const roleInfo = getRoleDisplayLabel(staffRecord?.role || user.role);
       const now = new Date();
 
+      const hasExplicitRemindAt = Boolean(body.remindAt && !isNaN(new Date(body.remindAt).getTime()));
+      const remindSecNum = body.remindInSeconds !== undefined ? Number(body.remindInSeconds) : 0;
+      const isNoReminder = !hasExplicitRemindAt && remindSecNum <= 0;
+
       let remindAtDate: Date;
-      if (body.remindAt && !isNaN(new Date(body.remindAt).getTime())) {
-        remindAtDate = new Date(body.remindAt);
+      if (hasExplicitRemindAt) {
+        remindAtDate = new Date(body.remindAt!);
+      } else if (remindSecNum > 0) {
+        remindAtDate = new Date(now.getTime() + Math.max(60, remindSecNum) * 1000);
       } else {
-        const remindInSec = Math.max(3, Number(body.remindInSeconds) || 900);
-        remindAtDate = new Date(now.getTime() + remindInSec * 1000);
+        remindAtDate = now;
       }
 
       const normTitle = normalizeTaskTitleKey(title);
@@ -1962,12 +2002,12 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       if (existingTaskIdx >= 0) {
         const existingTask = tasks[existingTaskIdx];
         existingTask.title = title;
-        existingTask.assigneeId = body.assigneeId ?? existingTask.assigneeId;
-        existingTask.assigneeName = body.assigneeName || existingTask.assigneeName || creatorName;
+        existingTask.assigneeId = canonicalAssigneeId;
+        existingTask.assigneeName = canonicalAssigneeName;
         existingTask.priority = body.priority || existingTask.priority || 'HIGH';
         existingTask.remindAt = remindAtDate.toISOString();
         existingTask.done = false;
-        existingTask.fired = false;
+        existingTask.fired = isNoReminder;
 
         if (body.sourceMessageId) {
           existingTask.sourceMessageId = body.sourceMessageId;
@@ -2011,7 +2051,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           senderRole: roleInfo.label,
           senderAvatar: getInitials(creatorName, user.username),
           roleColor: roleInfo.color,
-          text: `Giao việc cho ${body.assigneeName}:`,
+          text: `Giao việc cho ${canonicalAssigneeName}:`,
           timeLabel: formatTimeLabel(now),
           createdAt: now.toISOString(),
           taskId,
@@ -2027,13 +2067,13 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         sourceMessageId: targetMsgId,
         sourceAuthorName,
         title,
-        assigneeId: body.assigneeId,
-        assigneeName: body.assigneeName || creatorName,
+        assigneeId: canonicalAssigneeId,
+        assigneeName: canonicalAssigneeName,
         creatorName,
         priority: body.priority || 'HIGH',
         remindAt: remindAtDate.toISOString(),
         done: false,
-        fired: false,
+        fired: isNoReminder,
         createdAt: now.toISOString(),
       };
 
@@ -2062,7 +2102,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         triggerReminderNow?: boolean;
       };
 
-      const { conversations, tasks } = await loadChatState(fastify);
+      const { tasks } = await loadChatState(fastify);
       const task = tasks.find((t) => t.id === taskId);
       if (!task) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy công việc' });
@@ -2080,26 +2120,6 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       if (body.triggerReminderNow && !task.fired) {
         task.fired = true;
         task.remindAt = now.toISOString();
-        const conv = conversations.find((c) => c.id === task.conversationId);
-        if (conv) {
-          conv.messages.push({
-            id: `msg-rem-${crypto.randomUUID().slice(0, 8)}`,
-            conversationId: conv.id,
-            senderId: 'system-reminder',
-            senderName: 'mOS Reminder',
-            senderRole: 'Auto',
-            senderAvatar: 'AL',
-            roleColor: '#f59e0b',
-            text: `Đến giờ nhắc việc: "${task.title}" (@${task.assigneeName})`,
-            timeLabel: formatTimeLabel(now),
-            createdAt: now.toISOString(),
-            taskId: task.id,
-            isSystemReminder: true,
-            reactions: {},
-            thread: [],
-          });
-          await saveConversations(fastify, conversations);
-        }
       }
 
       await saveTasks(fastify, tasks);
