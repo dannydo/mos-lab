@@ -1565,6 +1565,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
               afternoon={afternoon}
               night={night}
               themeMode={themeMode}
+              selectedCV={selectedCV}
             />
           </div>
 

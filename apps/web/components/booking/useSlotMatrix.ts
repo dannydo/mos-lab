@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import dayjs from 'dayjs';
+import { SlotMatrixMap, SafeAny } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
 
 export const useSlotMatrix = (selectedCN: SafeAny, selectedCV: SafeAny, initialDate: dayjs.Dayjs = dayjs()) => {
@@ -47,7 +48,7 @@ export const useSlotMatrix = (selectedCN: SafeAny, selectedCV: SafeAny, initialD
     setBookingDateState(newDate);
   }, []);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-  const [slotMatrix, setSlotMatrix] = useState<{ [time: string]: { available: number; roster: number } }>({});
+  const [slotMatrix, setSlotMatrix] = useState<SlotMatrixMap>({});
   const [loadingSlots, setLoadingSlots] = useState(false);
 
   useEffect(

@@ -999,6 +999,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
               afternoon={afternoon}
               night={night}
               themeMode={themeMode}
+              selectedCV={selectedCV}
             />
           </div>
 
