@@ -23,6 +23,7 @@ import {
   Mail,
   CheckSquare,
   Check,
+  CheckCheck,
   Clock,
   ExternalLink,
   Search,
@@ -90,6 +91,8 @@ import type {
   MosChatMessage,
   MosChatMissionActionType,
   MosChatMissionSummary,
+  MosChatReadReceiptEntry,
+  MosChatThreadReadReceiptEntry,
   MosChatThreadReply,
   MosChatPresenceStatus,
   MosChatStaffMember,
@@ -2219,6 +2222,110 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     activeConversation?.id,
   ]);
 
+  const [isTabVisible, setIsTabVisible] = useState<boolean>(() =>
+    typeof document === 'undefined' ? true : document.visibilityState === 'visible'
+  );
+
+  useEffect(() => {
+    if (typeof document === 'undefined' || typeof window === 'undefined') return;
+    const syncVisibility = () => {
+      setIsTabVisible(document.visibilityState === 'visible');
+    };
+    const handleFocus = () => {
+      if (document.visibilityState === 'visible') {
+        setIsTabVisible(true);
+      }
+    };
+    document.addEventListener('visibilitychange', syncVisibility);
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      document.removeEventListener('visibilitychange', syncVisibility);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
+  const markConversationReadOptimisticAndSync = useCallback(
+    (convId: string, msgCount: number, lastMsgId?: string) => {
+      if (!convId || convId === AI_COPILOT_CONV_ID) return;
+      const nowIso = new Date().toISOString();
+      const myStaffId = Number(currentUserStaffMember.id) || Number(currentUser?.id) || 0;
+      const myName = currentUserStaffMember.displayName || currentUser?.displayName || currentUser?.username || 'Bạn';
+      const myRole = currentUserStaffMember.role || currentUser?.role || 'Member';
+      const myAvatar = currentUserStaffMember.avatarUrl || null;
+
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== convId) return c;
+          const existingReceipts = c.readReceipts || [];
+          const updatedReceipts =
+            myStaffId > 0
+              ? [
+                  ...existingReceipts.filter((r) => r.staffId !== myStaffId),
+                  {
+                    staffId: myStaffId,
+                    displayName: myName,
+                    role: myRole,
+                    avatarUrl: myAvatar,
+                    readCount: msgCount,
+                    lastReadMessageId: lastMsgId || null,
+                    readAt: nowIso,
+                  },
+                ]
+              : existingReceipts;
+          return {
+            ...c,
+            unreadCount: 0,
+            readReceipts: updatedReceipts,
+          };
+        })
+      );
+
+      updateUserSidebarPrefs((prev) => ({
+        ...prev,
+        manualUnreadIds: (prev.manualUnreadIds || []).filter((id) => id !== convId),
+        hiddenIds: (prev.hiddenIds || []).filter((id) => id !== convId),
+        readMessageCountByConv: {
+          ...(prev.readMessageCountByConv || {}),
+          [convId]: msgCount,
+        },
+        readAtByConv: {
+          ...(prev.readAtByConv || {}),
+          [convId]: nowIso,
+        },
+        ...(lastMsgId
+          ? {
+              lastReadMessageIdByConv: {
+                ...(prev.lastReadMessageIdByConv || {}),
+                [convId]: lastMsgId,
+              },
+            }
+          : {}),
+      }));
+
+      apiClient.chat
+        .markAsRead(convId)
+        .then((res) => {
+          if (res?.conversation) {
+            setConversations((prev) => prev.map((c) => (c.id === convId ? res.conversation! : c)));
+          }
+          notifyLivePeers();
+        })
+        .catch(() => {});
+    },
+    [
+      currentUserStaffMember.id,
+      currentUserStaffMember.displayName,
+      currentUserStaffMember.role,
+      currentUserStaffMember.avatarUrl,
+      currentUser?.id,
+      currentUser?.displayName,
+      currentUser?.username,
+      currentUser?.role,
+      updateUserSidebarPrefs,
+      notifyLivePeers,
+    ]
+  );
+
   const selectConversation = (convId: string) => {
     setActiveConvId(convId);
     setActiveSubtab('chat');
@@ -2226,48 +2333,57 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       setMobileActiveView('conversation');
     }
     const targetConv = allUserConversations.find((c) => c.id === convId);
-    const targetMsgCount = targetConv?.messages?.length || 0;
-
-    if (convId !== AI_COPILOT_CONV_ID) {
-      setConversations((prev) => prev.map((c) => (c.id === convId ? { ...c, unreadCount: 0 } : c)));
-    }
-    updateUserSidebarPrefs((prev) => ({
-      ...prev,
-      manualUnreadIds: (prev.manualUnreadIds || []).filter((id) => id !== convId),
-      hiddenIds: (prev.hiddenIds || []).filter((id) => id !== convId),
-      readMessageCountByConv: {
-        ...(prev.readMessageCountByConv || {}),
-        [convId]: targetMsgCount,
-      },
-    }));
-    if (convId !== AI_COPILOT_CONV_ID) {
-      apiClient.chat.markAsRead(convId).catch(() => {});
+    const msgs = targetConv?.messages || [];
+    const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : undefined;
+    if (isTabVisible) {
+      markConversationReadOptimisticAndSync(convId, msgs.length, lastMsg?.id);
     }
   };
 
-  // Automatically mark active conversation as read when main chat panel is open
+  // Automatically mark active conversation (or open mini dock) as read ONLY when browser tab is visible
   useEffect(() => {
-    if (!open || activeSubtab !== 'chat' || !activeConversation) return;
-    const convId = activeConversation.id;
-    if (convId === AI_COPILOT_CONV_ID) return;
-    const msgCount = activeConversation.messages?.length || 0;
-    const currentRead = userPrefs.readMessageCountByConv?.[convId];
-    const isManualUnread = (userPrefs.manualUnreadIds || []).includes(convId);
-    // CRITICAL: Do not auto-clear if user explicitly marked conversation as unread
-    if (isManualUnread) return;
-    if (currentRead !== msgCount || (activeConversation.unreadCount || 0) > 0) {
-      setConversations((prev) => prev.map((c) => (c.id === convId ? { ...c, unreadCount: 0 } : c)));
-      updateUserSidebarPrefs((prev) => ({
-        ...prev,
-        manualUnreadIds: (prev.manualUnreadIds || []).filter((id) => id !== convId),
-        readMessageCountByConv: {
-          ...(prev.readMessageCountByConv || {}),
-          [convId]: msgCount,
-        },
-      }));
-      apiClient.chat.markAsRead(convId).catch(() => {});
+    if (!isTabVisible) return;
+    if (open && activeSubtab === 'chat' && activeConversation) {
+      const convId = activeConversation.id;
+      if (convId !== AI_COPILOT_CONV_ID) {
+        const msgs = activeConversation.messages || [];
+        const msgCount = msgs.length;
+        const lastMsg = msgCount > 0 ? msgs[msgCount - 1] : undefined;
+        const currentRead = userPrefs.readMessageCountByConv?.[convId];
+        const isManualUnread = (userPrefs.manualUnreadIds || []).includes(convId);
+        if (!isManualUnread && (currentRead !== msgCount || (activeConversation.unreadCount || 0) > 0)) {
+          markConversationReadOptimisticAndSync(convId, msgCount, lastMsg?.id);
+        }
+      }
     }
-  }, [open, activeSubtab, activeConversation?.id, activeConversation?.messages?.length, userPrefs.manualUnreadIds]);
+    // Also mark any expanded mini dock conversations as read when tab is visible
+    for (const dockConvId of dockedConvIds) {
+      if (collapsedDockIds[dockConvId] || dockConvId === AI_COPILOT_CONV_ID) continue;
+      const dockConv = conversations.find((c) => c.id === dockConvId);
+      if (!dockConv) continue;
+      const msgs = dockConv.messages || [];
+      const msgCount = msgs.length;
+      const lastMsg = msgCount > 0 ? msgs[msgCount - 1] : undefined;
+      const currentRead = userPrefs.readMessageCountByConv?.[dockConvId];
+      const isManualUnread = (userPrefs.manualUnreadIds || []).includes(dockConvId);
+      if (!isManualUnread && (currentRead !== msgCount || (dockConv.unreadCount || 0) > 0)) {
+        markConversationReadOptimisticAndSync(dockConvId, msgCount, lastMsg?.id);
+      }
+    }
+  }, [
+    isTabVisible,
+    open,
+    activeSubtab,
+    activeConversation?.id,
+    activeConversation?.messages?.length,
+    activeConversation?.unreadCount,
+    dockedConvIds,
+    collapsedDockIds,
+    conversations,
+    userPrefs.readMessageCountByConv,
+    userPrefs.manualUnreadIds,
+    markConversationReadOptimisticAndSync,
+  ]);
 
   // ================= GOOGLE CHAT WORKSPACE PERSONAL SIDEBAR ACTIONS =================
   const togglePinConversation = useCallback(
@@ -3276,11 +3392,113 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     }
   };
 
+  const markThreadReadOptimisticAndSync = useCallback(
+    (convId: string, msgId: string) => {
+      if (!convId || !msgId || convId === AI_COPILOT_CONV_ID) return;
+      const nowIso = new Date().toISOString();
+      const myStaffId = Number(currentUserStaffMember.id || currentUser?.id || 0);
+      const myName =
+        currentUserStaffMember.displayName || currentUser?.displayName || currentUser?.username || 'Danny Do';
+      const myRole = currentUserStaffMember.role || currentUser?.role || 'Staff';
+      const myAvatar = currentUserStaffMember.avatarUrl || undefined;
+
+      let resolvedReplyCount = 0;
+      let resolvedLastReplyId: string | undefined;
+
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== convId) return c;
+          let unreadThreadTotal = 0;
+          const nextMessages = c.messages.map((m) => {
+            if (m.id !== msgId) {
+              unreadThreadTotal += m.unreadThreadReplyCount || 0;
+              return m;
+            }
+            const visibleReplies = (m.thread || []).filter((r) => !r.deletedAt);
+            resolvedReplyCount = visibleReplies.length;
+            resolvedLastReplyId = visibleReplies.length > 0 ? visibleReplies[visibleReplies.length - 1]?.id : undefined;
+            const existingReceipts = m.threadReadReceipts || [];
+            const updatedReceipts =
+              myStaffId > 0
+                ? [
+                    ...existingReceipts.filter((r) => r.staffId !== myStaffId),
+                    {
+                      staffId: myStaffId,
+                      displayName: myName,
+                      role: myRole,
+                      avatarUrl: myAvatar,
+                      readReplyCount: resolvedReplyCount,
+                      lastReadReplyId: resolvedLastReplyId || null,
+                      readAt: nowIso,
+                    },
+                  ]
+                : existingReceipts;
+            return {
+              ...m,
+              unreadThreadReplyCount: 0,
+              threadReadReceipts: updatedReceipts,
+            };
+          });
+          return {
+            ...c,
+            unreadThreadCount: unreadThreadTotal,
+            messages: nextMessages,
+          };
+        })
+      );
+
+      updateUserSidebarPrefs((prev) => ({
+        ...prev,
+        readThreadReplyCountByMsg: {
+          ...(prev.readThreadReplyCountByMsg || {}),
+          [msgId]: resolvedReplyCount,
+        },
+        readThreadAtByMsg: {
+          ...(prev.readThreadAtByMsg || {}),
+          [msgId]: nowIso,
+        },
+        ...(resolvedLastReplyId
+          ? {
+              lastReadThreadReplyIdByMsg: {
+                ...(prev.lastReadThreadReplyIdByMsg || {}),
+                [msgId]: resolvedLastReplyId,
+              },
+            }
+          : {}),
+      }));
+
+      apiClient.chat
+        .markThreadAsRead(convId, msgId)
+        .then((res) => {
+          if (res?.conversation) {
+            setConversations((prev) => prev.map((c) => (c.id === convId ? res.conversation! : c)));
+          }
+          notifyLivePeers();
+        })
+        .catch(() => {});
+    },
+    [
+      currentUserStaffMember.id,
+      currentUserStaffMember.displayName,
+      currentUserStaffMember.role,
+      currentUserStaffMember.avatarUrl,
+      currentUser?.id,
+      currentUser?.displayName,
+      currentUser?.username,
+      currentUser?.role,
+      updateUserSidebarPrefs,
+      notifyLivePeers,
+    ]
+  );
+
   const handleOpenThread = (msgId: string) => {
     setActiveThreadMsgId(msgId);
     setThreadOpen(true);
     if (isMobile) {
       setMobileActiveView('thread');
+    }
+    if (activeConversation && isTabVisible) {
+      markThreadReadOptimisticAndSync(activeConversation.id, msgId);
     }
   };
 
@@ -3340,19 +3558,24 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         return {
           ...c,
           messages: c.messages.map((m) =>
-            m.id === activeThreadMsgId ? { ...m, thread: [...(m.thread || []), newReply] } : m
+            m.id === activeThreadMsgId
+              ? { ...m, unreadThreadReplyCount: 0, thread: [...(m.thread || []), newReply] }
+              : m
           ),
         };
       })
     );
 
     try {
-      await apiClient.chat.sendThreadReply({
+      const res = await apiClient.chat.sendThreadReply({
         conversationId: activeConversation.id,
         messageId: activeThreadMsgId,
         text,
         attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
       });
+      if (res?.conversation) {
+        setConversations((prev) => prev.map((c) => (c.id === activeConversation.id ? res.conversation! : c)));
+      }
       notifyLivePeers();
     } catch (_) {}
   };
@@ -3715,6 +3938,28 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       activeConversation.messages.find((m) => m.id === activeThreadMsgId) || activeConversation.messages[0] || null
     );
   }, [activeConversation, activeThreadMsgId]);
+
+  // Automatically mark open Sub-thread as read ONLY when the sub-thread drawer is open and browser tab is visible
+  useEffect(() => {
+    if (!isTabVisible || !open || !threadOpen || !activeConversation || !activeThreadMessage) return;
+    if (activeConversation.id === AI_COPILOT_CONV_ID) return;
+    const visibleReplies = (activeThreadMessage.thread || []).filter((r) => !r.deletedAt);
+    if (visibleReplies.length === 0) return;
+    const currentReadReplyCount = userPrefs.readThreadReplyCountByMsg?.[activeThreadMessage.id];
+    if (currentReadReplyCount !== visibleReplies.length || (activeThreadMessage.unreadThreadReplyCount || 0) > 0) {
+      markThreadReadOptimisticAndSync(activeConversation.id, activeThreadMessage.id);
+    }
+  }, [
+    isTabVisible,
+    open,
+    threadOpen,
+    activeConversation?.id,
+    activeThreadMessage?.id,
+    activeThreadMessage?.thread?.length,
+    activeThreadMessage?.unreadThreadReplyCount,
+    userPrefs.readThreadReplyCountByMsg,
+    markThreadReadOptimisticAndSync,
+  ]);
 
   const assigneeOptions = useMemo(() => {
     const out: { value: string; label: string }[] = [];
@@ -5150,6 +5395,398 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     );
   };
 
+  // =========================================================================
+  // Read Receipts (Seen Status ✓ / ✓✓ + Mini Seen Avatars + Breakdown Popover)
+  // =========================================================================
+  const formatReadAtLabel = (iso?: string | null) => {
+    if (!iso) return 'Đã xem';
+    const d = dayjs(iso);
+    if (!d.isValid()) return 'Đã xem';
+    if (d.isSame(dayjs(), 'day')) {
+      return `Lúc ${d.format('HH:mm')}`;
+    }
+    return `${d.format('HH:mm')} · ${d.format('DD/MM')}`;
+  };
+
+  const doesReceiptMatchAuthor = useCallback(
+    (receiptStaffId: number, receiptName: string, senderId?: string | number, senderName?: string) => {
+      if (senderId !== undefined && senderId !== null && String(senderId) === String(receiptStaffId)) return true;
+      if (receiptName && senderName && receiptName.trim().toLowerCase() === senderName.trim().toLowerCase()) {
+        return true;
+      }
+      return false;
+    },
+    []
+  );
+
+  const getMessageReadBreakdown = useCallback(
+    (conv: MosChatConversation | null | undefined, msg: MosChatMessage) => {
+      if (!conv || conv.id === AI_COPILOT_CONV_ID || conv.isSelf) {
+        return { seenBy: [] as MosChatReadReceiptEntry[], unseenBy: [] as MosChatReadReceiptEntry[] };
+      }
+      const visibleMessages = (conv.messages || []).filter((m) => !m.deletedAt);
+      const msgIdx = visibleMessages.findIndex((m) => m.id === msg.id);
+      if (msgIdx < 0) {
+        return { seenBy: [] as MosChatReadReceiptEntry[], unseenBy: [] as MosChatReadReceiptEntry[] };
+      }
+      const myStaffId = Number(currentUserStaffMember.id || currentUser?.id || 0);
+      const otherReceipts = (conv.readReceipts || []).filter(
+        (r) =>
+          r.staffId !== myStaffId && !doesReceiptMatchAuthor(r.staffId, r.displayName, msg.senderId, msg.senderName)
+      );
+      const seenBy = otherReceipts.filter((r) => r.readCount >= msgIdx + 1);
+      const unseenBy = otherReceipts.filter((r) => r.readCount < msgIdx + 1);
+      return { seenBy, unseenBy };
+    },
+    [currentUserStaffMember.id, currentUser?.id, doesReceiptMatchAuthor]
+  );
+
+  const getThreadReplyReadBreakdown = useCallback(
+    (conv: MosChatConversation | null | undefined, parentMsg: MosChatMessage, reply: MosChatThreadReply) => {
+      if (!conv || conv.id === AI_COPILOT_CONV_ID || conv.isSelf) {
+        return { seenBy: [] as MosChatThreadReadReceiptEntry[], unseenBy: [] as MosChatThreadReadReceiptEntry[] };
+      }
+      const visibleReplies = (parentMsg.thread || []).filter((r) => !r.deletedAt);
+      const replyIdx = visibleReplies.findIndex((r) => r.id === reply.id);
+      if (replyIdx < 0) {
+        return { seenBy: [] as MosChatThreadReadReceiptEntry[], unseenBy: [] as MosChatThreadReadReceiptEntry[] };
+      }
+      const myStaffId = Number(currentUserStaffMember.id || currentUser?.id || 0);
+      const otherReceipts = (parentMsg.threadReadReceipts || []).filter(
+        (r) =>
+          r.staffId !== myStaffId && !doesReceiptMatchAuthor(r.staffId, r.displayName, reply.senderId, reply.senderName)
+      );
+      const seenBy = otherReceipts.filter((r) => r.readReplyCount >= replyIdx + 1);
+      const unseenBy = otherReceipts.filter((r) => r.readReplyCount < replyIdx + 1);
+      return { seenBy, unseenBy };
+    },
+    [currentUserStaffMember.id, currentUser?.id, doesReceiptMatchAuthor]
+  );
+
+  // Map each message ID in the active conversation to the list of participants whose latest read message stops at that message
+  const stoppedReadersByMsgId = useMemo(() => {
+    const out: Record<string, MosChatReadReceiptEntry[]> = {};
+    if (!activeConversation || activeConversation.id === AI_COPILOT_CONV_ID || activeConversation.isSelf) {
+      return out;
+    }
+    const visibleMessages = (activeConversation.messages || []).filter((m) => !m.deletedAt);
+    if (visibleMessages.length === 0) return out;
+    const myStaffId = Number(currentUserStaffMember.id || currentUser?.id || 0);
+    for (const r of activeConversation.readReceipts || []) {
+      if (r.staffId === myStaffId || r.readCount <= 0) continue;
+      const maxIdx = Math.min(r.readCount, visibleMessages.length) - 1;
+      for (let i = maxIdx; i >= 0; i--) {
+        const candidate = visibleMessages[i];
+        if (!candidate) continue;
+        if (!doesReceiptMatchAuthor(r.staffId, r.displayName, candidate.senderId, candidate.senderName)) {
+          if (!out[candidate.id]) out[candidate.id] = [];
+          out[candidate.id].push(r);
+          break;
+        }
+      }
+    }
+    return out;
+  }, [activeConversation, currentUserStaffMember.id, currentUser?.id, doesReceiptMatchAuthor]);
+
+  // Map each reply ID in the active sub-thread to the list of participants whose latest read reply stops at that reply
+  const stoppedReadersByReplyId = useMemo(() => {
+    const out: Record<string, MosChatThreadReadReceiptEntry[]> = {};
+    if (
+      !activeConversation ||
+      activeConversation.id === AI_COPILOT_CONV_ID ||
+      activeConversation.isSelf ||
+      !activeThreadMessage
+    ) {
+      return out;
+    }
+    const visibleReplies = (activeThreadMessage.thread || []).filter((r) => !r.deletedAt);
+    if (visibleReplies.length === 0) return out;
+    const myStaffId = Number(currentUserStaffMember.id || currentUser?.id || 0);
+    for (const r of activeThreadMessage.threadReadReceipts || []) {
+      if (r.staffId === myStaffId || r.readReplyCount <= 0) continue;
+      const maxIdx = Math.min(r.readReplyCount, visibleReplies.length) - 1;
+      for (let i = maxIdx; i >= 0; i--) {
+        const candidate = visibleReplies[i];
+        if (!candidate) continue;
+        if (!doesReceiptMatchAuthor(r.staffId, r.displayName, candidate.senderId, candidate.senderName)) {
+          if (!out[candidate.id]) out[candidate.id] = [];
+          out[candidate.id].push(r);
+          break;
+        }
+      }
+    }
+    return out;
+  }, [activeConversation, activeThreadMessage, currentUserStaffMember.id, currentUser?.id, doesReceiptMatchAuthor]);
+
+  const renderSeenBreakdownPopoverContent = (
+    seenBy: Array<{
+      staffId: number;
+      displayName: string;
+      role: string;
+      avatarUrl?: string | null;
+      readAt?: string | null;
+    }>,
+    unseenBy: Array<{
+      staffId: number;
+      displayName: string;
+      role: string;
+      avatarUrl?: string | null;
+      readAt?: string | null;
+    }>,
+    scopeLabel = 'Trạng thái đọc tin nhắn'
+  ) => {
+    return (
+      <div className="w-64 max-h-72 overflow-y-auto p-1 select-none" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="text-[11px] font-bold uppercase tracking-wider pb-1.5 mb-1.5 border-b flex items-center justify-between"
+          style={{
+            color: isDark ? '#94a3b8' : '#64748b',
+            borderColor: isDark ? 'rgba(255,255,255,0.08)' : '#e2e8f0',
+          }}
+        >
+          <span>{scopeLabel}</span>
+          <span className="tabular-nums text-[10.5px] font-semibold" style={{ color: '#10b981' }}>
+            {seenBy.length}/{seenBy.length + unseenBy.length} đã xem
+          </span>
+        </div>
+
+        {/* Seen Section */}
+        <div className="mb-2">
+          <div className="flex items-center gap-1.5 text-[11px] font-bold mb-1" style={{ color: '#10b981' }}>
+            <CheckCheck size={12.5} />
+            <span className="tabular-nums">Đã xem ({seenBy.length})</span>
+          </div>
+          {seenBy.length === 0 ? (
+            <div className="text-[11px] italic pl-4 py-0.5" style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
+              Chưa có người nhận nào đọc
+            </div>
+          ) : (
+            <div className="space-y-1">
+              {seenBy.map((reader) => (
+                <div
+                  key={`seen-${reader.staffId}-${reader.displayName}`}
+                  className="flex items-center justify-between gap-2 px-1.5 py-1 rounded-md"
+                  style={{ background: isDark ? 'rgba(16, 185, 129, 0.08)' : 'rgba(16, 185, 129, 0.06)' }}
+                >
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    {renderUserAvatarNode({
+                      staffId: reader.staffId,
+                      name: reader.displayName,
+                      avatarUrl: reader.avatarUrl,
+                      sizeClass: 'w-5 h-5',
+                      roundedClass: 'rounded-full',
+                      textSizeClass: 'text-[9px]',
+                    })}
+                    <div className="min-w-0">
+                      <div
+                        className="text-[11.5px] font-semibold truncate leading-tight"
+                        style={{ color: isDark ? '#f1f5f9' : '#0f172a' }}
+                      >
+                        {reader.displayName}
+                      </div>
+                      <div
+                        className="text-[9.5px] truncate leading-tight"
+                        style={{ color: isDark ? '#94a3b8' : '#64748b' }}
+                      >
+                        {reader.role}
+                      </div>
+                    </div>
+                  </div>
+                  <span
+                    className="text-[10px] font-medium tabular-nums shrink-0"
+                    style={{ color: isDark ? '#34d399' : '#059669' }}
+                  >
+                    {formatReadAtLabel(reader.readAt)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Unseen Section */}
+        {unseenBy.length > 0 && (
+          <div>
+            <div
+              className="flex items-center gap-1.5 text-[11px] font-bold mb-1"
+              style={{ color: isDark ? '#94a3b8' : '#64748b' }}
+            >
+              <Check size={12} />
+              <span className="tabular-nums">Chưa xem ({unseenBy.length})</span>
+            </div>
+            <div className="space-y-1">
+              {unseenBy.map((member) => (
+                <div
+                  key={`unseen-${member.staffId}-${member.displayName}`}
+                  className="flex items-center justify-between gap-2 px-1.5 py-1 rounded-md opacity-80"
+                >
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    {renderUserAvatarNode({
+                      staffId: member.staffId,
+                      name: member.displayName,
+                      avatarUrl: member.avatarUrl,
+                      sizeClass: 'w-5 h-5',
+                      roundedClass: 'rounded-full',
+                      textSizeClass: 'text-[9px]',
+                    })}
+                    <div className="min-w-0">
+                      <div
+                        className="text-[11.5px] font-medium truncate leading-tight"
+                        style={{ color: isDark ? '#cbd5e1' : '#334155' }}
+                      >
+                        {member.displayName}
+                      </div>
+                      <div
+                        className="text-[9.5px] truncate leading-tight"
+                        style={{ color: isDark ? '#64748b' : '#94a3b8' }}
+                      >
+                        {member.role}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] tabular-nums shrink-0" style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
+                    Đã gửi
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderReadStatusCheckmark = (
+    seenBy: Array<{
+      staffId: number;
+      displayName: string;
+      role: string;
+      avatarUrl?: string | null;
+      readAt?: string | null;
+    }>,
+    unseenBy: Array<{
+      staffId: number;
+      displayName: string;
+      role: string;
+      avatarUrl?: string | null;
+      readAt?: string | null;
+    }>,
+    options?: { compact?: boolean; scopeLabel?: string; showLabel?: boolean }
+  ) => {
+    const isSeen = seenBy.length > 0;
+    const totalPeers = seenBy.length + unseenBy.length;
+    if (totalPeers === 0) return null;
+
+    const iconSize = options?.compact ? 11.5 : 13;
+    return (
+      <Popover
+        trigger={['hover', 'click']}
+        placement="top"
+        content={renderSeenBreakdownPopoverContent(seenBy, unseenBy, options?.scopeLabel)}
+      >
+        <span
+          onClick={(e) => e.stopPropagation()}
+          className="inline-flex items-center gap-0.5 cursor-pointer select-none leading-none transition-opacity hover:opacity-85 tabular-nums"
+          style={{
+            color: isSeen ? '#10b981' : isDark ? '#64748b' : '#94a3b8',
+          }}
+          title={isSeen ? `Đã xem bởi ${seenBy.map((s) => s.displayName).join(', ')}` : 'Đã gửi · Chưa có người xem'}
+        >
+          {isSeen ? <CheckCheck size={iconSize} strokeWidth={2.4} /> : <Check size={iconSize} strokeWidth={2.2} />}
+          {options?.showLabel && (
+            <span className="text-[10px] font-semibold">
+              {isSeen ? (totalPeers > 1 ? `Đã xem (${seenBy.length})` : 'Đã xem') : 'Đã gửi'}
+            </span>
+          )}
+        </span>
+      </Popover>
+    );
+  };
+
+  const renderMiniSeenAvatarStack = (
+    readers: Array<{
+      staffId: number;
+      displayName: string;
+      role: string;
+      avatarUrl?: string | null;
+      readAt?: string | null;
+    }>,
+    unseenBy: Array<{
+      staffId: number;
+      displayName: string;
+      role: string;
+      avatarUrl?: string | null;
+      readAt?: string | null;
+    }> = [],
+    options?: {
+      align?: 'left' | 'right';
+      compact?: boolean;
+      scopeLabel?: string;
+    }
+  ) => {
+    if (!readers || readers.length === 0) return null;
+    const maxVisible = 4;
+    const visibleReaders = readers.slice(0, maxVisible);
+    const overflowCount = Math.max(0, readers.length - maxVisible);
+    const sizeClass = options?.compact ? 'w-3.5 h-3.5' : 'w-4 h-4';
+    const textSizeClass = options?.compact ? 'text-[7.5px]' : 'text-[8px]';
+    const alignClass = options?.align === 'left' ? 'justify-start' : 'justify-end';
+
+    return (
+      <Popover
+        trigger={['hover', 'click']}
+        placement="topRight"
+        content={renderSeenBreakdownPopoverContent(readers, unseenBy, options?.scopeLabel)}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className={`flex items-center ${alignClass} gap-1 cursor-pointer select-none group/seen`}
+        >
+          {!options?.compact && (
+            <span
+              className="text-[10px] font-medium opacity-0 group-hover/seen:opacity-100 transition-opacity tabular-nums"
+              style={{ color: isDark ? '#34d399' : '#059669' }}
+            >
+              Đã xem{readers.length > 1 ? ` (${readers.length})` : ''}
+            </span>
+          )}
+          <div className="flex items-center -space-x-1">
+            {visibleReaders.map((r) => (
+              <div
+                key={`mini-seen-${r.staffId}-${r.displayName}`}
+                className="rounded-full transition-transform group-hover/seen:scale-105"
+                style={{
+                  boxShadow: `0 0 0 1.5px ${surfaceBg}`,
+                }}
+              >
+                {renderUserAvatarNode({
+                  staffId: r.staffId,
+                  name: r.displayName,
+                  avatarUrl: r.avatarUrl,
+                  sizeClass,
+                  roundedClass: 'rounded-full',
+                  textSizeClass,
+                })}
+              </div>
+            ))}
+            {overflowCount > 0 && (
+              <span
+                className={`inline-flex items-center justify-center rounded-full font-extrabold tabular-nums leading-none ${sizeClass} ${textSizeClass}`}
+                style={{
+                  background: isDark ? '#1e293b' : '#e2e8f0',
+                  color: isDark ? '#e2e8f0' : '#334155',
+                  boxShadow: `0 0 0 1.5px ${surfaceBg}`,
+                }}
+              >
+                +{overflowCount}
+              </span>
+            )}
+          </div>
+        </div>
+      </Popover>
+    );
+  };
+
   const renderStagedAttachmentsStrip = (
     items: MosChatImageAttachment[],
     scope: 'main' | 'thread' | 'dock',
@@ -6292,18 +6929,43 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               </div>
 
                               <div className="flex items-center justify-between gap-1">
-                                <span
-                                  className={`text-[11px] truncate ${
-                                    effUnread > 0 ? 'font-bold text-slate-200 dark:text-slate-200' : 'text-slate-400'
-                                  }`}
-                                >
-                                  {previewText}
-                                </span>
-                                {effUnread > 0 && (
-                                  <span className="inline-flex items-center justify-center px-1.5 h-4 rounded-full bg-rose-500 text-white text-[10px] font-extrabold tabular-nums shrink-0">
-                                    {effUnread}
+                                <div className="flex items-center gap-1 min-w-0 flex-1">
+                                  {lastMsg &&
+                                    !isAiConv &&
+                                    !isSelfConv &&
+                                    isMessageFromCurrentUser(lastMsg) &&
+                                    (() => {
+                                      const { seenBy, unseenBy } = getMessageReadBreakdown(conv, lastMsg);
+                                      return renderReadStatusCheckmark(seenBy, unseenBy, {
+                                        compact: true,
+                                        scopeLabel: 'Trạng thái tin nhắn cuối',
+                                      });
+                                    })()}
+                                  <span
+                                    className={`text-[11px] truncate ${
+                                      effUnread > 0 ? 'font-bold text-slate-200 dark:text-slate-200' : 'text-slate-400'
+                                    }`}
+                                  >
+                                    {previewText}
                                   </span>
-                                )}
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {(conv.unreadThreadCount || 0) > 0 && (
+                                    <Tooltip
+                                      title={`${conv.unreadThreadCount} câu trả lời mới trong luồng phụ (Sub-thread)`}
+                                    >
+                                      <span className="inline-flex items-center gap-0.5 justify-center px-1.5 h-4 rounded-full bg-indigo-500/20 text-indigo-400 text-[9.5px] font-extrabold tabular-nums shrink-0">
+                                        <MessageSquareReply size={9.5} />
+                                        {conv.unreadThreadCount}
+                                      </span>
+                                    </Tooltip>
+                                  )}
+                                  {effUnread > 0 && (
+                                    <span className="inline-flex items-center justify-center px-1.5 h-4 rounded-full bg-rose-500 text-white text-[10px] font-extrabold tabular-nums shrink-0">
+                                      {effUnread}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -6769,6 +7431,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       !m.isSystemReminder
                     );
                     const isAiMessage = Boolean(m.isAiBot || m.senderId === 'wings-ai-copilot');
+                    const msgReadBreakdown = getMessageReadBreakdown(activeConversation, m);
+                    const stoppedReadersForMsg = stoppedReadersByMsgId[m.id] || [];
 
                     return (
                       <div
@@ -6785,13 +7449,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       >
                         {isCont ? (
                           <div
-                            className={`w-8 shrink-0 ${
-                              isMine ? 'text-left pl-0.5' : 'text-right pr-0.5'
-                            } pt-1 select-none`}
+                            className={`w-8 shrink-0 flex flex-col ${
+                              isMine ? 'items-start pl-0.5' : 'items-end pr-0.5'
+                            } pt-1 select-none gap-0.5`}
                           >
                             <span className="opacity-0 group-hover:opacity-100 text-[9.5px] text-slate-400 tabular-nums transition-opacity">
                               {m.timeLabel}
                             </span>
+                            {isMine &&
+                              !m.isDeleted &&
+                              renderReadStatusCheckmark(msgReadBreakdown.seenBy, msgReadBreakdown.unseenBy, {
+                                compact: true,
+                                scopeLabel: 'Trạng thái đọc tin nhắn',
+                              })}
                           </div>
                         ) : (
                           <div className="mt-0.5 shrink-0">
@@ -6834,6 +7504,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                 {m.senderRole}
                               </span>
                               <span className="text-[10.5px] text-slate-400 tabular-nums">{m.timeLabel}</span>
+                              {isMine &&
+                                !m.isDeleted &&
+                                renderReadStatusCheckmark(msgReadBreakdown.seenBy, msgReadBreakdown.unseenBy, {
+                                  compact: false,
+                                  scopeLabel: 'Trạng thái đọc tin nhắn',
+                                })}
                               {m.pinned && (
                                 <Tooltip title="Đã ghim">
                                   <span className="inline-flex text-amber-400">
@@ -7202,24 +7878,83 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           {(m.mission || linkedTask?.mission) &&
                             renderLiveMissionCard((m.mission || linkedTask?.mission)!, m, 'inline')}
 
-                          {/* Thread Chip */}
-                          {m.thread && m.thread.length > 0 && (
-                            <Tooltip title="Xem luồng trả lời bên phải">
-                              <button
-                                type="button"
-                                onClick={() => handleOpenThread(m.id)}
-                                className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold cursor-pointer tabular-nums"
-                                style={{
-                                  background: 'rgba(59, 130, 246, 0.14)',
-                                  border: '1px solid rgba(59, 130, 246, 0.3)',
-                                  color: '#60a5fa',
-                                }}
-                              >
-                                <MessageSquareReply size={13} />
-                                <span>{m.thread.length} trả lời</span>
-                              </button>
-                            </Tooltip>
-                          )}
+                          {/* Thread Chip with Unread Reply Badge & Seen Indicators */}
+                          {m.thread &&
+                            m.thread.length > 0 &&
+                            (() => {
+                              const visibleThreadReplies = m.thread.filter((r) => !r.deletedAt);
+                              const lastThreadReply =
+                                visibleThreadReplies.length > 0
+                                  ? visibleThreadReplies[visibleThreadReplies.length - 1]
+                                  : undefined;
+                              const unreadReplyCount = m.unreadThreadReplyCount || 0;
+                              const lastReplyBreakdown = lastThreadReply
+                                ? getThreadReplyReadBreakdown(activeConversation, m, lastThreadReply)
+                                : { seenBy: [], unseenBy: [] };
+                              const isLastReplyMine = lastThreadReply
+                                ? isMessageFromCurrentUser(lastThreadReply)
+                                : false;
+
+                              return (
+                                <div
+                                  className={`mt-1.5 flex items-center gap-1.5 flex-wrap ${
+                                    isMine ? 'flex-row-reverse' : 'flex-row'
+                                  }`}
+                                >
+                                  <Tooltip title="Xem luồng trả lời phụ bên phải (Sub-thread)">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenThread(m.id)}
+                                      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-bold cursor-pointer tabular-nums transition-all hover:brightness-110"
+                                      style={{
+                                        background:
+                                          unreadReplyCount > 0
+                                            ? 'rgba(99, 102, 241, 0.22)'
+                                            : 'rgba(59, 130, 246, 0.14)',
+                                        border:
+                                          unreadReplyCount > 0
+                                            ? '1px solid rgba(99, 102, 241, 0.55)'
+                                            : '1px solid rgba(59, 130, 246, 0.3)',
+                                        color: unreadReplyCount > 0 ? '#818cf8' : '#60a5fa',
+                                      }}
+                                    >
+                                      <MessageSquareReply size={13} />
+                                      <span>{visibleThreadReplies.length} trả lời</span>
+                                      {unreadReplyCount > 0 && (
+                                        <span className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[9.5px] font-extrabold tabular-nums">
+                                          +{unreadReplyCount} mới
+                                        </span>
+                                      )}
+                                    </button>
+                                  </Tooltip>
+
+                                  {/* Sub-thread outer Seen Status (✓/✓✓ + compact mini avatars for latest reply) */}
+                                  {lastThreadReply && (
+                                    <div className="inline-flex items-center gap-1">
+                                      {isLastReplyMine &&
+                                        renderReadStatusCheckmark(
+                                          lastReplyBreakdown.seenBy,
+                                          lastReplyBreakdown.unseenBy,
+                                          {
+                                            compact: true,
+                                            scopeLabel: 'Trạng thái đọc luồng trả lời phụ',
+                                          }
+                                        )}
+                                      {lastReplyBreakdown.seenBy.length > 0 &&
+                                        renderMiniSeenAvatarStack(
+                                          lastReplyBreakdown.seenBy,
+                                          lastReplyBreakdown.unseenBy,
+                                          {
+                                            compact: true,
+                                            align: isMine ? 'right' : 'left',
+                                            scopeLabel: 'Đã xem phản hồi mới nhất trong luồng phụ',
+                                          }
+                                        )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
 
                           {/* Unified Message Footer: Reaction Pills + Adjacent Quick Emoji & Action Set */}
                           <div
@@ -7433,6 +8168,16 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               )}
                             </div>
                           </div>
+
+                          {/* Mini Seen Avatars Stack (Participants whose latest read message stops here) */}
+                          {stoppedReadersForMsg.length > 0 && (
+                            <div className={`mt-0.5 w-full flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+                              {renderMiniSeenAvatarStack(stoppedReadersForMsg, msgReadBreakdown.unseenBy, {
+                                align: isMine ? 'right' : 'left',
+                                scopeLabel: 'Đã xem đến tin nhắn này',
+                              })}
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -8304,171 +9049,189 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
               {(activeThreadMessage.thread || []).map((r) => {
                 const isReplyMine = isMessageFromCurrentUser(r);
+                const replyBreakdown = getThreadReplyReadBreakdown(activeConversation, activeThreadMessage, r);
+                const stoppedReadersForReply = stoppedReadersByReplyId[r.id] || [];
                 return (
-                  <div key={r.id} className={`flex gap-2 items-start ${isReplyMine ? 'flex-row-reverse' : 'flex-row'}`}>
-                    {renderUserAvatarNode({
-                      name: r.senderName,
-                      avatarUrl: r.senderAvatar,
-                      sizeClass: 'w-6 h-6 mt-0.5',
-                      textClass: 'text-[9.5px]',
-                      bgStyle: isReplyMine ? 'linear-gradient(135deg, #d4a84b 0%, #b45309 100%)' : '#2563eb',
-                      textColor: isReplyMine ? '#000' : '#fff',
-                    })}
-                    <div
-                      className={`max-w-[85%] p-2 rounded-xl text-[12px] group relative ${
-                        isReplyMine ? 'rounded-tr-sm text-right' : 'rounded-tl-sm text-left'
-                      }`}
-                      style={{
-                        background: isReplyMine
-                          ? isDark
-                            ? 'rgba(212, 168, 75, 0.16)'
-                            : 'rgba(245, 158, 11, 0.14)'
-                          : canvasBg,
-                        border: `1px solid ${
-                          isReplyMine ? (isDark ? 'rgba(212, 168, 75, 0.35)' : 'rgba(217, 119, 6, 0.3)') : borderColor
-                        }`,
-                      }}
-                    >
+                  <div key={r.id} className="space-y-1">
+                    <div className={`flex gap-2 items-start ${isReplyMine ? 'flex-row-reverse' : 'flex-row'}`}>
+                      {renderUserAvatarNode({
+                        name: r.senderName,
+                        avatarUrl: r.senderAvatar,
+                        sizeClass: 'w-6 h-6 mt-0.5',
+                        textClass: 'text-[9.5px]',
+                        bgStyle: isReplyMine ? 'linear-gradient(135deg, #d4a84b 0%, #b45309 100%)' : '#2563eb',
+                        textColor: isReplyMine ? '#000' : '#fff',
+                      })}
                       <div
-                        className={`font-bold text-[10.5px] mb-0.5 flex items-center gap-1 ${
-                          isReplyMine ? 'justify-end' : 'justify-start'
+                        className={`max-w-[85%] p-2 rounded-xl text-[12px] group relative ${
+                          isReplyMine ? 'rounded-tr-sm text-right' : 'rounded-tl-sm text-left'
                         }`}
+                        style={{
+                          background: isReplyMine
+                            ? isDark
+                              ? 'rgba(212, 168, 75, 0.16)'
+                              : 'rgba(245, 158, 11, 0.14)'
+                            : canvasBg,
+                          border: `1px solid ${
+                            isReplyMine ? (isDark ? 'rgba(212, 168, 75, 0.35)' : 'rgba(217, 119, 6, 0.3)') : borderColor
+                          }`,
+                        }}
                       >
-                        <span style={{ color: isReplyMine ? '#d4a84b' : token.colorText }}>{r.senderName}</span>
-                        <span className="text-slate-400 tabular-nums">· {r.timeLabel}</span>
-                        {r.editHistory && r.editHistory.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setHistoryModalMessage(r as SafeAny);
-                              setHistoryModalOpen(true);
-                            }}
-                            className="text-[9.5px] text-amber-500/80 hover:text-amber-400 hover:underline cursor-pointer select-none"
-                            title="Xem lịch sử chỉnh sửa"
-                          >
-                            (đã sửa)
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Reply Content: Inline Edit vs Deleted vs Normal Text */}
-                      {editingMessageId === activeThreadMessage.id && editingReplyId === r.id ? (
-                        <div className="space-y-1.5 pt-1 text-left">
-                          <textarea
-                            autoFocus
-                            value={editingText}
-                            onChange={(e) => setEditingText(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Escape') {
-                                e.preventDefault();
-                                handleCancelEdit();
-                              } else if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                handleSaveEdit();
-                              }
-                            }}
-                            rows={2}
-                            className="w-full bg-transparent border border-amber-500/50 rounded-lg p-1 text-[12px] outline-none"
-                            style={{ color: token.colorText }}
-                          />
-                          <div className="flex items-center justify-between text-[10px]">
-                            <span className="text-slate-400">Shift+Enter: dòng mới</span>
-                            <div className="flex items-center gap-1">
-                              <button
-                                type="button"
-                                onClick={handleCancelEdit}
-                                className="px-1.5 py-0.5 rounded cursor-pointer hover:bg-white/10"
-                                style={{ color: token.colorTextSecondary }}
-                              >
-                                Huỷ
-                              </button>
-                              <button
-                                type="button"
-                                disabled={isSavingEdit || !editingText.trim()}
-                                onClick={handleSaveEdit}
-                                className="px-2 py-0.5 rounded font-bold cursor-pointer"
-                                style={{ background: '#d4a84b', color: '#000' }}
-                              >
-                                {isSavingEdit ? 'Lưu...' : 'Lưu'}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ) : r.isDeleted ? (
-                        <div className="italic opacity-70 text-[11.5px] flex items-center gap-1 text-left">
-                          <span>💬 Tin nhắn trong luồng đã bị xoá</span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setHistoryModalMessage(r as SafeAny);
-                              setHistoryModalOpen(true);
-                            }}
-                            className="text-[10px] text-amber-500 hover:underline not-italic font-bold cursor-pointer"
-                          >
-                            Xem
-                          </button>
-                        </div>
-                      ) : (
-                        r.text && (
-                          <div className="text-left break-words leading-relaxed">
-                            {renderRichTextMessage(r.text, isReplyMine)}
-                          </div>
-                        )
-                      )}
-
-                      {renderMessageAttachments(r.attachments, true)}
-
-                      {/* Reply Hover Action Toolbar */}
-                      <div
-                        className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-3.5 right-1 flex items-center gap-0.5 px-1 py-0.5 rounded-full shadow-sm"
-                        style={{ background: surfaceRaised, border: `1px solid ${borderStrong}` }}
-                      >
-                        {(isReplyMine || isDannyAccount) && !r.isDeleted && (
-                          <Tooltip title="Chỉnh sửa">
-                            <button
-                              type="button"
-                              onClick={() => handleStartEdit(activeThreadMessage, r.id)}
-                              className="w-5 h-5 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
-                              style={{ color: token.colorTextSecondary }}
-                            >
-                              <Pencil size={11} />
-                            </button>
-                          </Tooltip>
-                        )}
-                        {(isReplyMine || isDannyAccount) && !r.isDeleted && (
-                          <Popconfirm
-                            title="Xoá câu trả lời này?"
-                            onConfirm={() => handleDeleteMessage(activeThreadMessage.id, r.id)}
-                            okText="Xoá"
-                            cancelText="Huỷ"
-                            okButtonProps={{ danger: true }}
-                          >
-                            <Tooltip title="Xoá">
-                              <button
-                                type="button"
-                                className="w-5 h-5 rounded-full inline-flex items-center justify-center hover:bg-rose-500/15 cursor-pointer text-rose-400"
-                              >
-                                <Trash2 size={11} />
-                              </button>
-                            </Tooltip>
-                          </Popconfirm>
-                        )}
-                        {(r.isDeleted || (r.editHistory && r.editHistory.length > 0)) && (
-                          <Tooltip title="Lịch sử">
+                        <div
+                          className={`font-bold text-[10.5px] mb-0.5 flex items-center gap-1 ${
+                            isReplyMine ? 'justify-end' : 'justify-start'
+                          }`}
+                        >
+                          <span style={{ color: isReplyMine ? '#d4a84b' : token.colorText }}>{r.senderName}</span>
+                          <span className="text-slate-400 tabular-nums">· {r.timeLabel}</span>
+                          {isReplyMine &&
+                            !r.isDeleted &&
+                            renderReadStatusCheckmark(replyBreakdown.seenBy, replyBreakdown.unseenBy, {
+                              compact: true,
+                              scopeLabel: 'Trạng thái đọc phản hồi trong luồng',
+                            })}
+                          {r.editHistory && r.editHistory.length > 0 && (
                             <button
                               type="button"
                               onClick={() => {
                                 setHistoryModalMessage(r as SafeAny);
                                 setHistoryModalOpen(true);
                               }}
-                              className="w-5 h-5 rounded-full inline-flex items-center justify-center text-amber-400 cursor-pointer hover:bg-amber-500/10"
+                              className="text-[9.5px] text-amber-500/80 hover:text-amber-400 hover:underline cursor-pointer select-none"
+                              title="Xem lịch sử chỉnh sửa"
                             >
-                              <History size={11} />
+                              (đã sửa)
                             </button>
-                          </Tooltip>
+                          )}
+                        </div>
+
+                        {/* Reply Content: Inline Edit vs Deleted vs Normal Text */}
+                        {editingMessageId === activeThreadMessage.id && editingReplyId === r.id ? (
+                          <div className="space-y-1.5 pt-1 text-left">
+                            <textarea
+                              autoFocus
+                              value={editingText}
+                              onChange={(e) => setEditingText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Escape') {
+                                  e.preventDefault();
+                                  handleCancelEdit();
+                                } else if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault();
+                                  handleSaveEdit();
+                                }
+                              }}
+                              rows={2}
+                              className="w-full bg-transparent border border-amber-500/50 rounded-lg p-1 text-[12px] outline-none"
+                              style={{ color: token.colorText }}
+                            />
+                            <div className="flex items-center justify-between text-[10px]">
+                              <span className="text-slate-400">Shift+Enter: dòng mới</span>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={handleCancelEdit}
+                                  className="px-1.5 py-0.5 rounded cursor-pointer hover:bg-white/10"
+                                  style={{ color: token.colorTextSecondary }}
+                                >
+                                  Huỷ
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={isSavingEdit || !editingText.trim()}
+                                  onClick={handleSaveEdit}
+                                  className="px-2 py-0.5 rounded font-bold cursor-pointer"
+                                  style={{ background: '#d4a84b', color: '#000' }}
+                                >
+                                  {isSavingEdit ? 'Lưu...' : 'Lưu'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : r.isDeleted ? (
+                          <div className="italic opacity-70 text-[11.5px] flex items-center gap-1 text-left">
+                            <span>💬 Tin nhắn trong luồng đã bị xoá</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setHistoryModalMessage(r as SafeAny);
+                                setHistoryModalOpen(true);
+                              }}
+                              className="text-[10px] text-amber-500 hover:underline not-italic font-bold cursor-pointer"
+                            >
+                              Xem
+                            </button>
+                          </div>
+                        ) : (
+                          r.text && (
+                            <div className="text-left break-words leading-relaxed">
+                              {renderRichTextMessage(r.text, isReplyMine)}
+                            </div>
+                          )
                         )}
+
+                        {renderMessageAttachments(r.attachments, true)}
+
+                        {/* Reply Hover Action Toolbar */}
+                        <div
+                          className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-3.5 right-1 flex items-center gap-0.5 px-1 py-0.5 rounded-full shadow-sm"
+                          style={{ background: surfaceRaised, border: `1px solid ${borderStrong}` }}
+                        >
+                          {(isReplyMine || isDannyAccount) && !r.isDeleted && (
+                            <Tooltip title="Chỉnh sửa">
+                              <button
+                                type="button"
+                                onClick={() => handleStartEdit(activeThreadMessage, r.id)}
+                                className="w-5 h-5 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
+                                style={{ color: token.colorTextSecondary }}
+                              >
+                                <Pencil size={11} />
+                              </button>
+                            </Tooltip>
+                          )}
+                          {(isReplyMine || isDannyAccount) && !r.isDeleted && (
+                            <Popconfirm
+                              title="Xoá câu trả lời này?"
+                              onConfirm={() => handleDeleteMessage(activeThreadMessage.id, r.id)}
+                              okText="Xoá"
+                              cancelText="Huỷ"
+                              okButtonProps={{ danger: true }}
+                            >
+                              <Tooltip title="Xoá">
+                                <button
+                                  type="button"
+                                  className="w-5 h-5 rounded-full inline-flex items-center justify-center hover:bg-rose-500/15 cursor-pointer text-rose-400"
+                                >
+                                  <Trash2 size={11} />
+                                </button>
+                              </Tooltip>
+                            </Popconfirm>
+                          )}
+                          {(r.isDeleted || (r.editHistory && r.editHistory.length > 0)) && (
+                            <Tooltip title="Lịch sử">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setHistoryModalMessage(r as SafeAny);
+                                  setHistoryModalOpen(true);
+                                }}
+                                className="w-5 h-5 rounded-full inline-flex items-center justify-center text-amber-400 cursor-pointer hover:bg-amber-500/10"
+                              >
+                                <History size={11} />
+                              </button>
+                            </Tooltip>
+                          )}
+                        </div>
                       </div>
                     </div>
+                    {stoppedReadersForReply.length > 0 && (
+                      <div className={`w-full flex ${isReplyMine ? 'justify-end pr-8' : 'justify-start pl-8'}`}>
+                        {renderMiniSeenAvatarStack(stoppedReadersForReply, replyBreakdown.unseenBy, {
+                          align: isReplyMine ? 'right' : 'left',
+                          scopeLabel: 'Đã xem đến phản hồi này trong luồng',
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -8702,6 +9465,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     <div className="flex-1 overflow-y-auto p-2.5 space-y-2">
                       {recentMsgs.map((m) => {
                         const isDockMine = isMessageFromCurrentUser(m);
+                        const dockBreakdown = isDockMine
+                          ? getMessageReadBreakdown(conv, m)
+                          : { seenBy: [], unseenBy: [] };
                         return (
                           <div
                             key={m.id}
@@ -8739,8 +9505,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                   isDockMine ? 'flex-row-reverse' : 'flex-row'
                                 }`}
                               >
-                                <span className="text-[10.5px] font-bold" style={{ color: '#d4a84b' }}>
-                                  {m.senderName} · <span className="tabular-nums">{m.timeLabel}</span>
+                                <span
+                                  className="text-[10.5px] font-bold inline-flex items-center gap-1"
+                                  style={{ color: '#d4a84b' }}
+                                >
+                                  <span>{m.senderName}</span>
+                                  <span>·</span>
+                                  <span className="tabular-nums">{m.timeLabel}</span>
+                                  {isDockMine &&
+                                    !m.isDeleted &&
+                                    renderReadStatusCheckmark(dockBreakdown.seenBy, dockBreakdown.unseenBy, {
+                                      compact: true,
+                                      scopeLabel: 'Trạng thái đọc tin nhắn',
+                                    })}
                                 </span>
                                 <Tooltip title="Tạo Task & Nhắc hẹn">
                                   <button

@@ -10,6 +10,7 @@ import type {
   DeleteMosChatMessageRequest,
   EditMosChatMessageRequest,
   MarkConversationAsUnreadResponse,
+  MarkThreadAsReadResponse,
   MosChatAccessConfig,
   MosChatBootstrapResponse,
   MosChatConversation,
@@ -60,8 +61,20 @@ export const chatApi = {
     },
     markAsRead: async (
       conversationId: string
-    ): Promise<{ success: boolean; unreadCount: number; userPrefs: MosChatUserSidebarPrefs }> => {
+    ): Promise<{
+      success: boolean;
+      unreadCount: number;
+      userPrefs: MosChatUserSidebarPrefs;
+      conversation?: MosChatConversation;
+    }> => {
       const res = await api.post(`/chat/conversations/${encodeURIComponent(conversationId)}/read`);
+      invalidateApiGetCache(['/chat/bootstrap']);
+      return res.data;
+    },
+    markThreadAsRead: async (conversationId: string, messageId: string): Promise<MarkThreadAsReadResponse> => {
+      const res = await api.post(
+        `/chat/conversations/${encodeURIComponent(conversationId)}/threads/${encodeURIComponent(messageId)}/read`
+      );
       invalidateApiGetCache(['/chat/bootstrap']);
       return res.data;
     },
@@ -88,7 +101,12 @@ export const chatApi = {
     },
     sendThreadReply: async (
       payload: CreateMosChatThreadReplyRequest
-    ): Promise<{ success: boolean; reply: MosChatThreadReply; message: MosChatMessage }> => {
+    ): Promise<{
+      success: boolean;
+      reply: MosChatThreadReply;
+      message: MosChatMessage;
+      conversation?: MosChatConversation;
+    }> => {
       const res = await api.post('/chat/threads', payload);
       invalidateApiGetCache(['/chat/bootstrap']);
       return res.data;

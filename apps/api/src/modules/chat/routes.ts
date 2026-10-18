@@ -17,8 +17,11 @@ import {
   MosChatCustomSection,
   MosChatImageAttachment,
   MosChatImageMimeType,
+  MosChatMessage,
+  MosChatReadReceiptEntry,
   MosChatStaffMember,
   MosChatTaskItem,
+  MosChatThreadReadReceiptEntry,
   MosChatUserSidebarPrefs,
   SafeAny,
   UpdateMosChatAccessConfigRequest,
@@ -572,23 +575,297 @@ export function computeUnreadCountForUser(
   return conv.unreadCount || 0;
 }
 
+export function resolveConversationParticipantStaffIds(
+  conv: MosChatConversation,
+  staffDirectory: MosChatStaffMember[],
+  allUserPrefsByUserKey?: Record<string, MosChatUserSidebarPrefs>
+): number[] {
+  if (conv.type === 'dm') {
+    return resolveDmParticipantIds(conv, staffDirectory);
+  }
+  const set = new Set<number>();
+  if (Array.isArray(conv.memberIds)) {
+    for (const id of conv.memberIds) {
+      const n = Number(id);
+      if (Number.isFinite(n) && n > 0) set.add(n);
+    }
+  }
+  if (Array.isArray(conv.members)) {
+    for (const m of conv.members) {
+      const n = Number(m?.id);
+      if (Number.isFinite(n) && n > 0) set.add(n);
+    }
+  }
+  const byName = new Map<string, number>();
+  for (const s of staffDirectory) {
+    if (s.id > 0 && s.displayName) {
+      byName.set(s.displayName.trim().toLowerCase(), s.id);
+    }
+  }
+  for (const msg of conv.messages || []) {
+    const sNum = Number(msg.senderId);
+    if (Number.isFinite(sNum) && sNum > 0) {
+      set.add(sNum);
+    } else if (msg.senderName) {
+      const matched = byName.get(msg.senderName.trim().toLowerCase());
+      if (matched) set.add(matched);
+    }
+    for (const r of msg.thread || []) {
+      const rNum = Number(r.senderId);
+      if (Number.isFinite(rNum) && rNum > 0) {
+        set.add(rNum);
+      } else if (r.senderName) {
+        const matched = byName.get(r.senderName.trim().toLowerCase());
+        if (matched) set.add(matched);
+      }
+    }
+  }
+  if (allUserPrefsByUserKey) {
+    for (const [prefKey, p] of Object.entries(allUserPrefsByUserKey)) {
+      const sid = prefKey.startsWith('staff_') ? Number(prefKey.slice(6)) : Number(prefKey);
+      if (!Number.isFinite(sid) || sid <= 0) continue;
+      if (typeof p?.readMessageCountByConv?.[conv.id] === 'number') {
+        set.add(sid);
+      }
+    }
+  }
+  return Array.from(set);
+}
+
+export function computeConversationReadReceipts(
+  conv: MosChatConversation,
+  staffDirectory: MosChatStaffMember[],
+  allUserPrefsByUserKey?: Record<string, MosChatUserSidebarPrefs>
+): MosChatReadReceiptEntry[] {
+  const msgs = conv.messages || [];
+  const participantIds = resolveConversationParticipantStaffIds(conv, staffDirectory, allUserPrefsByUserKey);
+  const out: MosChatReadReceiptEntry[] = [];
+
+  for (const staffId of participantIds) {
+    if (!Number.isFinite(staffId) || staffId <= 0) continue;
+    const staff = staffDirectory.find((s) => s.id === staffId);
+    const prefs = allUserPrefsByUserKey?.[`staff_${staffId}`] || allUserPrefsByUserKey?.[String(staffId)];
+    const explicitReadCount = prefs?.readMessageCountByConv?.[conv.id];
+    const isManualUnread = Boolean(prefs?.manualUnreadIds?.includes(conv.id));
+
+    let lastSeenByActivityIdx = -1;
+    let lastActivityIso = '';
+    for (let i = 0; i < msgs.length; i++) {
+      const m = msgs[i];
+      const sNum = Number(m.senderId);
+      const isAuthor =
+        sNum === staffId ||
+        Boolean(staff?.displayName && m.senderName?.trim().toLowerCase() === staff.displayName.trim().toLowerCase());
+      if (isAuthor) {
+        lastSeenByActivityIdx = i;
+        if (m.createdAt) lastActivityIso = m.createdAt;
+      }
+      for (const r of m.thread || []) {
+        const rNum = Number(r.senderId);
+        const isReplyAuthor =
+          rNum === staffId ||
+          Boolean(staff?.displayName && r.senderName?.trim().toLowerCase() === staff.displayName.trim().toLowerCase());
+        if (isReplyAuthor) {
+          lastSeenByActivityIdx = Math.max(lastSeenByActivityIdx, i);
+          if (r.createdAt && (!lastActivityIso || r.createdAt > lastActivityIso)) {
+            lastActivityIso = r.createdAt;
+          }
+        }
+      }
+    }
+
+    let effectiveReadCount = 0;
+    if (isManualUnread) {
+      effectiveReadCount =
+        typeof explicitReadCount === 'number'
+          ? Math.min(msgs.length, Math.max(0, explicitReadCount))
+          : Math.max(0, msgs.length - 1);
+    } else {
+      const inferredFromActivity = lastSeenByActivityIdx >= 0 ? lastSeenByActivityIdx + 1 : 0;
+      const rawExplicit = typeof explicitReadCount === 'number' ? explicitReadCount : 0;
+      effectiveReadCount = Math.min(msgs.length, Math.max(rawExplicit, inferredFromActivity));
+    }
+
+    const lastReadMsg = effectiveReadCount > 0 ? msgs[effectiveReadCount - 1] : null;
+    const readAt =
+      prefs?.readAtByConv?.[conv.id] || lastActivityIso || lastReadMsg?.createdAt || prefs?.updatedAt || conv.updatedAt;
+
+    out.push({
+      staffId,
+      displayName: staff?.displayName || staff?.username || `Nhân sự #${staffId}`,
+      role: staff ? getRoleDisplayLabel(staff.role).label : 'Member',
+      avatarUrl: staff?.avatarUrl || (staff ? getInitials(staff.displayName, staff.username) : null),
+      readCount: effectiveReadCount,
+      lastReadMessageId: lastReadMsg?.id || null,
+      readAt,
+    });
+  }
+
+  return out;
+}
+
+export function computeThreadReadReceiptsForMessage(
+  conv: MosChatConversation,
+  msg: MosChatMessage,
+  staffDirectory: MosChatStaffMember[],
+  allUserPrefsByUserKey?: Record<string, MosChatUserSidebarPrefs>,
+  baseParticipantIds?: number[]
+): MosChatThreadReadReceiptEntry[] {
+  const replies = msg.thread || [];
+  if (replies.length === 0) return [];
+
+  const threadKey = `${conv.id}::${msg.id}`;
+  const participantIds =
+    baseParticipantIds || resolveConversationParticipantStaffIds(conv, staffDirectory, allUserPrefsByUserKey);
+  const out: MosChatThreadReadReceiptEntry[] = [];
+
+  for (const staffId of participantIds) {
+    if (!Number.isFinite(staffId) || staffId <= 0) continue;
+    const staff = staffDirectory.find((s) => s.id === staffId);
+    const prefs = allUserPrefsByUserKey?.[`staff_${staffId}`] || allUserPrefsByUserKey?.[String(staffId)];
+    const explicitReplyRead =
+      prefs?.readThreadReplyCountByMsg?.[threadKey] ?? prefs?.readThreadReplyCountByMsg?.[msg.id];
+
+    let lastAuthoredReplyIdx = -1;
+    let lastReplyIso = '';
+    for (let i = 0; i < replies.length; i++) {
+      const r = replies[i];
+      const rNum = Number(r.senderId);
+      const isReplyAuthor =
+        rNum === staffId ||
+        Boolean(staff?.displayName && r.senderName?.trim().toLowerCase() === staff.displayName.trim().toLowerCase());
+      if (isReplyAuthor) {
+        lastAuthoredReplyIdx = i;
+        if (r.createdAt) lastReplyIso = r.createdAt;
+      }
+    }
+
+    const inferredFromReply = lastAuthoredReplyIdx >= 0 ? lastAuthoredReplyIdx + 1 : 0;
+    const rawExplicit = typeof explicitReplyRead === 'number' ? explicitReplyRead : 0;
+    const effectiveReplyReadCount = Math.min(replies.length, Math.max(rawExplicit, inferredFromReply));
+    const lastReadReply = effectiveReplyReadCount > 0 ? replies[effectiveReplyReadCount - 1] : null;
+    const readAt =
+      prefs?.readThreadAtByMsg?.[threadKey] ||
+      prefs?.readThreadAtByMsg?.[msg.id] ||
+      lastReplyIso ||
+      lastReadReply?.createdAt ||
+      prefs?.updatedAt ||
+      msg.createdAt;
+
+    out.push({
+      staffId,
+      displayName: staff?.displayName || staff?.username || `Nhân sự #${staffId}`,
+      role: staff ? getRoleDisplayLabel(staff.role).label : 'Member',
+      avatarUrl: staff?.avatarUrl || (staff ? getInitials(staff.displayName, staff.username) : null),
+      readReplyCount: effectiveReplyReadCount,
+      lastReadReplyId: lastReadReply?.id || null,
+      readAt,
+    });
+  }
+
+  return out;
+}
+
+export function computeUnreadThreadReplyCountForUser(
+  conv: MosChatConversation,
+  msg: MosChatMessage,
+  myStaffId: number,
+  staffDirectory: MosChatStaffMember[],
+  userPrefs?: MosChatUserSidebarPrefs
+): number {
+  const replies = msg.thread || [];
+  if (replies.length === 0 || myStaffId <= 0) return 0;
+
+  const myStaff = staffDirectory.find((s) => s.id === myStaffId);
+  const isReplyByMe = (r: { senderId: number | string; senderName?: string }) =>
+    Number(r.senderId) === myStaffId ||
+    Boolean(myStaff?.displayName && r.senderName?.trim().toLowerCase() === myStaff.displayName.trim().toLowerCase());
+
+  const threadKey = `${conv.id}::${msg.id}`;
+  const explicitRead =
+    userPrefs?.readThreadReplyCountByMsg?.[threadKey] ?? userPrefs?.readThreadReplyCountByMsg?.[msg.id];
+
+  let lastMyReplyIdx = -1;
+  for (let i = 0; i < replies.length; i++) {
+    if (isReplyByMe(replies[i])) {
+      lastMyReplyIdx = i;
+    }
+  }
+  const inferredRead = lastMyReplyIdx >= 0 ? lastMyReplyIdx + 1 : 0;
+
+  if (typeof explicitRead === 'number') {
+    const startIdx = Math.max(explicitRead, inferredRead);
+    return replies.slice(startIdx).filter((r) => !r.isDeleted && !isReplyByMe(r)).length;
+  }
+
+  if (lastMyReplyIdx >= 0) {
+    return replies.slice(lastMyReplyIdx + 1).filter((r) => !r.isDeleted && !isReplyByMe(r)).length;
+  }
+
+  // If never opened and user never replied in thread:
+  const isParentMine =
+    Number(msg.senderId) === myStaffId ||
+    Boolean(myStaff?.displayName && msg.senderName?.trim().toLowerCase() === myStaff.displayName.trim().toLowerCase());
+  if (isParentMine || conv.type === 'dm') {
+    return replies.filter((r) => !r.isDeleted && !isReplyByMe(r) && !r.isMissionMilestone).length;
+  }
+
+  return 0;
+}
+
 /**
- * Personalizes a 1-1 Direct Message for the requesting user so that:
+ * Personalizes a 1-1 Direct Message or Space for the requesting user so that:
  * - Person A sees Person B's name, role, avatar, and `participantStaffId: B`.
  * - Person B sees Person A's name, role, avatar, and `participantStaffId: A`.
  * - `unreadCount` reflects the requesting user's actual unread status.
+ * - `readReceipts` and per-message `threadReadReceipts` / `unreadThreadReplyCount` are populated.
  */
 export function formatConversationForUser(
   conv: MosChatConversation,
   user: JwtUserPayload | undefined,
   staffDirectory: MosChatStaffMember[],
-  userPrefs?: MosChatUserSidebarPrefs
+  userPrefs?: MosChatUserSidebarPrefs,
+  allUserPrefsByUserKey?: Record<string, MosChatUserSidebarPrefs>
 ): MosChatConversation {
+  const myStaffId = resolveUserStaffId(user, staffDirectory);
+  const myPrefKey = resolveUserPrefKey(user, staffDirectory);
+  const mergedPrefsMap: Record<string, MosChatUserSidebarPrefs> = {
+    ...(allUserPrefsByUserKey || {}),
+    ...(userPrefs ? { [myPrefKey]: userPrefs } : {}),
+  };
+
   const personalizedUnread = computeUnreadCountForUser(conv, user, staffDirectory, userPrefs);
+  const participantIds = resolveConversationParticipantStaffIds(conv, staffDirectory, mergedPrefsMap);
+  const readReceipts = computeConversationReadReceipts(conv, staffDirectory, mergedPrefsMap);
+
+  let unreadThreadCount = 0;
+  const formattedMessages: MosChatMessage[] = (conv.messages || []).map((m) => {
+    if (!m.thread || m.thread.length === 0) {
+      return m;
+    }
+    const threadReadReceipts = computeThreadReadReceiptsForMessage(
+      conv,
+      m,
+      staffDirectory,
+      mergedPrefsMap,
+      participantIds
+    );
+    const unreadThreadReplyCount = computeUnreadThreadReplyCountForUser(conv, m, myStaffId, staffDirectory, userPrefs);
+    unreadThreadCount += unreadThreadReplyCount;
+    return {
+      ...m,
+      threadReadReceipts,
+      unreadThreadReplyCount,
+    };
+  });
+
   if (conv.type !== 'dm') {
     return {
       ...conv,
       unreadCount: personalizedUnread,
+      unreadThreadCount,
+      readReceipts,
+      messages: formattedMessages,
     };
   }
   const convIdStr = String(conv.id || '');
@@ -600,9 +877,11 @@ export function formatConversationForUser(
       memberIds: selfIds,
       memberCount: 1,
       unreadCount: personalizedUnread,
+      unreadThreadCount,
+      readReceipts,
+      messages: formattedMessages,
     };
   }
-  const myStaffId = resolveUserStaffId(user, staffDirectory);
   const dmIds = resolveDmParticipantIds(conv, staffDirectory);
   const peerId = dmIds.find((id) => id !== myStaffId) ?? dmIds[0] ?? Number(conv.participantStaffId);
   const peerStaff = staffDirectory.find((s) => s.id === Number(peerId));
@@ -618,6 +897,9 @@ export function formatConversationForUser(
     memberIds: dmIds,
     memberCount: 2,
     unreadCount: personalizedUnread,
+    unreadThreadCount,
+    readReceipts,
+    messages: formattedMessages,
   };
 }
 
@@ -625,11 +907,12 @@ function filterAndFormatConversationsForUser(
   conversations: MosChatConversation[],
   user: JwtUserPayload | undefined,
   staffDirectory: MosChatStaffMember[],
-  userPrefs?: MosChatUserSidebarPrefs
+  userPrefs?: MosChatUserSidebarPrefs,
+  allUserPrefsByUserKey?: Record<string, MosChatUserSidebarPrefs>
 ): MosChatConversation[] {
   return conversations
     .filter((c) => canUserAccessConversation(c, user, staffDirectory))
-    .map((c) => formatConversationForUser(c, user, staffDirectory, userPrefs));
+    .map((c) => formatConversationForUser(c, user, staffDirectory, userPrefs, allUserPrefsByUserKey));
 }
 
 function filterTasksForUser(
@@ -700,6 +983,11 @@ function buildDefaultUserSidebarPrefs(): MosChatUserSidebarPrefs {
     hiddenIds: [],
     manualUnreadIds: [],
     readMessageCountByConv: {},
+    readAtByConv: {},
+    lastReadMessageIdByConv: {},
+    readThreadReplyCountByMsg: {},
+    readThreadAtByMsg: {},
+    lastReadThreadReplyIdByMsg: {},
     collapsedSections: {},
     unreadOnlySections: {},
     sectionOrder: ['dm', 'spaces'],
@@ -730,6 +1018,14 @@ function normalizeUserSidebarPrefs(raw: SafeAny): MosChatUserSidebarPrefs {
     for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
       const n = Number(v);
       if (Number.isFinite(n) && n >= 0) out[k] = n;
+    }
+    return out;
+  };
+  const cleanStrMap = (obj: unknown): Record<string, string> => {
+    if (!obj || typeof obj !== 'object') return {};
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+      if (typeof v === 'string' && v.trim().length > 0) out[k] = v.trim();
     }
     return out;
   };
@@ -777,6 +1073,11 @@ function normalizeUserSidebarPrefs(raw: SafeAny): MosChatUserSidebarPrefs {
     hiddenIds: cleanStrList(raw.hiddenIds),
     manualUnreadIds: cleanStrList(raw.manualUnreadIds),
     readMessageCountByConv: cleanNumMap(raw.readMessageCountByConv),
+    readAtByConv: cleanStrMap(raw.readAtByConv),
+    lastReadMessageIdByConv: cleanStrMap(raw.lastReadMessageIdByConv),
+    readThreadReplyCountByMsg: cleanNumMap(raw.readThreadReplyCountByMsg),
+    readThreadAtByMsg: cleanStrMap(raw.readThreadAtByMsg),
+    lastReadThreadReplyIdByMsg: cleanStrMap(raw.lastReadThreadReplyIdByMsg),
     collapsedSections: cleanBoolMap(raw.collapsedSections),
     unreadOnlySections: cleanBoolMap(raw.unreadOnlySections),
     sectionOrder: mergedSectionOrder,
@@ -1378,7 +1679,13 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           } satisfies MosChatBootstrapResponse;
         }
 
-        const userConversations = filterAndFormatConversationsForUser(conversations, user, staffDirectory, userPrefs);
+        const userConversations = filterAndFormatConversationsForUser(
+          conversations,
+          user,
+          staffDirectory,
+          userPrefs,
+          userPrefsByUserKey
+        );
         const userTasks = filterTasksForUser(tasks, conversations, user, staffDirectory);
 
         const payload: MosChatBootstrapResponse = {
@@ -1649,20 +1956,28 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       const userPrefKey = resolveUserPrefKey(user, staffDirectory);
       const { userPrefsByUserKey } = await loadChatState(fastify);
       const currentSenderPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
-      const updatedSenderPrefs = {
+      const updatedSenderPrefs: MosChatUserSidebarPrefs = {
         ...currentSenderPrefs,
         manualUnreadIds: (currentSenderPrefs.manualUnreadIds || []).filter((id) => id !== conv.id),
         readMessageCountByConv: {
           ...(currentSenderPrefs.readMessageCountByConv || {}),
           [conv.id]: conv.messages.length,
         },
+        readAtByConv: {
+          ...(currentSenderPrefs.readAtByConv || {}),
+          [conv.id]: now.toISOString(),
+        },
+        lastReadMessageIdByConv: {
+          ...(currentSenderPrefs.lastReadMessageIdByConv || {}),
+          [conv.id]: newMessage.id,
+        },
       };
-      await saveUserSidebarPrefs(fastify, userPrefKey, updatedSenderPrefs);
+      const savedPrefs = await saveUserSidebarPrefs(fastify, userPrefKey, updatedSenderPrefs);
 
       return {
         success: true,
         message: newMessage,
-        conversation: formatConversationForUser(conv, user, staffDirectory, updatedSenderPrefs),
+        conversation: formatConversationForUser(conv, user, staffDirectory, savedPrefs, userPrefsByUserKey),
       };
     }
   );
@@ -1726,6 +2041,29 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       }
 
       await saveConversations(fastify, conversations);
+
+      // Advance sender's read count for this sub-thread in userPrefs
+      const userPrefKey = resolveUserPrefKey(user, staffDirectory);
+      const { userPrefsByUserKey } = await loadChatState(fastify);
+      const currentSenderPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
+      const threadKey = `${conv.id}::${msg.id}`;
+      const updatedSenderPrefs: MosChatUserSidebarPrefs = {
+        ...currentSenderPrefs,
+        readThreadReplyCountByMsg: {
+          ...(currentSenderPrefs.readThreadReplyCountByMsg || {}),
+          [threadKey]: msg.thread.length,
+        },
+        readThreadAtByMsg: {
+          ...(currentSenderPrefs.readThreadAtByMsg || {}),
+          [threadKey]: now.toISOString(),
+        },
+        lastReadThreadReplyIdByMsg: {
+          ...(currentSenderPrefs.lastReadThreadReplyIdByMsg || {}),
+          [threadKey]: replyItem.id,
+        },
+      };
+      await saveUserSidebarPrefs(fastify, userPrefKey, updatedSenderPrefs);
+
       return { success: true, reply: replyItem, message: msg };
     }
   );
@@ -2410,14 +2748,25 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         if (!targetConv) {
           return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy cuộc trò chuyện' });
         }
+        const nowIso = new Date().toISOString();
+        const msgs = targetConv.messages || [];
+        const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null;
         const userPrefKey = resolveUserPrefKey(user, staffDirectory);
         const currentPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
-        const updatedPrefs = {
+        const updatedPrefs: MosChatUserSidebarPrefs = {
           ...currentPrefs,
           manualUnreadIds: (currentPrefs.manualUnreadIds || []).filter((id) => id !== convId),
           readMessageCountByConv: {
             ...(currentPrefs.readMessageCountByConv || {}),
-            [convId]: targetConv.messages?.length || 0,
+            [convId]: msgs.length,
+          },
+          readAtByConv: {
+            ...(currentPrefs.readAtByConv || {}),
+            [convId]: nowIso,
+          },
+          lastReadMessageIdByConv: {
+            ...(currentPrefs.lastReadMessageIdByConv || {}),
+            ...(lastMsg?.id ? { [convId]: lastMsg.id } : {}),
           },
         };
         const saved = await saveUserSidebarPrefs(fastify, userPrefKey, updatedPrefs);
@@ -2425,10 +2774,69 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           success: true,
           unreadCount: 0,
           userPrefs: saved,
+          conversation: formatConversationForUser(targetConv, user, staffDirectory, saved, state.userPrefsByUserKey),
         };
       } catch (err: SafeAny) {
         fastify.log.error('Mark conversation as read error:', err);
         return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể đánh dấu đã đọc' });
+      }
+    }
+  );
+
+  // POST /api/chat/conversations/:id/threads/:messageId/read (Explicitly mark a sub-thread as read)
+  fastify.post(
+    '/chat/conversations/:id/threads/:messageId/read',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const user = (request as SafeAny).user as JwtUserPayload | undefined;
+        const { id: convId, messageId } = request.params as { id: string; messageId: string };
+        const state = await loadChatState(fastify);
+        const { conversations, userPrefsByUserKey } = state;
+        const staffDirectory = await loadStaffDirectoryCached(fastify);
+        const targetConv = conversations.find((c) => c.id === convId);
+        if (!targetConv) {
+          return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy cuộc trò chuyện' });
+        }
+        const targetMsg = targetConv.messages?.find((m) => m.id === messageId);
+        if (!targetMsg) {
+          return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tin nhắn gốc của luồng' });
+        }
+        const nowIso = new Date().toISOString();
+        const replies = targetMsg.thread || [];
+        const lastReply = replies.length > 0 ? replies[replies.length - 1] : null;
+        const threadKey = `${convId}::${messageId}`;
+        const userPrefKey = resolveUserPrefKey(user, staffDirectory);
+        const currentPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
+        const updatedPrefs: MosChatUserSidebarPrefs = {
+          ...currentPrefs,
+          readThreadReplyCountByMsg: {
+            ...(currentPrefs.readThreadReplyCountByMsg || {}),
+            [threadKey]: replies.length,
+          },
+          readThreadAtByMsg: {
+            ...(currentPrefs.readThreadAtByMsg || {}),
+            [threadKey]: nowIso,
+          },
+          lastReadThreadReplyIdByMsg: {
+            ...(currentPrefs.lastReadThreadReplyIdByMsg || {}),
+            ...(lastReply?.id ? { [threadKey]: lastReply.id } : {}),
+          },
+        };
+        const saved = await saveUserSidebarPrefs(fastify, userPrefKey, updatedPrefs);
+        return {
+          success: true,
+          unreadThreadReplyCount: 0,
+          userPrefs: saved,
+          conversation: formatConversationForUser(targetConv, user, staffDirectory, saved, state.userPrefsByUserKey),
+        };
+      } catch (err: SafeAny) {
+        fastify.log.error('Mark thread as read error:', err);
+        return reply
+          .status(500)
+          .send({ error: 'Internal Server Error', message: 'Không thể đánh dấu đã đọc luồng trả lời' });
       }
     }
   );

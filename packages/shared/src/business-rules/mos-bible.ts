@@ -1569,22 +1569,35 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
   {
     id: 'UI-008',
     book: 'SYSTEM',
-    title: 'mOS Google Chat: Trò chuyện 1-1, Spaces theo bộ phận và Message-to-Task Reminder xuyên suốt',
+    title:
+      'mOS Google Chat: Trò chuyện 1-1, Spaces theo bộ phận, Trạng thái Đã xem (Read Receipts) và Message-to-Task Reminder xuyên suốt',
     summary:
-      'Nút mOS Chat đặt sát Avatar trên Header (gom gọn Theme & Cuộc gọi hôm nay vào menu Avatar), hỗ trợ chế độ Kép (Right Panel + Mini Docked Pop-out), chuẩn Vector Icon + Tooltip và biến mọi tin nhắn thành Task hẹn giờ nhắc 2 chiều.',
+      'Nút mOS Chat đặt sát Avatar trên Header (gom gọn Theme & Cuộc gọi hôm nay vào menu Avatar), hỗ trợ chế độ Kép (Right Panel + Mini Docked Pop-out), hiển thị trạng thái Đã gửi / Đã xem (✓/✓✓ kèm Mini Seen Avatars) cho cả luồng chính lẫn Sub-thread và biến mọi tin nhắn thành Task hẹn giờ nhắc 2 chiều.',
     commandments: [
       'Nút mOS Chat nằm ngay bên trái Avatar người dùng trên Header, hiển thị badge số tin chưa đọc và chấm nhắc hẹn; các nút Giao diện Sáng/Tối và Cuộc gọi hôm nay được gom gọn vào trong menu tài khoản để thanh Header tinh gọn.',
       'Toàn bộ điều khiển trong mOS Chat trên Desktop FHD sử dụng Vector Icon sắc nét kèm Tooltip tức thì (có gợi ý phím tắt), hạn chế tối đa chữ thừa; chỉ dùng emoji cho lượt thả cảm xúc (Reaction) dưới tin nhắn.',
       'Hỗ trợ đồng thời 1-1 Direct Messages, Group Spaces theo bộ phận (#tư-vấn-cc, #telesales-booker, #chuyên-viên-mi) căn lề trái chuẩn Google Chat kèm cột trả lời theo luồng (Side Thread Pane) và thu nhỏ xuống góc dưới màn hình (Mini Pop-out).',
+      'Trạng thái Đã đọc / Đã xem (Read Receipts) hoạt động cho cả Luồng chat chính và Sub-thread: Hiển thị kết hợp dấu ✓ Đã gửi / ✓✓ Đã xem cạnh thời gian của mỗi tin nhắn do mình gửi kèm dãy Mini Avatar (tối đa 4-5 avatar xếp chồng + badge +N) dừng tại tin nhắn/phản hồi mới nhất mà từng thành viên đã đọc; khi hover hoặc click sẽ mở Popover chi tiết danh sách người Đã xem (kèm giờ xem) và người Chưa xem. Đối với Sub-thread, chỉ khi người dùng mở đúng Sub-thread trên tab đang active mới tính là đã đọc luồng đó, đồng thời ngay ngoài nút "💬 X trả lời" hiển thị cả badge số phản hồi mới chưa đọc lẫn mini avatar / ✓✓ của người đã xem câu trả lời cuối.',
       'Mọi tin nhắn đều có thể chuyển thành Công việc & Cài giờ nhắc hẹn (Message-to-Task -> Reminder) giao cho bản thân hoặc đồng nghiệp; khi đến giờ nhắc hệ thống phát chuông, bung thông báo nổi và đẩy tin nhắn nhắc tự động vào phòng chat.',
     ],
     rationale:
-      'Giúp các bộ phận Telesales, Tư Vấn (CC), Chuyên Viên (CV) và CSKH trao đổi tức thì, đính kèm hồ sơ khách hàng và giao việc có hẹn giờ nhắc ngay trên bất kỳ màn hình nào của mOS mà không bị trôi việc.',
-    tags: ['chat', 'google chat', 'spaces', 'task', 'reminder', 'thread', 'header', 'mini pop-out'],
+      'Giúp các bộ phận Telesales, Tư Vấn (CC), Chuyên Viên (CV) và CSKH trao đổi tức thì, nắm bắt chính xác ai đã đọc thông tin ở cả luồng chính lẫn sub-thread, đính kèm hồ sơ khách hàng và giao việc có hẹn giờ nhắc ngay trên bất kỳ màn hình nào của mOS mà không bị trôi việc.',
+    tags: [
+      'chat',
+      'google chat',
+      'spaces',
+      'task',
+      'reminder',
+      'thread',
+      'read receipts',
+      'đã xem',
+      'header',
+      'mini pop-out',
+    ],
     routeScopes: ['/dashboard'],
     status: 'ACTIVE',
-    version: '1.0.0',
-    effectiveFrom: '2026-10-14',
+    version: '1.1.0',
+    effectiveFrom: '2026-10-19',
     sources: [
       { label: 'mOS Chat Workspace Component', reference: 'apps/web/components/mos-chat/MosGoogleChatPortal.tsx' },
       { label: 'mOS Chat API Routes', reference: 'apps/api/src/modules/chat/routes.ts' },

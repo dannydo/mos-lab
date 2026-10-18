@@ -75,6 +75,26 @@ export interface MosChatMissionSummary {
   };
 }
 
+export interface MosChatReadReceiptEntry {
+  staffId: number;
+  displayName: string;
+  role: string;
+  avatarUrl?: string | null;
+  readCount: number;
+  lastReadMessageId?: string | null;
+  readAt: string;
+}
+
+export interface MosChatThreadReadReceiptEntry {
+  staffId: number;
+  displayName: string;
+  role: string;
+  avatarUrl?: string | null;
+  readReplyCount: number;
+  lastReadReplyId?: string | null;
+  readAt: string;
+}
+
 export interface MosChatThreadReply {
   id: string;
   senderId: number | string;
@@ -122,6 +142,8 @@ export interface MosChatMessage {
   missionSyncedStage?: MosChatMissionStage | null;
   missionSyncedCommentIds?: number[];
   thread?: MosChatThreadReply[];
+  threadReadReceipts?: MosChatThreadReadReceiptEntry[];
+  unreadThreadReplyCount?: number;
   isSystemReminder?: boolean;
   isAiBot?: boolean;
   aiThinking?: string | null;
@@ -184,6 +206,8 @@ export interface MosChatConversation {
   memberIds?: number[];
   members?: MosChatStaffMember[];
   unreadCount: number;
+  unreadThreadCount?: number;
+  readReceipts?: MosChatReadReceiptEntry[];
   messages: MosChatMessage[];
   updatedAt: string;
 }
@@ -231,6 +255,11 @@ export interface MosChatUserSidebarPrefs {
   hiddenIds: string[];
   manualUnreadIds: string[];
   readMessageCountByConv?: Record<string, number>;
+  readAtByConv?: Record<string, string>;
+  lastReadMessageIdByConv?: Record<string, string>;
+  readThreadReplyCountByMsg?: Record<string, number>;
+  readThreadAtByMsg?: Record<string, string>;
+  lastReadThreadReplyIdByMsg?: Record<string, string>;
   collapsedSections: Record<string, boolean>;
   unreadOnlySections: Record<string, boolean>;
   sectionOrder: string[];
@@ -395,4 +424,16 @@ export interface MarkConversationAsUnreadResponse {
   success: boolean;
   unreadCount: number;
   userPrefs?: MosChatUserSidebarPrefs;
+}
+
+export interface MarkThreadAsReadRequest {
+  conversationId: string;
+  messageId: string;
+}
+
+export interface MarkThreadAsReadResponse {
+  success: boolean;
+  unreadThreadReplyCount: number;
+  userPrefs?: MosChatUserSidebarPrefs;
+  conversation?: MosChatConversation;
 }

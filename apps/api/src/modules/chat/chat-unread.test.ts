@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { computeUnreadCountForUser, formatConversationForUser } from './routes.js';
+import {
+  computeUnreadCountForUser,
+  computeConversationReadReceipts,
+  computeThreadReadReceiptsForMessage,
+  computeUnreadThreadReplyCountForUser,
+  formatConversationForUser,
+} from './routes.js';
 import type { MosChatConversation, MosChatStaffMember, MosChatUserSidebarPrefs } from '@mos-lab/shared';
 import type { JwtUserPayload } from '../../middlewares/auth.js';
 
@@ -233,5 +239,126 @@ describe('computeUnreadCountForUser & formatConversationForUser', () => {
     assert.equal(unreadCount >= 1, true, 'Marked unread conversation must have unreadCount >= 1');
     const formatted = formatConversationForUser(dmConversation, userKhai, staffDirectory, prefsMarkedUnread);
     assert.equal(formatted.unreadCount >= 1, true);
+  });
+
+  it('computes main chat readReceipts and sub-thread threadReadReceipts & unreadThreadReplyCount accurately', () => {
+    const convWithThread: MosChatConversation = {
+      ...dmConversation,
+      messages: [
+        {
+          ...dmConversation.messages[0],
+          thread: [
+            {
+              id: 'th-1',
+              senderId: 4,
+              senderName: 'Tâm Nguyễn',
+              senderRole: 'Admin',
+              senderAvatar: 'TN',
+              text: 'Em đã nhận việc nhé anh Khải',
+              timeLabel: '12:05',
+              createdAt: '2026-10-19T05:05:00.000Z',
+            },
+            {
+              id: 'th-2',
+              senderId: 4,
+              senderName: 'Tâm Nguyễn',
+              senderRole: 'Admin',
+              senderAvatar: 'TN',
+              text: 'Báo cáo tiến độ bước 1',
+              timeLabel: '12:10',
+              createdAt: '2026-10-19T05:10:00.000Z',
+            },
+          ],
+        },
+        dmConversation.messages[1],
+      ],
+    };
+
+    const allUserPrefs: Record<string, MosChatUserSidebarPrefs> = {
+      '6': {
+        pinnedIds: [],
+        mutedIds: [],
+        hiddenIds: [],
+        manualUnreadIds: [],
+        readMessageCountByConv: { 'dm-pair-4-6': 2 },
+        readAtByConv: { 'dm-pair-4-6': '2026-10-19T06:02:00.000Z' },
+        lastReadMessageIdByConv: { 'dm-pair-4-6': 'msg-2' },
+        // Khải has only read 1 reply in msg-1's sub-thread so far
+        readThreadReplyCountByMsg: { 'msg-1': 1 },
+        readThreadAtByMsg: { 'msg-1': '2026-10-19T05:06:00.000Z' },
+        collapsedSections: {},
+        unreadOnlySections: {},
+        sectionOrder: ['dm', 'spaces'],
+        customSections: [],
+        conversationOrder: {},
+      },
+      '4': {
+        pinnedIds: [],
+        mutedIds: [],
+        hiddenIds: [],
+        manualUnreadIds: [],
+        readMessageCountByConv: { 'dm-pair-4-6': 2 },
+        readThreadReplyCountByMsg: { 'msg-1': 2 },
+        collapsedSections: {},
+        unreadOnlySections: {},
+        sectionOrder: ['dm', 'spaces'],
+        customSections: [],
+        conversationOrder: {},
+      },
+    };
+
+    const convReceipts = computeConversationReadReceipts(convWithThread, staffDirectory, allUserPrefs);
+    assert.equal(convReceipts.length, 2);
+    const khaiReceipt = convReceipts.find((r) => r.staffId === 6);
+    const tamReceipt = convReceipts.find((r) => r.staffId === 4);
+    assert.equal(khaiReceipt?.readCount, 2);
+    assert.equal(khaiReceipt?.lastReadMessageId, 'msg-2');
+    assert.equal(tamReceipt?.readCount, 2);
+
+    const threadReceipts = computeThreadReadReceiptsForMessage(
+      convWithThread,
+      convWithThread.messages[0],
+      staffDirectory,
+      allUserPrefs
+    );
+    const khaiThreadReceipt = threadReceipts.find((r) => r.staffId === 6);
+    const tamThreadReceipt = threadReceipts.find((r) => r.staffId === 4);
+    assert.equal(khaiThreadReceipt?.readReplyCount, 1);
+    assert.equal(khaiThreadReceipt?.lastReadReplyId, 'th-1');
+    assert.equal(tamThreadReceipt?.readReplyCount, 2);
+    assert.equal(tamThreadReceipt?.lastReadReplyId, 'th-2');
+
+    // Unread thread reply count for Khải should be 1 (th-2 from Tâm is unread)
+    const unreadThreadForKhai = computeUnreadThreadReplyCountForUser(
+      convWithThread,
+      convWithThread.messages[0],
+      userKhai.id,
+      staffDirectory,
+      allUserPrefs['6']
+    );
+    assert.equal(unreadThreadForKhai, 1);
+
+    // Unread thread reply count for Tâm should be 0 (she authored both replies)
+    const unreadThreadForTam = computeUnreadThreadReplyCountForUser(
+      convWithThread,
+      convWithThread.messages[0],
+      userTam.id,
+      staffDirectory,
+      allUserPrefs['4']
+    );
+    assert.equal(unreadThreadForTam, 0);
+
+    // Format full conversation for Khải
+    const formattedForKhai = formatConversationForUser(
+      convWithThread,
+      userKhai,
+      staffDirectory,
+      allUserPrefs['6'],
+      allUserPrefs
+    );
+    assert.equal(formattedForKhai.unreadThreadCount, 1);
+    assert.equal(formattedForKhai.messages[0]?.unreadThreadReplyCount, 1);
+    assert.equal(formattedForKhai.readReceipts?.length, 2);
+    assert.equal(formattedForKhai.messages[0]?.threadReadReceipts?.length, 2);
   });
 });
