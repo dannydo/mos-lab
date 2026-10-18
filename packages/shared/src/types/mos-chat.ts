@@ -129,7 +129,17 @@ export interface MosChatMessage {
     type: string;
     label: string;
     payload: Record<string, unknown>;
+    actions?: Array<{
+      type: string;
+      label: string;
+      payload: Record<string, unknown>;
+    }>;
   } | null;
+  aiActions?: Array<{
+    type: string;
+    label: string;
+    payload: Record<string, unknown>;
+  }> | null;
   editedAt?: string | null;
   editedBy?: string | number | null;
   editHistory?: MosChatMessageEditHistoryItem[];
@@ -251,7 +261,17 @@ export interface CreateMosChatMessageRequest {
     type: string;
     label: string;
     payload: Record<string, unknown>;
+    actions?: Array<{
+      type: string;
+      label: string;
+      payload: Record<string, unknown>;
+    }>;
   } | null;
+  aiActions?: Array<{
+    type: string;
+    label: string;
+    payload: Record<string, unknown>;
+  }> | null;
 }
 
 export interface EditMosChatMessageRequest {

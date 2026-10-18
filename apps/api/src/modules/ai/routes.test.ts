@@ -65,6 +65,44 @@ Tôi đề xuất lọc tệp khách này.
   });
 });
 
+test('extractThinkingAndAction correctly extracts multiple action tags and completely strips them from content (MOS-BUG-115)', () => {
+  const sampleWithMultipleActions = `Chào anh **Quang Khải**, em gợi ý các bộ lọc:
+
+<action type="APPLY_FILTER" label="🎯 Lọc khách COMBO_LIVE (14-21 ngày)">{"activeTab":"COMBO_LIVE","daysSinceLastVisitMin":14,"daysSinceLastVisitMax":21}</action>
+
+<action type="APPLY_FILTER" label="💎 Lọc khách lẻ tiềm năng đổi Combo">{"activeTab":"NOT_COMBO_LIVE","daysSinceLastVisitMax":21,"totalSpentMin":500000}</action>
+
+<action type="APPLY_FILTER" label="🔄 Lọc khách COMBO_DEAD cần Win-Back">{"activeTab":"COMBO_DEAD","daysSinceLastVisitMin":30,"daysSinceLastVisitMax":60}</action>
+
+Anh muốn bắt đầu phân tích tệp khách nào cứ nhắn em nhé!`;
+
+  const parsed = extractThinkingAndAction(sampleWithMultipleActions);
+
+  // 1. Content must be 100% clean of all <action> tags and json payloads
+  assert.ok(!parsed.content.includes('<action'));
+  assert.ok(!parsed.content.includes('</action>'));
+  assert.ok(!parsed.content.includes('totalSpentMin'));
+  assert.ok(parsed.content.includes('Chào anh **Quang Khải**'));
+  assert.ok(parsed.content.includes('Anh muốn bắt đầu phân tích tệp khách nào cứ nhắn em nhé!'));
+
+  // 2. All 3 actions must be properly parsed
+  assert.ok(parsed.suggestedActions);
+  assert.equal(parsed.suggestedActions.length, 3);
+  assert.equal(parsed.suggestedActions[0].label, '🎯 Lọc khách COMBO_LIVE (14-21 ngày)');
+  assert.equal(parsed.suggestedActions[1].label, '💎 Lọc khách lẻ tiềm năng đổi Combo');
+  assert.equal(parsed.suggestedActions[2].label, '🔄 Lọc khách COMBO_DEAD cần Win-Back');
+
+  // 3. suggestedAction points to the first action and contains .actions list for backward compat
+  assert.ok(parsed.suggestedAction);
+  assert.equal(parsed.suggestedAction.label, '🎯 Lọc khách COMBO_LIVE (14-21 ngày)');
+  assert.equal(parsed.suggestedAction.actions?.length, 3);
+
+  // 4. Defensive test: stray unclosed <action> tags are also cleanly removed
+  const straySample = `Văn bản thông thường <action type="APPLY_FILTER" label="Dở dang"`;
+  const parsedStray = extractThinkingAndAction(straySample);
+  assert.ok(!parsedStray.content.includes('<action'));
+});
+
 test('generateAssistantFallback provides domain thinking and filter payload for customer queries', () => {
   // 1. Bucket query
   const res1 = generateAssistantFallback('Giải thích các nhóm khách bucket trong mOS');

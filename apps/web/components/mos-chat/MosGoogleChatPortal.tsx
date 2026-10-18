@@ -1067,7 +1067,47 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         };
         if (parsedAi.sessionId) setAiSessionId(parsedAi.sessionId);
         if (Array.isArray(parsedAi.messages) && parsedAi.messages.length > 0) {
-          setAiMessages(parsedAi.messages);
+          const sanitizedMessages = parsedAi.messages.map((m) => {
+            if (m.text && /<action/i.test(m.text)) {
+              const actionMatches: NonNullable<MosChatMessage['aiAction']>[] = [];
+              const regex = /<action(?:\s+type="([^"]*)")?(?:\s+label="([^"]*)")?>([\s\S]*?)<\/action>/gi;
+              let match: RegExpExecArray | null;
+              while ((match = regex.exec(m.text)) !== null) {
+                try {
+                  actionMatches.push({
+                    type: match[1]?.trim() || 'APPLY_FILTER',
+                    label: match[2]?.trim() || 'Áp dụng bộ lọc gợi ý',
+                    payload: JSON.parse(match[3]?.trim() || '{}'),
+                  });
+                } catch {
+                  // ignore
+                }
+              }
+              const cleanText = m.text
+                .replace(/<action[\s\S]*?<\/action>/gi, '')
+                .replace(/<\/?action[^>]*>/gi, '')
+                .replace(/\n{3,}/g, '\n\n')
+                .trim();
+              const existingActions =
+                m.aiActions ||
+                (m.aiAction?.actions ? m.aiAction.actions : m.aiAction ? [m.aiAction] : []);
+              const allActions = [...existingActions, ...actionMatches].filter(
+                (act, index, self) =>
+                  index ===
+                  self.findIndex(
+                    (a) => a.label === act.label && JSON.stringify(a.payload) === JSON.stringify(act.payload)
+                  )
+              );
+              return {
+                ...m,
+                text: cleanText,
+                aiAction: allActions[0] || m.aiAction,
+                aiActions: allActions.length > 0 ? allActions : m.aiActions,
+              };
+            }
+            return m;
+          });
+          setAiMessages(sanitizedMessages);
           aiHydratedRef.current = true;
           return;
         }
@@ -2666,13 +2706,24 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     antdMessage.success('Đã làm mới phiên hội thoại riêng tư với Wings AI Copilot');
   }, [buildInitialAiWelcomeMessage]);
 
-  const handleExecuteAiAction = useCallback((action: NonNullable<MosChatMessage['aiAction']>, msgId: string) => {
-    if (typeof window !== 'undefined' && action.payload) {
-      window.dispatchEvent(new CustomEvent('mos-ai-copilot-apply-customer-filter', { detail: action.payload }));
-    }
-    setAppliedActionIds((prev) => ({ ...prev, [msgId]: true }));
-    antdMessage.success(`Đã kích hoạt: ${action.label}`);
-  }, []);
+  const handleExecuteAiAction = useCallback(
+    (
+      action: { type: string; label: string; payload: Record<string, unknown> },
+      msgId: string,
+      actionKey?: string
+    ) => {
+      if (typeof window !== 'undefined' && action.payload) {
+        window.dispatchEvent(new CustomEvent('mos-ai-copilot-apply-customer-filter', { detail: action.payload }));
+      }
+      setAppliedActionIds((prev) => ({
+        ...prev,
+        [msgId]: true,
+        ...(actionKey ? { [actionKey]: true } : {}),
+      }));
+      antdMessage.success(`Đã kích hoạt: ${action.label}`);
+    },
+    []
+  );
 
   const handleSpeakAiMessage = useCallback(
     (msg: MosChatMessage) => {
@@ -2683,7 +2734,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       }
       stopSpeaking();
       setSpeakingMsgId(msg.id);
-      speakText(msg.text, {
+      const cleanSpeakText = (msg.text || '')
+        .replace(/<action[\s\S]*?<\/action>/gi, '')
+        .replace(/<\/?action[^>]*>/gi, '')
+        .trim();
+      speakText(cleanSpeakText, {
         onEnd: () => {
           setSpeakingMsgId((prev) => (prev === msg.id ? null : prev));
         },
@@ -2767,9 +2822,16 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           senderAvatar: 'AI',
           roleColor: '#8b5cf6',
           isAiBot: true,
-          text: aiRes?.message?.content || 'Tôi đã xử lý yêu cầu của bạn.',
+          text: (aiRes?.message?.content || 'Tôi đã xử lý yêu cầu của bạn.')
+            .replace(/<action[\s\S]*?<\/action>/gi, '')
+            .replace(/<\/?action[^>]*>/gi, '')
+            .trim(),
           aiThinking: aiRes?.message?.thinking || null,
           aiAction: aiRes?.message?.suggestedAction || null,
+          aiActions:
+            aiRes?.message?.suggestedActions ||
+            aiRes?.message?.suggestedAction?.actions ||
+            (aiRes?.message?.suggestedAction ? [aiRes.message.suggestedAction] : null),
           timeLabel: dayjs().format('HH:mm'),
           createdAt: new Date().toISOString(),
           reactions: {},
@@ -2838,13 +2900,22 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         if (aiRes?.session?.id) {
           setAiSessionId(aiRes.session.id);
         }
-        const aiReplyText = aiRes?.message?.content || 'Tôi đã phân tích xong thông tin cho nhóm.';
+        const rawAiReplyText = aiRes?.message?.content || 'Tôi đã phân tích xong thông tin cho nhóm.';
+        const aiReplyText = rawAiReplyText
+          .replace(/<action[\s\S]*?<\/action>/gi, '')
+          .replace(/<\/?action[^>]*>/gi, '')
+          .trim();
+        const aiActions =
+          aiRes?.message?.suggestedActions ||
+          aiRes?.message?.suggestedAction?.actions ||
+          (aiRes?.message?.suggestedAction ? [aiRes.message.suggestedAction] : null);
         const postedAi = await apiClient.chat.sendMessage({
           conversationId: targetConvId,
           text: aiReplyText,
           isAiBot: true,
           aiThinking: aiRes?.message?.thinking || null,
           aiAction: aiRes?.message?.suggestedAction || null,
+          aiActions,
         });
         if (postedAi?.conversation) {
           setConversations((prev) => prev.map((c) => (c.id === targetConvId ? postedAi.conversation : c)));
@@ -4291,7 +4362,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     (rawText?: string | null, _isMine = false): React.ReactNode => {
       if (!rawText) return null;
 
-      const lines = rawText.split('\n');
+      const cleanText = rawText
+        .replace(/<action[\s\S]*?<\/action>/gi, '')
+        .replace(/<\/?action[^>]*>/gi, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+      if (!cleanText) return null;
+
+      const lines = cleanText.split('\n');
       const result: React.ReactNode[] = [];
       let inCodeBlock = false;
       let codeBlockLang = '';
@@ -6784,30 +6862,56 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           </div>
                         ) : null}
 
-                        {/* Suggested AI Action Button (e.g. APPLY_FILTER) */}
-                        {m.aiAction && (
-                          <div className="mt-2">
-                            <button
-                              type="button"
-                              onClick={() => m.aiAction && handleExecuteAiAction(m.aiAction, m.id)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11.5px] font-bold cursor-pointer transition-all"
-                              style={{
-                                background: appliedActionIds[m.id]
-                                  ? 'rgba(16, 185, 129, 0.16)'
-                                  : 'rgba(139, 92, 246, 0.16)',
-                                border: `1px solid ${
-                                  appliedActionIds[m.id] ? 'rgba(16, 185, 129, 0.4)' : 'rgba(139, 92, 246, 0.4)'
-                                }`,
-                                color: appliedActionIds[m.id] ? '#10b981' : '#a78bfa',
-                              }}
-                            >
-                              {appliedActionIds[m.id] ? <Check size={13} /> : <Sliders size={13} />}
-                              <span>
-                                {appliedActionIds[m.id] ? `Đã áp dụng: ${m.aiAction.label}` : m.aiAction.label}
-                              </span>
-                            </button>
-                          </div>
-                        )}
+                        {/* Suggested AI Action Button(s) (e.g. APPLY_FILTER) */}
+                        {(() => {
+                          const actionsList =
+                            m.aiActions && m.aiActions.length > 0
+                              ? m.aiActions
+                              : m.aiAction?.actions && m.aiAction.actions.length > 0
+                                ? m.aiAction.actions
+                                : m.aiAction
+                                  ? [m.aiAction]
+                                  : [];
+                          if (!actionsList || actionsList.length === 0) return null;
+
+                          return (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {actionsList.map((action, actionIdx) => {
+                                const actionKey = `${m.id}-${actionIdx}`;
+                                const isApplied = Boolean(
+                                  appliedActionIds[actionKey] ||
+                                    (actionIdx === 0 && appliedActionIds[m.id])
+                                );
+                                return (
+                                  <button
+                                    key={actionKey}
+                                    type="button"
+                                    onClick={() => {
+                                      handleExecuteAiAction(action, m.id, actionKey);
+                                    }}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11.5px] font-bold cursor-pointer transition-all active:scale-95"
+                                    style={{
+                                      background: isApplied
+                                        ? 'rgba(16, 185, 129, 0.16)'
+                                        : 'rgba(139, 92, 246, 0.16)',
+                                      border: `1px solid ${
+                                        isApplied
+                                          ? 'rgba(16, 185, 129, 0.4)'
+                                          : 'rgba(139, 92, 246, 0.4)'
+                                      }`,
+                                      color: isApplied ? '#10b981' : '#a78bfa',
+                                    }}
+                                  >
+                                    {isApplied ? <Check size={13} /> : <Sliders size={13} />}
+                                    <span>
+                                      {isApplied ? `Đã áp dụng: ${action.label}` : action.label}
+                                    </span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
 
                         {/* Quick Voice Read-Aloud & Copy Bar for AI Bot Replies */}
                         {isAiMessage && m.text && (

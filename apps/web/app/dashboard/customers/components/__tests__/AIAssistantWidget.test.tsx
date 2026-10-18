@@ -529,4 +529,56 @@ describe('AIAssistantWidget (Private Workspace AI Copilot)', () => {
     });
     expect(localStorage.getItem('mos_copilot_playback_rate')).toBeDefined();
   });
+
+  it('renders multiple suggested action cards and sanitizes raw action tags from message content (MOS-BUG-115)', async () => {
+    (aiApi.ai.sendMessage as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      sessionId: 'sess-multi-actions',
+      message: {
+        id: 'msg-multi',
+        sessionId: 'sess-multi-actions',
+        role: 'assistant',
+        content:
+          'Chào bạn, tôi đề xuất các bộ lọc sau:\n<action type="APPLY_FILTER" label="🎯 Lọc COMBO_LIVE">{"activeTab":"COMBO_LIVE"}</action>\n<action type="APPLY_FILTER" label="💎 Lọc khách lẻ">{"activeTab":"NOT_COMBO_LIVE"}</action>',
+        suggestedActions: [
+          { type: 'APPLY_FILTER', label: '🎯 Lọc COMBO_LIVE', payload: { activeTab: 'COMBO_LIVE' } },
+          { type: 'APPLY_FILTER', label: '💎 Lọc khách lẻ', payload: { activeTab: 'NOT_COMBO_LIVE' } },
+        ],
+        createdAt: new Date().toISOString(),
+      },
+      session: { id: 'sess-multi-actions', staffId: 99, title: 'Multi action session' },
+      source: 'gemini',
+    });
+
+    const mockApplyFilter = vi.fn();
+    render(<AIAssistantWidget themeMode="dark" currentUser={mockCurrentUser} onApplyFilter={mockApplyFilter} />);
+
+    // Open drawer
+    await act(async () => {
+      fireEvent.click(screen.getByText('mOS Copilot').closest('button')!);
+    });
+
+    const quickBtn = screen.getByText('Lọc khách NYC 60 chi tiêu > 1tr').closest('button');
+    await act(async () => {
+      fireEvent.click(quickBtn!);
+    });
+
+    // Verify raw code/tags are NOT rendered in message bubble
+    expect(screen.queryByText(/<action/)).toBeNull();
+    expect(screen.queryByText(/<\/action>/)).toBeNull();
+    expect(screen.getByText('Chào bạn, tôi đề xuất các bộ lọc sau:')).toBeDefined();
+
+    // Verify both action cards are rendered
+    expect(screen.getByText('🎯 Lọc COMBO_LIVE')).toBeDefined();
+    expect(screen.getByText('💎 Lọc khách lẻ')).toBeDefined();
+
+    // Click the second action card button
+    const applyButtons = screen.getAllByText('Áp dụng vào bảng hiện tại');
+    expect(applyButtons.length).toBe(2);
+
+    await act(async () => {
+      fireEvent.click(applyButtons[1]);
+    });
+
+    expect(mockApplyFilter).toHaveBeenCalledWith({ activeTab: 'NOT_COMBO_LIVE' });
+  });
 });

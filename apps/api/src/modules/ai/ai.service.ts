@@ -51,43 +51,61 @@ export interface ParsedAiResponse {
   content: string;
   thinking: string | null;
   suggestedAction: AiChatAction | null;
+  suggestedActions?: AiChatAction[];
 }
 
 export function extractThinkingAndAction(rawText: string): ParsedAiResponse {
-  let content = rawText;
+  let content = rawText || '';
   let thinking: string | null = null;
-  let suggestedAction: AiChatAction | null = null;
+  const suggestedActions: AiChatAction[] = [];
 
-  // Extract <thinking>...</thinking>
+  // 1. Extract <thinking>...</thinking>
   const thinkingMatch = content.match(/<thinking>([\s\S]*?)<\/thinking>/i);
   if (thinkingMatch) {
     thinking = thinkingMatch[1].trim();
-    content = content.replace(/<thinking>[\s\S]*?<\/thinking>/i, '').trim();
+    content = content.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '').trim();
   }
 
-  // Extract <action type="..." label="...">...</action>
-  const actionMatch = content.match(/<action(?:\s+type="([^"]*)")?(?:\s+label="([^"]*)")?>([\s\S]*?)<\/action>/i);
-  if (actionMatch) {
-    const type = (actionMatch[1]?.trim() || 'APPLY_FILTER') as AiChatAction['type'];
-    const label = actionMatch[2]?.trim() || 'Áp dụng bộ lọc gợi ý';
-    const payloadStr = actionMatch[3]?.trim() || '{}';
+  // 2. Extract ALL <action type="..." label="...">...</action>
+  const actionRegex = /<action(?:\s+type="([^"]*)")?(?:\s+label="([^"]*)")?>([\s\S]*?)<\/action>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = actionRegex.exec(content)) !== null) {
+    const type = (match[1]?.trim() || 'APPLY_FILTER') as AiChatAction['type'];
+    const label = match[2]?.trim() || 'Áp dụng bộ lọc gợi ý';
+    const payloadStr = match[3]?.trim() || '{}';
     try {
       const payload = JSON.parse(payloadStr);
-      suggestedAction = {
+      suggestedActions.push({
         type,
         label,
         payload,
-      };
+      });
     } catch {
       // ignore json parse error
     }
-    content = content.replace(/<action[\s\S]*?<\/action>/i, '').trim();
   }
 
+  // 3. Clean and strip ALL action tags globally from content so NO raw code or XML remains on UI
+  content = content
+    .replace(/<action[\s\S]*?<\/action>/gi, '')
+    .replace(/<\/?action[^>]*>/gi, '')
+    .replace(/<action\b[^<]*$/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  const suggestedAction: AiChatAction | null =
+    suggestedActions.length > 0
+      ? {
+          ...suggestedActions[0],
+          actions: suggestedActions,
+        }
+      : null;
+
   return {
-    content: content.trim(),
+    content,
     thinking,
     suggestedAction,
+    suggestedActions,
   };
 }
 
@@ -378,15 +396,44 @@ export class AiAssistantService {
         createdAt: session.createdAt.toISOString(),
         updatedAt: session.updatedAt.toISOString(),
       },
-      messages: session.messages.map((m) => ({
-        id: m.id,
-        sessionId: m.sessionId,
-        role: m.role as AiChatMessage['role'],
-        content: m.content,
-        thinking: m.thinking,
-        suggestedAction: m.suggestedActionJson ? JSON.parse(m.suggestedActionJson) : null,
-        createdAt: m.createdAt.toISOString(),
-      })),
+      messages: session.messages.map((m) => {
+        let suggestedAction = m.suggestedActionJson ? JSON.parse(m.suggestedActionJson) : null;
+        let content = m.content || '';
+        let suggestedActions: AiChatAction[] | null =
+          suggestedAction?.actions || (suggestedAction ? [suggestedAction] : null);
+
+        // Sanitize legacy content if it still contained unparsed <action> tags from past responses
+        if (content && /<action/i.test(content)) {
+          const parsed = extractThinkingAndAction(content);
+          content = parsed.content;
+          if (parsed.suggestedActions && parsed.suggestedActions.length > 0) {
+            const combined = [...(suggestedActions || []), ...parsed.suggestedActions];
+            const uniqueActions = combined.filter(
+              (act, index, self) =>
+                index ===
+                self.findIndex(
+                  (a) => a.label === act.label && JSON.stringify(a.payload) === JSON.stringify(act.payload)
+                )
+            );
+            suggestedActions = uniqueActions;
+            suggestedAction = {
+              ...(suggestedAction || uniqueActions[0]),
+              actions: uniqueActions,
+            };
+          }
+        }
+
+        return {
+          id: m.id,
+          sessionId: m.sessionId,
+          role: m.role as AiChatMessage['role'],
+          content,
+          thinking: m.thinking,
+          suggestedAction,
+          suggestedActions,
+          createdAt: m.createdAt.toISOString(),
+        };
+      }),
     };
   }
 
@@ -676,6 +723,7 @@ Quy định phản hồi:
         content: assistantMessageRecord.content,
         thinking: assistantMessageRecord.thinking,
         suggestedAction: parsedResponse.suggestedAction,
+        suggestedActions: parsedResponse.suggestedActions,
         source,
         createdAt: assistantMessageRecord.createdAt.toISOString(),
       },

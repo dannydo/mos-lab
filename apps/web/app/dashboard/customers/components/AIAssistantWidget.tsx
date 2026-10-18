@@ -155,7 +155,11 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
 
       stopSpeaking();
       setSpeakingMessageId(msg.id);
-      speakText(msg.content, {
+      const cleanContent = (msg.content || '')
+        .replace(/<action[\s\S]*?<\/action>/gi, '')
+        .replace(/<\/?action[^>]*>/gi, '')
+        .trim();
+      speakText(cleanContent, {
         rate: playbackRate,
         onStart: () => setSpeakingMessageId(msg.id),
         onEnd: () => setSpeakingMessageId((current) => (current === msg.id ? null : current)),
@@ -166,8 +170,12 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
   );
 
   const handleCopyContent = useCallback((msg: AiChatMessage) => {
-    if (!msg.content) return;
-    navigator.clipboard.writeText(msg.content).then(() => {
+    const cleanContent = (msg.content || '')
+      .replace(/<action[\s\S]*?<\/action>/gi, '')
+      .replace(/<\/?action[^>]*>/gi, '')
+      .trim();
+    if (!cleanContent) return;
+    navigator.clipboard.writeText(cleanContent).then(() => {
       setCopiedMessageId(msg.id);
       setTimeout(() => setCopiedMessageId((cur) => (cur === msg.id ? null : cur)), 2000);
     });
@@ -420,10 +428,14 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
   };
 
   // Handle applying action to current board
-  const handleExecuteAction = (action: AiChatAction, messageId: string) => {
+  const handleExecuteAction = (action: AiChatAction, messageId: string, actionKey?: string) => {
     if (action.type === 'APPLY_FILTER' && action.payload) {
       onApplyFilter(action.payload);
-      setAppliedActions((prev) => ({ ...prev, [messageId]: true }));
+      setAppliedActions((prev) => ({
+        ...prev,
+        [messageId]: true,
+        ...(actionKey ? { [actionKey]: true } : {}),
+      }));
     }
   };
 
@@ -912,7 +924,12 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
                               }`
                       }`}
                     >
-                      <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+                      <div className="whitespace-pre-wrap break-words">
+                        {(msg.content || '')
+                          .replace(/<action[\s\S]*?<\/action>/gi, '')
+                          .replace(/<\/?action[^>]*>/gi, '')
+                          .trim()}
+                      </div>
                       {msg.id.startsWith('err-') && lastFailedMessage && (
                         <div className="mt-2 pt-2 border-t border-rose-200/60 dark:border-rose-900/40 flex items-center justify-between gap-2">
                           <span className="text-[11px] text-rose-500">Mất kết nối máy chủ AI</span>
@@ -982,51 +999,76 @@ export function AIAssistantWidget({ currentFilterCriteria, onApplyFilter, curren
                       </div>
                     )}
 
-                    {/* Action Suggestion Card */}
-                    {!isUser && msg.suggestedAction && (
-                      <div className="w-full max-w-[90%] mt-2 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/60 dark:bg-emerald-950/30 shadow-sm">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Sliders className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-                          <span className="font-bold text-xs text-emerald-900 dark:text-emerald-200">
-                            {msg.suggestedAction.label}
-                          </span>
-                        </div>
+                    {/* Action Suggestion Card(s) */}
+                    {!isUser && (() => {
+                      const actionsList =
+                        msg.suggestedActions && msg.suggestedActions.length > 0
+                          ? msg.suggestedActions
+                          : msg.suggestedAction?.actions && msg.suggestedAction.actions.length > 0
+                            ? msg.suggestedAction.actions
+                            : msg.suggestedAction
+                              ? [msg.suggestedAction]
+                              : [];
+                      if (!actionsList || actionsList.length === 0) return null;
 
-                        {/* Criteria details */}
-                        <div className="flex flex-wrap gap-1.5 mb-2.5">
-                          {Object.entries(msg.suggestedAction.payload).map(([k, v]) => (
-                            <span
-                              key={k}
-                              className="px-2 py-0.5 rounded text-[10px] font-mono bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900 text-slate-700 dark:text-slate-300"
-                            >
-                              {k}: <strong className="text-emerald-600 dark:text-emerald-400">{String(v)}</strong>
-                            </span>
-                          ))}
-                        </div>
+                      return (
+                        <div className="w-full max-w-[90%] mt-2 flex flex-col gap-2">
+                          {actionsList.map((action, actionIdx) => {
+                            const actionKey = `${msg.id}-${actionIdx}`;
+                            const isActionApplied = Boolean(
+                              appliedActions[actionKey] || (actionIdx === 0 && appliedActions[msg.id])
+                            );
+                            return (
+                              <div
+                                key={actionKey}
+                                className="w-full p-3 rounded-xl border border-emerald-200 dark:border-emerald-800/80 bg-emerald-50/60 dark:bg-emerald-950/30 shadow-sm"
+                              >
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Sliders className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                                  <span className="font-bold text-xs text-emerald-900 dark:text-emerald-200">
+                                    {action.label}
+                                  </span>
+                                </div>
 
-                        <button
-                          type="button"
-                          onClick={() => handleExecuteAction(msg.suggestedAction!, msg.id)}
-                          className={`w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all ${
-                            isActionApplied
-                              ? 'bg-emerald-600 text-white'
-                              : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm hover:shadow'
-                          }`}
-                        >
-                          {isActionApplied ? (
-                            <>
-                              <Check className="w-3.5 h-3.5" />
-                              <span>Đã áp dụng vào bảng dữ liệu</span>
-                            </>
-                          ) : (
-                            <>
-                              <Sliders className="w-3.5 h-3.5" />
-                              <span>Áp dụng vào bảng hiện tại</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    )}
+                                {/* Criteria details */}
+                                <div className="flex flex-wrap gap-1.5 mb-2.5">
+                                  {Object.entries(action.payload).map(([k, v]) => (
+                                    <span
+                                      key={k}
+                                      className="px-2 py-0.5 rounded text-[10px] font-mono bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-900 text-slate-700 dark:text-slate-300"
+                                    >
+                                      {k}: <strong className="text-emerald-600 dark:text-emerald-400">{String(v)}</strong>
+                                    </span>
+                                  ))}
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleExecuteAction(action, msg.id, actionKey)}
+                                  className={`w-full flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all ${
+                                    isActionApplied
+                                      ? 'bg-emerald-600 text-white'
+                                      : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm hover:shadow'
+                                  }`}
+                                >
+                                  {isActionApplied ? (
+                                    <>
+                                      <Check className="w-3.5 h-3.5" />
+                                      <span>Đã áp dụng vào bảng dữ liệu</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Sliders className="w-3.5 h-3.5" />
+                                      <span>Áp dụng vào bảng hiện tại</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })

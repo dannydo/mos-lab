@@ -3,6 +3,7 @@ export interface AiChatAction {
   label: string;
   payload: Record<string, unknown>;
   description?: string;
+  actions?: AiChatAction[];
 }
 
 export interface AiChatMessage {
@@ -12,6 +13,7 @@ export interface AiChatMessage {
   content: string;
   thinking?: string | null;
   suggestedAction?: AiChatAction | null;
+  suggestedActions?: AiChatAction[] | null;
   source?: 'ag' | 'gemini' | 'fallback';
   createdAt: string;
 }
