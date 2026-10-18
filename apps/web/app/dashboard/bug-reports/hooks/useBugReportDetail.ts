@@ -10,6 +10,7 @@ import type {
   BugReportSummary,
   TriageBugReportRequest,
   InboxImplementationExecutionOwner,
+  InboxImplementationModelTier,
 } from '@mos-lab/shared';
 import { parseDuplicateKey } from '../bug-report-presenters';
 import type { useBugReports } from './useBugReports';
@@ -277,17 +278,19 @@ export function useBugReportDetail({
   );
 
   const approveCodeExecution = useCallback(
-    async (executionOwner?: InboxImplementationExecutionOwner) => {
+    async (executionOwner?: InboxImplementationExecutionOwner, modelTier?: InboxImplementationModelTier) => {
       if (!detail || approvalPending.current || reviewPending.current || approvalReceived) return;
       approvalPending.current = true;
       setSaving(true);
       setApprovalReceived(true);
       try {
-        const outcome = executionOwner
-          ? await approveImplementation(detail.id, detail.planReview ?? undefined, executionOwner)
-          : detail.planReview
-            ? await approveImplementation(detail.id, detail.planReview)
-            : await approveImplementation(detail.id);
+        const outcome = modelTier
+          ? await approveImplementation(detail.id, detail.planReview ?? undefined, executionOwner, modelTier)
+          : executionOwner
+            ? await approveImplementation(detail.id, detail.planReview ?? undefined, executionOwner)
+            : detail.planReview
+              ? await approveImplementation(detail.id, detail.planReview)
+              : await approveImplementation(detail.id);
         if (outcome.implementationQueued) {
           setStatus('IN_PROGRESS');
         }

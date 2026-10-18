@@ -554,6 +554,10 @@ export type InboxImplementationJobStatus = (typeof INBOX_IMPLEMENTATION_JOB_STAT
 export const INBOX_IMPLEMENTATION_EXECUTION_OWNERS = ['IDE', 'AG', 'AUTO'] as const;
 export type InboxImplementationExecutionOwner = (typeof INBOX_IMPLEMENTATION_EXECUTION_OWNERS)[number];
 
+/** Antigravity model tier selected by Danny when approving code/test execution. */
+export const INBOX_IMPLEMENTATION_MODEL_TIERS = ['flash_lite', 'flash', 'pro'] as const;
+export type InboxImplementationModelTier = (typeof INBOX_IMPLEMENTATION_MODEL_TIERS)[number];
+
 /** Safe, durable IDE task locator rendered by Inbox; never includes the receipt nonce. */
 export interface BugReportIdeHandoffState {
   reference: string;
@@ -575,6 +579,7 @@ export interface InboxIdeTaskProvisioningRequest {
   branchName: string;
   sourceVersion: string;
   planVersion: string;
+  modelTier?: InboxImplementationModelTier;
 }
 
 export interface CompleteInboxIdeTaskProvisioningRequest {
@@ -606,6 +611,7 @@ export interface BugReportImplementationState {
   reviewCandidate?: { jobId: string; sourceVersion: string; planVersion: string } | null;
   status: InboxImplementationJobStatus;
   executionOwner?: InboxImplementationExecutionOwner;
+  modelTier?: InboxImplementationModelTier;
   /** Present only for an IDE-owned durable implementation job. */
   ideHandoff?: BugReportIdeHandoffState | null;
   phase: string;
@@ -993,6 +999,7 @@ export interface ApproveBugReportImplementationRequest {
   acknowledged: true;
   planReview?: BugReportPlanReviewCandidate;
   executionOwner?: InboxImplementationExecutionOwner;
+  modelTier?: InboxImplementationModelTier;
 }
 
 export interface BugReportPlanReviewCandidate {

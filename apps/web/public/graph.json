@@ -2734,6 +2734,24 @@
       }
     },
     {
+      "id": "prisma:crm:CrmCustomerElsaReservation",
+      "type": "PrismaModel",
+      "label": "crm.CrmCustomerElsaReservation",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmCustomerElsaReservation",
+        "tableName": "crm_customer_elsa_reservations",
+        "fieldCount": 18,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
       "id": "prisma:legacy:client_store_language",
       "type": "PrismaModel",
       "label": "legacy.client_store_language",
@@ -6080,7 +6098,7 @@
         "path": "/api/bug-reports/:id/implementation-retry",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 858
+        "line": 859
       }
     },
     {
@@ -6094,7 +6112,7 @@
         "path": "/api/bug-reports/:id/ide-implementation-receipt",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 882
+        "line": 883
       }
     },
     {
@@ -6108,7 +6126,7 @@
         "path": "/api/bug-reports/:id/ide-handoff-cancel",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 908
+        "line": 909
       }
     },
     {
@@ -6122,7 +6140,7 @@
         "path": "/api/bug-reports/:id/ide-commit-receipt",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 922
+        "line": 923
       }
     },
     {
@@ -6136,7 +6154,7 @@
         "path": "/api/bug-reports/:id/implementation-worker-recovery-retry",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 948
+        "line": 949
       }
     },
     {
@@ -6150,7 +6168,7 @@
         "path": "/api/bug-reports/:id/implementation-commit-approval",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 977
+        "line": 978
       }
     },
     {
@@ -6164,7 +6182,7 @@
         "path": "/api/bug-reports/:id/implementation-deploy-approval",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1002
+        "line": 1003
       }
     },
     {
@@ -6178,7 +6196,7 @@
         "path": "/api/bug-reports/:id/implementation-request-changes",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1027
+        "line": 1028
       }
     },
     {
@@ -6192,7 +6210,7 @@
         "path": "/api/bug-reports/:id/plan-request-changes",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1051
+        "line": 1052
       }
     },
     {
@@ -6206,7 +6224,7 @@
         "path": "/api/ide-release-checkpoints/:id",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1075
+        "line": 1076
       }
     },
     {
@@ -6220,7 +6238,7 @@
         "path": "/api/bug-reports/:id/implementation-acceptance",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1089
+        "line": 1090
       }
     },
     {
@@ -6234,7 +6252,7 @@
         "path": "/api/bug-reports/:id/confirm-close",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1107
+        "line": 1108
       }
     },
     {
@@ -6248,7 +6266,7 @@
         "path": "/api/bug-reports/:id/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1126
+        "line": 1127
       }
     },
     {
@@ -6262,7 +6280,7 @@
         "path": "/api/agent/bug-reports",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1144
+        "line": 1145
       }
     },
     {
@@ -6276,7 +6294,7 @@
         "path": "/api/agent/bug-reports/:key",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1152
+        "line": 1153
       }
     },
     {
@@ -6290,7 +6308,7 @@
         "path": "/api/agent/bug-reports/:key/clarification",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1161
+        "line": 1162
       }
     },
     {
@@ -6304,7 +6322,7 @@
         "path": "/api/agent/bug-reports/:key/progress",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1180
+        "line": 1181
       }
     },
     {
@@ -6318,7 +6336,7 @@
         "path": "/api/agent/bug-reports/:key/fixed",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1194
+        "line": 1195
       }
     },
     {
@@ -6332,7 +6350,7 @@
         "path": "/api/agent/bug-reports/:key/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1204
+        "line": 1205
       }
     },
     {
@@ -6346,7 +6364,7 @@
         "path": "/api/request-classifier/heartbeat",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1222
+        "line": 1223
       }
     },
     {
@@ -6360,7 +6378,7 @@
         "path": "/api/request-classifier/health/heartbeat",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1234
+        "line": 1235
       }
     },
     {
@@ -6374,7 +6392,7 @@
         "path": "/api/request-classifier/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1247
+        "line": 1248
       }
     },
     {
@@ -6388,7 +6406,7 @@
         "path": "/api/request-classifier/conversations/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1257
+        "line": 1258
       }
     },
     {
@@ -6402,7 +6420,7 @@
         "path": "/api/request-classifier/conversations/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1270
+        "line": 1271
       }
     },
     {
@@ -6416,7 +6434,7 @@
         "path": "/api/request-classifier/conversations/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1290
+        "line": 1291
       }
     },
     {
@@ -6430,7 +6448,7 @@
         "path": "/api/request-classifier/inbox-follow-ups/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1309
+        "line": 1310
       }
     },
     {
@@ -6444,7 +6462,7 @@
         "path": "/api/request-classifier/inbox-follow-ups/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1322
+        "line": 1323
       }
     },
     {
@@ -6458,7 +6476,7 @@
         "path": "/api/request-classifier/inbox-follow-ups/:id/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1351
+        "line": 1352
       }
     },
     {
@@ -6472,7 +6490,7 @@
         "path": "/api/request-classifier/inbox-follow-ups/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1371
+        "line": 1372
       }
     },
     {
@@ -6486,7 +6504,7 @@
         "path": "/api/request-classifier/inbox-plans/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1389
+        "line": 1390
       }
     },
     {
@@ -6500,7 +6518,7 @@
         "path": "/api/request-classifier/inbox-plans/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1402
+        "line": 1403
       }
     },
     {
@@ -6514,7 +6532,7 @@
         "path": "/api/request-classifier/inbox-plans/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1426
+        "line": 1427
       }
     },
     {
@@ -6528,7 +6546,7 @@
         "path": "/api/request-classifier/inbox-implementations/claim",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1444
+        "line": 1445
       }
     },
     {
@@ -6542,7 +6560,7 @@
         "path": "/api/request-classifier/inbox-implementations/quality-gate-recovery-self-checks",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1462
+        "line": 1463
       }
     },
     {
@@ -6556,7 +6574,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/quality-gate-recovery-self-check",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1473
+        "line": 1474
       }
     },
     {
@@ -6570,7 +6588,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/start",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1489
+        "line": 1490
       }
     },
     {
@@ -6584,7 +6602,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/renew",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1509
+        "line": 1510
       }
     },
     {
@@ -6598,7 +6616,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1532
+        "line": 1533
       }
     },
     {
@@ -6612,7 +6630,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/commit-complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1563
+        "line": 1564
       }
     },
     {
@@ -6626,7 +6644,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/deploy-complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1581
+        "line": 1582
       }
     },
     {
@@ -6640,7 +6658,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/progress",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1598
+        "line": 1599
       }
     },
     {
@@ -6654,7 +6672,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/continue",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1629
+        "line": 1630
       }
     },
     {
@@ -6668,7 +6686,7 @@
         "path": "/api/request-classifier/inbox-implementations/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1658
+        "line": 1659
       }
     },
     {
@@ -6682,7 +6700,7 @@
         "path": "/api/request-classifier/jobs/:id/attachments/:attachmentId",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1678
+        "line": 1679
       }
     },
     {
@@ -6696,7 +6714,7 @@
         "path": "/api/request-classifier/jobs/:id/complete",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1701
+        "line": 1702
       }
     },
     {
@@ -6710,7 +6728,7 @@
         "path": "/api/request-classifier/jobs/:id/fail",
         "module": "bug-reports",
         "handler": "inlineHandler",
-        "line": 1721
+        "line": 1722
       }
     },
     {
@@ -8712,7 +8730,7 @@
         "path": "/api/customers/:id/history",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 334
+        "line": 362
       }
     },
     {
@@ -8726,7 +8744,7 @@
         "path": "/api/customers/:id",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 383
+        "line": 411
       }
     },
     {
@@ -8740,7 +8758,7 @@
         "path": "/api/customers/:id/detailed",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 515
+        "line": 543
       }
     },
     {
@@ -8754,7 +8772,7 @@
         "path": "/api/customers/:id/summary",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1477
+        "line": 1535
       }
     },
     {
@@ -8768,7 +8786,7 @@
         "path": "/api/customers/:id/bookings",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1814
+        "line": 1901
       }
     },
     {
@@ -8782,7 +8800,77 @@
         "path": "/api/customers/:id/calls",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 2036
+        "line": 2123
+      }
+    },
+    {
+      "id": "route:POST:/api/customers/:id/elsa-reservation",
+      "type": "FastifyRoute",
+      "label": "POST /api/customers/:id/elsa-reservation",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/customers/routes/customer-elsa.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/customers/:id/elsa-reservation",
+        "module": "customers",
+        "handler": "inlineHandler",
+        "line": 11
+      }
+    },
+    {
+      "id": "route:PUT:/api/customers/:id/elsa-reservation",
+      "type": "FastifyRoute",
+      "label": "PUT /api/customers/:id/elsa-reservation",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/customers/routes/customer-elsa.routes.ts",
+      "metadata": {
+        "method": "PUT",
+        "path": "/api/customers/:id/elsa-reservation",
+        "module": "customers",
+        "handler": "inlineHandler",
+        "line": 94
+      }
+    },
+    {
+      "id": "route:POST:/api/customers/:id/elsa-reservation/release",
+      "type": "FastifyRoute",
+      "label": "POST /api/customers/:id/elsa-reservation/release",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/customers/routes/customer-elsa.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/customers/:id/elsa-reservation/release",
+        "module": "customers",
+        "handler": "inlineHandler",
+        "line": 169
+      }
+    },
+    {
+      "id": "route:GET:/api/customers/:id/elsa-reservation",
+      "type": "FastifyRoute",
+      "label": "GET /api/customers/:id/elsa-reservation",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/customers/routes/customer-elsa.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/customers/:id/elsa-reservation",
+        "module": "customers",
+        "handler": "inlineHandler",
+        "line": 219
+      }
+    },
+    {
+      "id": "route:GET:/api/customers/elsa/reminders",
+      "type": "FastifyRoute",
+      "label": "GET /api/customers/elsa/reminders",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/customers/routes/customer-elsa.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/customers/elsa/reminders",
+        "module": "customers",
+        "handler": "inlineHandler",
+        "line": 261
       }
     },
     {
@@ -8810,7 +8898,7 @@
         "path": "/api/customers/random-ids",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1678
+        "line": 1788
       }
     },
     {
@@ -9034,7 +9122,7 @@
         "path": "/api/customers/loca-stats",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 816
+        "line": 822
       }
     },
     {
@@ -9048,7 +9136,7 @@
         "path": "/api/customers/nyc-stats",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1279
+        "line": 1285
       }
     },
     {
@@ -18282,6 +18370,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:InboxImplementationModelTier",
+      "type": "SharedType",
+      "label": "InboxImplementationModelTier",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bug-report.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InboxImplementationModelTier",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:BugReportIdeHandoffState",
       "type": "SharedType",
       "label": "BugReportIdeHandoffState",
@@ -21866,6 +21966,42 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "Customer",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CustomerElsaReservation",
+      "type": "SharedType",
+      "label": "CustomerElsaReservation",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CustomerElsaReservation",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreateElsaReservationInput",
+      "type": "SharedType",
+      "label": "CreateElsaReservationInput",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreateElsaReservationInput",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ReleaseElsaReservationInput",
+      "type": "SharedType",
+      "label": "ReleaseElsaReservationInput",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ReleaseElsaReservationInput",
         "package": "@mos-lab/shared"
       }
     },
@@ -28818,6 +28954,18 @@
       }
     },
     {
+      "id": "uicomp:ElsaReservationModal",
+      "type": "UIComponent",
+      "label": "<ElsaReservationModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/customer-detail/components/ElsaReservationModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "ElsaReservationModal",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:GemHistoryModal",
       "type": "UIComponent",
       "label": "<GemHistoryModal />",
@@ -30570,8 +30718,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13630091,
-        "lineCount": 296794,
+        "sizeBytes": 13695108,
+        "lineCount": 298332,
         "ext": ".ts"
       }
     },
@@ -31324,8 +31472,8 @@
       "filePath": "apps/api/src/modules/bug-reports/bug-report.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 127717,
-        "lineCount": 3054,
+        "sizeBytes": 128227,
+        "lineCount": 3064,
         "ext": ".ts"
       }
     },
@@ -31480,8 +31628,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-implementation.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 80423,
-        "lineCount": 2240,
+        "sizeBytes": 81112,
+        "lineCount": 2252,
         "ext": ".ts"
       }
     },
@@ -31493,8 +31641,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-implementation.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 157676,
-        "lineCount": 3955,
+        "sizeBytes": 159837,
+        "lineCount": 4005,
         "ext": ".ts"
       }
     },
@@ -31688,8 +31836,8 @@
       "filePath": "apps/api/src/modules/bug-reports/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 70842,
-        "lineCount": 1736,
+        "sizeBytes": 70868,
+        "lineCount": 1737,
         "ext": ".ts"
       }
     },
@@ -31896,8 +32044,8 @@
       "filePath": "apps/api/src/modules/chat/chat-mission-bridge.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 45626,
-        "lineCount": 1184,
+        "sizeBytes": 45364,
+        "lineCount": 1149,
         "ext": ".ts"
       }
     },
@@ -31909,8 +32057,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 89564,
-        "lineCount": 2433,
+        "sizeBytes": 89563,
+        "lineCount": 2432,
         "ext": ".ts"
       }
     },
@@ -32143,8 +32291,34 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-detail.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 89541,
-        "lineCount": 2102,
+        "sizeBytes": 94346,
+        "lineCount": 2189,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/customers/routes/customer-elsa.routes.test.ts",
+      "type": "File",
+      "label": "customer-elsa.routes.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/customer-elsa.routes.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6968,
+        "lineCount": 236,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/customers/routes/customer-elsa.routes.ts",
+      "type": "File",
+      "label": "customer-elsa.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/customer-elsa.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 12033,
+        "lineCount": 334,
         "ext": ".ts"
       }
     },
@@ -32156,8 +32330,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-list.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 87029,
-        "lineCount": 2104,
+        "sizeBytes": 92934,
+        "lineCount": 2235,
         "ext": ".ts"
       }
     },
@@ -32208,8 +32382,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-stats.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 55248,
-        "lineCount": 1366,
+        "sizeBytes": 55881,
+        "lineCount": 1372,
         "ext": ".ts"
       }
     },
@@ -32286,8 +32460,8 @@
       "filePath": "apps/api/src/modules/customers/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 1849,
-        "lineCount": 36,
+        "sizeBytes": 1973,
+        "lineCount": 38,
         "ext": ".ts"
       }
     },
@@ -35152,6 +35326,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/scripts/data-migrations/20261018000000_create_crm_customer_elsa_reservations.ts",
+      "type": "File",
+      "label": "20261018000000_create_crm_customer_elsa_reservations.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/scripts/data-migrations/20261018000000_create_crm_customer_elsa_reservations.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3552,
+        "lineCount": 68,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/scripts/data-migrations/types.ts",
       "type": "File",
       "label": "types.ts",
@@ -37239,8 +37426,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26403,
-        "lineCount": 571,
+        "sizeBytes": 27425,
+        "lineCount": 601,
         "ext": ".tsx"
       }
     },
@@ -37252,8 +37439,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 41407,
-        "lineCount": 892,
+        "sizeBytes": 44138,
+        "lineCount": 956,
         "ext": ".tsx"
       }
     },
@@ -37486,8 +37673,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/hooks/useBugReportDetail.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24619,
-        "lineCount": 648,
+        "sizeBytes": 24833,
+        "lineCount": 651,
         "ext": ".ts"
       }
     },
@@ -37499,8 +37686,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/hooks/useBugReports.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17468,
-        "lineCount": 496,
+        "sizeBytes": 17593,
+        "lineCount": 499,
         "ext": ".ts"
       }
     },
@@ -38266,8 +38453,8 @@
       "filePath": "apps/web/app/dashboard/customers/components/CustomerTable.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 26985,
-        "lineCount": 671,
+        "sizeBytes": 27926,
+        "lineCount": 689,
         "ext": ".tsx"
       }
     },
@@ -38474,8 +38661,8 @@
       "filePath": "apps/web/app/dashboard/customers/hooks/useCustomerList.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17010,
-        "lineCount": 413,
+        "sizeBytes": 17314,
+        "lineCount": 422,
         "ext": ".ts"
       }
     },
@@ -38513,8 +38700,8 @@
       "filePath": "apps/web/app/dashboard/customers/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23049,
-        "lineCount": 619,
+        "sizeBytes": 23243,
+        "lineCount": 624,
         "ext": ".tsx"
       }
     },
@@ -41100,8 +41287,8 @@
       "filePath": "apps/web/lib/api/chat.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6876,
-        "lineCount": 179,
+        "sizeBytes": 6875,
+        "lineCount": 178,
         "ext": ".ts"
       }
     },
@@ -41113,8 +41300,8 @@
       "filePath": "apps/web/lib/api/customers.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18653,
-        "lineCount": 483,
+        "sizeBytes": 20192,
+        "lineCount": 519,
         "ext": ".ts"
       }
     },
@@ -41529,8 +41716,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 117010,
-        "lineCount": 1647,
+        "sizeBytes": 119229,
+        "lineCount": 1677,
         "ext": ".ts"
       }
     },
@@ -41542,8 +41729,8 @@
       "filePath": "packages/shared/src/constants/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2751,
-        "lineCount": 119,
+        "sizeBytes": 2966,
+        "lineCount": 124,
         "ext": ".ts"
       }
     },
@@ -41763,8 +41950,8 @@
       "filePath": "packages/shared/src/types/bug-report.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 45690,
-        "lineCount": 1424,
+        "sizeBytes": 46090,
+        "lineCount": 1431,
         "ext": ".ts"
       }
     },
@@ -41906,8 +42093,8 @@
       "filePath": "packages/shared/src/types/customer.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 20097,
-        "lineCount": 759,
+        "sizeBytes": 21077,
+        "lineCount": 795,
         "ext": ".ts"
       }
     },
@@ -42075,8 +42262,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 9116,
-        "lineCount": 375,
+        "sizeBytes": 9100,
+        "lineCount": 367,
         "ext": ".ts"
       }
     },
@@ -43453,6 +43640,13 @@
     {
       "id": "edge:prisma:crm:CrmCvPayrollAllowance:ws:apps/api",
       "source": "prisma:crm:CrmCvPayrollAllowance",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmCustomerElsaReservation:ws:apps/api",
+      "source": "prisma:crm:CrmCustomerElsaReservation",
       "target": "ws:apps/api",
       "type": "EXPORTS",
       "label": "DEFINED_IN"
@@ -46449,6 +46643,41 @@
     {
       "id": "edge:route:GET:/api/customers/:id/calls:ws:apps/api",
       "source": "route:GET:/api/customers/:id/calls",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/customers/:id/elsa-reservation:ws:apps/api",
+      "source": "route:POST:/api/customers/:id/elsa-reservation",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:PUT:/api/customers/:id/elsa-reservation:ws:apps/api",
+      "source": "route:PUT:/api/customers/:id/elsa-reservation",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/customers/:id/elsa-reservation/release:ws:apps/api",
+      "source": "route:POST:/api/customers/:id/elsa-reservation/release",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/customers/:id/elsa-reservation:ws:apps/api",
+      "source": "route:GET:/api/customers/:id/elsa-reservation",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/customers/elsa/reminders:ws:apps/api",
+      "source": "route:GET:/api/customers/elsa/reminders",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -51585,6 +51814,13 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:InboxImplementationModelTier:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InboxImplementationModelTier",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:BugReportIdeHandoffState:ws:packages/shared",
       "source": "type:@mos-lab/shared:BugReportIdeHandoffState",
       "target": "ws:packages/shared",
@@ -53673,6 +53909,27 @@
     {
       "id": "edge:type:@mos-lab/shared:Customer:ws:packages/shared",
       "source": "type:@mos-lab/shared:Customer",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CustomerElsaReservation:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CustomerElsaReservation",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CreateElsaReservationInput:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CreateElsaReservationInput",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ReleaseElsaReservationInput:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ReleaseElsaReservationInput",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -58312,6 +58569,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:ElsaReservationModal:ws:apps/web",
+      "source": "uicomp:ElsaReservationModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:ElsaReservationModal:token:color:primary",
+      "source": "uicomp:ElsaReservationModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:GemHistoryModal:ws:apps/web",
       "source": "uicomp:GemHistoryModal",
       "target": "ws:apps/web",
@@ -60771,6 +61042,20 @@
     {
       "id": "edge:file:apps/api/src/modules/customers/routes/customer-detail.routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/customers/routes/customer-detail.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/customer-elsa.routes.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/customer-elsa.routes.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/customer-elsa.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/customer-elsa.routes.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -65025,6 +65310,13 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
+      "id": "edge:file:apps/api/src/modules/customers/routes/customer-detail.routes.ts:prisma:crm:CrmCustomerElsaReservation",
+      "source": "file:apps/api/src/modules/customers/routes/customer-detail.routes.ts",
+      "target": "prisma:crm:CrmCustomerElsaReservation",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/customers/routes/customer-detail.routes.ts:prisma:legacy:order_service",
       "source": "file:apps/api/src/modules/customers/routes/customer-detail.routes.ts",
       "target": "prisma:legacy:order_service",
@@ -65037,6 +65329,13 @@
       "target": "prisma:legacy:user_contact",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/customer-elsa.routes.ts:prisma:crm:CrmCustomerElsaReservation",
+      "source": "file:apps/api/src/modules/customers/routes/customer-elsa.routes.ts",
+      "target": "prisma:crm:CrmCustomerElsaReservation",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
     },
     {
       "id": "edge:file:apps/api/src/modules/customers/routes/customer-list.routes.ts:prisma:crm:CrmStaff",
@@ -65091,6 +65390,13 @@
       "id": "edge:file:apps/api/src/modules/customers/routes/customer-list.routes.ts:prisma:crm:CrmCampaignCustomer",
       "source": "file:apps/api/src/modules/customers/routes/customer-list.routes.ts",
       "target": "prisma:crm:CrmCampaignCustomer",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/customer-list.routes.ts:prisma:crm:CrmCustomerElsaReservation",
+      "source": "file:apps/api/src/modules/customers/routes/customer-list.routes.ts",
+      "target": "prisma:crm:CrmCustomerElsaReservation",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -69869,6 +70175,41 @@
       "label": "CALLS customers.getMissedSummary"
     },
     {
+      "id": "edge:page:/dashboard/appointments:route:POST:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/appointments",
+      "target": "route:POST:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS customers.getMissedSummary"
+    },
+    {
+      "id": "edge:page:/dashboard/appointments:route:PUT:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/appointments",
+      "target": "route:PUT:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS customers.getMissedSummary"
+    },
+    {
+      "id": "edge:page:/dashboard/appointments:route:POST:/api/customers/:id/elsa-reservation/release",
+      "source": "page:/dashboard/appointments",
+      "target": "route:POST:/api/customers/:id/elsa-reservation/release",
+      "type": "API_CALL",
+      "label": "CALLS customers.getMissedSummary"
+    },
+    {
+      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/appointments",
+      "target": "route:GET:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS customers.getMissedSummary"
+    },
+    {
+      "id": "edge:page:/dashboard/appointments:route:GET:/api/customers/elsa/reminders",
+      "source": "page:/dashboard/appointments",
+      "target": "route:GET:/api/customers/elsa/reminders",
+      "type": "API_CALL",
+      "label": "CALLS customers.getMissedSummary"
+    },
+    {
       "id": "edge:page:/dashboard/appointments:route:GET:/api/customers",
       "source": "page:/dashboard/appointments",
       "target": "route:GET:/api/customers",
@@ -70845,6 +71186,41 @@
       "id": "edge:page:/dashboard/architecture:route:GET:/api/customers/:id/calls",
       "source": "page:/dashboard/architecture",
       "target": "route:GET:/api/customers/:id/calls",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:POST:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/architecture",
+      "target": "route:POST:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:PUT:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/architecture",
+      "target": "route:PUT:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:POST:/api/customers/:id/elsa-reservation/release",
+      "source": "page:/dashboard/architecture",
+      "target": "route:POST:/api/customers/:id/elsa-reservation/release",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:GET:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/architecture",
+      "target": "route:GET:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:GET:/api/customers/elsa/reminders",
+      "source": "page:/dashboard/architecture",
+      "target": "route:GET:/api/customers/elsa/reminders",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -73309,6 +73685,41 @@
       "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/:id/calls",
       "source": "page:/dashboard/design-system",
       "target": "route:GET:/api/customers/:id/calls",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:POST:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/design-system",
+      "target": "route:POST:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:PUT:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/design-system",
+      "target": "route:PUT:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:POST:/api/customers/:id/elsa-reservation/release",
+      "source": "page:/dashboard/design-system",
+      "target": "route:POST:/api/customers/:id/elsa-reservation/release",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/design-system",
+      "target": "route:GET:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:GET:/api/customers/elsa/reminders",
+      "source": "page:/dashboard/design-system",
+      "target": "route:GET:/api/customers/elsa/reminders",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -76627,6 +77038,41 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/customers/:id/calls",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/customers/:id/calls",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PUT:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:PUT:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/customers/:id/elsa-reservation/release",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/customers/:id/elsa-reservation/release",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/customers/elsa/reminders",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/customers/elsa/reminders",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -81454,6 +81900,41 @@
       "label": "CALLS customers.getStaff"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS customers.getStaff"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:PUT:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:PUT:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS customers.getStaff"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/customers/:id/elsa-reservation/release",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/customers/:id/elsa-reservation/release",
+      "type": "API_CALL",
+      "label": "CALLS customers.getStaff"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS customers.getStaff"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/customers/elsa/reminders",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/customers/elsa/reminders",
+      "type": "API_CALL",
+      "label": "CALLS customers.getStaff"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/customers",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/customers",
@@ -84737,6 +85218,41 @@
       "label": "CALLS customers.getReferrals"
     },
     {
+      "id": "edge:page:/dashboard/referrals:route:POST:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/referrals",
+      "target": "route:POST:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS customers.getReferrals"
+    },
+    {
+      "id": "edge:page:/dashboard/referrals:route:PUT:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/referrals",
+      "target": "route:PUT:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS customers.getReferrals"
+    },
+    {
+      "id": "edge:page:/dashboard/referrals:route:POST:/api/customers/:id/elsa-reservation/release",
+      "source": "page:/dashboard/referrals",
+      "target": "route:POST:/api/customers/:id/elsa-reservation/release",
+      "type": "API_CALL",
+      "label": "CALLS customers.getReferrals"
+    },
+    {
+      "id": "edge:page:/dashboard/referrals:route:GET:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/referrals",
+      "target": "route:GET:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS customers.getReferrals"
+    },
+    {
+      "id": "edge:page:/dashboard/referrals:route:GET:/api/customers/elsa/reminders",
+      "source": "page:/dashboard/referrals",
+      "target": "route:GET:/api/customers/elsa/reminders",
+      "type": "API_CALL",
+      "label": "CALLS customers.getReferrals"
+    },
+    {
       "id": "edge:page:/dashboard/referrals:route:GET:/api/customers",
       "source": "page:/dashboard/referrals",
       "target": "route:GET:/api/customers",
@@ -85139,6 +85655,41 @@
       "id": "edge:page:/dashboard/schedule-calendar:route:GET:/api/customers/:id/calls",
       "source": "page:/dashboard/schedule-calendar",
       "target": "route:GET:/api/customers/:id/calls",
+      "type": "API_CALL",
+      "label": "CALLS customers.getAppointments"
+    },
+    {
+      "id": "edge:page:/dashboard/schedule-calendar:route:POST:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/schedule-calendar",
+      "target": "route:POST:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS customers.getAppointments"
+    },
+    {
+      "id": "edge:page:/dashboard/schedule-calendar:route:PUT:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/schedule-calendar",
+      "target": "route:PUT:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS customers.getAppointments"
+    },
+    {
+      "id": "edge:page:/dashboard/schedule-calendar:route:POST:/api/customers/:id/elsa-reservation/release",
+      "source": "page:/dashboard/schedule-calendar",
+      "target": "route:POST:/api/customers/:id/elsa-reservation/release",
+      "type": "API_CALL",
+      "label": "CALLS customers.getAppointments"
+    },
+    {
+      "id": "edge:page:/dashboard/schedule-calendar:route:GET:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/schedule-calendar",
+      "target": "route:GET:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS customers.getAppointments"
+    },
+    {
+      "id": "edge:page:/dashboard/schedule-calendar:route:GET:/api/customers/elsa/reminders",
+      "source": "page:/dashboard/schedule-calendar",
+      "target": "route:GET:/api/customers/elsa/reminders",
       "type": "API_CALL",
       "label": "CALLS customers.getAppointments"
     },
@@ -86126,6 +86677,41 @@
       "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/customers/:id/calls",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:GET:/api/customers/:id/calls",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:POST:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:PUT:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:PUT:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/customers/:id/elsa-reservation/release",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:POST:/api/customers/:id/elsa-reservation/release",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:GET:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/customers/elsa/reminders",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:GET:/api/customers/elsa/reminders",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -89427,6 +90013,41 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:PUT:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:PUT:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/customers/:id/elsa-reservation/release",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/customers/:id/elsa-reservation/release",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/customers/:id/elsa-reservation",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/customers/:id/elsa-reservation",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/customers/elsa/reminders",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/customers/elsa/reminders",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/customers",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/customers",
@@ -91444,31 +92065,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3249,
-    "totalEdges": 7005,
+    "totalNodes": 3263,
+    "totalEdges": 7067,
     "nodeTypeCounts": {
       "Workspace": 3,
-      "PrismaModel": 165,
-      "FastifyRoute": 689,
+      "PrismaModel": 166,
+      "FastifyRoute": 694,
       "Component": 58,
-      "SharedType": 1184,
+      "SharedType": 1188,
       "DesignToken": 12,
-      "UIComponent": 222,
-      "File": 916
+      "UIComponent": 223,
+      "File": 919
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1361,
-      "HANDLES_ROUTE": 689,
-      "RENDERS": 280,
-      "USES_TOKEN": 224,
-      "IMPORTS": 485,
-      "QUERIES_MODEL": 394,
-      "API_CALL": 3572
+      "EXPORTS": 1366,
+      "HANDLES_ROUTE": 694,
+      "RENDERS": 281,
+      "USES_TOKEN": 225,
+      "IMPORTS": 487,
+      "QUERIES_MODEL": 397,
+      "API_CALL": 3617
     },
-    "fastifyRouteCount": 694,
-    "prismaModelCount": 165,
+    "fastifyRouteCount": 699,
+    "prismaModelCount": 166,
     "nextPageCount": 58,
-    "sharedTypeCount": 1184
+    "sharedTypeCount": 1188
   },
   "routes": [
     {
@@ -94359,6 +94980,41 @@
       "method": "GET",
       "path": "/api/customers/:id/calls",
       "filePath": "apps/api/src/modules/customers/routes/customer-detail.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "customers"
+    },
+    {
+      "method": "POST",
+      "path": "/api/customers/:id/elsa-reservation",
+      "filePath": "apps/api/src/modules/customers/routes/customer-elsa.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "customers"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/customers/:id/elsa-reservation",
+      "filePath": "apps/api/src/modules/customers/routes/customer-elsa.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "customers"
+    },
+    {
+      "method": "POST",
+      "path": "/api/customers/:id/elsa-reservation/release",
+      "filePath": "apps/api/src/modules/customers/routes/customer-elsa.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "customers"
+    },
+    {
+      "method": "GET",
+      "path": "/api/customers/:id/elsa-reservation",
+      "filePath": "apps/api/src/modules/customers/routes/customer-elsa.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "customers"
+    },
+    {
+      "method": "GET",
+      "path": "/api/customers/elsa/reminders",
+      "filePath": "apps/api/src/modules/customers/routes/customer-elsa.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "customers"
     },
@@ -97677,6 +98333,15 @@
       "modelName": "CrmCvPayrollAllowance",
       "tableName": "crm_cv_payroll_allowances",
       "fieldCount": 9,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmCustomerElsaReservation",
+      "tableName": "crm_customer_elsa_reservations",
+      "fieldCount": 18,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []

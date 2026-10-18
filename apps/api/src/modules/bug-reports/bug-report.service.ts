@@ -60,7 +60,10 @@ import {
   canAuthorizeQualityGateRecoveryRetry,
   canAuthorizeWorkerRecoveryRetry,
   canRetryInboxImplementation,
+  extractModelTierFromLabel,
   inboxPlanReviewCandidate,
+  normalizeInboxModelTier,
+  stripModelTierMarker,
 } from './inbox-implementation.service.js';
 import { calculateTicketExecutionTiming } from './inbox-execution-time.service.js';
 
@@ -659,12 +662,19 @@ function implementationStateDto(
 ): BugReportImplementationState | null {
   if (!value) return null;
   const status = value.status as BugReportImplementationState['status'];
+  let modelTier = extractModelTierFromLabel(value.progressLabel);
+  if (!modelTier) {
+    const approvalAudit = [...audits].reverse().find((audit) => audit.action === 'IMPLEMENTATION_APPROVED');
+    const parsedAfter = safeJsonParse<{ modelTier?: unknown } | null>(approvalAudit?.afterJson ?? null, null);
+    modelTier = normalizeInboxModelTier(parsedAfter?.modelTier);
+  }
   return {
     status,
     executionOwner:
       value.executionOwner === 'IDE' || value.executionOwner === 'AG' || value.executionOwner === 'AUTO'
         ? value.executionOwner
         : undefined,
+    ...(modelTier ? { modelTier } : {}),
     reviewCandidate:
       status === 'AWAITING_COMMIT_REVIEW' && value.id && value.sourceVersion && value.planVersion
         ? { jobId: value.id, sourceVersion: value.sourceVersion, planVersion: value.planVersion }
@@ -680,7 +690,7 @@ function implementationStateDto(
           }
         : null,
     phase: clipped(value.executionPhase, 32) || 'QUEUED',
-    progressLabel: clipped(value.progressLabel, 160) || null,
+    progressLabel: stripModelTierMarker(clipped(value.progressLabel, 160)),
     lastProgressAt: value.lastProgressAt?.toISOString() ?? null,
     progressCount: value.progressCount,
     checkpointCount: value.checkpointCount,

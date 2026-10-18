@@ -17,6 +17,7 @@ import {
   type BugReportPlanReviewCandidate,
   type InboxIdeReleaseToken,
   type InboxImplementationExecutionOwner,
+  type InboxImplementationModelTier,
   removeVietnameseTones,
 } from '@mos-lab/shared';
 import { inboxImplementationSourceVersion } from './inbox-implementation-version.js';
@@ -354,7 +355,29 @@ function safeBranchName(ticketKey: string, id: string): string {
   return `codex/inbox/${ticketKey.toLowerCase().replace(/[^a-z0-9-]/g, '-')}-${id.slice(0, 8)}`.slice(0, 160);
 }
 
-function snapshot(source: GateSource) {
+export function normalizeInboxModelTier(value: unknown): InboxImplementationModelTier | undefined {
+  const normalized = String(value || '')
+    .trim()
+    .toLowerCase();
+  if (normalized === 'flash_lite' || normalized === 'flash' || normalized === 'pro') {
+    return normalized;
+  }
+  return undefined;
+}
+
+export function extractModelTierFromLabel(label: string | null | undefined): InboxImplementationModelTier | undefined {
+  if (!label) return undefined;
+  const match = label.match(/\[model:(flash_lite|flash|pro)\]/i);
+  return match ? normalizeInboxModelTier(match[1]) : undefined;
+}
+
+export function stripModelTierMarker(label: string | null | undefined): string | null {
+  if (!label) return null;
+  const stripped = label.replace(/\s*\[model:(?:flash_lite|flash|pro)\]/gi, '').trim();
+  return stripped || null;
+}
+
+function snapshot(source: GateSource, extra?: Record<string, unknown>) {
   return JSON.stringify({
     status: source.status,
     priority: source.priority,
@@ -362,6 +385,7 @@ function snapshot(source: GateSource) {
     implementationApprovedAt: source.implementationApprovedAt,
     implementationApprovalSourceVersion: source.implementationApprovalSourceVersion,
     implementationActiveJobId: source.implementationActiveJobId,
+    ...(extra || {}),
   });
 }
 
@@ -839,6 +863,7 @@ export class InboxImplementationService {
       orderBy: { createdAt: 'asc' },
     });
     if (!candidate?.ideProvisioningRequestId) return null;
+    const modelTier = extractModelTierFromLabel(candidate.progressLabel);
     const leaseToken = randomUUID();
     const claimed = await fastify.prisma.crm.crmInboxImplementationJob.updateMany({
       where: {
@@ -860,7 +885,9 @@ export class InboxImplementationService {
         ideProvisioningAttemptCount: { increment: 1 },
         ideProvisioningFailureCode: null,
         executionPhase: 'IDE_PROVISIONING_LEASED',
-        progressLabel: 'Antigravity đang tạo handoff cục bộ.',
+        progressLabel: modelTier
+          ? `Antigravity đang tạo handoff cục bộ. [model:${modelTier}]`
+          : 'Antigravity đang tạo handoff cục bộ.',
       },
     });
     if (!claimed.count) return null;
@@ -876,6 +903,7 @@ export class InboxImplementationService {
       branchName: candidate.branchName,
       sourceVersion: candidate.sourceVersion,
       planVersion: candidate.planVersion,
+      ...(modelTier ? { modelTier } : {}),
     };
   }
 
@@ -1640,8 +1668,10 @@ export class InboxImplementationService {
     reportId: number,
     actorStaffId: number,
     expectedPlan?: BugReportPlanReviewCandidate,
-    executionOwner: InboxImplementationExecutionOwner = 'AUTO'
+    executionOwner: InboxImplementationExecutionOwner = 'AUTO',
+    modelTier?: InboxImplementationModelTier
   ) {
+    const normalizedModelTier = normalizeInboxModelTier(modelTier);
     const approvalResult = await fastify.prisma.crm.$transaction(async (tx) => {
       await tx.$queryRaw(Prisma.sql`SELECT id FROM crm_bug_reports WHERE id = ${reportId} FOR UPDATE`);
       const report = await tx.crmBugReport.findUnique({
@@ -1713,18 +1743,21 @@ export class InboxImplementationService {
                   ? 'Danny đã duyệt AI tự động (Antigravity hoặc Codex) chỉ sửa code và chạy kiểm thử trong worktree riêng; commit, push và deploy vẫn cần duyệt riêng.'
                   : 'Danny đã duyệt AI chỉ sửa code và chạy kiểm thử trong worktree riêng; commit, push và deploy vẫn cần duyệt riêng.',
             beforeJson: snapshot(report),
-            afterJson: snapshot({
-              ...report,
-              ...current,
-              comments: report.comments,
-              inboxPlanJobs: report.inboxPlanJobs,
-            }),
+            afterJson: snapshot(
+              {
+                ...report,
+                ...current,
+                comments: report.comments,
+                inboxPlanJobs: report.inboxPlanJobs,
+              },
+              normalizedModelTier ? { modelTier: normalizedModelTier } : undefined
+            ),
           },
         });
       }
       return { sourceVersion, alreadyApproved };
     });
-    const queued = await this.enqueueApproved(fastify, reportId, executionOwner);
+    const queued = await this.enqueueApproved(fastify, reportId, executionOwner, normalizedModelTier);
     const refreshed = await fastify.prisma.crm.crmBugReport.findUnique({
       where: { id: reportId },
       include: implementationReportInclude(),
@@ -1739,7 +1772,8 @@ export class InboxImplementationService {
   static async enqueueApproved(
     fastify: FastifyInstance,
     reportId: number,
-    executionOwner: InboxImplementationExecutionOwner = 'AUTO'
+    executionOwner: InboxImplementationExecutionOwner = 'AUTO',
+    modelTier?: InboxImplementationModelTier
   ): Promise<boolean> {
     const report = await fastify.prisma.crm.crmBugReport.findUnique({
       where: { id: reportId },
@@ -1778,6 +1812,27 @@ export class InboxImplementationService {
       return false;
     }
 
+    let resolvedModelTier = normalizeInboxModelTier(modelTier);
+    if (!resolvedModelTier && fastify.prisma.crm.crmBugReportAudit?.findFirst) {
+      try {
+        const latestApprovalAudit = await fastify.prisma.crm.crmBugReportAudit.findFirst({
+          where: { reportId, action: 'IMPLEMENTATION_APPROVED' },
+          orderBy: { createdAt: 'desc' },
+        });
+        const parsedAfter = safeJsonValue(latestApprovalAudit?.afterJson ?? null) as { modelTier?: unknown } | null;
+        resolvedModelTier = normalizeInboxModelTier(parsedAfter?.modelTier);
+      } catch {
+        // Non-blocking fallback
+      }
+    }
+
+    const baseProgressLabel =
+      executionOwner === 'AG'
+        ? 'Chờ Antigravity tạo handoff cục bộ.'
+        : executionOwner === 'AUTO'
+          ? 'Chờ Worker (Antigravity hoặc Codex) tạo handoff cục bộ.'
+          : 'Chờ Codex IDE tạo handoff cục bộ.';
+
     const planVersion = gate.plan.planVersion;
     const id = randomUUID();
     const ticketKey = formatBugReportKey(report.id, report.requestType === 'FEATURE' ? 'FEATURE' : 'BUG');
@@ -1792,12 +1847,7 @@ export class InboxImplementationService {
           executionOwner,
           executionPhase: 'IDE_PROVISIONING_PENDING',
           ideProvisioningRequestId: randomUUID(),
-          progressLabel:
-            executionOwner === 'AG'
-              ? 'Chờ Antigravity tạo handoff cục bộ.'
-              : executionOwner === 'AUTO'
-                ? 'Chờ Worker (Antigravity hoặc Codex) tạo handoff cục bộ.'
-                : 'Chờ Codex IDE tạo handoff cục bộ.',
+          progressLabel: resolvedModelTier ? `${baseProgressLabel} [model:${resolvedModelTier}]` : baseProgressLabel,
           expiresAt: new Date(Date.now() + JOB_TTL_MS),
         },
       });

@@ -19,8 +19,10 @@ import {
 } from 'antd';
 import {
   type BugPriority,
+  type BugReportDetail,
   type BugReportPlanReviewCandidate,
   type InboxImplementationExecutionOwner,
+  type InboxImplementationModelTier,
   isDeferredBugReport,
 } from '@mos-lab/shared';
 import { CheckCircle2, Clock, Gavel, HelpCircle, RefreshCw, Send } from 'lucide-react';
@@ -61,6 +63,28 @@ import styles from './BugReportDetailDrawer.module.css';
 
 const { Text, Paragraph } = Typography;
 
+const MODEL_TIER_LABELS: Record<InboxImplementationModelTier, string> = {
+  flash: '⚡ Flash — Gemini 3.8 Flash (Tiết kiệm token)',
+  pro: '🧠 Argon High — Gemini 4 Pro (Task phức tạp)',
+  flash_lite: '🪶 Flash Lite — Gemini 3.1 Flash Lite (Siêu nhẹ)',
+};
+
+export function recommendDefaultModelTier(detail: BugReportDetail | null): InboxImplementationModelTier {
+  if (!detail) return 'flash';
+  if (
+    detail.priority === 'P0' ||
+    detail.priority === 'P1' ||
+    detail.reopen !== null ||
+    detail.implementation?.status === 'CHANGES_REQUESTED'
+  ) {
+    return 'pro';
+  }
+  if (detail.priority === 'P3' && (detail.description?.trim().length ?? 0) < 300) {
+    return 'flash_lite';
+  }
+  return 'flash';
+}
+
 type BugReportDetailDrawerProps = BugReportDetailOptions &
   Pick<ReturnType<typeof useBugReports>, 'comment'> & {
     onClose: () => void;
@@ -78,6 +102,10 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
   const [planReason, setPlanReason] = useState('');
   const [retryConfirmationOpen, setRetryConfirmationOpen] = useState(false);
   const [selectedEngine, setSelectedEngine] = useState<InboxImplementationExecutionOwner>('AUTO');
+  const [modelTierOverride, setModelTierOverride] = useState<{
+    reportId: number;
+    tier: InboxImplementationModelTier;
+  } | null>(null);
   const { reportId } = actions;
   const {
     messageContext,
@@ -123,6 +151,8 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
 
   const context = detail?.context;
   const isDeferred = detail ? isDeferredBugReport(detail) : false;
+  const activeModelTier: InboxImplementationModelTier =
+    detail && modelTierOverride?.reportId === detail.id ? modelTierOverride.tier : recommendDefaultModelTier(detail);
 
   return (
     <>
@@ -196,11 +226,37 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                   <Popconfirm
                     classNames={{ root: styles.confirmationPopup }}
                     title="Duyệt AI chạy code/test?"
-                    description="AI chỉ làm trong worktree riêng; tự động gán cho Antigravity hoặc Codex IDE đang chạy. Sau đó ticket sẽ chờ Danny duyệt commit."
+                    description={
+                      <div className="max-w-xs space-y-2.5">
+                        <div>
+                          AI chỉ làm trong worktree riêng; tự động gán cho Antigravity hoặc Codex IDE đang chạy. Sau đó
+                          ticket sẽ chờ Danny duyệt commit.
+                        </div>
+                        <div className="space-y-1.5 pt-1">
+                          <Text strong className="block text-xs">
+                            Chọn model Antigravity (khi tạo session mới):
+                          </Text>
+                          <Radio.Group
+                            value={activeModelTier}
+                            onChange={(e) =>
+                              setModelTierOverride({
+                                reportId: detail.id,
+                                tier: e.target.value as InboxImplementationModelTier,
+                              })
+                            }
+                            className="flex flex-col gap-1.5"
+                          >
+                            <Radio value="flash">{MODEL_TIER_LABELS.flash}</Radio>
+                            <Radio value="pro">{MODEL_TIER_LABELS.pro}</Radio>
+                            <Radio value="flash_lite">{MODEL_TIER_LABELS.flash_lite}</Radio>
+                          </Radio.Group>
+                        </div>
+                      </div>
+                    }
                     okText="Duyệt code/test"
                     cancelText="Chưa duyệt"
                     okButtonProps={{ loading: saving, disabled: saving || approvalReceived }}
-                    onConfirm={() => void approveCodeExecution('AUTO')}
+                    onConfirm={() => void approveCodeExecution('AUTO', activeModelTier)}
                   >
                     <Button
                       type="primary"
@@ -612,6 +668,12 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                         <Text strong>Mã tham chiếu: </Text>
                         <Text code>{detail.implementation.ideHandoff.reference}</Text>
                       </div>
+                      {detail.implementation.modelTier ? (
+                        <div>
+                          <Text strong>Model thực thi: </Text>
+                          <Text code>{MODEL_TIER_LABELS[detail.implementation.modelTier]}</Text>
+                        </div>
+                      ) : null}
                       {detail.implementation.ideHandoff.taskId ? (
                         <div>
                           <Text strong>

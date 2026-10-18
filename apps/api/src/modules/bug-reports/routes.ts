@@ -828,7 +828,8 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           id,
           request.user.id,
           body.planReview,
-          executionOwner
+          executionOwner,
+          body.modelTier
         );
         if (outcome.planRequested && (await InboxPlanService.enqueue(fastify, id, 'IMPLEMENTATION_APPROVAL'))) {
           RequestClassifierWorkerHub.notify('inbox_plan_available');

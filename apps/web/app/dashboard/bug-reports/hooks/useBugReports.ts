@@ -21,6 +21,7 @@ import type {
   CreateBugReportCommentRequest,
   TriageBugReportRequest,
   InboxImplementationExecutionOwner,
+  InboxImplementationModelTier,
 } from '@mos-lab/shared';
 import { useDebounce } from '../../../../hooks/useDebounce';
 import { apiClient, invalidateApiGetCache } from '../../../../lib/api-client';
@@ -305,12 +306,14 @@ export function useBugReports() {
     async (
       id: number,
       planReview?: BugReportPlanReviewCandidate,
-      executionOwner?: InboxImplementationExecutionOwner
+      executionOwner?: InboxImplementationExecutionOwner,
+      modelTier?: InboxImplementationModelTier
     ): Promise<ApproveBugReportImplementationResult> => {
       const response = await apiClient.bugReports.approveImplementation(id, {
         acknowledged: true,
         planReview,
         ...(executionOwner ? { executionOwner } : {}),
+        ...(modelTier ? { modelTier } : {}),
       });
       if (!response.data) throw new Error('Máy chủ không trả về trạng thái duyệt implementation.');
       // Approval has already been recorded. Refresh the list in the background

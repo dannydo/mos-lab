@@ -16,6 +16,8 @@ import {
   recoverLegacyDeployQualityEvidence,
   testsAfterOperationalCheckpointFailure,
   resolveInboxReleaseUrl,
+  extractModelTierFromLabel,
+  stripModelTierMarker,
 } from './inbox-implementation.service.js';
 import { inboxImplementationSourceVersion } from './inbox-implementation-version.js';
 
@@ -2236,4 +2238,13 @@ test('resolveInboxReleaseUrl returns null for pure backend changes with no web U
     changedFiles: ['apps/api/src/modules/bug-reports/deploy-lane.ts'],
   });
   assert.equal(url, null);
+});
+
+test('extractModelTierFromLabel and stripModelTierMarker round-trip model tier markers cleanly', () => {
+  const raw = 'Chờ Antigravity tạo task/worktree [model:flash]';
+  assert.equal(extractModelTierFromLabel(raw), 'flash');
+  assert.equal(stripModelTierMarker(raw), 'Chờ Antigravity tạo task/worktree');
+  assert.equal(extractModelTierFromLabel('Chờ Antigravity tạo task/worktree [model:flash_lite]'), 'flash_lite');
+  assert.equal(extractModelTierFromLabel('Chờ Antigravity tạo task/worktree [model:pro]'), 'pro');
+  assert.equal(extractModelTierFromLabel('Chờ Antigravity tạo task/worktree'), undefined);
 });

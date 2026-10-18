@@ -508,7 +508,7 @@ export async function spawnAntigravitySession(
   const prompt = buildAgentPrompt(request, worktreePath);
   const title = `[${request.ticketKey}] ${request.title.slice(0, 80)}`;
 
-  const model = process.env.MOS_AG_MODEL?.trim();
+  const model = request.modelTier || process.env.MOS_AG_MODEL?.trim() || 'flash';
   const modelArg = model ? [`--model=${model}`] : [];
   const args = command.endsWith('language_server')
     ? ['agentapi', 'new-conversation', ...modelArg, `--title=${title}`, prompt]

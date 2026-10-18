@@ -325,7 +325,37 @@ describe('BugReportDetailDrawer behavior', () => {
     expect(props.approveImplementation).not.toHaveBeenCalled();
     fireEvent.click(screen.getAllByRole('button', { name: 'Duyệt code/test' }).at(-1)!);
     await waitFor(() =>
-      expect(props.approveImplementation).toHaveBeenCalledExactlyOnceWith(props.reportId, undefined, 'AUTO')
+      expect(props.approveImplementation).toHaveBeenCalledExactlyOnceWith(props.reportId, undefined, 'AUTO', 'pro')
+    );
+  });
+
+  it('pre-selects flash for P2 tickets and allows overriding model tier in the confirmation popup', async () => {
+    const props = propsFor(
+      makeDetail({
+        status: 'APPROVED',
+        priority: 'P2',
+        agentProgress: {
+          stage: 'AWAITING_DANNY_IMPLEMENTATION_APPROVAL',
+          note: null,
+          updatedAt: capturedAt,
+        },
+      })
+    );
+    render(<BugReportDetailDrawer {...props} />);
+    const trigger = await screen.findByRole('button', { name: 'Duyệt code/test' });
+    fireEvent.click(trigger);
+    await screen.findByText('Duyệt AI chạy code/test?');
+
+    const flashLiteRadio = screen.getByRole('radio', { name: /Flash Lite/i });
+    fireEvent.click(flashLiteRadio);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Duyệt code/test' }).at(-1)!);
+    await waitFor(() =>
+      expect(props.approveImplementation).toHaveBeenCalledExactlyOnceWith(
+        props.reportId,
+        undefined,
+        'AUTO',
+        'flash_lite'
+      )
     );
   });
 
