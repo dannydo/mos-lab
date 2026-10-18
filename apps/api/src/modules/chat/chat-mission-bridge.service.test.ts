@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { buildMissionSummaryFromReport, ChatMissionBridgeService } from './chat-mission-bridge.service.js';
+import { deduplicateTasks } from './routes.js';
 
 describe('ChatMissionBridgeService.buildMissionSummaryFromReport', () => {
   const baseReport = {
@@ -122,5 +123,64 @@ describe('ChatMissionBridgeService.buildMissionSummaryFromReport', () => {
         return true;
       }
     );
+  });
+
+  it('deduplicates repeated tasks on the same sourceMessageId and merges mission metadata', () => {
+    const tasks = [
+      {
+        id: 'task-87cc2a5c',
+        conversationId: 'dm-13-1',
+        conversationName: 'Bảo Hân',
+        sourceMessageId: 'msg-9ad077de',
+        sourceAuthorName: 'Danny Do',
+        title: 'Khi đặt lịch cho CV, khung time matrix: Bổ sung nút lọc những khung giờ CV trống lịch',
+        assigneeName: 'Danny Do',
+        creatorName: 'Danny Do',
+        priority: 'HIGH' as const,
+        remindAt: '2026-10-18T15:39:10Z',
+        done: false,
+        fired: false,
+        createdAt: '2026-10-18T01:39:10Z',
+        missionId: 113,
+        missionKey: 'MOS-FEAT-113',
+      },
+      {
+        id: 'task-e0e0f83e',
+        conversationId: 'dm-13-1',
+        conversationName: 'Bảo Hân',
+        sourceMessageId: 'msg-9ad077de',
+        sourceAuthorName: 'Danny Do',
+        title: 'Khi đặt lịch cho CV, khung time matrix: Bổ sung nút lọc những khung giờ CV trống lịch',
+        assigneeName: 'Danny Do',
+        creatorName: 'Danny Do',
+        priority: 'HIGH' as const,
+        remindAt: '2026-10-18T01:38:38Z',
+        done: false,
+        fired: true,
+        createdAt: '2026-10-18T01:38:33Z',
+      },
+      {
+        id: 'task-d6f551f3',
+        conversationId: 'dm-13-1',
+        conversationName: 'Bảo Hân',
+        sourceMessageId: 'msg-9ad077de',
+        sourceAuthorName: 'Danny Do',
+        title: 'Khi đặt lịch cho CV, khung time matrix: Bổ sung nút lọc những khung giờ CV trống lịch',
+        assigneeName: 'Hà My (CC)',
+        creatorName: 'Danny Do',
+        priority: 'HIGH' as const,
+        remindAt: '2026-10-18T01:37:44Z',
+        done: false,
+        fired: true,
+        createdAt: '2026-10-18T01:37:39Z',
+      },
+    ];
+
+    const result = deduplicateTasks(tasks);
+    assert.equal(result.changed, true);
+    assert.equal(result.tasks.length, 1);
+    assert.equal(result.tasks[0]?.id, 'task-87cc2a5c');
+    assert.equal(result.tasks[0]?.missionId, 113);
+    assert.equal(result.tasks[0]?.assigneeName, 'Danny Do');
   });
 });

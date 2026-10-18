@@ -1269,7 +1269,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [taskModalSourceMsg, setTaskModalSourceMsg] = useState<MosChatMessage | null>(null);
   const [taskTitle, setTaskTitle] = useState('');
-  const [taskAssignee, setTaskAssignee] = useState('Hà My (CC)');
+  const [taskAssignee, setTaskAssignee] = useState('Danny Do');
   const [taskPriority, setTaskPriority] = useState<MosChatTaskPriority>('HIGH');
   const [taskRemindMode, setTaskRemindMode] = useState<'preset' | 'custom'>('preset');
   const [selectedPresetId, setSelectedPresetId] = useState<string>('5s');
@@ -1906,15 +1906,72 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     return () => window.removeEventListener('mos-chat:open', handleGlobalChatOpen);
   }, [visibleConversations, currentUserStaffMember.id, currentUser?.id, notifyLivePeers]);
 
+  const uniqueTasks = useMemo<MosChatTaskItem[]>(() => {
+    const out: MosChatTaskItem[] = [];
+    const byId = new Map<string, MosChatTaskItem>();
+    const byMsgKey = new Map<string, MosChatTaskItem>();
+    const byTitleKey = new Map<string, MosChatTaskItem>();
+    const byMissionKey = new Map<string, MosChatTaskItem>();
+
+    for (const raw of tasks) {
+      if (!raw || !raw.id || !String(raw.title || '').trim()) continue;
+      const convId = String(raw.conversationId || '').trim();
+      const msgId = raw.sourceMessageId ? String(raw.sourceMessageId).trim() : '';
+      const normTitle = String(raw.title || '')
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, ' ');
+      const missionIdNum = raw.missionId && Number(raw.missionId) > 0 ? Number(raw.missionId) : 0;
+
+      const msgKey = convId && msgId ? `${convId}::msg::${msgId}` : '';
+      const titleKey = convId && normTitle ? `${convId}::title::${normTitle}` : '';
+      const mKey = missionIdNum > 0 ? `mission::${missionIdNum}` : '';
+
+      const existing =
+        byId.get(raw.id) ||
+        (msgKey ? byMsgKey.get(msgKey) : undefined) ||
+        (mKey ? byMissionKey.get(mKey) : undefined) ||
+        (titleKey ? byTitleKey.get(titleKey) : undefined);
+
+      if (existing) {
+        if (!existing.missionId && missionIdNum > 0) {
+          existing.missionId = missionIdNum;
+          existing.missionKey = raw.missionKey || existing.missionKey;
+          existing.mission = raw.mission || existing.mission;
+          if (mKey) byMissionKey.set(mKey, existing);
+        } else if (!existing.mission && raw.mission) {
+          existing.mission = raw.mission;
+        }
+        if (!existing.sourceMessageId && msgId) {
+          existing.sourceMessageId = msgId;
+          if (msgKey) byMsgKey.set(msgKey, existing);
+        }
+        if (existing.assigneeName === 'Hà My (CC)' && raw.assigneeName && raw.assigneeName !== 'Hà My (CC)') {
+          existing.assigneeName = raw.assigneeName;
+          existing.assigneeId = raw.assigneeId ?? existing.assigneeId;
+        }
+        continue;
+      }
+
+      const cloned: MosChatTaskItem = { ...raw };
+      out.push(cloned);
+      byId.set(cloned.id, cloned);
+      if (msgKey) byMsgKey.set(msgKey, cloned);
+      if (titleKey) byTitleKey.set(titleKey, cloned);
+      if (mKey) byMissionKey.set(mKey, cloned);
+    }
+    return out;
+  }, [tasks]);
+
   // Report unread & active task counts up to Header
   useEffect(() => {
     const totalUnread = visibleConversations.reduce((sum, c) => {
       if ((userPrefs.mutedIds || []).includes(c.id)) return sum;
       return sum + getEffectiveUnreadCount(c);
     }, 0);
-    const openTaskCount = tasks.filter((t) => !t.done).length;
+    const openTaskCount = uniqueTasks.filter((t) => !t.done).length;
     onUnreadCountChange?.(totalUnread, openTaskCount);
-  }, [visibleConversations, tasks, userPrefs.mutedIds, getEffectiveUnreadCount, onUnreadCountChange]);
+  }, [visibleConversations, uniqueTasks, userPrefs.mutedIds, getEffectiveUnreadCount, onUnreadCountChange]);
 
   const triggerTaskReminderAlert = useCallback(
     async (task: MosChatTaskItem) => {
@@ -1959,7 +2016,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     const timer = setInterval(() => {
       const currentNow = Date.now();
       setNowMs(currentNow);
-      tasks.forEach((t) => {
+      uniqueTasks.forEach((t) => {
         if (!t.done && !t.fired && !firedTaskIdsRef.current.has(t.id)) {
           const remainMs = new Date(t.remindAt).getTime() - currentNow;
           if (remainMs <= 0) {
@@ -1969,7 +2026,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [tasks, triggerTaskReminderAlert]);
+  }, [uniqueTasks, triggerTaskReminderAlert]);
 
   const aiCopilotConversation = useMemo<MosChatConversation | null>(() => {
     if (!canUseAiCopilot) return null;
@@ -3208,7 +3265,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   const openTaskModalFromMessage = (msg: MosChatMessage | null) => {
     setTaskModalSourceMsg(msg);
-    setTaskTitle(msg ? msg.text : composerText.trim() || 'Kiểm tra lịch hẹn & chuẩn bị đón khách VIP');
+    const existingTask = msg ? uniqueTasks.find((t) => t.sourceMessageId === msg.id || t.id === msg.taskId) : null;
+    setTaskTitle(
+      existingTask?.title || (msg ? msg.text : composerText.trim() || 'Kiểm tra lịch hẹn & chuẩn bị đón khách VIP')
+    );
+    setTaskAssignee(existingTask?.assigneeName || currentUser?.displayName || 'Danny Do');
+    if (existingTask?.priority) {
+      setTaskPriority(existingTask.priority);
+    }
     setTaskRemindMode('preset');
     setSelectedPresetId('5s');
     setTaskRemindSeconds(5);
@@ -3232,13 +3296,23 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       remindSecondsToSend = taskRemindSeconds;
     }
 
-    const tempTaskId = `task-${Date.now()}`;
+    const normalizedTitle = cleanTitle.replace(/\s+/g, ' ').toLowerCase();
+    const existingTask = uniqueTasks.find(
+      (t) =>
+        (taskModalSourceMsg?.id && t.sourceMessageId === taskModalSourceMsg.id) ||
+        (t.conversationId === activeConversation.id &&
+          (t.title || '').trim().replace(/\s+/g, ' ').toLowerCase() === normalizedTitle)
+    );
+
+    const tempTaskId = existingTask?.id || `task-${Date.now()}`;
     const newTask: MosChatTaskItem = {
+      ...(existingTask || {}),
       id: tempTaskId,
       conversationId: activeConversation.id,
       conversationName: activeConversation.name,
-      sourceMessageId: taskModalSourceMsg?.id || null,
-      sourceAuthorName: taskModalSourceMsg?.senderName || currentUser?.displayName || 'Danny Do',
+      sourceMessageId: taskModalSourceMsg?.id || existingTask?.sourceMessageId || null,
+      sourceAuthorName:
+        taskModalSourceMsg?.senderName || existingTask?.sourceAuthorName || currentUser?.displayName || 'Danny Do',
       title: cleanTitle,
       assigneeName: taskAssignee,
       creatorName: currentUser?.displayName || 'Danny Do',
@@ -3246,10 +3320,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       remindAt: remindAtIso,
       done: false,
       fired: false,
-      createdAt: new Date().toISOString(),
+      createdAt: existingTask?.createdAt || new Date().toISOString(),
     };
 
-    setTasks((prev) => [newTask, ...prev]);
+    setTasks((prev) => {
+      if (existingTask) {
+        return prev.map((t) => (t.id === existingTask.id ? newTask : t));
+      }
+      return [newTask, ...prev];
+    });
     if (taskModalSourceMsg) {
       setConversations((prev) =>
         prev.map((c) =>
@@ -3261,7 +3340,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             : c
         )
       );
-    } else {
+    } else if (!existingTask) {
       const taskMsg: MosChatMessage = {
         id: `msg-task-${Date.now()}`,
         conversationId: activeConversation.id,
@@ -3283,18 +3362,23 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     }
 
     setTaskModalOpen(false);
-    antdMessage.success(`Đã tạo Task & bật nhắc hẹn (${taskAssignee})`);
+    antdMessage.success(
+      existingTask ? `Đã cập nhật Task & nhắc hẹn (${taskAssignee})` : `Đã tạo Task & bật nhắc hẹn (${taskAssignee})`
+    );
 
     try {
-      await apiClient.chat.createTask({
+      const res = await apiClient.chat.createTask({
         conversationId: activeConversation.id,
-        sourceMessageId: taskModalSourceMsg?.id || null,
+        sourceMessageId: taskModalSourceMsg?.id || existingTask?.sourceMessageId || null,
         title: cleanTitle,
         assigneeName: taskAssignee,
         priority: taskPriority,
         remindInSeconds: remindSecondsToSend,
         remindAt: remindAtIso,
       });
+      if (res?.task) {
+        setTasks((prev) => prev.map((t) => (t.id === tempTaskId || t.id === res.task.id ? res.task : t)));
+      }
       notifyLivePeers();
     } catch (_) {}
   };
@@ -5492,7 +5576,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   }}
                 >
                   <AlarmClock size={14} />
-                  <span>{tasks.filter((t) => !t.done).length}</span>
+                  <span>{uniqueTasks.filter((t) => !t.done).length}</span>
                 </button>
               </Tooltip>
             </div>
@@ -6300,7 +6384,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 >
                   <CheckSquare size={14} />
                   {!isMobile && <span>Tasks</span>}
-                  <span className="text-amber-500">{tasks.filter((t) => !t.done).length}</span>
+                  <span className="text-amber-500">{uniqueTasks.filter((t) => !t.done).length}</span>
                 </button>
               </Tooltip>
 
@@ -6444,7 +6528,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
               <div className="flex-1 overflow-y-auto py-3">
                 {activeConversation?.messages.map((m, idx) => {
-                  const linkedTask = tasks.find((t) => t.id === m.taskId || t.sourceMessageId === m.id);
+                  const linkedTask = uniqueTasks.find((t) => t.id === m.taskId || t.sourceMessageId === m.id);
                   const isMine = isMessageFromCurrentUser(m);
                   const prevMsg = idx > 0 ? activeConversation.messages[idx - 1] : null;
                   const prevIsMine = prevMsg ? isMessageFromCurrentUser(prevMsg) : false;
@@ -7612,7 +7696,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       type="button"
                       aria-label="Test nổ chuông nhắc hẹn ngay"
                       onClick={() => {
-                        const firstOpen = tasks.find((t) => !t.done) || tasks[0];
+                        const firstOpen = uniqueTasks.find((t) => !t.done) || uniqueTasks[0];
                         if (firstOpen) triggerTaskReminderAlert(firstOpen);
                       }}
                       className="w-7 h-7 rounded-lg inline-flex items-center justify-center cursor-pointer"
@@ -7635,7 +7719,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 </div>
               </div>
 
-              {tasks.map((t) => {
+              {uniqueTasks.map((t) => {
                 const taskConv = conversations.find((c) => c.id === t.conversationId);
                 const taskSourceMsg =
                   taskConv?.messages.find((m) => m.id === t.sourceMessageId || m.taskId === t.id) || null;
@@ -7878,7 +7962,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       onClick={() =>
                         openMissionModalFromChat(
                           activeThreadMessage,
-                          tasks.find(
+                          uniqueTasks.find(
                             (t) => t.id === activeThreadMessage.taskId || t.sourceMessageId === activeThreadMessage.id
                           ) || null
                         )

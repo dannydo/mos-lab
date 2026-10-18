@@ -818,8 +818,100 @@ function trimConversationsRetention(conversations: MosChatConversation[]): MosCh
   }));
 }
 
-function trimTasksRetention(tasks: MosChatTaskItem[]): MosChatTaskItem[] {
-  return tasks.slice(0, MAX_TASKS_RETENTION);
+function normalizeTaskTitleKey(rawTitle: string | undefined | null): string {
+  return String(rawTitle || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+export function deduplicateTasks(
+  tasks: MosChatTaskItem[],
+  conversations?: MosChatConversation[]
+): {
+  tasks: MosChatTaskItem[];
+  changed: boolean;
+  convChanged: boolean;
+} {
+  const deduped: MosChatTaskItem[] = [];
+  const byId = new Map<string, MosChatTaskItem>();
+  const byMsgKey = new Map<string, MosChatTaskItem>();
+  const byTitleKey = new Map<string, MosChatTaskItem>();
+  const byMissionKey = new Map<string, MosChatTaskItem>();
+  let changed = false;
+
+  for (const raw of tasks) {
+    if (!raw || !raw.id || !String(raw.title || '').trim()) {
+      changed = true;
+      continue;
+    }
+    const convId = String(raw.conversationId || '').trim();
+    const msgId = raw.sourceMessageId ? String(raw.sourceMessageId).trim() : '';
+    const normTitle = normalizeTaskTitleKey(raw.title);
+    const missionIdNum = raw.missionId && Number(raw.missionId) > 0 ? Number(raw.missionId) : 0;
+
+    const msgKey = convId && msgId ? `${convId}::msg::${msgId}` : '';
+    const titleKey = convId && normTitle ? `${convId}::title::${normTitle}` : '';
+    const mKey = missionIdNum > 0 ? `mission::${missionIdNum}` : '';
+
+    const existing =
+      byId.get(raw.id) ||
+      (msgKey ? byMsgKey.get(msgKey) : undefined) ||
+      (mKey ? byMissionKey.get(mKey) : undefined) ||
+      (titleKey ? byTitleKey.get(titleKey) : undefined);
+
+    if (existing) {
+      changed = true;
+      if (!existing.missionId && missionIdNum > 0) {
+        existing.missionId = missionIdNum;
+        existing.missionKey = raw.missionKey || existing.missionKey;
+        existing.mission = raw.mission || existing.mission;
+        if (mKey) byMissionKey.set(mKey, existing);
+      } else if (!existing.mission && raw.mission) {
+        existing.mission = raw.mission;
+      }
+      if (!existing.sourceMessageId && msgId) {
+        existing.sourceMessageId = msgId;
+        if (msgKey) byMsgKey.set(msgKey, existing);
+      }
+      if (existing.assigneeName === 'Hà My (CC)' && raw.assigneeName && raw.assigneeName !== 'Hà My (CC)') {
+        existing.assigneeName = raw.assigneeName;
+        existing.assigneeId = raw.assigneeId ?? existing.assigneeId;
+      }
+      continue;
+    }
+
+    const cloned: MosChatTaskItem = { ...raw };
+    deduped.push(cloned);
+    byId.set(cloned.id, cloned);
+    if (msgKey) byMsgKey.set(msgKey, cloned);
+    if (titleKey) byTitleKey.set(titleKey, cloned);
+    if (mKey) byMissionKey.set(mKey, cloned);
+  }
+
+  let convChanged = false;
+  if (Array.isArray(conversations) && conversations.length > 0) {
+    for (const c of conversations) {
+      for (const m of c.messages || []) {
+        const msgKey = `${c.id}::msg::${m.id}`;
+        const canonicalTask = byMsgKey.get(msgKey);
+        if (canonicalTask && m.taskId !== canonicalTask.id) {
+          m.taskId = canonicalTask.id;
+          convChanged = true;
+        }
+      }
+    }
+  }
+
+  return {
+    tasks: deduped.slice(0, MAX_TASKS_RETENTION),
+    changed,
+    convChanged,
+  };
+}
+
+function trimTasksRetention(tasks: MosChatTaskItem[], conversations?: MosChatConversation[]): MosChatTaskItem[] {
+  return deduplicateTasks(tasks, conversations).tasks;
 }
 
 async function loadChatState(fastify: FastifyInstance): Promise<{
@@ -859,7 +951,7 @@ async function loadChatState(fastify: FastifyInstance): Promise<{
     try {
       const parsed = JSON.parse(taskRecord.value);
       if (Array.isArray(parsed)) {
-        tasks = trimTasksRetention(parsed);
+        tasks = parsed;
       }
     } catch (_) {}
   }
@@ -898,6 +990,23 @@ async function loadChatState(fastify: FastifyInstance): Promise<{
       update: { value: JSON.stringify(tasks) },
       create: { key: CHAT_TASKS_CONFIG_KEY, value: JSON.stringify(tasks) },
     });
+  } else {
+    const dedup = deduplicateTasks(tasks, conversations);
+    tasks = dedup.tasks;
+    if (dedup.changed) {
+      await fastify.prisma.crm.crmConfig.upsert({
+        where: { key: CHAT_TASKS_CONFIG_KEY },
+        update: { value: JSON.stringify(tasks) },
+        create: { key: CHAT_TASKS_CONFIG_KEY, value: JSON.stringify(tasks) },
+      });
+    }
+    if (dedup.convChanged) {
+      await fastify.prisma.crm.crmConfig.upsert({
+        where: { key: CHAT_CONVERSATIONS_CONFIG_KEY },
+        update: { value: JSON.stringify(conversations) },
+        create: { key: CHAT_CONVERSATIONS_CONFIG_KEY, value: JSON.stringify(conversations) },
+      });
+    }
   }
 
   if (!accessConfig) {
@@ -1003,7 +1112,7 @@ async function saveConversations(fastify: FastifyInstance, conversations: MosCha
 }
 
 async function saveTasks(fastify: FastifyInstance, tasks: MosChatTaskItem[]) {
-  const trimmed = trimTasksRetention(tasks);
+  const trimmed = trimTasksRetention(tasks, memoryChatCache?.conversations);
   const nextVersion = Date.now();
   if (memoryChatCache) {
     memoryChatCache.tasks = trimmed;
@@ -1833,8 +1942,56 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       const creatorName = staffRecord?.displayName || user.username || 'Danny Do';
       const roleInfo = getRoleDisplayLabel(staffRecord?.role || user.role);
       const now = new Date();
-      const taskId = `task-${crypto.randomUUID().slice(0, 8)}`;
 
+      let remindAtDate: Date;
+      if (body.remindAt && !isNaN(new Date(body.remindAt).getTime())) {
+        remindAtDate = new Date(body.remindAt);
+      } else {
+        const remindInSec = Math.max(3, Number(body.remindInSeconds) || 900);
+        remindAtDate = new Date(now.getTime() + remindInSec * 1000);
+      }
+
+      const normTitle = normalizeTaskTitleKey(title);
+      const existingTaskIdx = tasks.findIndex(
+        (t) =>
+          t.conversationId === conv.id &&
+          ((body.sourceMessageId && t.sourceMessageId === body.sourceMessageId) ||
+            (normTitle && normalizeTaskTitleKey(t.title) === normTitle))
+      );
+
+      if (existingTaskIdx >= 0) {
+        const existingTask = tasks[existingTaskIdx];
+        existingTask.title = title;
+        existingTask.assigneeId = body.assigneeId ?? existingTask.assigneeId;
+        existingTask.assigneeName = body.assigneeName || existingTask.assigneeName || creatorName;
+        existingTask.priority = body.priority || existingTask.priority || 'HIGH';
+        existingTask.remindAt = remindAtDate.toISOString();
+        existingTask.done = false;
+        existingTask.fired = false;
+
+        if (body.sourceMessageId) {
+          existingTask.sourceMessageId = body.sourceMessageId;
+        }
+        if (existingTask.sourceMessageId) {
+          const sourceMsg = conv.messages.find((m) => m.id === existingTask.sourceMessageId);
+          if (sourceMsg) {
+            sourceMsg.taskId = existingTask.id;
+            existingTask.sourceAuthorName = sourceMsg.senderName;
+          }
+        }
+
+        tasks.splice(existingTaskIdx, 1);
+        tasks.unshift(existingTask);
+        await Promise.all([saveConversations(fastify, conversations), saveTasks(fastify, tasks)]);
+
+        return {
+          success: true,
+          task: existingTask,
+          conversation: formatConversationForUser(conv, user, staffDirectory),
+        };
+      }
+
+      const taskId = `task-${crypto.randomUUID().slice(0, 8)}`;
       let targetMsgId = body.sourceMessageId || null;
       let sourceAuthorName = creatorName;
 
@@ -1861,14 +2018,6 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           reactions: {},
           thread: [],
         });
-      }
-
-      let remindAtDate: Date;
-      if (body.remindAt && !isNaN(new Date(body.remindAt).getTime())) {
-        remindAtDate = new Date(body.remindAt);
-      } else {
-        const remindInSec = Math.max(3, Number(body.remindInSeconds) || 900);
-        remindAtDate = new Date(now.getTime() + remindInSec * 1000);
       }
 
       const newTask: MosChatTaskItem = {

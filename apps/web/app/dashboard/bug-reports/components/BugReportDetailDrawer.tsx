@@ -227,7 +227,7 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                     classNames={{ root: styles.confirmationPopup }}
                     title="Duyệt AI chạy code/test?"
                     description={
-                      <div className="max-w-xs space-y-2.5">
+                      <div className="max-w-md space-y-2.5">
                         <div>
                           AI chỉ làm trong worktree riêng; tự động gán cho Antigravity hoặc Codex IDE đang chạy. Sau đó
                           ticket sẽ chờ Danny duyệt commit.
@@ -246,9 +246,15 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
                             }
                             className="flex flex-col gap-1.5"
                           >
-                            <Radio value="flash">{MODEL_TIER_LABELS.flash}</Radio>
-                            <Radio value="pro">{MODEL_TIER_LABELS.pro}</Radio>
-                            <Radio value="flash_lite">{MODEL_TIER_LABELS.flash_lite}</Radio>
+                            <Radio value="flash" className="whitespace-nowrap">
+                              {MODEL_TIER_LABELS.flash}
+                            </Radio>
+                            <Radio value="pro" className="whitespace-nowrap">
+                              {MODEL_TIER_LABELS.pro}
+                            </Radio>
+                            <Radio value="flash_lite" className="whitespace-nowrap">
+                              {MODEL_TIER_LABELS.flash_lite}
+                            </Radio>
                           </Radio.Group>
                         </div>
                       </div>
