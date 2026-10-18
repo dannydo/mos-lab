@@ -2253,7 +2253,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     const msgCount = activeConversation.messages?.length || 0;
     const currentRead = userPrefs.readMessageCountByConv?.[convId];
     const isManualUnread = (userPrefs.manualUnreadIds || []).includes(convId);
-    if (currentRead !== msgCount || isManualUnread || (activeConversation.unreadCount || 0) > 0) {
+    // CRITICAL: Do not auto-clear if user explicitly marked conversation as unread
+    if (isManualUnread) return;
+    if (currentRead !== msgCount || (activeConversation.unreadCount || 0) > 0) {
       setConversations((prev) => prev.map((c) => (c.id === convId ? { ...c, unreadCount: 0 } : c)));
       updateUserSidebarPrefs((prev) => ({
         ...prev,
@@ -2265,7 +2267,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       }));
       apiClient.chat.markAsRead(convId).catch(() => {});
     }
-  }, [open, activeSubtab, activeConversation?.id, activeConversation?.messages?.length]);
+  }, [open, activeSubtab, activeConversation?.id, activeConversation?.messages?.length, userPrefs.manualUnreadIds]);
 
   // ================= GOOGLE CHAT WORKSPACE PERSONAL SIDEBAR ACTIONS =================
   const togglePinConversation = useCallback(
@@ -2275,9 +2277,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         const nextPinned = exists
           ? (prev.pinnedIds || []).filter((id) => id !== convId)
           : [convId, ...(prev.pinnedIds || [])];
-        antdMessage.success(exists ? 'Đã bỏ ghim cuộc trò chuyện' : 'Đã ghim cuộc trò chuyện lên đầu mục');
+        antdMessage.success(exists ? 'Đã bỏ ghim cuộc trò chuyện' : 'Đã ghim cuộc trò chuyện lên đầu mục (Pin)');
         return { ...prev, pinnedIds: nextPinned };
       });
+      apiClient.chat.togglePinConversation(convId).catch(() => {});
     },
     [updateUserSidebarPrefs]
   );
@@ -2314,11 +2317,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         }
         antdMessage.success('Đã đánh dấu đã đọc');
       } else {
+        setConversations((prev) =>
+          prev.map((c) => (c.id === conv.id ? { ...c, unreadCount: Math.max(1, c.unreadCount || 1) } : c))
+        );
         updateUserSidebarPrefs((prev) => ({
           ...prev,
           manualUnreadIds: Array.from(new Set([...(prev.manualUnreadIds || []), conv.id])),
+          readMessageCountByConv: {
+            ...(prev.readMessageCountByConv || {}),
+            [conv.id]: Math.max(0, conv.messages.length - 1),
+          },
         }));
-        antdMessage.success('Đã đánh dấu chưa đọc');
+        if (conv.id !== AI_COPILOT_CONV_ID) {
+          apiClient.chat.markAsUnread(conv.id).catch(() => {});
+        }
+        antdMessage.success('Đã đánh dấu chưa đọc (Mark as unread)');
       }
     },
     [getEffectiveUnreadCount, updateUserSidebarPrefs]
@@ -6239,7 +6252,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                         className="w-5 h-5 rounded inline-flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/15 cursor-pointer"
                                         style={{ color: isPinned ? '#d4a84b' : token.colorTextSecondary }}
                                       >
-                                        <Pin size={11} />
+                                        <Pin size={11} className={isPinned ? 'fill-amber-400' : ''} />
+                                      </button>
+                                    </Tooltip>
+
+                                    <Tooltip title={effUnread > 0 ? 'Đánh dấu đã đọc' : 'Đánh dấu chưa đọc'}>
+                                      <button
+                                        type="button"
+                                        aria-label={effUnread > 0 ? 'Đánh dấu đã đọc' : 'Đánh dấu chưa đọc'}
+                                        onClick={() => toggleManualUnreadConversation(conv)}
+                                        className="w-5 h-5 rounded inline-flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/15 cursor-pointer"
+                                        style={{ color: effUnread > 0 ? '#f43f5e' : token.colorTextSecondary }}
+                                      >
+                                        {effUnread > 0 ? <MailOpen size={11} /> : <Mail size={11} />}
                                       </button>
                                     </Tooltip>
 
@@ -6424,6 +6449,18 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               )}
               <div className="min-w-0 flex items-center gap-1.5">
                 <span className="font-extrabold text-[13.5px] truncate">{activeConversation?.name}</span>
+                {activeConversation && (userPrefs.pinnedIds || []).includes(activeConversation.id) && (
+                  <Tooltip title="Đã ghim lên đầu mục (Pinned)">
+                    <Pin size={12} className="text-amber-400 fill-amber-400 shrink-0" />
+                  </Tooltip>
+                )}
+                {activeConversation && (userPrefs.manualUnreadIds || []).includes(activeConversation.id) && (
+                  <Tooltip title="Đã đánh dấu chưa đọc (Mark as unread)">
+                    <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-rose-500/20 text-rose-400 shrink-0 border border-rose-500/30">
+                      Chưa đọc
+                    </span>
+                  </Tooltip>
+                )}
                 {activeConversation?.roleTag && activeConversation?.type !== 'space' && (
                   <span
                     className="inline-flex items-center justify-center leading-none py-1 px-2 rounded-full text-[10px] font-bold tabular-nums shrink-0"
@@ -6514,6 +6551,81 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
             {/* 100% Icon-only Window Controls (Right-aligned close button invariant) */}
             <div className="flex items-center gap-1">
+              {activeConversation && (
+                <Tooltip
+                  title={
+                    (userPrefs.pinnedIds || []).includes(activeConversation.id)
+                      ? 'Bỏ ghim cuộc trò chuyện'
+                      : 'Ghim cuộc trò chuyện lên đầu mục (Pin)'
+                  }
+                >
+                  <button
+                    type="button"
+                    aria-label="Ghim cuộc trò chuyện"
+                    onClick={() => togglePinConversation(activeConversation.id)}
+                    className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                    style={{
+                      background: (userPrefs.pinnedIds || []).includes(activeConversation.id)
+                        ? 'rgba(212, 168, 75, 0.16)'
+                        : 'transparent',
+                      color: (userPrefs.pinnedIds || []).includes(activeConversation.id)
+                        ? '#d4a84b'
+                        : token.colorTextSecondary,
+                    }}
+                  >
+                    <Pin
+                      size={15}
+                      className={(userPrefs.pinnedIds || []).includes(activeConversation.id) ? 'fill-amber-400' : ''}
+                    />
+                  </button>
+                </Tooltip>
+              )}
+
+              {activeConversation && activeConversation.id !== AI_COPILOT_CONV_ID && (
+                <Tooltip
+                  title={
+                    (userPrefs.manualUnreadIds || []).includes(activeConversation.id)
+                      ? 'Đánh dấu đã đọc'
+                      : 'Đánh dấu chưa đọc (Mark as unread)'
+                  }
+                >
+                  <button
+                    type="button"
+                    aria-label="Đánh dấu chưa đọc"
+                    onClick={() => toggleManualUnreadConversation(activeConversation)}
+                    className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                    style={{
+                      background: (userPrefs.manualUnreadIds || []).includes(activeConversation.id)
+                        ? 'rgba(244, 63, 94, 0.16)'
+                        : 'transparent',
+                      color: (userPrefs.manualUnreadIds || []).includes(activeConversation.id)
+                        ? '#f43f5e'
+                        : token.colorTextSecondary,
+                    }}
+                  >
+                    {(userPrefs.manualUnreadIds || []).includes(activeConversation.id) ? (
+                      <MailOpen size={15} />
+                    ) : (
+                      <Mail size={15} />
+                    )}
+                  </button>
+                </Tooltip>
+              )}
+
+              {!isMobile && activeConversation && (
+                <Tooltip title="Mở cửa sổ thu nhỏ (Mini Dock / Box chat)">
+                  <button
+                    type="button"
+                    aria-label="Mở cửa sổ thu nhỏ"
+                    onClick={handlePopOutToMiniDock}
+                    className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-black/10 dark:hover:bg-white/10"
+                    style={{ color: token.colorTextSecondary }}
+                  >
+                    <ExternalLink size={15} />
+                  </button>
+                </Tooltip>
+              )}
+
               {activeConversation?.id === AI_COPILOT_CONV_ID && (
                 <Tooltip title="Làm mới phiên hội thoại riêng tư với Wings AI Copilot">
                   <button
@@ -8472,6 +8584,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             const conv = conversations.find((c) => c.id === cid);
             if (!conv) return null;
             const isCollapsed = Boolean(collapsedDockIds[cid]);
+            const isDockPinned = (userPrefs.pinnedIds || []).includes(cid);
+            const isDockManualUnread = (userPrefs.manualUnreadIds || []).includes(cid);
+            const dockUnread = getEffectiveUnreadCount(conv);
             const recentMsgs = conv.messages.slice(-4);
             const dockStaged = dockAttachments[cid] || [];
             return (
@@ -8492,7 +8607,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   className="h-9 px-2.5 flex items-center justify-between cursor-pointer"
                   style={{ background: surfaceRaised, borderBottom: `1px solid ${borderColor}` }}
                 >
-                  <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex items-center gap-1.5 min-w-0">
                     {conv.type === 'dm' ? (
                       renderUserAvatarNode({
                         staffId: conv.participantStaffId,
@@ -8506,8 +8621,46 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                     )}
                     <span className="text-[12px] font-extrabold truncate">{conv.name}</span>
+                    {isDockPinned && (
+                      <Tooltip title="Đã ghim (Pinned)">
+                        <Pin size={11} className="text-amber-400 fill-amber-400 shrink-0" />
+                      </Tooltip>
+                    )}
+                    {(dockUnread > 0 || isDockManualUnread) && (
+                      <span className="inline-flex items-center justify-center px-1.5 h-4 rounded-full bg-rose-500 text-white text-[9px] font-extrabold tabular-nums shrink-0">
+                        {dockUnread > 0 ? dockUnread : 1}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                    <Tooltip title={isDockPinned ? 'Bỏ ghim box chat' : 'Ghim box chat lên đầu mục (Pin)'}>
+                      <button
+                        type="button"
+                        aria-label={isDockPinned ? 'Bỏ ghim box chat' : 'Ghim box chat'}
+                        onClick={() => togglePinConversation(cid)}
+                        className="w-6 h-6 rounded inline-flex items-center justify-center cursor-pointer transition-colors hover:bg-black/10 dark:hover:bg-white/10"
+                        style={{ color: isDockPinned ? '#d4a84b' : token.colorTextSecondary }}
+                      >
+                        <Pin size={12} className={isDockPinned ? 'fill-amber-400' : ''} />
+                      </button>
+                    </Tooltip>
+                    <Tooltip
+                      title={
+                        dockUnread > 0 || isDockManualUnread ? 'Đánh dấu đã đọc' : 'Đánh dấu chưa đọc (Mark as unread)'
+                      }
+                    >
+                      <button
+                        type="button"
+                        aria-label={dockUnread > 0 || isDockManualUnread ? 'Đánh dấu đã đọc' : 'Đánh dấu chưa đọc'}
+                        onClick={() => toggleManualUnreadConversation(conv)}
+                        className="w-6 h-6 rounded inline-flex items-center justify-center cursor-pointer transition-colors hover:bg-black/10 dark:hover:bg-white/10"
+                        style={{
+                          color: dockUnread > 0 || isDockManualUnread ? '#f43f5e' : token.colorTextSecondary,
+                        }}
+                      >
+                        {dockUnread > 0 || isDockManualUnread ? <MailOpen size={12} /> : <Mail size={12} />}
+                      </button>
+                    </Tooltip>
                     <Tooltip title="Mở rộng vào Bảng Chat">
                       <button
                         type="button"
@@ -8515,30 +8668,30 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           selectConversation(cid);
                           onToggle();
                         }}
-                        className="w-6 h-6 rounded inline-flex items-center justify-center cursor-pointer"
+                        className="w-6 h-6 rounded inline-flex items-center justify-center cursor-pointer hover:bg-black/10 dark:hover:bg-white/10"
                         style={{ color: token.colorTextSecondary }}
                       >
-                        <Maximize2 size={13} />
+                        <Maximize2 size={12} />
                       </button>
                     </Tooltip>
-                    <Tooltip title="Thu gọn / Bung ra">
+                    <Tooltip title={isCollapsed ? 'Mở rộng box chat' : 'Thu gọn box chat'}>
                       <button
                         type="button"
                         onClick={() => setCollapsedDockIds((p) => ({ ...p, [cid]: !p[cid] }))}
-                        className="w-6 h-6 rounded inline-flex items-center justify-center cursor-pointer"
+                        className="w-6 h-6 rounded inline-flex items-center justify-center cursor-pointer hover:bg-black/10 dark:hover:bg-white/10"
                         style={{ color: token.colorTextSecondary }}
                       >
-                        <Minus size={13} />
+                        <Minus size={12} />
                       </button>
                     </Tooltip>
-                    <Tooltip title="Đóng cửa sổ nhỏ">
+                    <Tooltip title="Đóng box chat">
                       <button
                         type="button"
                         onClick={() => setDockedConvIds((prev) => prev.filter((id) => id !== cid))}
-                        className="w-6 h-6 rounded inline-flex items-center justify-center cursor-pointer"
+                        className="w-6 h-6 rounded inline-flex items-center justify-center cursor-pointer hover:bg-rose-500/15 hover:text-rose-400"
                         style={{ color: token.colorTextSecondary }}
                       >
-                        <X size={13} />
+                        <X size={12} />
                       </button>
                     </Tooltip>
                   </div>

@@ -2433,6 +2433,93 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
     }
   );
 
+  // POST /api/chat/conversations/:id/unread (Explicitly mark conversation as unread)
+  fastify.post(
+    '/chat/conversations/:id/unread',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const user = (request as SafeAny).user as JwtUserPayload | undefined;
+        const convId = (request.params as { id: string }).id;
+        const state = await loadChatState(fastify);
+        const { conversations, userPrefsByUserKey } = state;
+        const staffDirectory = await loadStaffDirectoryCached(fastify);
+        const targetConv = conversations.find((c) => c.id === convId);
+        if (!targetConv) {
+          return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy cuộc trò chuyện' });
+        }
+        const userPrefKey = resolveUserPrefKey(user, staffDirectory);
+        const currentPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
+        const currentManual = currentPrefs.manualUnreadIds || [];
+        const nextManual = currentManual.includes(convId) ? currentManual : [...currentManual, convId];
+        const updatedPrefs = {
+          ...currentPrefs,
+          manualUnreadIds: nextManual,
+          readMessageCountByConv: {
+            ...(currentPrefs.readMessageCountByConv || {}),
+            [convId]: Math.max(0, (targetConv.messages?.length || 1) - 1),
+          },
+          updatedAt: new Date().toISOString(),
+        };
+        const saved = await saveUserSidebarPrefs(fastify, userPrefKey, updatedPrefs);
+        const unreadCount = computeUnreadCountForUser(targetConv, user, staffDirectory, saved);
+        return {
+          success: true,
+          unreadCount: Math.max(1, unreadCount),
+          userPrefs: saved,
+        };
+      } catch (err: SafeAny) {
+        fastify.log.error('Mark conversation as unread error:', err);
+        return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể đánh dấu chưa đọc' });
+      }
+    }
+  );
+
+  // POST /api/chat/conversations/:id/pin (Toggle pin status of conversation in user's sidebar)
+  fastify.post(
+    '/chat/conversations/:id/pin',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const user = (request as SafeAny).user as JwtUserPayload | undefined;
+        const convId = (request.params as { id: string }).id;
+        const state = await loadChatState(fastify);
+        const { conversations, userPrefsByUserKey } = state;
+        const staffDirectory = await loadStaffDirectoryCached(fastify);
+        const targetConv = conversations.find((c) => c.id === convId);
+        if (!targetConv) {
+          return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy cuộc trò chuyện' });
+        }
+        const userPrefKey = resolveUserPrefKey(user, staffDirectory);
+        const currentPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
+        const exists = (currentPrefs.pinnedIds || []).includes(convId);
+        const nextPinned = exists
+          ? (currentPrefs.pinnedIds || []).filter((id) => id !== convId)
+          : [convId, ...(currentPrefs.pinnedIds || [])];
+        const updatedPrefs = {
+          ...currentPrefs,
+          pinnedIds: nextPinned,
+          updatedAt: new Date().toISOString(),
+        };
+        const saved = await saveUserSidebarPrefs(fastify, userPrefKey, updatedPrefs);
+        return {
+          success: true,
+          pinned: !exists,
+          userPrefs: saved,
+        };
+      } catch (err: SafeAny) {
+        fastify.log.error('Toggle conversation pin error:', err);
+        return reply
+          .status(500)
+          .send({ error: 'Internal Server Error', message: 'Không thể thay đổi trạng thái ghim' });
+      }
+    }
+  );
+
   // POST /api/chat/conversations/:id/members (Add member or bulk department/team members to space)
   fastify.post(
     '/chat/conversations/:id/members',

@@ -384,3 +384,15 @@ export interface ActionMosChatMissionResponse {
   task?: MosChatTaskItem | null;
   systemReply?: MosChatThreadReply | null;
 }
+
+export interface TogglePinConversationResponse {
+  success: boolean;
+  pinned: boolean;
+  userPrefs?: MosChatUserSidebarPrefs;
+}
+
+export interface MarkConversationAsUnreadResponse {
+  success: boolean;
+  unreadCount: number;
+  userPrefs?: MosChatUserSidebarPrefs;
+}

@@ -11,8 +11,18 @@ describe('computeUnreadCountForUser & formatConversationForUser', () => {
     { id: 1, username: 'danny.do@wingslashes.com', displayName: 'Danny Do', role: 'super_admin', isOnline: true },
   ];
 
-  const userKhai: JwtUserPayload = { id: 6, username: 'khai.nguyen@wingslashes.com', displayName: 'Nguyễn Quang Khải', role: 'admin' };
-  const userTam: JwtUserPayload = { id: 4, username: 'tam.nguyen@wingslashes.com', displayName: 'Tâm Nguyễn', role: 'admin' };
+  const userKhai: JwtUserPayload = {
+    id: 6,
+    username: 'khai.nguyen@wingslashes.com',
+    displayName: 'Nguyễn Quang Khải',
+    role: 'admin',
+  };
+  const userTam: JwtUserPayload = {
+    id: 4,
+    username: 'tam.nguyen@wingslashes.com',
+    displayName: 'Tâm Nguyễn',
+    role: 'admin',
+  };
 
   const dmConversation: MosChatConversation = {
     id: 'dm-pair-4-6',
@@ -160,5 +170,68 @@ describe('computeUnreadCountForUser & formatConversationForUser', () => {
 
     const unreadForTam = computeUnreadCountForUser(dmConversation, userTam, staffDirectory, prefsNoReadCount);
     assert.equal(unreadForTam, 0, 'Inferred unread count for Tâm should be 0 (she sent the last message)');
+  });
+
+  it('correctly handles pinning and unpinning conversations in user preferences', () => {
+    const prefsInitial: MosChatUserSidebarPrefs = {
+      pinnedIds: [],
+      mutedIds: [],
+      hiddenIds: [],
+      manualUnreadIds: [],
+      collapsedSections: {},
+      unreadOnlySections: {},
+      sectionOrder: ['dm', 'spaces'],
+      customSections: [],
+      conversationOrder: {},
+    };
+
+    // Pin conversation
+    const convId = 'dm-pair-4-6';
+    const isAlreadyPinned = prefsInitial.pinnedIds.includes(convId);
+    assert.equal(isAlreadyPinned, false);
+
+    const pinnedPrefs: MosChatUserSidebarPrefs = {
+      ...prefsInitial,
+      pinnedIds: [convId, ...prefsInitial.pinnedIds],
+    };
+    assert.equal(pinnedPrefs.pinnedIds.includes(convId), true);
+
+    // Unpin conversation
+    const unpinnedPrefs: MosChatUserSidebarPrefs = {
+      ...pinnedPrefs,
+      pinnedIds: pinnedPrefs.pinnedIds.filter((id) => id !== convId),
+    };
+    assert.equal(unpinnedPrefs.pinnedIds.includes(convId), false);
+  });
+
+  it('marks conversation as unread by adding to manualUnreadIds and resetting readMessageCount', () => {
+    const convId = 'dm-pair-4-6';
+    const prefsRead: MosChatUserSidebarPrefs = {
+      pinnedIds: [],
+      mutedIds: [],
+      hiddenIds: [],
+      manualUnreadIds: [],
+      readMessageCountByConv: { [convId]: 2 },
+      collapsedSections: {},
+      unreadOnlySections: {},
+      sectionOrder: ['dm', 'spaces'],
+      customSections: [],
+      conversationOrder: {},
+    };
+
+    // Mark as unread
+    const prefsMarkedUnread: MosChatUserSidebarPrefs = {
+      ...prefsRead,
+      manualUnreadIds: Array.from(new Set([...prefsRead.manualUnreadIds, convId])),
+      readMessageCountByConv: {
+        ...prefsRead.readMessageCountByConv,
+        [convId]: Math.max(0, dmConversation.messages.length - 1),
+      },
+    };
+
+    const unreadCount = computeUnreadCountForUser(dmConversation, userKhai, staffDirectory, prefsMarkedUnread);
+    assert.equal(unreadCount >= 1, true, 'Marked unread conversation must have unreadCount >= 1');
+    const formatted = formatConversationForUser(dmConversation, userKhai, staffDirectory, prefsMarkedUnread);
+    assert.equal(formatted.unreadCount >= 1, true);
   });
 });

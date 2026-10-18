@@ -7806,7 +7806,7 @@
         "path": "/api/chat/bootstrap",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1277
+        "line": 1339
       }
     },
     {
@@ -7820,7 +7820,7 @@
         "path": "/api/chat/user-prefs",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1341
+        "line": 1403
       }
     },
     {
@@ -7834,7 +7834,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1373
+        "line": 1435
       }
     },
     {
@@ -7848,7 +7848,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1399
+        "line": 1461
       }
     },
     {
@@ -7862,7 +7862,7 @@
         "path": "/api/chat/upload-image",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1448
+        "line": 1510
       }
     },
     {
@@ -7876,7 +7876,7 @@
         "path": "/api/chat/media/:fileName",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1494
+        "line": 1556
       }
     },
     {
@@ -7890,7 +7890,7 @@
         "path": "/api/chat/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1519
+        "line": 1581
       }
     },
     {
@@ -7904,7 +7904,7 @@
         "path": "/api/chat/threads",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1595
+        "line": 1671
       }
     },
     {
@@ -7918,7 +7918,7 @@
         "path": "/api/chat/messages/:messageId/reaction",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1658
+        "line": 1734
       }
     },
     {
@@ -7932,7 +7932,7 @@
         "path": "/api/chat/messages/:messageId/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1720
+        "line": 1796
       }
     },
     {
@@ -7946,7 +7946,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1751
+        "line": 1827
       }
     },
     {
@@ -7960,7 +7960,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1836
+        "line": 1912
       }
     },
     {
@@ -7974,7 +7974,7 @@
         "path": "/api/chat/tasks",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1910
+        "line": 1986
       }
     },
     {
@@ -7988,7 +7988,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2052
+        "line": 2164
       }
     },
     {
@@ -8002,7 +8002,49 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2111
+        "line": 2203
+      }
+    },
+    {
+      "id": "route:POST:/api/chat/conversations/:id/read",
+      "type": "FastifyRoute",
+      "label": "POST /api/chat/conversations/:id/read",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/chat/conversations/:id/read",
+        "module": "chat",
+        "handler": "inlineHandler",
+        "line": 2397
+      }
+    },
+    {
+      "id": "route:POST:/api/chat/conversations/:id/unread",
+      "type": "FastifyRoute",
+      "label": "POST /api/chat/conversations/:id/unread",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/chat/conversations/:id/unread",
+        "module": "chat",
+        "handler": "inlineHandler",
+        "line": 2437
+      }
+    },
+    {
+      "id": "route:POST:/api/chat/conversations/:id/pin",
+      "type": "FastifyRoute",
+      "label": "POST /api/chat/conversations/:id/pin",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/chat/conversations/:id/pin",
+        "module": "chat",
+        "handler": "inlineHandler",
+        "line": 2481
       }
     },
     {
@@ -8016,7 +8058,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2305
+        "line": 2522
       }
     },
     {
@@ -8030,7 +8072,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2403
+        "line": 2620
       }
     },
     {
@@ -8044,7 +8086,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2470
+        "line": 2687
       }
     },
     {
@@ -8058,7 +8100,7 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2531
+        "line": 2748
       }
     },
     {
@@ -8450,7 +8492,7 @@
         "path": "/api/customers/booking",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 24
+        "line": 31
       }
     },
     {
@@ -8464,7 +8506,7 @@
         "path": "/api/customers/booking/:id/promotions",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 401
+        "line": 408
       }
     },
     {
@@ -8478,7 +8520,7 @@
         "path": "/api/customers/booking/:id/reschedule-eligibility",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 448
+        "line": 455
       }
     },
     {
@@ -8492,7 +8534,7 @@
         "path": "/api/customers/booking/:id",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 480
+        "line": 487
       }
     },
     {
@@ -8506,7 +8548,7 @@
         "path": "/api/customers/booking/:id",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 857
+        "line": 864
       }
     },
     {
@@ -8520,7 +8562,7 @@
         "path": "/api/customers/booking-slots",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 950
+        "line": 957
       }
     },
     {
@@ -22606,6 +22648,54 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:LashSetDetail",
+      "type": "SharedType",
+      "label": "LashSetDetail",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "LashSetDetail",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SlotBookingInfo",
+      "type": "SharedType",
+      "label": "SlotBookingInfo",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SlotBookingInfo",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SlotMatrixCell",
+      "type": "SharedType",
+      "label": "SlotMatrixCell",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SlotMatrixCell",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SlotMatrixMap",
+      "type": "SharedType",
+      "label": "SlotMatrixMap",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/customer.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SlotMatrixMap",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:LashServiceMode",
       "type": "SharedType",
       "label": "LashServiceMode",
@@ -25194,6 +25284,30 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "ActionMosChatMissionResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TogglePinConversationResponse",
+      "type": "SharedType",
+      "label": "TogglePinConversationResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TogglePinConversationResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MarkConversationAsUnreadResponse",
+      "type": "SharedType",
+      "label": "MarkConversationAsUnreadResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MarkConversationAsUnreadResponse",
         "package": "@mos-lab/shared"
       }
     },
@@ -28222,6 +28336,18 @@
       }
     },
     {
+      "id": "uicomp:RescheduleBookingModal.test",
+      "type": "UIComponent",
+      "label": "<RescheduleBookingModal.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/__tests__/RescheduleBookingModal.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "RescheduleBookingModal.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:AllocationAuditDashboard",
       "type": "UIComponent",
       "label": "<AllocationAuditDashboard />",
@@ -28338,6 +28464,30 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "CvDatePicker",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:LashDetailModal",
+      "type": "UIComponent",
+      "label": "<LashDetailModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/booking/LashDetailModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "LashDetailModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:SlotMatrixGrid.test",
+      "type": "UIComponent",
+      "label": "<SlotMatrixGrid.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/booking/SlotMatrixGrid.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "SlotMatrixGrid.test",
         "isPrimitive": false
       }
     },
@@ -31251,8 +31401,8 @@
       "filePath": "apps/api/src/modules/ai/ai.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 27704,
-        "lineCount": 685,
+        "sizeBytes": 29442,
+        "lineCount": 733,
         "ext": ".ts"
       }
     },
@@ -31277,8 +31427,8 @@
       "filePath": "apps/api/src/modules/ai/routes.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 8399,
-        "lineCount": 242,
+        "sizeBytes": 10728,
+        "lineCount": 280,
         "ext": ".ts"
       }
     },
@@ -32031,8 +32181,8 @@
       "filePath": "apps/api/src/modules/chat/chat-mission-bridge.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7139,
-        "lineCount": 187,
+        "sizeBytes": 9837,
+        "lineCount": 269,
         "ext": ".ts"
       }
     },
@@ -32050,6 +32200,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/chat/chat-unread.test.ts",
+      "type": "File",
+      "label": "chat-unread.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-unread.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 8856,
+        "lineCount": 229,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/chat/routes.ts",
       "type": "File",
       "label": "routes.ts",
@@ -32057,8 +32220,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 95006,
-        "lineCount": 2581,
+        "sizeBytes": 103983,
+        "lineCount": 2798,
         "ext": ".ts"
       }
     },
@@ -32252,8 +32415,8 @@
       "filePath": "apps/api/src/modules/customers/routes/booking-slots.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6253,
-        "lineCount": 154,
+        "sizeBytes": 10740,
+        "lineCount": 274,
         "ext": ".ts"
       }
     },
@@ -32265,8 +32428,8 @@
       "filePath": "apps/api/src/modules/customers/routes/booking.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 49680,
-        "lineCount": 1183,
+        "sizeBytes": 62081,
+        "lineCount": 1444,
         "ext": ".ts"
       }
     },
@@ -37452,8 +37615,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportDetailDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 37340,
-        "lineCount": 827,
+        "sizeBytes": 37335,
+        "lineCount": 824,
         "ext": ".tsx"
       }
     },
@@ -38401,8 +38564,8 @@
       "filePath": "apps/web/app/dashboard/customers/components/AIAssistantWidget.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 50521,
-        "lineCount": 1143,
+        "sizeBytes": 52682,
+        "lineCount": 1185,
         "ext": ".tsx"
       }
     },
@@ -38531,8 +38694,8 @@
       "filePath": "apps/web/app/dashboard/customers/components/__tests__/AIAssistantWidget.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18265,
-        "lineCount": 533,
+        "sizeBytes": 20575,
+        "lineCount": 585,
         "ext": ".tsx"
       }
     },
@@ -39753,7 +39916,7 @@
       "filePath": "apps/web/app/dashboard/schedule-calendar/components/MultiDayColumnView.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30296,
+        "sizeBytes": 30311,
         "lineCount": 748,
         "ext": ".tsx"
       }
@@ -39779,7 +39942,7 @@
       "filePath": "apps/web/app/dashboard/schedule-calendar/components/ScheduleListView.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15057,
+        "sizeBytes": 15072,
         "lineCount": 444,
         "ext": ".tsx"
       }
@@ -41313,8 +41476,8 @@
       "filePath": "apps/web/lib/api/chat.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6875,
-        "lineCount": 178,
+        "sizeBytes": 7861,
+        "lineCount": 201,
         "ext": ".ts"
       }
     },
@@ -41898,8 +42061,8 @@
       "filePath": "packages/shared/src/types/ai-assistant.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 1562,
-        "lineCount": 72,
+        "sizeBytes": 1634,
+        "lineCount": 74,
         "ext": ".ts"
       }
     },
@@ -42119,8 +42282,8 @@
       "filePath": "packages/shared/src/types/customer.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 21077,
-        "lineCount": 795,
+        "sizeBytes": 22574,
+        "lineCount": 854,
         "ext": ".ts"
       }
     },
@@ -42288,8 +42451,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 9100,
-        "lineCount": 367,
+        "sizeBytes": 9810,
+        "lineCount": 400,
         "ext": ".ts"
       }
     },
@@ -46270,6 +46433,27 @@
     {
       "id": "edge:route:POST:/api/chat/conversations:ws:apps/api",
       "source": "route:POST:/api/chat/conversations",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/chat/conversations/:id/read:ws:apps/api",
+      "source": "route:POST:/api/chat/conversations/:id/read",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/chat/conversations/:id/unread:ws:apps/api",
+      "source": "route:POST:/api/chat/conversations/:id/unread",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/chat/conversations/:id/pin:ws:apps/api",
+      "source": "route:POST:/api/chat/conversations/:id/pin",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -54311,6 +54495,34 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:LashSetDetail:ws:packages/shared",
+      "source": "type:@mos-lab/shared:LashSetDetail",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SlotBookingInfo:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SlotBookingInfo",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SlotMatrixCell:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SlotMatrixCell",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SlotMatrixMap:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SlotMatrixMap",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:LashServiceMode:ws:packages/shared",
       "source": "type:@mos-lab/shared:LashServiceMode",
       "target": "ws:packages/shared",
@@ -55818,6 +56030,20 @@
     {
       "id": "edge:type:@mos-lab/shared:ActionMosChatMissionResponse:ws:packages/shared",
       "source": "type:@mos-lab/shared:ActionMosChatMissionResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TogglePinConversationResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TogglePinConversationResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MarkConversationAsUnreadResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MarkConversationAsUnreadResponse",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -57741,6 +57967,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:RescheduleBookingModal.test:ws:apps/web",
+      "source": "uicomp:RescheduleBookingModal.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:RescheduleBookingModal.test:token:color:primary",
+      "source": "uicomp:RescheduleBookingModal.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:AllocationAuditDashboard:ws:apps/web",
       "source": "uicomp:AllocationAuditDashboard",
       "target": "ws:apps/web",
@@ -57876,6 +58116,34 @@
     {
       "id": "edge:uicomp:CvDatePicker:token:color:primary",
       "source": "uicomp:CvDatePicker",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:LashDetailModal:ws:apps/web",
+      "source": "uicomp:LashDetailModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:LashDetailModal:token:color:primary",
+      "source": "uicomp:LashDetailModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:SlotMatrixGrid.test:ws:apps/web",
+      "source": "uicomp:SlotMatrixGrid.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:SlotMatrixGrid.test:token:color:primary",
+      "source": "uicomp:SlotMatrixGrid.test",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -60984,6 +61252,13 @@
     {
       "id": "edge:file:apps/api/src/modules/chat/chat-mission-bridge.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/chat/chat-mission-bridge.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/chat-unread.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-unread.test.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -76683,6 +76958,27 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/chat/conversations/:id/read",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/chat/conversations/:id/read",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/chat/conversations/:id/unread",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/chat/conversations/:id/unread",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/chat/conversations/:id/pin",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/chat/conversations/:id/pin",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/chat/conversations/:id/members",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/chat/conversations/:id/members",
@@ -81537,6 +81833,27 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/chat/conversations",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/chat/conversations",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/chat/conversations/:id/read",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/chat/conversations/:id/read",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/chat/conversations/:id/unread",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/chat/conversations/:id/unread",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/chat/conversations/:id/pin",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/chat/conversations/:id/pin",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -89654,6 +89971,27 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/chat/conversations/:id/read",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/chat/conversations/:id/read",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/chat/conversations/:id/unread",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/chat/conversations/:id/unread",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/chat/conversations/:id/pin",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/chat/conversations/:id/pin",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/chat/conversations/:id/members",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/chat/conversations/:id/members",
@@ -92105,31 +92443,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3265,
-    "totalEdges": 7069,
+    "totalNodes": 3278,
+    "totalEdges": 7094,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 166,
-      "FastifyRoute": 694,
+      "FastifyRoute": 697,
       "Component": 58,
-      "SharedType": 1188,
+      "SharedType": 1194,
       "DesignToken": 12,
-      "UIComponent": 223,
-      "File": 921
+      "UIComponent": 226,
+      "File": 922
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1366,
-      "HANDLES_ROUTE": 694,
-      "RENDERS": 281,
-      "USES_TOKEN": 225,
-      "IMPORTS": 489,
+      "EXPORTS": 1372,
+      "HANDLES_ROUTE": 697,
+      "RENDERS": 284,
+      "USES_TOKEN": 228,
+      "IMPORTS": 490,
       "QUERIES_MODEL": 397,
-      "API_CALL": 3617
+      "API_CALL": 3626
     },
-    "fastifyRouteCount": 699,
+    "fastifyRouteCount": 702,
     "prismaModelCount": 166,
     "nextPageCount": 58,
-    "sharedTypeCount": 1188
+    "sharedTypeCount": 1194
   },
   "routes": [
     {
@@ -94620,6 +94958,27 @@
     {
       "method": "POST",
       "path": "/api/chat/conversations",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "chat"
+    },
+    {
+      "method": "POST",
+      "path": "/api/chat/conversations/:id/read",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "chat"
+    },
+    {
+      "method": "POST",
+      "path": "/api/chat/conversations/:id/unread",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "chat"
+    },
+    {
+      "method": "POST",
+      "path": "/api/chat/conversations/:id/pin",
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "chat"

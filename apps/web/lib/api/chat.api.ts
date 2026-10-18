@@ -9,6 +9,7 @@ import type {
   CreateMosChatThreadReplyRequest,
   DeleteMosChatMessageRequest,
   EditMosChatMessageRequest,
+  MarkConversationAsUnreadResponse,
   MosChatAccessConfig,
   MosChatBootstrapResponse,
   MosChatConversation,
@@ -17,6 +18,7 @@ import type {
   MosChatThreadReply,
   MosChatUserSidebarPrefs,
   SafeAny,
+  TogglePinConversationResponse,
   UpdateMosChatAccessConfigRequest,
   UploadMosChatImageRequest,
   UploadMosChatImageResponse,
@@ -60,6 +62,16 @@ export const chatApi = {
       conversationId: string
     ): Promise<{ success: boolean; unreadCount: number; userPrefs: MosChatUserSidebarPrefs }> => {
       const res = await api.post(`/chat/conversations/${encodeURIComponent(conversationId)}/read`);
+      invalidateApiGetCache(['/chat/bootstrap']);
+      return res.data;
+    },
+    markAsUnread: async (conversationId: string): Promise<MarkConversationAsUnreadResponse> => {
+      const res = await api.post(`/chat/conversations/${encodeURIComponent(conversationId)}/unread`);
+      invalidateApiGetCache(['/chat/bootstrap']);
+      return res.data;
+    },
+    togglePinConversation: async (conversationId: string): Promise<TogglePinConversationResponse> => {
+      const res = await api.post(`/chat/conversations/${encodeURIComponent(conversationId)}/pin`);
       invalidateApiGetCache(['/chat/bootstrap']);
       return res.data;
     },
