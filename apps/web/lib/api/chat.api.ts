@@ -56,6 +56,13 @@ export const chatApi = {
       invalidateApiGetCache(['/chat/bootstrap']);
       return res.data;
     },
+    markAsRead: async (
+      conversationId: string
+    ): Promise<{ success: boolean; unreadCount: number; userPrefs: MosChatUserSidebarPrefs }> => {
+      const res = await api.post(`/chat/conversations/${encodeURIComponent(conversationId)}/read`);
+      invalidateApiGetCache(['/chat/bootstrap']);
+      return res.data;
+    },
     uploadImage: async (payload: UploadMosChatImageRequest): Promise<UploadMosChatImageResponse> => {
       const res = await api.post('/chat/upload-image', payload);
       return res.data;
