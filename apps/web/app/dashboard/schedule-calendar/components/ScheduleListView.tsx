@@ -432,7 +432,7 @@ export default function ScheduleListView({
                 Gọi
               </Button>
               <Button size="small" type="primary" icon={<CalendarOutlined />} onClick={() => onReschedule(record)}>
-                Đổi lịch
+                Đổi lịch / Cập nhật
               </Button>
             </div>
           </div>
