@@ -38,6 +38,7 @@ import {
 import { BugReportConversation } from '../../../../components/bug-reports/BugReportConversation';
 import { BugReportResolutionTracking } from './BugReportResolutionTracking';
 import { BugReportExecutionTimingCard } from './BugReportExecutionTimingCard';
+import { BugReportImplementationStatusCards, MODEL_TIER_LABELS } from './BugReportImplementationStatusCards';
 import { FeatureRequestDetails } from './FeatureRequestDetails';
 import { BugReportDeferModal } from './BugReportDeferModal';
 import { BugReportReasonModal } from './BugReportReasonModal';
@@ -61,13 +62,7 @@ import { useBugReportDetail, type BugReportDetailOptions } from '../hooks/useBug
 import type { useBugReports } from '../hooks/useBugReports';
 import styles from './BugReportDetailDrawer.module.css';
 
-const { Text, Paragraph } = Typography;
-
-const MODEL_TIER_LABELS: Record<InboxImplementationModelTier, string> = {
-  flash: '⚡ Flash — Gemini 3.8 Flash (Tiết kiệm token)',
-  pro: '🧠 Argon High — Gemini 4 Pro (Task phức tạp)',
-  flash_lite: '🪶 Flash Lite — Gemini 3.1 Flash Lite (Siêu nhẹ)',
-};
+const { Text } = Typography;
 
 export function recommendDefaultModelTier(detail: BugReportDetail | null): InboxImplementationModelTier {
   if (!detail) return 'flash';
@@ -626,138 +621,7 @@ export function BugReportDetailDrawer({ onClose, canTriage, comment, ...actions 
               </div>
             </SectionCard>
 
-            {detail.implementation?.ideHandoff ? (
-              <SectionCard
-                title={
-                  detail.implementation.executionOwner === 'AG'
-                    ? 'Handoff Antigravity (AG)'
-                    : detail.implementation.executionOwner === 'AUTO'
-                      ? 'Handoff Tự Động (AG / Codex)'
-                      : 'Handoff Codex IDE'
-                }
-              >
-                <Alert
-                  type="info"
-                  showIcon
-                  message={
-                    detail.implementation.ideHandoff.taskId
-                      ? `${
-                          detail.implementation.executionOwner === 'AG'
-                            ? 'Antigravity'
-                            : detail.implementation.executionOwner === 'IDE'
-                              ? 'Codex IDE'
-                              : 'Worker'
-                        } đang thực thi code & kiểm thử`
-                      : detail.implementation.ideHandoff.phase === 'IDE_PROVISIONING_PENDING'
-                        ? detail.implementation.executionOwner === 'AUTO'
-                          ? 'Đang chờ Worker (Antigravity hoặc Codex) nhận task'
-                          : `Chờ ${detail.implementation.executionOwner === 'AG' ? 'Antigravity' : 'Codex IDE'} tạo task`
-                        : detail.implementation.ideHandoff.phase === 'IDE_PROVISIONING_LEASED'
-                          ? `${
-                              detail.implementation.executionOwner === 'AG'
-                                ? 'Antigravity'
-                                : detail.implementation.executionOwner === 'IDE'
-                                  ? 'Codex IDE'
-                                  : 'Worker'
-                            } đang tạo task`
-                          : `Đang chờ ${
-                              detail.implementation.executionOwner === 'AG'
-                                ? 'Antigravity'
-                                : detail.implementation.executionOwner === 'IDE'
-                                  ? 'Codex IDE'
-                                  : 'Worker (AG / Codex)'
-                            } nhận handoff`
-                  }
-                  description={
-                    <div className="space-y-1">
-                      <div>
-                        <Text strong>Mã tham chiếu: </Text>
-                        <Text code>{detail.implementation.ideHandoff.reference}</Text>
-                      </div>
-                      {detail.implementation.modelTier ? (
-                        <div>
-                          <Text strong>Model thực thi: </Text>
-                          <Text code>{MODEL_TIER_LABELS[detail.implementation.modelTier]}</Text>
-                        </div>
-                      ) : null}
-                      {detail.implementation.ideHandoff.taskId ? (
-                        <div>
-                          <Text strong>
-                            {detail.implementation.executionOwner === 'AG'
-                              ? 'Task Antigravity: '
-                              : detail.implementation.executionOwner === 'IDE'
-                                ? 'Task Codex IDE: '
-                                : 'Task Worker: '}
-                          </Text>
-                          <Text code>{detail.implementation.ideHandoff.taskId}</Text>
-                        </div>
-                      ) : null}
-                      <Text type="secondary">
-                        {detail.implementation.ideHandoff.phase === 'IDE_PROVISIONING_PENDING'
-                          ? 'Companion cục bộ đã opt-in sẽ tạo task/worktree. Chưa cấp nonce hay quyền code/test.'
-                          : detail.implementation.ideHandoff.phase === 'IDE_PROVISIONING_LEASED'
-                            ? 'Companion cục bộ đang tạo task/worktree với request ID bền vững. Mất kết nối sẽ retry cùng request, không tạo task thứ hai.'
-                            : detail.implementation.ideHandoff.phase === 'IDE_COMMIT_HANDOFF'
-                              ? 'Chỉ ghi đúng một commit từ candidate Danny đã duyệt. Không cấp lease, push, merge, deploy hoặc migration.'
-                              : detail.implementation.ideHandoff.taskId
-                                ? 'Agent đang trực tiếp thực thi code & kiểm thử trong worktree riêng.'
-                                : 'Chỉ code/test theo scope đã duyệt. Không cấp lease thực thi, commit, push, merge, deploy hoặc migration.'}
-                      </Text>
-                    </div>
-                  }
-                />
-              </SectionCard>
-            ) : null}
-
-            {detail.implementation?.deploymentLane ? (
-              <SectionCard title="Lộ trình phát hành đề xuất">
-                <Alert
-                  type="info"
-                  showIcon
-                  message={`${detail.implementation.deploymentLane.lane} · chỉ quan sát`}
-                  description={
-                    <div className="space-y-1">
-                      <Text>{detail.implementation.deploymentLane.reason}</Text>
-                      <div>
-                        <Text type="secondary">
-                          Sẽ chạy: {detail.implementation.deploymentLane.willRun.join(' · ')}
-                        </Text>
-                      </div>
-                      {detail.implementation.deploymentLane.willSkip.length ? (
-                        <div>
-                          <Text type="secondary">
-                            Bỏ qua: {detail.implementation.deploymentLane.willSkip.join(' · ')}
-                          </Text>
-                        </div>
-                      ) : null}
-                    </div>
-                  }
-                />
-              </SectionCard>
-            ) : null}
-
-            {detail.implementation?.failure ? (
-              <SectionCard title="Vì sao worker dừng">
-                <Alert
-                  type="warning"
-                  showIcon
-                  message={detail.implementation.failure.summary}
-                  description={
-                    <div className="space-y-1">
-                      {detail.implementation.failure.command ? (
-                        <Text code>{detail.implementation.failure.command}</Text>
-                      ) : null}
-                      <div>
-                        <Text type="secondary" className="tabular-nums">
-                          {detail.implementation.failure.code ? `${detail.implementation.failure.code} · ` : ''}
-                          Ghi nhận {formatDate(detail.implementation.failure.occurredAt)}. Commit và deploy đã bị chặn.
-                        </Text>
-                      </div>
-                    </div>
-                  }
-                />
-              </SectionCard>
-            ) : null}
+            <BugReportImplementationStatusCards implementation={detail.implementation} />
 
             {detail.reopen ? (
               <SectionCard title="Phản hồi reopen hiện tại">
