@@ -526,16 +526,71 @@ function canUserAccessConversation(
 }
 
 /**
+ * Accurately computes personalized unread count for a conversation and user:
+ * - If user explicitly marked conversation as unread (manualUnreadIds), returns >= 1.
+ * - Otherwise computes unread count from messages:
+ *   - Only messages sent by OTHERS (not self, not current user) are unread.
+ *   - Uses userPrefs.readMessageCountByConv[conv.id] if defined.
+ *   - For 1-1 DMs with no explicit read count, counts trailing unread messages sent by the peer since the user's last message.
+ */
+export function computeUnreadCountForUser(
+  conv: MosChatConversation,
+  user: JwtUserPayload | undefined,
+  staffDirectory: MosChatStaffMember[],
+  userPrefs?: MosChatUserSidebarPrefs
+): number {
+  if (userPrefs?.manualUnreadIds?.includes(conv.id)) {
+    return Math.max(1, conv.unreadCount || 0);
+  }
+  const myStaffId = resolveUserStaffId(user, staffDirectory);
+  const msgs = conv.messages || [];
+  if (msgs.length === 0) return 0;
+
+  const readCount = userPrefs?.readMessageCountByConv?.[conv.id];
+  if (typeof readCount === 'number') {
+    const unreadMsgs = msgs.slice(readCount).filter((m) => {
+      const senderNum = Number(m.senderId);
+      return senderNum !== myStaffId;
+    });
+    return unreadMsgs.length;
+  }
+
+  // If readCount is undefined:
+  if (conv.type === 'dm') {
+    let unreadCount = 0;
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      const m = msgs[i];
+      const senderNum = Number(m.senderId);
+      if (senderNum === myStaffId) {
+        break;
+      }
+      unreadCount++;
+    }
+    return Math.max(conv.unreadCount || 0, unreadCount);
+  }
+
+  return conv.unreadCount || 0;
+}
+
+/**
  * Personalizes a 1-1 Direct Message for the requesting user so that:
  * - Person A sees Person B's name, role, avatar, and `participantStaffId: B`.
  * - Person B sees Person A's name, role, avatar, and `participantStaffId: A`.
+ * - `unreadCount` reflects the requesting user's actual unread status.
  */
-function formatConversationForUser(
+export function formatConversationForUser(
   conv: MosChatConversation,
   user: JwtUserPayload | undefined,
-  staffDirectory: MosChatStaffMember[]
+  staffDirectory: MosChatStaffMember[],
+  userPrefs?: MosChatUserSidebarPrefs
 ): MosChatConversation {
-  if (conv.type !== 'dm') return conv;
+  const personalizedUnread = computeUnreadCountForUser(conv, user, staffDirectory, userPrefs);
+  if (conv.type !== 'dm') {
+    return {
+      ...conv,
+      unreadCount: personalizedUnread,
+    };
+  }
   const convIdStr = String(conv.id || '');
   if (conv.isSelf || convIdStr.startsWith('dm-self-')) {
     const selfIds = resolveDmParticipantIds(conv, staffDirectory);
@@ -544,6 +599,7 @@ function formatConversationForUser(
       isSelf: true,
       memberIds: selfIds,
       memberCount: 1,
+      unreadCount: personalizedUnread,
     };
   }
   const myStaffId = resolveUserStaffId(user, staffDirectory);
@@ -561,17 +617,19 @@ function formatConversationForUser(
     participantStaffId: Number(peerId) || conv.participantStaffId,
     memberIds: dmIds,
     memberCount: 2,
+    unreadCount: personalizedUnread,
   };
 }
 
 function filterAndFormatConversationsForUser(
   conversations: MosChatConversation[],
   user: JwtUserPayload | undefined,
-  staffDirectory: MosChatStaffMember[]
+  staffDirectory: MosChatStaffMember[],
+  userPrefs?: MosChatUserSidebarPrefs
 ): MosChatConversation[] {
   return conversations
     .filter((c) => canUserAccessConversation(c, user, staffDirectory))
-    .map((c) => formatConversationForUser(c, user, staffDirectory));
+    .map((c) => formatConversationForUser(c, user, staffDirectory, userPrefs));
 }
 
 function filterTasksForUser(
@@ -1320,7 +1378,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           } satisfies MosChatBootstrapResponse;
         }
 
-        const userConversations = filterAndFormatConversationsForUser(conversations, user, staffDirectory);
+        const userConversations = filterAndFormatConversationsForUser(conversations, user, staffDirectory, userPrefs);
         const userTasks = filterTasksForUser(tasks, conversations, user, staffDirectory);
 
         const payload: MosChatBootstrapResponse = {
@@ -1587,10 +1645,24 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       conv.updatedAt = now.toISOString();
       await saveConversations(fastify, conversations);
 
+      // Advance sender's read count for this conversation in userPrefs
+      const userPrefKey = resolveUserPrefKey(user, staffDirectory);
+      const { userPrefsByUserKey } = await loadChatState(fastify);
+      const currentSenderPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
+      const updatedSenderPrefs = {
+        ...currentSenderPrefs,
+        manualUnreadIds: (currentSenderPrefs.manualUnreadIds || []).filter((id) => id !== conv.id),
+        readMessageCountByConv: {
+          ...(currentSenderPrefs.readMessageCountByConv || {}),
+          [conv.id]: conv.messages.length,
+        },
+      };
+      await saveUserSidebarPrefs(fastify, userPrefKey, updatedSenderPrefs);
+
       return {
         success: true,
         message: newMessage,
-        conversation: formatConversationForUser(conv, user, staffDirectory),
+        conversation: formatConversationForUser(conv, user, staffDirectory, updatedSenderPrefs),
       };
     }
   );
@@ -2318,6 +2390,46 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       conversations.unshift(newConv);
       await saveConversations(fastify, conversations);
       return { success: true, conversation: newConv };
+    }
+  );
+
+  // POST /api/chat/conversations/:id/read (Explicitly mark conversation as read)
+  fastify.post(
+    '/chat/conversations/:id/read',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const user = (request as SafeAny).user as JwtUserPayload | undefined;
+        const convId = (request.params as { id: string }).id;
+        const state = await loadChatState(fastify);
+        const { conversations, userPrefsByUserKey } = state;
+        const staffDirectory = await loadStaffDirectoryCached(fastify);
+        const targetConv = conversations.find((c) => c.id === convId);
+        if (!targetConv) {
+          return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy cuộc trò chuyện' });
+        }
+        const userPrefKey = resolveUserPrefKey(user, staffDirectory);
+        const currentPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
+        const updatedPrefs = {
+          ...currentPrefs,
+          manualUnreadIds: (currentPrefs.manualUnreadIds || []).filter((id) => id !== convId),
+          readMessageCountByConv: {
+            ...(currentPrefs.readMessageCountByConv || {}),
+            [convId]: targetConv.messages?.length || 0,
+          },
+        };
+        const saved = await saveUserSidebarPrefs(fastify, userPrefKey, updatedPrefs);
+        return {
+          success: true,
+          unreadCount: 0,
+          userPrefs: saved,
+        };
+      } catch (err: SafeAny) {
+        fastify.log.error('Mark conversation as read error:', err);
+        return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể đánh dấu đã đọc' });
+      }
     }
   );
 

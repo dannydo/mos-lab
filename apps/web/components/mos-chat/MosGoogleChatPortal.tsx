@@ -1813,9 +1813,57 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     (conv: MosChatConversation): number => {
       const manualUnread = (userPrefs.manualUnreadIds || []).includes(conv.id);
       if (manualUnread) return Math.max(1, conv.unreadCount || 0);
+
+      // If this conversation is currently open and active in the main panel, it is being read right now!
+      if (open && activeConvId === conv.id && activeSubtab === 'chat') {
+        return 0;
+      }
+
+      // If open in an active mini dock window, it is also visible
+      if (dockedConvIds.includes(conv.id) && !collapsedDockIds[conv.id]) {
+        return 0;
+      }
+
+      const myStaffId = Number(currentUserStaffMember.id) || Number(currentUser?.id) || 0;
+      const msgs = conv.messages || [];
+      if (msgs.length === 0) return 0;
+
+      const readCount = userPrefs.readMessageCountByConv?.[conv.id];
+      if (typeof readCount === 'number') {
+        const unreadMsgs = msgs.slice(readCount).filter((m) => {
+          const senderNum = Number(m.senderId);
+          return senderNum !== myStaffId;
+        });
+        return unreadMsgs.length;
+      }
+
+      // If readCount is undefined:
+      if (conv.type === 'dm') {
+        let unread = 0;
+        for (let i = msgs.length - 1; i >= 0; i--) {
+          const m = msgs[i];
+          const senderNum = Number(m.senderId);
+          if (senderNum === myStaffId) {
+            break;
+          }
+          unread++;
+        }
+        return Math.max(conv.unreadCount || 0, unread);
+      }
+
       return conv.unreadCount || 0;
     },
-    [userPrefs.manualUnreadIds]
+    [
+      userPrefs.manualUnreadIds,
+      userPrefs.readMessageCountByConv,
+      open,
+      activeConvId,
+      activeSubtab,
+      dockedConvIds,
+      collapsedDockIds,
+      currentUserStaffMember.id,
+      currentUser?.id,
+    ]
   );
 
   const isConversationHiddenByUser = useCallback(
@@ -2177,22 +2225,47 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     if (isMobile) {
       setMobileActiveView('conversation');
     }
+    const targetConv = allUserConversations.find((c) => c.id === convId);
+    const targetMsgCount = targetConv?.messages?.length || 0;
+
     if (convId !== AI_COPILOT_CONV_ID) {
       setConversations((prev) => prev.map((c) => (c.id === convId ? { ...c, unreadCount: 0 } : c)));
     }
-    const targetConv = allUserConversations.find((c) => c.id === convId);
-    if ((userPrefs.manualUnreadIds || []).includes(convId) || (userPrefs.hiddenIds || []).includes(convId)) {
+    updateUserSidebarPrefs((prev) => ({
+      ...prev,
+      manualUnreadIds: (prev.manualUnreadIds || []).filter((id) => id !== convId),
+      hiddenIds: (prev.hiddenIds || []).filter((id) => id !== convId),
+      readMessageCountByConv: {
+        ...(prev.readMessageCountByConv || {}),
+        [convId]: targetMsgCount,
+      },
+    }));
+    if (convId !== AI_COPILOT_CONV_ID) {
+      apiClient.chat.markAsRead(convId).catch(() => {});
+    }
+  };
+
+  // Automatically mark active conversation as read when main chat panel is open
+  useEffect(() => {
+    if (!open || activeSubtab !== 'chat' || !activeConversation) return;
+    const convId = activeConversation.id;
+    if (convId === AI_COPILOT_CONV_ID) return;
+    const msgCount = activeConversation.messages?.length || 0;
+    const currentRead = userPrefs.readMessageCountByConv?.[convId];
+    const isManualUnread = (userPrefs.manualUnreadIds || []).includes(convId);
+    if (currentRead !== msgCount || isManualUnread || (activeConversation.unreadCount || 0) > 0) {
+      setConversations((prev) => prev.map((c) => (c.id === convId ? { ...c, unreadCount: 0 } : c)));
       updateUserSidebarPrefs((prev) => ({
         ...prev,
         manualUnreadIds: (prev.manualUnreadIds || []).filter((id) => id !== convId),
-        hiddenIds: (prev.hiddenIds || []).filter((id) => id !== convId),
         readMessageCountByConv: {
           ...(prev.readMessageCountByConv || {}),
-          [convId]: targetConv?.messages?.length || 0,
+          [convId]: msgCount,
         },
       }));
+      apiClient.chat.markAsRead(convId).catch(() => {});
     }
-  };
+  }, [open, activeSubtab, activeConversation?.id, activeConversation?.messages?.length]);
 
   // ================= GOOGLE CHAT WORKSPACE PERSONAL SIDEBAR ACTIONS =================
   const togglePinConversation = useCallback(
@@ -2236,6 +2309,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             [conv.id]: conv.messages.length,
           },
         }));
+        if (conv.id !== AI_COPILOT_CONV_ID) {
+          apiClient.chat.markAsRead(conv.id).catch(() => {});
+        }
         antdMessage.success('Đã đánh dấu đã đọc');
       } else {
         updateUserSidebarPrefs((prev) => ({
