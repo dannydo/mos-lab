@@ -3,6 +3,57 @@ import { requireAuth } from '../../../middlewares/auth.js';
 import { SafeAny, isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { createRouteHelpers } from './helpers.js';
 
+async function repairCustomerNotesIntegrity(tx: SafeAny, customerId: number): Promise<void> {
+  try {
+    const unhealedNotes = await tx.$queryRawUnsafe(
+      `SELECT id, note_field_key, date_created, attribute_group_key FROM user_note WHERE user_id = ? AND (attribute_group_key IS NULL OR date_updated IS NULL)`,
+      customerId
+    );
+    for (const n of unhealedNotes) {
+      const noteId = Number(n.id);
+      let groupKey = n.attribute_group_key;
+      if (!groupKey) {
+        groupKey = String(Math.floor(new Date(n.date_created || Date.now()).getTime() / 1000));
+        await tx.$executeRawUnsafe(
+          `UPDATE user_note SET attribute_group_key = ?, date_updated = COALESCE(date_updated, date_created, NOW()) WHERE id = ?`,
+          groupKey,
+          noteId
+        );
+      } else {
+        await tx.$executeRawUnsafe(
+          `UPDATE user_note SET date_updated = COALESCE(date_updated, date_created, NOW()) WHERE id = ?`,
+          noteId
+        );
+      }
+
+      const existingAttrs = await tx.$queryRawUnsafe(
+        `SELECT id FROM item_attribute_value WHERE item_id = ? AND type = 'user-note-attribute' LIMIT 1`,
+        noteId
+      );
+      if (existingAttrs.length === 0) {
+        const deptOptionId = n.note_field_key === 'order_note' ? 120 : 119;
+        const deptValue = n.note_field_key === 'order_note' ? 'Booking' : 'Note';
+        await tx.$executeRawUnsafe(
+          `INSERT INTO item_attribute_value (client_id, client_business_id, type, item_id, attribute_id, attribute_option_id, attribute_option_value, group_key, date_created)
+           VALUES 
+           (11, 1, 'user-note-attribute', ?, 23, 116, 'Normal', ?, ?),
+           (11, 1, 'user-note-attribute', ?, 24, ?, ?, ?, ?)`,
+          noteId,
+          groupKey,
+          n.date_created || new Date(),
+          noteId,
+          deptOptionId,
+          deptValue,
+          groupKey,
+          n.date_created || new Date()
+        );
+      }
+    }
+  } catch {
+    // Non-blocking self-healing
+  }
+}
+
 export async function registerCustomerNotesRoutes(fastify: FastifyInstance) {
   const { ensureTelesalesCustomerAccess, ensureTelesalesCustomerMutateAccess } = createRouteHelpers(fastify);
 
@@ -40,12 +91,13 @@ export async function registerCustomerNotesRoutes(fastify: FastifyInstance) {
       const groupKey = Math.floor(Date.now() / 1000).toString();
       const isDisabled = noteFieldKey === 'order_note' ? 1 : 0;
       const deptOptionId = noteFieldKey === 'order_note' ? 120 : 119;
+      const deptValue = noteFieldKey === 'order_note' ? 'Booking' : 'Note';
 
       await fastify.prisma.legacy.$transaction(async (tx) => {
-        // Insert into user_note raw table with attribute_group_key and proper is_disabled flag
+        // Insert into user_note raw table with attribute_group_key, date_created and date_updated
         await tx.$executeRawUnsafe(
-          `INSERT INTO user_note (client_id, client_business_id, user_id, note, note_field_key, attribute_group_key, is_sticky, is_issue, created_staff_id, is_disabled, date_created)
-           VALUES (11, 1, ?, ?, ?, ?, ?, 0, ?, ?, NOW())`,
+          `INSERT INTO user_note (client_id, client_business_id, user_id, note, note_field_key, attribute_group_key, is_sticky, is_issue, created_staff_id, is_disabled, date_created, date_updated)
+           VALUES (11, 1, ?, ?, ?, ?, ?, 0, ?, ?, NOW(), NOW())`,
           customerId,
           note.trim(),
           noteFieldKey || 'note',
@@ -63,12 +115,13 @@ export async function registerCustomerNotesRoutes(fastify: FastifyInstance) {
           await tx.$executeRawUnsafe(
             `INSERT INTO item_attribute_value (client_id, client_business_id, type, item_id, attribute_id, attribute_option_id, attribute_option_value, group_key, date_created)
              VALUES 
-             (11, 1, 'user-note-attribute', ?, 23, 116, '', ?, NOW()),
-             (11, 1, 'user-note-attribute', ?, 24, ?, '', ?, NOW())`,
+             (11, 1, 'user-note-attribute', ?, 23, 116, 'Normal', ?, NOW()),
+             (11, 1, 'user-note-attribute', ?, 24, ?, ?, ?, NOW())`,
             newNoteId,
             groupKey,
             newNoteId,
             deptOptionId,
+            deptValue,
             groupKey
           );
         }
@@ -104,7 +157,7 @@ export async function registerCustomerNotesRoutes(fastify: FastifyInstance) {
 
     try {
       await fastify.prisma.legacy.$executeRawUnsafe(
-        `UPDATE user_note SET is_sticky = 0 WHERE id = ? AND user_id = ?`,
+        `UPDATE user_note SET is_sticky = 0, date_updated = NOW() WHERE id = ? AND user_id = ?`,
         parsedNoteId,
         customerId
       );
@@ -140,22 +193,22 @@ export async function registerCustomerNotesRoutes(fastify: FastifyInstance) {
     try {
       await fastify.prisma.legacy.$transaction(async (tx) => {
         await tx.$executeRawUnsafe(
-          `UPDATE user_note SET is_sticky = 1 WHERE id = ? AND user_id = ?`,
+          `UPDATE user_note SET is_sticky = 1, date_updated = NOW() WHERE id = ? AND user_id = ?`,
           parsedNoteId,
           customerId
         );
 
         // Self-heal attribute_group_key and item_attribute_value if missing
         const noteRecords = await tx.$queryRawUnsafe<
-          Array<{ attribute_group_key: string | null; note_field_key: string }>
-        >(`SELECT attribute_group_key, note_field_key FROM user_note WHERE id = ? LIMIT 1`, parsedNoteId);
+          Array<{ attribute_group_key: string | null; note_field_key: string; date_created: Date | null }>
+        >(`SELECT attribute_group_key, note_field_key, date_created FROM user_note WHERE id = ? LIMIT 1`, parsedNoteId);
 
         if (noteRecords.length > 0) {
           let currentGroupKey = noteRecords[0]?.attribute_group_key;
           if (!currentGroupKey) {
             currentGroupKey = Math.floor(Date.now() / 1000).toString();
             await tx.$executeRawUnsafe(
-              `UPDATE user_note SET attribute_group_key = ? WHERE id = ?`,
+              `UPDATE user_note SET attribute_group_key = ?, date_updated = COALESCE(date_updated, date_created, NOW()) WHERE id = ?`,
               currentGroupKey,
               parsedNoteId
             );
@@ -168,16 +221,20 @@ export async function registerCustomerNotesRoutes(fastify: FastifyInstance) {
 
           if (existingAttrs.length === 0) {
             const deptOptionId = noteRecords[0]?.note_field_key === 'order_note' ? 120 : 119;
+            const deptValue = noteRecords[0]?.note_field_key === 'order_note' ? 'Booking' : 'Note';
             await tx.$executeRawUnsafe(
               `INSERT INTO item_attribute_value (client_id, client_business_id, type, item_id, attribute_id, attribute_option_id, attribute_option_value, group_key, date_created)
                VALUES 
-               (11, 1, 'user-note-attribute', ?, 23, 116, '', ?, NOW()),
-               (11, 1, 'user-note-attribute', ?, 24, ?, '', ?, NOW())`,
+               (11, 1, 'user-note-attribute', ?, 23, 116, 'Normal', ?, ?),
+               (11, 1, 'user-note-attribute', ?, 24, ?, ?, ?, ?)`,
               parsedNoteId,
               currentGroupKey,
+              noteRecords[0]?.date_created || new Date(),
               parsedNoteId,
               deptOptionId,
-              currentGroupKey
+              deptValue,
+              currentGroupKey,
+              noteRecords[0]?.date_created || new Date()
             );
           }
         }
@@ -211,6 +268,9 @@ export async function registerCustomerNotesRoutes(fastify: FastifyInstance) {
     if (!(await ensureTelesalesCustomerAccess(request, reply, customerId))) return;
 
     try {
+      // Proactively self-heal any unhealed customer notes
+      await repairCustomerNotesIntegrity(fastify.prisma.legacy, customerId);
+
       const notesSql = `
         SELECT 
           un.id,
