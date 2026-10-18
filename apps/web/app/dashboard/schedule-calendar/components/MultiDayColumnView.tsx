@@ -656,7 +656,7 @@ const AppointmentCardItem = React.memo(function AppointmentCardItem({
         )}
         {onReschedule && (
           <Button size="small" icon={<SwapOutlined />} onClick={() => onReschedule(appt)}>
-            Đổi lịch
+            Đổi lịch / Cập nhật
           </Button>
         )}
       </div>

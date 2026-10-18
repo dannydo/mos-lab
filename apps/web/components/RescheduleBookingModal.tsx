@@ -1,10 +1,9 @@
 'use client';
 // Mandatory Customer Phone Number Display Enforced
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Steps, Button, Select, DatePicker, Input, theme, message, notification, Card, Tag } from 'antd';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Button, Select, Input, theme, message, Card, Tag } from 'antd';
 import {
-  FormOutlined,
   HomeOutlined,
   InboxOutlined,
   ExclamationCircleOutlined,
@@ -13,6 +12,8 @@ import {
   SaveOutlined,
   CheckOutlined,
   SettingOutlined,
+  UserOutlined,
+  GiftOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { useTheme } from '../context/ThemeContext';
@@ -22,6 +23,9 @@ import {
   BookingConfirmationTemplate,
   DEFAULT_BOOKING_TEMPLATES,
   BOOKING_TEMPLATE_TAGS,
+  BookingPromotionOptionsResponse,
+  SafeAny,
+  UpdateBookingRequest,
 } from '@mos-lab/shared';
 import { CvDatePicker } from './booking/CvDatePicker';
 
@@ -31,11 +35,11 @@ import { checkAndAppendLowerLashNote, getRelativeDateInfo } from './booking/comb
 import { useBookingStaff } from './booking/useBookingStaff';
 import { useSlotMatrix } from './booking/useSlotMatrix';
 import { useCustomerInsights } from './booking/useCustomerInsights';
-import { TechnicianSelector } from './booking/TechnicianSelector';
 import { SlotMatrixGrid } from './booking/SlotMatrixGrid';
 import { BookingTemplateManagerModal } from './booking/BookingTemplateManagerModal';
 import { AdaptiveDrawer, AdaptiveModal } from './ui/AdaptiveOverlay';
 import { CopyPhoneButton } from './ui';
+import CalendarRescheduleIcon from './icons/CalendarRescheduleIcon';
 import { useResponsiveTier } from '../hooks/useResponsiveTier';
 import { notifyBookingMutation, toBookingCustomerId } from '../lib/booking-events';
 
@@ -59,18 +63,24 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
   const responsiveTier = useResponsiveTier();
   const isCompact = responsiveTier === 'mobile' || responsiveTier === 'tablet';
 
-  const [currentStep, setCurrentStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Form Fields State
   const [selectedCN, setSelectedCN] = useState<SafeAny>(null); // Branch/Store
-  const [selectedCV, setSelectedCV] = useState<SafeAny>(null); // KTV
+  const [selectedCV, setSelectedCV] = useState<SafeAny>(null); // Technician/CV
   const [bookingNote, setBookingNote] = useState('');
 
   // Dropdown data options
   const [services, setServices] = useState<SafeAny[]>([]);
   const [selectedService, setSelectedService] = useState<SafeAny>(null);
+
+  // Promotion options
+  const [promotionOptions, setPromotionOptions] = useState<BookingPromotionOptionsResponse | null>(null);
+  const [selectedPromotionSelection, setSelectedPromotionSelection] = useState<string | undefined>(undefined);
+
+  // Toggle for optional SMS message section
+  const [showTemplateSection, setShowTemplateSection] = useState<boolean>(false);
 
   // Re-use Customer details hook (simulating a selected customer)
   const selectedCustomer = booking?.customerId ? { id: booking.customerId } : null;
@@ -81,7 +91,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
   );
 
   // Re-use Booking Staff hook
-  const { staffList, loadingStaff, fetchStaff, getGroupedKTVs, getFavoriteKTVs, setStaffList, setLoadingStaff } =
+  const { staffList, loadingStaff, fetchStaff, getFavoriteKTVs, setStaffList, setLoadingStaff } =
     useBookingStaff(null, favoriteTechs);
 
   // Re-use Slot Matrix hook
@@ -93,7 +103,6 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
     slotMatrix,
     loadingSlots,
     fetchSlots,
-    getNextAvailableDate,
     getCategorizedSlots,
   } = useSlotMatrix(selectedCN, selectedCV);
 
@@ -129,7 +138,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
         const nextDateStr = nextDate.format('DD/MM/YYYY');
 
         message.warning({
-          content: `⚠️ CẢNH BÁO LỊCH NGHỈ TUẦN: CV ${staffNameStr} nghỉ tuần ngày ${dateStr}. Tiệm đã gợi ý dời sang ngày ${nextDateStr} (${staffNameStr} đi làm lại).`,
+          content: `⚠️ CẢNH BÁO LỊCH NGHỈ TUẦN: CV ${staffNameStr} nghỉ tuần ngày ${dateStr}. Tiệm đã gợi ý dời sang ngày ${nextDateStr} (${staffNameStr} đi làm lại).`,
           duration: 8,
         });
 
@@ -146,23 +155,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
     [booking]
   );
 
-  useEffect(() => {
-    if (open && booking) {
-      const rawDateStr = booking.targetBookingDate || booking.target_booking_date || booking.bookingDateStart;
-      const targetDate = rawDateStr ? dayjs(rawDateStr) : bookingDate || dayjs();
-      const targetCV = selectedCV || {
-        id: booking.technicianId,
-        displayName: booking.technicianName || 'Trancy',
-        offDays: booking.technicianOffDays || ['2'],
-      };
-
-      if (booking.isOffDayDrop || isStaffOffOnDate(targetCV, targetDate)) {
-        checkAndHandleOffDay(targetCV, targetDate);
-      }
-    }
-  }, [open, booking, selectedCV, bookingDate, checkAndHandleOffDay]);
-
-  // Step 3 (Message Template) States
+  // Message Template States
   const [bookingTemplates, setBookingTemplates] = useState<BookingConfirmationTemplate[]>(DEFAULT_BOOKING_TEMPLATES);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('tpl_booking_no_tech');
   const [customMessage, setCustomMessage] = useState<string>('');
@@ -243,6 +236,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       customerLastVisit,
       getDayOfWeekNoAccent,
       getCycleDays,
+      offDayStaffInfo,
     ]
   );
 
@@ -293,21 +287,6 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
     }
     return DEFAULT_BOOKING_TEMPLATES;
   }, []);
-
-  const handleGoToStep4 = async () => {
-    if (!selectedCN) {
-      message.error('Vui lòng chọn chi nhánh');
-      return;
-    }
-    if (!selectedSlot) {
-      message.error('Vui lòng chọn khung giờ trống');
-      return;
-    }
-
-    const list = await fetchBookingTemplates();
-    autoSelectTemplate(list);
-    setCurrentStep(3);
-  };
 
   const handleCopyMessage = () => {
     const text = evaluateBookingTemplate(customMessage);
@@ -371,8 +350,6 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
           : bookingObj.services[0]?.name || bookingObj.services[0]?.serviceName
         : null) ||
       null;
-    // `0` is the deliberate virtual ID for the legacy "Any Lashes" service.
-    // Do not use `||` here: it turns that valid ID into a fake service later.
     const rawId = bookingObj.serviceId ?? bookingObj.service_id ?? null;
     const isVirtualAnyLashes = typeof name === 'string' && /\bany\s*[-/]?\s*lashes\b/i.test(name);
     const id = rawId ?? (isVirtualAnyLashes ? 0 : null);
@@ -398,8 +375,6 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
         setServices((prev) => (prev.some((s) => s.id === matched.id) ? prev : [matched, ...list]));
       } else if (targetName) {
         const customService = {
-          // This is only a display fallback. Never invent a numeric service ID:
-          // sending one would make the legacy order_service foreign key fail.
           id: `unresolved:${String(targetName)}`,
           name: targetName,
           price: booking?.servicePrice || booking?.price || 0,
@@ -418,7 +393,6 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
   // Initialize fields on open
   useEffect(() => {
     if (open && booking) {
-      setCurrentStep(0);
       setIsLateSlotModalOpen(false);
 
       const targetDateStr = booking.targetBookingDate || booking.target_booking_date;
@@ -449,6 +423,8 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
           nextWorkingDate: nextDate,
         });
         setIsOffDayWarningOpen(true);
+      } else {
+        setIsOffDayWarningOpen(false);
       }
 
       // Synchronously set initial service so UI never shows empty placeholder
@@ -511,9 +487,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                       ? booking.technicianOffDays
                       : found.offDays && Array.isArray(found.offDays) && found.offDays.length > 0
                         ? found.offDays
-                        : (booking.technicianName || '').toLowerCase().includes('trancy')
-                          ? ['2']
-                          : ['2'],
+                        : ['2'],
                 }
               : {
                   id: booking.technicianId,
@@ -529,15 +503,37 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
         })
         .catch((err) => console.error('[Reschedule] Fetch staff failed:', err))
         .finally(() => setLoadingStaff(false));
+
+      // Fetch promotions for parity with update modal
+      if (booking.id) {
+        apiClient.customers
+          .getBookingPromotionOptions(Number(booking.id))
+          .then((promotionData) => {
+            setPromotionOptions(promotionData);
+            if (promotionData?.mode === 'CUSTOM_CAMPAIGN' && promotionData.selectedCampaignPromotionId) {
+              setSelectedPromotionSelection(`CUSTOM_CAMPAIGN:${promotionData.selectedCampaignPromotionId}`);
+            } else if (promotionData?.selectedPromotionId) {
+              setSelectedPromotionSelection(`STANDARD:${promotionData.selectedPromotionId}`);
+            } else {
+              setSelectedPromotionSelection(undefined);
+            }
+          })
+          .catch(() => setPromotionOptions(null));
+      }
+
+      // Fetch templates
+      fetchBookingTemplates().then((tpls) => {
+        autoSelectTemplate(tpls);
+      });
     }
   }, [open, booking]);
 
   // Fetch slot matrix when dependencies change
   useEffect(() => {
-    if (open && selectedCN && currentStep === 1) {
+    if (open && selectedCN) {
       fetchSlots();
     }
-  }, [selectedCN, bookingDate, selectedCV, open, currentStep]);
+  }, [selectedCN, bookingDate, selectedCV, open]);
 
   // Re-fetch staff directory when booking date changes
   useEffect(() => {
@@ -546,73 +542,12 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
     }
   }, [bookingDate, open]);
 
-  const HARDCODED_OFF_DATES: { [name: string]: string[] } = {
-    'cẩm tiên': ['2026-07-26', '2026-07-27'],
-    'cam tien': ['2026-07-26', '2026-07-27'],
-  };
-
-  const isDateDisabledForCV = (current: dayjs.Dayjs, cv: SafeAny) => {
-    if (!current) return false;
-    if (current.isBefore(dayjs().startOf('day'))) {
-      return true;
+  // Update template message when slot or staff changes
+  useEffect(() => {
+    if (open && bookingTemplates.length > 0) {
+      autoSelectTemplate(bookingTemplates);
     }
-    const targetCV =
-      cv || (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
-    if (!targetCV) return false;
-
-    const cvName = (targetCV.displayName || '').trim().toLowerCase();
-    const cvNormalized = cvName.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
-    const dateStr = current.format('YYYY-MM-DD');
-
-    if (cvNormalized.includes('cam tien')) {
-      const dayOfWeek = current.day();
-      const dbDayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
-      if (dbDayStr === '2' || dateStr === '2026-07-27' || dateStr === '2026-07-26') {
-        return true;
-      }
-    }
-
-    const matchedStaffs = targetCV
-      ? (staffList || []).filter(
-          (s: SafeAny) =>
-            (s.id && targetCV.id && s.id === targetCV.id) ||
-            (s.displayName && s.displayName.trim().toLowerCase() === cvName)
-        )
-      : [];
-
-    const fallbackOffDates = HARDCODED_OFF_DATES[cvName] || HARDCODED_OFF_DATES[cvNormalized] || [];
-
-    const allApprovedOffDates: string[] = Array.from(
-      new Set([
-        ...(targetCV.approvedOffDates || []),
-        ...matchedStaffs.flatMap((s: SafeAny) => s.approvedOffDates || []),
-        ...fallbackOffDates,
-      ])
-    );
-
-    if (allApprovedOffDates.includes(dateStr)) {
-      return true;
-    }
-
-    const allOffDays: string[] = Array.from(
-      new Set([...(targetCV.offDays || []), ...matchedStaffs.flatMap((s: SafeAny) => s.offDays || [])])
-    );
-
-    if (allOffDays.length > 0) {
-      const dayOfWeek = current.day();
-      const dbDayStr = dayOfWeek === 0 ? '7' : String(dayOfWeek);
-      if (allOffDays.includes(dbDayStr)) {
-        return true;
-      }
-    }
-
-    return false;
-  };
-
-  const isCVOff = (date: dayjs.Dayjs, cv: SafeAny) => {
-    return isDateDisabledForCV(date, cv);
-  };
+  }, [selectedSlot, selectedCV, open, bookingTemplates, autoSelectTemplate]);
 
   const selectCVOption = (cv: SafeAny) => {
     setSelectedCV(cv);
@@ -625,8 +560,9 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
 
     if (cv && (isStaffOffOnDate(cv, targetDateToCheck) || (booking && booking.isOffDayDrop))) {
       checkAndHandleOffDay(cv, targetDateToCheck);
+    } else {
+      setIsOffDayWarningOpen(false);
     }
-    setCurrentStep(1);
   };
 
   const handleReschedule = async () => {
@@ -635,26 +571,37 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       return;
     }
     if (!selectedSlot) {
-      message.error('Vui lòng chọn khung giờ trống');
+      message.error('Vui lòng chọn khung giờ hẹn');
       return;
     }
 
     setSubmitting(true);
     try {
       const parsedServiceId = Number(selectedService?.id);
-      const payload = {
+
+      const promotionSelection = typeof selectedPromotionSelection === 'string' ? selectedPromotionSelection : null;
+      const selectedPromotionId = promotionSelection?.startsWith('STANDARD:')
+        ? Number(promotionSelection.replace('STANDARD:', ''))
+        : null;
+      const selectedCampaignPromotionId = promotionSelection?.startsWith('CUSTOM_CAMPAIGN:')
+        ? Number(promotionSelection.replace('CUSTOM_CAMPAIGN:', ''))
+        : null;
+
+      const payload: UpdateBookingRequest = {
         storeId: selectedCN.id,
-        storeName: selectedCN.name,
         technicianId: selectedCV?.id || null,
-        technicianName: selectedCV?.displayName || 'Chuyên viên tự do',
         bookingDate: bookingDate.format('YYYY-MM-DD'),
         bookingTime: selectedSlot,
         bookingNote: checkAndAppendLowerLashNote(bookingNote, comboBalances),
         ...(Number.isInteger(parsedServiceId) && parsedServiceId >= 0 ? { serviceId: parsedServiceId } : {}),
+        ...(selectedPromotionId ? { promotionId: selectedPromotionId } : {}),
+        ...(selectedCampaignPromotionId ? { campaignPromotionId: selectedCampaignPromotionId } : {}),
+        reasonCategory: 'Đổi lịch & Cập nhật thông tin đơn hàng',
+        reasonNote: 'Cập nhật từ mOS CRM',
       };
 
       await apiClient.customers.updateBooking(booking.id, payload);
-      message.success('Dời lịch hẹn thành công!');
+      message.success('Đổi lịch và cập nhật lịch hẹn thành công!');
       notifyBookingMutation(
         {
           action: 'rescheduled',
@@ -667,21 +614,34 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
     } catch (err) {
       console.error('[Reschedule] Submit failed:', err);
       const apiError = (err as SafeAny).response;
-      const errorMessage = apiError?.data?.message || 'Có lỗi xảy ra khi dời lịch.';
+      const errorMessage = apiError?.data?.message || 'Có lỗi xảy ra khi đổi lịch và cập nhật.';
       setSubmitError(errorMessage);
     } finally {
       setSubmitting(false);
     }
   };
 
+  const favoriteKTVs = getFavoriteKTVs();
+  const visiblePromotionOptions = (promotionOptions?.promotions || []).filter(
+    (promotion) =>
+      promotion.promotionType !== 'FIXED_FINAL_PRICE' ||
+      Boolean(selectedService?.id && (promotion.eligibleServiceIds || []).includes(Number(selectedService.id)))
+  );
+
   return (
     <AdaptiveDrawer
       intent="form"
       className="booking-reschedule-overlay"
+      width={isCompact ? '100%' : 720}
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#D4A84B' }}>
-          <FormOutlined style={{ fontSize: '18px' }} />
-          <span style={{ fontWeight: 'bold', fontSize: '16px' }}>QUY TRÌNH DỜI LỊCH HẸN KHÁCH HÀNG</span>
+          <CalendarRescheduleIcon fontSize={18} />
+          <span style={{ fontWeight: 'bold', fontSize: '16px' }}>ĐỔI LỊCH & CẬP NHẬT LỊCH HẸN</span>
+          {booking?.orderKey && (
+            <Tag color="gold" style={{ fontWeight: 600, margin: 0 }} className="tabular-nums">
+              #{booking.orderKey}
+            </Tag>
+          )}
           <span
             id="off-day-modal-debug-tag"
             data-is-open={String(isOffDayWarningOpen)}
@@ -694,132 +654,138 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
       destroyOnHidden
       styles={{
         body: {
-          padding: '24px',
+          padding: isCompact ? '16px' : '20px 24px',
           background: themeMode === 'dark' ? '#0f172a' : '#f8fafc',
         },
       }}
-    >
-      <div style={{ marginBottom: '24px' }}>
-        <Steps
-          size="small"
-          current={currentStep}
-          onChange={(step) => {
-            if (step < currentStep) {
-              setCurrentStep(step);
-            }
-          }}
-          items={[
-            { title: isCompact ? 'CV' : 'Chuyên viên' },
-            { title: isCompact ? 'Lịch' : 'Dịch Vụ & Thời Gian' },
-            { title: isCompact ? 'Xác nhận' : 'Xác Nhận' },
-            { title: isCompact ? 'Nhắn' : 'Gửi Tin Nhắn' },
-          ]}
-          style={{ marginBottom: '24px' }}
-        />
-      </div>
-
-      {/* Interactive Off-Day Warning Banner */}
-      {isOffDayWarningOpen && (
-        <div
-          id="off-day-warning-banner"
-          style={{
-            marginBottom: '20px',
-            padding: '16px',
-            borderRadius: '8px',
-            backgroundColor: themeMode === 'dark' ? 'rgba(250, 84, 28, 0.15)' : '#fff2e8',
-            border: `1px solid ${themeMode === 'dark' ? '#ff7a45' : '#ffbb96'}`,
-            color: themeMode === 'dark' ? '#ff7a45' : '#d4380d',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              fontWeight: 'bold',
-              fontSize: '15px',
-              marginBottom: '8px',
-              color: '#fa541c',
-            }}
-          >
-            <ExclamationCircleOutlined style={{ fontSize: '18px' }} />
-            <span>⚠️ CẢNH BÁO LỊCH NGHỈ TUẦN CHUYÊN VIÊN</span>
-          </div>
-          <p style={{ margin: '0 0 12px 0', fontSize: '13px', lineHeight: '1.6' }}>
-            Lịch hẹn dời sang ngày <strong>{offDayStaffInfo?.dateStr || '11/08/2026'}</strong> trùng với ngày nghỉ tuần
-            (<code>Off</code>) của{' '}
-            <strong style={{ color: '#fa541c' }}>
-              {offDayStaffInfo?.staffName || selectedCV?.displayName || 'Trancy'}
-            </strong>
-            .
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+      footer={
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+          <Button onClick={onClose}>
+            Đóng
+          </Button>
+          <div style={{ display: 'flex', gap: '8px' }}>
             <Button
-              size="small"
-              onClick={() => {
-                const targetNext = offDayStaffInfo?.nextWorkingDate || dayjs('2026-08-12');
-                setBookingDate(targetNext);
-                message.info(
-                  `Đã đổi lịch sang ngày ${targetNext.format('DD/MM/YYYY')} (${
-                    offDayStaffInfo?.staffName || selectedCV?.displayName || 'Trancy'
-                  } đi làm)`
-                );
-                setIsOffDayWarningOpen(false);
-              }}
+              icon={<CopyOutlined />}
+              onClick={handleCopyMessage}
+              style={{ color: '#D4A84B', borderColor: '#D4A84B' }}
             >
-              Dời sang ngày{' '}
-              {offDayStaffInfo?.nextWorkingDate && dayjs.isDayjs(offDayStaffInfo.nextWorkingDate)
-                ? offDayStaffInfo.nextWorkingDate.format('DD/MM')
-                : '12/08'}{' '}
-              ({offDayStaffInfo?.staffName || selectedCV?.displayName || 'Trancy'} đi làm)
+              Sao chép tin nhắn
             </Button>
             <Button
-              size="small"
-              onClick={() => {
-                setIsOffDayWarningOpen(false);
-                setCurrentStep(0);
-              }}
-            >
-              Đổi sang CV khác ca ngày này
-            </Button>
-            <Button
-              size="small"
               type="primary"
-              style={{ backgroundColor: '#D4A84B', borderColor: '#D4A84B' }}
-              onClick={() => {
-                setSelectedCV(null);
-                setIsOffDayWarningOpen(false);
-                setCurrentStep(1);
-                message.info(
-                  `Đã chuyển đơn sang Chuyên viên Tự Do do CV ${
-                    offDayStaffInfo?.staffName || selectedCV?.displayName || 'Trancy'
-                  } nghỉ tuần ngày ${offDayStaffInfo?.dateStr || '11/08/2026'}`
-                );
-              }}
+              icon={<CheckOutlined />}
+              loading={submitting}
+              onClick={handleReschedule}
+              style={{ backgroundColor: '#52c41a', borderColor: '#52c41a', fontWeight: 'bold' }}
             >
-              Chuyển thành CV Tự Do (Tiếp tục)
+              Hoàn tất & Lưu
             </Button>
           </div>
         </div>
-      )}
+      }
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {/* Customer Information (Read-only Card) */}
+        <Card
+          size="small"
+          style={{
+            backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
+            borderColor: themeMode === 'dark' ? '#334155' : '#e2e8f0',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ fontSize: '13px', color: token.colorText }} className="flex items-center gap-1.5">
+              <span style={{ color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>Khách hàng:</span>
+              <strong style={{ fontSize: '14px' }}>{booking?.customerName || 'Khách hàng'}</strong>
+              <span>-</span>
+              <span style={{ fontWeight: 600 }}>{formatOrGenerateCustomerPhone(booking)}</span>
+              <CopyPhoneButton phone={formatOrGenerateCustomerPhone(booking)} size="xs" />
+            </div>
+            {bookingDate && (
+              <div style={{ fontSize: '12px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>
+                Lịch hiện tại: <strong className="tabular-nums">{bookingDate.format('DD/MM/YYYY')} {selectedSlot || ''}</strong> ({selectedCN?.name || booking?.branchName || ''})
+              </div>
+            )}
+          </div>
+        </Card>
 
-      {/* STEP 0: SPECIALIST SELECT */}
-      {currentStep === 0 && (
-        <TechnicianSelector
-          selectedCV={selectedCV}
-          onSelectCVOption={selectCVOption}
-          favoriteTechs={favoriteTechs}
-          getFavoriteKTVs={getFavoriteKTVs}
-          getGroupedKTVs={getGroupedKTVs}
-          loadingStaff={loadingStaff}
-          themeMode={themeMode}
-        />
-      )}
+        {/* Interactive Off-Day Warning Banner */}
+        {isOffDayWarningOpen && (
+          <div
+            id="off-day-warning-banner"
+            style={{
+              padding: '14px 16px',
+              borderRadius: '8px',
+              backgroundColor: themeMode === 'dark' ? 'rgba(250, 84, 28, 0.15)' : '#fff2e8',
+              border: `1px solid ${themeMode === 'dark' ? '#ff7a45' : '#ffbb96'}`,
+              color: themeMode === 'dark' ? '#ff7a45' : '#d4380d',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontWeight: 'bold',
+                fontSize: '14px',
+                marginBottom: '6px',
+                color: '#fa541c',
+              }}
+            >
+              <ExclamationCircleOutlined style={{ fontSize: '16px' }} />
+              <span>⚠️ CẢNH BÁO LỊCH NGHỈ TUẦN CHUYÊN VIÊN</span>
+            </div>
+            <p style={{ margin: '0 0 10px 0', fontSize: '13px', lineHeight: '1.5' }}>
+              Lịch hẹn dời sang ngày <strong>{offDayStaffInfo?.dateStr || bookingDate.format('DD/MM/YYYY')}</strong> trùng với ngày nghỉ tuần
+              (<code>Off</code>) của{' '}
+              <strong style={{ color: '#fa541c' }}>
+                {offDayStaffInfo?.staffName || selectedCV?.displayName || 'Chuyên viên'}
+              </strong>
+              .
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              <Button
+                size="small"
+                onClick={() => {
+                  const targetNext = offDayStaffInfo?.nextWorkingDate || bookingDate.clone().add(1, 'day');
+                  setBookingDate(targetNext);
+                  message.info(
+                    `Đã đổi lịch sang ngày ${targetNext.format('DD/MM/YYYY')} (${
+                      offDayStaffInfo?.staffName || selectedCV?.displayName || 'Chuyên viên'
+                    } đi làm)`
+                  );
+                  setIsOffDayWarningOpen(false);
+                }}
+              >
+                Dời sang ngày{' '}
+                {offDayStaffInfo?.nextWorkingDate && dayjs.isDayjs(offDayStaffInfo.nextWorkingDate)
+                  ? offDayStaffInfo.nextWorkingDate.format('DD/MM')
+                  : bookingDate.clone().add(1, 'day').format('DD/MM')}{' '}
+                ({offDayStaffInfo?.staffName || selectedCV?.displayName || 'Chuyên viên'} đi làm)
+              </Button>
+              <Button
+                size="small"
+                type="primary"
+                style={{ backgroundColor: '#D4A84B', borderColor: '#D4A84B' }}
+                onClick={() => {
+                  setSelectedCV(null);
+                  setIsOffDayWarningOpen(false);
+                  message.info(
+                    `Đã chuyển đơn sang Chuyên viên Tự Do do CV ${
+                      offDayStaffInfo?.staffName || selectedCV?.displayName || 'Chuyên viên'
+                    } nghỉ tuần`
+                  );
+                }}
+              >
+                Chuyển thành CV Tự Do
+              </Button>
+            </div>
+          </div>
+        )}
 
-      {/* STEP 1: SERVICE & SLOT SELECT */}
-      {currentStep === 1 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Store select */}
+        {/* SECTION 1: CHI NHÁNH & CHUYÊN VIÊN */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          {/* Store selection */}
           <div>
             <h4 style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b', marginBottom: '8px' }}>
               <HomeOutlined /> CHI NHÁNH ĐẶT LỊCH (CN)
@@ -867,29 +833,71 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                 );
               })}
             </div>
+          </div>
+
+          {/* Technician Selection */}
+          <div>
+            <h4 style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b', marginBottom: '8px' }}>
+              <UserOutlined /> CHUYÊN VIÊN THỰC HIỆN (CV)
+            </h4>
+            <Select
+              showSearch
+              filterOption={vietnameseSearchFilter}
+              style={{ width: '100%' }}
+              loading={loadingStaff}
+              placeholder="Chọn chuyên viên (hoặc Chuyên viên tự do)..."
+              value={selectedCV ? selectedCV.id : 0}
+              onChange={(val) => {
+                if (!val || val === 0) {
+                  setSelectedCV(null);
+                  setIsOffDayWarningOpen(false);
+                } else {
+                  const found = (staffList || []).find((s: SafeAny) => Number(s.id) === Number(val));
+                  if (found) {
+                    selectCVOption(found);
+                  }
+                }
+              }}
+              options={[
+                {
+                  value: 0,
+                  label: '✨ Không chỉ định chuyên viên (Chuyên viên Tự Do)',
+                },
+                ...(staffList || []).map((st: SafeAny) => {
+                  const isFav = favoriteTechs.some(
+                    (ft) => ft.toLowerCase() === (st.displayName || st.name || '').toLowerCase()
+                  );
+                  const isOff = isStaffOffOnDate(st, bookingDate);
+                  return {
+                    value: st.id,
+                    label: `${st.displayName || st.name}${st.notes ? ` (${st.notes})` : ''}${isOff ? ' ⚠️ [Nghỉ ngày này]' : ''}${isFav ? ' 💖 [Hay đi]' : ''}`,
+                  };
+                }),
+              ]}
+            />
+
+            {/* Favorite Stylist Suggestion Chips */}
+            {favoriteKTVs.length > 0 && (
+              <div style={{ marginTop: '6px', fontSize: '12px', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                <span style={{ color: '#D4A84B', fontWeight: 'bold' }}>💖 Chuyên viên khách hay đi:</span>
+                {favoriteKTVs.map((ktv: SafeAny) => (
+                  <Tag
+                    key={ktv.id}
+                    color={selectedCV?.id === ktv.id ? 'gold' : 'default'}
+                    style={{ cursor: 'pointer', margin: 0 }}
+                    onClick={() => selectCVOption(ktv)}
+                  >
+                    {ktv.displayName || ktv.name}
+                  </Tag>
+                ))}
+              </div>
+            )}
             {selectedCV && (
-              <div style={{ fontSize: '12px', color: '#fa8c16', marginTop: '6px' }}>
-                * Đang gợi ý chi nhánh làm việc chính của <strong>{selectedCV.displayName}</strong>.
+              <div style={{ fontSize: '12px', color: '#fa8c16', marginTop: '4px' }}>
+                * Đang chỉ định <strong>{selectedCV.displayName || selectedCV.name}</strong>.
               </div>
             )}
           </div>
-
-          {/* Customer Information (Read-only Card) */}
-          <Card
-            title={
-              <span style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>
-                THÔNG TIN KHÁCH HÀNG
-              </span>
-            }
-            size="small"
-            style={{ backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff' }}
-          >
-            <div style={{ fontSize: '13px', color: token.colorText }} className="flex items-center gap-1">
-              <span style={{ fontWeight: 'bold' }}>{booking?.customerName || 'Khách hàng'}</span> -{' '}
-              <span>{formatOrGenerateCustomerPhone(booking)}</span>
-              <CopyPhoneButton phone={formatOrGenerateCustomerPhone(booking)} size="xs" />
-            </div>
-          </Card>
 
           {/* Service Selector */}
           <div>
@@ -951,7 +959,27 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
             )}
           </div>
 
-          <div style={{ height: '1px', background: themeMode === 'dark' ? '#334155' : '#e5e7eb', margin: '6px 0' }} />
+          {/* Promotion Options (if applicable) */}
+          {visiblePromotionOptions.length > 0 && (
+            <div>
+              <h4 style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b', marginBottom: '8px' }}>
+                <GiftOutlined /> CHƯƠNG TRÌNH KHUYẾN MÃI
+              </h4>
+              <Select
+                placeholder="Chọn chương trình khuyến mãi (hoặc để trống)..."
+                allowClear
+                style={{ width: '100%' }}
+                value={selectedPromotionSelection}
+                onChange={(val) => setSelectedPromotionSelection(val)}
+                options={visiblePromotionOptions.map((promotion) => ({
+                  value: `${promotion.source}:${promotion.id}`,
+                  label: promotion.label || promotion.name,
+                }))}
+              />
+            </div>
+          )}
+
+          <div style={{ height: '1px', background: themeMode === 'dark' ? '#334155' : '#e5e7eb', margin: '4px 0' }} />
 
           {/* Date & Slot select matrix */}
           <div>
@@ -960,9 +988,9 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: '16px',
+                marginBottom: '12px',
                 flexWrap: 'wrap',
-                gap: '10px',
+                gap: '8px',
               }}
             >
               <div>
@@ -1002,278 +1030,222 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
             />
           </div>
 
-          <Button
-            type="primary"
-            onClick={() => setCurrentStep(2)}
-            disabled={!selectedCN || !selectedSlot || !selectedService}
-            style={{ marginTop: '10px', width: '100%' }}
-          >
-            Tiếp tục: Nhập ghi chú & Xác nhận
-          </Button>
-        </div>
-      )}
-
-      {/* STEP 2: CONFIRM & BOOK */}
-      {currentStep === 2 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <Card
-            title={<span style={{ color: '#D4A84B', fontWeight: 'bold' }}>TỔNG HỢP THÔNG TIN DỜI LỊCH HẸN</span>}
-            style={{ backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff' }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13.5px' }}>
-              <div className="flex items-center gap-1">
-                <span style={{ color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>Khách hàng:</span>{' '}
-                <strong>{booking?.customerName}</strong> ({booking?.customerPhone})
-                <CopyPhoneButton phone={booking?.customerPhone} size="xs" />
-              </div>
-              <div>
-                <span style={{ color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>Chi nhánh mới:</span>{' '}
-                <strong>{selectedCN?.name}</strong>
-              </div>
-              <div>
-                <span style={{ color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>Chuyên viên:</span>{' '}
-                <strong>{selectedCV ? selectedCV.displayName : 'Chuyên viên tự do'}</strong>
-              </div>
-              <div>
-                <span style={{ color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>Dịch vụ:</span>{' '}
-                <strong>{selectedService?.name}</strong>
-              </div>
-              <div>
-                <span style={{ color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>Giờ hẹn mới:</span>{' '}
-                <strong>{selectedSlot}</strong>{' '}
-                {(() => {
-                  const dateInfo = getRelativeDateInfo(bookingDate);
-                  const formattedDate = bookingDate
-                    ? typeof bookingDate.format === 'function'
-                      ? bookingDate.format('DD/MM/YYYY')
-                      : dayjs(bookingDate).format('DD/MM/YYYY')
-                    : '';
-                  return (
-                    <>
-                      <strong>{dateInfo.label}</strong> <strong>{formattedDate}</strong>
-                    </>
-                  );
-                })()}
-              </div>
-            </div>
-          </Card>
-
-          {/* Booking note */}
+          {/* Booking Note Section */}
           <div>
             <h4 style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b', marginBottom: '8px' }}>
-              GHI CHÚ ĐẶT LỊCH (BOOKING NOTE)
+              GHI CHÚ ĐẶT LỊCH (BOOKING NOTE / LƯU Ý KHÁCH HÀNG)
             </h4>
             <TextArea
-              rows={4}
-              placeholder="Nhập các ghi chú đặc biệt từ khách hàng..."
+              rows={3}
+              placeholder="Nhập ghi chú hoặc yêu cầu đặc biệt từ khách hàng (dáng mi, yêu cầu chuyên viên, tình trạng mắt...)..."
               value={bookingNote}
               onChange={(e) => setBookingNote(e.target.value)}
+              style={{
+                borderRadius: '8px',
+                backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
+                color: themeMode === 'dark' ? '#f8fafc' : '#0f172a',
+                borderColor: themeMode === 'dark' ? '#334155' : '#cbd5e1',
+              }}
             />
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
-            <Button style={{ flex: 1 }} onClick={() => setCurrentStep(1)}>
-              Quay lại
-            </Button>
-            <Button
-              type="primary"
-              style={{ flex: 2, backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-              onClick={handleGoToStep4}
-            >
-              Tiếp tục: Tạo tin nhắn xác nhận
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* STEP 3: MESSAGE CONFIRMATION TEMPLATE */}
-      {currentStep === 3 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <Card
-            title={
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span
-                  style={{ color: '#D4A84B', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}
-                >
-                  <MessageOutlined /> TIN NHẮN MẪU XÁC NHẬN DỜI LỊCH
-                </span>
-                <Tag color="orange">Chờ xác nhận & Dời lịch</Tag>
-              </div>
-            }
-            style={{ backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff' }}
+          {/* Collapsible Message Template Section (Optional / Non-blocking) */}
+          <div
+            style={{
+              borderRadius: '8px',
+              border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
+              overflow: 'hidden',
+              backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
+            }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* Template selector */}
-              <div>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '6px',
-                  }}
-                >
+            <div
+              onClick={() => setShowTemplateSection(!showTemplateSection)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '12px 16px',
+                cursor: 'pointer',
+                backgroundColor: themeMode === 'dark' ? '#1e293b' : '#f8fafc',
+                borderBottom: showTemplateSection ? `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}` : 'none',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', fontSize: '13px', color: '#D4A84B' }}>
+                <MessageOutlined />
+                <span>MẪU TIN NHẮN XÁC NHẬN GỬI KHÁCH (TÙY CHỌN XEM / SAO CHÉP)</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '12px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b' }}>
+                  {showTemplateSection ? '▲ Thu gọn' : '▼ Mở rộng'}
+                </span>
+              </div>
+            </div>
+
+            {showTemplateSection && (
+              <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {/* Template selector */}
+                <div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    <label
+                      style={{
+                        fontSize: '12.5px',
+                        fontWeight: '600',
+                        color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                      }}
+                    >
+                      MẪU TIN NHẮN HỆ THỐNG:
+                    </label>
+                    <Button
+                      type="link"
+                      size="small"
+                      icon={<SettingOutlined />}
+                      onClick={() => setIsManagerModalOpen(true)}
+                      style={{ color: '#D4A84B', padding: 0 }}
+                    >
+                      ⚙️ Quản lý Mẫu
+                    </Button>
+                  </div>
+                  <Select
+                    style={{ width: '100%' }}
+                    getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
+                    value={selectedTemplateId}
+                    loading={loadingTemplates}
+                    onChange={(val) => {
+                      setSelectedTemplateId(val);
+                      const chosen = bookingTemplates.find((t) => t.id === val);
+                      if (chosen) setCustomMessage(chosen.content);
+                    }}
+                    options={bookingTemplates.map((t) => ({
+                      label: t.title,
+                      value: t.id,
+                    }))}
+                  />
+                </div>
+
+                {/* Variable Insert Tags */}
+                <div>
                   <label
+                    style={{
+                      display: 'block',
+                      fontSize: '12.5px',
+                      fontWeight: '600',
+                      color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    CHÈN NHANH THẺ BIẾN ĐỘNG:
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {BOOKING_TEMPLATE_TAGS.map((tagDef) => (
+                      <Button
+                        key={tagDef.tag}
+                        size="small"
+                        type="dashed"
+                        onClick={() => setCustomMessage((prev) => prev + tagDef.tag)}
+                        style={{
+                          fontSize: '12px',
+                          borderColor: themeMode === 'dark' ? '#334155' : '#cbd5e1',
+                          color: themeMode === 'dark' ? '#fbbf24' : '#d97706',
+                        }}
+                      >
+                        + {tagDef.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Editable Custom Content */}
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '12.5px',
+                      fontWeight: '600',
+                      color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    NỘI DUNG MẪU TÙY CHỈNH:
+                  </label>
+                  <TextArea
+                    rows={4}
+                    value={customMessage}
+                    onChange={(e) => setCustomMessage(e.target.value)}
+                    style={{
+                      fontFamily: 'monospace',
+                      fontSize: '13px',
+                      backgroundColor: themeMode === 'dark' ? '#0f172a' : '#ffffff',
+                      color: themeMode === 'dark' ? '#f8fafc' : '#0f172a',
+                    }}
+                  />
+                </div>
+
+                {/* Live Preview Box */}
+                <div>
+                  <div
                     style={{
                       fontSize: '12.5px',
                       fontWeight: '600',
                       color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                      marginBottom: '6px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
                     }}
                   >
-                    MẪU TIN NHẮN HỆ THỐNG:
-                  </label>
-                  <Button
-                    type="link"
-                    size="small"
-                    icon={<SettingOutlined />}
-                    onClick={() => setIsManagerModalOpen(true)}
-                    style={{ color: '#D4A84B', padding: 0 }}
+                    <span>
+                      XEM TRƯỚC TIN NHẮN SẼ GỬI CHO{' '}
+                      <strong style={{ color: '#D4A84B' }}>
+                        {booking?.customerName || booking?.customer?.name || 'KHÁCH HÀNG'}
+                      </strong>
+                      :
+                    </span>
+                    <span style={{ fontSize: '11px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+                      {evaluateBookingTemplate(customMessage).length} ký tự
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      backgroundColor: themeMode === 'dark' ? '#0f172a' : '#f8fafc',
+                      border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
+                      color: themeMode === 'dark' ? '#e2e8f0' : '#1e293b',
+                      fontSize: '13px',
+                      whiteSpace: 'pre-wrap',
+                      lineHeight: '1.6',
+                    }}
                   >
-                    ⚙️ Quản lý Mẫu
+                    {evaluateBookingTemplate(customMessage)}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <Button icon={<SaveOutlined />} loading={savingTemplate} onClick={handleSaveTemplate} size="small">
+                    Lưu Template Mẫu
+                  </Button>
+                  <Button
+                    type="primary"
+                    icon={<CopyOutlined />}
+                    onClick={handleCopyMessage}
+                    size="small"
+                    style={{ backgroundColor: '#fa8c16', borderColor: '#fa8c16' }}
+                  >
+                    Sao chép tin nhắn này
                   </Button>
                 </div>
-                <Select
-                  style={{ width: '100%' }}
-                  getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
-                  value={selectedTemplateId}
-                  loading={loadingTemplates}
-                  onChange={(val) => {
-                    setSelectedTemplateId(val);
-                    const chosen = bookingTemplates.find((t) => t.id === val);
-                    if (chosen) setCustomMessage(chosen.content);
-                  }}
-                  options={bookingTemplates.map((t) => ({
-                    label: t.title,
-                    value: t.id,
-                  }))}
-                />
               </div>
-
-              {/* Variable Insert Tags */}
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '12.5px',
-                    fontWeight: '600',
-                    color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
-                    marginBottom: '8px',
-                  }}
-                >
-                  CHÈN NHANH THẺ BIẾN ĐỘNG (NHẤP ĐỂ CHÈN):
-                </label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {BOOKING_TEMPLATE_TAGS.map((tagDef) => (
-                    <Button
-                      key={tagDef.tag}
-                      size="small"
-                      type="dashed"
-                      onClick={() => setCustomMessage((prev) => prev + tagDef.tag)}
-                      style={{
-                        fontSize: '12px',
-                        borderColor: themeMode === 'dark' ? '#334155' : '#cbd5e1',
-                        color: themeMode === 'dark' ? '#fbbf24' : '#d97706',
-                      }}
-                    >
-                      + {tagDef.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Editable Custom Content */}
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '12.5px',
-                    fontWeight: '600',
-                    color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
-                    marginBottom: '6px',
-                  }}
-                >
-                  NỘI DUNG MẪU TÙY CHỈNH:
-                </label>
-                <TextArea
-                  rows={5}
-                  value={customMessage}
-                  onChange={(e) => setCustomMessage(e.target.value)}
-                  style={{
-                    fontFamily: 'monospace',
-                    fontSize: '13px',
-                    backgroundColor: themeMode === 'dark' ? '#0f172a' : '#ffffff',
-                    color: themeMode === 'dark' ? '#f8fafc' : '#0f172a',
-                  }}
-                />
-              </div>
-
-              {/* Live Preview Box */}
-              <div>
-                <div
-                  style={{
-                    fontSize: '12.5px',
-                    fontWeight: '600',
-                    color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
-                    marginBottom: '6px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <span>
-                    XEM TRƯỚC TIN NHẮN SẼ GỬI CHO{' '}
-                    <strong style={{ color: '#D4A84B' }}>
-                      {booking?.customerName || booking?.customer?.name || 'KHÁCH HÀNG'}
-                    </strong>
-                    :
-                  </span>
-                  <span style={{ fontSize: '11px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
-                    {evaluateBookingTemplate(customMessage).length} ký tự
-                  </span>
-                </div>
-                <div
-                  style={{
-                    padding: '14px 16px',
-                    borderRadius: '8px',
-                    backgroundColor: themeMode === 'dark' ? '#0f172a' : '#f8fafc',
-                    border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
-                    color: themeMode === 'dark' ? '#e2e8f0' : '#1e293b',
-                    fontSize: '13.5px',
-                    whiteSpace: 'pre-wrap',
-                    lineHeight: '1.6',
-                  }}
-                >
-                  {evaluateBookingTemplate(customMessage)}
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: '10px', marginTop: '4px', flexWrap: 'wrap' }}>
-            <Button icon={<SaveOutlined />} loading={savingTemplate} onClick={handleSaveTemplate} style={{ flex: 1 }}>
-              Lưu Template Mẫu
-            </Button>
-            <Button
-              type="primary"
-              icon={<CopyOutlined />}
-              onClick={handleCopyMessage}
-              style={{ flex: 1.5, backgroundColor: '#fa8c16', borderColor: '#fa8c16' }}
-            >
-              Sao chép tin nhắn
-            </Button>
-            <Button
-              type="primary"
-              icon={<CheckOutlined />}
-              loading={submitting}
-              onClick={handleReschedule}
-              style={{ flex: 1.5, backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-            >
-              Hoàn tất & Dời Lịch
-            </Button>
+            )}
           </div>
         </div>
-      )}
+      </div>
 
       {/* Booking Template Manager Modal */}
       <BookingTemplateManagerModal
@@ -1391,4 +1363,5 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
     </AdaptiveDrawer>
   );
 };
+
 export default RescheduleBookingModal;
