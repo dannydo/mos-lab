@@ -139,6 +139,7 @@ export async function gamificationRoutes(fastify: FastifyInstance) {
                   totalCcBonus: { type: 'number' },
                   projectedComboSales: { type: 'number' },
                   projectedProductSales: { type: 'number' },
+                  projectedSingleSales: { type: 'number' },
                   projectedTotalSales: { type: 'number' },
                   projectedCcBonus: { type: 'number' },
                   elapsedRatioPercent: { type: 'number' },

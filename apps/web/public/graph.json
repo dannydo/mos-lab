@@ -9500,7 +9500,7 @@
         "path": "/api/gamification/daily-sales-bonus/config",
         "module": "gamification",
         "handler": "inlineHandler",
-        "line": 210
+        "line": 211
       }
     },
     {
@@ -9514,7 +9514,7 @@
         "path": "/api/gamification/daily-sales-bonus/config",
         "module": "gamification",
         "handler": "inlineHandler",
-        "line": 216
+        "line": 217
       }
     },
     {
@@ -9528,7 +9528,7 @@
         "path": "/api/gamification/daily-sales-bonus/transactions",
         "module": "gamification",
         "handler": "inlineHandler",
-        "line": 286
+        "line": 287
       }
     },
     {
@@ -33127,8 +33127,8 @@
       "filePath": "apps/api/src/modules/gamification/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 32320,
-        "lineCount": 719,
+        "sizeBytes": 32380,
+        "lineCount": 720,
         "ext": ".ts"
       }
     },
@@ -33465,8 +33465,8 @@
       "filePath": "apps/api/src/modules/kpi/services/cc-kpi.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7841,
-        "lineCount": 225,
+        "sizeBytes": 9553,
+        "lineCount": 273,
         "ext": ".ts"
       }
     },
@@ -33478,8 +33478,8 @@
       "filePath": "apps/api/src/modules/kpi/services/cc-kpi.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 61721,
-        "lineCount": 1547,
+        "sizeBytes": 62541,
+        "lineCount": 1574,
         "ext": ".ts"
       }
     },
@@ -34336,8 +34336,8 @@
       "filePath": "apps/api/src/modules/projections/cc-kpi-daily-projection.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 8737,
-        "lineCount": 227,
+        "sizeBytes": 8178,
+        "lineCount": 223,
         "ext": ".ts"
       }
     },
@@ -38392,8 +38392,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcThuongTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 51046,
-        "lineCount": 1289,
+        "sizeBytes": 51700,
+        "lineCount": 1306,
         "ext": ".tsx"
       }
     },
@@ -38433,6 +38433,19 @@
       "metadata": {
         "sizeBytes": 27487,
         "lineCount": 746,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cc/components/__tests__/CcThuongTab.test.tsx",
+      "type": "File",
+      "label": "CcThuongTab.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cc/components/__tests__/CcThuongTab.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2764,
+        "lineCount": 92,
         "ext": ".tsx"
       }
     },
@@ -39614,8 +39627,8 @@
       "filePath": "apps/web/app/dashboard/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22864,
-        "lineCount": 581,
+        "sizeBytes": 22875,
+        "lineCount": 587,
         "ext": ".tsx"
       }
     },
@@ -40797,8 +40810,8 @@
       "filePath": "apps/web/app/dashboard/today/components/TodayStats.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 40540,
-        "lineCount": 1059,
+        "sizeBytes": 40476,
+        "lineCount": 1055,
         "ext": ".tsx"
       }
     },
@@ -42305,8 +42318,8 @@
       "filePath": "packages/shared/src/types/cc-thuong.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3813,
-        "lineCount": 141,
+        "sizeBytes": 3848,
+        "lineCount": 142,
         "ext": ".ts"
       }
     },
@@ -92629,7 +92642,7 @@
     }
   ],
   "stats": {
-    "totalNodes": 3285,
+    "totalNodes": 3286,
     "totalEdges": 7108,
     "nodeTypeCounts": {
       "Workspace": 3,
@@ -92639,7 +92652,7 @@
       "SharedType": 1198,
       "DesignToken": 12,
       "UIComponent": 226,
-      "File": 924
+      "File": 925
     },
     "edgeTypeCounts": {
       "EXPORTS": 1376,

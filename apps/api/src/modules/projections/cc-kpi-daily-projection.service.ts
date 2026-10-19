@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
+import { buildDailyBonusSummary } from '../kpi/services/cc-kpi.service.js';
 
 export const CC_KPI_DAILY_PROJECTION_KEY = 'cc-kpi-daily';
 export const CC_KPI_DAILY_FORMULA_VERSION = 'cc-kpi-daily-v1';
@@ -181,11 +182,6 @@ export class CcKpiDailyProjectionService {
     const activeStaff = (responsePayloads[0]?.activeStaff || []).filter(
       (staff) => !consultantId || asNumber(staff.userId) === consultantId
     );
-    const totalComboSales = Math.round(data.reduce((sum, row) => sum + asNumber(row.combo_sales), 0));
-    const totalProductSales = Math.round(data.reduce((sum, row) => sum + asNumber(row.product_sales), 0));
-    const totalSingleSales = Math.round(data.reduce((sum, row) => sum + asNumber(row.single_sales), 0));
-    const totalSales = Math.round(data.reduce((sum, row) => sum + asNumber(row.total_sales), 0));
-    const totalCcBonus = Math.round(data.reduce((sum, row) => sum + asNumber(row.daily_bonus), 0));
     const start = dateAtMidnight(dateFrom);
     const end = dateAtMidnight(dateTo);
     const today = dateAtMidnight(dateKey(new Date()));
@@ -205,21 +201,21 @@ export class CcKpiDailyProjectionService {
               )
             );
 
+    const summary = buildDailyBonusSummary(
+      data.map((row) => ({
+        combo_sales: asNumber(row.combo_sales),
+        product_sales: asNumber(row.product_sales),
+        single_sales: asNumber(row.single_sales),
+        debt_collected: asNumber(row.debt_collected),
+        daily_bonus: asNumber(row.daily_bonus),
+      })),
+      elapsedRatio
+    );
+
     return {
       data,
       total: data.length,
-      summary: {
-        totalComboSales,
-        totalProductSales,
-        totalSingleSales,
-        totalSales,
-        totalCcBonus,
-        projectedComboSales: Math.round(totalComboSales / elapsedRatio),
-        projectedProductSales: Math.round(totalProductSales / elapsedRatio),
-        projectedTotalSales: Math.round(totalSales / elapsedRatio),
-        projectedCcBonus: Math.round(totalCcBonus / elapsedRatio),
-        elapsedRatioPercent: Math.round(elapsedRatio * 1000) / 10,
-      },
+      summary,
       activeStaff,
     };
   }

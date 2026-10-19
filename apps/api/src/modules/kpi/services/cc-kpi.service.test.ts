@@ -6,6 +6,7 @@ import {
   buildGreenVisitEligibilitySql,
   buildCashTipCurrencyPredicate,
   buildCcLeaderboard,
+  buildDailyBonusSummary,
   summarizeCcLedgerXoayForPaystub,
   CASH_TIP_CURRENCY_ID,
   FAL_RULE_VALUES,
@@ -221,4 +222,50 @@ test('keeps the income/paystub Xoay total and count on posted Cash ledger rows',
   ]);
 
   assert.deepEqual(totals.get(10), { count: 2, bonus: 1 });
+});
+
+test('buildDailyBonusSummary calculates projectedSingleSales and keeps projected total matching the sum of categories', () => {
+  const sampleRows = [
+    {
+      combo_sales: 300_000_000,
+      product_sales: 10_000_000,
+      single_sales: 100_000_000,
+      debt_collected: 0,
+      daily_bonus: 5_000_000,
+    },
+    {
+      combo_sales: 30_000_000,
+      product_sales: 0,
+      single_sales: 40_000_000,
+      debt_collected: 5_000_000,
+      daily_bonus: 500_000,
+    },
+  ];
+
+  // Elapsed ratio = 0.5 (half month passed)
+  const summary = buildDailyBonusSummary(sampleRows, 0.5);
+
+  assert.equal(summary.totalComboSales, 330_000_000);
+  assert.equal(summary.totalProductSales, 10_000_000);
+  assert.equal(summary.totalSingleSales, 140_000_000);
+  // Total sales includes combo + product + single + debt
+  assert.equal(summary.totalSales, 485_000_000);
+  assert.equal(summary.totalCcBonus, 5_500_000);
+
+  // Projected at ratio 0.5 should be exactly double
+  assert.equal(summary.projectedComboSales, 660_000_000);
+  assert.equal(summary.projectedProductSales, 20_000_000);
+  assert.equal(summary.projectedSingleSales, 280_000_000);
+  assert.equal(summary.projectedTotalSales, 970_000_000);
+  assert.equal(summary.projectedCcBonus, 11_000_000);
+  assert.equal(summary.elapsedRatioPercent, 50.0);
+
+  // Crucial invariant for MOS-BUG-118:
+  // Projected Combo + Projected Single + Projected Product (+ debt) equals Projected Total!
+  const sumOfProjectedCategories =
+    summary.projectedComboSales +
+    summary.projectedSingleSales +
+    summary.projectedProductSales +
+    Math.round(5_000_000 / 0.5);
+  assert.equal(summary.projectedTotalSales, sumOfProjectedCategories);
 });
