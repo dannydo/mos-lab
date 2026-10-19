@@ -522,7 +522,7 @@ export class TeamService {
           COALESCE(NULLIF(up.avatar, ''), NULLIF(up.avatar_internal, '')) as avatarUrl
         FROM \`user_profile\` up
         JOIN \`staff_profile\` sp ON sp.user_id = up.user_id
-        WHERE up.provider = 'Staff' AND up.is_disabled = 0
+        WHERE up.provider IN ('Staff', 'Google') AND up.is_disabled = 0
         ${
           hasCrmException
             ? `
@@ -530,7 +530,7 @@ export class TeamService {
         SELECT DISTINCT up.user_id as staffId, up.full_name as displayName, up.username,
           COALESCE(NULLIF(up.avatar, ''), NULLIF(up.avatar_internal, '')) as avatarUrl
         FROM \`user_profile\` up
-        WHERE up.provider = 'Staff' AND up.is_disabled = 0 AND up.user_id IN (${crmPlaceholders})
+        WHERE up.provider IN ('Staff', 'Google') AND up.is_disabled = 0 AND up.user_id IN (${crmPlaceholders})
         `
             : ''
         }
@@ -562,10 +562,7 @@ export class TeamService {
       // 2. Query basic info from user_profile
       const userProfiles = await fastify.prisma.legacy.$queryRawUnsafe<
         { client_id: number; client_business_id: number; full_name: string | null }[]
-      >(
-        'SELECT client_id, client_business_id, full_name FROM `user_profile` WHERE user_id = ? AND provider = "Staff" LIMIT 1',
-        legacyStaffId
-      );
+      >('SELECT client_id, client_business_id, full_name FROM `user_profile` WHERE user_id = ? LIMIT 1', legacyStaffId);
       if (userProfiles.length === 0) return false;
 
       const up = userProfiles[0];
@@ -605,7 +602,7 @@ export class TeamService {
         `SELECT DISTINCT up.user_id as staffId, up.full_name as displayName, up.username,
           COALESCE(NULLIF(up.avatar, ''), NULLIF(up.avatar_internal, '')) as avatarUrl
          FROM \`user_profile\` up
-         WHERE up.provider = 'Staff' AND up.user_id IN (${placeholders})
+         WHERE up.user_id IN (${placeholders})
          ORDER BY up.full_name ASC`,
         ...legacyStaffIds
       );

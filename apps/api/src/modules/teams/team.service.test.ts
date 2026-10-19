@@ -95,10 +95,13 @@ function candidateFixture(
           const [normal, exception] = sql.split(/\bUNION\b/);
           assert.match(normal, /SELECT DISTINCT up\.user_id as staffId/);
           assert.match(normal, /JOIN `staff_profile` sp ON sp\.user_id = up\.user_id/);
-          assert.match(normal, /WHERE up\.provider = 'Staff' AND up\.is_disabled = 0/);
+          assert.match(normal, /WHERE up\.provider (?:= 'Staff'|IN \('Staff', 'Google'\)) AND up\.is_disabled = 0/);
           assert.doesNotMatch(normal, /LEFT JOIN `staff_profile`/);
           if (union) {
-            assert.match(exception, /WHERE up\.provider = 'Staff' AND up\.is_disabled = 0 AND up\.user_id IN \(/);
+            assert.match(
+              exception,
+              /WHERE up\.provider IN \('Staff', 'Google'\) AND up\.is_disabled = 0 AND up\.user_id IN \(/
+            );
             assert.doesNotMatch(sql, /UNION ALL/);
             assert.match(sql, /ORDER BY displayName ASC/);
           } else {
@@ -108,7 +111,7 @@ function candidateFixture(
           return rows
             .filter(
               (row) =>
-                row.provider === 'Staff' &&
+                (row.provider === 'Staff' || row.provider === 'Google') &&
                 !row.disabled &&
                 (row.hasStaffProfile || (union && params.includes(row.staffId)))
             )
@@ -236,4 +239,52 @@ test('keeps valid absolute staff avatars and rejects malformed legacy values', (
   assert.equal(normalizeStaffAvatarUrl('javascript:alert(1)'), null);
   assert.equal(normalizeStaffAvatarUrl('39407.png'), null);
   assert.equal(normalizeStaffAvatarUrl(null), null);
+});
+
+test('includes active Google provider admin staff with staff_profile (e.g. Danny Do)', async () => {
+  const dannyRow = { staffId: 86, displayName: 'Danny Do', provider: 'Google', disabled: false, hasStaffProfile: true };
+  const rowsWithDanny = [
+    { staffId: 47530, displayName: 'Thanh', provider: 'Staff', disabled: false, hasStaffProfile: true },
+    { staffId: 32268, displayName: 'Ngọc Điệp', provider: 'Staff', disabled: false, hasStaffProfile: true },
+    dannyRow,
+  ];
+  const now = new Date('2026-09-07T00:00:00Z');
+  const fastify = {
+    prisma: {
+      crm: {
+        crmTeam: {
+          findUnique: async ({ where }: { where: { code: string } }) => ({
+            id: 15,
+            code: where.code,
+            name: 'Core Team',
+            members: [],
+            isActive: true,
+            createdAt: now,
+            updatedAt: now,
+          }),
+        },
+      },
+      legacy: {
+        $queryRawUnsafe: async () => {
+          return rowsWithDanny.map(({ staffId, displayName }) => ({
+            staffId,
+            displayName,
+            username: staffId === 86 ? '0938633944' : null,
+            avatarUrl: null,
+          }));
+        },
+      },
+    },
+    log: {
+      error: () => {},
+      info: () => {},
+      warn: () => {},
+    },
+  } as unknown as FastifyInstance;
+
+  const detail = await TeamService.getTeamDetailByCode(fastify, 'CORE_TEAM');
+  assert.ok(detail);
+  const danny = detail.allStaffOptions.find((s) => s.staffId === 86);
+  assert.ok(danny, 'Danny Do must be present in allStaffOptions for CORE_TEAM');
+  assert.equal(danny?.displayName, 'Danny Do');
 });

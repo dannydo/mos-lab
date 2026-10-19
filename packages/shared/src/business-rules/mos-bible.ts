@@ -1002,21 +1002,21 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     summary:
       'Picker đội nhóm giữ nguyên tập nhân sự hợp lệ, tự động công nhận nhân sự mới từ crm_staff và auto-provision staff_profile.',
     commandments: [
-      'Danh sách nhân sự legacy hợp lệ yêu cầu provider = Staff, is_disabled = 0 và liên kết staff_profile (cô lập triệt để 50.800 khách hàng mang nhầm provider Staff).',
+      'Danh sách nhân sự legacy hợp lệ yêu cầu provider thuộc tập hợp ["Staff", "Google"], is_disabled = 0 và liên kết staff_profile (cô lập triệt để 50.800 khách hàng mang nhầm provider Staff và bảo toàn tài khoản quản trị Google OAuth như Danny Do).',
       'Đội nhóm tự động công nhận tất cả các tài khoản crm_staff đang active có vai trò tương ứng (telesales cho BK_TELESALES, cc cho CC, technician cho CV) và có liên kết legacyStaffId hợp lệ.',
       'Khi nhân sự được thêm vào đội nhóm hoặc đồng bộ trên hệ thống, nếu legacy DB còn thiếu bản ghi staff_profile, hệ thống tự động khởi tạo (auto-provision) staff_profile mặc định.',
       'Hiển thị ứng viên không tự thêm người vào team; chỉ phân quyền đúng đối tượng vào đúng nhóm nghiệp vụ.',
     ],
     rationale:
-      'Hơn 50.800 khách hàng legacy mang provider Staff; việc liên kết staff_profile kết hợp tự động nhận diện từ crm_staff active giúp nhân sự mới luôn hiển thị ngay lập tức mà vẫn cô lập triệt để tệp khách hàng.',
+      'Hơn 50.800 khách hàng legacy mang provider Staff; việc liên kết staff_profile kết hợp mở rộng nhận diện provider Google cho admin và tự động nhận diện từ crm_staff active giúp toàn bộ nhân sự và ban điều hành luôn hiển thị ngay lập tức mà vẫn cô lập triệt để tệp khách hàng.',
     exceptions: [
-      'Áp dụng cơ chế nhận diện tự động cho toàn bộ nhân sự mới gia nhập đội nhóm, mở rộng từ tiền lệ Thanh Vũ (#52598) và Thuý Kiều (#52648).',
+      'Áp dụng cơ chế nhận diện tự động cho toàn bộ nhân sự mới gia nhập đội nhóm, mở rộng từ tiền lệ Thanh Vũ (#52598) và Thuý Kiều (#52648), cùng tài khoản quản trị Google (#86).',
     ],
-    tags: ['nhân sự', 'BK', 'Telesales', 'nhóm', 'staff_profile', 'auto-provision'],
+    tags: ['nhân sự', 'BK', 'Telesales', 'nhóm', 'staff_profile', 'auto-provision', 'core-team'],
     routeScopes: ['/dashboard/staff/teams'],
     status: 'ACTIVE',
-    version: '2.0.0',
-    effectiveFrom: '2026-09-22',
+    version: '2.1.0',
+    effectiveFrom: '2026-10-19',
     sources: [
       { label: 'Điều kiện ứng viên và auto-provision', reference: 'apps/api/src/modules/teams/team.service.ts' },
       { label: 'Kiểm thử phạm vi ứng viên đội nhóm', reference: 'apps/api/src/modules/teams/team.service.test.ts' },
