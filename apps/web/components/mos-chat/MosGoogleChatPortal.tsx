@@ -4915,7 +4915,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   ) : (
                     <Rocket size={13} />
                   )}
-                  <span>🚀 Giao AG nâng cấp tiếp (Cổng 1)</span>
+                  <span>Giao AG nâng cấp tiếp (Cổng 1)</span>
                 </button>
               )}
 
@@ -12944,220 +12944,223 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         zIndex={1350}
         destroyOnClose
       >
-        {historyModalMessage && (() => {
-          const isHistoryMsgMine = isMessageFromCurrentUser(historyModalMessage);
-          const canManage = isHistoryMsgMine || isDannyAccount;
-          return (
-            <div className="py-2 space-y-4">
-              {/* Message Metadata Header */}
-              <div
-                className="p-3 rounded-xl flex items-center justify-between gap-2"
-                style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  {renderUserAvatarNode({
-                    staffId: historyModalMessage.senderId,
-                    name: historyModalMessage.senderName,
-                    rawAvatar: historyModalMessage.senderAvatar,
-                    sizeClass: 'w-8 h-8',
-                    roundedClass: 'rounded-full',
-                  })}
-                  <div className="min-w-0">
-                    <div className="text-[13px] font-bold truncate" style={{ color: token.colorText }}>
-                      {historyModalMessage.senderName}
-                    </div>
-                    <div className="text-[11px] text-slate-400 tabular-nums">
-                      Gửi ban đầu lúc{' '}
-                      {historyModalMessage.createdAt
-                        ? dayjs(historyModalMessage.createdAt).format('HH:mm · DD/MM/YYYY')
-                        : historyModalMessage.timeLabel}
+        {historyModalMessage &&
+          (() => {
+            const isHistoryMsgMine = isMessageFromCurrentUser(historyModalMessage);
+            const canManage = isHistoryMsgMine || isDannyAccount;
+            return (
+              <div className="py-2 space-y-4">
+                {/* Message Metadata Header */}
+                <div
+                  className="p-3 rounded-xl flex items-center justify-between gap-2"
+                  style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    {renderUserAvatarNode({
+                      staffId: historyModalMessage.senderId,
+                      name: historyModalMessage.senderName,
+                      rawAvatar: historyModalMessage.senderAvatar,
+                      sizeClass: 'w-8 h-8',
+                      roundedClass: 'rounded-full',
+                    })}
+                    <div className="min-w-0">
+                      <div className="text-[13px] font-bold truncate" style={{ color: token.colorText }}>
+                        {historyModalMessage.senderName}
+                      </div>
+                      <div className="text-[11px] text-slate-400 tabular-nums">
+                        Gửi ban đầu lúc{' '}
+                        {historyModalMessage.createdAt
+                          ? dayjs(historyModalMessage.createdAt).format('HH:mm · DD/MM/YYYY')
+                          : historyModalMessage.timeLabel}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-2 shrink-0">
-                  {historyModalMessage.isDeleted ? (
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
-                      Đã xoá
-                    </span>
-                  ) : historyModalMessage.editHistory && historyModalMessage.editHistory.length > 0 ? (
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                      Đã sửa {historyModalMessage.editHistory.length} lần
-                    </span>
-                  ) : (
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                      Bản gốc
-                    </span>
-                  )}
-
-                  {/* Actions in Header */}
-                  {canManage && (
-                    historyModalMessage.isDeleted ? (
-                      <button
-                        type="button"
-                        onClick={() => handleRestoreMessage(historyModalMessage.id)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11.5px] font-bold bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30 cursor-pointer transition-all"
-                      >
-                        <RotateCcw size={12} />
-                        <span>Khôi phục</span>
-                      </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {historyModalMessage.isDeleted ? (
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                        Đã xoá
+                      </span>
+                    ) : historyModalMessage.editHistory && historyModalMessage.editHistory.length > 0 ? (
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                        Đã sửa {historyModalMessage.editHistory.length} lần
+                      </span>
                     ) : (
-                      <Popconfirm
-                        title="Xoá tin nhắn này?"
-                        description="Nội dung sẽ bị ẩn nhưng toàn bộ lịch sử chỉnh sửa & xoá vẫn được lưu lại an toàn."
-                        onConfirm={() => handleDeleteMessage(historyModalMessage.id)}
-                        okText="Xoá"
-                        cancelText="Huỷ"
-                        okButtonProps={{ danger: true }}
-                        zIndex={1400}
-                        overlayStyle={{ zIndex: 1400 }}
-                      >
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                        Bản gốc
+                      </span>
+                    )}
+
+                    {/* Actions in Header */}
+                    {canManage &&
+                      (historyModalMessage.isDeleted ? (
                         <button
                           type="button"
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11.5px] font-bold bg-rose-500/15 text-rose-400 hover:bg-rose-500/25 border border-rose-500/30 cursor-pointer transition-all"
+                          onClick={() => handleRestoreMessage(historyModalMessage.id)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11.5px] font-bold bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30 cursor-pointer transition-all"
                         >
-                          <Trash2 size={12} />
-                          <span>Xoá</span>
+                          <RotateCcw size={12} />
+                          <span>Khôi phục</span>
                         </button>
-                      </Popconfirm>
-                    )
-                  )}
-                </div>
-              </div>
-
-              {/* If Deleted: Notice Card */}
-              {historyModalMessage.isDeleted && (
-                <div
-                  className="p-3 rounded-xl border border-rose-500/30 text-[12px] space-y-2"
-                  style={{ background: isDark ? 'rgba(239, 68, 68, 0.08)' : 'rgba(239, 68, 68, 0.05)' }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="font-bold text-rose-400 flex items-center gap-1.5">
-                      <Trash2 size={13} />
-                      <span>Tin nhắn đã bị xoá</span>
-                    </div>
-                    {canManage && (
-                      <button
-                        type="button"
-                        onClick={() => handleRestoreMessage(historyModalMessage.id)}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/40 cursor-pointer"
-                      >
-                        <RotateCcw size={11} />
-                        <span>Khôi phục tin nhắn này</span>
-                      </button>
-                    )}
-                  </div>
-                  <div className="text-slate-400 tabular-nums text-[11.5px]">
-                    Người xoá:{' '}
-                    <span className="font-semibold text-white/90">
-                      {historyModalMessage.deletedByName || 'Người dùng'}
-                    </span>{' '}
-                    lúc{' '}
-                    {historyModalMessage.deletedAt
-                      ? dayjs(historyModalMessage.deletedAt).format('HH:mm:ss · DD/MM/YYYY')
-                      : '—'}
-                  </div>
-                </div>
-              )}
-
-              {/* Version Timeline */}
-              <div className="space-y-3">
-                <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-                  Nhật ký các phiên bản ({1 + (historyModalMessage.editHistory?.length || 0)} phiên bản)
-                </div>
-
-                {/* Current Version / Content before deletion */}
-                <div
-                  className="p-3 rounded-xl space-y-1.5"
-                  style={{
-                    background: isDark ? 'rgba(212, 168, 75, 0.08)' : 'rgba(212, 168, 75, 0.06)',
-                    border: '1px solid rgba(212, 168, 75, 0.3)',
-                  }}
-                >
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="font-extrabold" style={{ color: '#d4a84b' }}>
-                      {historyModalMessage.isDeleted ? 'Nội dung trước khi xoá' : 'Phiên bản hiện tại (Mới nhất)'}
-                    </span>
-                    <span className="text-slate-400 tabular-nums">
-                      {historyModalMessage.editedAt
-                        ? dayjs(historyModalMessage.editedAt).format('HH:mm:ss · DD/MM/YYYY')
-                        : historyModalMessage.createdAt
-                          ? dayjs(historyModalMessage.createdAt).format('HH:mm:ss · DD/MM/YYYY')
-                          : ''}
-                    </span>
-                  </div>
-                  <div
-                    className="text-[13px] leading-relaxed whitespace-pre-wrap break-words"
-                    style={{ color: token.colorText }}
-                  >
-                    {historyModalMessage.text || historyModalMessage.originalText || '(Không có nội dung văn bản)'}
-                  </div>
-                </div>
-
-                {/* Historical Edits (from newest to oldest) */}
-                {historyModalMessage.editHistory && historyModalMessage.editHistory.length > 0 && (
-                  <div className="space-y-2.5">
-                    {[...historyModalMessage.editHistory].reverse().map((item, idx) => {
-                      const versionNum = historyModalMessage.editHistory!.length - idx;
-                      return (
-                        <div
-                          key={idx}
-                          className="p-3 rounded-xl space-y-1.5"
-                          style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                      ) : (
+                        <Popconfirm
+                          title="Xoá tin nhắn này?"
+                          description="Nội dung sẽ bị ẩn nhưng toàn bộ lịch sử chỉnh sửa & xoá vẫn được lưu lại an toàn."
+                          onConfirm={() => handleDeleteMessage(historyModalMessage.id)}
+                          okText="Xoá"
+                          cancelText="Huỷ"
+                          okButtonProps={{ danger: true }}
+                          zIndex={1400}
+                          overlayStyle={{ zIndex: 1400 }}
                         >
-                          <div className="flex items-center justify-between text-[11px] gap-2">
-                            <span className="font-bold text-slate-300">Phiên bản #{versionNum} (Trước khi sửa)</span>
-                            <div className="flex items-center gap-2">
-                              <span className="text-slate-400 tabular-nums">
-                                {dayjs(item.editedAt).format('HH:mm:ss · DD/MM/YYYY')}
-                                {item.editorName && ` · Sửa bởi ${item.editorName}`}
-                              </span>
-                              {canManage && !historyModalMessage.isDeleted && item.text && item.text !== historyModalMessage.text && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleRestoreVersion(historyModalMessage.id, item.text)}
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-bold text-amber-400 hover:bg-amber-500/10 border border-amber-500/30 cursor-pointer"
-                                >
-                                  <RotateCcw size={10} />
-                                  <span>Khôi phục bản này</span>
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                          <div className="text-[12.5px] leading-relaxed whitespace-pre-wrap break-words text-slate-300">
-                            {item.text || '(Tin nhắn trống)'}
-                          </div>
-                        </div>
-                      );
-                    })}
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11.5px] font-bold bg-rose-500/15 text-rose-400 hover:bg-rose-500/25 border border-rose-500/30 cursor-pointer transition-all"
+                          >
+                            <Trash2 size={12} />
+                            <span>Xoá</span>
+                          </button>
+                        </Popconfirm>
+                      ))}
+                  </div>
+                </div>
+
+                {/* If Deleted: Notice Card */}
+                {historyModalMessage.isDeleted && (
+                  <div
+                    className="p-3 rounded-xl border border-rose-500/30 text-[12px] space-y-2"
+                    style={{ background: isDark ? 'rgba(239, 68, 68, 0.08)' : 'rgba(239, 68, 68, 0.05)' }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="font-bold text-rose-400 flex items-center gap-1.5">
+                        <Trash2 size={13} />
+                        <span>Tin nhắn đã bị xoá</span>
+                      </div>
+                      {canManage && (
+                        <button
+                          type="button"
+                          onClick={() => handleRestoreMessage(historyModalMessage.id)}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/40 cursor-pointer"
+                        >
+                          <RotateCcw size={11} />
+                          <span>Khôi phục tin nhắn này</span>
+                        </button>
+                      )}
+                    </div>
+                    <div className="text-slate-400 tabular-nums text-[11.5px]">
+                      Người xoá:{' '}
+                      <span className="font-semibold text-white/90">
+                        {historyModalMessage.deletedByName || 'Người dùng'}
+                      </span>{' '}
+                      lúc{' '}
+                      {historyModalMessage.deletedAt
+                        ? dayjs(historyModalMessage.deletedAt).format('HH:mm:ss · DD/MM/YYYY')
+                        : '—'}
+                    </div>
                   </div>
                 )}
 
-                {/* Initial Original Version if different and preserved */}
-                {historyModalMessage.originalText &&
-                  historyModalMessage.originalText !== historyModalMessage.text &&
-                  (!historyModalMessage.editHistory || historyModalMessage.editHistory.length === 0) && (
-                    <div
-                      className="p-3 rounded-xl space-y-1.5"
-                      style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
-                    >
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="font-bold text-slate-400">Nội dung gốc ban đầu</span>
-                        <span className="text-slate-400 tabular-nums">
-                          {historyModalMessage.createdAt
+                {/* Version Timeline */}
+                <div className="space-y-3">
+                  <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
+                    Nhật ký các phiên bản ({1 + (historyModalMessage.editHistory?.length || 0)} phiên bản)
+                  </div>
+
+                  {/* Current Version / Content before deletion */}
+                  <div
+                    className="p-3 rounded-xl space-y-1.5"
+                    style={{
+                      background: isDark ? 'rgba(212, 168, 75, 0.08)' : 'rgba(212, 168, 75, 0.06)',
+                      border: '1px solid rgba(212, 168, 75, 0.3)',
+                    }}
+                  >
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-extrabold" style={{ color: '#d4a84b' }}>
+                        {historyModalMessage.isDeleted ? 'Nội dung trước khi xoá' : 'Phiên bản hiện tại (Mới nhất)'}
+                      </span>
+                      <span className="text-slate-400 tabular-nums">
+                        {historyModalMessage.editedAt
+                          ? dayjs(historyModalMessage.editedAt).format('HH:mm:ss · DD/MM/YYYY')
+                          : historyModalMessage.createdAt
                             ? dayjs(historyModalMessage.createdAt).format('HH:mm:ss · DD/MM/YYYY')
                             : ''}
-                        </span>
-                      </div>
-                      <div className="text-[12.5px] leading-relaxed whitespace-pre-wrap break-words text-slate-300">
-                        {historyModalMessage.originalText}
-                      </div>
+                      </span>
+                    </div>
+                    <div
+                      className="text-[13px] leading-relaxed whitespace-pre-wrap break-words"
+                      style={{ color: token.colorText }}
+                    >
+                      {historyModalMessage.text || historyModalMessage.originalText || '(Không có nội dung văn bản)'}
+                    </div>
+                  </div>
+
+                  {/* Historical Edits (from newest to oldest) */}
+                  {historyModalMessage.editHistory && historyModalMessage.editHistory.length > 0 && (
+                    <div className="space-y-2.5">
+                      {[...historyModalMessage.editHistory].reverse().map((item, idx) => {
+                        const versionNum = historyModalMessage.editHistory!.length - idx;
+                        return (
+                          <div
+                            key={idx}
+                            className="p-3 rounded-xl space-y-1.5"
+                            style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                          >
+                            <div className="flex items-center justify-between text-[11px] gap-2">
+                              <span className="font-bold text-slate-300">Phiên bản #{versionNum} (Trước khi sửa)</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-slate-400 tabular-nums">
+                                  {dayjs(item.editedAt).format('HH:mm:ss · DD/MM/YYYY')}
+                                  {item.editorName && ` · Sửa bởi ${item.editorName}`}
+                                </span>
+                                {canManage &&
+                                  !historyModalMessage.isDeleted &&
+                                  item.text &&
+                                  item.text !== historyModalMessage.text && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRestoreVersion(historyModalMessage.id, item.text)}
+                                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10.5px] font-bold text-amber-400 hover:bg-amber-500/10 border border-amber-500/30 cursor-pointer"
+                                    >
+                                      <RotateCcw size={10} />
+                                      <span>Khôi phục bản này</span>
+                                    </button>
+                                  )}
+                              </div>
+                            </div>
+                            <div className="text-[12.5px] leading-relaxed whitespace-pre-wrap break-words text-slate-300">
+                              {item.text || '(Tin nhắn trống)'}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
+
+                  {/* Initial Original Version if different and preserved */}
+                  {historyModalMessage.originalText &&
+                    historyModalMessage.originalText !== historyModalMessage.text &&
+                    (!historyModalMessage.editHistory || historyModalMessage.editHistory.length === 0) && (
+                      <div
+                        className="p-3 rounded-xl space-y-1.5"
+                        style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                      >
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-bold text-slate-400">Nội dung gốc ban đầu</span>
+                          <span className="text-slate-400 tabular-nums">
+                            {historyModalMessage.createdAt
+                              ? dayjs(historyModalMessage.createdAt).format('HH:mm:ss · DD/MM/YYYY')
+                              : ''}
+                          </span>
+                        </div>
+                        <div className="text-[12.5px] leading-relaxed whitespace-pre-wrap break-words text-slate-300">
+                          {historyModalMessage.originalText}
+                        </div>
+                      </div>
+                    )}
+                </div>
               </div>
-            </div>
-          );
-        })()}
+            );
+          })()}
       </Modal>
     </>
   );

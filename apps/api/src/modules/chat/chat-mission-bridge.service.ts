@@ -789,8 +789,14 @@ export class ChatMissionBridgeService {
       };
       const planVersion = inboxImplementationPlanVersion(sourceVersion, planDraft);
 
-      await tx.crmInboxPlanJob.create({
-        data: {
+      await tx.crmInboxPlanJob.upsert({
+        where: {
+          reportId_eventVersion: {
+            reportId: report.id,
+            eventVersion,
+          },
+        },
+        create: {
           id: planJobId,
           reportId: report.id,
           eventKind,
@@ -800,6 +806,18 @@ export class ChatMissionBridgeService {
           sourceVersion,
           planVersion,
           expiresAt: new Date(now.getTime() + 24 * 3600 * 1000),
+        },
+        update: {
+          eventKind,
+          status: 'COMPLETED',
+          resultAction: 'POST_PLAN',
+          sourceVersion,
+          planVersion,
+          leaseToken: null,
+          leasedBy: null,
+          leaseExpiresAt: null,
+          expiresAt: new Date(now.getTime() + 24 * 3600 * 1000),
+          updatedAt: now,
         },
       });
 
@@ -1021,7 +1039,9 @@ export class ChatMissionBridgeService {
           },
           include: {
             comments: {
-              orderBy: { createdAt: 'asc' },
+              where: { authorType: 'STAFF' },
+              orderBy: { createdAt: 'desc' },
+              take: 8,
               select: { id: true, body: true },
             },
           },
@@ -1038,7 +1058,8 @@ export class ChatMissionBridgeService {
         const sourceVersion = inboxImplementationSourceVersion(updated);
         const latestCommentText =
           updated.comments
-            .slice(-3)
+            .slice(0, 3)
+            .reverse()
             .map((c) => c.body)
             .join('\n')
             .slice(0, 800) || updated.title;
@@ -1053,12 +1074,33 @@ export class ChatMissionBridgeService {
           ],
           verification: 'pnpm verify:quick && pnpm check:ui-contract',
           risksAndRollback: 'Thay đổi cô lập trong worktree riêng; có thể rollback commit an toàn nếu cần.',
-          approvalRequest: 'Super Admin Danny đã duyệt Cổng 1 trực tiếp từ subthread mOS Chat để AG nâng cấp tiếp.',
+          approvalRequest: `Super Admin Danny đã duyệt Cổng 1 trực tiếp từ subthread mOS Chat để AG nâng cấp tiếp (${now.toISOString()}).`,
         };
         const planVersion = inboxImplementationPlanVersion(sourceVersion, planDraft);
 
-        await tx.crmInboxPlanJob.create({
+        await tx.crmInboxPlanJob.updateMany({
+          where: {
+            reportId,
+            NOT: { eventVersion },
+            OR: [{ status: { in: ['PENDING', 'LEASED'] } }, { status: 'COMPLETED', sourceVersion }],
+          },
           data: {
+            status: 'SUPERSEDED',
+            leaseToken: null,
+            leasedBy: null,
+            leaseExpiresAt: null,
+            updatedAt: now,
+          },
+        });
+
+        const savedPlanJob = await tx.crmInboxPlanJob.upsert({
+          where: {
+            reportId_eventVersion: {
+              reportId,
+              eventVersion,
+            },
+          },
+          create: {
             id: planJobId,
             reportId,
             eventKind,
@@ -1069,9 +1111,21 @@ export class ChatMissionBridgeService {
             planVersion,
             expiresAt: new Date(now.getTime() + 24 * 3600 * 1000),
           },
+          update: {
+            eventKind,
+            status: 'COMPLETED',
+            resultAction: 'POST_PLAN',
+            sourceVersion,
+            planVersion,
+            leaseToken: null,
+            leasedBy: null,
+            leaseExpiresAt: null,
+            expiresAt: new Date(now.getTime() + 24 * 3600 * 1000),
+            updatedAt: now,
+          },
         });
 
-        return { planJobId, sourceVersion, planVersion };
+        return { planJobId: savedPlanJob.id, sourceVersion, planVersion };
       });
 
       await InboxImplementationService.approve(fastify, reportId, actorStaffId, expectedPlan, 'AG');
