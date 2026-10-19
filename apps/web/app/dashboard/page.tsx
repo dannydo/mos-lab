@@ -17,7 +17,13 @@ import {
 import { Sparkles, Target } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
-import type { DashboardBranchSnapshot, DashboardTodayResponse, RevenueHourlyResponse, Staff } from '@mos-lab/shared';
+import {
+  type DashboardBranchSnapshot,
+  type DashboardTodayResponse,
+  type RevenueHourlyResponse,
+  type Staff,
+  isCvRole,
+} from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
 import { formatVND } from '../../lib/format-utils';
 import { ContentSurface, PageHeader, StatePanel, StatCard } from '../../components/ui';
@@ -179,6 +185,8 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
+  const [isCvRestricted, setIsCvRestricted] = useState(false);
+
   const loadSnapshot = useCallback(async (background = false) => {
     if (background) {
       setRefreshing(true);
@@ -207,20 +215,29 @@ export default function DashboardPage() {
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem('mos_user');
-      if (storedUser) setCurrentUser(JSON.parse(storedUser) as Staff);
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser) as Staff;
+        if (isCvRole(parsed?.role)) {
+          setIsCvRestricted(true);
+          router.replace('/dashboard/cv');
+          return;
+        }
+        setCurrentUser(parsed);
+      }
     } catch {
       setCurrentUser(null);
     }
     void loadSnapshot();
-  }, [loadSnapshot]);
+  }, [loadSnapshot, router]);
 
   useEffect(() => {
+    if (isCvRestricted) return;
     const intervalId = window.setInterval(() => {
       if (document.visibilityState === 'visible') void loadSnapshot(true);
     }, 60_000);
 
     return () => window.clearInterval(intervalId);
-  }, [loadSnapshot]);
+  }, [isCvRestricted, loadSnapshot]);
 
   const derived = useMemo(() => {
     if (!snapshot) return null;
@@ -278,6 +295,18 @@ export default function DashboardPage() {
     gap: 12,
     gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
   };
+
+  if (isCvRestricted) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center p-6">
+        <StatePanel
+          kind="loading"
+          title="Đang chuyển hướng sang Báo Cáo CV"
+          description="Tài khoản Chuyên Viên không sử dụng trang tổng quan. Hệ thống đang đưa bạn về trang Báo Cáo CV..."
+        />
+      </div>
+    );
+  }
 
   if (loading && !snapshot) {
     return <StatePanel kind="loading" title="Đang tải Trung tâm vận hành" />;

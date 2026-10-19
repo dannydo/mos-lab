@@ -33,12 +33,12 @@ import {
   UserRound,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from '../../context/ThemeContext';
 import { SeasonalAccentProvider } from '../../context/SeasonalAccentContext';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 import { ThemeSelector } from '../../components/theme/ThemeSelector';
-import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, isCvRole } from '@mos-lab/shared';
 
 const TelesalesDashboardModal = dynamic(() => import('../../components/TelesalesDashboardModal'), { ssr: false });
 const DailyCallsDrawer = dynamic(() => import('../../components/DailyCallsDrawer'), { ssr: false });
@@ -71,6 +71,7 @@ const { Header, Sider, Content } = Layout;
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { themeMode, toggleTheme, desktopDensity, setDesktopDensity } = useTheme();
   const { token } = theme.useToken();
   const responsiveTier = useResponsiveTier();
@@ -381,6 +382,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setIsImpersonating(hasOriginal);
         setLoading(false);
 
+        if (isCvRole(parsed.role) && pathname === '/dashboard') {
+          router.replace('/dashboard/cv');
+          return;
+        }
+
         // Background profile sync to fetch latest user config & auto-init roles
         apiClient.auth
           .me()
@@ -407,7 +413,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
       }
     }
-  }, []);
+  }, [pathname, router]);
+
+  // Invariant: CV accounts must never access management dashboard (/dashboard).
+  // Always redirect directly to the CV report (/dashboard/cv).
+  useEffect(() => {
+    if (user && isCvRole(user.role) && pathname === '/dashboard') {
+      router.replace('/dashboard/cv');
+    }
+  }, [user, pathname, router]);
 
   const handleAvatarUpdated = useCallback((newAvatarUrl: string) => {
     setUser((prev: SafeAny) => (prev ? { ...prev, avatarUrl: newAvatarUrl, avatar: newAvatarUrl } : prev));

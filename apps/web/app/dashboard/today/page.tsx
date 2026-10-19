@@ -246,6 +246,8 @@ export default function TodayDashboard() {
               previousAllBookings={data.previousAllBookings}
               previousBranchesData={data.previousBranchesData}
               comparison={data.comparison}
+              dateRangeMode={data.dateRangeMode}
+              selectedDate={data.selectedDate}
             />
 
             <Row gutter={[24, 24]}>

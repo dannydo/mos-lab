@@ -4,6 +4,7 @@ import {
   RevenueHourlyResponse,
   RevenueDetailResponse,
   calculateFractionToday,
+  isCvRole,
   maskPhoneNumber,
   shouldMaskCustomerPhone,
 } from '@mos-lab/shared';
@@ -1486,6 +1487,13 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
 
   // GET /api/dashboard/today/revenue-hourly
   fastify.get('/dashboard/today/revenue-hourly', { preHandler: [requireAuth] }, async (request, reply) => {
+    if (isCvRole(request.user?.role)) {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Tài khoản Chuyên Viên không có quyền truy cập dữ liệu doanh thu tổng quan.',
+      });
+    }
+
     try {
       const { dateFrom, dateTo, endAt, branchKey, bookerFilter } = request.query as {
         dateFrom: string;
@@ -1850,6 +1858,13 @@ export async function registerDashboardRoutes(fastify: FastifyInstance) {
 
   // GET /api/dashboard/today/revenue-detail
   fastify.get('/dashboard/today/revenue-detail', { preHandler: [requireAuth] }, async (request, reply) => {
+    if (isCvRole(request.user?.role)) {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Tài khoản Chuyên Viên không có quyền truy cập dữ liệu doanh thu tổng quan.',
+      });
+    }
+
     try {
       const { dateFrom, dateTo, hour, branchKey, bookerFilter } = request.query as {
         dateFrom: string;

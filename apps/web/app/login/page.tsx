@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, Typography, message, Divider, theme } from 'antd';
 import { UserOutlined, LockOutlined, GoogleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
+import { getDefaultRouteForRole } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -26,7 +27,12 @@ export default function LoginPage() {
     const token = localStorage.getItem('mos_token');
     const user = localStorage.getItem('mos_user');
     if (token && user) {
-      router.push('/dashboard');
+      try {
+        const parsed = JSON.parse(user);
+        router.push(getDefaultRouteForRole(parsed?.role));
+      } catch {
+        router.push('/dashboard');
+      }
     }
   }, [router]);
 
@@ -80,7 +86,7 @@ export default function LoginPage() {
       localStorage.setItem('mos_omicall_auto_init', String(!!resolvedOmicallAutoInit));
 
       message.success(`Đăng nhập Google thành công! Chào mừng ${user.displayName}`);
-      router.push('/dashboard');
+      router.push(getDefaultRouteForRole(user?.role));
     } catch (error) {
       console.error('Google login error:', error);
       const errMsg = (error as SafeAny).response?.data?.message || 'Đăng nhập Google thất bại.';
@@ -106,7 +112,7 @@ export default function LoginPage() {
       localStorage.setItem('mos_omicall_auto_init', String(!!resolvedOmicallAutoInit));
 
       message.success(`Đăng nhập Google (Mock) thành công! Chào mừng ${user.displayName}`);
-      router.push('/dashboard');
+      router.push(getDefaultRouteForRole(user?.role));
     } catch (error) {
       console.error('Mock login error:', error);
       const errMsg = (error as SafeAny).response?.data?.message || 'Đăng nhập Mock Google thất bại.';
@@ -131,7 +137,7 @@ export default function LoginPage() {
       localStorage.setItem('mos_omicall_auto_init', String(!!resolvedOmicallAutoInit));
 
       message.success(`Đăng nhập thành công! Chào mừng ${user.displayName}`);
-      router.push('/dashboard');
+      router.push(getDefaultRouteForRole(user?.role));
     } catch (error) {
       console.error('Login error:', error);
       const errMsg =

@@ -115,6 +115,29 @@ export function isCanonicalSuperAdminIdentity(identity: { username?: string | nu
   return SUPER_ADMIN_IDENTITIES.some((value) => value === username || value === email);
 }
 
+/**
+ * Chuyên Viên (CV) and Lash Technician roles.
+ * Invariant: CV accounts must be restricted from management dashboard and default to CV reports.
+ */
+export function isCvRole(role?: string | null): boolean {
+  const normalizedRole = String(role || '')
+    .trim()
+    .toLowerCase();
+  return ['cv', 'lt', 'technician', 'ktv'].includes(normalizedRole);
+}
+
+/**
+ * Returns the default landing route based on staff role.
+ * - CV roles land directly on the CV report (/dashboard/cv).
+ * - Other roles land on the main operations dashboard (/dashboard).
+ */
+export function getDefaultRouteForRole(role?: string | null): string {
+  if (isCvRole(role)) {
+    return '/dashboard/cv';
+  }
+  return '/dashboard';
+}
+
 export interface Staff {
   id: number;
   username: string;

@@ -1,12 +1,16 @@
 'use client';
 
 import React from 'react';
-import { Card, Row, Col, Typography, theme } from 'antd';
+import { Card, Row, Col, Typography, Tooltip, theme } from 'antd';
 import { CalendarOutlined, PieChartOutlined, BarChartOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
 import { BookingData, ComingClientData, BranchDetail } from '../hooks/useTodayData';
-import { formatVND } from '../../../../lib/format-utils';
-import type { ReportPeriodComparison } from '@mos-lab/shared';
+import { formatVND, formatCompactVND } from '../../../../lib/format-utils';
+import { calculateFractionToday, type ReportPeriodComparison } from '@mos-lab/shared';
 import PeriodComparison from '../../../../components/ui/PeriodComparison';
+
+dayjs.extend(isoWeek);
 
 const { Text } = Typography;
 
@@ -136,6 +140,8 @@ interface TodayStatsProps {
   previousAllBookings?: BookingData[];
   previousBranchesData?: Record<string, BranchDetail> | null;
   comparison?: ReportPeriodComparison | null;
+  dateRangeMode?: 'day' | 'week' | 'month';
+  selectedDate?: dayjs.Dayjs | null;
 }
 
 export default function TodayStats({
@@ -151,6 +157,8 @@ export default function TodayStats({
   previousAllBookings = [],
   previousBranchesData,
   comparison,
+  dateRangeMode = 'day',
+  selectedDate,
 }: TodayStatsProps) {
   const getItemPrice = React.useCallback(
     (item: SafeAny) => {
@@ -331,6 +339,72 @@ export default function TodayStats({
     return { revCombo, revTele, revOther, total };
   }, [branchesData, showTax]);
 
+  const isDayMode = dateRangeMode === 'day';
+  const periodNoun = dateRangeMode === 'week' ? 'tuần' : 'tháng';
+
+  const elapsedRatioPercent = React.useMemo(() => {
+    if (!selectedDate || isDayMode) return 100;
+    const now = dayjs();
+    const currentHour = now.hour();
+    const fractionToday = calculateFractionToday(currentHour);
+
+    const start = dateRangeMode === 'week' ? selectedDate.startOf('isoWeek') : selectedDate.startOf('month');
+    const end = dateRangeMode === 'week' ? selectedDate.endOf('isoWeek') : selectedDate.endOf('month');
+
+    if (now.isBefore(start, 'day')) return 0.1;
+    if (now.isAfter(end, 'day')) return 100;
+
+    const totalDays = end.diff(start, 'day') + 1;
+    const daysPassed = now.diff(start, 'day');
+    const elapsedDays = daysPassed + fractionToday;
+    const r = Math.min(1.0, Math.max(0.001, elapsedDays / totalDays));
+    return Math.round(r * 1000) / 10;
+  }, [selectedDate, isDayMode, dateRangeMode]);
+
+  const isPastPeriod = elapsedRatioPercent >= 100;
+  const ratio = (elapsedRatioPercent || 100) / 100;
+
+  const projectedTotalBookings = React.useMemo(() => {
+    if (isDayMode || isPastPeriod || ratio <= 0) return 0;
+    return Math.round(allBookings.length / ratio);
+  }, [allBookings.length, isDayMode, isPastPeriod, ratio]);
+
+  const projectedComingCount = React.useMemo(() => {
+    if (isDayMode || isPastPeriod || ratio <= 0) return 0;
+    return Math.round(comingStats.totalCount / ratio);
+  }, [comingStats.totalCount, isDayMode, isPastPeriod, ratio]);
+
+  const projectedComingPrice = React.useMemo(() => {
+    if (isDayMode || isPastPeriod || ratio <= 0) return 0;
+    return Math.round((comingStats.totalPrice || 0) / ratio);
+  }, [comingStats.totalPrice, isDayMode, isPastPeriod, ratio]);
+
+  const projectedTotalRevenue = React.useMemo(() => {
+    if (isDayMode || isPastPeriod || ratio <= 0) return 0;
+    return Math.round((totalRevenueData.total || 0) / ratio);
+  }, [totalRevenueData.total, isDayMode, isPastPeriod, ratio]);
+
+  const renderForecast = (content: React.ReactNode) => {
+    if (isDayMode || isPastPeriod || !content) return null;
+    return (
+      <Tooltip
+        title={`Đã trôi qua ${elapsedRatioPercent.toFixed(1)}% thời gian ${periodNoun} (Ca 11:00 - 23:00). Dự đoán về đích cuối ${periodNoun} dựa trên tốc độ hiện tại.`}
+      >
+        <div
+          className={`flex items-center justify-end gap-1 text-[11px] font-medium tabular-nums mt-0.5 cursor-help ${
+            themeMode === 'dark' ? 'text-emerald-400' : 'text-emerald-600'
+          }`}
+        >
+          <span role="img" aria-label={`Dự đoán cuối ${periodNoun}`} className="text-[10px]">
+            🔮
+          </span>
+          <span className="text-[10px] text-slate-400">Cuối {periodNoun}:</span>
+          <span className="font-semibold whitespace-nowrap">~{content}</span>
+        </div>
+      </Tooltip>
+    );
+  };
+
   return (
     <Row gutter={[16, 16]}>
       {/* CHART 1: PHÂN TÍCH BOOKING TẠO HÔM NAY */}
@@ -340,7 +414,8 @@ export default function TodayStats({
           style={{
             background: token.colorBgContainer,
             borderColor: token.colorBorderSecondary,
-            height: '220px',
+            minHeight: '225px',
+            height: '100%',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
@@ -350,8 +425,8 @@ export default function TodayStats({
             style={{
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '12px',
+              alignItems: 'flex-start',
+              marginBottom: '10px',
             }}
           >
             <div>
@@ -368,12 +443,15 @@ export default function TodayStats({
                 className="mt-1 border-0 pt-0 text-[10px]"
               />
             </div>
-            <strong
-              className="tabular-nums"
-              style={{ fontSize: '15px', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
-            >
-              {allBookings.length}
-            </strong>
+            <div className="flex flex-col items-end">
+              <strong
+                className="tabular-nums"
+                style={{ fontSize: '15px', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
+              >
+                {allBookings.length}
+              </strong>
+              {renderForecast(<span>{projectedTotalBookings.toLocaleString('vi-VN')} booking</span>)}
+            </div>
           </div>
 
           <Row gutter={16} style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
@@ -528,7 +606,8 @@ export default function TodayStats({
           style={{
             background: token.colorBgContainer,
             borderColor: token.colorBorderSecondary,
-            height: '220px',
+            minHeight: '225px',
+            height: '100%',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
@@ -538,8 +617,8 @@ export default function TodayStats({
             style={{
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '12px',
+              alignItems: 'flex-start',
+              marginBottom: '10px',
             }}
           >
             <div>
@@ -556,13 +635,20 @@ export default function TodayStats({
                 className="mt-1 border-0 pt-0 text-[10px]"
               />
             </div>
-            <strong
-              className="tabular-nums"
-              style={{ fontSize: '13px', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
-              title={`Tổng cộng: ${comingStats.totalCount} khách • ${Math.round(comingStats.totalPrice || 0).toLocaleString('vi-VN')} đ`}
-            >
-              {comingStats.totalCount} khách • {Math.round(comingStats.totalPrice || 0).toLocaleString('vi-VN')} đ
-            </strong>
+            <div className="flex flex-col items-end">
+              <strong
+                className="tabular-nums"
+                style={{ fontSize: '13px', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
+                title={`Tổng cộng: ${comingStats.totalCount} khách • ${Math.round(comingStats.totalPrice || 0).toLocaleString('vi-VN')} đ`}
+              >
+                {comingStats.totalCount} khách • {Math.round(comingStats.totalPrice || 0).toLocaleString('vi-VN')} đ
+              </strong>
+              {renderForecast(
+                <span>
+                  {projectedComingCount.toLocaleString('vi-VN')} khách • {formatCompactVND(projectedComingPrice)}
+                </span>
+              )}
+            </div>
           </div>
 
           <Row gutter={16} style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
@@ -766,7 +852,8 @@ export default function TodayStats({
           style={{
             background: token.colorBgContainer,
             borderColor: token.colorBorderSecondary,
-            height: '220px',
+            minHeight: '225px',
+            height: '100%',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
@@ -776,8 +863,8 @@ export default function TodayStats({
             style={{
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '12px',
+              alignItems: 'flex-start',
+              marginBottom: '10px',
             }}
           >
             <div>
@@ -794,13 +881,16 @@ export default function TodayStats({
                 className="mt-1 border-0 pt-0 text-[10px]"
               />
             </div>
-            <strong
-              className="tabular-nums"
-              style={{ fontSize: '14px', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
-              title={`Tổng cộng: ${Math.round(totalRevenueData.total || 0).toLocaleString('vi-VN')} đ`}
-            >
-              {Math.round(totalRevenueData.total || 0).toLocaleString('vi-VN')} đ
-            </strong>
+            <div className="flex flex-col items-end">
+              <strong
+                className="tabular-nums"
+                style={{ fontSize: '14px', color: token.colorText, fontVariantNumeric: 'tabular-nums' }}
+                title={`Tổng cộng: ${Math.round(totalRevenueData.total || 0).toLocaleString('vi-VN')} đ`}
+              >
+                {Math.round(totalRevenueData.total || 0).toLocaleString('vi-VN')} đ
+              </strong>
+              {renderForecast(<span>{formatCompactVND(projectedTotalRevenue)}</span>)}
+            </div>
           </div>
 
           <Row gutter={16} style={{ flex: 1, display: 'flex', alignItems: 'center' }}>

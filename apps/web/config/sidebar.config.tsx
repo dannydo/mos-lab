@@ -35,7 +35,7 @@ import {
   Trophy,
 } from 'lucide-react';
 
-import { canAccessLoca, isAdminOrSuperAdminRole, isSuperAdminRole, SafeAny } from '@mos-lab/shared';
+import { canAccessLoca, isAdminOrSuperAdminRole, isCvRole, isSuperAdminRole, SafeAny } from '@mos-lab/shared';
 import { AppIcon } from '../components/ui/AppIcon';
 
 export interface SidebarItemConfig {
@@ -69,6 +69,7 @@ export function getSidebarGroups(
   const normalizedRole = userRole?.toLowerCase() || '';
   const isAdmin = isAdminOrSuperAdminRole(normalizedRole);
   const isSuperAdmin = isSuperAdminRole(normalizedRole);
+  const isCv = isCvRole(normalizedRole);
   const isLocaAllowed = canAccessLoca(normalizedRole);
   const isCrmCategoryVisible = categoryVisibility.crm !== false;
   const isAcademyCategoryVisible = categoryVisibility.academy !== false;
@@ -536,6 +537,10 @@ export function getSidebarGroups(
 
   const filterItems = (items: SidebarItemConfig[]): SidebarItemConfig[] =>
     items.flatMap((item) => {
+      // Invariant: CV accounts must never see management dashboard
+      if (isCv && item.key === 'dashboard') return [];
+      // Invariant: CV accounts must always have access to CV report
+      if (isCv && item.key === 'cv') return [item];
       // Dynamic campaign links do not have individual static menu keys. Their
       // parent category therefore enforces the category policy for every child.
       if (!isCrmCategoryVisible && item.key === 'nyc-parent') return [];
