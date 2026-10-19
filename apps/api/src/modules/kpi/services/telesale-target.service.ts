@@ -758,7 +758,7 @@ export class TelesaleTargetService {
         if (!this.inFlightOverviewPromises.has(cacheKey)) {
           const revalidatePromise = (async () => {
             try {
-              const freshOverview = await this.computeOverview(fastify, month, _currentStaffId);
+              const freshOverview = await this.computeOverview(fastify, month, _currentStaffId, options);
               this.overviewComputedAt.set(cacheKey, Date.now());
               fastify.cache?.set(cacheKey, freshOverview, 300_000);
               return freshOverview;
@@ -788,7 +788,7 @@ export class TelesaleTargetService {
     // 4. Cold-start hoặc skipCache: Tính toán và lưu cache
     const computePromise = (async () => {
       try {
-        const overview = await this.computeOverview(fastify, month, _currentStaffId);
+        const overview = await this.computeOverview(fastify, month, _currentStaffId, options);
         this.overviewComputedAt.set(cacheKey, Date.now());
         fastify.cache?.set(cacheKey, overview, 300_000);
         return overview;
@@ -807,7 +807,8 @@ export class TelesaleTargetService {
   private static async computeOverview(
     fastify: FastifyInstance,
     month = '2026-10',
-    _currentStaffId?: number
+    _currentStaffId?: number,
+    options?: { skipCache?: boolean }
   ): Promise<TelesaleTargetOverview> {
     const config = await this.getConfig(fastify, month);
     const [yearStr, monthNumStr] = month.split('-');
@@ -883,29 +884,21 @@ export class TelesaleTargetService {
       GROUP BY DATE_FORMAT(o.date_created, '%Y-%m-%d')
     `;
 
+    // SARGable index query with direct range seek on actual_booking_date_start / booking_date_start
     const dailyCheckinGroupSql = `
       SELECT 
-        DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start, o.date_created), '%Y-%m-%d') as checkinDate,
+        DATE(COALESCE(ro.actual_booking_date_start, o.booking_date_start)) as checkinDate,
         COUNT(DISTINCT o.id) as totalCheckins
       FROM \`order\` o
       LEFT JOIN report_order ro ON ro.order_id = o.id
       WHERE o.created_staff_id IN (${candidateIdsStr})
         AND (
           (ro.actual_booking_date_start >= '${startDateTimeStr}' AND ro.actual_booking_date_start <= '${endDateTimeStr}')
-          OR (
-            ro.actual_booking_date_start IS NULL 
-            AND (
-              o.order_state NOT IN ('New', 'Confirmed', 'Missed', 'Cancelled')
-              OR EXISTS (SELECT 1 FROM order_service os WHERE os.order_id = o.id AND os.check_in_staff_id IS NOT NULL)
-            )
-            AND (
-              (o.booking_date_start >= '${startDateTimeStr}' AND o.booking_date_start <= '${endDateTimeStr}')
-              OR (o.booking_date_start IS NULL AND o.date_created >= '${startDateTimeStr}' AND o.date_created <= '${endDateTimeStr}')
-            )
-          )
+          OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${startDateTimeStr}' AND o.booking_date_start <= '${endDateTimeStr}')
         )
+        AND (o.order_state IN ('Completed', 'CheckOut', 'InProgress') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)
         AND o.order_state NOT IN ('Cancelled', 'Missed')
-      GROUP BY DATE_FORMAT(COALESCE(ro.actual_booking_date_start, o.booking_date_start, o.date_created), '%Y-%m-%d')
+      GROUP BY DATE(COALESCE(ro.actual_booking_date_start, o.booking_date_start))
     `;
 
     // 1. Fetch Month, Today metrics, and month orders in parallel (Single Source of Truth)
@@ -925,31 +918,31 @@ export class TelesaleTargetService {
         dateFrom: startDateStr,
         dateTo: endDateStr,
         targetStaffIds: combinedStaffIds,
-        skipCache: true,
+        skipCache: options?.skipCache,
       }),
       BkLeaderboardService.getBookingLeaderboard(fastify, {
         dateFrom: todayStr,
         dateTo: todayStr,
         targetStaffIds: combinedStaffIds,
-        skipCache: true,
+        skipCache: options?.skipCache,
       }),
       BkLeaderboardService.getDoneLeaderboard(fastify, {
         dateFrom: startDateStr,
         dateTo: endDateStr,
         targetStaffIds: combinedStaffIds,
-        skipCache: true,
+        skipCache: options?.skipCache,
       }),
       BkLeaderboardService.getDoneLeaderboard(fastify, {
         dateFrom: todayStr,
         dateTo: todayStr,
         targetStaffIds: combinedStaffIds,
-        skipCache: true,
+        skipCache: options?.skipCache,
       }),
       BkLeaderboardService.getRevenueLeaderboard(fastify, {
         dateFrom: startDateStr,
         dateTo: endDateStr,
         targetStaffIds: combinedStaffIds,
-        skipCache: true,
+        skipCache: options?.skipCache,
       }),
       BkLeaderboardService.getIncomingBookingsCount(fastify, {
         dateFrom: startDateStr,
@@ -970,9 +963,28 @@ export class TelesaleTargetService {
     }
 
     const dailyCheckinMap = new Map<string, number>();
-    for (const r of rawDailyCheckinRows || []) {
-      if (r && r.checkinDate) {
-        dailyCheckinMap.set(String(r.checkinDate), Number(r.totalCheckins || 0));
+    // Primary: aggregate checkin dates directly from monthOrders in memory (0ms latency, zero DB scan)
+    if (rawMonthOrders && rawMonthOrders.length > 0) {
+      for (const o of rawMonthOrders) {
+        const rawDate = o.actualBookingDateStart || o.bookingDateStart || o.dateCreated;
+        if (rawDate) {
+          const d = typeof rawDate === 'string' ? new Date(rawDate) : (rawDate as Date);
+          if (!isNaN(d.getTime())) {
+            const dStr = new Date(d.getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10);
+            dailyCheckinMap.set(dStr, (dailyCheckinMap.get(dStr) || 0) + 1);
+          }
+        }
+      }
+    } else {
+      // Fallback to SARGable query rows if monthOrders was empty
+      for (const r of rawDailyCheckinRows || []) {
+        if (r && r.checkinDate) {
+          const dStr =
+            r.checkinDate instanceof Date
+              ? new Date(r.checkinDate.getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10)
+              : String(r.checkinDate).slice(0, 10);
+          dailyCheckinMap.set(dStr, Number(r.totalCheckins || 0));
+        }
       }
     }
 

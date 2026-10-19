@@ -48,6 +48,7 @@ import { BkLeaderboardService } from '../services/bk-leaderboard.service.js';
 const inFlightDoneDetailsPromises = new Map<string, Promise<SafeAny>>();
 const inFlightTipLeaderboardPromises = new Map<string, Promise<SafeAny>>();
 const inFlightTipDetailsPromises = new Map<string, Promise<SafeAny>>();
+const bkDoneDetailsComputedAt = new Map<string, number>();
 const bkTipLeaderboardComputedAt = new Map<string, number>();
 const bkTipDetailsComputedAt = new Map<string, number>();
 
@@ -316,16 +317,6 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
     const canViewPhone = !shouldMaskCustomerPhone(request.user?.role);
     const cacheKey = `bk:done:details:${startPart}:${endPart}:${bookerId || 'ALL'}:${storeId || 'ALL'}:${statusParam}:${canViewPhone ? 'full' : 'masked'}`;
 
-    const cached = fastify.cache?.get<SafeAny>(cacheKey);
-    if (cached) {
-      return cached;
-    }
-
-    const inFlight = inFlightDoneDetailsPromises.get(cacheKey);
-    if (inFlight) {
-      return inFlight;
-    }
-
     const compute = async () => {
       const activeTelesalesIds = await getActiveBkTelesalesIds(fastify);
       if (activeTelesalesIds.length === 0) {
@@ -359,13 +350,18 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         storeFilter = `AND UPPER(cs.client_store_key) = '${storeId.toUpperCase()}'`;
       }
       let stateCondition = '';
-      let dateField = 'COALESCE(ro.actual_booking_date_start, o.booking_date_start)';
+      let dateCondition = `AND (
+        (ro.actual_booking_date_start >= '${startPart} 00:00:00' AND ro.actual_booking_date_start <= '${endPart} 23:59:59')
+        OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${startPart} 00:00:00' AND o.booking_date_start <= '${endPart} 23:59:59')
+      )`;
+      let orderDateField = 'COALESCE(ro.actual_booking_date_start, o.booking_date_start)';
 
       if (['COMPLETED', 'SINGLE', 'COMBO_LIVE', 'COMBO_SOLD', 'COMBO'].includes(statusParam)) {
         stateCondition = `AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)`;
       } else if (statusParam === 'MISSED') {
         stateCondition = `AND o.booking_date_start <= NOW() AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut')`;
-        dateField = 'o.booking_date_start';
+        orderDateField = 'o.booking_date_start';
+        dateCondition = `AND (o.booking_date_start >= '${startPart} 00:00:00' AND o.booking_date_start <= '${endPart} 23:59:59')`;
       }
 
       // Compute Check-in bonuses per Order
@@ -396,12 +392,12 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         LEFT JOIN \`user_profile\` up_b ON up_b.user_id = o.created_staff_id
         LEFT JOIN \`client_store\` cs ON cs.id = COALESCE(o.client_store_id, up_b.client_store_id)
         LEFT JOIN report_order ro ON o.id = ro.order_id
-        WHERE ${dateField} >= '${startPart} 00:00:00' 
-          AND ${dateField} <= '${endPart} 23:59:59'
+        WHERE 1=1
+          ${dateCondition}
           ${stateCondition}
           ${bookerFilter}
           ${storeFilter}
-        ORDER BY ${dateField} DESC
+        ORDER BY ${orderDateField} DESC
         LIMIT 500
       `;
 
@@ -531,9 +527,47 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         },
       };
 
-      fastify.cache?.set(cacheKey, payload, 120_000);
+      bkDoneDetailsComputedAt.set(cacheKey, Date.now());
+      fastify.cache?.set(cacheKey, payload, 900_000);
       return payload;
     };
+
+    const now = Date.now();
+    const cached = fastify.cache?.get<SafeAny>(cacheKey);
+    if (cached) {
+      const computedAt = bkDoneDetailsComputedAt.get(cacheKey) || now;
+      const age = now - computedAt;
+
+      // 1. FRESH (< 180s): Trả về ngay lập tức từ bộ nhớ RAM
+      if (age < 180_000) {
+        return cached;
+      }
+
+      // 2. STALE-WHILE-REVALIDATE (180s - 900s): Trả về ngay stale result (0ms) và revalidate ngầm
+      if (age < 900_000) {
+        if (!inFlightDoneDetailsPromises.has(cacheKey)) {
+          const revalidatePromise = (async () => {
+            try {
+              const freshPayload = await compute();
+              return freshPayload;
+            } catch (err: unknown) {
+              const errMsg = err instanceof Error ? err.message : String(err);
+              fastify.log?.warn?.(`[BkDoneDetails] Background SWR revalidation failed: ${errMsg}`);
+              return cached;
+            } finally {
+              inFlightDoneDetailsPromises.delete(cacheKey);
+            }
+          })();
+          inFlightDoneDetailsPromises.set(cacheKey, revalidatePromise);
+        }
+        return cached;
+      }
+    }
+
+    const inFlight = inFlightDoneDetailsPromises.get(cacheKey);
+    if (inFlight) {
+      return inFlight;
+    }
 
     try {
       const promise = compute().finally(() => {

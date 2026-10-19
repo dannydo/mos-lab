@@ -401,13 +401,122 @@ export async function getCustomerTipAmountByOrderIds(
   return tipsByOrder;
 }
 
+// Module-level in-flight deduplication and SWR cache for Booker Order Checkin computation
+export interface BkOrderCheckinComputationResult {
+  clientBonusMap: Map<number, number>;
+  singleDoneMap: Map<number, number>;
+  comboLiveDoneMap: Map<number, number>;
+  orderCheckinMap: Map<
+    number,
+    {
+      bonus: number;
+      checkinCategory: string;
+      discountRate: number;
+      isCombo: boolean;
+      serviceName?: string;
+      servicePrice?: number;
+      discountPercent?: number;
+    }
+  >;
+}
+
+const inFlightBkCheckinPromises = new Map<string, Promise<BkOrderCheckinComputationResult>>();
+const bkCheckinComputedAt = new Map<string, number>();
+const bkCheckinCache = new Map<string, BkOrderCheckinComputationResult>();
+
 export async function computeBkOrderCheckins(
   fastify: FastifyInstance,
   startPart: string,
   endPart: string,
   targetBkIds: number[],
+  storeFilter: string = '',
+  skipCache = false
+): Promise<BkOrderCheckinComputationResult> {
+  if (targetBkIds.length === 0) {
+    return {
+      clientBonusMap: new Map<number, number>(),
+      singleDoneMap: new Map<number, number>(),
+      comboLiveDoneMap: new Map<number, number>(),
+      orderCheckinMap: new Map(),
+    };
+  }
+
+  const sortedBkIds = [...targetBkIds].sort((a, b) => a - b).join(',');
+  const cacheKey = `bk:order-checkins:${startPart}:${endPart}:${sortedBkIds}:${storeFilter.trim().toUpperCase()}`;
+  const now = Date.now();
+
+  if (!skipCache) {
+    const cached = bkCheckinCache.get(cacheKey);
+    if (cached) {
+      const computedAt = bkCheckinComputedAt.get(cacheKey) || now;
+      const age = now - computedAt;
+
+      // 1. FRESH (< 180s): Trả về ngay lập tức từ bộ nhớ RAM
+      if (age < 180_000) {
+        return cached;
+      }
+
+      // 2. STALE-WHILE-REVALIDATE (180s - 900s): Trả về ngay stale result (0ms) và revalidate ngầm
+      if (age < 900_000) {
+        if (!inFlightBkCheckinPromises.has(cacheKey)) {
+          const revalidatePromise = (async () => {
+            try {
+              const freshResult = await executeComputeBkOrderCheckins(
+                fastify,
+                startPart,
+                endPart,
+                targetBkIds,
+                storeFilter
+              );
+              bkCheckinComputedAt.set(cacheKey, Date.now());
+              bkCheckinCache.set(cacheKey, freshResult);
+              return freshResult;
+            } catch (err: unknown) {
+              const errMsg = err instanceof Error ? err.message : String(err);
+              fastify.log?.warn?.(`[BkSalary] Background SWR revalidation failed: ${errMsg}`);
+              return cached;
+            } finally {
+              inFlightBkCheckinPromises.delete(cacheKey);
+            }
+          })();
+          inFlightBkCheckinPromises.set(cacheKey, revalidatePromise);
+        }
+        return cached;
+      }
+    }
+
+    // 3. Single-flight in-progress deduplication cho cold-start
+    const inFlight = inFlightBkCheckinPromises.get(cacheKey);
+    if (inFlight) {
+      return inFlight;
+    }
+  }
+
+  const computePromise = (async () => {
+    try {
+      const result = await executeComputeBkOrderCheckins(fastify, startPart, endPart, targetBkIds, storeFilter);
+      bkCheckinComputedAt.set(cacheKey, Date.now());
+      bkCheckinCache.set(cacheKey, result);
+      return result;
+    } finally {
+      inFlightBkCheckinPromises.delete(cacheKey);
+    }
+  })();
+
+  if (!skipCache) {
+    inFlightBkCheckinPromises.set(cacheKey, computePromise);
+  }
+
+  return computePromise;
+}
+
+async function executeComputeBkOrderCheckins(
+  fastify: FastifyInstance,
+  startPart: string,
+  endPart: string,
+  targetBkIds: number[],
   storeFilter: string = ''
-) {
+): Promise<BkOrderCheckinComputationResult> {
   const config = await getBkSalaryConfig(fastify);
 
   if (targetBkIds.length === 0) {
@@ -514,27 +623,44 @@ export async function computeBkOrderCheckins(
 
   const serviceIds = Array.from(new Set(orderServices.map((os) => os.service_id)));
   const balanceIds = userBalances.map((b) => b.id);
-  const [serviceLanguages, userBalanceTransactions] = await Promise.all([
+
+  // Chunking balanceIds into batches of 500 to avoid giant SQL IN clauses
+  const balanceChunkSize = 500;
+  const balanceChunks: number[][] = [];
+  for (let i = 0; i < balanceIds.length; i += balanceChunkSize) {
+    balanceChunks.push(balanceIds.slice(i, i + balanceChunkSize));
+  }
+
+  const [serviceLanguages, chunkedBalanceTransactions] = await Promise.all([
     serviceIds.length > 0
       ? fastify.prisma.legacy.service_language.findMany({
           where: { service_id: { in: serviceIds } },
           select: { service_id: true, service_name: true },
         })
       : Promise.resolve([]),
-    balanceIds.length > 0
-      ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
-          SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired,
-                 usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count,
-                 usbt.retain_count, usbt.used_staff_id, usbt.order_id,
-                 COALESCE(ro.actual_booking_date_start, o.booking_date_start) as o_booking_date_start
-          FROM user_service_balance_transaction usbt
-          LEFT JOIN \`order\` o ON o.id = usbt.order_id
-          LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
-          WHERE usbt.user_service_balance_id IN (${balanceIds.join(',')})
-            AND usbt.date_created <= '${endPart} 23:59:59'
-        `)
+    balanceChunks.length > 0
+      ? Promise.all(
+          balanceChunks.map((chunk) =>
+            fastify.prisma.legacy
+              .$queryRawUnsafe<SafeAny[]>(
+                `
+              SELECT usbt.id, usbt.user_service_balance_id, usbt.date_created, usbt.date_expired,
+                     usbt.total_normal_count_left, usbt.total_retain_count_left, usbt.normal_count,
+                     usbt.retain_count, usbt.used_staff_id, usbt.order_id,
+                     COALESCE(ro.actual_booking_date_start, o.booking_date_start) as o_booking_date_start
+              FROM user_service_balance_transaction usbt
+              LEFT JOIN \`order\` o ON o.id = usbt.order_id
+              LEFT JOIN \`report_order\` ro ON o.id = ro.order_id
+              WHERE usbt.user_service_balance_id IN (${chunk.join(',')})
+                AND usbt.date_created <= '${endPart} 23:59:59'
+            `
+              )
+              .catch(() => [])
+          )
+        ).then((res) => res.flat())
       : Promise.resolve([]),
   ]);
+  const userBalanceTransactions = chunkedBalanceTransactions;
   const serviceNameMap = new Map<number, string>();
   serviceLanguages.forEach((sl) => {
     serviceNameMap.set(sl.service_id, sl.service_name);

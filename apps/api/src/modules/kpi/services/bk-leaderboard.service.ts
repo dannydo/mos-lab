@@ -18,6 +18,7 @@ import {
 import { bookingMissedSqlCondition } from './bk-booking.service.js';
 
 const inFlightDoneLeaderboardPromises = new Map<string, Promise<BkDoneLeaderboardResult>>();
+const bkDoneLeaderboardComputedAt = new Map<string, number>();
 
 export interface BkBookingLeaderboardParams {
   dateFrom?: string;
@@ -292,18 +293,53 @@ export class BkLeaderboardService {
       return { leaderboard: [], summary: { totalDone: 0, avgDoneRate: 0, totalDoneBonus: 0 } };
     }
 
+    const staffKey =
+      options.targetStaffIds && options.targetStaffIds.length > 0
+        ? [...options.targetStaffIds].sort((a, b) => a - b).join(',')
+        : 'ALL';
     const normalizedStoreId = String(storeId || 'ALL').toUpperCase();
-    const cacheKey = `kpi:bk:done-leaderboard:${startPart}:${endPart}:${normalizedStoreId}`;
+    const cacheKey = `kpi:bk:done-leaderboard:${startPart}:${endPart}:${normalizedStoreId}:${staffKey}`;
+    const now = Date.now();
 
     if (!skipCache) {
       const cached = fastify.cache?.get<BkDoneLeaderboardResult>(cacheKey);
-      if (cached) return cached;
+      if (cached) {
+        const computedAt = bkDoneLeaderboardComputedAt.get(cacheKey) || now;
+        const age = now - computedAt;
+
+        // 1. FRESH (< 180s): Trả về ngay lập tức từ bộ nhớ RAM
+        if (age < 180_000) {
+          return cached;
+        }
+
+        // 2. STALE-WHILE-REVALIDATE (180s - 900s): Trả về ngay stale result (0ms) và revalidate ngầm
+        if (age < 900_000) {
+          if (!inFlightDoneLeaderboardPromises.has(cacheKey)) {
+            const revalidatePromise = (async () => {
+              try {
+                const freshPayload = await compute();
+                bkDoneLeaderboardComputedAt.set(cacheKey, Date.now());
+                fastify.cache?.set(cacheKey, freshPayload, 900_000);
+                return freshPayload;
+              } catch (err: unknown) {
+                const errMsg = err instanceof Error ? err.message : String(err);
+                fastify.log?.warn?.(`[BkLeaderboard] Background SWR revalidation failed: ${errMsg}`);
+                return cached;
+              } finally {
+                inFlightDoneLeaderboardPromises.delete(cacheKey);
+              }
+            })();
+            inFlightDoneLeaderboardPromises.set(cacheKey, revalidatePromise);
+          }
+          return cached;
+        }
+      }
 
       const inFlight = inFlightDoneLeaderboardPromises.get(cacheKey);
       if (inFlight) return inFlight;
     }
 
-    const compute = async (): Promise<BkDoneLeaderboardResult> => {
+    async function compute(): Promise<BkDoneLeaderboardResult> {
       const config = await getBkSalaryConfig(fastify);
 
       let storeFilter = '';
@@ -487,11 +523,12 @@ export class BkLeaderboardService {
       };
 
       if (!skipCache) {
-        fastify.cache?.set(cacheKey, payload, 120_000);
+        bkDoneLeaderboardComputedAt.set(cacheKey, Date.now());
+        fastify.cache?.set(cacheKey, payload, 900_000);
       }
 
       return payload;
-    };
+    }
 
     if (!skipCache) {
       const promise = compute().finally(() => {
