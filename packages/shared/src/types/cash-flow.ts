@@ -133,3 +133,11 @@ export interface CashFlowEntryListQuery {
   page?: number;
   limit?: number;
 }
+
+export interface CashAccountBalanceAdjustment {
+  id: number;
+  currentBalance: number;
+  minSafetyThreshold?: number;
+  notes?: string;
+}
+

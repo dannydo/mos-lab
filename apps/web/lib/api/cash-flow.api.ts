@@ -1,4 +1,10 @@
-import type { CashAccount, CashFlowEntry, CashFlowEntryListQuery, CashFlowForecastResponse } from '@mos-lab/shared';
+import type {
+  CashAccount,
+  CashAccountBalanceAdjustment,
+  CashFlowEntry,
+  CashFlowEntryListQuery,
+  CashFlowForecastResponse,
+} from '@mos-lab/shared';
 import { api } from './base';
 
 export const cashFlowApi = {
@@ -62,6 +68,13 @@ export const cashFlowApi = {
       }
     ): Promise<{ success: boolean; data: CashAccount }> => {
       const response = await api.put(`/cash-flow/accounts/${id}`, data);
+      return response.data;
+    },
+
+    batchUpdateBalances: async (
+      items: CashAccountBalanceAdjustment[]
+    ): Promise<{ success: boolean; data: CashAccount[] }> => {
+      const response = await api.put('/cash-flow/accounts/batch-balance', { items });
       return response.data;
     },
 

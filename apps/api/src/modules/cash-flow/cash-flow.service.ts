@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import {
   CashAccount,
+  CashAccountBalanceAdjustment,
   CashFlowCategory,
   CashFlowEntry,
   CashFlowEntryListQuery,
@@ -510,6 +511,26 @@ export class CashFlowService {
     });
     return this.mapAccount(updated);
   }
+
+  /**
+   * Cập nhật số dư hàng loạt cho nhiều tài khoản quỹ
+   */
+  async batchUpdateBalances(items: CashAccountBalanceAdjustment[]): Promise<CashAccount[]> {
+    const results = await this.fastify.prisma.crm.$transaction(
+      items.map((item) =>
+        this.fastify.prisma.crm.crmCashAccount.update({
+          where: { id: item.id },
+          data: {
+            currentBalance: Number(item.currentBalance),
+            ...(item.minSafetyThreshold !== undefined ? { minSafetyThreshold: Number(item.minSafetyThreshold) } : {}),
+            ...(item.notes !== undefined ? { notes: item.notes } : {}),
+          },
+        })
+      )
+    );
+    return results.map(this.mapAccount);
+  }
+
 
   /**
    * Xuất báo cáo CSV dự báo dòng tiền

@@ -13,6 +13,7 @@ import {
   Plus,
   Landmark,
   Percent,
+  SlidersHorizontal,
 } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
 import { apiClient } from '../../../../lib/api-client';
@@ -28,6 +29,7 @@ import type {
 import { ExpenseModal } from './components/ExpenseModal';
 import { IncomeModal } from './components/IncomeModal';
 import { AccountModal } from './components/AccountModal';
+import { AdjustBalanceModal } from './components/AdjustBalanceModal';
 import { DayInspectionModal } from './components/DayInspectionModal';
 import { TimelineOverviewTab } from './components/TimelineOverviewTab';
 import { OutflowTab } from './components/OutflowTab';
@@ -127,6 +129,8 @@ export default function CashFlowForecastPage() {
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState<boolean>(false);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState<boolean>(false);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState<boolean>(false);
+  const [isAdjustBalanceModalOpen, setIsAdjustBalanceModalOpen] = useState<boolean>(false);
+  const [initialAccountForAdjustment, setInitialAccountForAdjustment] = useState<number | null>(null);
   const [selectedAccountForEdit, setSelectedAccountForEdit] = useState<CashAccount | null>(null);
 
   const [expenseForm] = Form.useForm();
@@ -373,6 +377,15 @@ export default function CashFlowForecastPage() {
               Xuất CSV
             </Button>
             <Button
+              icon={<AppIcon icon={SlidersHorizontal} size="sm" />}
+              onClick={() => {
+                setInitialAccountForAdjustment(selectedAccount !== 'all' ? parseInt(selectedAccount, 10) : null);
+                setIsAdjustBalanceModalOpen(true);
+              }}
+            >
+              Cài đặt / Điều chỉnh số dư
+            </Button>
+            <Button
               type="primary"
               danger
               icon={<AppIcon icon={Plus} size="sm" />}
@@ -425,7 +438,21 @@ export default function CashFlowForecastPage() {
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} lg={4}>
           <Card bordered={false} className="shadow-sm border border-neutral-200 dark:border-neutral-800 h-full">
-            <div className="text-xs text-neutral-400 font-medium">Số dư hiện tại</div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-neutral-400 font-medium">Số dư hiện tại</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setInitialAccountForAdjustment(selectedAccount !== 'all' ? parseInt(selectedAccount, 10) : null);
+                  setIsAdjustBalanceModalOpen(true);
+                }}
+                className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline font-medium cursor-pointer inline-flex items-center gap-1"
+                title="Cài đặt / Điều chỉnh số dư hiện tại"
+              >
+                <AppIcon icon={SlidersHorizontal} size="sm" />
+                Điều chỉnh
+              </button>
+            </div>
             <div className="text-2xl font-bold text-neutral-800 dark:text-neutral-100 tabular-nums mt-1">
               {summary ? (summary.openingBalance / 1000000).toFixed(1) : 0} Tr
             </div>
@@ -672,6 +699,21 @@ export default function CashFlowForecastPage() {
         account={selectedAccountForEdit}
         form={accountForm}
         onFinish={handleSaveAccount}
+      />
+
+      <AdjustBalanceModal
+        open={isAdjustBalanceModalOpen}
+        onCancel={() => {
+          setIsAdjustBalanceModalOpen(false);
+          setInitialAccountForAdjustment(null);
+        }}
+        accounts={forecastData?.accounts || []}
+        initialSelectedAccountId={initialAccountForAdjustment}
+        onSuccess={() => {
+          message.success('Đã cập nhật số dư hiện tại thành công!');
+          fetchForecast();
+          fetchEntries();
+        }}
       />
 
       <DayInspectionModal dayPoint={selectedDayPoint} onClose={() => setSelectedDayPoint(null)} />

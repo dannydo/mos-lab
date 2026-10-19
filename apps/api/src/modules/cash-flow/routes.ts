@@ -233,7 +233,43 @@ export async function cashFlowRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // 7. PUT /cash-flow/accounts/:id - Cập nhật số dư / ngưỡng an toàn tài khoản
+  // 7a. PUT /cash-flow/accounts/batch-balance - Cập nhật số dư hàng loạt
+  fastify.put(
+    '/cash-flow/accounts/batch-balance',
+    {
+      preHandler: [requireAuth],
+      schema: {
+        tags: ['Cash Flow'],
+        summary: 'Batch update account balances and safety thresholds',
+        security: [{ bearerAuth: [] }],
+      },
+    },
+    async (request, reply) => {
+      try {
+        const body = request.body as SafeAny;
+        const items = body?.items;
+        if (!Array.isArray(items) || items.length === 0) {
+          return reply.status(400).send({
+            success: false,
+            error: 'Bad Request',
+            message: 'Danh sách tài khoản cập nhật không hợp lệ hoặc rỗng',
+          });
+        }
+
+        const updatedAccounts = await service.batchUpdateBalances(items);
+        return reply.send({ success: true, data: updatedAccounts });
+      } catch (err: SafeAny) {
+        fastify.log.error(err as Error, 'Cash flow batch balance update error:');
+        return reply.status(500).send({
+          success: false,
+          error: 'Internal Server Error',
+          message: err.message || 'Không thể cập nhật số dư hàng loạt',
+        });
+      }
+    }
+  );
+
+  // 7b. PUT /cash-flow/accounts/:id - Cập nhật số dư / ngưỡng an toàn tài khoản
   fastify.put(
     '/cash-flow/accounts/:id',
     {

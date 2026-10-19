@@ -131,6 +131,7 @@ function createMockApp(mockCrmOverrides: SafeAny = {}) {
     crmCashFlowAudit: {
       create: async () => ({ id: 1 }),
     },
+    $transaction: async (promises: SafeAny[]) => Promise.all(promises),
   };
 
   const defaultMockLegacy = {
@@ -222,3 +223,48 @@ test('POST /api/cash-flow/entries with hasVat=false sets vatAmount to 0', async 
   assert.equal(body.data.totalAmount, 50000000);
   assert.equal(body.data.priority, 'CRITICAL');
 });
+
+test('PUT /api/cash-flow/accounts/:id updates account balance and safety threshold', async () => {
+  const app = createMockApp();
+  await app.register(cashFlowRoutes, { prefix: '/api' });
+
+  const res = await app.inject({
+    method: 'PUT',
+    url: '/api/cash-flow/accounts/1',
+    headers: AUTH_HEADERS,
+    payload: {
+      currentBalance: 75000000,
+      minSafetyThreshold: 25000000,
+      notes: 'Đối chiếu sổ quỹ ngày 19/10',
+    },
+  });
+
+  assert.equal(res.statusCode, 200);
+  const body = res.json();
+  assert.equal(body.success, true);
+  assert.equal(body.data.currentBalance, 75000000);
+  assert.equal(body.data.minSafetyThreshold, 25000000);
+});
+
+test('PUT /api/cash-flow/accounts/batch-balance updates multiple accounts at once', async () => {
+  const app = createMockApp();
+  await app.register(cashFlowRoutes, { prefix: '/api' });
+
+  const res = await app.inject({
+    method: 'PUT',
+    url: '/api/cash-flow/accounts/batch-balance',
+    headers: AUTH_HEADERS,
+    payload: {
+      items: [
+        { id: 1, currentBalance: 80000000, minSafetyThreshold: 30000000 },
+      ],
+    },
+  });
+
+  assert.equal(res.statusCode, 200);
+  const body = res.json();
+  assert.equal(body.success, true);
+  assert.ok(Array.isArray(body.data));
+  assert.equal(body.data[0].currentBalance, 80000000);
+});
+
