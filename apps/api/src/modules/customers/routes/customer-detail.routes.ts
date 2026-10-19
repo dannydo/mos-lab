@@ -9,6 +9,7 @@ import { LashSpecificationService } from '../services/lash-specification.service
 import { TeamService } from '../../teams/team.service.js';
 import { createRouteHelpers } from './helpers.js';
 import { daysSinceVisit } from '../../projections/customer-visit-projection.service.js';
+import { repairCustomerNotesIntegrity } from './customer-notes.routes.js';
 
 export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
   const { ensureTelesalesCustomerAccess, ensureTelesalesCustomerMutateAccess } = createRouteHelpers(fastify);
@@ -1274,6 +1275,8 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
       });
 
       // 7. Fetch Notes from user_note
+      await repairCustomerNotesIntegrity(fastify.prisma.legacy, resolvedCustomerId);
+
       const notesSql = `
         SELECT 
           un.id,

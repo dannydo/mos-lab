@@ -176,12 +176,34 @@ export class PackageAuditService {
           AND date_created = '${new Date(txn.date_created).toISOString().slice(0, 19).replace('T', ' ')}'
       `);
 
-      // 3. Log user note
+      // 3. Log user note with legacy attribute compatibility
       const userNoteText = `[AUDIT REVOKE] Lượt cộng thủ công (+${totalNormalAdded} nối, +${totalRetainAdded} dặm) đã bị Quản lý Thu hồi. Lý do: ${reviewNote || 'Thao tác thu hồi từ Báo cáo Kiểm toán'}`;
-      await this.fastify.prisma.legacy.$executeRawUnsafe(`
-        INSERT INTO user_note (client_id, client_business_id, client_store_id, user_id, created_staff_id, note_field_key, note, date_created)
-        VALUES (1, 1, 1, ${Number(txn.user_id)}, ${Number(reviewerStaffId)}, 'note', '${userNoteText.replace(/'/g, "''")}', NOW())
-      `);
+      const groupKey = Math.floor(Date.now() / 1000).toString();
+      await this.fastify.prisma.legacy.$executeRawUnsafe(
+        `INSERT INTO user_note (client_id, client_business_id, client_store_id, user_id, created_staff_id, note_field_key, note, attribute_group_key, is_sticky, is_issue, is_disabled, date_created, date_updated)
+         VALUES (11, 1, 1, ?, ?, 'note', ?, ?, 0, 0, 0, NOW(), NOW())`,
+        Number(txn.user_id),
+        Number(reviewerStaffId),
+        userNoteText,
+        groupKey
+      );
+
+      const lastIdResult = await this.fastify.prisma.legacy.$queryRawUnsafe<Array<{ id: number | bigint }>>(
+        'SELECT LAST_INSERT_ID() as id'
+      );
+      const newNoteId = Number(lastIdResult[0]?.id);
+      if (newNoteId) {
+        await this.fastify.prisma.legacy.$executeRawUnsafe(
+          `INSERT INTO item_attribute_value (client_id, client_business_id, type, item_id, attribute_id, attribute_option_id, attribute_option_value, group_key, date_created)
+           VALUES 
+           (11, 1, 'user-note-attribute', ?, 23, 116, 'Normal', ?, NOW()),
+           (11, 1, 'user-note-attribute', ?, 24, 119, 'Note', ?, NOW())`,
+          newNoteId,
+          groupKey,
+          newNoteId,
+          groupKey
+        );
+      }
 
       return { success: true, message: 'Thu hồi lượt cộng thủ công thành công.', reviewStatus: 'REVOKED' };
     } else {

@@ -3,7 +3,7 @@ import { requireAuth } from '../../../middlewares/auth.js';
 import { SafeAny, isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { createRouteHelpers } from './helpers.js';
 
-async function repairCustomerNotesIntegrity(tx: SafeAny, customerId: number): Promise<void> {
+export async function repairCustomerNotesIntegrity(tx: SafeAny, customerId: number): Promise<void> {
   try {
     const unhealedNotes = await tx.$queryRawUnsafe(
       `SELECT id, note_field_key, date_created, attribute_group_key FROM user_note WHERE user_id = ? AND (attribute_group_key IS NULL OR date_updated IS NULL)`,
