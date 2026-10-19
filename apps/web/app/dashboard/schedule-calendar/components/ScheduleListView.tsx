@@ -358,7 +358,7 @@ export default function ScheduleListView({
               />
             </Tooltip>
           )}
-          <Tooltip title="Đổi giờ hẹn">
+          <Tooltip title="Đổi lịch / Cập nhật">
             <Button
               type="text"
               size="small"

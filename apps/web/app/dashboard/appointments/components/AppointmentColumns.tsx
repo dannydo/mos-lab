@@ -236,7 +236,7 @@ export const getPendingColumns = ({
               style={{ color: '#D4A84B' }}
             />
           </Tooltip>
-          <Tooltip title="Dời lịch hẹn">
+          <Tooltip title="Đổi lịch / Cập nhật">
             <Button
               type="primary"
               size="small"

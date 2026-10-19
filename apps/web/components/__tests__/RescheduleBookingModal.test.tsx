@@ -142,4 +142,42 @@ describe('RescheduleBookingModal (MOS-BUG-114 1-Step Consolidation)', () => {
       expect(handleSuccess).toHaveBeenCalledTimes(1);
     });
   });
+
+  it('extracts HH:mm slot automatically when bookingDate is an ISO datetime string without separate bookingTime', async () => {
+    const handleSuccess = vi.fn();
+    const isoBooking = {
+      ...mockBooking,
+      bookingDate: '2026-10-25T14:30:00',
+      bookingTime: undefined,
+      branchName: 'Đề Thám',
+      storeId: 6,
+    };
+
+    render(
+      <RescheduleBookingModal
+        open={true}
+        booking={isoBooking}
+        onClose={vi.fn()}
+        onSuccess={handleSuccess}
+      />
+    );
+
+    const saveButton = screen.getByRole('button', { name: /hoàn tất & lưu/i });
+    fireEvent.click(saveButton);
+
+    await waitFor(() => {
+      expect(apiMocks.updateBooking).toHaveBeenCalledTimes(1);
+    });
+
+    expect(apiMocks.updateBooking).toHaveBeenCalledWith(
+      12345,
+      expect.objectContaining({
+        storeId: 6,
+        bookingDate: '2026-10-25',
+        bookingTime: '14:30',
+        bookingNote: 'Khách muốn nối mi tự nhiên',
+      })
+    );
+  });
 });
+

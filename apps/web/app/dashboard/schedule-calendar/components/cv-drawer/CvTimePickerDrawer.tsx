@@ -352,10 +352,10 @@ export const CvTimePickerDrawer: React.FC<CvTimePickerDrawerProps> = ({
                             onEditAppointment(overlap.rawAppointment);
                           }}
                           className="px-2 py-1 text-[11px] font-bold rounded-md bg-blue-500/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/40 transition-all shadow-2xs active:scale-95 cursor-pointer flex items-center gap-1 shrink-0"
-                          title="Cập nhật bộ mi / dịch vụ cho đơn này"
+                          title="Đổi lịch / Cập nhật thông tin lịch hẹn"
                         >
                           <EditOutlined className="text-[10px]" />
-                          <span>Sửa mi</span>
+                          <span>Đổi lịch / Cập nhật</span>
                         </button>
                       )}
                       <button
@@ -409,7 +409,7 @@ export const CvTimePickerDrawer: React.FC<CvTimePickerDrawerProps> = ({
                         className="px-2.5 py-1 text-[11px] font-bold rounded bg-blue-600 hover:bg-blue-500 text-white cursor-pointer flex items-center gap-1 shadow-xs"
                       >
                         <EditOutlined />
-                        <span>✏️ Cập nhật bộ mi đơn này</span>
+                        <span>✏️ Đổi lịch / Cập nhật</span>
                       </button>
                     )}
                     <button
