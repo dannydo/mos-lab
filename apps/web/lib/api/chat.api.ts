@@ -20,6 +20,7 @@ import type {
   MosChatUserSidebarPrefs,
   MoveMosChatThreadItemRequest,
   MoveMosChatThreadItemResponse,
+  RestoreMosChatMessageRequest,
   SafeAny,
   TogglePinConversationResponse,
   UpdateMosChatAccessConfigRequest,
@@ -160,6 +161,14 @@ export const chatApi = {
         data: payload,
         params: payload,
       });
+      invalidateApiGetCache(['/chat/bootstrap']);
+      return res.data;
+    },
+    restoreMessage: async (
+      messageId: string,
+      payload: RestoreMosChatMessageRequest
+    ): Promise<{ success: boolean; message: MosChatMessage; target?: SafeAny }> => {
+      const res = await api.post(`/chat/messages/${encodeURIComponent(messageId)}/restore`, payload);
       invalidateApiGetCache(['/chat/bootstrap']);
       return res.data;
     },
