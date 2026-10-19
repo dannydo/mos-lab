@@ -445,9 +445,17 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
 
       fetchServices(srvId, srvName);
 
-      // Map branch name to store object
+      // Map branch name or storeId to store object
+      const branchLower = String(booking.branchName || booking.storeName || '').toLowerCase();
       const matchedStore =
-        STORES.find((s) => s.name === booking.branchName || booking.branchName?.includes(s.name)) || STORES[0];
+        STORES.find(
+          (s) =>
+            (booking.storeId && Number(booking.storeId) === s.id) ||
+            s.name === booking.branchName ||
+            booking.branchName?.includes(s.name) ||
+            (s.id === 6 && (branchLower.includes('đề thám') || branchLower.includes('de tham'))) ||
+            (s.id === 16 && branchLower.includes('estella'))
+        ) || STORES[0];
       setSelectedCN(matchedStore);
 
       // Set date & note & slot
@@ -459,6 +467,13 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
         booking.bookingTime ||
         booking.time ||
         (rawDate && String(rawDate).includes(' ') ? String(rawDate).split(' ')[1] : null);
+
+      if (!rawTime && rawDate && String(rawDate).includes(':') && bDate.isValid()) {
+        const formattedTime = bDate.format('HH:mm');
+        if (formattedTime !== '00:00') {
+          rawTime = formattedTime;
+        }
+      }
 
       if (rawTime && rawTime.includes(':')) {
         const parts = rawTime.split(':');
@@ -979,6 +994,25 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
             </div>
           )}
 
+          {/* Booking Note Section */}
+          <div>
+            <h4 style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b', marginBottom: '8px' }}>
+              GHI CHÚ ĐẶT LỊCH (BOOKING NOTE / LƯU Ý KHÁCH HÀNG)
+            </h4>
+            <TextArea
+              rows={3}
+              placeholder="Nhập ghi chú hoặc yêu cầu đặc biệt từ khách hàng (dáng mi, yêu cầu chuyên viên, tình trạng mắt...)..."
+              value={bookingNote}
+              onChange={(e) => setBookingNote(e.target.value)}
+              style={{
+                borderRadius: '8px',
+                backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
+                color: themeMode === 'dark' ? '#f8fafc' : '#0f172a',
+                borderColor: themeMode === 'dark' ? '#334155' : '#cbd5e1',
+              }}
+            />
+          </div>
+
           <div style={{ height: '1px', background: themeMode === 'dark' ? '#334155' : '#e5e7eb', margin: '4px 0' }} />
 
           {/* Date & Slot select matrix */}
@@ -1028,25 +1062,6 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
               night={night}
               themeMode={themeMode}
               selectedCV={selectedCV}
-            />
-          </div>
-
-          {/* Booking Note Section */}
-          <div>
-            <h4 style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b', marginBottom: '8px' }}>
-              GHI CHÚ ĐẶT LỊCH (BOOKING NOTE / LƯU Ý KHÁCH HÀNG)
-            </h4>
-            <TextArea
-              rows={3}
-              placeholder="Nhập ghi chú hoặc yêu cầu đặc biệt từ khách hàng (dáng mi, yêu cầu chuyên viên, tình trạng mắt...)..."
-              value={bookingNote}
-              onChange={(e) => setBookingNote(e.target.value)}
-              style={{
-                borderRadius: '8px',
-                backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff',
-                color: themeMode === 'dark' ? '#f8fafc' : '#0f172a',
-                borderColor: themeMode === 'dark' ? '#334155' : '#cbd5e1',
-              }}
             />
           </div>
 

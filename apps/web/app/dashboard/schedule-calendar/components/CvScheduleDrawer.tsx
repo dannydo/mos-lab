@@ -25,10 +25,9 @@ import { CvOffStaffCard } from './cv-drawer/CvOffStaffCard';
 import { CvTimePickerDrawer } from './cv-drawer/CvTimePickerDrawer';
 
 const BookingWizardDrawer = nextDynamic(() => import('../../../../components/BookingWizardDrawer'), { ssr: false });
-const UpdateBookingModal = nextDynamic(
-  () => import('../../../../components/UpdateBookingModal').then((m) => m.UpdateBookingModal),
-  { ssr: false }
-);
+const RescheduleBookingModal = nextDynamic(() => import('../../../../components/RescheduleBookingModal'), {
+  ssr: false,
+});
 
 export interface CvScheduleDrawerProps {
   open: boolean;
@@ -613,10 +612,10 @@ export const CvScheduleDrawer: React.FC<CvScheduleDrawerProps> = React.memo(
           />
         )}
 
-        {/* UpdateBookingModal for editing lash service / technician */}
+        {/* RescheduleBookingModal for unified 1-step editing / rescheduling */}
         {isUpdateModalOpen && editingAppointment && (
-          <UpdateBookingModal
-            visible={isUpdateModalOpen}
+          <RescheduleBookingModal
+            open={isUpdateModalOpen}
             onClose={() => {
               setIsUpdateModalOpen(false);
               setEditingAppointment(null);

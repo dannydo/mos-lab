@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Alert, Steps, Button, Select, DatePicker, Radio, Input, theme, message, Card, Tag, Switch } from 'antd';
+import { Alert, Button, Select, Radio, Input, theme, message, Card, Tag, Switch } from 'antd';
 import {
   PhoneOutlined,
   UserOutlined,
@@ -13,7 +13,6 @@ import {
   SaveOutlined,
   CheckOutlined,
   MessageOutlined,
-  ReloadOutlined,
   SettingOutlined,
   ExclamationCircleOutlined,
 } from '@ant-design/icons';
@@ -30,8 +29,8 @@ import {
 } from '@mos-lab/shared';
 
 // Shared modules
-import { STORES, FALLBACK_SERVICES, CHANNELS, getStoreFullAddress } from './booking/constants';
-import { checkAndAppendLowerLashNote, getCalculatedPrice, getRelativeDateInfo } from './booking/comboUtils';
+import { STORES, FALLBACK_SERVICES, CHANNELS, getStoreFullAddress, isStaffOffOnDate } from './booking/constants';
+import { checkAndAppendLowerLashNote, getCalculatedPrice } from './booking/comboUtils';
 import { useBookingStaff } from './booking/useBookingStaff';
 import { useSlotMatrix } from './booking/useSlotMatrix';
 import { useCustomerInsights } from './booking/useCustomerInsights';
@@ -42,7 +41,6 @@ import { CvDatePicker } from './booking/CvDatePicker';
 import CreateCustomerModal from './CreateCustomerModal';
 import { AdaptiveDrawer, AdaptiveModal } from './ui/AdaptiveOverlay';
 import { CopyPhoneButton } from './ui';
-import { useResponsiveTier } from '../hooks/useResponsiveTier';
 import { notifyBookingMutation, toBookingCustomerId } from '../lib/booking-events';
 import {
   isBookingWithinCampaignScope,
@@ -92,14 +90,14 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
 }) => {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
-  const responsiveTier = useResponsiveTier();
-  const isCompact = responsiveTier === 'mobile' || responsiveTier === 'tablet';
 
-  const [currentStep, setCurrentStep] = useState(0);
+  // 1-Step UI Toggle States
+  const [showCvCardSelector, setShowCvCardSelector] = useState(false);
+  const [showMessagePreview, setShowMessagePreview] = useState(false);
 
   // Form State
   const [selectedCV, setSelectedCV] = useState<SafeAny>(null); // Specific CV or null for "No CV"
-  const [selectedCN, setSelectedCN] = useState<SafeAny>(null); // Branch/Store
+  const [selectedCN, setSelectedCN] = useState<SafeAny>(STORES[0]); // Branch/Store
   const [searchQuery, setSearchQuery] = useState('');
   const [customerList, setCustomerList] = useState<SafeAny[]>([]);
   const [searchingCustomers, setSearchingCustomers] = useState(false);
@@ -300,6 +298,12 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
     [selectedSlot, selectedCV]
   );
 
+  useEffect(() => {
+    if (open && bookingTemplates.length > 0) {
+      autoSelectTemplate(bookingTemplates);
+    }
+  }, [open, selectedSlot, selectedCV, bookingTemplates, autoSelectTemplate]);
+
   // Fetch templates from API
   const fetchBookingTemplates = useCallback(async () => {
     setLoadingTemplates(true);
@@ -415,6 +419,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
       fetchServices();
       fetchPromotions();
       resetForm();
+      void fetchBookingTemplates().then((list) => autoSelectTemplate(list));
     }
   }, [open]);
 
@@ -427,16 +432,37 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
 
   // Fetch slot matrix when dependencies change
   useEffect(() => {
-    if (open && selectedCN && currentStep === 1) {
+    if (open && selectedCN) {
       fetchSlots();
     }
-  }, [selectedCN, bookingDate, selectedCV, open, currentStep]);
+  }, [selectedCN, bookingDate, selectedCV, open]);
+
+  const resolveInitialStore = (branchInput: SafeAny) => {
+    if (!branchInput) return STORES[0];
+    if (typeof branchInput === 'object' && branchInput.id) {
+      return STORES.find((s) => Number(s.id) === Number(branchInput.id)) || branchInput;
+    }
+    const rawStr = String(branchInput).trim().toLowerCase();
+    if (rawStr === '6' || rawStr.includes('đề thám') || rawStr.includes('de tham')) {
+      return STORES.find((s) => s.id === 6) || STORES[1] || STORES[0];
+    }
+    if (rawStr === '16' || rawStr.includes('estella')) {
+      return STORES.find((s) => s.id === 16) || STORES[0];
+    }
+    return STORES.find((s) => s.name.toLowerCase().includes(rawStr)) || STORES[0];
+  };
 
   const resetForm = () => {
-    setCurrentStep(0);
+    setShowCvCardSelector(false);
+    setShowMessagePreview(false);
     setBookingCreated(false);
     setSelectedCV(initialCV || null);
-    setSelectedCN(initialBranch || null);
+    const resolvedBranch = initialBranch
+      ? resolveInitialStore(initialBranch)
+      : initialCV?.notes
+        ? resolveInitialStore(initialCV.notes)
+        : STORES[0];
+    setSelectedCN(resolvedBranch);
     if (initialCustomer) {
       const normalizedCust = {
         ...initialCustomer,
@@ -595,6 +621,7 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
 
   const selectCVOption = (cv: SafeAny) => {
     setSelectedCV(cv);
+    setShowCvCardSelector(false);
 
     const checkCV =
       cv || (staffList || []).find((s: SafeAny) => (s.displayName || '').toLowerCase().includes('cẩm tiên'));
@@ -619,52 +646,12 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
         `Đã tự động chuyển ngày sang ngày làm việc tiếp theo của chuyên viên: ${finalDate.format('DD/MM/YYYY')}`
       );
     }
-    setCurrentStep(1);
-  };
-
-  const handleStepChange = (step: number) => {
-    if (step === 2) {
-      if (
-        !selectedService ||
-        (!isNewLead && !selectedCustomer) ||
-        (isNewLead && (!leadName || !leadPhone)) ||
-        !selectedSlot ||
-        !selectedCN
-      ) {
-        message.error('Vui lòng chọn đầy đủ Dịch vụ, Khách hàng, Chi nhánh và Khung giờ trống.');
-        return;
-      }
-
-      if (isNewLead) {
-        const cleanName = leadName.trim();
-        const cleanPhone = leadPhone.trim();
-
-        const isNamePhone = /^\+?[0-9\s\-()]{8,}$/.test(cleanName);
-        if (isNamePhone) {
-          message.error('Tên khách hàng không được là số điện thoại. Vui lòng kiểm tra lại!');
-          return;
-        }
-
-        const isPhoneInvalid = /[a-zA-Z\u00C0-\u1EF9]/.test(cleanPhone);
-        if (isPhoneInvalid) {
-          message.error('Số điện thoại không hợp lệ (không được chứa chữ cái). Vui lòng kiểm tra lại!');
-          return;
-        }
-
-        const digitCount = cleanPhone.replace(/[^0-9]/g, '').length;
-        if (digitCount < 8 || digitCount > 15) {
-          message.error('Số điện thoại phải từ 8 đến 15 chữ số.');
-          return;
-        }
-      }
-    }
-    setCurrentStep(step);
   };
 
   const [creatingBooking, setCreatingBooking] = useState(false);
   const [bookingCreationError, setBookingCreationError] = useState<string | null>(null);
 
-  const handleGoToStep4 = async () => {
+  const handleFinalCreateBooking = async () => {
     if (!selectedCN) {
       message.error('Vui lòng chọn chi nhánh');
       return;
@@ -705,12 +692,6 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
       }
     }
 
-    const list = await fetchBookingTemplates();
-    autoSelectTemplate(list);
-    setCurrentStep(3);
-  };
-
-  const handleFinalCreateBooking = async () => {
     setBookingCreationError(null);
     setCreatingBooking(true);
     try {
@@ -795,11 +776,6 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
     }
   };
 
-  const handleFinishWizard = () => {
-    onSuccess();
-    onClose();
-  };
-
   const priceInfo = getCalculatedPrice(selectedService, selectedPromotion, selectedCampaignPromotion);
   const visibleCustomerCampaignPromotions = useMemo(() => {
     return customerCampaignPromotions
@@ -831,6 +807,13 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
     );
   }, [customerCampaignPromotions, selectedService]);
 
+  const isSubmitDisabled =
+    !selectedService ||
+    (!isNewLead && !selectedCustomer) ||
+    (isNewLead && (!leadName || !leadPhone)) ||
+    !selectedSlot ||
+    !selectedCN;
+
   return (
     <AdaptiveDrawer
       intent="form"
@@ -845,55 +828,175 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
           }}
         >
           <CalendarOutlined style={{ fontSize: '18px' }} />
-          <span style={{ fontWeight: 'bold' }}>QUY TRÌNH ĐẶT LỊCH HẸN KHÁCH HÀNG</span>
+          <span style={{ fontWeight: 'bold' }}>ĐẶT LỊCH HẸN KHÁCH HÀNG (1 BƯỚC)</span>
         </div>
       }
       placement="right"
       open={open}
       onClose={onClose}
+      footer={
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '10px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <Button onClick={onClose}>Đóng</Button>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <Button
+              icon={<CopyOutlined />}
+              onClick={handleCopyMessage}
+              style={{
+                borderColor: '#fa8c16',
+                color: themeMode === 'dark' ? '#ffa940' : '#d87a16',
+              }}
+            >
+              Sao chép tin nhắn
+            </Button>
+            <Button
+              type="primary"
+              icon={<CheckOutlined />}
+              loading={creatingBooking}
+              disabled={isSubmitDisabled}
+              onClick={handleFinalCreateBooking}
+              style={{
+                backgroundColor: isSubmitDisabled ? undefined : '#52c41a',
+                borderColor: isSubmitDisabled ? undefined : '#52c41a',
+                fontWeight: 'bold',
+              }}
+            >
+              Hoàn tất & Tạo Lịch
+            </Button>
+          </div>
+        </div>
+      }
       styles={{
         body: {
           background: themeMode === 'dark' ? '#141414' : '#f9fafb',
-          padding: '24px',
+          padding: '20px 24px',
         },
       }}
     >
-      <Steps
-        className="booking-wizard-steps"
-        current={currentStep}
-        onChange={(step) => {
-          if (step < currentStep) {
-            setCurrentStep(step);
-          } else {
-            handleStepChange(step);
-          }
-        }}
-        size="small"
-        style={{ marginBottom: '24px' }}
-        items={[
-          { title: isCompact ? 'CV' : 'Chuyên viên' },
-          { title: isCompact ? 'Lịch' : 'Dịch Vụ & Thời Gian' },
-          { title: isCompact ? 'Xác nhận' : 'Xác Nhận' },
-          { title: isCompact ? 'Nhắn' : 'Gửi Tin Nhắn' },
-        ]}
-      />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        {bookingCreationError && (
+          <Alert
+            type="error"
+            showIcon
+            closable
+            message="Chưa thể tạo lịch"
+            description={bookingCreationError}
+            onClose={() => setBookingCreationError(null)}
+          />
+        )}
 
-      {/* STEP 0: SELECT TECHNICIAN (CV) */}
-      {currentStep === 0 && (
-        <TechnicianSelector
-          selectedCV={selectedCV}
-          onSelectCVOption={selectCVOption}
-          favoriteTechs={favoriteTechs}
-          getFavoriteKTVs={getFavoriteKTVs}
-          getGroupedKTVs={getGroupedKTVs}
-          loadingStaff={loadingStaff}
-          themeMode={themeMode}
-        />
-      )}
+        {/* SPECIALIST (CV) QUICK SELECTOR + OPTIONAL CARD PICKER */}
+        <div>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '8px',
+              flexWrap: 'wrap',
+              gap: '8px',
+            }}
+          >
+            <h4 style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b', margin: 0 }}>
+              <UserOutlined /> CHỌN CHUYÊN VIÊN (CV)
+            </h4>
+            <Button
+              size="small"
+              type={showCvCardSelector ? 'primary' : 'dashed'}
+              onClick={() => setShowCvCardSelector((prev) => !prev)}
+            >
+              {showCvCardSelector ? 'Thu gọn danh sách thẻ CV' : 'Mở bảng thẻ Chuyên Viên'}
+            </Button>
+          </div>
 
-      {/* STEP 1: SERVICE & CUSTOMER & SLOT SELECT */}
-      {currentStep === 1 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <Select
+            showSearch
+            allowClear
+            filterOption={vietnameseSearchFilter}
+            style={{ width: '100%' }}
+            getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
+            placeholder="🌟 Chuyên viên tự do (Click để chọn CV chỉ định)..."
+            value={selectedCV?.id ?? 0}
+            loading={loadingStaff}
+            onChange={(val) => {
+              if (!val || val === 0) {
+                selectCVOption(null);
+                return;
+              }
+              const found = (staffList || []).find((s: SafeAny) => s.id === val);
+              if (found) {
+                selectCVOption(found);
+              }
+            }}
+            options={[
+              {
+                value: 0,
+                label: '🌟 Chuyên viên tự do (Không yêu cầu chỉ định CV)',
+              },
+              ...(staffList || []).map((cv: SafeAny) => {
+                const isOff = isStaffOffOnDate(cv, safeBookingDate);
+                return {
+                  value: cv.id,
+                  label: `${cv.displayName}${cv.notes ? ` (${cv.notes})` : ''}${isOff ? ' — [Nghỉ phép ngày chọn]' : ''}`,
+                };
+              }),
+            ]}
+          />
+
+          {/* Favorite CVs quick chips */}
+          {getFavoriteKTVs().length > 0 && (
+            <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '12px', color: '#db2777', fontWeight: 'bold' }}>💖 CV khách hay chọn:</span>
+              {getFavoriteKTVs().map((cv: SafeAny) => {
+                const isSelected = selectedCV?.id === cv.id;
+                return (
+                  <Tag
+                    key={cv.id}
+                    color={isSelected ? 'magenta' : 'pink'}
+                    style={{
+                      cursor: 'pointer',
+                      margin: 0,
+                      fontWeight: isSelected ? 'bold' : 'normal',
+                      border: isSelected ? '1.5px solid #db2777' : undefined,
+                    }}
+                    onClick={() => selectCVOption(cv)}
+                  >
+                    {cv.displayName}
+                  </Tag>
+                );
+              })}
+            </div>
+          )}
+
+          {showCvCardSelector && (
+            <div
+              style={{
+                marginTop: '12px',
+                padding: '12px',
+                borderRadius: '10px',
+                border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
+                background: themeMode === 'dark' ? '#0f172a' : '#ffffff',
+              }}
+            >
+              <TechnicianSelector
+                selectedCV={selectedCV}
+                onSelectCVOption={selectCVOption}
+                favoriteTechs={favoriteTechs}
+                getFavoriteKTVs={getFavoriteKTVs}
+                getGroupedKTVs={getGroupedKTVs}
+                loadingStaff={loadingStaff}
+                themeMode={themeMode}
+              />
+            </div>
+          )}
+        </div>
           {/* Branch Check */}
           <div>
             <h4 style={{ fontSize: '13px', color: themeMode === 'dark' ? '#94a3b8' : '#64748b', marginBottom: '8px' }}>
@@ -1500,8 +1603,42 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
             </div>
           )}
 
+          {/* Select Channels & Booking Note */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div>
+              <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>
+                KÊNH TIẾP NHẬN ĐẶT LỊCH (BOOKING CHANNEL)
+              </h4>
+              <Radio.Group
+                value={bookingChannel}
+                onChange={(e) => setBookingChannel(e.target.value)}
+                buttonStyle="solid"
+              >
+                {CHANNELS.map((ch) => (
+                  <Radio.Button
+                    key={ch.key}
+                    value={ch.key}
+                    style={{ marginBottom: '8px', marginRight: '8px', borderRadius: '4px' }}
+                  >
+                    {ch.key}
+                  </Radio.Button>
+                ))}
+              </Radio.Group>
+            </div>
+
+            <div>
+              <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>GHI CHÚ ĐẶT LỊCH (BOOKING NOTE)</h4>
+              <TextArea
+                rows={3}
+                placeholder="Nhập các ghi chú đặc biệt từ khách hàng hoặc thay đổi đặt lịch..."
+                value={bookingNote}
+                onChange={(e) => setBookingNote(e.target.value)}
+              />
+            </div>
+          </div>
+
           {/* Divider separating inputs from slots */}
-          <div style={{ height: '1px', background: themeMode === 'dark' ? '#334155' : '#e5e7eb', margin: '10px 0' }} />
+          <div style={{ height: '1px', background: themeMode === 'dark' ? '#334155' : '#e5e7eb', margin: '6px 0' }} />
 
           {/* SLOT AVAILABILITY MATRIX */}
           <div>
@@ -1569,357 +1706,221 @@ const BookingWizardDrawer: React.FC<BookingWizardDrawerProps> = ({
             />
           </div>
 
-          <Button
-            type="primary"
-            onClick={() => handleStepChange(2)}
-            disabled={
-              !selectedService ||
-              (!isNewLead && !selectedCustomer) ||
-              (isNewLead && (!leadName || !leadPhone)) ||
-              !selectedSlot ||
-              !selectedCN
-            }
-            style={{ marginTop: '20px', width: '100%' }}
-          >
-            Tiếp tục: Nhập Kênh & Xác nhận đặt lịch
-          </Button>
-        </div>
-      )}
-
-      {/* STEP 2: CONFIRM & BOOK */}
-      {currentStep === 2 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Summary Card */}
+          {/* OPTIONAL COLLAPSIBLE MESSAGE CONFIRMATION TEMPLATE */}
           <Card
-            title={<span style={{ color: '#D4A84B', fontWeight: 'bold' }}>TỔNG HỢP LỊCH ĐẶT HẸN</span>}
-            style={{ backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff' }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13.5px' }}>
-              <div className="flex items-center gap-1 flex-wrap">
-                <span style={{ color: '#888' }}>Khách hàng:</span>{' '}
-                <strong>
-                  {isNewLead
-                    ? `${leadName} (Khách mới)`
-                    : selectedCustomer?.name ||
-                      selectedCustomer?.customerName ||
-                      `Khách hàng #${selectedCustomer?.id || selectedCustomer?.legacyUserId}`}
-                </strong>{' '}
-                <span>
-                  {isNewLead
-                    ? `(${leadPhone})`
-                    : `(${selectedCustomer?.phone || selectedCustomer?.customerPhone || ''})`}
-                </span>
-                <CopyPhoneButton
-                  phone={isNewLead ? leadPhone : selectedCustomer?.phone || selectedCustomer?.customerPhone}
-                  size="xs"
-                />
-              </div>
-              <div>
-                <span style={{ color: '#888' }}>Chi nhánh:</span> <strong>{selectedCN?.name}</strong>
-              </div>
-              <div>
-                <span style={{ color: '#888' }}>Chuyên viên:</span>{' '}
-                <strong>{selectedCV ? selectedCV.displayName : 'Chuyên viên tự do'}</strong>
-              </div>
-              <div>
-                <span style={{ color: '#888' }}>Dịch vụ:</span> <strong>{selectedService?.name}</strong>{' '}
-                {selectedService?.id !== 0 && (
-                  <span style={{ color: '#888' }}>({selectedService?.price.toLocaleString('vi-VN')}đ)</span>
-                )}
-              </div>
-              {selectedCampaignPromotion && (
-                <div>
-                  <span style={{ color: '#888' }}>Ưu đãi chiến dịch:</span>{' '}
-                  <Tag color="purple">{selectedCampaignPromotion.label}</Tag>{' '}
-                  <strong>{selectedCampaignPromotion.name}</strong>
-                  {priceInfo.discount > 0 && (
-                    <span style={{ color: '#fa8c16' }}> (-{priceInfo.discount.toLocaleString('vi-VN')}đ)</span>
-                  )}
-                </div>
-              )}
-              {selectedPromotion && (
-                <div>
-                  <span style={{ color: '#888' }}>Khuyến mãi:</span> <strong>{selectedPromotion.name}</strong>
-                  {priceInfo.discount > 0 && (
-                    <span style={{ color: '#fa8c16' }}> (-{priceInfo.discount.toLocaleString('vi-VN')}đ)</span>
-                  )}
-                </div>
-              )}
-              {referralPhone && (
-                <div className="flex items-center gap-1">
-                  <span style={{ color: '#888' }}>Người giới thiệu:</span> <strong>{referralPhone}</strong>
-                  <CopyPhoneButton phone={referralPhone} size="xs" />
-                </div>
-              )}
-              {selectedService && selectedService.id !== 0 && (
-                <div>
-                  <span style={{ color: '#888' }}>Giá thanh toán:</span>{' '}
-                  <strong style={{ color: '#52c41a', fontSize: '14.5px', fontVariantNumeric: 'tabular-nums' }}>
-                    {priceInfo.final.toLocaleString('vi-VN')}đ
-                  </strong>
-                </div>
-              )}
-              <div>
-                <span style={{ color: '#888' }}>Giờ hẹn:</span> <strong>{selectedSlot}</strong>{' '}
-                {(() => {
-                  const dateInfo = getRelativeDateInfo(bookingDate);
-                  const formattedDate = bookingDate
-                    ? typeof bookingDate.format === 'function'
-                      ? bookingDate.format('DD/MM/YYYY')
-                      : dayjs(bookingDate).format('DD/MM/YYYY')
-                    : '';
-                  return (
-                    <>
-                      <strong>{dateInfo.label}</strong> <strong>{formattedDate}</strong>
-                    </>
-                  );
-                })()}
-              </div>
-            </div>
-          </Card>
-
-          {/* Select Channels */}
-          <div>
-            <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>
-              KÊNH TIẾP NHẬN ĐẶT LỊCH (BOOKING CHANNEL)
-            </h4>
-            <Radio.Group value={bookingChannel} onChange={(e) => setBookingChannel(e.target.value)} buttonStyle="solid">
-              {CHANNELS.map((ch) => (
-                <Radio.Button
-                  key={ch.key}
-                  value={ch.key}
-                  style={{ marginBottom: '8px', marginRight: '8px', borderRadius: '4px' }}
-                >
-                  {ch.key}
-                </Radio.Button>
-              ))}
-            </Radio.Group>
-          </div>
-
-          {/* Booking note */}
-          <div>
-            <h4 style={{ fontSize: '13px', color: '#888', marginBottom: '8px' }}>GHI CHÚ ĐẶT LỊCH (BOOKING NOTE)</h4>
-            <TextArea
-              rows={4}
-              placeholder="Nhập các ghi chú đặc biệt từ khách hàng hoặc thay đổi đặt lịch..."
-              value={bookingNote}
-              onChange={(e) => setBookingNote(e.target.value)}
-            />
-          </div>
-
-          <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
-            <Button style={{ flex: 1 }} onClick={() => setCurrentStep(1)}>
-              Quay lại
-            </Button>
-            <Button
-              type="primary"
-              style={{ flex: 2, backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-              onClick={handleGoToStep4}
-            >
-              Tiếp tục: Tạo tin nhắn xác nhận
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* STEP 3: MESSAGE CONFIRMATION TEMPLATE */}
-      {currentStep === 3 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {bookingCreationError && (
-            <Alert
-              type="error"
-              showIcon
-              closable
-              message="Chưa thể tạo lịch"
-              description={bookingCreationError}
-              onClose={() => setBookingCreationError(null)}
-            />
-          )}
-          <Card
+            size="small"
             title={
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                }}
+                onClick={() => setShowMessagePreview((prev) => !prev)}
+              >
                 <span
                   style={{ color: '#D4A84B', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}
                 >
                   <MessageOutlined /> TIN NHẮN MẪU XÁC NHẬN ĐẶT LỊCH
                 </span>
-                <Tag color="orange">Chờ xác nhận & Tạo lịch</Tag>
+                <Button size="small" type="link" style={{ padding: 0 }}>
+                  {showMessagePreview ? 'Thu gọn ▲' : 'Mở rộng / Tùy chỉnh mẫu ▼'}
+                </Button>
               </div>
             }
             style={{ backgroundColor: themeMode === 'dark' ? '#1e293b' : '#ffffff' }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* Template selector */}
-              <div>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '6px',
-                  }}
-                >
+            {showMessagePreview ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    <label
+                      style={{
+                        fontSize: '12.5px',
+                        fontWeight: '600',
+                        color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                      }}
+                    >
+                      MẪU TIN NHẮN HỆ THỐNG:
+                    </label>
+                    <Button
+                      type="link"
+                      size="small"
+                      icon={<SettingOutlined />}
+                      onClick={() => setIsManagerModalOpen(true)}
+                      style={{ color: '#D4A84B', padding: 0 }}
+                    >
+                      ⚙️ Quản lý Mẫu
+                    </Button>
+                  </div>
+                  <Select
+                    style={{ width: '100%' }}
+                    getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
+                    value={selectedTemplateId}
+                    loading={loadingTemplates}
+                    onChange={(val) => {
+                      setSelectedTemplateId(val);
+                      const chosen = bookingTemplates.find((t) => t.id === val);
+                      if (chosen) setCustomMessage(chosen.content);
+                    }}
+                    options={bookingTemplates.map((t) => ({
+                      label: t.title,
+                      value: t.id,
+                    }))}
+                  />
+                </div>
+
+                <div>
                   <label
+                    style={{
+                      display: 'block',
+                      fontSize: '12.5px',
+                      fontWeight: '600',
+                      color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                      marginBottom: '8px',
+                    }}
+                  >
+                    CHÈN NHANH THẺ BIẾN ĐỘNG (NHẤP ĐỂ CHÈN):
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {BOOKING_TEMPLATE_TAGS.map((tagDef) => (
+                      <Button
+                        key={tagDef.tag}
+                        size="small"
+                        type="dashed"
+                        onClick={() => setCustomMessage((prev) => prev + tagDef.tag)}
+                        style={{
+                          fontSize: '12px',
+                          borderColor: themeMode === 'dark' ? '#334155' : '#cbd5e1',
+                          color: themeMode === 'dark' ? '#fbbf24' : '#d97706',
+                        }}
+                      >
+                        + {tagDef.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '12.5px',
+                      fontWeight: '600',
+                      color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                      marginBottom: '6px',
+                    }}
+                  >
+                    NỘI DUNG MẪU TÙY CHỈNH:
+                  </label>
+                  <TextArea
+                    rows={4}
+                    value={customMessage}
+                    onChange={(e) => setCustomMessage(e.target.value)}
+                    style={{
+                      fontFamily: 'monospace',
+                      fontSize: '13px',
+                      backgroundColor: themeMode === 'dark' ? '#0f172a' : '#ffffff',
+                      color: themeMode === 'dark' ? '#f8fafc' : '#0f172a',
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <div
                     style={{
                       fontSize: '12.5px',
                       fontWeight: '600',
                       color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
+                      marginBottom: '6px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
                     }}
                   >
-                    MẪU TIN NHẮN HỆ THỐNG:
-                  </label>
-                  <Button
-                    type="link"
-                    size="small"
-                    icon={<SettingOutlined />}
-                    onClick={() => setIsManagerModalOpen(true)}
-                    style={{ color: '#D4A84B', padding: 0 }}
+                    <span>
+                      XEM TRƯỚC TIN NHẮN SẼ GỬI CHO{' '}
+                      <strong style={{ color: '#D4A84B' }}>
+                        {isNewLead
+                          ? leadName
+                          : selectedCustomer?.name || selectedCustomer?.customerName || 'KHÁCH HÀNG'}
+                      </strong>
+                      :
+                    </span>
+                    <span style={{ fontSize: '11px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
+                      {evaluateBookingTemplate(customMessage).length} ký tự
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      backgroundColor: themeMode === 'dark' ? '#0f172a' : '#f8fafc',
+                      border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
+                      color: themeMode === 'dark' ? '#e2e8f0' : '#1e293b',
+                      fontSize: '13px',
+                      whiteSpace: 'pre-wrap',
+                      lineHeight: '1.6',
+                    }}
                   >
-                    ⚙️ Quản lý Mẫu
+                    {evaluateBookingTemplate(customMessage)}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <Button icon={<SaveOutlined />} size="small" loading={savingTemplate} onClick={handleSaveTemplate}>
+                    Lưu Template Mẫu
+                  </Button>
+                  <Button
+                    type="primary"
+                    size="small"
+                    icon={<CopyOutlined />}
+                    onClick={handleCopyMessage}
+                    style={{ backgroundColor: '#fa8c16', borderColor: '#fa8c16' }}
+                  >
+                    Sao chép tin nhắn
                   </Button>
                 </div>
-                <Select
-                  style={{ width: '100%' }}
-                  getPopupContainer={(triggerNode) => triggerNode.parentElement || document.body}
-                  value={selectedTemplateId}
-                  loading={loadingTemplates}
-                  onChange={(val) => {
-                    setSelectedTemplateId(val);
-                    const chosen = bookingTemplates.find((t) => t.id === val);
-                    if (chosen) setCustomMessage(chosen.content);
-                  }}
-                  options={bookingTemplates.map((t) => ({
-                    label: t.title,
-                    value: t.id,
-                  }))}
-                />
               </div>
-
-              {/* Variable Insert Tags */}
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '12.5px',
-                    fontWeight: '600',
-                    color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
-                    marginBottom: '8px',
-                  }}
-                >
-                  CHÈN NHANH THẺ BIẾN ĐỘNG (NHẤP ĐỂ CHÈN):
-                </label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {BOOKING_TEMPLATE_TAGS.map((tagDef) => (
-                    <Button
-                      key={tagDef.tag}
-                      size="small"
-                      type="dashed"
-                      onClick={() => setCustomMessage((prev) => prev + tagDef.tag)}
-                      style={{
-                        fontSize: '12px',
-                        borderColor: themeMode === 'dark' ? '#334155' : '#cbd5e1',
-                        color: themeMode === 'dark' ? '#fbbf24' : '#d97706',
-                      }}
-                    >
-                      + {tagDef.label}
-                    </Button>
-                  ))}
-                </div>
+            ) : (
+              <div
+                style={{
+                  fontSize: '12.5px',
+                  color: themeMode === 'dark' ? '#cbd5e1' : '#475569',
+                  whiteSpace: 'pre-wrap',
+                }}
+              >
+                {evaluateBookingTemplate(customMessage)}
               </div>
-
-              {/* Editable Custom Content */}
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: '12.5px',
-                    fontWeight: '600',
-                    color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
-                    marginBottom: '6px',
-                  }}
-                >
-                  NỘI DUNG MẪU TÙY CHỈNH:
-                </label>
-                <TextArea
-                  rows={5}
-                  value={customMessage}
-                  onChange={(e) => setCustomMessage(e.target.value)}
-                  style={{
-                    fontFamily: 'monospace',
-                    fontSize: '13px',
-                    backgroundColor: themeMode === 'dark' ? '#0f172a' : '#ffffff',
-                    color: themeMode === 'dark' ? '#f8fafc' : '#0f172a',
-                  }}
-                />
-              </div>
-
-              {/* Live Preview Box */}
-              <div>
-                <div
-                  style={{
-                    fontSize: '12.5px',
-                    fontWeight: '600',
-                    color: themeMode === 'dark' ? '#94a3b8' : '#64748b',
-                    marginBottom: '6px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <span>
-                    XEM TRƯỚC TIN NHẮN SẼ GỬI CHO{' '}
-                    <strong style={{ color: '#D4A84B' }}>
-                      {isNewLead ? leadName : selectedCustomer?.name || selectedCustomer?.customerName || 'KHÁCH HÀNG'}
-                    </strong>
-                    :
-                  </span>
-                  <span style={{ fontSize: '11px', color: '#94a3b8', fontVariantNumeric: 'tabular-nums' }}>
-                    {evaluateBookingTemplate(customMessage).length} ký tự
-                  </span>
-                </div>
-                <div
-                  style={{
-                    padding: '14px 16px',
-                    borderRadius: '8px',
-                    backgroundColor: themeMode === 'dark' ? '#0f172a' : '#f8fafc',
-                    border: `1px solid ${themeMode === 'dark' ? '#334155' : '#e2e8f0'}`,
-                    color: themeMode === 'dark' ? '#e2e8f0' : '#1e293b',
-                    fontSize: '13.5px',
-                    whiteSpace: 'pre-wrap',
-                    lineHeight: '1.6',
-                  }}
-                >
-                  {evaluateBookingTemplate(customMessage)}
-                </div>
-              </div>
-            </div>
+            )}
           </Card>
 
-          {/* Action Buttons */}
-          <div style={{ display: 'flex', gap: '10px', marginTop: '4px', flexWrap: 'wrap' }}>
-            <Button icon={<SaveOutlined />} loading={savingTemplate} onClick={handleSaveTemplate} style={{ flex: 1 }}>
-              Lưu Template Mẫu
-            </Button>
-            <Button
-              type="primary"
-              icon={<CopyOutlined />}
-              onClick={handleCopyMessage}
-              style={{ flex: 1.5, backgroundColor: '#fa8c16', borderColor: '#fa8c16' }}
-            >
-              Sao chép tin nhắn
-            </Button>
-            <Button
-              type="primary"
-              icon={<CheckOutlined />}
-              loading={creatingBooking}
-              onClick={handleFinalCreateBooking}
-              style={{ flex: 1.5, backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-            >
-              Hoàn tất & Tạo Lịch
-            </Button>
-          </div>
+          {/* Primary 1-Step Submit Button */}
+          <Button
+            type="primary"
+            size="large"
+            icon={<CheckOutlined />}
+            loading={creatingBooking}
+            disabled={isSubmitDisabled}
+            onClick={handleFinalCreateBooking}
+            style={{
+              width: '100%',
+              backgroundColor: isSubmitDisabled ? undefined : '#52c41a',
+              borderColor: isSubmitDisabled ? undefined : '#52c41a',
+              fontWeight: 'bold',
+            }}
+          >
+            Hoàn tất & Tạo Lịch
+          </Button>
         </div>
-      )}
 
       <CreateCustomerModal
         open={isCreateCustomerModalOpen}
