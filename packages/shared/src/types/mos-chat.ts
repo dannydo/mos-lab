@@ -304,13 +304,18 @@ export interface CreateMosChatMessageRequest {
 }
 
 export interface EditMosChatMessageRequest {
-  conversationId: string;
+  conversationId?: string;
   text: string;
   replyId?: string;
 }
 
 export interface DeleteMosChatMessageRequest {
-  conversationId: string;
+  conversationId?: string;
+  replyId?: string;
+}
+
+export interface RestoreMosChatMessageRequest {
+  conversationId?: string;
   replyId?: string;
 }
 

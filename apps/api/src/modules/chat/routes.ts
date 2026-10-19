@@ -26,6 +26,7 @@ import {
   MosChatThreadReply,
   MosChatUserSidebarPrefs,
   MoveMosChatThreadItemRequest,
+  RestoreMosChatMessageRequest,
   SafeAny,
   UpdateMosChatAccessConfigRequest,
   UploadMosChatImageRequest,
@@ -2521,15 +2522,16 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       const newText = String(body?.text || '').trim();
       const replyId = body?.replyId ? String(body.replyId).trim() : undefined;
 
-      if (!conversationId) {
-        return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu conversationId' });
-      }
-
       const [{ conversations }, staffDirectory] = await Promise.all([
         loadChatState(fastify),
         loadStaffDirectoryCached(fastify),
       ]);
-      const conv = conversations.find((c) => c.id === conversationId);
+      let conv = conversationId ? conversations.find((c) => c.id === conversationId) : undefined;
+      if (!conv) {
+        conv = conversations.find(
+          (c) => c.messages.some((m) => m.id === messageId) && canUserAccessConversation(c, user, staffDirectory)
+        );
+      }
       const msg = conv?.messages.find((m) => m.id === messageId);
       if (!conv || !msg) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tin nhắn' });
@@ -2606,15 +2608,16 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       const conversationId = String(body.conversationId || query.conversationId || '').trim();
       const replyId = body.replyId || query.replyId ? String(body.replyId || query.replyId).trim() : undefined;
 
-      if (!conversationId) {
-        return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu conversationId' });
-      }
-
       const [{ conversations }, staffDirectory] = await Promise.all([
         loadChatState(fastify),
         loadStaffDirectoryCached(fastify),
       ]);
-      const conv = conversations.find((c) => c.id === conversationId);
+      let conv = conversationId ? conversations.find((c) => c.id === conversationId) : undefined;
+      if (!conv) {
+        conv = conversations.find(
+          (c) => c.messages.some((m) => m.id === messageId) && canUserAccessConversation(c, user, staffDirectory)
+        );
+      }
       const msg = conv?.messages.find((m) => m.id === messageId);
       if (!conv || !msg) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tin nhắn' });
@@ -2659,6 +2662,88 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         targetItem.deletedBy = user.id;
         targetItem.deletedByName = deleterName;
       }
+
+      conv.updatedAt = now.toISOString();
+      await saveConversations(fastify, conversations);
+      return { success: true, message: msg, target: targetItem };
+    }
+  );
+
+  // POST /api/chat/messages/:messageId/restore (Restore soft-deleted message)
+  fastify.post(
+    '/chat/messages/:messageId/restore',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      const user = request.user as JwtUserPayload;
+      const { messageId } = request.params as { messageId: string };
+      const body = ((request.body as SafeAny) || {}) as RestoreMosChatMessageRequest;
+      const query = ((request.query as SafeAny) || {}) as RestoreMosChatMessageRequest;
+      const conversationId = String(body.conversationId || query.conversationId || '').trim();
+      const replyId = body.replyId || query.replyId ? String(body.replyId || query.replyId).trim() : undefined;
+
+      const [{ conversations }, staffDirectory] = await Promise.all([
+        loadChatState(fastify),
+        loadStaffDirectoryCached(fastify),
+      ]);
+      let conv = conversationId ? conversations.find((c) => c.id === conversationId) : undefined;
+      if (!conv) {
+        conv = conversations.find(
+          (c) => c.messages.some((m) => m.id === messageId) && canUserAccessConversation(c, user, staffDirectory)
+        );
+      }
+      const msg = conv?.messages.find((m) => m.id === messageId);
+      if (!conv || !msg) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tin nhắn' });
+      }
+      if (!canUserAccessConversation(conv, user, staffDirectory)) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Tin nhắn trực tiếp (Direct Message) chỉ hiển thị cho 2 người tham gia.',
+        });
+      }
+
+      const targetItem = replyId ? msg.thread?.find((r) => r.id === replyId) : msg;
+      if (!targetItem) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy câu trả lời trong luồng' });
+      }
+
+      const staffRecord = await fastify.prisma.crm.crmStaff.findUnique({
+        where: { id: Number(user.id) || 0 },
+        select: { displayName: true, username: true, role: true },
+      });
+      const restorerName = staffRecord?.displayName || user.username || 'mOS User';
+
+      const isOwner =
+        String(targetItem.senderId) === String(user.id) ||
+        (user.id && String(targetItem.senderId) === 'me') ||
+        (staffRecord?.displayName && targetItem.senderName === staffRecord.displayName);
+      const isAdmin = isDannyOrSuperAdminUser(user);
+
+      if (!isOwner && !isAdmin) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Bạn chỉ có thể khôi phục tin nhắn của chính mình.',
+        });
+      }
+
+      const now = new Date();
+      targetItem.isDeleted = false;
+      targetItem.deletedAt = null;
+      targetItem.deletedBy = null;
+      targetItem.deletedByName = null;
+      if (targetItem.originalText && (!targetItem.text || targetItem.text.trim() === '')) {
+        targetItem.text = targetItem.originalText;
+      }
+
+      targetItem.editHistory = targetItem.editHistory || [];
+      targetItem.editHistory.push({
+        text: targetItem.text,
+        editedAt: now.toISOString(),
+        editedBy: user.id,
+        editorName: `${restorerName} (Đã khôi phục tin nhắn)`,
+      });
 
       conv.updatedAt = now.toISOString();
       await saveConversations(fastify, conversations);
