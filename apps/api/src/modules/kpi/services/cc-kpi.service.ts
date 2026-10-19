@@ -202,6 +202,54 @@ export function resolveCcDailyBonusTierRate(totalSales: number): number {
   return CC_DAILY_BONUS_TIER_RATES.find(({ minimumSales }) => totalSales >= minimumSales)?.ratePercent ?? 0.5;
 }
 
+export interface DailySalesBonusSummaryInput {
+  combo_sales?: number | null;
+  product_sales?: number | null;
+  single_sales?: number | null;
+  debt_collected?: number | null;
+  daily_bonus?: number | null;
+}
+
+export function buildDailyBonusSummary(
+  result: DailySalesBonusSummaryInput[],
+  elapsedRatio: number,
+  comparison?: {
+    mode: 'month' | 'week' | 'day';
+    dateFrom: string;
+    dateTo: string;
+    totalComboSales: number;
+    totalProductSales: number;
+    totalSingleSales: number;
+    totalSales: number;
+    totalCcBonus: number;
+  }
+) {
+  const totalComboSales = Math.round(result.reduce((sum, r) => sum + (Number(r.combo_sales) || 0), 0));
+  const totalProductSales = Math.round(result.reduce((sum, r) => sum + (Number(r.product_sales) || 0), 0));
+  const totalSingleSales = Math.round(result.reduce((sum, r) => sum + (Number(r.single_sales) || 0), 0));
+  const totalDebtCollected = Math.round(result.reduce((sum, r) => sum + (Number(r.debt_collected) || 0), 0));
+  // Total sales for the top KPI summary includes all service categories (combo + product + single + debt)
+  const totalSales = Math.round(totalComboSales + totalProductSales + totalSingleSales + totalDebtCollected);
+  const totalCcBonus = Math.round(result.reduce((sum, r) => sum + (Number(r.daily_bonus) || 0), 0));
+
+  const safeRatio = elapsedRatio > 0 ? elapsedRatio : 1;
+
+  return {
+    totalComboSales,
+    totalProductSales,
+    totalSingleSales,
+    totalSales,
+    totalCcBonus,
+    projectedComboSales: Math.round(totalComboSales / safeRatio),
+    projectedProductSales: Math.round(totalProductSales / safeRatio),
+    projectedSingleSales: Math.round(totalSingleSales / safeRatio),
+    projectedTotalSales: Math.round(totalSales / safeRatio),
+    projectedCcBonus: Math.round(totalCcBonus / safeRatio),
+    elapsedRatioPercent: Math.round(elapsedRatio * 1000) / 10,
+    comparison,
+  };
+}
+
 interface BuildCcLeaderboardInput {
   selectedRecords: SafeAny[];
   monthlyRecords: SafeAny[];
@@ -1422,15 +1470,6 @@ export class CcKpiService {
               )
             );
 
-    const totalComboSales = Math.round(result.reduce((sum, r) => sum + (r.combo_sales || 0), 0));
-    const totalProductSales = Math.round(result.reduce((sum, r) => sum + (r.product_sales || 0), 0));
-    const totalSingleSales = Math.round(result.reduce((sum, r) => sum + (r.single_sales || 0), 0));
-    // totalSales = bonus-eligible sales only (combo + product + debt), excludes single_sales
-    const totalSales = Math.round(
-      result.reduce((sum, r) => sum + (r.combo_sales || 0) + (r.product_sales || 0) + (r.debt_collected || 0), 0)
-    );
-    const totalCcBonus = Math.round(result.reduce((sum, r) => sum + (r.daily_bonus || 0), 0));
-
     const comparisonResult = comparisonPromise
       ? await comparisonPromise.catch((error: unknown) => {
           fastify.log.warn(error, 'Unable to load Daily Bonus comparison period');
@@ -1451,19 +1490,7 @@ export class CcKpiService {
           }
         : undefined;
 
-    const summary = {
-      totalComboSales,
-      totalProductSales,
-      totalSingleSales,
-      totalSales,
-      totalCcBonus,
-      projectedComboSales: Math.round(totalComboSales / elapsedRatio),
-      projectedProductSales: Math.round(totalProductSales / elapsedRatio),
-      projectedTotalSales: Math.round(totalSales / elapsedRatio),
-      projectedCcBonus: Math.round(totalCcBonus / elapsedRatio),
-      elapsedRatioPercent: Math.round(elapsedRatio * 1000) / 10,
-      comparison,
-    };
+    const summary = buildDailyBonusSummary(result, elapsedRatio, comparison);
 
     return {
       data: result,

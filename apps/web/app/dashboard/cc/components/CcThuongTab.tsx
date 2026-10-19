@@ -106,6 +106,7 @@ export default function CcThuongTab({
     totalCcBonus: number;
     projectedComboSales?: number;
     projectedProductSales?: number;
+    projectedSingleSales?: number;
     projectedTotalSales?: number;
     projectedCcBonus?: number;
     elapsedRatioPercent?: number;
@@ -257,27 +258,39 @@ export default function CcThuongTab({
     return Math.round(ratio * 1000) / 10;
   }, [summary, dateRange]);
 
+  const vatMultiplier = includeVat ? 1.08 : 1;
+
   const projectedComboSales = useMemo(() => {
-    if (summary?.projectedComboSales !== undefined) return summary.projectedComboSales;
+    if (summary?.projectedComboSales !== undefined) {
+      return Math.round(summary.projectedComboSales * vatMultiplier);
+    }
     const ratio = (elapsedRatioPercent || 100) / 100;
     return Math.round(totalComboSales / (ratio || 1));
-  }, [summary, totalComboSales, elapsedRatioPercent]);
+  }, [summary, vatMultiplier, totalComboSales, elapsedRatioPercent]);
 
   const projectedProductSales = useMemo(() => {
-    if (summary?.projectedProductSales !== undefined) return summary.projectedProductSales;
+    if (summary?.projectedProductSales !== undefined) {
+      return Math.round(summary.projectedProductSales * vatMultiplier);
+    }
     const ratio = (elapsedRatioPercent || 100) / 100;
     return Math.round(totalProductSales / (ratio || 1));
-  }, [summary, totalProductSales, elapsedRatioPercent]);
+  }, [summary, vatMultiplier, totalProductSales, elapsedRatioPercent]);
 
   const projectedSingleSales = useMemo(() => {
+    if (summary?.projectedSingleSales !== undefined) {
+      return Math.round(summary.projectedSingleSales * vatMultiplier);
+    }
     const ratio = (elapsedRatioPercent || 100) / 100;
     return Math.round(totalSingleSales / (ratio || 1));
-  }, [totalSingleSales, elapsedRatioPercent]);
+  }, [summary, vatMultiplier, totalSingleSales, elapsedRatioPercent]);
 
   const projectedTotalSales = useMemo(() => {
-    if (summary?.projectedTotalSales !== undefined) return summary.projectedTotalSales;
-    return projectedComboSales + projectedProductSales;
-  }, [summary, projectedComboSales, projectedProductSales]);
+    if (summary?.projectedTotalSales !== undefined) {
+      return Math.round(summary.projectedTotalSales * vatMultiplier);
+    }
+    const ratio = (elapsedRatioPercent || 100) / 100;
+    return Math.round(totalSales / (ratio || 1));
+  }, [summary, vatMultiplier, totalSales, elapsedRatioPercent]);
 
   const projectedCcBonus = useMemo(() => {
     if (summary?.projectedCcBonus !== undefined) return summary.projectedCcBonus;
@@ -1010,7 +1023,11 @@ export default function CcThuongTab({
           styles={dailyBonusKpiCardStyles}
         >
           <Statistic
-            title="∑ Doanh Thu"
+            title={
+              <Tooltip title="Tổng doanh thu toàn bộ dịch vụ (Combo + Sản phẩm + Single + Nợ thu)">
+                <span className="cursor-help">∑ Doanh Thu</span>
+              </Tooltip>
+            }
             value={totalSales}
             formatter={compactVndStatistic}
             valueStyle={{

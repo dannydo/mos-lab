@@ -55,6 +55,7 @@ export interface DailySalesBonusConsultantResponse {
     totalCcBonus: number;
     projectedComboSales?: number;
     projectedProductSales?: number;
+    projectedSingleSales?: number;
     projectedTotalSales?: number;
     projectedCcBonus?: number;
     elapsedRatioPercent?: number;
