@@ -241,14 +241,24 @@ export const BookingsTab: React.FC<
         {
           cycleDays: number | null;
           isFirstOrder: boolean;
+          isWarranty: boolean;
           prevCompletedDateStr: string | null;
         }
       >();
 
       if (!bookings || bookings.length === 0) return map;
 
+      const isWarrantyBooking = (b: SafeAny) => {
+        if (b.isWarranty) return true;
+        const sTypes: string[] = b.serviceTypes || [];
+        if (sTypes.length > 0 && sTypes.every((t) => ['Fix', 'Log', 'Adjust'].includes(t))) return true;
+        return false;
+      };
+
       const completedList = bookings
-        .filter((b: SafeAny) => b.orderState === 'ServiceCompleted' || b.orderState === 'Completed')
+        .filter(
+          (b: SafeAny) => (b.orderState === 'ServiceCompleted' || b.orderState === 'Completed') && !isWarrantyBooking(b)
+        )
         .map((b: SafeAny) => ({
           id: Number(b.id),
           date: safeParseDate(b.bookingDate),
@@ -259,16 +269,22 @@ export const BookingsTab: React.FC<
       bookings.forEach((b: SafeAny) => {
         const bId = Number(b.id);
         const bDate = safeParseDate(b.bookingDate);
+        const isWarranty = isWarrantyBooking(b);
+
+        if (isWarranty) {
+          map.set(bId, { cycleDays: null, isFirstOrder: false, isWarranty: true, prevCompletedDateStr: null });
+          return;
+        }
 
         if (!bDate) {
-          map.set(bId, { cycleDays: null, isFirstOrder: false, prevCompletedDateStr: null });
+          map.set(bId, { cycleDays: null, isFirstOrder: false, isWarranty: false, prevCompletedDateStr: null });
           return;
         }
 
         const prevCompleted = completedList.filter((cb) => cb.id !== bId && cb.date.getTime() <= bDate.getTime()).pop();
 
         if (!prevCompleted) {
-          map.set(bId, { cycleDays: null, isFirstOrder: true, prevCompletedDateStr: null });
+          map.set(bId, { cycleDays: null, isFirstOrder: true, isWarranty: false, prevCompletedDateStr: null });
         } else {
           const diffTime = bDate.getTime() - prevCompleted.date.getTime();
           const diffDays = Math.max(0, Math.round(diffTime / (1000 * 60 * 60 * 24)));
@@ -279,6 +295,7 @@ export const BookingsTab: React.FC<
           map.set(bId, {
             cycleDays: diffDays,
             isFirstOrder: false,
+            isWarranty: false,
             prevCompletedDateStr: formattedPrevDate,
           });
         }
@@ -399,6 +416,31 @@ export const BookingsTab: React.FC<
                       {(() => {
                         const cycleInfo = bookingCycleMap.get(Number(b.id));
                         if (!cycleInfo) return null;
+
+                        if (cycleInfo.isWarranty) {
+                          return (
+                            <Tooltip title="Đơn bảo hành kỹ thuật (Fix/Log/Adjust) - Không tính vào chu kỳ làm mi chuẩn theo Điều răn CARE-001">
+                              <span
+                                className="tabular-nums"
+                                style={{
+                                  fontSize: '11px',
+                                  fontWeight: '600',
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  background: themeMode === 'dark' ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff',
+                                  color: themeMode === 'dark' ? '#60a5fa' : '#2563eb',
+                                  border: `1px solid ${themeMode === 'dark' ? 'rgba(96, 165, 250, 0.3)' : '#bfdbfe'}`,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                }}
+                              >
+                                <span style={{ fontSize: '10px' }}>🛡️</span>
+                                <span>Bảo hành kỹ thuật</span>
+                              </span>
+                            </Tooltip>
+                          );
+                        }
 
                         if (cycleInfo.isFirstOrder) {
                           return (
@@ -967,7 +1009,6 @@ export const BookingsTab: React.FC<
             }
           }}
         />
-
 
         {/* Booking Audit Log Drawer */}
         <BookingAuditLogDrawer

@@ -8842,7 +8842,7 @@
         "path": "/api/customers/:id/summary",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1535
+        "line": 1571
       }
     },
     {
@@ -8856,7 +8856,7 @@
         "path": "/api/customers/:id/bookings",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1901
+        "line": 1954
       }
     },
     {
@@ -8870,7 +8870,7 @@
         "path": "/api/customers/:id/calls",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 2123
+        "line": 2191
       }
     },
     {
@@ -32293,8 +32293,8 @@
       "filePath": "apps/api/src/modules/chat/chat-mission-bridge.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17221,
-        "lineCount": 488,
+        "sizeBytes": 17220,
+        "lineCount": 487,
         "ext": ".ts"
       }
     },
@@ -32540,8 +32540,8 @@
       "filePath": "apps/api/src/modules/customers/routes/booking.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 62081,
-        "lineCount": 1444,
+        "sizeBytes": 62293,
+        "lineCount": 1449,
         "ext": ".ts"
       }
     },
@@ -32566,8 +32566,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-detail.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 94346,
-        "lineCount": 2189,
+        "sizeBytes": 97769,
+        "lineCount": 2257,
         "ext": ".ts"
       }
     },
@@ -32594,6 +32594,19 @@
       "metadata": {
         "sizeBytes": 12033,
         "lineCount": 334,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/customers/routes/customer-lash-cycle.test.ts",
+      "type": "File",
+      "label": "customer-lash-cycle.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/customer-lash-cycle.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 8771,
+        "lineCount": 267,
         "ext": ".ts"
       }
     },
@@ -42043,8 +42056,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 120652,
-        "lineCount": 1690,
+        "sizeBytes": 121211,
+        "lineCount": 1694,
         "ext": ".ts"
       }
     },
@@ -42433,8 +42446,8 @@
       "filePath": "packages/shared/src/types/customer.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 22574,
-        "lineCount": 854,
+        "sizeBytes": 22784,
+        "lineCount": 858,
         "ext": ".ts"
       }
     },
@@ -42602,8 +42615,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 11491,
-        "lineCount": 463,
+        "sizeBytes": 11482,
+        "lineCount": 459,
         "ext": ".ts"
       }
     },
@@ -61571,6 +61584,13 @@
     {
       "id": "edge:file:apps/api/src/modules/customers/routes/customer-elsa.routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/customers/routes/customer-elsa.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/customer-lash-cycle.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/customer-lash-cycle.test.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -92741,8 +92761,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 3290,
-    "totalEdges": 7115,
+    "totalNodes": 3291,
+    "totalEdges": 7116,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 166,
@@ -92751,14 +92771,14 @@
       "SharedType": 1201,
       "DesignToken": 12,
       "UIComponent": 226,
-      "File": 925
+      "File": 926
     },
     "edgeTypeCounts": {
       "EXPORTS": 1379,
       "HANDLES_ROUTE": 699,
       "RENDERS": 284,
       "USES_TOKEN": 228,
-      "IMPORTS": 493,
+      "IMPORTS": 494,
       "QUERIES_MODEL": 397,
       "API_CALL": 3635
     },

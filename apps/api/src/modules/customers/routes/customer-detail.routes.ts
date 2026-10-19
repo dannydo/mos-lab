@@ -302,9 +302,7 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
 
       const row = result[0];
       const latestVisitDate =
-        lastCompletedOrder.length > 0 && lastCompletedOrder[0]?.bookingDate
-          ? lastCompletedOrder[0].bookingDate
-          : null;
+        lastCompletedOrder.length > 0 && lastCompletedOrder[0]?.bookingDate ? lastCompletedOrder[0].bookingDate : null;
       const daysSince = latestVisitDate ? daysSinceVisit(latestVisitDate) : null;
 
       const customer = {
@@ -648,14 +646,30 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
         customerId
       );
 
+      // Completed service orders (excluding Fix, Log, Adjust warranty orders) for visit cycle & frequency
+      const completedServiceOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT o.id, o.order_key as orderKey, COALESCE(ro.actual_booking_date_start, o.booking_date_start) as bookingDate, o.total_price as totalPrice
+         FROM \`order\` o
+         LEFT JOIN report_order ro ON o.id = ro.order_id
+         WHERE o.user_id = ? AND o.order_state = 'Completed'
+           AND NOT EXISTS (
+             SELECT 1 FROM order_service os_w
+             WHERE os_w.order_id = o.id
+               AND os_w.service_type IN ('Fix', 'Log', 'Adjust')
+           )
+         ORDER BY COALESCE(ro.actual_booking_date_start, o.booking_date_start) DESC`,
+        customerId
+      );
+
       const totalSpent = Math.round(completedOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0));
       const totalVisits = completedOrders.length;
 
-      // 4. Calculate Average Visit Frequency (in days)
+      // 4. Calculate Average Visit Frequency (in days) based on genuine service orders
       let avgFrequency = 0;
-      if (completedOrders.length > 1) {
+      const frequencyOrders = completedServiceOrders.length > 1 ? completedServiceOrders : completedOrders;
+      if (frequencyOrders.length > 1) {
         // Chronological order for calculating distance between consecutive dates
-        const sortedBookingDates = [...completedOrders]
+        const sortedBookingDates = [...frequencyOrders]
           .map((o) => new Date(o.bookingDate).getTime())
           .sort((a, b) => a - b);
         let totalDays = 0;
@@ -1000,6 +1014,7 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
         SELECT 
           os.order_id as orderId,
           COALESCE(sl.service_name, s.service_key) as serviceName,
+          os.service_type as serviceType,
           os.user_service_type as userServiceType
         FROM order_service os
         LEFT JOIN service s ON os.service_id = s.id
@@ -1150,16 +1165,27 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
 
       // Map services to bookings
       const servicesByOrderId = new Map<number, string[]>();
-      const serviceStatusesByOrderId = new Map<number, { serviceName: string; userServiceType: string | null }[]>();
+      const serviceTypesByOrderId = new Map<number, string[]>();
+      const serviceStatusesByOrderId = new Map<
+        number,
+        { serviceName: string; serviceType?: string | null; userServiceType: string | null }[]
+      >();
       for (const s of servicesRaw) {
         const orderId = Number(s.orderId);
         const list = servicesByOrderId.get(orderId) || [];
         list.push(s.serviceName);
         servicesByOrderId.set(orderId, list);
 
+        if (s.serviceType) {
+          const types = serviceTypesByOrderId.get(orderId) || [];
+          types.push(String(s.serviceType));
+          serviceTypesByOrderId.set(orderId, types);
+        }
+
         const statuses = serviceStatusesByOrderId.get(orderId) || [];
         statuses.push({
           serviceName: String(s.serviceName || 'Dịch vụ'),
+          serviceType: s.serviceType ? String(s.serviceType) : null,
           userServiceType: s.userServiceType ? String(s.userServiceType) : null,
         });
         serviceStatusesByOrderId.set(orderId, statuses);
@@ -1212,6 +1238,10 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
             ? b.assignedTechnicianName
             : null);
 
+        const bServiceTypes = serviceTypesByOrderId.get(Number(b.id)) || [];
+        const isWarranty =
+          bServiceTypes.length > 0 && bServiceTypes.every((st) => ['Fix', 'Log', 'Adjust'].includes(st));
+
         return {
           id: b.id,
           orderKey: b.orderKey,
@@ -1233,6 +1263,8 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
           technicianId: firstCvStaffId ? Number(firstCvStaffId) : null,
           storeId: b.storeId ? Number(b.storeId) : null,
           services: servicesByOrderId.get(Number(b.id)) || [],
+          serviceTypes: bServiceTypes,
+          isWarranty,
           serviceStatuses: serviceStatusesByOrderId.get(Number(b.id)) || [],
           hasLiveComboAtBooking: bookingComboLiveByOrderId.get(Number(b.id)) || false,
           lashSpecifications: bookingLashSpecsByOrderId.get(Number(b.id)) || [],
@@ -1314,9 +1346,11 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
       }, 0);
 
       const latestVisitDate =
-        completedOrders.length > 0 && completedOrders[0].bookingDate
-          ? completedOrders[0].bookingDate
-          : null;
+        completedServiceOrders.length > 0 && completedServiceOrders[0].bookingDate
+          ? completedServiceOrders[0].bookingDate
+          : completedOrders.length > 0 && completedOrders[0].bookingDate
+            ? completedOrders[0].bookingDate
+            : null;
       const daysSince = latestVisitDate ? daysSinceVisit(latestVisitDate) : null;
       const isMaskedRole = shouldMaskCustomerPhone(request.user?.role);
 
@@ -1616,6 +1650,7 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
         customerResult,
         userContacts,
         completedOrders,
+        completedServiceOrders,
         gemBalanceRow,
         bookingCountResult,
         noteCountResult,
@@ -1633,6 +1668,19 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
            FROM \`order\` o
            LEFT JOIN report_order ro ON o.id = ro.order_id
            WHERE o.user_id = ? AND o.order_state = 'Completed'
+           ORDER BY COALESCE(ro.actual_booking_date_start, o.booking_date_start) DESC`,
+          customerId
+        ),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+          `SELECT o.id, COALESCE(ro.actual_booking_date_start, o.booking_date_start) as bookingDate, o.total_price as totalPrice
+           FROM \`order\` o
+           LEFT JOIN report_order ro ON o.id = ro.order_id
+           WHERE o.user_id = ? AND o.order_state = 'Completed'
+             AND NOT EXISTS (
+               SELECT 1 FROM order_service os_w
+               WHERE os_w.order_id = o.id
+                 AND os_w.service_type IN ('Fix', 'Log', 'Adjust')
+             )
            ORDER BY COALESCE(ro.actual_booking_date_start, o.booking_date_start) DESC`,
           customerId
         ),
@@ -1714,8 +1762,9 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
       const totalVisits = completedOrders.length;
 
       let avgFrequency = 0;
-      if (completedOrders.length > 1) {
-        const sortedBookingDates = [...completedOrders]
+      const frequencyOrders = completedServiceOrders.length > 1 ? completedServiceOrders : completedOrders;
+      if (frequencyOrders.length > 1) {
+        const sortedBookingDates = [...frequencyOrders]
           .map((o) => new Date(o.bookingDate).getTime())
           .sort((a, b) => a - b);
         let totalDays = 0;
@@ -1809,9 +1858,11 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
       }
 
       const latestVisitDate =
-        completedOrders.length > 0 && completedOrders[0]?.bookingDate
-          ? completedOrders[0].bookingDate
-          : null;
+        completedServiceOrders.length > 0 && completedServiceOrders[0]?.bookingDate
+          ? completedServiceOrders[0].bookingDate
+          : completedOrders.length > 0 && completedOrders[0]?.bookingDate
+            ? completedOrders[0].bookingDate
+            : null;
       const daysSince = latestVisitDate ? daysSinceVisit(latestVisitDate) : null;
       const isMaskedRole = shouldMaskCustomerPhone(request.user?.role);
 
@@ -1958,7 +2009,11 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
         LashSpecificationService.getLashSpecsByOrderIds(fastify, bookingIds),
       ]);
       const servicesByOrderId = new Map<number, string[]>();
-      const serviceStatusesByOrderId = new Map<number, { serviceName: string; userServiceType: string | null }[]>();
+      const serviceStatusesByOrderId = new Map<
+        number,
+        { serviceName: string; userServiceType: string | null; serviceType?: string | null }[]
+      >();
+      const serviceTypesByOrderId = new Map<number, string[]>();
       let orderServicesDetails: SafeAny[] = [];
       let auditLogCounts: SafeAny[] = [];
 
@@ -1968,7 +2023,8 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
             SELECT
               os.order_id as orderId,
               COALESCE(sl.service_name, s.service_key) as serviceName,
-              os.user_service_type as userServiceType
+              os.user_service_type as userServiceType,
+              os.service_type as serviceType
             FROM order_service os
             LEFT JOIN service s ON os.service_id = s.id
             LEFT JOIN service_language sl ON os.service_id = sl.service_id AND sl.language_id = 1
@@ -2002,8 +2058,15 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
           statuses.push({
             serviceName: String(s.serviceName || 'Dịch vụ'),
             userServiceType: s.userServiceType ? String(s.userServiceType) : null,
+            serviceType: s.serviceType ? String(s.serviceType) : null,
           });
           serviceStatusesByOrderId.set(orderId, statuses);
+
+          if (s.serviceType) {
+            const types = serviceTypesByOrderId.get(orderId) || [];
+            types.push(String(s.serviceType));
+            serviceTypesByOrderId.set(orderId, types);
+          }
         }
       }
 
@@ -2081,6 +2144,10 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
           return isInactive ? `${name} (Đã nghỉ)` : name;
         })();
 
+        const bServiceTypes = serviceTypesByOrderId.get(Number(b.id)) || [];
+        const isWarranty =
+          bServiceTypes.length > 0 && bServiceTypes.every((st) => ['Fix', 'Log', 'Adjust'].includes(st));
+
         return {
           id: Number(b.id),
           orderKey: b.orderKey,
@@ -2096,6 +2163,8 @@ export async function registerCustomerDetailRoutes(fastify: FastifyInstance) {
           storeId: b.storeId ? Number(b.storeId) : null,
           branchName: b.branchName,
           services: servicesByOrderId.get(Number(b.id)) || [],
+          serviceTypes: bServiceTypes,
+          isWarranty,
           serviceStatuses: serviceStatusesByOrderId.get(Number(b.id)) || [],
           hasLiveComboAtBooking: bookingComboLiveByOrderId.get(Number(b.id)) || false,
           lashSpecifications: bookingLashSpecsByOrderId.get(Number(b.id)) || [],

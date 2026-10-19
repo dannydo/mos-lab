@@ -19,6 +19,7 @@ export type BookingUserServiceType =
 
 export interface BookingServiceStatus {
   serviceName: string;
+  serviceType?: string | null;
   /** Unknown legacy values remain representable instead of being discarded. */
   userServiceType: BookingUserServiceType | (string & {}) | null;
 }
@@ -347,6 +348,9 @@ export interface Appointment {
   serviceName?: string;
   /** One legacy segment status per booked service, in display order. */
   serviceStatuses?: BookingServiceStatus[];
+  /** Whether this appointment is a technical warranty order (Fix - Log - Adjust), excluded from regular lash cycle counting */
+  isWarranty?: boolean;
+  serviceTypes?: string[];
   /** Rule #21 source-of-truth combo state reconstructed at order creation time. */
   hasLiveComboAtBooking?: boolean;
   /** Lash technical specifications (Dáng mi, Độ cong, Độ dày, Độ dài, Số sợi, Fan, Màu) for completed bookings */

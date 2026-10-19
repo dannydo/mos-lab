@@ -773,17 +773,22 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     summary: 'Khách lẻ có tối đa 21 ngày để dặm; khách có Combo có tối đa 25 ngày.',
     commandments: [
       'Mốc tính từ lần làm mi gần nhất theo actual check-in, fallback booking start.',
+      'Chu kỳ làm mi / dặm mi tính từ lần làm mới hoặc dặm gần nhất, tuyệt đối không tính từ ngày bảo hành kỹ thuật (Fix - Log - Adjust). Các đơn bảo hành không đặt lại mốc chu kỳ.',
       'Khách lẻ quá 21 ngày phải tư vấn nối mới.',
       'Khách Combo quá 25 ngày không dùng lượt dặm trong gói và phải dùng lượt nối mới.',
       'Chạm 24h của LoCa chỉ gồm khách ghé hôm qua, không gồm hôm nay.',
     ],
-    rationale: 'Chu kỳ dặm bảo vệ chất lượng bộ mi và giúp các mốc chăm sóc nói cùng một ngôn ngữ.',
-    tags: ['dặm mi', '21 ngày', '25 ngày', 'LoCa', 'Chạm 24h'],
+    rationale:
+      'Chu kỳ dặm bảo vệ chất lượng bộ mi và giúp các mốc chăm sóc nói cùng một ngôn ngữ. Bảo hành (Fix/Log/Adjust) là dịch vụ hỗ trợ kỹ thuật, không làm mới bộ mi nên không được dùng làm mốc chu kỳ.',
+    tags: ['dặm mi', '21 ngày', '25 ngày', 'LoCa', 'Chạm 24h', 'bảo hành', 'Fix', 'Log', 'Adjust'],
     routeScopes: ['/dashboard/loca', '/dashboard/nyc', '/dashboard/customers', '/dashboard/appointments'],
     status: 'ACTIVE',
-    version: '1.0.0',
-    effectiveFrom: '2026-09-02',
-    sources: [{ label: 'Chu kỳ dặm và LoCa', reference: 'AGENTS.md · Rules #16, #28, #36' }],
+    version: '1.1.0',
+    effectiveFrom: '2026-10-19',
+    sources: [
+      { label: 'Chu kỳ dặm và LoCa', reference: 'AGENTS.md · Rules #16, #28, #36' },
+      { label: 'Quy tắc Chu kỳ Bảo hành', reference: 'MOS-BUG-123 · Fix công thức bộ đếm chu kỳ làm mi' },
+    ],
   },
   {
     id: 'CUSTOMER-002',

@@ -1208,6 +1208,11 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
              WHERE o.user_id IN (${idList})
                AND o.booking_date_start < ?
                AND o.order_state = 'Completed'
+               AND NOT EXISTS (
+                 SELECT 1 FROM order_service os_w
+                 WHERE os_w.order_id = o.id
+                   AND os_w.service_type IN ('Fix', 'Log', 'Adjust')
+               )
              ORDER BY o.booking_date_start DESC`,
             dateStartStr
           );
@@ -1345,7 +1350,9 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
             const rawLashSets = customerRecentOrders.get(uid) || [];
             const recentLashSets: LashSetDetail[] = rawLashSets.map((r) => {
               const rPhotos = photoOrderMap.get(Number(r.id)) || [];
-              const beforeP = rPhotos.find((p) => p.service_state === 'ServiceStart' || p.service_state === 'ServiceCleaned');
+              const beforeP = rPhotos.find(
+                (p) => p.service_state === 'ServiceStart' || p.service_state === 'ServiceCleaned'
+              );
               const afterP = rPhotos.find((p) => p.service_state === 'ServiceEnd');
 
               return {

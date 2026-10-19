@@ -36,11 +36,18 @@ export const useCustomerInsights = (
           const balances = data.comboBalances || [];
           setComboBalances(balances);
 
-          // Find last completed booking date for cycle calculation (Order Completed)
+          // Find last completed service booking date for cycle calculation (excluding Fix, Log, Adjust warranty orders)
           let lastCompletedDate: string | null = null;
-          const completedBooking = (bookings as SafeAny[]).find(
-            (b: SafeAny) => b.orderState === 'ServiceCompleted' || b.orderState === 'Completed'
-          );
+          const completedBooking = (bookings as SafeAny[]).find((b: SafeAny) => {
+            const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
+            if (!isCompleted) return false;
+            if (b.isWarranty) return false;
+            const sTypes: string[] = b.serviceTypes || [];
+            if (sTypes.length > 0 && sTypes.every((t) => ['Fix', 'Log', 'Adjust'].includes(t))) {
+              return false;
+            }
+            return true;
+          });
           if (completedBooking?.bookingDate || completedBooking?.bookingDateStart) {
             lastCompletedDate = completedBooking.bookingDate || completedBooking.bookingDateStart;
           } else if ((data as SafeAny)?.customer?.lastCompletedVisit) {
@@ -86,11 +93,14 @@ export const useCustomerInsights = (
             .sort((a, b) => b.count - a.count);
           setSuggestedServices(sortedSrvs.slice(0, 1).map((s) => s.name));
 
-          // Find last completed booking services
+          // Find last completed booking services (excluding warranty)
           let lastSrvs: string[] = [];
           for (const b of bookings as SafeAny[]) {
             const isCompleted = b.orderState === 'ServiceCompleted' || b.orderState === 'Completed';
-            if (isCompleted && b.services && b.services.length > 0) {
+            const isWarranty =
+              b.isWarranty ||
+              (b.serviceTypes?.length > 0 && b.serviceTypes.every((t: string) => ['Fix', 'Log', 'Adjust'].includes(t)));
+            if (isCompleted && !isWarranty && b.services && b.services.length > 0) {
               lastSrvs = b.services;
               break;
             }
