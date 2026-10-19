@@ -13,12 +13,14 @@ import { aiApi } from './ai.api';
 import { pilotApi } from './pilot.api';
 import { careerApi } from './career.api';
 import { chatApi } from './chat.api';
+import { cashFlowApi } from './cash-flow.api';
 
 export * from './base';
 export * from './ai.api';
 export * from './pilot.api';
 export * from './career.api';
 export * from './chat.api';
+export * from './cash-flow.api';
 
 export const apiClient = {
   ...payrollApi,
@@ -36,6 +38,7 @@ export const apiClient = {
   ...pilotApi,
   ...careerApi,
   ...chatApi,
+  ...cashFlowApi,
   cs: {
     ...telecomApi.cs,
     ...kpiApi.cs,

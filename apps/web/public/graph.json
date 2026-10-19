@@ -2752,6 +2752,60 @@
       }
     },
     {
+      "id": "prisma:crm:CrmCashAccount",
+      "type": "PrismaModel",
+      "label": "crm.CrmCashAccount",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmCashAccount",
+        "tableName": "crm_cash_accounts",
+        "fieldCount": 14,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmCashFlowEntry",
+      "type": "PrismaModel",
+      "label": "crm.CrmCashFlowEntry",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmCashFlowEntry",
+        "tableName": "crm_cash_flow_entries",
+        "fieldCount": 28,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmCashFlowAudit",
+      "type": "PrismaModel",
+      "label": "crm.CrmCashFlowAudit",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmCashFlowAudit",
+        "tableName": "crm_cash_flow_audits",
+        "fieldCount": 8,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
       "id": "prisma:legacy:client_store_language",
       "type": "PrismaModel",
       "label": "legacy.client_store_language",
@@ -7387,6 +7441,118 @@
         "module": "career",
         "handler": "inlineHandler",
         "line": 101
+      }
+    },
+    {
+      "id": "route:GET:/api/cash-flow/forecast",
+      "type": "FastifyRoute",
+      "label": "GET /api/cash-flow/forecast",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/cash-flow/forecast",
+        "module": "cash-flow",
+        "handler": "preHandler",
+        "line": 10
+      }
+    },
+    {
+      "id": "route:GET:/api/cash-flow/entries",
+      "type": "FastifyRoute",
+      "label": "GET /api/cash-flow/entries",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/cash-flow/entries",
+        "module": "cash-flow",
+        "handler": "preHandler",
+        "line": 52
+      }
+    },
+    {
+      "id": "route:POST:/api/cash-flow/entries",
+      "type": "FastifyRoute",
+      "label": "POST /api/cash-flow/entries",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/cash-flow/entries",
+        "module": "cash-flow",
+        "handler": "preHandler",
+        "line": 93
+      }
+    },
+    {
+      "id": "route:PUT:/api/cash-flow/entries/:id",
+      "type": "FastifyRoute",
+      "label": "PUT /api/cash-flow/entries/:id",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "metadata": {
+        "method": "PUT",
+        "path": "/api/cash-flow/entries/:id",
+        "module": "cash-flow",
+        "handler": "preHandler",
+        "line": 134
+      }
+    },
+    {
+      "id": "route:DELETE:/api/cash-flow/entries/:id",
+      "type": "FastifyRoute",
+      "label": "DELETE /api/cash-flow/entries/:id",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "metadata": {
+        "method": "DELETE",
+        "path": "/api/cash-flow/entries/:id",
+        "module": "cash-flow",
+        "handler": "preHandler",
+        "line": 173
+      }
+    },
+    {
+      "id": "route:GET:/api/cash-flow/accounts",
+      "type": "FastifyRoute",
+      "label": "GET /api/cash-flow/accounts",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/cash-flow/accounts",
+        "module": "cash-flow",
+        "handler": "preHandler",
+        "line": 211
+      }
+    },
+    {
+      "id": "route:PUT:/api/cash-flow/accounts/:id",
+      "type": "FastifyRoute",
+      "label": "PUT /api/cash-flow/accounts/:id",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "metadata": {
+        "method": "PUT",
+        "path": "/api/cash-flow/accounts/:id",
+        "module": "cash-flow",
+        "handler": "preHandler",
+        "line": 237
+      }
+    },
+    {
+      "id": "route:GET:/api/cash-flow/export",
+      "type": "FastifyRoute",
+      "label": "GET /api/cash-flow/export",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/cash-flow/export",
+        "module": "cash-flow",
+        "handler": "preHandler",
+        "line": 270
       }
     },
     {
@@ -13257,6 +13423,26 @@
         "routePath": "/dashboard/fal",
         "apiCallsCount": 3,
         "apiCalls": ["fal.listCases", "fal.submitLogExplanation", "fal.approveLog"]
+      }
+    },
+    {
+      "id": "page:/dashboard/finance/cash-flow",
+      "type": "Component",
+      "label": "App Page: /dashboard/finance/cash-flow",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/page.tsx",
+      "metadata": {
+        "routePath": "/dashboard/finance/cash-flow",
+        "apiCallsCount": 7,
+        "apiCalls": [
+          "cashFlow.getForecast",
+          "cashFlow.listEntries",
+          "cashFlow.exportCsv",
+          "cashFlow.createEntry",
+          "cashFlow.updateEntry",
+          "cashFlow.deleteEntry",
+          "cashFlow.updateAccount"
+        ]
       }
     },
     {
@@ -20704,6 +20890,138 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "CvPlusSimulationSummaryResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashFlowType",
+      "type": "SharedType",
+      "label": "CashFlowType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashFlowType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashFlowCategory",
+      "type": "SharedType",
+      "label": "CashFlowCategory",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashFlowCategory",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashFlowPriority",
+      "type": "SharedType",
+      "label": "CashFlowPriority",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashFlowPriority",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashFlowStatus",
+      "type": "SharedType",
+      "label": "CashFlowStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashFlowStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashAccountType",
+      "type": "SharedType",
+      "label": "CashAccountType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashAccountType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashAccount",
+      "type": "SharedType",
+      "label": "CashAccount",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashAccount",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashFlowEntry",
+      "type": "SharedType",
+      "label": "CashFlowEntry",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashFlowEntry",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashFlowForecastSummary",
+      "type": "SharedType",
+      "label": "CashFlowForecastSummary",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashFlowForecastSummary",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashFlowTimelinePoint",
+      "type": "SharedType",
+      "label": "CashFlowTimelinePoint",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashFlowTimelinePoint",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashFlowForecastResponse",
+      "type": "SharedType",
+      "label": "CashFlowForecastResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashFlowForecastResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashFlowEntryListQuery",
+      "type": "SharedType",
+      "label": "CashFlowEntryListQuery",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashFlowEntryListQuery",
         "package": "@mos-lab/shared"
       }
     },
@@ -30980,8 +31298,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13695108,
-        "lineCount": 298332,
+        "sizeBytes": 13868164,
+        "lineCount": 302941,
         "ext": ".ts"
       }
     },
@@ -32247,6 +32565,45 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/cash-flow/cash-flow.service.ts",
+      "type": "File",
+      "label": "cash-flow.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/cash-flow/cash-flow.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 22249,
+        "lineCount": 648,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/cash-flow/cash-flow.test.ts",
+      "type": "File",
+      "label": "cash-flow.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/cash-flow/cash-flow.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6330,
+        "lineCount": 225,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/cash-flow/routes.ts",
+      "type": "File",
+      "label": "routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 10526,
+        "lineCount": 312,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/catalog/routes.ts",
       "type": "File",
       "label": "routes.ts",
@@ -32293,8 +32650,8 @@
       "filePath": "apps/api/src/modules/chat/chat-mission-bridge.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17221,
-        "lineCount": 488,
+        "sizeBytes": 17220,
+        "lineCount": 487,
         "ext": ".ts"
       }
     },
@@ -35640,6 +35997,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/scripts/data-migrations/20261019190000_create_crm_cash_flow_system.ts",
+      "type": "File",
+      "label": "20261019190000_create_crm_cash_flow_system.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/scripts/data-migrations/20261019190000_create_crm_cash_flow_system.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7609,
+        "lineCount": 126,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/scripts/data-migrations/types.ts",
       "type": "File",
       "label": "types.ts",
@@ -35920,8 +36290,8 @@
       "filePath": "apps/api/src/server.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16486,
-        "lineCount": 416,
+        "sizeBytes": 16613,
+        "lineCount": 418,
         "ext": ".ts"
       }
     },
@@ -39228,6 +39598,110 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/finance/cash-flow/components/AccountModal.tsx",
+      "type": "File",
+      "label": "AccountModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/components/AccountModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2301,
+        "lineCount": 69,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/finance/cash-flow/components/DayInspectionModal.tsx",
+      "type": "File",
+      "label": "DayInspectionModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/components/DayInspectionModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3232,
+        "lineCount": 84,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/finance/cash-flow/components/ExpenseModal.tsx",
+      "type": "File",
+      "label": "ExpenseModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/components/ExpenseModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7359,
+        "lineCount": 201,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/finance/cash-flow/components/IncomeModal.tsx",
+      "type": "File",
+      "label": "IncomeModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/components/IncomeModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3632,
+        "lineCount": 110,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/finance/cash-flow/components/InflowTab.tsx",
+      "type": "File",
+      "label": "InflowTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/components/InflowTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3637,
+        "lineCount": 127,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/finance/cash-flow/components/OutflowTab.tsx",
+      "type": "File",
+      "label": "OutflowTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/components/OutflowTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8193,
+        "lineCount": 252,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/finance/cash-flow/components/TimelineOverviewTab.tsx",
+      "type": "File",
+      "label": "TimelineOverviewTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/components/TimelineOverviewTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6395,
+        "lineCount": 141,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/finance/cash-flow/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 27865,
+        "lineCount": 700,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/holiday-work/components/HolidayCalendarSection.tsx",
       "type": "File",
       "label": "HolidayCalendarSection.tsx",
@@ -41594,6 +42068,19 @@
       }
     },
     {
+      "id": "file:apps/web/lib/api/cash-flow.api.ts",
+      "type": "File",
+      "label": "cash-flow.api.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/api/cash-flow.api.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2428,
+        "lineCount": 88,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/lib/api/catalog.api.ts",
       "type": "File",
       "label": "catalog.api.ts",
@@ -41640,8 +42127,8 @@
       "filePath": "apps/web/lib/api/index.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1130,
-        "lineCount": 46,
+        "sizeBytes": 1228,
+        "lineCount": 49,
         "ext": ".ts"
       }
     },
@@ -42095,8 +42582,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2561,
-        "lineCount": 66,
+        "sizeBytes": 2599,
+        "lineCount": 67,
         "ext": ".ts"
       }
     },
@@ -42331,6 +42818,19 @@
       "metadata": {
         "sizeBytes": 29495,
         "lineCount": 716,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/cash-flow.ts",
+      "type": "File",
+      "label": "cash-flow.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 4053,
+        "lineCount": 143,
         "ext": ".ts"
       }
     },
@@ -42602,8 +43102,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 11491,
-        "lineCount": 463,
+        "sizeBytes": 11482,
+        "lineCount": 459,
         "ext": ".ts"
       }
     },
@@ -43987,6 +44487,27 @@
     {
       "id": "edge:prisma:crm:CrmCustomerElsaReservation:ws:apps/api",
       "source": "prisma:crm:CrmCustomerElsaReservation",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmCashAccount:ws:apps/api",
+      "source": "prisma:crm:CrmCashAccount",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmCashFlowEntry:ws:apps/api",
+      "source": "prisma:crm:CrmCashFlowEntry",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmCashFlowAudit:ws:apps/api",
+      "source": "prisma:crm:CrmCashFlowAudit",
       "target": "ws:apps/api",
       "type": "EXPORTS",
       "label": "DEFINED_IN"
@@ -46276,6 +46797,62 @@
     {
       "id": "edge:route:POST:/api/career/sync-prod:ws:apps/api",
       "source": "route:POST:/api/career/sync-prod",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/cash-flow/forecast:ws:apps/api",
+      "source": "route:GET:/api/cash-flow/forecast",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/cash-flow/entries:ws:apps/api",
+      "source": "route:GET:/api/cash-flow/entries",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/cash-flow/entries:ws:apps/api",
+      "source": "route:POST:/api/cash-flow/entries",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:PUT:/api/cash-flow/entries/:id:ws:apps/api",
+      "source": "route:PUT:/api/cash-flow/entries/:id",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:DELETE:/api/cash-flow/entries/:id:ws:apps/api",
+      "source": "route:DELETE:/api/cash-flow/entries/:id",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/cash-flow/accounts:ws:apps/api",
+      "source": "route:GET:/api/cash-flow/accounts",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:PUT:/api/cash-flow/accounts/:id:ws:apps/api",
+      "source": "route:PUT:/api/cash-flow/accounts/:id",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/cash-flow/export:ws:apps/api",
+      "source": "route:GET:/api/cash-flow/export",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -49209,6 +49786,13 @@
     {
       "id": "edge:page:/dashboard/fal:ws:apps/web",
       "source": "page:/dashboard/fal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
+      "id": "edge:page:/dashboard/finance/cash-flow:ws:apps/web",
+      "source": "page:/dashboard/finance/cash-flow",
       "target": "ws:apps/web",
       "type": "RENDERS",
       "label": "PAGE_OF"
@@ -53507,6 +54091,83 @@
     {
       "id": "edge:type:@mos-lab/shared:CvPlusSimulationSummaryResponse:ws:packages/shared",
       "source": "type:@mos-lab/shared:CvPlusSimulationSummaryResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashFlowType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashFlowType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashFlowCategory:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashFlowCategory",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashFlowPriority:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashFlowPriority",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashFlowStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashFlowStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashAccountType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashAccountType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashAccount:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashAccount",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashFlowEntry:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashFlowEntry",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashFlowForecastSummary:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashFlowForecastSummary",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashFlowTimelinePoint:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashFlowTimelinePoint",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashFlowForecastResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashFlowForecastResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashFlowEntryListQuery:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashFlowEntryListQuery",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -61443,6 +62104,27 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/cash-flow/cash-flow.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/cash-flow/cash-flow.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/cash-flow/cash-flow.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/cash-flow/cash-flow.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/cash-flow/routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/cash-flow/routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/catalog/routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/catalog/routes.ts",
       "target": "ws:packages/shared",
@@ -63613,6 +64295,55 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/finance/cash-flow/components/AccountModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/finance/cash-flow/components/AccountModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/finance/cash-flow/components/DayInspectionModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/finance/cash-flow/components/DayInspectionModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/finance/cash-flow/components/ExpenseModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/finance/cash-flow/components/ExpenseModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/finance/cash-flow/components/InflowTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/finance/cash-flow/components/InflowTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/finance/cash-flow/components/OutflowTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/finance/cash-flow/components/OutflowTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/finance/cash-flow/components/TimelineOverviewTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/finance/cash-flow/components/TimelineOverviewTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/finance/cash-flow/page.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/finance/cash-flow/page.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/holiday-work/components/HolidayCalendarSection.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/holiday-work/components/HolidayCalendarSection.tsx",
       "target": "ws:packages/shared",
@@ -64406,6 +65137,13 @@
     {
       "id": "edge:file:apps/web/lib/api/career.api.ts:ws:packages/shared",
       "source": "file:apps/web/lib/api/career.api.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/lib/api/cash-flow.api.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/api/cash-flow.api.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -65417,6 +66155,34 @@
       "target": "prisma:crm:CrmStaffCvPlusRewardSnapshot",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/cash-flow/cash-flow.service.ts:prisma:crm:CrmCashAccount",
+      "source": "file:apps/api/src/modules/cash-flow/cash-flow.service.ts",
+      "target": "prisma:crm:CrmCashAccount",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/cash-flow/cash-flow.service.ts:prisma:crm:CrmCashFlowEntry",
+      "source": "file:apps/api/src/modules/cash-flow/cash-flow.service.ts",
+      "target": "prisma:crm:CrmCashFlowEntry",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/cash-flow/cash-flow.service.ts:prisma:crm:CrmCashFlowAudit",
+      "source": "file:apps/api/src/modules/cash-flow/cash-flow.service.ts",
+      "target": "prisma:crm:CrmCashFlowAudit",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/cash-flow/cash-flow.service.ts:prisma:legacy:order",
+      "source": "file:apps/api/src/modules/cash-flow/cash-flow.service.ts",
+      "target": "prisma:legacy:order",
+      "type": "QUERIES_MODEL",
+      "label": "READS_LEGACY_MODEL"
     },
     {
       "id": "edge:file:apps/api/src/modules/catalog/routes.ts:prisma:crm:CrmLashTypeBenchmark",
@@ -74715,6 +75481,27 @@
       "label": "CALLS fal.listCases"
     },
     {
+      "id": "edge:page:/dashboard/finance/cash-flow:route:GET:/api/cash-flow/forecast",
+      "source": "page:/dashboard/finance/cash-flow",
+      "target": "route:GET:/api/cash-flow/forecast",
+      "type": "API_CALL",
+      "label": "CALLS cashFlow.getForecast"
+    },
+    {
+      "id": "edge:page:/dashboard/finance/cash-flow:route:GET:/api/cash-flow/accounts",
+      "source": "page:/dashboard/finance/cash-flow",
+      "target": "route:GET:/api/cash-flow/accounts",
+      "type": "API_CALL",
+      "label": "CALLS cashFlow.updateAccount"
+    },
+    {
+      "id": "edge:page:/dashboard/finance/cash-flow:route:PUT:/api/cash-flow/accounts/:id",
+      "source": "page:/dashboard/finance/cash-flow",
+      "target": "route:PUT:/api/cash-flow/accounts/:id",
+      "type": "API_CALL",
+      "label": "CALLS cashFlow.updateAccount"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/academy-sales/access",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/academy-sales/access",
@@ -76895,6 +77682,62 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/career/sync-prod",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/career/sync-prod",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/cash-flow/forecast",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/cash-flow/forecast",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/cash-flow/entries",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/cash-flow/entries",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/cash-flow/entries",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/cash-flow/entries",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PUT:/api/cash-flow/entries/:id",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:PUT:/api/cash-flow/entries/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:DELETE:/api/cash-flow/entries/:id",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:DELETE:/api/cash-flow/entries/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/cash-flow/accounts",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/cash-flow/accounts",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PUT:/api/cash-flow/accounts/:id",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:PUT:/api/cash-flow/accounts/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/cash-flow/export",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/cash-flow/export",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -81788,6 +82631,62 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/career/sync-prod",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/career/sync-prod",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/cash-flow/forecast",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/cash-flow/forecast",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/cash-flow/entries",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/cash-flow/entries",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/cash-flow/entries",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/cash-flow/entries",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:PUT:/api/cash-flow/entries/:id",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:PUT:/api/cash-flow/entries/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:DELETE:/api/cash-flow/entries/:id",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:DELETE:/api/cash-flow/entries/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/cash-flow/accounts",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/cash-flow/accounts",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:PUT:/api/cash-flow/accounts/:id",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:PUT:/api/cash-flow/accounts/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/cash-flow/export",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/cash-flow/export",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -89947,6 +90846,62 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/cash-flow/forecast",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/cash-flow/forecast",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/cash-flow/entries",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/cash-flow/entries",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/cash-flow/entries",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/cash-flow/entries",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:PUT:/api/cash-flow/entries/:id",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:PUT:/api/cash-flow/entries/:id",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:DELETE:/api/cash-flow/entries/:id",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:DELETE:/api/cash-flow/entries/:id",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/cash-flow/accounts",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/cash-flow/accounts",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:PUT:/api/cash-flow/accounts/:id",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:PUT:/api/cash-flow/accounts/:id",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/cash-flow/export",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/cash-flow/export",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/catalog/groups",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/catalog/groups",
@@ -92741,31 +93696,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3290,
-    "totalEdges": 7115,
+    "totalNodes": 3327,
+    "totalEdges": 7180,
     "nodeTypeCounts": {
       "Workspace": 3,
-      "PrismaModel": 166,
-      "FastifyRoute": 699,
-      "Component": 58,
-      "SharedType": 1201,
+      "PrismaModel": 169,
+      "FastifyRoute": 707,
+      "Component": 59,
+      "SharedType": 1212,
       "DesignToken": 12,
       "UIComponent": 226,
-      "File": 925
+      "File": 939
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1379,
-      "HANDLES_ROUTE": 699,
-      "RENDERS": 284,
+      "EXPORTS": 1393,
+      "HANDLES_ROUTE": 707,
+      "RENDERS": 285,
       "USES_TOKEN": 228,
-      "IMPORTS": 493,
-      "QUERIES_MODEL": 397,
-      "API_CALL": 3635
+      "IMPORTS": 504,
+      "QUERIES_MODEL": 401,
+      "API_CALL": 3662
     },
-    "fastifyRouteCount": 704,
-    "prismaModelCount": 166,
-    "nextPageCount": 58,
-    "sharedTypeCount": 1201
+    "fastifyRouteCount": 712,
+    "prismaModelCount": 169,
+    "nextPageCount": 59,
+    "sharedTypeCount": 1212
   },
   "routes": [
     {
@@ -94951,6 +95906,62 @@
       "filePath": "apps/api/src/modules/career/career.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "career"
+    },
+    {
+      "method": "GET",
+      "path": "/api/cash-flow/forecast",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "cash-flow"
+    },
+    {
+      "method": "GET",
+      "path": "/api/cash-flow/entries",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "cash-flow"
+    },
+    {
+      "method": "POST",
+      "path": "/api/cash-flow/entries",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "cash-flow"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/cash-flow/entries/:id",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "cash-flow"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/cash-flow/entries/:id",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "cash-flow"
+    },
+    {
+      "method": "GET",
+      "path": "/api/cash-flow/accounts",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "cash-flow"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/cash-flow/accounts/:id",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "cash-flow"
+    },
+    {
+      "method": "GET",
+      "path": "/api/cash-flow/export",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "cash-flow"
     },
     {
       "method": "GET",
@@ -99053,6 +100064,33 @@
       "modelName": "CrmCustomerElsaReservation",
       "tableName": "crm_customer_elsa_reservations",
       "fieldCount": 18,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmCashAccount",
+      "tableName": "crm_cash_accounts",
+      "fieldCount": 14,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmCashFlowEntry",
+      "tableName": "crm_cash_flow_entries",
+      "fieldCount": 28,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmCashFlowAudit",
+      "tableName": "crm_cash_flow_audits",
+      "fieldCount": 8,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []

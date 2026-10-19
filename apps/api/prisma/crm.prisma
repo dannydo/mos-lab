@@ -3717,3 +3717,80 @@ model CrmCustomerElsaReservation {
   @@map("crm_customer_elsa_reservations")
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// Cash Flow Forecast System (Dự Báo Dòng Tiền & Kế Hoạch Thu Chi)
+// ═══════════════════════════════════════════════════════════════════
+
+model CrmCashAccount {
+  id                 Int      @id @default(autoincrement())
+  code               String   @unique @db.VarChar(50)
+  name               String   @db.VarChar(100)
+  accountType        String   @default("BANK") @map("account_type") @db.VarChar(20) // CASH, BANK, WALLET
+  accountNumber      String?  @map("account_number") @db.VarChar(50)
+  bankName           String?  @map("bank_name") @db.VarChar(100)
+  storeId            Int?     @map("store_id")
+  initialBalance     Float    @default(0) @map("initial_balance")
+  currentBalance     Float    @default(0) @map("current_balance")
+  minSafetyThreshold Float    @default(10000000) @map("min_safety_threshold")
+  isActive           Boolean  @default(true) @map("is_active") @db.TinyInt
+  notes              String?  @db.Text
+  createdAt          DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([storeId], map: "cash_account_store_idx")
+  @@index([isActive], map: "cash_account_active_idx")
+  @@map("crm_cash_accounts")
+}
+
+model CrmCashFlowEntry {
+  id                Int       @id @default(autoincrement())
+  flowType          String    @map("flow_type") @db.VarChar(20) // INFLOW, OUTFLOW
+  category          String    @db.VarChar(50) // REVENUE_SERVICE, REVENUE_PRODUCT, REVENUE_ACADEMY, REVENUE_OTHER, SALARY, RENT, SUPPLIER_MATERIAL, TAX, TRANSACTION_FEE, OPEX, OTHER
+  title             String    @db.VarChar(255)
+  description       String?   @db.Text
+  amount            Float     // Số tiền trước VAT
+  hasVat            Boolean   @default(false) @map("has_vat") @db.TinyInt // Có VAT hay không (theo Triage Note của Danny)
+  vatRate           Float     @default(0) @map("vat_rate") // Thuế suất VAT % (ví dụ: 0, 8, 10)
+  vatAmount         Float     @default(0) @map("vat_amount") // Tiền thuế VAT
+  totalAmount       Float     @map("total_amount") // Tổng tiền sau thuế (amount + vatAmount)
+  priority          String    @default("MEDIUM") @db.VarChar(20) // CRITICAL, HIGH, MEDIUM, LOW (Mức độ ưu tiên chi)
+  status            String    @default("PENDING") @db.VarChar(30) // PENDING, APPROVED, PAID, COLLECTED, OVERDUE, DEFERRED, CANCELLED
+  expectedDate      DateTime  @map("expected_date") @db.Date
+  dueDate           DateTime? @map("due_date") @db.Date
+  actualDate        DateTime? @map("actual_date") @db.Date
+  accountId         Int?      @map("account_id")
+  storeId           Int?      @map("store_id")
+  paymentMethod     String?   @map("payment_method") @db.VarChar(50)
+  isRecurring       Boolean   @default(false) @map("is_recurring") @db.TinyInt
+  recurringInterval String?   @map("recurring_interval") @db.VarChar(20) // ONCE, WEEKLY, MONTHLY, QUARTERLY, YEARLY
+  recurringEndDate  DateTime? @map("recurring_end_date") @db.Date
+  sourceRef         String?   @map("source_ref") @db.VarChar(100)
+  createdByStaffId  Int?      @map("created_by_staff_id")
+  createdByName     String?   @map("created_by_name") @db.VarChar(100)
+  approvedByStaffId Int?      @map("approved_by_staff_id")
+  approvedByName    String?   @map("approved_by_name") @db.VarChar(100)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([flowType, status, expectedDate], map: "cash_flow_type_status_date_idx")
+  @@index([storeId, expectedDate], map: "cash_flow_store_date_idx")
+  @@index([category], map: "cash_flow_category_idx")
+  @@index([priority], map: "cash_flow_priority_idx")
+  @@index([accountId], map: "cash_flow_account_idx")
+  @@map("crm_cash_flow_entries")
+}
+
+model CrmCashFlowAudit {
+  id        Int      @id @default(autoincrement())
+  entryId   Int      @map("entry_id")
+  action    String   @db.VarChar(50) // CREATE, UPDATE, APPROVE, PAY, DEFER, CANCEL
+  staffId   Int?     @map("staff_id")
+  staffName String?  @map("staff_name") @db.VarChar(100)
+  payload   Json?
+  note      String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  @@index([entryId], map: "cash_flow_audit_entry_idx")
+  @@map("crm_cash_flow_audits")
+}
+

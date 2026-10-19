@@ -526,11 +526,31 @@ export function getSidebarGroups(
     items: systemGroupItems,
   };
 
+  // Group: TÀI CHÍNH
+  const financeItems: SidebarItemConfig[] = [];
+  if (isAdmin || ['manager', 'accountant', 'boss', 'cho'].includes(normalizedRole)) {
+    financeItems.push({
+      key: 'finance-cash-flow',
+      label: 'Dự báo dòng tiền',
+      icon: <AppIcon icon={WalletCards} size="sm" className="text-emerald-500" />,
+      path: '/dashboard/finance/cash-flow',
+    });
+  }
+
+  const financeGroup: SidebarGroupConfig = {
+    groupKey: 'grp-finance',
+    groupTitle: 'TÀI CHÍNH',
+    items: financeItems,
+  };
+
   const groups: SidebarGroupConfig[] = [homeGroup, crmGroup];
   if (academyItems.length > 0) {
     groups.push(academyGroup);
   }
   groups.push(operationsGroup, qualityGroup, scheduleGroup, reportsGroup);
+  if (financeItems.length > 0) {
+    groups.push(financeGroup);
+  }
   if (systemGroupItems.length > 0) {
     groups.push(systemGroup);
   }
