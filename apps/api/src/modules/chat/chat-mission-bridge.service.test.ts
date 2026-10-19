@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { buildMissionSummaryFromReport, ChatMissionBridgeService } from './chat-mission-bridge.service.js';
-import { deduplicateTasks } from './routes.js';
+import { deduplicateTasks, moveChatThreadItemInMemory } from './routes.js';
 
 describe('ChatMissionBridgeService.buildMissionSummaryFromReport', () => {
   const baseReport = {
@@ -293,5 +293,194 @@ describe('ChatMissionBridgeService.buildMissionSummaryFromReport', () => {
     assert.equal(result.tasks[0]?.id, 'task-real-1');
     assert.equal(conversations[0]?.messages.length, 1);
     assert.equal(conversations[0]?.messages[0]?.id, 'msg-real-1');
+  });
+
+  it('merges a standalone root message (with attachments and child replies) into a target subthread and cleans up root feed', () => {
+    const conv = {
+      id: 'space-ops',
+      type: 'space' as const,
+      name: '# van-hanh',
+      avatar: 'VH',
+      color: '#d4a84b',
+      unreadCount: 0,
+      updatedAt: '2026-10-19T08:40:00Z',
+      messages: [
+        {
+          id: 'msg-cycle-fix',
+          conversationId: 'space-ops',
+          senderId: 15,
+          senderName: 'Tâm Nguyễn',
+          senderRole: 'Manager',
+          senderAvatar: 'TN',
+          roleColor: '#f59e0b',
+          text: 'Fix công thức bộ đếm chu kỳ làm mi của khách hàng',
+          timeLabel: '14:21',
+          createdAt: '2026-10-19T07:21:00Z',
+          taskId: 'task-cycle',
+          thread: [
+            {
+              id: 'th-1',
+              senderId: 1,
+              senderName: 'Danny Do',
+              senderRole: 'Super Admin',
+              senderAvatar: 'DD',
+              text: 'Em gửi ví dụ cụ thể nhé',
+              timeLabel: '14:30',
+              createdAt: '2026-10-19T07:30:00Z',
+            },
+          ],
+        },
+        {
+          id: 'msg-stray-root',
+          conversationId: 'space-ops',
+          senderId: 15,
+          senderName: 'Tâm Nguyễn',
+          senderRole: 'Manager',
+          senderAvatar: 'TN',
+          roleColor: '#f59e0b',
+          text: 'Khách hàng 0866996096 lần cuối đến là 17/05/2025, lịch kế tiếp 08/08/2026 -> Chu kỳ hiển thị 448 ngày',
+          timeLabel: '15:39',
+          createdAt: '2026-10-19T08:39:00Z',
+          attachments: [
+            {
+              id: 'img-1',
+              name: 'lich-su-khach.png',
+              url: '/uploads/chat/lich-su-khach.png',
+              mimeType: 'image/png' as const,
+              sizeBytes: 120400,
+              source: 'clipboard' as const,
+              createdAt: '2026-10-19T08:39:00Z',
+            },
+          ],
+          thread: [
+            {
+              id: 'th-child-1',
+              senderId: 15,
+              senderName: 'Tâm Nguyễn',
+              senderRole: 'Manager',
+              senderAvatar: 'TN',
+              text: 'Nên loại trừ các lịch hẹn huỷ (Canceled) khi tính chu kỳ.',
+              timeLabel: '15:40',
+              createdAt: '2026-10-19T08:40:00Z',
+            },
+          ],
+        },
+      ],
+    };
+
+    const tasks = [
+      {
+        id: 'task-stray',
+        conversationId: 'space-ops',
+        conversationName: '# van-hanh',
+        sourceMessageId: 'msg-stray-root',
+        sourceAuthorName: 'Tâm Nguyễn',
+        title: 'Kiểm tra khách 0866996096',
+        assigneeName: 'Danny Do',
+        creatorName: 'Tâm Nguyễn',
+        priority: 'HIGH' as const,
+        remindAt: '2026-10-19T10:00:00Z',
+        done: false,
+        fired: false,
+        createdAt: '2026-10-19T08:39:30Z',
+      },
+    ];
+
+    const res = moveChatThreadItemInMemory(conv, tasks, {
+      mode: 'MERGE_ROOT_TO_THREAD',
+      sourceMessageId: 'msg-stray-root',
+      targetMessageId: 'msg-cycle-fix',
+    });
+
+    assert.equal(conv.messages.length, 1);
+    assert.equal(conv.messages[0]?.id, 'msg-cycle-fix');
+    assert.equal(conv.messages[0]?.thread?.length, 3);
+    assert.equal(res.movedReplies.length, 2);
+    assert.equal(res.movedReplies[0]?.attachments?.length, 1);
+    assert.equal(res.movedReplies[0]?.attachments?.[0]?.name, 'lich-su-khach.png');
+    assert.equal(tasks[0]?.sourceMessageId, 'msg-cycle-fix');
+  });
+
+  it('promotes a subthread reply to a standalone root message and moves a reply between threads', () => {
+    const conv = {
+      id: 'space-ops',
+      type: 'space' as const,
+      name: '# van-hanh',
+      avatar: 'VH',
+      color: '#d4a84b',
+      unreadCount: 0,
+      updatedAt: '2026-10-19T08:40:00Z',
+      messages: [
+        {
+          id: 'msg-1',
+          conversationId: 'space-ops',
+          senderId: 13,
+          senderName: 'Bảo Hân',
+          senderRole: 'Admin',
+          senderAvatar: 'BH',
+          text: 'Luồng 1',
+          timeLabel: '10:00',
+          createdAt: '2026-10-19T03:00:00Z',
+          thread: [
+            {
+              id: 'rep-a',
+              senderId: 15,
+              senderName: 'Tâm Nguyễn',
+              senderRole: 'Manager',
+              senderAvatar: 'TN',
+              text: 'Câu trả lời A cần tách ra luồng chính',
+              timeLabel: '10:05',
+              createdAt: '2026-10-19T03:05:00Z',
+            },
+            {
+              id: 'rep-b',
+              senderId: 15,
+              senderName: 'Tâm Nguyễn',
+              senderRole: 'Manager',
+              senderAvatar: 'TN',
+              text: 'Câu trả lời B cần chuyển sang Luồng 2',
+              timeLabel: '10:06',
+              createdAt: '2026-10-19T03:06:00Z',
+            },
+          ],
+        },
+        {
+          id: 'msg-2',
+          conversationId: 'space-ops',
+          senderId: 1,
+          senderName: 'Danny Do',
+          senderRole: 'Super Admin',
+          senderAvatar: 'DD',
+          text: 'Luồng 2',
+          timeLabel: '10:10',
+          createdAt: '2026-10-19T03:10:00Z',
+          thread: [],
+        },
+      ],
+    };
+
+    // 1. Promote rep-a to standalone root message
+    const promoteRes = moveChatThreadItemInMemory(conv, [], {
+      mode: 'PROMOTE_REPLY_TO_ROOT',
+      sourceMessageId: 'msg-1',
+      replyId: 'rep-a',
+    });
+    assert.ok(promoteRes.promotedMessage);
+    assert.equal(conv.messages.length, 3);
+    assert.equal(conv.messages[0]?.thread?.length, 1);
+
+    // 2. Move rep-b from msg-1 to msg-2's thread
+    const moveRes = moveChatThreadItemInMemory(conv, [], {
+      mode: 'MOVE_REPLY_TO_THREAD',
+      sourceMessageId: 'msg-1',
+      replyId: 'rep-b',
+      targetMessageId: 'msg-2',
+    });
+    assert.equal(moveRes.movedReplies.length, 1);
+    const msg1 = conv.messages.find((m) => m.id === 'msg-1');
+    const msg2 = conv.messages.find((m) => m.id === 'msg-2');
+    assert.equal(msg1?.thread?.length, 0);
+    assert.equal(msg2?.thread?.length, 1);
+    assert.equal(msg2?.thread?.[0]?.text, 'Câu trả lời B cần chuyển sang Luồng 2');
   });
 });

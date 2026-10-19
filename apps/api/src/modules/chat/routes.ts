@@ -21,8 +21,11 @@ import {
   MosChatReadReceiptEntry,
   MosChatStaffMember,
   MosChatTaskItem,
+  MosChatThreadMoveMode,
   MosChatThreadReadReceiptEntry,
+  MosChatThreadReply,
   MosChatUserSidebarPrefs,
+  MoveMosChatThreadItemRequest,
   SafeAny,
   UpdateMosChatAccessConfigRequest,
   UploadMosChatImageRequest,
@@ -1277,6 +1280,210 @@ function trimTasksRetention(tasks: MosChatTaskItem[], conversations?: MosChatCon
   return deduplicateTasks(tasks, conversations).tasks;
 }
 
+function sortRepliesChronologically(replies: MosChatThreadReply[]): MosChatThreadReply[] {
+  return [...replies].sort((a, b) => {
+    const tA = a.createdAt ? Date.parse(a.createdAt) : NaN;
+    const tB = b.createdAt ? Date.parse(b.createdAt) : NaN;
+    if (Number.isFinite(tA) && Number.isFinite(tB) && tA !== tB) {
+      return tA - tB;
+    }
+    return 0;
+  });
+}
+
+export function moveChatThreadItemInMemory(
+  conv: MosChatConversation,
+  tasks: MosChatTaskItem[],
+  params: {
+    mode: MosChatThreadMoveMode;
+    sourceMessageId: string;
+    replyId?: string | null;
+    targetMessageId?: string | null;
+  }
+): {
+  targetMessage: MosChatMessage | null;
+  promotedMessage: MosChatMessage | null;
+  movedReplies: MosChatThreadReply[];
+  tasksChanged: boolean;
+} {
+  const { mode, sourceMessageId, replyId, targetMessageId } = params;
+  const sourceIdx = conv.messages.findIndex((m) => m.id === sourceMessageId);
+  if (sourceIdx < 0) {
+    throw new Error('Không tìm thấy tin nhắn nguồn.');
+  }
+  const sourceMsg = conv.messages[sourceIdx];
+
+  if (mode === 'MERGE_ROOT_TO_THREAD') {
+    if (!targetMessageId || targetMessageId === sourceMessageId) {
+      throw new Error('Vui lòng chọn một luồng đích hợp lệ để gộp tin nhắn.');
+    }
+    const targetMsg = conv.messages.find((m) => m.id === targetMessageId);
+    if (!targetMsg) {
+      throw new Error('Không tìm thấy tin nhắn luồng đích.');
+    }
+
+    const convertedReply: MosChatThreadReply = {
+      id: `th-mv-${sourceMsg.id.replace(/^msg-/, '')}`,
+      senderId: sourceMsg.senderId,
+      senderName: sourceMsg.senderName,
+      senderRole: sourceMsg.senderRole,
+      senderAvatar: sourceMsg.senderAvatar,
+      text: sourceMsg.text || '',
+      attachments: sourceMsg.attachments && sourceMsg.attachments.length > 0 ? sourceMsg.attachments : undefined,
+      timeLabel: sourceMsg.timeLabel,
+      createdAt: sourceMsg.createdAt || new Date().toISOString(),
+      editHistory: sourceMsg.editHistory,
+      editedAt: sourceMsg.editedAt,
+      editedBy: sourceMsg.editedBy,
+      isDeleted: sourceMsg.isDeleted,
+      deletedAt: sourceMsg.deletedAt,
+      deletedBy: sourceMsg.deletedBy,
+      deletedByName: sourceMsg.deletedByName,
+      originalText: sourceMsg.originalText,
+    };
+
+    const childReplies = Array.isArray(sourceMsg.thread) ? sourceMsg.thread : [];
+    const existingTargetThread = Array.isArray(targetMsg.thread) ? targetMsg.thread : [];
+    const existingIds = new Set(existingTargetThread.map((r) => r.id));
+
+    const toAppend: MosChatThreadReply[] = [];
+    if (!existingIds.has(convertedReply.id) && (convertedReply.text.trim() || convertedReply.attachments?.length)) {
+      toAppend.push(convertedReply);
+      existingIds.add(convertedReply.id);
+    }
+    for (const child of childReplies) {
+      if (!existingIds.has(child.id)) {
+        toAppend.push(child);
+        existingIds.add(child.id);
+      }
+    }
+
+    targetMsg.thread = sortRepliesChronologically([...existingTargetThread, ...toAppend]);
+
+    // Transfer Mission ownership if sourceMsg had a mission and targetMsg did not
+    if (sourceMsg.missionId && !targetMsg.missionId) {
+      targetMsg.missionId = sourceMsg.missionId;
+      targetMsg.missionKey = sourceMsg.missionKey;
+      targetMsg.mission = sourceMsg.mission;
+      targetMsg.missionSyncedStage = sourceMsg.missionSyncedStage;
+      targetMsg.missionSyncedCommentIds = sourceMsg.missionSyncedCommentIds;
+    }
+
+    // Re-link any tasks pointing to sourceMsg over to targetMsg
+    let tasksChanged = false;
+    for (const t of tasks) {
+      if (t.sourceMessageId === sourceMsg.id || (sourceMsg.taskId && t.id === sourceMsg.taskId)) {
+        t.sourceMessageId = targetMsg.id;
+        if (!targetMsg.taskId) {
+          targetMsg.taskId = t.id;
+        }
+        tasksChanged = true;
+      }
+    }
+
+    // Remove sourceMsg from root messages
+    conv.messages = conv.messages.filter((m) => m.id !== sourceMsg.id);
+    conv.updatedAt = new Date().toISOString();
+
+    return {
+      targetMessage: targetMsg,
+      promotedMessage: null,
+      movedReplies: toAppend.filter((r) => !r.isMissionMilestone),
+      tasksChanged,
+    };
+  }
+
+  if (mode === 'PROMOTE_REPLY_TO_ROOT') {
+    if (!replyId) {
+      throw new Error('Thiếu mã phản hồi (replyId) cần tách ra luồng chính.');
+    }
+    const sourceThread = Array.isArray(sourceMsg.thread) ? sourceMsg.thread : [];
+    const replyItem = sourceThread.find((r) => r.id === replyId);
+    if (!replyItem) {
+      throw new Error('Không tìm thấy câu trả lời cần tách trong luồng.');
+    }
+
+    sourceMsg.thread = sourceThread.filter((r) => r.id !== replyId);
+
+    const promotedMsg: MosChatMessage = {
+      id: `msg-pr-${replyItem.id.replace(/^th-/, '')}`,
+      conversationId: conv.id,
+      senderId: replyItem.senderId,
+      senderName: replyItem.senderName,
+      senderRole: replyItem.senderRole,
+      senderAvatar: replyItem.senderAvatar,
+      roleColor: '#38bdf8',
+      text: replyItem.text || '',
+      attachments: replyItem.attachments && replyItem.attachments.length > 0 ? replyItem.attachments : undefined,
+      timeLabel: replyItem.timeLabel,
+      createdAt: replyItem.createdAt || new Date().toISOString(),
+      reactions: {},
+      customerCard: null,
+      thread: [],
+      aiThinking: null,
+      aiAction: null,
+      editHistory: replyItem.editHistory,
+      editedAt: replyItem.editedAt,
+      editedBy: replyItem.editedBy,
+    };
+
+    const nextMessages = [...conv.messages];
+    const promotedTime = promotedMsg.createdAt ? Date.parse(promotedMsg.createdAt) : NaN;
+    let inserted = false;
+    if (Number.isFinite(promotedTime)) {
+      for (let i = sourceIdx + 1; i < nextMessages.length; i++) {
+        const msgTime = nextMessages[i]?.createdAt ? Date.parse(nextMessages[i].createdAt!) : NaN;
+        if (Number.isFinite(msgTime) && msgTime > promotedTime) {
+          nextMessages.splice(i, 0, promotedMsg);
+          inserted = true;
+          break;
+        }
+      }
+    }
+    if (!inserted) {
+      nextMessages.push(promotedMsg);
+    }
+    conv.messages = nextMessages;
+    conv.updatedAt = new Date().toISOString();
+
+    return {
+      targetMessage: sourceMsg,
+      promotedMessage: promotedMsg,
+      movedReplies: [],
+      tasksChanged: false,
+    };
+  }
+
+  if (mode === 'MOVE_REPLY_TO_THREAD') {
+    if (!replyId || !targetMessageId || targetMessageId === sourceMessageId) {
+      throw new Error('Vui lòng chọn phản hồi và luồng đích hợp lệ để di chuyển.');
+    }
+    const targetMsg = conv.messages.find((m) => m.id === targetMessageId);
+    if (!targetMsg) {
+      throw new Error('Không tìm thấy tin nhắn luồng đích.');
+    }
+    const sourceThread = Array.isArray(sourceMsg.thread) ? sourceMsg.thread : [];
+    const replyItem = sourceThread.find((r) => r.id === replyId);
+    if (!replyItem) {
+      throw new Error('Không tìm thấy câu trả lời cần di chuyển.');
+    }
+
+    sourceMsg.thread = sourceThread.filter((r) => r.id !== replyId);
+    const existingTargetThread = Array.isArray(targetMsg.thread) ? targetMsg.thread : [];
+    targetMsg.thread = sortRepliesChronologically([...existingTargetThread, replyItem]);
+    conv.updatedAt = new Date().toISOString();
+
+    return {
+      targetMessage: targetMsg,
+      promotedMessage: null,
+      movedReplies: replyItem.isMissionMilestone ? [] : [replyItem],
+      tasksChanged: false,
+    };
+  }
+
+  throw new Error('Chế độ di chuyển luồng không hợp lệ.');
+}
+
 async function loadChatState(fastify: FastifyInstance): Promise<{
   conversations: MosChatConversation[];
   tasks: MosChatTaskItem[];
@@ -2065,6 +2272,145 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       await saveUserSidebarPrefs(fastify, userPrefKey, updatedSenderPrefs);
 
       return { success: true, reply: replyItem, message: msg };
+    }
+  );
+
+  // POST /api/chat/threads/move (Merge root message into subthread, promote reply to root, or move reply between threads)
+  fastify.post(
+    '/chat/threads/move',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      const user = request.user as JwtUserPayload;
+      const body = request.body as MoveMosChatThreadItemRequest;
+      const conversationId = String(body?.conversationId || '').trim();
+      const sourceMessageId = String(body?.sourceMessageId || '').trim();
+      const mode = body?.mode;
+      const replyId = body?.replyId ? String(body.replyId).trim() : null;
+      const targetMessageId = body?.targetMessageId ? String(body.targetMessageId).trim() : null;
+
+      if (!conversationId || !sourceMessageId || !mode) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'Thiếu thông tin luồng cần di chuyển (conversationId, sourceMessageId, mode).',
+        });
+      }
+
+      const [{ conversations, tasks, userPrefsByUserKey }, staffDirectory] = await Promise.all([
+        loadChatState(fastify),
+        loadStaffDirectoryCached(fastify),
+      ]);
+      const conv = conversations.find((c) => c.id === conversationId);
+      const sourceMsg = conv?.messages.find((m) => m.id === sourceMessageId);
+      if (!conv || !sourceMsg) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tin nhắn nguồn.' });
+      }
+      if (!canUserAccessConversation(conv, user, staffDirectory)) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Bạn không có quyền truy cập cuộc trò chuyện này.',
+        });
+      }
+
+      const itemToMove = replyId ? sourceMsg.thread?.find((r) => r.id === replyId) : sourceMsg;
+      if (!itemToMove) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy nội dung cần di chuyển.' });
+      }
+
+      const staffRecord = await fastify.prisma.crm.crmStaff.findUnique({
+        where: { id: Number(user.id) || 0 },
+        select: { displayName: true, username: true, role: true },
+      });
+      const effectiveRole = String(staffRecord?.role || user.role || '').toLowerCase();
+      const isOwner =
+        String(itemToMove.senderId) === String(user.id) ||
+        (user.id && String(itemToMove.senderId) === 'me') ||
+        Boolean(staffRecord?.displayName && itemToMove.senderName === staffRecord.displayName);
+      const isAdminOrManager =
+        isDannyOrSuperAdminUser(user) || ['admin', 'manager', 'super_admin'].includes(effectiveRole);
+
+      if (!isOwner && !isAdminOrManager) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Chỉ người gửi tin nhắn, Quản lý/Admin hoặc Super Admin mới có thể gộp/tách luồng.',
+        });
+      }
+
+      let moveResult: ReturnType<typeof moveChatThreadItemInMemory>;
+      try {
+        moveResult = moveChatThreadItemInMemory(conv, tasks, {
+          mode,
+          sourceMessageId,
+          replyId,
+          targetMessageId,
+        });
+      } catch (err: SafeAny) {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: err?.message || 'Không thể thực hiện di chuyển luồng.',
+        });
+      }
+
+      if (moveResult.targetMessage?.missionId && moveResult.movedReplies.length > 0) {
+        for (const movedReply of moveResult.movedReplies) {
+          await ChatMissionBridgeService.syncChatReplyToMission(
+            fastify,
+            user,
+            moveResult.targetMessage,
+            movedReply,
+            mosChatMediaRoot()
+          );
+        }
+        await ChatMissionBridgeService.syncLinkedMissionsIntoChatState(fastify, conversations, tasks);
+      }
+
+      await saveConversations(fastify, conversations);
+      if (moveResult.tasksChanged || moveResult.targetMessage?.missionId) {
+        await saveTasks(fastify, tasks);
+      }
+
+      const userPrefKey = resolveUserPrefKey(user, staffDirectory);
+      const currentSenderPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
+      if (moveResult.targetMessage) {
+        const threadKey = `${conv.id}::${moveResult.targetMessage.id}`;
+        const targetThread = moveResult.targetMessage.thread || [];
+        const lastReply = targetThread[targetThread.length - 1];
+        const updatedSenderPrefs: MosChatUserSidebarPrefs = {
+          ...currentSenderPrefs,
+          readThreadReplyCountByMsg: {
+            ...(currentSenderPrefs.readThreadReplyCountByMsg || {}),
+            [threadKey]: targetThread.length,
+          },
+          readThreadAtByMsg: {
+            ...(currentSenderPrefs.readThreadAtByMsg || {}),
+            [threadKey]: new Date().toISOString(),
+          },
+          lastReadThreadReplyIdByMsg: lastReply
+            ? {
+                ...(currentSenderPrefs.lastReadThreadReplyIdByMsg || {}),
+                [threadKey]: lastReply.id,
+              }
+            : currentSenderPrefs.lastReadThreadReplyIdByMsg,
+        };
+        userPrefsByUserKey[userPrefKey] = updatedSenderPrefs;
+        await saveUserSidebarPrefs(fastify, userPrefKey, updatedSenderPrefs);
+      }
+
+      return {
+        success: true,
+        mode,
+        conversation: formatConversationForUser(
+          conv,
+          user,
+          staffDirectory,
+          userPrefsByUserKey[userPrefKey] || currentSenderPrefs,
+          userPrefsByUserKey
+        ),
+        targetMessage: moveResult.targetMessage,
+        promotedMessage: moveResult.promotedMessage,
+        tasks,
+      };
     }
   );
 

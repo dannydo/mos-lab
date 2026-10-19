@@ -78,6 +78,8 @@ import {
   Rocket,
   CheckCircle2,
   RefreshCw,
+  CornerDownRight,
+  ArrowUpRight,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import type {
@@ -92,6 +94,7 @@ import type {
   MosChatMissionActionType,
   MosChatMissionSummary,
   MosChatReadReceiptEntry,
+  MosChatThreadMoveMode,
   MosChatThreadReadReceiptEntry,
   MosChatThreadReply,
   MosChatPresenceStatus,
@@ -1104,6 +1107,20 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     };
   }, [currentUser?.id, currentUser?.username, currentUser?.displayName, currentUser?.role, staffDirectory]);
 
+  const canManageChatThreads = useMemo(() => {
+    if (isDannyAccount) return true;
+    const roleLower = String(currentUser?.role || currentUserStaffMember?.role || '')
+      .toLowerCase()
+      .trim();
+    return (
+      roleLower === 'manager' ||
+      roleLower === 'oc' ||
+      roleLower === 'admin' ||
+      roleLower === 'super_admin' ||
+      matchesStaffGroup(currentUserStaffMember, 'TEAM_ADMIN_MANAGER')
+    );
+  }, [isDannyAccount, currentUser?.role, currentUserStaffMember]);
+
   const isStaffMemberAllowedInChat = useCallback(
     (
       member: MosChatStaffMember,
@@ -1406,6 +1423,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [isSavingEdit, setIsSavingEdit] = useState<boolean>(false);
   const [historyModalMessage, setHistoryModalMessage] = useState<MosChatMessage | MosChatThreadReply | null>(null);
   const [historyModalOpen, setHistoryModalOpen] = useState<boolean>(false);
+
+  // Move / Merge Thread & Subthread States (Popover + Drag & Drop)
+  const [movingThreadItemKey, setMovingThreadItemKey] = useState<string | null>(null);
+  const [openMovePopoverKey, setOpenMovePopoverKey] = useState<string | null>(null);
+  const [moveThreadSearchQuery, setMoveThreadSearchQuery] = useState<string>('');
+  const [draggingRootMsgId, setDraggingRootMsgId] = useState<string | null>(null);
+  const [dragOverTargetMsgId, setDragOverTargetMsgId] = useState<string | null>(null);
+  const [dragOverThreadPane, setDragOverThreadPane] = useState<boolean>(false);
 
   const lastVersionRef = useRef<number>(0);
 
@@ -3978,6 +4003,363 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const canvasBg = isDark ? '#0d1322' : '#ffffff';
   const borderColor = isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0';
   const borderStrong = isDark ? 'rgba(255, 255, 255, 0.15)' : '#cbd5e1';
+
+  const formatMoveTargetSnippet = (msg: MosChatMessage): string => {
+    const raw = String(msg.text || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (raw) {
+      return raw.length > 72 ? `${raw.slice(0, 72)}…` : raw;
+    }
+    if (msg.attachments && msg.attachments.length > 0) {
+      return `[Đính kèm ${msg.attachments.length} hình ảnh]`;
+    }
+    return '[Tin nhắn]';
+  };
+
+  const handleMoveThreadItem = async (params: {
+    mode: MosChatThreadMoveMode;
+    sourceMessageId: string;
+    replyId?: string;
+    targetMessageId?: string;
+  }) => {
+    if (!activeConversation || activeConversation.id === AI_COPILOT_CONV_ID) return;
+    const convId = activeConversation.id;
+    const loadingKey = `${params.mode}:${params.sourceMessageId}:${params.replyId || ''}`;
+    setMovingThreadItemKey(loadingKey);
+    setOpenMovePopoverKey(null);
+    setMoveThreadSearchQuery('');
+    try {
+      const res = await apiClient.chat.moveThreadItem({
+        conversationId: convId,
+        mode: params.mode,
+        sourceMessageId: params.sourceMessageId,
+        replyId: params.replyId,
+        targetMessageId: params.targetMessageId,
+      });
+      if (res?.conversation) {
+        setConversations((prev) => prev.map((c) => (c.id === convId ? res.conversation : c)));
+      }
+      if (res?.tasks) {
+        setTasks(res.tasks);
+      }
+      if (
+        (params.mode === 'MERGE_ROOT_TO_THREAD' || params.mode === 'MOVE_REPLY_TO_THREAD') &&
+        params.targetMessageId
+      ) {
+        setActiveThreadMsgId(params.targetMessageId);
+        setThreadOpen(true);
+        if (isMobile) {
+          setMobileActiveView('thread');
+        }
+      }
+      notifyLivePeers();
+      if (params.mode === 'MERGE_ROOT_TO_THREAD') {
+        antdMessage.success('Đã gộp tin nhắn (kèm ảnh & phản hồi) vào luồng trả lời phụ!');
+      } else if (params.mode === 'PROMOTE_REPLY_TO_ROOT') {
+        antdMessage.success('Đã tách phản hồi ra thành tin nhắn độc lập ở luồng chính!');
+      } else {
+        antdMessage.success('Đã chuyển phản hồi sang luồng trả lời đích!');
+      }
+    } catch (err: SafeAny) {
+      antdMessage.error(
+        err?.response?.data?.message || err?.message || 'Không thể di chuyển tin nhắn / luồng trả lời.'
+      );
+    } finally {
+      setMovingThreadItemKey(null);
+    }
+  };
+
+  const renderMoveRootToThreadPopover = (
+    sourceMsg: MosChatMessage,
+    prevMsg: MosChatMessage | null,
+    allVisibleMessages: MosChatMessage[]
+  ) => {
+    const qNorm = removeVietnameseTones(moveThreadSearchQuery.trim().toLowerCase());
+    const candidates = allVisibleMessages
+      .filter((m) => m.id !== sourceMsg.id && !m.isDeleted && !m.isSystemReminder)
+      .slice()
+      .reverse()
+      .filter((m) => {
+        if (!qNorm) return true;
+        const hay = removeVietnameseTones(
+          `${m.senderName} ${m.text || ''} ${m.mission?.missionKey || ''}`.toLowerCase()
+        );
+        return hay.includes(qNorm);
+      });
+
+    const isBusy = movingThreadItemKey === `MERGE_ROOT_TO_THREAD:${sourceMsg.id}:`;
+    const openThreadTarget =
+      threadOpen && activeThreadMessage && activeThreadMessage.id !== sourceMsg.id && !activeThreadMessage.isDeleted
+        ? activeThreadMessage
+        : null;
+
+    return (
+      <div
+        data-no-chat-autofocus="true"
+        onClick={(e) => e.stopPropagation()}
+        className="w-[320px] space-y-2 text-[12px]"
+        style={{ color: token.colorText }}
+      >
+        <div
+          className="flex items-center justify-between gap-2 pb-1"
+          style={{ borderBottom: `1px solid ${borderColor}` }}
+        >
+          <div className="font-extrabold flex items-center gap-1.5 text-[12.5px]">
+            <CornerDownRight size={14} className="text-amber-500 shrink-0" />
+            <span>Gộp tin nhắn vào luồng phụ (Subthread)</span>
+          </div>
+        </div>
+
+        {/* 1-Click Primary Action: Merge into the message immediately above */}
+        {prevMsg && !prevMsg.isDeleted && (
+          <button
+            type="button"
+            disabled={isBusy}
+            onClick={() =>
+              void handleMoveThreadItem({
+                mode: 'MERGE_ROOT_TO_THREAD',
+                sourceMessageId: sourceMsg.id,
+                targetMessageId: prevMsg.id,
+              })
+            }
+            className="w-full p-2 rounded-lg text-left cursor-pointer transition-all hover:brightness-105 disabled:opacity-50"
+            style={{
+              background: isDark ? 'rgba(212, 168, 75, 0.16)' : 'rgba(245, 158, 11, 0.12)',
+              border: '1px solid rgba(212, 168, 75, 0.45)',
+            }}
+          >
+            <div
+              className="flex items-center justify-between gap-1.5 font-extrabold text-[11.5px]"
+              style={{ color: '#d4a84b' }}
+            >
+              <span>⚡ Gộp vào luồng ngay phía trên (1-Click)</span>
+              <span className="tabular-nums text-[10.5px]">
+                {(prevMsg.thread || []).filter((r) => !r.deletedAt).length} trả lời
+              </span>
+            </div>
+            <div className="mt-0.5 text-[11px] truncate" style={{ color: token.colorText }}>
+              <span className="font-bold">{prevMsg.senderName}:</span> {formatMoveTargetSnippet(prevMsg)}
+            </div>
+          </button>
+        )}
+
+        {/* 1-Click Secondary Action: Merge into the currently open Right-Side Thread */}
+        {openThreadTarget && openThreadTarget.id !== prevMsg?.id && (
+          <button
+            type="button"
+            disabled={isBusy}
+            onClick={() =>
+              void handleMoveThreadItem({
+                mode: 'MERGE_ROOT_TO_THREAD',
+                sourceMessageId: sourceMsg.id,
+                targetMessageId: openThreadTarget.id,
+              })
+            }
+            className="w-full p-2 rounded-lg text-left cursor-pointer transition-all hover:brightness-105 disabled:opacity-50"
+            style={{
+              background: isDark ? 'rgba(99, 102, 241, 0.16)' : 'rgba(99, 102, 241, 0.1)',
+              border: '1px solid rgba(99, 102, 241, 0.42)',
+            }}
+          >
+            <div className="flex items-center justify-between gap-1.5 font-extrabold text-[11.5px] text-indigo-400">
+              <span>👉 Gộp vào luồng đang mở bên phải</span>
+              <span className="tabular-nums text-[10.5px]">
+                {(openThreadTarget.thread || []).filter((r) => !r.deletedAt).length} trả lời
+              </span>
+            </div>
+            <div className="mt-0.5 text-[11px] truncate" style={{ color: token.colorText }}>
+              <span className="font-bold">{openThreadTarget.senderName}:</span>{' '}
+              {formatMoveTargetSnippet(openThreadTarget)}
+            </div>
+          </button>
+        )}
+
+        {/* Search & Pick any other message / thread in conversation */}
+        <div className="space-y-1.5 pt-0.5">
+          <Input
+            size="small"
+            allowClear
+            placeholder="Tìm luồng / tin nhắn đích..."
+            value={moveThreadSearchQuery}
+            onChange={(e) => setMoveThreadSearchQuery(e.target.value)}
+            prefix={<Search size={12} className="text-slate-400" />}
+          />
+          <div className="max-h-[190px] overflow-y-auto space-y-1 pr-0.5">
+            {candidates.length === 0 ? (
+              <div className="py-3 text-center text-[11px] text-slate-400">Không tìm thấy tin nhắn đích phù hợp</div>
+            ) : (
+              candidates.slice(0, 25).map((target) => {
+                const replyCount = (target.thread || []).filter((r) => !r.deletedAt).length;
+                const missionKey = target.mission?.missionKey;
+                return (
+                  <button
+                    key={target.id}
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() =>
+                      void handleMoveThreadItem({
+                        mode: 'MERGE_ROOT_TO_THREAD',
+                        sourceMessageId: sourceMsg.id,
+                        targetMessageId: target.id,
+                      })
+                    }
+                    className="w-full px-2 py-1.5 rounded-md text-left cursor-pointer transition-colors hover:bg-black/5 dark:hover:bg-white/10 flex flex-col gap-0.5"
+                    style={{ border: `1px solid ${borderColor}` }}
+                  >
+                    <div className="flex items-center justify-between gap-1.5 text-[11px]">
+                      <span className="font-bold truncate">
+                        {target.senderName}{' '}
+                        <span className="text-slate-400 font-normal tabular-nums">· {target.timeLabel}</span>
+                      </span>
+                      <span className="inline-flex items-center gap-1 shrink-0 tabular-nums text-[10px] font-bold text-blue-400">
+                        {missionKey && (
+                          <span className="px-1 py-0.2 rounded bg-purple-500/20 text-purple-300">#{missionKey}</span>
+                        )}
+                        <span>💬 {replyCount}</span>
+                      </span>
+                    </div>
+                    <div className="text-[11px] truncate" style={{ color: token.colorTextSecondary }}>
+                      {formatMoveTargetSnippet(target)}
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        <div
+          className="pt-1.5 text-[10.5px] leading-snug text-slate-400"
+          style={{ borderTop: `1px dashed ${borderColor}` }}
+        >
+          💡 <span className="font-semibold">Mẹo nhanh:</span> Bạn cũng có thể kéo thả tin nhắn này trực tiếp vào tin
+          nhắn đích hoặc thả vào khung Luồng trả lời bên phải.
+        </div>
+      </div>
+    );
+  };
+
+  const renderMoveReplyPopover = (parentMsg: MosChatMessage, reply: MosChatThreadReply) => {
+    const allMsgs = (activeConversation?.messages || []).filter(
+      (m) =>
+        m.id !== parentMsg.id &&
+        !m.isDeleted &&
+        !m.isSystemReminder &&
+        m.senderId !== 'system-reminder' &&
+        m.senderName !== 'mOS Reminder'
+    );
+    const qNorm = removeVietnameseTones(moveThreadSearchQuery.trim().toLowerCase());
+    const candidates = allMsgs
+      .slice()
+      .reverse()
+      .filter((m) => {
+        if (!qNorm) return true;
+        const hay = removeVietnameseTones(
+          `${m.senderName} ${m.text || ''} ${m.mission?.missionKey || ''}`.toLowerCase()
+        );
+        return hay.includes(qNorm);
+      });
+
+    const isBusy =
+      movingThreadItemKey === `PROMOTE_REPLY_TO_ROOT:${parentMsg.id}:${reply.id}` ||
+      movingThreadItemKey === `MOVE_REPLY_TO_THREAD:${parentMsg.id}:${reply.id}`;
+
+    return (
+      <div
+        data-no-chat-autofocus="true"
+        onClick={(e) => e.stopPropagation()}
+        className="w-[300px] space-y-2 text-[12px]"
+        style={{ color: token.colorText }}
+      >
+        <div
+          className="font-extrabold flex items-center gap-1.5 text-[12px] pb-1"
+          style={{ borderBottom: `1px solid ${borderColor}` }}
+        >
+          <ArrowUpRight size={14} className="text-amber-500 shrink-0" />
+          <span>Tách hoặc chuyển câu trả lời sang luồng khác</span>
+        </div>
+
+        {/* 1-Click Promote Reply to Standalone Root Message */}
+        <button
+          type="button"
+          disabled={isBusy}
+          onClick={() =>
+            void handleMoveThreadItem({
+              mode: 'PROMOTE_REPLY_TO_ROOT',
+              sourceMessageId: parentMsg.id,
+              replyId: reply.id,
+            })
+          }
+          className="w-full p-2 rounded-lg text-left cursor-pointer transition-all hover:brightness-105 disabled:opacity-50"
+          style={{
+            background: isDark ? 'rgba(212, 168, 75, 0.16)' : 'rgba(245, 158, 11, 0.12)',
+            border: '1px solid rgba(212, 168, 75, 0.45)',
+          }}
+        >
+          <div className="font-extrabold text-[11.5px] flex items-center gap-1" style={{ color: '#d4a84b' }}>
+            <ArrowUpRight size={13} />
+            <span>Tách ra thành tin nhắn riêng ở luồng chính</span>
+          </div>
+          <div className="text-[10.5px] mt-0.5" style={{ color: token.colorTextSecondary }}>
+            Đưa câu trả lời này (kèm hình ảnh) ra ngoài cuộc trò chuyện chính
+          </div>
+        </button>
+
+        {/* Move Reply to another message's thread */}
+        <div className="space-y-1.5 pt-0.5">
+          <div className="text-[10.5px] font-bold uppercase text-slate-400">
+            Hoặc chuyển sang luồng của tin nhắn khác:
+          </div>
+          <Input
+            size="small"
+            allowClear
+            placeholder="Tìm tin nhắn đích..."
+            value={moveThreadSearchQuery}
+            onChange={(e) => setMoveThreadSearchQuery(e.target.value)}
+            prefix={<Search size={12} className="text-slate-400" />}
+          />
+          <div className="max-h-[165px] overflow-y-auto space-y-1 pr-0.5">
+            {candidates.length === 0 ? (
+              <div className="py-2 text-center text-[11px] text-slate-400">Không có tin nhắn đích khác</div>
+            ) : (
+              candidates.slice(0, 20).map((target) => {
+                const replyCount = (target.thread || []).filter((r) => !r.deletedAt).length;
+                return (
+                  <button
+                    key={target.id}
+                    type="button"
+                    disabled={isBusy}
+                    onClick={() =>
+                      void handleMoveThreadItem({
+                        mode: 'MOVE_REPLY_TO_THREAD',
+                        sourceMessageId: parentMsg.id,
+                        replyId: reply.id,
+                        targetMessageId: target.id,
+                      })
+                    }
+                    className="w-full px-2 py-1.5 rounded-md text-left cursor-pointer transition-colors hover:bg-black/5 dark:hover:bg-white/10 flex flex-col gap-0.5"
+                    style={{ border: `1px solid ${borderColor}` }}
+                  >
+                    <div className="flex items-center justify-between gap-1.5 text-[11px]">
+                      <span className="font-bold truncate">
+                        {target.senderName}{' '}
+                        <span className="text-slate-400 font-normal tabular-nums">· {target.timeLabel}</span>
+                      </span>
+                      <span className="shrink-0 tabular-nums text-[10px] font-bold text-blue-400">💬 {replyCount}</span>
+                    </div>
+                    <div className="text-[11px] truncate" style={{ color: token.colorTextSecondary }}>
+                      {formatMoveTargetSnippet(target)}
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const openMissionModalFromChat = (
     msg: MosChatMessage | null,
@@ -7417,6 +7799,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             <div
               className="flex-1 flex flex-col min-h-0 relative"
               onDragOver={(e) => {
+                if (draggingRootMsgId || e.dataTransfer?.types?.includes('application/x-mos-chat-msg-id')) {
+                  return;
+                }
                 e.preventDefault();
                 if (!isDraggingOver) setIsDraggingOver(true);
               }}
@@ -7424,6 +7809,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 if (e.currentTarget === e.target) setIsDraggingOver(false);
               }}
               onDrop={(e) => {
+                if (draggingRootMsgId || e.dataTransfer?.types?.includes('application/x-mos-chat-msg-id')) {
+                  return;
+                }
                 e.preventDefault();
                 setIsDraggingOver(false);
                 if (e.dataTransfer?.files?.length) {
@@ -7431,7 +7819,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 }
               }}
             >
-              {isDraggingOver && (
+              {isDraggingOver && !draggingRootMsgId && (
                 <div
                   className="absolute inset-2 rounded-xl z-20 flex flex-col items-center justify-center gap-1.5 pointer-events-none"
                   style={{
@@ -7470,20 +7858,102 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     const isAiMessage = Boolean(m.isAiBot || m.senderId === 'wings-ai-copilot');
                     const msgReadBreakdown = getMessageReadBreakdown(activeConversation, m);
                     const stoppedReadersForMsg = stoppedReadersByMsgId[m.id] || [];
+                    const canMoveThisMsg =
+                      (isMine || canManageChatThreads) &&
+                      !m.isDeleted &&
+                      !isAiMessage &&
+                      activeConversation?.id !== AI_COPILOT_CONV_ID;
+                    const isBeingDragged = draggingRootMsgId === m.id;
+                    const isDropTarget = Boolean(
+                      draggingRootMsgId && draggingRootMsgId !== m.id && dragOverTargetMsgId === m.id && !m.isDeleted
+                    );
 
                     return (
                       <div
                         key={m.id}
                         data-message-side={isMine ? 'right' : 'left'}
+                        draggable={canMoveThisMsg && editingMessageId !== m.id}
+                        onDragStart={(e) => {
+                          if (!canMoveThisMsg || editingMessageId === m.id) {
+                            e.preventDefault();
+                            return;
+                          }
+                          const sel = typeof window !== 'undefined' ? window.getSelection()?.toString().trim() : '';
+                          if (sel) {
+                            e.preventDefault();
+                            return;
+                          }
+                          setDraggingRootMsgId(m.id);
+                          try {
+                            e.dataTransfer.setData('application/x-mos-chat-msg-id', m.id);
+                            e.dataTransfer.effectAllowed = 'move';
+                          } catch (_) {}
+                        }}
+                        onDragEnd={() => {
+                          setDraggingRootMsgId(null);
+                          setDragOverTargetMsgId(null);
+                          setDragOverThreadPane(false);
+                        }}
+                        onDragOver={(e) => {
+                          if (!draggingRootMsgId || draggingRootMsgId === m.id || m.isDeleted) return;
+                          e.preventDefault();
+                          e.stopPropagation();
+                          e.dataTransfer.dropEffect = 'move';
+                          if (dragOverTargetMsgId !== m.id) {
+                            setDragOverTargetMsgId(m.id);
+                          }
+                        }}
+                        onDragLeave={(e) => {
+                          if (
+                            dragOverTargetMsgId === m.id &&
+                            !e.currentTarget.contains(e.relatedTarget as Node | null)
+                          ) {
+                            setDragOverTargetMsgId(null);
+                          }
+                        }}
+                        onDrop={(e) => {
+                          if (!draggingRootMsgId || draggingRootMsgId === m.id || m.isDeleted) return;
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const srcId = draggingRootMsgId;
+                          setDraggingRootMsgId(null);
+                          setDragOverTargetMsgId(null);
+                          setDragOverThreadPane(false);
+                          void handleMoveThreadItem({
+                            mode: 'MERGE_ROOT_TO_THREAD',
+                            sourceMessageId: srcId,
+                            targetMessageId: m.id,
+                          });
+                        }}
                         className={`group relative flex items-start gap-2.5 px-4 ${
                           isMine ? 'flex-row-reverse' : 'flex-row'
                         } ${
                           isCont ? 'py-0.5' : 'pt-2.5 pb-1'
-                        } transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.03]`}
+                        } transition-all hover:bg-black/[0.03] dark:hover:bg-white/[0.03] ${
+                          isBeingDragged ? 'opacity-45 scale-[0.99]' : ''
+                        }`}
                         style={{
-                          background: linkedTask ? 'rgba(212, 168, 75, 0.06)' : undefined,
+                          background: isDropTarget
+                            ? 'rgba(212, 168, 75, 0.14)'
+                            : linkedTask
+                              ? 'rgba(212, 168, 75, 0.06)'
+                              : undefined,
+                          boxShadow: isDropTarget ? 'inset 0 0 0 1.5px #d4a84b' : undefined,
+                          borderRadius: isDropTarget ? 10 : undefined,
                         }}
                       >
+                        {isDropTarget && (
+                          <div
+                            className="absolute -top-2.5 left-4 z-20 px-2 py-0.5 rounded-full text-[10.5px] font-extrabold inline-flex items-center gap-1 shadow-md pointer-events-none"
+                            style={{
+                              background: '#d4a84b',
+                              color: '#000',
+                            }}
+                          >
+                            <CornerDownRight size={11} />
+                            <span>Thả để gộp vào luồng trả lời của {m.senderName}</span>
+                          </div>
+                        )}
                         {isCont ? (
                           <div
                             className={`w-8 shrink-0 flex flex-col ${
@@ -8033,13 +8503,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             {/* Adjacent Quick Emoji & Action Bar (placed right next to reaction pills) */}
                             <div
                               className={`${
-                                mobileActiveMsgId === m.id
+                                mobileActiveMsgId === m.id || openMovePopoverKey === `root:${m.id}`
                                   ? 'opacity-100 pointer-events-auto scale-100 ring-1 ring-amber-500/50 shadow-md'
                                   : 'opacity-0 pointer-events-none'
                               } group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-all inline-flex items-center gap-0.5 px-1 py-0.5 rounded-full shadow-sm`}
                               style={{
                                 background: surfaceRaised,
-                                border: `1px solid ${mobileActiveMsgId === m.id ? 'rgba(212, 168, 75, 0.6)' : borderStrong}`,
+                                border: `1px solid ${
+                                  mobileActiveMsgId === m.id || openMovePopoverKey === `root:${m.id}`
+                                    ? 'rgba(212, 168, 75, 0.6)'
+                                    : borderStrong
+                                }`,
                               }}
                             >
                               {GOOGLE_CHAT_QUICK_EMOJIS.map((emoji) => {
@@ -8095,6 +8569,33 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                   <MessageSquareReply size={13} />
                                 </button>
                               </Tooltip>
+
+                              {canMoveThisMsg && filteredMessages.length > 1 && (
+                                <Popover
+                                  trigger="click"
+                                  placement={isMine ? 'topRight' : 'topLeft'}
+                                  open={openMovePopoverKey === `root:${m.id}`}
+                                  onOpenChange={(vis) => {
+                                    setOpenMovePopoverKey(vis ? `root:${m.id}` : null);
+                                    if (!vis) setMoveThreadSearchQuery('');
+                                  }}
+                                  content={renderMoveRootToThreadPopover(m, prevMsg, filteredMessages)}
+                                >
+                                  <Tooltip title="Gộp tin nhắn này vào luồng trả lời phụ (Subthread) của tin nhắn khác">
+                                    <button
+                                      type="button"
+                                      aria-label="Gộp tin nhắn vào luồng trả lời phụ"
+                                      className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-amber-500/15 cursor-pointer transition-transform hover:scale-110"
+                                      style={{
+                                        color:
+                                          openMovePopoverKey === `root:${m.id}` ? '#d4a84b' : token.colorTextSecondary,
+                                      }}
+                                    >
+                                      <CornerDownRight size={13} />
+                                    </button>
+                                  </Tooltip>
+                                </Popover>
+                              )}
 
                               <Tooltip title="Tạo Task & Hẹn giờ nhắc từ tin nhắn">
                                 <button
@@ -8887,6 +9388,32 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         {threadOpen && activeThreadMessage && (
           <aside
             data-chat-thread-pane="true"
+            onDragOver={(e) => {
+              if (!draggingRootMsgId || draggingRootMsgId === activeThreadMessage.id) return;
+              e.preventDefault();
+              e.stopPropagation();
+              e.dataTransfer.dropEffect = 'move';
+              if (!dragOverThreadPane) setDragOverThreadPane(true);
+            }}
+            onDragLeave={(e) => {
+              if (dragOverThreadPane && !e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                setDragOverThreadPane(false);
+              }
+            }}
+            onDrop={(e) => {
+              if (!draggingRootMsgId || draggingRootMsgId === activeThreadMessage.id) return;
+              e.preventDefault();
+              e.stopPropagation();
+              const srcId = draggingRootMsgId;
+              setDraggingRootMsgId(null);
+              setDragOverTargetMsgId(null);
+              setDragOverThreadPane(false);
+              void handleMoveThreadItem({
+                mode: 'MERGE_ROOT_TO_THREAD',
+                sourceMessageId: srcId,
+                targetMessageId: activeThreadMessage.id,
+              });
+            }}
             className={`${isMobile ? 'absolute inset-0 z-30 w-full' : ''} flex flex-col shrink-0 relative`}
             style={{
               width: isMobile ? '100%' : threadWidth,
@@ -8894,12 +9421,32 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               borderLeft: isMobile
                 ? 'none'
                 : `1px solid ${
-                    isResizingTarget === 'thread' || hoverResizeHandle === 'thread' ? '#d4a84b' : borderColor
+                    dragOverThreadPane || isResizingTarget === 'thread' || hoverResizeHandle === 'thread'
+                      ? '#d4a84b'
+                      : borderColor
                   }`,
               display: isMobile && mobileActiveView !== 'thread' ? 'none' : 'flex',
               transition: isResizingTarget === 'thread' ? 'none' : 'width 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
             }}
           >
+            {dragOverThreadPane && draggingRootMsgId && draggingRootMsgId !== activeThreadMessage.id && (
+              <div
+                className="absolute inset-2 rounded-xl z-30 flex flex-col items-center justify-center gap-2 pointer-events-none px-4 text-center"
+                style={{
+                  background: 'rgba(15, 23, 42, 0.86)',
+                  border: '2px dashed #d4a84b',
+                  color: '#fbbf24',
+                }}
+              >
+                <CornerDownRight size={28} />
+                <div className="text-[13px] font-extrabold">
+                  Thả vào đây để gộp tin nhắn (kèm ảnh & phản hồi) vào luồng này
+                </div>
+                <div className="text-[11px] text-slate-300 max-w-[260px] truncate">
+                  {activeThreadMessage.senderName}: {formatMoveTargetSnippet(activeThreadMessage)}
+                </div>
+              </div>
+            )}
             {/* THREAD PANE RESIZE DIVIDER (Drag to resize & persistent width) */}
             {!isMobile && (
               <Tooltip title="Kéo sang trái/phải để đổi độ rộng luồng · Nhấp đúp để đặt lại 440px">
@@ -9211,9 +9758,41 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
                         {/* Reply Hover Action Toolbar */}
                         <div
-                          className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-3.5 right-1 flex items-center gap-0.5 px-1 py-0.5 rounded-full shadow-sm"
+                          className={`${
+                            openMovePopoverKey === `reply:${activeThreadMessage.id}:${r.id}`
+                              ? 'opacity-100 pointer-events-auto ring-1 ring-amber-500/50'
+                              : 'opacity-0'
+                          } group-hover:opacity-100 transition-opacity absolute -top-3.5 right-1 flex items-center gap-0.5 px-1 py-0.5 rounded-full shadow-sm`}
                           style={{ background: surfaceRaised, border: `1px solid ${borderStrong}` }}
                         >
+                          {(isReplyMine || canManageChatThreads) && !r.isDeleted && !r.isMissionMilestone && (
+                            <Popover
+                              trigger="click"
+                              placement="topRight"
+                              open={openMovePopoverKey === `reply:${activeThreadMessage.id}:${r.id}`}
+                              onOpenChange={(vis) => {
+                                setOpenMovePopoverKey(vis ? `reply:${activeThreadMessage.id}:${r.id}` : null);
+                                if (!vis) setMoveThreadSearchQuery('');
+                              }}
+                              content={renderMoveReplyPopover(activeThreadMessage, r)}
+                            >
+                              <Tooltip title="Tách ra luồng chính hoặc chuyển sang luồng khác">
+                                <button
+                                  type="button"
+                                  aria-label="Tách hoặc chuyển câu trả lời sang luồng khác"
+                                  className="w-5 h-5 rounded-full inline-flex items-center justify-center hover:bg-amber-500/15 cursor-pointer"
+                                  style={{
+                                    color:
+                                      openMovePopoverKey === `reply:${activeThreadMessage.id}:${r.id}`
+                                        ? '#d4a84b'
+                                        : token.colorTextSecondary,
+                                  }}
+                                >
+                                  <ArrowUpRight size={11} />
+                                </button>
+                              </Tooltip>
+                            </Popover>
+                          )}
                           {(isReplyMine || isDannyAccount) && !r.isDeleted && (
                             <Tooltip title="Chỉnh sửa">
                               <button

@@ -18,6 +18,8 @@ import type {
   MosChatTaskItem,
   MosChatThreadReply,
   MosChatUserSidebarPrefs,
+  MoveMosChatThreadItemRequest,
+  MoveMosChatThreadItemResponse,
   SafeAny,
   TogglePinConversationResponse,
   UpdateMosChatAccessConfigRequest,
@@ -109,6 +111,11 @@ export const chatApi = {
     }> => {
       const res = await api.post('/chat/threads', payload);
       invalidateApiGetCache(['/chat/bootstrap']);
+      return res.data;
+    },
+    moveThreadItem: async (payload: MoveMosChatThreadItemRequest): Promise<MoveMosChatThreadItemResponse> => {
+      const res = await api.post('/chat/threads/move', payload);
+      invalidateApiGetCache(['/chat/bootstrap', '/bug-reports/inbox']);
       return res.data;
     },
     reactToMessage: async (

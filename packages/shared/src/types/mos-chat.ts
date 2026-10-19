@@ -437,3 +437,22 @@ export interface MarkThreadAsReadResponse {
   userPrefs?: MosChatUserSidebarPrefs;
   conversation?: MosChatConversation;
 }
+
+export type MosChatThreadMoveMode = 'MERGE_ROOT_TO_THREAD' | 'PROMOTE_REPLY_TO_ROOT' | 'MOVE_REPLY_TO_THREAD';
+
+export interface MoveMosChatThreadItemRequest {
+  conversationId: string;
+  mode: MosChatThreadMoveMode;
+  sourceMessageId: string;
+  replyId?: string | null;
+  targetMessageId?: string | null;
+}
+
+export interface MoveMosChatThreadItemResponse {
+  success: boolean;
+  mode: MosChatThreadMoveMode;
+  conversation: MosChatConversation;
+  targetMessage?: MosChatMessage | null;
+  promotedMessage?: MosChatMessage | null;
+  tasks?: MosChatTaskItem[];
+}
