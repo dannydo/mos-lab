@@ -102,7 +102,36 @@ describe('ChatMissionBridgeService.buildMissionSummaryFromReport', () => {
 
     assert.equal(closedSummary.stage, 'COMPLETED');
     assert.equal(closedSummary.stepIndex, 4);
-    assert.equal(closedSummary.reporterActions?.canAcceptOrReopen, false);
+    assert.equal(closedSummary.reporterActions?.canAcceptOrReopen, true);
+
+    const reopenedForUpgradeSummary = buildMissionSummaryFromReport(
+      {
+        ...baseReport,
+        status: 'NEW',
+        implementationApprovedAt: null,
+        implementationActiveJobId: null,
+        resolution: {
+          solutionSummary: 'Đã thêm bộ lọc khách hàng bảo lưu Combo Elsa vào danh sách.',
+          verificationSummary: 'Bảo Hân đã nghiệm thu.',
+          releaseUrl: 'https://lab.masteros.app/dashboard/customers',
+        },
+        comments: [
+          {
+            id: 501,
+            authorType: 'STAFF',
+            kind: 'COMMENT',
+            body: 'Bổ sung thêm cột ghi chú lý do bảo lưu ngay ngoài bảng danh sách Elsa nhé',
+            createdAt: new Date('2026-10-19T04:20:00Z'),
+          },
+        ],
+      },
+      null
+    );
+
+    assert.equal(reopenedForUpgradeSummary.stage, 'RECEIVED');
+    assert.equal(reopenedForUpgradeSummary.stepIndex, 1);
+    assert.equal(reopenedForUpgradeSummary.superAdminActions?.canApproveImplementation, true);
+    assert.equal(reopenedForUpgradeSummary.humanBadge.includes('Có yêu cầu nâng cấp'), true);
   });
 
   it('rejects non-Danny users (staff or regular admin) when dispatching a mission from mOS Chat', async () => {

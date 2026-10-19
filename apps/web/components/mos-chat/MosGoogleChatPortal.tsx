@@ -4112,14 +4112,18 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         setMissionReopenFeedbackByReportId((prev) => ({ ...prev, [mission.reportId]: '' }));
         notifyLivePeers();
 
-        if (action === 'APPROVE_COMMIT') {
+        if (action === 'APPROVE_IMPLEMENTATION') {
+          antdMessage.success(`🚀 Đã duyệt Cổng 1 & đánh thức phiên AG nâng cấp tiếp cho #${mission.missionKey}!`);
+        } else if (action === 'APPROVE_COMMIT') {
           antdMessage.success(`✅ Đã duyệt Commit (Cổng 2) cho #${mission.missionKey}!`);
         } else if (action === 'APPROVE_DEPLOY') {
           antdMessage.success(`🚀 Đã duyệt Deploy lên Web (Cổng 3) cho #${mission.missionKey}!`);
         } else if (action === 'REPORTER_ACCEPT') {
           antdMessage.success(`🎉 Đã xác nhận nghiệm thu #${mission.missionKey} & tự động hoàn tất Task!`);
         } else if (action === 'REPORTER_REOPEN') {
-          antdMessage.info(`🔄 Đã gửi yêu cầu chỉnh sửa thêm cho AG trên #${mission.missionKey}!`);
+          antdMessage.info(
+            `🔄 Đã ghi nhận yêu cầu nâng cấp / chỉnh thêm trên #${mission.missionKey} (chờ anh Danny duyệt giao AG)!`
+          );
         }
       }
     } catch (err: SafeAny) {
@@ -4193,6 +4197,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     ];
     const isReopenOpen = Boolean(missionReopenInputOpenByReportId[mission.reportId]);
     const reopenText = missionReopenFeedbackByReportId[mission.reportId] || '';
+    const canApproveImplementation = Boolean(mission.superAdminActions?.canApproveImplementation);
+    const canRequestUpgradeOrRework =
+      mission.canReporterAccept || Boolean(mission.reporterActions?.canAcceptOrReopen) || mission.stage === 'COMPLETED';
 
     return (
       <div
@@ -4318,72 +4325,95 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           {mission.humanStatusSummary}
         </div>
 
-        {/* Super Admin Inline Gate Controls (Gate 2 Commit & Gate 3 Deploy) */}
-        {isStrictDannySuperAdmin && (mission.canSuperAdminApproveCommit || mission.canSuperAdminApproveDeploy) && (
-          <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-            {mission.canSuperAdminApproveCommit && (
-              <button
-                type="button"
-                disabled={missionActionLoadingKey === `${mission.reportId}:APPROVE_COMMIT`}
-                onClick={() => void handleMissionInlineAction(mission, 'APPROVE_COMMIT')}
-                className="h-7 px-3 rounded-lg text-[11.5px] font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
-                style={{
-                  background: '#d4a84b',
-                  color: '#000',
-                }}
-              >
-                {missionActionLoadingKey === `${mission.reportId}:APPROVE_COMMIT` ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <CheckCircle2 size={13} />
-                )}
-                <span>✅ Duyệt Commit (Cổng 2)</span>
-              </button>
-            )}
+        {/* Super Admin Inline Gate Controls (Gate 1 Implementation, Gate 2 Commit & Gate 3 Deploy) */}
+        {isStrictDannySuperAdmin &&
+          (canApproveImplementation || mission.canSuperAdminApproveCommit || mission.canSuperAdminApproveDeploy) && (
+            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+              {canApproveImplementation && (
+                <button
+                  type="button"
+                  disabled={missionActionLoadingKey === `${mission.reportId}:APPROVE_IMPLEMENTATION`}
+                  onClick={() => void handleMissionInlineAction(mission, 'APPROVE_IMPLEMENTATION')}
+                  className="h-7 px-3 rounded-lg text-[11.5px] font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+                  style={{
+                    background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                    color: '#fff',
+                  }}
+                >
+                  {missionActionLoadingKey === `${mission.reportId}:APPROVE_IMPLEMENTATION` ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : (
+                    <Rocket size={13} />
+                  )}
+                  <span>🚀 Giao AG nâng cấp tiếp (Cổng 1)</span>
+                </button>
+              )}
 
-            {mission.canSuperAdminApproveDeploy && (
-              <button
-                type="button"
-                disabled={missionActionLoadingKey === `${mission.reportId}:APPROVE_DEPLOY`}
-                onClick={() => void handleMissionInlineAction(mission, 'APPROVE_DEPLOY')}
-                className="h-7 px-3 rounded-lg text-[11.5px] font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
-                style={{
-                  background: '#10b981',
-                  color: '#000',
-                }}
-              >
-                {missionActionLoadingKey === `${mission.reportId}:APPROVE_DEPLOY` ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <Rocket size={13} />
-                )}
-                <span>🚀 Duyệt Deploy lên Web (Cổng 3)</span>
-              </button>
-            )}
-          </div>
-        )}
+              {mission.canSuperAdminApproveCommit && (
+                <button
+                  type="button"
+                  disabled={missionActionLoadingKey === `${mission.reportId}:APPROVE_COMMIT`}
+                  onClick={() => void handleMissionInlineAction(mission, 'APPROVE_COMMIT')}
+                  className="h-7 px-3 rounded-lg text-[11.5px] font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+                  style={{
+                    background: '#d4a84b',
+                    color: '#000',
+                  }}
+                >
+                  {missionActionLoadingKey === `${mission.reportId}:APPROVE_COMMIT` ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : (
+                    <CheckCircle2 size={13} />
+                  )}
+                  <span>✅ Duyệt Commit (Cổng 2)</span>
+                </button>
+              )}
 
-        {/* Reporter / Staff & Super Admin Inline Acceptance Controls (Stage READY_FOR_REVIEW) */}
-        {mission.canReporterAccept && (
+              {mission.canSuperAdminApproveDeploy && (
+                <button
+                  type="button"
+                  disabled={missionActionLoadingKey === `${mission.reportId}:APPROVE_DEPLOY`}
+                  onClick={() => void handleMissionInlineAction(mission, 'APPROVE_DEPLOY')}
+                  className="h-7 px-3 rounded-lg text-[11.5px] font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+                  style={{
+                    background: '#10b981',
+                    color: '#000',
+                  }}
+                >
+                  {missionActionLoadingKey === `${mission.reportId}:APPROVE_DEPLOY` ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : (
+                    <Rocket size={13} />
+                  )}
+                  <span>🚀 Duyệt Deploy lên Web (Cổng 3)</span>
+                </button>
+              )}
+            </div>
+          )}
+
+        {/* Reporter / Staff & Super Admin Inline Acceptance & Subthread Upgrade Controls */}
+        {canRequestUpgradeOrRework && (
           <div className="space-y-1.5 pt-0.5">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <button
-                type="button"
-                disabled={missionActionLoadingKey === `${mission.reportId}:REPORTER_ACCEPT`}
-                onClick={() => void handleMissionInlineAction(mission, 'REPORTER_ACCEPT')}
-                className="h-7 px-3 rounded-lg text-[11.5px] font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
-                style={{
-                  background: '#10b981',
-                  color: '#000',
-                }}
-              >
-                {missionActionLoadingKey === `${mission.reportId}:REPORTER_ACCEPT` ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <Check size={13} strokeWidth={3} />
-                )}
-                <span>✅ Đã đúng ý (Hoàn tất)</span>
-              </button>
+              {mission.canReporterAccept && (
+                <button
+                  type="button"
+                  disabled={missionActionLoadingKey === `${mission.reportId}:REPORTER_ACCEPT`}
+                  onClick={() => void handleMissionInlineAction(mission, 'REPORTER_ACCEPT')}
+                  className="h-7 px-3 rounded-lg text-[11.5px] font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-sm disabled:opacity-50"
+                  style={{
+                    background: '#10b981',
+                    color: '#000',
+                  }}
+                >
+                  {missionActionLoadingKey === `${mission.reportId}:REPORTER_ACCEPT` ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : (
+                    <Check size={13} strokeWidth={3} />
+                  )}
+                  <span>✅ Đã đúng ý (Hoàn tất)</span>
+                </button>
+              )}
 
               <button
                 type="button"
@@ -4397,11 +4427,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 style={{
                   background: surfaceRaised,
                   border: `1px solid ${borderStrong}`,
-                  color: '#f59e0b',
+                  color: mission.stage === 'COMPLETED' ? '#a78bfa' : '#f59e0b',
                 }}
               >
                 <RefreshCw size={12} />
-                <span>🔄 Cần chỉnh thêm</span>
+                <span>{mission.stage === 'COMPLETED' ? '✨ Nâng cấp / Chỉnh thêm' : '🔄 Cần chỉnh thêm'}</span>
               </button>
             </div>
 
@@ -4422,7 +4452,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       void handleMissionInlineAction(mission, 'REPORTER_REOPEN', reopenText.trim());
                     }
                   }}
-                  placeholder="Nhập điểm cần AG chỉnh lại (VD: Thêm cột tổng số buổi còn lại)..."
+                  placeholder={
+                    mission.stage === 'COMPLETED'
+                      ? 'Nhập nội dung cần nâng cấp tiếp trong luồng này (chờ anh Danny duyệt giao AG)...'
+                      : 'Nhập điểm cần AG chỉnh lại (VD: Thêm cột tổng số buổi còn lại)...'
+                  }
                   className="flex-1 h-7 px-2.5 rounded-lg text-[11.5px] outline-none"
                   style={{
                     background: surfaceBg,
@@ -4435,9 +4469,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   disabled={!reopenText.trim() || missionActionLoadingKey === `${mission.reportId}:REPORTER_REOPEN`}
                   onClick={() => void handleMissionInlineAction(mission, 'REPORTER_REOPEN', reopenText.trim())}
                   className="h-7 px-2.5 rounded-lg text-[11px] font-extrabold cursor-pointer disabled:opacity-50 shrink-0"
-                  style={{ background: '#f59e0b', color: '#000' }}
+                  style={{
+                    background: mission.stage === 'COMPLETED' ? '#8b5cf6' : '#f59e0b',
+                    color: mission.stage === 'COMPLETED' ? '#fff' : '#000',
+                  }}
                 >
-                  Gửi cho AG
+                  Gửi đề xuất
                 </button>
               </div>
             )}

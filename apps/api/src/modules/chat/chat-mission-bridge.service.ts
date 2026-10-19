@@ -119,10 +119,24 @@ export function buildMissionSummaryFromReport(
     report.comments?.filter((c) => c.authorType === 'AGENT' && c.kind === 'CLARIFICATION_QUESTION').slice(-1)[0]
       ?.body || null;
 
+  const isJobActivelyRunning = Boolean(
+    activeJob &&
+    ['PENDING', 'LEASED', 'RUNNING', 'AWAITING_COMMIT_REVIEW', 'AWAITING_DEPLOY_REVIEW'].includes(activeJob.status)
+  );
+  const hasUpgradeOrReworkContext = Boolean(
+    report.resolution ||
+    (activeJob && activeJob.status === 'RELEASED') ||
+    report.comments?.some((c) => c.authorType === 'STAFF')
+  );
+
   let stage: MosChatMissionStage = 'RECEIVED';
   let stepIndex: 1 | 2 | 3 | 4 = 1;
-  let humanBadge = '🟣 Đã tiếp nhận nhiệm vụ';
-  let humanSummary = 'Đã ghi nhận vào mOS Mission. Hệ thống đang đọc nội dung và hình ảnh đính kèm.';
+  let humanBadge = hasUpgradeOrReworkContext
+    ? '🟣 Có yêu cầu nâng cấp · Chờ anh Danny duyệt'
+    : '🟣 Đã tiếp nhận nhiệm vụ';
+  let humanSummary = hasUpgradeOrReworkContext
+    ? 'Đã ghi nhận yêu cầu nâng cấp / chỉnh sửa bổ sung trong luồng chat. Đang chờ anh Danny bấm [🚀 Giao AG nâng cấp tiếp] để AG thực hiện.'
+    : 'Đã ghi nhận vào mOS Mission. Hệ thống đang đọc nội dung và hình ảnh đính kèm.';
 
   if (report.status === 'CLOSED') {
     stage = 'COMPLETED';
@@ -177,7 +191,7 @@ export function buildMissionSummaryFromReport(
         ? `Đã xây dựng xong bản thử nghiệm: ${activeJob.summary} — Chờ anh Danny kiểm tra và duyệt.`
         : 'Đã xây dựng và kiểm thử xong trên bản thử nghiệm! Đang chờ anh Danny duyệt.';
     }
-  } else if (report.status === 'APPROVED' || report.status === 'IN_PROGRESS') {
+  } else if (report.status === 'IN_PROGRESS' || (report.status === 'APPROVED' && isJobActivelyRunning)) {
     stage = 'BUILDING';
     stepIndex = 2;
     humanBadge = '⚡ Đang xây dựng tính năng';
@@ -185,9 +199,7 @@ export function buildMissionSummaryFromReport(
   }
 
   const changedFiles = parseSafeStringList(activeJob?.changedFilesJson);
-  const canApproveImplementation =
-    report.status === 'NEW' ||
-    (report.status === 'APPROVED' && !report.implementationApprovedAt && !report.implementationActiveJobId);
+  const canApproveImplementation = report.status === 'NEW' || (report.status === 'APPROVED' && !isJobActivelyRunning);
   const canApproveCommit = Boolean(
     activeJob &&
     activeJob.status === 'AWAITING_COMMIT_REVIEW' &&
@@ -242,7 +254,7 @@ export function buildMissionSummaryFromReport(
       agentSummary: activeJob?.summary || report.resolution?.solutionSummary || null,
     },
     reporterActions: {
-      canAcceptOrReopen: report.status === 'FIXED',
+      canAcceptOrReopen: report.status === 'FIXED' || report.status === 'CLOSED',
     },
   };
 }
@@ -898,6 +910,23 @@ export class ChatMissionBridgeService {
         msg.missionSyncedCommentIds.push(latestComment.id);
       }
 
+      if (added?.report?.status === 'FIXED' || added?.report?.status === 'CLOSED') {
+        await fastify.prisma.crm.crmBugReport.update({
+          where: { id: missionId },
+          data: {
+            status: 'NEW',
+            statusSort: 0,
+            clarificationStatus: 'READY',
+            implementationApprovedByStaffId: null,
+            implementationApprovedAt: null,
+            implementationApprovalSourceVersion: null,
+            implementationActiveJobId: null,
+            closedAt: null,
+          },
+        });
+        msg.missionSyncedStage = 'RECEIVED';
+      }
+
       if (await InboxFollowUpService.enqueue(fastify, missionId, 'REPORTER_COMMENT', added.report.updatedAt)) {
         RequestClassifierWorkerHub.notify('inbox_follow_up_available');
       }
@@ -957,17 +986,118 @@ export class ChatMissionBridgeService {
       if (!isSuperAdmin) {
         throw new BugReportError('Chỉ Super Admin Danny mới có quyền duyệt triển khai.', 403);
       }
-      if (report.status === 'NEW') {
-        await BugReportService.triage(fastify, actorStaffId, reportId, {
-          status: 'APPROVED',
-          priority: (report.priority as BugPriority) || 'P1',
-          businessContext: noteTextInput || 'Duyệt trực tiếp từ mOS Chat.',
-          note: noteTextInput || 'Super Admin Danny duyệt triển khai từ mOS Chat.',
+      if (noteTextInput) {
+        await BugReportService.addComment(fastify, actorStaffId, reportId, true, {
+          body: noteTextInput,
         });
       }
-      await InboxImplementationService.approve(fastify, reportId, actorStaffId, undefined, 'AG');
+
+      const expectedPlan = await fastify.prisma.crm.$transaction(async (tx) => {
+        const effectivePriority: BugPriority = (report.priority as BugPriority) || 'P1';
+        const updated = await tx.crmBugReport.update({
+          where: { id: reportId },
+          data: {
+            status: 'APPROVED',
+            statusSort: 0,
+            priority: effectivePriority,
+            prioritySort:
+              effectivePriority === 'P0' ? 0 : effectivePriority === 'P1' ? 1 : effectivePriority === 'P2' ? 2 : 3,
+            clarificationStatus: 'READY',
+            clarificationSummary:
+              report.clarificationSummary ||
+              `Nhiệm vụ #MSN-${reportId} đã được Super Admin Danny duyệt nâng cấp / triển khai tiếp trực tiếp từ subthread mOS Chat.`,
+            clarifiedAt: now,
+            businessContext:
+              noteTextInput ||
+              report.businessContext ||
+              'Super Admin Danny duyệt nâng cấp / triển khai tiếp trực tiếp từ subthread mOS Chat.',
+            approvedByStaffId: actorStaffId,
+            approvedAt: now,
+            implementationApprovedByStaffId: null,
+            implementationApprovedAt: null,
+            implementationApprovalSourceVersion: null,
+            implementationActiveJobId: null,
+            closedAt: null,
+          },
+          include: {
+            comments: {
+              orderBy: { createdAt: 'asc' },
+              select: { id: true, body: true },
+            },
+          },
+        });
+
+        await tx.crmInboxImplementationJob.updateMany({
+          where: { reportId, status: 'CHANGES_REQUESTED' },
+          data: { status: 'SUPERSEDED' },
+        });
+
+        const planJobId = randomUUID();
+        const eventKind = 'IMPLEMENTATION_APPROVAL';
+        const eventVersion = inboxPlanEventVersion(updated, eventKind);
+        const sourceVersion = inboxImplementationSourceVersion(updated);
+        const latestCommentText =
+          updated.comments
+            .slice(-3)
+            .map((c) => c.body)
+            .join('\n')
+            .slice(0, 800) || updated.title;
+        const planDraft: InboxPlanDraft = {
+          evidence: `Yêu cầu nâng cấp / điều chỉnh bổ sung trong luồng mOS Chat (#MSN-${reportId}): ${latestCommentText}`,
+          expectedOutcome: updated.title,
+          scope: 'apps/web, apps/api, packages/shared',
+          steps: [
+            'Đọc toàn bộ lịch sử thảo luận và yêu cầu nâng cấp mới nhất trong subthread mOS Chat.',
+            'Kế thừa mã nguồn đã triển khai của nhiệm vụ này (1 ticket = 1 session) để nâng cấp / điều chỉnh.',
+            'Chạy kiểm thử tự động (pnpm verify:quick, pnpm check:ui-contract) và xác minh giao diện.',
+          ],
+          verification: 'pnpm verify:quick && pnpm check:ui-contract',
+          risksAndRollback: 'Thay đổi cô lập trong worktree riêng; có thể rollback commit an toàn nếu cần.',
+          approvalRequest: 'Super Admin Danny đã duyệt Cổng 1 trực tiếp từ subthread mOS Chat để AG nâng cấp tiếp.',
+        };
+        const planVersion = inboxImplementationPlanVersion(sourceVersion, planDraft);
+
+        await tx.crmInboxPlanJob.create({
+          data: {
+            id: planJobId,
+            reportId,
+            eventKind,
+            eventVersion,
+            status: 'COMPLETED',
+            resultAction: 'POST_PLAN',
+            sourceVersion,
+            planVersion,
+            expiresAt: new Date(now.getTime() + 24 * 3600 * 1000),
+          },
+        });
+
+        return { planJobId, sourceVersion, planVersion };
+      });
+
+      await InboxImplementationService.approve(fastify, reportId, actorStaffId, expectedPlan, 'AG');
       RequestClassifierWorkerHub.notify('inbox_implementation_available');
-      responseMessage = 'Đã duyệt cho AG bắt đầu lập trình và kiểm thử!';
+
+      const conv = conversations.find((c) => c.id === body.conversationId);
+      const msg = conv?.messages.find((m) => m.id === body.messageId || m.missionId === reportId);
+      if (conv && msg) {
+        const key = formatBugReportKey(reportId, report.requestType === 'FEATURE' ? 'FEATURE' : 'BUG');
+        msg.thread = msg.thread || [];
+        systemReply = createMilestoneThreadReply(
+          reportId,
+          'BUILDING',
+          `🚀 **Đã duyệt nâng cấp / chỉnh sửa tiếp #MSN-${reportId} (${key})**\nAnh Danny đã duyệt yêu cầu bổ sung trong luồng chat. Phiên trợ lý kỹ thuật (AG) của nhiệm vụ này đã được đánh thức để thực hiện nâng cấp!`,
+          now
+        );
+        msg.thread.push(systemReply);
+        msg.missionSyncedStage = 'BUILDING';
+        conv.updatedAt = now.toISOString();
+      }
+      for (const task of tasks) {
+        if (task.missionId === reportId) {
+          task.done = false;
+        }
+      }
+      responseMessage = 'Đã duyệt Cổng 1 cho AG bắt đầu nâng cấp / lập trình tiếp!';
     } else if (action === 'APPROVE_COMMIT') {
       if (!isSuperAdmin) {
         throw new BugReportError('Chỉ Super Admin Danny mới có quyền duyệt Commit.', 403);
@@ -1014,7 +1144,7 @@ export class ChatMissionBridgeService {
       const reworkReason =
         noteTextInput.length >= 10
           ? noteTextInput
-          : `${noteTextInput || 'Cần điều chỉnh thêm'} (Phản hồi trực tiếp từ luồng mOS Chat)`;
+          : `${noteTextInput || 'Cần nâng cấp / điều chỉnh thêm'} (Phản hồi trực tiếp từ luồng mOS Chat)`;
 
       if (report.status === 'FIXED') {
         try {
@@ -1033,7 +1163,21 @@ export class ChatMissionBridgeService {
         });
       }
 
-      // Also append user's rework note to the chat thread so everyone sees what needs adjusting
+      await fastify.prisma.crm.crmBugReport.update({
+        where: { id: reportId },
+        data: {
+          status: 'NEW',
+          statusSort: 0,
+          clarificationStatus: 'READY',
+          implementationApprovedByStaffId: null,
+          implementationApprovedAt: null,
+          implementationApprovalSourceVersion: null,
+          implementationActiveJobId: null,
+          closedAt: null,
+        },
+      });
+
+      // Also append user's rework/upgrade note to the chat thread so everyone sees what needs adjusting
       const conv = conversations.find((c) => c.id === body.conversationId);
       const msg = conv?.messages.find((m) => m.id === body.messageId || m.missionId === reportId);
       if (conv && msg) {
@@ -1043,12 +1187,12 @@ export class ChatMissionBridgeService {
           senderId: user.id,
           senderName: user.username || 'Nhân sự',
           senderRole: isSuperAdmin ? 'Super Admin' : 'Admin',
-          text: `🔄 **Yêu cầu chỉnh thêm (#MSN-${reportId}):** ${reworkReason}`,
+          text: `🔄 **Yêu cầu nâng cấp / chỉnh thêm (#MSN-${reportId}):** ${reworkReason}`,
           timeLabel: formatTimeLabel(now),
           createdAt: now.toISOString(),
         };
         msg.thread.push(systemReply);
-        msg.missionSyncedStage = 'BUILDING';
+        msg.missionSyncedStage = 'RECEIVED';
         conv.updatedAt = now.toISOString();
       }
       for (const task of tasks) {
@@ -1062,7 +1206,7 @@ export class ChatMissionBridgeService {
       if (await InboxPlanService.enqueue(fastify, reportId, 'REPORTER_COMMENT')) {
         RequestClassifierWorkerHub.notify('inbox_plan_available');
       }
-      responseMessage = 'Đã gửi yêu cầu chỉnh sửa thêm cho AG ngay trong luồng chat!';
+      responseMessage = 'Đã ghi nhận yêu cầu nâng cấp / chỉnh thêm trong luồng chat (chờ anh Danny duyệt giao AG)!';
     }
 
     await this.syncLinkedMissionsIntoChatState(fastify, conversations, tasks);
