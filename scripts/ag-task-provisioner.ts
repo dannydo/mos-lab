@@ -90,6 +90,7 @@ export type TicketSessionRecord = {
   reportId: number;
   conversationId: string;
   worktreePath: string;
+  modelTier?: 'flash_lite' | 'flash' | 'pro';
   createdAt: string;
   updatedAt: string;
 };
@@ -500,21 +501,211 @@ export async function detectAntigravityLsEnv(): Promise<Record<string, string>> 
   return {};
 }
 
+const DEFAULT_AG_MODEL_ENUM_BY_TIER: Record<'flash_lite' | 'flash' | 'pro', string> = {
+  pro: 'MODEL_PLACEHOLDER_M417', // Gemini 4 Argon (High)
+  flash: 'MODEL_PLACEHOLDER_M318', // Gemini 3.8 Flash (High)
+  flash_lite: 'MODEL_PLACEHOLDER_M320', // Gemini 3.8 Flash (Low)
+};
+
+export async function resolveAntigravityPlanModel(
+  modelTier: string | undefined,
+  lsAddress?: string,
+  csrfToken?: string,
+  fetcher: typeof fetch = fetch
+): Promise<string> {
+  const normalized = (modelTier || process.env.MOS_AG_MODEL?.trim() || 'pro').toLowerCase();
+  if (normalized.startsWith('model_placeholder_')) {
+    return normalized.toUpperCase();
+  }
+  const tier: 'flash_lite' | 'flash' | 'pro' =
+    normalized === 'flash_lite' ? 'flash_lite' : normalized === 'flash' ? 'flash' : 'pro';
+  const fallbackEnum = DEFAULT_AG_MODEL_ENUM_BY_TIER[tier];
+
+  if (!lsAddress || !csrfToken) {
+    return fallbackEnum;
+  }
+
+  try {
+    const res = await fetcher(
+      `http://${lsAddress}/exa.language_server_pb.LanguageServerService/GetCascadeModelConfigData`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-codeium-csrf-token': csrfToken,
+        },
+        body: JSON.stringify({}),
+        signal: AbortSignal.timeout(3_000),
+      }
+    );
+    if (res.ok) {
+      const data = (await res.json()) as {
+        clientModelConfigs?: Array<{
+          label?: string;
+          disabled?: boolean;
+          modelOrAlias?: { model?: string };
+        }>;
+      };
+      const configs = (data.clientModelConfigs || []).filter((c) => !c.disabled && c.modelOrAlias?.model);
+      const match =
+        tier === 'pro'
+          ? configs.find((c) => /Argon.*\(High\)/i.test(c.label || '')) ||
+            configs.find((c) => /Argon/i.test(c.label || ''))
+          : tier === 'flash'
+            ? configs.find((c) => /Flash.*\(High\)/i.test(c.label || '')) ||
+              configs.find((c) => /Flash/i.test(c.label || ''))
+            : configs.find((c) => /Flash.*\(Low\)/i.test(c.label || '')) ||
+              configs.find((c) => /Flash.*\(Medium\)/i.test(c.label || ''));
+      if (match?.modelOrAlias?.model) {
+        return match.modelOrAlias.model;
+      }
+    }
+  } catch {
+    // Fallback to static enum mapping
+  }
+
+  return fallbackEnum;
+}
+
+export function buildAntigravityCascadeConfig(planModel: string) {
+  return {
+    plannerConfig: {
+      planModel,
+      supportsLatexRendering: true,
+      useAiCredits: false,
+      toolConfig: {
+        runCommand: {
+          autoCommandConfig: {
+            autoExecutionPolicy: 'CASCADE_COMMANDS_AUTO_EXECUTION_EAGER',
+          },
+        },
+        notifyUser: {
+          artifactReviewMode: 'ARTIFACT_REVIEW_MODE_ALWAYS',
+        },
+      },
+    },
+    executorConfig: {
+      useCoreDirect: true,
+    },
+    conversationHistoryConfig: {},
+  };
+}
+
+export function buildAntigravityCustomAgentSpec() {
+  return {
+    builtinAgent: {
+      defaultAgent: {
+        isGoogle: false,
+        isInteractive: true,
+        surface: 'AGENT_SURFACE_HUB',
+      },
+    },
+  };
+}
+
 export async function spawnAntigravitySession(
   request: InboxIdeTaskProvisioningRequest,
-  worktreePath: string
+  worktreePath: string,
+  fetcher: typeof fetch = fetch
 ): Promise<string> {
-  const command = resolveAgentApiCommand();
   const prompt = buildAgentPrompt(request, worktreePath);
   const title = `[${request.ticketKey}] ${request.title.slice(0, 80)}`;
+  const modelTier = request.modelTier || (process.env.MOS_AG_MODEL?.trim() as 'flash_lite' | 'flash' | 'pro') || 'pro';
+  const detectedEnv = await detectAntigravityLsEnv();
+  const lsAddress = detectedEnv.ANTIGRAVITY_LS_ADDRESS;
+  const csrfToken = detectedEnv.ANTIGRAVITY_CSRF_TOKEN;
+  const projectId = detectedEnv.ANTIGRAVITY_PROJECT_ID || detectAntigravityProjectId();
 
-  const model = request.modelTier || process.env.MOS_AG_MODEL?.trim() || 'flash';
-  const modelArg = model ? [`--model=${model}`] : [];
+  if (lsAddress && csrfToken) {
+    try {
+      const planModel = await resolveAntigravityPlanModel(modelTier, lsAddress, csrfToken, fetcher);
+      const requestedCascadeId = randomUUID();
+      const repoPath = (() => {
+        try {
+          return readManagedRuntimeConfig().repository;
+        } catch {
+          return resolve(homedir(), 'projects/mos-lab');
+        }
+      })();
+      const workspaceUri = `file://${repoPath}`;
+      const rpcHeaders = {
+        'Content-Type': 'application/json',
+        'x-codeium-csrf-token': csrfToken,
+      };
+
+      const startRes = await fetcher(`http://${lsAddress}/exa.language_server_pb.LanguageServerService/StartCascade`, {
+        method: 'POST',
+        headers: rpcHeaders,
+        body: JSON.stringify({
+          source: 'CORTEX_TRAJECTORY_SOURCE_CASCADE_CLIENT',
+          cascadeId: requestedCascadeId,
+          requestedModel: planModel,
+          workspaceUris: [workspaceUri],
+          projectEnvConfig: {
+            projectId,
+            defaultProjectEnvironment: {},
+          },
+        }),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+
+      if (!startRes.ok) {
+        throw new Error(`StartCascade HTTP ${startRes.status}: ${await startRes.text()}`);
+      }
+
+      const startPayload = (await startRes.json()) as { cascadeId?: string };
+      const cascadeId = startPayload.cascadeId || requestedCascadeId;
+
+      await fetcher(`http://${lsAddress}/exa.language_server_pb.LanguageServerService/UpdateConversationAnnotations`, {
+        method: 'POST',
+        headers: rpcHeaders,
+        body: JSON.stringify({
+          cascadeId,
+          annotations: {
+            title,
+            lastUserViewTime: new Date().toISOString(),
+          },
+          mergeAnnotations: true,
+        }),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      }).catch(() => {});
+
+      const sendRes = await fetcher(
+        `http://${lsAddress}/exa.language_server_pb.LanguageServerService/SendUserCascadeMessage`,
+        {
+          method: 'POST',
+          headers: rpcHeaders,
+          body: JSON.stringify({
+            cascadeId,
+            items: [{ text: prompt }],
+            cascadeConfig: buildAntigravityCascadeConfig(planModel),
+            customAgentSpec: buildAntigravityCustomAgentSpec(),
+          }),
+          signal: AbortSignal.timeout(AGENTAPI_TIMEOUT_MS),
+        }
+      );
+
+      if (!sendRes.ok) {
+        throw new Error(`SendUserCascadeMessage HTTP ${sendRes.status}: ${await sendRes.text()}`);
+      }
+
+      process.stdout.write(
+        `[Provisioner] Spawned Antigravity Cascade ${cascadeId} for ${request.ticketKey} with modelTier=${modelTier} (planModel=${planModel})\n`
+      );
+      return cascadeId;
+    } catch (rpcErr) {
+      process.stderr.write(
+        `[Provisioner] Direct StartCascade RPC failed (${rpcErr instanceof Error ? rpcErr.message : String(rpcErr)}), falling back to agentapi CLI...\n`
+      );
+    }
+  }
+
+  const command = resolveAgentApiCommand();
+  const modelArg = modelTier ? [`--model=${modelTier}`] : [];
   const args = command.endsWith('language_server')
     ? ['agentapi', 'new-conversation', ...modelArg, `--title=${title}`, prompt]
     : ['new-conversation', ...modelArg, `--title=${title}`, prompt];
 
-  const detectedEnv = await detectAntigravityLsEnv();
   const env = {
     ...process.env,
     ...detectedEnv,
@@ -552,15 +743,69 @@ export async function spawnAntigravitySession(
 export async function sendMessageToAntigravitySession(
   conversationId: string,
   content: string,
-  title?: string
+  title?: string,
+  modelTier?: 'flash_lite' | 'flash' | 'pro',
+  fetcher: typeof fetch = fetch
 ): Promise<void> {
+  const detectedEnv = await detectAntigravityLsEnv();
+  const lsAddress = detectedEnv.ANTIGRAVITY_LS_ADDRESS;
+  const csrfToken = detectedEnv.ANTIGRAVITY_CSRF_TOKEN;
+
+  if (lsAddress && csrfToken) {
+    try {
+      const planModel = await resolveAntigravityPlanModel(modelTier, lsAddress, csrfToken, fetcher);
+      const rpcHeaders = {
+        'Content-Type': 'application/json',
+        'x-codeium-csrf-token': csrfToken,
+      };
+      if (title) {
+        await fetcher(
+          `http://${lsAddress}/exa.language_server_pb.LanguageServerService/UpdateConversationAnnotations`,
+          {
+            method: 'POST',
+            headers: rpcHeaders,
+            body: JSON.stringify({
+              cascadeId: conversationId,
+              annotations: {
+                title,
+                lastUserViewTime: new Date().toISOString(),
+              },
+              mergeAnnotations: true,
+            }),
+            signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+          }
+        ).catch(() => {});
+      }
+
+      const sendRes = await fetcher(
+        `http://${lsAddress}/exa.language_server_pb.LanguageServerService/SendUserCascadeMessage`,
+        {
+          method: 'POST',
+          headers: rpcHeaders,
+          body: JSON.stringify({
+            cascadeId: conversationId,
+            items: [{ text: content }],
+            cascadeConfig: buildAntigravityCascadeConfig(planModel),
+            customAgentSpec: buildAntigravityCustomAgentSpec(),
+          }),
+          signal: AbortSignal.timeout(AGENTAPI_TIMEOUT_MS),
+        }
+      );
+
+      if (sendRes.ok) {
+        return;
+      }
+    } catch {
+      // Fallback to agentapi CLI
+    }
+  }
+
   const command = resolveAgentApiCommand();
   const titleArg = title ? [`--title=${title}`] : [];
   const args = command.endsWith('language_server')
     ? ['agentapi', 'send-message', ...titleArg, conversationId, content]
     : ['send-message', ...titleArg, conversationId, content];
 
-  const detectedEnv = await detectAntigravityLsEnv();
   const env = {
     ...process.env,
     ...detectedEnv,
@@ -574,24 +819,31 @@ export async function getOrCreateAntigravitySession(
   worktreePath: string
 ): Promise<{ taskId: string; isNew: boolean }> {
   const existing = findExistingSessionForTicket(request.ticketKey, request.reportId);
+  const resolvedTier =
+    request.modelTier ||
+    existing?.modelTier ||
+    (process.env.MOS_AG_MODEL?.trim() as 'flash_lite' | 'flash' | 'pro') ||
+    'pro';
   if (existing) {
     process.stdout.write(
-      `[Provisioner] Ticket ${request.ticketKey} already has active session ${existing.conversationId}. Reusing session (1 ticket -> 1 session).\n`
+      `[Provisioner] Ticket ${request.ticketKey} already has active session ${existing.conversationId}. Reusing session (1 ticket -> 1 session) with modelTier=${resolvedTier}.\n`
     );
     const prompt = buildAgentPrompt(request, worktreePath);
     try {
       await sendMessageToAntigravitySession(
         existing.conversationId,
         `🔔 [mOS Inbox Cập nhật]: Ticket ${request.ticketKey} có yêu cầu thực thi mới (Job: ${request.jobId}):\n\n${prompt}`,
-        `Cập nhật [${request.ticketKey}]`
+        `Cập nhật [${request.ticketKey}]`,
+        resolvedTier
       );
     } catch (err) {
       process.stderr.write(
         `[Provisioner] Failed to notify existing session ${existing.conversationId}: ${err instanceof Error ? err.message : String(err)}\n`
       );
     }
-    if (worktreePath && worktreePath !== existing.worktreePath) {
-      existing.worktreePath = worktreePath;
+    if ((worktreePath && worktreePath !== existing.worktreePath) || existing.modelTier !== resolvedTier) {
+      if (worktreePath) existing.worktreePath = worktreePath;
+      existing.modelTier = resolvedTier;
       existing.updatedAt = new Date().toISOString();
       const sessions = readTicketSessions();
       sessions[request.ticketKey] = existing;
@@ -601,12 +853,13 @@ export async function getOrCreateAntigravitySession(
     return { taskId: existing.conversationId, isNew: false };
   }
 
-  const conversationId = await spawnAntigravitySession(request, worktreePath);
+  const conversationId = await spawnAntigravitySession({ ...request, modelTier: resolvedTier }, worktreePath);
   const record: TicketSessionRecord = {
     ticketKey: request.ticketKey,
     reportId: request.reportId,
     conversationId,
     worktreePath,
+    modelTier: resolvedTier,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };

@@ -5,8 +5,10 @@ import { join } from 'node:path';
 import test from 'node:test';
 import {
   buildAgentPrompt,
+  buildAntigravityCascadeConfig,
   readManagedRuntimeConfig,
   readProvisioningLedger,
+  resolveAntigravityPlanModel,
   runProvisionerOnce,
   runClarificationWatcher,
   runPlanWatcher,
@@ -459,4 +461,17 @@ test('probeIsAntigravityPort rejects non-antigravity HTTP ports', async () => {
   } finally {
     server.close();
   }
+});
+
+test('resolveAntigravityPlanModel maps pro to Argon High (MODEL_PLACEHOLDER_M417), flash to Flash High (MODEL_PLACEHOLDER_M318), and flash_lite to Flash Low (MODEL_PLACEHOLDER_M320)', async () => {
+  assert.equal(await resolveAntigravityPlanModel('pro'), 'MODEL_PLACEHOLDER_M417');
+  assert.equal(await resolveAntigravityPlanModel('flash'), 'MODEL_PLACEHOLDER_M318');
+  assert.equal(await resolveAntigravityPlanModel('flash_lite'), 'MODEL_PLACEHOLDER_M320');
+
+  const cascadeConfig = buildAntigravityCascadeConfig('MODEL_PLACEHOLDER_M417');
+  assert.equal(cascadeConfig.plannerConfig.planModel, 'MODEL_PLACEHOLDER_M417');
+  assert.equal(
+    cascadeConfig.plannerConfig.toolConfig.runCommand.autoCommandConfig.autoExecutionPolicy,
+    'CASCADE_COMMANDS_AUTO_EXECUTION_EAGER'
+  );
 });
