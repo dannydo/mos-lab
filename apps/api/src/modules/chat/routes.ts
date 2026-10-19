@@ -294,9 +294,9 @@ const STATE_DB_SYNC_TTL_MS = 30_000;
 function buildDefaultAccessConfig(): MosChatAccessConfig {
   return {
     allowAllStaff: false,
-    allowedGroupKeys: ['TEAM_ADMIN_MANAGER'],
+    allowedGroupKeys: ['TEAM_ADMIN_MANAGER', 'TEAM_CC', 'TEAM_TELESALES'],
     allowedStaffIds: [],
-    aiCopilotAllowedGroupKeys: [],
+    aiCopilotAllowedGroupKeys: ['TEAM_ADMIN_MANAGER', 'TEAM_TELESALES'],
     aiCopilotAllowedStaffIds: [],
     updatedAt: new Date().toISOString(),
   };

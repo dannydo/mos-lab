@@ -941,9 +941,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   const [accessConfig, setAccessConfig] = useState<MosChatAccessConfig>({
     allowAllStaff: false,
-    allowedGroupKeys: ['TEAM_ADMIN_MANAGER'],
+    allowedGroupKeys: ['TEAM_ADMIN_MANAGER', 'TEAM_CC', 'TEAM_TELESALES'],
     allowedStaffIds: [],
-    aiCopilotAllowedGroupKeys: [],
+    aiCopilotAllowedGroupKeys: ['TEAM_ADMIN_MANAGER', 'TEAM_TELESALES'],
     aiCopilotAllowedStaffIds: [],
   });
   const [serverCanAccessChat, setServerCanAccessChat] = useState<boolean | null>(null);
