@@ -325,6 +325,22 @@ export interface MosGoogleChatPortalProps {
   onUnreadCountChange?: (unreadCount: number, activeTaskCount: number) => void;
 }
 
+const STAFF_DIRECTORY_CACHE_KEY = 'mos_chat_staff_directory_v1';
+
+const getInitialStaffDirectory = (): MosChatStaffMember[] => {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(STAFF_DIRECTORY_CACHE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {
+    // ignore parse error
+  }
+  return [];
+};
+
 const FALLBACK_CONVERSATIONS: MosChatConversation[] = [
   {
     id: 'space-cc',
@@ -676,7 +692,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   const [conversations, setConversations] = useState<MosChatConversation[]>(FALLBACK_CONVERSATIONS);
   const [tasks, setTasks] = useState<MosChatTaskItem[]>(FALLBACK_TASKS);
-  const [staffDirectory, setStaffDirectory] = useState<MosChatStaffMember[]>([]);
+  const [staffDirectory, setStaffDirectory] = useState<MosChatStaffMember[]>(getInitialStaffDirectory);
   const personalLayoutStorageKey = useMemo(() => {
     let resolvedKey = String(currentUser?.id || currentUser?.username || '').trim();
     if (!resolvedKey && typeof window !== 'undefined') {
@@ -1510,8 +1526,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const fetchBootstrap = useCallback(
     async (forceFull = false) => {
       try {
+        const shouldForceFull = forceFull || staffDirectory.length === 0;
         const res = await apiClient.chat.bootstrap(
-          { sinceVersion: forceFull ? undefined : lastVersionRef.current || undefined },
+          { sinceVersion: shouldForceFull ? undefined : lastVersionRef.current || undefined },
           { isPolling: true }
         );
         if (res?.accessConfig) {
@@ -1542,6 +1559,16 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             return prev;
           });
         }
+        if (Array.isArray(res?.staffDirectory) && res.staffDirectory.length > 0) {
+          setStaffDirectory(res.staffDirectory);
+          if (typeof window !== 'undefined') {
+            try {
+              window.localStorage.setItem(STAFF_DIRECTORY_CACHE_KEY, JSON.stringify(res.staffDirectory));
+            } catch {
+              // ignore
+            }
+          }
+        }
         if (res?.unchanged) {
           return;
         }
@@ -1554,14 +1581,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         if (res?.tasks) {
           setTasks(res.tasks);
         }
-        if (res?.staffDirectory) {
-          setStaffDirectory(res.staffDirectory);
-        }
       } catch (_) {
         // Fallback state already initialized
       }
     },
-    [userSidebarPrefsStorageKey]
+    [userSidebarPrefsStorageKey, staffDirectory.length]
   );
 
   useEffect(() => {
@@ -3795,6 +3819,31 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   const openTaskModalFromMessage = (msg: MosChatMessage | null) => {
     setTaskModalSourceMsg(msg);
+    if (staffDirectory.length === 0) {
+      fetchBootstrap(true);
+      apiClient.staff
+        .list()
+        .then((data) => {
+          if (Array.isArray(data) && data.length > 0) {
+            const mapped: MosChatStaffMember[] = data.map((s: SafeAny) => ({
+              id: s.id,
+              username: s.username || s.name || s.displayName || `staff_${s.id}`,
+              displayName: s.name || s.displayName || `Staff #${s.id}`,
+              role: s.role || 'Staff',
+              avatar: s.avatar || undefined,
+              department: s.department || undefined,
+              userGroupName: s.userGroupName || undefined,
+            }));
+            setStaffDirectory((prev) => (prev.length === 0 ? mapped : prev));
+            if (typeof window !== 'undefined') {
+              try {
+                window.localStorage.setItem(STAFF_DIRECTORY_CACHE_KEY, JSON.stringify(mapped));
+              } catch {}
+            }
+          }
+        })
+        .catch(() => {});
+    }
     const existingTask = msg ? uniqueTasks.find((t) => t.sourceMessageId === msg.id || t.id === msg.taskId) : null;
     setTaskTitle(
       existingTask?.title || (msg ? msg.text : composerText.trim() || 'Kiểm tra lịch hẹn & chuẩn bị đón khách VIP')
@@ -3804,7 +3853,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       !String(existingTask.assigneeName).includes('Hà My') &&
       existingTask.assigneeName !== 'Chưa phân công'
         ? existingTask.assigneeName
-        : '';
+        : currentUser?.displayName || '';
     setTaskAssignee(existingAssignee);
     if (existingTask?.priority) {
       setTaskPriority(existingTask.priority);
@@ -4180,11 +4229,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     staffDirectory.forEach((s) => {
       if (s.displayName && !existingSet.has(s.displayName)) {
         existingSet.add(s.displayName);
-        out.push({ value: s.displayName, label: `${s.displayName} (${s.role})` });
+        out.push({ value: s.displayName, label: `${s.displayName} (${s.role || 'Nhân sự'})` });
       }
     });
+    if (currentUser?.displayName && !existingSet.has(currentUser.displayName)) {
+      out.unshift({
+        value: currentUser.displayName,
+        label: `${currentUser.displayName} (${currentUser.role || 'Tôi'})`,
+      });
+    }
     return out;
-  }, [staffDirectory]);
+  }, [staffDirectory, currentUser?.displayName, currentUser?.role]);
 
   const surfaceBg = isDark ? '#111827' : '#ffffff';
   const surfaceRaised = isDark ? '#1a2333' : '#f8fafc';
@@ -6876,6 +6931,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   onClick={() => {
                     setSidebarFilter('all');
                     setActiveSubtab('chat');
+                    if (isMobile) {
+                      setMobileActiveView('inbox');
+                    }
                   }}
                   className="h-7 rounded-md inline-flex items-center justify-center gap-1 text-[11px] font-bold cursor-pointer"
                   style={{
@@ -6894,6 +6952,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   onClick={() => {
                     setSidebarFilter('unread');
                     setActiveSubtab('chat');
+                    if (isMobile) {
+                      setMobileActiveView('inbox');
+                    }
                   }}
                   className="h-7 rounded-md inline-flex items-center justify-center gap-1 text-[11px] font-bold cursor-pointer tabular-nums"
                   style={{
@@ -6918,6 +6979,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   onClick={() => {
                     setSidebarFilter('spaces');
                     setActiveSubtab('chat');
+                    if (isMobile) {
+                      setMobileActiveView('inbox');
+                    }
                   }}
                   className="h-7 rounded-md inline-flex items-center justify-center gap-1 text-[11px] font-bold cursor-pointer"
                   style={{
@@ -6933,7 +6997,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 <button
                   type="button"
                   aria-label="Kho Công việc & Nhắc hẹn (Tasks)"
-                  onClick={() => setActiveSubtab('tasks')}
+                  onClick={() => {
+                    setActiveSubtab('tasks');
+                    if (isMobile) {
+                      setMobileActiveView('conversation');
+                    }
+                  }}
                   className="h-7 rounded-md inline-flex items-center justify-center gap-1 text-[11px] font-bold cursor-pointer tabular-nums"
                   style={{
                     background: activeSubtab === 'tasks' ? surfaceBg : 'transparent',
@@ -7684,86 +7753,113 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 <button
                   type="button"
                   aria-label="Quay lại danh sách hội thoại"
-                  onClick={() => setMobileActiveView('inbox')}
+                  onClick={() => {
+                    setMobileActiveView('inbox');
+                    if (activeSubtab === 'tasks') {
+                      setActiveSubtab('chat');
+                    }
+                  }}
                   className="w-7 h-7 -ml-1 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-white/10 shrink-0"
                   style={{ color: token.colorText }}
                 >
                   <ChevronLeft size={20} />
                 </button>
               )}
-              {activeConversation?.type === 'space' ? (
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center font-extrabold text-xs shrink-0"
-                  style={{
-                    background: `${activeConversation?.color || '#10b981'}24`,
-                    color: activeConversation?.color || '#10b981',
-                  }}
-                >
-                  <Hash size={16} />
-                </div>
-              ) : (
-                renderUserAvatarNode({
-                  staffId: activeConversation?.isSelf
-                    ? currentUser?.id || 'me'
-                    : activeConversation?.participantStaffId,
-                  name: activeConversation?.name,
-                  rawAvatar: activeConversation?.avatar,
-                  bgColor: activeConversation?.color || '#10b981',
-                  sizeClass: 'w-8 h-8',
-                  roundedClass: 'rounded-full',
-                  isOnline: activeConversation?.id !== AI_COPILOT_CONV_ID,
-                  isAiBot: activeConversation?.id === AI_COPILOT_CONV_ID,
-                  isSelfBookmark: Boolean(activeConversation?.isSelf || activeConversation?.id.startsWith('dm-self-')),
-                })
-              )}
-              <div className="min-w-0 flex items-center gap-1.5">
-                <span className="font-extrabold text-[13.5px] truncate">{activeConversation?.name}</span>
-                {activeConversation && (userPrefs.pinnedIds || []).includes(activeConversation.id) && (
-                  <Tooltip title="Đã ghim lên đầu mục (Pinned)">
-                    <Pin size={12} className="text-amber-400 fill-amber-400 shrink-0" />
-                  </Tooltip>
-                )}
-                {activeConversation && (userPrefs.manualUnreadIds || []).includes(activeConversation.id) && (
-                  <Tooltip title="Đã đánh dấu chưa đọc (Mark as unread)">
-                    <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-rose-500/20 text-rose-400 shrink-0 border border-rose-500/30">
-                      Chưa đọc
-                    </span>
-                  </Tooltip>
-                )}
-                {activeConversation?.roleTag && activeConversation?.type !== 'space' && (
-                  <span
-                    className="inline-flex items-center justify-center leading-none py-1 px-2 rounded-full text-[10px] font-bold tabular-nums shrink-0"
+              {activeSubtab === 'tasks' ? (
+                <div className="flex items-center gap-2 min-w-0">
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center font-extrabold text-xs shrink-0"
                     style={{
-                      background:
-                        activeConversation.id === AI_COPILOT_CONV_ID
-                          ? 'rgba(139, 92, 246, 0.16)'
-                          : 'rgba(16, 185, 129, 0.14)',
-                      color: activeConversation.id === AI_COPILOT_CONV_ID ? '#a78bfa' : '#10b981',
+                      background: 'rgba(212, 168, 75, 0.18)',
+                      color: '#d4a84b',
                     }}
                   >
-                    {activeConversation.roleTag}
-                  </span>
-                )}
-                {activeConversation?.type === 'space' && (
-                  <Tooltip
-                    title={`Xem và quản lý thành viên Không gian (${activeConversation.memberCount || activeConversation.memberIds?.length || 1} thành viên)`}
-                  >
-                    <button
-                      type="button"
-                      aria-label="Quản lý thành viên Không gian"
-                      onClick={() => setSpaceMembersModalOpen(true)}
-                      className="inline-flex items-center justify-center w-6 h-6 rounded-full transition-colors cursor-pointer hover:opacity-90 ml-0.5 shrink-0"
+                    <AlarmClock size={16} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="font-extrabold text-[13.5px] truncate">Kho Công Việc & Nhắc Hẹn</div>
+                    <div className="text-[11px] text-slate-400">
+                      {uniqueTasks.filter((t) => !t.done).length} đầu việc chưa xong
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {activeConversation?.type === 'space' ? (
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center font-extrabold text-xs shrink-0"
                       style={{
-                        background: 'rgba(59, 130, 246, 0.15)',
-                        color: '#3b82f6',
-                        border: '1px solid rgba(59, 130, 246, 0.25)',
+                        background: `${activeConversation?.color || '#10b981'}24`,
+                        color: activeConversation?.color || '#10b981',
                       }}
                     >
-                      <Users size={13} />
-                    </button>
-                  </Tooltip>
-                )}
-              </div>
+                      <Hash size={16} />
+                    </div>
+                  ) : (
+                    renderUserAvatarNode({
+                      staffId: activeConversation?.isSelf
+                        ? currentUser?.id || 'me'
+                        : activeConversation?.participantStaffId,
+                      name: activeConversation?.name,
+                      rawAvatar: activeConversation?.avatar,
+                      bgColor: activeConversation?.color || '#10b981',
+                      sizeClass: 'w-8 h-8',
+                      roundedClass: 'rounded-full',
+                      isOnline: activeConversation?.id !== AI_COPILOT_CONV_ID,
+                      isAiBot: activeConversation?.id === AI_COPILOT_CONV_ID,
+                      isSelfBookmark: Boolean(activeConversation?.isSelf || activeConversation?.id.startsWith('dm-self-')),
+                    })
+                  )}
+                  <div className="min-w-0 flex items-center gap-1.5">
+                    <span className="font-extrabold text-[13.5px] truncate">{activeConversation?.name}</span>
+                    {activeConversation && (userPrefs.pinnedIds || []).includes(activeConversation.id) && (
+                      <Tooltip title="Đã ghim lên đầu mục (Pinned)">
+                        <Pin size={12} className="text-amber-400 fill-amber-400 shrink-0" />
+                      </Tooltip>
+                    )}
+                    {activeConversation && (userPrefs.manualUnreadIds || []).includes(activeConversation.id) && (
+                      <Tooltip title="Đã đánh dấu chưa đọc (Mark as unread)">
+                        <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-rose-500/20 text-rose-400 shrink-0 border border-rose-500/30">
+                          Chưa đọc
+                        </span>
+                      </Tooltip>
+                    )}
+                    {activeConversation?.roleTag && activeConversation?.type !== 'space' && (
+                      <span
+                        className="inline-flex items-center justify-center leading-none py-1 px-2 rounded-full text-[10px] font-bold tabular-nums shrink-0"
+                        style={{
+                          background:
+                            activeConversation.id === AI_COPILOT_CONV_ID
+                              ? 'rgba(139, 92, 246, 0.16)'
+                              : 'rgba(16, 185, 129, 0.14)',
+                          color: activeConversation.id === AI_COPILOT_CONV_ID ? '#a78bfa' : '#10b981',
+                        }}
+                      >
+                        {activeConversation.roleTag}
+                      </span>
+                    )}
+                    {activeConversation?.type === 'space' && (
+                      <Tooltip
+                        title={`Xem và quản lý thành viên Không gian (${activeConversation.memberCount || activeConversation.memberIds?.length || 1} thành viên)`}
+                      >
+                        <button
+                          type="button"
+                          aria-label="Quản lý thành viên Không gian"
+                          onClick={() => setSpaceMembersModalOpen(true)}
+                          className="inline-flex items-center justify-center w-6 h-6 rounded-full transition-colors cursor-pointer hover:opacity-90 ml-0.5 shrink-0"
+                          style={{
+                            background: 'rgba(59, 130, 246, 0.15)',
+                            color: '#3b82f6',
+                            border: '1px solid rgba(59, 130, 246, 0.25)',
+                          }}
+                        >
+                          <Users size={13} />
+                        </button>
+                      </Tooltip>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Sub-tabs: Chat | Tasks | Pinned */}
@@ -9554,6 +9650,27 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   </div>
                 );
               })}
+
+              {uniqueTasks.length === 0 && (
+                <div className="py-12 flex flex-col items-center justify-center text-center text-slate-400">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center bg-amber-500/10 text-amber-500 mb-3">
+                    <AlarmClock size={24} />
+                  </div>
+                  <div className="text-[13.5px] font-bold text-slate-300 mb-1">Chưa có đầu việc hoặc nhắc hẹn nào</div>
+                  <div className="text-[12px] max-w-xs mb-4">
+                    Bạn có thể tạo đầu việc mới hoặc bấm vào biểu tượng hẹn giờ trên bất kỳ tin nhắn nào.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openTaskModalFromMessage(null)}
+                    className="px-3 py-1.5 rounded-lg text-[12px] font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-sm"
+                    style={{ background: '#d4a84b', color: '#000' }}
+                  >
+                    <Plus size={14} />
+                    <span>Tạo đầu việc mới</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
@@ -10566,6 +10683,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 options={assigneeOptions}
                 showSearch
                 allowClear
+                loading={assigneeOptions.length === 0}
+                notFoundContent={assigneeOptions.length === 0 ? 'Đang tải danh sách nhân sự...' : 'Không tìm thấy nhân sự'}
+                getPopupContainer={(trigger) => trigger?.parentElement || document.body}
+                dropdownStyle={{ zIndex: 1400 }}
                 status={!taskAssignee ? 'warning' : undefined}
                 placeholder="Chọn nhân sự phụ trách..."
                 filterOption={(input, option) => {
