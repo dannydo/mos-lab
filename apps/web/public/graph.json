@@ -8336,7 +8336,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3772
+        "line": 3775
       }
     },
     {
@@ -8350,7 +8350,7 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3833
+        "line": 3836
       }
     },
     {
@@ -11095,6 +11095,34 @@
         "module": "menu-access",
         "handler": "inlineHandler",
         "line": 47
+      }
+    },
+    {
+      "id": "route:GET:/api/notifications",
+      "type": "FastifyRoute",
+      "label": "GET /api/notifications",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/notifications/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/notifications",
+        "module": "notifications",
+        "handler": "inlineHandler",
+        "line": 68
+      }
+    },
+    {
+      "id": "route:POST:/api/notifications/read",
+      "type": "FastifyRoute",
+      "label": "POST /api/notifications/read",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/notifications/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/notifications/read",
+        "module": "notifications",
+        "handler": "inlineHandler",
+        "line": 370
       }
     },
     {
@@ -25858,6 +25886,102 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:NotificationCategory",
+      "type": "SharedType",
+      "label": "NotificationCategory",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-notifications.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "NotificationCategory",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:NotificationPriority",
+      "type": "SharedType",
+      "label": "NotificationPriority",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-notifications.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "NotificationPriority",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:NotificationActionType",
+      "type": "SharedType",
+      "label": "NotificationActionType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-notifications.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "NotificationActionType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosNotificationAction",
+      "type": "SharedType",
+      "label": "MosNotificationAction",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-notifications.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosNotificationAction",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosNotificationActor",
+      "type": "SharedType",
+      "label": "MosNotificationActor",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-notifications.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosNotificationActor",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosNotificationItem",
+      "type": "SharedType",
+      "label": "MosNotificationItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-notifications.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosNotificationItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosNotificationFeedResponse",
+      "type": "SharedType",
+      "label": "MosNotificationFeedResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-notifications.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosNotificationFeedResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MarkNotificationReadRequest",
+      "type": "SharedType",
+      "label": "MarkNotificationReadRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-notifications.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MarkNotificationReadRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:OmiCallDiagnosticResult",
       "type": "SharedType",
       "label": "OmiCallDiagnosticResult",
@@ -30106,6 +30230,18 @@
       }
     },
     {
+      "id": "uicomp:HeaderNotificationCenter",
+      "type": "UIComponent",
+      "label": "<HeaderNotificationCenter />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/notification-center/HeaderNotificationCenter.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "HeaderNotificationCenter",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:OmiCallHeaderControl",
       "type": "UIComponent",
       "label": "<OmiCallHeaderControl />",
@@ -32868,8 +33004,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 147188,
-        "lineCount": 3883,
+        "sizeBytes": 147222,
+        "lineCount": 3886,
         "ext": ".ts"
       }
     },
@@ -34274,6 +34410,19 @@
       "metadata": {
         "sizeBytes": 2437,
         "lineCount": 66,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/notifications/routes.ts",
+      "type": "File",
+      "label": "routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/notifications/routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 14909,
+        "lineCount": 418,
         "ext": ".ts"
       }
     },
@@ -36482,8 +36631,8 @@
       "filePath": "apps/api/src/server.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16613,
-        "lineCount": 418,
+        "sizeBytes": 16748,
+        "lineCount": 420,
         "ext": ".ts"
       }
     },
@@ -40213,8 +40362,8 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 59866,
-        "lineCount": 1477,
+        "sizeBytes": 60183,
+        "lineCount": 1485,
         "ext": ".tsx"
       }
     },
@@ -42319,8 +42468,8 @@
       "filePath": "apps/web/lib/api/chat.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9812,
-        "lineCount": 253,
+        "sizeBytes": 9800,
+        "lineCount": 251,
         "ext": ".ts"
       }
     },
@@ -42345,8 +42494,8 @@
       "filePath": "apps/web/lib/api/index.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1228,
-        "lineCount": 49,
+        "sizeBytes": 1344,
+        "lineCount": 52,
         "ext": ".ts"
       }
     },
@@ -42360,6 +42509,19 @@
       "metadata": {
         "sizeBytes": 19607,
         "lineCount": 509,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/lib/api/notifications.api.ts",
+      "type": "File",
+      "label": "notifications.api.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/api/notifications.api.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1124,
+        "lineCount": 34,
         "ext": ".ts"
       }
     },
@@ -42800,8 +42962,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2599,
-        "lineCount": 67,
+        "sizeBytes": 2645,
+        "lineCount": 68,
         "ext": ".ts"
       }
     },
@@ -43322,6 +43484,19 @@
       "metadata": {
         "sizeBytes": 12256,
         "lineCount": 492,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/mos-notifications.ts",
+      "type": "File",
+      "label": "mos-notifications.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/mos-notifications.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 1238,
+        "lineCount": 56,
         "ext": ".ts"
       }
     },
@@ -48842,6 +49017,20 @@
     {
       "id": "edge:route:PUT:/api/menu-access/policies/:menuKey:ws:apps/api",
       "source": "route:PUT:/api/menu-access/policies/:menuKey",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/notifications:ws:apps/api",
+      "source": "route:GET:/api/notifications",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/notifications/read:ws:apps/api",
+      "source": "route:POST:/api/notifications/read",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -57205,6 +57394,62 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:NotificationCategory:ws:packages/shared",
+      "source": "type:@mos-lab/shared:NotificationCategory",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:NotificationPriority:ws:packages/shared",
+      "source": "type:@mos-lab/shared:NotificationPriority",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:NotificationActionType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:NotificationActionType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosNotificationAction:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosNotificationAction",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosNotificationActor:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosNotificationActor",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosNotificationItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosNotificationItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosNotificationFeedResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosNotificationFeedResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MarkNotificationReadRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MarkNotificationReadRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:OmiCallDiagnosticResult:ws:packages/shared",
       "source": "type:@mos-lab/shared:OmiCallDiagnosticResult",
       "target": "ws:packages/shared",
@@ -60551,6 +60796,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:HeaderNotificationCenter:ws:apps/web",
+      "source": "uicomp:HeaderNotificationCenter",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:HeaderNotificationCenter:token:color:primary",
+      "source": "uicomp:HeaderNotificationCenter",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:OmiCallHeaderControl:ws:apps/web",
       "source": "uicomp:OmiCallHeaderControl",
       "target": "ws:apps/web",
@@ -63010,6 +63269,13 @@
     {
       "id": "edge:file:apps/api/src/modules/menu-access/routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/menu-access/routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/notifications/routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/notifications/routes.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -65528,6 +65794,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/lib/api/notifications.api.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/api/notifications.api.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/lib/api/payroll.api.ts:ws:packages/shared",
       "source": "file:apps/web/lib/api/payroll.api.ts",
       "target": "ws:packages/shared",
@@ -67820,6 +68093,34 @@
       "id": "edge:file:apps/api/src/modules/menu-access/menu-access.service.ts:prisma:crm:CrmMenuAccessAudit",
       "source": "file:apps/api/src/modules/menu-access/menu-access.service.ts",
       "target": "prisma:crm:CrmMenuAccessAudit",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/notifications/routes.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/notifications/routes.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/notifications/routes.ts:prisma:crm:CrmConfig",
+      "source": "file:apps/api/src/modules/notifications/routes.ts",
+      "target": "prisma:crm:CrmConfig",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/notifications/routes.ts:prisma:crm:CrmBugReport",
+      "source": "file:apps/api/src/modules/notifications/routes.ts",
+      "target": "prisma:crm:CrmBugReport",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/notifications/routes.ts:prisma:crm:CrmBugReportNotification",
+      "source": "file:apps/api/src/modules/notifications/routes.ts",
+      "target": "prisma:crm:CrmBugReportNotification",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -79899,6 +80200,20 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/notifications",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/notifications",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/notifications/read",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/notifications/read",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/omicall/webhook",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/omicall/webhook",
@@ -84872,6 +85187,20 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:PUT:/api/menu-access/policies/:menuKey",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:PUT:/api/menu-access/policies/:menuKey",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/notifications",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/notifications",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/notifications/read",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/notifications/read",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -93129,6 +93458,20 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/notifications",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/notifications",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/notifications/read",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/notifications/read",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/omicall/webhook",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/omicall/webhook",
@@ -94180,31 +94523,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3344,
-    "totalEdges": 7218,
+    "totalNodes": 3358,
+    "totalEdges": 7242,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 169,
-      "FastifyRoute": 711,
+      "FastifyRoute": 713,
       "Component": 59,
-      "SharedType": 1217,
+      "SharedType": 1225,
       "DesignToken": 12,
-      "UIComponent": 228,
-      "File": 945
+      "UIComponent": 229,
+      "File": 948
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1398,
-      "HANDLES_ROUTE": 711,
-      "RENDERS": 287,
-      "USES_TOKEN": 230,
-      "IMPORTS": 510,
-      "QUERIES_MODEL": 401,
-      "API_CALL": 3681
+      "EXPORTS": 1406,
+      "HANDLES_ROUTE": 713,
+      "RENDERS": 288,
+      "USES_TOKEN": 231,
+      "IMPORTS": 512,
+      "QUERIES_MODEL": 405,
+      "API_CALL": 3687
     },
-    "fastifyRouteCount": 716,
+    "fastifyRouteCount": 718,
     "prismaModelCount": 169,
     "nextPageCount": 59,
-    "sharedTypeCount": 1217
+    "sharedTypeCount": 1225
   },
   "routes": [
     {
@@ -98217,6 +98560,20 @@
       "filePath": "apps/api/src/modules/menu-access/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "menu-access"
+    },
+    {
+      "method": "GET",
+      "path": "/api/notifications",
+      "filePath": "apps/api/src/modules/notifications/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "notifications"
+    },
+    {
+      "method": "POST",
+      "path": "/api/notifications/read",
+      "filePath": "apps/api/src/modules/notifications/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "notifications"
     },
     {
       "method": "POST",

@@ -64,3 +64,4 @@ export * from './types/telesale-target.js';
 export * from './types/mos-chat.js';
 export * from './utils/phone.js';
 export * from './types/cash-flow.js';
+export * from './types/mos-notifications.js';

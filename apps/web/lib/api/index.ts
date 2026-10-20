@@ -14,6 +14,7 @@ import { pilotApi } from './pilot.api';
 import { careerApi } from './career.api';
 import { chatApi } from './chat.api';
 import { cashFlowApi } from './cash-flow.api';
+import { notificationsApi } from './notifications.api';
 
 export * from './base';
 export * from './ai.api';
@@ -21,6 +22,7 @@ export * from './pilot.api';
 export * from './career.api';
 export * from './chat.api';
 export * from './cash-flow.api';
+export * from './notifications.api';
 
 export const apiClient = {
   ...payrollApi,
@@ -39,6 +41,7 @@ export const apiClient = {
   ...careerApi,
   ...chatApi,
   ...cashFlowApi,
+  ...notificationsApi,
   cs: {
     ...telecomApi.cs,
     ...kpiApi.cs,

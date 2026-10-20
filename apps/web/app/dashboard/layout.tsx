@@ -64,6 +64,7 @@ const MosBibleDrawer = dynamic(() => import('../../components/mos-bible/MosBible
 const MosGoogleChatPortal = dynamic(() => import('../../components/mos-chat/MosGoogleChatPortal'), { ssr: false });
 import SidebarNav from '../../components/layout/SidebarNav';
 import HeaderLeftToolbar from '../../components/layout/HeaderLeftToolbar';
+import { HeaderNotificationCenter } from '../../components/notification-center/HeaderNotificationCenter';
 import { HeaderActionIndicator } from '../../components/ui/HeaderActionIndicator';
 import { HeaderIconButton } from '../../components/ui/HeaderIconButton';
 
@@ -853,6 +854,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </HeaderActionIndicator>
                   </Dropdown>
                 )}
+
+                <HeaderNotificationCenter
+                  themeMode={themeMode}
+                  onOpenChat={(convId) => {
+                    setIsMosChatOpen(true);
+                  }}
+                />
 
                 {effectiveCanAccessMosChat && (
                   <HeaderActionIndicator variant="count" count={mosChatUnreadCount}>
