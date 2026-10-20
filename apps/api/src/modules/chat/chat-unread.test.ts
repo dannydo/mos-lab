@@ -360,5 +360,25 @@ describe('computeUnreadCountForUser & formatConversationForUser', () => {
     assert.equal(formattedForKhai.messages[0]?.unreadThreadReplyCount, 1);
     assert.equal(formattedForKhai.readReceipts?.length, 2);
     assert.equal(formattedForKhai.messages[0]?.threadReadReceipts?.length, 2);
+
+    // When Khải marks the conversation as read, unreadThreadCount drops to 0
+    const prefsKhaiFullyRead: MosChatUserSidebarPrefs = {
+      ...allUserPrefs['6'],
+      readMessageCountByConv: { 'dm-pair-4-6': 2 },
+      readThreadReplyCountByMsg: {
+        'msg-1': 2,
+        'dm-pair-4-6::msg-1': 2,
+      },
+    };
+    const formattedFullyRead = formatConversationForUser(
+      convWithThread,
+      userKhai,
+      staffDirectory,
+      prefsKhaiFullyRead,
+      { ...allUserPrefs, '6': prefsKhaiFullyRead }
+    );
+    assert.equal(formattedFullyRead.unreadCount, 0, 'unreadCount should be 0');
+    assert.equal(formattedFullyRead.unreadThreadCount, 0, 'unreadThreadCount should be 0');
+    assert.equal(formattedFullyRead.messages[0]?.unreadThreadReplyCount, 0, 'thread reply unread count should be 0');
   });
 });

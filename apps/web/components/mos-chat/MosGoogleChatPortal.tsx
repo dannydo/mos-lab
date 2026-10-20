@@ -2584,12 +2584,56 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   const markConversationReadOptimisticAndSync = useCallback(
     (convId: string, msgCount: number, lastMsgId?: string) => {
-      if (!convId || convId === AI_COPILOT_CONV_ID) return;
+      if (!convId) return;
       const nowIso = new Date().toISOString();
       const myStaffId = Number(currentUserStaffMember.id) || Number(currentUser?.id) || 0;
       const myName = currentUserStaffMember.displayName || currentUser?.displayName || currentUser?.username || 'Bạn';
       const myRole = currentUserStaffMember.role || currentUser?.role || 'Member';
       const myAvatar = currentUserStaffMember.avatarUrl || null;
+
+      if (convId === AI_COPILOT_CONV_ID) {
+        updateUserSidebarPrefs((prev) => ({
+          ...prev,
+          manualUnreadIds: (prev.manualUnreadIds || []).filter((id) => id !== convId),
+          readMessageCountByConv: {
+            ...(prev.readMessageCountByConv || {}),
+            [convId]: msgCount,
+          },
+          readAtByConv: {
+            ...(prev.readAtByConv || {}),
+            [convId]: nowIso,
+          },
+          ...(lastMsgId
+            ? {
+                lastReadMessageIdByConv: {
+                  ...(prev.lastReadMessageIdByConv || {}),
+                  [convId]: lastMsgId,
+                },
+              }
+            : {}),
+        }));
+        return;
+      }
+
+      const targetConv = conversations.find((c) => c.id === convId);
+      const threadRepliesUpdates: Record<string, number> = {};
+      const threadAtUpdates: Record<string, string> = {};
+      const threadLastReplyUpdates: Record<string, string> = {};
+      for (const m of targetConv?.messages || []) {
+        if (m.thread && m.thread.length > 0) {
+          const threadKey = `${convId}::${m.id}`;
+          const repCount = m.thread.length;
+          threadRepliesUpdates[m.id] = repCount;
+          threadRepliesUpdates[threadKey] = repCount;
+          threadAtUpdates[m.id] = nowIso;
+          threadAtUpdates[threadKey] = nowIso;
+          const lastRep = m.thread[m.thread.length - 1];
+          if (lastRep?.id) {
+            threadLastReplyUpdates[m.id] = lastRep.id;
+            threadLastReplyUpdates[threadKey] = lastRep.id;
+          }
+        }
+      }
 
       setConversations((prev) =>
         prev.map((c) => {
@@ -2610,10 +2654,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   },
                 ]
               : existingReceipts;
+          const nextMessages = (c.messages || []).map((m) =>
+            m.thread && m.thread.length > 0 ? { ...m, unreadThreadReplyCount: 0 } : m
+          );
           return {
             ...c,
             unreadCount: 0,
+            unreadThreadCount: 0,
             readReceipts: updatedReceipts,
+            messages: nextMessages,
           };
         })
       );
@@ -2638,6 +2687,18 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               },
             }
           : {}),
+        readThreadReplyCountByMsg: {
+          ...(prev.readThreadReplyCountByMsg || {}),
+          ...threadRepliesUpdates,
+        },
+        readThreadAtByMsg: {
+          ...(prev.readThreadAtByMsg || {}),
+          ...threadAtUpdates,
+        },
+        lastReadThreadReplyIdByMsg: {
+          ...(prev.lastReadThreadReplyIdByMsg || {}),
+          ...threadLastReplyUpdates,
+        },
       }));
 
       apiClient.chat
@@ -2659,6 +2720,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       currentUser?.displayName,
       currentUser?.username,
       currentUser?.role,
+      conversations,
       updateUserSidebarPrefs,
       notifyLivePeers,
     ]
@@ -2684,20 +2746,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     if (!isTabVisible) return;
     if (open && activeSubtab === 'chat' && activeConversation) {
       const convId = activeConversation.id;
-      if (convId !== AI_COPILOT_CONV_ID) {
-        const msgs = activeConversation.messages || [];
-        const msgCount = msgs.length;
-        const lastMsg = msgCount > 0 ? msgs[msgCount - 1] : undefined;
-        const currentRead = userPrefs.readMessageCountByConv?.[convId];
-        const isManualUnread = (userPrefs.manualUnreadIds || []).includes(convId);
-        if (!isManualUnread && (currentRead !== msgCount || (activeConversation.unreadCount || 0) > 0)) {
-          markConversationReadOptimisticAndSync(convId, msgCount, lastMsg?.id);
-        }
+      const msgs = activeConversation.messages || [];
+      const msgCount = msgs.length;
+      const lastMsg = msgCount > 0 ? msgs[msgCount - 1] : undefined;
+      const currentRead = userPrefs.readMessageCountByConv?.[convId];
+      const isManualUnread = (userPrefs.manualUnreadIds || []).includes(convId);
+      const hasUnreadThreads = (activeConversation.unreadThreadCount || 0) > 0;
+      if (!isManualUnread && (currentRead !== msgCount || (activeConversation.unreadCount || 0) > 0 || hasUnreadThreads)) {
+        markConversationReadOptimisticAndSync(convId, msgCount, lastMsg?.id);
       }
     }
     // Also mark any expanded mini dock conversations as read when tab is visible
     for (const dockConvId of dockedConvIds) {
-      if (collapsedDockIds[dockConvId] || dockConvId === AI_COPILOT_CONV_ID) continue;
+      if (collapsedDockIds[dockConvId]) continue;
       const dockConv = conversations.find((c) => c.id === dockConvId);
       if (!dockConv) continue;
       const msgs = dockConv.messages || [];
@@ -2705,7 +2766,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       const lastMsg = msgCount > 0 ? msgs[msgCount - 1] : undefined;
       const currentRead = userPrefs.readMessageCountByConv?.[dockConvId];
       const isManualUnread = (userPrefs.manualUnreadIds || []).includes(dockConvId);
-      if (!isManualUnread && (currentRead !== msgCount || (dockConv.unreadCount || 0) > 0)) {
+      const hasUnreadThreads = (dockConv.unreadThreadCount || 0) > 0;
+      if (!isManualUnread && (currentRead !== msgCount || (dockConv.unreadCount || 0) > 0 || hasUnreadThreads)) {
         markConversationReadOptimisticAndSync(dockConvId, msgCount, lastMsg?.id);
       }
     }
@@ -2716,6 +2778,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     activeConversation?.id,
     activeConversation?.messages?.length,
     activeConversation?.unreadCount,
+    activeConversation?.unreadThreadCount,
     dockedConvIds,
     collapsedDockIds,
     conversations,
@@ -2756,15 +2819,39 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   const toggleManualUnreadConversation = useCallback(
     (conv: MosChatConversation) => {
-      const currentlyUnread = getEffectiveUnreadCount(conv) > 0;
+      const currentlyUnread = getEffectiveUnreadCount(conv) > 0 || (conv.unreadThreadCount || 0) > 0;
       if (currentlyUnread) {
-        setConversations((prev) => prev.map((c) => (c.id === conv.id ? { ...c, unreadCount: 0 } : c)));
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === conv.id
+              ? {
+                  ...c,
+                  unreadCount: 0,
+                  unreadThreadCount: 0,
+                  messages: (c.messages || []).map((m) =>
+                    m.thread && m.thread.length > 0 ? { ...m, unreadThreadReplyCount: 0 } : m
+                  ),
+                }
+              : c
+          )
+        );
+        const threadRepliesUpdates: Record<string, number> = {};
+        for (const m of conv.messages || []) {
+          if (m.thread && m.thread.length > 0) {
+            threadRepliesUpdates[m.id] = m.thread.length;
+            threadRepliesUpdates[`${conv.id}::${m.id}`] = m.thread.length;
+          }
+        }
         updateUserSidebarPrefs((prev) => ({
           ...prev,
           manualUnreadIds: (prev.manualUnreadIds || []).filter((id) => id !== conv.id),
           readMessageCountByConv: {
             ...(prev.readMessageCountByConv || {}),
             [conv.id]: conv.messages.length,
+          },
+          readThreadReplyCountByMsg: {
+            ...(prev.readThreadReplyCountByMsg || {}),
+            ...threadRepliesUpdates,
           },
         }));
         if (conv.id !== AI_COPILOT_CONV_ID) {
@@ -4053,16 +4140,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         readThreadReplyCountByMsg: {
           ...(prev.readThreadReplyCountByMsg || {}),
           [msgId]: resolvedReplyCount,
+          [`${convId}::${msgId}`]: resolvedReplyCount,
         },
         readThreadAtByMsg: {
           ...(prev.readThreadAtByMsg || {}),
           [msgId]: nowIso,
+          [`${convId}::${msgId}`]: nowIso,
         },
         ...(resolvedLastReplyId
           ? {
               lastReadThreadReplyIdByMsg: {
                 ...(prev.lastReadThreadReplyIdByMsg || {}),
                 [msgId]: resolvedLastReplyId,
+                [`${convId}::${msgId}`]: resolvedLastReplyId,
               },
             }
           : {}),
@@ -4093,14 +4183,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   );
 
   const handleOpenThread = useCallback(
-    (msgId: string) => {
+    (msgId: string, convIdOverride?: string) => {
       setActiveThreadMsgId(msgId);
       setThreadOpen(true);
       if (isMobile) {
         setMobileActiveView('thread');
       }
-      if (activeConversation && isTabVisible) {
-        markThreadReadOptimisticAndSync(activeConversation.id, msgId);
+      const targetConvId = convIdOverride || activeConversation?.id;
+      if (targetConvId && isTabVisible) {
+        markThreadReadOptimisticAndSync(targetConvId, msgId);
       }
       scrollToChatBottom('thread', 'auto');
     },
@@ -4113,9 +4204,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       setActiveSubtab('chat');
       if (isMobile) setMobileActiveView('conversation');
 
-      if (!msgId) return;
-
       const targetConv = conversations.find((c) => c.id === convId);
+      if (targetConv && isTabVisible) {
+        const msgs = targetConv.messages || [];
+        const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : undefined;
+        markConversationReadOptimisticAndSync(convId, msgs.length, lastMsg?.id);
+      }
+
+      if (!msgId) return;
       if (!targetConv) return;
 
       let rootMsg = targetConv.messages.find((m) => m.id === msgId);
@@ -4135,7 +4231,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       if (rootMsg) {
         const hasSubthread = Boolean(rootMsg.thread && rootMsg.thread.length > 0);
         if (hasSubthread || isReply) {
-          handleOpenThread(rootMsg.id);
+          handleOpenThread(rootMsg.id, convId);
         }
       }
 
@@ -4153,7 +4249,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         setHighlightedMsgId((prev) => (prev === msgId ? null : prev));
       }, 4000);
     },
-    [conversations, isMobile, handleOpenThread]
+    [conversations, isMobile, handleOpenThread, isTabVisible, markConversationReadOptimisticAndSync]
   );
 
   useEffect(() => {
@@ -5118,7 +5214,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     if (activeConversation.id === AI_COPILOT_CONV_ID) return;
     const visibleReplies = (activeThreadMessage.thread || []).filter((r) => !r.deletedAt);
     if (visibleReplies.length === 0) return;
-    const currentReadReplyCount = userPrefs.readThreadReplyCountByMsg?.[activeThreadMessage.id];
+    const currentReadReplyCount =
+      userPrefs.readThreadReplyCountByMsg?.[activeThreadMessage.id] ??
+      userPrefs.readThreadReplyCountByMsg?.[`${activeConversation.id}::${activeThreadMessage.id}`];
     if (currentReadReplyCount !== visibleReplies.length || (activeThreadMessage.unreadThreadReplyCount || 0) > 0) {
       markThreadReadOptimisticAndSync(activeConversation.id, activeThreadMessage.id);
     }
@@ -9414,7 +9512,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0">
-                                  {(conv.unreadThreadCount || 0) > 0 && (
+                                  {(conv.unreadThreadCount || 0) > 0 && conv.id !== activeConvId && (
                                     <Tooltip
                                       title={`${conv.unreadThreadCount} câu trả lời mới trong luồng phụ (Sub-thread)`}
                                     >

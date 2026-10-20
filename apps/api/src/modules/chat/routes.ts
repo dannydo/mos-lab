@@ -3414,6 +3414,26 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null;
         const userPrefKey = resolveUserPrefKey(user, staffDirectory);
         const currentPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
+
+        const threadRepliesUpdates: Record<string, number> = {};
+        const threadAtUpdates: Record<string, string> = {};
+        const threadLastReplyUpdates: Record<string, string> = {};
+        for (const m of msgs) {
+          if (m.thread && m.thread.length > 0) {
+            const threadKey = `${convId}::${m.id}`;
+            const repCount = m.thread.length;
+            threadRepliesUpdates[m.id] = repCount;
+            threadRepliesUpdates[threadKey] = repCount;
+            threadAtUpdates[m.id] = nowIso;
+            threadAtUpdates[threadKey] = nowIso;
+            const lastRep = m.thread[m.thread.length - 1];
+            if (lastRep?.id) {
+              threadLastReplyUpdates[m.id] = lastRep.id;
+              threadLastReplyUpdates[threadKey] = lastRep.id;
+            }
+          }
+        }
+
         const updatedPrefs: MosChatUserSidebarPrefs = {
           ...currentPrefs,
           manualUnreadIds: (currentPrefs.manualUnreadIds || []).filter((id) => id !== convId),
@@ -3428,6 +3448,18 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           lastReadMessageIdByConv: {
             ...(currentPrefs.lastReadMessageIdByConv || {}),
             ...(lastMsg?.id ? { [convId]: lastMsg.id } : {}),
+          },
+          readThreadReplyCountByMsg: {
+            ...(currentPrefs.readThreadReplyCountByMsg || {}),
+            ...threadRepliesUpdates,
+          },
+          readThreadAtByMsg: {
+            ...(currentPrefs.readThreadAtByMsg || {}),
+            ...threadAtUpdates,
+          },
+          lastReadThreadReplyIdByMsg: {
+            ...(currentPrefs.lastReadThreadReplyIdByMsg || {}),
+            ...threadLastReplyUpdates,
           },
         };
         const saved = await saveUserSidebarPrefs(fastify, userPrefKey, updatedPrefs);
@@ -3475,15 +3507,17 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           ...currentPrefs,
           readThreadReplyCountByMsg: {
             ...(currentPrefs.readThreadReplyCountByMsg || {}),
+            [messageId]: replies.length,
             [threadKey]: replies.length,
           },
           readThreadAtByMsg: {
             ...(currentPrefs.readThreadAtByMsg || {}),
+            [messageId]: nowIso,
             [threadKey]: nowIso,
           },
           lastReadThreadReplyIdByMsg: {
             ...(currentPrefs.lastReadThreadReplyIdByMsg || {}),
-            ...(lastReply?.id ? { [threadKey]: lastReply.id } : {}),
+            ...(lastReply?.id ? { [messageId]: lastReply.id, [threadKey]: lastReply.id } : {}),
           },
         };
         const saved = await saveUserSidebarPrefs(fastify, userPrefKey, updatedPrefs);

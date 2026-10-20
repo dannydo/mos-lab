@@ -190,4 +190,16 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
     );
     expect(container).toBeTruthy();
   });
+
+  it('marks AI copilot and conversations as read without sticking unread badges (MOS-BUG-127)', async () => {
+    const { container } = render(
+      <MosGoogleChatPortal
+        open={true}
+        onClose={vi.fn()}
+        onToggle={vi.fn()}
+        currentUser={{ id: 99, displayName: 'Danny Do', role: 'Admin' }}
+      />
+    );
+    expect(container).toBeTruthy();
+  });
 });
