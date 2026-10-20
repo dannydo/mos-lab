@@ -1,7 +1,18 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Tooltip, Modal, Input, Select, Popover, Popconfirm, DatePicker, Switch, message as antdMessage, theme } from 'antd';
+import {
+  Tooltip,
+  Modal,
+  Input,
+  Select,
+  Popover,
+  Popconfirm,
+  DatePicker,
+  Switch,
+  message as antdMessage,
+  theme,
+} from 'antd';
 import {
   MessageSquare,
   MessageSquareReply,
@@ -335,7 +346,9 @@ const getInitialStaffDirectory = (): MosChatStaffMember[] => {
     const raw = window.localStorage.getItem(STAFF_DIRECTORY_CACHE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((item: MosChatStaffMember) => ({ ...item, isOnline: false }));
+      }
     }
   } catch {
     // ignore parse error
@@ -4034,7 +4047,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         priority: taskPriority,
         done: taskDoneState,
         archived: taskArchivedState,
-        archivedAt: taskArchivedState ? (editingTask.archivedAt || new Date().toISOString()) : null,
+        archivedAt: taskArchivedState ? editingTask.archivedAt || new Date().toISOString() : null,
         remindAt: remindAtIso,
         fired: isNoReminder || taskDoneState || taskArchivedState,
         updatedAt: new Date().toISOString(),
@@ -6145,6 +6158,64 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     [currentUser?.id, currentUser?.displayName, currentUser?.username]
   );
 
+  const isConversationParticipantOnline = useCallback(
+    (conv: MosChatConversation | null | undefined): boolean => {
+      if (!conv || conv.type === 'space') return false;
+      const convIdStr = String(conv.id || '');
+      if (convIdStr === AI_COPILOT_CONV_ID) return false;
+      if (conv.isSelf || convIdStr.startsWith('dm-self-')) {
+        return presence === 'active';
+      }
+      const myStaffId = Number(currentUserStaffMember.id) || Number(currentUser?.id) || 0;
+      let peerStaffId = 0;
+      if (Number(conv.participantStaffId) > 0 && Number(conv.participantStaffId) !== myStaffId) {
+        peerStaffId = Number(conv.participantStaffId);
+      } else if (Array.isArray(conv.memberIds) && conv.memberIds.length > 0) {
+        const otherId = conv.memberIds.map(Number).find((id) => Number.isFinite(id) && id > 0 && id !== myStaffId);
+        if (otherId) peerStaffId = otherId;
+      }
+      if (!peerStaffId) {
+        const pairMatch = convIdStr.match(/^dm-(?:pair-)?(\d+)-(\d+)$/);
+        if (pairMatch) {
+          const a = Number(pairMatch[1]);
+          const b = Number(pairMatch[2]);
+          peerStaffId = a !== myStaffId ? a : b;
+        }
+      }
+      if (peerStaffId > 0) {
+        const matchedById = staffDirectory.find((s) => Number(s.id) === peerStaffId);
+        if (matchedById) {
+          return Boolean(matchedById.isOnline);
+        }
+      }
+      const normName = removeVietnameseTones(
+        String(conv.name || '')
+          .trim()
+          .toLowerCase()
+      );
+      if (normName) {
+        const matchedByName = staffDirectory.find((s) => {
+          const dName = removeVietnameseTones(
+            String(s.displayName || '')
+              .trim()
+              .toLowerCase()
+          );
+          const uName = removeVietnameseTones(
+            String(s.username || '')
+              .trim()
+              .toLowerCase()
+          );
+          return (dName && dName === normName) || (uName && uName === normName);
+        });
+        if (matchedByName) {
+          return Boolean(matchedByName.isOnline);
+        }
+      }
+      return false;
+    },
+    [currentUser?.id, currentUserStaffMember.id, presence, staffDirectory]
+  );
+
   const renderUserAvatarNode = ({
     staffId,
     name,
@@ -7654,7 +7725,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                 bgColor: conv.color || '#ec4899',
                                 sizeClass: 'w-8 h-8',
                                 roundedClass: 'rounded-full',
-                                isOnline: true,
+                                isOnline: isConversationParticipantOnline(conv),
                                 isAiBot: isAiConv,
                                 isSelfBookmark: isSelfConv,
                               })
@@ -7973,9 +8044,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       bgColor: activeConversation?.color || '#10b981',
                       sizeClass: 'w-8 h-8',
                       roundedClass: 'rounded-full',
-                      isOnline: activeConversation?.id !== AI_COPILOT_CONV_ID,
+                      isOnline: isConversationParticipantOnline(activeConversation),
                       isAiBot: activeConversation?.id === AI_COPILOT_CONV_ID,
-                      isSelfBookmark: Boolean(activeConversation?.isSelf || activeConversation?.id.startsWith('dm-self-')),
+                      isSelfBookmark: Boolean(
+                        activeConversation?.isSelf || activeConversation?.id.startsWith('dm-self-')
+                      ),
                     })
                   )}
                   <div className="min-w-0 flex items-center gap-1.5">
@@ -10634,10 +10707,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         avatarUrl: conv.avatar,
                         sizeClass: 'w-5 h-5',
                         textClass: 'text-[9px]',
-                        isOnline: true,
+                        isOnline: isConversationParticipantOnline(conv),
                       })
                     ) : (
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                      <Hash size={13} className="shrink-0" style={{ color: conv.color || '#10b981' }} />
                     )}
                     <span className="text-[12px] font-extrabold truncate">{conv.name}</span>
                     {isDockPinned && (
@@ -11011,11 +11084,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   <Check size={14} className={taskDoneState ? 'text-emerald-400' : 'text-slate-400'} />
                   <span>Đã hoàn thành</span>
                 </span>
-                <Switch
-                  checked={taskDoneState}
-                  onChange={(checked) => setTaskDoneState(checked)}
-                  size="small"
-                />
+                <Switch checked={taskDoneState} onChange={(checked) => setTaskDoneState(checked)} size="small" />
               </div>
               <div className="flex items-center justify-between pt-1.5 border-t border-white/5">
                 <span className="text-[12px] flex items-center gap-2 font-medium">
@@ -11044,7 +11113,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 showSearch
                 allowClear
                 loading={assigneeOptions.length === 0}
-                notFoundContent={assigneeOptions.length === 0 ? 'Đang tải danh sách nhân sự...' : 'Không tìm thấy nhân sự'}
+                notFoundContent={
+                  assigneeOptions.length === 0 ? 'Đang tải danh sách nhân sự...' : 'Không tìm thấy nhân sự'
+                }
                 getPopupContainer={(trigger) => trigger?.parentElement || document.body}
                 dropdownStyle={{ zIndex: 1400 }}
                 status={!taskAssignee ? 'warning' : undefined}
@@ -11445,7 +11516,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 sizeClass: 'w-10 h-10',
                 textClass: 'text-[13px]',
                 bgStyle: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-                onlineDot: true,
+                onlineDot: presence === 'active',
               })}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">

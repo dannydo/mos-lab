@@ -293,7 +293,7 @@ function buildDefaultTasks(): MosChatTaskItem[] {
 
 const MAX_MESSAGES_PER_CONVERSATION = 150;
 const MAX_TASKS_RETENTION = 200;
-const STAFF_DIRECTORY_CACHE_TTL_MS = 60_000;
+const STAFF_DIRECTORY_CACHE_TTL_MS = 30_000;
 const STATE_DB_SYNC_TTL_MS = 30_000;
 
 function buildDefaultAccessConfig(): MosChatAccessConfig {
@@ -865,8 +865,23 @@ export function formatConversationForUser(
   });
 
   if (conv.type !== 'dm') {
+    const liveStaffMap = new Map(staffDirectory.map((s) => [Number(s.id), s]));
+    const hydratedMembers = Array.isArray(conv.members)
+      ? conv.members.map((m) => {
+          const live = liveStaffMap.get(Number(m.id));
+          return live
+            ? {
+                ...m,
+                displayName: live.displayName || m.displayName,
+                avatarUrl: live.avatarUrl || m.avatarUrl,
+                isOnline: Boolean(live.isOnline),
+              }
+            : { ...m, isOnline: false };
+        })
+      : conv.members;
     return {
       ...conv,
+      members: hydratedMembers,
       unreadCount: personalizedUnread,
       unreadThreadCount,
       readReceipts,
@@ -1832,7 +1847,7 @@ async function loadStaffDirectoryCached(fastify: FastifyInstance): Promise<MosCh
       displayName: s.displayName || s.username,
       role: s.role,
       avatarUrl: s.avatarUrl || fallbackLegacyAvatar,
-      isOnline: Boolean(s.lastActiveAt && nowMs - new Date(s.lastActiveAt).getTime() < 10 * 60 * 1000),
+      isOnline: Boolean(s.lastActiveAt && nowMs - new Date(s.lastActiveAt).getTime() < 5 * 60 * 1000),
       departmentCodes: Array.from(deptSet),
       teamCodes: Array.from(teamSet),
     };
@@ -1874,14 +1889,14 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         const userPrefKey = resolveUserPrefKey(user, staffDirectory);
         const userPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
 
-        // Zero-DB, Zero-Payload Short-Circuit when nothing changed!
+        // Zero-DB, lightweight short-circuit when conversations/tasks unchanged (still returns fresh staffDirectory presence!)
         if (!missionMutated && clientVersion > 0 && clientVersion === version) {
           return {
             version,
             unchanged: true,
             conversations: [],
             tasks: [],
-            staffDirectory: [],
+            staffDirectory,
             accessConfig,
             canAccessChat,
             userPrefs,
@@ -3197,15 +3212,16 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       if (initialMemberIds.length > 0) {
         const staffRows = await fastify.prisma.crm.crmStaff.findMany({
           where: { id: { in: initialMemberIds } },
-          select: { id: true, username: true, displayName: true, role: true, avatarUrl: true },
+          select: { id: true, username: true, displayName: true, role: true, avatarUrl: true, lastActiveAt: true },
         });
+        const nowMs = Date.now();
         initialMembers = staffRows.map((s) => ({
           id: s.id,
           username: s.username,
           displayName: s.displayName || s.username,
           role: s.role,
           avatarUrl: s.avatarUrl,
-          isOnline: true,
+          isOnline: Boolean(s.lastActiveAt && nowMs - new Date(s.lastActiveAt).getTime() < 5 * 60 * 1000),
         }));
       }
 
@@ -3469,13 +3485,14 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
 
       const staffList = await fastify.prisma.crm.crmStaff.findMany({
         where: { id: { in: newIds } },
-        select: { id: true, username: true, displayName: true, role: true, avatarUrl: true },
+        select: { id: true, username: true, displayName: true, role: true, avatarUrl: true, lastActiveAt: true },
       });
 
       if (staffList.length === 0) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy nhân sự' });
       }
 
+      const nowMs = Date.now();
       for (const staff of staffList) {
         if (!conv.memberIds.includes(staff.id)) {
           conv.memberIds.push(staff.id);
@@ -3487,7 +3504,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
             displayName: staff.displayName || staff.username,
             role: staff.role,
             avatarUrl: staff.avatarUrl,
-            isOnline: true,
+            isOnline: Boolean(staff.lastActiveAt && nowMs - new Date(staff.lastActiveAt).getTime() < 5 * 60 * 1000),
           });
         }
       }
