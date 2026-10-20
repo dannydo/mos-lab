@@ -1298,6 +1298,23 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [formatBarOpenMain, setFormatBarOpenMain] = useState(false);
   const [formatBarOpenThread, setFormatBarOpenThread] = useState(false);
 
+  // @Mention Autocomplete state (tagging group/space members)
+  const [mentionState, setMentionState] = useState<{
+    open: boolean;
+    scope: 'main' | 'thread';
+    query: string;
+    atIndex: number;
+    cursorIndex: number;
+    highlightedIndex: number;
+  }>({
+    open: false,
+    scope: 'main',
+    query: '',
+    atIndex: -1,
+    cursorIndex: -1,
+    highlightedIndex: 0,
+  });
+
   // Mini Docked Pop-out Windows (Bottom right like Gmail)
   const [dockedConvIds, setDockedConvIds] = useState<string[]>([]);
   const [collapsedDockIds, setCollapsedDockIds] = useState<Record<string, boolean>>({});
@@ -3254,6 +3271,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     const attachmentsToSend = stagedAttachments;
     if (!text.trim() && attachmentsToSend.length === 0) return;
 
+    setMentionState((prev) => (prev.open ? { ...prev, open: false } : prev));
     setComposerText('');
     setStagedAttachments([]);
     if (composerInputRef.current) {
@@ -3901,6 +3919,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     const text = threadInput.trim();
     const attachmentsToSend = threadAttachments;
     if ((!text && attachmentsToSend.length === 0) || !activeConversation || !activeThreadMsgId) return;
+    setMentionState((prev) => (prev.open ? { ...prev, open: false } : prev));
     setThreadInput('');
     setThreadAttachments([]);
     if (threadInputRef.current) {
@@ -5573,98 +5592,122 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
    * Tokenizer phân tích inline markup an toàn thành React Nodes:
    * **đậm**, *nghiêng*, ~~gạch ngang~~, <u>gạch chân</u>, `code`, https://..., @mentions
    */
-  const parseInlineRichText = useCallback((text: string, keyPrefix = 'inline'): React.ReactNode[] => {
-    if (!text) return [];
-    const regex =
-      /(\*\*(.+?)\*\*)|(~~(.+?)~~)|(<u>(.+?)<\/u>)|(`([^`]+)`)|\*([^*\n]+)\*|(https?:\/\/[^\s<]+)|(@[a-zA-Z0-9_\u00C0-\u1EF9]+(?:\s[a-zA-Z0-9_\u00C0-\u1EF9]+)?)/gu;
+  const parseInlineRichText = useCallback(
+    (text: string, keyPrefix = 'inline'): React.ReactNode[] => {
+      if (!text) return [];
+      const regex =
+        /(\*\*(.+?)\*\*)|(~~(.+?)~~)|(<u>(.+?)<\/u>)|(`([^`]+)`)|\*([^*\n]+)\*|(https?:\/\/[^\s<]+)|(@[a-zA-Z0-9_\u00C0-\u1EF9]+(?:\s+[a-zA-Z0-9_\u00C0-\u1EF9]+){0,3})/gu;
 
-    const elements: React.ReactNode[] = [];
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
-    let i = 0;
+      const elements: React.ReactNode[] = [];
+      let lastIndex = 0;
+      let match: RegExpExecArray | null;
+      let i = 0;
 
-    while ((match = regex.exec(text)) !== null) {
-      if (match.index > lastIndex) {
-        elements.push(text.substring(lastIndex, match.index));
+      while ((match = regex.exec(text)) !== null) {
+        if (match.index > lastIndex) {
+          elements.push(text.substring(lastIndex, match.index));
+        }
+
+        const fullMatch = match[0];
+        const key = `${keyPrefix}-${i++}`;
+
+        if (fullMatch.startsWith('**') && fullMatch.endsWith('**')) {
+          elements.push(
+            <strong key={key} className="font-bold text-amber-500/90 dark:text-amber-400">
+              {fullMatch.slice(2, -2)}
+            </strong>
+          );
+        } else if (fullMatch.startsWith('~~') && fullMatch.endsWith('~~')) {
+          elements.push(
+            <del key={key} className="line-through opacity-70">
+              {fullMatch.slice(2, -2)}
+            </del>
+          );
+        } else if (fullMatch.startsWith('<u>') && fullMatch.endsWith('</u>')) {
+          elements.push(
+            <u key={key} className="underline underline-offset-2">
+              {fullMatch.slice(3, -4)}
+            </u>
+          );
+        } else if (fullMatch.startsWith('`') && fullMatch.endsWith('`')) {
+          elements.push(
+            <code
+              key={key}
+              className="px-1.5 py-0.5 rounded text-[11.5px] font-mono bg-black/15 dark:bg-white/10 text-amber-600 dark:text-amber-300"
+            >
+              {fullMatch.slice(1, -1)}
+            </code>
+          );
+        } else if (fullMatch.startsWith('*') && fullMatch.endsWith('*')) {
+          elements.push(
+            <em key={key} className="italic opacity-90">
+              {fullMatch.slice(1, -1)}
+            </em>
+          );
+        } else if (fullMatch.startsWith('http://') || fullMatch.startsWith('https://')) {
+          elements.push(
+            <a
+              key={key}
+              href={fullMatch}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-blue-500 dark:text-blue-400 hover:underline inline-flex items-center gap-0.5 break-all font-medium"
+            >
+              <span>{fullMatch}</span>
+              <ExternalLink size={10} className="inline shrink-0 opacity-70" />
+            </a>
+          );
+        } else if (fullMatch.startsWith('@')) {
+          const cleanTag = fullMatch.slice(1).trim().toLowerCase();
+          const isAi = cleanTag === 'ai' || cleanTag.includes('copilot');
+          const isAll = cleanTag === 'all' || cleanTag === 'mọi người' || cleanTag === 'moi nguoi';
+          const myName = removeVietnameseTones(
+            (
+              currentUserStaffMember.displayName ||
+              currentUser?.displayName ||
+              currentUser?.username ||
+              ''
+            ).toLowerCase()
+          );
+          const myUname = (currentUser?.username || '').toLowerCase();
+          const tagNorm = removeVietnameseTones(cleanTag);
+          const isMentioningMe = Boolean(
+            (myName && (tagNorm.includes(myName) || myName.includes(tagNorm))) ||
+            (myUname && cleanTag.includes(myUname)) ||
+            isAll
+          );
+
+          elements.push(
+            <span
+              key={key}
+              className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11.5px] transition-all font-semibold select-text ${
+                isAi
+                  ? 'bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/30'
+                  : isMentioningMe
+                    ? 'bg-amber-500/25 text-amber-800 dark:text-amber-200 border border-amber-500/50 shadow-sm ring-1 ring-amber-500/30 font-bold'
+                    : 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30'
+              }`}
+            >
+              <AtSign size={10.5} className="shrink-0 opacity-80" />
+              <span>{fullMatch.slice(1)}</span>
+            </span>
+          );
+        } else {
+          elements.push(fullMatch);
+        }
+
+        lastIndex = regex.lastIndex;
       }
 
-      const fullMatch = match[0];
-      const key = `${keyPrefix}-${i++}`;
-
-      if (fullMatch.startsWith('**') && fullMatch.endsWith('**')) {
-        elements.push(
-          <strong key={key} className="font-bold text-amber-500/90 dark:text-amber-400">
-            {fullMatch.slice(2, -2)}
-          </strong>
-        );
-      } else if (fullMatch.startsWith('~~') && fullMatch.endsWith('~~')) {
-        elements.push(
-          <del key={key} className="line-through opacity-70">
-            {fullMatch.slice(2, -2)}
-          </del>
-        );
-      } else if (fullMatch.startsWith('<u>') && fullMatch.endsWith('</u>')) {
-        elements.push(
-          <u key={key} className="underline underline-offset-2">
-            {fullMatch.slice(3, -4)}
-          </u>
-        );
-      } else if (fullMatch.startsWith('`') && fullMatch.endsWith('`')) {
-        elements.push(
-          <code
-            key={key}
-            className="px-1.5 py-0.5 rounded text-[11.5px] font-mono bg-black/15 dark:bg-white/10 text-amber-600 dark:text-amber-300"
-          >
-            {fullMatch.slice(1, -1)}
-          </code>
-        );
-      } else if (fullMatch.startsWith('*') && fullMatch.endsWith('*')) {
-        elements.push(
-          <em key={key} className="italic opacity-90">
-            {fullMatch.slice(1, -1)}
-          </em>
-        );
-      } else if (fullMatch.startsWith('http://') || fullMatch.startsWith('https://')) {
-        elements.push(
-          <a
-            key={key}
-            href={fullMatch}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="text-blue-500 dark:text-blue-400 hover:underline inline-flex items-center gap-0.5 break-all font-medium"
-          >
-            <span>{fullMatch}</span>
-            <ExternalLink size={10} className="inline shrink-0 opacity-70" />
-          </a>
-        );
-      } else if (fullMatch.startsWith('@')) {
-        const isAi = fullMatch.toUpperCase() === '@AI';
-        elements.push(
-          <span
-            key={key}
-            className={`inline-flex items-center px-1.5 py-0.2 rounded-md font-semibold text-[11px] ${
-              isAi
-                ? 'bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/30'
-                : 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30'
-            }`}
-          >
-            {fullMatch}
-          </span>
-        );
-      } else {
-        elements.push(fullMatch);
+      if (lastIndex < text.length) {
+        elements.push(text.substring(lastIndex));
       }
 
-      lastIndex = regex.lastIndex;
-    }
-
-    if (lastIndex < text.length) {
-      elements.push(text.substring(lastIndex));
-    }
-
-    return elements.length > 0 ? elements : [text];
-  }, []);
+      return elements.length > 0 ? elements : [text];
+    },
+    [currentUserStaffMember.displayName, currentUser?.displayName, currentUser?.username]
+  );
 
   /**
    * Bộ Renderer chuẩn Rich Text phong cách Apple Notes cho bong bóng chat:
@@ -6302,6 +6345,406 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     }
     return clean.slice(0, 2).toUpperCase();
   }, []);
+
+  // ================= @MENTION AUTOCOMPLETE IN SPACES & DIRECT MESSAGES =================
+  const getRoleBadgeInfo = useCallback((role?: string | null): { label: string; color: string } => {
+    const normalized = String(role || '')
+      .toLowerCase()
+      .trim();
+    if (normalized === 'super_admin') return { label: 'Super Admin', color: '#d4a84b' };
+    if (normalized === 'admin') return { label: 'Admin', color: '#a855f7' };
+    if (normalized === 'telesales' || normalized === 'booker') return { label: 'Telesales', color: '#0ea5e9' };
+    if (normalized === 'cc' || normalized === 'consultant') return { label: 'Tư Vấn (CC)', color: '#10b981' };
+    if (normalized === 'technician' || normalized === 'ktv' || normalized === 'cv') {
+      return { label: 'Chuyên Viên (CV)', color: '#14b8a6' };
+    }
+    return { label: role ? role.toUpperCase() : 'Nhân sự', color: '#3b82f6' };
+  }, []);
+
+  interface MentionItem {
+    id: string;
+    type: 'special' | 'staff';
+    tagText: string;
+    displayName: string;
+    username?: string;
+    role?: string;
+    avatarUrl?: string | null;
+    avatarText?: string;
+    color?: string;
+    isOnline?: boolean;
+  }
+
+  // Danh sách ứng viên có thể tag trong phòng hiện tại
+  const mentionCandidates = useMemo<MentionItem[]>(() => {
+    const list: MentionItem[] = [];
+
+    // 1. Trong Space: Thêm tag @All (Toàn bộ thành viên)
+    if (activeConversation?.type === 'space') {
+      list.push({
+        id: 'all',
+        type: 'special',
+        tagText: 'All',
+        displayName: 'All (Tất cả mọi người)',
+        role: 'Toàn nhóm',
+        color: '#3b82f6',
+        avatarText: '👥',
+      });
+    }
+
+    // 2. Thêm tag @AI nếu có Copilot
+    if (canUseAiCopilot) {
+      list.push({
+        id: 'ai',
+        type: 'special',
+        tagText: 'AI',
+        displayName: 'Wings AI Copilot',
+        role: 'Trợ lý AI',
+        color: '#8b5cf6',
+        avatarText: '🤖',
+      });
+    }
+
+    // 3. Danh sách thành viên của phòng hiện tại
+    let roomStaff: MosChatStaffMember[] = [];
+    if (activeConversation?.type === 'space') {
+      if (Array.isArray(activeConversation.memberIds) && activeConversation.memberIds.length > 0) {
+        const mSet = new Set(activeConversation.memberIds.map(Number));
+        roomStaff = staffDirectory.filter((s) => mSet.has(s.id));
+      } else if (Array.isArray(activeConversation.members) && activeConversation.members.length > 0) {
+        roomStaff = activeConversation.members;
+      } else {
+        // Phòng mở public (chung, cc, telesales) -> Cho phép tag đồng nghiệp
+        roomStaff = staffDirectory;
+      }
+    } else if (activeConversation?.type === 'dm') {
+      const peerId = Number(activeConversation.participantStaffId);
+      if (peerId > 0) {
+        const peer = staffDirectory.find((s) => s.id === peerId);
+        if (peer) roomStaff = [peer];
+      } else if (Array.isArray(activeConversation.memberIds)) {
+        const myId = Number(currentUserStaffMember.id) || Number(currentUser?.id) || 0;
+        const otherId = activeConversation.memberIds.find((id) => Number(id) !== myId);
+        if (otherId) {
+          const peer = staffDirectory.find((s) => s.id === Number(otherId));
+          if (peer) roomStaff = [peer];
+        }
+      }
+    } else {
+      roomStaff = staffDirectory;
+    }
+
+    for (const s of roomStaff) {
+      if (!s || !s.id) continue;
+      if (list.some((item) => item.id === `staff-${s.id}`)) continue;
+      const name = s.displayName || s.username || `Nhân sự #${s.id}`;
+      const badge = getRoleBadgeInfo(s.role);
+      list.push({
+        id: `staff-${s.id}`,
+        type: 'staff',
+        tagText: name,
+        displayName: name,
+        username: s.username,
+        role: badge.label,
+        avatarUrl: s.avatarUrl || undefined,
+        avatarText: getAvatarInitials(name, s.username),
+        color: badge.color,
+        isOnline: s.isOnline,
+      });
+    }
+
+    return list;
+  }, [
+    activeConversation,
+    canUseAiCopilot,
+    currentUserStaffMember.id,
+    currentUser?.id,
+    getAvatarInitials,
+    getRoleBadgeInfo,
+    staffDirectory,
+  ]);
+
+  // Bộ lọc danh sách thành viên khớp với chuỗi gõ sau dấu @
+  const filteredMentions = useMemo(() => {
+    if (!mentionState.open) return [];
+    const q = removeVietnameseTones(mentionState.query.trim().toLowerCase());
+    if (!q) return mentionCandidates.slice(0, 10);
+
+    return mentionCandidates
+      .filter((item) => {
+        const nameNorm = removeVietnameseTones(item.displayName.toLowerCase());
+        const tagNorm = removeVietnameseTones(item.tagText.toLowerCase());
+        const unameNorm = item.username ? removeVietnameseTones(item.username.toLowerCase()) : '';
+        const roleNorm = item.role ? removeVietnameseTones(item.role.toLowerCase()) : '';
+        return nameNorm.includes(q) || tagNorm.includes(q) || unameNorm.includes(q) || roleNorm.includes(q);
+      })
+      .slice(0, 10);
+  }, [mentionState.open, mentionState.query, mentionCandidates]);
+
+  // Kiểm tra con trỏ chuột có đang nằm trong từ khoá bắt đầu bằng @ hay không
+  const checkForMentionTrigger = useCallback((text: string, cursor: number, scope: 'main' | 'thread') => {
+    const textBeforeCursor = text.slice(0, cursor);
+    const match = textBeforeCursor.match(/(?:^|\s)@([a-zA-Z0-9_\u00C0-\u1EF9\s]*)$/u);
+    if (match && match.index !== undefined) {
+      const rawMatch = match[0];
+      const atOffset = rawMatch.indexOf('@');
+      const atIndex = match.index + atOffset;
+      const query = match[1];
+
+      if (query.includes('\n') || query.length > 25 || (query.match(/\s/g) || []).length > 2) {
+        setMentionState((prev) => (prev.open ? { ...prev, open: false } : prev));
+        return;
+      }
+
+      setMentionState({
+        open: true,
+        scope,
+        query,
+        atIndex,
+        cursorIndex: cursor,
+        highlightedIndex: 0,
+      });
+      return;
+    }
+    setMentionState((prev) => (prev.open ? { ...prev, open: false } : prev));
+  }, []);
+
+  // Chọn thành viên và tự động hoàn tất cú pháp @Tên Thành Viên vào văn bản
+  const handleSelectMention = useCallback(
+    (item: MentionItem, scope: 'main' | 'thread') => {
+      const textarea = scope === 'main' ? composerInputRef.current : threadInputRef.current;
+      const currentVal = scope === 'main' ? composerText : threadInput;
+      if (!textarea) return;
+
+      const atIdx = mentionState.atIndex >= 0 ? mentionState.atIndex : currentVal.lastIndexOf('@');
+      const cursor = textarea.selectionStart ?? mentionState.cursorIndex;
+      const before = currentVal.slice(0, Math.max(0, atIdx));
+      const after = currentVal.slice(Math.max(atIdx + 1, cursor));
+      const inserted = `@${item.tagText} `;
+      const nextVal = `${before}${inserted}${after}`;
+
+      if (scope === 'main') {
+        setComposerText(nextVal);
+      } else {
+        setThreadInput(nextVal);
+      }
+
+      setMentionState({
+        open: false,
+        scope,
+        query: '',
+        atIndex: -1,
+        cursorIndex: -1,
+        highlightedIndex: 0,
+      });
+
+      requestAnimationFrame(() => {
+        textarea.focus();
+        const newPos = before.length + inserted.length;
+        textarea.setSelectionRange(newPos, newPos);
+        textarea.style.height = 'auto';
+        textarea.style.height = `${Math.min(textarea.scrollHeight, scope === 'main' ? 120 : 100)}px`;
+      });
+    },
+    [composerText, threadInput, mentionState.atIndex, mentionState.cursorIndex]
+  );
+
+  // Điều hướng bằng phím mũi tên Lên/Xuống, Enter/Tab để chọn, Escape để đóng
+  const handleMentionKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>, scope: 'main' | 'thread'): boolean => {
+      if (!mentionState.open || mentionState.scope !== scope || filteredMentions.length === 0) {
+        return false;
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setMentionState((prev) => ({
+          ...prev,
+          highlightedIndex: (prev.highlightedIndex + 1) % filteredMentions.length,
+        }));
+        return true;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setMentionState((prev) => ({
+          ...prev,
+          highlightedIndex: (prev.highlightedIndex - 1 + filteredMentions.length) % filteredMentions.length,
+        }));
+        return true;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        if (
+          e.nativeEvent.isComposing ||
+          isComposingRef.current ||
+          e.keyCode === 229 ||
+          Date.now() - lastCompositionEndMsRef.current < 60
+        ) {
+          return false;
+        }
+        e.preventDefault();
+        const targetItem = filteredMentions[mentionState.highlightedIndex] || filteredMentions[0];
+        if (targetItem) {
+          handleSelectMention(targetItem, scope);
+        }
+        return true;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setMentionState((prev) => ({ ...prev, open: false }));
+        return true;
+      }
+      return false;
+    },
+    [filteredMentions, handleSelectMention, mentionState.highlightedIndex, mentionState.open, mentionState.scope]
+  );
+
+  // Tự động cuộn mục đang chọn vào tầm nhìn
+  useEffect(() => {
+    if (!mentionState.open) return;
+    const el = document.getElementById(`mention-item-${mentionState.highlightedIndex}`);
+    if (el) {
+      el.scrollIntoView({ block: 'nearest' });
+    }
+  }, [mentionState.highlightedIndex, mentionState.open]);
+
+  // Đóng danh sách gợi ý khi bấm chuột ra ngoài
+  useEffect(() => {
+    if (!mentionState.open) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (target.closest('.mos-chat-mention-dropdown')) return;
+      if (target === composerInputRef.current || target === threadInputRef.current) return;
+      setMentionState((prev) => (prev.open ? { ...prev, open: false } : prev));
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [mentionState.open]);
+
+  // Component Popup hiển thị gợi ý thành viên khi gõ @
+  const renderMentionAutocompleteDropdown = useCallback(
+    (scope: 'main' | 'thread') => {
+      if (!mentionState.open || mentionState.scope !== scope || filteredMentions.length === 0) {
+        return null;
+      }
+
+      return (
+        <div
+          className="mos-chat-mention-dropdown absolute bottom-full left-0 mb-2 z-50 rounded-2xl shadow-2xl border backdrop-blur-xl overflow-hidden transition-all duration-150 animate-in fade-in slide-in-from-bottom-2 select-none w-72 md:w-84 max-w-[calc(100vw-32px)]"
+          style={{
+            background: isDark ? 'rgba(23, 23, 23, 0.96)' : 'rgba(255, 255, 255, 0.98)',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.12)',
+            boxShadow: isDark
+              ? '0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.6)'
+              : '0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+          }}
+        >
+          {/* Header */}
+          <div
+            className="px-3.5 py-2 flex items-center justify-between text-[11px] font-semibold tracking-wide"
+            style={{
+              borderBottom: isDark ? '1px solid rgba(255, 255, 255, 0.08)' : '1px solid rgba(0, 0, 0, 0.06)',
+              color: token.colorTextSecondary,
+            }}
+          >
+            <span className="flex items-center gap-1.5 uppercase font-bold text-amber-500">
+              <AtSign size={13} className="shrink-0" />
+              <span>Gợi ý thành viên ({filteredMentions.length})</span>
+            </span>
+            <span className="text-[10px] font-normal lowercase opacity-70">↑ ↓ chọn · Enter/Tab tag · Esc huỷ</span>
+          </div>
+
+          {/* Danh sách thành viên */}
+          <div className="overflow-y-auto max-h-56 py-1 scrollbar-thin">
+            {filteredMentions.map((item, idx) => {
+              const isHighlighted = idx === mentionState.highlightedIndex;
+              return (
+                <div
+                  key={item.id}
+                  id={`mention-item-${idx}`}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    handleSelectMention(item, scope);
+                  }}
+                  onMouseEnter={() => setMentionState((prev) => ({ ...prev, highlightedIndex: idx }))}
+                  className={`px-3 py-2 flex items-center gap-2.5 cursor-pointer transition-colors ${
+                    isHighlighted
+                      ? isDark
+                        ? 'bg-amber-500/20 text-white'
+                        : 'bg-amber-50 text-slate-900'
+                      : isDark
+                        ? 'hover:bg-white/5 text-slate-300'
+                        : 'hover:bg-slate-100 text-slate-700'
+                  }`}
+                  style={{
+                    borderLeft: isHighlighted ? '3px solid #d4a84b' : '3px solid transparent',
+                  }}
+                >
+                  {/* Avatar */}
+                  <div className="relative shrink-0">
+                    {item.avatarUrl ? (
+                      <img src={item.avatarUrl} alt={item.displayName} className="w-7 h-7 rounded-full object-cover" />
+                    ) : (
+                      <div
+                        className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-[11px] text-white shadow-sm"
+                        style={{ background: item.color || '#d4a84b' }}
+                      >
+                        {item.avatarText || '@'}
+                      </div>
+                    )}
+                    {item.type === 'staff' && item.isOnline && (
+                      <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-neutral-900" />
+                    )}
+                  </div>
+
+                  {/* Tên & Chức vụ */}
+                  <div className="flex-1 min-w-0 text-left">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-[13px] truncate">{item.displayName}</span>
+                      {item.role && (
+                        <span
+                          className="px-1.5 py-0.2 rounded text-[10px] font-medium shrink-0"
+                          style={{
+                            background: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+                            color: item.color || token.colorTextSecondary,
+                          }}
+                        >
+                          {item.role}
+                        </span>
+                      )}
+                    </div>
+                    {item.username && <div className="text-[11px] opacity-60 truncate font-mono">@{item.username}</div>}
+                  </div>
+
+                  {/* Tag Cú pháp Preview */}
+                  <div
+                    className="shrink-0 text-[10.5px] font-mono font-medium px-2 py-0.5 rounded-full"
+                    style={{
+                      background: isHighlighted
+                        ? 'rgba(212, 168, 75, 0.28)'
+                        : isDark
+                          ? 'rgba(255, 255, 255, 0.06)'
+                          : 'rgba(0, 0, 0, 0.05)',
+                      color: isHighlighted ? '#d4a84b' : token.colorTextSecondary,
+                    }}
+                  >
+                    @{item.tagText}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    },
+    [
+      filteredMentions,
+      handleSelectMention,
+      isDark,
+      mentionState.highlightedIndex,
+      mentionState.open,
+      mentionState.scope,
+      token.colorTextSecondary,
+    ]
+  );
 
   const isMessageFromCurrentUser = useCallback(
     (m: {
@@ -9599,9 +10042,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         <button
                           type="button"
                           onClick={() => {
-                            setComposerText((prev) => `${prev}${prev.endsWith(' ') || !prev ? '' : ' '}@`);
+                            setComposerText((prev) => {
+                              const next = `${prev}${prev.endsWith(' ') || !prev ? '' : ' '}@`;
+                              setTimeout(() => {
+                                composerInputRef.current?.focus();
+                                const len = next.length;
+                                composerInputRef.current?.setSelectionRange(len, len);
+                                checkForMentionTrigger(next, len, 'main');
+                              }, 20);
+                              return next;
+                            });
                             setMobileActionOpen(false);
-                            composerInputRef.current?.focus();
                           }}
                           className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/5 active:scale-95 transition-transform"
                         >
@@ -9675,19 +10126,37 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         <span className="font-serif font-bold text-[13px] tracking-tight">Aa</span>
                       </button>
 
-                      {/* Text Input Pill (38px min-height) */}
+                      {/* Text Input Pill (38px min-height) with Floating @Mention Autocomplete */}
                       <div
-                        className="flex-1 min-h-[38px] max-h-[120px] rounded-2xl px-3 py-1 flex items-center gap-1.5"
+                        className="relative flex-1 min-h-[38px] max-h-[120px] rounded-2xl px-3 py-1 flex items-center gap-1.5"
                         style={{ background: surfaceRaised, border: `1px solid ${borderStrong}` }}
                       >
+                        {renderMentionAutocompleteDropdown('main')}
+
                         <textarea
                           ref={composerInputRef}
                           rows={1}
                           value={composerText}
                           onChange={(e) => {
-                            setComposerText(e.target.value);
+                            const val = e.target.value;
+                            setComposerText(val);
                             e.target.style.height = 'auto';
                             e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                            checkForMentionTrigger(val, e.target.selectionStart ?? val.length, 'main');
+                          }}
+                          onClick={(e) => {
+                            const target = e.target as HTMLTextAreaElement;
+                            checkForMentionTrigger(target.value, target.selectionStart ?? target.value.length, 'main');
+                          }}
+                          onKeyUp={(e) => {
+                            if (['ArrowLeft', 'ArrowRight', 'Home', 'End', 'Backspace', 'Delete'].includes(e.key)) {
+                              const target = e.target as HTMLTextAreaElement;
+                              checkForMentionTrigger(
+                                target.value,
+                                target.selectionStart ?? target.value.length,
+                                'main'
+                              );
+                            }
                           }}
                           onPaste={(e) => handleClipboardPaste(e, 'main')}
                           onCompositionStart={() => {
@@ -9700,6 +10169,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             }, 50);
                           }}
                           onKeyDown={(e) => {
+                            if (handleMentionKeyDown(e, 'main')) return;
                             if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
                               e.preventDefault();
                               handleApplyFormat('bold', 'main');
@@ -9773,17 +10243,31 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   <div className="space-y-1.5">
                     {formatBarOpenMain && renderAppleNotesFormatToolbar('main')}
                     <div
-                      className="min-h-[44px] max-h-[140px] rounded-2xl pl-4 pr-1.5 py-1.5 flex items-end gap-1.5 transition-all"
+                      className="relative min-h-[44px] max-h-[140px] rounded-2xl pl-4 pr-1.5 py-1.5 flex items-end gap-1.5 transition-all"
                       style={{ background: surfaceRaised, border: `1px solid ${borderStrong}` }}
                     >
+                      {renderMentionAutocompleteDropdown('main')}
+
                       <textarea
                         ref={composerInputRef}
                         rows={1}
                         value={composerText}
                         onChange={(e) => {
-                          setComposerText(e.target.value);
+                          const val = e.target.value;
+                          setComposerText(val);
                           e.target.style.height = 'auto';
                           e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                          checkForMentionTrigger(val, e.target.selectionStart ?? val.length, 'main');
+                        }}
+                        onClick={(e) => {
+                          const target = e.target as HTMLTextAreaElement;
+                          checkForMentionTrigger(target.value, target.selectionStart ?? target.value.length, 'main');
+                        }}
+                        onKeyUp={(e) => {
+                          if (['ArrowLeft', 'ArrowRight', 'Home', 'End', 'Backspace', 'Delete'].includes(e.key)) {
+                            const target = e.target as HTMLTextAreaElement;
+                            checkForMentionTrigger(target.value, target.selectionStart ?? target.value.length, 'main');
+                          }
                         }}
                         onPaste={(e) => handleClipboardPaste(e, 'main')}
                         onCompositionStart={() => {
@@ -9796,6 +10280,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           }, 50);
                         }}
                         onKeyDown={(e) => {
+                          if (handleMentionKeyDown(e, 'main')) return;
                           if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
                             e.preventDefault();
                             handleApplyFormat('bold', 'main');
@@ -9931,8 +10416,16 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           type="button"
                           aria-label="Nhắc tên đồng nghiệp"
                           onClick={() => {
-                            setComposerText((prev) => `${prev}${prev.endsWith(' ') || !prev ? '' : ' '}@`);
-                            composerInputRef.current?.focus();
+                            setComposerText((prev) => {
+                              const next = `${prev}${prev.endsWith(' ') || !prev ? '' : ' '}@`;
+                              setTimeout(() => {
+                                composerInputRef.current?.focus();
+                                const len = next.length;
+                                composerInputRef.current?.setSelectionRange(len, len);
+                                checkForMentionTrigger(next, len, 'main');
+                              }, 20);
+                              return next;
+                            });
                           }}
                           className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
                           style={{ color: token.colorTextSecondary }}
@@ -10725,15 +11218,29 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             <div className="p-2.5 space-y-1.5" style={{ borderTop: `1px solid ${borderColor}` }}>
               {renderStagedAttachmentsStrip(threadAttachments, 'thread')}
               {formatBarOpenThread && renderAppleNotesFormatToolbar('thread')}
-              <div className="flex items-end gap-1">
+              <div className="relative flex items-end gap-1">
+                {renderMentionAutocompleteDropdown('thread')}
                 <textarea
                   ref={threadInputRef}
                   rows={1}
                   value={threadInput}
                   onChange={(e) => {
-                    setThreadInput(e.target.value);
+                    const val = e.target.value;
+                    const cursor = e.target.selectionStart ?? val.length;
+                    setThreadInput(val);
                     e.target.style.height = 'auto';
                     e.target.style.height = `${Math.min(e.target.scrollHeight, 100)}px`;
+                    checkForMentionTrigger(val, cursor, 'thread');
+                  }}
+                  onClick={(e) => {
+                    const target = e.currentTarget;
+                    checkForMentionTrigger(target.value, target.selectionStart ?? target.value.length, 'thread');
+                  }}
+                  onKeyUp={(e) => {
+                    if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
+                      const target = e.currentTarget;
+                      checkForMentionTrigger(target.value, target.selectionStart ?? target.value.length, 'thread');
+                    }
                   }}
                   onPaste={(e) => handleClipboardPaste(e, 'thread')}
                   onCompositionStart={() => {
@@ -10746,6 +11253,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     }, 50);
                   }}
                   onKeyDown={(e) => {
+                    if (handleMentionKeyDown(e, 'thread')) {
+                      return;
+                    }
                     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
                       e.preventDefault();
                       handleApplyFormat('bold', 'thread');
@@ -10774,7 +11284,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       handleSendThreadReply();
                     }
                   }}
-                  placeholder="Trả lời... (Shift+Enter để xuống dòng)"
+                  placeholder="Trả lời... (gõ @ để nhắc tên, Shift+Enter để xuống dòng)"
                   className="flex-1 min-h-[38px] max-h-[100px] rounded-2xl px-3.5 py-2 text-[13px] outline-none resize-none leading-relaxed"
                   style={{
                     background: surfaceRaised,
@@ -10782,6 +11292,29 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     color: token.colorText,
                   }}
                 />
+                {/* [@] Mention Button in Thread */}
+                <Tooltip title="Nhắc tên đồng nghiệp (@)">
+                  <button
+                    type="button"
+                    aria-label="Nhắc tên đồng nghiệp trong luồng"
+                    onClick={() => {
+                      setThreadInput((prev) => {
+                        const next = `${prev}${prev.endsWith(' ') || !prev ? '' : ' '}@`;
+                        setTimeout(() => {
+                          threadInputRef.current?.focus();
+                          const len = next.length;
+                          threadInputRef.current?.setSelectionRange(len, len);
+                          checkForMentionTrigger(next, len, 'thread');
+                        }, 20);
+                        return next;
+                      });
+                    }}
+                    className="w-9 h-9 rounded-full inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10 active:scale-95 transition-all"
+                    style={{ color: token.colorTextSecondary }}
+                  >
+                    <AtSign size={17} />
+                  </button>
+                </Tooltip>
                 {/* [Aa] Apple Notes Format Button in Thread */}
                 <Tooltip title="Định dạng chữ phong cách Apple Notes (Aa)">
                   <button
