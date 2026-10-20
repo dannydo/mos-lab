@@ -93,6 +93,10 @@ import {
   ArrowUpRight,
   Archive,
   ArchiveRestore,
+  CalendarClock,
+  AlertTriangle,
+  Handshake,
+  Activity,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import type {
@@ -547,6 +551,96 @@ const REMINDER_PRESETS: ReminderPreset[] = [
     },
   },
 ];
+
+interface DeadlinePreset {
+  id: string;
+  label: string;
+  getDate: () => dayjs.Dayjs | null;
+}
+
+const DEADLINE_PRESETS: DeadlinePreset[] = [
+  {
+    id: 'today-1730',
+    label: '17:30 hôm nay',
+    getDate: () => {
+      const now = dayjs();
+      let target = now.hour(17).minute(30).second(0);
+      if (target.isBefore(now)) target = target.add(1, 'day');
+      return target;
+    },
+  },
+  {
+    id: 'today-2200',
+    label: '22:00 hôm nay',
+    getDate: () => {
+      const now = dayjs();
+      let target = now.hour(22).minute(0).second(0);
+      if (target.isBefore(now)) target = target.add(1, 'day');
+      return target;
+    },
+  },
+  {
+    id: 'tomorrow-1200',
+    label: '12:00 trưa mai',
+    getDate: () => dayjs().add(1, 'day').hour(12).minute(0).second(0),
+  },
+  {
+    id: 'tomorrow-1730',
+    label: '17:30 chiều mai',
+    getDate: () => dayjs().add(1, 'day').hour(17).minute(30).second(0),
+  },
+  {
+    id: 'in-2-days',
+    label: 'Trong 2 ngày',
+    getDate: () => dayjs().add(2, 'day').hour(17).minute(30).second(0),
+  },
+  {
+    id: 'none',
+    label: 'Không đặt hạn',
+    getDate: () => null,
+  },
+];
+
+function getTaskDeadlineInfo(deadlineIso?: string | null, done?: boolean) {
+  if (!deadlineIso) return null;
+  const d = dayjs(deadlineIso);
+  if (!d.isValid()) return null;
+  const now = dayjs();
+  const diffMinutes = d.diff(now, 'minute');
+  const isOverdue = diffMinutes < 0 && !done;
+  const isDueSoon = diffMinutes >= 0 && diffMinutes <= 180 && !done;
+
+  let relative = '';
+  if (done) {
+    relative = 'Đã xong';
+  } else if (isOverdue) {
+    const absMin = Math.abs(diffMinutes);
+    if (absMin < 60) relative = `Trễ ${absMin}p`;
+    else if (absMin < 1440) relative = `Trễ ${Math.floor(absMin / 60)}h ${absMin % 60}m`;
+    else relative = `Trễ ${Math.floor(absMin / 1440)} ngày`;
+  } else {
+    if (diffMinutes < 60) relative = `Còn ${diffMinutes}p`;
+    else if (diffMinutes < 1440) relative = `Còn ${Math.floor(diffMinutes / 60)}h ${diffMinutes % 60}m`;
+    else relative = `Còn ${Math.floor(diffMinutes / 1440)} ngày`;
+  }
+
+  let label = '';
+  if (d.isSame(now, 'day')) {
+    label = `Hôm nay ${d.format('HH:mm')}`;
+  } else if (d.isSame(now.add(1, 'day'), 'day')) {
+    label = `Mai ${d.format('HH:mm')}`;
+  } else {
+    label = d.format('DD/MM HH:mm');
+  }
+
+  return {
+    raw: d,
+    label,
+    relative,
+    isOverdue,
+    isDueSoon,
+  };
+}
 
 function playWebAudioReminderChime() {
   try {
@@ -1359,8 +1453,22 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [taskRemindSeconds, setTaskRemindSeconds] = useState<number>(0);
   const [customRemindDate, setCustomRemindDate] = useState<dayjs.Dayjs | null>(null);
 
+  // Deadline & Negotiation states (MOS-BUG-125)
+  const [taskDeadlineMode, setTaskDeadlineMode] = useState<'preset' | 'custom' | 'none'>('preset');
+  const [selectedDeadlinePresetId, setSelectedDeadlinePresetId] = useState<string>('today-1730');
+  const [taskDeadline, setTaskDeadline] = useState<dayjs.Dayjs | null>(null);
+  const [taskNegotiatedDeadline, setTaskNegotiatedDeadline] = useState<dayjs.Dayjs | null>(null);
+  const [taskNegotiationNote, setTaskNegotiationNote] = useState<string>('');
+
+  // Quick Deadline Negotiation Modal state
+  const [negotiateModalOpen, setNegotiateModalOpen] = useState(false);
+  const [negotiatingTask, setNegotiatingTask] = useState<MosChatTaskItem | null>(null);
+  const [negotiateProposedDeadline, setNegotiateProposedDeadline] = useState<dayjs.Dayjs | null>(null);
+  const [negotiateReason, setNegotiateReason] = useState('');
+  const [isSubmittingNegotiation, setIsSubmittingNegotiation] = useState(false);
+
   // Tasks Tab filter state
-  const [taskFilter, setTaskFilter] = useState<'ACTIVE' | 'DONE' | 'ARCHIVED' | 'ALL'>('ACTIVE');
+  const [taskFilter, setTaskFilter] = useState<'ACTIVE' | 'MINE' | 'OVERDUE' | 'DONE' | 'ARCHIVED' | 'ALL'>('ACTIVE');
 
   // mOS Mission Dispatch & Inline Action state (2-way bridge between mOS Chat & mOS Mission)
   const [missionModalOpen, setMissionModalOpen] = useState(false);
@@ -2194,22 +2302,44 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     let active = 0;
     let done = 0;
     let archived = 0;
+    let overdue = 0;
+    let mine = 0;
+    const now = dayjs();
+    const myName = (currentUser?.displayName || '').trim().toLowerCase();
     for (const t of uniqueTasks) {
-      if (t.archived) archived++;
-      else if (t.done) done++;
-      else active++;
+      if (t.archived) {
+        archived++;
+      } else if (t.done) {
+        done++;
+      } else {
+        active++;
+        if (t.deadline && dayjs(t.deadline).isBefore(now)) {
+          overdue++;
+        }
+        if (myName && (t.assigneeName || '').trim().toLowerCase().includes(myName)) {
+          mine++;
+        }
+      }
     }
-    return { active, done, archived, total: uniqueTasks.length };
-  }, [uniqueTasks]);
+    return { active, done, archived, overdue, mine, total: uniqueTasks.length };
+  }, [uniqueTasks, currentUser?.displayName]);
 
   const filteredTasks = useMemo(() => {
+    const now = dayjs();
+    const myName = (currentUser?.displayName || '').trim().toLowerCase();
     return uniqueTasks.filter((t) => {
       if (taskFilter === 'ACTIVE') return !t.done && !t.archived;
+      if (taskFilter === 'MINE') {
+        return !t.done && !t.archived && Boolean(myName && (t.assigneeName || '').trim().toLowerCase().includes(myName));
+      }
+      if (taskFilter === 'OVERDUE') {
+        return !t.done && !t.archived && Boolean(t.deadline && dayjs(t.deadline).isBefore(now));
+      }
       if (taskFilter === 'DONE') return t.done && !t.archived;
       if (taskFilter === 'ARCHIVED') return Boolean(t.archived);
       return true; // 'ALL'
     });
-  }, [uniqueTasks, taskFilter]);
+  }, [uniqueTasks, taskFilter, currentUser?.displayName]);
 
   // Report unread & active task counts up to Header
   useEffect(() => {
@@ -4096,6 +4226,22 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     setSelectedPresetId('none');
     setTaskRemindSeconds(0);
     setCustomRemindDate(dayjs().add(1, 'hour').minute(0).second(0));
+
+    // Deadline initialization for new task (MOS-BUG-125)
+    if (existingTask?.deadline || existingTask?.dueAt) {
+      const d = dayjs(existingTask.deadline || existingTask.dueAt);
+      setTaskDeadline(d.isValid() ? d : null);
+      setTaskDeadlineMode('custom');
+      setSelectedDeadlinePresetId('custom');
+    } else {
+      const defaultD = DEADLINE_PRESETS[0].getDate();
+      setTaskDeadline(defaultD);
+      setTaskDeadlineMode('preset');
+      setSelectedDeadlinePresetId('today-1730');
+    }
+    setTaskNegotiatedDeadline(existingTask?.negotiatedDeadline ? dayjs(existingTask.negotiatedDeadline) : null);
+    setTaskNegotiationNote(existingTask?.negotiationNote || '');
+
     setTaskModalOpen(true);
   };
 
@@ -4145,7 +4291,139 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       setTaskRemindSeconds(0);
       setCustomRemindDate(dayjs().add(1, 'hour').minute(0).second(0));
     }
+
+    // Deadline initialization for edit (MOS-BUG-125)
+    if (task.deadline || task.dueAt) {
+      const d = dayjs(task.deadline || task.dueAt);
+      setTaskDeadline(d.isValid() ? d : null);
+      setTaskDeadlineMode('custom');
+      setSelectedDeadlinePresetId('custom');
+    } else {
+      setTaskDeadline(null);
+      setTaskDeadlineMode('none');
+      setSelectedDeadlinePresetId('none');
+    }
+    setTaskNegotiatedDeadline(task.negotiatedDeadline ? dayjs(task.negotiatedDeadline) : null);
+    setTaskNegotiationNote(task.negotiationNote || '');
+
     setTaskModalOpen(true);
+  };
+
+  const handleOpenNegotiateModal = (task: MosChatTaskItem) => {
+    setNegotiatingTask(task);
+    const initialProposed = task.deadline
+      ? dayjs(task.deadline).add(2, 'hour')
+      : dayjs().hour(17).minute(30).second(0);
+    setNegotiateProposedDeadline(initialProposed);
+    setNegotiateReason(task.negotiationNote || '');
+    setNegotiateModalOpen(true);
+  };
+
+  const handleSubmitNegotiation = async () => {
+    if (!negotiatingTask) return;
+    if (!negotiateProposedDeadline || !negotiateProposedDeadline.isValid()) {
+      antdMessage.warning('Vui lòng chọn thời hạn bạn đề xuất dời sang');
+      return;
+    }
+    if (!negotiateReason.trim()) {
+      antdMessage.warning('Vui lòng nhập lý do / giải trình thương lượng dời hạn');
+      return;
+    }
+
+    setIsSubmittingNegotiation(true);
+    const proposedIso = negotiateProposedDeadline.toISOString();
+    const cleanReason = negotiateReason.trim();
+    const myName = currentUser?.displayName || 'Nhân sự';
+    const nowIso = new Date().toISOString();
+
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === negotiatingTask.id
+          ? {
+              ...t,
+              negotiatedDeadline: proposedIso,
+              negotiationNote: cleanReason,
+              negotiatedBy: myName,
+              negotiatedAt: nowIso,
+            }
+          : t
+      )
+    );
+
+    setNegotiateModalOpen(false);
+    antdMessage.success('Đã gửi đề xuất thương lượng dời hạn chót thành công!');
+
+    try {
+      await apiClient.chat.updateTask(negotiatingTask.id, {
+        negotiatedDeadline: proposedIso,
+        negotiationNote: cleanReason,
+        negotiatedBy: myName,
+        negotiatedAt: nowIso,
+      });
+      notifyLivePeers();
+    } catch (_) {
+      antdMessage.error('Không thể gửi đề xuất thương lượng');
+    } finally {
+      setIsSubmittingNegotiation(false);
+      setNegotiatingTask(null);
+    }
+  };
+
+  const handleAcceptNegotiatedDeadline = async (task: MosChatTaskItem) => {
+    if (!task.negotiatedDeadline) return;
+    const newDeadline = task.negotiatedDeadline;
+
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === task.id
+          ? {
+              ...t,
+              deadline: newDeadline,
+              dueAt: newDeadline,
+              negotiatedDeadline: null,
+              negotiationNote: null,
+              negotiatedBy: null,
+              negotiatedAt: null,
+              updatedAt: new Date().toISOString(),
+            }
+          : t
+      )
+    );
+
+    antdMessage.success(`Đã chấp thuận dời hạn sang ${dayjs(newDeadline).format('HH:mm DD/MM/YYYY')}!`);
+
+    try {
+      await apiClient.chat.updateTask(task.id, {
+        acceptNegotiatedDeadline: true,
+      });
+      notifyLivePeers();
+    } catch (_) {}
+  };
+
+  const handleRejectNegotiatedDeadline = async (task: MosChatTaskItem) => {
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === task.id
+          ? {
+              ...t,
+              negotiatedDeadline: null,
+              negotiationNote: null,
+              negotiatedBy: null,
+              negotiatedAt: null,
+              updatedAt: new Date().toISOString(),
+            }
+          : t
+      )
+    );
+
+    antdMessage.info('Đã từ chối đề xuất dời hạn và giữ nguyên hạn cũ');
+
+    try {
+      await apiClient.chat.updateTask(task.id, {
+        rejectNegotiatedDeadline: true,
+      });
+      notifyLivePeers();
+    } catch (_) {}
   };
 
   const handleToggleArchiveTask = async (taskId: string, archived: boolean) => {
@@ -4223,6 +4501,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       remindSecondsToSend = taskRemindSeconds;
     }
 
+    const deadlineIso = taskDeadline && taskDeadline.isValid() ? taskDeadline.toISOString() : null;
+    const negotiatedDeadlineIso =
+      taskNegotiatedDeadline && taskNegotiatedDeadline.isValid() ? taskNegotiatedDeadline.toISOString() : null;
+    const cleanNegotiationNote = taskNegotiationNote.trim() || null;
+
     if (editingTask) {
       const updatedTask: MosChatTaskItem = {
         ...editingTask,
@@ -4234,6 +4517,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         archived: taskArchivedState,
         archivedAt: taskArchivedState ? editingTask.archivedAt || new Date().toISOString() : null,
         remindAt: remindAtIso,
+        deadline: deadlineIso,
+        dueAt: deadlineIso,
+        negotiatedDeadline: negotiatedDeadlineIso,
+        negotiationNote: cleanNegotiationNote,
         fired: isNoReminder || taskDoneState || taskArchivedState,
         updatedAt: new Date().toISOString(),
       };
@@ -4253,6 +4540,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           archived: taskArchivedState,
           remindInSeconds: remindSecondsToSend,
           remindAt: remindAtIso,
+          deadline: deadlineIso,
+          dueAt: deadlineIso,
+          negotiatedDeadline: negotiatedDeadlineIso,
+          negotiationNote: cleanNegotiationNote,
         });
         notifyLivePeers();
       } catch (_) {}
@@ -4284,6 +4575,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       creatorName: currentUser?.displayName || 'Danny Do',
       priority: taskPriority,
       remindAt: remindAtIso,
+      deadline: deadlineIso,
+      dueAt: deadlineIso,
+      negotiatedDeadline: negotiatedDeadlineIso,
+      negotiationNote: cleanNegotiationNote,
       done: false,
       fired: isNoReminder,
       createdAt: existingTask?.createdAt || new Date().toISOString(),
@@ -4346,6 +4641,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         priority: taskPriority,
         remindInSeconds: remindSecondsToSend,
         remindAt: remindAtIso,
+        deadline: deadlineIso,
+        dueAt: deadlineIso,
+        negotiationNote: cleanNegotiationNote,
       });
       if (res?.task) {
         setTasks((prev) => prev.map((t) => (t.id === tempTaskId || t.id === res.task.id ? res.task : t)));
@@ -5573,6 +5871,410 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             )}
           </div>
         )}
+      </div>
+    );
+  };
+
+  const renderTaskCard = (
+    task: MosChatTaskItem,
+    sourceMsg?: MosChatMessage | null,
+    mode: 'inline' | 'list' | 'thread' = 'inline'
+  ) => {
+    const isDone = Boolean(task.done);
+    const deadlineInfo = getTaskDeadlineInfo(task.deadline, isDone);
+    const hasNegotiation = Boolean(task.negotiatedDeadline);
+    const taskCode = `#TASK-${(task.id || '').replace(/[^a-zA-Z0-9]/g, '').slice(-5).toUpperCase() || 'CHAT'}`;
+
+    // Priority pill styling
+    let priorityBg = 'rgba(59, 130, 246, 0.15)';
+    let priorityColor = '#60a5fa';
+    let priorityBorder = 'rgba(59, 130, 246, 0.35)';
+    let priorityLabel = 'P2 · Thường';
+
+    if (task.priority === 'URGENT') {
+      priorityBg = 'rgba(239, 68, 68, 0.18)';
+      priorityColor = '#f87171';
+      priorityBorder = 'rgba(239, 68, 68, 0.4)';
+      priorityLabel = 'P0 · Khẩn cấp';
+    } else if (task.priority === 'HIGH') {
+      priorityBg = 'rgba(245, 158, 11, 0.18)';
+      priorityColor = '#fbbf24';
+      priorityBorder = 'rgba(245, 158, 11, 0.4)';
+      priorityLabel = 'P1 · Quan trọng';
+    }
+
+    // Status badge styling
+    let statusBg = 'rgba(100, 116, 139, 0.18)';
+    let statusColor = '#94a3b8';
+    let statusBorder = 'rgba(100, 116, 139, 0.35)';
+    let statusLabel = 'ĐANG THỰC HIỆN';
+
+    if (isDone) {
+      statusBg = 'rgba(16, 185, 129, 0.18)';
+      statusColor = '#34d399';
+      statusBorder = 'rgba(16, 185, 129, 0.4)';
+      statusLabel = 'ĐÃ HOÀN THÀNH';
+    } else if (deadlineInfo?.isOverdue) {
+      statusBg = 'rgba(239, 68, 68, 0.2)';
+      statusColor = '#f87171';
+      statusBorder = 'rgba(239, 68, 68, 0.45)';
+      statusLabel = 'QUÁ HẠN';
+    } else if (deadlineInfo?.isDueSoon) {
+      statusBg = 'rgba(245, 158, 11, 0.2)';
+      statusColor = '#fbbf24';
+      statusBorder = 'rgba(245, 158, 11, 0.45)';
+      statusLabel = 'SẮP ĐẾN HẠN';
+    }
+
+    const isCreator = Boolean(
+      task.creatorName && currentUser?.displayName && task.creatorName === currentUser.displayName
+    );
+    const canApproveNegotiation = isCreator || isStrictDannySuperAdmin;
+
+    return (
+      <div
+        key={task.id}
+        className={`rounded-xl transition-all ${mode === 'inline' ? 'mt-2 max-w-[92%]' : 'w-full'} p-3 space-y-2.5 text-left`}
+        style={{
+          background: isDark ? 'rgba(15, 23, 42, 0.72)' : 'rgba(255, 255, 255, 0.95)',
+          border: `1.5px solid ${isDone ? 'rgba(16, 185, 129, 0.4)' : deadlineInfo?.isOverdue ? 'rgba(239, 68, 68, 0.45)' : 'rgba(212, 168, 75, 0.4)'}`,
+          boxShadow: isDark
+            ? '0 4px 18px rgba(0, 0, 0, 0.35)'
+            : '0 4px 14px rgba(15, 23, 42, 0.06)',
+          opacity: isDone ? 0.85 : 1,
+        }}
+      >
+        {/* Header: Task Code + Priority + Status Badge + Done Toggle */}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span
+              className="px-2 py-0.5 rounded-md text-[10.5px] font-black tracking-wider uppercase tabular-nums"
+              style={{
+                background: isDark ? 'rgba(212, 168, 75, 0.18)' : '#fef3c7',
+                color: isDark ? '#fbbf24' : '#b45309',
+                border: '1px solid rgba(212, 168, 75, 0.35)',
+              }}
+            >
+              {taskCode}
+            </span>
+
+            <span
+              className="px-2 py-0.5 rounded-md text-[10px] font-extrabold"
+              style={{
+                background: priorityBg,
+                color: priorityColor,
+                border: `1px solid ${priorityBorder}`,
+              }}
+            >
+              {priorityLabel}
+            </span>
+
+            <span
+              className="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wide flex items-center gap-1"
+              style={{
+                background: statusBg,
+                color: statusColor,
+                border: `1px solid ${statusBorder}`,
+              }}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full"
+                style={{
+                  background: statusColor,
+                  boxShadow: !isDone && (deadlineInfo?.isOverdue || deadlineInfo?.isDueSoon) ? `0 0 6px ${statusColor}` : 'none',
+                }}
+              />
+              {statusLabel}
+            </span>
+
+            {task.archived && (
+              <span className="px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-slate-500/20 text-slate-400 border border-slate-500/30">
+                Lưu trữ
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            {mode !== 'thread' && sourceMsg && (
+              <Tooltip title="Mở luồng tin nhắn trao đổi">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (task.conversationId && task.conversationId !== activeConversation?.id) {
+                      selectConversation(task.conversationId);
+                    }
+                    handleOpenThread(sourceMsg.id);
+                  }}
+                  className="h-6 px-2 rounded-md inline-flex items-center gap-1 text-[10.5px] font-bold cursor-pointer hover:opacity-90"
+                  style={{
+                    background: surfaceRaised,
+                    border: `1px solid ${borderColor}`,
+                    color: token.colorText,
+                  }}
+                >
+                  <MessageSquareReply size={11} className="text-amber-400" />
+                  <span>Luồng</span>
+                </button>
+              </Tooltip>
+            )}
+
+            <Tooltip title={isDone ? 'Mở lại công việc' : 'Đánh dấu hoàn thành'}>
+              <button
+                type="button"
+                aria-label={isDone ? 'Mở lại công việc' : 'Đánh dấu hoàn thành'}
+                onClick={() => handleToggleTaskDone(task.id)}
+                className="h-6 px-2.5 rounded-md inline-flex items-center gap-1.5 text-[11px] font-extrabold cursor-pointer transition-all"
+                style={{
+                  background: isDone ? '#10b981' : isDark ? 'rgba(16, 185, 129, 0.15)' : '#ecfdf5',
+                  color: isDone ? '#fff' : '#059669',
+                  border: `1.5px solid ${isDone ? '#10b981' : 'rgba(16, 185, 129, 0.4)'}`,
+                }}
+              >
+                <Check size={12} strokeWidth={isDone ? 3 : 2} />
+                <span>{isDone ? 'Đã xong' : 'Hoàn thành'}</span>
+              </button>
+            </Tooltip>
+          </div>
+        </div>
+
+        {/* Task Title */}
+        <div
+          className={`text-[13px] font-bold leading-snug ${isDone ? 'line-through opacity-70' : ''}`}
+          style={{ color: token.colorText }}
+        >
+          {task.title}
+        </div>
+
+        {/* People Flow (Creator -> Assignee) */}
+        <div className="flex items-center gap-2 text-[11px] text-slate-400 flex-wrap">
+          <div className="flex items-center gap-1">
+            <span className="opacity-70">Giao bởi:</span>
+            <span className="font-semibold text-slate-300">{task.creatorName || 'Hệ thống'}</span>
+          </div>
+          <span>→</span>
+          <div className="flex items-center gap-1">
+            <span className="opacity-70">Người nhận:</span>
+            <span className="font-semibold text-amber-400">{task.assigneeName || 'Chung'}</span>
+          </div>
+        </div>
+
+        {/* Deadline & Reminder visual row */}
+        <div className="flex items-center gap-2 flex-wrap pt-0.5">
+          {deadlineInfo ? (
+            <div
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold tabular-nums"
+              style={{
+                background: isDone
+                  ? 'rgba(16, 185, 129, 0.12)'
+                  : deadlineInfo.isOverdue
+                    ? 'rgba(239, 68, 68, 0.16)'
+                    : deadlineInfo.isDueSoon
+                      ? 'rgba(245, 158, 11, 0.16)'
+                      : isDark
+                        ? 'rgba(139, 92, 246, 0.15)'
+                        : '#f5f3ff',
+                color: isDone
+                  ? '#10b981'
+                  : deadlineInfo.isOverdue
+                    ? '#ef4444'
+                    : deadlineInfo.isDueSoon
+                      ? '#f59e0b'
+                      : '#8b5cf6',
+                border: `1px solid ${
+                  isDone
+                    ? 'rgba(16, 185, 129, 0.3)'
+                    : deadlineInfo.isOverdue
+                      ? 'rgba(239, 68, 68, 0.35)'
+                      : deadlineInfo.isDueSoon
+                        ? 'rgba(245, 158, 11, 0.35)'
+                        : 'rgba(139, 92, 246, 0.35)'
+                }`,
+              }}
+            >
+              <CalendarClock size={13} className="shrink-0" />
+              <span>Hạn: {deadlineInfo.label}</span>
+              <span className="font-extrabold opacity-90">({deadlineInfo.relative})</span>
+            </div>
+          ) : (
+            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10.5px] text-slate-400 bg-slate-500/10 border border-slate-500/20">
+              <CalendarClock size={12} className="opacity-60" />
+              <span>Chưa đặt hạn chót</span>
+            </div>
+          )}
+
+          {task.remindAt && !isDone && (
+            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/25 tabular-nums">
+              <Bell size={11} />
+              <span>Nhắc: {formatCountdown(task.remindAt, nowMs)}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Negotiation Banner (if negotiatedDeadline is pending) */}
+        {hasNegotiation && !isDone && (
+          <div
+            className="p-2.5 rounded-xl text-left space-y-2"
+            style={{
+              background: isDark ? 'rgba(245, 158, 11, 0.12)' : '#fffbeb',
+              border: '1.5px dashed rgba(245, 158, 11, 0.5)',
+            }}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-amber-500 font-extrabold text-[11.5px]">
+                <Handshake size={14} className="shrink-0" />
+                <span>Đề xuất thương lượng dời hạn chót</span>
+              </div>
+              <span className="text-[10px] text-slate-400 tabular-nums">
+                {task.negotiatedAt ? dayjs(task.negotiatedAt).format('HH:mm DD/MM') : ''}
+              </span>
+            </div>
+
+            <div className="text-[11.5px] space-y-1">
+              <div className="flex items-center gap-1.5 text-slate-300">
+                <span className="text-slate-400">Đề xuất hạn mới:</span>
+                <span className="font-extrabold text-amber-400 tabular-nums">
+                  {dayjs(task.negotiatedDeadline).format('HH:mm DD/MM/YYYY')}
+                </span>
+                <span className="text-[10px] text-amber-500 font-semibold">
+                  ({dayjs(task.negotiatedDeadline).fromNow()})
+                </span>
+              </div>
+              {task.negotiationNote && (
+                <div className="text-slate-300 italic bg-black/20 p-1.5 rounded-lg text-[11px] leading-relaxed">
+                  &ldquo;{task.negotiationNote}&rdquo;
+                </div>
+              )}
+              <div className="text-[10.5px] text-slate-400">
+                Bởi: <span className="font-semibold text-slate-300">{task.negotiatedBy || 'Người nhận task'}</span>
+              </div>
+            </div>
+
+            {/* Negotiation approval buttons */}
+            <div className="pt-1 flex items-center justify-between gap-2 flex-wrap">
+              {canApproveNegotiation ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleAcceptNegotiatedDeadline(task)}
+                    className="h-6 px-2.5 rounded-lg text-[10.5px] font-extrabold inline-flex items-center gap-1 cursor-pointer bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm"
+                  >
+                    <Check size={12} strokeWidth={3} />
+                    <span>Duyệt dời hạn</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRejectNegotiatedDeadline(task)}
+                    className="h-6 px-2.5 rounded-lg text-[10.5px] font-bold inline-flex items-center gap-1 cursor-pointer bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30"
+                  >
+                    <X size={12} />
+                    <span>Từ chối</span>
+                  </button>
+                </div>
+              ) : (
+                <span className="text-[10.5px] text-amber-400 italic">
+                  Đang chờ người giao ({task.creatorName || 'người tạo'}) xét duyệt...
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Card Actions Footer */}
+        <div className="pt-1 border-t border-white/5 flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            {!isDone && (
+              <button
+                type="button"
+                onClick={() => handleOpenNegotiateModal(task)}
+                className="h-6 px-2 rounded-md inline-flex items-center gap-1 text-[10.5px] font-bold cursor-pointer transition-all hover:bg-amber-500/20 text-amber-400"
+                style={{
+                  background: isDark ? 'rgba(245, 158, 11, 0.12)' : '#fef3c7',
+                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                }}
+              >
+                <Handshake size={12} />
+                <span>{hasNegotiation ? 'Sửa đề xuất hạn' : 'Xin dời hạn'}</span>
+              </button>
+            )}
+
+            {isStrictDannySuperAdmin && !task.mission && (
+              <button
+                type="button"
+                onClick={() => openMissionModalFromChat(sourceMsg || null, task, task.conversationId)}
+                className="h-6 px-2 rounded-md inline-flex items-center gap-1 text-[10.5px] font-bold cursor-pointer transition-all hover:opacity-90"
+                style={{
+                  background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                  color: '#fff',
+                }}
+              >
+                <Rocket size={11} />
+                <span>Giao AG</span>
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0">
+            <Tooltip title="Chỉnh sửa công việc">
+              <button
+                type="button"
+                aria-label="Chỉnh sửa công việc"
+                onClick={() => openEditTaskModal(task)}
+                className="w-6 h-6 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-white/10"
+                style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+              >
+                <Pencil size={11} className="text-amber-400" />
+              </button>
+            </Tooltip>
+
+            <Tooltip title={task.archived ? 'Khôi phục công việc' : 'Lưu trữ công việc'}>
+              <button
+                type="button"
+                aria-label={task.archived ? 'Khôi phục công việc' : 'Lưu trữ công việc'}
+                onClick={() => handleToggleArchiveTask(task.id, !task.archived)}
+                className="w-6 h-6 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-white/10"
+                style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+              >
+                {task.archived ? (
+                  <ArchiveRestore size={11} className="text-emerald-400" />
+                ) : (
+                  <Archive size={11} className="text-slate-400" />
+                )}
+              </button>
+            </Tooltip>
+
+            <Popconfirm
+              title="Xoá vĩnh viễn công việc này?"
+              description="Bạn có chắc chắn muốn xoá task này không?"
+              okText="Xoá"
+              cancelText="Huỷ"
+              okButtonProps={{ danger: true }}
+              onConfirm={() => handleDeleteTask(task.id)}
+            >
+              <Tooltip title="Xoá task">
+                <button
+                  type="button"
+                  aria-label="Xoá task"
+                  className="w-6 h-6 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-rose-500/20 text-rose-400"
+                  style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                >
+                  <Trash2 size={11} />
+                </button>
+              </Tooltip>
+            </Popconfirm>
+
+            <Tooltip title="Thử chuông nhắc hẹn">
+              <button
+                type="button"
+                aria-label="Thử chuông nhắc hẹn"
+                onClick={() => triggerTaskReminderAlert(task)}
+                className="w-6 h-6 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-white/10 text-amber-400"
+                style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+              >
+                <BellRing size={11} />
+              </button>
+            </Tooltip>
+          </div>
+        </div>
       </div>
     );
   };
@@ -9609,115 +10311,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             </div>
                           )}
 
-                          {/* Inline Task & Reminder Card */}
-                          {linkedTask && (
-                            <div
-                              className="mt-1.5 px-2.5 py-2 rounded-lg flex items-center justify-between gap-2 text-left max-w-[85%]"
-                              style={{
-                                background: surfaceBg,
-                                border: `1px solid ${linkedTask.done ? 'rgba(16, 185, 129, 0.4)' : 'rgba(212, 168, 75, 0.45)'}`,
-                                borderLeft: `3px solid ${linkedTask.done ? '#10b981' : '#d4a84b'}`,
-                                opacity: linkedTask.done ? 0.8 : 1,
-                              }}
-                            >
-                              <div className="flex items-center gap-2 min-w-0">
-                                <Tooltip title={linkedTask.done ? 'Mở lại Task' : 'Đánh dấu hoàn thành'}>
-                                  <button
-                                    type="button"
-                                    aria-label="Đánh dấu hoàn thành Task"
-                                    onClick={() => handleToggleTaskDone(linkedTask.id)}
-                                    className="w-4 h-4 rounded flex items-center justify-center shrink-0 cursor-pointer"
-                                    style={{
-                                      border: `1.75px solid ${linkedTask.done ? '#10b981' : '#d4a84b'}`,
-                                      background: linkedTask.done ? '#10b981' : 'transparent',
-                                      color: '#000',
-                                    }}
-                                  >
-                                    {linkedTask.done && <Check size={11} strokeWidth={3} />}
-                                  </button>
-                                </Tooltip>
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-1.5 min-w-0">
-                                    <div
-                                      className={`text-[12px] font-bold truncate ${linkedTask.done ? 'line-through' : ''}`}
-                                    >
-                                      {linkedTask.title}
-                                    </div>
-                                    {linkedTask.archived && (
-                                      <span className="px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-slate-500/20 text-slate-400 border border-slate-500/30 shrink-0">
-                                        Lưu trữ
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="text-[10.5px] text-slate-400 flex items-center gap-2">
-                                    <span>{linkedTask.assigneeName}</span>
-                                    <span>· {linkedTask.priority}</span>
-                                    <span className="text-amber-500 font-bold tabular-nums">
-                                      {linkedTask.done ? 'Xong' : formatCountdown(linkedTask.remindAt, nowMs)}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-1 shrink-0">
-                                <Tooltip title="Chỉnh sửa task">
-                                  <button
-                                    type="button"
-                                    aria-label="Chỉnh sửa task"
-                                    onClick={() => openEditTaskModal(linkedTask)}
-                                    className="w-7 h-7 rounded-md inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10"
-                                    style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
-                                  >
-                                    <Pencil size={12} className="text-amber-400" />
-                                  </button>
-                                </Tooltip>
-                                <Tooltip title={linkedTask.archived ? 'Khôi phục công việc' : 'Lưu trữ công việc'}>
-                                  <button
-                                    type="button"
-                                    aria-label={linkedTask.archived ? 'Khôi phục công việc' : 'Lưu trữ công việc'}
-                                    onClick={() => handleToggleArchiveTask(linkedTask.id, !linkedTask.archived)}
-                                    className="w-7 h-7 rounded-md inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10"
-                                    style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
-                                  >
-                                    {linkedTask.archived ? (
-                                      <ArchiveRestore size={12} className="text-emerald-400" />
-                                    ) : (
-                                      <Archive size={12} className="text-slate-400" />
-                                    )}
-                                  </button>
-                                </Tooltip>
-                                <Popconfirm
-                                  title="Xoá vĩnh viễn công việc này?"
-                                  description="Bạn có chắc chắn muốn xoá task này không?"
-                                  okText="Xoá"
-                                  cancelText="Huỷ"
-                                  okButtonProps={{ danger: true }}
-                                  onConfirm={() => handleDeleteTask(linkedTask.id)}
-                                >
-                                  <Tooltip title="Xoá task">
-                                    <button
-                                      type="button"
-                                      aria-label="Xoá task"
-                                      className="w-7 h-7 rounded-md inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-rose-500/20 text-rose-400"
-                                      style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
-                                    >
-                                      <Trash2 size={12} />
-                                    </button>
-                                  </Tooltip>
-                                </Popconfirm>
-                                <Tooltip title="Test nổ chuông nhắc hẹn ngay">
-                                  <button
-                                    type="button"
-                                    aria-label="Test nổ chuông nhắc hẹn ngay"
-                                    onClick={() => triggerTaskReminderAlert(linkedTask)}
-                                    className="w-7 h-7 rounded-md inline-flex items-center justify-center shrink-0 cursor-pointer"
-                                    style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
-                                  >
-                                    <BellRing size={14} className="text-amber-400" />
-                                  </button>
-                                </Tooltip>
-                              </div>
-                            </div>
-                          )}
+                          {/* Inline Task & Reminder Card (mOS Mission Inspired) */}
+                          {linkedTask && renderTaskCard(linkedTask, m, 'inline')}
 
                           {/* Live mOS Mission Card (Synced 2-way with AG & mOS Mission) */}
                           {(m.mission || linkedTask?.mission) &&
@@ -10675,6 +11270,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               <div className="flex items-center gap-1.5 mb-2 overflow-x-auto pb-1 text-[11.5px]">
                 {[
                   { key: 'ACTIVE', label: `Đang làm (${taskCounts.active})` },
+                  { key: 'MINE', label: `Của tôi (${taskCounts.mine})` },
+                  { key: 'OVERDUE', label: `Quá hạn (${taskCounts.overdue})` },
                   { key: 'DONE', label: `Đã xong (${taskCounts.done})` },
                   { key: 'ARCHIVED', label: `Lưu trữ (${taskCounts.archived})` },
                   { key: 'ALL', label: `Tất cả (${taskCounts.total})` },
@@ -10704,143 +11301,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   taskConv?.messages.find((m) => m.id === t.sourceMessageId || m.taskId === t.id) || null;
                 const taskMission = t.mission || taskSourceMsg?.mission || null;
                 return (
-                  <div
-                    key={t.id}
-                    className="p-2.5 rounded-lg space-y-2"
-                    style={{
-                      background: surfaceBg,
-                      border: `1px solid ${t.done ? 'rgba(16, 185, 129, 0.35)' : 'rgba(212, 168, 75, 0.45)'}`,
-                      borderLeft: `3px solid ${t.done ? '#10b981' : '#d4a84b'}`,
-                    }}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleTaskDone(t.id)}
-                          className="w-4 h-4 rounded flex items-center justify-center shrink-0 cursor-pointer"
-                          style={{
-                            border: `1.75px solid ${t.done ? '#10b981' : '#d4a84b'}`,
-                            background: t.done ? '#10b981' : 'transparent',
-                            color: '#000',
-                          }}
-                        >
-                          {t.done && <Check size={11} strokeWidth={3} />}
-                        </button>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <div
-                              className={`text-[12.5px] font-bold truncate ${t.done ? 'line-through opacity-70' : ''}`}
-                            >
-                              {t.title}
-                            </div>
-                            {t.archived && (
-                              <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-slate-500/20 text-slate-400 border border-slate-500/30 shrink-0">
-                                Lưu trữ
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[11px] text-slate-400 flex items-center gap-2 flex-wrap">
-                            <span>{t.assigneeName}</span>
-                            <span>· #{t.conversationName}</span>
-                            <span className="text-amber-500 font-bold tabular-nums">
-                              {t.done ? 'Xong' : formatCountdown(t.remindAt, nowMs)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {isStrictDannySuperAdmin && taskSourceMsg && (
-                          <Tooltip
-                            title={
-                              taskMission
-                                ? `Xem mOS Mission #${taskMission.missionKey}`
-                                : '🚀 Giao Task này qua mOS Mission để AG code'
-                            }
-                          >
-                            <button
-                              type="button"
-                              onClick={() => openMissionModalFromChat(taskSourceMsg, t, t.conversationId)}
-                              className="h-7 px-2 rounded-md inline-flex items-center gap-1 text-[11px] font-bold cursor-pointer"
-                              style={{
-                                background: taskMission ? 'rgba(16, 185, 129, 0.16)' : 'rgba(139, 92, 246, 0.18)',
-                                border: `1px solid ${taskMission ? 'rgba(16, 185, 129, 0.4)' : 'rgba(139, 92, 246, 0.45)'}`,
-                                color: taskMission ? '#10b981' : '#c4b5fd',
-                              }}
-                            >
-                              <Rocket size={12} />
-                              <span>{taskMission ? `#${taskMission.missionKey}` : 'Giao AG'}</span>
-                            </button>
-                          </Tooltip>
-                        )}
-                        <Tooltip title="Chỉnh sửa task">
-                          <button
-                            type="button"
-                            aria-label="Chỉnh sửa task"
-                            onClick={() => openEditTaskModal(t)}
-                            className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-white/10"
-                            style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
-                          >
-                            <Pencil size={13} className="text-amber-400" />
-                          </button>
-                        </Tooltip>
-                        <Tooltip title={t.archived ? 'Khôi phục công việc' : 'Lưu trữ (Archive) công việc'}>
-                          <button
-                            type="button"
-                            aria-label={t.archived ? 'Khôi phục công việc' : 'Lưu trữ công việc'}
-                            onClick={() => handleToggleArchiveTask(t.id, !t.archived)}
-                            className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-white/10"
-                            style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
-                          >
-                            {t.archived ? (
-                              <ArchiveRestore size={13} className="text-emerald-400" />
-                            ) : (
-                              <Archive size={13} className="text-slate-400" />
-                            )}
-                          </button>
-                        </Tooltip>
-                        <Popconfirm
-                          title="Xoá vĩnh viễn công việc này?"
-                          description="Bạn có chắc chắn muốn xoá task này không?"
-                          okText="Xoá"
-                          cancelText="Huỷ"
-                          okButtonProps={{ danger: true }}
-                          onConfirm={() => handleDeleteTask(t.id)}
-                        >
-                          <Tooltip title="Xoá task">
-                            <button
-                              type="button"
-                              aria-label="Xoá task"
-                              className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-rose-500/20 text-rose-400"
-                              style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </Tooltip>
-                        </Popconfirm>
-                        <Tooltip title="Test nổ chuông nhắc">
-                          <button
-                            type="button"
-                            onClick={() => triggerTaskReminderAlert(t)}
-                            className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer"
-                            style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
-                          >
-                            <BellRing size={13} className="text-amber-400" />
-                          </button>
-                        </Tooltip>
-                        <Tooltip title="Mở cuộc trò chuyện gốc">
-                          <button
-                            type="button"
-                            onClick={() => selectConversation(t.conversationId)}
-                            className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer"
-                            style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
-                          >
-                            <ExternalLink size={13} />
-                          </button>
-                        </Tooltip>
-                      </div>
-                    </div>
-
+                  <div key={t.id} className="space-y-1.5">
+                    {renderTaskCard(t, taskSourceMsg, 'list')}
                     {taskMission && renderLiveMissionCard(taskMission, taskSourceMsg, 'task')}
                   </div>
                 );
@@ -12061,6 +12523,166 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             </div>
           </div>
 
+          {/* Deadline Section (MOS-BUG-125) */}
+          <div
+            className="p-2.5 rounded-lg space-y-2 text-left"
+            style={{
+              background: surfaceRaised,
+              border: `1px solid ${taskDeadline ? 'rgba(212, 168, 75, 0.4)' : borderColor}`,
+            }}
+          >
+            <div className="flex items-center justify-between text-[11px] font-bold text-slate-400">
+              <span className="flex items-center gap-1.5 text-amber-500">
+                <CalendarClock size={13} />
+                <span>Hạn chót hoàn thành (Deadline)</span>
+              </span>
+              {taskDeadline && (
+                <span className="text-amber-500 font-semibold tabular-nums text-[10.5px]">
+                  Hạn: {taskDeadline.format('HH:mm DD/MM/YYYY')}
+                </span>
+              )}
+            </div>
+
+            {/* Deadline Presets */}
+            <div className="grid grid-cols-3 gap-1.5">
+              {DEADLINE_PRESETS.map((preset) => {
+                const isSelected = taskDeadlineMode === 'preset' && selectedDeadlinePresetId === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => {
+                      setTaskDeadlineMode('preset');
+                      setSelectedDeadlinePresetId(preset.id);
+                      setTaskDeadline(preset.getDate());
+                    }}
+                    className="h-8 rounded-lg text-[11px] font-semibold cursor-pointer transition-colors"
+                    style={{
+                      background: isSelected ? 'rgba(212, 168, 75, 0.22)' : 'rgba(255, 255, 255, 0.04)',
+                      border: `1px solid ${isSelected ? '#d4a84b' : borderColor}`,
+                      color: isSelected ? '#d4a84b' : token.colorText,
+                    }}
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
+
+              {/* Custom Deadline Picker Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setTaskDeadlineMode('custom');
+                  if (!taskDeadline) {
+                    setTaskDeadline(dayjs().hour(17).minute(30).second(0));
+                  }
+                }}
+                className="h-8 rounded-lg text-[11px] font-bold cursor-pointer transition-colors col-span-3 flex items-center justify-center gap-1.5"
+                style={{
+                  background: taskDeadlineMode === 'custom' ? 'rgba(212, 168, 75, 0.22)' : 'rgba(255, 255, 255, 0.04)',
+                  border: `1px solid ${taskDeadlineMode === 'custom' ? '#d4a84b' : borderColor}`,
+                  color: taskDeadlineMode === 'custom' ? '#d4a84b' : token.colorText,
+                }}
+              >
+                <Calendar size={13} />
+                <span>Tùy chỉnh ngày & giờ chót (Deadline)</span>
+              </button>
+            </div>
+
+            {/* Custom Deadline DatePicker */}
+            {taskDeadlineMode === 'custom' && (
+              <div className="pt-1 space-y-1.5">
+                <DatePicker
+                  showTime={{ format: 'HH:mm' }}
+                  format="DD/MM/YYYY HH:mm"
+                  value={taskDeadline}
+                  onChange={(val) => setTaskDeadline(val)}
+                  className="w-full h-8 text-[12px]"
+                  placeholder="Chọn ngày và giờ hạn chót..."
+                />
+                <div className="flex flex-wrap items-center gap-1">
+                  <span className="text-[10px] text-slate-400 mr-0.5">Nhanh:</span>
+                  {[
+                    { label: 'Hôm nay 17:30', get: () => dayjs().hour(17).minute(30).second(0) },
+                    { label: 'Hôm nay 22:00', get: () => dayjs().hour(22).minute(0).second(0) },
+                    { label: 'Trưa mai 12:00', get: () => dayjs().add(1, 'day').hour(12).minute(0).second(0) },
+                    { label: 'Chiều mai 17:30', get: () => dayjs().add(1, 'day').hour(17).minute(30).second(0) },
+                    { label: '+2 ngày', get: () => dayjs().add(2, 'day').hour(17).minute(30).second(0) },
+                  ].map((chip) => (
+                    <button
+                      key={chip.label}
+                      type="button"
+                      onClick={() => setTaskDeadline(chip.get())}
+                      className="px-2 py-0.5 rounded text-[10px] cursor-pointer hover:opacity-80 transition-opacity tabular-nums"
+                      style={{
+                        background: 'rgba(212, 168, 75, 0.12)',
+                        color: '#d4a84b',
+                        border: '1px solid rgba(212, 168, 75, 0.25)',
+                      }}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Active Negotiation review banner in Edit modal */}
+          {editingTask && taskNegotiatedDeadline && (
+            <div
+              className="p-2.5 rounded-lg space-y-1.5 text-left"
+              style={{
+                background: 'rgba(245, 158, 11, 0.12)',
+                border: '1.5px dashed rgba(245, 158, 11, 0.45)',
+              }}
+            >
+              <div className="flex items-center justify-between text-amber-500 font-bold text-[11.5px]">
+                <span className="flex items-center gap-1">
+                  <Handshake size={13} />
+                  <span>Đề xuất dời hạn từ người nhận</span>
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  {taskNegotiatedDeadline ? dayjs(taskNegotiatedDeadline).format('HH:mm DD/MM/YYYY') : ''}
+                </span>
+              </div>
+              {taskNegotiationNote && (
+                <div className="text-[11px] italic text-slate-300 bg-black/20 p-1.5 rounded">
+                  &ldquo;{taskNegotiationNote}&rdquo;
+                </div>
+              )}
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  className="h-6 px-2.5 rounded-md text-[11px] font-bold cursor-pointer bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm inline-flex items-center gap-1"
+                  onClick={() => {
+                    if (taskNegotiatedDeadline) {
+                      setTaskDeadline(taskNegotiatedDeadline);
+                      setTaskNegotiatedDeadline(null);
+                      setTaskNegotiationNote('');
+                      antdMessage.success('Đã áp dụng hạn mới từ đề xuất thương lượng!');
+                    }
+                  }}
+                >
+                  <Check size={12} strokeWidth={3} />
+                  <span>Áp dụng hạn đề xuất này</span>
+                </button>
+                <button
+                  type="button"
+                  className="h-6 px-2.5 rounded-md text-[11px] font-bold cursor-pointer bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 inline-flex items-center gap-1"
+                  onClick={() => {
+                    setTaskNegotiatedDeadline(null);
+                    setTaskNegotiationNote('');
+                    antdMessage.info('Đã hủy bỏ đề xuất thương lượng');
+                  }}
+                >
+                  <X size={12} />
+                  <span>Bác bỏ đề xuất</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           <div>
             <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 mb-1.5">
               <span>Hẹn giờ nhắc (Reminder)</span>
@@ -12189,6 +12811,118 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 )}
               </div>
             )}
+          </div>
+        </div>
+      </Modal>
+
+      {/* ================= MODAL: THƯƠNG LƯỢNG DỜI HẠN CHÓT (MOS-BUG-125) ================= */}
+      <Modal
+        open={negotiateModalOpen}
+        zIndex={1360}
+        onCancel={() => {
+          setNegotiateModalOpen(false);
+          setNegotiatingTask(null);
+        }}
+        onOk={handleSubmitNegotiation}
+        confirmLoading={isSubmittingNegotiation}
+        okText="Gửi đề xuất dời hạn"
+        cancelText="Đóng"
+        title={
+          <span className="flex items-center gap-2 text-[14px] font-bold text-amber-500">
+            <Handshake size={16} />
+            <span>Thương Lượng Dời Hạn Chót Task</span>
+          </span>
+        }
+        width={isMobile ? 'calc(100vw - 24px)' : 460}
+      >
+        <div className="space-y-3 py-1">
+          {negotiatingTask && (
+            <div
+              className="p-2.5 rounded-lg text-[12px] space-y-1 text-left"
+              style={{ background: surfaceRaised, borderLeft: '3px solid #d4a84b' }}
+            >
+              <div className="font-extrabold text-[13px]">{negotiatingTask.title}</div>
+              <div className="text-[11px] text-slate-400 flex items-center gap-2 flex-wrap">
+                <span>Giao bởi: <strong>{negotiatingTask.creatorName || 'Hệ thống'}</strong></span>
+                <span>·</span>
+                <span>
+                  Hạn hiện tại:{' '}
+                  <strong className="text-amber-400">
+                    {negotiatingTask.deadline
+                      ? dayjs(negotiatingTask.deadline).format('HH:mm DD/MM/YYYY')
+                      : 'Chưa đặt hạn'}
+                  </strong>
+                </span>
+              </div>
+            </div>
+          )}
+
+          <div>
+            <div className="text-[11px] font-bold text-slate-400 mb-1">
+              Thời hạn đề xuất dời sang <span className="text-rose-400">*</span>
+            </div>
+            <DatePicker
+              showTime={{ format: 'HH:mm' }}
+              format="DD/MM/YYYY HH:mm"
+              value={negotiateProposedDeadline}
+              onChange={(val) => setNegotiateProposedDeadline(val)}
+              className="w-full h-9 text-[12px]"
+              placeholder="Chọn ngày và giờ bạn xin dời hạn..."
+            />
+            {/* Quick helper chips */}
+            <div className="flex flex-wrap items-center gap-1 mt-1.5">
+              <span className="text-[10px] text-slate-400 mr-0.5">Gợi ý:</span>
+              {[
+                { label: '+2 giờ', get: () => dayjs().add(2, 'hour') },
+                {
+                  label: '17:30 hôm nay',
+                  get: () => {
+                    const t = dayjs().hour(17).minute(30).second(0);
+                    return t.isBefore(dayjs()) ? t.add(1, 'day') : t;
+                  },
+                },
+                {
+                  label: '22:00 hôm nay',
+                  get: () => {
+                    const t = dayjs().hour(22).minute(0).second(0);
+                    return t.isBefore(dayjs()) ? t.add(1, 'day') : t;
+                  },
+                },
+                { label: '12:00 trưa mai', get: () => dayjs().add(1, 'day').hour(12).minute(0).second(0) },
+                { label: '17:30 chiều mai', get: () => dayjs().add(1, 'day').hour(17).minute(30).second(0) },
+                { label: '+2 ngày', get: () => dayjs().add(2, 'day').hour(17).minute(30).second(0) },
+              ].map((chip) => (
+                <button
+                  key={chip.label}
+                  type="button"
+                  onClick={() => setNegotiateProposedDeadline(chip.get())}
+                  className="px-2 py-0.5 rounded text-[10.5px] cursor-pointer hover:opacity-80 transition-opacity tabular-nums"
+                  style={{
+                    background: 'rgba(212, 168, 75, 0.12)',
+                    color: '#d4a84b',
+                    border: '1px solid rgba(212, 168, 75, 0.25)',
+                  }}
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[11px] font-bold text-slate-400 mb-1">
+              Lý do / Giải trình đề xuất dời hạn <span className="text-rose-400">*</span>
+            </div>
+            <Input.TextArea
+              rows={3}
+              value={negotiateReason}
+              onChange={(e) => setNegotiateReason(e.target.value)}
+              placeholder="VD: Đang xử lý khẩn cấp khách VIP tại quầy, xin dời hạn sang 22:00 tối nay..."
+            />
+          </div>
+
+          <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-400 leading-relaxed text-left">
+            💡 Khi gửi đề xuất, người giao việc ({negotiatingTask?.creatorName || 'người tạo'}) sẽ nhận được thông báo để xét duyệt hoặc phản hồi trao đổi.
           </div>
         </div>
       </Modal>

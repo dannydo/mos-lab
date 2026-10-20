@@ -184,6 +184,12 @@ export interface MosChatTaskItem {
   creatorName: string;
   priority: MosChatTaskPriority;
   remindAt: string;
+  dueAt?: string | null;
+  deadline?: string | null;
+  negotiatedDeadline?: string | null;
+  negotiationNote?: string | null;
+  negotiatedBy?: string | null;
+  negotiatedAt?: string | null;
   done: boolean;
   fired?: boolean;
   createdAt: string;
@@ -353,6 +359,9 @@ export interface CreateMosChatTaskRequest {
   priority: MosChatTaskPriority;
   remindInSeconds?: number;
   remindAt?: string;
+  dueAt?: string | null;
+  deadline?: string | null;
+  negotiationNote?: string | null;
 }
 
 export interface CreateMosChatConversationRequest {
@@ -386,6 +395,14 @@ export interface UpdateMosChatTaskRequest {
   assigneeName?: string;
   priority?: MosChatTaskPriority;
   remindAt?: string;
+  dueAt?: string | null;
+  deadline?: string | null;
+  negotiatedDeadline?: string | null;
+  negotiationNote?: string | null;
+  negotiatedBy?: string | null;
+  negotiatedAt?: string | null;
+  acceptNegotiatedDeadline?: boolean;
+  rejectNegotiatedDeadline?: boolean;
   snoozeSeconds?: number;
   remindInSeconds?: number;
   done?: boolean;
