@@ -6045,7 +6045,7 @@ body {
 
 .dashboard-header-right {
   flex: 0 1 auto;
-  gap: 4px;
+  gap: 6px;
 }
 
 .mos-header-action-indicator {
@@ -6107,7 +6107,33 @@ body {
   padding-inline: var(--mos-header-count-padding-inline);
   place-items: center;
   top: var(--mos-header-count-inset-block-start);
-  transform: translate(50%, -50%);
+  transform: translate(25%, -25%);
+}
+
+.mos-thin-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.mos-thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.mos-thin-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.25);
+  border-radius: 999px;
+}
+.mos-thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.45);
+}
+
+.mos-dark-toast.ant-notification-notice {
+  background-color: #1a1a1a !important;
+  border: 1px solid #333333 !important;
+  color: #f3f4f6 !important;
+}
+.mos-dark-toast .ant-notification-notice-close {
+  color: #9ca3af !important;
+}
+.mos-dark-toast .ant-notification-notice-close:hover {
+  color: #ffffff !important;
 }
 
 /* Separate a count from a tinted action without shifting the centered icon. */

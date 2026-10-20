@@ -14,6 +14,57 @@ const CHAT_CONVERSATIONS_CONFIG_KEY = 'mos_chat:conversations_v1';
 const CHAT_USER_PREFS_CONFIG_KEY = 'mos_chat:user_prefs_v1';
 const CHAT_TASKS_CONFIG_KEY = 'mos_chat:tasks_v1';
 
+function cleanConversationName(name: string, type?: string): string {
+  if (!name) return 'nhóm chat';
+  if (type === 'dm') return name;
+  const cleaned = name.replace(/-{2,}/g, ' - ').replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
+  return `#${cleaned}`;
+}
+
+function formatRemindAtVi(remindAtIso: string): string {
+  if (!remindAtIso) return 'Nhiệm vụ cần xử lý';
+  const targetDate = new Date(remindAtIso);
+  if (isNaN(targetDate.getTime())) return 'Nhiệm vụ cần xử lý';
+
+  const vnFormatter = new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    hour: '2-digit',
+    minute: '2-digit',
+    day: '2-digit',
+    month: '2-digit',
+  });
+  const parts = vnFormatter.formatToParts(targetDate);
+  const getPart = (type: string) => parts.find((p) => p.type === type)?.value || '';
+  const timeStr = `${getPart('hour')}:${getPart('minute')}`;
+  const dateStr = `${getPart('day')}/${getPart('month')}`;
+
+  const now = new Date();
+  const diffMinutes = Math.round((targetDate.getTime() - now.getTime()) / (1000 * 60));
+
+  if (diffMinutes < 0) {
+    const overdueMins = Math.abs(diffMinutes);
+    if (overdueMins < 60) {
+      return `Hạn nhắc: ${timeStr} hôm nay (quá hạn ${overdueMins} phút)`;
+    }
+    return `Hạn nhắc: ${timeStr}, ${dateStr} (quá hạn)`;
+  } else if (diffMinutes === 0) {
+    return `Hạn nhắc: ngay bây giờ (${timeStr})`;
+  } else if (diffMinutes < 60) {
+    return `Hạn nhắc: ${timeStr} hôm nay (còn ${diffMinutes} phút)`;
+  }
+
+  const vnToday = new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    day: '2-digit',
+    month: '2-digit',
+  }).format(now);
+
+  if (vnToday === dateStr) {
+    return `Hạn nhắc: ${timeStr} hôm nay`;
+  }
+  return `Hạn nhắc: ${timeStr}, ${dateStr}`;
+}
+
 interface UserNotificationReadState {
   readIds: string[];
   lastMarkedAllAt?: string;
@@ -250,9 +301,10 @@ export default async function notificationRoutes(fastify: FastifyInstance) {
           if (isAtAll || isPersonalMention) {
             hasMentionInConv = true;
             const notifId = `chat-mention-${conv.id}-${msg.id}`;
+            const targetChannelName = cleanConversationName(conv.name, conv.type);
             items.push({
               id: notifId,
-              title: `[Nhắc tên @] ${msg.senderName || 'Thành viên'} trong ${conv.name}`,
+              title: `[Nhắc tên @] ${msg.senderName || 'Thành viên'} trong ${targetChannelName}`,
               summary: msg.text || '',
               category: 'chat_mention',
               priority: isPersonalMention ? 'urgent' : 'high',
@@ -320,7 +372,7 @@ export default async function notificationRoutes(fastify: FastifyInstance) {
           items.push({
             id: notifId,
             title: `[Nhắc việc] ${task.title}`,
-            summary: task.remindAt ? `Hạn nhắc: ${task.remindAt}` : 'Nhiệm vụ cần xử lý',
+            summary: task.remindAt ? formatRemindAtVi(task.remindAt) : 'Nhiệm vụ cần xử lý',
             category: 'task_reminder',
             priority: 'normal',
             action: {

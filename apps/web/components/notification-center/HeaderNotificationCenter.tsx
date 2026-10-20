@@ -46,6 +46,30 @@ function formatRelativeTimeVi(dateIso: string): string {
   }).format(new Date(dateIso));
 }
 
+function cleanSummaryText(summary: string): string {
+  if (!summary) return '';
+  return summary.replace(/Hạn nhắc:\s*(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)/g, (_match, isoStr) => {
+    try {
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return summary;
+      return `Hạn nhắc: ${new Intl.DateTimeFormat('vi-VN', {
+        timeZone: 'Asia/Ho_Chi_Minh',
+        hour: '2-digit',
+        minute: '2-digit',
+        day: '2-digit',
+        month: '2-digit',
+      }).format(d)}`;
+    } catch {
+      return summary;
+    }
+  });
+}
+
+function cleanNotificationTitle(title: string): string {
+  if (!title) return '';
+  return title.replace(/-{2,}/g, ' - ').replace(/-/g, ' ');
+}
+
 export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> = ({
   onOpenChat,
   themeMode = 'dark',
@@ -58,55 +82,80 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
   const [loading, setLoading] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
 
-  // Track seen IDs to alert on new urgent items
+  // Track seen IDs to alert only on newly arrived urgent approval items
   const seenUrgentIdsRef = useRef<Set<string>>(new Set());
+  const isInitialMountRef = useRef<boolean>(true);
 
-  const fetchFeed = useCallback(async (isSilent = false) => {
-    if (!isSilent) setLoading(true);
-    try {
-      const data = await apiClient.notifications.getFeed();
-      setFeed(data);
+  const fetchFeed = useCallback(
+    async (isSilent = false) => {
+      if (!isSilent) setLoading(true);
+      try {
+        const data = await apiClient.notifications.getFeed();
+        setFeed(data);
 
-      // Check for newly arrived urgent items to display a notification toast
-      const urgentUnread = (data.items || []).filter(
-        (item: MosNotificationItem) => !item.readAt && (item.priority === 'urgent' || item.priority === 'high')
-      );
-
-      for (const item of urgentUnread) {
-        if (!seenUrgentIdsRef.current.has(item.id)) {
-          seenUrgentIdsRef.current.add(item.id);
-          // Show toast alert
-          notification.open({
-            message: (
-              <span className="font-semibold text-amber-500 flex items-center gap-1.5">
-                <Sparkles size={16} /> {item.title}
-              </span>
-            ),
-            description: <div className="text-xs text-neutral-300 mt-1 line-clamp-2">{item.summary}</div>,
-            placement: 'topRight',
-            duration: 6,
-            btn: (
-              <Button
-                type="primary"
-                size="small"
-                className="bg-amber-600 hover:bg-amber-500 border-none text-xs rounded-md"
-                onClick={() => {
-                  notification.destroy();
-                  handleItemClick(item);
-                }}
-              >
-                Mở việc ngay
-              </Button>
-            ),
+        if (isInitialMountRef.current) {
+          isInitialMountRef.current = false;
+          // Seed all existing item IDs on initial load so we NEVER spam toasts on page load
+          (data.items || []).forEach((item: MosNotificationItem) => {
+            seenUrgentIdsRef.current.add(item.id);
           });
+        } else {
+          // LIVE toast alert: ONLY for critical actionable approvals (e.g. Danny approving commit/deploy)
+          const urgentLiveItems = (data.items || []).filter(
+            (item: MosNotificationItem) =>
+              !item.readAt && item.priority === 'urgent' && item.category === 'inbox_approval'
+          );
+
+          for (const item of urgentLiveItems) {
+            if (!seenUrgentIdsRef.current.has(item.id)) {
+              seenUrgentIdsRef.current.add(item.id);
+              const isDark = themeMode === 'dark';
+              notification.open({
+                className: isDark ? 'mos-dark-toast' : 'mos-light-toast',
+                style: {
+                  backgroundColor: isDark ? '#1a1a1a' : '#ffffff',
+                  border: isDark ? '1px solid #333333' : '1px solid #e5e7eb',
+                  borderRadius: '12px',
+                  color: isDark ? '#f3f4f6' : '#111827',
+                  boxShadow: isDark ? '0 20px 25px -5px rgba(0, 0, 0, 0.6)' : '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                },
+                message: (
+                  <span className="font-semibold text-amber-500 flex items-center gap-1.5 text-sm">
+                    <Sparkles size={16} /> {cleanNotificationTitle(item.title)}
+                  </span>
+                ),
+                description: (
+                  <div className={`text-xs mt-1 line-clamp-2 ${isDark ? 'text-neutral-300' : 'text-neutral-600'}`}>
+                    {cleanSummaryText(item.summary)}
+                  </div>
+                ),
+                placement: 'topRight',
+                duration: 6,
+                btn: (
+                  <Button
+                    type="primary"
+                    size="small"
+                    className="bg-amber-600 hover:bg-amber-500 border-none text-xs rounded-md text-white font-medium"
+                    onClick={() => {
+                      notification.destroy();
+                      handleItemClick(item);
+                    }}
+                  >
+                    Mở việc ngay
+                  </Button>
+                ),
+              });
+            }
+          }
         }
+      } catch (err) {
+        console.warn('Failed to fetch notifications feed:', err);
+      } finally {
+        if (!isSilent) setLoading(false);
       }
-    } catch (err) {
-      console.warn('Failed to fetch notifications feed:', err);
-    } finally {
-      if (!isSilent) setLoading(false);
-    }
-  }, []);
+    },
+    [themeMode]
+  );
 
   useEffect(() => {
     fetchFeed(false);
@@ -250,7 +299,7 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
           </span>
           {unreadCount > 0 && (
             <span
-              className="text-[11px] font-semibold px-2 py-0.5 rounded-full tabular-nums bg-amber-500/15 text-amber-500 dark:bg-amber-400/20 dark:text-amber-300"
+              className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full tabular-nums bg-amber-500/10 text-amber-400 border border-amber-500/20"
               style={{ fontVariantNumeric: 'tabular-nums' }}
             >
               {unreadCount} việc cần làm
@@ -282,7 +331,7 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
             },
             {
               key: 'mention',
-              label: `Nhắc tên @ (${feed?.items.filter((i) => i.category === 'chat_mention').length || 0})`,
+              label: `Tin nhắn & @ (${feed?.items.filter((i) => i.category === 'chat_mention').length || 0})`,
             },
             {
               key: 'task',
@@ -306,7 +355,7 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
       </div>
 
       {/* Notification Items List */}
-      <div className="overflow-y-auto px-2 py-2 divide-y divide-neutral-800/40 flex-1">
+      <div className="overflow-y-auto px-2 py-2 divide-y divide-neutral-800/40 flex-1 mos-thin-scrollbar">
         {loading && !feed ? (
           <div className="py-12 flex flex-col items-center justify-center gap-2">
             <Spin size="small" />
@@ -350,7 +399,7 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
                     <span
                       className={`text-xs font-semibold truncate ${isUnread ? 'text-neutral-100' : 'text-neutral-300'}`}
                     >
-                      {item.title}
+                      {cleanNotificationTitle(item.title)}
                     </span>
                     <span
                       className="text-[11px] text-neutral-400 shrink-0 tabular-nums"
@@ -361,7 +410,7 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
                   </div>
 
                   <p className="text-xs text-neutral-300 line-clamp-2 leading-relaxed mb-1.5 break-words">
-                    {item.summary}
+                    {cleanSummaryText(item.summary)}
                   </p>
 
                   <div className="flex items-center justify-between mt-1">
