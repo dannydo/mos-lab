@@ -29,6 +29,7 @@ import {
   RestoreMosChatMessageRequest,
   SafeAny,
   UpdateMosChatAccessConfigRequest,
+  UpdateMosChatTaskRequest,
   UploadMosChatImageRequest,
   UploadMosChatImageResponse,
 } from '@mos-lab/shared';
@@ -2937,11 +2938,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const { taskId } = request.params as { taskId: string };
-      const body = request.body as {
-        done?: boolean;
-        snoozeSeconds?: number;
-        triggerReminderNow?: boolean;
-      };
+      const body = request.body as UpdateMosChatTaskRequest;
 
       const { tasks } = await loadChatState(fastify);
       const task = tasks.find((t) => t.id === taskId);
@@ -2950,21 +2947,93 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       }
 
       const now = new Date();
+      if (typeof body.title === 'string' && body.title.trim()) {
+        task.title = body.title.trim();
+      }
+      if (body.assigneeId !== undefined) {
+        task.assigneeId = body.assigneeId;
+      }
+      if (typeof body.assigneeName === 'string' && body.assigneeName.trim()) {
+        task.assigneeName = body.assigneeName.trim();
+      }
+      if (body.priority && ['URGENT', 'HIGH', 'NORMAL'].includes(body.priority)) {
+        task.priority = body.priority;
+      }
       if (typeof body.done === 'boolean') {
         task.done = body.done;
+      }
+      if (typeof body.archived === 'boolean') {
+        task.archived = body.archived;
+        task.archivedAt = body.archived ? now.toISOString() : null;
       }
       if (typeof body.snoozeSeconds === 'number' && body.snoozeSeconds > 0) {
         task.remindAt = new Date(now.getTime() + body.snoozeSeconds * 1000).toISOString();
         task.fired = false;
         task.done = false;
+      } else if (typeof body.remindInSeconds === 'number') {
+        if (body.remindInSeconds > 0) {
+          task.remindAt = new Date(now.getTime() + body.remindInSeconds * 1000).toISOString();
+          task.fired = false;
+        } else {
+          task.remindAt = now.toISOString();
+          task.fired = true;
+        }
+      } else if (body.remindAt) {
+        const parsed = new Date(body.remindAt);
+        if (!isNaN(parsed.getTime())) {
+          task.remindAt = parsed.toISOString();
+          task.fired = parsed.getTime() <= now.getTime();
+        }
       }
       if (body.triggerReminderNow && !task.fired) {
         task.fired = true;
         task.remindAt = now.toISOString();
       }
+      task.updatedAt = now.toISOString();
 
       await saveTasks(fastify, tasks);
       return { success: true, task };
+    }
+  );
+
+  // DELETE /api/chat/tasks/:taskId
+  fastify.delete(
+    '/chat/tasks/:taskId',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      const { taskId } = request.params as { taskId: string };
+      const { tasks, conversations } = await loadChatState(fastify);
+      const taskIndex = tasks.findIndex((t) => t.id === taskId);
+      if (taskIndex === -1) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy công việc' });
+      }
+
+      const deletedTask = tasks[taskIndex];
+      tasks.splice(taskIndex, 1);
+
+      // Clean up taskId link in conversations messages if present
+      let convChanged = false;
+      if (deletedTask.sourceMessageId || deletedTask.conversationId) {
+        for (const c of conversations) {
+          if (c.id === deletedTask.conversationId) {
+            for (const m of c.messages) {
+              if (m.taskId === taskId) {
+                delete m.taskId;
+                convChanged = true;
+              }
+            }
+          }
+        }
+      }
+
+      await Promise.all([
+        saveTasks(fastify, tasks),
+        convChanged ? saveConversations(fastify, conversations) : Promise.resolve(),
+      ]);
+
+      return { success: true, taskId, message: 'Đã xoá công việc thành công' };
     }
   );
 

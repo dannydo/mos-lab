@@ -8,6 +8,7 @@ import type {
   CreateMosChatTaskRequest,
   CreateMosChatThreadReplyRequest,
   DeleteMosChatMessageRequest,
+  DeleteMosChatTaskResponse,
   EditMosChatMessageRequest,
   MarkConversationAsUnreadResponse,
   MarkThreadAsReadResponse,
@@ -24,6 +25,7 @@ import type {
   SafeAny,
   TogglePinConversationResponse,
   UpdateMosChatAccessConfigRequest,
+  UpdateMosChatTaskRequest,
   UploadMosChatImageRequest,
   UploadMosChatImageResponse,
 } from '@mos-lab/shared';
@@ -181,9 +183,16 @@ export const chatApi = {
     },
     updateTask: async (
       taskId: string,
-      payload: { done?: boolean; snoozeSeconds?: number; triggerReminderNow?: boolean }
+      payload: UpdateMosChatTaskRequest
     ): Promise<{ success: boolean; task: MosChatTaskItem }> => {
       const res = await api.patch(`/chat/tasks/${encodeURIComponent(taskId)}`, payload);
+      invalidateApiGetCache(['/chat/bootstrap']);
+      return res.data;
+    },
+    deleteTask: async (
+      taskId: string
+    ): Promise<DeleteMosChatTaskResponse> => {
+      const res = await api.delete(`/chat/tasks/${encodeURIComponent(taskId)}`);
       invalidateApiGetCache(['/chat/bootstrap']);
       return res.data;
     },

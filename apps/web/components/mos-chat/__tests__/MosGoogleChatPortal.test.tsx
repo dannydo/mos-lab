@@ -47,7 +47,8 @@ vi.mock('../../../lib/api-client', () => ({
         canAccessChat: true,
       }),
       updateUserPrefs: vi.fn().mockResolvedValue({}),
-      updateTask: vi.fn().mockResolvedValue({}),
+      updateTask: vi.fn().mockResolvedValue({ success: true }),
+      deleteTask: vi.fn().mockResolvedValue({ success: true, taskId: 'task-test-1' }),
       markAsRead: vi.fn().mockResolvedValue({}),
       togglePinConversation: vi.fn().mockResolvedValue({}),
     },
@@ -132,5 +133,45 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
     await waitFor(() => {
       expect(screen.queryByText('Kho Công Việc & Nhắc Hẹn')).toBeNull();
     });
+  });
+
+  it('renders edit, archive, and delete action buttons for each task in tasks tab (MOS-FEAT-121)', async () => {
+    // Reset window width to desktop
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1200 });
+
+    render(
+      <MosGoogleChatPortal
+        open={true}
+        onClose={vi.fn()}
+        onToggle={vi.fn()}
+        currentUser={{ id: 99, displayName: 'Danny Do', role: 'Admin' }}
+      />
+    );
+
+    // Navigate to tasks tab
+    const tasksButton = await screen.findByRole('button', { name: /Công việc & Nhắc hẹn/i });
+    expect(tasksButton).toBeTruthy();
+    fireEvent.click(tasksButton);
+
+    // Wait for task item to be visible
+    await waitFor(() => {
+      expect(screen.getByText('Hỗ trợ khách VIP đến sớm')).toBeTruthy();
+    });
+
+    // Check filter pills
+    expect(screen.getByText(/Đang làm/i)).toBeTruthy();
+    expect(screen.getByText(/Đã xong/i)).toBeTruthy();
+    expect(screen.getByText(/Lưu trữ/i)).toBeTruthy();
+    expect(screen.getByText(/Tất cả/i)).toBeTruthy();
+
+    // Check action buttons: edit, archive, delete
+    const editBtn = screen.getByRole('button', { name: /Chỉnh sửa task/i });
+    expect(editBtn).toBeTruthy();
+
+    const archiveBtn = screen.getByRole('button', { name: /Lưu trữ công việc/i });
+    expect(archiveBtn).toBeTruthy();
+
+    const deleteBtn = screen.getByRole('button', { name: /Xoá task/i });
+    expect(deleteBtn).toBeTruthy();
   });
 });

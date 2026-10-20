@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Tooltip, Modal, Input, Select, Popover, Popconfirm, DatePicker, message as antdMessage, theme } from 'antd';
+import { Tooltip, Modal, Input, Select, Popover, Popconfirm, DatePicker, Switch, message as antdMessage, theme } from 'antd';
 import {
   MessageSquare,
   MessageSquareReply,
@@ -80,6 +80,8 @@ import {
   RefreshCw,
   CornerDownRight,
   ArrowUpRight,
+  Archive,
+  ArchiveRestore,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import type {
@@ -1283,16 +1285,22 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const uploadTargetRef = useRef<{ scope: 'main' | 'thread' | 'dock'; convId?: string }>({ scope: 'main' });
 
-  // Task & Reminder Creation Modal state
+  // Task & Reminder Creation / Edit Modal state
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [taskModalSourceMsg, setTaskModalSourceMsg] = useState<MosChatMessage | null>(null);
+  const [editingTask, setEditingTask] = useState<MosChatTaskItem | null>(null);
   const [taskTitle, setTaskTitle] = useState('');
   const [taskAssignee, setTaskAssignee] = useState<string>('');
   const [taskPriority, setTaskPriority] = useState<MosChatTaskPriority>('HIGH');
+  const [taskDoneState, setTaskDoneState] = useState(false);
+  const [taskArchivedState, setTaskArchivedState] = useState(false);
   const [taskRemindMode, setTaskRemindMode] = useState<'preset' | 'custom'>('preset');
   const [selectedPresetId, setSelectedPresetId] = useState<string>('none');
   const [taskRemindSeconds, setTaskRemindSeconds] = useState<number>(0);
   const [customRemindDate, setCustomRemindDate] = useState<dayjs.Dayjs | null>(null);
+
+  // Tasks Tab filter state
+  const [taskFilter, setTaskFilter] = useState<'ACTIVE' | 'DONE' | 'ARCHIVED' | 'ALL'>('ACTIVE');
 
   // mOS Mission Dispatch & Inline Action state (2-way bridge between mOS Chat & mOS Mission)
   const [missionModalOpen, setMissionModalOpen] = useState(false);
@@ -2044,6 +2052,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           existing.assigneeName = raw.assigneeName;
           existing.assigneeId = raw.assigneeId ?? existing.assigneeId;
         }
+        if (raw.archived !== undefined) {
+          existing.archived = raw.archived;
+          existing.archivedAt = raw.archivedAt ?? existing.archivedAt;
+        }
         continue;
       }
 
@@ -2061,13 +2073,34 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     return out;
   }, [tasks]);
 
+  const taskCounts = useMemo(() => {
+    let active = 0;
+    let done = 0;
+    let archived = 0;
+    for (const t of uniqueTasks) {
+      if (t.archived) archived++;
+      else if (t.done) done++;
+      else active++;
+    }
+    return { active, done, archived, total: uniqueTasks.length };
+  }, [uniqueTasks]);
+
+  const filteredTasks = useMemo(() => {
+    return uniqueTasks.filter((t) => {
+      if (taskFilter === 'ACTIVE') return !t.done && !t.archived;
+      if (taskFilter === 'DONE') return t.done && !t.archived;
+      if (taskFilter === 'ARCHIVED') return Boolean(t.archived);
+      return true; // 'ALL'
+    });
+  }, [uniqueTasks, taskFilter]);
+
   // Report unread & active task counts up to Header
   useEffect(() => {
     const totalUnread = visibleConversations.reduce((sum, c) => {
       if ((userPrefs.mutedIds || []).includes(c.id)) return sum;
       return sum + getEffectiveUnreadCount(c);
     }, 0);
-    const openTaskCount = uniqueTasks.filter((t) => !t.done).length;
+    const openTaskCount = uniqueTasks.filter((t) => !t.done && !t.archived).length;
     onUnreadCountChange?.(totalUnread, openTaskCount);
   }, [visibleConversations, uniqueTasks, userPrefs.mutedIds, getEffectiveUnreadCount, onUnreadCountChange]);
 
@@ -2095,7 +2128,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       const currentNow = Date.now();
       setNowMs(currentNow);
       uniqueTasks.forEach((t) => {
-        if (!t.done && !t.fired && !firedTaskIdsRef.current.has(t.id)) {
+        if (!t.done && !t.archived && !t.fired && !firedTaskIdsRef.current.has(t.id)) {
           const remainMs = new Date(t.remindAt).getTime() - currentNow;
           if (remainMs <= 0) {
             triggerTaskReminderAlert(t);
@@ -3818,7 +3851,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   };
 
   const openTaskModalFromMessage = (msg: MosChatMessage | null) => {
+    setEditingTask(null);
     setTaskModalSourceMsg(msg);
+    setTaskDoneState(false);
+    setTaskArchivedState(false);
     if (staffDirectory.length === 0) {
       fetchBootstrap(true);
       apiClient.staff
@@ -3865,10 +3901,104 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     setTaskModalOpen(true);
   };
 
+  const openEditTaskModal = (task: MosChatTaskItem) => {
+    setEditingTask(task);
+    setTaskModalSourceMsg(null);
+    if (staffDirectory.length === 0) {
+      fetchBootstrap(true);
+      apiClient.staff
+        .list()
+        .then((data) => {
+          if (Array.isArray(data) && data.length > 0) {
+            const mapped: MosChatStaffMember[] = data.map((s: SafeAny) => ({
+              id: s.id,
+              username: s.username || s.name || s.displayName || `staff_${s.id}`,
+              displayName: s.name || s.displayName || `Staff #${s.id}`,
+              role: s.role || 'Staff',
+              avatar: s.avatar || undefined,
+              department: s.department || undefined,
+              userGroupName: s.userGroupName || undefined,
+            }));
+            setStaffDirectory((prev) => (prev.length === 0 ? mapped : prev));
+            if (typeof window !== 'undefined') {
+              try {
+                window.localStorage.setItem(STAFF_DIRECTORY_CACHE_KEY, JSON.stringify(mapped));
+              } catch {}
+            }
+          }
+        })
+        .catch(() => {});
+    }
+    setTaskTitle(task.title || '');
+    setTaskAssignee(task.assigneeName || currentUser?.displayName || '');
+    setTaskPriority(task.priority || 'HIGH');
+    setTaskDoneState(Boolean(task.done));
+    setTaskArchivedState(Boolean(task.archived));
+
+    const remindDate = dayjs(task.remindAt);
+    if (remindDate.isValid() && remindDate.isAfter(dayjs())) {
+      setTaskRemindMode('custom');
+      setCustomRemindDate(remindDate);
+      setSelectedPresetId('custom');
+      setTaskRemindSeconds(Math.max(60, remindDate.diff(dayjs(), 'second')));
+    } else {
+      setTaskRemindMode('preset');
+      setSelectedPresetId('none');
+      setTaskRemindSeconds(0);
+      setCustomRemindDate(dayjs().add(1, 'hour').minute(0).second(0));
+    }
+    setTaskModalOpen(true);
+  };
+
+  const handleToggleArchiveTask = async (taskId: string, archived: boolean) => {
+    const nowIso = new Date().toISOString();
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === taskId
+          ? {
+              ...t,
+              archived,
+              archivedAt: archived ? nowIso : null,
+              fired: archived ? true : t.fired,
+            }
+          : t
+      )
+    );
+    if (activeAlertTask?.id === taskId && archived) {
+      setActiveAlertTask(null);
+    }
+    antdMessage.success(archived ? 'Đã chuyển công việc vào Lưu trữ' : 'Đã khôi phục công việc');
+    try {
+      await apiClient.chat.updateTask(taskId, { archived });
+      notifyLivePeers();
+    } catch (_) {}
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    if (activeAlertTask?.id === taskId) {
+      setActiveAlertTask(null);
+    }
+    setConversations((prev) =>
+      prev.map((c) => ({
+        ...c,
+        messages: c.messages.map((m) => (m.taskId === taskId ? { ...m, taskId: undefined } : m)),
+      }))
+    );
+    antdMessage.success('Đã xoá công việc thành công');
+    try {
+      await apiClient.chat.deleteTask(taskId);
+      notifyLivePeers();
+    } catch (_) {}
+  };
+
   const handleConfirmCreateTask = async () => {
     const cleanTitle = taskTitle.trim();
     const cleanAssignee = taskAssignee.trim();
-    if (!cleanTitle || !activeConversation) return;
+    if (!cleanTitle) {
+      antdMessage.warning('Vui lòng nhập tên công việc');
+      return;
+    }
     if (!cleanAssignee) {
       antdMessage.warning('Vui lòng chọn Người phụ trách công việc từ danh sách nhân sự đang hoạt động');
       return;
@@ -3894,6 +4024,44 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       remindAtIso = new Date(Date.now() + taskRemindSeconds * 1000).toISOString();
       remindSecondsToSend = taskRemindSeconds;
     }
+
+    if (editingTask) {
+      const updatedTask: MosChatTaskItem = {
+        ...editingTask,
+        title: cleanTitle,
+        assigneeId: matchedAssignee?.id ?? editingTask.assigneeId,
+        assigneeName: resolvedAssigneeName,
+        priority: taskPriority,
+        done: taskDoneState,
+        archived: taskArchivedState,
+        archivedAt: taskArchivedState ? (editingTask.archivedAt || new Date().toISOString()) : null,
+        remindAt: remindAtIso,
+        fired: isNoReminder || taskDoneState || taskArchivedState,
+        updatedAt: new Date().toISOString(),
+      };
+
+      setTasks((prev) => prev.map((t) => (t.id === editingTask.id ? updatedTask : t)));
+      setTaskModalOpen(false);
+      setEditingTask(null);
+      antdMessage.success(`Đã cập nhật công việc "${cleanTitle}"`);
+
+      try {
+        await apiClient.chat.updateTask(editingTask.id, {
+          title: cleanTitle,
+          assigneeId: matchedAssignee?.id ?? editingTask.assigneeId,
+          assigneeName: resolvedAssigneeName,
+          priority: taskPriority,
+          done: taskDoneState,
+          archived: taskArchivedState,
+          remindInSeconds: remindSecondsToSend,
+          remindAt: remindAtIso,
+        });
+        notifyLivePeers();
+      } catch (_) {}
+      return;
+    }
+
+    if (!activeConversation) return;
 
     const normalizedTitle = cleanTitle.replace(/\s+/g, ' ').toLowerCase();
     const existingTask = uniqueTasks.find(
@@ -8647,10 +8815,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                   </button>
                                 </Tooltip>
                                 <div className="min-w-0">
-                                  <div
-                                    className={`text-[12px] font-bold truncate ${linkedTask.done ? 'line-through' : ''}`}
-                                  >
-                                    {linkedTask.title}
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <div
+                                      className={`text-[12px] font-bold truncate ${linkedTask.done ? 'line-through' : ''}`}
+                                    >
+                                      {linkedTask.title}
+                                    </div>
+                                    {linkedTask.archived && (
+                                      <span className="px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-slate-500/20 text-slate-400 border border-slate-500/30 shrink-0">
+                                        Lưu trữ
+                                      </span>
+                                    )}
                                   </div>
                                   <div className="text-[10.5px] text-slate-400 flex items-center gap-2">
                                     <span>{linkedTask.assigneeName}</span>
@@ -8661,17 +8836,64 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                   </div>
                                 </div>
                               </div>
-                              <Tooltip title="Test nổ chuông nhắc hẹn ngay">
-                                <button
-                                  type="button"
-                                  aria-label="Test nổ chuông nhắc hẹn ngay"
-                                  onClick={() => triggerTaskReminderAlert(linkedTask)}
-                                  className="w-7 h-7 rounded-md inline-flex items-center justify-center shrink-0 cursor-pointer"
-                                  style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                              <div className="flex items-center gap-1 shrink-0">
+                                <Tooltip title="Chỉnh sửa task">
+                                  <button
+                                    type="button"
+                                    aria-label="Chỉnh sửa task"
+                                    onClick={() => openEditTaskModal(linkedTask)}
+                                    className="w-7 h-7 rounded-md inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10"
+                                    style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                                  >
+                                    <Pencil size={12} className="text-amber-400" />
+                                  </button>
+                                </Tooltip>
+                                <Tooltip title={linkedTask.archived ? 'Khôi phục công việc' : 'Lưu trữ công việc'}>
+                                  <button
+                                    type="button"
+                                    aria-label={linkedTask.archived ? 'Khôi phục công việc' : 'Lưu trữ công việc'}
+                                    onClick={() => handleToggleArchiveTask(linkedTask.id, !linkedTask.archived)}
+                                    className="w-7 h-7 rounded-md inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10"
+                                    style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                                  >
+                                    {linkedTask.archived ? (
+                                      <ArchiveRestore size={12} className="text-emerald-400" />
+                                    ) : (
+                                      <Archive size={12} className="text-slate-400" />
+                                    )}
+                                  </button>
+                                </Tooltip>
+                                <Popconfirm
+                                  title="Xoá vĩnh viễn công việc này?"
+                                  description="Bạn có chắc chắn muốn xoá task này không?"
+                                  okText="Xoá"
+                                  cancelText="Huỷ"
+                                  okButtonProps={{ danger: true }}
+                                  onConfirm={() => handleDeleteTask(linkedTask.id)}
                                 >
-                                  <BellRing size={14} className="text-amber-400" />
-                                </button>
-                              </Tooltip>
+                                  <Tooltip title="Xoá task">
+                                    <button
+                                      type="button"
+                                      aria-label="Xoá task"
+                                      className="w-7 h-7 rounded-md inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-rose-500/20 text-rose-400"
+                                      style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                                    >
+                                      <Trash2 size={12} />
+                                    </button>
+                                  </Tooltip>
+                                </Popconfirm>
+                                <Tooltip title="Test nổ chuông nhắc hẹn ngay">
+                                  <button
+                                    type="button"
+                                    aria-label="Test nổ chuông nhắc hẹn ngay"
+                                    onClick={() => triggerTaskReminderAlert(linkedTask)}
+                                    className="w-7 h-7 rounded-md inline-flex items-center justify-center shrink-0 cursor-pointer"
+                                    style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                                  >
+                                    <BellRing size={14} className="text-amber-400" />
+                                  </button>
+                                </Tooltip>
+                              </div>
                             </div>
                           )}
 
@@ -9555,7 +9777,34 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 </div>
               </div>
 
-              {uniqueTasks.map((t) => {
+              {/* Filter Pills */}
+              <div className="flex items-center gap-1.5 mb-2 overflow-x-auto pb-1 text-[11.5px]">
+                {[
+                  { key: 'ACTIVE', label: `Đang làm (${taskCounts.active})` },
+                  { key: 'DONE', label: `Đã xong (${taskCounts.done})` },
+                  { key: 'ARCHIVED', label: `Lưu trữ (${taskCounts.archived})` },
+                  { key: 'ALL', label: `Tất cả (${taskCounts.total})` },
+                ].map((f) => {
+                  const isSel = taskFilter === f.key;
+                  return (
+                    <button
+                      key={f.key}
+                      type="button"
+                      onClick={() => setTaskFilter(f.key as any)}
+                      className="px-2.5 py-1 rounded-full font-bold cursor-pointer transition-all whitespace-nowrap text-[11px]"
+                      style={{
+                        background: isSel ? '#d4a84b' : surfaceRaised,
+                        color: isSel ? '#000' : token.colorTextSecondary,
+                        border: `1px solid ${isSel ? '#d4a84b' : borderColor}`,
+                      }}
+                    >
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {filteredTasks.map((t) => {
                 const taskConv = conversations.find((c) => c.id === t.conversationId);
                 const taskSourceMsg =
                   taskConv?.messages.find((m) => m.id === t.sourceMessageId || m.taskId === t.id) || null;
@@ -9585,10 +9834,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           {t.done && <Check size={11} strokeWidth={3} />}
                         </button>
                         <div className="min-w-0">
-                          <div
-                            className={`text-[12.5px] font-bold truncate ${t.done ? 'line-through opacity-70' : ''}`}
-                          >
-                            {t.title}
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <div
+                              className={`text-[12.5px] font-bold truncate ${t.done ? 'line-through opacity-70' : ''}`}
+                            >
+                              {t.title}
+                            </div>
+                            {t.archived && (
+                              <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-slate-500/20 text-slate-400 border border-slate-500/30 shrink-0">
+                                Lưu trữ
+                              </span>
+                            )}
                           </div>
                           <div className="text-[11px] text-slate-400 flex items-center gap-2 flex-wrap">
                             <span>{t.assigneeName}</span>
@@ -9623,6 +9879,51 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             </button>
                           </Tooltip>
                         )}
+                        <Tooltip title="Chỉnh sửa task">
+                          <button
+                            type="button"
+                            aria-label="Chỉnh sửa task"
+                            onClick={() => openEditTaskModal(t)}
+                            className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-white/10"
+                            style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                          >
+                            <Pencil size={13} className="text-amber-400" />
+                          </button>
+                        </Tooltip>
+                        <Tooltip title={t.archived ? 'Khôi phục công việc' : 'Lưu trữ (Archive) công việc'}>
+                          <button
+                            type="button"
+                            aria-label={t.archived ? 'Khôi phục công việc' : 'Lưu trữ công việc'}
+                            onClick={() => handleToggleArchiveTask(t.id, !t.archived)}
+                            className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-white/10"
+                            style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                          >
+                            {t.archived ? (
+                              <ArchiveRestore size={13} className="text-emerald-400" />
+                            ) : (
+                              <Archive size={13} className="text-slate-400" />
+                            )}
+                          </button>
+                        </Tooltip>
+                        <Popconfirm
+                          title="Xoá vĩnh viễn công việc này?"
+                          description="Bạn có chắc chắn muốn xoá task này không?"
+                          okText="Xoá"
+                          cancelText="Huỷ"
+                          okButtonProps={{ danger: true }}
+                          onConfirm={() => handleDeleteTask(t.id)}
+                        >
+                          <Tooltip title="Xoá task">
+                            <button
+                              type="button"
+                              aria-label="Xoá task"
+                              className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-rose-500/20 text-rose-400"
+                              style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </Tooltip>
+                        </Popconfirm>
                         <Tooltip title="Test nổ chuông nhắc">
                           <button
                             type="button"
@@ -9651,24 +9952,34 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 );
               })}
 
-              {uniqueTasks.length === 0 && (
+              {filteredTasks.length === 0 && (
                 <div className="py-12 flex flex-col items-center justify-center text-center text-slate-400">
                   <div className="w-12 h-12 rounded-full flex items-center justify-center bg-amber-500/10 text-amber-500 mb-3">
                     <AlarmClock size={24} />
                   </div>
-                  <div className="text-[13.5px] font-bold text-slate-300 mb-1">Chưa có đầu việc hoặc nhắc hẹn nào</div>
-                  <div className="text-[12px] max-w-xs mb-4">
-                    Bạn có thể tạo đầu việc mới hoặc bấm vào biểu tượng hẹn giờ trên bất kỳ tin nhắn nào.
+                  <div className="text-[13.5px] font-bold text-slate-300 mb-1">
+                    {taskFilter === 'ARCHIVED'
+                      ? 'Chưa có công việc nào trong Lưu trữ'
+                      : taskFilter === 'DONE'
+                        ? 'Chưa có công việc nào hoàn thành'
+                        : 'Chưa có đầu việc hoặc nhắc hẹn nào'}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => openTaskModalFromMessage(null)}
-                    className="px-3 py-1.5 rounded-lg text-[12px] font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-sm"
-                    style={{ background: '#d4a84b', color: '#000' }}
-                  >
-                    <Plus size={14} />
-                    <span>Tạo đầu việc mới</span>
-                  </button>
+                  <div className="text-[12px] max-w-xs mb-4">
+                    {taskFilter === 'ARCHIVED'
+                      ? 'Các công việc được lưu trữ sẽ xuất hiện tại đây và có thể khôi phục bất kỳ lúc nào.'
+                      : 'Bạn có thể tạo đầu việc mới hoặc bấm vào biểu tượng hẹn giờ trên bất kỳ tin nhắn nào.'}
+                  </div>
+                  {taskFilter !== 'ARCHIVED' && (
+                    <button
+                      type="button"
+                      onClick={() => openTaskModalFromMessage(null)}
+                      className="px-3 py-1.5 rounded-lg text-[12px] font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-sm"
+                      style={{ background: '#d4a84b', color: '#000' }}
+                    >
+                      <Plus size={14} />
+                      <span>Tạo đầu việc mới</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -10644,14 +10955,32 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       <Modal
         open={taskModalOpen}
         zIndex={1350}
-        onCancel={() => setTaskModalOpen(false)}
+        onCancel={() => {
+          setTaskModalOpen(false);
+          setEditingTask(null);
+        }}
         onOk={handleConfirmCreateTask}
-        okText={taskRemindMode === 'preset' && selectedPresetId === 'none' ? 'Lưu Task' : 'Lưu & Hẹn giờ'}
+        okText={
+          editingTask
+            ? 'Lưu thay đổi'
+            : taskRemindMode === 'preset' && selectedPresetId === 'none'
+              ? 'Lưu Task'
+              : 'Lưu & Hẹn giờ'
+        }
         cancelText="Hủy"
         title={
           <span className="flex items-center gap-2 text-[14px] font-bold">
-            <AlarmClockPlus size={16} className="text-amber-500" />
-            <span>Giao Task & Hẹn Giờ Nhắc</span>
+            {editingTask ? (
+              <>
+                <Pencil size={16} className="text-amber-500" />
+                <span>Chỉnh Sửa Công Việc</span>
+              </>
+            ) : (
+              <>
+                <AlarmClockPlus size={16} className="text-amber-500" />
+                <span>Giao Task & Hẹn Giờ Nhắc</span>
+              </>
+            )}
           </span>
         }
         width={isMobile ? 'calc(100vw - 24px)' : 440}
@@ -10670,6 +10999,37 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             <div className="text-[11px] font-bold text-slate-400 mb-1">Tên công việc</div>
             <Input value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} />
           </div>
+
+          {editingTask && (
+            <div
+              className="p-2.5 rounded-lg space-y-2.5"
+              style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
+            >
+              <div className="text-[11px] font-bold text-slate-400">Trạng thái công việc</div>
+              <div className="flex items-center justify-between">
+                <span className="text-[12px] flex items-center gap-2 font-medium">
+                  <Check size={14} className={taskDoneState ? 'text-emerald-400' : 'text-slate-400'} />
+                  <span>Đã hoàn thành</span>
+                </span>
+                <Switch
+                  checked={taskDoneState}
+                  onChange={(checked) => setTaskDoneState(checked)}
+                  size="small"
+                />
+              </div>
+              <div className="flex items-center justify-between pt-1.5 border-t border-white/5">
+                <span className="text-[12px] flex items-center gap-2 font-medium">
+                  <Archive size={14} className={taskArchivedState ? 'text-amber-400' : 'text-slate-400'} />
+                  <span>Lưu trữ (Archived)</span>
+                </span>
+                <Switch
+                  checked={taskArchivedState}
+                  onChange={(checked) => setTaskArchivedState(checked)}
+                  size="small"
+                />
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-2.5">
             <div>

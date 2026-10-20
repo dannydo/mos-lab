@@ -190,6 +190,9 @@ export interface MosChatTaskItem {
   missionId?: number | null;
   missionKey?: string | null;
   mission?: MosChatMissionSummary | null;
+  archived?: boolean;
+  archivedAt?: string | null;
+  updatedAt?: string;
 }
 
 export interface MosChatConversation {
@@ -369,6 +372,25 @@ export interface AddMosChatMemberRequest {
 export interface RemoveMosChatMemberRequest {
   conversationId: string;
   staffId: number;
+}
+
+export interface UpdateMosChatTaskRequest {
+  title?: string;
+  assigneeId?: number | string;
+  assigneeName?: string;
+  priority?: MosChatTaskPriority;
+  remindAt?: string;
+  snoozeSeconds?: number;
+  remindInSeconds?: number;
+  done?: boolean;
+  archived?: boolean;
+  triggerReminderNow?: boolean;
+}
+
+export interface DeleteMosChatTaskResponse {
+  success: boolean;
+  taskId: string;
+  message?: string;
 }
 
 export type MosChatMissionActionType =
