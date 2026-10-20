@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Search, Sparkles } from 'lucide-react';
 import { removeVietnameseTones } from '@mos-lab/shared';
 
@@ -1446,8 +1446,10 @@ export const MosChatStickerVisual: React.FC<{
 
       {sticker.caption && (
         <span
-          className={`inline-flex items-center justify-center leading-none font-black uppercase tracking-tight rounded-full shadow-md text-center whitespace-nowrap ${
-            isPicker ? 'text-[8.5px] px-1.5 py-1 -mt-1 max-w-[96%] truncate' : 'text-[10px] px-2.5 py-1 -mt-1.5'
+          className={`block font-black uppercase tracking-tight rounded-full shadow-md text-center truncate ${
+            isPicker
+              ? 'text-[7.5px] leading-tight px-1.5 py-0.5 -mt-1 max-w-[96%]'
+              : 'text-[10px] leading-none px-2.5 py-1 -mt-1.5 whitespace-nowrap'
           }`}
           style={{
             background: sticker.captionBg || 'linear-gradient(135deg, #d4a84b, #b45309)',
@@ -1485,6 +1487,7 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
 }) => {
   const [activePack, setActivePack] = useState<MosChatStickerPackId>('wings');
   const [searchQuery, setSearchQuery] = useState('');
+  const gridScrollRef = useRef<HTMLDivElement | null>(null);
 
   const filteredStickers = useMemo(() => {
     const q = removeVietnameseTones(searchQuery.trim().toLowerCase());
@@ -1508,11 +1511,11 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
       data-no-chat-autofocus="true"
       onClick={(e) => e.stopPropagation()}
       className="p-2 space-y-2 select-none"
-      style={{ width: 356 }}
+      style={{ width: 372 }}
     >
-      {/* Top Category Pack Switcher Tabs */}
+      {/* Top Category Pack Switcher Tabs (Fits all 6 packs cleanly without scrollbar) */}
       <div
-        className="flex items-center gap-1 p-1 rounded-xl overflow-x-auto"
+        className="grid grid-cols-6 gap-1 p-1 rounded-xl"
         style={{
           background: isDark ? 'rgba(15, 23, 42, 0.7)' : 'rgba(241, 245, 249, 0.9)',
           border: `1px solid ${borderColor}`,
@@ -1527,15 +1530,19 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
               onClick={() => {
                 setActivePack(tab.id);
                 setSearchQuery('');
+                if (gridScrollRef.current) {
+                  gridScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                }
               }}
-              className="px-2 py-1 rounded-lg text-[11px] font-extrabold inline-flex items-center gap-1 shrink-0 cursor-pointer transition-all"
+              title={tab.label}
+              className="px-1 py-1.5 rounded-lg text-[10px] font-extrabold inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer transition-all leading-none"
               style={{
                 background: isActive ? '#d4a84b' : 'transparent',
                 color: isActive ? '#000000' : isDark ? '#cbd5e1' : '#334155',
               }}
             >
-              <span>{tab.icon}</span>
-              <span>{tab.shortLabel}</span>
+              <span className="text-[13px] leading-none">{tab.icon}</span>
+              <span className="truncate max-w-full">{tab.shortLabel}</span>
             </button>
           );
         })}
@@ -1645,7 +1652,7 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
               Không tìm thấy sticker phù hợp với &ldquo;{searchQuery}&rdquo;
             </div>
           ) : (
-            <div className="grid grid-cols-4 gap-1.5 max-h-[268px] overflow-y-auto pr-0.5 py-0.5">
+            <div ref={gridScrollRef} className="grid grid-cols-4 gap-1.5 max-h-[268px] overflow-y-auto pr-0.5 py-0.5">
               {filteredStickers.map((sticker) => {
                 const tokenKey = formatStickerToken(sticker.id);
                 const reacted = hasUserReacted?.(tokenKey);

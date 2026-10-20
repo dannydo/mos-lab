@@ -1454,6 +1454,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [nowMs, setNowMs] = useState<number>(() => Date.now());
   const firedTaskIdsRef = useRef<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const mainMessagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const threadMessagesContainerRef = useRef<HTMLDivElement | null>(null);
+  const threadMessagesEndRef = useRef<HTMLDivElement | null>(null);
+  const dockMessagesContainerRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const prevMainMsgCountRef = useRef<{ convId: string; count: number }>({ convId: '', count: 0 });
+  const prevThreadReplyCountRef = useRef<{ msgId: string; count: number }>({ msgId: '', count: 0 });
+  const [openStickerPopoverKey, setOpenStickerPopoverKey] = useState<string | null>(null);
   const composerInputRef = useRef<HTMLTextAreaElement | null>(null);
   const threadInputRef = useRef<HTMLTextAreaElement | null>(null);
   const dockInputRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
@@ -1485,6 +1492,40 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       broadcastChannelRef.current?.postMessage({ type: 'MOS_CHAT_SYNC', ts: Date.now() });
     } catch (_) {}
   }, []);
+
+  const scrollToChatBottom = useCallback(
+    (target: 'main' | 'thread' | { dockConvId: string } = 'main', behavior: ScrollBehavior = 'smooth') => {
+      const executeScroll = (mode: ScrollBehavior) => {
+        if (target === 'main') {
+          const el = mainMessagesContainerRef.current;
+          if (el) {
+            el.scrollTo({ top: el.scrollHeight, behavior: mode });
+          } else {
+            messagesEndRef.current?.scrollIntoView({ behavior: mode, block: 'end' });
+          }
+        } else if (target === 'thread') {
+          const el = threadMessagesContainerRef.current;
+          if (el) {
+            el.scrollTo({ top: el.scrollHeight, behavior: mode });
+          } else {
+            threadMessagesEndRef.current?.scrollIntoView({ behavior: mode, block: 'end' });
+          }
+        } else if (typeof target === 'object' && target.dockConvId) {
+          const el = dockMessagesContainerRefs.current[target.dockConvId];
+          if (el) {
+            el.scrollTo({ top: el.scrollHeight, behavior: mode });
+          }
+        }
+      };
+
+      if (typeof window !== 'undefined') {
+        window.requestAnimationFrame(() => executeScroll(behavior));
+        window.setTimeout(() => executeScroll(behavior), 90);
+        window.setTimeout(() => executeScroll(behavior), 220);
+      }
+    },
+    []
+  );
 
   const updateUserSidebarPrefs = useCallback(
     (updater: (prev: MosChatUserSidebarPrefs) => MosChatUserSidebarPrefs) => {
@@ -2442,6 +2483,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     if (isTabVisible) {
       markConversationReadOptimisticAndSync(convId, msgs.length, lastMsg?.id);
     }
+    scrollToChatBottom('main', 'auto');
   };
 
   // Automatically mark active conversation (or open mini dock) as read ONLY when browser tab is visible
@@ -3035,6 +3077,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     if (targetConvId === AI_COPILOT_CONV_ID) {
       setAiMessages((prev) => [...prev, optimisticMsg]);
       setAiThinkingActive(true);
+      scrollToChatBottom('main', 'smooth');
       try {
         const imageDataUrl = await convertAttachmentToDataUrl(cleanAttachments?.[0]);
         const promptForAi =
@@ -3108,6 +3151,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     setConversations((prev) =>
       prev.map((c) => (c.id === targetConvId ? { ...c, messages: [...c.messages, optimisticMsg] } : c))
     );
+    if (activeConversation?.id === targetConvId) {
+      scrollToChatBottom('main', 'smooth');
+    }
+    if (dockedConvIds.includes(targetConvId)) {
+      scrollToChatBottom({ dockConvId: targetConvId }, 'smooth');
+    }
 
     try {
       const res = await apiClient.chat.sendMessage({
@@ -3792,6 +3841,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     if (activeConversation && isTabVisible) {
       markThreadReadOptimisticAndSync(activeConversation.id, msgId);
     }
+    scrollToChatBottom('thread', 'auto');
   };
 
   const handleMessageTap = (msgId: string, e: React.MouseEvent) => {
@@ -3857,6 +3907,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         };
       })
     );
+    scrollToChatBottom('thread', 'smooth');
 
     try {
       const res = await apiClient.chat.sendThreadReply({
@@ -3876,14 +3927,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     sticker: MosChatStickerItem,
     target: 'main' | 'thread' | { dockConvId: string } = 'main'
   ) => {
+    setOpenStickerPopoverKey(null);
     const tokenText = formatStickerToken(sticker.id);
     if (target === 'main') {
       if (!activeConversation) return;
+      scrollToChatBottom('main', 'smooth');
       await handleSendMessage(activeConversation.id, tokenText, null, []);
+      scrollToChatBottom('main', 'smooth');
       return;
     }
     if (typeof target === 'object' && target.dockConvId) {
+      scrollToChatBottom({ dockConvId: target.dockConvId }, 'smooth');
       await handleSendMessage(target.dockConvId, tokenText, null, []);
+      scrollToChatBottom({ dockConvId: target.dockConvId }, 'smooth');
       return;
     }
     if (target === 'thread') {
@@ -3912,6 +3968,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           };
         })
       );
+      scrollToChatBottom('thread', 'smooth');
       try {
         const res = await apiClient.chat.sendThreadReply({
           conversationId: activeConversation.id,
@@ -3921,6 +3978,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         if (res?.conversation) {
           setConversations((prev) => prev.map((c) => (c.id === activeConversation.id ? res.conversation! : c)));
         }
+        scrollToChatBottom('thread', 'smooth');
         notifyLivePeers();
       } catch (_) {}
     }
@@ -4444,6 +4502,40 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       activeConversation.messages.find((m) => m.id === activeThreadMsgId) || activeConversation.messages[0] || null
     );
   }, [activeConversation, activeThreadMsgId]);
+
+  // Automatically scroll main conversation stream to bottom when switching conversations or when new messages arrive
+  useEffect(() => {
+    if (!open || activeSubtab !== 'chat' || !activeConversation) return;
+    const convId = activeConversation.id;
+    const count = (activeConversation.messages || []).length;
+    const prev = prevMainMsgCountRef.current;
+    if (prev.convId !== convId) {
+      prevMainMsgCountRef.current = { convId, count };
+      scrollToChatBottom('main', 'auto');
+    } else if (count > prev.count) {
+      prevMainMsgCountRef.current = { convId, count };
+      scrollToChatBottom('main', 'smooth');
+    } else {
+      prevMainMsgCountRef.current = { convId, count };
+    }
+  }, [open, activeSubtab, activeConversation?.id, activeConversation?.messages?.length, scrollToChatBottom]);
+
+  // Automatically scroll sub-thread stream to bottom when opening thread or when new replies arrive
+  useEffect(() => {
+    if (!open || !threadOpen || !activeThreadMessage) return;
+    const msgId = activeThreadMessage.id;
+    const count = (activeThreadMessage.thread || []).length;
+    const prev = prevThreadReplyCountRef.current;
+    if (prev.msgId !== msgId) {
+      prevThreadReplyCountRef.current = { msgId, count };
+      scrollToChatBottom('thread', 'auto');
+    } else if (count > prev.count) {
+      prevThreadReplyCountRef.current = { msgId, count };
+      scrollToChatBottom('thread', 'smooth');
+    } else {
+      prevThreadReplyCountRef.current = { msgId, count };
+    }
+  }, [open, threadOpen, activeThreadMessage?.id, activeThreadMessage?.thread?.length, scrollToChatBottom]);
 
   // Automatically mark open Sub-thread as read ONLY when the sub-thread drawer is open and browser tab is visible
   useEffect(() => {
@@ -6833,8 +6925,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       popularEmojis={GOOGLE_CHAT_REACTION_EMOJIS}
       mode="reaction"
       hasUserReacted={(key) => hasUserReacted(msgObj, key)}
-      onSelectEmoji={(emoji) => void handleToggleReaction(msgId, emoji)}
-      onSelectSticker={(sticker) => void handleToggleReaction(msgId, formatStickerToken(sticker.id))}
+      onSelectEmoji={(emoji) => {
+        setOpenStickerPopoverKey(null);
+        void handleToggleReaction(msgId, emoji);
+      }}
+      onSelectSticker={(sticker) => {
+        setOpenStickerPopoverKey(null);
+        void handleToggleReaction(msgId, formatStickerToken(sticker.id));
+      }}
     />
   );
 
@@ -6860,6 +6958,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         }
       }}
       onSelectSticker={(sticker) => {
+        setOpenStickerPopoverKey(null);
         void handleSendSticker(sticker, target);
       }}
     />
@@ -8354,7 +8453,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 </div>
               )}
 
-              <div className="flex-1 overflow-y-auto py-3">
+              <div ref={mainMessagesContainerRef} className="flex-1 overflow-y-auto py-3">
                 {(activeConversation?.messages || [])
                   .filter(
                     (m) =>
@@ -9146,6 +9245,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               <Popover
                                 trigger="click"
                                 placement={isMine ? 'topRight' : 'topLeft'}
+                                open={openStickerPopoverKey === `react:${m.id}`}
+                                onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? `react:${m.id}` : null)}
                                 content={renderReactionPickerContent(m.id, m)}
                               >
                                 <Tooltip title="Chọn thêm biểu tượng cảm xúc (Wings & phổ biến)">
@@ -9605,7 +9706,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           style={{ color: token.colorText, maxHeight: 110 }}
                         />
 
-                        <Popover trigger="click" placement="topRight" content={renderComposerEmojiPickerContent()}>
+                        <Popover
+                          trigger="click"
+                          placement="topRight"
+                          open={openStickerPopoverKey === 'composer:main:mobile'}
+                          onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:main:mobile' : null)}
+                          content={renderComposerEmojiPickerContent('main')}
+                        >
                           <button
                             type="button"
                             aria-label="Chèn biểu tượng cảm xúc Wings"
@@ -9717,7 +9824,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         </button>
                       </Tooltip>
 
-                      <Popover trigger="click" placement="topRight" content={renderComposerEmojiPickerContent()}>
+                      <Popover
+                        trigger="click"
+                        placement="topRight"
+                        open={openStickerPopoverKey === 'composer:main:desktop'}
+                        onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:main:desktop' : null)}
+                        content={renderComposerEmojiPickerContent('main')}
+                      >
                         <Tooltip title="Chèn biểu tượng cảm xúc Wings">
                           <button
                             type="button"
@@ -10316,7 +10429,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
+            <div ref={threadMessagesContainerRef} className="flex-1 overflow-y-auto p-3 space-y-2.5">
               <div
                 className="p-2.5 rounded-lg text-[12px]"
                 style={{ background: surfaceRaised, borderLeft: '3px solid #d4a84b' }}
@@ -10579,6 +10692,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   </div>
                 );
               })}
+              <div ref={threadMessagesEndRef} />
             </div>
 
             <div className="p-2.5 space-y-1.5" style={{ borderTop: `1px solid ${borderColor}` }}>
@@ -10656,7 +10770,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     <span className="font-serif font-bold text-[13px] tracking-tight">Aa</span>
                   </button>
                 </Tooltip>
-                <Popover trigger="click" placement="topRight" content={renderComposerEmojiPickerContent('thread')}>
+                <Popover
+                  trigger="click"
+                  placement="topRight"
+                  open={openStickerPopoverKey === 'composer:thread'}
+                  onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:thread' : null)}
+                  content={renderComposerEmojiPickerContent('thread')}
+                >
                   <Tooltip title="Gửi Sticker động / Meme / Emoji vào luồng">
                     <button
                       type="button"
@@ -10818,7 +10938,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
                 {!isCollapsed && (
                   <div className="h-[280px] flex flex-col" style={{ background: canvasBg }}>
-                    <div className="flex-1 overflow-y-auto p-2.5 space-y-2">
+                    <div
+                      ref={(el) => {
+                        dockMessagesContainerRefs.current[cid] = el;
+                      }}
+                      className="flex-1 overflow-y-auto p-2.5 space-y-2"
+                    >
                       {recentMsgs.map((m) => {
                         const isDockMine = isMessageFromCurrentUser(m);
                         const dockBreakdown = isDockMine
@@ -10954,6 +11079,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         <Popover
                           trigger="click"
                           placement="topRight"
+                          open={openStickerPopoverKey === `composer:dock:${cid}`}
+                          onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? `composer:dock:${cid}` : null)}
                           content={renderComposerEmojiPickerContent({ dockConvId: cid })}
                         >
                           <Tooltip title="Gửi Sticker động / Emoji">
