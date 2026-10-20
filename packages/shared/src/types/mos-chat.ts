@@ -117,6 +117,8 @@ export interface MosChatThreadReply {
   missionStage?: MosChatMissionStage | null;
   missionId?: number | null;
   syncedCommentId?: number | null;
+  reactions?: Record<string, number>;
+  reactionUsers?: Record<string, Array<number | string>>;
 }
 
 export interface MosChatMessage {

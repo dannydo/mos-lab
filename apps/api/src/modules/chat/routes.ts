@@ -2506,14 +2506,41 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       const user = (request as SafeAny).user as JwtUserPayload | undefined;
       const userKey = String(user?.id ?? 'me');
       const { messageId } = request.params as { messageId: string };
-      const { conversationId, emoji } = request.body as { conversationId: string; emoji: string };
+      const { conversationId, emoji, replyId } = request.body as {
+        conversationId: string;
+        emoji: string;
+        replyId?: string;
+      };
       const [{ conversations }, staffDirectory] = await Promise.all([
         loadChatState(fastify),
         loadStaffDirectoryCached(fastify),
       ]);
       const conv = conversations.find((c) => c.id === conversationId);
-      const msg = conv?.messages.find((m) => m.id === messageId);
-      if (!conv || !msg) {
+      if (!conv) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy cuộc trò chuyện' });
+      }
+
+      // Find target message: root message or thread reply
+      let targetMsg: MosChatMessage | MosChatThreadReply | undefined;
+      const rootMsg = conv.messages.find((m) => m.id === messageId);
+      if (rootMsg) {
+        if (replyId) {
+          targetMsg = (rootMsg.thread || []).find((r) => r.id === replyId);
+        } else {
+          targetMsg = rootMsg;
+        }
+      } else {
+        // Fallback: check if messageId is directly a reply ID
+        for (const m of conv.messages) {
+          const replyItem = (m.thread || []).find((r) => r.id === messageId);
+          if (replyItem) {
+            targetMsg = replyItem;
+            break;
+          }
+        }
+      }
+
+      if (!targetMsg) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tin nhắn' });
       }
       if (!canUserAccessConversation(conv, user, staffDirectory)) {
@@ -2522,39 +2549,39 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           message: 'Tin nhắn trực tiếp (Direct Message) chỉ hiển thị cho 2 người tham gia.',
         });
       }
-      msg.reactions = msg.reactions || {};
-      msg.reactionUsers = msg.reactionUsers || {};
+      targetMsg.reactions = targetMsg.reactions || {};
+      targetMsg.reactionUsers = targetMsg.reactionUsers || {};
 
-      const existingUsers = msg.reactionUsers[emoji];
-      const currentCount = msg.reactions[emoji] || 0;
+      const existingUsers = targetMsg.reactionUsers[emoji];
+      const currentCount = targetMsg.reactions[emoji] || 0;
 
       if (Array.isArray(existingUsers)) {
         const normalized = existingUsers.map(String);
         if (normalized.includes(userKey)) {
           const remaining = normalized.filter((u) => u !== userKey);
           if (remaining.length === 0) {
-            delete msg.reactions[emoji];
-            delete msg.reactionUsers[emoji];
+            delete targetMsg.reactions[emoji];
+            delete targetMsg.reactionUsers[emoji];
           } else {
-            msg.reactionUsers[emoji] = remaining;
-            msg.reactions[emoji] = remaining.length;
+            targetMsg.reactionUsers[emoji] = remaining;
+            targetMsg.reactions[emoji] = remaining.length;
           }
         } else {
           const updated = [...normalized, userKey];
-          msg.reactionUsers[emoji] = updated;
-          msg.reactions[emoji] = updated.length;
+          targetMsg.reactionUsers[emoji] = updated;
+          targetMsg.reactions[emoji] = updated.length;
         }
       } else if (currentCount > 0) {
         // Legacy reaction without per-user tracking (e.g. inflated count): clicking undoes/clears it
-        delete msg.reactions[emoji];
-        delete msg.reactionUsers[emoji];
+        delete targetMsg.reactions[emoji];
+        delete targetMsg.reactionUsers[emoji];
       } else {
-        msg.reactionUsers[emoji] = [userKey];
-        msg.reactions[emoji] = 1;
+        targetMsg.reactionUsers[emoji] = [userKey];
+        targetMsg.reactions[emoji] = 1;
       }
 
       await saveConversations(fastify, conversations);
-      return { success: true, reactions: msg.reactions, reactionUsers: msg.reactionUsers };
+      return { success: true, reactions: targetMsg.reactions, reactionUsers: targetMsg.reactionUsers };
     }
   );
 

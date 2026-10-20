@@ -2330,7 +2330,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     return uniqueTasks.filter((t) => {
       if (taskFilter === 'ACTIVE') return !t.done && !t.archived;
       if (taskFilter === 'MINE') {
-        return !t.done && !t.archived && Boolean(myName && (t.assigneeName || '').trim().toLowerCase().includes(myName));
+        return (
+          !t.done && !t.archived && Boolean(myName && (t.assigneeName || '').trim().toLowerCase().includes(myName))
+        );
       }
       if (taskFilter === 'OVERDUE') {
         return !t.done && !t.archived && Boolean(t.deadline && dayjs(t.deadline).isBefore(now));
@@ -3430,7 +3432,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   const currentUserReactionKey = String(currentUser?.id || 'me');
 
-  const hasUserReacted = (m: MosChatMessage | undefined, emoji: string): boolean => {
+  const hasUserReacted = (
+    m: { reactions?: Record<string, number>; reactionUsers?: Record<string, Array<number | string>> } | undefined,
+    emoji: string
+  ): boolean => {
     if (!m) return false;
     const count = m.reactions?.[emoji] || 0;
     if (count <= 0) return false;
@@ -3442,7 +3447,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     return users.map(String).includes(currentUserReactionKey);
   };
 
-  const applyReactionToggleToMessage = (m: MosChatMessage, emoji: string): MosChatMessage => {
+  const applyReactionToggleToMessage = <
+    T extends { reactions?: Record<string, number>; reactionUsers?: Record<string, Array<number | string>> },
+  >(
+    m: T,
+    emoji: string
+  ): T => {
     const nextReactions = { ...(m.reactions || {}) };
     const nextReactionUsers = { ...(m.reactionUsers || {}) };
     const existingUsers = nextReactionUsers[emoji];
@@ -3480,13 +3490,63 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     };
   };
 
-  const handleToggleReaction = async (msgId: string, emoji: string) => {
+  const handleToggleReaction = async (msgId: string, emoji: string, replyId?: string) => {
     if (!activeConversation) return;
     if (activeConversation.id === AI_COPILOT_CONV_ID) {
       setAiMessages((prev) => prev.map((m) => (m.id === msgId ? applyReactionToggleToMessage(m, emoji) : m)));
       return;
     }
     const targetConvId = activeConversation.id;
+
+    if (replyId) {
+      // Subthread reply reaction toggle (optimistic)
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== targetConvId) return c;
+          return {
+            ...c,
+            messages: c.messages.map((m) => {
+              if (m.id !== msgId) return m;
+              return {
+                ...m,
+                thread: (m.thread || []).map((r) => (r.id === replyId ? applyReactionToggleToMessage(r, emoji) : r)),
+              };
+            }),
+          };
+        })
+      );
+      try {
+        const res = await apiClient.chat.reactToMessage(msgId, targetConvId, emoji, replyId);
+        if (res?.reactions) {
+          setConversations((prev) =>
+            prev.map((c) => {
+              if (c.id !== targetConvId) return c;
+              return {
+                ...c,
+                messages: c.messages.map((m) => {
+                  if (m.id !== msgId) return m;
+                  return {
+                    ...m,
+                    thread: (m.thread || []).map((r) =>
+                      r.id === replyId
+                        ? {
+                            ...r,
+                            reactions: res.reactions,
+                            reactionUsers: res.reactionUsers ?? r.reactionUsers,
+                          }
+                        : r
+                    ),
+                  };
+                }),
+              };
+            })
+          );
+        }
+        notifyLivePeers();
+      } catch (_) {}
+      return;
+    }
+
     setConversations((prev) =>
       prev.map((c) => {
         if (c.id !== targetConvId) return c;
@@ -4311,9 +4371,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   const handleOpenNegotiateModal = (task: MosChatTaskItem) => {
     setNegotiatingTask(task);
-    const initialProposed = task.deadline
-      ? dayjs(task.deadline).add(2, 'hour')
-      : dayjs().hour(17).minute(30).second(0);
+    const initialProposed = task.deadline ? dayjs(task.deadline).add(2, 'hour') : dayjs().hour(17).minute(30).second(0);
     setNegotiateProposedDeadline(initialProposed);
     setNegotiateReason(task.negotiationNote || '');
     setNegotiateModalOpen(true);
@@ -5883,7 +5941,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     const isDone = Boolean(task.done);
     const deadlineInfo = getTaskDeadlineInfo(task.deadline, isDone);
     const hasNegotiation = Boolean(task.negotiatedDeadline);
-    const taskCode = `#TASK-${(task.id || '').replace(/[^a-zA-Z0-9]/g, '').slice(-5).toUpperCase() || 'CHAT'}`;
+    const taskCode = `#TASK-${
+      (task.id || '')
+        .replace(/[^a-zA-Z0-9]/g, '')
+        .slice(-5)
+        .toUpperCase() || 'CHAT'
+    }`;
 
     // Priority pill styling
     let priorityBg = 'rgba(59, 130, 246, 0.15)';
@@ -5938,9 +6001,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         style={{
           background: isDark ? 'rgba(15, 23, 42, 0.72)' : 'rgba(255, 255, 255, 0.95)',
           border: `1.5px solid ${isDone ? 'rgba(16, 185, 129, 0.4)' : deadlineInfo?.isOverdue ? 'rgba(239, 68, 68, 0.45)' : 'rgba(212, 168, 75, 0.4)'}`,
-          boxShadow: isDark
-            ? '0 4px 18px rgba(0, 0, 0, 0.35)'
-            : '0 4px 14px rgba(15, 23, 42, 0.06)',
+          boxShadow: isDark ? '0 4px 18px rgba(0, 0, 0, 0.35)' : '0 4px 14px rgba(15, 23, 42, 0.06)',
           opacity: isDone ? 0.85 : 1,
         }}
       >
@@ -5981,7 +6042,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 className="w-1.5 h-1.5 rounded-full"
                 style={{
                   background: statusColor,
-                  boxShadow: !isDone && (deadlineInfo?.isOverdue || deadlineInfo?.isDueSoon) ? `0 0 6px ${statusColor}` : 'none',
+                  boxShadow:
+                    !isDone && (deadlineInfo?.isOverdue || deadlineInfo?.isDueSoon) ? `0 0 6px ${statusColor}` : 'none',
                 }}
               />
               {statusLabel}
@@ -8217,7 +8279,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     );
   };
 
-  const renderReactionPickerContent = (msgId: string, msgObj?: MosChatMessage) => (
+  const renderReactionPickerContent = (
+    msgId: string,
+    msgObj?: MosChatMessage | MosChatThreadReply,
+    replyId?: string
+  ) => (
     <MosChatStickerAndEmojiPicker
       isDark={isDark}
       borderColor={borderColor}
@@ -8228,11 +8294,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       hasUserReacted={(key) => hasUserReacted(msgObj, key)}
       onSelectEmoji={(emoji) => {
         setOpenStickerPopoverKey(null);
-        void handleToggleReaction(msgId, emoji);
+        void handleToggleReaction(msgId, emoji, replyId);
       }}
       onSelectSticker={(sticker) => {
         setOpenStickerPopoverKey(null);
-        void handleToggleReaction(msgId, formatStickerToken(sticker.id));
+        void handleToggleReaction(msgId, formatStickerToken(sticker.id), replyId);
       }}
     />
   );
@@ -11605,6 +11671,42 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   </div>
                 )}
                 {renderMessageAttachments(activeThreadMessage.attachments, true)}
+                {activeThreadMessage.reactions &&
+                  Object.entries(activeThreadMessage.reactions).filter(([, count]) => count > 0).length > 0 && (
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                      {Object.entries(activeThreadMessage.reactions)
+                        .filter(([, count]) => count > 0)
+                        .map(([emoji, count]) => {
+                          const reactedByMe = hasUserReacted(activeThreadMessage, emoji);
+                          const stickerReaction = parseStickerReactionKey(emoji);
+                          const label = stickerReaction ? stickerReaction.caption || stickerReaction.title : emoji;
+                          return (
+                            <Tooltip
+                              key={emoji}
+                              title={reactedByMe ? `Đã thả ${label} · Nhấn để gỡ cảm xúc` : `Thả cùng ${label}`}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => handleToggleReaction(activeThreadMessage.id, emoji)}
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10.5px] font-bold cursor-pointer tabular-nums transition-all hover:scale-105"
+                                style={{
+                                  background: reactedByMe ? 'rgba(212, 168, 75, 0.16)' : canvasBg,
+                                  border: `1px solid ${reactedByMe ? 'rgba(212, 168, 75, 0.55)' : borderColor}`,
+                                  color: reactedByMe ? '#d4a84b' : token.colorText,
+                                }}
+                              >
+                                {stickerReaction ? (
+                                  <MosChatStickerVisual sticker={stickerReaction} size="reaction" />
+                                ) : (
+                                  <span>{emoji}</span>
+                                )}
+                                <span>{count}</span>
+                              </button>
+                            </Tooltip>
+                          );
+                        })}
+                    </div>
+                  )}
               </div>
 
               {/* Pinned Live mOS Mission Card at the top of the Thread */}
@@ -11763,15 +11865,112 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
                         {renderMessageAttachments(r.attachments, true)}
 
+                        {/* Reaction Pills for Thread Reply */}
+                        {r.reactions && Object.entries(r.reactions).filter(([, count]) => count > 0).length > 0 && (
+                          <div
+                            className={`mt-1.5 flex flex-wrap items-center gap-1 ${
+                              isReplyMine ? 'justify-end' : 'justify-start'
+                            }`}
+                          >
+                            {Object.entries(r.reactions)
+                              .filter(([, count]) => count > 0)
+                              .map(([emoji, count]) => {
+                                const reactedByMe = hasUserReacted(r, emoji);
+                                const stickerReaction = parseStickerReactionKey(emoji);
+                                const label = stickerReaction
+                                  ? stickerReaction.caption || stickerReaction.title
+                                  : emoji;
+                                return (
+                                  <Tooltip
+                                    key={emoji}
+                                    title={
+                                      reactedByMe
+                                        ? `Bạn đã thả ${label} · Nhấn để gỡ cảm xúc`
+                                        : `Nhấn để thả cùng ${label}`
+                                    }
+                                  >
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleReaction(activeThreadMessage.id, emoji, r.id)}
+                                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10.5px] font-bold cursor-pointer tabular-nums transition-all hover:scale-105"
+                                      style={{
+                                        background: reactedByMe ? 'rgba(212, 168, 75, 0.16)' : surfaceRaised,
+                                        border: `1px solid ${reactedByMe ? 'rgba(212, 168, 75, 0.55)' : borderColor}`,
+                                        color: reactedByMe ? '#d4a84b' : token.colorText,
+                                      }}
+                                    >
+                                      {stickerReaction ? (
+                                        <MosChatStickerVisual sticker={stickerReaction} size="reaction" />
+                                      ) : (
+                                        <span>{emoji}</span>
+                                      )}
+                                      <span>{count}</span>
+                                    </button>
+                                  </Tooltip>
+                                );
+                              })}
+                          </div>
+                        )}
+
                         {/* Reply Hover Action Toolbar */}
                         <div
                           className={`${
-                            openMovePopoverKey === `reply:${activeThreadMessage.id}:${r.id}`
+                            openMovePopoverKey === `reply:${activeThreadMessage.id}:${r.id}` ||
+                            openStickerPopoverKey === `reply:${activeThreadMessage.id}:${r.id}`
                               ? 'opacity-100 pointer-events-auto ring-1 ring-amber-500/50'
                               : 'opacity-0'
                           } group-hover:opacity-100 transition-opacity absolute -top-3.5 right-1 flex items-center gap-0.5 px-1 py-0.5 rounded-full shadow-sm`}
                           style={{ background: surfaceRaised, border: `1px solid ${borderStrong}` }}
                         >
+                          {!r.isDeleted && (
+                            <>
+                              {GOOGLE_CHAT_QUICK_EMOJIS.slice(0, 3).map((emoji) => {
+                                const reactedByMe = hasUserReacted(r, emoji);
+                                return (
+                                  <Tooltip
+                                    key={emoji}
+                                    title={reactedByMe ? `Đã thả ${emoji} · Nhấn để gỡ` : `Thả nhanh ${emoji}`}
+                                  >
+                                    <button
+                                      type="button"
+                                      aria-label={reactedByMe ? `Gỡ cảm xúc ${emoji}` : `Thả nhanh ${emoji}`}
+                                      onClick={() => handleToggleReaction(activeThreadMessage.id, emoji, r.id)}
+                                      className="w-5 h-5 rounded-full inline-flex items-center justify-center text-[11px] hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-transform hover:scale-110"
+                                      style={{
+                                        background: reactedByMe ? 'rgba(212, 168, 75, 0.22)' : 'transparent',
+                                        boxShadow: reactedByMe ? 'inset 0 0 0 1px rgba(212, 168, 75, 0.55)' : 'none',
+                                      }}
+                                    >
+                                      {emoji}
+                                    </button>
+                                  </Tooltip>
+                                );
+                              })}
+
+                              <Popover
+                                trigger="click"
+                                placement={isReplyMine ? 'topRight' : 'topLeft'}
+                                open={openStickerPopoverKey === `reply:${activeThreadMessage.id}:${r.id}`}
+                                onOpenChange={(vis) =>
+                                  setOpenStickerPopoverKey(vis ? `reply:${activeThreadMessage.id}:${r.id}` : null)
+                                }
+                                content={renderReactionPickerContent(activeThreadMessage.id, r, r.id)}
+                              >
+                                <Tooltip title="Chọn biểu tượng cảm xúc">
+                                  <button
+                                    type="button"
+                                    aria-label="Chọn biểu tượng cảm xúc"
+                                    className="w-5 h-5 rounded-full inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+                                    style={{ color: token.colorTextSecondary }}
+                                  >
+                                    <SmilePlus size={11} />
+                                  </button>
+                                </Tooltip>
+                              </Popover>
+
+                              <span className="w-px h-3 mx-0.5" style={{ background: borderStrong }} />
+                            </>
+                          )}
                           {(isReplyMine || canManageChatThreads) && !r.isDeleted && !r.isMissionMilestone && (
                             <Popover
                               trigger="click"
@@ -12843,7 +13042,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             >
               <div className="font-extrabold text-[13px]">{negotiatingTask.title}</div>
               <div className="text-[11px] text-slate-400 flex items-center gap-2 flex-wrap">
-                <span>Giao bởi: <strong>{negotiatingTask.creatorName || 'Hệ thống'}</strong></span>
+                <span>
+                  Giao bởi: <strong>{negotiatingTask.creatorName || 'Hệ thống'}</strong>
+                </span>
                 <span>·</span>
                 <span>
                   Hạn hiện tại:{' '}
@@ -12922,7 +13123,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           </div>
 
           <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-400 leading-relaxed text-left">
-            💡 Khi gửi đề xuất, người giao việc ({negotiatingTask?.creatorName || 'người tạo'}) sẽ nhận được thông báo để xét duyệt hoặc phản hồi trao đổi.
+            💡 Khi gửi đề xuất, người giao việc ({negotiatingTask?.creatorName || 'người tạo'}) sẽ nhận được thông báo
+            để xét duyệt hoặc phản hồi trao đổi.
           </div>
         </div>
       </Modal>

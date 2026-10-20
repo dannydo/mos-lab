@@ -125,7 +125,8 @@ export const chatApi = {
     reactToMessage: async (
       messageId: string,
       conversationId: string,
-      emoji: string
+      emoji: string,
+      replyId?: string
     ): Promise<{
       success: boolean;
       reactions: Record<string, number>;
@@ -134,6 +135,7 @@ export const chatApi = {
       const res = await api.post(`/chat/messages/${encodeURIComponent(messageId)}/reaction`, {
         conversationId,
         emoji,
+        replyId,
       });
       invalidateApiGetCache(['/chat/bootstrap']);
       return res.data;
