@@ -25,6 +25,7 @@ import type {
   SafeAny,
   TogglePinConversationResponse,
   UpdateMosChatAccessConfigRequest,
+  UpdateMosChatNicknameRequest,
   UpdateMosChatTaskRequest,
   UploadMosChatImageRequest,
   UploadMosChatImageResponse,
@@ -189,9 +190,7 @@ export const chatApi = {
       invalidateApiGetCache(['/chat/bootstrap']);
       return res.data;
     },
-    deleteTask: async (
-      taskId: string
-    ): Promise<DeleteMosChatTaskResponse> => {
+    deleteTask: async (taskId: string): Promise<DeleteMosChatTaskResponse> => {
       const res = await api.delete(`/chat/tasks/${encodeURIComponent(taskId)}`);
       invalidateApiGetCache(['/chat/bootstrap']);
       return res.data;
@@ -219,6 +218,18 @@ export const chatApi = {
       const res = await api.delete(
         `/chat/conversations/${encodeURIComponent(conversationId)}/members/${encodeURIComponent(String(staffId))}`
       );
+      invalidateApiGetCache(['/chat/bootstrap']);
+      return res.data;
+    },
+    updateNickname: async (
+      conversationId: string,
+      payload: UpdateMosChatNicknameRequest
+    ): Promise<{
+      success: boolean;
+      conversation: MosChatConversation;
+      memberNicknames: Record<string, string>;
+    }> => {
+      const res = await api.put(`/chat/conversations/${encodeURIComponent(conversationId)}/nickname`, payload);
       invalidateApiGetCache(['/chat/bootstrap']);
       return res.data;
     },

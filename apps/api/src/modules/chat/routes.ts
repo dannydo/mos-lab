@@ -29,6 +29,7 @@ import {
   RestoreMosChatMessageRequest,
   SafeAny,
   UpdateMosChatAccessConfigRequest,
+  UpdateMosChatNicknameRequest,
   UpdateMosChatTaskRequest,
   UploadMosChatImageRequest,
   UploadMosChatImageResponse,
@@ -3658,6 +3659,114 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
 
       await saveConversations(fastify, conversations);
       return { success: true, conversation: conv };
+    }
+  );
+
+  // PUT /api/chat/conversations/:id/nickname (Change member's nickname in a group/space)
+  // - Any user can change their own nickname in any space they belong to.
+  // - Danny / Super Admin / Admin can change anyone's nickname in the space.
+  fastify.put(
+    '/chat/conversations/:id/nickname',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      const user = request.user as JwtUserPayload;
+      const { id } = request.params as { id: string };
+      const body = (request.body || {}) as UpdateMosChatNicknameRequest;
+
+      const [{ conversations }, staffDirectory] = await Promise.all([
+        loadChatState(fastify),
+        loadStaffDirectoryCached(fastify),
+      ]);
+      const conv = conversations.find((c) => c.id === id);
+      if (!conv) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy cuộc hội thoại' });
+      }
+
+      if (!canUserAccessConversation(conv, user, staffDirectory)) {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền truy cập không gian này.' });
+      }
+
+      const myStaffId = resolveUserStaffId(user, staffDirectory);
+      const targetStaffId = body.targetStaffId ? Number(body.targetStaffId) : myStaffId;
+
+      if (!targetStaffId) {
+        return reply
+          .status(400)
+          .send({ error: 'Bad Request', message: 'Không xác định được nhân sự cần đổi biệt danh' });
+      }
+
+      const isSelf = targetStaffId === myStaffId;
+      const isAdmin = isDannyOrSuperAdminUser(user);
+
+      if (!isSelf && !isAdmin) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message:
+            'Bạn chỉ có thể đổi biệt danh của chính mình. Chỉ Quản trị viên mới được đổi biệt danh cho người khác.',
+        });
+      }
+
+      const targetStaff = staffDirectory.find((s) => s.id === targetStaffId);
+      const targetName = targetStaff?.displayName || targetStaff?.username || `ID #${targetStaffId}`;
+      const operatorStaff = staffDirectory.find((s) => s.id === myStaffId);
+      const operatorName = operatorStaff?.displayName || user.displayName || user.username || 'Thành viên';
+
+      conv.memberNicknames = conv.memberNicknames || {};
+      const rawNick = typeof body.nickname === 'string' ? body.nickname.trim() : '';
+
+      const now = new Date();
+      if (!rawNick) {
+        // Gỡ bỏ biệt danh
+        delete conv.memberNicknames[String(targetStaffId)];
+        conv.messages.push({
+          id: `msg-${crypto.randomUUID().slice(0, 8)}`,
+          conversationId: conv.id,
+          senderId: 'system',
+          senderName: 'Hệ thống mOS',
+          senderRole: 'Hệ thống',
+          senderAvatar: '🏷️',
+          roleColor: '#3b82f6',
+          text: isSelf
+            ? `${operatorName} đã gỡ biệt danh của mình trong nhóm.`
+            : `${operatorName} đã gỡ biệt danh của ${targetName} trong nhóm.`,
+          timeLabel: formatTimeLabel(now),
+          createdAt: now.toISOString(),
+          reactions: {},
+          thread: [],
+          isSystemReminder: true,
+        });
+      } else {
+        // Đặt biệt danh mới (tối đa 40 ký tự)
+        const sanitizedNick = rawNick.slice(0, 40);
+        conv.memberNicknames[String(targetStaffId)] = sanitizedNick;
+        conv.messages.push({
+          id: `msg-${crypto.randomUUID().slice(0, 8)}`,
+          conversationId: conv.id,
+          senderId: 'system',
+          senderName: 'Hệ thống mOS',
+          senderRole: 'Hệ thống',
+          senderAvatar: '🏷️',
+          roleColor: '#3b82f6',
+          text: isSelf
+            ? `${operatorName} đã đổi biệt danh của mình thành "${sanitizedNick}".`
+            : `${operatorName} đã đặt biệt danh cho ${targetName} là "${sanitizedNick}".`,
+          timeLabel: formatTimeLabel(now),
+          createdAt: now.toISOString(),
+          reactions: {},
+          thread: [],
+          isSystemReminder: true,
+        });
+      }
+      conv.updatedAt = now.toISOString();
+
+      await saveConversations(fastify, conversations);
+      return {
+        success: true,
+        conversation: conv,
+        memberNicknames: conv.memberNicknames,
+      };
     }
   );
 

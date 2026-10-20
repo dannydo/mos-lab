@@ -1315,6 +1315,16 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     highlightedIndex: 0,
   });
 
+  // Nickname Editing State (Per-Space Nicknames)
+  const [editingNicknameTarget, setEditingNicknameTarget] = useState<{
+    staffId: number;
+    displayName: string;
+    currentNickname: string;
+    isMe: boolean;
+  } | null>(null);
+  const [nicknameInputVal, setNicknameInputVal] = useState('');
+  const [isUpdatingNickname, setIsUpdatingNickname] = useState(false);
+
   // Mini Docked Pop-out Windows (Bottom right like Gmail)
   const [dockedConvIds, setDockedConvIds] = useState<string[]>([]);
   const [collapsedDockIds, setCollapsedDockIds] = useState<Record<string, boolean>>({});
@@ -4542,6 +4552,74 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     }
   };
 
+  const getMemberNickname = useCallback(
+    (staffId: number | string | undefined | null): string | undefined => {
+      if (!staffId || !activeConversation || activeConversation.type !== 'space') return undefined;
+      return activeConversation.memberNicknames?.[String(staffId)]?.trim() || undefined;
+    },
+    [activeConversation]
+  );
+
+  const handleOpenNicknameModal = useCallback(
+    (targetStaffId: number) => {
+      if (!activeConversation || activeConversation.type !== 'space') return;
+      const targetStaff = staffDirectory.find((s) => s.id === targetStaffId);
+      const myId = Number(currentUserStaffMember.id) || Number(currentUser?.id) || 0;
+      const isMe = targetStaffId === myId;
+      const currentNick = activeConversation.memberNicknames?.[String(targetStaffId)] || '';
+      const name = targetStaff?.displayName || targetStaff?.username || (isMe ? 'Bạn' : `Nhân sự #${targetStaffId}`);
+
+      setEditingNicknameTarget({
+        staffId: targetStaffId,
+        displayName: name,
+        currentNickname: currentNick,
+        isMe,
+      });
+      setNicknameInputVal(currentNick);
+    },
+    [activeConversation, currentUserStaffMember.id, currentUser?.id, staffDirectory]
+  );
+
+  const handleSaveNickname = useCallback(
+    async (overrideValue?: string) => {
+      if (!activeConversation || !editingNicknameTarget) return;
+      const newNick = (overrideValue !== undefined ? overrideValue : nicknameInputVal).trim();
+      setIsUpdatingNickname(true);
+      try {
+        const res = await apiClient.chat.updateNickname(activeConversation.id, {
+          targetStaffId: editingNicknameTarget.staffId,
+          nickname: newNick,
+        });
+
+        if (res.success) {
+          const updatedConv = res.conversation;
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === activeConversation.id
+                ? {
+                    ...c,
+                    memberNicknames: res.memberNicknames,
+                    messages: updatedConv?.messages || c.messages,
+                    updatedAt: updatedConv?.updatedAt || new Date().toISOString(),
+                  }
+                : c
+            )
+          );
+
+          notifyLivePeers();
+          antdMessage.success(newNick ? `Đã đổi biệt danh thành "${newNick}"!` : 'Đã gỡ biệt danh, trở về tên thật!');
+          setEditingNicknameTarget(null);
+          setNicknameInputVal('');
+        }
+      } catch (err: SafeAny) {
+        antdMessage.error(err?.response?.data?.message || err?.message || 'Không thể lưu biệt danh');
+      } finally {
+        setIsUpdatingNickname(false);
+      }
+    },
+    [activeConversation, editingNicknameTarget, nicknameInputVal, notifyLivePeers]
+  );
+
   const activeThreadMessage = useMemo(() => {
     if (!activeConversation) return null;
     return (
@@ -5662,6 +5740,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           const cleanTag = fullMatch.slice(1).trim().toLowerCase();
           const isAi = cleanTag === 'ai' || cleanTag.includes('copilot');
           const isAll = cleanTag === 'all' || cleanTag === 'mọi người' || cleanTag === 'moi nguoi';
+          const myId = Number(currentUserStaffMember.id) || Number(currentUser?.id) || 0;
+          const myNick = activeConversation?.memberNicknames?.[String(myId)];
+          const myNickNorm = myNick ? removeVietnameseTones(myNick.toLowerCase()) : '';
           const myName = removeVietnameseTones(
             (
               currentUserStaffMember.displayName ||
@@ -5675,6 +5756,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           const isMentioningMe = Boolean(
             (myName && (tagNorm.includes(myName) || myName.includes(tagNorm))) ||
             (myUname && cleanTag.includes(myUname)) ||
+            (myNickNorm && (tagNorm.includes(myNickNorm) || myNickNorm.includes(tagNorm))) ||
             isAll
           );
 
@@ -6366,6 +6448,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     type: 'special' | 'staff';
     tagText: string;
     displayName: string;
+    realName?: string;
+    nickname?: string;
     username?: string;
     role?: string;
     avatarUrl?: string | null;
@@ -6436,17 +6520,27 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     for (const s of roomStaff) {
       if (!s || !s.id) continue;
       if (list.some((item) => item.id === `staff-${s.id}`)) continue;
-      const name = s.displayName || s.username || `Nhân sự #${s.id}`;
+      const realName = s.displayName || s.username || `Nhân sự #${s.id}`;
       const badge = getRoleBadgeInfo(s.role);
+      const nick =
+        activeConversation?.type === 'space' && activeConversation.memberNicknames
+          ? activeConversation.memberNicknames[String(s.id)]?.trim()
+          : undefined;
+
+      const tagText = nick || realName;
+      const displayName = nick ? `${nick} (${realName})` : realName;
+
       list.push({
         id: `staff-${s.id}`,
         type: 'staff',
-        tagText: name,
-        displayName: name,
+        tagText,
+        displayName,
+        realName,
+        nickname: nick,
         username: s.username,
         role: badge.label,
         avatarUrl: s.avatarUrl || undefined,
-        avatarText: getAvatarInitials(name, s.username),
+        avatarText: getAvatarInitials(tagText, s.username),
         color: badge.color,
         isOnline: s.isOnline,
       });
@@ -6463,19 +6557,39 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     staffDirectory,
   ]);
 
-  // Bộ lọc danh sách thành viên khớp với chuỗi gõ sau dấu @
+  // Bộ lọc danh sách thành viên khớp với chuỗi gõ sau dấu @ (Hỗ trợ tiếng Việt không dấu, họ tên thật, username và biệt danh)
   const filteredMentions = useMemo(() => {
     if (!mentionState.open) return [];
-    const q = removeVietnameseTones(mentionState.query.trim().toLowerCase());
+    const rawQ = mentionState.query.trim().toLowerCase();
+    const q = removeVietnameseTones(rawQ);
     if (!q) return mentionCandidates.slice(0, 10);
+
+    const qTokens = q.split(/\s+/).filter(Boolean);
 
     return mentionCandidates
       .filter((item) => {
-        const nameNorm = removeVietnameseTones(item.displayName.toLowerCase());
         const tagNorm = removeVietnameseTones(item.tagText.toLowerCase());
+        const nameNorm = removeVietnameseTones(item.displayName.toLowerCase());
+        const realNorm = item.realName ? removeVietnameseTones(item.realName.toLowerCase()) : '';
+        const nickNorm = item.nickname ? removeVietnameseTones(item.nickname.toLowerCase()) : '';
         const unameNorm = item.username ? removeVietnameseTones(item.username.toLowerCase()) : '';
         const roleNorm = item.role ? removeVietnameseTones(item.role.toLowerCase()) : '';
-        return nameNorm.includes(q) || tagNorm.includes(q) || unameNorm.includes(q) || roleNorm.includes(q);
+
+        // Khớp toàn chuỗi
+        if (
+          tagNorm.includes(q) ||
+          nameNorm.includes(q) ||
+          realNorm.includes(q) ||
+          nickNorm.includes(q) ||
+          unameNorm.includes(q) ||
+          roleNorm.includes(q)
+        ) {
+          return true;
+        }
+
+        // Khớp từng từ (token) không phân biệt thứ tự (VD: "danh do" khớp "do danh")
+        const combined = `${tagNorm} ${nameNorm} ${realNorm} ${nickNorm} ${unameNorm} ${roleNorm}`;
+        return qTokens.length > 0 && qTokens.every((tok) => combined.includes(tok));
       })
       .slice(0, 10);
   }, [mentionState.open, mentionState.query, mentionCandidates]);
@@ -6697,8 +6811,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
                   {/* Tên & Chức vụ */}
                   <div className="flex-1 min-w-0 text-left">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-[13px] truncate">{item.displayName}</span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {item.nickname ? (
+                        <>
+                          <span className="font-extrabold text-[13px] text-emerald-400 truncate">{item.nickname}</span>
+                          <span className="text-[11px] text-slate-400 truncate font-normal">({item.realName})</span>
+                        </>
+                      ) : (
+                        <span className="font-semibold text-[13px] truncate">{item.displayName}</span>
+                      )}
                       {item.role && (
                         <span
                           className="px-1.5 py-0.2 rounded text-[10px] font-medium shrink-0"
@@ -8663,6 +8784,35 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         </button>
                       </Tooltip>
                     )}
+                    {activeConversation?.type === 'space' &&
+                      (() => {
+                        const myId = Number(currentUserStaffMember.id) || Number(currentUser?.id) || 0;
+                        const myNick = activeConversation.memberNicknames?.[String(myId)];
+                        return (
+                          <Tooltip
+                            title={
+                              myNick
+                                ? `Biệt danh của bạn trong nhóm: "${myNick}" (Bấm để đổi)`
+                                : 'Đặt biệt danh của bạn trong nhóm này'
+                            }
+                          >
+                            <button
+                              type="button"
+                              aria-label="Đổi biệt danh trong nhóm"
+                              onClick={() => handleOpenNicknameModal(myId)}
+                              className="inline-flex items-center gap-1 h-6 px-2 rounded-full transition-all cursor-pointer hover:opacity-90 ml-1 shrink-0 text-[11px]"
+                              style={{
+                                background: myNick ? 'rgba(16, 185, 129, 0.15)' : 'rgba(212, 168, 75, 0.14)',
+                                color: myNick ? '#10b981' : '#d4a84b',
+                                border: `1px solid ${myNick ? 'rgba(16, 185, 129, 0.3)' : 'rgba(212, 168, 75, 0.25)'}`,
+                              }}
+                            >
+                              <Pencil size={10} />
+                              <span className="font-bold max-w-[100px] truncate">{myNick || 'Đặt biệt danh'}</span>
+                            </button>
+                          </Tooltip>
+                        );
+                      })()}
                   </div>
                 </>
               )}
@@ -9041,7 +9191,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             }}
                           >
                             <CornerDownRight size={11} />
-                            <span>Thả để gộp vào luồng trả lời của {m.senderName}</span>
+                            <span>
+                              Thả để gộp vào luồng trả lời của {getMemberNickname(m.senderId) || m.senderName}
+                            </span>
                           </div>
                         )}
                         {isCont ? (
@@ -9079,7 +9231,20 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             <div
                               className={`flex items-center gap-1.5 mb-1 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
                             >
-                              <span className="text-[12.5px] font-bold">{m.senderName}</span>
+                              {(() => {
+                                const nick = getMemberNickname(m.senderId);
+                                if (nick && nick !== m.senderName) {
+                                  return (
+                                    <span className="flex items-center gap-1">
+                                      <span className="text-[12.5px] font-bold text-emerald-500 dark:text-emerald-400">
+                                        {nick}
+                                      </span>
+                                      <span className="text-[11px] text-slate-400 font-normal">({m.senderName})</span>
+                                    </span>
+                                  );
+                                }
+                                return <span className="text-[12.5px] font-bold">{m.senderName}</span>;
+                              })()}
                               {isMine && (
                                 <span
                                   className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full text-[9px] font-extrabold"
@@ -11015,7 +11180,20 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             isReplyMine ? 'justify-end' : 'justify-start'
                           }`}
                         >
-                          <span style={{ color: isReplyMine ? '#d4a84b' : token.colorText }}>{r.senderName}</span>
+                          {(() => {
+                            const nick = getMemberNickname(r.senderId);
+                            if (nick && nick !== r.senderName) {
+                              return (
+                                <span className="inline-flex items-center gap-1">
+                                  <span style={{ color: isReplyMine ? '#d4a84b' : '#10b981' }}>{nick}</span>
+                                  <span className="text-slate-400 font-normal">({r.senderName})</span>
+                                </span>
+                              );
+                            }
+                            return (
+                              <span style={{ color: isReplyMine ? '#d4a84b' : token.colorText }}>{r.senderName}</span>
+                            );
+                          })()}
                           <span className="text-slate-400 tabular-nums">· {r.timeLabel}</span>
                           {isReplyMine &&
                             !r.isDeleted &&
@@ -12660,17 +12838,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     activeConversation?.members?.some((m) => m.id === s.id)
                 )
                 .map((m) => {
-                  const isMe = Number(m.id) === Number(currentUser?.id);
-                  const isAdm = m.role?.toLowerCase().includes('admin');
+                  const myStaffId = Number(currentUserStaffMember.id) || Number(currentUser?.id) || 0;
+                  const isMe = Number(m.id) === myStaffId;
+                  const isAdm =
+                    isDannyAccount || (currentUser?.role && currentUser.role.toLowerCase().includes('admin'));
+                  const canEditNick = isMe || isAdm;
+                  const nick = activeConversation?.memberNicknames?.[String(m.id)];
                   return (
                     <div
                       key={m.id}
-                      className="flex items-center justify-between p-2 rounded-lg border transition-colors"
+                      className="flex items-center justify-between p-2 rounded-lg border transition-colors gap-2"
                       style={{ background: surfaceRaised, borderColor }}
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         {renderUserAvatarNode({
-                          name: m.displayName || m.username,
+                          name: nick || m.displayName || m.username,
                           avatarUrl: m.avatarUrl,
                           staffId: m.id,
                           sizeClass: 'w-8 h-8',
@@ -12678,43 +12860,163 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           bgStyle: isAdm ? '#a855f7' : '#3b82f6',
                           onlineDot: Boolean(m.isOnline),
                         })}
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-[12.5px] truncate">{m.displayName || m.username}</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {nick ? (
+                              <>
+                                <span className="font-extrabold text-[12.5px] text-emerald-400 truncate">{nick}</span>
+                                <span className="text-[11px] text-slate-400 truncate font-normal">
+                                  ({m.displayName || m.username})
+                                </span>
+                              </>
+                            ) : (
+                              <span className="font-bold text-[12.5px] truncate">{m.displayName || m.username}</span>
+                            )}
                             {isMe && (
                               <span className="text-[9.5px] font-extrabold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400">
                                 Bạn
                               </span>
                             )}
                           </div>
-                          <span className="text-[11px] text-slate-400">{m.role || 'Nhân sự'}</span>
+                          <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                            <span>{m.role || 'Nhân sự'}</span>
+                            {nick && <span className="text-emerald-500/80 font-medium">· Đã đặt biệt danh</span>}
+                          </div>
                         </div>
                       </div>
 
-                      {/* Remove button */}
-                      {!isMe && (
-                        <Popconfirm
-                          title="Xóa thành viên"
-                          description={`Bạn có chắc muốn xóa ${m.displayName || m.username} khỏi Không gian này?`}
-                          onConfirm={() => handleRemoveMemberFromSpace(m.id)}
-                          okText="Xóa"
-                          cancelText="Hủy"
-                          okButtonProps={{ danger: true }}
-                        >
-                          <button
-                            type="button"
-                            aria-label={`Xóa ${m.displayName || m.username} khỏi nhóm`}
-                            className="h-7 px-2 rounded-md inline-flex items-center gap-1 text-[11px] font-bold text-rose-400 hover:bg-rose-500/10 cursor-pointer transition-colors"
+                      <div className="flex items-center gap-1 shrink-0">
+                        {canEditNick && (
+                          <Tooltip
+                            title={
+                              isMe
+                                ? 'Đổi biệt danh của bạn trong Không gian này'
+                                : `Đổi biệt danh cho ${m.displayName || m.username}`
+                            }
                           >
-                            <UserMinus size={13} />
-                            <span>Xóa</span>
-                          </button>
-                        </Popconfirm>
-                      )}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenNicknameModal(m.id)}
+                              className="h-7 px-2 rounded-md inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 hover:bg-amber-500/10 cursor-pointer transition-colors"
+                            >
+                              <Pencil size={11} />
+                              <span>{nick ? 'Sửa biệt danh' : 'Đặt biệt danh'}</span>
+                            </button>
+                          </Tooltip>
+                        )}
+
+                        {/* Remove button */}
+                        {!isMe && (
+                          <Popconfirm
+                            title="Xóa thành viên"
+                            description={`Bạn có chắc muốn xóa ${m.displayName || m.username} khỏi Không gian này?`}
+                            onConfirm={() => handleRemoveMemberFromSpace(m.id)}
+                            okText="Xóa"
+                            cancelText="Hủy"
+                            okButtonProps={{ danger: true }}
+                          >
+                            <button
+                              type="button"
+                              aria-label={`Xóa ${m.displayName || m.username} khỏi nhóm`}
+                              className="h-7 px-2 rounded-md inline-flex items-center gap-1 text-[11px] font-bold text-rose-400 hover:bg-rose-500/10 cursor-pointer transition-colors"
+                            >
+                              <UserMinus size={13} />
+                              <span>Xóa</span>
+                            </button>
+                          </Popconfirm>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
             </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ================= MODAL: EDIT MEMBER NICKNAME IN GROUP (PER-SPACE NICKNAMES) ================= */}
+      <Modal
+        open={Boolean(editingNicknameTarget)}
+        zIndex={1400}
+        onCancel={() => {
+          if (!isUpdatingNickname) {
+            setEditingNicknameTarget(null);
+            setNicknameInputVal('');
+          }
+        }}
+        footer={null}
+        width={420}
+        title={
+          <div className="flex items-center gap-2">
+            <Pencil size={16} className="text-amber-500" />
+            <span className="text-[14.5px] font-extrabold">
+              {editingNicknameTarget?.isMe
+                ? 'Đổi biệt danh của bạn'
+                : `Đổi biệt danh cho ${editingNicknameTarget?.displayName || 'thành viên'}`}
+            </span>
+          </div>
+        }
+      >
+        <div className="py-2 space-y-3">
+          <div className="text-[12px] text-slate-400">
+            Biệt danh này chỉ áp dụng riêng cho Không gian{' '}
+            <strong className="text-amber-500 font-bold">#{activeConversation?.name}</strong>. Mọi người trong nhóm sẽ
+            thấy tên này và có thể tag bạn bằng biệt danh này.
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[11.5px] font-bold text-slate-300">Biệt danh trong nhóm:</label>
+            <Input
+              autoFocus
+              placeholder="Nhập biệt danh (VD: Danny Cực Chill, Bé Hoa Lash...)"
+              value={nicknameInputVal}
+              maxLength={40}
+              onChange={(e) => setNicknameInputVal(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSaveNickname();
+                }
+              }}
+              disabled={isUpdatingNickname}
+            />
+            <div className="text-[10.5px] text-slate-500 flex justify-between pt-0.5">
+              <span>Để trống và bấm Lưu nếu muốn quay lại tên thật ban đầu.</span>
+              <span className="tabular-nums">{nicknameInputVal.length}/40</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2 border-t" style={{ borderColor }}>
+            {editingNicknameTarget?.currentNickname && (
+              <button
+                type="button"
+                disabled={isUpdatingNickname}
+                onClick={() => handleSaveNickname('')}
+                className="h-8 px-3 rounded-lg text-xs font-bold text-rose-400 hover:bg-rose-500/10 cursor-pointer transition-colors mr-auto"
+              >
+                Gỡ biệt danh
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={isUpdatingNickname}
+              onClick={() => {
+                setEditingNicknameTarget(null);
+                setNicknameInputVal('');
+              }}
+              className="h-8 px-3 rounded-lg text-xs font-bold text-slate-400 hover:bg-white/5 cursor-pointer transition-colors"
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              disabled={isUpdatingNickname}
+              onClick={() => handleSaveNickname(nicknameInputVal)}
+              className="h-8 px-4 rounded-lg text-xs font-bold text-black transition-opacity disabled:opacity-50 cursor-pointer shadow-sm"
+              style={{ background: '#d4a84b' }}
+            >
+              {isUpdatingNickname ? 'Đang lưu...' : 'Lưu biệt danh'}
+            </button>
           </div>
         </div>
       </Modal>

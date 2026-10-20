@@ -208,6 +208,7 @@ export interface MosChatConversation {
   isSelf?: boolean;
   memberIds?: number[];
   members?: MosChatStaffMember[];
+  memberNicknames?: Record<string, string>; // staffId string -> nickname in this group/space
   unreadCount: number;
   unreadThreadCount?: number;
   readReceipts?: MosChatReadReceiptEntry[];
@@ -372,6 +373,11 @@ export interface AddMosChatMemberRequest {
 export interface RemoveMosChatMemberRequest {
   conversationId: string;
   staffId: number;
+}
+
+export interface UpdateMosChatNicknameRequest {
+  targetStaffId?: number;
+  nickname: string;
 }
 
 export interface UpdateMosChatTaskRequest {
