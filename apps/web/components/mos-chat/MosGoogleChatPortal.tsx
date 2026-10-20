@@ -3415,11 +3415,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     if (replyId) {
       const reply = msg.thread?.find((r) => r.id === replyId);
       if (reply) {
+        if (!isMessageFromCurrentUser(reply)) {
+          antdMessage.warning('Bạn chỉ có thể chỉnh sửa tin nhắn của chính mình');
+          return;
+        }
         setEditingMessageId(msg.id);
         setEditingReplyId(replyId);
         setEditingText(reply.text);
       }
     } else {
+      if (!isMessageFromCurrentUser(msg)) {
+        antdMessage.warning('Bạn chỉ có thể chỉnh sửa tin nhắn của chính mình');
+        return;
+      }
       setEditingMessageId(msg.id);
       setEditingReplyId(null);
       setEditingText(msg.text);
@@ -9990,8 +9998,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                 </button>
                               </Tooltip>
 
-                              {/* Edit Message Button (if author or admin, and not deleted) */}
-                              {(isMine || isDannyAccount) && !m.isDeleted && (
+                              {/* Edit Message Button (author only, and not deleted) */}
+                              {isMine && !m.isDeleted && (
                                 <Tooltip title="Chỉnh sửa tin nhắn">
                                   <button
                                     type="button"
@@ -11330,7 +11338,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               </Tooltip>
                             </Popover>
                           )}
-                          {(isReplyMine || isDannyAccount) && !r.isDeleted && (
+                          {/* Edit Reply Button (author only, and not deleted) */}
+                          {isReplyMine && !r.isDeleted && (
                             <Tooltip title="Chỉnh sửa">
                               <button
                                 type="button"

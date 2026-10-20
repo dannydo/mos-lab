@@ -423,6 +423,32 @@ export function isDannyOrSuperAdminUser(user?: JwtUserPayload): boolean {
   return uname === 'danny' || uname.includes('danny') || role === 'super_admin' || role === 'admin';
 }
 
+/**
+ * Chỉ cho phép chính tác giả của tin nhắn chỉnh sửa nội dung (Kinh Thánh mOS Điều răn UI-007 / MOS-BUG-126).
+ * Tuyệt đối không cho phép quản trị viên hoặc người dùng khác sửa đổi tin nhắn của người khác.
+ */
+export function canUserEditChatMessage(
+  targetItem: { senderId?: number | string | null; senderName?: string | null },
+  user: { id?: number | string; username?: string } | undefined,
+  staffRecord?: { displayName?: string | null; username?: string | null } | null
+): boolean {
+  if (!user) return false;
+  const isSenderIdMatch = Boolean(user.id && String(targetItem.senderId) === String(user.id));
+  const isDisplayNameMatch = Boolean(
+    staffRecord?.displayName &&
+    String(targetItem.senderName || '')
+      .trim()
+      .toLowerCase() === staffRecord.displayName.trim().toLowerCase()
+  );
+  const isUsernameMatch = Boolean(
+    user.username &&
+    String(targetItem.senderName || '')
+      .trim()
+      .toLowerCase() === String(user.username).trim().toLowerCase()
+  );
+  return isSenderIdMatch || isDisplayNameMatch || isUsernameMatch;
+}
+
 function resolveUserStaffId(user: JwtUserPayload | undefined, staffDirectory: MosChatStaffMember[]): number {
   if (!user) return 0;
   const directId = Number(user.id);
@@ -2614,13 +2640,9 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       });
       const editorName = staffRecord?.displayName || user.username || 'mOS User';
 
-      const isOwner =
-        String(targetItem.senderId) === String(user.id) ||
-        (user.id && String(targetItem.senderId) === 'me') ||
-        (staffRecord?.displayName && targetItem.senderName === staffRecord.displayName);
-      const isAdmin = isDannyOrSuperAdminUser(user);
+      const isOwner = canUserEditChatMessage(targetItem, user, staffRecord);
 
-      if (!isOwner && !isAdmin) {
+      if (!isOwner) {
         return reply.status(403).send({
           error: 'Forbidden',
           message: 'Bạn chỉ có thể chỉnh sửa tin nhắn của chính mình.',
