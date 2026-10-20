@@ -411,7 +411,7 @@ function matchesStaffGroupBackend(member: MosChatStaffMember, groupKey: string):
   }
 }
 
-function isDannyOrSuperAdminUser(user?: JwtUserPayload): boolean {
+export function isDannyOrSuperAdminUser(user?: JwtUserPayload): boolean {
   if (!user) return false;
   const uname = String(user.username || '')
     .toLowerCase()
@@ -512,12 +512,16 @@ function resolveDmParticipantIds(conv: MosChatConversation, staffDirectory: MosC
 }
 
 /**
- * Strict Direct Message Privacy Invariant:
+ * Strict Conversation Privacy Invariant:
  * - A 1-1 Direct Message (`type === 'dm'`) is ONLY visible to the 2 people in that DM (`dmIds.includes(myStaffId)`).
  * - A Self-Chat (`isSelf`) is ONLY visible to that 1 owner.
- * - No other user (not even another Admin) can see someone else's Direct Message.
+ * - No other user can see someone else's Direct Message.
+ * - A Space with explicit members (`Array.isArray(conv.memberIds) && conv.memberIds.length > 0`) is ONLY
+ *   visible and accessible to its members or Danny/SuperAdmin. Non-members cannot see it in the sidebar,
+ *   cannot fetch it, cannot read/post messages, and cannot see read receipts.
+ * - Public spaces (no memberIds specified) remain open to all active staff.
  */
-function canUserAccessConversation(
+export function canUserAccessConversation(
   conv: MosChatConversation,
   user: JwtUserPayload | undefined,
   staffDirectory: MosChatStaffMember[]
@@ -531,6 +535,16 @@ function canUserAccessConversation(
     }
     const dmIds = resolveDmParticipantIds(conv, staffDirectory);
     return myStaffId > 0 && dmIds.length === 2 && dmIds.includes(myStaffId);
+  }
+  if (conv.type === 'space') {
+    if (isDannyOrSuperAdminUser(user)) return true;
+    if (Array.isArray(conv.memberIds) && conv.memberIds.length > 0) {
+      const memberNums = conv.memberIds.map(Number).filter((n) => Number.isFinite(n) && n > 0);
+      if (memberNums.length > 0) {
+        return myStaffId > 0 && memberNums.includes(myStaffId);
+      }
+    }
+    return true;
   }
   return true;
 }
@@ -590,6 +604,24 @@ export function resolveConversationParticipantStaffIds(
   if (conv.type === 'dm') {
     return resolveDmParticipantIds(conv, staffDirectory);
   }
+
+  const explicitMemberNums =
+    Array.isArray(conv.memberIds) && conv.memberIds.length > 0
+      ? conv.memberIds.map(Number).filter((n) => Number.isFinite(n) && n > 0)
+      : [];
+
+  // For a restricted space with specific members (like Core Team):
+  // ONLY designated members of that space (plus any sender/author) are valid participants for read receipts.
+  // Non-members who might have had residual read counts in userPrefs MUST NOT be counted or shown!
+  if (conv.type === 'space' && explicitMemberNums.length > 0) {
+    const set = new Set<number>(explicitMemberNums);
+    for (const msg of conv.messages || []) {
+      const sNum = Number(msg.senderId);
+      if (Number.isFinite(sNum) && sNum > 0) set.add(sNum);
+    }
+    return Array.from(set);
+  }
+
   const set = new Set<number>();
   if (Array.isArray(conv.memberIds)) {
     for (const id of conv.memberIds) {
@@ -3470,10 +3502,17 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu ID nhân sự' });
       }
 
-      const { conversations } = await loadChatState(fastify);
+      const [{ conversations }, staffDirectory] = await Promise.all([
+        loadChatState(fastify),
+        loadStaffDirectoryCached(fastify),
+      ]);
       const conv = conversations.find((c) => c.id === id);
       if (!conv) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy cuộc hội thoại' });
+      }
+
+      if (!canUserAccessConversation(conv, user, staffDirectory)) {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền truy cập không gian này.' });
       }
 
       if (conv.type !== 'space') {
@@ -3564,10 +3603,17 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         return reply.status(400).send({ error: 'Bad Request', message: 'ID nhân sự không hợp lệ' });
       }
 
-      const { conversations } = await loadChatState(fastify);
+      const [{ conversations }, staffDirectory] = await Promise.all([
+        loadChatState(fastify),
+        loadStaffDirectoryCached(fastify),
+      ]);
       const conv = conversations.find((c) => c.id === id);
       if (!conv) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy cuộc hội thoại' });
+      }
+
+      if (!canUserAccessConversation(conv, user, staffDirectory)) {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền truy cập không gian này.' });
       }
 
       if (conv.type !== 'space') {

@@ -1907,35 +1907,51 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   ]);
 
   /**
-   * Strict Direct Message Privacy Guard:
+   * Strict Conversation Privacy Guard:
    * - A 1-1 Direct Message (`type === 'dm'`) is ONLY visible to the 2 participants (`memberIds.includes(myStaffId)`).
    * - A Self-Chat (`isSelf`) is ONLY visible to its single owner.
-   * - Other users are strictly prevented from seeing someone else's Direct Message.
+   * - A Restricted Space with specific memberIds (`conv.memberIds.length > 0`) is ONLY visible to its members or Danny/SuperAdmin.
+   * - Public spaces remain visible to all users.
    */
   const isConversationVisibleToCurrentUser = useCallback(
     (conv: MosChatConversation): boolean => {
-      if (conv.type !== 'dm') return true;
       if (conv.id === AI_COPILOT_CONV_ID) return canUseAiCopilot;
       const myStaffId = Number(currentUserStaffMember.id) || Number(currentUser?.id) || 0;
       if (myStaffId <= 0) return false;
       const convIdStr = String(conv.id || '');
       if (convIdStr === 'dm-tuyetnhi' || convIdStr === 'dm-hamy') return false;
-      if (conv.isSelf || convIdStr.startsWith('dm-self-')) {
-        return Number(conv.participantStaffId) === myStaffId || convIdStr === `dm-self-${myStaffId}`;
+
+      if (conv.type === 'dm') {
+        if (conv.isSelf || convIdStr.startsWith('dm-self-')) {
+          return Number(conv.participantStaffId) === myStaffId || convIdStr === `dm-self-${myStaffId}`;
+        }
+        if (Array.isArray(conv.memberIds) && conv.memberIds.length > 0) {
+          const nums = conv.memberIds.map(Number).filter((n) => Number.isFinite(n) && n > 0);
+          return nums.length === 2 && nums.includes(myStaffId);
+        }
+        const pairMatch = convIdStr.match(/^dm-pair-(\d+)-(\d+)$/);
+        if (pairMatch) {
+          const a = Number(pairMatch[1]);
+          const b = Number(pairMatch[2]);
+          return a === myStaffId || b === myStaffId;
+        }
+        return Number(conv.participantStaffId) === myStaffId;
       }
-      if (Array.isArray(conv.memberIds) && conv.memberIds.length > 0) {
-        const nums = conv.memberIds.map(Number).filter((n) => Number.isFinite(n) && n > 0);
-        return nums.length === 2 && nums.includes(myStaffId);
+
+      if (conv.type === 'space') {
+        if (isDannyAccount) return true;
+        if (Array.isArray(conv.memberIds) && conv.memberIds.length > 0) {
+          const nums = conv.memberIds.map(Number).filter((n) => Number.isFinite(n) && n > 0);
+          if (nums.length > 0) {
+            return nums.includes(myStaffId);
+          }
+        }
+        return true;
       }
-      const pairMatch = convIdStr.match(/^dm-pair-(\d+)-(\d+)$/);
-      if (pairMatch) {
-        const a = Number(pairMatch[1]);
-        const b = Number(pairMatch[2]);
-        return a === myStaffId || b === myStaffId;
-      }
-      return Number(conv.participantStaffId) === myStaffId;
+
+      return true;
     },
-    [canUseAiCopilot, currentUserStaffMember.id, currentUser?.id]
+    [canUseAiCopilot, currentUserStaffMember.id, currentUser?.id, isDannyAccount]
   );
 
   const visibleConversations = useMemo(
