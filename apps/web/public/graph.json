@@ -2752,6 +2752,60 @@
       }
     },
     {
+      "id": "prisma:crm:CrmCashAccount",
+      "type": "PrismaModel",
+      "label": "crm.CrmCashAccount",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmCashAccount",
+        "tableName": "crm_cash_accounts",
+        "fieldCount": 14,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmCashFlowEntry",
+      "type": "PrismaModel",
+      "label": "crm.CrmCashFlowEntry",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmCashFlowEntry",
+        "tableName": "crm_cash_flow_entries",
+        "fieldCount": 28,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmCashFlowAudit",
+      "type": "PrismaModel",
+      "label": "crm.CrmCashFlowAudit",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmCashFlowAudit",
+        "tableName": "crm_cash_flow_audits",
+        "fieldCount": 8,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
       "id": "prisma:legacy:client_store_language",
       "type": "PrismaModel",
       "label": "legacy.client_store_language",
@@ -7390,6 +7444,132 @@
       }
     },
     {
+      "id": "route:GET:/api/cash-flow/forecast",
+      "type": "FastifyRoute",
+      "label": "GET /api/cash-flow/forecast",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/cash-flow/forecast",
+        "module": "cash-flow",
+        "handler": "preHandler",
+        "line": 10
+      }
+    },
+    {
+      "id": "route:GET:/api/cash-flow/entries",
+      "type": "FastifyRoute",
+      "label": "GET /api/cash-flow/entries",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/cash-flow/entries",
+        "module": "cash-flow",
+        "handler": "preHandler",
+        "line": 52
+      }
+    },
+    {
+      "id": "route:POST:/api/cash-flow/entries",
+      "type": "FastifyRoute",
+      "label": "POST /api/cash-flow/entries",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/cash-flow/entries",
+        "module": "cash-flow",
+        "handler": "preHandler",
+        "line": 93
+      }
+    },
+    {
+      "id": "route:PUT:/api/cash-flow/entries/:id",
+      "type": "FastifyRoute",
+      "label": "PUT /api/cash-flow/entries/:id",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "metadata": {
+        "method": "PUT",
+        "path": "/api/cash-flow/entries/:id",
+        "module": "cash-flow",
+        "handler": "preHandler",
+        "line": 134
+      }
+    },
+    {
+      "id": "route:DELETE:/api/cash-flow/entries/:id",
+      "type": "FastifyRoute",
+      "label": "DELETE /api/cash-flow/entries/:id",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "metadata": {
+        "method": "DELETE",
+        "path": "/api/cash-flow/entries/:id",
+        "module": "cash-flow",
+        "handler": "preHandler",
+        "line": 173
+      }
+    },
+    {
+      "id": "route:GET:/api/cash-flow/accounts",
+      "type": "FastifyRoute",
+      "label": "GET /api/cash-flow/accounts",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/cash-flow/accounts",
+        "module": "cash-flow",
+        "handler": "preHandler",
+        "line": 211
+      }
+    },
+    {
+      "id": "route:PUT:/api/cash-flow/accounts/batch-balance",
+      "type": "FastifyRoute",
+      "label": "PUT /api/cash-flow/accounts/batch-balance",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "metadata": {
+        "method": "PUT",
+        "path": "/api/cash-flow/accounts/batch-balance",
+        "module": "cash-flow",
+        "handler": "preHandler",
+        "line": 237
+      }
+    },
+    {
+      "id": "route:PUT:/api/cash-flow/accounts/:id",
+      "type": "FastifyRoute",
+      "label": "PUT /api/cash-flow/accounts/:id",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "metadata": {
+        "method": "PUT",
+        "path": "/api/cash-flow/accounts/:id",
+        "module": "cash-flow",
+        "handler": "preHandler",
+        "line": 273
+      }
+    },
+    {
+      "id": "route:GET:/api/cash-flow/export",
+      "type": "FastifyRoute",
+      "label": "GET /api/cash-flow/export",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/cash-flow/export",
+        "module": "cash-flow",
+        "handler": "preHandler",
+        "line": 306
+      }
+    },
+    {
       "id": "route:GET:/api/catalog/groups",
       "type": "FastifyRoute",
       "label": "GET /api/catalog/groups",
@@ -7806,7 +7986,7 @@
         "path": "/api/chat/bootstrap",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1847
+        "line": 1874
       }
     },
     {
@@ -7820,7 +8000,7 @@
         "path": "/api/chat/user-prefs",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1917
+        "line": 1944
       }
     },
     {
@@ -7834,7 +8014,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1949
+        "line": 1976
       }
     },
     {
@@ -7848,7 +8028,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1975
+        "line": 2002
       }
     },
     {
@@ -7862,7 +8042,7 @@
         "path": "/api/chat/upload-image",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2024
+        "line": 2051
       }
     },
     {
@@ -7876,7 +8056,7 @@
         "path": "/api/chat/media/:fileName",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2070
+        "line": 2097
       }
     },
     {
@@ -7890,7 +8070,7 @@
         "path": "/api/chat/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2095
+        "line": 2122
       }
     },
     {
@@ -7904,7 +8084,7 @@
         "path": "/api/chat/threads",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2193
+        "line": 2220
       }
     },
     {
@@ -7918,7 +8098,7 @@
         "path": "/api/chat/threads/move",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2279
+        "line": 2306
       }
     },
     {
@@ -7932,7 +8112,7 @@
         "path": "/api/chat/messages/:messageId/reaction",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2418
+        "line": 2445
       }
     },
     {
@@ -7946,7 +8126,7 @@
         "path": "/api/chat/messages/:messageId/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2480
+        "line": 2507
       }
     },
     {
@@ -7960,7 +8140,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2511
+        "line": 2538
       }
     },
     {
@@ -7974,7 +8154,21 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2596
+        "line": 2624
+      }
+    },
+    {
+      "id": "route:POST:/api/chat/messages/:messageId/restore",
+      "type": "FastifyRoute",
+      "label": "POST /api/chat/messages/:messageId/restore",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/chat/messages/:messageId/restore",
+        "module": "chat",
+        "handler": "inlineHandler",
+        "line": 2699
       }
     },
     {
@@ -7988,7 +8182,7 @@
         "path": "/api/chat/tasks",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2670
+        "line": 2781
       }
     },
     {
@@ -8002,7 +8196,21 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2848
+        "line": 2959
+      }
+    },
+    {
+      "id": "route:DELETE:/api/chat/tasks/:taskId",
+      "type": "FastifyRoute",
+      "label": "DELETE /api/chat/tasks/:taskId",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "metadata": {
+        "method": "DELETE",
+        "path": "/api/chat/tasks/:taskId",
+        "module": "chat",
+        "handler": "inlineHandler",
+        "line": 3025
       }
     },
     {
@@ -8016,7 +8224,7 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2887
+        "line": 3066
       }
     },
     {
@@ -8030,7 +8238,7 @@
         "path": "/api/chat/conversations/:id/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3081
+        "line": 3261
       }
     },
     {
@@ -8044,7 +8252,7 @@
         "path": "/api/chat/conversations/:id/threads/:messageId/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3133
+        "line": 3313
       }
     },
     {
@@ -8058,7 +8266,7 @@
         "path": "/api/chat/conversations/:id/unread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3191
+        "line": 3371
       }
     },
     {
@@ -8072,7 +8280,7 @@
         "path": "/api/chat/conversations/:id/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3235
+        "line": 3415
       }
     },
     {
@@ -8086,7 +8294,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3278
+        "line": 3458
       }
     },
     {
@@ -8100,7 +8308,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3376
+        "line": 3557
       }
     },
     {
@@ -8114,7 +8322,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3443
+        "line": 3624
       }
     },
     {
@@ -8128,7 +8336,7 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3504
+        "line": 3685
       }
     },
     {
@@ -8744,7 +8952,7 @@
         "path": "/api/customers/:id",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 18
+        "line": 19
       }
     },
     {
@@ -8758,7 +8966,7 @@
         "path": "/api/customers/bulk-delete",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 89
+        "line": 90
       }
     },
     {
@@ -8772,7 +8980,7 @@
         "path": "/api/customers/:id/restore",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 166
+        "line": 167
       }
     },
     {
@@ -8786,7 +8994,7 @@
         "path": "/api/customers/:id",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 238
+        "line": 239
       }
     },
     {
@@ -8800,7 +9008,7 @@
         "path": "/api/customers/:id/history",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 362
+        "line": 361
       }
     },
     {
@@ -8814,7 +9022,7 @@
         "path": "/api/customers/:id",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 411
+        "line": 410
       }
     },
     {
@@ -8828,7 +9036,7 @@
         "path": "/api/customers/:id/detailed",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 543
+        "line": 542
       }
     },
     {
@@ -8842,7 +9050,7 @@
         "path": "/api/customers/:id/summary",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1571
+        "line": 1572
       }
     },
     {
@@ -8856,7 +9064,7 @@
         "path": "/api/customers/:id/bookings",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1954
+        "line": 1955
       }
     },
     {
@@ -8870,7 +9078,7 @@
         "path": "/api/customers/:id/calls",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 2191
+        "line": 2195
       }
     },
     {
@@ -13257,6 +13465,26 @@
         "routePath": "/dashboard/fal",
         "apiCallsCount": 3,
         "apiCalls": ["fal.listCases", "fal.submitLogExplanation", "fal.approveLog"]
+      }
+    },
+    {
+      "id": "page:/dashboard/finance/cash-flow",
+      "type": "Component",
+      "label": "App Page: /dashboard/finance/cash-flow",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/page.tsx",
+      "metadata": {
+        "routePath": "/dashboard/finance/cash-flow",
+        "apiCallsCount": 7,
+        "apiCalls": [
+          "cashFlow.getForecast",
+          "cashFlow.listEntries",
+          "cashFlow.exportCsv",
+          "cashFlow.createEntry",
+          "cashFlow.updateEntry",
+          "cashFlow.deleteEntry",
+          "cashFlow.updateAccount"
+        ]
       }
     },
     {
@@ -20708,6 +20936,150 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:CashFlowType",
+      "type": "SharedType",
+      "label": "CashFlowType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashFlowType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashFlowCategory",
+      "type": "SharedType",
+      "label": "CashFlowCategory",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashFlowCategory",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashFlowPriority",
+      "type": "SharedType",
+      "label": "CashFlowPriority",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashFlowPriority",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashFlowStatus",
+      "type": "SharedType",
+      "label": "CashFlowStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashFlowStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashAccountType",
+      "type": "SharedType",
+      "label": "CashAccountType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashAccountType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashAccount",
+      "type": "SharedType",
+      "label": "CashAccount",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashAccount",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashFlowEntry",
+      "type": "SharedType",
+      "label": "CashFlowEntry",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashFlowEntry",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashFlowForecastSummary",
+      "type": "SharedType",
+      "label": "CashFlowForecastSummary",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashFlowForecastSummary",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashFlowTimelinePoint",
+      "type": "SharedType",
+      "label": "CashFlowTimelinePoint",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashFlowTimelinePoint",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashFlowForecastResponse",
+      "type": "SharedType",
+      "label": "CashFlowForecastResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashFlowForecastResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashFlowEntryListQuery",
+      "type": "SharedType",
+      "label": "CashFlowEntryListQuery",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashFlowEntryListQuery",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CashAccountBalanceAdjustment",
+      "type": "SharedType",
+      "label": "CashAccountBalanceAdjustment",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CashAccountBalanceAdjustment",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:ServiceType",
       "type": "SharedType",
       "label": "ServiceType",
@@ -25196,6 +25568,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:RestoreMosChatMessageRequest",
+      "type": "SharedType",
+      "label": "RestoreMosChatMessageRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "RestoreMosChatMessageRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:CreateMosChatThreadReplyRequest",
       "type": "SharedType",
       "label": "CreateMosChatThreadReplyRequest",
@@ -25276,6 +25660,30 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "RemoveMosChatMemberRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UpdateMosChatTaskRequest",
+      "type": "SharedType",
+      "label": "UpdateMosChatTaskRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UpdateMosChatTaskRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:DeleteMosChatTaskResponse",
+      "type": "SharedType",
+      "label": "DeleteMosChatTaskResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "DeleteMosChatTaskResponse",
         "package": "@mos-lab/shared"
       }
     },
@@ -29648,6 +30056,30 @@
       }
     },
     {
+      "id": "uicomp:MosGoogleChatPortal.test",
+      "type": "UIComponent",
+      "label": "<MosGoogleChatPortal.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosGoogleChatPortal.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosGoogleChatPortal.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:mos-chat-stickers",
+      "type": "UIComponent",
+      "label": "<mos-chat-stickers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mos-chat-stickers.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "mos-chat-stickers",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:OmiCallHeaderControl",
       "type": "UIComponent",
       "label": "<OmiCallHeaderControl />",
@@ -30980,8 +31412,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13695108,
-        "lineCount": 298332,
+        "sizeBytes": 13868164,
+        "lineCount": 302941,
         "ext": ".ts"
       }
     },
@@ -32247,6 +32679,45 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/cash-flow/cash-flow.service.ts",
+      "type": "File",
+      "label": "cash-flow.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/cash-flow/cash-flow.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 23038,
+        "lineCount": 672,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/cash-flow/cash-flow.test.ts",
+      "type": "File",
+      "label": "cash-flow.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/cash-flow/cash-flow.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7717,
+        "lineCount": 271,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/cash-flow/routes.ts",
+      "type": "File",
+      "label": "routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 11766,
+        "lineCount": 348,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/catalog/routes.ts",
       "type": "File",
       "label": "routes.ts",
@@ -32286,6 +32757,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/chat/chat-delete-restore.test.ts",
+      "type": "File",
+      "label": "chat-delete-restore.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-delete-restore.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3891,
+        "lineCount": 120,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/chat/chat-mission-bridge.service.test.ts",
       "type": "File",
       "label": "chat-mission-bridge.service.test.ts",
@@ -32306,8 +32790,21 @@
       "filePath": "apps/api/src/modules/chat/chat-mission-bridge.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 51615,
-        "lineCount": 1293,
+        "sizeBytes": 53190,
+        "lineCount": 1347,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/chat-task-edit-archive-delete.test.ts",
+      "type": "File",
+      "label": "chat-task-edit-archive-delete.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-task-edit-archive-delete.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6380,
+        "lineCount": 195,
         "ext": ".ts"
       }
     },
@@ -32332,8 +32829,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 133473,
-        "lineCount": 3554,
+        "sizeBytes": 140802,
+        "lineCount": 3735,
         "ext": ".ts"
       }
     },
@@ -32540,8 +33037,8 @@
       "filePath": "apps/api/src/modules/customers/routes/booking.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 62293,
-        "lineCount": 1449,
+        "sizeBytes": 62325,
+        "lineCount": 1451,
         "ext": ".ts"
       }
     },
@@ -32566,8 +33063,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-detail.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 97769,
-        "lineCount": 2257,
+        "sizeBytes": 97938,
+        "lineCount": 2261,
         "ext": ".ts"
       }
     },
@@ -32644,7 +33141,7 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-notes.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17998,
+        "sizeBytes": 18005,
         "lineCount": 450,
         "ext": ".ts"
       }
@@ -33593,8 +34090,8 @@
       "filePath": "apps/api/src/modules/kpi/services/package-audit.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 9246,
-        "lineCount": 206,
+        "sizeBytes": 10195,
+        "lineCount": 228,
         "ext": ".ts"
       }
     },
@@ -35653,6 +36150,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/scripts/data-migrations/20261019190000_create_crm_cash_flow_system.ts",
+      "type": "File",
+      "label": "20261019190000_create_crm_cash_flow_system.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/scripts/data-migrations/20261019190000_create_crm_cash_flow_system.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7589,
+        "lineCount": 123,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/scripts/data-migrations/types.ts",
       "type": "File",
       "label": "types.ts",
@@ -35933,8 +36443,8 @@
       "filePath": "apps/api/src/server.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16486,
-        "lineCount": 416,
+        "sizeBytes": 16613,
+        "lineCount": 418,
         "ext": ".ts"
       }
     },
@@ -37298,7 +37808,7 @@
       "filePath": "apps/web/app/dashboard/appointments/components/AppointmentColumns.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 25637,
+        "sizeBytes": 25647,
         "lineCount": 746,
         "ext": ".tsx"
       }
@@ -39241,6 +39751,136 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/finance/cash-flow/components/AccountModal.tsx",
+      "type": "File",
+      "label": "AccountModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/components/AccountModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2301,
+        "lineCount": 69,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/finance/cash-flow/components/AdjustBalanceModal.tsx",
+      "type": "File",
+      "label": "AdjustBalanceModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/components/AdjustBalanceModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4466,
+        "lineCount": 142,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/finance/cash-flow/components/DayInspectionModal.tsx",
+      "type": "File",
+      "label": "DayInspectionModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/components/DayInspectionModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3204,
+        "lineCount": 82,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/finance/cash-flow/components/ExpenseModal.tsx",
+      "type": "File",
+      "label": "ExpenseModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/components/ExpenseModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7304,
+        "lineCount": 197,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/finance/cash-flow/components/IncomeModal.tsx",
+      "type": "File",
+      "label": "IncomeModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/components/IncomeModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3483,
+        "lineCount": 98,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/finance/cash-flow/components/InflowTab.tsx",
+      "type": "File",
+      "label": "InflowTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/components/InflowTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3591,
+        "lineCount": 123,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/finance/cash-flow/components/OutflowTab.tsx",
+      "type": "File",
+      "label": "OutflowTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/components/OutflowTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 8114,
+        "lineCount": 246,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/finance/cash-flow/components/TimelineOverviewTab.tsx",
+      "type": "File",
+      "label": "TimelineOverviewTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/components/TimelineOverviewTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6395,
+        "lineCount": 141,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/finance/cash-flow/components/__tests__/AdjustBalanceModal.test.tsx",
+      "type": "File",
+      "label": "AdjustBalanceModal.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/components/__tests__/AdjustBalanceModal.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3894,
+        "lineCount": 112,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/finance/cash-flow/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/finance/cash-flow/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 28571,
+        "lineCount": 702,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/holiday-work/components/HolidayCalendarSection.tsx",
       "type": "File",
       "label": "HolidayCalendarSection.tsx",
@@ -40041,8 +40681,8 @@
       "filePath": "apps/web/app/dashboard/schedule-calendar/components/CvScheduleDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 24893,
-        "lineCount": 637,
+        "sizeBytes": 24873,
+        "lineCount": 636,
         "ext": ".tsx"
       }
     },
@@ -40093,7 +40733,7 @@
       "filePath": "apps/web/app/dashboard/schedule-calendar/components/ScheduleListView.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15072,
+        "sizeBytes": 15082,
         "lineCount": 444,
         "ext": ".tsx"
       }
@@ -40171,7 +40811,7 @@
       "filePath": "apps/web/app/dashboard/schedule-calendar/components/cv-drawer/CvTimePickerDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17960,
+        "sizeBytes": 17980,
         "lineCount": 439,
         "ext": ".tsx"
       }
@@ -41607,6 +42247,19 @@
       }
     },
     {
+      "id": "file:apps/web/lib/api/cash-flow.api.ts",
+      "type": "File",
+      "label": "cash-flow.api.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/api/cash-flow.api.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2687,
+        "lineCount": 90,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/lib/api/catalog.api.ts",
       "type": "File",
       "label": "catalog.api.ts",
@@ -41627,8 +42280,8 @@
       "filePath": "apps/web/lib/api/chat.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8687,
-        "lineCount": 222,
+        "sizeBytes": 9345,
+        "lineCount": 240,
         "ext": ".ts"
       }
     },
@@ -41653,8 +42306,8 @@
       "filePath": "apps/web/lib/api/index.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1130,
-        "lineCount": 46,
+        "sizeBytes": 1228,
+        "lineCount": 49,
         "ext": ".ts"
       }
     },
@@ -42056,8 +42709,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 121211,
-        "lineCount": 1694,
+        "sizeBytes": 121217,
+        "lineCount": 1695,
         "ext": ".ts"
       }
     },
@@ -42108,8 +42761,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2561,
-        "lineCount": 66,
+        "sizeBytes": 2599,
+        "lineCount": 67,
         "ext": ".ts"
       }
     },
@@ -42344,6 +42997,19 @@
       "metadata": {
         "sizeBytes": 29495,
         "lineCount": 716,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/cash-flow.ts",
+      "type": "File",
+      "label": "cash-flow.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/cash-flow.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 4178,
+        "lineCount": 144,
         "ext": ".ts"
       }
     },
@@ -42615,8 +43281,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 11482,
-        "lineCount": 459,
+        "sizeBytes": 12065,
+        "lineCount": 486,
         "ext": ".ts"
       }
     },
@@ -44000,6 +44666,27 @@
     {
       "id": "edge:prisma:crm:CrmCustomerElsaReservation:ws:apps/api",
       "source": "prisma:crm:CrmCustomerElsaReservation",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmCashAccount:ws:apps/api",
+      "source": "prisma:crm:CrmCashAccount",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmCashFlowEntry:ws:apps/api",
+      "source": "prisma:crm:CrmCashFlowEntry",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmCashFlowAudit:ws:apps/api",
+      "source": "prisma:crm:CrmCashFlowAudit",
       "target": "ws:apps/api",
       "type": "EXPORTS",
       "label": "DEFINED_IN"
@@ -46294,6 +46981,69 @@
       "label": "REGISTERED_IN"
     },
     {
+      "id": "edge:route:GET:/api/cash-flow/forecast:ws:apps/api",
+      "source": "route:GET:/api/cash-flow/forecast",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/cash-flow/entries:ws:apps/api",
+      "source": "route:GET:/api/cash-flow/entries",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/cash-flow/entries:ws:apps/api",
+      "source": "route:POST:/api/cash-flow/entries",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:PUT:/api/cash-flow/entries/:id:ws:apps/api",
+      "source": "route:PUT:/api/cash-flow/entries/:id",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:DELETE:/api/cash-flow/entries/:id:ws:apps/api",
+      "source": "route:DELETE:/api/cash-flow/entries/:id",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/cash-flow/accounts:ws:apps/api",
+      "source": "route:GET:/api/cash-flow/accounts",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:PUT:/api/cash-flow/accounts/batch-balance:ws:apps/api",
+      "source": "route:PUT:/api/cash-flow/accounts/batch-balance",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:PUT:/api/cash-flow/accounts/:id:ws:apps/api",
+      "source": "route:PUT:/api/cash-flow/accounts/:id",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/cash-flow/export:ws:apps/api",
+      "source": "route:GET:/api/cash-flow/export",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
       "id": "edge:route:GET:/api/catalog/groups:ws:apps/api",
       "source": "route:GET:/api/catalog/groups",
       "target": "ws:apps/api",
@@ -46588,6 +47338,13 @@
       "label": "REGISTERED_IN"
     },
     {
+      "id": "edge:route:POST:/api/chat/messages/:messageId/restore:ws:apps/api",
+      "source": "route:POST:/api/chat/messages/:messageId/restore",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
       "id": "edge:route:POST:/api/chat/tasks:ws:apps/api",
       "source": "route:POST:/api/chat/tasks",
       "target": "ws:apps/api",
@@ -46597,6 +47354,13 @@
     {
       "id": "edge:route:PATCH:/api/chat/tasks/:taskId:ws:apps/api",
       "source": "route:PATCH:/api/chat/tasks/:taskId",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:DELETE:/api/chat/tasks/:taskId:ws:apps/api",
+      "source": "route:DELETE:/api/chat/tasks/:taskId",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -49222,6 +49986,13 @@
     {
       "id": "edge:page:/dashboard/fal:ws:apps/web",
       "source": "page:/dashboard/fal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
+      "id": "edge:page:/dashboard/finance/cash-flow:ws:apps/web",
+      "source": "page:/dashboard/finance/cash-flow",
       "target": "ws:apps/web",
       "type": "RENDERS",
       "label": "PAGE_OF"
@@ -53525,6 +54296,90 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:CashFlowType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashFlowType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashFlowCategory:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashFlowCategory",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashFlowPriority:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashFlowPriority",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashFlowStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashFlowStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashAccountType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashAccountType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashAccount:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashAccount",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashFlowEntry:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashFlowEntry",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashFlowForecastSummary:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashFlowForecastSummary",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashFlowTimelinePoint:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashFlowTimelinePoint",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashFlowForecastResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashFlowForecastResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashFlowEntryListQuery:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashFlowEntryListQuery",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CashAccountBalanceAdjustment:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CashAccountBalanceAdjustment",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:ServiceType:ws:packages/shared",
       "source": "type:@mos-lab/shared:ServiceType",
       "target": "ws:packages/shared",
@@ -56143,6 +56998,13 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:RestoreMosChatMessageRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:RestoreMosChatMessageRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:CreateMosChatThreadReplyRequest:ws:packages/shared",
       "source": "type:@mos-lab/shared:CreateMosChatThreadReplyRequest",
       "target": "ws:packages/shared",
@@ -56187,6 +57049,20 @@
     {
       "id": "edge:type:@mos-lab/shared:RemoveMosChatMemberRequest:ws:packages/shared",
       "source": "type:@mos-lab/shared:RemoveMosChatMemberRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UpdateMosChatTaskRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UpdateMosChatTaskRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:DeleteMosChatTaskResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:DeleteMosChatTaskResponse",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -59594,6 +60470,34 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosGoogleChatPortal.test:ws:apps/web",
+      "source": "uicomp:MosGoogleChatPortal.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosGoogleChatPortal.test:token:color:primary",
+      "source": "uicomp:MosGoogleChatPortal.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:mos-chat-stickers:ws:apps/web",
+      "source": "uicomp:mos-chat-stickers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:mos-chat-stickers:token:color:primary",
+      "source": "uicomp:mos-chat-stickers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:OmiCallHeaderControl:ws:apps/web",
       "source": "uicomp:OmiCallHeaderControl",
       "target": "ws:apps/web",
@@ -61456,6 +62360,27 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/cash-flow/cash-flow.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/cash-flow/cash-flow.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/cash-flow/cash-flow.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/cash-flow/cash-flow.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/cash-flow/routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/cash-flow/routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/catalog/routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/catalog/routes.ts",
       "target": "ws:packages/shared",
@@ -61477,8 +62402,22 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/chat/chat-delete-restore.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-delete-restore.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/chat/chat-mission-bridge.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/chat/chat-mission-bridge.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/chat-task-edit-archive-delete.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-task-edit-archive-delete.test.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -63633,6 +64572,69 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/finance/cash-flow/components/AccountModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/finance/cash-flow/components/AccountModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/finance/cash-flow/components/AdjustBalanceModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/finance/cash-flow/components/AdjustBalanceModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/finance/cash-flow/components/DayInspectionModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/finance/cash-flow/components/DayInspectionModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/finance/cash-flow/components/ExpenseModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/finance/cash-flow/components/ExpenseModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/finance/cash-flow/components/InflowTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/finance/cash-flow/components/InflowTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/finance/cash-flow/components/OutflowTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/finance/cash-flow/components/OutflowTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/finance/cash-flow/components/TimelineOverviewTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/finance/cash-flow/components/TimelineOverviewTab.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/finance/cash-flow/components/__tests__/AdjustBalanceModal.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/finance/cash-flow/components/__tests__/AdjustBalanceModal.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/finance/cash-flow/page.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/finance/cash-flow/page.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/holiday-work/components/HolidayCalendarSection.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/holiday-work/components/HolidayCalendarSection.tsx",
       "target": "ws:packages/shared",
@@ -64426,6 +65428,13 @@
     {
       "id": "edge:file:apps/web/lib/api/career.api.ts:ws:packages/shared",
       "source": "file:apps/web/lib/api/career.api.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/lib/api/cash-flow.api.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/api/cash-flow.api.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -65437,6 +66446,34 @@
       "target": "prisma:crm:CrmStaffCvPlusRewardSnapshot",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/cash-flow/cash-flow.service.ts:prisma:crm:CrmCashAccount",
+      "source": "file:apps/api/src/modules/cash-flow/cash-flow.service.ts",
+      "target": "prisma:crm:CrmCashAccount",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/cash-flow/cash-flow.service.ts:prisma:crm:CrmCashFlowEntry",
+      "source": "file:apps/api/src/modules/cash-flow/cash-flow.service.ts",
+      "target": "prisma:crm:CrmCashFlowEntry",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/cash-flow/cash-flow.service.ts:prisma:crm:CrmCashFlowAudit",
+      "source": "file:apps/api/src/modules/cash-flow/cash-flow.service.ts",
+      "target": "prisma:crm:CrmCashFlowAudit",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/cash-flow/cash-flow.service.ts:prisma:legacy:order",
+      "source": "file:apps/api/src/modules/cash-flow/cash-flow.service.ts",
+      "target": "prisma:legacy:order",
+      "type": "QUERIES_MODEL",
+      "label": "READS_LEGACY_MODEL"
     },
     {
       "id": "edge:file:apps/api/src/modules/catalog/routes.ts:prisma:crm:CrmLashTypeBenchmark",
@@ -71515,6 +72552,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/architecture:route:POST:/api/chat/messages/:messageId/restore",
+      "source": "page:/dashboard/architecture",
+      "target": "route:POST:/api/chat/messages/:messageId/restore",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/architecture:route:POST:/api/chat/conversations/:id/threads/:messageId/read",
       "source": "page:/dashboard/architecture",
       "target": "route:POST:/api/chat/conversations/:id/threads/:messageId/read",
@@ -74021,6 +75065,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/design-system:route:POST:/api/chat/messages/:messageId/restore",
+      "source": "page:/dashboard/design-system",
+      "target": "route:POST:/api/chat/messages/:messageId/restore",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/design-system:route:POST:/api/chat/conversations/:id/threads/:messageId/read",
       "source": "page:/dashboard/design-system",
       "target": "route:POST:/api/chat/conversations/:id/threads/:messageId/read",
@@ -74733,6 +75784,34 @@
       "target": "route:POST:/api/fal/logs/:orderServiceId/approval",
       "type": "API_CALL",
       "label": "CALLS fal.listCases"
+    },
+    {
+      "id": "edge:page:/dashboard/finance/cash-flow:route:GET:/api/cash-flow/forecast",
+      "source": "page:/dashboard/finance/cash-flow",
+      "target": "route:GET:/api/cash-flow/forecast",
+      "type": "API_CALL",
+      "label": "CALLS cashFlow.getForecast"
+    },
+    {
+      "id": "edge:page:/dashboard/finance/cash-flow:route:GET:/api/cash-flow/accounts",
+      "source": "page:/dashboard/finance/cash-flow",
+      "target": "route:GET:/api/cash-flow/accounts",
+      "type": "API_CALL",
+      "label": "CALLS cashFlow.updateAccount"
+    },
+    {
+      "id": "edge:page:/dashboard/finance/cash-flow:route:PUT:/api/cash-flow/accounts/batch-balance",
+      "source": "page:/dashboard/finance/cash-flow",
+      "target": "route:PUT:/api/cash-flow/accounts/batch-balance",
+      "type": "API_CALL",
+      "label": "CALLS cashFlow.updateAccount"
+    },
+    {
+      "id": "edge:page:/dashboard/finance/cash-flow:route:PUT:/api/cash-flow/accounts/:id",
+      "source": "page:/dashboard/finance/cash-flow",
+      "target": "route:PUT:/api/cash-flow/accounts/:id",
+      "type": "API_CALL",
+      "label": "CALLS cashFlow.updateAccount"
     },
     {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/academy-sales/access",
@@ -76919,6 +77998,69 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/cash-flow/forecast",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/cash-flow/forecast",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/cash-flow/entries",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/cash-flow/entries",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/cash-flow/entries",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/cash-flow/entries",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PUT:/api/cash-flow/entries/:id",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:PUT:/api/cash-flow/entries/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:DELETE:/api/cash-flow/entries/:id",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:DELETE:/api/cash-flow/entries/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/cash-flow/accounts",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/cash-flow/accounts",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PUT:/api/cash-flow/accounts/batch-balance",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:PUT:/api/cash-flow/accounts/batch-balance",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PUT:/api/cash-flow/accounts/:id",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:PUT:/api/cash-flow/accounts/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/cash-flow/export",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/cash-flow/export",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/catalog/groups",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/catalog/groups",
@@ -77213,6 +78355,13 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/chat/messages/:messageId/restore",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/chat/messages/:messageId/restore",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/chat/tasks",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/chat/tasks",
@@ -77223,6 +78372,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PATCH:/api/chat/tasks/:taskId",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:PATCH:/api/chat/tasks/:taskId",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:DELETE:/api/chat/tasks/:taskId",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:DELETE:/api/chat/tasks/:taskId",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -81812,6 +82968,69 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/cash-flow/forecast",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/cash-flow/forecast",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/cash-flow/entries",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/cash-flow/entries",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/cash-flow/entries",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/cash-flow/entries",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:PUT:/api/cash-flow/entries/:id",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:PUT:/api/cash-flow/entries/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:DELETE:/api/cash-flow/entries/:id",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:DELETE:/api/cash-flow/entries/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/cash-flow/accounts",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/cash-flow/accounts",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:PUT:/api/cash-flow/accounts/batch-balance",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:PUT:/api/cash-flow/accounts/batch-balance",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:PUT:/api/cash-flow/accounts/:id",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:PUT:/api/cash-flow/accounts/:id",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/cash-flow/export",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/cash-flow/export",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/catalog/groups",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/catalog/groups",
@@ -82106,6 +83325,13 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/chat/messages/:messageId/restore",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/chat/messages/:messageId/restore",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/chat/tasks",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/chat/tasks",
@@ -82116,6 +83342,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:PATCH:/api/chat/tasks/:taskId",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:PATCH:/api/chat/tasks/:taskId",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:DELETE:/api/chat/tasks/:taskId",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:DELETE:/api/chat/tasks/:taskId",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -87090,6 +88323,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/chat/messages/:messageId/restore",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:POST:/api/chat/messages/:messageId/restore",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/chat/conversations/:id/threads/:messageId/read",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:POST:/api/chat/conversations/:id/threads/:messageId/read",
@@ -89967,6 +91207,69 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/cash-flow/forecast",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/cash-flow/forecast",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/cash-flow/entries",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/cash-flow/entries",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/cash-flow/entries",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/cash-flow/entries",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:PUT:/api/cash-flow/entries/:id",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:PUT:/api/cash-flow/entries/:id",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:DELETE:/api/cash-flow/entries/:id",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:DELETE:/api/cash-flow/entries/:id",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/cash-flow/accounts",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/cash-flow/accounts",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:PUT:/api/cash-flow/accounts/batch-balance",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:PUT:/api/cash-flow/accounts/batch-balance",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:PUT:/api/cash-flow/accounts/:id",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:PUT:/api/cash-flow/accounts/:id",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/cash-flow/export",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/cash-flow/export",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/catalog/groups",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/catalog/groups",
@@ -90261,6 +91564,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/chat/messages/:messageId/restore",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/chat/messages/:messageId/restore",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/chat/tasks",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/chat/tasks",
@@ -90271,6 +91581,13 @@
       "id": "edge:page:/dashboard/staff/teams:route:PATCH:/api/chat/tasks/:taskId",
       "source": "page:/dashboard/staff/teams",
       "target": "route:PATCH:/api/chat/tasks/:taskId",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:DELETE:/api/chat/tasks/:taskId",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:DELETE:/api/chat/tasks/:taskId",
       "type": "API_CALL",
       "label": "CALLS teams.update"
     },
@@ -92761,31 +94078,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3291,
-    "totalEdges": 7116,
+    "totalNodes": 3341,
+    "totalEdges": 7209,
     "nodeTypeCounts": {
       "Workspace": 3,
-      "PrismaModel": 166,
-      "FastifyRoute": 699,
-      "Component": 58,
-      "SharedType": 1201,
+      "PrismaModel": 169,
+      "FastifyRoute": 710,
+      "Component": 59,
+      "SharedType": 1216,
       "DesignToken": 12,
-      "UIComponent": 226,
-      "File": 926
+      "UIComponent": 228,
+      "File": 944
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1379,
-      "HANDLES_ROUTE": 699,
-      "RENDERS": 284,
-      "USES_TOKEN": 228,
-      "IMPORTS": 494,
-      "QUERIES_MODEL": 397,
-      "API_CALL": 3635
+      "EXPORTS": 1397,
+      "HANDLES_ROUTE": 710,
+      "RENDERS": 287,
+      "USES_TOKEN": 230,
+      "IMPORTS": 509,
+      "QUERIES_MODEL": 401,
+      "API_CALL": 3675
     },
-    "fastifyRouteCount": 704,
-    "prismaModelCount": 166,
-    "nextPageCount": 58,
-    "sharedTypeCount": 1201
+    "fastifyRouteCount": 715,
+    "prismaModelCount": 169,
+    "nextPageCount": 59,
+    "sharedTypeCount": 1216
   },
   "routes": [
     {
@@ -94974,6 +96291,69 @@
     },
     {
       "method": "GET",
+      "path": "/api/cash-flow/forecast",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "cash-flow"
+    },
+    {
+      "method": "GET",
+      "path": "/api/cash-flow/entries",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "cash-flow"
+    },
+    {
+      "method": "POST",
+      "path": "/api/cash-flow/entries",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "cash-flow"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/cash-flow/entries/:id",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "cash-flow"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/cash-flow/entries/:id",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "cash-flow"
+    },
+    {
+      "method": "GET",
+      "path": "/api/cash-flow/accounts",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "cash-flow"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/cash-flow/accounts/batch-balance",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "cash-flow"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/cash-flow/accounts/:id",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "cash-flow"
+    },
+    {
+      "method": "GET",
+      "path": "/api/cash-flow/export",
+      "filePath": "apps/api/src/modules/cash-flow/routes.ts",
+      "handler": "preHandler",
+      "moduleName": "cash-flow"
+    },
+    {
+      "method": "GET",
       "path": "/api/catalog/groups",
       "filePath": "apps/api/src/modules/catalog/routes.ts",
       "handler": "inlineHandler",
@@ -95268,6 +96648,13 @@
     },
     {
       "method": "POST",
+      "path": "/api/chat/messages/:messageId/restore",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "chat"
+    },
+    {
+      "method": "POST",
       "path": "/api/chat/tasks",
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "handler": "inlineHandler",
@@ -95275,6 +96662,13 @@
     },
     {
       "method": "PATCH",
+      "path": "/api/chat/tasks/:taskId",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "chat"
+    },
+    {
+      "method": "DELETE",
       "path": "/api/chat/tasks/:taskId",
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "handler": "inlineHandler",
@@ -99073,6 +100467,33 @@
       "modelName": "CrmCustomerElsaReservation",
       "tableName": "crm_customer_elsa_reservations",
       "fieldCount": 18,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmCashAccount",
+      "tableName": "crm_cash_accounts",
+      "fieldCount": 14,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmCashFlowEntry",
+      "tableName": "crm_cash_flow_entries",
+      "fieldCount": 28,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmCashFlowAudit",
+      "tableName": "crm_cash_flow_audits",
+      "fieldCount": 8,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []

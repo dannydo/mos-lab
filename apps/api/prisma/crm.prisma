@@ -232,7 +232,7 @@ model CrmStaffKpi {
 model CrmConfig {
   id        Int      @id @default(autoincrement())
   key       String   @unique @db.VarChar(50)
-  value     String   @db.Text
+  value     String   @db.LongText
   updatedAt DateTime @updatedAt @map("updated_at") @db.DateTime(0)
 
   @@map("crm_config")

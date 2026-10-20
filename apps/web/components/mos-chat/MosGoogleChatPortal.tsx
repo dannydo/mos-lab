@@ -203,7 +203,16 @@ const SPACE_DEPARTMENT_AND_TEAM_GROUPS: SpaceDepartmentOrTeamGroup[] = [
     defaultSlug: 'back-office-quan-tri',
     defaultSubtitle: 'Không gian điều hành Ban Quản Trị · Quản lý · Nội bộ',
   },
-  // 8 Specialized Teams / Roles (Nhóm chuyên môn)
+  // Specialized Teams / Roles (Nhóm chuyên môn)
+  {
+    key: 'TEAM_CORE',
+    category: 'team',
+    label: '⭐ Core Team',
+    shortLabel: 'Core Team',
+    color: '#722ed1',
+    defaultSlug: 'core-team',
+    defaultSubtitle: 'Không gian phối hợp Ban Điều Hành & Đội Ngũ Cốt Lõi',
+  },
   {
     key: 'TEAM_ADMIN_MANAGER',
     category: 'team',
@@ -310,6 +319,8 @@ function matchesStaffGroup(member: MosChatStaffMember, groupKey: string): boolea
           'rnd',
         ].includes(role)
       );
+    case 'TEAM_CORE':
+      return teams.includes('CORE') || teams.includes('CORE_TEAM') || ['super_admin', 'boss'].includes(role);
     case 'TEAM_ADMIN_MANAGER':
       return teams.includes('ADMIN_MANAGER') || ['super_admin', 'admin', 'boss', 'manager', 'fm', 'cho'].includes(role);
     case 'TEAM_CC':
@@ -1498,21 +1509,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       const executeScroll = (mode: ScrollBehavior) => {
         if (target === 'main') {
           const el = mainMessagesContainerRef.current;
-          if (el) {
+          if (el && typeof el.scrollTo === 'function') {
             el.scrollTo({ top: el.scrollHeight, behavior: mode });
-          } else {
-            messagesEndRef.current?.scrollIntoView({ behavior: mode, block: 'end' });
+          } else if (typeof messagesEndRef.current?.scrollIntoView === 'function') {
+            messagesEndRef.current.scrollIntoView({ behavior: mode, block: 'end' });
           }
         } else if (target === 'thread') {
           const el = threadMessagesContainerRef.current;
-          if (el) {
+          if (el && typeof el.scrollTo === 'function') {
             el.scrollTo({ top: el.scrollHeight, behavior: mode });
-          } else {
-            threadMessagesEndRef.current?.scrollIntoView({ behavior: mode, block: 'end' });
+          } else if (typeof threadMessagesEndRef.current?.scrollIntoView === 'function') {
+            threadMessagesEndRef.current.scrollIntoView({ behavior: mode, block: 'end' });
           }
         } else if (typeof target === 'object' && target.dockConvId) {
           const el = dockMessagesContainerRefs.current[target.dockConvId];
-          if (el) {
+          if (el && typeof el.scrollTo === 'function') {
             el.scrollTo({ top: el.scrollHeight, behavior: mode });
           }
         }
@@ -12606,10 +12617,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   </div>
                 </div>
 
-                {/* 8 Specialized Teams */}
+                {/* Specialized Teams */}
                 <div className="pt-1">
                   <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                    8 Đội chuyên môn (Specialized Teams)
+                    Đội chuyên môn (Specialized Teams)
                   </div>
                   <div className="grid grid-cols-2 gap-1.5">
                     {SPACE_DEPARTMENT_AND_TEAM_GROUPS.filter((g) => g.category === 'team').map((group) => {

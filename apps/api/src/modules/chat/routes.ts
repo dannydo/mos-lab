@@ -381,6 +381,8 @@ function matchesStaffGroupBackend(member: MosChatStaffMember, groupKey: string):
           'rnd',
         ].includes(role)
       );
+    case 'TEAM_CORE':
+      return teams.includes('CORE') || teams.includes('CORE_TEAM') || ['super_admin', 'boss'].includes(role);
     case 'TEAM_ADMIN_MANAGER':
       return teams.includes('ADMIN_MANAGER') || ['super_admin', 'admin', 'boss', 'manager', 'fm', 'cho'].includes(role);
     case 'TEAM_CC':
@@ -1647,7 +1649,7 @@ async function saveUserSidebarPrefs(
       });
     })
     .catch((err) => {
-      fastify.log.error('saveUserSidebarPrefs error:', err);
+      fastify.log.error(err, 'saveUserSidebarPrefs error:');
     });
   await writeChain;
   return normalized;
@@ -1670,7 +1672,7 @@ async function saveAccessConfig(fastify: FastifyInstance, accessConfig: MosChatA
       });
     })
     .catch((err) => {
-      fastify.log.error('saveAccessConfig error:', err);
+      fastify.log.error(err, 'saveAccessConfig error:');
     });
   await writeChain;
   return normalized;
@@ -1693,7 +1695,7 @@ async function saveConversations(fastify: FastifyInstance, conversations: MosCha
       });
     })
     .catch((err) => {
-      fastify.log.error('saveConversations error:', err);
+      fastify.log.error(err, 'saveConversations error:');
     });
   await writeChain;
 }
@@ -1715,7 +1717,7 @@ async function saveTasks(fastify: FastifyInstance, tasks: MosChatTaskItem[]) {
       });
     })
     .catch((err) => {
-      fastify.log.error('saveTasks error:', err);
+      fastify.log.error(err, 'saveTasks error:');
     });
   await writeChain;
 }
@@ -1836,6 +1838,10 @@ async function loadStaffDirectoryCached(fastify: FastifyInstance): Promise<MosCh
         if (tCode === 'BK' || tCode === 'BK_TELESALES') teamSet.add('BK_TELESALES');
         if (tCode === 'BK_CS' || tCode === 'BK_CONTROL') teamSet.add('BK_CS_CONTROL');
         if (tCode === 'ACADEMY' || tCode === 'MARKETING_SALES') teamSet.add('ACADEMY');
+        if (tCode === 'CORE' || tCode === 'CORE_TEAM') {
+          teamSet.add('CORE_TEAM');
+          teamSet.add('CORE');
+        }
       }
     }
 
