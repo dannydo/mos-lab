@@ -122,6 +122,15 @@ import { useTheme } from '../../context/ThemeContext';
 import { apiClient } from '../../lib/api-client';
 import { resolveMediaUrl } from '../../lib/api-base-url';
 import { speakText, stopSpeaking } from '../voice-assistant/speech-utils';
+import {
+  MosChatStickerAndEmojiPicker,
+  MosChatStickerVisual,
+  formatChatPreviewWithStickers,
+  formatStickerToken,
+  parsePureStickerMessage,
+  parseStickerReactionKey,
+  type MosChatStickerItem,
+} from './mos-chat-stickers';
 
 export const AI_COPILOT_CONV_ID = 'dm-wings-ai-copilot';
 const AI_COPILOT_GROUP_ACCESS_KEY = 'mos_chat_ai_copilot_allowed_groups_v1';
@@ -3863,6 +3872,60 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     } catch (_) {}
   };
 
+  const handleSendSticker = async (
+    sticker: MosChatStickerItem,
+    target: 'main' | 'thread' | { dockConvId: string } = 'main'
+  ) => {
+    const tokenText = formatStickerToken(sticker.id);
+    if (target === 'main') {
+      if (!activeConversation) return;
+      await handleSendMessage(activeConversation.id, tokenText, null, []);
+      return;
+    }
+    if (typeof target === 'object' && target.dockConvId) {
+      await handleSendMessage(target.dockConvId, tokenText, null, []);
+      return;
+    }
+    if (target === 'thread') {
+      if (!activeConversation || !activeThreadMsgId) return;
+      const senderName = currentUser?.displayName || 'Danny Do';
+      const newReply = {
+        id: `th-${Date.now()}`,
+        senderId: currentUser?.id || 'me',
+        senderName,
+        senderRole: 'Super Admin',
+        senderAvatar: 'DD',
+        text: tokenText,
+        timeLabel: dayjs().format('HH:mm'),
+        createdAt: new Date().toISOString(),
+      };
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== activeConversation.id) return c;
+          return {
+            ...c,
+            messages: c.messages.map((m) =>
+              m.id === activeThreadMsgId
+                ? { ...m, unreadThreadReplyCount: 0, thread: [...(m.thread || []), newReply] }
+                : m
+            ),
+          };
+        })
+      );
+      try {
+        const res = await apiClient.chat.sendThreadReply({
+          conversationId: activeConversation.id,
+          messageId: activeThreadMsgId,
+          text: tokenText,
+        });
+        if (res?.conversation) {
+          setConversations((prev) => prev.map((c) => (c.id === activeConversation.id ? res.conversation! : c)));
+        }
+        notifyLivePeers();
+      } catch (_) {}
+    }
+  };
+
   const openTaskModalFromMessage = (msg: MosChatMessage | null) => {
     setEditingTask(null);
     setTaskModalSourceMsg(msg);
@@ -5500,6 +5563,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         .trim();
       if (!cleanText) return null;
 
+      // Pure Sticker Message: render large animated borderless sticker (Zalo / Telegram style)
+      const pureSticker = parsePureStickerMessage(cleanText);
+      if (pureSticker) {
+        return <MosChatStickerVisual sticker={pureSticker} size="chat" />;
+      }
+
       const lines = cleanText.split('\n');
       const result: React.ReactNode[] = [];
       let inCodeBlock = false;
@@ -6756,117 +6825,44 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   };
 
   const renderReactionPickerContent = (msgId: string, msgObj?: MosChatMessage) => (
-    <div
-      data-no-chat-autofocus="true"
-      onClick={(e) => e.stopPropagation()}
-      className="p-1.5 space-y-2 select-none"
-      style={{ width: 316 }}
-    >
-      <div>
-        <div className="px-1 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-amber-500">
-          Nhóm Wings Đặc Trưng
-        </div>
-        <div className="grid grid-cols-9 gap-1">
-          {WINGS_SIGNATURE_EMOJIS.map((emoji) => {
-            const reactedByMe = hasUserReacted(msgObj, emoji);
-            return (
-              <Tooltip
-                key={`wings-${emoji}`}
-                title={reactedByMe ? `Đã thả ${emoji} · Nhấn để gỡ (Undo)` : `Thả ${emoji}`}
-              >
-                <button
-                  type="button"
-                  onClick={() => handleToggleReaction(msgId, emoji)}
-                  className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-[18px] cursor-pointer transition-transform hover:scale-125 hover:bg-black/5 dark:hover:bg-white/10"
-                  style={{
-                    background: reactedByMe ? 'rgba(212, 168, 75, 0.22)' : 'transparent',
-                    boxShadow: reactedByMe ? 'inset 0 0 0 1px rgba(212, 168, 75, 0.55)' : 'none',
-                  }}
-                >
-                  {emoji}
-                </button>
-              </Tooltip>
-            );
-          })}
-        </div>
-      </div>
-
-      <div style={{ borderTop: `1px solid ${borderColor}` }} className="pt-1.5">
-        <div className="px-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Cảm xúc phổ biến</div>
-        <div className="grid grid-cols-9 gap-1">
-          {GOOGLE_CHAT_REACTION_EMOJIS.map((emoji) => {
-            const reactedByMe = hasUserReacted(msgObj, emoji);
-            return (
-              <Tooltip
-                key={`gchat-${emoji}`}
-                title={reactedByMe ? `Đã thả ${emoji} · Nhấn để gỡ (Undo)` : `Thả ${emoji}`}
-              >
-                <button
-                  type="button"
-                  onClick={() => handleToggleReaction(msgId, emoji)}
-                  className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-[18px] cursor-pointer transition-transform hover:scale-125 hover:bg-black/5 dark:hover:bg-white/10"
-                  style={{
-                    background: reactedByMe ? 'rgba(212, 168, 75, 0.22)' : 'transparent',
-                    boxShadow: reactedByMe ? 'inset 0 0 0 1px rgba(212, 168, 75, 0.55)' : 'none',
-                  }}
-                >
-                  {emoji}
-                </button>
-              </Tooltip>
-            );
-          })}
-        </div>
-      </div>
-    </div>
+    <MosChatStickerAndEmojiPicker
+      isDark={isDark}
+      borderColor={borderColor}
+      surfaceRaised={surfaceRaised}
+      wingsSignatureEmojis={WINGS_SIGNATURE_EMOJIS}
+      popularEmojis={GOOGLE_CHAT_REACTION_EMOJIS}
+      mode="reaction"
+      hasUserReacted={(key) => hasUserReacted(msgObj, key)}
+      onSelectEmoji={(emoji) => void handleToggleReaction(msgId, emoji)}
+      onSelectSticker={(sticker) => void handleToggleReaction(msgId, formatStickerToken(sticker.id))}
+    />
   );
 
-  const renderComposerEmojiPickerContent = () => (
-    <div
-      data-no-chat-autofocus="true"
-      onClick={(e) => e.stopPropagation()}
-      className="p-1.5 space-y-2 select-none"
-      style={{ width: 316 }}
-    >
-      <div>
-        <div className="px-1 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-amber-500">
-          Chèn biểu tượng Wings
-        </div>
-        <div className="grid grid-cols-9 gap-1">
-          {WINGS_SIGNATURE_EMOJIS.map((emoji) => (
-            <button
-              key={`comp-wings-${emoji}`}
-              type="button"
-              onClick={() => {
-                setComposerText((prev) => `${prev}${emoji}`);
-                composerInputRef.current?.focus();
-              }}
-              className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-[18px] cursor-pointer transition-transform hover:scale-125 hover:bg-black/5 dark:hover:bg-white/10"
-            >
-              {emoji}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ borderTop: `1px solid ${borderColor}` }} className="pt-1.5">
-        <div className="px-1 pb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">Cảm xúc phổ biến</div>
-        <div className="grid grid-cols-9 gap-1">
-          {GOOGLE_CHAT_REACTION_EMOJIS.map((emoji) => (
-            <button
-              key={`comp-gchat-${emoji}`}
-              type="button"
-              onClick={() => {
-                setComposerText((prev) => `${prev}${emoji}`);
-                composerInputRef.current?.focus();
-              }}
-              className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-[18px] cursor-pointer transition-transform hover:scale-125 hover:bg-black/5 dark:hover:bg-white/10"
-            >
-              {emoji}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
+  const renderComposerEmojiPickerContent = (target: 'main' | 'thread' | { dockConvId: string } = 'main') => (
+    <MosChatStickerAndEmojiPicker
+      isDark={isDark}
+      borderColor={borderColor}
+      surfaceRaised={surfaceRaised}
+      wingsSignatureEmojis={WINGS_SIGNATURE_EMOJIS}
+      popularEmojis={GOOGLE_CHAT_REACTION_EMOJIS}
+      mode="composer"
+      onSelectEmoji={(emoji) => {
+        if (target === 'main') {
+          setComposerText((prev) => `${prev}${emoji}`);
+          composerInputRef.current?.focus();
+        } else if (target === 'thread') {
+          setThreadInput((prev) => `${prev}${emoji}`);
+          threadInputRef.current?.focus();
+        } else if (typeof target === 'object' && target.dockConvId) {
+          const cid = target.dockConvId;
+          setDockInputs((p) => ({ ...p, [cid]: `${p[cid] || ''}${emoji}` }));
+          dockInputRefs.current[cid]?.focus();
+        }
+      }}
+      onSelectSticker={(sticker) => {
+        void handleSendSticker(sticker, target);
+      }}
+    />
   );
 
   if (!canUserAccessChat) {
@@ -7493,7 +7489,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           (cs.conversationIds || []).includes(conv.id)
                         );
                         const previewText =
-                          lastMsg?.text ||
+                          formatChatPreviewWithStickers(lastMsg?.text) ||
                           (lastMsg?.attachments?.length ? `Hình ảnh (${lastMsg.attachments.length})` : conv.subtitle);
 
                         const convMenuContent = (
@@ -8685,55 +8681,66 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               )}
                             </div>
                           ) : m.text ? (
-                            <div
-                              onClick={(e) => handleMessageTap(m.id, e)}
-                              className={`relative inline-block text-left px-3.5 py-2 rounded-2xl ${
-                                isMine ? 'rounded-tr-sm' : 'rounded-tl-sm'
-                              } text-[13px] leading-relaxed whitespace-pre-wrap break-words max-w-[85%] cursor-pointer select-none active:scale-[0.985] transition-all`}
-                              style={{
-                                background: isMine
-                                  ? isDark
-                                    ? 'rgba(212, 168, 75, 0.16)'
-                                    : 'rgba(212, 168, 75, 0.14)'
-                                  : surfaceRaised,
-                                border: `1px solid ${
-                                  isMine
-                                    ? isDark
-                                      ? 'rgba(212, 168, 75, 0.38)'
-                                      : 'rgba(212, 168, 75, 0.35)'
-                                    : borderColor
-                                }`,
-                                color: token.colorText,
-                              }}
-                            >
-                              {renderRichTextMessage(m.text, isMine)}
-
-                              {/* Edited Badge with Clickable Audit History */}
-                              {m.editHistory && m.editHistory.length > 0 && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setHistoryModalMessage(m);
-                                    setHistoryModalOpen(true);
+                            (() => {
+                              const isPureSticker = Boolean(parsePureStickerMessage(m.text));
+                              return (
+                                <div
+                                  onClick={(e) => handleMessageTap(m.id, e)}
+                                  className={`relative inline-block text-left ${
+                                    isPureSticker
+                                      ? 'px-1 py-0.5 rounded-2xl'
+                                      : `px-3.5 py-2 rounded-2xl ${isMine ? 'rounded-tr-sm' : 'rounded-tl-sm'}`
+                                  } text-[13px] leading-relaxed whitespace-pre-wrap break-words max-w-[85%] cursor-pointer select-none active:scale-[0.985] transition-all`}
+                                  style={{
+                                    background: isPureSticker
+                                      ? 'transparent'
+                                      : isMine
+                                        ? isDark
+                                          ? 'rgba(212, 168, 75, 0.16)'
+                                          : 'rgba(212, 168, 75, 0.14)'
+                                        : surfaceRaised,
+                                    border: isPureSticker
+                                      ? 'none'
+                                      : `1px solid ${
+                                          isMine
+                                            ? isDark
+                                              ? 'rgba(212, 168, 75, 0.38)'
+                                              : 'rgba(212, 168, 75, 0.35)'
+                                            : borderColor
+                                        }`,
+                                    color: token.colorText,
                                   }}
-                                  className="inline-flex items-center gap-0.5 text-[10.5px] font-medium text-amber-500/80 hover:text-amber-400 hover:underline cursor-pointer select-none ml-1.5 align-baseline"
-                                  title="Xem lịch sử chỉnh sửa"
                                 >
-                                  <History size={10} />
-                                  <span>(đã chỉnh sửa)</span>
-                                </button>
-                              )}
+                                  {renderRichTextMessage(m.text, isMine)}
 
-                              {/* Floating Heart Burst on Double-Tap */}
-                              {heartFlyMsgId === m.id && (
-                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30 select-none overflow-hidden">
-                                  <span className="text-[38px] drop-shadow-xl animate-heart-burst leading-none">
-                                    ❤️
-                                  </span>
+                                  {/* Edited Badge with Clickable Audit History */}
+                                  {m.editHistory && m.editHistory.length > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setHistoryModalMessage(m);
+                                        setHistoryModalOpen(true);
+                                      }}
+                                      className="inline-flex items-center gap-0.5 text-[10.5px] font-medium text-amber-500/80 hover:text-amber-400 hover:underline cursor-pointer select-none ml-1.5 align-baseline"
+                                      title="Xem lịch sử chỉnh sửa"
+                                    >
+                                      <History size={10} />
+                                      <span>(đã chỉnh sửa)</span>
+                                    </button>
+                                  )}
+
+                                  {/* Floating Heart Burst on Double-Tap */}
+                                  {heartFlyMsgId === m.id && (
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30 select-none overflow-hidden">
+                                      <span className="text-[38px] drop-shadow-xl animate-heart-burst leading-none">
+                                        ❤️
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
+                              );
+                            })()
                           ) : null}
 
                           {/* Suggested AI Action Button(s) (e.g. APPLY_FILTER) */}
@@ -9063,13 +9070,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                 .filter(([, count]) => count > 0)
                                 .map(([emoji, count]) => {
                                   const reactedByMe = hasUserReacted(m, emoji);
+                                  const stickerReaction = parseStickerReactionKey(emoji);
+                                  const label = stickerReaction
+                                    ? stickerReaction.caption || stickerReaction.title
+                                    : emoji;
                                   return (
                                     <Tooltip
                                       key={emoji}
                                       title={
                                         reactedByMe
-                                          ? `Bạn đã thả ${emoji} · Nhấn để gỡ cảm xúc (Undo)`
-                                          : `Nhấn để thả cùng ${emoji}`
+                                          ? `Bạn đã thả ${label} · Nhấn để gỡ cảm xúc (Undo)`
+                                          : `Nhấn để thả cùng ${label}`
                                       }
                                     >
                                       <button
@@ -9082,7 +9093,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                           color: reactedByMe ? '#d4a84b' : token.colorText,
                                         }}
                                       >
-                                        <span>{emoji}</span>
+                                        {stickerReaction ? (
+                                          <MosChatStickerVisual sticker={stickerReaction} size="reaction" />
+                                        ) : (
+                                          <span>{emoji}</span>
+                                        )}
                                         <span>{count}</span>
                                       </button>
                                     </Tooltip>
@@ -10641,6 +10656,18 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     <span className="font-serif font-bold text-[13px] tracking-tight">Aa</span>
                   </button>
                 </Tooltip>
+                <Popover trigger="click" placement="topRight" content={renderComposerEmojiPickerContent('thread')}>
+                  <Tooltip title="Gửi Sticker động / Meme / Emoji vào luồng">
+                    <button
+                      type="button"
+                      aria-label="Gửi Sticker động hoặc Emoji vào luồng"
+                      className="w-9 h-9 rounded-full inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10 active:scale-95 transition-transform"
+                      style={{ color: token.colorTextSecondary }}
+                    >
+                      <SmilePlus size={18} />
+                    </button>
+                  </Tooltip>
+                </Popover>
                 <Tooltip title="Tải hình vào luồng">
                   <button
                     type="button"
@@ -10924,6 +10951,22 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             color: token.colorText,
                           }}
                         />
+                        <Popover
+                          trigger="click"
+                          placement="topRight"
+                          content={renderComposerEmojiPickerContent({ dockConvId: cid })}
+                        >
+                          <Tooltip title="Gửi Sticker động / Emoji">
+                            <button
+                              type="button"
+                              aria-label="Gửi Sticker động hoặc Emoji"
+                              className="w-7 h-7 rounded-full inline-flex items-center justify-center cursor-pointer hover:bg-white/10"
+                              style={{ color: token.colorTextSecondary }}
+                            >
+                              <SmilePlus size={13} />
+                            </button>
+                          </Tooltip>
+                        </Popover>
                         <Tooltip title="Tải hình lên">
                           <button
                             type="button"
