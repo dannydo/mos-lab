@@ -191,4 +191,64 @@ describe('chat task edit, archive, and delete invariants (MOS-FEAT-121)', () => 
     const linkedMsg = conversations[0].messages.find((m) => m.id === 'msg-linked-1');
     assert.equal(linkedMsg?.taskId, undefined);
   });
+
+  it('correctly sets task deadline, negotiates deadline with note, and accepts negotiation (MOS-BUG-125)', () => {
+    const initialDeadline = new Date(Date.now() + 18000000).toISOString(); // 5 hours later
+    const task: MosChatTaskItem = {
+      id: 'task-deadline-1',
+      conversationId: 'dm-pair-1-6',
+      conversationName: 'Nguyễn Quang Khải',
+      title: 'Báo cáo số liệu chiến dịch Telesales',
+      assigneeId: 6,
+      assigneeName: 'Nguyễn Quang Khải',
+      creatorName: 'Danny Do',
+      priority: 'HIGH',
+      remindAt: new Date(Date.now() + 3600000).toISOString(),
+      deadline: initialDeadline,
+      dueAt: initialDeadline,
+      done: false,
+      fired: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    assert.equal(task.deadline, initialDeadline);
+    assert.equal(task.dueAt, initialDeadline);
+
+    // 1. Assignee negotiates deadline (e.g. Khải asks to postpone to tomorrow 10:00)
+    const proposedDeadline = new Date(Date.now() + 86400000).toISOString();
+    const negotiationPayload: UpdateMosChatTaskRequest = {
+      negotiatedDeadline: proposedDeadline,
+      negotiationNote: 'Em đang kẹt xử lý sự cố OmiCall, xin phép dời sang sáng mai ạ',
+      negotiatedBy: 'Nguyễn Quang Khải',
+      negotiatedAt: new Date().toISOString(),
+    };
+
+    task.negotiatedDeadline = negotiationPayload.negotiatedDeadline;
+    task.negotiationNote = negotiationPayload.negotiationNote;
+    task.negotiatedBy = negotiationPayload.negotiatedBy;
+    task.negotiatedAt = negotiationPayload.negotiatedAt;
+
+    assert.equal(task.negotiatedDeadline, proposedDeadline);
+    assert.equal(task.negotiationNote, 'Em đang kẹt xử lý sự cố OmiCall, xin phép dời sang sáng mai ạ');
+    // Official deadline remains intact until approved
+    assert.equal(task.deadline, initialDeadline);
+
+    // 2. Creator (Danny) accepts negotiated deadline
+    const acceptPayload: UpdateMosChatTaskRequest = {
+      acceptNegotiatedDeadline: true,
+    };
+    if (acceptPayload.acceptNegotiatedDeadline && task.negotiatedDeadline) {
+      task.deadline = task.negotiatedDeadline;
+      task.dueAt = task.negotiatedDeadline;
+      task.negotiatedDeadline = null;
+      task.negotiationNote = null;
+      task.negotiatedBy = null;
+      task.negotiatedAt = null;
+    }
+
+    assert.equal(task.deadline, proposedDeadline);
+    assert.equal(task.dueAt, proposedDeadline);
+    assert.equal(task.negotiatedDeadline, null);
+    assert.equal(task.negotiationNote, null);
+  });
 });

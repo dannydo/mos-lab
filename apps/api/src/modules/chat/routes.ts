@@ -2956,6 +2956,15 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         });
       }
 
+      let deadlineIso: string | null = null;
+      const rawDeadline = body.deadline !== undefined ? body.deadline : body.dueAt;
+      if (rawDeadline) {
+        const parsedDeadline = new Date(rawDeadline);
+        if (!isNaN(parsedDeadline.getTime())) {
+          deadlineIso = parsedDeadline.toISOString();
+        }
+      }
+
       const newTask: MosChatTaskItem = {
         id: taskId,
         conversationId: conv.id,
@@ -2968,6 +2977,9 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         creatorName,
         priority: body.priority || 'HIGH',
         remindAt: remindAtDate.toISOString(),
+        dueAt: deadlineIso,
+        deadline: deadlineIso,
+        negotiationNote: body.negotiationNote ? String(body.negotiationNote).trim() : null,
         done: false,
         fired: isNoReminder,
         createdAt: now.toISOString(),
@@ -3042,6 +3054,51 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       if (body.triggerReminderNow && !task.fired) {
         task.fired = true;
         task.remindAt = now.toISOString();
+      }
+      if (body.deadline !== undefined || body.dueAt !== undefined) {
+        const rawDeadline = body.deadline !== undefined ? body.deadline : body.dueAt;
+        if (!rawDeadline) {
+          task.deadline = null;
+          task.dueAt = null;
+        } else {
+          const parsed = new Date(rawDeadline);
+          if (!isNaN(parsed.getTime())) {
+            task.deadline = parsed.toISOString();
+            task.dueAt = parsed.toISOString();
+          }
+        }
+      }
+      if (body.negotiatedDeadline !== undefined) {
+        if (!body.negotiatedDeadline) {
+          task.negotiatedDeadline = null;
+        } else {
+          const parsed = new Date(body.negotiatedDeadline);
+          if (!isNaN(parsed.getTime())) {
+            task.negotiatedDeadline = parsed.toISOString();
+          }
+        }
+      }
+      if (body.negotiationNote !== undefined) {
+        task.negotiationNote = body.negotiationNote ? String(body.negotiationNote).trim() : null;
+      }
+      if (body.negotiatedBy !== undefined) {
+        task.negotiatedBy = body.negotiatedBy ? String(body.negotiatedBy).trim() : null;
+      }
+      if (body.negotiatedAt !== undefined) {
+        task.negotiatedAt = body.negotiatedAt ? String(body.negotiatedAt) : null;
+      }
+      if (body.acceptNegotiatedDeadline && task.negotiatedDeadline) {
+        task.deadline = task.negotiatedDeadline;
+        task.dueAt = task.negotiatedDeadline;
+        task.negotiatedDeadline = null;
+        task.negotiationNote = null;
+        task.negotiatedBy = null;
+        task.negotiatedAt = null;
+      } else if (body.rejectNegotiatedDeadline) {
+        task.negotiatedDeadline = null;
+        task.negotiationNote = null;
+        task.negotiatedBy = null;
+        task.negotiatedAt = null;
       }
       task.updatedAt = now.toISOString();
 
