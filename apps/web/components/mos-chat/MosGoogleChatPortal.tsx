@@ -360,6 +360,11 @@ export interface MosGoogleChatPortalProps {
   currentUser?: SafeAny;
   onAccessChange?: (canAccess: boolean) => void;
   onUnreadCountChange?: (unreadCount: number, activeTaskCount: number) => void;
+  targetNavigation?: {
+    conversationId?: string;
+    messageId?: string;
+    timestamp?: number;
+  } | null;
 }
 
 const STAFF_DIRECTORY_CACHE_KEY = 'mos_chat_staff_directory_v1';
@@ -814,6 +819,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   currentUser,
   onAccessChange,
   onUnreadCountChange,
+  targetNavigation,
 }) => {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
@@ -822,6 +828,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [conversations, setConversations] = useState<MosChatConversation[]>(FALLBACK_CONVERSATIONS);
   const [tasks, setTasks] = useState<MosChatTaskItem[]>(FALLBACK_TASKS);
   const [staffDirectory, setStaffDirectory] = useState<MosChatStaffMember[]>(getInitialStaffDirectory);
+  const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
+  const navigateToMessageRef = useRef<(convId: string, msgId?: string) => void>(() => {});
   const personalLayoutStorageKey = useMemo(() => {
     let resolvedKey = String(currentUser?.id || currentUser?.username || '').trim();
     if (!resolvedKey && typeof window !== 'undefined') {
@@ -2164,20 +2172,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     [userPrefs.hiddenIds, userPrefs.readMessageCountByConv]
   );
 
-  // Listen to global custom event 'mos-chat:open' (e.g. clicking an online colleague avatar on Header)
+  // Listen to global custom event 'mos-chat:open' (e.g. clicking an online colleague avatar on Header or from Notification)
   useEffect(() => {
     const handleGlobalChatOpen = async (ev: Event) => {
       const customEv = ev as CustomEvent<{
         conversationId?: string;
+        messageId?: string;
         participantStaffId?: number;
         participantName?: string;
         customerCard?: MosChatCustomerCard;
       }>;
       const detail = customEv.detail || {};
-      if (detail.conversationId && visibleConversations.some((c) => c.id === detail.conversationId)) {
-        setActiveConvId(detail.conversationId);
-        setActiveSubtab('chat');
-        if (isMobile) setMobileActiveView('conversation');
+      if (detail.conversationId) {
+        navigateToMessageRef.current(detail.conversationId, detail.messageId);
         return;
       }
       if (detail.participantName || detail.participantStaffId) {
@@ -4062,14 +4069,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       }));
 
       apiClient.chat
-        .markThreadAsRead(convId, msgId)
-        .then((res) => {
+        ?.markThreadAsRead?.(convId, msgId)
+        ?.then((res) => {
           if (res?.conversation) {
             setConversations((prev) => prev.map((c) => (c.id === convId ? res.conversation! : c)));
           }
           notifyLivePeers();
         })
-        .catch(() => {});
+        ?.catch?.(() => {});
     },
     [
       currentUserStaffMember.id,
@@ -4085,24 +4092,100 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     ]
   );
 
-  const handleOpenThread = (msgId: string) => {
-    setActiveThreadMsgId(msgId);
-    setThreadOpen(true);
-    if (isMobile) {
-      setMobileActiveView('thread');
-    }
-    if (activeConversation && isTabVisible) {
-      markThreadReadOptimisticAndSync(activeConversation.id, msgId);
-    }
-    scrollToChatBottom('thread', 'auto');
-  };
+  const handleOpenThread = useCallback(
+    (msgId: string) => {
+      setActiveThreadMsgId(msgId);
+      setThreadOpen(true);
+      if (isMobile) {
+        setMobileActiveView('thread');
+      }
+      if (activeConversation && isTabVisible) {
+        markThreadReadOptimisticAndSync(activeConversation.id, msgId);
+      }
+      scrollToChatBottom('thread', 'auto');
+    },
+    [isMobile, activeConversation, isTabVisible, markThreadReadOptimisticAndSync, scrollToChatBottom]
+  );
 
-  const handleMessageTap = (msgId: string, e: React.MouseEvent) => {
+  const navigateToMessage = useCallback(
+    (convId: string, msgId?: string) => {
+      setActiveConvId(convId);
+      setActiveSubtab('chat');
+      if (isMobile) setMobileActiveView('conversation');
+
+      if (!msgId) return;
+
+      const targetConv = conversations.find((c) => c.id === convId);
+      if (!targetConv) return;
+
+      let rootMsg = targetConv.messages.find((m) => m.id === msgId);
+      let isReply = false;
+
+      if (!rootMsg) {
+        for (const m of targetConv.messages) {
+          const foundReply = (m.thread || []).find((r) => r.id === msgId);
+          if (foundReply) {
+            rootMsg = m;
+            isReply = true;
+            break;
+          }
+        }
+      }
+
+      if (rootMsg) {
+        const hasSubthread = Boolean(rootMsg.thread && rootMsg.thread.length > 0);
+        if (hasSubthread || isReply) {
+          handleOpenThread(rootMsg.id);
+        }
+      }
+
+      setHighlightedMsgId(msgId);
+
+      setTimeout(() => {
+        const targetId = isReply ? `mos-chat-reply-${msgId}` : `mos-chat-msg-${msgId}`;
+        const el = document.getElementById(targetId) || document.getElementById(`mos-chat-msg-${msgId}`);
+        if (el && typeof el.scrollIntoView === 'function') {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 350);
+
+      setTimeout(() => {
+        setHighlightedMsgId((prev) => (prev === msgId ? null : prev));
+      }, 4000);
+    },
+    [conversations, isMobile, handleOpenThread]
+  );
+
+  useEffect(() => {
+    navigateToMessageRef.current = navigateToMessage;
+  }, [navigateToMessage]);
+
+  const lastProcessedNavRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (targetNavigation?.conversationId) {
+      const navKey = `${targetNavigation.conversationId}:${targetNavigation.messageId || ''}:${targetNavigation.timestamp || 0}`;
+      if (lastProcessedNavRef.current === navKey) return;
+      lastProcessedNavRef.current = navKey;
+      navigateToMessageRef.current(targetNavigation.conversationId, targetNavigation.messageId);
+    }
+  }, [targetNavigation?.timestamp, targetNavigation?.conversationId, targetNavigation?.messageId]);
+
+  const handleMessageTap = (m: MosChatMessage, e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (target.closest('button') || target.closest('a') || target.closest('input')) {
+    if (
+      target.closest('button') ||
+      target.closest('a') ||
+      target.closest('input') ||
+      target.closest('textarea') ||
+      target.closest('[role="button"]')
+    ) {
       return;
     }
+    const msgId = m.id;
     const now = Date.now();
+    const hasSubthread = Boolean(m.thread && m.thread.length > 0);
+
     if (lastTapRef.current.msgId === msgId && now - lastTapRef.current.time < 380) {
       // Double tap detected: Instant Heart reaction toggle
       handleToggleReaction(msgId, '❤️');
@@ -4119,6 +4202,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       lastTapRef.current = { msgId, time: now };
       if (isMobile) {
         setMobileActiveMsgId((prev) => (prev === msgId ? null : msgId));
+      }
+      // If message has subthread, auto-open subthread on click!
+      if (hasSubthread) {
+        handleOpenThread(msgId);
       }
     }
   };
@@ -9941,6 +10028,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             targetMessageId: m.id,
                           });
                         }}
+                        id={`mos-chat-msg-${m.id}`}
                         className={`group relative flex items-start gap-2.5 px-4 ${
                           isMine ? 'flex-row-reverse' : 'flex-row'
                         } ${
@@ -9951,11 +10039,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         style={{
                           background: isDropTarget
                             ? 'rgba(212, 168, 75, 0.14)'
-                            : linkedTask
-                              ? 'rgba(212, 168, 75, 0.06)'
+                            : highlightedMsgId === m.id
+                              ? 'rgba(212, 168, 75, 0.18)'
+                              : linkedTask
+                                ? 'rgba(212, 168, 75, 0.06)'
+                                : undefined,
+                          boxShadow: isDropTarget
+                            ? 'inset 0 0 0 1.5px #d4a84b'
+                            : highlightedMsgId === m.id
+                              ? '0 0 0 2px #d4a84b, inset 0 0 14px rgba(212, 168, 75, 0.28)'
                               : undefined,
-                          boxShadow: isDropTarget ? 'inset 0 0 0 1.5px #d4a84b' : undefined,
-                          borderRadius: isDropTarget ? 10 : undefined,
+                          borderRadius: isDropTarget || highlightedMsgId === m.id ? 10 : undefined,
                         }}
                       >
                         {isDropTarget && (
@@ -10193,14 +10287,22 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           ) : m.text ? (
                             (() => {
                               const isPureSticker = Boolean(parsePureStickerMessage(m.text));
+                              const hasSubthread = Boolean(m.thread && m.thread.length > 0);
                               return (
                                 <div
-                                  onClick={(e) => handleMessageTap(m.id, e)}
+                                  onClick={(e) => handleMessageTap(m, e)}
+                                  title={
+                                    hasSubthread
+                                      ? `Nhấn để mở luồng trả lời phụ (${m.thread?.length} phản hồi)`
+                                      : undefined
+                                  }
                                   className={`relative inline-block text-left ${
                                     isPureSticker
                                       ? 'px-1 py-0.5 rounded-2xl'
                                       : `px-3.5 py-2 rounded-2xl ${isMine ? 'rounded-tr-sm' : 'rounded-tl-sm'}`
-                                  } text-[13px] leading-relaxed whitespace-pre-wrap break-words max-w-[85%] cursor-pointer select-none active:scale-[0.985] transition-all`}
+                                  } text-[13px] leading-relaxed whitespace-pre-wrap break-words max-w-[85%] cursor-pointer select-none active:scale-[0.985] transition-all ${
+                                    hasSubthread ? 'hover:ring-1 hover:ring-amber-500/50' : ''
+                                  }`}
                                   style={{
                                     background: isPureSticker
                                       ? 'transparent'
@@ -11652,8 +11754,16 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
             <div ref={threadMessagesContainerRef} className="flex-1 overflow-y-auto p-3 space-y-2.5">
               <div
-                className="p-2.5 rounded-lg text-[12px]"
-                style={{ background: surfaceRaised, borderLeft: '3px solid #d4a84b' }}
+                id={`mos-chat-thread-root-${activeThreadMessage.id}`}
+                className="p-2.5 rounded-lg text-[12px] transition-all"
+                style={{
+                  background: surfaceRaised,
+                  borderLeft: '3px solid #d4a84b',
+                  boxShadow:
+                    highlightedMsgId === activeThreadMessage.id
+                      ? '0 0 0 2px #d4a84b, 0 0 14px rgba(212, 168, 75, 0.4)'
+                      : undefined,
+                }}
               >
                 <div className="flex items-center gap-1.5 font-bold mb-1">
                   {renderUserAvatarNode({
@@ -11722,7 +11832,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 const replyBreakdown = getThreadReplyReadBreakdown(activeConversation, activeThreadMessage, r);
                 const stoppedReadersForReply = stoppedReadersByReplyId[r.id] || [];
                 return (
-                  <div key={r.id} className="space-y-1">
+                  <div key={r.id} id={`mos-chat-reply-${r.id}`} className="space-y-1">
                     <div className={`flex gap-2 items-start ${isReplyMine ? 'flex-row-reverse' : 'flex-row'}`}>
                       {renderUserAvatarNode({
                         name: r.senderName,
@@ -11733,7 +11843,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         textColor: isReplyMine ? '#000' : '#fff',
                       })}
                       <div
-                        className={`max-w-[85%] p-2 rounded-xl text-[12px] group relative ${
+                        className={`max-w-[85%] p-2 rounded-xl text-[12px] group relative transition-all ${
                           isReplyMine ? 'rounded-tr-sm text-right' : 'rounded-tl-sm text-left'
                         }`}
                         style={{
@@ -11745,6 +11855,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           border: `1px solid ${
                             isReplyMine ? (isDark ? 'rgba(212, 168, 75, 0.35)' : 'rgba(217, 119, 6, 0.3)') : borderColor
                           }`,
+                          boxShadow:
+                            highlightedMsgId === r.id
+                              ? '0 0 0 2px #d4a84b, 0 0 14px rgba(212, 168, 75, 0.4)'
+                              : undefined,
                         }}
                       >
                         <div

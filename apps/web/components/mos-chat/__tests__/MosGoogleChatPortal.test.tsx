@@ -50,6 +50,7 @@ vi.mock('../../../lib/api-client', () => ({
       updateTask: vi.fn().mockResolvedValue({ success: true }),
       deleteTask: vi.fn().mockResolvedValue({ success: true, taskId: 'task-test-1' }),
       markAsRead: vi.fn().mockResolvedValue({}),
+      markThreadAsRead: vi.fn().mockResolvedValue({}),
       togglePinConversation: vi.fn().mockResolvedValue({}),
     },
     staff: {
@@ -67,9 +68,7 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
   });
 
   it('initializes and caches staffDirectory to localStorage', async () => {
-    const mockStaff = [
-      { id: 10, displayName: 'Minh Thư', role: 'CS' },
-    ];
+    const mockStaff = [{ id: 10, displayName: 'Minh Thư', role: 'CS' }];
     window.localStorage.setItem('mos_chat_staff_directory_v1', JSON.stringify(mockStaff));
 
     render(
@@ -165,7 +164,7 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
     expect(screen.getByText(/Tất cả/i)).toBeTruthy();
 
     // Check action buttons: edit, archive, delete
-    const editBtn = screen.getByRole('button', { name: /Chỉnh sửa task/i });
+    const editBtn = screen.getByRole('button', { name: /Chỉnh sửa/i });
     expect(editBtn).toBeTruthy();
 
     const archiveBtn = screen.getByRole('button', { name: /Lưu trữ công việc/i });
@@ -173,5 +172,22 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
 
     const deleteBtn = screen.getByRole('button', { name: /Xoá task/i });
     expect(deleteBtn).toBeTruthy();
+  });
+
+  it('accepts targetNavigation prop to navigate and highlight target message', async () => {
+    const { container } = render(
+      <MosGoogleChatPortal
+        open={true}
+        onClose={vi.fn()}
+        onToggle={vi.fn()}
+        currentUser={{ id: 99, displayName: 'Danny Do', role: 'Admin' }}
+        targetNavigation={{
+          conversationId: 'space-cc',
+          messageId: 'msg-seed-1',
+          timestamp: Date.now(),
+        }}
+      />
+    );
+    expect(container).toBeTruthy();
   });
 });

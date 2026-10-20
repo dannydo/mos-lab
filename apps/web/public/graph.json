@@ -40375,8 +40375,8 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 60183,
-        "lineCount": 1485,
+        "sizeBytes": 60608,
+        "lineCount": 1496,
         "ext": ".tsx"
       }
     },

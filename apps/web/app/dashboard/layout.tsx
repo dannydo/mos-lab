@@ -114,6 +114,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mosChatTaskCount, setMosChatTaskCount] = useState(2);
   const [canAccessMosChat, setCanAccessMosChat] = useState(false);
   const effectiveCanAccessMosChat = isAdminOrSuperAdminRole(user?.role) || canAccessMosChat;
+  const [targetChatNavigation, setTargetChatNavigation] = useState<{
+    conversationId?: string;
+    messageId?: string;
+    timestamp?: number;
+  } | null>(null);
 
   useEffect(() => {
     try {
@@ -857,8 +862,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                 <HeaderNotificationCenter
                   themeMode={themeMode}
-                  onOpenChat={(convId) => {
+                  onOpenChat={(convId, msgId) => {
                     setIsMosChatOpen(true);
+                    setTargetChatNavigation({
+                      conversationId: convId,
+                      messageId: msgId,
+                      timestamp: Date.now(),
+                    });
                   }}
                 />
 
@@ -1472,6 +1482,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             onToggle={() => setIsMosChatOpen((prev) => !prev)}
             currentUser={user}
             onAccessChange={setCanAccessMosChat}
+            targetNavigation={targetChatNavigation}
             onUnreadCountChange={(unread, tasks) => {
               setMosChatUnreadCount(unread);
               setMosChatTaskCount(tasks);
