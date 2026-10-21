@@ -10,8 +10,8 @@ import {
   Popconfirm,
   DatePicker,
   Switch,
-  message as antdMessage,
-  notification,
+  message as antdMessageStatic,
+  notification as notificationStatic,
   theme,
 } from 'antd';
 import {
@@ -126,7 +126,7 @@ import type {
   MosChatWorkflowTemplate,
   SafeAny,
 } from '@mos-lab/shared';
-import { isCanonicalSuperAdminIdentity, removeVietnameseTones } from '@mos-lab/shared';
+import { hexToRgba, isCanonicalSuperAdminIdentity, removeVietnameseTones } from '@mos-lab/shared';
 import { useTheme } from '../../context/ThemeContext';
 import { apiClient } from '../../lib/api-client';
 import { resolveMediaUrl } from '../../lib/api-base-url';
@@ -196,9 +196,25 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   onUnreadCountChange,
   targetNavigation,
 }) => {
-  const { themeMode } = useTheme();
+  const { themeMode, activeThemeDefinition } = useTheme();
   const { token } = theme.useToken();
   const isDark = themeMode === 'dark';
+  const [antdMessage, messageContextHolder] = antdMessageStatic.useMessage();
+  const [notification, notificationContextHolder] = notificationStatic.useNotification();
+
+  const activeMode =
+    activeThemeDefinition.modes[themeMode] ?? activeThemeDefinition.modes[activeThemeDefinition.defaultMode];
+  const currentModeColors = activeMode.colors;
+  const currentModeSemantic = activeMode.semantic;
+  const surfaceBg = currentModeSemantic.surface;
+  const surfaceRaised = currentModeSemantic.surfaceRaised;
+  const canvasBg = currentModeColors.bgLayout;
+  const borderColor = currentModeSemantic.border;
+  const borderStrong = currentModeSemantic.borderStrong;
+  const accentColor = currentModeSemantic.accent;
+  const accentContrast = currentModeSemantic.accentContrast;
+  const accentSoftBg = hexToRgba(accentColor, isDark ? 0.16 : 0.12);
+  const accentBorder = hexToRgba(accentColor, isDark ? 0.38 : 0.34);
 
   const [conversations, setConversations] = useState<MosChatConversation[]>(FALLBACK_CONVERSATIONS);
   const [tasks, setTasks] = useState<MosChatTaskItem[]>(FALLBACK_TASKS);
@@ -1274,6 +1290,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       message: `⚡ TIN NHẮN KHẨN CẤP (BUZZ) ${convLabel}`,
                       description: `${senderLabel} vừa Buzz tin nhắn khẩn cấp: "${preview}"`,
                       duration: 8,
+                      style: {
+                        background: surfaceRaised,
+                        border: `1.5px solid ${accentColor}`,
+                        color: token.colorText,
+                        boxShadow: 'var(--mos-shadow)',
+                        borderRadius: 12,
+                      },
                       btn: (
                         <button
                           type="button"
@@ -1284,7 +1307,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             selectConversation(conv.id);
                             notification.destroy();
                           }}
-                          className="px-3 py-1 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs cursor-pointer shadow-sm"
+                          className="px-3 py-1 rounded font-bold text-xs cursor-pointer shadow-sm transition-opacity hover:opacity-90"
+                          style={{
+                            background: accentColor,
+                            color: accentContrast,
+                          }}
                         >
                           Xem ngay
                         </button>
@@ -5105,12 +5132,6 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     return out;
   }, [staffDirectory, currentUser?.displayName, currentUser?.role]);
 
-  const surfaceBg = isDark ? '#111827' : '#ffffff';
-  const surfaceRaised = isDark ? '#1a2333' : '#f8fafc';
-  const canvasBg = isDark ? '#0d1322' : '#ffffff';
-  const borderColor = isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0';
-  const borderStrong = isDark ? 'rgba(255, 255, 255, 0.15)' : '#cbd5e1';
-
   const formatMoveTargetSnippet = (msg: MosChatMessage): string => {
     const raw = String(msg.text || '')
       .replace(/\s+/g, ' ')
@@ -6715,9 +6736,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             result.push(
               <div
                 key={`cb-${idx}`}
-                className="my-2 rounded-xl overflow-hidden border border-white/10 shadow-sm bg-neutral-900 text-neutral-100 text-[11.5px] font-mono select-text"
+                className="my-2 rounded-xl overflow-hidden shadow-sm text-[11.5px] font-mono select-text"
+                style={{
+                  background: isDark ? '#0f172a' : '#f8fafc',
+                  color: isDark ? '#f1f5f9' : '#0f172a',
+                  border: `1px solid ${borderColor}`,
+                }}
               >
-                <div className="flex items-center justify-between px-3 py-1 bg-neutral-800/80 border-b border-white/5 text-[10px] text-neutral-400">
+                <div
+                  className="flex items-center justify-between px-3 py-1 text-[10px]"
+                  style={{
+                    background: surfaceRaised,
+                    borderBottom: `1px solid ${borderColor}`,
+                    color: token.colorTextSecondary,
+                  }}
+                >
                   <span className="font-semibold">{codeBlockLang || 'Code'}</span>
                   <button
                     type="button"
@@ -6726,7 +6759,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       void navigator.clipboard?.writeText(codeContent);
                       antdMessage.success('Đã sao chép mã code');
                     }}
-                    className="hover:text-amber-400 cursor-pointer inline-flex items-center gap-1"
+                    className="cursor-pointer inline-flex items-center gap-1 transition-opacity hover:opacity-80"
+                    style={{ color: accentColor }}
                   >
                     <Copy size={11} />
                     <span>Sao chép</span>
@@ -6869,7 +6903,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         result.push(
           <pre
             key="cb-unclosed"
-            className="p-3 my-2 rounded-xl bg-neutral-900 text-neutral-100 text-[11.5px] font-mono overflow-x-auto leading-relaxed border border-white/10 select-text"
+            className="p-3 my-2 rounded-xl text-[11.5px] font-mono overflow-x-auto leading-relaxed select-text"
+            style={{
+              background: isDark ? '#0f172a' : '#f8fafc',
+              color: isDark ? '#f1f5f9' : '#0f172a',
+              border: `1px solid ${borderColor}`,
+            }}
           >
             <code>{codeContent}</code>
           </pre>
@@ -6878,7 +6917,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
       return <div className="space-y-0.5">{result}</div>;
     },
-    [parseInlineRichText]
+    [parseInlineRichText, isDark, borderColor, surfaceRaised, token.colorTextSecondary, accentColor, antdMessage]
   );
 
   /**
@@ -8451,6 +8490,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   return (
     <>
+      {messageContextHolder}
+      {notificationContextHolder}
       {/* Hidden File Input for Local Drive & Google Drive Desktop Upload */}
       <input
         ref={fileInputRef}
@@ -8469,6 +8510,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       {/* ================= GOOGLE CHAT RIGHT WORKSPACE PANEL (FHD, VECTOR ICONS + TOOLTIPS) ================= */}
       <section
         aria-label="mOS Google Chat Workspace"
+        className="mos-chat-theme-scope"
         style={{
           position: 'fixed',
           top: isMobile ? 0 : 52,
@@ -8478,10 +8520,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           width: isMobile ? '100vw' : maximized ? 'calc(100vw - 224px)' : panelWidth,
           maxWidth: isMobile ? '100vw' : 'calc(100vw - 56px)',
           background: surfaceBg,
+          color: token.colorText,
           borderLeft: isMobile
             ? 'none'
-            : `1px solid ${isResizingTarget === 'panel' || hoverResizeHandle === 'panel' ? '#d4a84b' : borderStrong}`,
-          boxShadow: isDark ? '0 24px 56px rgba(0, 0, 0, 0.65)' : '0 20px 48px rgba(15, 23, 42, 0.15)',
+            : `1px solid ${isResizingTarget === 'panel' || hoverResizeHandle === 'panel' ? accentColor : borderStrong}`,
+          boxShadow: 'var(--mos-shadow)',
           display: 'flex',
           zIndex: isMobile ? 1200 : 995,
           transform: open ? 'translateX(0)' : 'translateX(104%)',
@@ -8548,11 +8591,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   height: isResizingTarget === 'panel' || hoverResizeHandle === 'panel' ? 56 : 36,
                   background:
                     isResizingTarget === 'panel' || hoverResizeHandle === 'panel'
-                      ? '#d4a84b'
+                      ? accentColor
                       : isDark
                         ? 'rgba(148, 163, 184, 0.32)'
                         : 'rgba(100, 116, 139, 0.28)',
-                  boxShadow: isResizingTarget === 'panel' ? '0 0 10px rgba(212, 168, 75, 0.65)' : 'none',
+                  boxShadow: isResizingTarget === 'panel' ? `0 0 10px ${accentBorder}` : 'none',
                 }}
               />
               {isResizingTarget === 'panel' && (
@@ -8561,9 +8604,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   style={{
                     position: 'absolute',
                     left: -64,
-                    background: '#111827',
-                    color: '#d4a84b',
-                    border: '1px solid rgba(212, 168, 75, 0.45)',
+                    background: surfaceRaised,
+                    color: accentColor,
+                    border: `1px solid ${accentBorder}`,
                     whiteSpace: 'nowrap',
                   }}
                 >
@@ -8582,7 +8625,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             borderRight: isMobile
               ? 'none'
               : `1px solid ${
-                  isResizingTarget === 'sidebar' || hoverResizeHandle === 'sidebar' ? '#d4a84b' : borderColor
+                  isResizingTarget === 'sidebar' || hoverResizeHandle === 'sidebar' ? accentColor : borderColor
                 }`,
             display: isMobile && mobileActiveView !== 'inbox' ? 'none' : 'flex',
             flexDirection: 'column',
@@ -10606,21 +10649,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                           ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.22) 0%, rgba(225, 29, 72, 0.14) 100%)'
                                           : 'linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, rgba(225, 29, 72, 0.1) 100%)'
                                         : isMine
-                                          ? isDark
-                                            ? 'rgba(212, 168, 75, 0.16)'
-                                            : 'rgba(212, 168, 75, 0.14)'
+                                          ? accentSoftBg
                                           : surfaceRaised,
                                     border: isPureSticker
                                       ? 'none'
                                       : m.isBuzzed
                                         ? '1px solid rgba(245, 158, 11, 0.8)'
-                                        : `1px solid ${
-                                            isMine
-                                              ? isDark
-                                                ? 'rgba(212, 168, 75, 0.38)'
-                                                : 'rgba(212, 168, 75, 0.35)'
-                                              : borderColor
-                                          }`,
+                                        : `1px solid ${isMine ? accentBorder : borderColor}`,
                                     color: token.colorText,
                                   }}
                                 >
@@ -12678,9 +12713,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         }`}
                         style={{
                           background: isReplyMine
-                            ? isDark
-                              ? 'rgba(212, 168, 75, 0.16)'
-                              : 'rgba(245, 158, 11, 0.14)'
+                            ? accentSoftBg
                             : isAiReply
                               ? isDark
                                 ? 'rgba(139, 92, 246, 0.12)'
@@ -12688,9 +12721,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               : canvasBg,
                           border: `1px solid ${
                             isReplyMine
-                              ? isDark
-                                ? 'rgba(212, 168, 75, 0.35)'
-                                : 'rgba(217, 119, 6, 0.3)'
+                              ? accentBorder
                               : isAiReply
                                 ? isDark
                                   ? 'rgba(139, 92, 246, 0.4)'
@@ -12699,7 +12730,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           }`,
                           boxShadow:
                             highlightedMsgId === r.id
-                              ? '0 0 0 2px #d4a84b, 0 0 14px rgba(212, 168, 75, 0.4)'
+                              ? `0 0 0 2px ${accentColor}, 0 0 14px ${accentBorder}`
                               : undefined,
                         }}
                       >
@@ -13362,7 +13393,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
       {/* ================= MINI DOCKED POP-OUT CHAT WINDOWS (BOTTOM RIGHT LIKE GMAIL) ================= */}
       {!isMobile && dockedConvIds.length > 0 && (
-        <div className="fixed bottom-0 right-5 flex items-end gap-2.5 z-[990]" style={{ pointerEvents: 'none' }}>
+        <div
+          className="mos-chat-theme-scope fixed bottom-0 right-5 flex items-end gap-2.5 z-[990]"
+          style={{ pointerEvents: 'none', color: token.colorText }}
+        >
           {dockedConvIds.map((cid) => {
             const conv = conversations.find((c) => c.id === cid);
             if (!conv) return null;
@@ -13511,18 +13545,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                 isDockMine ? 'rounded-tr-sm' : 'rounded-tl-sm'
                               }`}
                               style={{
-                                background: isDockMine
-                                  ? isDark
-                                    ? 'rgba(212, 168, 75, 0.16)'
-                                    : 'rgba(245, 158, 11, 0.14)'
-                                  : surfaceBg,
-                                border: `1px solid ${
-                                  isDockMine
-                                    ? isDark
-                                      ? 'rgba(212, 168, 75, 0.35)'
-                                      : 'rgba(217, 119, 6, 0.3)'
-                                    : borderColor
-                                }`,
+                                background: isDockMine ? accentSoftBg : surfaceBg,
+                                border: `1px solid ${isDockMine ? accentBorder : borderColor}`,
                               }}
                             >
                               <div
@@ -13532,7 +13556,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               >
                                 <span
                                   className="text-[10.5px] font-bold inline-flex items-center gap-1"
-                                  style={{ color: '#d4a84b' }}
+                                  style={{ color: accentColor }}
                                 >
                                   <span>{m.senderName}</span>
                                   <span>·</span>
@@ -13549,7 +13573,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                     type="button"
                                     onClick={() => openTaskModalFromMessage(m)}
                                     className="w-5 h-5 rounded inline-flex items-center justify-center cursor-pointer"
-                                    style={{ color: '#d4a84b' }}
+                                    style={{ color: accentColor }}
                                   >
                                     <AlarmClockPlus size={12} />
                                   </button>
@@ -13658,7 +13682,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             handleSendMessage(cid, val, null, atts);
                           }}
                           className="w-7 h-7 rounded-full inline-flex items-center justify-center cursor-pointer"
-                          style={{ background: '#d4a84b', color: '#000' }}
+                          style={{ background: accentColor, color: accentContrast }}
                         >
                           <SendHorizontal size={13} />
                         </button>
@@ -13676,14 +13700,16 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       {activeAlertTask && (
         <div
           role="alert"
-          className="fixed top-16 right-5 w-[356px] rounded-xl p-3.5 shadow-2xl z-[1100]"
+          className="mos-chat-theme-scope fixed top-16 right-5 w-[356px] rounded-xl p-3.5 shadow-2xl z-[1100]"
           style={{
-            background: surfaceBg,
-            border: '1.5px solid #d4a84b',
+            background: surfaceRaised,
+            border: `1.5px solid ${accentColor}`,
+            color: token.colorText,
+            boxShadow: 'var(--mos-shadow)',
           }}
         >
           <div className="flex items-center justify-between mb-1.5">
-            <span className="flex items-center gap-1.5 text-[12px] font-extrabold text-amber-400">
+            <span className="flex items-center gap-1.5 text-[12px] font-extrabold" style={{ color: accentColor }}>
               <BellRing size={14} />
               <span>NHẮC HẸN CÔNG VIỆC</span>
             </span>
@@ -13740,6 +13766,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
       {/* ================= MODAL: MESSAGE TO TASK -> REMINDER ================= */}
       <Modal
+        className="mos-chat-theme-scope"
         open={taskModalOpen}
         zIndex={1350}
         onCancel={() => {
@@ -14152,6 +14179,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
       {/* ================= MODAL: THƯƠNG LƯỢNG DỜI HẠN CHÓT (MOS-BUG-125) ================= */}
       <Modal
+        className="mos-chat-theme-scope"
         open={negotiateModalOpen}
         zIndex={1360}
         onCancel={() => {
@@ -14267,6 +14295,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
       {/* ================= MODAL: CHUYỂN VÀO mOS MISSION (1-CLICK DISPATCH) ================= */}
       <Modal
+        className="mos-chat-theme-scope"
         open={missionModalOpen && isStrictDannySuperAdmin}
         zIndex={1360}
         onCancel={() => !isDispatchingMission && setMissionModalOpen(false)}
@@ -14456,6 +14485,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
       {/* ================= MODAL: CREATE NEW SPACE OR DM ================= */}
       <Modal
+        className="mos-chat-theme-scope"
         open={newRoomModalOpen}
         zIndex={1350}
         onCancel={() => {
@@ -14884,6 +14914,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
       {/* ================= MODAL: SPACE MEMBERS MANAGEMENT (GOOGLE CHAT WORKSPACE STYLE) ================= */}
       <Modal
+        className="mos-chat-theme-scope"
         open={spaceMembersModalOpen}
         zIndex={1350}
         onCancel={() => setSpaceMembersModalOpen(false)}
@@ -15088,6 +15119,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
       {/* ================= MODAL: EDIT MEMBER NICKNAME IN GROUP (PER-SPACE NICKNAMES) ================= */}
       <Modal
+        className="mos-chat-theme-scope"
         open={Boolean(editingNicknameTarget)}
         zIndex={1400}
         onCancel={() => {
@@ -15175,6 +15207,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
       {/* ================= MODAL: ATTACH IMAGE FROM GOOGLE DRIVE / LOCAL DRIVE ================= */}
       <Modal
+        className="mos-chat-theme-scope"
         open={driveLinkModalOpen}
         zIndex={1350}
         onCancel={() => setDriveLinkModalOpen(false)}
@@ -15229,6 +15262,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
       {/* ================= MOS CHAT & WINGS AI COPILOT ACCESS CONTROL MODAL (DEPARTMENT / TEAM / INDIVIDUAL) ================= */}
       <Modal
+        className="mos-chat-theme-scope"
         open={accessConfigModalOpen}
         zIndex={1350}
         onCancel={() => setAccessConfigModalOpen(false)}
@@ -16199,6 +16233,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
       {/* ================= QUICK CREATE CUSTOM SECTION MODAL ================= */}
       <Modal
+        className="mos-chat-theme-scope"
         open={quickCreateSectionModalOpen}
         onCancel={() => {
           setQuickCreateSectionModalOpen(false);
@@ -16278,6 +16313,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
       {/* ================= PERSONAL SIDEBAR CUSTOMIZATION MODAL (GOOGLE CHAT WORKSPACE) ================= */}
       <Modal
+        className="mos-chat-theme-scope"
         open={sidebarCustomizeModalOpen}
         onCancel={() => {
           setSidebarCustomizeModalOpen(false);
@@ -16663,6 +16699,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
       {/* ================= MESSAGE AUDIT & EDIT/DELETE HISTORY MODAL ================= */}
       <Modal
+        className="mos-chat-theme-scope"
         open={historyModalOpen}
         onCancel={() => {
           setHistoryModalOpen(false);

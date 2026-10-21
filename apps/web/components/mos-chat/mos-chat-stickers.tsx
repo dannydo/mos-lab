@@ -1517,7 +1517,7 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
       <div
         className="grid grid-cols-6 gap-1 p-1 rounded-xl"
         style={{
-          background: isDark ? 'rgba(15, 23, 42, 0.7)' : 'rgba(241, 245, 249, 0.9)',
+          background: surfaceRaised,
           border: `1px solid ${borderColor}`,
         }}
       >
@@ -1537,8 +1537,8 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
               title={tab.label}
               className="px-1 py-1.5 rounded-lg text-[10px] font-extrabold inline-flex flex-col items-center justify-center gap-0.5 cursor-pointer transition-all leading-none"
               style={{
-                background: isActive ? '#d4a84b' : 'transparent',
-                color: isActive ? '#000000' : isDark ? '#cbd5e1' : '#334155',
+                background: isActive ? 'var(--mos-accent, #d4a84b)' : 'transparent',
+                color: isActive ? 'var(--mos-accent-contrast, #000000)' : 'var(--mos-text-muted, #64748b)',
               }}
             >
               <span className="text-[13px] leading-none">{tab.icon}</span>
@@ -1564,7 +1564,7 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm meme / sticker (VD: chốt đơn, mèo, khóc, sếp...)"
             className="w-full bg-transparent text-[11.5px] outline-none"
-            style={{ color: isDark ? '#f8fafc' : '#0f172a' }}
+            style={{ color: 'var(--mos-text, #f8fafc)' }}
           />
           {searchQuery && (
             <button
@@ -1582,7 +1582,10 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
       {activePack === 'emoji' && !searchQuery.trim() ? (
         <div className="space-y-2 max-h-[270px] overflow-y-auto pr-0.5">
           <div>
-            <div className="px-1 pb-1 text-[10px] font-extrabold uppercase tracking-wider text-amber-500">
+            <div
+              className="px-1 pb-1 text-[10px] font-extrabold uppercase tracking-wider"
+              style={{ color: 'var(--mos-accent, #f59e0b)' }}
+            >
               Chèn biểu tượng Wings
             </div>
             <div className="grid grid-cols-9 gap-1">
@@ -1595,8 +1598,8 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
                     onClick={() => onSelectEmoji(emoji)}
                     className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-[18px] cursor-pointer transition-transform hover:scale-125 hover:bg-black/5 dark:hover:bg-white/10"
                     style={{
-                      background: reacted ? 'rgba(212, 168, 75, 0.22)' : 'transparent',
-                      boxShadow: reacted ? 'inset 0 0 0 1px rgba(212, 168, 75, 0.55)' : 'none',
+                      background: reacted ? 'var(--mos-focus-ring, rgba(212, 168, 75, 0.22))' : 'transparent',
+                      boxShadow: reacted ? 'inset 0 0 0 1px var(--mos-accent, #d4a84b)' : 'none',
                     }}
                   >
                     {emoji}
@@ -1620,8 +1623,8 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
                     onClick={() => onSelectEmoji(emoji)}
                     className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-[18px] cursor-pointer transition-transform hover:scale-125 hover:bg-black/5 dark:hover:bg-white/10"
                     style={{
-                      background: reacted ? 'rgba(212, 168, 75, 0.22)' : 'transparent',
-                      boxShadow: reacted ? 'inset 0 0 0 1px rgba(212, 168, 75, 0.55)' : 'none',
+                      background: reacted ? 'var(--mos-focus-ring, rgba(212, 168, 75, 0.22))' : 'transparent',
+                      boxShadow: reacted ? 'inset 0 0 0 1px var(--mos-accent, #d4a84b)' : 'none',
                     }}
                   >
                     {emoji}
@@ -1634,7 +1637,10 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
       ) : (
         <div className="space-y-1.5">
           <div className="flex items-center justify-between px-1">
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-500 inline-flex items-center gap-1">
+            <span
+              className="text-[10px] font-extrabold uppercase tracking-wider inline-flex items-center gap-1"
+              style={{ color: 'var(--mos-accent, #f59e0b)' }}
+            >
               <Sparkles size={11} />
               <span>
                 {searchQuery.trim()
@@ -1664,11 +1670,11 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
                     className="rounded-xl flex items-center justify-center cursor-pointer transition-colors hover:bg-amber-500/10"
                     style={{
                       background: reacted
-                        ? 'rgba(212, 168, 75, 0.22)'
+                        ? 'var(--mos-focus-ring, rgba(212, 168, 75, 0.22))'
                         : isDark
                           ? 'rgba(255, 255, 255, 0.03)'
                           : 'rgba(15, 23, 42, 0.025)',
-                      border: `1px solid ${reacted ? '#d4a84b' : borderColor}`,
+                      border: `1px solid ${reacted ? 'var(--mos-accent, #d4a84b)' : borderColor}`,
                     }}
                   >
                     <MosChatStickerVisual sticker={sticker} size="picker" />

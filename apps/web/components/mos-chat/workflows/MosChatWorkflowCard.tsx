@@ -141,10 +141,11 @@ export const MosChatWorkflowCard: React.FC<MosChatWorkflowCardProps> = React.mem
           marginTop: 8,
           borderRadius: 12,
           border: `1px solid ${borderColor}`,
-          background: isDark ? '#161b26' : '#ffffff',
+          background: 'var(--mos-surface, #ffffff)',
+          color: 'var(--mos-text)',
           overflow: 'hidden',
           maxWidth: 560,
-          boxShadow: isDark ? '0 4px 16px rgba(0,0,0,0.3)' : '0 2px 10px rgba(15,23,42,0.06)',
+          boxShadow: 'var(--mos-shadow, 0 2px 10px rgba(15,23,42,0.06))',
         }}
       >
         {/* Header */}
@@ -171,7 +172,7 @@ export const MosChatWorkflowCard: React.FC<MosChatWorkflowCardProps> = React.mem
                   fontWeight: 700,
                   textTransform: 'uppercase',
                   letterSpacing: 0.4,
-                  color: isDark ? '#93c5fd' : '#1d4ed8',
+                  color: 'var(--mos-accent)',
                 }}
               >
                 {workflow.templateName}
@@ -180,7 +181,7 @@ export const MosChatWorkflowCard: React.FC<MosChatWorkflowCardProps> = React.mem
                 style={{
                   fontSize: 13.5,
                   fontWeight: 700,
-                  color: isDark ? '#f8fafc' : '#0f172a',
+                  color: 'var(--mos-text)',
                 }}
               >
                 {workflow.title}
@@ -195,8 +196,8 @@ export const MosChatWorkflowCard: React.FC<MosChatWorkflowCardProps> = React.mem
               borderRadius: 999,
               fontSize: 11,
               fontWeight: 700,
-              background: isCompleted ? '#10b981' : isRejected ? '#ef4444' : '#2563eb',
-              color: '#ffffff',
+              background: isCompleted ? '#10b981' : isRejected ? '#ef4444' : 'var(--mos-accent)',
+              color: isCompleted || isRejected ? '#ffffff' : 'var(--mos-accent-contrast)',
             }}
           >
             {isCompleted
@@ -215,15 +216,15 @@ export const MosChatWorkflowCard: React.FC<MosChatWorkflowCardProps> = React.mem
               style={{
                 padding: '9px 12px',
                 borderRadius: 8,
-                background: isDark ? 'rgba(255,255,255,0.04)' : '#f8fafc',
-                border: `1px solid ${isDark ? '#262f40' : '#e2e8f0'}`,
+                background: 'var(--mos-surface-raised)',
+                border: '1px solid var(--mos-surface-border)',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 4,
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 12, color: isDark ? '#94a3b8' : '#64748b' }}>Số tiền yêu cầu:</span>
+                <span style={{ fontSize: 12, color: 'var(--mos-text-muted)' }}>Số tiền yêu cầu:</span>
                 <span
                   className="tabular-nums"
                   style={{
@@ -237,12 +238,12 @@ export const MosChatWorkflowCard: React.FC<MosChatWorkflowCardProps> = React.mem
                 </span>
               </div>
               {reason && (
-                <div style={{ fontSize: 12, color: isDark ? '#cbd5e1' : '#334155' }}>
+                <div style={{ fontSize: 12, color: 'var(--mos-text)' }}>
                   <strong>Lý do:</strong> {reason}
                 </div>
               )}
               {bankInfo && (
-                <div style={{ fontSize: 11.5, color: isDark ? '#94a3b8' : '#475569' }}>
+                <div style={{ fontSize: 11.5, color: 'var(--mos-text-muted)' }}>
                   <strong>TK nhận:</strong> {bankInfo}
                 </div>
               )}
@@ -254,7 +255,7 @@ export const MosChatWorkflowCard: React.FC<MosChatWorkflowCardProps> = React.mem
             <div
               style={{
                 borderRadius: 8,
-                border: `1px solid ${isDark ? '#262f40' : '#e2e8f0'}`,
+                border: '1px solid var(--mos-surface-border)',
                 overflow: 'hidden',
               }}
             >
@@ -263,8 +264,8 @@ export const MosChatWorkflowCard: React.FC<MosChatWorkflowCardProps> = React.mem
                   padding: '6px 10px',
                   fontSize: 11,
                   fontWeight: 700,
-                  background: isDark ? '#1e2638' : '#f1f5f9',
-                  color: isDark ? '#cbd5e1' : '#334155',
+                  background: 'var(--mos-surface-raised)',
+                  color: 'var(--mos-text)',
                   display: 'grid',
                   gridTemplateColumns: '1fr 70px 70px 80px',
                   gap: 6,
@@ -284,12 +285,12 @@ export const MosChatWorkflowCard: React.FC<MosChatWorkflowCardProps> = React.mem
                     style={{
                       padding: '6px 10px',
                       fontSize: 12,
-                      borderTop: `1px solid ${isDark ? '#262f40' : '#e2e8f0'}`,
+                      borderTop: '1px solid var(--mos-surface-border)',
                       display: 'grid',
                       gridTemplateColumns: '1fr 70px 70px 80px',
                       gap: 6,
                       alignItems: 'center',
-                      color: isDark ? '#e2e8f0' : '#1e293b',
+                      color: 'var(--mos-text)',
                       fontVariantNumeric: 'tabular-nums',
                     }}
                   >
@@ -328,23 +329,15 @@ export const MosChatWorkflowCard: React.FC<MosChatWorkflowCardProps> = React.mem
                   style={{
                     padding: '7px 10px',
                     borderRadius: 8,
-                    background: isCurrent
-                      ? isDark
-                        ? 'rgba(37, 99, 235, 0.16)'
-                        : '#eff6ff'
-                      : isDark
-                        ? 'rgba(255,255,255,0.02)'
-                        : '#f8fafc',
+                    background: isCurrent ? 'var(--mos-focus-ring)' : 'var(--mos-surface-raised)',
                     border: `1px solid ${
                       isCurrent
-                        ? '#3b82f6'
+                        ? 'var(--mos-accent)'
                         : isDone
                           ? isDark
                             ? 'rgba(16, 185, 129, 0.3)'
                             : '#bbf7d0'
-                          : isDark
-                            ? '#222b3a'
-                            : '#e2e8f0'
+                          : 'var(--mos-surface-border)'
                     }`,
                     display: 'flex',
                     flexDirection: 'column',
@@ -366,11 +359,11 @@ export const MosChatWorkflowCard: React.FC<MosChatWorkflowCardProps> = React.mem
                             : isStepRejected
                               ? '#ef4444'
                               : isCurrent
-                                ? '#2563eb'
+                                ? 'var(--mos-accent)'
                                 : isDark
                                   ? '#334155'
                                   : '#cbd5e1',
-                          color: '#ffffff',
+                          color: isCurrent && !isDone && !isStepRejected ? 'var(--mos-accent-contrast)' : '#ffffff',
                         }}
                       >
                         {isDone ? '✓' : isStepRejected ? '✕' : idx + 1}
@@ -379,7 +372,7 @@ export const MosChatWorkflowCard: React.FC<MosChatWorkflowCardProps> = React.mem
                         style={{
                           fontSize: 12.5,
                           fontWeight: isCurrent ? 700 : 600,
-                          color: isDark ? '#f1f5f9' : '#1e293b',
+                          color: 'var(--mos-text)',
                         }}
                       >
                         {step.title}
@@ -390,7 +383,7 @@ export const MosChatWorkflowCard: React.FC<MosChatWorkflowCardProps> = React.mem
                       style={{
                         fontSize: 11,
                         fontWeight: 600,
-                        color: isDone ? '#10b981' : isCurrent ? '#3b82f6' : isDark ? '#94a3b8' : '#64748b',
+                        color: isDone ? '#10b981' : isCurrent ? 'var(--mos-accent)' : 'var(--mos-text-muted)',
                       }}
                     >
                       {isDone
@@ -402,9 +395,7 @@ export const MosChatWorkflowCard: React.FC<MosChatWorkflowCardProps> = React.mem
                   </div>
 
                   {log?.note && (
-                    <div style={{ fontSize: 11.5, color: isDark ? '#94a3b8' : '#475569', paddingLeft: 24 }}>
-                      💬 {log.note}
-                    </div>
+                    <div style={{ fontSize: 11.5, color: 'var(--mos-text-muted)', paddingLeft: 24 }}>💬 {log.note}</div>
                   )}
 
                   {log?.attachments && log.attachments.length > 0 && (
@@ -455,7 +446,7 @@ export const MosChatWorkflowCard: React.FC<MosChatWorkflowCardProps> = React.mem
               style={{
                 marginTop: 4,
                 paddingTop: 10,
-                borderTop: `1px dashed ${isDark ? '#334155' : '#cbd5e1'}`,
+                borderTop: '1px dashed var(--mos-surface-border-strong)',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 8,
@@ -472,9 +463,9 @@ export const MosChatWorkflowCard: React.FC<MosChatWorkflowCardProps> = React.mem
                     padding: '6px 10px',
                     borderRadius: 6,
                     fontSize: 12,
-                    border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                    background: isDark ? '#0f172a' : '#ffffff',
-                    color: isDark ? '#f8fafc' : '#0f172a',
+                    border: '1px solid var(--mos-surface-border-strong)',
+                    background: 'var(--mos-surface-raised)',
+                    color: 'var(--mos-text)',
                     outline: 'none',
                   }}
                 />
@@ -496,9 +487,9 @@ export const MosChatWorkflowCard: React.FC<MosChatWorkflowCardProps> = React.mem
                     fontSize: 11.5,
                     fontWeight: 600,
                     cursor: 'pointer',
-                    border: `1px solid ${activeStep.requireAttachment ? '#3b82f6' : isDark ? '#334155' : '#cbd5e1'}`,
-                    background: isDark ? '#1e293b' : '#f8fafc',
-                    color: isDark ? '#e2e8f0' : '#334155',
+                    border: `1px solid ${activeStep.requireAttachment ? 'var(--mos-accent)' : 'var(--mos-surface-border-strong)'}`,
+                    background: 'var(--mos-surface-raised)',
+                    color: 'var(--mos-text)',
                   }}
                 >
                   {uploading ? 'Đang tải...' : '📎 Đính kèm ảnh/UNC'}

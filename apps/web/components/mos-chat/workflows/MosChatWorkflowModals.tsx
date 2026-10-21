@@ -153,16 +153,16 @@ export const MosChatTriggerWorkflowModal: React.FC<MosChatTriggerWorkflowModalPr
           maxHeight: '88vh',
           overflowY: 'auto',
           borderRadius: 16,
-          background: isDark ? '#141923' : '#ffffff',
-          border: `1px solid ${isDark ? '#2a3446' : '#e2e8f0'}`,
-          boxShadow: '0 24px 48px rgba(0,0,0,0.35)',
+          background: 'var(--mos-surface)',
+          border: '1px solid var(--mos-surface-border-strong)',
+          boxShadow: 'var(--mos-shadow, 0 24px 48px rgba(0,0,0,0.35))',
           padding: 20,
-          color: isDark ? '#f8fafc' : '#0f172a',
+          color: 'var(--mos-text)',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#3b82f6', textTransform: 'uppercase' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--mos-accent)', textTransform: 'uppercase' }}>
               ⚡ Super Admin Operational OS
             </div>
             <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800 }}>Khởi tạo Quy trình Sống trong mOS Chat</h3>
@@ -174,7 +174,7 @@ export const MosChatTriggerWorkflowModal: React.FC<MosChatTriggerWorkflowModalPr
               background: 'transparent',
               border: 'none',
               fontSize: 18,
-              color: isDark ? '#94a3b8' : '#64748b',
+              color: 'var(--mos-text-muted)',
               cursor: 'pointer',
             }}
           >
@@ -194,9 +194,9 @@ export const MosChatTriggerWorkflowModal: React.FC<MosChatTriggerWorkflowModalPr
                 width: '100%',
                 padding: '8px 10px',
                 borderRadius: 8,
-                border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                background: isDark ? '#0f172a' : '#f8fafc',
-                color: isDark ? '#f8fafc' : '#0f172a',
+                border: '1px solid var(--mos-surface-border-strong)',
+                background: 'var(--mos-surface-raised)',
+                color: 'var(--mos-text)',
                 fontSize: 13,
               }}
             >
@@ -220,9 +220,9 @@ export const MosChatTriggerWorkflowModal: React.FC<MosChatTriggerWorkflowModalPr
                 width: '100%',
                 padding: '8px 10px',
                 borderRadius: 8,
-                border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                background: isDark ? '#0f172a' : '#ffffff',
-                color: isDark ? '#f8fafc' : '#0f172a',
+                border: '1px solid var(--mos-surface-border-strong)',
+                background: 'var(--mos-surface-raised)',
+                color: 'var(--mos-text)',
                 fontSize: 13,
               }}
             />
@@ -244,8 +244,8 @@ export const MosChatTriggerWorkflowModal: React.FC<MosChatTriggerWorkflowModalPr
                       width: '100%',
                       padding: '8px 10px',
                       borderRadius: 8,
-                      border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                      background: isDark ? '#0f172a' : '#ffffff',
+                      border: '1px solid var(--mos-surface-border-strong)',
+                      background: 'var(--mos-surface-raised)',
                       color: '#10b981',
                       fontWeight: 700,
                       fontSize: 13,
@@ -265,9 +265,9 @@ export const MosChatTriggerWorkflowModal: React.FC<MosChatTriggerWorkflowModalPr
                       width: '100%',
                       padding: '8px 10px',
                       borderRadius: 8,
-                      border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                      background: isDark ? '#0f172a' : '#ffffff',
-                      color: isDark ? '#f8fafc' : '#0f172a',
+                      border: '1px solid var(--mos-surface-border-strong)',
+                      background: 'var(--mos-surface-raised)',
+                      color: 'var(--mos-text)',
                       fontSize: 13,
                     }}
                   />
@@ -286,9 +286,9 @@ export const MosChatTriggerWorkflowModal: React.FC<MosChatTriggerWorkflowModalPr
                     width: '100%',
                     padding: '8px 10px',
                     borderRadius: 8,
-                    border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                    background: isDark ? '#0f172a' : '#ffffff',
-                    color: isDark ? '#f8fafc' : '#0f172a',
+                    border: '1px solid var(--mos-surface-border-strong)',
+                    background: 'var(--mos-surface-raised)',
+                    color: 'var(--mos-text)',
                     fontSize: 13,
                   }}
                 />
@@ -309,9 +309,9 @@ export const MosChatTriggerWorkflowModal: React.FC<MosChatTriggerWorkflowModalPr
                     width: '100%',
                     padding: '8px 10px',
                     borderRadius: 8,
-                    border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                    background: isDark ? '#0f172a' : '#f8fafc',
-                    color: isDark ? '#f8fafc' : '#0f172a',
+                    border: '1px solid var(--mos-surface-border-strong)',
+                    background: 'var(--mos-surface-raised)',
+                    color: 'var(--mos-text)',
                     fontSize: 13,
                   }}
                 >
@@ -331,9 +331,9 @@ export const MosChatTriggerWorkflowModal: React.FC<MosChatTriggerWorkflowModalPr
                     width: '100%',
                     padding: '8px 10px',
                     borderRadius: 8,
-                    border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                    background: isDark ? '#0f172a' : '#ffffff',
-                    color: isDark ? '#f8fafc' : '#0f172a',
+                    border: '1px solid var(--mos-surface-border-strong)',
+                    background: 'var(--mos-surface-raised)',
+                    color: 'var(--mos-text)',
                     fontSize: 12.5,
                   }}
                 />
@@ -347,8 +347,8 @@ export const MosChatTriggerWorkflowModal: React.FC<MosChatTriggerWorkflowModalPr
               style={{
                 padding: 12,
                 borderRadius: 10,
-                background: isDark ? 'rgba(255,255,255,0.03)' : '#f8fafc',
-                border: `1px solid ${isDark ? '#262f40' : '#e2e8f0'}`,
+                background: 'var(--mos-surface-raised)',
+                border: '1px solid var(--mos-surface-border)',
               }}
             >
               <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>
@@ -380,9 +380,9 @@ export const MosChatTriggerWorkflowModal: React.FC<MosChatTriggerWorkflowModalPr
                       style={{
                         padding: '5px 8px',
                         borderRadius: 6,
-                        border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                        background: isDark ? '#0f172a' : '#ffffff',
-                        color: isDark ? '#f8fafc' : '#0f172a',
+                        border: '1px solid var(--mos-surface-border-strong)',
+                        background: 'var(--mos-surface)',
+                        color: 'var(--mos-text)',
                         fontSize: 11.5,
                       }}
                     >
@@ -408,9 +408,9 @@ export const MosChatTriggerWorkflowModal: React.FC<MosChatTriggerWorkflowModalPr
               style={{
                 padding: '8px 14px',
                 borderRadius: 8,
-                border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                background: 'transparent',
-                color: isDark ? '#cbd5e1' : '#475569',
+                border: '1px solid var(--mos-surface-border-strong)',
+                background: 'var(--mos-surface-raised)',
+                color: 'var(--mos-text-muted)',
                 fontWeight: 600,
                 fontSize: 12.5,
                 cursor: 'pointer',
@@ -426,8 +426,8 @@ export const MosChatTriggerWorkflowModal: React.FC<MosChatTriggerWorkflowModalPr
                 padding: '8px 16px',
                 borderRadius: 8,
                 border: 'none',
-                background: '#2563eb',
-                color: '#ffffff',
+                background: 'var(--mos-accent)',
+                color: 'var(--mos-accent-contrast)',
                 fontWeight: 700,
                 fontSize: 12.5,
                 cursor: 'pointer',
@@ -529,16 +529,16 @@ export const MosChatSaveThreadWorkflowModal: React.FC<MosChatSaveThreadWorkflowM
           width: '100%',
           maxWidth: 500,
           borderRadius: 16,
-          background: isDark ? '#141923' : '#ffffff',
-          border: `1px solid ${isDark ? '#2a3446' : '#e2e8f0'}`,
-          boxShadow: '0 24px 48px rgba(0,0,0,0.35)',
+          background: 'var(--mos-surface)',
+          border: '1px solid var(--mos-surface-border-strong)',
+          boxShadow: 'var(--mos-shadow, 0 24px 48px rgba(0,0,0,0.35))',
           padding: 20,
-          color: isDark ? '#f8fafc' : '#0f172a',
+          color: 'var(--mos-text)',
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#a855f7', textTransform: 'uppercase' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--mos-accent)', textTransform: 'uppercase' }}>
               ✨ Adaptive Workflow Builder (Super Admin)
             </div>
             <h3 style={{ margin: 0, fontSize: 16.5, fontWeight: 800 }}>
@@ -552,7 +552,7 @@ export const MosChatSaveThreadWorkflowModal: React.FC<MosChatSaveThreadWorkflowM
               background: 'transparent',
               border: 'none',
               fontSize: 18,
-              color: isDark ? '#94a3b8' : '#64748b',
+              color: 'var(--mos-text-muted)',
               cursor: 'pointer',
             }}
           >
@@ -571,9 +571,9 @@ export const MosChatSaveThreadWorkflowModal: React.FC<MosChatSaveThreadWorkflowM
               fontSize: 12,
               fontWeight: 700,
               cursor: 'pointer',
-              border: `1px solid ${mode === 'NEW_FROM_THREAD' ? '#a855f7' : isDark ? '#334155' : '#cbd5e1'}`,
-              background: mode === 'NEW_FROM_THREAD' ? 'rgba(168, 85, 247, 0.15)' : 'transparent',
-              color: mode === 'NEW_FROM_THREAD' ? '#a855f7' : isDark ? '#94a3b8' : '#475569',
+              border: `1px solid ${mode === 'NEW_FROM_THREAD' ? 'var(--mos-accent)' : 'var(--mos-surface-border-strong)'}`,
+              background: mode === 'NEW_FROM_THREAD' ? 'var(--mos-focus-ring)' : 'var(--mos-surface-raised)',
+              color: mode === 'NEW_FROM_THREAD' ? 'var(--mos-accent)' : 'var(--mos-text-muted)',
             }}
           >
             Đóng gói Thread này thành Workflow mới
@@ -588,9 +588,9 @@ export const MosChatSaveThreadWorkflowModal: React.FC<MosChatSaveThreadWorkflowM
               fontSize: 12,
               fontWeight: 700,
               cursor: 'pointer',
-              border: `1px solid ${mode === 'UPGRADE_EXISTING' ? '#3b82f6' : isDark ? '#334155' : '#cbd5e1'}`,
-              background: mode === 'UPGRADE_EXISTING' ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
-              color: mode === 'UPGRADE_EXISTING' ? '#3b82f6' : isDark ? '#94a3b8' : '#475569',
+              border: `1px solid ${mode === 'UPGRADE_EXISTING' ? 'var(--mos-accent)' : 'var(--mos-surface-border-strong)'}`,
+              background: mode === 'UPGRADE_EXISTING' ? 'var(--mos-focus-ring)' : 'var(--mos-surface-raised)',
+              color: mode === 'UPGRADE_EXISTING' ? 'var(--mos-accent)' : 'var(--mos-text-muted)',
             }}
           >
             Nâng cấp Workflow đang có
@@ -612,9 +612,9 @@ export const MosChatSaveThreadWorkflowModal: React.FC<MosChatSaveThreadWorkflowM
                     width: '100%',
                     padding: '8px 10px',
                     borderRadius: 8,
-                    border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                    background: isDark ? '#0f172a' : '#ffffff',
-                    color: isDark ? '#f8fafc' : '#0f172a',
+                    border: '1px solid var(--mos-surface-border-strong)',
+                    background: 'var(--mos-surface-raised)',
+                    color: 'var(--mos-text)',
                     fontSize: 13,
                   }}
                 />
@@ -629,9 +629,9 @@ export const MosChatSaveThreadWorkflowModal: React.FC<MosChatSaveThreadWorkflowM
                       width: '100%',
                       padding: '8px 10px',
                       borderRadius: 8,
-                      border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                      background: isDark ? '#0f172a' : '#f8fafc',
-                      color: isDark ? '#f8fafc' : '#0f172a',
+                      border: '1px solid var(--mos-surface-border-strong)',
+                      background: 'var(--mos-surface-raised)',
+                      color: 'var(--mos-text)',
                       fontSize: 12.5,
                     }}
                   >
@@ -652,9 +652,9 @@ export const MosChatSaveThreadWorkflowModal: React.FC<MosChatSaveThreadWorkflowM
                       width: '100%',
                       padding: '8px 10px',
                       borderRadius: 8,
-                      border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                      background: isDark ? '#0f172a' : '#f8fafc',
-                      color: isDark ? '#f8fafc' : '#0f172a',
+                      border: '1px solid var(--mos-surface-border-strong)',
+                      background: 'var(--mos-surface-raised)',
+                      color: 'var(--mos-text)',
                       fontSize: 12.5,
                     }}
                   >
@@ -677,9 +677,9 @@ export const MosChatSaveThreadWorkflowModal: React.FC<MosChatSaveThreadWorkflowM
                   width: '100%',
                   padding: '8px 10px',
                   borderRadius: 8,
-                  border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                  background: isDark ? '#0f172a' : '#f8fafc',
-                  color: isDark ? '#f8fafc' : '#0f172a',
+                  border: '1px solid var(--mos-surface-border-strong)',
+                  background: 'var(--mos-surface-raised)',
+                  color: 'var(--mos-text)',
                   fontSize: 13,
                 }}
               >
@@ -705,9 +705,9 @@ export const MosChatSaveThreadWorkflowModal: React.FC<MosChatSaveThreadWorkflowM
                 width: '100%',
                 padding: '8px 10px',
                 borderRadius: 8,
-                border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                background: isDark ? '#0f172a' : '#ffffff',
-                color: isDark ? '#f8fafc' : '#0f172a',
+                border: '1px solid var(--mos-surface-border-strong)',
+                background: 'var(--mos-surface-raised)',
+                color: 'var(--mos-text)',
                 fontSize: 12.5,
               }}
             />
@@ -722,9 +722,9 @@ export const MosChatSaveThreadWorkflowModal: React.FC<MosChatSaveThreadWorkflowM
               style={{
                 padding: '8px 14px',
                 borderRadius: 8,
-                border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                background: 'transparent',
-                color: isDark ? '#cbd5e1' : '#475569',
+                border: '1px solid var(--mos-surface-border-strong)',
+                background: 'var(--mos-surface-raised)',
+                color: 'var(--mos-text-muted)',
                 fontWeight: 600,
                 fontSize: 12.5,
                 cursor: 'pointer',
@@ -740,8 +740,8 @@ export const MosChatSaveThreadWorkflowModal: React.FC<MosChatSaveThreadWorkflowM
                 padding: '8px 16px',
                 borderRadius: 8,
                 border: 'none',
-                background: '#a855f7',
-                color: '#ffffff',
+                background: 'var(--mos-accent)',
+                color: 'var(--mos-accent-contrast)',
                 fontWeight: 700,
                 fontSize: 12.5,
                 cursor: 'pointer',

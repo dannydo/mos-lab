@@ -416,6 +416,24 @@ export function ThemeProvider({ children, defaultIsAdmin }: { children: React.Re
             Drawer: {
               colorBgContainer: currentTokens.bgContainer,
             },
+            Notification: {
+              colorBgElevated: semanticTokens.surfaceRaised,
+              colorText: currentTokens.textPrimary,
+              colorTextHeading: currentTokens.textPrimary,
+              colorIcon: currentTokens.textSecondary,
+              colorIconHover: currentTokens.textPrimary,
+              borderRadiusLG: 14,
+            },
+            Message: {
+              contentBg: semanticTokens.surfaceRaised,
+              colorText: currentTokens.textPrimary,
+              borderRadiusLG: 12,
+            },
+            Popover: {
+              colorBgElevated: semanticTokens.surfaceRaised,
+              colorText: currentTokens.textPrimary,
+              borderRadiusLG: 12,
+            },
             Tabs: {
               horizontalItemPadding: '10px 16px',
               cardGutter: 6,

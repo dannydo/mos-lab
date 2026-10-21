@@ -8045,3 +8045,90 @@ button:not(:disabled):not(.ant-btn-loading):active,
 .animate-heart-burst {
   animation: heartBurst 0.82s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
+
+/* ==========================================================================
+   mOS Chat & Global Notification Theme Synchronization (Dark / Light & Brand Themes)
+   ========================================================================== */
+.dark-theme .ant-notification .ant-notification-notice-wrapper .ant-notification-notice,
+.light-theme .ant-notification .ant-notification-notice-wrapper .ant-notification-notice {
+  background: var(--mos-surface-raised) !important;
+  border: 1px solid var(--mos-surface-border-strong) !important;
+  color: var(--mos-text) !important;
+  box-shadow: var(--mos-shadow) !important;
+  border-radius: 14px !important;
+}
+
+.dark-theme .ant-notification .ant-notification-notice-message,
+.light-theme .ant-notification .ant-notification-notice-message {
+  color: var(--mos-text) !important;
+  font-weight: 700 !important;
+}
+
+.dark-theme .ant-notification .ant-notification-notice-description,
+.light-theme .ant-notification .ant-notification-notice-description {
+  color: var(--mos-text-muted) !important;
+}
+
+.dark-theme .ant-notification .ant-notification-notice-close,
+.light-theme .ant-notification .ant-notification-notice-close {
+  color: var(--mos-text-muted) !important;
+}
+
+.dark-theme .ant-message .ant-message-notice-wrapper .ant-message-notice-content,
+.light-theme .ant-message .ant-message-notice-wrapper .ant-message-notice-content {
+  background: var(--mos-surface-raised) !important;
+  border: 1px solid var(--mos-surface-border-strong) !important;
+  color: var(--mos-text) !important;
+  box-shadow: var(--mos-shadow) !important;
+  border-radius: 12px !important;
+}
+
+/* Light-Theme Contrast Normalization inside mOS Chat Portal & Modals */
+.light-theme .mos-chat-theme-scope .text-slate-100,
+.light-theme .mos-chat-theme-scope .text-slate-200,
+.light-theme .mos-chat-theme-scope .text-white\/90 {
+  color: var(--mos-text) !important;
+}
+
+.light-theme .mos-chat-theme-scope .text-slate-300 {
+  color: color-mix(in srgb, var(--mos-text) 82%, var(--mos-text-muted)) !important;
+}
+
+.light-theme .mos-chat-theme-scope .text-slate-400 {
+  color: var(--mos-text-muted) !important;
+}
+
+.light-theme .mos-chat-theme-scope .border-white\/5,
+.light-theme .mos-chat-theme-scope .border-white\/10,
+.light-theme .mos-chat-theme-scope .border-white\/15 {
+  border-color: var(--mos-surface-border) !important;
+}
+
+.light-theme .mos-chat-theme-scope .bg-black\/20 {
+  background-color: var(--mos-surface-muted) !important;
+}
+
+.light-theme .mos-chat-theme-scope .text-amber-300,
+.light-theme .mos-chat-theme-scope .text-amber-400 {
+  color: #b45309 !important;
+}
+
+.light-theme .mos-chat-theme-scope .text-purple-300,
+.light-theme .mos-chat-theme-scope .text-purple-400 {
+  color: #6d28d9 !important;
+}
+
+.light-theme .mos-chat-theme-scope .text-emerald-300,
+.light-theme .mos-chat-theme-scope .text-emerald-400 {
+  color: #047857 !important;
+}
+
+.light-theme .mos-chat-theme-scope .text-sky-300,
+.light-theme .mos-chat-theme-scope .text-sky-400 {
+  color: #0369a1 !important;
+}
+
+.light-theme .mos-chat-theme-scope .text-rose-300,
+.light-theme .mos-chat-theme-scope .text-rose-400 {
+  color: #be123c !important;
+}
