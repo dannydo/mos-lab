@@ -7562,15 +7562,20 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const handleSelectMention = useCallback(
     (item: MentionItem, scope: 'main' | 'thread') => {
       const textarea = scope === 'main' ? composerInputRef.current : threadInputRef.current;
-      const currentVal = scope === 'main' ? composerText : threadInput;
+      const currentVal = (textarea?.value ?? (scope === 'main' ? composerText : threadInput)) || '';
       if (!textarea) return;
 
       const atIdx = mentionState.atIndex >= 0 ? mentionState.atIndex : currentVal.lastIndexOf('@');
-      const cursor = textarea.selectionStart ?? mentionState.cursorIndex;
+      const cursor = Math.max(textarea.selectionEnd ?? currentVal.length, atIdx + 1);
       const before = currentVal.slice(0, Math.max(0, atIdx));
-      const after = currentVal.slice(Math.max(atIdx + 1, cursor));
+      const after = currentVal.slice(cursor);
       const inserted = `@${item.tagText} `;
       const nextVal = `${before}${inserted}${after}`;
+
+      // Ghi nhận trực tiếp giá trị vào DOM textarea trước để ngăn chặn hiện tượng trễ của React/IME
+      textarea.value = nextVal;
+      isComposingRef.current = false;
+      lastCompositionEndMsRef.current = Date.now();
 
       if (scope === 'main') {
         setComposerText(nextVal);
@@ -7592,7 +7597,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         const newPos = before.length + inserted.length;
         textarea.setSelectionRange(newPos, newPos);
         textarea.style.height = 'auto';
-        textarea.style.height = `${Math.min(textarea.scrollHeight, scope === 'main' ? 120 : 100)}px`;
+        textarea.style.height = `${Math.min(textarea.scrollHeight, scope === 'main' ? 180 : 140)}px`;
       });
     },
     [composerText, threadInput, mentionState.atIndex, mentionState.cursorIndex]
@@ -7620,22 +7625,33 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         }));
         return true;
       }
-      if (e.key === 'Enter' || e.key === 'Tab') {
-        if (
-          e.nativeEvent.isComposing ||
-          isComposingRef.current ||
-          e.keyCode === 229 ||
-          Date.now() - lastCompositionEndMsRef.current < 60
-        ) {
-          return false;
-        }
+
+      // Phím TAB: Luôn luôn hoàn tất autocomplete ngay lập tức và NGĂN CHẶN trình duyệt nhảy focus xuống nút Aa
+      if (e.key === 'Tab' || e.code === 'Tab' || e.keyCode === 9) {
         e.preventDefault();
+        e.stopPropagation();
+        isComposingRef.current = false;
         const targetItem = filteredMentions[mentionState.highlightedIndex] || filteredMentions[0];
         if (targetItem) {
           handleSelectMention(targetItem, scope);
         }
         return true;
       }
+
+      // Phím ENTER: Hoàn tất tag khi không trong trạng thái gõ phím tiếng Việt (IME composition)
+      if (e.key === 'Enter') {
+        if (e.nativeEvent.isComposing || isComposingRef.current || e.keyCode === 229) {
+          return false;
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        const targetItem = filteredMentions[mentionState.highlightedIndex] || filteredMentions[0];
+        if (targetItem) {
+          handleSelectMention(targetItem, scope);
+        }
+        return true;
+      }
+
       if (e.key === 'Escape') {
         e.preventDefault();
         setMentionState((prev) => ({ ...prev, open: false }));
