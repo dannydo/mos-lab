@@ -15,6 +15,7 @@ import { careerApi } from './career.api';
 import { chatApi } from './chat.api';
 import { cashFlowApi } from './cash-flow.api';
 import { notificationsApi } from './notifications.api';
+import { telesaleCompetencyApi } from './telesale-competency.api';
 
 export * from './base';
 export * from './ai.api';
@@ -23,6 +24,7 @@ export * from './career.api';
 export * from './chat.api';
 export * from './cash-flow.api';
 export * from './notifications.api';
+export * from './telesale-competency.api';
 
 export const apiClient = {
   ...payrollApi,
@@ -42,6 +44,7 @@ export const apiClient = {
   ...chatApi,
   ...cashFlowApi,
   ...notificationsApi,
+  ...telesaleCompetencyApi,
   cs: {
     ...telecomApi.cs,
     ...kpiApi.cs,
