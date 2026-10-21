@@ -103,7 +103,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
   lastSyncedAt,
   activeRoleFilter = 'ALL',
   onRoleFilterChange,
-  period = 'last_month',
+  period = 'last_30_days',
   onPeriodChange,
   onSetRole,
   onDemote,
@@ -957,7 +957,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
             {/* Period selector */}
             <div className="hidden sm:flex items-center gap-0.5 bg-slate-100/80 dark:bg-slate-800/60 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60 overflow-x-auto no-scrollbar shrink-0">
               {PERIOD_TABS.map((tab) => {
-                const isActive = (period || 'last_month') === tab.key;
+                const isActive = (period || 'last_30_days') === tab.key;
                 return (
                   <Tooltip key={tab.key} title={tab.fullLabel}>
                     <button
@@ -1141,7 +1141,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
             {/* Period selector */}
             <div className="hidden sm:flex items-center gap-0.5 bg-slate-100/80 dark:bg-slate-800/60 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60 overflow-x-auto no-scrollbar shrink-0">
               {PERIOD_TABS.map((tab) => {
-                const isActive = (period || 'last_month') === tab.key;
+                const isActive = (period || 'last_30_days') === tab.key;
                 return (
                   <Tooltip key={tab.key} title={tab.fullLabel}>
                     <button
@@ -1313,7 +1313,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
             {/* Period Filter Chips */}
             <div className="flex items-center gap-0.5 bg-slate-100/80 dark:bg-slate-800/60 p-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60 overflow-x-auto no-scrollbar shrink-0">
               {PERIOD_TABS.map((tab) => {
-                const isActive = (period || 'last_month') === tab.key;
+                const isActive = (period || 'last_30_days') === tab.key;
                 return (
                   <Tooltip key={tab.key} title={tab.fullLabel}>
                     <button

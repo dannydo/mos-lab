@@ -44,7 +44,7 @@ export function resolveBranchInfo(storeId?: number | null) {
   return { storeId: 6, branchName: 'Đề Thám', branchCode: 'DT' };
 }
 
-export function resolveCareerPeriodDates(period: CareerPeriod = 'last_month') {
+export function resolveCareerPeriodDates(period: CareerPeriod = 'last_30_days') {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
@@ -58,10 +58,11 @@ export function resolveCareerPeriodDates(period: CareerPeriod = 'last_month') {
   const orders90dEnd = now;
 
   switch (period) {
-    case 'last_30_days':
-      periodLabel = '30 ngày qua';
-      periodStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      periodEnd = now;
+    case 'last_month':
+      periodLabel = 'Tháng trước';
+      // 1 tháng hoàn chỉnh trước tháng này (không tính tháng này)
+      periodStart = new Date(currentYear, currentMonth - 1, 1, 0, 0, 0, 0);
+      periodEnd = new Date(currentYear, currentMonth, 1, 0, 0, 0, 0);
       break;
 
     case 'this_month':
@@ -77,12 +78,11 @@ export function resolveCareerPeriodDates(period: CareerPeriod = 'last_month') {
       periodEnd = new Date(currentYear, currentMonth, 1, 0, 0, 0, 0);
       break;
 
-    case 'last_month':
+    case 'last_30_days':
     default:
-      periodLabel = 'Tháng trước';
-      // 1 tháng hoàn chỉnh trước tháng này (không tính tháng này)
-      periodStart = new Date(currentYear, currentMonth - 1, 1, 0, 0, 0, 0);
-      periodEnd = new Date(currentYear, currentMonth, 1, 0, 0, 0, 0);
+      periodLabel = '30 ngày qua';
+      periodStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      periodEnd = now;
       break;
   }
 
@@ -92,7 +92,7 @@ export function resolveCareerPeriodDates(period: CareerPeriod = 'last_month') {
   };
 
   return {
-    period: (period || 'last_month') as CareerPeriod,
+    period: (period || 'last_30_days') as CareerPeriod,
     periodLabel,
     periodStart,
     periodEnd,

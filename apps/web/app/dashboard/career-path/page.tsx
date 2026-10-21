@@ -71,7 +71,7 @@ export default function CareerPathPage() {
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<boolean>(false);
   const [activeRoleFilter, setActiveRoleFilter] = useState<string>('ALL');
-  const [selectedPeriod, setSelectedPeriod] = useState<CareerPeriod>('last_month');
+  const [selectedPeriod, setSelectedPeriod] = useState<CareerPeriod>('last_30_days');
 
   const [loading, setLoading] = useState<boolean>(true);
   const [isConfigDrawerOpen, setIsConfigDrawerOpen] = useState<boolean>(false);

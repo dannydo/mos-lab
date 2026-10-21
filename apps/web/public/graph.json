@@ -33330,7 +33330,7 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 111839,
+        "sizeBytes": 111843,
         "lineCount": 2814,
         "ext": ".ts"
       }
@@ -39466,8 +39466,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 82234,
-        "lineCount": 1764,
+        "sizeBytes": 82194,
+        "lineCount": 1762,
         "ext": ".tsx"
       }
     },
@@ -39479,7 +39479,7 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 36506,
+        "sizeBytes": 36508,
         "lineCount": 819,
         "ext": ".tsx"
       }
