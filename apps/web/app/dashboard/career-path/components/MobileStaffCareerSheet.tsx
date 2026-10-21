@@ -73,14 +73,14 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
 
   // Metric calculation helpers
   const getStaffTipPercent = (staff: CareerStaffSummary): number => {
-    if (typeof staff.staffTipRate === 'number' && staff.staffTipRate > 0) {
+    if (typeof staff.staffTipRate === 'number') {
       return Number((staff.staffTipRate * 100).toFixed(1));
     }
     if (staff.ordersCount && staff.totalTip) {
       const raw = Math.min(0.65, Math.max(0.2, (staff.totalTip / (staff.ordersCount * 38000)) * 0.45));
       return Number((raw * 100).toFixed(1));
     }
-    return 31.4;
+    return 0;
   };
 
   const getQaAuditsCount = (staff: CareerStaffSummary): number => {

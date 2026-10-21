@@ -399,23 +399,26 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     book: 'REWARDS',
     title: 'Khách tip từ 20K mới tính một lượt tip',
     summary:
-      'Lượt tip KPI chỉ tính cho hóa đơn có tổng tiền tip từ 20.000đ trở lên; tiền tip dưới 20.000đ là tiền thối lẻ không tính lượt nhưng vẫn kết chuyển đủ vào thu nhập.',
+      'Lượt tip KPI và Lộ trình thăng tiến chỉ tính cho hóa đơn có tổng tiền tip từ 20.000đ trở lên; tiền tip dưới 20.000đ là tiền thối lẻ không tính lượt nhưng vẫn kết chuyển đủ vào thu nhập.',
     commandments: [
-      'Chỉ các hóa đơn có tổng tiền khách tip (Customer Tip) ≥ 20.000đ mới được ghi nhận là 1 lượt có tip và tính vào Tỷ lệ Tip (%) trên Leaderboard.',
+      'Chỉ các hóa đơn có tổng tiền khách tip (Customer Tip) ≥ 20.000đ mới được ghi nhận là 1 lượt có tip và tính vào Tỷ lệ Tip (%) trên Leaderboard và Lộ trình thăng tiến (Career Path).',
       'Các khoản tip dưới 20.000đ là tiền thối lẻ khách không lấy lại: không tính vào số lượt có tip (Tipped Visits), không làm tăng Tỷ lệ Tip chuyển đổi.',
       'Nhân viên vẫn được hưởng đủ số tiền chia thưởng tip (CV 70%, CC 20% hoặc 10% mỗi người khi chia ca) đối với các khoản tip dưới 20.000đ trên bảng lương.',
       'Giao diện tra cứu chi tiết phân định rõ 4 trạng thái: Tất cả (ALL), Có Tip ≥ 20K (TIPPED), Tiền lẻ < 20K (SMALL_CHANGE) và Không Tip 0đ (NO_TIP).',
+      'Áp dụng đồng bộ cho Lộ trình thăng tiến (/dashboard/career-path) trên mọi chu kỳ đánh giá (30 ngày qua, tháng này, tháng trước, 3 tháng trước): Tỷ lệ tip của Chuyên Viên và Tỷ lệ tip trung bình chi nhánh đều được tính trên số đơn hàng hoàn tất duy nhất (COUNT(DISTINCT order_id)), tuyệt đối không dùng số dòng dịch vụ làm mẫu số.',
+      'Ngưỡng 20K bắt buộc phải so sánh trên tổng tiền tip thực tế mà khách hàng chi trả trên hóa đơn (Customer Tip), tuyệt đối không so sánh trên phần tiền sau chia thưởng của Chuyên Viên (CV 70%) để không bỏ sót các khoản tip 20K, 25K hợp lệ.',
     ],
     rationale:
-      'Ngăn ngừa hiện tượng tiền thối lẻ làm sai lệch chỉ số đánh giá mức độ hài lòng khách hàng (KPI), đồng thời bảo toàn trọn vẹn thu nhập thực tế cho nhân sự.',
-    tags: ['TIP', '20K', 'KPI', 'CV', 'CC', 'CS', 'tiền lẻ', 'ledger'],
-    routeScopes: ['/dashboard/cv', '/dashboard/cc', '/dashboard/cs', '/dashboard/kpi'],
+      'Ngăn ngừa hiện tượng tiền thối lẻ làm sai lệch chỉ số đánh giá mức độ hài lòng khách hàng (KPI) và điều kiện thăng cấp tay nghề, đồng thời bảo toàn trọn vẹn thu nhập thực tế cho nhân sự.',
+    tags: ['TIP', '20K', 'KPI', 'CV', 'CC', 'CS', 'tiền lẻ', 'ledger', 'career-path', 'thăng tiến'],
+    routeScopes: ['/dashboard/cv', '/dashboard/cc', '/dashboard/cs', '/dashboard/kpi', '/dashboard/career-path'],
     status: 'ACTIVE',
-    version: '1.0.0',
-    effectiveFrom: '2026-09-28',
+    version: '1.2.0',
+    effectiveFrom: '2026-10-21',
     sources: [
       { label: 'Quy tắc Tip 20K', reference: 'AGENTS.md · Rule #7 & Điều răn TIP-001' },
       { label: 'Hằng số hệ thống', reference: 'packages/shared/src/constants/system-constants.ts · TIP_SYSTEM_CONFIG' },
+      { label: 'Lộ trình thăng tiến Career Service', reference: 'apps/api/src/modules/career/career.service.ts' },
     ],
   },
   {

@@ -332,7 +332,7 @@ export class CareerProgressionService {
           SELECT 
             os.assigned_staff_id,
             COUNT(CASE WHEN o.booking_date_start >= ${periodConfig.orders90dStartSql} AND o.booking_date_start < ${periodConfig.orders90dEndSql} THEN os.id END) as total_orders_90d,
-            COUNT(CASE WHEN o.booking_date_start >= ${periodConfig.periodStartSql} AND o.booking_date_start < ${periodConfig.periodEndSql} THEN os.id END) as total_orders_period,
+            COUNT(DISTINCT CASE WHEN o.booking_date_start >= ${periodConfig.periodStartSql} AND o.booking_date_start < ${periodConfig.periodEndSql} THEN o.id END) as total_orders_period,
             COUNT(CASE WHEN os.next_fix_order_service_id IS NOT NULL AND o.booking_date_start >= ${periodConfig.periodStartSql} AND o.booking_date_start < ${periodConfig.periodEndSql} THEN 1 END) as fix_count_period
           FROM order_service os
           JOIN \`order\` o ON o.id = os.order_id
@@ -348,9 +348,20 @@ export class CareerProgressionService {
             st.user_id,
             COALESCE(SUM(st.tip_amount), 0) as total_tip,
             COUNT(st.id) as tip_count,
-            COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as valid_tip_orders
+            COUNT(DISTINCT CASE WHEN tip_summary.customer_tip >= 20000 THEN st.order_id END) as valid_tip_orders
           FROM staff_tip st
           JOIN \`order\` o ON o.id = st.order_id
+          LEFT JOIN (
+            SELECT 
+              st2.order_id,
+              MAX(CASE WHEN st2.tip_percentage > 0 THEN st2.tip_amount / (st2.tip_percentage / 100) ELSE st2.tip_amount END) as customer_tip
+            FROM staff_tip st2
+            JOIN \`order\` o_tip ON o_tip.id = st2.order_id
+            WHERE o_tip.order_state = 'Completed'
+              AND o_tip.booking_date_start >= ${periodConfig.periodStartSql}
+              AND o_tip.booking_date_start < ${periodConfig.periodEndSql}
+            GROUP BY st2.order_id
+          ) tip_summary ON tip_summary.order_id = o.id
           WHERE o.order_state = 'Completed'
             AND o.booking_date_start >= ${periodConfig.periodStartSql}
             AND o.booking_date_start < ${periodConfig.periodEndSql}
@@ -386,14 +397,21 @@ export class CareerProgressionService {
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
             o.client_store_id,
-            COALESCE(SUM(st.tip_amount), 0) as branch_total_tip,
-            COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as branch_valid_tip_orders,
-            (SELECT COUNT(o2.id) FROM \`order\` o2 WHERE o2.order_state = 'Completed' AND o2.booking_date_start >= ${periodConfig.periodStartSql} AND o2.booking_date_start < ${periodConfig.periodEndSql} AND o2.client_store_id = o.client_store_id) as branch_orders,
-            COALESCE(SUM(st.tip_amount), 0) as shop_total_tip,
-            COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as shop_valid_tip_orders,
-            (SELECT COUNT(id) FROM \`order\` WHERE order_state = 'Completed' AND booking_date_start >= ${periodConfig.periodStartSql} AND booking_date_start < ${periodConfig.periodEndSql}) as shop_orders
+            COUNT(DISTINCT o.id) as branch_orders,
+            COUNT(DISTINCT CASE WHEN tip_summary.customer_tip >= 20000 THEN o.id END) as branch_valid_tip_orders,
+            COALESCE(SUM(tip_summary.customer_tip), 0) as branch_total_tip
           FROM \`order\` o
-          LEFT JOIN staff_tip st ON st.order_id = o.id
+          LEFT JOIN (
+            SELECT 
+              st.order_id,
+              MAX(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE st.tip_amount END) as customer_tip
+            FROM staff_tip st
+            JOIN \`order\` o_tip ON o_tip.id = st.order_id
+            WHERE o_tip.order_state = 'Completed'
+              AND o_tip.booking_date_start >= ${periodConfig.periodStartSql}
+              AND o_tip.booking_date_start < ${periodConfig.periodEndSql}
+            GROUP BY st.order_id
+          ) tip_summary ON tip_summary.order_id = o.id
           WHERE o.order_state = 'Completed'
             AND o.booking_date_start >= ${periodConfig.periodStartSql}
             AND o.booking_date_start < ${periodConfig.periodEndSql}
@@ -665,13 +683,8 @@ export class CareerProgressionService {
       const totalTip = tipsMap[legacyId]?.totalTip || 0;
       const staffAvgTip = staffOrdersPeriod > 0 ? totalTip / staffOrdersPeriod : 0;
       const validTipOrders = tipsMap[legacyId]?.validTipOrders || 0;
-      let staffTipRate =
+      const staffTipRate =
         staffOrdersPeriod > 0 && validTipOrders > 0 ? Number((validTipOrders / staffOrdersPeriod).toFixed(3)) : 0;
-      if (staffTipRate === 0 && totalTip > 0 && staffOrdersPeriod > 0) {
-        staffTipRate = Number(
-          Math.min(0.65, Math.max(0.2, (totalTip / (staffOrdersPeriod * 38000)) * 0.45)).toFixed(3)
-        );
-      }
 
       // Xác định chi nhánh của nhân sự: ưu tiên store có nhiều ca làm nhất trong 3 tháng đã hoàn tất, fallback profile store
       const staffStoreId = staffPrimaryStoreMap[legacyId] || profileStoreMap[legacyId] || 6;
@@ -957,10 +970,10 @@ export class CareerProgressionService {
           SELECT 
             -- Số bộ mi luôn luôn giữ ở 90 ngày qua:
             COUNT(CASE WHEN o.booking_date_start >= ${periodConfig.orders90dStartSql} AND o.booking_date_start < ${periodConfig.orders90dEndSql} THEN os.id END) as total_orders,
-            COUNT(CASE 
+            COUNT(DISTINCT CASE 
               WHEN o.booking_date_start >= ${periodConfig.periodStartSql}
                AND o.booking_date_start < ${periodConfig.periodEndSql}
-              THEN os.id END) as period_orders
+              THEN o.id END) as period_orders
           FROM order_service os
           JOIN \`order\` o ON o.id = os.order_id
           WHERE os.assigned_staff_id = ?
@@ -995,10 +1008,21 @@ export class CareerProgressionService {
                AND o.booking_date_start < ${periodConfig.periodEndSql}
               THEN st.tip_amount ELSE 0 END), 0) as period_tip,
             COUNT(st.id) as tip_count,
-            COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 AND o.booking_date_start >= ${periodConfig.periodStartSql} AND o.booking_date_start < ${periodConfig.periodEndSql} THEN st.order_id END) as valid_tip_orders_period,
-            COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as valid_tip_orders
+            COUNT(DISTINCT CASE WHEN tip_summary.customer_tip >= 20000 AND o.booking_date_start >= ${periodConfig.periodStartSql} AND o.booking_date_start < ${periodConfig.periodEndSql} THEN st.order_id END) as valid_tip_orders_period,
+            COUNT(DISTINCT CASE WHEN tip_summary.customer_tip >= 20000 THEN st.order_id END) as valid_tip_orders
           FROM staff_tip st
           JOIN \`order\` o ON o.id = st.order_id
+          LEFT JOIN (
+            SELECT 
+              st2.order_id,
+              MAX(CASE WHEN st2.tip_percentage > 0 THEN st2.tip_amount / (st2.tip_percentage / 100) ELSE st2.tip_amount END) as customer_tip
+            FROM staff_tip st2
+            JOIN \`order\` o_tip ON o_tip.id = st2.order_id
+            WHERE o_tip.order_state = 'Completed'
+              AND o_tip.booking_date_start >= ${periodConfig.periodStartSql}
+              AND o_tip.booking_date_start < ${periodConfig.periodEndSql}
+            GROUP BY st2.order_id
+          ) tip_summary ON tip_summary.order_id = o.id
           WHERE st.user_id = ?
             AND o.order_state = 'Completed'
             AND o.booking_date_start >= ${periodConfig.periodStartSql}
@@ -1040,14 +1064,21 @@ export class CareerProgressionService {
         fastify.prisma.legacy.$queryRawUnsafe<any[]>(`
           SELECT 
             o.client_store_id,
-            COALESCE(SUM(st.tip_amount), 0) as branch_total_tip,
-            COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as branch_valid_tip_orders,
-            (SELECT COUNT(o2.id) FROM \`order\` o2 WHERE o2.order_state = 'Completed' AND o2.booking_date_start >= ${periodConfig.periodStartSql} AND o2.booking_date_start < ${periodConfig.periodEndSql} AND o2.client_store_id = o.client_store_id) as branch_orders,
-            COALESCE(SUM(st.tip_amount), 0) as shop_total_tip,
-            COUNT(DISTINCT CASE WHEN st.tip_amount >= 20000 THEN st.order_id END) as shop_valid_tip_orders,
-            (SELECT COUNT(id) FROM \`order\` WHERE order_state = 'Completed' AND booking_date_start >= ${periodConfig.periodStartSql} AND booking_date_start < ${periodConfig.periodEndSql}) as shop_orders
+            COUNT(DISTINCT o.id) as branch_orders,
+            COUNT(DISTINCT CASE WHEN tip_summary.customer_tip >= 20000 THEN o.id END) as branch_valid_tip_orders,
+            COALESCE(SUM(tip_summary.customer_tip), 0) as branch_total_tip
           FROM \`order\` o
-          LEFT JOIN staff_tip st ON st.order_id = o.id
+          LEFT JOIN (
+            SELECT 
+              st.order_id,
+              MAX(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE st.tip_amount END) as customer_tip
+            FROM staff_tip st
+            JOIN \`order\` o_tip ON o_tip.id = st.order_id
+            WHERE o_tip.order_state = 'Completed'
+              AND o_tip.booking_date_start >= ${periodConfig.periodStartSql}
+              AND o_tip.booking_date_start < ${periodConfig.periodEndSql}
+            GROUP BY st.order_id
+          ) tip_summary ON tip_summary.order_id = o.id
           WHERE o.order_state = 'Completed'
             AND o.booking_date_start >= ${periodConfig.periodStartSql}
             AND o.booking_date_start < ${periodConfig.periodEndSql}
@@ -1254,10 +1285,6 @@ export class CareerProgressionService {
       tippedOrdersCount = Number(tipRes?.[0]?.valid_tip_orders_period ?? 0);
       staffTipRate =
         periodOrders > 0 && tippedOrdersCount > 0 ? Number((tippedOrdersCount / periodOrders).toFixed(3)) : 0;
-      if (staffTipRate === 0 && totalTip > 0 && periodOrders > 0) {
-        staffTipRate = Number(Math.min(0.65, Math.max(0.2, (totalTip / (periodOrders * 38000)) * 0.45)).toFixed(3));
-        tippedOrdersCount = Math.round(periodOrders * staffTipRate);
-      }
 
       let staffStoreId = 6;
       if (staffStoreRes?.[0]?.client_store_id) {
