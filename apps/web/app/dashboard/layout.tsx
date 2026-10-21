@@ -57,6 +57,7 @@ import dayjs from 'dayjs';
 import { apiClient } from '../../lib/api-client';
 import { pollWithAbort, pollingCoordinator } from '../../lib/api/base';
 import { OmiCallProvider } from '../../context/OmiCallContext';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
 const OmiCallWidget = dynamic(() => import('../../components/OmiCallWidget'), { ssr: false });
 import UserProfileDropdown from '../../components/layout/UserProfileDropdown';
 const AvatarPromptModal = dynamic(() => import('../../components/avatar/AvatarPromptModal'), { ssr: false });
@@ -1476,18 +1477,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         />
         <AvatarPromptModal currentUser={user} onAvatarUpdated={handleAvatarUpdated} />
         {(hasAuthenticatedUser || isAdminOrSuperAdminRole(user?.role)) && (
-          <MosGoogleChatPortal
-            open={isMosChatOpen}
-            onClose={() => setIsMosChatOpen(false)}
-            onToggle={() => setIsMosChatOpen((prev) => !prev)}
-            currentUser={user}
-            onAccessChange={setCanAccessMosChat}
-            targetNavigation={targetChatNavigation}
-            onUnreadCountChange={(unread, tasks) => {
-              setMosChatUnreadCount(unread);
-              setMosChatTaskCount(tasks);
-            }}
-          />
+          <ErrorBoundary fallback={null}>
+            <MosGoogleChatPortal
+              open={isMosChatOpen}
+              onClose={() => setIsMosChatOpen(false)}
+              onToggle={() => setIsMosChatOpen((prev) => !prev)}
+              currentUser={user}
+              onAccessChange={setCanAccessMosChat}
+              targetNavigation={targetChatNavigation}
+              onUnreadCountChange={(unread, tasks) => {
+                setMosChatUnreadCount(unread);
+                setMosChatTaskCount(tasks);
+              }}
+            />
+          </ErrorBoundary>
         )}
       </OmiCallProvider>
     </SeasonalAccentProvider>

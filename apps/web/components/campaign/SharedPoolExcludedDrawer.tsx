@@ -33,6 +33,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { formatRelativeTime } from '../../lib/date-utils';
 import { apiClient } from '../../lib/api-client';
 import { useTheme } from '../../context/ThemeContext';
 import { CopyPhoneButton } from '../ui/CopyPhoneButton';
@@ -352,10 +353,11 @@ export const SharedPoolExcludedDrawer: React.FC<SharedPoolExcludedDrawerProps> =
         const time = record.lastCallAt || record.addedAt;
         if (!time) return <span className="text-xs text-gray-400">N/A</span>;
         const d = dayjs(time);
+        const relText = formatRelativeTime(d);
         return (
           <div className="flex flex-col text-xs text-slate-600 dark:text-slate-400 tabular-nums">
             <span className="font-medium text-slate-800 dark:text-slate-200">{d.format('DD/MM/YYYY HH:mm')}</span>
-            <span className="text-[10px] text-gray-400">{d.fromNow()}</span>
+            {relText && <span className="text-[10px] text-gray-400">{relText}</span>}
           </div>
         );
       },

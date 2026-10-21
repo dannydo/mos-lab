@@ -94,4 +94,6 @@ export function parseVndInput(value?: string | number | null): string | number {
   return digits || '';
 }
 
+export { formatRelativeTime } from './date-utils';
+
 

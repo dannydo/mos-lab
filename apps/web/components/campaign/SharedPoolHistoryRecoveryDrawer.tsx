@@ -36,6 +36,7 @@ import {
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { formatRelativeTime } from '../../lib/date-utils';
 import { CampaignSharedPoolDetailedLog, SharedPoolRecoveryAction, SharedPoolRecoveryDto } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
 import { useTheme } from '../../context/ThemeContext';
@@ -372,8 +373,9 @@ export const SharedPoolHistoryRecoveryDrawer: React.FC<SharedPoolHistoryRecovery
       width: 145,
       render: (val: string) => {
         const d = dayjs(val);
+        const relText = formatRelativeTime(d);
         return (
-          <Tooltip title={d.fromNow()}>
+          <Tooltip title={relText || d.format('DD/MM/YYYY HH:mm')}>
             <div className="text-xs">
               <div className="font-semibold text-slate-700 dark:text-slate-200 tabular-nums">
                 {d.format('DD/MM/YYYY')}

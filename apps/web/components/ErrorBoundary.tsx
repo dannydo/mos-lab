@@ -7,6 +7,7 @@ import { handleAutoChunkReload, reportFrontendIssue } from '../lib/telemetry/fro
 
 interface Props {
   children: ReactNode;
+  fallback?: ReactNode | ((error: Error) => ReactNode);
 }
 
 interface State {
@@ -51,6 +52,12 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public render() {
     if (this.state.hasError) {
+      if (this.props.fallback !== undefined) {
+        return typeof this.props.fallback === 'function'
+          ? this.props.fallback(this.state.error || new Error('Component crashed'))
+          : this.props.fallback;
+      }
+
       return (
         <div className="flex min-h-screen items-center justify-center p-4 bg-slate-900 text-white">
           <Result

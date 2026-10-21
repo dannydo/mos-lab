@@ -103,6 +103,7 @@ import {
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import { formatRelativeTime } from '../../lib/date-utils';
 
 dayjs.extend(relativeTime);
 import type {
@@ -6336,9 +6337,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   {dayjs(task.negotiatedDeadline).format('HH:mm DD/MM/YYYY')}
                 </span>
                 {(() => {
-                  const d = dayjs(task.negotiatedDeadline);
-                  if (!d.isValid()) return null;
-                  const relText = typeof d.fromNow === 'function' ? d.fromNow() : '';
+                  const relText = formatRelativeTime(task.negotiatedDeadline);
                   if (!relText) return null;
                   return <span className="text-[10px] text-amber-500 font-semibold">({relText})</span>;
                 })()}
