@@ -2998,16 +2998,17 @@ QUY TẮC BẮT BUỘC:
       }
     }
 
-    const edgeTtsCandidates = [
-      '/usr/local/bin/edge-tts',
-      '/usr/bin/edge-tts',
-      '/Users/dannydo/.gemini/antigravity/venv-f5tts/bin/edge-tts',
+    const pythonCandidates = [
+      '/Users/dannydo/.gemini/antigravity/venv-f5tts/bin/python',
+      '/usr/bin/python3',
+      '/usr/local/bin/python3',
+      'python3',
     ];
 
-    let binaryPath = 'edge-tts';
-    for (const c of edgeTtsCandidates) {
+    let pythonBin = 'python3';
+    for (const c of pythonCandidates) {
       if (existsSync(c)) {
-        binaryPath = c;
+        pythonBin = c;
         break;
       }
     }
@@ -3016,11 +3017,8 @@ QUY TẮC BẮT BUỘC:
     const execFileAsync = promisify(execFile);
 
     try {
-      await execFileAsync(
-        binaryPath,
-        ['--text', cleanText, '--voice', voice, `--rate=${rate}`, `--pitch=${pitch}`, '--write-media', tempFile],
-        { timeout: 25_000 }
-      );
+      const pyScript = `import sys, asyncio, edge_tts; asyncio.run(edge_tts.Communicate(sys.argv[1], sys.argv[2], rate=sys.argv[3]).save(sys.argv[4]))`;
+      await execFileAsync(pythonBin, ['-c', pyScript, cleanText, voice, rate, tempFile], { timeout: 25_000 });
 
       if (existsSync(tempFile)) {
         const audioBuf = readFileSync(tempFile);
