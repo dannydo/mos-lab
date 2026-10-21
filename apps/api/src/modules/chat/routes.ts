@@ -5,6 +5,8 @@ import { resolve, sep } from 'node:path';
 import {
   ActionMosChatMissionRequest,
   ActionMosChatWorkflowInstanceRequest,
+  BuzzMosChatMessageRequest,
+  BuzzMosChatMessageResponse,
   CreateMosChatConversationRequest,
   CreateMosChatMessageRequest,
   CreateMosChatMissionRequest,
@@ -15,6 +17,7 @@ import {
   EditMosChatMessageRequest,
   MosChatAccessConfig,
   MosChatBootstrapResponse,
+  MosChatBuzzEvent,
   MosChatConversation,
   MosChatCustomSection,
   MosChatImageAttachment,
@@ -943,6 +946,25 @@ export function formatConversationForUser(
     };
   });
 
+  // Compute unread buzz status for this user
+  let hasUnreadBuzz = false;
+  let unreadBuzzCount = 0;
+  if (personalizedUnread > 0) {
+    const msgs = conv.messages || [];
+    const readCount = userPrefs?.readMessageCountByConv?.[conv.id];
+    const startIndex =
+      typeof readCount === 'number'
+        ? Math.min(msgs.length, Math.max(0, readCount))
+        : Math.max(0, msgs.length - personalizedUnread);
+    const unreadMessages = msgs.slice(startIndex);
+    for (const m of unreadMessages) {
+      if (m.isBuzzed && Number(m.senderId) !== myStaffId) {
+        hasUnreadBuzz = true;
+        unreadBuzzCount++;
+      }
+    }
+  }
+
   if (conv.type !== 'dm') {
     const liveStaffMap = new Map(staffDirectory.map((s) => [Number(s.id), s]));
     const hydratedMembers = Array.isArray(conv.members)
@@ -963,6 +985,8 @@ export function formatConversationForUser(
       members: hydratedMembers,
       unreadCount: personalizedUnread,
       unreadThreadCount,
+      hasUnreadBuzz,
+      unreadBuzzCount,
       readReceipts,
       messages: formattedMessages,
     };
@@ -977,6 +1001,8 @@ export function formatConversationForUser(
       memberCount: 1,
       unreadCount: personalizedUnread,
       unreadThreadCount,
+      hasUnreadBuzz,
+      unreadBuzzCount,
       readReceipts,
       messages: formattedMessages,
     };
@@ -997,6 +1023,8 @@ export function formatConversationForUser(
     memberCount: 2,
     unreadCount: personalizedUnread,
     unreadThreadCount,
+    hasUnreadBuzz,
+    unreadBuzzCount,
     readReceipts,
     messages: formattedMessages,
   };
@@ -2955,6 +2983,118 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       conv.updatedAt = now.toISOString();
       await saveConversations(fastify, conversations);
       return { success: true, message: msg, target: targetItem };
+    }
+  );
+
+  // POST /api/chat/messages/:messageId/buzz (Buzz / Bump urgent message)
+  fastify.post(
+    '/chat/messages/:messageId/buzz',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      const user = request.user as JwtUserPayload;
+      const { messageId } = request.params as { messageId: string };
+      const body = ((request.body as SafeAny) || {}) as BuzzMosChatMessageRequest;
+      const conversationId = String(body.conversationId || '').trim();
+      const replyId = body.replyId ? String(body.replyId).trim() : undefined;
+      const note = body.note ? String(body.note).trim() : undefined;
+
+      const [{ conversations }, staffDirectory] = await Promise.all([
+        loadChatState(fastify),
+        loadStaffDirectoryCached(fastify),
+      ]);
+      let conv = conversationId ? conversations.find((c) => c.id === conversationId) : undefined;
+      if (!conv) {
+        conv = conversations.find(
+          (c) => c.messages.some((m) => m.id === messageId) && canUserAccessConversation(c, user, staffDirectory)
+        );
+      }
+      const msg = conv?.messages.find((m) => m.id === messageId);
+      if (!conv || !msg) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tin nhắn.' });
+      }
+      if (!canUserAccessConversation(conv, user, staffDirectory)) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Bạn không có quyền truy cập cuộc hội thoại này.',
+        });
+      }
+
+      const targetItem = replyId ? msg.thread?.find((r) => r.id === replyId) : msg;
+      if (!targetItem) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy câu trả lời trong luồng.' });
+      }
+
+      const myStaffId = resolveUserStaffId(user, staffDirectory);
+      const staffRecord = await fastify.prisma.crm.crmStaff.findUnique({
+        where: { id: myStaffId || Number(user.id) || 0 },
+        select: { displayName: true, username: true, role: true, avatarUrl: true },
+      });
+      const senderName = staffRecord?.displayName || user.displayName || user.username || 'Nhân sự';
+      const senderRole = staffRecord?.role || user.role || 'Staff';
+
+      const isSender =
+        Number(targetItem.senderId) === myStaffId ||
+        String(targetItem.senderId) === String(user.id) ||
+        (user.id && String(targetItem.senderId) === 'me') ||
+        Boolean(
+          staffRecord?.displayName &&
+          targetItem.senderName?.trim().toLowerCase() === staffRecord.displayName.trim().toLowerCase()
+        );
+      const isAdmin = isDannyOrSuperAdminUser(user) || user.role === 'admin';
+
+      if (!isSender && !isAdmin) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Chỉ người gửi tin nhắn hoặc Quản trị viên mới có thể Buzz / Bump tin nhắn này.',
+        });
+      }
+
+      // Anti-spam Cooldown: 60 seconds between buzzes on the same message
+      const now = new Date();
+      if (targetItem.buzzedAt) {
+        const lastBuzzTime = new Date(targetItem.buzzedAt).getTime();
+        const diffSeconds = Math.floor((now.getTime() - lastBuzzTime) / 1000);
+        const cooldownSeconds = 60;
+        if (diffSeconds < cooldownSeconds) {
+          const waitLeft = cooldownSeconds - diffSeconds;
+          return reply.status(429).send({
+            error: 'Too Many Requests',
+            message: `Tin nhắn vừa được Buzz cách đây ${diffSeconds}s. Vui lòng chờ thêm ${waitLeft}s trước khi Buzz lại để tránh làm phiền đồng nghiệp.`,
+            waitRemainingSeconds: waitLeft,
+          });
+        }
+      }
+
+      const buzzEvent: MosChatBuzzEvent = {
+        id: `buzz-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        senderId: myStaffId || user.id || 'unknown',
+        senderName,
+        senderRole,
+        senderAvatar: staffRecord?.avatarUrl || null,
+        buzzedAt: now.toISOString(),
+        note: note || null,
+      };
+
+      targetItem.isBuzzed = true;
+      targetItem.buzzedAt = buzzEvent.buzzedAt;
+      targetItem.latestBuzz = buzzEvent;
+      targetItem.buzzHistory = [...(targetItem.buzzHistory || []), buzzEvent];
+      targetItem.buzzCount = targetItem.buzzHistory.length;
+
+      conv.updatedAt = now.toISOString();
+      await saveConversations(fastify, conversations);
+
+      const formattedConv = formatConversationForUser(conv, user, staffDirectory);
+      const formattedMsg = formattedConv.messages.find((m) => m.id === messageId) || msg;
+
+      return {
+        success: true,
+        message: formattedMsg,
+        buzzEvent,
+        conversation: formattedConv,
+      };
     }
   );
 

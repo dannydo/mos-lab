@@ -30,6 +30,16 @@ export interface MosChatMessageEditHistoryItem {
   editorName?: string;
 }
 
+export interface MosChatBuzzEvent {
+  id: string;
+  senderId: number | string;
+  senderName: string;
+  senderRole?: string;
+  senderAvatar?: string | null;
+  buzzedAt: string;
+  note?: string | null;
+}
+
 export type MosChatMissionStage =
   'RECEIVED' | 'NEEDS_INFO' | 'BUILDING' | 'AWAITING_RELEASE' | 'READY_FOR_REVIEW' | 'COMPLETED' | 'NOT_PROCEEDING';
 
@@ -137,6 +147,11 @@ export interface MosChatThreadReply {
     payload: Record<string, unknown>;
   }> | null;
   roleColor?: string;
+  isBuzzed?: boolean;
+  buzzedAt?: string | null;
+  buzzCount?: number;
+  latestBuzz?: MosChatBuzzEvent | null;
+  buzzHistory?: MosChatBuzzEvent[];
 }
 
 export interface MosChatMessage {
@@ -193,6 +208,11 @@ export interface MosChatMessage {
   workflowInstanceId?: string | null;
   workflow?: MosChatWorkflowInstance | null;
   entityContext?: MosChatEntityContext | null;
+  isBuzzed?: boolean;
+  buzzedAt?: string | null;
+  buzzCount?: number;
+  latestBuzz?: MosChatBuzzEvent | null;
+  buzzHistory?: MosChatBuzzEvent[];
 }
 
 export interface MosChatTaskItem {
@@ -240,6 +260,8 @@ export interface MosChatConversation {
   memberNicknames?: Record<string, string>; // staffId string -> nickname in this group/space
   unreadCount: number;
   unreadThreadCount?: number;
+  hasUnreadBuzz?: boolean;
+  unreadBuzzCount?: number;
   readReceipts?: MosChatReadReceiptEntry[];
   messages: MosChatMessage[];
   updatedAt: string;
@@ -353,6 +375,19 @@ export interface DeleteMosChatMessageRequest {
 export interface RestoreMosChatMessageRequest {
   conversationId?: string;
   replyId?: string;
+}
+
+export interface BuzzMosChatMessageRequest {
+  conversationId: string;
+  replyId?: string;
+  note?: string;
+}
+
+export interface BuzzMosChatMessageResponse {
+  success: boolean;
+  message: MosChatMessage;
+  buzzEvent: MosChatBuzzEvent;
+  conversation?: MosChatConversation;
 }
 
 export interface CreateMosChatThreadReplyRequest {

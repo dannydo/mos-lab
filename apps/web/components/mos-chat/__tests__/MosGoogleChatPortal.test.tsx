@@ -53,6 +53,16 @@ vi.mock('../../../lib/api-client', () => ({
       markAsRead: vi.fn().mockResolvedValue({}),
       markThreadAsRead: vi.fn().mockResolvedValue({}),
       togglePinConversation: vi.fn().mockResolvedValue({}),
+      buzzMessage: vi.fn().mockResolvedValue({
+        success: true,
+        buzzEvent: {
+          id: 'buzz-test-1',
+          senderId: 99,
+          senderName: 'Danny Do',
+          senderRole: 'Admin',
+          buzzedAt: new Date().toISOString(),
+        },
+      }),
     },
     staff: {
       list: vi.fn().mockResolvedValue([
@@ -372,5 +382,78 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /Đi đến tin nhắn đã ghim/i })).toBeTruthy();
     });
+  });
+
+  it('renders Buzz / Bump urgent button, displays buzzed badge, and calls buzzMessage API (MOS-BUG-131)', async () => {
+    const mockBuzzedConv = {
+      id: 'space-operations',
+      type: 'space' as const,
+      name: 'vận-hành-khẩn-cấp',
+      memberCount: 8,
+      unreadCount: 1,
+      hasUnreadBuzz: true,
+      unreadBuzzCount: 1,
+      updatedAt: new Date().toISOString(),
+      messages: [
+        {
+          id: 'msg-buzz-1',
+          conversationId: 'space-operations',
+          senderId: 'staff-tn',
+          senderName: 'Tâm Nguyễn',
+          senderRole: 'Admin',
+          text: 'Khách VIP yêu cầu hỗ trợ gấp tại sảnh.',
+          timeLabel: '10:30',
+          createdAt: new Date().toISOString(),
+          isBuzzed: true,
+          buzzCount: 2,
+          buzzedAt: new Date().toISOString(),
+          latestBuzz: {
+            id: 'b-1',
+            senderId: 'staff-tn',
+            senderName: 'Tâm Nguyễn',
+            senderRole: 'Admin',
+            buzzedAt: new Date().toISOString(),
+          },
+        },
+      ],
+    };
+
+    (apiClient.chat.bootstrap as any).mockResolvedValueOnce({
+      unchanged: false,
+      version: 1,
+      conversations: [mockBuzzedConv],
+      tasks: [],
+      staffDirectory: [],
+      accessConfig: { allowAllStaff: true, allowedGroupKeys: [], allowedStaffIds: [] },
+      canAccessChat: true,
+    });
+
+    render(
+      <MosGoogleChatPortal
+        open={true}
+        onClose={vi.fn()}
+        onToggle={vi.fn()}
+        currentUser={{ id: 99, displayName: 'Danny Do', role: 'Admin' }}
+      />
+    );
+
+    // Verify the unread buzzed badge in sidebar
+    await waitFor(() => {
+      expect(screen.getByText('BUZZ')).toBeTruthy();
+    });
+
+    // Click on the buzzed conversation in sidebar to open it
+    const convItem = screen.getByText('vận-hành-khẩn-cấp');
+    fireEvent.click(convItem);
+
+    // Verify emergency header banner inside buzzed message
+    await waitFor(() => {
+      expect(screen.getByText(/TIN NHẮN KHẨN CẤP · BUZZ/i)).toBeTruthy();
+      expect(screen.getByText('x2')).toBeTruthy();
+    });
+
+    // Verify Buzz / Bump button is present in message action toolbar
+    const buzzBtn = screen.getByRole('button', { name: /Buzz \/ Bump tin nhắn khẩn cấp/i });
+    expect(buzzBtn).toBeTruthy();
   });
 });
