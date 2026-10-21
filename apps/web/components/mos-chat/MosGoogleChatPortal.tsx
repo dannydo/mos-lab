@@ -290,6 +290,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     () => readStoredPersonalLayout(personalLayoutStorageKey).activeConvId
   );
   const [activeSubtab, setActiveSubtab] = useState<'chat' | 'tasks' | 'pinned'>('chat');
+  const [pinnedBannerIndex, setPinnedBannerIndex] = useState<number>(0);
   const [sidebarFilter, setSidebarFilter] = useState<'all' | 'unread' | 'spaces'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [maximized, setMaximized] = useState<boolean>(
@@ -1788,6 +1789,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     }
     return visibleConversations.find((c) => c.id === activeConvId) || aiCopilotConversation || visibleConversations[0];
   }, [visibleConversations, activeConvId, aiCopilotConversation]);
+
+  const pinnedMessages = useMemo(() => {
+    return (activeConversation?.messages || []).filter((m) => m.pinned);
+  }, [activeConversation?.messages]);
 
   const allUserConversations = useMemo<MosChatConversation[]>(() => {
     return aiCopilotConversation ? [aiCopilotConversation, ...visibleConversations] : [...visibleConversations];
@@ -3722,7 +3727,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       setActiveSubtab('chat');
       if (isMobile) setMobileActiveView('conversation');
 
-      const targetConv = conversations.find((c) => c.id === convId);
+      const targetConv =
+        convId === AI_COPILOT_CONV_ID
+          ? aiCopilotConversation
+          : conversations.find((c) => c.id === convId);
       if (targetConv && isTabVisible) {
         const msgs = targetConv.messages || [];
         const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : undefined;
@@ -3755,19 +3763,27 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
       setHighlightedMsgId(msgId);
 
-      setTimeout(() => {
+      const attemptScroll = () => {
         const targetId = isReply ? `mos-chat-reply-${msgId}` : `mos-chat-msg-${msgId}`;
         const el = document.getElementById(targetId) || document.getElementById(`mos-chat-msg-${msgId}`);
         if (el && typeof el.scrollIntoView === 'function') {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return true;
         }
-      }, 350);
+        return false;
+      };
+
+      setTimeout(() => {
+        if (!attemptScroll()) {
+          setTimeout(attemptScroll, 200);
+        }
+      }, 250);
 
       setTimeout(() => {
         setHighlightedMsgId((prev) => (prev === msgId ? null : prev));
       }, 4000);
     },
-    [conversations, isMobile, handleOpenThread, isTabVisible, markConversationReadOptimisticAndSync]
+    [conversations, aiCopilotConversation, isMobile, handleOpenThread, isTabVisible, markConversationReadOptimisticAndSync]
   );
 
   useEffect(() => {
@@ -9477,6 +9493,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               <Tooltip title="Tin nhắn đã ghim">
                 <button
                   type="button"
+                  aria-label="Tab tin nhắn đã ghim"
                   onClick={() => setActiveSubtab('pinned')}
                   className="h-7 px-2 rounded-md inline-flex items-center gap-1 text-[11.5px] font-bold cursor-pointer tabular-nums"
                   style={{
@@ -9690,6 +9707,114 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 >
                   <ImagePlus size={28} />
                   <span className="text-[13px] font-bold">Thả hình ảnh từ máy tính hoặc Google Drive vào đây</span>
+                </div>
+              )}
+
+              {/* STICKY PINNED MESSAGE BANNER */}
+              {pinnedMessages.length > 0 && activeConversation && (
+                <div
+                  className="px-3 py-1.5 flex items-center justify-between gap-2 shrink-0 z-10 transition-colors text-[12px]"
+                  style={{
+                    background: isDark ? 'rgba(30, 41, 59, 0.72)' : 'rgba(254, 243, 199, 0.65)',
+                    borderBottom: `1px solid ${borderColor}`,
+                    backdropFilter: 'blur(6px)',
+                  }}
+                >
+                  {/* Left: Icon + Text snippet (click to navigate) */}
+                  <div
+                    onClick={() => {
+                      const msg = pinnedMessages[pinnedBannerIndex % pinnedMessages.length];
+                      if (msg) navigateToMessage(activeConversation.id, msg.id);
+                    }}
+                    className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer hover:opacity-85 transition-opacity"
+                    title="Nhấn để đi đến tin nhắn đã ghim"
+                  >
+                    <div
+                      className="w-6 h-6 rounded-md inline-flex items-center justify-center shrink-0"
+                      style={{ background: 'rgba(212, 168, 75, 0.2)', color: '#d4a84b' }}
+                    >
+                      <Pin size={13} className="fill-amber-400" />
+                    </div>
+
+                    <div className="flex items-center gap-1.5 min-w-0 truncate">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-amber-500 shrink-0">
+                        {pinnedMessages.length > 1
+                          ? `Ghim (${(pinnedBannerIndex % pinnedMessages.length) + 1}/${pinnedMessages.length}):`
+                          : 'Đã ghim:'}
+                      </span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-100 shrink-0">
+                        {pinnedMessages[pinnedBannerIndex % pinnedMessages.length]?.senderName}:
+                      </span>
+                      <span className="text-slate-600 dark:text-slate-300 truncate">
+                        {formatMoveTargetSnippet(pinnedMessages[pinnedBannerIndex % pinnedMessages.length])}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Right: Actions */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {/* Cycle pinned messages if > 1 */}
+                    {pinnedMessages.length > 1 && (
+                      <Tooltip title="Xem tin nhắn đã ghim tiếp theo">
+                        <button
+                          type="button"
+                          aria-label="Tin nhắn ghim tiếp theo"
+                          onClick={() => setPinnedBannerIndex((prev) => (prev + 1) % pinnedMessages.length)}
+                          className="w-6 h-6 rounded inline-flex items-center justify-center text-slate-400 hover:text-amber-500 hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+                        >
+                          <ChevronRight size={13} />
+                        </button>
+                      </Tooltip>
+                    )}
+
+                    {/* Nút bấm dẫn đến tin nhắn */}
+                    <Tooltip title="Đi đến tin nhắn này trong cuộc trò chuyện">
+                      <button
+                        type="button"
+                        aria-label="Đi đến tin nhắn đã ghim"
+                        onClick={() => {
+                          const msg = pinnedMessages[pinnedBannerIndex % pinnedMessages.length];
+                          if (msg) navigateToMessage(activeConversation.id, msg.id);
+                        }}
+                        className="h-6 px-2 rounded-md inline-flex items-center gap-1 text-[11px] font-bold cursor-pointer transition-colors"
+                        style={{
+                          background: 'rgba(212, 168, 75, 0.18)',
+                          color: '#d4a84b',
+                          border: '1px solid rgba(212, 168, 75, 0.35)',
+                        }}
+                      >
+                        <CornerDownRight size={12} />
+                        <span className="hidden sm:inline">Đi đến tin nhắn</span>
+                      </button>
+                    </Tooltip>
+
+                    {/* Xem danh sách tất cả tin ghim */}
+                    <Tooltip title="Xem danh sách tất cả tin nhắn đã ghim">
+                      <button
+                        type="button"
+                        aria-label="Xem tất cả tin ghim"
+                        onClick={() => setActiveSubtab('pinned')}
+                        className="h-6 px-1.5 rounded-md inline-flex items-center text-[11px] font-semibold text-slate-400 hover:text-amber-500 hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+                      >
+                        Tất cả ({pinnedMessages.length})
+                      </button>
+                    </Tooltip>
+
+                    {/* Bỏ ghim */}
+                    <Tooltip title="Bỏ ghim tin nhắn này">
+                      <button
+                        type="button"
+                        aria-label="Bỏ ghim"
+                        onClick={() => {
+                          const msg = pinnedMessages[pinnedBannerIndex % pinnedMessages.length];
+                          if (msg) handleTogglePin(msg.id);
+                        }}
+                        className="w-6 h-6 rounded-md inline-flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-colors"
+                      >
+                        <PinOff size={13} />
+                      </button>
+                    </Tooltip>
+                  </div>
                 </div>
               )}
 
@@ -11560,27 +11685,136 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
           {/* VIEW 3: PINNED MESSAGES */}
           {activeSubtab === 'pinned' && (
-            <div className="flex-1 overflow-y-auto p-4 space-y-2">
-              <div className="text-[13.5px] font-extrabold mb-2">Tin nhắn đã ghim</div>
-              {activeConversation?.messages
-                .filter((m) => m.pinned)
-                .map((m) => (
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-[13.5px] font-extrabold flex items-center gap-2">
+                  <Pin size={15} className="text-amber-500 fill-amber-400" />
+                  <span>Tin nhắn đã ghim</span>
+                  <span
+                    className="text-[11px] px-2 py-0.5 rounded-full font-bold tabular-nums"
+                    style={{ background: 'rgba(212, 168, 75, 0.16)', color: '#d4a84b' }}
+                  >
+                    {pinnedMessages.length}
+                  </span>
+                </div>
+                {pinnedMessages.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveSubtab('chat')}
+                    className="text-[12px] font-semibold text-amber-500 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Quay lại trò chuyện</span>
+                    <CornerDownRight size={13} />
+                  </button>
+                )}
+              </div>
+
+              {pinnedMessages.length === 0 ? (
+                <div
+                  className="flex flex-col items-center justify-center p-8 rounded-xl text-center space-y-2 mt-4"
+                  style={{
+                    background: surfaceBg,
+                    border: `1px dashed ${borderColor}`,
+                  }}
+                >
+                  <Pin size={32} className="text-slate-400/60 mb-1" />
+                  <div className="text-[13px] font-bold text-slate-400">
+                    Chưa có tin nhắn nào được ghim trong cuộc trò chuyện này
+                  </div>
+                  <div className="text-[11.5px] text-slate-500 max-w-sm">
+                    Rê chuột vào bất kỳ tin nhắn nào trong luồng trò chuyện và nhấn biểu tượng Ghim (Pin) để lưu nhanh tại đây.
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveSubtab('chat')}
+                    className="mt-2 h-7 px-3 rounded-md text-[11.5px] font-bold text-amber-500 hover:bg-amber-400/10 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                    style={{ border: '1px solid rgba(212, 168, 75, 0.3)' }}
+                  >
+                    <MessageSquare size={13} />
+                    <span>Quay lại cuộc trò chuyện</span>
+                  </button>
+                </div>
+              ) : (
+                pinnedMessages.map((m) => (
                   <div
                     key={m.id}
-                    className="p-2.5 rounded-lg text-[12.5px]"
+                    onClick={() => {
+                      if (activeConversation) {
+                        navigateToMessage(activeConversation.id, m.id);
+                      }
+                    }}
+                    className="p-3 rounded-lg text-[12.5px] transition-all hover:shadow-md cursor-pointer group relative"
                     style={{
                       background: surfaceBg,
                       border: `1px solid ${borderStrong}`,
-                      borderLeft: '3px solid #d4a84b',
+                      borderLeft: '4px solid #d4a84b',
                     }}
                   >
-                    <div className="text-[11px] font-bold mb-1">
-                      {m.senderName} · <span className="text-slate-400 tabular-nums">{m.timeLabel}</span>
+                    <div className="flex items-center justify-between mb-1.5 gap-2">
+                      <div className="text-[11.5px] font-bold flex items-center gap-1.5 truncate">
+                        <span className="text-amber-500 font-extrabold">{m.senderName}</span>
+                        <span className="text-slate-400 font-normal">·</span>
+                        <span className="text-slate-400 tabular-nums font-normal">{m.timeLabel}</span>
+                        {m.thread && m.thread.length > 0 && (
+                          <span
+                            className="text-[10px] px-1.5 py-0.5 rounded font-semibold text-sky-500 tabular-nums"
+                            style={{ background: 'rgba(14, 165, 233, 0.12)' }}
+                          >
+                            {m.thread.length} phản hồi
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        {/* Nút bấm dẫn đến tin nhắn */}
+                        <Tooltip title="Đi đến tin nhắn này trong cuộc trò chuyện">
+                          <button
+                            type="button"
+                            aria-label="Đi đến tin nhắn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (activeConversation) {
+                                navigateToMessage(activeConversation.id, m.id);
+                              }
+                            }}
+                            className="h-6 px-2 rounded-md inline-flex items-center gap-1 text-[11px] font-bold cursor-pointer transition-colors"
+                            style={{
+                              background: 'rgba(212, 168, 75, 0.16)',
+                              color: '#d4a84b',
+                              border: '1px solid rgba(212, 168, 75, 0.3)',
+                            }}
+                          >
+                            <CornerDownRight size={12} />
+                            <span>Đi đến tin nhắn</span>
+                          </button>
+                        </Tooltip>
+
+                        {/* Nút bỏ ghim */}
+                        <Tooltip title="Bỏ ghim tin nhắn này">
+                          <button
+                            type="button"
+                            aria-label="Bỏ ghim tin nhắn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleTogglePin(m.id);
+                            }}
+                            className="w-6 h-6 rounded-md inline-flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-colors"
+                          >
+                            <PinOff size={13} />
+                          </button>
+                        </Tooltip>
+                      </div>
                     </div>
-                    {m.text && <div>{m.text}</div>}
+
+                    {m.text && (
+                      <div className="text-slate-700 dark:text-slate-200 line-clamp-3 mb-1 break-words">
+                        {m.text}
+                      </div>
+                    )}
                     {renderMessageAttachments(m.attachments, true)}
                   </div>
-                ))}
+                ))
+              )}
             </div>
           )}
         </div>

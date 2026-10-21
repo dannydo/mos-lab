@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import MosGoogleChatPortal from '../MosGoogleChatPortal';
+import { apiClient } from '../../../lib/api-client';
 
 // Mock matchMedia
 beforeEach(() => {
@@ -299,6 +300,77 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /Khởi tạo Quy trình Sống/i })).toBeTruthy();
+    });
+  });
+
+  it('renders sticky pinned banner and allows jumping to pinned message from banner and pinned tab (MOS-FEAT-130)', async () => {
+    const mockPinnedConv = {
+      id: 'space-cc',
+      type: 'space' as const,
+      name: 'tư-vấn-cc-ca-hôm-nay',
+      memberCount: 12,
+      unreadCount: 0,
+      updatedAt: new Date().toISOString(),
+      messages: [
+        {
+          id: 'msg-pinned-1',
+          conversationId: 'space-cc',
+          senderId: 'staff-tn',
+          senderName: 'Tuyết Nhi',
+          senderRole: 'Telesales',
+          text: 'Chị Nguyễn Bích Ngọc (VIP Diamond) vừa báo sẽ tới sớm.',
+          timeLabel: '14:42',
+          createdAt: new Date().toISOString(),
+          pinned: true,
+        },
+      ],
+    };
+    (apiClient.chat.bootstrap as any).mockResolvedValueOnce({
+      unchanged: false,
+      version: 1,
+      conversations: [mockPinnedConv],
+      tasks: [],
+      staffDirectory: [],
+      accessConfig: { allowAllStaff: true, allowedGroupKeys: [], allowedStaffIds: [] },
+      canAccessChat: true,
+    });
+
+    render(
+      <MosGoogleChatPortal
+        open={true}
+        onClose={vi.fn()}
+        onToggle={vi.fn()}
+        currentUser={{ id: 99, displayName: 'Danny Do', role: 'Admin' }}
+      />
+    );
+
+    // Sticky pinned message banner should be rendered in chat view
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Đi đến tin nhắn đã ghim/i })).toBeTruthy();
+    });
+
+    // Pinned banner should have "Đi đến tin nhắn" button
+    const bannerJumpBtn = screen.getByRole('button', { name: /Đi đến tin nhắn đã ghim/i });
+    expect(bannerJumpBtn).toBeTruthy();
+
+    // Switch to Pinned Messages subtab
+    const pinnedTabBtn = screen.getByRole('button', { name: /Tab tin nhắn đã ghim/i });
+    fireEvent.click(pinnedTabBtn);
+
+    // In Pinned subtab, verify header and pinned message card
+    await waitFor(() => {
+      expect(screen.getByText(/Tin nhắn đã ghim/i)).toBeTruthy();
+    });
+
+    const cardJumpBtn = screen.getByRole('button', { name: /Đi đến tin nhắn/i });
+    expect(cardJumpBtn).toBeTruthy();
+
+    // Click "Đi đến tin nhắn" button on pinned card to navigate back to chat
+    fireEvent.click(cardJumpBtn);
+
+    // Verify it navigated back to chat view (sticky banner is visible again)
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Đi đến tin nhắn đã ghim/i })).toBeTruthy();
     });
   });
 });
