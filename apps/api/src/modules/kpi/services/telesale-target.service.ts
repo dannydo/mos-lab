@@ -3018,7 +3018,16 @@ QUY TẮC BẮT BUỘC:
 
     try {
       const pyScript = `import sys, asyncio, edge_tts; asyncio.run(edge_tts.Communicate(sys.argv[1], sys.argv[2], rate=sys.argv[3]).save(sys.argv[4]))`;
-      await execFileAsync(pythonBin, ['-c', pyScript, cleanText, voice, rate, tempFile], { timeout: 25_000 });
+      try {
+        await execFileAsync(pythonBin, ['-c', pyScript, cleanText, voice, rate, tempFile], { timeout: 25_000 });
+      } catch (firstErr) {
+        if (rate !== '+0%') {
+          // Fallback to standard rate +0% if edge-tts rejects custom rate
+          await execFileAsync(pythonBin, ['-c', pyScript, cleanText, voice, '+0%', tempFile], { timeout: 25_000 });
+        } else {
+          throw firstErr;
+        }
+      }
 
       if (existsSync(tempFile)) {
         const audioBuf = readFileSync(tempFile);
