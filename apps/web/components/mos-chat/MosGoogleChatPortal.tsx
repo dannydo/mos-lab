@@ -11,6 +11,7 @@ import {
   DatePicker,
   Switch,
   message as antdMessage,
+  notification,
   theme,
 } from 'antd';
 import {
@@ -97,11 +98,13 @@ import {
   AlertTriangle,
   Handshake,
   Activity,
+  Zap,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import type {
   MosChatMessageEditHistoryItem,
   MosChatAccessConfig,
+  MosChatBuzzEvent,
   MosChatConversation,
   MosChatCustomSection,
   MosChatCustomerCard,
@@ -159,8 +162,10 @@ import {
   getTaskDeadlineInfo,
   matchesStaffGroup,
   parseGoogleDriveImageFromText,
+  playWebAudioBuzzChime,
   playWebAudioReminderChime,
   readOrCompressImagePayload,
+  triggerBuzzVibration,
 } from './utils/chat-helpers';
 import { useMosChatBridgeListener } from './store/mos-chat-bridge';
 import { MosChatWorkflowCard } from './workflows/MosChatWorkflowCard';
@@ -319,6 +324,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [mobileActiveMsgId, setMobileActiveMsgId] = useState<string | null>(null);
   const [heartFlyMsgId, setHeartFlyMsgId] = useState<string | null>(null);
   const lastTapRef = useRef<{ msgId: string; time: number }>({ msgId: '', time: 0 });
+  const notifiedBuzzIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     setMobileActionOpen(false);
@@ -1189,6 +1195,62 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         }
         if (Array.isArray(res?.conversations)) {
           setConversations(res.conversations);
+
+          // Detect new unread buzzed messages for current user
+          const myId = String(currentUser?.id || '');
+          const myName = String(currentUser?.displayName || currentUser?.username || '')
+            .trim()
+            .toLowerCase();
+          for (const conv of res.conversations) {
+            if (conv.hasUnreadBuzz || (conv.unreadCount || 0) > 0) {
+              for (const m of conv.messages || []) {
+                if (m.isBuzzed && m.buzzedAt) {
+                  const buzzKey = `${m.id}-${m.buzzedAt}`;
+                  const isMine =
+                    String(m.senderId) === myId ||
+                    Boolean(
+                      myName &&
+                      String(m.senderName || '')
+                        .trim()
+                        .toLowerCase() === myName
+                    );
+                  if (!isMine && !notifiedBuzzIdsRef.current.has(buzzKey)) {
+                    notifiedBuzzIdsRef.current.add(buzzKey);
+                    playWebAudioBuzzChime();
+                    triggerBuzzVibration();
+                    const senderLabel = m.latestBuzz?.senderName || m.senderName || 'Đồng nghiệp';
+                    const convLabel = conv.name ? `[${conv.name}]` : '';
+                    const preview = m.text
+                      ? m.text.length > 70
+                        ? `${m.text.slice(0, 70)}...`
+                        : m.text
+                      : 'Tin nhắn khẩn cấp';
+                    notification.warning({
+                      message: `⚡ TIN NHẮN KHẨN CẤP (BUZZ) ${convLabel}`,
+                      description: `${senderLabel} vừa Buzz tin nhắn khẩn cấp: "${preview}"`,
+                      duration: 8,
+                      btn: (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!open) {
+                              onToggle();
+                            }
+                            selectConversation(conv.id);
+                            notification.destroy();
+                          }}
+                          className="px-3 py-1 rounded bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs cursor-pointer shadow-sm"
+                        >
+                          Xem ngay
+                        </button>
+                      ),
+                      key: `buzz-notify-${m.id}`,
+                    });
+                  }
+                }
+              }
+            }
+          }
         }
         if (res?.tasks) {
           setTasks(res.tasks);
@@ -3587,6 +3649,69 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     }
   };
 
+  const handleBuzzMessage = async (msgId: string, replyId?: string) => {
+    if (!activeConversation) return;
+    try {
+      antdMessage.loading({ content: 'Đang gửi tín hiệu Buzz khẩn cấp...', key: `buzz-${msgId}` });
+      const res = await apiClient.chat.buzzMessage(msgId, {
+        conversationId: activeConversation.id,
+        replyId,
+      });
+      if (res?.success) {
+        playWebAudioBuzzChime();
+        triggerBuzzVibration();
+        antdMessage.success({
+          content: '⚡ Đã Buzz tin nhắn khẩn cấp thành công! Hệ thống đã gửi cảnh báo đến người nhận.',
+          key: `buzz-${msgId}`,
+          duration: 3,
+        });
+
+        // Update local state immediately
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.id !== activeConversation.id) return c;
+            return {
+              ...c,
+              updatedAt: res.buzzEvent.buzzedAt,
+              messages: c.messages.map((m) => {
+                if (m.id !== msgId) return m;
+                if (replyId && m.thread) {
+                  return {
+                    ...m,
+                    thread: m.thread.map((r) =>
+                      r.id === replyId
+                        ? {
+                            ...r,
+                            isBuzzed: true,
+                            buzzedAt: res.buzzEvent.buzzedAt,
+                            buzzCount: (r.buzzCount || 0) + 1,
+                            latestBuzz: res.buzzEvent,
+                            buzzHistory: [...(r.buzzHistory || []), res.buzzEvent],
+                          }
+                        : r
+                    ),
+                  };
+                }
+                return {
+                  ...m,
+                  isBuzzed: true,
+                  buzzedAt: res.buzzEvent.buzzedAt,
+                  buzzCount: (m.buzzCount || 0) + 1,
+                  latestBuzz: res.buzzEvent,
+                  buzzHistory: [...(m.buzzHistory || []), res.buzzEvent],
+                };
+              }),
+            };
+          })
+        );
+        notifyLivePeers();
+      }
+    } catch (err: SafeAny) {
+      const errorMsg = err?.response?.data?.message || err?.message || 'Không thể Buzz tin nhắn này';
+      antdMessage.error({ content: errorMsg, key: `buzz-${msgId}`, duration: 4 });
+    }
+  };
+
   const markThreadReadOptimisticAndSync = useCallback(
     (convId: string, msgId: string) => {
       if (!convId || !msgId || convId === AI_COPILOT_CONV_ID) return;
@@ -3728,9 +3853,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       if (isMobile) setMobileActiveView('conversation');
 
       const targetConv =
-        convId === AI_COPILOT_CONV_ID
-          ? aiCopilotConversation
-          : conversations.find((c) => c.id === convId);
+        convId === AI_COPILOT_CONV_ID ? aiCopilotConversation : conversations.find((c) => c.id === convId);
       if (targetConv && isTabVisible) {
         const msgs = targetConv.messages || [];
         const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : undefined;
@@ -3783,7 +3906,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         setHighlightedMsgId((prev) => (prev === msgId ? null : prev));
       }, 4000);
     },
-    [conversations, aiCopilotConversation, isMobile, handleOpenThread, isTabVisible, markConversationReadOptimisticAndSync]
+    [
+      conversations,
+      aiCopilotConversation,
+      isMobile,
+      handleOpenThread,
+      isTabVisible,
+      markConversationReadOptimisticAndSync,
+    ]
   );
 
   useEffect(() => {
@@ -9187,6 +9317,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0">
+                                  {conv.hasUnreadBuzz && effUnread > 0 && (
+                                    <Tooltip title="🚨 Có tin nhắn KHẨN CẤP (BUZZ) chưa đọc!">
+                                      <span className="inline-flex items-center gap-0.5 justify-center px-1.5 h-4 rounded-full bg-amber-500 text-slate-950 text-[9px] font-black animate-pulse shadow-sm shrink-0">
+                                        <Zap size={9} className="fill-slate-950" />
+                                        BUZZ
+                                      </span>
+                                    </Tooltip>
+                                  )}
                                   {(conv.unreadThreadCount || 0) > 0 && conv.id !== activeConvId && (
                                     <Tooltip
                                       title={`${conv.unreadThreadCount} câu trả lời mới trong luồng phụ (Sub-thread)`}
@@ -10183,28 +10321,96 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                       ? 'px-1 py-0.5 rounded-2xl'
                                       : `px-3.5 py-2 rounded-2xl ${isMine ? 'rounded-tr-sm' : 'rounded-tl-sm'}`
                                   } text-[13px] leading-relaxed whitespace-pre-wrap break-words max-w-[85%] cursor-pointer select-none active:scale-[0.985] transition-all ${
-                                    hasSubthread ? 'hover:ring-1 hover:ring-amber-500/50' : ''
-                                  }`}
+                                    m.isBuzzed ? 'ring-2 ring-amber-500/70 shadow-lg shadow-amber-500/15' : ''
+                                  } ${hasSubthread ? 'hover:ring-1 hover:ring-amber-500/50' : ''}`}
                                   style={{
                                     background: isPureSticker
                                       ? 'transparent'
-                                      : isMine
+                                      : m.isBuzzed
                                         ? isDark
-                                          ? 'rgba(212, 168, 75, 0.16)'
-                                          : 'rgba(212, 168, 75, 0.14)'
-                                        : surfaceRaised,
+                                          ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.22) 0%, rgba(225, 29, 72, 0.14) 100%)'
+                                          : 'linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, rgba(225, 29, 72, 0.1) 100%)'
+                                        : isMine
+                                          ? isDark
+                                            ? 'rgba(212, 168, 75, 0.16)'
+                                            : 'rgba(212, 168, 75, 0.14)'
+                                          : surfaceRaised,
                                     border: isPureSticker
                                       ? 'none'
-                                      : `1px solid ${
-                                          isMine
-                                            ? isDark
-                                              ? 'rgba(212, 168, 75, 0.38)'
-                                              : 'rgba(212, 168, 75, 0.35)'
-                                            : borderColor
-                                        }`,
+                                      : m.isBuzzed
+                                        ? '1px solid rgba(245, 158, 11, 0.8)'
+                                        : `1px solid ${
+                                            isMine
+                                              ? isDark
+                                                ? 'rgba(212, 168, 75, 0.38)'
+                                                : 'rgba(212, 168, 75, 0.35)'
+                                              : borderColor
+                                          }`,
                                     color: token.colorText,
                                   }}
                                 >
+                                  {/* Buzz / Bump Urgent Header Banner */}
+                                  {m.isBuzzed && (
+                                    <div
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="mb-1.5 px-2 py-1 rounded-md bg-amber-500/20 border border-amber-500/40 flex items-center justify-between gap-1 text-[11px] font-bold text-amber-500 dark:text-amber-400 select-none"
+                                    >
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-amber-500 text-slate-950 font-black text-[9.5px] animate-pulse shrink-0">
+                                          ⚡
+                                        </span>
+                                        <span className="truncate">TIN NHẮN KHẨN CẤP · BUZZ</span>
+                                        {m.buzzCount && m.buzzCount > 1 && (
+                                          <span className="px-1 py-0.2 rounded bg-amber-500/30 text-[9.5px] tabular-nums font-extrabold text-amber-300 shrink-0">
+                                            x{m.buzzCount}
+                                          </span>
+                                        )}
+                                      </div>
+                                      {m.latestBuzz && (
+                                        <Popover
+                                          title="Lịch sử Buzz khẩn cấp"
+                                          trigger="click"
+                                          content={
+                                            <div className="max-w-[270px] flex flex-col gap-1.5 text-xs">
+                                              {(m.buzzHistory || [m.latestBuzz]).map((b, idx) => (
+                                                <div
+                                                  key={b.id || idx}
+                                                  className="flex flex-col border-b border-black/5 dark:border-white/10 pb-1.5 last:border-b-0"
+                                                >
+                                                  <div className="flex items-center justify-between font-semibold text-amber-500">
+                                                    <span>
+                                                      Lần {idx + 1}: {b.senderName}
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-400 font-normal">
+                                                      {b.senderRole || 'Staff'}
+                                                    </span>
+                                                  </div>
+                                                  <div className="text-[10.5px] text-slate-400 tabular-nums">
+                                                    {dayjs(b.buzzedAt).format('HH:mm:ss DD/MM/YYYY')}
+                                                  </div>
+                                                  {b.note && (
+                                                    <div className="text-slate-300 italic text-[11px] mt-0.5">
+                                                      {b.note}
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              ))}
+                                            </div>
+                                          }
+                                        >
+                                          <button
+                                            type="button"
+                                            aria-label="Xem lịch sử Buzz"
+                                            className="text-[10px] font-medium text-amber-400/90 hover:underline hover:text-amber-300 cursor-pointer inline-flex items-center gap-0.5 shrink-0"
+                                          >
+                                            <History size={10} />
+                                            <span>Lịch sử</span>
+                                          </button>
+                                        </Popover>
+                                      )}
+                                    </div>
+                                  )}
+
                                   {renderRichTextMessage(m.text, isMine)}
 
                                   {/* Edited Badge with Clickable Audit History */}
@@ -10673,6 +10879,50 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                   <Pin size={13} />
                                 </button>
                               </Tooltip>
+
+                              {/* Buzz / Bump Urgent Message Button */}
+                              {!m.isDeleted && (
+                                <Tooltip
+                                  title={
+                                    m.isBuzzed
+                                      ? `Đã Buzz ${m.buzzCount || 1} lần · Nhấp để Buzz lại tin nhắn khẩn cấp`
+                                      : '⚡ Buzz / Bump tin nhắn khẩn cấp (Cảnh báo chuông & rung)'
+                                  }
+                                >
+                                  <Popconfirm
+                                    title="⚡ Buzz / Bump tin nhắn khẩn cấp?"
+                                    description="Gửi tín hiệu cảnh báo nổi bật kèm âm thanh & rung để người nhận chú ý xử lý ngay."
+                                    onConfirm={() => handleBuzzMessage(m.id)}
+                                    okText="⚡ Buzz ngay"
+                                    cancelText="Huỷ"
+                                    okButtonProps={{
+                                      style: {
+                                        backgroundColor: '#f59e0b',
+                                        borderColor: '#f59e0b',
+                                        color: '#000',
+                                        fontWeight: 'bold',
+                                      },
+                                    }}
+                                    zIndex={1350}
+                                    overlayStyle={{ zIndex: 1350 }}
+                                  >
+                                    <button
+                                      type="button"
+                                      aria-label="Buzz / Bump tin nhắn khẩn cấp"
+                                      className="w-6 h-6 rounded-full inline-flex items-center justify-center hover:bg-amber-500/20 cursor-pointer transition-transform hover:scale-110"
+                                      style={{
+                                        background: m.isBuzzed ? 'rgba(245, 158, 11, 0.22)' : 'transparent',
+                                        color: m.isBuzzed ? '#f59e0b' : token.colorTextSecondary,
+                                      }}
+                                    >
+                                      <Zap
+                                        size={13}
+                                        className={m.isBuzzed ? 'fill-amber-500 animate-pulse text-amber-500' : ''}
+                                      />
+                                    </button>
+                                  </Popconfirm>
+                                </Tooltip>
+                              )}
 
                               {/* Edit Message Button (author only, and not deleted) */}
                               {isMine && !m.isDeleted && (
@@ -11722,7 +11972,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     Chưa có tin nhắn nào được ghim trong cuộc trò chuyện này
                   </div>
                   <div className="text-[11.5px] text-slate-500 max-w-sm">
-                    Rê chuột vào bất kỳ tin nhắn nào trong luồng trò chuyện và nhấn biểu tượng Ghim (Pin) để lưu nhanh tại đây.
+                    Rê chuột vào bất kỳ tin nhắn nào trong luồng trò chuyện và nhấn biểu tượng Ghim (Pin) để lưu nhanh
+                    tại đây.
                   </div>
                   <button
                     type="button"
@@ -11807,9 +12058,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     </div>
 
                     {m.text && (
-                      <div className="text-slate-700 dark:text-slate-200 line-clamp-3 mb-1 break-words">
-                        {m.text}
-                      </div>
+                      <div className="text-slate-700 dark:text-slate-200 line-clamp-3 mb-1 break-words">{m.text}</div>
                     )}
                     {renderMessageAttachments(m.attachments, true)}
                   </div>
@@ -12332,6 +12581,29 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                 )}
                               </div>
                             )}
+                            {r.isBuzzed && (
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                className="mb-1 px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 flex items-center justify-between gap-1 text-[10px] font-bold text-amber-500 dark:text-amber-400 select-none"
+                              >
+                                <div className="flex items-center gap-1 min-w-0">
+                                  <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-amber-500 text-slate-950 font-black text-[8.5px] animate-pulse shrink-0">
+                                    ⚡
+                                  </span>
+                                  <span className="truncate">KHẨN CẤP · BUZZ</span>
+                                  {r.buzzCount && r.buzzCount > 1 && (
+                                    <span className="px-1 py-0.2 rounded bg-amber-500/30 text-[9px] tabular-nums font-extrabold text-amber-300 shrink-0">
+                                      x{r.buzzCount}
+                                    </span>
+                                  )}
+                                </div>
+                                {r.latestBuzz && (
+                                  <span className="text-[9.5px] opacity-75 font-normal tabular-nums">
+                                    {dayjs(r.latestBuzz.buzzedAt).format('HH:mm')}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                             {r.text && (
                               <div className="text-left break-words leading-relaxed">
                                 {renderRichTextMessage(r.text, isReplyMine)}
@@ -12447,6 +12719,49 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
                               <span className="w-px h-3 mx-0.5" style={{ background: borderStrong }} />
                             </>
+                          )}
+
+                          {/* Buzz / Bump Urgent Reply Button */}
+                          {!r.isDeleted && (
+                            <Tooltip
+                              title={
+                                r.isBuzzed
+                                  ? `Đã Buzz ${r.buzzCount || 1} lần · Nhấp để Buzz lại phản hồi khẩn cấp`
+                                  : '⚡ Buzz / Bump phản hồi khẩn cấp'
+                              }
+                            >
+                              <Popconfirm
+                                title="⚡ Buzz / Bump phản hồi khẩn cấp?"
+                                description="Gửi tín hiệu cảnh báo nổi bật kèm âm thanh & rung để người nhận chú ý xử lý ngay."
+                                onConfirm={() => handleBuzzMessage(activeThreadMessage.id, r.id)}
+                                okText="⚡ Buzz ngay"
+                                cancelText="Huỷ"
+                                okButtonProps={{
+                                  style: {
+                                    backgroundColor: '#f59e0b',
+                                    borderColor: '#f59e0b',
+                                    color: '#000',
+                                    fontWeight: 'bold',
+                                  },
+                                }}
+                                zIndex={1350}
+                                overlayStyle={{ zIndex: 1350 }}
+                              >
+                                <button
+                                  type="button"
+                                  aria-label="Buzz / Bump phản hồi khẩn cấp"
+                                  className="w-5 h-5 rounded-full inline-flex items-center justify-center hover:bg-amber-500/20 cursor-pointer text-amber-500 transition-transform hover:scale-110"
+                                  style={{
+                                    background: r.isBuzzed ? 'rgba(245, 158, 11, 0.22)' : 'transparent',
+                                  }}
+                                >
+                                  <Zap
+                                    size={11}
+                                    className={r.isBuzzed ? 'fill-amber-500 animate-pulse text-amber-500' : ''}
+                                  />
+                                </button>
+                              </Popconfirm>
+                            </Tooltip>
                           )}
                           {(isReplyMine || canManageChatThreads) && !r.isDeleted && !r.isMissionMilestone && (
                             <Popover

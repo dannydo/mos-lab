@@ -3,6 +3,8 @@ import type {
   ActionMosChatMissionResponse,
   ActionMosChatWorkflowInstanceRequest,
   ActionMosChatWorkflowInstanceResponse,
+  BuzzMosChatMessageRequest,
+  BuzzMosChatMessageResponse,
   CreateMosChatConversationRequest,
   CreateMosChatMessageRequest,
   CreateMosChatMissionRequest,
@@ -155,6 +157,11 @@ export const chatApi = {
       const res = await api.post(`/chat/messages/${encodeURIComponent(messageId)}/pin`, {
         conversationId,
       });
+      invalidateApiGetCache(['/chat/bootstrap']);
+      return res.data;
+    },
+    buzzMessage: async (messageId: string, payload: BuzzMosChatMessageRequest): Promise<BuzzMosChatMessageResponse> => {
+      const res = await api.post(`/chat/messages/${encodeURIComponent(messageId)}/buzz`, payload);
       invalidateApiGetCache(['/chat/bootstrap']);
       return res.data;
     },

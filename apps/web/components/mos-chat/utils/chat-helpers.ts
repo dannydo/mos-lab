@@ -104,6 +104,41 @@ export function getTaskDeadlineInfo(deadlineIso?: string | null, done?: boolean)
   };
 }
 
+export function playWebAudioBuzzChime() {
+  try {
+    const AudioCtx = window.AudioContext || (window as SafeAny).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    // High-attention dual alert pulses (880Hz -> 1320Hz -> 880Hz -> 1320Hz)
+    const tones = [
+      { freq: 880, time: 0 },
+      { freq: 1320, time: 0.1 },
+      { freq: 880, time: 0.22 },
+      { freq: 1320, time: 0.32 },
+    ];
+    tones.forEach(({ freq, time }) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.18, ctx.currentTime + time);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + time + 0.1);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + time);
+      osc.stop(ctx.currentTime + time + 0.11);
+    });
+  } catch (_) {}
+}
+
+export function triggerBuzzVibration() {
+  try {
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+      navigator.vibrate([200, 100, 200, 100, 300]);
+    }
+  } catch (_) {}
+}
+
 export function playWebAudioReminderChime() {
   try {
     const AudioCtx = window.AudioContext || (window as SafeAny).webkitAudioContext;
