@@ -773,8 +773,28 @@ Quy định phản hồi:
       const config = await crm.crmConfig.findUnique({ where: { key: 'mos_chat:conversations_v1' } });
       if (!config) return;
       const convs = JSON.parse(config.value || '[]');
-      const conv = convs.find((c: SafeAny) => c.id === conversationId);
-      if (!conv) return;
+      let conv = convs.find((c: SafeAny) => c.id === conversationId);
+      if (!conv) {
+        if (conversationId.startsWith('space-')) {
+          const slug = conversationId.replace(/^space-/, '');
+          const isCore = slug.includes('core');
+          conv = {
+            id: conversationId,
+            type: 'space',
+            name: slug,
+            subtitle: isCore ? 'Không gian phối hợp Ban Điều Hành & Đội Ngũ Cốt Lõi' : `Không gian trao đổi ${slug}`,
+            roleTag: isCore ? 'Core Team' : 'Space',
+            color: isCore ? '#722ed1' : '#10b981',
+            memberCount: 5,
+            unreadCount: 0,
+            updatedAt: new Date().toISOString(),
+            messages: [],
+          };
+          convs.unshift(conv);
+        } else {
+          return;
+        }
+      }
 
       const now = new Date();
       const timeLabel = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
