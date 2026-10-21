@@ -135,7 +135,7 @@ export function buildMissionSummaryFromReport(
     ? '🟣 Có yêu cầu nâng cấp · Chờ anh Danny duyệt'
     : '🟣 Đã tiếp nhận nhiệm vụ';
   let humanSummary = hasUpgradeOrReworkContext
-    ? 'Đã ghi nhận yêu cầu nâng cấp / chỉnh sửa bổ sung trong luồng chat. Đang chờ anh Danny bấm [🚀 Giao AG nâng cấp tiếp] để AG thực hiện.'
+    ? 'Đã ghi nhận yêu cầu nâng cấp / chỉnh sửa bổ sung trong luồng chat. Đang chờ anh Danny bấm [🚀 Duyệt nâng cấp tiếp · Cổng 1 (mOS Mission)] để triển khai.'
     : 'Đã ghi nhận vào mOS Mission. Hệ thống đang đọc nội dung và hình ảnh đính kèm.';
 
   if (report.status === 'CLOSED') {
@@ -195,7 +195,8 @@ export function buildMissionSummaryFromReport(
     stage = 'BUILDING';
     stepIndex = 2;
     humanBadge = '⚡ Đang xây dựng tính năng';
-    humanSummary = 'Anh Danny đã duyệt nhiệm vụ! Trợ lý kỹ thuật (AG) đang lập trình và chạy kiểm thử tự động.';
+    humanSummary =
+      'Anh Danny đã duyệt Cổng 1 trên mOS Mission! Hệ thống đang lập trình và chạy kiểm thử tự động trong worktree riêng.';
   }
 
   const changedFiles = parseSafeStringList(activeJob?.changedFilesJson);
@@ -785,7 +786,8 @@ export class ChatMissionBridgeService {
         ],
         verification: 'pnpm verify:quick && pnpm check:ui-contract',
         risksAndRollback: 'Thay đổi cô lập trong worktree riêng; có thể rollback commit an toàn nếu cần.',
-        approvalRequest: 'Super Admin Danny đã duyệt Cổng 1 trực tiếp từ mOS Chat để AG bắt đầu làm ngay.',
+        approvalRequest:
+          'Super Admin Danny đã duyệt Cổng 1 trực tiếp từ mOS Chat để chuyển vào hàng đợi thực thi của mOS Mission.',
       };
       const planVersion = inboxImplementationPlanVersion(sourceVersion, planDraft);
 
@@ -842,8 +844,8 @@ export class ChatMissionBridgeService {
       }
     }
 
-    // Automatically authorize Gate 1 for AG execution
-    await InboxImplementationService.approve(fastify, createdReport.id, actorStaffId, undefined, 'AG');
+    // Automatically authorize Gate 1 in mOS Mission (AUTO mode routes to the configured mission worker)
+    await InboxImplementationService.approve(fastify, createdReport.id, actorStaffId, undefined, 'AUTO');
     RequestClassifierWorkerHub.notify('inbox_implementation_available');
 
     const key = formatBugReportKey(createdReport.id, requestType);
@@ -854,10 +856,10 @@ export class ChatMissionBridgeService {
     targetMsg.thread = targetMsg.thread || [];
 
     const milestone1Text =
-      `🚀 **Đã nhận nhiệm vụ #MSN-${createdReport.id} (${key})**\n` +
-      `Anh Danny đã giao yêu cầu này vào **mOS Mission** (đã gom trọn ${threadReplies.length} phản hồi trong luồng` +
+      `🚀 **Đã chuyển vào mOS Mission #MSN-${createdReport.id} (${key})**\n` +
+      `Anh Danny đã chuyển yêu cầu này sang **mOS Mission** (đã gom trọn ${threadReplies.length} phản hồi trong luồng` +
       `${bugAttachments.length > 0 ? ` và ${bugAttachments.length} ảnh chụp màn hình` : ''}).\n` +
-      `⚡ Trợ lý kỹ thuật (AG) đã nhận việc và đang bắt đầu xây dựng tính năng!`;
+      `⚡ Đã duyệt Cổng 1 — Nhiệm vụ đang được xử lý tự động trên mOS Mission!`;
 
     targetMsg.thread.push(createMilestoneThreadReply(createdReport.id, 'BUILDING', milestone1Text, now));
     conv.updatedAt = now.toISOString();
@@ -1074,7 +1076,7 @@ export class ChatMissionBridgeService {
           ],
           verification: 'pnpm verify:quick && pnpm check:ui-contract',
           risksAndRollback: 'Thay đổi cô lập trong worktree riêng; có thể rollback commit an toàn nếu cần.',
-          approvalRequest: `Super Admin Danny đã duyệt Cổng 1 trực tiếp từ subthread mOS Chat để AG nâng cấp tiếp (${now.toISOString()}).`,
+          approvalRequest: `Super Admin Danny đã duyệt Cổng 1 trực tiếp từ subthread mOS Chat để mOS Mission nâng cấp tiếp (${now.toISOString()}).`,
         };
         const planVersion = inboxImplementationPlanVersion(sourceVersion, planDraft);
 
@@ -1128,7 +1130,7 @@ export class ChatMissionBridgeService {
         return { planJobId: savedPlanJob.id, sourceVersion, planVersion };
       });
 
-      await InboxImplementationService.approve(fastify, reportId, actorStaffId, expectedPlan, 'AG');
+      await InboxImplementationService.approve(fastify, reportId, actorStaffId, expectedPlan, 'AUTO');
       RequestClassifierWorkerHub.notify('inbox_implementation_available');
 
       const conv = conversations.find((c) => c.id === body.conversationId);
@@ -1139,7 +1141,7 @@ export class ChatMissionBridgeService {
         systemReply = createMilestoneThreadReply(
           reportId,
           'BUILDING',
-          `🚀 **Đã duyệt nâng cấp / chỉnh sửa tiếp #MSN-${reportId} (${key})**\nAnh Danny đã duyệt yêu cầu bổ sung trong luồng chat. Phiên trợ lý kỹ thuật (AG) của nhiệm vụ này đã được đánh thức để thực hiện nâng cấp!`,
+          `🚀 **Đã duyệt nâng cấp / chỉnh sửa tiếp #MSN-${reportId} (${key})**\nAnh Danny đã duyệt yêu cầu bổ sung trong luồng chat. Nhiệm vụ trên **mOS Mission** đã được kích hoạt Cổng 1 để thực hiện nâng cấp!`,
           now
         );
         msg.thread.push(systemReply);
@@ -1151,14 +1153,14 @@ export class ChatMissionBridgeService {
           task.done = false;
         }
       }
-      responseMessage = 'Đã duyệt Cổng 1 cho AG bắt đầu nâng cấp / lập trình tiếp!';
+      responseMessage = 'Đã duyệt Cổng 1 để mOS Mission bắt đầu nâng cấp / lập trình tiếp!';
     } else if (action === 'APPROVE_COMMIT') {
       if (!isSuperAdmin) {
         throw new BugReportError('Chỉ Super Admin Danny mới có quyền duyệt Commit.', 403);
       }
       const queued = await InboxImplementationService.approveCommit(fastify, reportId, actorStaffId);
       if (queued) RequestClassifierWorkerHub.notify('inbox_implementation_available');
-      responseMessage = 'Đã duyệt Commit ngay từ mOS Chat! AG đang tự động tạo commit.';
+      responseMessage = 'Đã duyệt Commit ngay từ mOS Chat! mOS Mission đang tự động tạo commit.';
     } else if (action === 'APPROVE_DEPLOY') {
       if (!isSuperAdmin) {
         throw new BugReportError('Chỉ Super Admin Danny mới có quyền duyệt Deploy.', 403);
@@ -1260,7 +1262,8 @@ export class ChatMissionBridgeService {
       if (await InboxPlanService.enqueue(fastify, reportId, 'REPORTER_COMMENT')) {
         RequestClassifierWorkerHub.notify('inbox_plan_available');
       }
-      responseMessage = 'Đã ghi nhận yêu cầu nâng cấp / chỉnh thêm trong luồng chat (chờ anh Danny duyệt giao AG)!';
+      responseMessage =
+        'Đã ghi nhận yêu cầu nâng cấp / chỉnh thêm trong luồng chat (chờ anh Danny duyệt Cổng 1 mOS Mission)!';
     }
 
     await this.syncLinkedMissionsIntoChatState(fastify, conversations, tasks);
