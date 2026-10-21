@@ -96,6 +96,8 @@ export function extractThinkingAndAction(rawText: string): ParsedAiResponse {
     .replace(/<action[\s\S]*?<\/action>/gi, '')
     .replace(/<\/?action[^>]*>/gi, '')
     .replace(/<action\b[^<]*$/gi, '')
+    .replace(/🎙️\s*BẮT BUỘC PHẢN HỒI BẰNG GIỌNG NÓI[\s\S]*$/gi, '')
+    .replace(/\/Users\/dannydo\/\.gemini\/antigravity\/bin\/speak[\s\S]*$/gi, '')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 
@@ -588,6 +590,9 @@ ${liveCustomerText ? `${liveCustomerText}\n` : ''}${agContextInfo}
 ${trimmedMessage}
 
 Quy định phản hồi:
+- BẠN LÀ TRỢ LÝ HỘI THOẠI TRÊN GIAO DIỆN WEB mOS CHAT (MAI). BẠN ĐÃ CÓ ĐẦY ĐỦ THÔNG TIN TRONG NGỮ CẢNH TRÊN.
+- TUYỆT ĐỐI KHÔNG GỌI BẤT KỲ TOOL NÀO (KHÔNG GỌI read_file, run_command, search_code, edit_file).
+- HÃY TRẢ LỜI NGAY TRỰC TIẾP TRONG LƯỢT ĐẦU TIÊN (Step 1) BẰNG VĂN BẢN VÀ THẺ <thinking>, <action> NẾU CÓ.
 - Hãy suy luận và phân tích kỹ lưỡng. Đặt quá trình tư duy trong thẻ <thinking>...</thinking>.
 - Nếu người dùng cần lọc tệp khách hàng, hãy đề xuất cấu hình bộ lọc cụ thể trong thẻ <action type="APPLY_FILTER" label="...">JSON_FILTER_PAYLOAD</action>.
 - Trả lời bằng tiếng Việt thân thiện, súc tích và chuẩn xác.
@@ -612,7 +617,7 @@ Quy định phản hồi:
             agConversationId,
             promptForAg,
             agTitle,
-            240_000,
+            20_000,
             session.id,
             {
               scope,
@@ -672,9 +677,9 @@ Quy định phản hồi:
             },
           };
 
-          const response = await axios.post(payload as SafeAny, geminiUrl, {
+          const response = await axios.post(geminiUrl, payload, {
             headers: { 'Content-Type': 'application/json' },
-            timeout: 20_000,
+            timeout: 15_000,
           });
 
           const replyRaw = response.data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();

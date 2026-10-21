@@ -36,6 +36,11 @@ export class AgChatBridgeService {
   private static pendingBridgeJobs = new Map<string, PendingBridgeJobEntry>();
   private static waitingLongPollers: Array<(job: AgChatBridgeJob | null) => void> = [];
   private static archivedJobs = new Map<string, AgChatBridgeJob>();
+  private static lastRemotePollerSeenAt: number = 0;
+
+  static isRemotePollerActive(): boolean {
+    return Date.now() - this.lastRemotePollerSeenAt < 40_000 || this.waitingLongPollers.length > 0;
+  }
 
   static getArchivedJob(jobId: string): AgChatBridgeJob | undefined {
     return this.archivedJobs.get(jobId);
@@ -241,8 +246,8 @@ export class AgChatBridgeService {
       await execFile(command, args, { timeout: AGENTAPI_TIMEOUT_MS, env });
     } else {
       const titleArg = title ? [`--title=${title}`] : ['--title=[mOS Copilot]'];
-      const model = process.env.MOS_AG_MODEL?.trim();
-      const modelArg = model ? [`--model=${model}`] : [];
+      const model = process.env.MOS_AG_MODEL?.trim() || 'flash';
+      const modelArg = [`--model=${model}`];
       const args = command.endsWith('language_server')
         ? ['agentapi', 'new-conversation', ...modelArg, ...titleArg, prompt]
         : ['new-conversation', ...modelArg, ...titleArg, prompt];
@@ -370,10 +375,13 @@ export class AgChatBridgeService {
     conversationId: string | undefined,
     prompt: string,
     title?: string,
-    timeoutMs = 240_000,
+    timeoutMs = 20_000,
     sessionId?: string,
     metadata?: { scope?: string; targetChatConvId?: string; userName?: string }
   ): Promise<{ conversationId: string; response: ParsedAiResponse }> {
+    if (!this.isRemotePollerActive()) {
+      return Promise.reject(new Error('No active remote Antigravity bridge poller connected'));
+    }
     return new Promise((resolve, reject) => {
       const jobId = randomUUID();
       const job: AgChatBridgeJob = {
@@ -423,6 +431,7 @@ export class AgChatBridgeService {
    */
   static async getNextRemoteChatJob(timeoutMs = 25_000): Promise<AgChatBridgeJob | null> {
     const now = Date.now();
+    this.lastRemotePollerSeenAt = now;
     // 1. Check if there is already an unclaimed pending job (or a stale claim older than 240s)
     for (const entry of this.pendingBridgeJobs.values()) {
       if (!entry.claimedAt || now - entry.claimedAt > 240_000) {

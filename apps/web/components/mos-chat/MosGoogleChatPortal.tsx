@@ -667,6 +667,89 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     }
   }, [aiPersonalStorageKey, aiSessionId, aiMessages]);
 
+  // Synchronize latest messages from backend if aiSessionId exists
+  useEffect(() => {
+    if (!aiSessionId) return;
+    let isCancelled = false;
+    (async () => {
+      try {
+        const sessRes = await apiClient.ai.getSession(aiSessionId);
+        if (isCancelled || !sessRes?.messages || sessRes.messages.length === 0) return;
+
+        const mappedBackend: MosChatMessage[] = sessRes.messages.map((bm) => {
+          const isBot = bm.role === 'assistant';
+          const rawContent = bm.content || '';
+          const actionMatches: NonNullable<MosChatMessage['aiAction']>[] = [];
+          const regex = /<action(?:\s+type="([^"]*)")?(?:\s+label="([^"]*)")?>([\s\S]*?)<\/action>/gi;
+          let match: RegExpExecArray | null;
+          while ((match = regex.exec(rawContent)) !== null) {
+            try {
+              actionMatches.push({
+                type: match[1]?.trim() || 'APPLY_FILTER',
+                label: match[2]?.trim() || 'Áp dụng bộ lọc gợi ý',
+                payload: JSON.parse(match[3]?.trim() || '{}'),
+              });
+            } catch {
+              // ignore
+            }
+          }
+          const cleanText = rawContent
+            .replace(/<action[\s\S]*?<\/action>/gi, '')
+            .replace(/<\/?action[^>]*>/gi, '')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
+
+          const existingActions = bm.suggestedActions || (bm.suggestedAction ? [bm.suggestedAction] : []);
+          const allActions = [...existingActions, ...actionMatches].filter(
+            (act, index, self) =>
+              index ===
+              self.findIndex((a) => a.label === act.label && JSON.stringify(a.payload) === JSON.stringify(act.payload))
+          );
+
+          return {
+            id: bm.id,
+            conversationId: AI_COPILOT_CONV_ID,
+            senderId: isBot ? 'wings-ai-copilot' : String(currentUser?.id || 'me'),
+            senderName: isBot ? '🤖 MAI' : currentUser?.displayName || currentUser?.username || 'Bạn',
+            senderRole: isBot ? 'mOS AI' : currentUser?.role || 'Staff',
+            senderAvatar: isBot ? 'MAI' : 'U',
+            roleColor: isBot ? '#8b5cf6' : '#2563eb',
+            isAiBot: isBot,
+            text: cleanText,
+            aiThinking: bm.thinking || null,
+            aiAction: allActions[0] || bm.suggestedAction || null,
+            aiActions: allActions.length > 0 ? allActions : null,
+            timeLabel: dayjs(bm.createdAt).format('HH:mm'),
+            createdAt: bm.createdAt,
+            reactions: {},
+            thread: [],
+          };
+        });
+
+        const welcome = buildInitialAiWelcomeMessage();
+        setAiMessages((prev) => {
+          // If local has pending optimistic messages, keep them
+          if (prev.length > mappedBackend.length + 1) {
+            return prev;
+          }
+          return [welcome, ...mappedBackend];
+        });
+      } catch {
+        // ignore sync error
+      }
+    })();
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    aiSessionId,
+    buildInitialAiWelcomeMessage,
+    currentUser?.id,
+    currentUser?.displayName,
+    currentUser?.username,
+    currentUser?.role,
+  ]);
+
   const currentUserStaffMember = useMemo<MosChatStaffMember>(() => {
     const myId = Number(currentUser?.id);
     const uname = String(currentUser?.username || '')
@@ -3128,22 +3211,92 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         };
         setAiMessages((prev) => [...prev, botMsg]);
       } catch (err: SafeAny) {
-        const fallbackErr: MosChatMessage = {
-          id: `msg-ai-err-${Date.now()}`,
-          conversationId: AI_COPILOT_CONV_ID,
-          senderId: 'wings-ai-copilot',
-          senderName: '🤖 MAI',
-          senderRole: 'mOS AI',
-          senderAvatar: 'MAI',
-          roleColor: '#8b5cf6',
-          isAiBot: true,
-          text: err?.response?.data?.message || 'Hiện kết nối MAI đang bận, bạn vui lòng thử lại sau giây lát nhé.',
-          timeLabel: dayjs().format('HH:mm'),
-          createdAt: new Date().toISOString(),
-          reactions: {},
-          thread: [],
-        };
-        setAiMessages((prev) => [...prev, fallbackErr]);
+        let recoveredMsg: MosChatMessage | null = null;
+        if (aiSessionId) {
+          for (let poll = 0; poll < 3; poll++) {
+            await new Promise((r) => setTimeout(r, 2000));
+            try {
+              const sessRes = await apiClient.ai.getSession(aiSessionId);
+              const lastAssistant = sessRes?.messages?.filter((m) => m.role === 'assistant')?.pop();
+              if (lastAssistant && lastAssistant.content) {
+                const rawContent = lastAssistant.content;
+                const actionMatches: NonNullable<MosChatMessage['aiAction']>[] = [];
+                const regex = /<action(?:\s+type="([^"]*)")?(?:\s+label="([^"]*)")?>([\s\S]*?)<\/action>/gi;
+                let match: RegExpExecArray | null;
+                while ((match = regex.exec(rawContent)) !== null) {
+                  try {
+                    actionMatches.push({
+                      type: match[1]?.trim() || 'APPLY_FILTER',
+                      label: match[2]?.trim() || 'Áp dụng bộ lọc gợi ý',
+                      payload: JSON.parse(match[3]?.trim() || '{}'),
+                    });
+                  } catch {
+                    // ignore
+                  }
+                }
+                const cleanText = rawContent
+                  .replace(/<action[\s\S]*?<\/action>/gi, '')
+                  .replace(/<\/?action[^>]*>/gi, '')
+                  .replace(/\n{3,}/g, '\n\n')
+                  .trim();
+
+                const existingActions =
+                  lastAssistant.suggestedActions ||
+                  (lastAssistant.suggestedAction ? [lastAssistant.suggestedAction] : []);
+                const allActions = [...existingActions, ...actionMatches].filter(
+                  (act, index, self) =>
+                    index ===
+                    self.findIndex(
+                      (a) => a.label === act.label && JSON.stringify(a.payload) === JSON.stringify(act.payload)
+                    )
+                );
+
+                recoveredMsg = {
+                  id: lastAssistant.id || `msg-ai-${Date.now()}`,
+                  conversationId: AI_COPILOT_CONV_ID,
+                  senderId: 'wings-ai-copilot',
+                  senderName: '🤖 MAI',
+                  senderRole: 'mOS AI',
+                  senderAvatar: 'MAI',
+                  roleColor: '#8b5cf6',
+                  isAiBot: true,
+                  text: cleanText,
+                  aiThinking: lastAssistant.thinking || null,
+                  aiAction: allActions[0] || lastAssistant.suggestedAction || null,
+                  aiActions: allActions.length > 0 ? allActions : null,
+                  timeLabel: dayjs(lastAssistant.createdAt).format('HH:mm'),
+                  createdAt: lastAssistant.createdAt || new Date().toISOString(),
+                  reactions: {},
+                  thread: [],
+                };
+                break;
+              }
+            } catch {
+              // ignore poll error
+            }
+          }
+        }
+
+        if (recoveredMsg) {
+          setAiMessages((prev) => [...prev, recoveredMsg!]);
+        } else {
+          const fallbackErr: MosChatMessage = {
+            id: `msg-ai-err-${Date.now()}`,
+            conversationId: AI_COPILOT_CONV_ID,
+            senderId: 'wings-ai-copilot',
+            senderName: '🤖 MAI',
+            senderRole: 'mOS AI',
+            senderAvatar: 'MAI',
+            roleColor: '#8b5cf6',
+            isAiBot: true,
+            text: err?.response?.data?.message || 'Hiện kết nối MAI đang bận, bạn vui lòng thử lại sau giây lát nhé.',
+            timeLabel: dayjs().format('HH:mm'),
+            createdAt: new Date().toISOString(),
+            reactions: {},
+            thread: [],
+          };
+          setAiMessages((prev) => [...prev, fallbackErr]);
+        }
       } finally {
         setAiThinkingActive(false);
       }
