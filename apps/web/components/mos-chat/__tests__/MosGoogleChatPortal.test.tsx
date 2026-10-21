@@ -161,7 +161,11 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
     expect(screen.getByText(/Đang làm/i)).toBeTruthy();
     expect(screen.getByText(/Đã xong/i)).toBeTruthy();
     expect(screen.getByText(/Lưu trữ/i)).toBeTruthy();
-    expect(screen.getByText(/Tất cả/i)).toBeTruthy();
+    expect(screen.getAllByText(/Tất cả/i).length).toBeGreaterThan(0);
+
+    // Check scope filter buttons (MOS-BUG-129)
+    expect(screen.getByText(/Tất cả task/i)).toBeTruthy();
+    expect(screen.getByText(/Task của tôi/i)).toBeTruthy();
 
     // Check action buttons: edit, archive, delete
     const editBtn = screen.getByRole('button', { name: /Chỉnh sửa/i });
@@ -172,6 +176,38 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
 
     const deleteBtn = screen.getByRole('button', { name: /Xoá task/i });
     expect(deleteBtn).toBeTruthy();
+  });
+
+  it('prioritizes tasks belonging to the active space and partitions other spaces below (MOS-BUG-129)', async () => {
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1200 });
+
+    render(
+      <MosGoogleChatPortal
+        open={true}
+        onClose={vi.fn()}
+        onToggle={vi.fn()}
+        currentUser={{ id: 99, displayName: 'Danny Do', role: 'Admin' }}
+      />
+    );
+
+    // Navigate to tasks tab
+    const tasksButton = await screen.findByRole('button', { name: /Công việc & Nhắc hẹn/i });
+    expect(tasksButton).toBeTruthy();
+    fireEvent.click(tasksButton);
+
+    // Task Manager header should be visible
+    await waitFor(() => {
+      expect(screen.getByText('Quản Lý Công Việc & Nhắc Hẹn')).toBeTruthy();
+    });
+
+    // Check that scope filter contains "Tất cả task" and "Task của tôi"
+    expect(screen.getByText(/Tất cả task/i)).toBeTruthy();
+    expect(screen.getByText(/Task của tôi/i)).toBeTruthy();
+
+    // Verify task search input is rendered
+    expect(
+      screen.getByPlaceholderText(/Tìm kiếm công việc/i)
+    ).toBeTruthy();
   });
 
   it('accepts targetNavigation prop to navigate and highlight target message', async () => {

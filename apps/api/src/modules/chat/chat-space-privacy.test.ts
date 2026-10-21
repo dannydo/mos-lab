@@ -5,8 +5,9 @@ import {
   resolveConversationParticipantStaffIds,
   computeConversationReadReceipts,
   isDannyOrSuperAdminUser,
+  filterTasksForUser,
 } from './routes.js';
-import type { MosChatConversation, MosChatStaffMember, MosChatUserSidebarPrefs } from '@mos-lab/shared';
+import type { MosChatConversation, MosChatStaffMember, MosChatTaskItem, MosChatUserSidebarPrefs } from '@mos-lab/shared';
 import type { JwtUserPayload } from '../../middlewares/auth.js';
 
 describe('Chat Space Privacy & Read Receipts Isolation', () => {
@@ -177,5 +178,52 @@ describe('Chat Space Privacy & Read Receipts Isolation', () => {
 
     assert.ok(receiptStaffIds.includes(4), 'Tâm should have read receipt');
     assert.equal(receiptStaffIds.includes(22), false, 'Bích Phượng (22) must NOT appear in read receipts');
+  });
+
+  it('isolates tasks created in restricted spaces so non-members cannot see them (MOS-BUG-129)', () => {
+    const tasks: MosChatTaskItem[] = [
+      {
+        id: 'task-core-1',
+        conversationId: 'space-core-team',
+        conversationName: 'core-team',
+        title: 'Bảo mật kiến trúc mOS',
+        assigneeName: 'Tâm Nguyễn',
+        creatorName: 'Danny Do',
+        priority: 'HIGH',
+        remindAt: new Date().toISOString(),
+        done: false,
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 'task-general-1',
+        conversationId: 'space-general',
+        conversationName: 'chung',
+        title: 'Thông báo lịch nghỉ lễ toàn công ty',
+        assigneeName: 'Bích Phượng',
+        creatorName: 'Danny Do',
+        priority: 'NORMAL',
+        remindAt: new Date().toISOString(),
+        done: false,
+        createdAt: new Date().toISOString(),
+      },
+    ];
+
+    const conversations = [coreTeamSpace, publicGeneralSpace];
+
+    // Core team member (Tâm) sees both tasks
+    const tamTasks = filterTasksForUser(tasks, conversations, userTam, staffDirectory);
+    assert.equal(tamTasks.length, 2);
+    assert.ok(tamTasks.some((t) => t.id === 'task-core-1'));
+    assert.ok(tamTasks.some((t) => t.id === 'task-general-1'));
+
+    // Non-member (Bích Phượng) ONLY sees public space tasks, NEVER core team tasks
+    const phuongTasks = filterTasksForUser(tasks, conversations, userBichPhuong, staffDirectory);
+    assert.equal(phuongTasks.length, 1);
+    assert.equal(phuongTasks[0]?.id, 'task-general-1');
+    assert.equal(phuongTasks.some((t) => t.id === 'task-core-1'), false);
+
+    // Danny (Super Admin) sees all tasks
+    const dannyTasks = filterTasksForUser(tasks, conversations, userDanny, staffDirectory);
+    assert.equal(dannyTasks.length, 2);
   });
 });

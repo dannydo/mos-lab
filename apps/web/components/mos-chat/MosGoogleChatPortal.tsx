@@ -1483,8 +1483,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [negotiateReason, setNegotiateReason] = useState('');
   const [isSubmittingNegotiation, setIsSubmittingNegotiation] = useState(false);
 
-  // Tasks Tab filter state
+  // Tasks Tab filter & search state (MOS-BUG-129)
   const [taskFilter, setTaskFilter] = useState<'ACTIVE' | 'MINE' | 'OVERDUE' | 'DONE' | 'ARCHIVED' | 'ALL'>('ACTIVE');
+  const [taskScopeFilter, setTaskScopeFilter] = useState<'ALL' | 'MINE' | 'SPACE'>('ALL');
+  const [taskSearchQuery, setTaskSearchQuery] = useState('');
+  const [collapseOtherSpaces, setCollapseOtherSpaces] = useState(false);
 
   // mOS Mission Dispatch & Inline Action state (2-way bridge between mOS Chat & mOS Mission)
   const [missionModalOpen, setMissionModalOpen] = useState(false);
@@ -2313,51 +2316,6 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     return out;
   }, [tasks]);
 
-  const taskCounts = useMemo(() => {
-    let active = 0;
-    let done = 0;
-    let archived = 0;
-    let overdue = 0;
-    let mine = 0;
-    const now = dayjs();
-    const myName = (currentUser?.displayName || '').trim().toLowerCase();
-    for (const t of uniqueTasks) {
-      if (t.archived) {
-        archived++;
-      } else if (t.done) {
-        done++;
-      } else {
-        active++;
-        if (t.deadline && dayjs(t.deadline).isBefore(now)) {
-          overdue++;
-        }
-        if (myName && (t.assigneeName || '').trim().toLowerCase().includes(myName)) {
-          mine++;
-        }
-      }
-    }
-    return { active, done, archived, overdue, mine, total: uniqueTasks.length };
-  }, [uniqueTasks, currentUser?.displayName]);
-
-  const filteredTasks = useMemo(() => {
-    const now = dayjs();
-    const myName = (currentUser?.displayName || '').trim().toLowerCase();
-    return uniqueTasks.filter((t) => {
-      if (taskFilter === 'ACTIVE') return !t.done && !t.archived;
-      if (taskFilter === 'MINE') {
-        return (
-          !t.done && !t.archived && Boolean(myName && (t.assigneeName || '').trim().toLowerCase().includes(myName))
-        );
-      }
-      if (taskFilter === 'OVERDUE') {
-        return !t.done && !t.archived && Boolean(t.deadline && dayjs(t.deadline).isBefore(now));
-      }
-      if (taskFilter === 'DONE') return t.done && !t.archived;
-      if (taskFilter === 'ARCHIVED') return Boolean(t.archived);
-      return true; // 'ALL'
-    });
-  }, [uniqueTasks, taskFilter, currentUser?.displayName]);
-
   // Report unread & active task counts up to Header
   useEffect(() => {
     const totalUnread = visibleConversations.reduce((sum, c) => {
@@ -2443,6 +2401,109 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       return inName || inMsg;
     });
   }, [allUserConversations, isConversationHiddenByUser, getEffectiveUnreadCount, sidebarFilter, searchQuery]);
+
+  const isMyTask = useCallback(
+    (t: MosChatTaskItem): boolean => {
+      if (!t) return false;
+      const myId = currentUser?.id ? String(currentUser.id) : null;
+      const myStaffId = currentUserStaffMember?.id ? String(currentUserStaffMember.id) : null;
+      const myName = (currentUser?.displayName || '').trim().toLowerCase();
+      const myUsername = (currentUser?.username || '').trim().toLowerCase();
+
+      if (t.assigneeId != null) {
+        const aid = String(t.assigneeId);
+        if (aid === myId || aid === myStaffId) return true;
+      }
+      const aName = (t.assigneeName || '').trim().toLowerCase();
+      if (aName) {
+        if (myName && (aName === myName || aName.includes(myName) || myName.includes(aName))) return true;
+        if (myUsername && (aName === myUsername || aName.includes(myUsername))) return true;
+      }
+      return false;
+    },
+    [currentUser?.id, currentUser?.displayName, currentUser?.username, currentUserStaffMember?.id]
+  );
+
+  const taskCounts = useMemo(() => {
+    let active = 0;
+    let done = 0;
+    let archived = 0;
+    let overdue = 0;
+    let mine = 0;
+    let space = 0;
+    const now = dayjs();
+    for (const t of uniqueTasks) {
+      if (t.archived) {
+        archived++;
+      } else if (t.done) {
+        done++;
+      } else {
+        active++;
+        if (t.deadline && dayjs(t.deadline).isBefore(now)) {
+          overdue++;
+        }
+      }
+      if (!t.done && !t.archived && isMyTask(t)) {
+        mine++;
+      }
+      if (activeConversation && t.conversationId === activeConversation.id && !t.done && !t.archived) {
+        space++;
+      }
+    }
+    return { active, done, archived, overdue, mine, space, total: uniqueTasks.length };
+  }, [uniqueTasks, isMyTask, activeConversation]);
+
+  const filteredTasks = useMemo(() => {
+    const now = dayjs();
+    const query = taskSearchQuery.trim().toLowerCase();
+
+    return uniqueTasks.filter((t) => {
+      // 1. Status Filter
+      if (taskFilter === 'ACTIVE' && (t.done || t.archived)) return false;
+      if (taskFilter === 'MINE' && (t.done || t.archived || !isMyTask(t))) return false;
+      if (taskFilter === 'OVERDUE' && (t.done || t.archived || !t.deadline || !dayjs(t.deadline).isBefore(now))) {
+        return false;
+      }
+      if (taskFilter === 'DONE' && (!t.done || t.archived)) return false;
+      if (taskFilter === 'ARCHIVED' && !t.archived) return false;
+
+      // 2. Scope Filter (Tất cả / Của tôi / Không gian này)
+      if (taskScopeFilter === 'MINE' && !isMyTask(t)) return false;
+      if (taskScopeFilter === 'SPACE' && activeConversation && t.conversationId !== activeConversation.id) {
+        return false;
+      }
+
+      // 3. Search Query Filter
+      if (query) {
+        const titleMatch = (t.title || '').toLowerCase().includes(query);
+        const codeMatch = (t.id || '').toLowerCase().includes(query);
+        const assigneeMatch = (t.assigneeName || '').toLowerCase().includes(query);
+        const creatorMatch = (t.creatorName || '').toLowerCase().includes(query);
+        const convMatch = (t.conversationName || '').toLowerCase().includes(query);
+        if (!titleMatch && !codeMatch && !assigneeMatch && !creatorMatch && !convMatch) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [uniqueTasks, taskFilter, taskScopeFilter, taskSearchQuery, isMyTask, activeConversation]);
+
+  const { currentSpaceTasks, otherSpaceTasks } = useMemo(() => {
+    if (!activeConversation) {
+      return { currentSpaceTasks: [], otherSpaceTasks: filteredTasks };
+    }
+    const current: MosChatTaskItem[] = [];
+    const other: MosChatTaskItem[] = [];
+    for (const t of filteredTasks) {
+      if (t.conversationId === activeConversation.id) {
+        current.push(t);
+      } else {
+        other.push(t);
+      }
+    }
+    return { currentSpaceTasks: current, otherSpaceTasks: other };
+  }, [filteredTasks, activeConversation]);
 
   const sortConversationsForSection = useCallback(
     (items: MosChatConversation[], sectionId: string): MosChatConversation[] => {
@@ -6195,6 +6256,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       task.creatorName && currentUser?.displayName && task.creatorName === currentUser.displayName
     );
     const canApproveNegotiation = isCreator || isStrictDannySuperAdmin;
+    const taskConv = conversations.find((c) => c.id === task.conversationId);
 
     return (
       <div
@@ -6207,7 +6269,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           opacity: isDone ? 0.85 : 1,
         }}
       >
-        {/* Header: Task Code + Priority + Status Badge + Done Toggle */}
+        {/* Header: Task Code + Space Badge + Priority + Status Badge + Done Toggle */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-1.5 flex-wrap">
             <span
@@ -6220,6 +6282,52 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             >
               {taskCode}
             </span>
+
+            {/* Space / Conversation Badge with quick switch */}
+            {taskConv && (
+              <Tooltip title={`Thuộc không gian: ${taskConv.name} · Nhấp để mở hội thoại`}>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (task.conversationId && task.conversationId !== activeConversation?.id) {
+                      selectConversation(task.conversationId);
+                    }
+                  }}
+                  className="px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1 cursor-pointer transition-all hover:opacity-85"
+                  style={{
+                    background:
+                      taskConv.type === 'space'
+                        ? isDark
+                          ? 'rgba(59, 130, 246, 0.18)'
+                          : '#eff6ff'
+                        : isDark
+                          ? 'rgba(168, 85, 247, 0.18)'
+                          : '#faf5ff',
+                    color:
+                      taskConv.type === 'space'
+                        ? isDark
+                          ? '#93c5fd'
+                          : '#2563eb'
+                        : isDark
+                          ? '#c084fc'
+                          : '#7e22ce',
+                    border: `1px solid ${
+                      taskConv.type === 'space'
+                        ? isDark
+                          ? 'rgba(59, 130, 246, 0.35)'
+                          : 'rgba(59, 130, 246, 0.25)'
+                        : isDark
+                          ? 'rgba(168, 85, 247, 0.35)'
+                          : 'rgba(168, 85, 247, 0.25)'
+                    }`,
+                  }}
+                >
+                  {taskConv.type === 'space' ? <Hash size={10} /> : <MessageSquare size={10} />}
+                  <span className="truncate max-w-[120px]">{taskConv.name || task.conversationName || 'Hội thoại'}</span>
+                </button>
+              </Tooltip>
+            )}
 
             <span
               className="px-2 py-0.5 rounded-md text-[10px] font-extrabold"
@@ -11548,12 +11656,32 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             </div>
           )}
 
-          {/* VIEW 2: TASKS & REMINDERS HUB */}
+          {/* VIEW 2: TASKS & REMINDERS HUB (Task Manager - MOS-BUG-129) */}
           {activeSubtab === 'tasks' && (
-            <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[13.5px] font-extrabold">Công việc & Nhắc hẹn từ Tin nhắn</span>
-                <div className="flex items-center gap-1.5">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {/* Header: Title + Space Indicator + Quick Actions */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-white/5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[14px] font-extrabold flex items-center gap-1.5">
+                    <ListTodo size={17} className="text-amber-400" />
+                    <span>Quản Lý Công Việc & Nhắc Hẹn</span>
+                  </span>
+                  {activeConversation && (
+                    <span
+                      className="px-2 py-0.5 rounded-full text-[10.5px] font-bold flex items-center gap-1"
+                      style={{
+                        background: isDark ? 'rgba(212, 168, 75, 0.15)' : '#fef3c7',
+                        color: isDark ? '#fbbf24' : '#b45309',
+                        border: '1px solid rgba(212, 168, 75, 0.3)',
+                      }}
+                    >
+                      {activeConversation.type === 'space' ? <Hash size={11} /> : <MessageSquare size={11} />}
+                      <span className="truncate max-w-[160px]">{activeConversation.name}</span>
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
                   <Tooltip title="Test nổ chuông nhắc hẹn ngay">
                     <button
                       type="button"
@@ -11573,56 +11701,236 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       type="button"
                       aria-label="Tạo Task mới"
                       onClick={() => openTaskModalFromMessage(null)}
-                      className="w-7 h-7 rounded-lg inline-flex items-center justify-center cursor-pointer"
+                      className="h-7 px-2.5 rounded-lg inline-flex items-center gap-1 text-[11.5px] font-extrabold cursor-pointer"
                       style={{ background: '#d4a84b', color: '#000' }}
                     >
                       <Plus size={15} />
+                      <span className="hidden sm:inline">Tạo Task</span>
                     </button>
                   </Tooltip>
                 </div>
               </div>
 
-              {/* Filter Pills */}
-              <div className="flex items-center gap-1.5 mb-2 overflow-x-auto pb-1 text-[11.5px]">
-                {[
-                  { key: 'ACTIVE', label: `Đang làm (${taskCounts.active})` },
-                  { key: 'MINE', label: `Của tôi (${taskCounts.mine})` },
-                  { key: 'OVERDUE', label: `Quá hạn (${taskCounts.overdue})` },
-                  { key: 'DONE', label: `Đã xong (${taskCounts.done})` },
-                  { key: 'ARCHIVED', label: `Lưu trữ (${taskCounts.archived})` },
-                  { key: 'ALL', label: `Tất cả (${taskCounts.total})` },
-                ].map((f) => {
-                  const isSel = taskFilter === f.key;
-                  return (
+              {/* Search Bar + Scope Selector + Status Filter */}
+              <div className="space-y-2">
+                {/* Search input */}
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={taskSearchQuery}
+                    onChange={(e) => setTaskSearchQuery(e.target.value)}
+                    placeholder="Tìm kiếm công việc (tiêu đề, mã task, người nhận, người tạo)..."
+                    className="w-full h-8 pl-8 pr-7 rounded-lg text-[12px] transition-all outline-none"
+                    style={{
+                      background: surfaceBg,
+                      border: `1px solid ${taskSearchQuery ? '#d4a84b' : borderColor}`,
+                      color: token.colorText,
+                    }}
+                  />
+                  {taskSearchQuery && (
                     <button
-                      key={f.key}
                       type="button"
-                      onClick={() => setTaskFilter(f.key as any)}
-                      className="px-2.5 py-1 rounded-full font-bold cursor-pointer transition-all whitespace-nowrap text-[11px]"
-                      style={{
-                        background: isSel ? '#d4a84b' : surfaceRaised,
-                        color: isSel ? '#000' : token.colorTextSecondary,
-                        border: `1px solid ${isSel ? '#d4a84b' : borderColor}`,
-                      }}
+                      onClick={() => setTaskSearchQuery('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
                     >
-                      {f.label}
+                      <X size={13} />
                     </button>
-                  );
-                })}
+                  )}
+                </div>
+
+                {/* Scope Filter Buttons: Tất cả task | Task của tôi | Không gian này */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 text-[11.5px]">
+                  <span className="text-[11px] font-bold text-slate-400 shrink-0 mr-1">Phạm vi:</span>
+                  {[
+                    { key: 'ALL', label: `Tất cả task (${uniqueTasks.filter((t) => !t.done && !t.archived).length})` },
+                    { key: 'MINE', label: `Task của tôi (${taskCounts.mine})` },
+                    ...(activeConversation
+                      ? [
+                          {
+                            key: 'SPACE',
+                            label: `Trong ${activeConversation.name} (${taskCounts.space})`,
+                          },
+                        ]
+                      : []),
+                  ].map((s) => {
+                    const isSel = taskScopeFilter === s.key;
+                    return (
+                      <button
+                        key={s.key}
+                        type="button"
+                        onClick={() => setTaskScopeFilter(s.key as any)}
+                        className="px-2.5 py-1 rounded-lg font-bold cursor-pointer transition-all whitespace-nowrap text-[11px] flex items-center gap-1"
+                        style={{
+                          background: isSel ? 'rgba(212, 168, 75, 0.2)' : surfaceRaised,
+                          color: isSel ? '#fbbf24' : token.colorTextSecondary,
+                          border: `1px solid ${isSel ? '#d4a84b' : borderColor}`,
+                        }}
+                      >
+                        {s.key === 'MINE' && <Users size={11} />}
+                        {s.key === 'SPACE' && <Hash size={11} />}
+                        {s.key === 'ALL' && <FolderKanban size={11} />}
+                        <span>{s.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Status Filter Pills: Đang làm | Của tôi | Quá hạn | Đã xong | Lưu trữ | Tất cả */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11.5px]">
+                  <span className="text-[11px] font-bold text-slate-400 shrink-0 mr-1">Trạng thái:</span>
+                  {[
+                    { key: 'ACTIVE', label: `Đang làm (${taskCounts.active})` },
+                    { key: 'MINE', label: `Của tôi (${taskCounts.mine})` },
+                    { key: 'OVERDUE', label: `Quá hạn (${taskCounts.overdue})` },
+                    { key: 'DONE', label: `Đã xong (${taskCounts.done})` },
+                    { key: 'ARCHIVED', label: `Lưu trữ (${taskCounts.archived})` },
+                    { key: 'ALL', label: `Tất cả (${taskCounts.total})` },
+                  ].map((f) => {
+                    const isSel = taskFilter === f.key;
+                    return (
+                      <button
+                        key={f.key}
+                        type="button"
+                        onClick={() => setTaskFilter(f.key as any)}
+                        className="px-2.5 py-0.5 rounded-full font-bold cursor-pointer transition-all whitespace-nowrap text-[11px]"
+                        style={{
+                          background: isSel ? '#d4a84b' : surfaceRaised,
+                          color: isSel ? '#000' : token.colorTextSecondary,
+                          border: `1px solid ${isSel ? '#d4a84b' : borderColor}`,
+                        }}
+                      >
+                        {f.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              {filteredTasks.map((t) => {
-                const taskConv = conversations.find((c) => c.id === t.conversationId);
-                const taskSourceMsg =
-                  taskConv?.messages.find((m) => m.id === t.sourceMessageId || m.taskId === t.id) || null;
-                const taskMission = t.mission || taskSourceMsg?.mission || null;
-                return (
-                  <div key={t.id} className="space-y-1.5">
-                    {renderTaskCard(t, taskSourceMsg, 'list')}
-                    {taskMission && renderLiveMissionCard(taskMission, taskSourceMsg, 'task')}
+              {/* IF IN A CONVERSATION/SPACE AND SCOPE IS NOT STRICTLY 'SPACE': PRIORITIZE THIS SPACE FIRST, OTHER TASKS BELOW */}
+              {activeConversation && taskScopeFilter !== 'SPACE' ? (
+                <div className="space-y-4 pt-1">
+                  {/* SECTION 1: TRONG KHÔNG GIAN NÀY */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between pb-1 border-b border-white/5">
+                      <div className="flex items-center gap-2">
+                        {activeConversation.type === 'space' ? (
+                          <Hash size={15} className="text-amber-400" />
+                        ) : (
+                          <MessageSquare size={15} className="text-indigo-400" />
+                        )}
+                        <span className="text-[12.5px] font-black uppercase tracking-wide">
+                          Trong không gian này: {activeConversation.name}
+                        </span>
+                        <span
+                          className="px-2 py-0.2 rounded-full text-[10px] font-bold tabular-nums"
+                          style={{
+                            background: isDark ? 'rgba(212, 168, 75, 0.2)' : '#fef3c7',
+                            color: isDark ? '#fbbf24' : '#b45309',
+                          }}
+                        >
+                          {currentSpaceTasks.length} việc
+                        </span>
+                        <span className="hidden sm:inline px-1.5 py-0.2 rounded text-[9.5px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                          Ưu tiên không gian hiện tại
+                        </span>
+                      </div>
+                    </div>
+
+                    {currentSpaceTasks.length > 0 ? (
+                      <div className="space-y-2">
+                        {currentSpaceTasks.map((t) => {
+                          const taskConv = conversations.find((c) => c.id === t.conversationId);
+                          const taskSourceMsg =
+                            taskConv?.messages.find((m) => m.id === t.sourceMessageId || m.taskId === t.id) || null;
+                          const taskMission = t.mission || taskSourceMsg?.mission || null;
+                          return (
+                            <div key={t.id} className="space-y-1.5">
+                              {renderTaskCard(t, taskSourceMsg, 'list')}
+                              {taskMission && renderLiveMissionCard(taskMission, taskSourceMsg, 'task')}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div
+                        className="p-3 rounded-xl text-center text-slate-400 text-[12px] flex items-center justify-between gap-2"
+                        style={{ background: surfaceRaised, border: `1px dashed ${borderColor}` }}
+                      >
+                        <span>Không có công việc nào thuộc không gian này.</span>
+                        <button
+                          type="button"
+                          onClick={() => openTaskModalFromMessage(null)}
+                          className="px-2.5 py-1 rounded-lg text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer"
+                          style={{ background: '#d4a84b', color: '#000' }}
+                        >
+                          <Plus size={12} />
+                          <span>Tạo việc trong không gian này</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
-                );
-              })}
+
+                  {/* SECTION 2: CÁC KHÔNG GIAN & HỘI THOẠI KHÁC */}
+                  {otherSpaceTasks.length > 0 && (
+                    <div className="space-y-2 pt-2">
+                      <div className="flex items-center justify-between pb-1 border-b border-white/5">
+                        <div className="flex items-center gap-2">
+                          <FolderKanban size={15} className="text-slate-400" />
+                          <span className="text-[12.5px] font-black uppercase tracking-wide text-slate-300">
+                            Các không gian & hội thoại khác
+                          </span>
+                          <span className="px-2 py-0.2 rounded-full text-[10px] font-bold tabular-nums bg-slate-500/20 text-slate-300">
+                            {otherSpaceTasks.length} việc
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setCollapseOtherSpaces((prev) => !prev)}
+                          className="px-2 py-0.5 rounded text-[11px] font-bold inline-flex items-center gap-1 text-slate-400 hover:text-slate-200 cursor-pointer"
+                        >
+                          {collapseOtherSpaces ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+                          <span>{collapseOtherSpaces ? 'Mở rộng' : 'Thu gọn'}</span>
+                        </button>
+                      </div>
+
+                      {!collapseOtherSpaces && (
+                        <div className="space-y-2">
+                          {otherSpaceTasks.map((t) => {
+                            const taskConv = conversations.find((c) => c.id === t.conversationId);
+                            const taskSourceMsg =
+                              taskConv?.messages.find((m) => m.id === t.sourceMessageId || m.taskId === t.id) || null;
+                            const taskMission = t.mission || taskSourceMsg?.mission || null;
+                            return (
+                              <div key={t.id} className="space-y-1.5">
+                                {renderTaskCard(t, taskSourceMsg, 'list')}
+                                {taskMission && renderLiveMissionCard(taskMission, taskSourceMsg, 'task')}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* SINGLE LIST (E.G. WHEN NO ACTIVE CONVERSATION OR WHEN FILTERED STRICTLY TO THIS SPACE) */
+                <div className="space-y-2 pt-1">
+                  {filteredTasks.map((t) => {
+                    const taskConv = conversations.find((c) => c.id === t.conversationId);
+                    const taskSourceMsg =
+                      taskConv?.messages.find((m) => m.id === t.sourceMessageId || m.taskId === t.id) || null;
+                    const taskMission = t.mission || taskSourceMsg?.mission || null;
+                    return (
+                      <div key={t.id} className="space-y-1.5">
+                        {renderTaskCard(t, taskSourceMsg, 'list')}
+                        {taskMission && renderLiveMissionCard(taskMission, taskSourceMsg, 'task')}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {filteredTasks.length === 0 && (
                 <div className="py-12 flex flex-col items-center justify-center text-center text-slate-400">
@@ -11634,7 +11942,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       ? 'Chưa có công việc nào trong Lưu trữ'
                       : taskFilter === 'DONE'
                         ? 'Chưa có công việc nào hoàn thành'
-                        : 'Chưa có đầu việc hoặc nhắc hẹn nào'}
+                        : taskScopeFilter === 'MINE'
+                          ? 'Bạn chưa có công việc nào được giao'
+                          : taskScopeFilter === 'SPACE'
+                            ? `Không có công việc nào trong "${activeConversation?.name || 'không gian này'}"`
+                            : 'Chưa có đầu việc hoặc nhắc hẹn nào'}
                   </div>
                   <div className="text-[12px] max-w-xs mb-4">
                     {taskFilter === 'ARCHIVED'

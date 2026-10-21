@@ -996,7 +996,7 @@ function filterAndFormatConversationsForUser(
     .map((c) => formatConversationForUser(c, user, staffDirectory, userPrefs, allUserPrefsByUserKey));
 }
 
-function filterTasksForUser(
+export function filterTasksForUser(
   tasks: MosChatTaskItem[],
   allConversations: MosChatConversation[],
   user: JwtUserPayload | undefined,
@@ -1009,7 +1009,9 @@ function filterTasksForUser(
   return tasks.filter((t) => {
     if (t.conversationId === 'dm-tuyetnhi' || t.conversationId === 'dm-hamy') return false;
     const conv = convMap.get(t.conversationId);
-    if (!conv) return true;
+    if (!conv) {
+      return isDannyOrSuperAdminUser(user);
+    }
     return canUserAccessConversation(conv, user, staffDirectory);
   });
 }
@@ -3054,11 +3056,19 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       const { taskId } = request.params as { taskId: string };
       const body = request.body as UpdateMosChatTaskRequest;
+      const user = request.user as JwtUserPayload;
 
-      const { tasks } = await loadChatState(fastify);
+      const [{ tasks, conversations }, staffDirectory] = await Promise.all([
+        loadChatState(fastify),
+        loadStaffDirectoryCached(fastify),
+      ]);
       const task = tasks.find((t) => t.id === taskId);
       if (!task) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy công việc' });
+      }
+      const conv = conversations.find((c) => c.id === task.conversationId);
+      if (conv && !canUserAccessConversation(conv, user, staffDirectory)) {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền chỉnh sửa công việc này' });
       }
 
       const now = new Date();
@@ -3164,13 +3174,21 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const { taskId } = request.params as { taskId: string };
-      const { tasks, conversations } = await loadChatState(fastify);
+      const user = request.user as JwtUserPayload;
+      const [{ tasks, conversations }, staffDirectory] = await Promise.all([
+        loadChatState(fastify),
+        loadStaffDirectoryCached(fastify),
+      ]);
       const taskIndex = tasks.findIndex((t) => t.id === taskId);
       if (taskIndex === -1) {
         return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy công việc' });
       }
 
       const deletedTask = tasks[taskIndex];
+      const conv = conversations.find((c) => c.id === deletedTask.conversationId);
+      if (conv && !canUserAccessConversation(conv, user, staffDirectory)) {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền xoá công việc này' });
+      }
       tasks.splice(taskIndex, 1);
 
       // Clean up taskId link in conversations messages if present
