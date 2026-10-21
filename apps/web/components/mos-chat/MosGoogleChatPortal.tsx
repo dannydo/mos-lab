@@ -847,8 +847,16 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   }, [currentUser?.id, currentUser?.username]);
 
   const readStoredPersonalLayout = useCallback((storageKey: string) => {
+    const getResponsiveDefaultPanelWidth = () => {
+      if (typeof window === 'undefined') return 960;
+      const w = window.innerWidth || 1920;
+      if (w >= 1920) return 1080;
+      if (w >= 1600) return 980;
+      if (w >= 1440) return 920;
+      return 840;
+    };
     const defaults = {
-      panelWidth: 840,
+      panelWidth: getResponsiveDefaultPanelWidth(),
       sidebarWidth: 264,
       threadWidth: 440,
       maximized: false,
@@ -4188,6 +4196,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       setThreadOpen(true);
       if (isMobile) {
         setMobileActiveView('thread');
+      } else if (!maximizedRef.current && typeof window !== 'undefined') {
+        const minComfort = sidebarWidthRef.current + threadWidthRef.current + 380;
+        if (panelWidthRef.current < minComfort) {
+          const maxAllowed = Math.max(520, window.innerWidth - 56);
+          const nextW = Math.min(maxAllowed, minComfort);
+          panelWidthRef.current = nextW;
+          setPanelWidth(nextW);
+          persistPersonalLayout({ panelWidth: nextW });
+        }
       }
       const targetConvId = convIdOverride || activeConversation?.id;
       if (targetConvId && isTabVisible) {
@@ -4195,7 +4212,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       }
       scrollToChatBottom('thread', 'auto');
     },
-    [isMobile, activeConversation, isTabVisible, markThreadReadOptimisticAndSync, scrollToChatBottom]
+    [isMobile, activeConversation, isTabVisible, markThreadReadOptimisticAndSync, scrollToChatBottom, persistPersonalLayout]
   );
 
   const navigateToMessage = useCallback(
@@ -8564,7 +8581,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         {/* LEFT EDGE RESIZE HANDLE (Drag to resize chat panel width, double-click to reset) */}
         {!isMobile && (
           <Tooltip
-            title="Kéo sang trái/phải để thay đổi kích thước khung Chat (Tự động lưu riêng cho bạn · Nhấp đúp để đặt lại 840px)"
+            title="Kéo sang trái/phải để thay đổi kích thước khung Chat (Tự động lưu riêng cho bạn · Nhấp đúp để đặt lại mặc định)"
             placement="left"
             mouseEnterDelay={0.5}
           >
@@ -8592,11 +8609,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               onDoubleClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                const resetW = typeof window !== 'undefined' && window.innerWidth >= 1920 ? 1080 : 960;
                 maximizedRef.current = false;
-                panelWidthRef.current = 840;
+                panelWidthRef.current = resetW;
                 setMaximized(false);
-                setPanelWidth(840);
-                persistPersonalLayout({ maximized: false, panelWidth: 840 });
+                setPanelWidth(resetW);
+                persistPersonalLayout({ maximized: false, panelWidth: resetW });
               }}
               style={{
                 position: 'absolute',
@@ -11273,15 +11291,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     </div>
                   </div>
                 ) : (
-                  /* Desktop Layout with spacious 32px buttons and 17px icons */
+                  /* Desktop Layout: Spacious, 2-Tier Modern Google Chat Workspace Composer Card */
                   <div className="space-y-1.5">
                     {formatBarOpenMain && renderAppleNotesFormatToolbar('main')}
                     <div
-                      className="relative min-h-[44px] max-h-[140px] rounded-2xl pl-4 pr-1.5 py-1.5 flex items-end gap-1.5 transition-all"
-                      style={{ background: surfaceRaised, border: `1px solid ${borderStrong}` }}
+                      className="relative rounded-2xl px-3.5 pt-2.5 pb-2 flex flex-col transition-all shadow-sm focus-within:shadow-md focus-within:border-[#d4a84b]/60"
+                      style={{
+                        background: surfaceRaised,
+                        border: `1px solid ${borderStrong}`,
+                      }}
                     >
                       {renderMentionAutocompleteDropdown('main')}
 
+                      {/* Top: 100% Full-Width Textarea with generous min/max height and comfortable typography */}
                       <textarea
                         ref={composerInputRef}
                         rows={1}
@@ -11290,7 +11312,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           const val = e.target.value;
                           setComposerText(val);
                           e.target.style.height = 'auto';
-                          e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                          e.target.style.height = `${Math.min(e.target.scrollHeight, 180)}px`;
                           checkForMentionTrigger(val, e.target.selectionStart ?? val.length, 'main');
                         }}
                         onClick={(e) => {
@@ -11350,147 +11372,175 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               ? 'Nhắn tin, gõ @AI để gọi Copilot, Paste hình (⌘V)... (Shift+Enter để xuống dòng)'
                               : 'Nhắn tin, Paste hình (⌘V) hoặc dán link Google Drive... (Shift+Enter để xuống dòng)'
                         }
-                        className="flex-1 bg-transparent border-0 outline-none text-[13px] resize-none leading-relaxed py-1.5 self-center"
-                        style={{ color: token.colorText, maxHeight: 120 }}
+                        className="w-full bg-transparent border-0 outline-none text-[13.5px] resize-none leading-relaxed px-0.5 py-1 min-h-[42px]"
+                        style={{ color: token.colorText, maxHeight: 180 }}
                       />
 
-                      {/* [Aa] Apple Notes Format Button for Desktop */}
-                      <Tooltip title="Định dạng chữ phong cách Apple Notes (Aa)">
-                        <button
-                          type="button"
-                          aria-label="Định dạng chữ Apple Notes"
-                          onClick={() => setFormatBarOpenMain((prev) => !prev)}
-                          className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer transition-all"
-                          style={{
-                            background: formatBarOpenMain ? '#d4a84b' : 'transparent',
-                            color: formatBarOpenMain ? '#000' : token.colorTextSecondary,
-                          }}
-                        >
-                          <span className="font-serif font-bold text-[13px] tracking-tight">Aa</span>
-                        </button>
-                      </Tooltip>
-
-                      <Popover
-                        trigger="click"
-                        placement="topRight"
-                        open={openStickerPopoverKey === 'composer:main:desktop'}
-                        onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:main:desktop' : null)}
-                        content={renderComposerEmojiPickerContent('main')}
+                      {/* Bottom Toolbar: Action Icons on Left, Send Button on Right */}
+                      <div
+                        className="flex items-center justify-between gap-2 pt-1.5 mt-1 border-t"
+                        style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)' }}
                       >
-                        <Tooltip title="Chèn biểu tượng cảm xúc Wings">
-                          <button
-                            type="button"
-                            aria-label="Chèn biểu tượng cảm xúc Wings"
-                            className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
-                            style={{ color: token.colorTextSecondary }}
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {/* [Aa] Apple Notes Format Button */}
+                          <Tooltip title="Định dạng chữ phong cách Apple Notes (Aa)">
+                            <button
+                              type="button"
+                              aria-label="Định dạng chữ Apple Notes"
+                              onClick={() => setFormatBarOpenMain((prev) => !prev)}
+                              className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-all"
+                              style={{
+                                background: formatBarOpenMain ? '#d4a84b' : 'transparent',
+                                color: formatBarOpenMain ? '#000' : token.colorTextSecondary,
+                              }}
+                            >
+                              <span className="font-serif font-bold text-[12.5px] tracking-tight">Aa</span>
+                            </button>
+                          </Tooltip>
+
+                          <Popover
+                            trigger="click"
+                            placement="topRight"
+                            open={openStickerPopoverKey === 'composer:main:desktop'}
+                            onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:main:desktop' : null)}
+                            content={renderComposerEmojiPickerContent('main')}
                           >
-                            <SmilePlus size={17} />
-                          </button>
-                        </Tooltip>
-                      </Popover>
+                            <Tooltip title="Chèn biểu tượng cảm xúc Wings">
+                              <button
+                                type="button"
+                                aria-label="Chèn biểu tượng cảm xúc Wings"
+                                className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
+                                style={{ color: token.colorTextSecondary }}
+                              >
+                                <SmilePlus size={16} />
+                              </button>
+                            </Tooltip>
+                          </Popover>
 
-                      <Tooltip title="Tải hình từ Ổ đĩa / Google Drive Desktop hoặc Paste ảnh (⌘V)">
-                        <button
-                          type="button"
-                          aria-label="Tải hình từ ổ đĩa hoặc Google Drive"
-                          onClick={() => triggerFilePicker('main')}
-                          className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
-                          style={{ color: token.colorTextSecondary }}
-                        >
-                          <ImagePlus size={17} />
-                        </button>
-                      </Tooltip>
+                          <Tooltip title="Tải hình từ Ổ đĩa / Google Drive Desktop hoặc Paste ảnh (⌘V)">
+                            <button
+                              type="button"
+                              aria-label="Tải hình từ ổ đĩa hoặc Google Drive"
+                              onClick={() => triggerFilePicker('main')}
+                              className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
+                              style={{ color: token.colorTextSecondary }}
+                            >
+                              <ImagePlus size={16} />
+                            </button>
+                          </Tooltip>
 
-                      <Tooltip title="Đính kèm hình từ link Google Drive">
-                        <button
-                          type="button"
-                          aria-label="Đính kèm hình từ link Google Drive"
-                          onClick={() => {
-                            uploadTargetRef.current = { scope: 'main' };
-                            setDriveLinkModalOpen(true);
-                          }}
-                          className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
-                          style={{ color: token.colorTextSecondary }}
-                        >
-                          <HardDrive size={17} />
-                        </button>
-                      </Tooltip>
+                          <Tooltip title="Đính kèm hình từ link Google Drive">
+                            <button
+                              type="button"
+                              aria-label="Đính kèm hình từ link Google Drive"
+                              onClick={() => {
+                                uploadTargetRef.current = { scope: 'main' };
+                                setDriveLinkModalOpen(true);
+                              }}
+                              className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
+                              style={{ color: token.colorTextSecondary }}
+                            >
+                              <HardDrive size={16} />
+                            </button>
+                          </Tooltip>
 
-                      <Tooltip title="Đính kèm thẻ Khách hàng / Booking mOS">
-                        <button
-                          type="button"
-                          aria-label="Đính kèm thẻ Khách hàng"
-                          onClick={handleSendQuickCustomerCard}
-                          className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
-                          style={{ color: token.colorTextSecondary }}
-                        >
-                          <UserRoundPlus size={17} />
-                        </button>
-                      </Tooltip>
+                          <Tooltip title="Đính kèm thẻ Khách hàng / Booking mOS">
+                            <button
+                              type="button"
+                              aria-label="Đính kèm thẻ Khách hàng"
+                              onClick={handleSendQuickCustomerCard}
+                              className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
+                              style={{ color: token.colorTextSecondary }}
+                            >
+                              <UserRoundPlus size={16} />
+                            </button>
+                          </Tooltip>
 
-                      {canUseAiCopilot && activeConversation?.id !== AI_COPILOT_CONV_ID && (
-                        <Tooltip title="Gọi @AI để Wings AI Copilot phân tích & trả lời công khai vào nhóm này">
-                          <button
-                            type="button"
-                            aria-label="Gọi @AI Copilot trong nhóm"
-                            onClick={() => {
-                              setComposerText((prev) => (prev.includes('@AI') ? prev : `@AI ${prev}`));
-                              composerInputRef.current?.focus();
-                            }}
-                            className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-purple-500/15 cursor-pointer"
-                            style={{ color: '#a78bfa' }}
+                          {canUseAiCopilot && activeConversation?.id !== AI_COPILOT_CONV_ID && (
+                            <Tooltip title="Gọi @AI để Wings AI Copilot phân tích & trả lời công khai vào nhóm này">
+                              <button
+                                type="button"
+                                aria-label="Gọi @AI Copilot trong nhóm"
+                                onClick={() => {
+                                  setComposerText((prev) => (prev.includes('@AI') ? prev : `@AI ${prev}`));
+                                  composerInputRef.current?.focus();
+                                }}
+                                className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-purple-500/15 cursor-pointer transition-colors"
+                                style={{ color: '#a78bfa' }}
+                              >
+                                <Bot size={16} />
+                              </button>
+                            </Tooltip>
+                          )}
+
+                          <Tooltip title="Nhắc tên đồng nghiệp (@)">
+                            <button
+                              type="button"
+                              aria-label="Nhắc tên đồng nghiệp"
+                              onClick={() => {
+                                setComposerText((prev) => {
+                                  const next = `${prev}${prev.endsWith(' ') || !prev ? '' : ' '}@`;
+                                  setTimeout(() => {
+                                    composerInputRef.current?.focus();
+                                    const len = next.length;
+                                    composerInputRef.current?.setSelectionRange(len, len);
+                                    checkForMentionTrigger(next, len, 'main');
+                                  }, 20);
+                                  return next;
+                                });
+                              }}
+                              className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
+                              style={{ color: token.colorTextSecondary }}
+                            >
+                              <AtSign size={16} />
+                            </button>
+                          </Tooltip>
+
+                          <Tooltip title="Giao Task & Cài nhắc hẹn mới">
+                            <button
+                              type="button"
+                              aria-label="Giao Task & Cài nhắc hẹn mới"
+                              onClick={() => openTaskModalFromMessage(null)}
+                              className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-amber-500/15 cursor-pointer transition-colors"
+                              style={{ color: '#d4a84b' }}
+                            >
+                              <AlarmClockPlus size={16} />
+                            </button>
+                          </Tooltip>
+                        </div>
+
+                        {/* Send button with hint */}
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span
+                            className="text-[11px] select-none hidden sm:inline"
+                            style={{ color: token.colorTextQuaternary }}
                           >
-                            <Bot size={17} />
-                          </button>
-                        </Tooltip>
-                      )}
-
-                      <Tooltip title="Nhắc tên đồng nghiệp (@)">
-                        <button
-                          type="button"
-                          aria-label="Nhắc tên đồng nghiệp"
-                          onClick={() => {
-                            setComposerText((prev) => {
-                              const next = `${prev}${prev.endsWith(' ') || !prev ? '' : ' '}@`;
-                              setTimeout(() => {
-                                composerInputRef.current?.focus();
-                                const len = next.length;
-                                composerInputRef.current?.setSelectionRange(len, len);
-                                checkForMentionTrigger(next, len, 'main');
-                              }, 20);
-                              return next;
-                            });
-                          }}
-                          className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
-                          style={{ color: token.colorTextSecondary }}
-                        >
-                          <AtSign size={17} />
-                        </button>
-                      </Tooltip>
-
-                      <Tooltip title="Giao Task & Cài nhắc hẹn mới">
-                        <button
-                          type="button"
-                          aria-label="Giao Task & Cài nhắc hẹn mới"
-                          onClick={() => openTaskModalFromMessage(null)}
-                          className="w-8 h-8 rounded-full inline-flex items-center justify-center hover:bg-white/10 cursor-pointer"
-                          style={{ color: '#d4a84b' }}
-                        >
-                          <AlarmClockPlus size={17} />
-                        </button>
-                      </Tooltip>
-
-                      <Tooltip title="Gửi tin nhắn (Enter)">
-                        <button
-                          type="button"
-                          aria-label="Gửi tin nhắn"
-                          onClick={handleSendMain}
-                          className="w-8 h-8 rounded-full inline-flex items-center justify-center cursor-pointer shadow-sm"
-                          style={{ background: '#d4a84b', color: '#000' }}
-                        >
-                          <SendHorizontal size={16} />
-                        </button>
-                      </Tooltip>
+                            Enter gửi · Shift+Enter xuống dòng
+                          </span>
+                          <Tooltip title="Gửi tin nhắn (Enter)">
+                            <button
+                              type="button"
+                              aria-label="Gửi tin nhắn"
+                              onClick={handleSendMain}
+                              className="w-8 h-8 rounded-full inline-flex items-center justify-center cursor-pointer shadow-sm active:scale-95 transition-all"
+                              style={{
+                                background:
+                                  composerText.trim() || stagedAttachments.length > 0
+                                    ? '#d4a84b'
+                                    : isDark
+                                      ? 'rgba(255, 255, 255, 0.08)'
+                                      : 'rgba(0, 0, 0, 0.06)',
+                                color:
+                                  composerText.trim() || stagedAttachments.length > 0
+                                    ? '#000'
+                                    : token.colorTextQuaternary,
+                              }}
+                            >
+                              <SendHorizontal size={15} />
+                            </button>
+                          </Tooltip>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -12278,7 +12328,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             <div className="p-2.5 space-y-1.5" style={{ borderTop: `1px solid ${borderColor}` }}>
               {renderStagedAttachmentsStrip(threadAttachments, 'thread')}
               {formatBarOpenThread && renderAppleNotesFormatToolbar('thread')}
-              <div className="relative flex items-end gap-1">
+              <div
+                className="relative rounded-2xl px-3 pt-2 pb-1.5 flex flex-col transition-all shadow-sm focus-within:shadow-md focus-within:border-[#d4a84b]/60"
+                style={{
+                  background: surfaceRaised,
+                  border: `1px solid ${borderStrong}`,
+                }}
+              >
                 {renderMentionAutocompleteDropdown('thread')}
                 <textarea
                   ref={threadInputRef}
@@ -12289,7 +12345,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     const cursor = e.target.selectionStart ?? val.length;
                     setThreadInput(val);
                     e.target.style.height = 'auto';
-                    e.target.style.height = `${Math.min(e.target.scrollHeight, 100)}px`;
+                    e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
                     checkForMentionTrigger(val, cursor, 'thread');
                   }}
                   onClick={(e) => {
@@ -12344,92 +12400,115 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       handleSendThreadReply();
                     }
                   }}
-                  placeholder="Trả lời... (gõ @ để nhắc tên, Shift+Enter để xuống dòng)"
-                  className="flex-1 min-h-[38px] max-h-[100px] rounded-2xl px-3.5 py-2 text-[13px] outline-none resize-none leading-relaxed"
+                  placeholder="Trả lời vào luồng... (gõ @ để nhắc tên, Shift+Enter xuống dòng)"
+                  className="w-full bg-transparent border-0 outline-none text-[13px] resize-none leading-relaxed px-0.5 py-1 min-h-[36px]"
                   style={{
-                    background: surfaceRaised,
-                    border: `1px solid ${borderStrong}`,
                     color: token.colorText,
+                    maxHeight: 140,
                   }}
                 />
-                {/* [@] Mention Button in Thread */}
-                <Tooltip title="Nhắc tên đồng nghiệp (@)">
-                  <button
-                    type="button"
-                    aria-label="Nhắc tên đồng nghiệp trong luồng"
-                    onClick={() => {
-                      setThreadInput((prev) => {
-                        const next = `${prev}${prev.endsWith(' ') || !prev ? '' : ' '}@`;
-                        setTimeout(() => {
-                          threadInputRef.current?.focus();
-                          const len = next.length;
-                          threadInputRef.current?.setSelectionRange(len, len);
-                          checkForMentionTrigger(next, len, 'thread');
-                        }, 20);
-                        return next;
-                      });
-                    }}
-                    className="w-9 h-9 rounded-full inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10 active:scale-95 transition-all"
-                    style={{ color: token.colorTextSecondary }}
-                  >
-                    <AtSign size={17} />
-                  </button>
-                </Tooltip>
-                {/* [Aa] Apple Notes Format Button in Thread */}
-                <Tooltip title="Định dạng chữ phong cách Apple Notes (Aa)">
-                  <button
-                    type="button"
-                    aria-label="Định dạng chữ Apple Notes trong luồng"
-                    onClick={() => setFormatBarOpenThread((prev) => !prev)}
-                    className="w-9 h-9 rounded-full inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10 active:scale-95 transition-all"
-                    style={{
-                      background: formatBarOpenThread ? '#d4a84b' : 'transparent',
-                      color: formatBarOpenThread ? '#000' : token.colorTextSecondary,
-                    }}
-                  >
-                    <span className="font-serif font-bold text-[13px] tracking-tight">Aa</span>
-                  </button>
-                </Tooltip>
-                <Popover
-                  trigger="click"
-                  placement="topRight"
-                  open={openStickerPopoverKey === 'composer:thread'}
-                  onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:thread' : null)}
-                  content={renderComposerEmojiPickerContent('thread')}
+
+                {/* Bottom row: Tools on Left, Send on Right */}
+                <div
+                  className="flex items-center justify-between gap-1.5 pt-1 mt-0.5 border-t"
+                  style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)' }}
                 >
-                  <Tooltip title="Gửi Sticker động / Meme / Emoji vào luồng">
+                  <div className="flex items-center gap-0.5">
+                    {/* [@] Mention Button in Thread */}
+                    <Tooltip title="Nhắc tên đồng nghiệp (@)">
+                      <button
+                        type="button"
+                        aria-label="Nhắc tên đồng nghiệp trong luồng"
+                        onClick={() => {
+                          setThreadInput((prev) => {
+                            const next = `${prev}${prev.endsWith(' ') || !prev ? '' : ' '}@`;
+                            setTimeout(() => {
+                              threadInputRef.current?.focus();
+                              const len = next.length;
+                              threadInputRef.current?.setSelectionRange(len, len);
+                              checkForMentionTrigger(next, len, 'thread');
+                            }, 20);
+                            return next;
+                          });
+                        }}
+                        className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all"
+                        style={{ color: token.colorTextSecondary }}
+                      >
+                        <AtSign size={15} />
+                      </button>
+                    </Tooltip>
+
+                    {/* [Aa] Apple Notes Format Button in Thread */}
+                    <Tooltip title="Định dạng chữ phong cách Apple Notes (Aa)">
+                      <button
+                        type="button"
+                        aria-label="Định dạng chữ Apple Notes trong luồng"
+                        onClick={() => setFormatBarOpenThread((prev) => !prev)}
+                        className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all"
+                        style={{
+                          background: formatBarOpenThread ? '#d4a84b' : 'transparent',
+                          color: formatBarOpenThread ? '#000' : token.colorTextSecondary,
+                        }}
+                      >
+                        <span className="font-serif font-bold text-[12px] tracking-tight">Aa</span>
+                      </button>
+                    </Tooltip>
+
+                    <Popover
+                      trigger="click"
+                      placement="topRight"
+                      open={openStickerPopoverKey === 'composer:thread'}
+                      onOpenChange={(vis) => setOpenStickerPopoverKey(vis ? 'composer:thread' : null)}
+                      content={renderComposerEmojiPickerContent('thread')}
+                    >
+                      <Tooltip title="Gửi Sticker động / Meme / Emoji vào luồng">
+                        <button
+                          type="button"
+                          aria-label="Gửi Sticker động hoặc Emoji vào luồng"
+                          className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-transform"
+                          style={{ color: token.colorTextSecondary }}
+                        >
+                          <SmilePlus size={15} />
+                        </button>
+                      </Tooltip>
+                    </Popover>
+
+                    <Tooltip title="Tải hình vào luồng">
+                      <button
+                        type="button"
+                        aria-label="Tải hình vào luồng"
+                        onClick={() => triggerFilePicker('thread')}
+                        className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-transform"
+                        style={{ color: token.colorTextSecondary }}
+                      >
+                        <ImagePlus size={15} />
+                      </button>
+                    </Tooltip>
+                  </div>
+
+                  <Tooltip title="Gửi vào luồng (Enter)">
                     <button
                       type="button"
-                      aria-label="Gửi Sticker động hoặc Emoji vào luồng"
-                      className="w-9 h-9 rounded-full inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10 active:scale-95 transition-transform"
-                      style={{ color: token.colorTextSecondary }}
+                      aria-label="Gửi vào luồng"
+                      onClick={handleSendThreadReply}
+                      className="w-7 h-7 rounded-full inline-flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-sm"
+                      style={{
+                        background:
+                          threadInput.trim() || threadAttachments.length > 0
+                            ? '#d4a84b'
+                            : isDark
+                              ? 'rgba(255, 255, 255, 0.08)'
+                              : 'rgba(0, 0, 0, 0.06)',
+                        color:
+                          threadInput.trim() || threadAttachments.length > 0
+                            ? '#000'
+                            : token.colorTextQuaternary,
+                      }}
                     >
-                      <SmilePlus size={18} />
+                      <SendHorizontal size={14} />
                     </button>
                   </Tooltip>
-                </Popover>
-                <Tooltip title="Tải hình vào luồng">
-                  <button
-                    type="button"
-                    aria-label="Tải hình vào luồng"
-                    onClick={() => triggerFilePicker('thread')}
-                    className="w-9 h-9 rounded-full inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10 active:scale-95 transition-transform"
-                    style={{ color: token.colorTextSecondary }}
-                  >
-                    <ImagePlus size={18} />
-                  </button>
-                </Tooltip>
-                <Tooltip title="Gửi vào luồng">
-                  <button
-                    type="button"
-                    aria-label="Gửi vào luồng"
-                    onClick={handleSendThreadReply}
-                    className="w-9 h-9 rounded-full inline-flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-transform shadow-sm"
-                    style={{ background: '#d4a84b', color: '#000' }}
-                  >
-                    <SendHorizontal size={16} />
-                  </button>
-                </Tooltip>
+                </div>
               </div>
             </div>
           </aside>

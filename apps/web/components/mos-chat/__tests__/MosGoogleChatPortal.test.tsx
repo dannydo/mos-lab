@@ -202,4 +202,39 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
     );
     expect(container).toBeTruthy();
   });
+
+  it('renders a spacious, full-width chat composer card with dedicated action toolbar (MOS-FEAT-128)', async () => {
+    Object.defineProperty(window, 'innerWidth', { writable: true, configurable: true, value: 1920 });
+
+    render(
+      <MosGoogleChatPortal
+        open={true}
+        onClose={vi.fn()}
+        onToggle={vi.fn()}
+        currentUser={{ id: 99, displayName: 'Danny Do', role: 'Admin' }}
+      />
+    );
+
+    // Verify textarea is rendered with placeholder and width
+    const textarea = (await screen.findByPlaceholderText(/Nhắn tin/i)) as HTMLTextAreaElement;
+    expect(textarea).toBeTruthy();
+    expect(textarea.className).toContain('w-full');
+
+    // Verify desktop action toolbar items are present
+    expect(screen.getByRole('button', { name: /Định dạng chữ Apple Notes/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Chèn biểu tượng cảm xúc Wings/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Tải hình từ ổ đĩa hoặc Google Drive/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Đính kèm hình từ link Google Drive/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Đính kèm thẻ Khách hàng/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Nhắc tên đồng nghiệp/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Giao Task & Cài nhắc hẹn mới/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Gửi tin nhắn/i })).toBeTruthy();
+
+    // Verify hint text for Enter to send
+    expect(screen.getByText(/Enter gửi · Shift\+Enter xuống dòng/i)).toBeTruthy();
+
+    // Verify typing into textarea
+    fireEvent.change(textarea, { target: { value: 'Chào Danny, khung chat đã rộng rãi rồi nhé!' } });
+    expect(textarea.value).toBe('Chào Danny, khung chat đã rộng rãi rồi nhé!');
+  });
 });
