@@ -2999,7 +2999,6 @@ QUY TẮC BẮT BUỘC:
     }
 
     const edgeTtsCandidates = [
-      'edge-tts',
       '/usr/local/bin/edge-tts',
       '/usr/bin/edge-tts',
       '/Users/dannydo/.gemini/antigravity/venv-f5tts/bin/edge-tts',
@@ -3007,7 +3006,7 @@ QUY TẮC BẮT BUỘC:
 
     let binaryPath = 'edge-tts';
     for (const c of edgeTtsCandidates) {
-      if (c === 'edge-tts' || existsSync(c)) {
+      if (existsSync(c)) {
         binaryPath = c;
         break;
       }

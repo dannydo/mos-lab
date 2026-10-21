@@ -10,6 +10,7 @@ import {
   Popconfirm,
   DatePicker,
   Switch,
+  Dropdown,
   message as antdMessageStatic,
   notification as notificationStatic,
   theme,
@@ -133,7 +134,7 @@ import { hexToRgba, isCanonicalSuperAdminIdentity, removeVietnameseTones } from 
 import { useTheme } from '../../context/ThemeContext';
 import { apiClient } from '../../lib/api-client';
 import { resolveMediaUrl } from '../../lib/api-base-url';
-import { speakText, stopSpeaking } from '../voice-assistant/speech-utils';
+import { playNeuralSpeech, stopSpeaking, setNeuralSpeechSpeed } from '../voice-assistant/speech-utils';
 import {
   MosChatStickerAndEmojiPicker,
   MosChatStickerVisual,
@@ -530,6 +531,26 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [expandedThinkingIds, setExpandedThinkingIds] = useState<Record<string, boolean>>({});
   const [appliedActionIds, setAppliedActionIds] = useState<Record<string, boolean>>({});
   const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
+  const [ttsSpeed, setTtsSpeed] = useState<number>(() => {
+    if (typeof window === 'undefined') return 1.0;
+    try {
+      const saved = localStorage.getItem('mos_chat_tts_speed');
+      const val = saved ? parseFloat(saved) : 1.0;
+      return [0.8, 1.0, 1.25, 1.5, 1.75, 2.0].includes(val) ? val : 1.0;
+    } catch {
+      return 1.0;
+    }
+  });
+
+  const handleSetTtsSpeed = useCallback((speed: number) => {
+    setTtsSpeed(speed);
+    try {
+      localStorage.setItem('mos_chat_tts_speed', String(speed));
+    } catch {
+      // ignore storage error
+    }
+    setNeuralSpeechSpeed(speed);
+  }, []);
   const aiHydratedRef = useRef<boolean>(false);
 
   const buildInitialAiWelcomeMessage = useCallback((): MosChatMessage => {
@@ -2996,17 +3017,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       }
       stopSpeaking();
       setSpeakingMsgId(msg.id);
-      const cleanSpeakText = (msg.text || '')
-        .replace(/<action[\s\S]*?<\/action>/gi, '')
-        .replace(/<\/?action[^>]*>/gi, '')
-        .trim();
-      speakText(cleanSpeakText, {
+      void playNeuralSpeech(msg.text || '', {
+        voice: 'vi-VN-HoaiMyNeural',
+        speed: ttsSpeed,
+        onStart: () => {
+          setSpeakingMsgId(msg.id);
+        },
         onEnd: () => {
+          setSpeakingMsgId((prev) => (prev === msg.id ? null : prev));
+        },
+        onError: () => {
           setSpeakingMsgId((prev) => (prev === msg.id ? null : prev));
         },
       });
     },
-    [speakingMsgId]
+    [speakingMsgId, ttsSpeed]
   );
 
   const handleSendMessage = async (
@@ -10828,23 +10853,67 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           {isAiMessage && m.text && (
                             <div className="mt-1.5 flex items-center gap-1.5">
                               <Tooltip
-                                title={speakingMsgId === m.id ? 'Dừng đọc giọng nói' : 'Đọc câu trả lời bằng giọng nói'}
+                                title={
+                                  speakingMsgId === m.id
+                                    ? 'Dừng đọc giọng nói'
+                                    : `Đọc câu trả lời bằng giọng Hoài My (${ttsSpeed}x)`
+                                }
                               >
                                 <button
                                   type="button"
                                   aria-label="Đọc câu trả lời AI"
                                   onClick={() => handleSpeakAiMessage(m)}
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold cursor-pointer"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold cursor-pointer transition-colors"
                                   style={{
                                     background: speakingMsgId === m.id ? 'rgba(139, 92, 246, 0.2)' : surfaceRaised,
-                                    border: `1px solid ${borderColor}`,
+                                    border: `1px solid ${speakingMsgId === m.id ? 'rgba(139, 92, 246, 0.5)' : borderColor}`,
                                     color: speakingMsgId === m.id ? '#a78bfa' : token.colorTextSecondary,
                                   }}
                                 >
-                                  {speakingMsgId === m.id ? <VolumeX size={12} /> : <Volume2 size={12} />}
-                                  <span>{speakingMsgId === m.id ? 'Đang đọc' : 'Nghe'}</span>
+                                  {speakingMsgId === m.id ? (
+                                    <VolumeX size={12} className="animate-pulse" />
+                                  ) : (
+                                    <Volume2 size={12} />
+                                  )}
+                                  <span>{speakingMsgId === m.id ? 'Dừng đọc' : 'Nghe'}</span>
                                 </button>
                               </Tooltip>
+
+                              {/* Tùy chỉnh tốc độ đọc cá nhân */}
+                              <Dropdown
+                                menu={{
+                                  items: [
+                                    { key: '0.8', label: '0.8x (Chậm)' },
+                                    { key: '1.0', label: '1.0x (Chuẩn)' },
+                                    { key: '1.25', label: '1.25x (Nhanh vừa)' },
+                                    { key: '1.5', label: '1.5x (Nhanh)' },
+                                    { key: '1.75', label: '1.75x (Rất nhanh)' },
+                                    { key: '2.0', label: '2.0x (Tối đa)' },
+                                  ],
+                                  selectedKeys: [String(ttsSpeed)],
+                                  onClick: ({ key }) => {
+                                    const s = parseFloat(key);
+                                    if (s) handleSetTtsSpeed(s);
+                                  },
+                                }}
+                                trigger={['click']}
+                                placement="bottomLeft"
+                              >
+                                <button
+                                  type="button"
+                                  aria-label="Tùy chỉnh tốc độ đọc"
+                                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10.5px] font-medium cursor-pointer transition-colors hover:text-violet-400"
+                                  style={{
+                                    background: surfaceRaised,
+                                    border: `1px solid ${borderColor}`,
+                                    color: token.colorTextSecondary,
+                                  }}
+                                  title={`Tốc độ đọc giọng nói cá nhân: ${ttsSpeed}x (nhấp để đổi)`}
+                                >
+                                  <span className="tabular-nums font-semibold">{ttsSpeed}x</span>
+                                  <ChevronDown size={10} />
+                                </button>
+                              </Dropdown>
 
                               <Tooltip title="Sao chép nội dung">
                                 <button
@@ -12667,6 +12736,95 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     {renderRichTextMessage(activeThreadMessage.text)}
                   </div>
                 )}
+                {Boolean(activeThreadMessage.isAiBot || activeThreadMessage.senderId === 'wings-ai-copilot') &&
+                  activeThreadMessage.text && (
+                    <div className="mt-1.5 flex items-center gap-1.5">
+                      <Tooltip
+                        title={
+                          speakingMsgId === activeThreadMessage.id
+                            ? 'Dừng đọc giọng nói'
+                            : `Đọc câu trả lời bằng giọng Hoài My (${ttsSpeed}x)`
+                        }
+                      >
+                        <button
+                          type="button"
+                          aria-label="Đọc câu trả lời AI trong luồng"
+                          onClick={() => handleSpeakAiMessage(activeThreadMessage)}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold cursor-pointer transition-colors"
+                          style={{
+                            background:
+                              speakingMsgId === activeThreadMessage.id ? 'rgba(139, 92, 246, 0.2)' : surfaceRaised,
+                            border: `1px solid ${
+                              speakingMsgId === activeThreadMessage.id ? 'rgba(139, 92, 246, 0.5)' : borderColor
+                            }`,
+                            color: speakingMsgId === activeThreadMessage.id ? '#a78bfa' : token.colorTextSecondary,
+                          }}
+                        >
+                          {speakingMsgId === activeThreadMessage.id ? (
+                            <VolumeX size={12} className="animate-pulse" />
+                          ) : (
+                            <Volume2 size={12} />
+                          )}
+                          <span>{speakingMsgId === activeThreadMessage.id ? 'Dừng đọc' : 'Nghe'}</span>
+                        </button>
+                      </Tooltip>
+
+                      <Dropdown
+                        menu={{
+                          items: [
+                            { key: '0.8', label: '0.8x (Chậm)' },
+                            { key: '1.0', label: '1.0x (Chuẩn)' },
+                            { key: '1.25', label: '1.25x (Nhanh vừa)' },
+                            { key: '1.5', label: '1.5x (Nhanh)' },
+                            { key: '1.75', label: '1.75x (Rất nhanh)' },
+                            { key: '2.0', label: '2.0x (Tối đa)' },
+                          ],
+                          selectedKeys: [String(ttsSpeed)],
+                          onClick: ({ key }) => {
+                            const s = parseFloat(key);
+                            if (s) handleSetTtsSpeed(s);
+                          },
+                        }}
+                        trigger={['click']}
+                        placement="bottomLeft"
+                      >
+                        <button
+                          type="button"
+                          aria-label="Tùy chỉnh tốc độ đọc"
+                          className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10.5px] font-medium cursor-pointer transition-colors hover:text-violet-400"
+                          style={{
+                            background: surfaceRaised,
+                            border: `1px solid ${borderColor}`,
+                            color: token.colorTextSecondary,
+                          }}
+                          title={`Tốc độ đọc giọng nói cá nhân: ${ttsSpeed}x (nhấp để đổi)`}
+                        >
+                          <span className="tabular-nums font-semibold">{ttsSpeed}x</span>
+                          <ChevronDown size={10} />
+                        </button>
+                      </Dropdown>
+
+                      <Tooltip title="Sao chép nội dung">
+                        <button
+                          type="button"
+                          aria-label="Sao chép nội dung AI"
+                          onClick={() => {
+                            void navigator.clipboard?.writeText(activeThreadMessage.text);
+                            antdMessage.success('Đã sao chép nội dung câu trả lời AI');
+                          }}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold cursor-pointer"
+                          style={{
+                            background: surfaceRaised,
+                            border: `1px solid ${borderColor}`,
+                            color: token.colorTextSecondary,
+                          }}
+                        >
+                          <Copy size={11} />
+                          <span>Sao chép</span>
+                        </button>
+                      </Tooltip>
+                    </div>
+                  )}
                 {renderMessageAttachments(activeThreadMessage.attachments, true)}
                 {activeThreadMessage.reactions &&
                   Object.entries(activeThreadMessage.reactions).filter(([, count]) => count > 0).length > 0 && (
@@ -12941,6 +13099,93 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             {r.text && (
                               <div className="text-left break-words leading-relaxed">
                                 {renderRichTextMessage(r.text, isReplyMine)}
+                              </div>
+                            )}
+                            {isAiReply && r.text && (
+                              <div className="mt-1.5 flex items-center gap-1.5">
+                                <Tooltip
+                                  title={
+                                    speakingMsgId === r.id
+                                      ? 'Dừng đọc giọng nói'
+                                      : `Đọc câu trả lời bằng giọng Hoài My (${ttsSpeed}x)`
+                                  }
+                                >
+                                  <button
+                                    type="button"
+                                    aria-label="Đọc câu trả lời AI trong luồng"
+                                    onClick={() => handleSpeakAiMessage(r as SafeAny)}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold cursor-pointer transition-colors"
+                                    style={{
+                                      background: speakingMsgId === r.id ? 'rgba(139, 92, 246, 0.2)' : surfaceRaised,
+                                      border: `1px solid ${
+                                        speakingMsgId === r.id ? 'rgba(139, 92, 246, 0.5)' : borderColor
+                                      }`,
+                                      color: speakingMsgId === r.id ? '#a78bfa' : token.colorTextSecondary,
+                                    }}
+                                  >
+                                    {speakingMsgId === r.id ? (
+                                      <VolumeX size={12} className="animate-pulse" />
+                                    ) : (
+                                      <Volume2 size={12} />
+                                    )}
+                                    <span>{speakingMsgId === r.id ? 'Dừng đọc' : 'Nghe'}</span>
+                                  </button>
+                                </Tooltip>
+
+                                <Dropdown
+                                  menu={{
+                                    items: [
+                                      { key: '0.8', label: '0.8x (Chậm)' },
+                                      { key: '1.0', label: '1.0x (Chuẩn)' },
+                                      { key: '1.25', label: '1.25x (Nhanh vừa)' },
+                                      { key: '1.5', label: '1.5x (Nhanh)' },
+                                      { key: '1.75', label: '1.75x (Rất nhanh)' },
+                                      { key: '2.0', label: '2.0x (Tối đa)' },
+                                    ],
+                                    selectedKeys: [String(ttsSpeed)],
+                                    onClick: ({ key }) => {
+                                      const s = parseFloat(key);
+                                      if (s) handleSetTtsSpeed(s);
+                                    },
+                                  }}
+                                  trigger={['click']}
+                                  placement="bottomLeft"
+                                >
+                                  <button
+                                    type="button"
+                                    aria-label="Tùy chỉnh tốc độ đọc"
+                                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10.5px] font-medium cursor-pointer transition-colors hover:text-violet-400"
+                                    style={{
+                                      background: surfaceRaised,
+                                      border: `1px solid ${borderColor}`,
+                                      color: token.colorTextSecondary,
+                                    }}
+                                    title={`Tốc độ đọc giọng nói cá nhân: ${ttsSpeed}x (nhấp để đổi)`}
+                                  >
+                                    <span className="tabular-nums font-semibold">{ttsSpeed}x</span>
+                                    <ChevronDown size={10} />
+                                  </button>
+                                </Dropdown>
+
+                                <Tooltip title="Sao chép nội dung">
+                                  <button
+                                    type="button"
+                                    aria-label="Sao chép nội dung AI"
+                                    onClick={() => {
+                                      void navigator.clipboard?.writeText(r.text);
+                                      antdMessage.success('Đã sao chép nội dung câu trả lời AI');
+                                    }}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold cursor-pointer"
+                                    style={{
+                                      background: surfaceRaised,
+                                      border: `1px solid ${borderColor}`,
+                                      color: token.colorTextSecondary,
+                                    }}
+                                  >
+                                    <Copy size={11} />
+                                    <span>Sao chép</span>
+                                  </button>
+                                </Tooltip>
                               </div>
                             )}
                           </>

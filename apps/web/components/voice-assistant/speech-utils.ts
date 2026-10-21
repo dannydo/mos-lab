@@ -1,21 +1,30 @@
 // Helper functions for Text-to-Speech (TTS) and Speech-to-Text (STT)
+import { resolveApiBaseUrl } from '../../lib/api-base-url';
 
 export function cleanMarkdownForSpeech(markdown: string): string {
   if (!markdown) return '';
 
   return (
     markdown
+      // Remove AI thinking blocks
+      .replace(/<thinking[\s\S]*?<\/thinking>/gi, '')
+      .replace(/<thinking[\s\S]*$/gi, '')
+      // Remove AI action tags
+      .replace(/<action[\s\S]*?<\/action>/gi, '')
+      .replace(/<\/?action[^>]*>/gi, '')
       // Remove code blocks
       .replace(/```[\s\S]*?```/g, '')
       // Remove inline code
       .replace(/`([^`]+)`/g, '$1')
+      // Remove markdown links [text](url) -> text
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      // Remove HTML tags
+      .replace(/<[^>]+>/g, '')
       // Remove bold and italic markers
       .replace(/\*\*([^*]+)\*\*/g, '$1')
       .replace(/\*([^*]+)\*/g, '$1')
       .replace(/__([^_]+)__/g, '$1')
       .replace(/_([^_]+)_/g, '$1')
-      // Remove markdown links [text](url) -> text
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
       // Remove markdown headers
       .replace(/^#+\s+/gm, '')
       // Remove blockquotes
@@ -133,8 +142,124 @@ export function speakText(
   return utterance;
 }
 
+let activeNeuralAudio: HTMLAudioElement | null = null;
+let activeNeuralBlobUrl: string | null = null;
+
+export interface NeuralTtsOptions {
+  speed?: number;
+  voice?: string;
+  onStart?: () => void;
+  onEnd?: () => void;
+  onError?: (error?: unknown) => void;
+}
+
+export function stopNeuralSpeech() {
+  if (activeNeuralAudio) {
+    try {
+      activeNeuralAudio.pause();
+      activeNeuralAudio.currentTime = 0;
+    } catch {
+      // ignore pause error
+    }
+    activeNeuralAudio = null;
+  }
+  if (activeNeuralBlobUrl) {
+    try {
+      URL.revokeObjectURL(activeNeuralBlobUrl);
+    } catch {
+      // ignore revoke error
+    }
+    activeNeuralBlobUrl = null;
+  }
+}
+
+export function setNeuralSpeechSpeed(speed: number) {
+  if (activeNeuralAudio) {
+    try {
+      activeNeuralAudio.playbackRate = speed;
+    } catch {
+      // ignore playbackRate error
+    }
+  }
+}
+
 export function stopSpeaking() {
+  stopNeuralSpeech();
   if (typeof window !== 'undefined' && window.speechSynthesis) {
-    window.speechSynthesis.cancel();
+    try {
+      window.speechSynthesis.cancel();
+    } catch {
+      // ignore cancel error
+    }
+  }
+}
+
+export async function playNeuralSpeech(text: string, options?: NeuralTtsOptions): Promise<HTMLAudioElement | null> {
+  stopSpeaking();
+
+  const spokenText = cleanMarkdownForSpeech(text);
+  if (!spokenText) return null;
+
+  const speed = options?.speed || 1.0;
+  const voice = options?.voice || 'vi-VN-HoaiMyNeural';
+
+  try {
+    const baseUrl = resolveApiBaseUrl();
+    const query = new URLSearchParams({
+      text: spokenText,
+      voice,
+      speed: String(speed),
+    });
+    const url = `${baseUrl}/chat/tts?${query.toString()}`;
+
+    const res = await fetch(url, {
+      mode: 'cors',
+      signal: AbortSignal.timeout(25000),
+    });
+
+    if (!res.ok) {
+      throw new Error(`TTS server returned status ${res.status}`);
+    }
+
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    activeNeuralBlobUrl = blobUrl;
+
+    const audio = new Audio(blobUrl);
+    audio.playbackRate = speed;
+    activeNeuralAudio = audio;
+
+    audio.onplay = () => {
+      options?.onStart?.();
+    };
+
+    audio.onended = () => {
+      stopNeuralSpeech();
+      options?.onEnd?.();
+    };
+
+    audio.onerror = (e) => {
+      stopNeuralSpeech();
+      // Graceful fallback to browser speech synthesis
+      speakText(spokenText, {
+        rate: speed,
+        onStart: options?.onStart,
+        onEnd: options?.onEnd,
+        onError: options?.onError,
+      });
+    };
+
+    await audio.play();
+    return audio;
+  } catch (_err) {
+    stopNeuralSpeech();
+    // Fallback to browser speech synthesis on network failure
+    speakText(spokenText, {
+      rate: speed,
+      onStart: options?.onStart,
+      onEnd: options?.onEnd,
+      onError: options?.onError,
+    });
+    return null;
   }
 }

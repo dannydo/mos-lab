@@ -57,6 +57,7 @@ import {
   saveOrUpgradeWorkflowFromThread,
   saveWorkflowInstances,
 } from './chat-workflow.service.js';
+import { TelesaleTargetService } from '../kpi/services/telesale-target.service.js';
 
 const CHAT_CONVERSATIONS_CONFIG_KEY = 'mos_chat:conversations_v1';
 const CHAT_TASKS_CONFIG_KEY = 'mos_chat:tasks_v1';
@@ -2295,6 +2296,71 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       return reply.send(buffer);
     } catch (_) {
       return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy ảnh.' });
+    }
+  });
+
+  // Helper for cleaning text before TTS synthesis
+  function cleanChatTextForTts(text: string): string {
+    if (!text) return '';
+    return text
+      .replace(/<thinking[\s\S]*?<\/thinking>/gi, '')
+      .replace(/<thinking[\s\S]*$/gi, '')
+      .replace(/<action[\s\S]*?<\/action>/gi, '')
+      .replace(/<\/?action[^>]*>/gi, '')
+      .replace(/```[\s\S]*?```/g, '')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/<[^>]+>/g, '')
+      .replace(/[*#_~>|]/g, ' ')
+      .replace(/[\r\n\t]+/g, ' ')
+      .replace(/\s{2,}/g, ' ')
+      .trim()
+      .slice(0, 4000);
+  }
+
+  function convertSpeedToRate(speed?: number | string, rate?: string): string {
+    if (rate && String(rate).trim()) return String(rate).trim();
+    if (speed !== undefined && speed !== null && speed !== '') {
+      const s = typeof speed === 'string' ? parseFloat(speed) : speed;
+      if (!isNaN(s) && s > 0) {
+        const pct = Math.round((s - 1.0) * 100);
+        return pct >= 0 ? `+${pct}%` : `${pct}%`;
+      }
+    }
+    return '+0%';
+  }
+
+  // GET /api/chat/tts - Neural TTS stream with Hoai My voice & customizable playback speed
+  fastify.get('/chat/tts', async (request, reply) => {
+    const query = request.query as {
+      text?: string;
+      voice?: string;
+      speed?: string | number;
+      rate?: string;
+      pitch?: string;
+    };
+    const rawText = query.text || '';
+    const cleanText = cleanChatTextForTts(rawText);
+    if (!cleanText) {
+      return reply.status(400).send({ error: 'Text is required' });
+    }
+
+    const voice = (query.voice || 'vi-VN-HoaiMyNeural').trim();
+    const rate = convertSpeedToRate(query.speed, query.rate);
+    const pitch = (query.pitch || '+0Hz').trim();
+
+    try {
+      const audioBuffer = await TelesaleTargetService.synthesizeCelebrationAudio(cleanText, voice, rate, pitch);
+      return reply
+        .header('Content-Type', 'audio/mpeg')
+        .header('Cross-Origin-Resource-Policy', 'cross-origin')
+        .header('Access-Control-Allow-Origin', '*')
+        .header('Accept-Ranges', 'bytes')
+        .header('Cache-Control', 'public, max-age=86400')
+        .send(audioBuffer);
+    } catch (err: SafeAny) {
+      fastify.log.error(`Failed to synthesize chat tts audio: ${err.message}`);
+      return reply.status(500).send({ error: 'Failed to synthesize chat tts audio' });
     }
   });
 
