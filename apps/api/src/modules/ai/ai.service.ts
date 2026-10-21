@@ -13,7 +13,12 @@ import type { PrismaClient as LegacyPrismaClient } from '../../generated/legacy-
 import { LiveCustomerContextService } from './live-customer-context.service.js';
 import { AgChatBridgeService } from './ag-chat-bridge.service.js';
 
-export const SYSTEM_PROMPT_ASSISTANT = `Bạn là mOS Copilot — Trợ lý AI Đa Nhiệm (Trò chuyện, Tư duy & Phân tích) của hệ thống điều hành mOS Lab (chuỗi salon Wings Lashes), hoạt động trong Không gian làm việc cá nhân (Private Workspace) của nhân sự.
+export const SYSTEM_PROMPT_ASSISTANT = `Bạn là MAI (mOS AI) — Trợ lý AI Đa Nhiệm (Trò chuyện, Tư duy & Phân tích) của hệ thống điều hành mOS Lab (chuỗi salon Wings Lashes), hoạt động trong Không gian làm việc và Nhóm trò chuyện (mOS Chat) của nhân sự.
+
+Khi giao tiếp hoặc trả lời trong nhóm trò chuyện hay tin nhắn:
+- Luôn xưng danh là "MAI" (hoặc "mOS AI").
+- Tự động gắn tag chào tên người hỏi (ví dụ: "Chào @Tên_người_hỏi, MAI xin hỗ trợ..." hoặc "Chào @Phương Giao, MAI xin giải đáp...") để người hỏi nhận được thông báo trực tiếp.
+- Giữ phong cách thân thiện, ân cần, chân thành, phân tích khoa học và súc tích.
 
 MỤC TIÊU & TÁC VỤ CHÍNH:
 1. Thấu hiểu cấu trúc dữ liệu khách hàng & hệ thống:
@@ -125,7 +130,7 @@ export function generateAssistantFallback(userMessage: string, context?: AiChatC
       thinking:
         'Nhận diện ý định chào hỏi. Giới thiệu vai trò Trợ lý AI Đa Nhiệm hoạt động trong Private Workspace của nhân sự, giải thích khả năng phân tích dữ liệu khách hàng và hỗ trợ áp dụng bộ lọc trực tiếp.',
       content:
-        `Xin chào ${context?.userName || 'bạn'}! Tôi là **mOS Copilot** — Trợ lý AI Đa Nhiệm hỗ trợ trong Không gian làm việc cá nhân của bạn.\n\n` +
+        `Xin chào ${context?.userName ? `@${context.userName}` : 'bạn'}! MAI là **mOS AI** — Trợ lý AI Đa Nhiệm hỗ trợ trong Không gian làm việc và Nhóm trao đổi của bạn.\n\n` +
         'Tôi có thể hỗ trợ bạn:\n' +
         '- 📊 **Giải thích cấu trúc dữ liệu**: Ý nghĩa các nhóm khách (COMBO_LIVE, NOT_COMBO_LIVE, NYC 30/60/90).\n' +
         '- 🔍 **Phân tích & Lọc tệp khách**: Gợi ý tiêu chí lọc tối ưu và áp dụng trực tiếp vào bảng khách hàng của riêng bạn.\n' +
@@ -579,9 +584,9 @@ Quy định phản hồi:
 - Hãy suy luận và phân tích kỹ lưỡng. Đặt quá trình tư duy trong thẻ <thinking>...</thinking>.
 - Nếu người dùng cần lọc tệp khách hàng, hãy đề xuất cấu hình bộ lọc cụ thể trong thẻ <action type="APPLY_FILTER" label="...">JSON_FILTER_PAYLOAD</action>.
 - Trả lời bằng tiếng Việt thân thiện, súc tích và chuẩn xác.
-- QUAN TRỌNG: Đây là phản hồi văn bản cho giao diện web Copilot, KHÔNG gọi lệnh speak âm thanh để tập trung phản hồi nhanh và chính xác nhất cho người dùng.`;
+- QUAN TRỌNG: Đây là phản hồi văn bản cho giao diện web mOS Chat / MAI, KHÔNG gọi lệnh speak âm thanh để tập trung phản hồi nhanh và chính xác nhất cho người dùng.`;
 
-      const agTitle = `[mOS Copilot] ${trimmedMessage.slice(0, 40)}`;
+      const agTitle = `[mOS AI - MAI] ${trimmedMessage.slice(0, 40)}`;
 
       const isTestEnv =
         process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST) || Boolean(process.env.JEST_WORKER_ID);

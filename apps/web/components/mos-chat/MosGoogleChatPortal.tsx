@@ -538,15 +538,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       id: 'msg-ai-welcome',
       conversationId: AI_COPILOT_CONV_ID,
       senderId: 'wings-ai-copilot',
-      senderName: '🤖 Wings AI Copilot',
-      senderRole: 'AI Copilot',
-      senderAvatar: 'AI',
+      senderName: '🤖 MAI',
+      senderRole: 'mOS AI',
+      senderAvatar: 'MAI',
       roleColor: '#8b5cf6',
       isAiBot: true,
       text:
-        `Xin chào ${userDisplayName}! Tôi là **Wings AI Copilot** đã được tích hợp trực tiếp vào **mOS Chat**.\n` +
+        `Xin chào ${userDisplayName}! MAI là **mOS AI** đã được tích hợp trực tiếp vào **mOS Chat**.\n` +
         '• **Kênh 1-1 riêng tư**: Mọi trao đổi và phân tích dữ liệu tại đây chỉ một mình bạn nhìn thấy.\n' +
-        '• **Gọi @AI trong #Space**: Gõ `@AI` hoặc `@copilot` kèm câu hỏi trong bất kỳ nhóm Space nào để tôi phân tích và trả lời công khai cho cả nhóm.',
+        '• **Gọi @MAI trong #Space**: Gõ `@MAI` kèm câu hỏi trong bất kỳ nhóm Space nào để MAI phân tích và trả lời công khai cho cả nhóm.',
       timeLabel: dayjs().format('HH:mm'),
       createdAt: new Date().toISOString(),
       reactions: {},
@@ -1909,11 +1909,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     return {
       id: AI_COPILOT_CONV_ID,
       type: 'dm',
-      name: '🤖 Wings AI Copilot',
-      subtitle: 'Trợ lý AI Đa Nhiệm · Tra cứu dữ liệu & Phân tích riêng tư',
-      roleTag: 'AI Copilot',
+      name: '🤖 MAI',
+      subtitle: 'mOS AI · Tra cứu dữ liệu & Phân tích riêng tư',
+      roleTag: 'mOS AI',
       color: '#8b5cf6',
-      avatar: 'AI',
+      avatar: 'MAI',
       unreadCount: 0,
       messages: aiMessages,
       updatedAt: new Date().toISOString(),
@@ -2969,7 +2969,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const handleClearAiChat = useCallback(() => {
     setAiSessionId(null);
     setAiMessages([buildInitialAiWelcomeMessage()]);
-    antdMessage.success('Đã làm mới phiên hội thoại riêng tư với Wings AI Copilot');
+    antdMessage.success('Đã làm mới phiên hội thoại riêng tư với MAI');
   }, [buildInitialAiWelcomeMessage]);
 
   const handleExecuteAiAction = useCallback(
@@ -3050,7 +3050,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       thread: [],
     };
 
-    // CASE 1: Private 1-1 Chat with 🤖 Wings AI Copilot (100% personal)
+    // CASE 1: Private 1-1 Chat with 🤖 MAI (mOS AI) (100% personal)
     if (targetConvId === AI_COPILOT_CONV_ID) {
       setAiMessages((prev) => [...prev, optimisticMsg]);
       setAiThinkingActive(true);
@@ -3080,12 +3080,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           id: aiRes?.message?.id || `msg-ai-${Date.now()}`,
           conversationId: AI_COPILOT_CONV_ID,
           senderId: 'wings-ai-copilot',
-          senderName: '🤖 Wings AI Copilot',
-          senderRole: 'AI Copilot',
-          senderAvatar: 'AI',
+          senderName: '🤖 MAI',
+          senderRole: 'mOS AI',
+          senderAvatar: 'MAI',
           roleColor: '#8b5cf6',
           isAiBot: true,
-          text: (aiRes?.message?.content || 'Tôi đã xử lý yêu cầu của bạn.')
+          text: (aiRes?.message?.content || 'MAI đã xử lý xong yêu cầu của bạn.')
             .replace(/<action[\s\S]*?<\/action>/gi, '')
             .replace(/<\/?action[^>]*>/gi, '')
             .trim(),
@@ -3106,12 +3106,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           id: `msg-ai-err-${Date.now()}`,
           conversationId: AI_COPILOT_CONV_ID,
           senderId: 'wings-ai-copilot',
-          senderName: '🤖 Wings AI Copilot',
-          senderRole: 'AI Copilot',
-          senderAvatar: 'AI',
+          senderName: '🤖 MAI',
+          senderRole: 'mOS AI',
+          senderAvatar: 'MAI',
           roleColor: '#8b5cf6',
           isAiBot: true,
-          text: err?.response?.data?.message || 'Hiện kết nối AI đang bận, bạn vui lòng thử lại sau giây lát nhé.',
+          text: err?.response?.data?.message || 'Hiện kết nối MAI đang bận, bạn vui lòng thử lại sau giây lát nhé.',
           timeLabel: dayjs().format('HH:mm'),
           createdAt: new Date().toISOString(),
           reactions: {},
@@ -3124,7 +3124,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       return;
     }
 
-    // CASE 2: Standard Space / 1-1 Conversation (plus @AI / @copilot trigger for authorized users)
+    // CASE 2: Standard Space / 1-1 Conversation (plus @MAI trigger for authorized users)
     setConversations((prev) =>
       prev.map((c) => (c.id === targetConvId ? { ...c, messages: [...c.messages, optimisticMsg] } : c))
     );
@@ -3148,10 +3148,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       notifyLivePeers();
     } catch (_) {}
 
-    // If user is authorized to use AI Copilot and tagged @AI or @copilot in the message, invoke AI and post reply publicly to this room!
-    if (canUseAiCopilot && /(?:^|\s)@(?:ai|copilot)\b/i.test(text)) {
-      const cleanedPrompt =
-        text.replace(/(?:^|\s)@(?:ai|copilot)\b/gi, '').trim() || 'Hãy phân tích nội dung trên giúp nhóm.';
+    // If user is authorized to use MAI (mOS AI) and tagged @MAI in the message, invoke MAI and post reply publicly to this room!
+    if (canUseAiCopilot && /(?:^|\s)@\s*mai\b/i.test(text)) {
+      const cleanedPrompt = text.replace(/(?:^|\s)@\s*mai\b/gi, '').trim() || 'Hãy phân tích nội dung trên giúp nhóm.';
       setAiThinkingActive(true);
       try {
         const imageDataUrl = await convertAttachmentToDataUrl(cleanAttachments?.[0]);
@@ -3169,11 +3168,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         if (aiRes?.session?.id) {
           setAiSessionId(aiRes.session.id);
         }
-        const rawAiReplyText = aiRes?.message?.content || 'Tôi đã phân tích xong thông tin cho nhóm.';
-        const aiReplyText = rawAiReplyText
+        const rawAiReplyText = aiRes?.message?.content || 'MAI đã phân tích xong thông tin cho nhóm.';
+        let aiReplyText = rawAiReplyText
           .replace(/<action[\s\S]*?<\/action>/gi, '')
           .replace(/<\/?action[^>]*>/gi, '')
           .trim();
+        if (senderName && !aiReplyText.includes(`@${senderName}`)) {
+          aiReplyText = `Chào @${senderName}, ${aiReplyText}`;
+        }
         const aiActions =
           aiRes?.message?.suggestedActions ||
           aiRes?.message?.suggestedAction?.actions ||
@@ -4176,11 +4178,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       notifyLivePeers();
     } catch (_) {}
 
-    // If user tagged @AI or @copilot in the thread reply, invoke AI Copilot with full thread context!
-    if (canUseAiCopilot && /(?:^|\s)@\s*(?:ai|copilot)\b/i.test(text)) {
+    // If user tagged @MAI in the thread reply, invoke MAI with full thread context!
+    if (canUseAiCopilot && /(?:^|\s)@\s*mai\b/i.test(text)) {
       const cleanedPrompt =
-        text.replace(/(?:^|\s)@\s*(?:ai|copilot)\b/gi, '').trim() ||
-        'Hãy phân tích nội dung luồng thảo luận trên giúp nhóm.';
+        text.replace(/(?:^|\s)@\s*mai\b/gi, '').trim() || 'Hãy phân tích nội dung luồng thảo luận trên giúp nhóm.';
       setAiThinkingActive(true);
       try {
         const rootMsg = activeConversation.messages.find((m) => m.id === activeThreadMsgId);
@@ -4213,11 +4214,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         if (aiRes?.session?.id) {
           setAiSessionId(aiRes.session.id);
         }
-        const rawAiReplyText = aiRes?.message?.content || 'Tôi đã phân tích xong thông tin cho luồng thảo luận.';
-        const aiReplyText = rawAiReplyText
+        const rawAiReplyText = aiRes?.message?.content || 'MAI đã phân tích xong thông tin cho luồng thảo luận.';
+        let aiReplyText = rawAiReplyText
           .replace(/<action[\s\S]*?<\/action>/gi, '')
           .replace(/<\/?action[^>]*>/gi, '')
           .trim();
+        if (senderName && !aiReplyText.includes(`@${senderName}`)) {
+          aiReplyText = `Chào @${senderName}, ${aiReplyText}`;
+        }
         const aiActions =
           aiRes?.message?.suggestedActions ||
           aiRes?.message?.suggestedAction?.actions ||
@@ -7407,13 +7411,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       });
     }
 
-    // 2. Thêm tag @AI nếu có Copilot
+    // 2. Thêm tag @MAI nếu có Copilot
     if (canUseAiCopilot) {
       list.push({
-        id: 'ai',
+        id: 'mai',
         type: 'special',
-        tagText: 'AI',
-        displayName: 'Wings AI Copilot',
+        tagText: 'MAI',
+        displayName: 'MAI (mOS AI)',
         role: 'Trợ lý AI',
         color: '#8b5cf6',
         avatarText: '🤖',
@@ -10048,7 +10052,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               )}
 
               {activeConversation?.id === AI_COPILOT_CONV_ID && (
-                <Tooltip title="Làm mới phiên hội thoại riêng tư với Wings AI Copilot">
+                <Tooltip title="Làm mới phiên hội thoại riêng tư với MAI">
                   <button
                     type="button"
                     aria-label="Làm mới phiên hội thoại AI"
@@ -11333,7 +11337,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       }}
                     >
                       <Sparkles size={13} />
-                      <span>Wings AI Copilot đang suy luận & phân tích dữ liệu... ({aiElapsedSec}s)</span>
+                      <span>MAI đang suy luận & phân tích dữ liệu... ({aiElapsedSec}s)</span>
                     </div>
                   </div>
                 )}
@@ -11487,20 +11491,20 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           <button
                             type="button"
                             onClick={() => {
-                              setComposerText((prev) => (prev.includes('@AI') ? prev : `@AI ${prev}`));
+                              setComposerText((prev) => (/(?:^|\s)@\s*mai\b/i.test(prev) ? prev : `@MAI ${prev}`));
                               setMobileActionOpen(false);
                               composerInputRef.current?.focus();
                             }}
                             className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/5 active:scale-95 transition-transform"
                           >
-                            <div className="w-9 h-9 rounded-full flex items-center justify-center bg-purple-500/15 text-purple-400 border border-purple-500/30 overflow-hidden shrink-0">
-                              <Bot size={16} />
+                            <div className="w-9 h-9 rounded-full flex items-center justify-center bg-purple-500/15 text-purple-400 border border-purple-500/30 overflow-hidden shrink-0 font-black text-[11px]">
+                              MAI
                             </div>
                             <span
                               className="text-[10.5px] font-medium text-center leading-tight"
                               style={{ color: token.colorText }}
                             >
-                              Gọi @AI
+                              Gọi @MAI
                             </span>
                           </button>
                         )}
@@ -11731,9 +11735,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         }}
                         placeholder={
                           activeConversation?.id === AI_COPILOT_CONV_ID
-                            ? 'Hỏi Wings AI Copilot, Paste hình (⌘V) hoặc yêu cầu phân tích khách hàng... (Shift+Enter để xuống dòng)'
+                            ? 'Hỏi MAI, Paste hình (⌘V) hoặc yêu cầu phân tích khách hàng... (Shift+Enter để xuống dòng)'
                             : canUseAiCopilot
-                              ? 'Nhắn tin, gõ @AI để gọi Copilot, Paste hình (⌘V)... (Shift+Enter để xuống dòng)'
+                              ? 'Nhắn tin, gõ @MAI để gọi mOS AI, Paste hình (⌘V)... (Shift+Enter để xuống dòng)'
                               : 'Nhắn tin, Paste hình (⌘V) hoặc dán link Google Drive... (Shift+Enter để xuống dòng)'
                         }
                         className="w-full bg-transparent border-0 outline-none text-[13.5px] resize-none leading-relaxed px-0.5 py-1 min-h-[42px]"
@@ -11821,18 +11825,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           </Tooltip>
 
                           {canUseAiCopilot && activeConversation?.id !== AI_COPILOT_CONV_ID && (
-                            <Tooltip title="Gọi @AI để Wings AI Copilot phân tích & trả lời công khai vào nhóm này">
+                            <Tooltip title="Gọi @MAI để mOS AI phân tích & trả lời công khai vào nhóm này">
                               <button
                                 type="button"
-                                aria-label="Gọi @AI Copilot trong nhóm"
+                                aria-label="Gọi @MAI trong nhóm"
                                 onClick={() => {
-                                  setComposerText((prev) => (prev.includes('@AI') ? prev : `@AI ${prev}`));
+                                  setComposerText((prev) => (/(?:^|\s)@\s*mai\b/i.test(prev) ? prev : `@MAI ${prev}`));
                                   composerInputRef.current?.focus();
                                 }}
-                                className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-purple-500/15 cursor-pointer transition-colors"
+                                className="h-7 px-2 rounded-lg inline-flex items-center justify-center gap-1 hover:bg-purple-500/15 cursor-pointer transition-colors text-[11px] font-black"
                                 style={{ color: '#a78bfa' }}
                               >
-                                <Bot size={16} />
+                                <Bot size={15} />
+                                <span>@MAI</span>
                               </button>
                             </Tooltip>
                           )}
@@ -13182,7 +13187,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       border: '1px solid rgba(139, 92, 246, 0.3)',
                     }}
                   >
-                    <span className="font-semibold text-purple-400">🤖 Wings AI Copilot</span>
+                    <span className="font-semibold text-purple-400">🤖 MAI</span>
                     <span className="text-slate-400 ml-1.5 animate-pulse tabular-nums">
                       Đang phân tích luồng ({aiElapsedSec}s)...
                     </span>
@@ -13267,7 +13272,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       handleSendThreadReply();
                     }
                   }}
-                  placeholder="Trả lời vào luồng... (gõ @AI để gọi Copilot, @ để nhắc tên, Shift+Enter xuống dòng)"
+                  placeholder="Trả lời vào luồng... (gõ @MAI để gọi mOS AI, @ để nhắc tên, Shift+Enter xuống dòng)"
                   className="w-full bg-transparent border-0 outline-none text-[13px] resize-none leading-relaxed px-0.5 py-1 min-h-[36px]"
                   style={{
                     color: token.colorText,
@@ -13281,21 +13286,22 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)' }}
                 >
                   <div className="flex items-center gap-0.5">
-                    {/* [Bot] Call @AI Copilot in Thread */}
+                    {/* [Bot] Call @MAI in Thread */}
                     {canUseAiCopilot && (
-                      <Tooltip title="Gọi @AI để Wings AI Copilot phân tích & tư vấn trực tiếp vào luồng này">
+                      <Tooltip title="Gọi @MAI để mOS AI phân tích & tư vấn trực tiếp vào luồng này">
                         <button
                           type="button"
-                          aria-label="Gọi @AI Copilot trong luồng"
+                          aria-label="Gọi @MAI trong luồng"
                           onClick={() => {
-                            setThreadInput((prev) => (/(?:^|\s)@\s*AI\b/i.test(prev) ? prev : `@AI ${prev}`));
+                            setThreadInput((prev) => (/(?:^|\s)@\s*mai\b/i.test(prev) ? prev : `@MAI ${prev}`));
                             setTimeout(() => {
                               threadInputRef.current?.focus();
                             }, 20);
                           }}
-                          className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-purple-500/20 active:scale-95 transition-all text-purple-400 hover:text-purple-300"
+                          className="h-7 px-2 rounded-lg inline-flex items-center justify-center gap-1 shrink-0 cursor-pointer hover:bg-purple-500/20 active:scale-95 transition-all text-purple-400 hover:text-purple-300 text-[11px] font-black"
                         >
-                          <Bot size={15} />
+                          <Bot size={14} />
+                          <span>@MAI</span>
                         </button>
                       </Tooltip>
                     )}
@@ -15280,7 +15286,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           <div className="flex items-center justify-between pr-6">
             <div className="flex items-center gap-2 text-[14px] font-extrabold">
               <ShieldCheck size={17} className="text-violet-400" />
-              <span>Phân quyền truy cập mOS Chat & Wings AI Copilot</span>
+              <span>Phân quyền truy cập mOS Chat & mOS AI (MAI)</span>
             </div>
             {savingAccessConfig && (
               <span className="text-[11px] font-bold text-amber-400 animate-pulse">Đang lưu cấu hình...</span>
@@ -15368,7 +15374,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
           return (
             <div className="space-y-3.5 pt-2">
-              {/* Top Mode Switcher: mOS Chat Access vs Wings AI Copilot Access */}
+              {/* Top Mode Switcher: mOS Chat Access vs mOS AI (MAI) Access */}
               <div
                 className="grid grid-cols-2 gap-2 p-1 rounded-xl"
                 style={{ background: surfaceRaised, border: `1px solid ${borderStrong}` }}
@@ -15400,7 +15406,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 >
                   <Bot size={15} />
                   <span>
-                    Quyền dùng Wings AI Copilot (
+                    Quyền dùng mOS AI (MAI) (
                     {staffDirectory.filter((m) => isStaffMemberAllowedInAi(m, accessConfig).allowed).length}/
                     {staffDirectory.length})
                   </span>
@@ -15423,8 +15429,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     </>
                   ) : (
                     <>
-                      Chọn <b>Bộ phận / Đội nhóm</b> hoặc <b>Cá nhân</b> được phép chat 1-1 với{' '}
-                      <b>🤖 Wings AI Copilot</b> và gọi <code>@AI</code> trong nhóm Space.
+                      Chọn <b>Bộ phận / Đội nhóm</b> hoặc <b>Cá nhân</b> được phép chat 1-1 với <b>🤖 MAI</b> và gọi{' '}
+                      <code>@MAI</code> trong nhóm Space.
                     </>
                   )}
                 </div>
