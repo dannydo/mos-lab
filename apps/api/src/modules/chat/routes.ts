@@ -2063,9 +2063,52 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         const body = (request.body || {}) as Partial<MosChatUserSidebarPrefs>;
         const { userPrefsByUserKey } = await loadChatState(fastify);
         const current = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
+
+        const mergedReadMessageCountByConv: Record<string, number> = {
+          ...(current.readMessageCountByConv || {}),
+        };
+        if (body.readMessageCountByConv && typeof body.readMessageCountByConv === 'object') {
+          for (const [k, v] of Object.entries(body.readMessageCountByConv)) {
+            const n = Number(v);
+            if (Number.isFinite(n) && n >= 0) {
+              mergedReadMessageCountByConv[k] = Math.max(mergedReadMessageCountByConv[k] || 0, n);
+            }
+          }
+        }
+
+        const mergedReadThreadReplyCountByMsg: Record<string, number> = {
+          ...(current.readThreadReplyCountByMsg || {}),
+        };
+        if (body.readThreadReplyCountByMsg && typeof body.readThreadReplyCountByMsg === 'object') {
+          for (const [k, v] of Object.entries(body.readThreadReplyCountByMsg)) {
+            const n = Number(v);
+            if (Number.isFinite(n) && n >= 0) {
+              mergedReadThreadReplyCountByMsg[k] = Math.max(mergedReadThreadReplyCountByMsg[k] || 0, n);
+            }
+          }
+        }
+
         const saved = await saveUserSidebarPrefs(fastify, userPrefKey, {
           ...current,
           ...body,
+          readMessageCountByConv: mergedReadMessageCountByConv,
+          readAtByConv: {
+            ...(current.readAtByConv || {}),
+            ...(body.readAtByConv || {}),
+          },
+          lastReadMessageIdByConv: {
+            ...(current.lastReadMessageIdByConv || {}),
+            ...(body.lastReadMessageIdByConv || {}),
+          },
+          readThreadReplyCountByMsg: mergedReadThreadReplyCountByMsg,
+          readThreadAtByMsg: {
+            ...(current.readThreadAtByMsg || {}),
+            ...(body.readThreadAtByMsg || {}),
+          },
+          lastReadThreadReplyIdByMsg: {
+            ...(current.lastReadThreadReplyIdByMsg || {}),
+            ...(body.lastReadThreadReplyIdByMsg || {}),
+          },
           updatedAt: new Date().toISOString(),
         });
         return {
@@ -3656,7 +3699,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
     }
   );
 
-  // POST /api/chat/conversations/:id/pin (Toggle pin status of conversation in user's sidebar)
+  // POST /api/chat/conversations/:id/pin (Toggle or explicitly set pin status of conversation in user's sidebar)
   fastify.post(
     '/chat/conversations/:id/pin',
     {
@@ -3665,20 +3708,22 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const user = (request as SafeAny).user as JwtUserPayload | undefined;
-        const convId = (request.params as { id: string }).id;
+        const convId = String((request.params as { id: string }).id || '').trim();
+        const body = (request.body || {}) as { pinned?: boolean };
         const state = await loadChatState(fastify);
         const { conversations, userPrefsByUserKey } = state;
         const staffDirectory = await loadStaffDirectoryCached(fastify);
         const targetConv = conversations.find((c) => c.id === convId);
-        if (!targetConv) {
+        const isSpecialPersonalConv = convId === 'ai-copilot-mos' || convId.startsWith('dm-self-');
+        if (!targetConv && !isSpecialPersonalConv) {
           return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy cuộc trò chuyện' });
         }
         const userPrefKey = resolveUserPrefKey(user, staffDirectory);
         const currentPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
         const exists = (currentPrefs.pinnedIds || []).includes(convId);
-        const nextPinned = exists
-          ? (currentPrefs.pinnedIds || []).filter((id) => id !== convId)
-          : [convId, ...(currentPrefs.pinnedIds || [])];
+        const shouldPin = typeof body.pinned === 'boolean' ? body.pinned : !exists;
+        const filteredPinned = (currentPrefs.pinnedIds || []).filter((id) => id !== convId);
+        const nextPinned = shouldPin ? [convId, ...filteredPinned] : filteredPinned;
         const updatedPrefs = {
           ...currentPrefs,
           pinnedIds: nextPinned,
@@ -3687,7 +3732,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         const saved = await saveUserSidebarPrefs(fastify, userPrefKey, updatedPrefs);
         return {
           success: true,
-          pinned: !exists,
+          pinned: shouldPin,
           userPrefs: saved,
         };
       } catch (err: SafeAny) {

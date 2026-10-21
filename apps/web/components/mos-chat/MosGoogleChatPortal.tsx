@@ -974,6 +974,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [userPrefs, setUserPrefs] = useState<MosChatUserSidebarPrefs>(() =>
     readStoredUserSidebarPrefs(userSidebarPrefsStorageKey)
   );
+  const lastLocalPrefsMutationAtRef = useRef<number>(0);
+  const hasHydratedPrefsFromServerRef = useRef<boolean>(false);
+  const [draggingSidebarConv, setDraggingSidebarConv] = useState<{ convId: string; sectionId: string } | null>(null);
+  const [dragOverSidebarConvId, setDragOverSidebarConvId] = useState<string | null>(null);
   const [sidebarCustomizeModalOpen, setSidebarCustomizeModalOpen] = useState(false);
   const [sidebarCustomizeTab, setSidebarCustomizeTab] = useState<'sections' | 'conversations'>('sections');
   const [newSectionNameInput, setNewSectionNameInput] = useState('');
@@ -987,6 +991,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const isSubmittingSectionRef = useRef(false);
 
   useEffect(() => {
+    hasHydratedPrefsFromServerRef.current = false;
     setUserPrefs(readStoredUserSidebarPrefs(userSidebarPrefsStorageKey));
   }, [userSidebarPrefsStorageKey, readStoredUserSidebarPrefs]);
 
@@ -1068,8 +1073,26 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     []
   );
 
+  const updateUserPrefsLocalOnly = useCallback(
+    (updater: (prev: MosChatUserSidebarPrefs) => MosChatUserSidebarPrefs) => {
+      setUserPrefs((prev) => {
+        const next = updater(prev);
+        if (typeof window !== 'undefined') {
+          try {
+            window.localStorage.setItem(userSidebarPrefsStorageKey, JSON.stringify(next));
+          } catch {
+            // ignore
+          }
+        }
+        return next;
+      });
+    },
+    [userSidebarPrefsStorageKey]
+  );
+
   const updateUserSidebarPrefs = useCallback(
     (updater: (prev: MosChatUserSidebarPrefs) => MosChatUserSidebarPrefs) => {
+      lastLocalPrefsMutationAtRef.current = Date.now();
       setUserPrefs((prev) => {
         const computed = updater(prev);
         // Strict deduplication of custom sections by ID and normalized name
@@ -1100,7 +1123,18 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             // ignore
           }
         }
-        apiClient.chat.updateUserPrefs(next).catch(() => {});
+        apiClient.chat
+          .updateUserPrefs(next)
+          .then((res) => {
+            if (res?.userPrefs && typeof window !== 'undefined') {
+              try {
+                window.localStorage.setItem(userSidebarPrefsStorageKey, JSON.stringify(res.userPrefs));
+              } catch {
+                // ignore
+              }
+            }
+          })
+          .catch(() => {});
         return next;
       });
     },
@@ -1151,14 +1185,25 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         }
         if (res?.userPrefs) {
           setUserPrefs((prev) => {
+            // Never overwrite an in-flight local sidebar customization (pin, reorder, move section)
+            if (Date.now() - lastLocalPrefsMutationAtRef.current < 4000) {
+              return prev;
+            }
             const serverTs = res.userPrefs?.updatedAt ? new Date(res.userPrefs.updatedAt).getTime() : 0;
             const localTs = prev.updatedAt ? new Date(prev.updatedAt).getTime() : 0;
             const hasServerCustomizations =
               (res.userPrefs?.pinnedIds?.length || 0) > 0 ||
               (res.userPrefs?.mutedIds?.length || 0) > 0 ||
               (res.userPrefs?.hiddenIds?.length || 0) > 0 ||
-              (res.userPrefs?.customSections?.length || 0) > 0;
-            if ((!prev.updatedAt && hasServerCustomizations) || (serverTs > localTs && hasServerCustomizations)) {
+              (res.userPrefs?.customSections?.length || 0) > 0 ||
+              Object.keys(res.userPrefs?.conversationOrder || {}).length > 0;
+            const isFirstHydration = !hasHydratedPrefsFromServerRef.current;
+            hasHydratedPrefsFromServerRef.current = true;
+            if (
+              (!prev.updatedAt && (hasServerCustomizations || isFirstHydration)) ||
+              (isFirstHydration && hasServerCustomizations && serverTs >= localTs) ||
+              serverTs > localTs
+            ) {
               if (typeof window !== 'undefined') {
                 try {
                   window.localStorage.setItem(userSidebarPrefsStorageKey, JSON.stringify(res.userPrefs));
@@ -1917,7 +1962,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   const sortConversationsForSection = useCallback(
     (items: MosChatConversation[], sectionId: string): MosChatConversation[] => {
-      const pinnedSet = new Set(userPrefs.pinnedIds || []);
+      const pinnedArr = userPrefs.pinnedIds || [];
+      const pinnedSet = new Set(pinnedArr);
+      const pinnedIdxMap = new Map<string, number>();
+      pinnedArr.forEach((id, idx) => pinnedIdxMap.set(id, idx));
+
       const orderArr = userPrefs.conversationOrder?.[sectionId] || [];
       const orderMap = new Map<string, number>();
       orderArr.forEach((id, idx) => orderMap.set(id, idx));
@@ -1926,6 +1975,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         const aPinned = pinnedSet.has(a.id) ? 1 : 0;
         const bPinned = pinnedSet.has(b.id) ? 1 : 0;
         if (aPinned !== bPinned) return bPinned - aPinned;
+
+        // If both are pinned, prefer explicit conversationOrder if both are present, otherwise pinnedIds order
+        if (aPinned && bPinned) {
+          if (orderMap.has(a.id) && orderMap.has(b.id)) {
+            return orderMap.get(a.id)! - orderMap.get(b.id)!;
+          }
+          const aPinIdx = pinnedIdxMap.has(a.id) ? pinnedIdxMap.get(a.id)! : 9999;
+          const bPinIdx = pinnedIdxMap.has(b.id) ? pinnedIdxMap.get(b.id)! : 9999;
+          if (aPinIdx !== bPinIdx) return aPinIdx - bPinIdx;
+        }
+
         const aOrder = orderMap.has(a.id) ? orderMap.get(a.id)! : 9999;
         const bOrder = orderMap.has(b.id) ? orderMap.get(b.id)! : 9999;
         if (aOrder !== bOrder) return aOrder - bOrder;
@@ -2146,7 +2206,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         })
       );
 
-      updateUserSidebarPrefs((prev) => ({
+      updateUserPrefsLocalOnly((prev) => ({
         ...prev,
         manualUnreadIds: (prev.manualUnreadIds || []).filter((id) => id !== convId),
         hiddenIds: (prev.hiddenIds || []).filter((id) => id !== convId),
@@ -2201,6 +2261,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       currentUser?.role,
       conversations,
       updateUserSidebarPrefs,
+      updateUserPrefsLocalOnly,
       notifyLivePeers,
     ]
   );
@@ -2272,17 +2333,40 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   // ================= GOOGLE CHAT WORKSPACE PERSONAL SIDEBAR ACTIONS =================
   const togglePinConversation = useCallback(
     (convId: string) => {
+      const targetConv = allUserConversations.find((c) => c.id === convId);
+      const convLabel = targetConv
+        ? targetConv.type === 'space'
+          ? `#${targetConv.name}`
+          : targetConv.name
+        : 'mục này';
       updateUserSidebarPrefs((prev) => {
         const exists = (prev.pinnedIds || []).includes(convId);
         const nextPinned = exists
           ? (prev.pinnedIds || []).filter((id) => id !== convId)
-          : [convId, ...(prev.pinnedIds || [])];
-        antdMessage.success(exists ? 'Đã bỏ ghim cuộc trò chuyện' : 'Đã ghim cuộc trò chuyện lên đầu mục (Pin)');
-        return { ...prev, pinnedIds: nextPinned };
+          : [convId, ...(prev.pinnedIds || []).filter((id) => id !== convId)];
+
+        const nextConvOrder: Record<string, string[]> = { ...(prev.conversationOrder || {}) };
+        if (!exists) {
+          for (const [secKey, arr] of Object.entries(nextConvOrder)) {
+            if (Array.isArray(arr) && arr.length > 0) {
+              nextConvOrder[secKey] = [convId, ...arr.filter((id) => id !== convId)];
+            }
+          }
+        }
+
+        antdMessage.success(
+          exists
+            ? `Đã bỏ ghim ${convLabel} khỏi danh sách cá nhân`
+            : `📌 Đã ghim ${convLabel} lên đầu danh sách cá nhân (đã lưu)`
+        );
+        return {
+          ...prev,
+          pinnedIds: nextPinned,
+          conversationOrder: nextConvOrder,
+        };
       });
-      apiClient.chat.togglePinConversation(convId).catch(() => {});
     },
-    [updateUserSidebarPrefs]
+    [allUserConversations, updateUserSidebarPrefs]
   );
 
   const toggleMuteConversation = useCallback(
@@ -2418,13 +2502,52 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       const temp = nextOrder[idx];
       nextOrder[idx] = nextOrder[swapIdx];
       nextOrder[swapIdx] = temp;
-      updateUserSidebarPrefs((prev) => ({
-        ...prev,
-        conversationOrder: {
-          ...(prev.conversationOrder || {}),
-          [sectionId]: nextOrder,
-        },
-      }));
+      updateUserSidebarPrefs((prev) => {
+        const pinnedSet = new Set(prev.pinnedIds || []);
+        const reorderedSectionPinned = nextOrder.filter((id) => pinnedSet.has(id));
+        const otherPinned = (prev.pinnedIds || []).filter((id) => !currentIds.includes(id));
+        return {
+          ...prev,
+          pinnedIds: [...reorderedSectionPinned, ...otherPinned],
+          conversationOrder: {
+            ...(prev.conversationOrder || {}),
+            [sectionId]: nextOrder,
+          },
+        };
+      });
+    },
+    [updateUserSidebarPrefs]
+  );
+
+  const reorderConversationByDragDrop = useCallback(
+    (sourceConvId: string, targetConvId: string, sectionId: string, currentItems: MosChatConversation[]) => {
+      if (!sourceConvId || !targetConvId || sourceConvId === targetConvId) return;
+      const currentIds = currentItems.map((c) => c.id);
+      const fromIdx = currentIds.indexOf(sourceConvId);
+      const toIdx = currentIds.indexOf(targetConvId);
+      if (fromIdx === -1 || toIdx === -1) return;
+      const nextOrder = [...currentIds];
+      nextOrder.splice(fromIdx, 1);
+      nextOrder.splice(toIdx, 0, sourceConvId);
+
+      updateUserSidebarPrefs((prev) => {
+        const pinnedSet = new Set(prev.pinnedIds || []);
+        // If user dragged an unpinned Space onto a pinned Space, automatically pin it at that exact position!
+        if (!pinnedSet.has(sourceConvId) && pinnedSet.has(targetConvId)) {
+          pinnedSet.add(sourceConvId);
+          antdMessage.success('📌 Đã ghim và sắp xếp vị trí Space theo ý bạn');
+        }
+        const reorderedSectionPinned = nextOrder.filter((id) => pinnedSet.has(id));
+        const otherPinned = (prev.pinnedIds || []).filter((id) => !currentIds.includes(id));
+        return {
+          ...prev,
+          pinnedIds: [...reorderedSectionPinned, ...otherPinned],
+          conversationOrder: {
+            ...(prev.conversationOrder || {}),
+            [sectionId]: nextOrder,
+          },
+        };
+      });
     },
     [updateUserSidebarPrefs]
   );
@@ -3642,7 +3765,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         })
       );
 
-      updateUserSidebarPrefs((prev) => ({
+      updateUserPrefsLocalOnly((prev) => ({
         ...prev,
         readThreadReplyCountByMsg: {
           ...(prev.readThreadReplyCountByMsg || {}),
@@ -3684,7 +3807,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       currentUser?.displayName,
       currentUser?.username,
       currentUser?.role,
-      updateUserSidebarPrefs,
+      updateUserPrefsLocalOnly,
       notifyLivePeers,
     ]
   );
@@ -3728,9 +3851,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       if (isMobile) setMobileActiveView('conversation');
 
       const targetConv =
-        convId === AI_COPILOT_CONV_ID
-          ? aiCopilotConversation
-          : conversations.find((c) => c.id === convId);
+        convId === AI_COPILOT_CONV_ID ? aiCopilotConversation : conversations.find((c) => c.id === convId);
       if (targetConv && isTabVisible) {
         const msgs = targetConv.messages || [];
         const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : undefined;
@@ -3783,7 +3904,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         setHighlightedMsgId((prev) => (prev === msgId ? null : prev));
       }, 4000);
     },
-    [conversations, aiCopilotConversation, isMobile, handleOpenThread, isTabVisible, markConversationReadOptimisticAndSync]
+    [
+      conversations,
+      aiCopilotConversation,
+      isMobile,
+      handleOpenThread,
+      isTabVisible,
+      markConversationReadOptimisticAndSync,
+    ]
   );
 
   useEffect(() => {
@@ -8801,413 +8929,563 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             : 'Chưa có cuộc trò chuyện'}
                       </div>
                     ) : (
-                      sec.items.map((conv, itemIdx) => {
-                        const isAiConv = conv.id === AI_COPILOT_CONV_ID;
-                        const isSelfConv = Boolean(conv.isSelf || conv.id.startsWith('dm-self-'));
-                        const isSpace = conv.type === 'space';
-                        const lastMsg = conv.messages[conv.messages.length - 1];
-                        const isSelected = conv.id === activeConversation?.id;
-                        const isPinned = (userPrefs.pinnedIds || []).includes(conv.id);
-                        const isMuted = (userPrefs.mutedIds || []).includes(conv.id);
-                        const effUnread = getEffectiveUnreadCount(conv);
-                        const isConvMenuOpen = openConvMenuId === conv.id;
-                        const currentCustomSec = (userPrefs.customSections || []).find((cs) =>
-                          (cs.conversationIds || []).includes(conv.id)
-                        );
-                        const previewText =
-                          formatChatPreviewWithStickers(lastMsg?.text) ||
-                          (lastMsg?.attachments?.length ? `Hình ảnh (${lastMsg.attachments.length})` : conv.subtitle);
+                      (() => {
+                        const pinnedSetForSec = new Set(userPrefs.pinnedIds || []);
+                        const pinnedCountInSec = sec.items.filter((c) => pinnedSetForSec.has(c.id)).length;
+                        const unpinnedCountInSec = sec.items.length - pinnedCountInSec;
 
-                        const convMenuContent = (
-                          <div
-                            data-no-chat-autofocus="true"
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-60 py-1 select-none text-[12px]"
-                          >
-                            <div className="px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 truncate">
-                              {isSpace ? `#${conv.name}` : conv.name}
-                            </div>
+                        return sec.items.map((conv, itemIdx) => {
+                          const isAiConv = conv.id === AI_COPILOT_CONV_ID;
+                          const isSelfConv = Boolean(conv.isSelf || conv.id.startsWith('dm-self-'));
+                          const isSpace = conv.type === 'space';
+                          const lastMsg = conv.messages[conv.messages.length - 1];
+                          const isSelected = conv.id === activeConversation?.id;
+                          const isPinned = pinnedSetForSec.has(conv.id);
+                          const prevItem = itemIdx > 0 ? sec.items[itemIdx - 1] : null;
+                          const showPinnedSubHeader = itemIdx === 0 && isPinned;
+                          const showUnpinnedSubHeader =
+                            pinnedCountInSec > 0 && !isPinned && (!prevItem || pinnedSetForSec.has(prevItem.id));
+                          const isMuted = (userPrefs.mutedIds || []).includes(conv.id);
+                          const effUnread = getEffectiveUnreadCount(conv);
+                          const isConvMenuOpen = openConvMenuId === conv.id;
+                          const isDragTarget =
+                            dragOverSidebarConvId === conv.id &&
+                            draggingSidebarConv?.sectionId === sec.id &&
+                            draggingSidebarConv?.convId !== conv.id;
+                          const currentCustomSec = (userPrefs.customSections || []).find((cs) =>
+                            (cs.conversationIds || []).includes(conv.id)
+                          );
+                          const previewText =
+                            formatChatPreviewWithStickers(lastMsg?.text) ||
+                            (lastMsg?.attachments?.length ? `Hình ảnh (${lastMsg.attachments.length})` : conv.subtitle);
 
-                            <button
-                              type="button"
-                              onClick={() => {
-                                togglePinConversation(conv.id);
-                                setOpenConvMenuId(null);
-                              }}
-                              className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left"
-                              style={{ color: token.colorText }}
+                          const convMenuContent = (
+                            <div
+                              data-no-chat-autofocus="true"
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-60 py-1 select-none text-[12px]"
                             >
-                              {isPinned ? (
-                                <PinOff size={13} className="text-amber-500" />
-                              ) : (
-                                <Pin size={13} className="text-amber-500" />
-                              )}
-                              <span>{isPinned ? 'Bỏ ghim khỏi đầu mục' : 'Ghim lên đầu mục (Pin)'}</span>
-                            </button>
+                              <div className="px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-slate-400 truncate">
+                                {isSpace ? `#${conv.name}` : conv.name}
+                              </div>
 
-                            <button
-                              type="button"
-                              onClick={() => {
-                                toggleManualUnreadConversation(conv);
-                                setOpenConvMenuId(null);
-                              }}
-                              className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left"
-                              style={{ color: token.colorText }}
-                            >
-                              {effUnread > 0 ? <MailOpen size={13} /> : <Mail size={13} className="text-rose-500" />}
-                              <span>{effUnread > 0 ? 'Đánh dấu đã đọc' : 'Đánh dấu chưa đọc'}</span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                toggleMuteConversation(conv.id);
-                                setOpenConvMenuId(null);
-                              }}
-                              className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left"
-                              style={{ color: token.colorText }}
-                            >
-                              {isMuted ? (
-                                <Bell size={13} className="text-emerald-500" />
-                              ) : (
-                                <BellOff size={13} className="text-slate-400" />
-                              )}
-                              <span>{isMuted ? 'Bật thông báo' : 'Tắt thông báo (Mute)'}</span>
-                            </button>
-
-                            <div className="my-1" style={{ borderTop: `1px solid ${borderColor}` }} />
-
-                            <div className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                              Chuyển tới mục (Google Chat Sections)
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                moveConversationToSection(conv.id, 'default');
-                                setOpenConvMenuId(null);
-                              }}
-                              className="w-full px-2.5 py-1.5 flex items-center justify-between gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left"
-                              style={{ color: token.colorText }}
-                            >
-                              <span className="truncate">
-                                {isSpace ? 'SPACES (Mặc định)' : 'DIRECT MESSAGES (Mặc định)'}
-                              </span>
-                              {!currentCustomSec && <Check size={13} className="text-emerald-500 shrink-0" />}
-                            </button>
-
-                            {(userPrefs.customSections || []).map((cs) => (
                               <button
-                                key={cs.id}
                                 type="button"
                                 onClick={() => {
-                                  moveConversationToSection(conv.id, cs.id);
+                                  togglePinConversation(conv.id);
+                                  setOpenConvMenuId(null);
+                                }}
+                                className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left"
+                                style={{ color: token.colorText }}
+                              >
+                                {isPinned ? (
+                                  <PinOff size={13} className="text-amber-500" />
+                                ) : (
+                                  <Pin size={13} className="text-amber-500" />
+                                )}
+                                <span>{isPinned ? 'Bỏ ghim khỏi đầu mục' : 'Ghim lên đầu mục (Pin)'}</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  toggleManualUnreadConversation(conv);
+                                  setOpenConvMenuId(null);
+                                }}
+                                className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left"
+                                style={{ color: token.colorText }}
+                              >
+                                {effUnread > 0 ? <MailOpen size={13} /> : <Mail size={13} className="text-rose-500" />}
+                                <span>{effUnread > 0 ? 'Đánh dấu đã đọc' : 'Đánh dấu chưa đọc'}</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  toggleMuteConversation(conv.id);
+                                  setOpenConvMenuId(null);
+                                }}
+                                className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left"
+                                style={{ color: token.colorText }}
+                              >
+                                {isMuted ? (
+                                  <Bell size={13} className="text-emerald-500" />
+                                ) : (
+                                  <BellOff size={13} className="text-slate-400" />
+                                )}
+                                <span>{isMuted ? 'Bật thông báo' : 'Tắt thông báo (Mute)'}</span>
+                              </button>
+
+                              <div className="my-1" style={{ borderTop: `1px solid ${borderColor}` }} />
+
+                              <div className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                Chuyển tới mục (Google Chat Sections)
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  moveConversationToSection(conv.id, 'default');
                                   setOpenConvMenuId(null);
                                 }}
                                 className="w-full px-2.5 py-1.5 flex items-center justify-between gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left"
                                 style={{ color: token.colorText }}
                               >
-                                <span className="truncate">📁 {cs.name}</span>
-                                {currentCustomSec?.id === cs.id && (
-                                  <Check size={13} className="text-emerald-500 shrink-0" />
-                                )}
+                                <span className="truncate">
+                                  {isSpace ? 'SPACES (Mặc định)' : 'DIRECT MESSAGES (Mặc định)'}
+                                </span>
+                                {!currentCustomSec && <Check size={13} className="text-emerald-500 shrink-0" />}
                               </button>
-                            ))}
 
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setOpenConvMenuId(null);
-                                setQuickCreateSectionTargetConvId(conv.id);
-                                setQuickCreateSectionName('');
-                                setQuickCreateSectionModalOpen(true);
-                              }}
-                              className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left text-sky-400 font-semibold"
-                            >
-                              <FolderPlus size={13} />
-                              <span>+ Tạo mục mới & chuyển vào...</span>
-                            </button>
+                              {(userPrefs.customSections || []).map((cs) => (
+                                <button
+                                  key={cs.id}
+                                  type="button"
+                                  onClick={() => {
+                                    moveConversationToSection(conv.id, cs.id);
+                                    setOpenConvMenuId(null);
+                                  }}
+                                  className="w-full px-2.5 py-1.5 flex items-center justify-between gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left"
+                                  style={{ color: token.colorText }}
+                                >
+                                  <span className="truncate">📁 {cs.name}</span>
+                                  {currentCustomSec?.id === cs.id && (
+                                    <Check size={13} className="text-emerald-500 shrink-0" />
+                                  )}
+                                </button>
+                              ))}
 
-                            <div className="my-1" style={{ borderTop: `1px solid ${borderColor}` }} />
-
-                            <div className="grid grid-cols-2 gap-1 px-1">
                               <button
                                 type="button"
-                                disabled={itemIdx === 0}
                                 onClick={() => {
-                                  moveConversationOrderInSection(conv.id, sec.id, 'up', sec.items);
                                   setOpenConvMenuId(null);
+                                  setQuickCreateSectionTargetConvId(conv.id);
+                                  setQuickCreateSectionName('');
+                                  setQuickCreateSectionModalOpen(true);
                                 }}
-                                className="px-2 py-1 flex items-center justify-center gap-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-[11px] disabled:opacity-40 disabled:cursor-not-allowed"
-                                style={{ color: token.colorText }}
+                                className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left text-sky-400 font-semibold"
                               >
-                                <ArrowUp size={12} />
-                                <span>Lên trên</span>
+                                <FolderPlus size={13} />
+                                <span>+ Tạo mục mới & chuyển vào...</span>
                               </button>
+
+                              <div className="my-1" style={{ borderTop: `1px solid ${borderColor}` }} />
+
+                              <div className="grid grid-cols-2 gap-1 px-1">
+                                <button
+                                  type="button"
+                                  disabled={itemIdx === 0}
+                                  onClick={() => {
+                                    moveConversationOrderInSection(conv.id, sec.id, 'up', sec.items);
+                                    setOpenConvMenuId(null);
+                                  }}
+                                  className="px-2 py-1 flex items-center justify-center gap-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-[11px] disabled:opacity-40 disabled:cursor-not-allowed"
+                                  style={{ color: token.colorText }}
+                                >
+                                  <ArrowUp size={12} />
+                                  <span>Lên trên</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={itemIdx === sec.items.length - 1}
+                                  onClick={() => {
+                                    moveConversationOrderInSection(conv.id, sec.id, 'down', sec.items);
+                                    setOpenConvMenuId(null);
+                                  }}
+                                  className="px-2 py-1 flex items-center justify-center gap-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-[11px] disabled:opacity-40 disabled:cursor-not-allowed"
+                                  style={{ color: token.colorText }}
+                                >
+                                  <ArrowDown size={12} />
+                                  <span>Xuống dưới</span>
+                                </button>
+                              </div>
+
+                              <div className="my-1" style={{ borderTop: `1px solid ${borderColor}` }} />
+
                               <button
                                 type="button"
-                                disabled={itemIdx === sec.items.length - 1}
                                 onClick={() => {
-                                  moveConversationOrderInSection(conv.id, sec.id, 'down', sec.items);
+                                  setDockedConvIds((prev) => {
+                                    const next = prev.includes(conv.id) ? prev : [...prev, conv.id];
+                                    return next.slice(-2);
+                                  });
                                   setOpenConvMenuId(null);
                                 }}
-                                className="px-2 py-1 flex items-center justify-center gap-1 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-[11px] disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left"
                                 style={{ color: token.colorText }}
                               >
-                                <ArrowDown size={12} />
-                                <span>Xuống dưới</span>
+                                <ExternalLink size={13} />
+                                <span>Mở cửa sổ thu nhỏ (Mini Dock)</span>
                               </button>
+
+                              {!isAiConv && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    toggleHideConversation(conv);
+                                    setOpenConvMenuId(null);
+                                  }}
+                                  className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left text-amber-500"
+                                >
+                                  <EyeOff size={13} />
+                                  <span>Ẩn khỏi danh sách của tôi</span>
+                                </button>
+                              )}
+
+                              {isSpace && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    void handleLeaveOrJoinSpace(conv);
+                                    setOpenConvMenuId(null);
+                                  }}
+                                  className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-rose-500/10 cursor-pointer text-left text-rose-500"
+                                >
+                                  <LogOut size={13} />
+                                  <span>Rời khỏi Space này</span>
+                                </button>
+                              )}
                             </div>
+                          );
 
-                            <div className="my-1" style={{ borderTop: `1px solid ${borderColor}` }} />
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setDockedConvIds((prev) => {
-                                  const next = prev.includes(conv.id) ? prev : [...prev, conv.id];
-                                  return next.slice(-2);
-                                });
-                                setOpenConvMenuId(null);
-                              }}
-                              className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left"
-                              style={{ color: token.colorText }}
-                            >
-                              <ExternalLink size={13} />
-                              <span>Mở cửa sổ thu nhỏ (Mini Dock)</span>
-                            </button>
-
-                            {!isAiConv && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  toggleHideConversation(conv);
-                                  setOpenConvMenuId(null);
-                                }}
-                                className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left text-amber-500"
-                              >
-                                <EyeOff size={13} />
-                                <span>Ẩn khỏi danh sách của tôi</span>
-                              </button>
-                            )}
-
-                            {isSpace && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  void handleLeaveOrJoinSpace(conv);
-                                  setOpenConvMenuId(null);
-                                }}
-                                className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-rose-500/10 cursor-pointer text-left text-rose-500"
-                              >
-                                <LogOut size={13} />
-                                <span>Rời khỏi Space này</span>
-                              </button>
-                            )}
-                          </div>
-                        );
-
-                        return (
-                          <div
-                            key={conv.id}
-                            onClick={() => selectConversation(conv.id)}
-                            className="group/conv relative flex items-center gap-2.5 px-2 py-1.5 rounded-lg cursor-pointer mb-0.5 transition-colors"
-                            style={{
-                              background: isSelected
-                                ? isAiConv
-                                  ? 'rgba(139, 92, 246, 0.18)'
-                                  : isSelfConv
-                                    ? 'rgba(99, 102, 241, 0.18)'
-                                    : 'rgba(59, 130, 246, 0.14)'
-                                : isAiConv
-                                  ? 'rgba(139, 92, 246, 0.07)'
-                                  : isSelfConv
-                                    ? 'rgba(99, 102, 241, 0.06)'
-                                    : 'transparent',
-                              border: isAiConv
-                                ? '1px solid rgba(139, 92, 246, 0.28)'
-                                : isSelfConv
-                                  ? '1px solid rgba(99, 102, 241, 0.25)'
-                                  : '1px solid transparent',
-                              opacity: isMuted && !isSelected ? 0.72 : 1,
-                            }}
-                          >
-                            {isSpace ? (
+                          return (
+                            <React.Fragment key={conv.id}>
+                              {showPinnedSubHeader && (
+                                <div className="px-2 pt-1 pb-0.5 flex items-center justify-between text-[9.5px] font-extrabold uppercase tracking-wider text-amber-400 select-none">
+                                  <span className="inline-flex items-center gap-1">
+                                    <Pin size={10} className="fill-amber-400 text-amber-400" />
+                                    <span>ĐÃ GHIM CÁ NHÂN ({pinnedCountInSec})</span>
+                                  </span>
+                                  <span className="text-[9px] font-medium text-slate-400 normal-case">
+                                    Kéo thả / ↑↓ để xếp
+                                  </span>
+                                </div>
+                              )}
+                              {showUnpinnedSubHeader && (
+                                <div
+                                  className="px-2 pt-1.5 pb-0.5 mt-1 flex items-center justify-between text-[9.5px] font-bold uppercase tracking-wider text-slate-400 select-none"
+                                  style={{ borderTop: `1px dashed ${borderColor}` }}
+                                >
+                                  <span>
+                                    {sec.id === 'spaces'
+                                      ? `TẤT CẢ SPACES (${unpinnedCountInSec})`
+                                      : `KHÁC (${unpinnedCountInSec})`}
+                                  </span>
+                                </div>
+                              )}
                               <div
-                                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                                style={{ background: `${conv.color}22`, color: conv.color }}
-                              >
-                                <Hash size={16} />
-                              </div>
-                            ) : (
-                              renderUserAvatarNode({
-                                staffId: isSelfConv ? currentUser?.id || 'me' : conv.participantStaffId,
-                                name: conv.name,
-                                rawAvatar: conv.avatar,
-                                bgColor: conv.color || '#ec4899',
-                                sizeClass: 'w-8 h-8',
-                                roundedClass: 'rounded-full',
-                                isOnline: isConversationParticipantOnline(conv),
-                                isAiBot: isAiConv,
-                                isSelfBookmark: isSelfConv,
-                              })
-                            )}
-
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-1">
-                                <div className="flex items-center gap-1 min-w-0">
-                                  <span
-                                    className={`text-[12.5px] truncate ${
-                                      effUnread > 0 || isAiConv || isSelfConv ? 'font-extrabold' : 'font-semibold'
-                                    }`}
-                                    style={{
-                                      color: isAiConv
-                                        ? isDark
-                                          ? '#c4b5fd'
-                                          : '#6d28d9'
+                                draggable
+                                onDragStart={(e) => {
+                                  setDraggingSidebarConv({ convId: conv.id, sectionId: sec.id });
+                                  e.dataTransfer.effectAllowed = 'move';
+                                  try {
+                                    e.dataTransfer.setData('text/plain', conv.id);
+                                  } catch {
+                                    // ignore
+                                  }
+                                }}
+                                onDragOver={(e) => {
+                                  if (draggingSidebarConv && draggingSidebarConv.sectionId === sec.id) {
+                                    e.preventDefault();
+                                    e.dataTransfer.dropEffect = 'move';
+                                    if (dragOverSidebarConvId !== conv.id) {
+                                      setDragOverSidebarConvId(conv.id);
+                                    }
+                                  }
+                                }}
+                                onDragLeave={() => {
+                                  if (dragOverSidebarConvId === conv.id) {
+                                    setDragOverSidebarConvId(null);
+                                  }
+                                }}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  if (
+                                    draggingSidebarConv &&
+                                    draggingSidebarConv.sectionId === sec.id &&
+                                    draggingSidebarConv.convId !== conv.id
+                                  ) {
+                                    reorderConversationByDragDrop(
+                                      draggingSidebarConv.convId,
+                                      conv.id,
+                                      sec.id,
+                                      sec.items
+                                    );
+                                  }
+                                  setDraggingSidebarConv(null);
+                                  setDragOverSidebarConvId(null);
+                                }}
+                                onDragEnd={() => {
+                                  setDraggingSidebarConv(null);
+                                  setDragOverSidebarConvId(null);
+                                }}
+                                onClick={() => selectConversation(conv.id)}
+                                className="group/conv relative flex items-center gap-2.5 px-2 py-1.5 rounded-lg cursor-pointer mb-0.5 transition-all"
+                                style={{
+                                  background: isDragTarget
+                                    ? 'rgba(245, 158, 11, 0.16)'
+                                    : isSelected
+                                      ? isAiConv
+                                        ? 'rgba(139, 92, 246, 0.18)'
                                         : isSelfConv
-                                          ? isDark
-                                            ? '#a5b4fc'
-                                            : '#4338ca'
-                                          : undefined,
-                                    }}
-                                  >
-                                    {conv.name}
-                                  </span>
-                                  {isSelfConv && (
-                                    <span className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-500/20 text-indigo-400 shrink-0">
-                                      Bạn
-                                    </span>
-                                  )}
-                                  {isPinned && (
-                                    <Tooltip title="Đã ghim lên đầu mục">
-                                      <Pin size={11} className="text-amber-400 shrink-0" />
-                                    </Tooltip>
-                                  )}
-                                  {isMuted && (
-                                    <Tooltip title="Đang tắt thông báo">
-                                      <BellOff size={11} className="text-slate-400 shrink-0" />
-                                    </Tooltip>
-                                  )}
-                                </div>
-
-                                {/* Right side: Time / Badge OR Hover Quick Action Buttons (Pin + More ⋮) */}
-                                <div className="flex items-center gap-0.5 shrink-0">
+                                          ? 'rgba(99, 102, 241, 0.18)'
+                                          : 'rgba(59, 130, 246, 0.14)'
+                                      : isPinned
+                                        ? isDark
+                                          ? 'rgba(245, 158, 11, 0.06)'
+                                          : 'rgba(245, 158, 11, 0.08)'
+                                        : isAiConv
+                                          ? 'rgba(139, 92, 246, 0.07)'
+                                          : isSelfConv
+                                            ? 'rgba(99, 102, 241, 0.06)'
+                                            : 'transparent',
+                                  border: isDragTarget
+                                    ? '1px dashed #f59e0b'
+                                    : isAiConv
+                                      ? '1px solid rgba(139, 92, 246, 0.28)'
+                                      : isSelfConv
+                                        ? '1px solid rgba(99, 102, 241, 0.25)'
+                                        : isPinned
+                                          ? '1px solid rgba(245, 158, 11, 0.22)'
+                                          : '1px solid transparent',
+                                  borderLeft: isPinned ? '2.5px solid #f59e0b' : undefined,
+                                  opacity:
+                                    draggingSidebarConv?.convId === conv.id ? 0.5 : isMuted && !isSelected ? 0.72 : 1,
+                                }}
+                              >
+                                {isSpace ? (
                                   <div
-                                    className={`${
-                                      isConvMenuOpen ? 'hidden' : 'flex group-hover/conv:hidden'
-                                    } items-center gap-1`}
+                                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                                    style={{ background: `${conv.color}22`, color: conv.color }}
                                   >
-                                    {isAiConv ? (
+                                    <Hash size={16} />
+                                  </div>
+                                ) : (
+                                  renderUserAvatarNode({
+                                    staffId: isSelfConv ? currentUser?.id || 'me' : conv.participantStaffId,
+                                    name: conv.name,
+                                    rawAvatar: conv.avatar,
+                                    bgColor: conv.color || '#ec4899',
+                                    sizeClass: 'w-8 h-8',
+                                    roundedClass: 'rounded-full',
+                                    isOnline: isConversationParticipantOnline(conv),
+                                    isAiBot: isAiConv,
+                                    isSelfBookmark: isSelfConv,
+                                  })
+                                )}
+
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-1">
+                                    <div className="flex items-center gap-1 min-w-0">
                                       <span
-                                        className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full text-[9px] font-bold"
-                                        style={{ background: 'rgba(139, 92, 246, 0.18)', color: '#a78bfa' }}
+                                        className={`text-[12.5px] truncate ${
+                                          effUnread > 0 || isAiConv || isSelfConv ? 'font-extrabold' : 'font-semibold'
+                                        }`}
+                                        style={{
+                                          color: isAiConv
+                                            ? isDark
+                                              ? '#c4b5fd'
+                                              : '#6d28d9'
+                                            : isSelfConv
+                                              ? isDark
+                                                ? '#a5b4fc'
+                                                : '#4338ca'
+                                              : undefined,
+                                        }}
                                       >
-                                        Riêng tư
+                                        {conv.name}
                                       </span>
-                                    ) : (
-                                      <span className="text-[10px] text-slate-400 tabular-nums shrink-0">
-                                        {lastMsg?.timeLabel || ''}
-                                      </span>
-                                    )}
-                                  </div>
+                                      {isSelfConv && (
+                                        <span className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-indigo-500/20 text-indigo-400 shrink-0">
+                                          Bạn
+                                        </span>
+                                      )}
+                                      {isPinned && (
+                                        <Tooltip title="Đã ghim cá nhân · Nhấn để bỏ ghim">
+                                          <button
+                                            type="button"
+                                            aria-label="Bỏ ghim"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              togglePinConversation(conv.id);
+                                            }}
+                                            className="inline-flex items-center justify-center w-4 h-4 rounded hover:bg-amber-500/20 cursor-pointer shrink-0"
+                                          >
+                                            <Pin size={11} className="text-amber-400 fill-amber-400 shrink-0" />
+                                          </button>
+                                        </Tooltip>
+                                      )}
+                                      {isMuted && (
+                                        <Tooltip title="Đang tắt thông báo">
+                                          <BellOff size={11} className="text-slate-400 shrink-0" />
+                                        </Tooltip>
+                                      )}
+                                    </div>
 
-                                  <div
-                                    onClick={(e) => e.stopPropagation()}
-                                    className={`${
-                                      isConvMenuOpen ? 'flex' : 'hidden group-hover/conv:flex'
-                                    } items-center gap-0.5`}
-                                  >
-                                    <Tooltip title={isPinned ? 'Bỏ ghim' : 'Ghim lên đầu'}>
-                                      <button
-                                        type="button"
-                                        aria-label={isPinned ? 'Bỏ ghim' : 'Ghim lên đầu'}
-                                        onClick={() => togglePinConversation(conv.id)}
-                                        className="w-5 h-5 rounded inline-flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/15 cursor-pointer"
-                                        style={{ color: isPinned ? '#d4a84b' : token.colorTextSecondary }}
+                                    {/* Right side: Time / Badge OR Hover Quick Action Buttons (Pin + Up/Down + More ⋮) */}
+                                    <div className="flex items-center gap-0.5 shrink-0">
+                                      <div
+                                        className={`${
+                                          isConvMenuOpen ? 'hidden' : 'flex group-hover/conv:hidden'
+                                        } items-center gap-1`}
                                       >
-                                        <Pin size={11} className={isPinned ? 'fill-amber-400' : ''} />
-                                      </button>
-                                    </Tooltip>
+                                        {isAiConv ? (
+                                          <span
+                                            className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+                                            style={{ background: 'rgba(139, 92, 246, 0.18)', color: '#a78bfa' }}
+                                          >
+                                            Riêng tư
+                                          </span>
+                                        ) : (
+                                          <span className="text-[10px] text-slate-400 tabular-nums shrink-0">
+                                            {lastMsg?.timeLabel || ''}
+                                          </span>
+                                        )}
+                                      </div>
 
-                                    <Tooltip title={effUnread > 0 ? 'Đánh dấu đã đọc' : 'Đánh dấu chưa đọc'}>
-                                      <button
-                                        type="button"
-                                        aria-label={effUnread > 0 ? 'Đánh dấu đã đọc' : 'Đánh dấu chưa đọc'}
-                                        onClick={() => toggleManualUnreadConversation(conv)}
-                                        className="w-5 h-5 rounded inline-flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/15 cursor-pointer"
-                                        style={{ color: effUnread > 0 ? '#f43f5e' : token.colorTextSecondary }}
+                                      <div
+                                        onClick={(e) => e.stopPropagation()}
+                                        className={`${
+                                          isConvMenuOpen ? 'flex' : 'hidden group-hover/conv:flex'
+                                        } items-center gap-0.5`}
                                       >
-                                        {effUnread > 0 ? <MailOpen size={11} /> : <Mail size={11} />}
-                                      </button>
-                                    </Tooltip>
-
-                                    <Popover
-                                      open={isConvMenuOpen}
-                                      onOpenChange={(v) => setOpenConvMenuId(v ? conv.id : null)}
-                                      trigger="click"
-                                      placement="bottomRight"
-                                      zIndex={1150}
-                                      content={convMenuContent}
-                                    >
-                                      <Tooltip title="Tuỳ chọn cuộc trò chuyện (Ghim / Chuyển mục / Tắt thông báo / Ẩn)">
-                                        <button
-                                          type="button"
-                                          aria-label="Tuỳ chọn cuộc trò chuyện"
-                                          className="w-5 h-5 rounded inline-flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/15 cursor-pointer"
-                                          style={{ color: token.colorTextSecondary }}
+                                        <Tooltip
+                                          title={
+                                            isPinned
+                                              ? 'Bỏ ghim khỏi đầu danh sách cá nhân'
+                                              : '📌 Ghim lên đầu danh sách cá nhân (lưu tự động)'
+                                          }
                                         >
-                                          <MoreVertical size={12} />
-                                        </button>
-                                      </Tooltip>
-                                    </Popover>
+                                          <button
+                                            type="button"
+                                            aria-label={isPinned ? 'Bỏ ghim' : 'Ghim lên đầu'}
+                                            onClick={() => togglePinConversation(conv.id)}
+                                            className="w-5 h-5 rounded inline-flex items-center justify-center hover:bg-amber-500/20 cursor-pointer"
+                                            style={{
+                                              color: isPinned ? '#f59e0b' : token.colorTextSecondary,
+                                              background: isPinned ? 'rgba(245, 158, 11, 0.15)' : undefined,
+                                            }}
+                                          >
+                                            <Pin size={11.5} className={isPinned ? 'fill-amber-400' : ''} />
+                                          </button>
+                                        </Tooltip>
+
+                                        {sec.items.length > 1 && (
+                                          <>
+                                            <Tooltip title="Đưa lên trên">
+                                              <button
+                                                type="button"
+                                                aria-label="Đưa lên trên"
+                                                disabled={itemIdx === 0}
+                                                onClick={() =>
+                                                  moveConversationOrderInSection(conv.id, sec.id, 'up', sec.items)
+                                                }
+                                                className="w-4 h-5 rounded inline-flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/15 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                                style={{ color: token.colorTextSecondary }}
+                                              >
+                                                <ArrowUp size={10.5} />
+                                              </button>
+                                            </Tooltip>
+                                            <Tooltip title="Đưa xuống dưới">
+                                              <button
+                                                type="button"
+                                                aria-label="Đưa xuống dưới"
+                                                disabled={itemIdx === sec.items.length - 1}
+                                                onClick={() =>
+                                                  moveConversationOrderInSection(conv.id, sec.id, 'down', sec.items)
+                                                }
+                                                className="w-4 h-5 rounded inline-flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/15 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                                style={{ color: token.colorTextSecondary }}
+                                              >
+                                                <ArrowDown size={10.5} />
+                                              </button>
+                                            </Tooltip>
+                                          </>
+                                        )}
+
+                                        <Tooltip title={effUnread > 0 ? 'Đánh dấu đã đọc' : 'Đánh dấu chưa đọc'}>
+                                          <button
+                                            type="button"
+                                            aria-label={effUnread > 0 ? 'Đánh dấu đã đọc' : 'Đánh dấu chưa đọc'}
+                                            onClick={() => toggleManualUnreadConversation(conv)}
+                                            className="w-5 h-5 rounded inline-flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/15 cursor-pointer"
+                                            style={{ color: effUnread > 0 ? '#f43f5e' : token.colorTextSecondary }}
+                                          >
+                                            {effUnread > 0 ? <MailOpen size={11} /> : <Mail size={11} />}
+                                          </button>
+                                        </Tooltip>
+
+                                        <Popover
+                                          open={isConvMenuOpen}
+                                          onOpenChange={(v) => setOpenConvMenuId(v ? conv.id : null)}
+                                          trigger="click"
+                                          placement="bottomRight"
+                                          zIndex={1150}
+                                          content={convMenuContent}
+                                        >
+                                          <Tooltip title="Tuỳ chọn cuộc trò chuyện (Ghim / Chuyển mục / Tắt thông báo / Ẩn)">
+                                            <button
+                                              type="button"
+                                              aria-label="Tuỳ chọn cuộc trò chuyện"
+                                              className="w-5 h-5 rounded inline-flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/15 cursor-pointer"
+                                              style={{ color: token.colorTextSecondary }}
+                                            >
+                                              <MoreVertical size={12} />
+                                            </button>
+                                          </Tooltip>
+                                        </Popover>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center justify-between gap-1">
+                                    <div className="flex items-center gap-1 min-w-0 flex-1">
+                                      {lastMsg &&
+                                        !isAiConv &&
+                                        !isSelfConv &&
+                                        isMessageFromCurrentUser(lastMsg) &&
+                                        (() => {
+                                          const { seenBy, unseenBy } = getMessageReadBreakdown(conv, lastMsg);
+                                          return renderReadStatusCheckmark(seenBy, unseenBy, {
+                                            compact: true,
+                                            scopeLabel: 'Trạng thái tin nhắn cuối',
+                                          });
+                                        })()}
+                                      <span
+                                        className={`text-[11px] truncate ${
+                                          effUnread > 0
+                                            ? 'font-bold text-slate-200 dark:text-slate-200'
+                                            : 'text-slate-400'
+                                        }`}
+                                      >
+                                        {previewText}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      {(conv.unreadThreadCount || 0) > 0 && conv.id !== activeConvId && (
+                                        <Tooltip
+                                          title={`${conv.unreadThreadCount} câu trả lời mới trong luồng phụ (Sub-thread)`}
+                                        >
+                                          <span className="inline-flex items-center gap-0.5 justify-center px-1.5 h-4 rounded-full bg-indigo-500/20 text-indigo-400 text-[9.5px] font-extrabold tabular-nums shrink-0">
+                                            <MessageSquareReply size={9.5} />
+                                            {conv.unreadThreadCount}
+                                          </span>
+                                        </Tooltip>
+                                      )}
+                                      {effUnread > 0 && (
+                                        <span className="inline-flex items-center justify-center px-1.5 h-4 rounded-full bg-rose-500 text-white text-[10px] font-extrabold tabular-nums shrink-0">
+                                          {effUnread}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-
-                              <div className="flex items-center justify-between gap-1">
-                                <div className="flex items-center gap-1 min-w-0 flex-1">
-                                  {lastMsg &&
-                                    !isAiConv &&
-                                    !isSelfConv &&
-                                    isMessageFromCurrentUser(lastMsg) &&
-                                    (() => {
-                                      const { seenBy, unseenBy } = getMessageReadBreakdown(conv, lastMsg);
-                                      return renderReadStatusCheckmark(seenBy, unseenBy, {
-                                        compact: true,
-                                        scopeLabel: 'Trạng thái tin nhắn cuối',
-                                      });
-                                    })()}
-                                  <span
-                                    className={`text-[11px] truncate ${
-                                      effUnread > 0 ? 'font-bold text-slate-200 dark:text-slate-200' : 'text-slate-400'
-                                    }`}
-                                  >
-                                    {previewText}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1 shrink-0">
-                                  {(conv.unreadThreadCount || 0) > 0 && conv.id !== activeConvId && (
-                                    <Tooltip
-                                      title={`${conv.unreadThreadCount} câu trả lời mới trong luồng phụ (Sub-thread)`}
-                                    >
-                                      <span className="inline-flex items-center gap-0.5 justify-center px-1.5 h-4 rounded-full bg-indigo-500/20 text-indigo-400 text-[9.5px] font-extrabold tabular-nums shrink-0">
-                                        <MessageSquareReply size={9.5} />
-                                        {conv.unreadThreadCount}
-                                      </span>
-                                    </Tooltip>
-                                  )}
-                                  {effUnread > 0 && (
-                                    <span className="inline-flex items-center justify-center px-1.5 h-4 rounded-full bg-rose-500 text-white text-[10px] font-extrabold tabular-nums shrink-0">
-                                      {effUnread}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })
+                            </React.Fragment>
+                          );
+                        });
+                      })()
                     ))}
                 </div>
               );
@@ -11722,7 +12000,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     Chưa có tin nhắn nào được ghim trong cuộc trò chuyện này
                   </div>
                   <div className="text-[11.5px] text-slate-500 max-w-sm">
-                    Rê chuột vào bất kỳ tin nhắn nào trong luồng trò chuyện và nhấn biểu tượng Ghim (Pin) để lưu nhanh tại đây.
+                    Rê chuột vào bất kỳ tin nhắn nào trong luồng trò chuyện và nhấn biểu tượng Ghim (Pin) để lưu nhanh
+                    tại đây.
                   </div>
                   <button
                     type="button"
@@ -11807,9 +12086,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     </div>
 
                     {m.text && (
-                      <div className="text-slate-700 dark:text-slate-200 line-clamp-3 mb-1 break-words">
-                        {m.text}
-                      </div>
+                      <div className="text-slate-700 dark:text-slate-200 line-clamp-3 mb-1 break-words">{m.text}</div>
                     )}
                     {renderMessageAttachments(m.attachments, true)}
                   </div>
