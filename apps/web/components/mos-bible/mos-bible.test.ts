@@ -14,8 +14,21 @@ describe('Kinh Thánh mOS contextual registry', () => {
     const ids = getMosBibleCommandmentsForPath('/dashboard/catalog').map((item) => item.id);
 
     expect(ids).toContain('MOS-001');
+    expect(ids).toContain('MOS-002');
     expect(ids).toContain('UI-001');
     expect(ids).toContain('CAT-001');
+  });
+
+  it('includes the 4 key culture pillars (MOS-002) in dashboard routes', () => {
+    const ids = getMosBibleCommandmentsForPath('/dashboard').map((item) => item.id);
+    expect(ids).toContain('MOS-002');
+
+    const mos002 = MOS_BIBLE_COMMANDMENTS.find((item) => item.id === 'MOS-002');
+    expect(mos002).toBeDefined();
+    expect(mos002?.commandments.join(' ')).toContain('Vui Vẻ');
+    expect(mos002?.commandments.join(' ')).toContain('Ân Cần');
+    expect(mos002?.commandments.join(' ')).toContain('Chân Thành');
+    expect(mos002?.commandments.join(' ')).toContain('Khoa Học');
   });
 
   it('shows privileged account-switch rules on the Staff screen', () => {

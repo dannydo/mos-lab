@@ -101,6 +101,9 @@ import {
   Zap,
 } from 'lucide-react';
 import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
 import type {
   MosChatMessageEditHistoryItem,
   MosChatAccessConfig,
@@ -6303,9 +6306,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 <span className="font-extrabold text-amber-400 tabular-nums">
                   {dayjs(task.negotiatedDeadline).format('HH:mm DD/MM/YYYY')}
                 </span>
-                <span className="text-[10px] text-amber-500 font-semibold">
-                  ({dayjs(task.negotiatedDeadline).fromNow()})
-                </span>
+                {(() => {
+                  const d = dayjs(task.negotiatedDeadline);
+                  if (!d.isValid()) return null;
+                  const relText = typeof d.fromNow === 'function' ? d.fromNow() : '';
+                  if (!relText) return null;
+                  return <span className="text-[10px] text-amber-500 font-semibold">({relText})</span>;
+                })()}
               </div>
               {task.negotiationNote && (
                 <div className="text-slate-300 italic bg-black/20 p-1.5 rounded-lg text-[11px] leading-relaxed">

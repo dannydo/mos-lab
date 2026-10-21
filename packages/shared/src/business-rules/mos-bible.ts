@@ -76,6 +76,45 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'MOS-002',
+    book: 'GOVERNANCE',
+    title: 'Bốn chìa khóa văn hóa Wings: Vui Vẻ, Ân Cần, Chân Thành và Khoa Học',
+    summary:
+      'Văn hóa Wings vận hành trên 4 chìa khóa liên hoàn: Vui Vẻ tạo nền tảng cho Ân Cần, Ân Cần bền bỉ hóa Chân Thành, và Khoa Học là thước đo định lượng kiểm chứng thực tế.',
+    commandments: [
+      '1. Vui Vẻ: Phải thật sự vui vẻ từ bên trong thì mới có thể ân cần được; nụ cười và năng lượng tích cực là khởi nguồn của mọi hành vi phục vụ.',
+      '2. Ân Cần: Ân cần xuất phát từ niềm vui chân thật; ân cần mà không vui vẻ thì gượng gạo, giả tạo và mang màu sắc thảo mai.',
+      '3. Chân Thành: Sự ân cần được thực hành nhất quán và bền bỉ trong một thời gian dài chính là Chân Thành; không phải lời hứa đầu môi mà là hành động kiểm chứng qua thời gian.',
+      '4. Khoa Học: Ba điều trên là cảm xúc và định tính; nếu đã làm đủ ba điều mà tổ chức không phát triển thì bắt buộc phải nhìn lại. Wings luôn tin vào khoa học, làm việc có phương pháp khoa học. Khoa học là thước đo thực tế chứng minh chúng ta đang đi đúng hướng, tuyệt đối không đoán mò hay tự huyễn hoặc theo cảm xúc.',
+    ],
+    rationale:
+      'Cảm xúc và năng lượng (Vui Vẻ - Ân Cần - Chân Thành) là linh hồn phục vụ của con người, nhưng Khoa Học và dữ liệu định lượng (mOS, KPI, chỉ số sức khỏe vận hành) là thước đo khách quan để xác minh hiệu quả thực tế và bảo đảm tổ chức phát triển bền vững.',
+    examples: [
+      'Chuyên Viên phục vụ khách luôn giữ tinh thần thoải mái, niềm nở (Vui Vẻ), chăm chút từng sợi mi và sự dễ chịu của khách tại giường (Ân Cần), kiên trì chăm sóc từng lần khách ghé qua nhiều năm (Chân Thành), và luôn đối chiếu kết quả qua tỷ lệ giữ chân khách, đánh giá 5★ và doanh thu trên mOS (Khoa Học).',
+      'Khi một chi nhánh hoặc bộ phận gặp khó khăn về doanh số hay khách rời bỏ, không được vin vào cảm xúc "mọi người đã rất cố gắng và thương nhau" (đoán mò), mà phải dùng dữ liệu Khoa Học trên mOS (LoCa, NYC, tỷ lệ chuyển đổi, SLA hoàn thành đơn) để phân tích nguyên nhân gốc rễ và hành động.',
+    ],
+    tags: [
+      'văn hóa',
+      'văn hóa Wings',
+      '4 key văn hóa',
+      'Vui Vẻ',
+      'Ân Cần',
+      'Chân Thành',
+      'Khoa Học',
+      'thước đo thật',
+      'cảm xúc',
+      'định lượng',
+    ],
+    routeScopes: ['/dashboard'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-10-21',
+    sources: [
+      { label: 'Tuyên ngôn 4 Chìa Khóa Văn Hóa Wings Lashes', reference: 'mos-bible.ts · Điều răn MOS-002' },
+      { label: 'Tôn chỉ vận hành định lượng mOS Lab', reference: 'docs/DEVELOPMENT.md' },
+    ],
+  },
+  {
     id: 'BK-001',
     book: 'BOOKING',
     title: 'Booked đo năng suất tạo lịch',

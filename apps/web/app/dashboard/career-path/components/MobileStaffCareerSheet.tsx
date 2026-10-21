@@ -588,12 +588,12 @@ export const MobileStaffCareerSheet: React.FC<MobileStaffCareerSheetProps> = ({
                   {/* 6. Chuối */}
                   <div
                     className={`rounded-lg py-1 border transition-all ${getBadgeClass(sBanana)}`}
-                    title={`Số dư Chuối: ${bananaBalance.toLocaleString('vi-VN')} 🍌 (chuẩn không âm ≥ 0)`}
+                    title={`Chuối Check-in: ${staff.bananaCount || 0}/${targetBanana} 🍌 (chuẩn ≥ ${targetBanana})`}
                   >
                     <div className="text-[8px] opacity-75 font-sans leading-none mb-0.5">Chuối</div>
                     <div className="flex items-center justify-center gap-0.5 truncate px-0.5">
                       <Banana className="w-2.5 h-2.5 shrink-0" />
-                      <span>{bananaBalance}</span>
+                      <span>{staff.bananaCount || 0}</span>
                     </div>
                   </div>
                 </div>

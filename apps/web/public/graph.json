@@ -33330,7 +33330,7 @@
       "filePath": "apps/api/src/modules/career/career.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 111751,
+        "sizeBytes": 111839,
         "lineCount": 2814,
         "ext": ".ts"
       }
@@ -39440,7 +39440,7 @@
       "filePath": "apps/web/app/dashboard/career-path/components/MobileStaffCareerSheet.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 27186,
+        "sizeBytes": 27199,
         "lineCount": 608,
         "ext": ".tsx"
       }
@@ -39466,8 +39466,8 @@
       "filePath": "apps/web/app/dashboard/career-path/components/StaffCareerSelector.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 83757,
-        "lineCount": 1803,
+        "sizeBytes": 82234,
+        "lineCount": 1764,
         "ext": ".tsx"
       }
     },
@@ -43483,8 +43483,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 123694,
-        "lineCount": 1716,
+        "sizeBytes": 126886,
+        "lineCount": 1749,
         "ext": ".ts"
       }
     },

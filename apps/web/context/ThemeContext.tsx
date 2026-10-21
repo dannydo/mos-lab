@@ -8,6 +8,7 @@ import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import updateLocale from 'dayjs/plugin/updateLocale';
+import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import { safeStorage } from '../lib/safe-storage';
 import {
@@ -32,6 +33,7 @@ import { useResponsiveTier } from '../hooks/useResponsiveTier';
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.extend(updateLocale);
+dayjs.extend(relativeTime);
 dayjs.tz.setDefault('Asia/Ho_Chi_Minh');
 dayjs.locale('vi');
 dayjs.updateLocale('vi', {

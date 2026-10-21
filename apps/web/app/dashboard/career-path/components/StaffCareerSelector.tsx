@@ -210,7 +210,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
         </button>
       </Tooltip>
 
-      <Tooltip title="Chế độ Bảng 9 Cột: Mở rộng xem toàn bộ 9 chỉ số kiểm toán của toàn salon">
+      <Tooltip title="Chế độ Bảng Chỉ Số: Mở rộng xem toàn bộ các chỉ số kiểm toán của toàn salon">
         <button
           type="button"
           data-testid="mode-table-btn"
@@ -222,7 +222,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
           }`}
         >
           <TableIcon className="w-3.5 h-3.5" />
-          <span>Bảng 9 Cột</span>
+          <span>Bảng Chỉ Số</span>
         </button>
       </Tooltip>
     </div>
@@ -776,7 +776,8 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
       sorter: (a, b) => getQaAuditsCount(a) - getQaAuditsCount(b),
       render: (_, staff) => {
         const req = getStaffBenchmarkReq(staff);
-        const targetQaAudits = req?.minQaAudits ?? minQaAuditsConfig;
+        const baseQa = req?.minQaAudits ?? minQaAuditsConfig;
+        const targetQaAudits = period === 'last_3_months' ? baseQa * 3 : baseQa;
         const audits = getQaAuditsCount(staff);
         const status = getQaStatus(staff, targetQaAudits);
         return (
@@ -851,7 +852,8 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
       sorter: (a, b) => (a.bananaCount || 0) - (b.bananaCount || 0),
       render: (bananaCount: number, staff: CareerStaffSummary) => {
         const req = getStaffBenchmarkReq(staff);
-        const targetBanana = req?.minBananaCount ?? minBananaConfig;
+        const baseBanana = req?.minBananaCount ?? minBananaConfig;
+        const targetBanana = period === 'last_3_months' ? baseBanana * 3 : baseBanana;
         const count = bananaCount || 0;
         const status = getBananaCountStatus(count, targetBanana);
         return (
@@ -906,41 +908,6 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
             >
               {comboPct}%
             </span>
-          </Tooltip>
-        );
-      },
-    },
-    {
-      title: (
-        <Tooltip title="Ví chuối: Số dư ví thực tế sống ở thời điểm hiện tại (Chuẩn không âm ≥ 0 🍌)">
-          <span className="inline-flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-            <Wallet className="w-4 h-4 text-amber-500" />
-          </span>
-        </Tooltip>
-      ),
-      key: 'bananaBalance',
-      width: 76,
-      align: 'center',
-      sorter: (a, b) => getBananaBalance(a) - getBananaBalance(b),
-      render: (_, staff) => {
-        const balance = getBananaBalance(staff);
-        const status = getBananaBalanceStatus(balance);
-        return (
-          <Tooltip
-            title={`Số dư ví hiện tại: ${balance.toLocaleString('vi-VN')} 🍌 · ${getStatusLabel(status)} (Nhấn để xem sao kê)`}
-          >
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenBananaDrawer?.(staff.id, 'ALL');
-              }}
-              className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-black tabular-nums border shadow-2xs hover:scale-105 active:scale-95 transition-transform cursor-pointer ${getStatusBadgeClass(
-                status
-              )}`}
-            >
-              {balance.toLocaleString('vi-VN')}
-            </button>
           </Tooltip>
         );
       },
@@ -1301,15 +1268,7 @@ const StaffCareerSelectorComponent: React.FC<StaffCareerSelectorProps> = ({
                       <span>·</span>
                       <span className="text-emerald-600 dark:text-emerald-400 font-bold">{tipRate}% tip</span>
                       <span>·</span>
-                      <span
-                        className={
-                          balance < 0
-                            ? 'text-rose-600 dark:text-rose-400 font-bold'
-                            : 'text-amber-600 dark:text-amber-400 font-bold'
-                        }
-                      >
-                        {balance.toLocaleString('vi-VN')} 🍌
-                      </span>
+                      <span className="text-amber-600 dark:text-amber-400 font-bold">{staff.bananaCount || 0} 🍌</span>
                     </div>
                   </div>
                 </button>

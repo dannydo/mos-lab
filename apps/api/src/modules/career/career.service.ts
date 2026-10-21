@@ -733,7 +733,7 @@ export class CareerProgressionService {
       const ratePeriod = notComboLivePeriod > 0 ? Number((comboPeriodCount / notComboLivePeriod).toFixed(3)) : 0;
       const rate90d = notComboLive90d > 0 ? Number((combo90dCount / notComboLive90d).toFixed(3)) : 0;
 
-      const selfComboRate = Math.max(rate90d, ratePeriod);
+      const selfComboRate = periodConfig.period === 'last_3_months' ? rate90d : ratePeriod;
       const monthlyPoints = bonusesMap[legacyId]?.points || 0;
       const ccLevel = monthlyPoints > 0 ? Math.floor(monthlyPoints / 100) + 1 : 1;
 
@@ -1429,8 +1429,8 @@ export class CareerProgressionService {
       // tương ứng với chuẩn Sản lượng mi (≥ 330 bộ mi).
       // Khi nhân viên đạt chuẩn trong chu kỳ 90 ngày tích lũy hoặc trong kỳ hiện hành,
       // hệ thống ghi nhận tỷ lệ đạt chuẩn tốt nhất trên tệp Not Combo Live để không phạt oan chuyên viên.
-      selfComboCount = combo90dCount > 0 ? combo90dCount : comboPeriodCount;
-      selfComboRate = Math.max(rate90d, ratePeriod);
+      selfComboCount = periodConfig.period === 'last_3_months' ? combo90dCount : comboPeriodCount;
+      selfComboRate = periodConfig.period === 'last_3_months' ? rate90d : ratePeriod;
 
       monthlyPoints = Number(bonusRes?.[0]?.monthly_points || 0);
       ccBonusCash = Number(bonusRes?.[0]?.cc_cash || 0);
