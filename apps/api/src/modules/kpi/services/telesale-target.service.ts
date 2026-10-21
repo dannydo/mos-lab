@@ -3017,16 +3017,16 @@ QUY TẮC BẮT BUỘC:
     const execFileAsync = promisify(execFile);
 
     try {
-      const pyScript = `import sys, asyncio, edge_tts; asyncio.run(edge_tts.Communicate(sys.argv[1], sys.argv[2], rate=sys.argv[3]).save(sys.argv[4]))`;
+      const pyScript = `import sys, asyncio, edge_tts
+rate = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] not in ('', '+0%', 'None') else None
+comm = edge_tts.Communicate(sys.argv[1], sys.argv[2], rate=rate) if rate else edge_tts.Communicate(sys.argv[1], sys.argv[2])
+asyncio.run(comm.save(sys.argv[4]))`;
       try {
         await execFileAsync(pythonBin, ['-c', pyScript, cleanText, voice, rate, tempFile], { timeout: 25_000 });
-      } catch (firstErr) {
-        if (rate !== '+0%') {
-          // Fallback to standard rate +0% if edge-tts rejects custom rate
-          await execFileAsync(pythonBin, ['-c', pyScript, cleanText, voice, '+0%', tempFile], { timeout: 25_000 });
-        } else {
-          throw firstErr;
-        }
+      } catch {
+        // Fallback to default rate Communicate if custom rate prosody fails in Edge TTS
+        const fallbackPy = `import sys, asyncio, edge_tts; asyncio.run(edge_tts.Communicate(sys.argv[1], sys.argv[2]).save(sys.argv[3]))`;
+        await execFileAsync(pythonBin, ['-c', fallbackPy, cleanText, voice, tempFile], { timeout: 25_000 });
       }
 
       if (existsSync(tempFile)) {
