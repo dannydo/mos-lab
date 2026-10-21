@@ -2806,6 +2806,132 @@
       }
     },
     {
+      "id": "prisma:crm:CrmChatConversation",
+      "type": "PrismaModel",
+      "label": "crm.CrmChatConversation",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmChatConversation",
+        "tableName": "crm_chat_conversations",
+        "fieldCount": 16,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmChatParticipant",
+      "type": "PrismaModel",
+      "label": "crm.CrmChatParticipant",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmChatParticipant",
+        "tableName": "crm_chat_participants",
+        "fieldCount": 9,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmChatMessage",
+      "type": "PrismaModel",
+      "label": "crm.CrmChatMessage",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmChatMessage",
+        "tableName": "crm_chat_messages",
+        "fieldCount": 21,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmChatTask",
+      "type": "PrismaModel",
+      "label": "crm.CrmChatTask",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmChatTask",
+        "tableName": "crm_chat_tasks",
+        "fieldCount": 19,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmChatUserPref",
+      "type": "PrismaModel",
+      "label": "crm.CrmChatUserPref",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmChatUserPref",
+        "tableName": "crm_chat_user_prefs",
+        "fieldCount": 3,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmChatWorkflowTemplate",
+      "type": "PrismaModel",
+      "label": "crm.CrmChatWorkflowTemplate",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmChatWorkflowTemplate",
+        "tableName": "crm_chat_workflow_templates",
+        "fieldCount": 14,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmChatWorkflowInstance",
+      "type": "PrismaModel",
+      "label": "crm.CrmChatWorkflowInstance",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmChatWorkflowInstance",
+        "tableName": "crm_chat_workflow_instances",
+        "fieldCount": 17,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
       "id": "prisma:legacy:client_store_language",
       "type": "PrismaModel",
       "label": "legacy.client_store_language",
@@ -7986,7 +8112,7 @@
         "path": "/api/chat/bootstrap",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1929
+        "line": 1968
       }
     },
     {
@@ -8000,7 +8126,7 @@
         "path": "/api/chat/user-prefs",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1999
+        "line": 2053
       }
     },
     {
@@ -8014,7 +8140,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2031
+        "line": 2085
       }
     },
     {
@@ -8028,7 +8154,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2057
+        "line": 2111
       }
     },
     {
@@ -8042,7 +8168,7 @@
         "path": "/api/chat/upload-image",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2106
+        "line": 2160
       }
     },
     {
@@ -8056,7 +8182,7 @@
         "path": "/api/chat/media/:fileName",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2152
+        "line": 2206
       }
     },
     {
@@ -8070,7 +8196,7 @@
         "path": "/api/chat/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2177
+        "line": 2231
       }
     },
     {
@@ -8084,7 +8210,7 @@
         "path": "/api/chat/threads",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2275
+        "line": 2329
       }
     },
     {
@@ -8098,7 +8224,7 @@
         "path": "/api/chat/threads/move",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2361
+        "line": 2421
       }
     },
     {
@@ -8112,7 +8238,7 @@
         "path": "/api/chat/messages/:messageId/reaction",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2500
+        "line": 2560
       }
     },
     {
@@ -8126,7 +8252,7 @@
         "path": "/api/chat/messages/:messageId/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2589
+        "line": 2649
       }
     },
     {
@@ -8140,7 +8266,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2620
+        "line": 2680
       }
     },
     {
@@ -8154,7 +8280,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2702
+        "line": 2762
       }
     },
     {
@@ -8168,7 +8294,7 @@
         "path": "/api/chat/messages/:messageId/restore",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2777
+        "line": 2837
       }
     },
     {
@@ -8182,7 +8308,7 @@
         "path": "/api/chat/tasks",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2859
+        "line": 2919
       }
     },
     {
@@ -8196,7 +8322,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3049
+        "line": 3109
       }
     },
     {
@@ -8210,7 +8336,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3160
+        "line": 3228
       }
     },
     {
@@ -8224,7 +8350,7 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3201
+        "line": 3277
       }
     },
     {
@@ -8238,7 +8364,7 @@
         "path": "/api/chat/conversations/:id/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3396
+        "line": 3472
       }
     },
     {
@@ -8252,7 +8378,7 @@
         "path": "/api/chat/conversations/:id/threads/:messageId/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3448
+        "line": 3556
       }
     },
     {
@@ -8266,7 +8392,7 @@
         "path": "/api/chat/conversations/:id/unread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3506
+        "line": 3616
       }
     },
     {
@@ -8280,7 +8406,7 @@
         "path": "/api/chat/conversations/:id/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3550
+        "line": 3660
       }
     },
     {
@@ -8294,7 +8420,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3593
+        "line": 3703
       }
     },
     {
@@ -8308,7 +8434,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3699
+        "line": 3809
       }
     },
     {
@@ -8322,7 +8448,7 @@
         "path": "/api/chat/conversations/:id/nickname",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3774
+        "line": 3884
       }
     },
     {
@@ -8336,7 +8462,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3881
+        "line": 3991
       }
     },
     {
@@ -8350,7 +8476,63 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3942
+        "line": 4052
+      }
+    },
+    {
+      "id": "route:GET:/api/chat/workflows",
+      "type": "FastifyRoute",
+      "label": "GET /api/chat/workflows",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/chat/workflows",
+        "module": "chat",
+        "handler": "inlineHandler",
+        "line": 4105
+      }
+    },
+    {
+      "id": "route:POST:/api/chat/workflows/instances",
+      "type": "FastifyRoute",
+      "label": "POST /api/chat/workflows/instances",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/chat/workflows/instances",
+        "module": "chat",
+        "handler": "inlineHandler",
+        "line": 4126
+      }
+    },
+    {
+      "id": "route:POST:/api/chat/workflows/instances/:instanceId/action",
+      "type": "FastifyRoute",
+      "label": "POST /api/chat/workflows/instances/:instanceId/action",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/chat/workflows/instances/:instanceId/action",
+        "module": "chat",
+        "handler": "inlineHandler",
+        "line": 4306
+      }
+    },
+    {
+      "id": "route:POST:/api/chat/workflows/templates/from-thread",
+      "type": "FastifyRoute",
+      "label": "POST /api/chat/workflows/templates/from-thread",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/chat/workflows/templates/from-thread",
+        "module": "chat",
+        "handler": "inlineHandler",
+        "line": 4483
       }
     },
     {
@@ -25886,6 +26068,222 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:MosChatEntityType",
+      "type": "SharedType",
+      "label": "MosChatEntityType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatEntityType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatEntityContext",
+      "type": "SharedType",
+      "label": "MosChatEntityContext",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatEntityContext",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatWorkflowCategory",
+      "type": "SharedType",
+      "label": "MosChatWorkflowCategory",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatWorkflowCategory",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatWorkflowTargetHook",
+      "type": "SharedType",
+      "label": "MosChatWorkflowTargetHook",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatWorkflowTargetHook",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatWorkflowStepType",
+      "type": "SharedType",
+      "label": "MosChatWorkflowStepType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatWorkflowStepType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatWorkflowStepDefinition",
+      "type": "SharedType",
+      "label": "MosChatWorkflowStepDefinition",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatWorkflowStepDefinition",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatWorkflowTemplate",
+      "type": "SharedType",
+      "label": "MosChatWorkflowTemplate",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatWorkflowTemplate",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatWorkflowStepStatus",
+      "type": "SharedType",
+      "label": "MosChatWorkflowStepStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatWorkflowStepStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatWorkflowStepLog",
+      "type": "SharedType",
+      "label": "MosChatWorkflowStepLog",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatWorkflowStepLog",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatWorkflowInstanceStatus",
+      "type": "SharedType",
+      "label": "MosChatWorkflowInstanceStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatWorkflowInstanceStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatInventoryVarianceItem",
+      "type": "SharedType",
+      "label": "MosChatInventoryVarianceItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatInventoryVarianceItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatWorkflowInstance",
+      "type": "SharedType",
+      "label": "MosChatWorkflowInstance",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatWorkflowInstance",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreateMosChatWorkflowInstanceRequest",
+      "type": "SharedType",
+      "label": "CreateMosChatWorkflowInstanceRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreateMosChatWorkflowInstanceRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreateMosChatWorkflowInstanceResponse",
+      "type": "SharedType",
+      "label": "CreateMosChatWorkflowInstanceResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreateMosChatWorkflowInstanceResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ActionMosChatWorkflowInstanceRequest",
+      "type": "SharedType",
+      "label": "ActionMosChatWorkflowInstanceRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ActionMosChatWorkflowInstanceRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ActionMosChatWorkflowInstanceResponse",
+      "type": "SharedType",
+      "label": "ActionMosChatWorkflowInstanceResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ActionMosChatWorkflowInstanceResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SaveThreadAsWorkflowTemplateRequest",
+      "type": "SharedType",
+      "label": "SaveThreadAsWorkflowTemplateRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SaveThreadAsWorkflowTemplateRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SaveThreadAsWorkflowTemplateResponse",
+      "type": "SharedType",
+      "label": "SaveThreadAsWorkflowTemplateResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SaveThreadAsWorkflowTemplateResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:NotificationCategory",
       "type": "SharedType",
       "label": "NotificationCategory",
@@ -30218,6 +30616,18 @@
       }
     },
     {
+      "id": "uicomp:chat-constants",
+      "type": "UIComponent",
+      "label": "<chat-constants />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/constants/chat-constants.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "chat-constants",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:mos-chat-stickers",
       "type": "UIComponent",
       "label": "<mos-chat-stickers />",
@@ -30226,6 +30636,54 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "mos-chat-stickers",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:mos-chat-bridge",
+      "type": "UIComponent",
+      "label": "<mos-chat-bridge />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/store/mos-chat-bridge.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "mos-chat-bridge",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:chat-helpers",
+      "type": "UIComponent",
+      "label": "<chat-helpers />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/utils/chat-helpers.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "chat-helpers",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatWorkflowCard",
+      "type": "UIComponent",
+      "label": "<MosChatWorkflowCard />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/workflows/MosChatWorkflowCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatWorkflowCard",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatWorkflowModals",
+      "type": "UIComponent",
+      "label": "<MosChatWorkflowModals />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/workflows/MosChatWorkflowModals.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatWorkflowModals",
         "isPrimitive": false
       }
     },
@@ -31574,8 +32032,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13868164,
-        "lineCount": 302941,
+        "sizeBytes": 14246909,
+        "lineCount": 312804,
         "ext": ".ts"
       }
     },
@@ -32971,6 +33429,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/chat/chat-repository.service.ts",
+      "type": "File",
+      "label": "chat-repository.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-repository.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 24040,
+        "lineCount": 605,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/chat/chat-space-privacy.test.ts",
       "type": "File",
       "label": "chat-space-privacy.test.ts",
@@ -32978,8 +33449,8 @@
       "filePath": "apps/api/src/modules/chat/chat-space-privacy.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6131,
-        "lineCount": 182,
+        "sizeBytes": 8004,
+        "lineCount": 230,
         "ext": ".ts"
       }
     },
@@ -33004,8 +33475,34 @@
       "filePath": "apps/api/src/modules/chat/chat-unread.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13277,
-        "lineCount": 365,
+        "sizeBytes": 14092,
+        "lineCount": 385,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/chat-workflow.service.test.ts",
+      "type": "File",
+      "label": "chat-workflow.service.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-workflow.service.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 6724,
+        "lineCount": 192,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/chat-workflow.service.ts",
+      "type": "File",
+      "label": "chat-workflow.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-workflow.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 26146,
+        "lineCount": 720,
         "ext": ".ts"
       }
     },
@@ -33017,8 +33514,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 151294,
-        "lineCount": 3992,
+        "sizeBytes": 175590,
+        "lineCount": 4572,
         "ext": ".ts"
       }
     },
@@ -42481,8 +42978,8 @@
       "filePath": "apps/web/lib/api/chat.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9841,
-        "lineCount": 253,
+        "sizeBytes": 11431,
+        "lineCount": 288,
         "ext": ".ts"
       }
     },
@@ -42923,8 +43420,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 121217,
-        "lineCount": 1695,
+        "sizeBytes": 122582,
+        "lineCount": 1701,
         "ext": ".ts"
       }
     },
@@ -43495,8 +43992,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 12896,
-        "lineCount": 511,
+        "sizeBytes": 18975,
+        "lineCount": 738,
         "ext": ".ts"
       }
     },
@@ -44914,6 +45411,55 @@
     {
       "id": "edge:prisma:crm:CrmCashFlowAudit:ws:apps/api",
       "source": "prisma:crm:CrmCashFlowAudit",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmChatConversation:ws:apps/api",
+      "source": "prisma:crm:CrmChatConversation",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmChatParticipant:ws:apps/api",
+      "source": "prisma:crm:CrmChatParticipant",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmChatMessage:ws:apps/api",
+      "source": "prisma:crm:CrmChatMessage",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmChatTask:ws:apps/api",
+      "source": "prisma:crm:CrmChatTask",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmChatUserPref:ws:apps/api",
+      "source": "prisma:crm:CrmChatUserPref",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmChatWorkflowTemplate:ws:apps/api",
+      "source": "prisma:crm:CrmChatWorkflowTemplate",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmChatWorkflowInstance:ws:apps/api",
+      "source": "prisma:crm:CrmChatWorkflowInstance",
       "target": "ws:apps/api",
       "type": "EXPORTS",
       "label": "DEFINED_IN"
@@ -47658,6 +48204,34 @@
     {
       "id": "edge:route:POST:/api/chat/missions/:reportId/action:ws:apps/api",
       "source": "route:POST:/api/chat/missions/:reportId/action",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/chat/workflows:ws:apps/api",
+      "source": "route:GET:/api/chat/workflows",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/chat/workflows/instances:ws:apps/api",
+      "source": "route:POST:/api/chat/workflows/instances",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/chat/workflows/instances/:instanceId/action:ws:apps/api",
+      "source": "route:POST:/api/chat/workflows/instances/:instanceId/action",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/chat/workflows/templates/from-thread:ws:apps/api",
+      "source": "route:POST:/api/chat/workflows/templates/from-thread",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -57407,6 +57981,132 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:MosChatEntityType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatEntityType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatEntityContext:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatEntityContext",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatWorkflowCategory:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatWorkflowCategory",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatWorkflowTargetHook:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatWorkflowTargetHook",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatWorkflowStepType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatWorkflowStepType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatWorkflowStepDefinition:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatWorkflowStepDefinition",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatWorkflowTemplate:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatWorkflowTemplate",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatWorkflowStepStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatWorkflowStepStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatWorkflowStepLog:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatWorkflowStepLog",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatWorkflowInstanceStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatWorkflowInstanceStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatInventoryVarianceItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatInventoryVarianceItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatWorkflowInstance:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatWorkflowInstance",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CreateMosChatWorkflowInstanceRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CreateMosChatWorkflowInstanceRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CreateMosChatWorkflowInstanceResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CreateMosChatWorkflowInstanceResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ActionMosChatWorkflowInstanceRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ActionMosChatWorkflowInstanceRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ActionMosChatWorkflowInstanceResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ActionMosChatWorkflowInstanceResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SaveThreadAsWorkflowTemplateRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SaveThreadAsWorkflowTemplateRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SaveThreadAsWorkflowTemplateResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SaveThreadAsWorkflowTemplateResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:NotificationCategory:ws:packages/shared",
       "source": "type:@mos-lab/shared:NotificationCategory",
       "target": "ws:packages/shared",
@@ -60795,6 +61495,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:chat-constants:ws:apps/web",
+      "source": "uicomp:chat-constants",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:chat-constants:token:color:primary",
+      "source": "uicomp:chat-constants",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:mos-chat-stickers:ws:apps/web",
       "source": "uicomp:mos-chat-stickers",
       "target": "ws:apps/web",
@@ -60804,6 +61518,62 @@
     {
       "id": "edge:uicomp:mos-chat-stickers:token:color:primary",
       "source": "uicomp:mos-chat-stickers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:mos-chat-bridge:ws:apps/web",
+      "source": "uicomp:mos-chat-bridge",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:mos-chat-bridge:token:color:primary",
+      "source": "uicomp:mos-chat-bridge",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:chat-helpers:ws:apps/web",
+      "source": "uicomp:chat-helpers",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:chat-helpers:token:color:primary",
+      "source": "uicomp:chat-helpers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatWorkflowCard:ws:apps/web",
+      "source": "uicomp:MosChatWorkflowCard",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatWorkflowCard:token:color:primary",
+      "source": "uicomp:MosChatWorkflowCard",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatWorkflowModals:ws:apps/web",
+      "source": "uicomp:MosChatWorkflowModals",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatWorkflowModals:token:color:primary",
+      "source": "uicomp:MosChatWorkflowModals",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -62748,6 +63518,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/chat/chat-repository.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-repository.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/chat/chat-space-privacy.test.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/chat/chat-space-privacy.test.ts",
       "target": "ws:packages/shared",
@@ -62764,6 +63541,20 @@
     {
       "id": "edge:file:apps/api/src/modules/chat/chat-unread.test.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/chat/chat-unread.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/chat-workflow.service.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-workflow.service.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/chat-workflow.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-workflow.service.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -78848,6 +79639,34 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/chat/workflows",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/chat/workflows",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/chat/workflows/instances",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/chat/workflows/instances",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/chat/workflows/instances/:instanceId/action",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/chat/workflows/instances/:instanceId/action",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/chat/workflows/templates/from-thread",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/chat/workflows/templates/from-thread",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/cs/happy-calls",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/cs/happy-calls",
@@ -83835,6 +84654,34 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/chat/missions/:reportId/action",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/chat/missions/:reportId/action",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/chat/workflows",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/chat/workflows",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/chat/workflows/instances",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/chat/workflows/instances",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/chat/workflows/instances/:instanceId/action",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/chat/workflows/instances/:instanceId/action",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/chat/workflows/templates/from-thread",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/chat/workflows/templates/from-thread",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -92106,6 +92953,34 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/chat/workflows",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/chat/workflows",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/chat/workflows/instances",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/chat/workflows/instances",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/chat/workflows/instances/:instanceId/action",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/chat/workflows/instances/:instanceId/action",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/chat/workflows/templates/from-thread",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/chat/workflows/templates/from-thread",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/cs/happy-calls",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/cs/happy-calls",
@@ -94543,31 +95418,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3359,
-    "totalEdges": 7243,
+    "totalNodes": 3396,
+    "totalEdges": 7297,
     "nodeTypeCounts": {
       "Workspace": 3,
-      "PrismaModel": 169,
-      "FastifyRoute": 713,
+      "PrismaModel": 176,
+      "FastifyRoute": 717,
       "Component": 59,
-      "SharedType": 1225,
+      "SharedType": 1243,
       "DesignToken": 12,
-      "UIComponent": 229,
-      "File": 949
+      "UIComponent": 234,
+      "File": 952
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1406,
-      "HANDLES_ROUTE": 713,
-      "RENDERS": 288,
-      "USES_TOKEN": 231,
-      "IMPORTS": 513,
+      "EXPORTS": 1431,
+      "HANDLES_ROUTE": 717,
+      "RENDERS": 293,
+      "USES_TOKEN": 236,
+      "IMPORTS": 516,
       "QUERIES_MODEL": 405,
-      "API_CALL": 3687
+      "API_CALL": 3699
     },
-    "fastifyRouteCount": 718,
-    "prismaModelCount": 169,
+    "fastifyRouteCount": 722,
+    "prismaModelCount": 176,
     "nextPageCount": 59,
-    "sharedTypeCount": 1225
+    "sharedTypeCount": 1243
   },
   "routes": [
     {
@@ -97205,6 +98080,34 @@
     {
       "method": "POST",
       "path": "/api/chat/missions/:reportId/action",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "chat"
+    },
+    {
+      "method": "GET",
+      "path": "/api/chat/workflows",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "chat"
+    },
+    {
+      "method": "POST",
+      "path": "/api/chat/workflows/instances",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "chat"
+    },
+    {
+      "method": "POST",
+      "path": "/api/chat/workflows/instances/:instanceId/action",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "chat"
+    },
+    {
+      "method": "POST",
+      "path": "/api/chat/workflows/templates/from-thread",
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "chat"
@@ -100980,6 +101883,69 @@
       "modelName": "CrmCashFlowAudit",
       "tableName": "crm_cash_flow_audits",
       "fieldCount": 8,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmChatConversation",
+      "tableName": "crm_chat_conversations",
+      "fieldCount": 16,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmChatParticipant",
+      "tableName": "crm_chat_participants",
+      "fieldCount": 9,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmChatMessage",
+      "tableName": "crm_chat_messages",
+      "fieldCount": 21,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmChatTask",
+      "tableName": "crm_chat_tasks",
+      "fieldCount": 19,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmChatUserPref",
+      "tableName": "crm_chat_user_prefs",
+      "fieldCount": 3,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmChatWorkflowTemplate",
+      "tableName": "crm_chat_workflow_templates",
+      "fieldCount": 14,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmChatWorkflowInstance",
+      "tableName": "crm_chat_workflow_instances",
+      "fieldCount": 17,
       "readOnly": false,
       "isCatalogException": false,
       "relations": []

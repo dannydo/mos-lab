@@ -1584,9 +1584,10 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'Hỗ trợ đồng thời 1-1 Direct Messages, Group Spaces theo bộ phận (#tư-vấn-cc, #telesales-booker, #chuyên-viên-mi) căn lề trái chuẩn Google Chat kèm cột trả lời theo luồng (Side Thread Pane) và thu nhỏ xuống góc dưới màn hình (Mini Pop-out).',
       'Trạng thái Đã đọc / Đã xem (Read Receipts) hoạt động cho cả Luồng chat chính và Sub-thread: Hiển thị kết hợp dấu ✓ Đã gửi / ✓✓ Đã xem cạnh thời gian của mỗi tin nhắn do mình gửi kèm dãy Mini Avatar (tối đa 4-5 avatar xếp chồng + badge +N) dừng tại tin nhắn/phản hồi mới nhất mà từng thành viên đã đọc; khi hover hoặc click sẽ mở Popover chi tiết danh sách người Đã xem (kèm giờ xem) và người Chưa xem. Đối với Sub-thread, chỉ khi người dùng mở đúng Sub-thread trên tab đang active mới tính là đã đọc luồng đó, đồng thời ngay ngoài nút "💬 X trả lời" hiển thị cả badge số phản hồi mới chưa đọc lẫn mini avatar / ✓✓ của người đã xem câu trả lời cuối.',
       'Mọi tin nhắn đều có thể chuyển thành Công việc & Cài giờ nhắc hẹn (Message-to-Task -> Reminder) giao cho bản thân hoặc đồng nghiệp; khi đến giờ nhắc hệ thống phát chuông, bung thông báo nổi và đẩy tin nhắn nhắc tự động vào phòng chat.',
+      'Kiến trúc Lưu trữ Relational & Dynamic Workflow Engine (Operational OS): Toàn bộ dữ liệu mOS Chat và Quy trình Sống được lưu trữ chuẩn hóa trên 7 bảng Prisma chuyên biệt (crm_chat_conversations, crm_chat_participants, crm_chat_messages, crm_chat_tasks, crm_chat_user_prefs, crm_chat_workflow_templates, crm_chat_workflow_instances). Chỉ duy nhất Super Admin mới thấy và sử dụng bộ công cụ khởi tạo/đóng gói/nâng cấp Workflow (/tam-ung, /kiem-kho, /tao-quy-trinh, nút [⚡ Quy trình], nút [✨ Lưu Workflow]); đối với nhân sự khác, giao diện tự động ẩn gọn toàn bộ nút quản trị và chỉ hiển thị nút xác nhận/đính kèm UNC tại đúng bước mà nhân sự đó được phân công phụ trách. Khi hoàn tất bước cuối, hệ thống tự động đồng bộ sang Báo cáo Thu Chi (CrmCashFlowEntry) hoặc mOS Kho (CrmStockInventory).',
     ],
     rationale:
-      'Giúp các bộ phận Telesales, Tư Vấn (CC), Chuyên Viên (CV) và CSKH trao đổi tức thì, nắm bắt chính xác ai đã đọc thông tin ở cả luồng chính lẫn sub-thread, đính kèm hồ sơ khách hàng và giao việc có hẹn giờ nhắc ngay trên bất kỳ màn hình nào của mOS mà không bị trôi việc.',
+      'Giúp các bộ phận Telesales, Tư Vấn (CC), Chuyên Viên (CV) và CSKH trao đổi tức thì, nắm bắt chính xác ai đã đọc thông tin ở cả luồng chính lẫn sub-thread, đính kèm hồ sơ khách hàng, giao việc có hẹn giờ nhắc và vận hành quy trình phê duyệt đa bước (Tạm ứng, Kiểm kho) ngay trên bất kỳ màn hình nào của mOS mà không bị trôi việc.',
     tags: [
       'chat',
       'google chat',
@@ -1598,13 +1599,24 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'đã xem',
       'header',
       'mini pop-out',
+      'workflow engine',
+      'tạm ứng',
+      'kiểm kho',
     ],
     routeScopes: ['/dashboard'],
     status: 'ACTIVE',
-    version: '1.1.0',
-    effectiveFrom: '2026-10-19',
+    version: '2.0.0',
+    effectiveFrom: '2026-10-21',
     sources: [
       { label: 'mOS Chat Workspace Component', reference: 'apps/web/components/mos-chat/MosGoogleChatPortal.tsx' },
+      {
+        label: 'mOS Chat Workflow Card & Modals',
+        reference: 'apps/web/components/mos-chat/workflows/MosChatWorkflowCard.tsx',
+      },
+      {
+        label: 'mOS Chat Relational Repository & Workflow Service',
+        reference: 'apps/api/src/modules/chat/chat-workflow.service.ts',
+      },
       { label: 'mOS Chat API Routes', reference: 'apps/api/src/modules/chat/routes.ts' },
     ],
   },

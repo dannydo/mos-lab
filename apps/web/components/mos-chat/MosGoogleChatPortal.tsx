@@ -119,6 +119,8 @@ import type {
   MosChatTaskItem,
   MosChatTaskPriority,
   MosChatUserSidebarPrefs,
+  MosChatWorkflowInstance,
+  MosChatWorkflowTemplate,
   SafeAny,
 } from '@mos-lab/shared';
 import { isCanonicalSuperAdminIdentity, removeVietnameseTones } from '@mos-lab/shared';
@@ -135,223 +137,36 @@ import {
   parseStickerReactionKey,
   type MosChatStickerItem,
 } from './mos-chat-stickers';
+import {
+  AI_COPILOT_CONV_ID,
+  AI_COPILOT_GROUP_ACCESS_KEY,
+  AI_QUICK_PROMPTS,
+  DEADLINE_PRESETS,
+  FALLBACK_CONVERSATIONS,
+  FALLBACK_TASKS,
+  GOOGLE_CHAT_QUICK_EMOJIS,
+  GOOGLE_CHAT_REACTION_EMOJIS,
+  REMINDER_PRESETS,
+  SAMPLE_CUSTOMER_CARDS,
+  SPACE_DEPARTMENT_AND_TEAM_GROUPS,
+  STAFF_DIRECTORY_CACHE_KEY,
+  WINGS_SIGNATURE_EMOJIS,
+  getInitialStaffDirectory,
+  type SpaceDepartmentOrTeamGroup,
+} from './constants/chat-constants';
+import {
+  formatCountdown,
+  getTaskDeadlineInfo,
+  matchesStaffGroup,
+  parseGoogleDriveImageFromText,
+  playWebAudioReminderChime,
+  readOrCompressImagePayload,
+} from './utils/chat-helpers';
+import { useMosChatBridgeListener } from './store/mos-chat-bridge';
+import { MosChatWorkflowCard } from './workflows/MosChatWorkflowCard';
+import { MosChatSaveThreadWorkflowModal, MosChatTriggerWorkflowModal } from './workflows/MosChatWorkflowModals';
 
-export const AI_COPILOT_CONV_ID = 'dm-wings-ai-copilot';
-const AI_COPILOT_GROUP_ACCESS_KEY = 'mos_chat_ai_copilot_allowed_groups_v1';
-
-const AI_QUICK_PROMPTS = [
-  {
-    label: 'Giải thích nhóm khách (Buckets)',
-    prompt: 'Giải thích các nhóm khách hàng COMBO_LIVE, NOT_COMBO_LIVE, COMBO_DEAD và SINGLE trong hệ thống mOS.',
-  },
-  {
-    label: 'Lọc khách NYC 60 chi tiêu > 1tr',
-    prompt:
-      'Lọc giúp tôi các khách hàng NYC 60 (31 đến 60 ngày chưa ghé) có tổng chi tiêu trên 1 triệu đồng để gọi nhắc dặm mi.',
-  },
-  {
-    label: 'Khách hàng được giao cho tôi',
-    prompt: 'Lọc danh sách khách hàng đang được phân bổ cho riêng tôi.',
-  },
-  {
-    label: 'Tư vấn quy trình CSKH dặm mi',
-    prompt: 'Tư vấn quy trình và thời điểm gọi chăm sóc khách hàng dặm mi chuẩn để tối ưu tỷ lệ quay lại.',
-  },
-] as const;
-
-interface SpaceDepartmentOrTeamGroup {
-  key: string;
-  category: 'department' | 'team';
-  label: string;
-  shortLabel: string;
-  color: string;
-  defaultSlug: string;
-  defaultSubtitle: string;
-}
-
-const SPACE_DEPARTMENT_AND_TEAM_GROUPS: SpaceDepartmentOrTeamGroup[] = [
-  // 4 Core Departments (Bộ phận)
-  {
-    key: 'DEPT_SHOP',
-    category: 'department',
-    label: '🏢 Shop Operations',
-    shortLabel: 'Shop Ops',
-    color: '#d4a72c',
-    defaultSlug: 'shop-operations',
-    defaultSubtitle: 'Không gian vận hành cửa hàng · Tư Vấn CC · Chuyên Viên Mi · QA/QC',
-  },
-  {
-    key: 'DEPT_GROWTH',
-    category: 'department',
-    label: '📈 Growth & Booking',
-    shortLabel: 'Growth & Booking',
-    color: '#fa8c16',
-    defaultSlug: 'growth-booking',
-    defaultSubtitle: 'Không gian điều phối lịch hẹn · Telesales · Booker · CS & Control',
-  },
-  {
-    key: 'DEPT_ACADEMY',
-    category: 'department',
-    label: '🎓 Academy & Marketing',
-    shortLabel: 'Academy',
-    color: '#a855f7',
-    defaultSlug: 'academy-marketing',
-    defaultSubtitle: 'Không gian đào tạo Academy · Giảng Viên · Marketing & Sales',
-  },
-  {
-    key: 'DEPT_BACK_OFFICE',
-    category: 'department',
-    label: '🛡️ Back Office & Quản Trị',
-    shortLabel: 'Back Office',
-    color: '#3b82f6',
-    defaultSlug: 'back-office-quan-tri',
-    defaultSubtitle: 'Không gian điều hành Ban Quản Trị · Quản lý · Nội bộ',
-  },
-  // Specialized Teams / Roles (Nhóm chuyên môn)
-  {
-    key: 'TEAM_CORE',
-    category: 'team',
-    label: '⭐ Core Team',
-    shortLabel: 'Core Team',
-    color: '#722ed1',
-    defaultSlug: 'core-team',
-    defaultSubtitle: 'Không gian phối hợp Ban Điều Hành & Đội Ngũ Cốt Lõi',
-  },
-  {
-    key: 'TEAM_ADMIN_MANAGER',
-    category: 'team',
-    label: '👑 Ban Quản Trị & Manager',
-    shortLabel: 'Admin / Manager',
-    color: '#d4a84b',
-    defaultSlug: 'ban-quan-tri-manager',
-    defaultSubtitle: 'Không gian trao đổi Ban Giám Đốc, Admin và Quản lý',
-  },
-  {
-    key: 'TEAM_CC',
-    category: 'team',
-    label: '💬 Tư Vấn Viên (CC)',
-    shortLabel: 'Tư vấn CC',
-    color: '#10b981',
-    defaultSlug: 'tu-van-cc',
-    defaultSubtitle: 'Không gian phối hợp đội ngũ Tư Vấn Viên Client Consultant',
-  },
-  {
-    key: 'TEAM_CV',
-    category: 'team',
-    label: '✨ Chuyên Viên Mi (CV)',
-    shortLabel: 'Chuyên Viên Mi',
-    color: '#14b8a6',
-    defaultSlug: 'chuyen-vien-mi-cv',
-    defaultSubtitle: 'Không gian trao đổi đội ngũ Chuyên Viên Kỹ Thuật & Nghệ Nhân Mi',
-  },
-  {
-    key: 'TEAM_TELESALES',
-    category: 'team',
-    label: '📞 Telesales & Booker',
-    shortLabel: 'Telesales / Booker',
-    color: '#0ea5e9',
-    defaultSlug: 'telesales-booker',
-    defaultSubtitle: 'Không gian chiến dịch gọi chăm sóc khách & đặt lịch Booker',
-  },
-  {
-    key: 'TEAM_CS_CONTROL',
-    category: 'team',
-    label: '🎧 CS & Control',
-    shortLabel: 'CS & Control',
-    color: '#f59e0b',
-    defaultSlug: 'cs-control',
-    defaultSubtitle: 'Không gian chăm sóc khách hàng CS & Điều phối Control',
-  },
-  {
-    key: 'TEAM_ACADEMY',
-    category: 'team',
-    label: '🎓 Giảng Viên Academy',
-    shortLabel: 'Giảng viên',
-    color: '#8b5cf6',
-    defaultSlug: 'giang-vien-academy',
-    defaultSubtitle: 'Không gian chuyên môn đội ngũ Giảng Viên & Đào tạo',
-  },
-  {
-    key: 'TEAM_QA_QC',
-    category: 'team',
-    label: '🏅 QA / QC',
-    shortLabel: 'QA / QC',
-    color: '#ec4899',
-    defaultSlug: 'qa-qc-chat-luong',
-    defaultSubtitle: 'Không gian kiểm soát chất lượng dịch vụ & trải nghiệm khách hàng',
-  },
-  {
-    key: 'TEAM_INTERNAL',
-    category: 'team',
-    label: '🏠 Vận Hành / Nội Bộ',
-    shortLabel: 'Vận hành',
-    color: '#64748b',
-    defaultSlug: 'van-hanh-noi-bo',
-    defaultSubtitle: 'Không gian phối hợp vận hành nội bộ & hậu cần',
-  },
-];
-
-function matchesStaffGroup(member: MosChatStaffMember, groupKey: string): boolean {
-  const role = String(member.role || '')
-    .toLowerCase()
-    .trim();
-  const depts = (member.departmentCodes || []).map((d) => d.toUpperCase());
-  const teams = (member.teamCodes || []).map((t) => t.toUpperCase());
-
-  switch (groupKey) {
-    case 'DEPT_SHOP':
-      return (
-        depts.includes('SHOP') || ['cc', 'coca', 'consultant', 'cv', 'lt', 'technician', 'ktv', 'qa_qc'].includes(role)
-      );
-    case 'DEPT_GROWTH':
-      return depts.includes('GROWTH') || ['telesales', 'booker', 'oc', 'ls', 'cs', 'control'].includes(role);
-    case 'DEPT_ACADEMY':
-      return depts.includes('ACADEMY') || ['teacher', 'ht'].includes(role);
-    case 'DEPT_BACK_OFFICE':
-      return (
-        depts.includes('BACK_OFFICE') ||
-        [
-          'super_admin',
-          'admin',
-          'boss',
-          'manager',
-          'fm',
-          'cho',
-          'staff',
-          'office-cleaner',
-          'security-guard',
-          'rnd',
-        ].includes(role)
-      );
-    case 'TEAM_CORE':
-      return teams.includes('CORE') || teams.includes('CORE_TEAM') || ['super_admin', 'boss'].includes(role);
-    case 'TEAM_ADMIN_MANAGER':
-      return teams.includes('ADMIN_MANAGER') || ['super_admin', 'admin', 'boss', 'manager', 'fm', 'cho'].includes(role);
-    case 'TEAM_CC':
-      return teams.includes('CC') || ['cc', 'coca', 'consultant'].includes(role);
-    case 'TEAM_CV':
-      return teams.includes('CV') || ['cv', 'lt', 'technician', 'ktv'].includes(role);
-    case 'TEAM_TELESALES':
-      return (
-        teams.includes('BK_TELESALES') || teams.includes('BK') || ['telesales', 'booker', 'oc', 'ls'].includes(role)
-      );
-    case 'TEAM_CS_CONTROL':
-      return (
-        teams.includes('BK_CS_CONTROL') ||
-        teams.includes('BK_CS') ||
-        teams.includes('BK_CONTROL') ||
-        ['cs', 'control'].includes(role)
-      );
-    case 'TEAM_ACADEMY':
-      return teams.includes('ACADEMY') || teams.includes('MARKETING_SALES') || ['teacher', 'ht'].includes(role);
-    case 'TEAM_QA_QC':
-      return teams.some((t) => t.startsWith('QA_QC')) || ['qa_qc'].includes(role);
-    case 'TEAM_INTERNAL':
-      return teams.includes('BACK_OFFICE_STAFF') || ['staff', 'office-cleaner', 'security-guard', 'rnd'].includes(role);
-    default:
-      return false;
-  }
-}
+export { AI_COPILOT_CONV_ID };
 
 export interface MosGoogleChatPortalProps {
   open: boolean;
@@ -366,451 +181,6 @@ export interface MosGoogleChatPortalProps {
     timestamp?: number;
   } | null;
 }
-
-const STAFF_DIRECTORY_CACHE_KEY = 'mos_chat_staff_directory_v1';
-
-const getInitialStaffDirectory = (): MosChatStaffMember[] => {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = window.localStorage.getItem(STAFF_DIRECTORY_CACHE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map((item: MosChatStaffMember) => ({ ...item, isOnline: false }));
-      }
-    }
-  } catch {
-    // ignore parse error
-  }
-  return [];
-};
-
-const FALLBACK_CONVERSATIONS: MosChatConversation[] = [
-  {
-    id: 'space-cc',
-    type: 'space',
-    name: 'tư-vấn-cc-ca-hôm-nay',
-    subtitle: 'Phối hợp đón khách giữa Telesales Booker · Tư Vấn CC · Chuyên Viên Mi',
-    roleTag: '12',
-    color: '#10b981',
-    memberCount: 12,
-    unreadCount: 2,
-    updatedAt: new Date().toISOString(),
-    messages: [
-      {
-        id: 'msg-seed-1',
-        conversationId: 'space-cc',
-        senderId: 'staff-tn',
-        senderName: 'Tuyết Nhi',
-        senderRole: 'Telesales',
-        senderAvatar: 'TN',
-        roleColor: '#0ea5e9',
-        text: 'Chị Nguyễn Bích Ngọc (VIP Diamond) vừa báo sẽ tới sớm lúc 15:15 hôm nay để nối mi Anime Thiết Kế.',
-        timeLabel: '14:42',
-        createdAt: new Date().toISOString(),
-        pinned: true,
-        reactions: { '❤️': 3, '🔥': 2 },
-        customerCard: {
-          name: 'Chị Nguyễn Bích Ngọc',
-          meta: 'VIP Diamond · 15:15 hôm nay',
-          cvName: 'Chuyên Viên Minh Thư (CV+)',
-        },
-        thread: [
-          {
-            id: 'th-seed-2',
-            senderId: 'staff-mt',
-            senderName: 'Chuyên Viên Minh Thư',
-            senderRole: 'Chuyên Viên Tự Chủ (CV+)',
-            senderAvatar: 'MT',
-            text: 'Giường VIP 02 đã khử khuẩn sẵn sàng đón khách.',
-            timeLabel: '14:44',
-            createdAt: new Date().toISOString(),
-          },
-        ],
-      },
-      {
-        id: 'msg-seed-3',
-        conversationId: 'space-cc',
-        senderId: 'staff-mt',
-        senderName: 'Chuyên Viên Minh Thư',
-        senderRole: 'Chuyên Viên Tự Chủ (CV+)',
-        senderAvatar: 'MT',
-        roleColor: '#14b8a6',
-        text: 'Em vừa xong ca trước, khay dụng cụ mi thiết kế đã khử khuẩn đầy đủ.',
-        timeLabel: '14:46',
-        createdAt: new Date().toISOString(),
-        reactions: { '🎉': 4 },
-        thread: [],
-      },
-    ],
-  },
-  {
-    id: 'space-telesales',
-    type: 'space',
-    name: 'telesales-booker',
-    subtitle: 'Chiến dịch gọi chăm sóc khách Combo Live & Khách cũ quay lại',
-    roleTag: '8',
-    color: '#f59e0b',
-    memberCount: 8,
-    unreadCount: 0,
-    updatedAt: new Date().toISOString(),
-    messages: [
-      {
-        id: 'msg-seed-tele-1',
-        conversationId: 'space-telesales',
-        senderId: 'staff-tn',
-        senderName: 'Tuyết Nhi',
-        senderRole: 'Telesales',
-        senderAvatar: 'TN',
-        roleColor: '#0ea5e9',
-        text: 'Ca chiều còn 3 khung 16:30 của Chuyên Viên Kỹ Thuật, ưu tiên gọi tệp khách gần hạn dặm mi.',
-        timeLabel: '14:15',
-        createdAt: new Date().toISOString(),
-        reactions: { '🔥': 5 },
-        thread: [],
-      },
-    ],
-  },
-  {
-    id: 'space-cv',
-    type: 'space',
-    name: 'chuyên-viên-mi-tầng-1',
-    subtitle: 'Kênh điều phối tua và chuẩn bị dụng cụ của đội ngũ Chuyên Viên Mi',
-    roleTag: '15',
-    color: '#14b8a6',
-    memberCount: 15,
-    unreadCount: 0,
-    updatedAt: new Date().toISOString(),
-    messages: [
-      {
-        id: 'msg-seed-cv-1',
-        conversationId: 'space-cv',
-        senderId: 'staff-mt',
-        senderName: 'Chuyên Viên Minh Thư',
-        senderRole: 'Chuyên Viên Tự Chủ (CV+)',
-        senderAvatar: 'MT',
-        roleColor: '#14b8a6',
-        text: 'Nhờ kho bổ sung thêm 5 khay mi cong C 0.07 dài 11mm lên tủ Chuyên Viên tầng 1 trước 16:00.',
-        timeLabel: '13:50',
-        createdAt: new Date().toISOString(),
-        reactions: { '👍': 3 },
-        thread: [],
-      },
-    ],
-  },
-];
-
-const FALLBACK_TASKS: MosChatTaskItem[] = [];
-
-const SAMPLE_CUSTOMER_CARDS: MosChatCustomerCard[] = [
-  {
-    name: 'Chị Nguyễn Bích Ngọc',
-    meta: 'VIP Diamond · 15:15 hôm nay',
-    cvName: 'Chuyên Viên Minh Thư (CV+)',
-  },
-  {
-    name: 'Chị Trần Bảo Trân',
-    meta: 'Khách Mới · 16:15 Mi Thiết Kế',
-    cvName: 'Chuyên Viên Thanh Tâm (CV)',
-  },
-  {
-    name: 'Chị Lê Hoàng Yến',
-    meta: 'Cần xác nhận · 17:30 hôm nay',
-    cvName: 'Chuyên Viên Ngọc Ánh (CV+)',
-  },
-];
-
-interface ReminderPreset {
-  id: string;
-  label: string;
-  seconds: number;
-  getSeconds: () => number;
-}
-
-const REMINDER_PRESETS: ReminderPreset[] = [
-  { id: 'none', label: 'Không hẹn giờ', seconds: 0, getSeconds: () => 0 },
-  { id: '15m', label: '15 phút', seconds: 900, getSeconds: () => 900 },
-  { id: '30m', label: '30 phút', seconds: 1800, getSeconds: () => 1800 },
-  { id: '1h', label: '1 giờ', seconds: 3600, getSeconds: () => 3600 },
-  {
-    id: '1730',
-    label: '17:30 hôm nay',
-    seconds: 7200,
-    getSeconds: () => {
-      const now = dayjs();
-      let target = now.hour(17).minute(30).second(0);
-      if (target.isBefore(now)) {
-        target = target.add(1, 'day');
-      }
-      return Math.max(60, target.diff(now, 'second'));
-    },
-  },
-  {
-    id: '0900',
-    label: '09:00 sáng mai',
-    seconds: 86400,
-    getSeconds: () => {
-      const now = dayjs();
-      const target = now.add(1, 'day').hour(9).minute(0).second(0);
-      return Math.max(60, target.diff(now, 'second'));
-    },
-  },
-];
-
-interface DeadlinePreset {
-  id: string;
-  label: string;
-  getDate: () => dayjs.Dayjs | null;
-}
-
-const DEADLINE_PRESETS: DeadlinePreset[] = [
-  {
-    id: 'today-1730',
-    label: '17:30 hôm nay',
-    getDate: () => {
-      const now = dayjs();
-      let target = now.hour(17).minute(30).second(0);
-      if (target.isBefore(now)) target = target.add(1, 'day');
-      return target;
-    },
-  },
-  {
-    id: 'today-2200',
-    label: '22:00 hôm nay',
-    getDate: () => {
-      const now = dayjs();
-      let target = now.hour(22).minute(0).second(0);
-      if (target.isBefore(now)) target = target.add(1, 'day');
-      return target;
-    },
-  },
-  {
-    id: 'tomorrow-1200',
-    label: '12:00 trưa mai',
-    getDate: () => dayjs().add(1, 'day').hour(12).minute(0).second(0),
-  },
-  {
-    id: 'tomorrow-1730',
-    label: '17:30 chiều mai',
-    getDate: () => dayjs().add(1, 'day').hour(17).minute(30).second(0),
-  },
-  {
-    id: 'in-2-days',
-    label: 'Trong 2 ngày',
-    getDate: () => dayjs().add(2, 'day').hour(17).minute(30).second(0),
-  },
-  {
-    id: 'none',
-    label: 'Không đặt hạn',
-    getDate: () => null,
-  },
-];
-
-function getTaskDeadlineInfo(deadlineIso?: string | null, done?: boolean) {
-  if (!deadlineIso) return null;
-  const d = dayjs(deadlineIso);
-  if (!d.isValid()) return null;
-  const now = dayjs();
-  const diffMinutes = d.diff(now, 'minute');
-  const isOverdue = diffMinutes < 0 && !done;
-  const isDueSoon = diffMinutes >= 0 && diffMinutes <= 180 && !done;
-
-  let relative = '';
-  if (done) {
-    relative = 'Đã xong';
-  } else if (isOverdue) {
-    const absMin = Math.abs(diffMinutes);
-    if (absMin < 60) relative = `Trễ ${absMin}p`;
-    else if (absMin < 1440) relative = `Trễ ${Math.floor(absMin / 60)}h ${absMin % 60}m`;
-    else relative = `Trễ ${Math.floor(absMin / 1440)} ngày`;
-  } else {
-    if (diffMinutes < 60) relative = `Còn ${diffMinutes}p`;
-    else if (diffMinutes < 1440) relative = `Còn ${Math.floor(diffMinutes / 60)}h ${diffMinutes % 60}m`;
-    else relative = `Còn ${Math.floor(diffMinutes / 1440)} ngày`;
-  }
-
-  let label = '';
-  if (d.isSame(now, 'day')) {
-    label = `Hôm nay ${d.format('HH:mm')}`;
-  } else if (d.isSame(now.add(1, 'day'), 'day')) {
-    label = `Mai ${d.format('HH:mm')}`;
-  } else {
-    label = d.format('DD/MM HH:mm');
-  }
-
-  return {
-    raw: d,
-    label,
-    relative,
-    isOverdue,
-    isDueSoon,
-  };
-}
-
-function playWebAudioReminderChime() {
-  try {
-    const AudioCtx = window.AudioContext || (window as SafeAny).webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-    [587.33, 880, 1174.66].forEach((freq, idx) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.1, ctx.currentTime + idx * 0.11);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.11 + 0.42);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime + idx * 0.11);
-      osc.stop(ctx.currentTime + idx * 0.11 + 0.44);
-    });
-  } catch (_) {}
-}
-
-function formatCountdown(remindAtIso: string, nowMs: number): string {
-  const diffSec = Math.max(0, Math.floor((new Date(remindAtIso).getTime() - nowMs) / 1000));
-  if (diffSec <= 0) return '00:00';
-  const mins = Math.floor(diffSec / 60);
-  const secs = diffSec % 60;
-  if (mins >= 60) {
-    return `${Math.floor(mins / 60)}h${String(mins % 60).padStart(2, '0')}p`;
-  }
-  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-}
-
-function parseGoogleDriveImageFromText(rawText: string): MosChatImageAttachment | null {
-  const trimmed = String(rawText || '').trim();
-  if (!trimmed) return null;
-  const match =
-    trimmed.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]{15,})/) ||
-    trimmed.match(/drive\.google\.com\/open\?id=([a-zA-Z0-9_-]{15,})/) ||
-    trimmed.match(/drive\.google\.com\/uc\?(?:export=\w+&)?id=([a-zA-Z0-9_-]{15,})/) ||
-    trimmed.match(/drive\.google\.com\/thumbnail\?id=([a-zA-Z0-9_-]{15,})/);
-  if (!match) return null;
-  const fileId = match[1];
-  return {
-    id: `drive-${fileId.slice(0, 8)}-${Date.now()}`,
-    url: `https://drive.google.com/thumbnail?id=${fileId}&sz=w1600`,
-    name: `Google-Drive-${fileId.slice(0, 6)}.jpg`,
-    mimeType: 'image/jpeg',
-    sizeBytes: 0,
-    source: 'drive',
-  };
-}
-
-async function readOrCompressImagePayload(
-  file: File
-): Promise<{ dataBase64: string; mimeType: MosChatImageMimeType; width?: number; height?: number }> {
-  if (file.type === 'image/gif') {
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result || ''));
-      reader.onerror = () => reject(new Error('Không thể đọc ảnh GIF'));
-      reader.readAsDataURL(file);
-    });
-    return {
-      dataBase64: dataUrl.replace(/^data:image\/gif;base64,/i, ''),
-      mimeType: 'image/gif',
-    };
-  }
-
-  const objectUrl = URL.createObjectURL(file);
-  try {
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const el = new window.Image();
-      el.onload = () => resolve(el);
-      el.onerror = () => reject(new Error('Không thể giải mã hình ảnh'));
-      el.src = objectUrl;
-    });
-
-    const maxDim = 1600;
-    let width = img.naturalWidth || img.width || 800;
-    let height = img.naturalHeight || img.height || 600;
-    if (width > maxDim || height > maxDim) {
-      const ratio = Math.min(maxDim / width, maxDim / height);
-      width = Math.max(1, Math.round(width * ratio));
-      height = Math.max(1, Math.round(height * ratio));
-    }
-
-    const canvas = document.createElement('canvas');
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Không khởi tạo được bộ nén ảnh');
-    ctx.drawImage(img, 0, 0, width, height);
-
-    let targetMime: MosChatImageMimeType = file.type === 'image/png' ? 'image/png' : 'image/webp';
-    let dataUrl = canvas.toDataURL(targetMime, 0.86);
-    if (!dataUrl.startsWith(`data:${targetMime};base64,`)) {
-      targetMime = 'image/jpeg';
-      dataUrl = canvas.toDataURL('image/jpeg', 0.86);
-    }
-
-    // If PNG is still > 2.5MB (e.g. Retina screenshot), compress to WebP/JPEG
-    if (targetMime === 'image/png' && dataUrl.length > 3_200_000) {
-      targetMime = 'image/webp';
-      dataUrl = canvas.toDataURL('image/webp', 0.86);
-      if (!dataUrl.startsWith('data:image/webp;base64,')) {
-        targetMime = 'image/jpeg';
-        dataUrl = canvas.toDataURL('image/jpeg', 0.86);
-      }
-    }
-
-    return {
-      dataBase64: dataUrl.replace(/^data:image\/(?:jpeg|png|webp);base64,/i, ''),
-      mimeType: targetMime,
-      width,
-      height,
-    };
-  } finally {
-    URL.revokeObjectURL(objectUrl);
-  }
-}
-
-const GOOGLE_CHAT_QUICK_EMOJIS = ['🪽', '💎', '❤️', '👍', '✅'] as const;
-
-const WINGS_SIGNATURE_EMOJIS = [
-  '🪽',
-  '🪶',
-  '🥚',
-  '🐣',
-  '🐥',
-  '🐔',
-  '🍗',
-  '👼',
-  '🍌',
-  '💎',
-  '👀',
-  '🔮',
-  '💃',
-  '💰',
-  '©️',
-  '👍',
-  '✅',
-  '🟢',
-  '⚫',
-] as const;
-
-const GOOGLE_CHAT_REACTION_EMOJIS = [
-  '❤️',
-  '🔥',
-  '😂',
-  '🎉',
-  '👏',
-  '🙏',
-  '💯',
-  '🚀',
-  '😍',
-  '🥰',
-  '😎',
-  '🤩',
-  '🤝',
-  '💪',
-  '✨',
-  '🌸',
-  '👑',
-  '🫡',
-] as const;
 
 export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   open,
@@ -828,6 +198,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [conversations, setConversations] = useState<MosChatConversation[]>(FALLBACK_CONVERSATIONS);
   const [tasks, setTasks] = useState<MosChatTaskItem[]>(FALLBACK_TASKS);
   const [staffDirectory, setStaffDirectory] = useState<MosChatStaffMember[]>(getInitialStaffDirectory);
+  const [workflowTemplates, setWorkflowTemplates] = useState<MosChatWorkflowTemplate[]>([]);
+  const [workflowInstances, setWorkflowInstances] = useState<MosChatWorkflowInstance[]>([]);
+  const [triggerWorkflowModalOpen, setTriggerWorkflowModalOpen] = useState<boolean>(false);
+  const [initialWorkflowCode, setInitialWorkflowCode] = useState<string>('WF_CASH_ADVANCE');
+  const [saveThreadWorkflowModalOpen, setSaveThreadWorkflowModalOpen] = useState<boolean>(false);
   const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
   const navigateToMessageRef = useRef<(convId: string, msgId?: string) => void>(() => {});
   const personalLayoutStorageKey = useMemo(() => {
@@ -1817,11 +1192,41 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         if (res?.tasks) {
           setTasks(res.tasks);
         }
+        if (Array.isArray(res?.workflowTemplates)) {
+          setWorkflowTemplates(res.workflowTemplates);
+        }
+        if (Array.isArray(res?.workflowInstances)) {
+          setWorkflowInstances(res.workflowInstances);
+        }
       } catch (_) {
         // Fallback state already initialized
       }
     },
     [userSidebarPrefsStorageKey, staffDirectory.length]
+  );
+
+  useMosChatBridgeListener(
+    useCallback(
+      (payload) => {
+        if (payload.type === 'OPEN_CONVERSATION') {
+          navigateToMessageRef.current(payload.conversationId, payload.messageId);
+        } else if (payload.type === 'OPEN_WORKFLOW_MODAL' && isStrictDannySuperAdmin) {
+          if (payload.conversationId) {
+            setActiveConvId(payload.conversationId);
+          }
+          setInitialWorkflowCode(payload.templateCode || 'WF_CASH_ADVANCE');
+          setTriggerWorkflowModalOpen(true);
+        } else if (payload.type === 'SHARE_ENTITY_CONTEXT') {
+          if (payload.conversationId) {
+            setActiveConvId(payload.conversationId);
+          }
+          if (payload.initialDraftText) {
+            setComposerText(payload.initialDraftText);
+          }
+        }
+      },
+      [isStrictDannySuperAdmin]
+    )
   );
 
   useEffect(() => {
@@ -2821,7 +2226,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       const currentRead = userPrefs.readMessageCountByConv?.[convId];
       const isManualUnread = (userPrefs.manualUnreadIds || []).includes(convId);
       const hasUnreadThreads = (activeConversation.unreadThreadCount || 0) > 0;
-      if (!isManualUnread && (currentRead !== msgCount || (activeConversation.unreadCount || 0) > 0 || hasUnreadThreads)) {
+      if (
+        !isManualUnread &&
+        (currentRead !== msgCount || (activeConversation.unreadCount || 0) > 0 || hasUnreadThreads)
+      ) {
         markConversationReadOptimisticAndSync(convId, msgCount, lastMsg?.id);
       }
     }
@@ -3576,6 +2984,31 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     const attachmentsToSend = stagedAttachments;
     if (!text.trim() && attachmentsToSend.length === 0) return;
 
+    // Super Admin Slash Commands for Dynamic Workflow Engine (/tam-ung, /kiem-kho, /tao-quy-trinh)
+    const trimmedCmd = text.trim().toLowerCase();
+    if (isStrictDannySuperAdmin && attachmentsToSend.length === 0) {
+      if (trimmedCmd === '/tam-ung' || trimmedCmd.startsWith('/tam-ung ')) {
+        setComposerText('');
+        if (composerInputRef.current) composerInputRef.current.value = '';
+        setInitialWorkflowCode('WF_CASH_ADVANCE');
+        setTriggerWorkflowModalOpen(true);
+        return;
+      }
+      if (trimmedCmd === '/kiem-kho' || trimmedCmd.startsWith('/kiem-kho ')) {
+        setComposerText('');
+        if (composerInputRef.current) composerInputRef.current.value = '';
+        setInitialWorkflowCode('WF_INVENTORY_AUDIT');
+        setTriggerWorkflowModalOpen(true);
+        return;
+      }
+      if (trimmedCmd === '/tao-quy-trinh' || trimmedCmd === '/workflow') {
+        setComposerText('');
+        if (composerInputRef.current) composerInputRef.current.value = '';
+        setSaveThreadWorkflowModalOpen(true);
+        return;
+      }
+    }
+
     setMentionState((prev) => (prev.open ? { ...prev, open: false } : prev));
     setComposerText('');
     setStagedAttachments([]);
@@ -4273,7 +3706,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       }
       scrollToChatBottom('thread', 'auto');
     },
-    [isMobile, activeConversation, isTabVisible, markThreadReadOptimisticAndSync, scrollToChatBottom, persistPersonalLayout]
+    [
+      isMobile,
+      activeConversation,
+      isTabVisible,
+      markThreadReadOptimisticAndSync,
+      scrollToChatBottom,
+      persistPersonalLayout,
+    ]
   );
 
   const navigateToMessage = useCallback(
@@ -4436,6 +3876,74 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       }
       notifyLivePeers();
     } catch (_) {}
+
+    // If user tagged @AI or @copilot in the thread reply, invoke AI Copilot with full thread context!
+    if (canUseAiCopilot && /(?:^|\s)@\s*(?:ai|copilot)\b/i.test(text)) {
+      const cleanedPrompt =
+        text.replace(/(?:^|\s)@\s*(?:ai|copilot)\b/gi, '').trim() ||
+        'Hãy phân tích nội dung luồng thảo luận trên giúp nhóm.';
+      setAiThinkingActive(true);
+      try {
+        const rootMsg = activeConversation.messages.find((m) => m.id === activeThreadMsgId);
+        const rootContent = rootMsg ? `[Tin nhắn gốc từ ${rootMsg.senderName}]: ${rootMsg.text || ''}` : '';
+        const threadReplies = (rootMsg?.thread || [])
+          .slice(-10)
+          .map((r) => `- ${r.senderName}: ${r.text || ''}`)
+          .join('\n');
+        const contextPayload = [
+          `[Bối cảnh Luồng thảo luận (Thread) trong không gian "${activeConversation.name}"]:`,
+          rootContent,
+          threadReplies ? `[Các phản hồi trước đó trong luồng]:\n${threadReplies}` : '',
+          `[Câu hỏi từ ${senderName}]: ${cleanedPrompt}`,
+        ]
+          .filter(Boolean)
+          .join('\n\n');
+
+        const imageDataUrl = await convertAttachmentToDataUrl(attachmentsToSend?.[0]);
+        const aiRes = await apiClient.ai.sendMessage({
+          sessionId: aiSessionId || undefined,
+          message: contextPayload,
+          scope: `mos-chat-thread:${activeConversation.id}:${activeThreadMsgId}`,
+          imageDataUrl,
+          context: {
+            page: `mos-chat-thread:${activeConversation.id}:${activeThreadMsgId}`,
+            userName: senderName,
+            myRole: currentUser?.role || 'super_admin',
+          },
+        });
+        if (aiRes?.session?.id) {
+          setAiSessionId(aiRes.session.id);
+        }
+        const rawAiReplyText = aiRes?.message?.content || 'Tôi đã phân tích xong thông tin cho luồng thảo luận.';
+        const aiReplyText = rawAiReplyText
+          .replace(/<action[\s\S]*?<\/action>/gi, '')
+          .replace(/<\/?action[^>]*>/gi, '')
+          .trim();
+        const aiActions =
+          aiRes?.message?.suggestedActions ||
+          aiRes?.message?.suggestedAction?.actions ||
+          (aiRes?.message?.suggestedAction ? [aiRes.message.suggestedAction] : null);
+
+        const postedAi = await apiClient.chat.sendThreadReply({
+          conversationId: activeConversation.id,
+          messageId: activeThreadMsgId,
+          text: aiReplyText,
+          isAiBot: true,
+          aiThinking: aiRes?.message?.thinking || null,
+          aiAction: aiRes?.message?.suggestedAction || null,
+          aiActions,
+        });
+        if (postedAi?.conversation) {
+          setConversations((prev) => prev.map((c) => (c.id === activeConversation.id ? postedAi.conversation! : c)));
+        }
+        notifyLivePeers();
+        scrollToChatBottom('thread', 'smooth');
+      } catch (_) {
+        // ignore thread AI error
+      } finally {
+        setAiThinkingActive(false);
+      }
+    }
   };
 
   const handleSendSticker = async (
@@ -6305,13 +5813,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           ? 'rgba(168, 85, 247, 0.18)'
                           : '#faf5ff',
                     color:
-                      taskConv.type === 'space'
-                        ? isDark
-                          ? '#93c5fd'
-                          : '#2563eb'
-                        : isDark
-                          ? '#c084fc'
-                          : '#7e22ce',
+                      taskConv.type === 'space' ? (isDark ? '#93c5fd' : '#2563eb') : isDark ? '#c084fc' : '#7e22ce',
                     border: `1px solid ${
                       taskConv.type === 'space'
                         ? isDark
@@ -6324,7 +5826,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   }}
                 >
                   {taskConv.type === 'space' ? <Hash size={10} /> : <MessageSquare size={10} />}
-                  <span className="truncate max-w-[120px]">{taskConv.name || task.conversationName || 'Hội thoại'}</span>
+                  <span className="truncate max-w-[120px]">
+                    {taskConv.name || task.conversationName || 'Hội thoại'}
+                  </span>
                 </button>
               </Tooltip>
             )}
@@ -6748,6 +6252,22 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     );
   };
 
+  // Trích xuất các tên nhân sự nhiều từ (có khoảng trắng) để tạo pattern khớp chính xác tên, không nuốt từ tiếp theo
+  const knownMultiWordStaffNames = useMemo(() => {
+    const set = new Set<string>();
+    staffDirectory.forEach((s) => {
+      if (s.displayName && s.displayName.includes(' ')) set.add(s.displayName.trim());
+      const extraName = (s as SafeAny).realName || (s as SafeAny).nickname;
+      if (typeof extraName === 'string' && extraName.includes(' ')) set.add(extraName.trim());
+    });
+    if (activeConversation?.memberNicknames) {
+      Object.values(activeConversation.memberNicknames).forEach((nick) => {
+        if (nick && nick.includes(' ')) set.add(nick.trim());
+      });
+    }
+    return Array.from(set).sort((a, b) => b.length - a.length);
+  }, [staffDirectory, activeConversation?.memberNicknames]);
+
   /**
    * Tokenizer phân tích inline markup an toàn thành React Nodes:
    * **đậm**, *nghiêng*, ~~gạch ngang~~, <u>gạch chân</u>, `code`, https://..., @mentions
@@ -6755,8 +6275,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const parseInlineRichText = useCallback(
     (text: string, keyPrefix = 'inline'): React.ReactNode[] => {
       if (!text) return [];
-      const regex =
-        /(\*\*(.+?)\*\*)|(~~(.+?)~~)|(<u>(.+?)<\/u>)|(`([^`]+)`)|\*([^*\n]+)\*|(https?:\/\/[^\s<]+)|(@[a-zA-Z0-9_\u00C0-\u1EF9]+(?:\s+[a-zA-Z0-9_\u00C0-\u1EF9]+){0,3})/gu;
+      const staffPattern =
+        knownMultiWordStaffNames.length > 0
+          ? `|(@(?:${knownMultiWordStaffNames.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b)`
+          : '';
+
+      const regex = new RegExp(
+        `(\\*\\*(.+?)\\*\\*)|(~~(.+?)~~)|(<u>(.+?)<\\/u>)|(\`([^\`]+)\`)|\\*([^\\*\\n]+)\\*|(https?:\\/\\/[^\\s<]+)|(@\\s*(?:AI|copilot|all|mọi\\s+người|moi\\s+nguoi)\\b)${staffPattern}|(@[a-zA-Z0-9_\\u00C0-\\u1EF9]+)`,
+        'gui'
+      );
 
       const elements: React.ReactNode[] = [];
       let lastIndex = 0;
@@ -6819,7 +6346,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             </a>
           );
         } else if (fullMatch.startsWith('@')) {
-          const cleanTag = fullMatch.slice(1).trim().toLowerCase();
+          const cleanTag = fullMatch.replace(/^@\s*/, '').trim().toLowerCase();
           const isAi = cleanTag === 'ai' || cleanTag.includes('copilot');
           const isAll = cleanTag === 'all' || cleanTag === 'mọi người' || cleanTag === 'moi nguoi';
           const myId = Number(currentUserStaffMember.id) || Number(currentUser?.id) || 0;
@@ -6854,7 +6381,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               }`}
             >
               <AtSign size={10.5} className="shrink-0 opacity-80" />
-              <span>{fullMatch.slice(1)}</span>
+              <span>{isAi ? 'AI' : fullMatch.replace(/^@\s*/, '')}</span>
             </span>
           );
         } else {
@@ -6870,7 +6397,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
       return elements.length > 0 ? elements : [text];
     },
-    [currentUserStaffMember.displayName, currentUser?.displayName, currentUser?.username]
+    [
+      currentUserStaffMember.displayName,
+      currentUser?.displayName,
+      currentUser?.username,
+      knownMultiWordStaffNames,
+      activeConversation?.memberNicknames,
+    ]
   );
 
   /**
@@ -10710,6 +10243,37 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           {(m.mission || linkedTask?.mission) &&
                             renderLiveMissionCard((m.mission || linkedTask?.mission)!, m, 'inline')}
 
+                          {/* Interactive Operational Workflow Card (Cash Advance -> Thu Chi, Inventory Audit -> mOS Kho) */}
+                          {(m.workflow ||
+                            (m.workflowInstanceId &&
+                              workflowInstances.find((wf) => wf.id === m.workflowInstanceId))) && (
+                            <MosChatWorkflowCard
+                              workflow={(m.workflow || workflowInstances.find((wf) => wf.id === m.workflowInstanceId))!}
+                              isDark={isDark}
+                              isSuperAdmin={isStrictDannySuperAdmin}
+                              currentStaffId={currentUserStaffMember?.id}
+                              currentUserName={
+                                currentUserStaffMember?.displayName || currentUser?.fullName || currentUser?.username
+                              }
+                              onWorkflowUpdated={(updatedWf) => {
+                                setWorkflowInstances((prev) =>
+                                  prev.some((w) => w.id === updatedWf.id)
+                                    ? prev.map((w) => (w.id === updatedWf.id ? updatedWf : w))
+                                    : [updatedWf, ...prev]
+                                );
+                                void fetchBootstrap(true);
+                              }}
+                              onOpenLightbox={(url, name) =>
+                                setLightboxImage({
+                                  items: [{ id: url, url, name }],
+                                  currentIndex: 0,
+                                  zoom: 1,
+                                  rotate: 0,
+                                })
+                              }
+                            />
+                          )}
+
                           {/* Thread Chip with Unread Reply Badge & Seen Indicators */}
                           {m.thread &&
                             m.thread.length > 0 &&
@@ -11615,6 +11179,28 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               <AlarmClockPlus size={16} />
                             </button>
                           </Tooltip>
+
+                          {/* Super Admin Only: [⚡ Quy trình] Trigger Button */}
+                          {isStrictDannySuperAdmin && activeConversation?.id !== AI_COPILOT_CONV_ID && (
+                            <Tooltip title="⚡ Khởi tạo Quy trình Sống (/tam-ung, /kiem-kho, /tao-quy-trinh) — Chỉ dành cho Super Admin">
+                              <button
+                                type="button"
+                                aria-label="Khởi tạo Quy trình Sống"
+                                onClick={() => {
+                                  setInitialWorkflowCode('WF_CASH_ADVANCE');
+                                  setTriggerWorkflowModalOpen(true);
+                                }}
+                                className="h-7 px-2 rounded-lg inline-flex items-center gap-1 text-[11px] font-extrabold hover:bg-blue-500/15 cursor-pointer transition-colors"
+                                style={{
+                                  color: '#60a5fa',
+                                  border: '1px solid rgba(59, 130, 246, 0.35)',
+                                }}
+                              >
+                                <Activity size={13} />
+                                <span>⚡ Quy trình</span>
+                              </button>
+                            </Tooltip>
+                          )}
                         </div>
 
                         {/* Send button with hint */}
@@ -11715,7 +11301,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               <div className="space-y-2">
                 {/* Search input */}
                 <div className="relative">
-                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <Search
+                    size={14}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                  />
                   <input
                     type="text"
                     value={taskSearchQuery}
@@ -12177,6 +11766,23 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     </button>
                   </Tooltip>
                 )}
+                {isStrictDannySuperAdmin && (
+                  <Tooltip title="✨ Chuẩn hóa luồng thảo luận này thành Workflow hoặc Nâng cấp Workflow (Chỉ Super Admin)">
+                    <button
+                      type="button"
+                      onClick={() => setSaveThreadWorkflowModalOpen(true)}
+                      className="h-7 px-2.5 rounded-md inline-flex items-center gap-1 text-[11px] font-extrabold cursor-pointer transition-all hover:scale-[1.02]"
+                      style={{
+                        background: 'rgba(59, 130, 246, 0.18)',
+                        border: '1px solid rgba(59, 130, 246, 0.45)',
+                        color: '#93c5fd',
+                      }}
+                    >
+                      <Activity size={12} />
+                      <span>✨ Lưu Workflow</span>
+                    </button>
+                  </Tooltip>
+                )}
                 {/* Nút phóng to / thu gọn nhanh luồng trả lời trên màn hình lớn */}
                 {!isMobile && (
                   <Tooltip title={threadWidth >= 560 ? 'Thu gọn luồng về 440px' : 'Mở rộng luồng sang 620px (FHD)'}>
@@ -12289,6 +11895,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
               {(activeThreadMessage.thread || []).map((r) => {
                 const isReplyMine = isMessageFromCurrentUser(r);
+                const isAiReply = Boolean(r.isAiBot || r.senderId === 'wings-ai-copilot');
                 const replyBreakdown = getThreadReplyReadBreakdown(activeConversation, activeThreadMessage, r);
                 const stoppedReadersForReply = stoppedReadersByReplyId[r.id] || [];
                 return (
@@ -12299,8 +11906,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         avatarUrl: r.senderAvatar,
                         sizeClass: 'w-6 h-6 mt-0.5',
                         textClass: 'text-[9.5px]',
-                        bgStyle: isReplyMine ? 'linear-gradient(135deg, #d4a84b 0%, #b45309 100%)' : '#2563eb',
+                        bgStyle: isReplyMine
+                          ? 'linear-gradient(135deg, #d4a84b 0%, #b45309 100%)'
+                          : isAiReply
+                            ? 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 55%, #d4a84b 100%)'
+                            : '#2563eb',
                         textColor: isReplyMine ? '#000' : '#fff',
+                        isAiBot: isAiReply,
                       })}
                       <div
                         className={`max-w-[85%] p-2 rounded-xl text-[12px] group relative transition-all ${
@@ -12311,9 +11923,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             ? isDark
                               ? 'rgba(212, 168, 75, 0.16)'
                               : 'rgba(245, 158, 11, 0.14)'
-                            : canvasBg,
+                            : isAiReply
+                              ? isDark
+                                ? 'rgba(139, 92, 246, 0.12)'
+                                : 'rgba(139, 92, 246, 0.08)'
+                              : canvasBg,
                           border: `1px solid ${
-                            isReplyMine ? (isDark ? 'rgba(212, 168, 75, 0.35)' : 'rgba(217, 119, 6, 0.3)') : borderColor
+                            isReplyMine
+                              ? isDark
+                                ? 'rgba(212, 168, 75, 0.35)'
+                                : 'rgba(217, 119, 6, 0.3)'
+                              : isAiReply
+                                ? isDark
+                                  ? 'rgba(139, 92, 246, 0.4)'
+                                  : 'rgba(139, 92, 246, 0.3)'
+                                : borderColor
                           }`,
                           boxShadow:
                             highlightedMsgId === r.id
@@ -12331,13 +11955,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             if (nick && nick !== r.senderName) {
                               return (
                                 <span className="inline-flex items-center gap-1">
-                                  <span style={{ color: isReplyMine ? '#d4a84b' : '#10b981' }}>{nick}</span>
+                                  <span style={{ color: isReplyMine ? '#d4a84b' : isAiReply ? '#a855f7' : '#10b981' }}>
+                                    {nick}
+                                  </span>
                                   <span className="text-slate-400 font-normal">({r.senderName})</span>
                                 </span>
                               );
                             }
                             return (
-                              <span style={{ color: isReplyMine ? '#d4a84b' : token.colorText }}>{r.senderName}</span>
+                              <span
+                                style={{ color: isReplyMine ? '#d4a84b' : isAiReply ? '#a855f7' : token.colorText }}
+                              >
+                                {r.senderName}
+                              </span>
                             );
                           })()}
                           <span className="text-slate-400 tabular-nums">· {r.timeLabel}</span>
@@ -12430,11 +12060,50 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             )}
                           </div>
                         ) : (
-                          r.text && (
-                            <div className="text-left break-words leading-relaxed">
-                              {renderRichTextMessage(r.text, isReplyMine)}
-                            </div>
-                          )
+                          <>
+                            {r.aiThinking && (
+                              <div
+                                className="mb-1 rounded-lg overflow-hidden w-full text-left"
+                                style={{
+                                  background: isDark ? 'rgba(139, 92, 246, 0.08)' : 'rgba(139, 92, 246, 0.06)',
+                                  border: '1px solid rgba(139, 92, 246, 0.25)',
+                                }}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setExpandedThinkingIds((prev) => ({
+                                      ...prev,
+                                      [r.id]: !prev[r.id],
+                                    }))
+                                  }
+                                  className="w-full px-2 py-1 flex items-center justify-between text-[10px] font-semibold text-purple-400 hover:bg-purple-500/10 cursor-pointer transition-colors"
+                                >
+                                  <span className="inline-flex items-center gap-1">
+                                    <Sparkles size={11} />
+                                    <span>Quá trình tư duy của AI</span>
+                                  </span>
+                                  {expandedThinkingIds[r.id] ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                                </button>
+                                {expandedThinkingIds[r.id] && (
+                                  <div
+                                    className="px-2 py-1.5 text-[11px] font-mono leading-relaxed whitespace-pre-wrap select-text"
+                                    style={{
+                                      color: token.colorTextSecondary,
+                                      borderTop: '1px dashed rgba(139, 92, 246, 0.2)',
+                                    }}
+                                  >
+                                    {r.aiThinking}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {r.text && (
+                              <div className="text-left break-words leading-relaxed">
+                                {renderRichTextMessage(r.text, isReplyMine)}
+                              </div>
+                            )}
+                          </>
                         )}
 
                         {renderMessageAttachments(r.attachments, true)}
@@ -12634,6 +12303,30 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   </div>
                 );
               })}
+              {aiThinkingActive && (
+                <div className="flex gap-2 items-start text-left p-1">
+                  <div
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-white shrink-0 mt-0.5"
+                    style={{
+                      background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 55%, #d4a84b 100%)',
+                    }}
+                  >
+                    <Bot size={13} className="animate-spin" />
+                  </div>
+                  <div
+                    className="p-2 rounded-xl text-[11.5px] max-w-[85%]"
+                    style={{
+                      background: isDark ? 'rgba(139, 92, 246, 0.12)' : 'rgba(139, 92, 246, 0.08)',
+                      border: '1px solid rgba(139, 92, 246, 0.3)',
+                    }}
+                  >
+                    <span className="font-semibold text-purple-400">🤖 Wings AI Copilot</span>
+                    <span className="text-slate-400 ml-1.5 animate-pulse tabular-nums">
+                      Đang phân tích luồng ({aiElapsedSec}s)...
+                    </span>
+                  </div>
+                </div>
+              )}
               <div ref={threadMessagesEndRef} />
             </div>
 
@@ -12712,7 +12405,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       handleSendThreadReply();
                     }
                   }}
-                  placeholder="Trả lời vào luồng... (gõ @ để nhắc tên, Shift+Enter xuống dòng)"
+                  placeholder="Trả lời vào luồng... (gõ @AI để gọi Copilot, @ để nhắc tên, Shift+Enter xuống dòng)"
                   className="w-full bg-transparent border-0 outline-none text-[13px] resize-none leading-relaxed px-0.5 py-1 min-h-[36px]"
                   style={{
                     color: token.colorText,
@@ -12726,6 +12419,25 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)' }}
                 >
                   <div className="flex items-center gap-0.5">
+                    {/* [Bot] Call @AI Copilot in Thread */}
+                    {canUseAiCopilot && (
+                      <Tooltip title="Gọi @AI để Wings AI Copilot phân tích & tư vấn trực tiếp vào luồng này">
+                        <button
+                          type="button"
+                          aria-label="Gọi @AI Copilot trong luồng"
+                          onClick={() => {
+                            setThreadInput((prev) => (/(?:^|\s)@\s*AI\b/i.test(prev) ? prev : `@AI ${prev}`));
+                            setTimeout(() => {
+                              threadInputRef.current?.focus();
+                            }, 20);
+                          }}
+                          className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-purple-500/20 active:scale-95 transition-all text-purple-400 hover:text-purple-300"
+                        >
+                          <Bot size={15} />
+                        </button>
+                      </Tooltip>
+                    )}
+
                     {/* [@] Mention Button in Thread */}
                     <Tooltip title="Nhắc tên đồng nghiệp (@)">
                       <button
@@ -12811,10 +12523,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             : isDark
                               ? 'rgba(255, 255, 255, 0.08)'
                               : 'rgba(0, 0, 0, 0.06)',
-                        color:
-                          threadInput.trim() || threadAttachments.length > 0
-                            ? '#000'
-                            : token.colorTextQuaternary,
+                        color: threadInput.trim() || threadAttachments.length > 0 ? '#000' : token.colorTextQuaternary,
                       }}
                     >
                       <SendHorizontal size={14} />
@@ -16294,6 +16003,60 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             );
           })()}
       </Modal>
+
+      {/* ================= SUPER ADMIN DYNAMIC WORKFLOW ENGINE MODALS ================= */}
+      {isStrictDannySuperAdmin && activeConversation && (
+        <>
+          <MosChatTriggerWorkflowModal
+            open={triggerWorkflowModalOpen}
+            isDark={isDark}
+            conversationId={activeConversation.id}
+            templates={workflowTemplates}
+            staffDirectory={staffDirectory}
+            initialTemplateCode={initialWorkflowCode}
+            onClose={() => setTriggerWorkflowModalOpen(false)}
+            onCreated={(res) => {
+              if (res?.workflow) {
+                setWorkflowInstances((prev) => [res.workflow, ...prev]);
+              }
+              if (res?.conversation) {
+                setConversations((prev) => prev.map((c) => (c.id === res.conversation.id ? res.conversation : c)));
+              }
+              if (res?.task) {
+                setTasks((prev) => [res.task!, ...prev]);
+              }
+              antdMessage.success(`Đã phát thẻ quy trình: ${res.workflow.title}`);
+              notifyLivePeers();
+            }}
+          />
+
+          <MosChatSaveThreadWorkflowModal
+            open={saveThreadWorkflowModalOpen}
+            isDark={isDark}
+            conversationId={activeConversation.id}
+            messageId={activeThreadMessage?.id ?? null}
+            defaultName={
+              activeThreadMessage?.text
+                ? `Quy trình: ${activeThreadMessage.text.replace(/[*#_`]/g, '').slice(0, 48)}`
+                : 'Quy trình Phối hợp Nội bộ Mới'
+            }
+            existingTemplates={workflowTemplates}
+            onClose={() => setSaveThreadWorkflowModalOpen(false)}
+            onSaved={(res) => {
+              if (res?.template) {
+                setWorkflowTemplates((prev) =>
+                  prev.some((t) => t.code === res.template.code)
+                    ? prev.map((t) => (t.code === res.template.code ? res.template : t))
+                    : [res.template, ...prev]
+                );
+              }
+              antdMessage.success(`Đã lưu & áp dụng Quy trình: ${res.template.name} (v${res.template.version})`);
+              void fetchBootstrap(true);
+              notifyLivePeers();
+            }}
+          />
+        </>
+      )}
     </>
   );
 };

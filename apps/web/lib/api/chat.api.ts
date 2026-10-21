@@ -1,12 +1,16 @@
 import type {
   ActionMosChatMissionRequest,
   ActionMosChatMissionResponse,
+  ActionMosChatWorkflowInstanceRequest,
+  ActionMosChatWorkflowInstanceResponse,
   CreateMosChatConversationRequest,
   CreateMosChatMessageRequest,
   CreateMosChatMissionRequest,
   CreateMosChatMissionResponse,
   CreateMosChatTaskRequest,
   CreateMosChatThreadReplyRequest,
+  CreateMosChatWorkflowInstanceRequest,
+  CreateMosChatWorkflowInstanceResponse,
   DeleteMosChatMessageRequest,
   DeleteMosChatTaskResponse,
   EditMosChatMessageRequest,
@@ -19,10 +23,14 @@ import type {
   MosChatTaskItem,
   MosChatThreadReply,
   MosChatUserSidebarPrefs,
+  MosChatWorkflowInstance,
+  MosChatWorkflowTemplate,
   MoveMosChatThreadItemRequest,
   MoveMosChatThreadItemResponse,
   RestoreMosChatMessageRequest,
   SafeAny,
+  SaveThreadAsWorkflowTemplateRequest,
+  SaveThreadAsWorkflowTemplateResponse,
   TogglePinConversationResponse,
   UpdateMosChatAccessConfigRequest,
   UpdateMosChatNicknameRequest,
@@ -246,6 +254,33 @@ export const chatApi = {
     ): Promise<ActionMosChatMissionResponse> => {
       const res = await api.post(`/chat/missions/${encodeURIComponent(String(reportId))}/action`, payload);
       invalidateApiGetCache(['/chat/bootstrap', '/bug-reports/inbox']);
+      return res.data;
+    },
+    listWorkflows: async (
+      options?: ApiRequestOptions
+    ): Promise<{ success: boolean; templates: MosChatWorkflowTemplate[]; instances: MosChatWorkflowInstance[] }> => {
+      return dedupeApiGet('/chat/workflows', undefined, 2500, options);
+    },
+    createWorkflowInstance: async (
+      payload: CreateMosChatWorkflowInstanceRequest
+    ): Promise<CreateMosChatWorkflowInstanceResponse> => {
+      const res = await api.post('/chat/workflows/instances', payload);
+      invalidateApiGetCache(['/chat/bootstrap', '/chat/workflows']);
+      return res.data;
+    },
+    actionWorkflowInstance: async (
+      instanceId: string,
+      payload: ActionMosChatWorkflowInstanceRequest
+    ): Promise<ActionMosChatWorkflowInstanceResponse> => {
+      const res = await api.post(`/chat/workflows/instances/${encodeURIComponent(instanceId)}/action`, payload);
+      invalidateApiGetCache(['/chat/bootstrap', '/chat/workflows']);
+      return res.data;
+    },
+    saveThreadAsWorkflowTemplate: async (
+      payload: SaveThreadAsWorkflowTemplateRequest
+    ): Promise<SaveThreadAsWorkflowTemplateResponse> => {
+      const res = await api.post('/chat/workflows/templates/from-thread', payload);
+      invalidateApiGetCache(['/chat/bootstrap', '/chat/workflows']);
       return res.data;
     },
   },

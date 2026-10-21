@@ -3794,3 +3794,154 @@ model CrmCashFlowAudit {
   @@map("crm_cash_flow_audits")
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// mOS Chat & Dynamic Workflow Engine (Operational OS)
+// ═══════════════════════════════════════════════════════════════════
+
+model CrmChatConversation {
+  id                  String   @id @db.VarChar(120)
+  type                String   @default("space") @db.VarChar(20) // 'dm' | 'space'
+  name                String   @db.VarChar(255)
+  subtitle            String?  @db.VarChar(255)
+  roleTag             String?  @map("role_tag") @db.VarChar(60)
+  color               String   @default("#1a73e8") @db.VarChar(30)
+  avatar              String?  @db.VarChar(512)
+  participantStaffId  Int?     @map("participant_staff_id")
+  isSelf              Boolean  @default(false) @map("is_self") @db.TinyInt
+  contextType         String?  @map("context_type") @db.VarChar(50) // CUSTOMER, ORDER, INVENTORY, CASHFLOW, MISSION, QA, WORKFLOW
+  contextId           String?  @map("context_id") @db.VarChar(120)
+  memberIdsJson       Json?    @map("member_ids_json")
+  memberNicknamesJson Json?    @map("member_nicknames_json")
+  payloadJson         Json?    @map("payload_json")
+  createdAt           DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([type, updatedAt], map: "chat_conv_type_updated_idx")
+  @@index([contextType, contextId], map: "chat_conv_context_idx")
+  @@map("crm_chat_conversations")
+}
+
+model CrmChatParticipant {
+  id                Int       @id @default(autoincrement())
+  conversationId    String    @map("conversation_id") @db.VarChar(120)
+  staffId           Int       @map("staff_id")
+  nickname          String?   @db.VarChar(120)
+  role              String?   @db.VarChar(50)
+  lastReadMessageId String?   @map("last_read_message_id") @db.VarChar(120)
+  readCount         Int       @default(0) @map("read_count")
+  lastReadAt        DateTime? @map("last_read_at") @db.DateTime(0)
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@unique([conversationId, staffId], map: "chat_part_conv_staff_uniq")
+  @@index([staffId], map: "chat_part_staff_idx")
+  @@map("crm_chat_participants")
+}
+
+model CrmChatMessage {
+  id                 String   @id @db.VarChar(120)
+  conversationId     String   @map("conversation_id") @db.VarChar(120)
+  parentMessageId    String?  @map("parent_message_id") @db.VarChar(120)
+  senderId           String   @map("sender_id") @db.VarChar(80)
+  senderName         String   @map("sender_name") @db.VarChar(150)
+  senderRole         String   @map("sender_role") @db.VarChar(80)
+  senderAvatar       String?  @map("sender_avatar") @db.VarChar(512)
+  roleColor          String?  @map("role_color") @db.VarChar(40)
+  text               String   @db.LongText
+  timeLabel          String   @map("time_label") @db.VarChar(60)
+  pinned             Boolean  @default(false) @db.TinyInt
+  isDeleted          Boolean  @default(false) @map("is_deleted") @db.TinyInt
+  taskId             String?  @map("task_id") @db.VarChar(120)
+  missionId          Int?     @map("mission_id")
+  missionKey         String?  @map("mission_key") @db.VarChar(80)
+  workflowInstanceId String?  @map("workflow_instance_id") @db.VarChar(120)
+  entityType         String?  @map("entity_type") @db.VarChar(50)
+  entityId           String?  @map("entity_id") @db.VarChar(120)
+  metadataJson       Json?    @map("metadata_json")
+  createdAt          DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([conversationId, parentMessageId, createdAt], map: "chat_msg_conv_parent_created_idx")
+  @@index([workflowInstanceId], map: "chat_msg_workflow_idx")
+  @@index([entityType, entityId], map: "chat_msg_entity_idx")
+  @@map("crm_chat_messages")
+}
+
+model CrmChatTask {
+  id                 String    @id @db.VarChar(120)
+  conversationId     String    @map("conversation_id") @db.VarChar(120)
+  conversationName   String    @map("conversation_name") @db.VarChar(255)
+  sourceMessageId    String?   @map("source_message_id") @db.VarChar(120)
+  workflowInstanceId String?   @map("workflow_instance_id") @db.VarChar(120)
+  title              String    @db.VarChar(500)
+  assigneeId         String?   @map("assignee_id") @db.VarChar(80)
+  assigneeName       String    @map("assignee_name") @db.VarChar(150)
+  creatorName        String    @map("creator_name") @db.VarChar(150)
+  priority           String    @default("HIGH") @db.VarChar(20)
+  remindAt           DateTime  @map("remind_at") @db.DateTime(0)
+  dueAt              DateTime? @map("due_at") @db.DateTime(0)
+  deadline           DateTime? @db.DateTime(0)
+  done               Boolean   @default(false) @db.TinyInt
+  archived           Boolean   @default(false) @db.TinyInt
+  missionId          Int?      @map("mission_id")
+  payloadJson        Json?     @map("payload_json")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([conversationId, done, archived], map: "chat_task_conv_status_idx")
+  @@index([assigneeId, done], map: "chat_task_assignee_idx")
+  @@map("crm_chat_tasks")
+}
+
+model CrmChatUserPref {
+  userKey   String   @id @map("user_key") @db.VarChar(120)
+  prefsJson Json     @map("prefs_json")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@map("crm_chat_user_prefs")
+}
+
+model CrmChatWorkflowTemplate {
+  id                   String   @id @db.VarChar(120)
+  code                 String   @unique @db.VarChar(80)
+  name                 String   @db.VarChar(255)
+  description          String?  @db.Text
+  category             String   @default("OPERATIONS") @db.VarChar(50) // FINANCE, INVENTORY, OPERATIONS, BRAINSTORM, CUSTOM
+  targetSystemHook     String   @default("NONE") @map("target_system_hook") @db.VarChar(50) // CASHFLOW_ENTRY, STOCK_INVENTORY, NONE
+  stepsJson            Json     @map("steps_json")
+  version              Int      @default(1)
+  isActive             Boolean  @default(true) @map("is_active") @db.TinyInt
+  sourceConversationId String?  @map("source_conversation_id") @db.VarChar(120)
+  sourceMessageId      String?  @map("source_message_id") @db.VarChar(120)
+  createdBy            String?  @map("created_by") @db.VarChar(150)
+  createdAt            DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([category, isActive], map: "chat_wf_tpl_cat_active_idx")
+  @@map("crm_chat_workflow_templates")
+}
+
+model CrmChatWorkflowInstance {
+  id               String   @id @db.VarChar(120)
+  templateId       String   @map("template_id") @db.VarChar(120)
+  templateCode     String   @map("template_code") @db.VarChar(80)
+  title            String   @db.VarChar(255)
+  conversationId   String   @map("conversation_id") @db.VarChar(120)
+  messageId        String   @map("message_id") @db.VarChar(120)
+  status           String   @default("IN_PROGRESS") @db.VarChar(30) // IN_PROGRESS, COMPLETED, REJECTED, CANCELLED
+  currentStepIndex Int      @default(0) @map("current_step_index")
+  initiatorStaffId Int?     @map("initiator_staff_id")
+  initiatorName    String   @map("initiator_name") @db.VarChar(150)
+  stepsJson        Json     @map("steps_json")
+  stepLogsJson     Json     @map("step_logs_json")
+  formDataJson     Json     @map("form_data_json")
+  syncedRecordType String?  @map("synced_record_type") @db.VarChar(50)
+  syncedRecordId   Int?     @map("synced_record_id")
+  createdAt        DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  @@index([conversationId, status], map: "chat_wf_inst_conv_status_idx")
+  @@index([templateCode, status], map: "chat_wf_inst_code_status_idx")
+  @@map("crm_chat_workflow_instances")
+}
+
+

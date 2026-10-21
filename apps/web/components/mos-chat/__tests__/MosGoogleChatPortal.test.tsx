@@ -205,9 +205,7 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
     expect(screen.getByText(/Task của tôi/i)).toBeTruthy();
 
     // Verify task search input is rendered
-    expect(
-      screen.getByPlaceholderText(/Tìm kiếm công việc/i)
-    ).toBeTruthy();
+    expect(screen.getByPlaceholderText(/Tìm kiếm công việc/i)).toBeTruthy();
   });
 
   it('accepts targetNavigation prop to navigate and highlight target message', async () => {
@@ -272,5 +270,35 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
     // Verify typing into textarea
     fireEvent.change(textarea, { target: { value: 'Chào Danny, khung chat đã rộng rãi rồi nhé!' } });
     expect(textarea.value).toBe('Chào Danny, khung chat đã rộng rãi rồi nhé!');
+  });
+
+  it('strictly shows [⚡ Quy trình] workflow builder button ONLY to Super Admin Danny and hides it for regular staff', async () => {
+    const { unmount } = render(
+      <MosGoogleChatPortal
+        open={true}
+        onClose={vi.fn()}
+        onToggle={vi.fn()}
+        currentUser={{ id: 102, username: 'tuyetnhi', role: 'telesales' }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Giao Task & Cài nhắc hẹn mới/i })).toBeTruthy();
+    });
+    expect(screen.queryByRole('button', { name: /Khởi tạo Quy trình Sống/i })).toBeNull();
+    unmount();
+
+    render(
+      <MosGoogleChatPortal
+        open={true}
+        onClose={vi.fn()}
+        onToggle={vi.fn()}
+        currentUser={{ id: 1, username: 'danny', email: 'danny@wingslashes.com', role: 'super_admin' }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Khởi tạo Quy trình Sống/i })).toBeTruthy();
+    });
   });
 });
