@@ -5516,7 +5516,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     const convId = missionSourceConvId || activeConversation?.id || '';
     const msgId = missionSourceMsg?.id || missionSourceTask?.sourceMessageId || '';
     if (!convId || !msgId) {
-      antdMessage.warning('Không tìm thấy tin nhắn gốc để đóng gói ngữ cảnh giao việc cho AG.');
+      antdMessage.warning('Không tìm thấy tin nhắn gốc để đóng gói ngữ cảnh chuyển vào mOS Mission.');
       return;
     }
 
@@ -5552,11 +5552,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         handleOpenThread(msgId);
         notifyLivePeers();
         antdMessage.success(
-          `🚀 Đã giao mOS Mission #${res.mission.missionKey} (${res.mission.missionCode}) & tự động duyệt Cổng 1 cho AG!`
+          `🚀 Đã chuyển vào mOS Mission #${res.mission.missionKey} (${res.mission.missionCode}) & duyệt Cổng 1!`
         );
       }
     } catch (err: SafeAny) {
-      antdMessage.error(err?.response?.data?.message || err?.message || 'Không thể giao nhiệm vụ sang mOS Mission.');
+      antdMessage.error(err?.response?.data?.message || err?.message || 'Không thể chuyển nhiệm vụ sang mOS Mission.');
     } finally {
       setIsDispatchingMission(false);
     }
@@ -5602,7 +5602,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         notifyLivePeers();
 
         if (action === 'APPROVE_IMPLEMENTATION') {
-          antdMessage.success(`🚀 Đã duyệt Cổng 1 & đánh thức phiên AG nâng cấp tiếp cho #${mission.missionKey}!`);
+          antdMessage.success(
+            `🚀 Đã duyệt Cổng 1 & chuyển #${mission.missionKey} vào hàng đợi thực thi của mOS Mission!`
+          );
         } else if (action === 'APPROVE_COMMIT') {
           antdMessage.success(`✅ Đã duyệt Commit (Cổng 2) cho #${mission.missionKey}!`);
         } else if (action === 'APPROVE_DEPLOY') {
@@ -5611,7 +5613,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           antdMessage.success(`🎉 Đã xác nhận nghiệm thu #${mission.missionKey} & tự động hoàn tất Task!`);
         } else if (action === 'REPORTER_REOPEN') {
           antdMessage.info(
-            `🔄 Đã ghi nhận yêu cầu nâng cấp / chỉnh thêm trên #${mission.missionKey} (chờ anh Danny duyệt giao AG)!`
+            `🔄 Đã ghi nhận yêu cầu nâng cấp / chỉnh thêm trên #${mission.missionKey} (chờ anh Danny duyệt Cổng 1 mOS Mission)!`
           );
         }
       }
@@ -5680,7 +5682,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     const palette = stageColors[mission.stage] || stageColors.RECEIVED;
     const steps = [
       { idx: 1, label: '1. Tiếp nhận' },
-      { idx: 2, label: '2. AG đang làm' },
+      { idx: 2, label: '2. Đang xử lý' },
       { idx: 3, label: '3. Nghiệm thu' },
       { idx: 4, label: '4. Hoàn tất' },
     ];
@@ -5730,7 +5732,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
           <div className="flex items-center gap-1 shrink-0">
             {mode !== 'thread' && msg && (
-              <Tooltip title="Mở luồng trao đổi & theo dõi trực tiếp với AG">
+              <Tooltip title="Mở luồng trao đổi & theo dõi tiến độ mOS Mission">
                 <button
                   type="button"
                   onClick={() => {
@@ -5834,7 +5836,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   ) : (
                     <Rocket size={13} />
                   )}
-                  <span>Giao AG nâng cấp tiếp (Cổng 1)</span>
+                  <span>Duyệt nâng cấp tiếp · Cổng 1 (mOS Mission)</span>
                 </button>
               )}
 
@@ -5943,8 +5945,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   }}
                   placeholder={
                     mission.stage === 'COMPLETED'
-                      ? 'Nhập nội dung cần nâng cấp tiếp trong luồng này (chờ anh Danny duyệt giao AG)...'
-                      : 'Nhập điểm cần AG chỉnh lại (VD: Thêm cột tổng số buổi còn lại)...'
+                      ? 'Nhập nội dung cần nâng cấp tiếp trong luồng này (chờ anh Danny duyệt Cổng 1 mOS Mission)...'
+                      : 'Nhập điểm cần điều chỉnh thêm (VD: Thêm cột tổng số buổi còn lại)...'
                   }
                   className="flex-1 h-7 px-2.5 rounded-lg text-[11.5px] outline-none"
                   style={{
@@ -6346,14 +6348,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               <button
                 type="button"
                 onClick={() => openMissionModalFromChat(sourceMsg || null, task, task.conversationId)}
-                className="h-6 px-2 rounded-md inline-flex items-center gap-1 text-[10.5px] font-bold cursor-pointer transition-all hover:opacity-90"
+                className="h-6 px-2 rounded-md inline-flex items-center gap-1 text-[10.5px] font-bold cursor-pointer transition-all hover:opacity-90 shrink-0 whitespace-nowrap"
                 style={{
                   background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
                   color: '#fff',
                 }}
               >
                 <Rocket size={11} />
-                <span>Giao AG</span>
+                <span>Chuyển mOS Mission</span>
               </button>
             )}
           </div>
@@ -11120,12 +11122,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                   title={
                                     m.mission || linkedTask?.mission
                                       ? `Mở tiến độ mOS Mission #${(m.mission || linkedTask?.mission)?.missionKey}`
-                                      : '🚀 Giao mOS Mission cho AG lập trình (Đóng gói trọn luồng & hình ảnh)'
+                                      : '🚀 Chuyển vào mOS Mission (Đóng gói trọn luồng & hình ảnh)'
                                   }
                                 >
                                   <button
                                     type="button"
-                                    aria-label="Giao mOS Mission cho AG"
+                                    aria-label="Chuyển vào mOS Mission"
                                     onClick={() => openMissionModalFromChat(m, linkedTask)}
                                     className="w-6 h-6 rounded-full inline-flex items-center justify-center cursor-pointer transition-transform hover:scale-110"
                                     style={{
@@ -12499,7 +12501,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               </div>
               <div className="flex items-center gap-1">
                 {isStrictDannySuperAdmin && !activeThreadMessage.mission && (
-                  <Tooltip title="Đóng gói trọn luồng này (tin nhắn gốc + câu trả lời + hình ảnh) giao cho AG lập trình">
+                  <Tooltip title="Đóng gói trọn luồng này (tin nhắn gốc + câu trả lời + hình ảnh) chuyển vào mOS Mission (Cổng 1)">
                     <button
                       type="button"
                       onClick={() =>
@@ -12510,7 +12512,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           ) || null
                         )
                       }
-                      className="h-7 px-2.5 rounded-md inline-flex items-center gap-1 text-[11px] font-extrabold cursor-pointer transition-all hover:scale-[1.02]"
+                      className="h-7 px-2.5 rounded-md inline-flex items-center gap-1 text-[11px] font-extrabold cursor-pointer transition-all hover:scale-[1.02] shrink-0 whitespace-nowrap"
                       style={{
                         background: 'rgba(139, 92, 246, 0.2)',
                         border: '1px solid rgba(139, 92, 246, 0.45)',
@@ -12518,7 +12520,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       }}
                     >
                       <Rocket size={12} />
-                      <span>Giao mOS Mission</span>
+                      <span>Chuyển vào mOS Mission</span>
                     </button>
                   </Tooltip>
                 )}
@@ -14263,22 +14265,28 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         </div>
       </Modal>
 
-      {/* ================= MODAL: GIAO mOS MISSION CHO AG (1-CLICK DISPATCH) ================= */}
+      {/* ================= MODAL: CHUYỂN VÀO mOS MISSION (1-CLICK DISPATCH) ================= */}
       <Modal
         open={missionModalOpen && isStrictDannySuperAdmin}
         zIndex={1360}
         onCancel={() => !isDispatchingMission && setMissionModalOpen(false)}
         footer={
-          <div className="flex items-center justify-between gap-2 pt-1">
-            <span className="text-[11px] text-slate-400">
-              ⚡ Tự động duyệt Cổng 1 & đồng bộ 2 chiều ngay trong luồng Chat
-            </span>
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-white/10">
+            <div className="flex items-center gap-1.5 text-[11.5px] text-slate-400 text-left leading-snug min-w-0">
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-amber-500/15 text-amber-400 shrink-0 text-[10px]">
+                ⚡
+              </span>
+              <span className="truncate">
+                Tự động duyệt <strong className="text-slate-200 font-semibold">Cổng 1</strong> & đồng bộ 2 chiều ngay
+                trong luồng Chat
+              </span>
+            </div>
+            <div className="flex items-center justify-end gap-2 shrink-0">
               <button
                 type="button"
                 disabled={isDispatchingMission}
                 onClick={() => setMissionModalOpen(false)}
-                className="px-3 py-1.5 rounded-lg text-[12px] font-semibold cursor-pointer"
+                className="h-9 px-3.5 rounded-lg text-[12.5px] font-semibold inline-flex items-center justify-center cursor-pointer transition-all hover:opacity-90 shrink-0 whitespace-nowrap"
                 style={{ background: surfaceRaised, border: `1px solid ${borderColor}`, color: token.colorText }}
               >
                 Huỷ
@@ -14287,62 +14295,127 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 type="button"
                 disabled={isDispatchingMission || !missionTitle.trim()}
                 onClick={() => void handleConfirmDispatchMission()}
-                className="px-4 py-1.5 rounded-lg text-[12px] font-extrabold inline-flex items-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50"
-                style={{ background: '#10b981', color: '#000' }}
+                className="h-9 px-4 rounded-lg text-[12.5px] font-extrabold inline-flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition-all hover:brightness-105 disabled:opacity-50 shrink-0 whitespace-nowrap"
+                style={{
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  color: '#04130d',
+                  border: '1px solid rgba(16, 185, 129, 0.5)',
+                }}
               >
-                {isDispatchingMission ? <Loader2 size={14} className="animate-spin" /> : <Rocket size={14} />}
-                <span>{isDispatchingMission ? 'Đang đóng gói...' : '🚀 Giao ngay cho AG'}</span>
+                {isDispatchingMission ? (
+                  <Loader2 size={14} className="animate-spin shrink-0" />
+                ) : (
+                  <Rocket size={15} className="shrink-0" />
+                )}
+                <span>{isDispatchingMission ? 'Đang chuyển sang mOS Mission...' : 'Chuyển vào mOS Mission'}</span>
               </button>
             </div>
           </div>
         }
         title={
-          <span className="flex items-center gap-2 text-[14.5px] font-extrabold">
-            <Rocket size={17} className="text-purple-400" />
-            <span>Giao mOS Mission cho AG Lập Trình</span>
-          </span>
+          <div className="flex items-center justify-between gap-2 pr-6 flex-wrap">
+            <span className="inline-flex items-center gap-2 text-[15px] font-extrabold">
+              <span
+                className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0"
+                style={{
+                  background: 'rgba(167, 139, 250, 0.16)',
+                  border: '1px solid rgba(167, 139, 250, 0.35)',
+                  color: '#c4b5fd',
+                }}
+              >
+                <Rocket size={15} />
+              </span>
+              <span>Chuyển vào mOS Mission</span>
+            </span>
+            <span
+              className="inline-flex items-center justify-center leading-none gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold"
+              style={{
+                background: 'rgba(16, 185, 129, 0.14)',
+                border: '1px solid rgba(16, 185, 129, 0.35)',
+                color: '#34d399',
+              }}
+            >
+              <span>Đích kế tiếp: mOS Mission · Cổng 1</span>
+            </span>
+          </div>
         }
-        width={isMobile ? 'calc(100vw - 24px)' : 480}
+        width={isMobile ? 'calc(100vw - 24px)' : 560}
       >
-        <div className="space-y-3 py-1">
+        <div className="space-y-3.5 py-1.5">
+          {/* Next Destination Flow Banner */}
+          <div
+            className="px-3 py-2 rounded-xl flex items-center justify-between gap-2 text-[11px]"
+            style={{
+              background: isDark ? 'rgba(15, 23, 42, 0.65)' : 'rgba(248, 250, 252, 0.95)',
+              border: `1px solid ${borderColor}`,
+            }}
+          >
+            <div className="flex items-center gap-1.5 font-semibold text-slate-400 min-w-0">
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-purple-500/20 text-purple-300 text-[10px] font-bold shrink-0">
+                1
+              </span>
+              <span className="truncate">Luồng mOS Chat</span>
+            </div>
+            <span className="text-slate-500 shrink-0">→</span>
+            <div className="flex items-center gap-1.5 font-extrabold text-emerald-400 min-w-0">
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold shrink-0">
+                2
+              </span>
+              <span className="truncate">mOS Mission (Cổng 1)</span>
+            </div>
+            <span className="text-slate-500 shrink-0">→</span>
+            <div className="flex items-center gap-1.5 font-semibold text-slate-400 min-w-0">
+              <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold shrink-0">
+                3
+              </span>
+              <span className="truncate">Xử lý & Nghiệm thu</span>
+            </div>
+          </div>
+
           {missionSourceMsg && (
             <div
-              className="p-2.5 rounded-xl text-[12px] space-y-1.5"
+              className="p-3 rounded-xl text-[12px] space-y-1.5"
               style={{
                 background: surfaceRaised,
                 border: `1px solid ${borderStrong}`,
                 borderLeft: '3.5px solid #a78bfa',
               }}
             >
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-bold text-purple-400">
-                  📦 Gói ngữ cảnh tự động từ {missionSourceMsg.senderName}
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="font-bold text-purple-300 inline-flex items-center gap-1.5">
+                  <span>📦 Gói ngữ cảnh từ {missionSourceMsg.senderName}</span>
                 </span>
-                <span className="text-[10.5px] text-slate-400 tabular-nums">
+                <span
+                  className="inline-flex items-center justify-center leading-none px-2 py-1 rounded-md text-[10.5px] font-bold tabular-nums"
+                  style={{
+                    background: isDark ? 'rgba(148, 163, 184, 0.12)' : 'rgba(15, 23, 42, 0.06)',
+                    color: token.colorTextSecondary,
+                  }}
+                >
                   {1 + (missionSourceMsg.thread?.length || 0)} tin nhắn ·{' '}
                   {(missionSourceMsg.attachments?.length || 0) +
                     (missionSourceMsg.thread || []).reduce((acc, r) => acc + (r.attachments?.length || 0), 0)}{' '}
                   hình ảnh
                 </span>
               </div>
-              <div className="text-[11.5px] opacity-90 line-clamp-3 whitespace-pre-wrap">
+              <div className="text-[11.5px] opacity-90 line-clamp-3 whitespace-pre-wrap leading-relaxed">
                 &ldquo;{missionSourceMsg.text}&rdquo;
               </div>
             </div>
           )}
 
           <div>
-            <div className="text-[11px] font-bold text-slate-400 mb-1">Tiêu đề mOS Mission</div>
+            <div className="text-[11.5px] font-bold text-slate-300 mb-1.5">Tiêu đề Ticket trên mOS Mission</div>
             <Input
               value={missionTitle}
               onChange={(e) => setMissionTitle(e.target.value)}
-              placeholder="Nhập tiêu đề nhiệm vụ cho AG..."
+              placeholder="Nhập tiêu đề nhiệm vụ chuyển vào mOS Mission..."
             />
           </div>
 
           <div>
-            <div className="text-[11px] font-bold text-slate-400 mb-1">Phân loại nhiệm vụ</div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="text-[11.5px] font-bold text-slate-300 mb-1.5">Phân loại nhiệm vụ</div>
+            <div className="grid grid-cols-2 gap-2.5">
               {[
                 { key: 'FEATURE' as const, label: '✨ Tính năng / Nâng cấp mới', color: '#a78bfa' },
                 { key: 'BUG' as const, label: '🐞 Sửa lỗi vận hành (Bug)', color: '#f43f5e' },
@@ -14353,7 +14426,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     key={opt.key}
                     type="button"
                     onClick={() => setMissionType(opt.key)}
-                    className="h-9 px-3 rounded-lg text-[12px] font-bold flex items-center justify-center cursor-pointer transition-all"
+                    className="h-9 px-3 rounded-lg text-[12px] font-bold inline-flex items-center justify-center gap-1.5 cursor-pointer transition-all whitespace-nowrap"
                     style={{
                       background: active ? `${opt.color}22` : surfaceRaised,
                       border: `1.5px solid ${active ? opt.color : borderColor}`,
@@ -14368,8 +14441,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           </div>
 
           <div>
-            <div className="text-[11px] font-bold text-slate-400 mb-1">
-              Chỉ đạo thêm của Super Admin Danny cho AG (Tuỳ chọn)
+            <div className="text-[11.5px] font-bold text-slate-300 mb-1.5">
+              Chỉ đạo / Ghi chú triển khai cho mOS Mission (Tuỳ chọn)
             </div>
             <Input.TextArea
               rows={2}
