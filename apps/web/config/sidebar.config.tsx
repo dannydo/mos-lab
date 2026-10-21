@@ -100,6 +100,12 @@ export function getSidebarGroups(
       icon: <AppIcon icon={Target} size="sm" className="text-amber-500" />,
       path: '/dashboard/telesale-target',
     },
+    {
+      key: 'telesale-competency',
+      label: 'Khung Năng Lực Telesales',
+      icon: <AppIcon icon={Trophy} size="sm" className="text-amber-500" />,
+      path: '/dashboard/telesale-competency',
+    },
   ];
 
   if (isSuperAdmin) {
@@ -347,6 +353,12 @@ export function getSidebarGroups(
       label: 'Mục Tiêu Telesales T10',
       icon: <AppIcon icon={Target} size="sm" className="text-amber-500" />,
       path: '/dashboard/telesale-target',
+    },
+    {
+      key: 'telesale-competency',
+      label: 'Khung Năng Lực Telesales',
+      icon: <AppIcon icon={Trophy} size="sm" className="text-amber-500" />,
+      path: '/dashboard/telesale-competency',
     },
     {
       key: 'plans',
@@ -628,6 +640,7 @@ export function getSelectedMenuKey(
   if (pathname.includes('/dashboard/pilot-dark-lashes')) return 'pilot-dark-lashes';
   if (pathname.includes('/dashboard/payroll-pilot')) return 'cc-payroll-pilot';
 
+  if (pathname.includes('/dashboard/telesale-competency')) return 'telesale-competency';
   if (pathname.includes('/dashboard/telesale-target')) return 'telesale-target';
   if (pathname.includes('/dashboard/cc')) return 'cc';
   if (pathname.includes('/dashboard/cv')) return 'cv';

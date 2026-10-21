@@ -378,6 +378,24 @@ function TelesaleTargetContent() {
               </Link>
             </Tooltip>
 
+            {/* Khung Năng Lực Telesales */}
+            <Tooltip title="Khung Năng Lực & Thăng/Giáng Bậc Telesales">
+              <Link href="/dashboard/telesale-competency">
+                <button
+                  type="button"
+                  aria-label="Khung Năng Lực"
+                  className={`h-7 px-2 rounded-lg border text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
+                    isDark
+                      ? 'border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300'
+                      : 'border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 shadow-2xs'
+                  }`}
+                >
+                  <Trophy className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="text-[11px] font-semibold">Khung Năng Lực</span>
+                </button>
+              </Link>
+            </Tooltip>
+
             {/* 2. Bộ chọn Đội nhóm (Team Selector) */}
             <Tooltip title="Chọn Đội nhóm áp dụng làm nguồn nhân sự cho War Room">
               <button
