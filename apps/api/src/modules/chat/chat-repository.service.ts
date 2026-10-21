@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import type {
   MosChatAccessConfig,
@@ -597,5 +598,92 @@ export async function loadOrMigrateRelationalChatData(
       tasks: legacyData.tasks,
       userPrefsByUserKey: legacyData.userPrefsByUserKey,
     };
+  }
+}
+
+/**
+ * Append an AI bot message directly into a chat conversation in both JSON state and relational DB.
+ */
+export async function appendBotMessageToChatConversation(
+  fastify: FastifyInstance,
+  conversationId: string,
+  message: {
+    text: string;
+    thinking?: string | null;
+    suggestedAction?: SafeAny;
+    suggestedActions?: SafeAny[];
+    senderName?: string;
+    recipientName?: string;
+  }
+): Promise<MosChatMessage | null> {
+  const crm = (fastify as SafeAny)?.prisma?.crm;
+  if (!crm) return null;
+
+  try {
+    const config = await crm.crmConfig.findUnique({ where: { key: 'mos_chat:conversations_v1' } });
+    if (!config) return null;
+    const convs: MosChatConversation[] = JSON.parse(config.value || '[]');
+    const conv = convs.find((c) => c.id === conversationId);
+    if (!conv) return null;
+
+    const now = new Date();
+    const timeLabel = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+    let cleanText = (message.text || '')
+      .replace(/<action[\s\S]*?<\/action>/gi, '')
+      .replace(/<\/?action[^>]*>/gi, '')
+      .trim();
+
+    if (message.recipientName && !cleanText.includes(`@${message.recipientName}`)) {
+      cleanText = `Chào @${message.recipientName}, ${cleanText}`;
+    }
+
+    // Deduplication check: Avoid appending duplicate bot reply to this conversation within 30 seconds
+    const recentBotMsg = conv.messages
+      .slice(-5)
+      .find(
+        (m) => m.isAiBot && m.text === cleanText && Math.abs(now.getTime() - new Date(m.createdAt).getTime()) < 30_000
+      );
+    if (recentBotMsg) {
+      return recentBotMsg;
+    }
+
+    const newMsg: MosChatMessage = {
+      id: `msg-${randomUUID().slice(0, 8)}`,
+      conversationId: conv.id,
+      senderId: 'wings-ai-copilot',
+      senderName: message.senderName || '🤖 MAI',
+      senderRole: 'mOS AI',
+      senderAvatar: 'MAI',
+      roleColor: '#8b5cf6',
+      text: cleanText,
+      timeLabel,
+      createdAt: now.toISOString(),
+      reactions: {},
+      customerCard: null,
+      thread: [],
+      isAiBot: true,
+      aiThinking: message.thinking || null,
+      aiAction: message.suggestedAction || null,
+      aiActions: message.suggestedActions || (message.suggestedAction ? [message.suggestedAction] : null),
+    };
+
+    conv.messages.push(newMsg);
+    conv.updatedAt = now.toISOString();
+
+    await crm.crmConfig.update({
+      where: { key: 'mos_chat:conversations_v1' },
+      data: { value: JSON.stringify(convs) },
+    });
+
+    // Also sync to relational DB if available
+    try {
+      await syncConversationsToRelationalDb(fastify, convs);
+    } catch (_) {}
+
+    return newMsg;
+  } catch (err) {
+    fastify.log?.warn?.({ err }, 'Failed to append bot message to chat conversation');
+    return null;
   }
 }

@@ -18,6 +18,9 @@ export interface AgChatBridgeJob {
   title?: string;
   createdAt: number;
   sessionId?: string;
+  scope?: string;
+  targetChatConvId?: string;
+  userName?: string;
 }
 
 interface PendingBridgeJobEntry {
@@ -368,7 +371,8 @@ export class AgChatBridgeService {
     prompt: string,
     title?: string,
     timeoutMs = 240_000,
-    sessionId?: string
+    sessionId?: string,
+    metadata?: { scope?: string; targetChatConvId?: string; userName?: string }
   ): Promise<{ conversationId: string; response: ParsedAiResponse }> {
     return new Promise((resolve, reject) => {
       const jobId = randomUUID();
@@ -379,6 +383,9 @@ export class AgChatBridgeService {
         title,
         createdAt: Date.now(),
         sessionId,
+        scope: metadata?.scope,
+        targetChatConvId: metadata?.targetChatConvId,
+        userName: metadata?.userName,
       };
 
       if (this.archivedJobs.size >= 100) {
