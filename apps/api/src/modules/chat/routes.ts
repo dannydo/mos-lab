@@ -1795,6 +1795,30 @@ async function loadChatState(fastify: FastifyInstance): Promise<{
   return memoryChatCache;
 }
 
+let userPrefsPersistTimeout: NodeJS.Timeout | null = null;
+let latestUserPrefsSnapshot: Record<string, MosChatUserSidebarPrefs> | null = null;
+
+function scheduleUserPrefsPersist(fastify: FastifyInstance, snapshot: Record<string, MosChatUserSidebarPrefs>) {
+  latestUserPrefsSnapshot = snapshot;
+  if (userPrefsPersistTimeout) return;
+  userPrefsPersistTimeout = setTimeout(() => {
+    userPrefsPersistTimeout = null;
+    const toSave = latestUserPrefsSnapshot;
+    if (!toSave) return;
+    writeChain = writeChain
+      .then(async () => {
+        await fastify.prisma.crm.crmConfig.upsert({
+          where: { key: CHAT_USER_PREFS_CONFIG_KEY },
+          update: { value: JSON.stringify(toSave) },
+          create: { key: CHAT_USER_PREFS_CONFIG_KEY, value: JSON.stringify(toSave) },
+        });
+      })
+      .catch((err) => {
+        fastify.log.error(err, 'debounced saveUserSidebarPrefs crmConfig error:');
+      });
+  }, 200);
+}
+
 async function saveUserSidebarPrefs(
   fastify: FastifyInstance,
   userPrefKey: string,
@@ -1813,21 +1837,17 @@ async function saveUserSidebarPrefs(
     memoryChatCache.lastSyncedFromDbAt = nextVersion;
   }
   const snapshot = { ...state.userPrefsByUserKey };
+
+  // Debounce the heavy JSON crmConfig persist, and run relational DB sync asynchronously without blocking request
+  scheduleUserPrefsPersist(fastify, snapshot);
   writeChain = writeChain
     .then(async () => {
-      await Promise.all([
-        fastify.prisma.crm.crmConfig.upsert({
-          where: { key: CHAT_USER_PREFS_CONFIG_KEY },
-          update: { value: JSON.stringify(snapshot) },
-          create: { key: CHAT_USER_PREFS_CONFIG_KEY, value: JSON.stringify(snapshot) },
-        }),
-        syncUserPrefsToRelationalDb(fastify, userPrefKey, normalized),
-      ]);
+      await syncUserPrefsToRelationalDb(fastify, userPrefKey, normalized);
     })
     .catch((err) => {
-      fastify.log.error(err, 'saveUserSidebarPrefs error:');
+      fastify.log.error(err, 'saveUserSidebarPrefs relational sync error:');
     });
-  await writeChain;
+
   return normalized;
 }
 
@@ -1850,7 +1870,6 @@ async function saveAccessConfig(fastify: FastifyInstance, accessConfig: MosChatA
     .catch((err) => {
       fastify.log.error(err, 'saveAccessConfig error:');
     });
-  await writeChain;
   return normalized;
 }
 
@@ -1876,7 +1895,6 @@ async function saveConversations(fastify: FastifyInstance, conversations: MosCha
     .catch((err) => {
       fastify.log.error(err, 'saveConversations error:');
     });
-  await writeChain;
 }
 
 async function saveTasks(fastify: FastifyInstance, tasks: MosChatTaskItem[]) {
@@ -1901,7 +1919,6 @@ async function saveTasks(fastify: FastifyInstance, tasks: MosChatTaskItem[]) {
     .catch((err) => {
       fastify.log.error(err, 'saveTasks error:');
     });
-  await writeChain;
 }
 
 async function loadStaffDirectoryCached(fastify: FastifyInstance): Promise<MosChatStaffMember[]> {

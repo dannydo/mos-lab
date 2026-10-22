@@ -2320,11 +2320,19 @@ export class CampaignService {
   private static inFlightSharedPoolOverviewPromises = new Map<string, Promise<SharedPoolOverviewStats>>();
   private static campaignStatsComputedAt = new Map<string, number>();
   private static sharedPoolOverviewComputedAt = new Map<string, number>();
+  private static lastMaintainedAtMap = new Map<number, number>();
+  private static staffPerformanceCache = new Map<
+    number,
+    { data: CampaignStaffPerformanceResponse; computedAt: number }
+  >();
+  private static inFlightStaffPerformancePromises = new Map<number, Promise<CampaignStaffPerformanceResponse>>();
 
   static invalidateCampaignCache(fastify: FastifyInstance, campaignId?: number): void {
     if (campaignId) {
       fastify.cache?.invalidatePattern(`^campaign:stats:${campaignId}:`);
       fastify.cache?.invalidatePattern(`^campaign:shared-pool:overview:${campaignId}:`);
+      this.staffPerformanceCache.delete(campaignId);
+      this.inFlightStaffPerformancePromises.delete(campaignId);
       for (const key of this.inFlightCampaignStatsPromises.keys()) {
         if (key.startsWith(`campaign:stats:${campaignId}:`)) {
           this.inFlightCampaignStatsPromises.delete(key);
@@ -2348,6 +2356,8 @@ export class CampaignService {
     } else {
       fastify.cache?.invalidatePattern(`^campaign:stats:`);
       fastify.cache?.invalidatePattern(`^campaign:shared-pool:overview:`);
+      this.staffPerformanceCache.clear();
+      this.inFlightStaffPerformancePromises.clear();
       this.inFlightCampaignStatsPromises.clear();
       this.inFlightSharedPoolOverviewPromises.clear();
       this.campaignStatsComputedAt.clear();
@@ -2905,6 +2915,24 @@ export class CampaignService {
   }
 
   /**
+   * Throttled Shared Pool maintenance:
+   * Only triggers at most once every 60 seconds per campaign in the background.
+   * Completely avoids blocking read/overview requests.
+   */
+  static maintainSharedPoolThrottled(fastify: FastifyInstance, campaignId: number): void {
+    const now = Date.now();
+    const lastRun = this.lastMaintainedAtMap.get(campaignId) || 0;
+    if (now - lastRun < 60_000) {
+      return;
+    }
+    this.lastMaintainedAtMap.set(campaignId, now);
+    this.maintainSharedPool(fastify, campaignId).catch((err: unknown) => {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      fastify.log?.warn?.(`[maintainSharedPoolThrottled] Error maintaining campaign ${campaignId}: ${errMsg}`);
+    });
+  }
+
+  /**
    * Get Shared Pool Overview Stats: active batch metrics, campaign metrics, burn rate, and early warning levels.
    * Features Stale-While-Revalidate (SWR):
    * - Fresh (< 60s): Returns directly from RAM (< 5ms).
@@ -2986,7 +3014,7 @@ export class CampaignService {
     campaignId: number,
     batchNumberParam?: number | string | 'ALL'
   ): Promise<SharedPoolOverviewStats> {
-    await this.maintainSharedPool(fastify, campaignId);
+    this.maintainSharedPoolThrottled(fastify, campaignId);
 
     const campaign = await fastify.prisma.crm.crmCustomCampaign.findUnique({
       where: { id: campaignId },
@@ -3020,12 +3048,42 @@ export class CampaignService {
       batchWhere.batchNumber = selectedBatch;
     }
 
-    // Counts for selected batch (or all batches if ALL)
-    const activeBatchCustomers = await fastify.prisma.crm.crmCampaignCustomer.groupBy({
-      by: ['poolStatus'],
-      where: batchWhere,
-      _count: { id: true },
-    });
+    // Run single pass campaign-wide SQL aggregation, batch groupBy, burn rate query, and cached staff performance concurrently
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const [campaignAggRows, activeBatchCustomers, recentActivityCount, staffPerformance] = await Promise.all([
+      fastify.prisma.crm.$queryRaw<
+        Array<{
+          totalCustomers: number | bigint;
+          totalExploited: number | bigint;
+          totalRemaining: number | bigint;
+          totalExcluded: number | bigint;
+          maxBatchNumber: number | null;
+        }>
+      >`
+        SELECT 
+          COUNT(*) as totalCustomers,
+          COALESCE(SUM(CASE WHEN pool_status IN ('EXPLOITED', 'BOOKED', 'EXCLUDED') THEN 1 ELSE 0 END), 0) as totalExploited,
+          COALESCE(SUM(CASE WHEN pool_status IN ('AVAILABLE', 'CLAIMED', 'RECYCLING', 'RECYCLE') THEN 1 ELSE 0 END), 0) as totalRemaining,
+          COALESCE(SUM(CASE WHEN pool_status = 'EXCLUDED' THEN 1 ELSE 0 END), 0) as totalExcluded,
+          COALESCE(MAX(batch_number), 1) as maxBatchNumber
+        FROM crm_campaign_customers
+        WHERE campaign_id = ${campaignId} AND removed_at IS NULL
+      `,
+      fastify.prisma.crm.crmCampaignCustomer.groupBy({
+        by: ['poolStatus'],
+        where: batchWhere,
+        _count: { id: true },
+      }),
+      fastify.prisma.crm.crmCampaignSharedPoolLog.count({
+        where: {
+          campaignId,
+          action: { in: ['STATUS_UPDATE', 'CALL'] },
+          createdAt: { gte: oneDayAgo },
+        },
+      }),
+      this.getCampaignStaffPerformance(fastify, campaignId),
+    ]);
 
     const statusMap = new Map(activeBatchCustomers.map((g) => [g.poolStatus, g._count.id]));
     const batchAvailable = statusMap.get('AVAILABLE') || 0;
@@ -3036,55 +3094,21 @@ export class CampaignService {
     const batchBooked = statusMap.get('BOOKED') || 0;
     const batchTotal = batchAvailable + batchClaimed + batchExploited + batchRecycling + batchExcluded + batchBooked;
 
-    // Highest batch number
-    const maxBatchCustomer = await fastify.prisma.crm.crmCampaignCustomer.findFirst({
-      where: { campaignId, removedAt: null },
-      orderBy: { batchNumber: 'desc' },
-      select: { batchNumber: true },
-    });
-    const totalBatches = Math.max(activeBatchNumber, maxBatchCustomer?.batchNumber || 1);
+    const agg = campaignAggRows[0] || {
+      totalCustomers: 0,
+      totalExploited: 0,
+      totalRemaining: 0,
+      totalExcluded: 0,
+      maxBatchNumber: 1,
+    };
 
-    // Total campaign-wide metrics
-    const totalCustomers = await fastify.prisma.crm.crmCampaignCustomer.count({
-      where: { campaignId, removedAt: null },
-    });
-
-    const totalExploited = await fastify.prisma.crm.crmCampaignCustomer.count({
-      where: {
-        campaignId,
-        poolStatus: { in: ['EXPLOITED', 'BOOKED', 'EXCLUDED'] },
-        removedAt: null,
-      },
-    });
-
-    const totalRemaining = await fastify.prisma.crm.crmCampaignCustomer.count({
-      where: {
-        campaignId,
-        poolStatus: { in: ['AVAILABLE', 'CLAIMED', 'RECYCLING', 'RECYCLE'] },
-        removedAt: null,
-      },
-    });
-
-    const totalExcluded = await fastify.prisma.crm.crmCampaignCustomer.count({
-      where: {
-        campaignId,
-        poolStatus: 'EXCLUDED',
-        removedAt: null,
-      },
-    });
+    const totalCustomers = Number(agg.totalCustomers || 0);
+    const totalExploited = Number(agg.totalExploited || 0);
+    const totalRemaining = Number(agg.totalRemaining || 0);
+    const totalExcluded = Number(agg.totalExcluded || 0);
+    const totalBatches = Math.max(activeBatchNumber, Number(agg.maxBatchNumber || 1));
 
     const percentRemaining = totalCustomers > 0 ? Math.round((totalRemaining / totalCustomers) * 100) : 0;
-
-    // Burn rate calculation: activity in last 24h
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const recentActivityCount = await fastify.prisma.crm.crmCampaignSharedPoolLog.count({
-      where: {
-        campaignId,
-        action: { in: ['STATUS_UPDATE', 'CALL'] },
-        createdAt: { gte: oneDayAgo },
-      },
-    });
-
     const burnRatePerHour = Number(Math.max(0.1, recentActivityCount / 24).toFixed(1));
     const estimatedHoursRemaining =
       totalRemaining > 0 && burnRatePerHour > 0 ? Number((totalRemaining / burnRatePerHour).toFixed(1)) : null;
@@ -3103,8 +3127,6 @@ export class CampaignService {
       warningLevel = 'WARNING';
       warningMessage = `Sắp hết Data (còn ${percentRemaining}%)`;
     }
-
-    const staffPerformance = await this.getCampaignStaffPerformance(fastify, campaignId);
 
     return {
       activeBatchNumber,
@@ -3133,9 +3155,60 @@ export class CampaignService {
 
   /**
    * Get Campaign Staff Performance (Kết quả khai thác theo nhân viên trong Campaign Teamwork) - MOS-BUG-81.
+   * Features Stale-While-Revalidate (SWR): Fresh < 60s from RAM, background revalidation.
    * Scoped strictly to this campaign and within campaign startDate/endDate window.
    */
   static async getCampaignStaffPerformance(
+    fastify: FastifyInstance,
+    campaignId: number
+  ): Promise<CampaignStaffPerformanceResponse> {
+    const cacheKey = campaignId;
+    const now = Date.now();
+    const cached = this.staffPerformanceCache.get(cacheKey);
+
+    if (cached) {
+      const age = now - cached.computedAt;
+      if (age < 60_000) {
+        return cached.data;
+      }
+      if (!this.inFlightStaffPerformancePromises.has(cacheKey)) {
+        const revalidatePromise = this.computeCampaignStaffPerformance(fastify, campaignId)
+          .then((res) => {
+            this.staffPerformanceCache.set(cacheKey, { data: res, computedAt: Date.now() });
+            return res;
+          })
+          .catch((err: unknown) => {
+            const errMsg = err instanceof Error ? err.message : String(err);
+            fastify.log?.warn?.(`[getCampaignStaffPerformance] Background revalidation failed: ${errMsg}`);
+            return cached.data;
+          })
+          .finally(() => {
+            this.inFlightStaffPerformancePromises.delete(cacheKey);
+          });
+        this.inFlightStaffPerformancePromises.set(cacheKey, revalidatePromise);
+      }
+      return cached.data;
+    }
+
+    const inFlight = this.inFlightStaffPerformancePromises.get(cacheKey);
+    if (inFlight) {
+      return await inFlight;
+    }
+
+    const computePromise = this.computeCampaignStaffPerformance(fastify, campaignId)
+      .then((res) => {
+        this.staffPerformanceCache.set(cacheKey, { data: res, computedAt: Date.now() });
+        return res;
+      })
+      .finally(() => {
+        this.inFlightStaffPerformancePromises.delete(cacheKey);
+      });
+
+    this.inFlightStaffPerformancePromises.set(cacheKey, computePromise);
+    return await computePromise;
+  }
+
+  private static async computeCampaignStaffPerformance(
     fastify: FastifyInstance,
     campaignId: number
   ): Promise<CampaignStaffPerformanceResponse> {

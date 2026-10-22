@@ -632,6 +632,9 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
             JOIN staff_tip st ON st.order_id = o.id AND st.tip_amount > 0
             LEFT JOIN report_order ro ON o.id = ro.order_id
             WHERE o.order_state = 'Completed'
+              AND o.created_staff_id IN (${bkIdsStr})
+              AND o.booking_date_start >= '${startPart} 00:00:00' - INTERVAL 2 DAY
+              AND o.booking_date_start <= '${endPart} 23:59:59' + INTERVAL 2 DAY
               AND (
                 (ro.actual_booking_date_start >= '${startPart} 00:00:00' AND ro.actual_booking_date_start <= '${endPart} 23:59:59')
                 OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${startPart} 00:00:00' AND o.booking_date_start <= '${endPart} 23:59:59')
