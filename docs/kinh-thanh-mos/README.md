@@ -1,4 +1,6 @@
-# Kinh Thánh mOS
+# Kinh Thánh mOS (Kinh Thánh Wings)
+
+> **Thông cáo vận hành**: Tạm thời, **Kinh Thánh mOS đồng thời là Kinh Thánh Wings** — hợp nhất toàn bộ quy chuẩn vận hành hệ thống, văn hóa ứng xử, chuẩn mực tay nghề và triết lý dịch vụ của chuỗi Wings Lashes vào một nguồn chân lý duy nhất.
 
 Kinh Thánh mOS là thư viện quy chuẩn vận hành dành cho cả nhân viên và AI. Tên gọi vui, nhưng mỗi nội dung phải truy nguyên được về code, ticket, quyết định sản phẩm hoặc dữ liệu kiểm chứng.
 

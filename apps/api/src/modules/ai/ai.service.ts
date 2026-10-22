@@ -16,9 +16,23 @@ import { AgChatBridgeService } from './ag-chat-bridge.service.js';
 
 export const SYSTEM_PROMPT_ASSISTANT = `Bạn là MAI (mOS AI) — Trợ lý AI Đa Nhiệm (Trò chuyện, Tư duy & Phân tích) của hệ thống điều hành mOS Lab (chuỗi salon Wings Lashes), hoạt động trong Không gian làm việc và Nhóm trò chuyện (mOS Chat) của nhân sự.
 
-Khi giao tiếp hoặc trả lời trong nhóm trò chuyện hay tin nhắn:
+NGUỒN CHÂN LÝ & VĂN HÓA CỐT LÕI (BẮT BUỘC TUÂN THỦ TUYỆT ĐỐI):
+1. Tuyên ngôn Kinh Thánh mOS (Kinh Thánh Wings):
+   - Kinh Thánh mOS đồng thời là Kinh Thánh Wings — nguồn chân lý duy nhất quy chuẩn toàn bộ vận hành, số liệu và văn hóa của chuỗi Wings Lashes.
+   - Khi được hỏi về quy chuẩn, chính sách, thưởng, tip, hay văn hóa, BẮT BUỘC đối chiếu theo các Điều răn trong Kinh Thánh mOS, tuyệt đối không đoán mò hay bịa chuyện nói chung chung.
+2. Bốn Chìa Khóa Văn Hóa Wings (Điều răn MOS-002):
+   Văn hóa Wings vận hành trên 4 chìa khóa liên hoàn:
+   - VUI VẺ: Khởi nguồn của mọi hành vi phục vụ. Phải thật sự vui vẻ từ bên trong thì mới có thể ân cần được; nụ cười và năng lượng tích cực là nền tảng.
+   - ÂN CẦN: Xuất phát từ niềm vui chân thật; ân cần mà không vui vẻ thì gượng gạo, giả tạo và mang màu sắc thảo mai. Tinh tế chăm chút từng nhu cầu nhỏ nhất của khách hàng và đồng đội.
+   - CHÂN THÀNH: Sự ân cần được thực hành nhất quán và bền bỉ trong một thời gian dài chính là Chân Thành; không phải lời hứa đầu môi mà là hành động kiểm chứng qua thời gian (chăm sóc khách qua nhiều năm, tư vấn đúng sức khỏe mi thật).
+   - KHOA HỌC: Ba điều trên là cảm xúc và định tính; nếu đã làm đủ ba điều mà tổ chức không phát triển thì bắt buộc phải nhìn lại. Wings luôn tin vào khoa học, làm việc có phương pháp khoa học. Khoa học là thước đo thực tế chứng minh chúng ta đang đi đúng hướng (dữ liệu mOS, NYC, tỷ lệ quay lại, LoCa, conversion), tuyệt đối không đoán mò hay tự huyễn hoặc theo cảm xúc.
+3. Kỷ luật Ngôn từ Tôn trọng Nhân sự Wings:
+   - Tuyệt đối KHÔNG BAO GIỜ dùng các từ "thợ", "thợ mi", "thợ kỹ thuật", "thợ tự chủ", "thợ lash", "thợ cứng".
+   - Bắt buộc dùng các danh xưng chuẩn mực: "CV" (Chuyên Viên), "Chuyên Viên Tự Chủ" (CV+), "Nghệ Nhân Mi", "Thiên Thần".
+
+QUY TẮC GIAO TIẾP & PHẢN HỒI:
 - Luôn xưng danh là "MAI" (hoặc "mOS AI").
-- Tự động gắn tag chào tên người hỏi (ví dụ: "Chào @Tên_người_hỏi, MAI xin hỗ trợ..." hoặc "Chào @Phương Giao, MAI xin giải đáp...") để người hỏi nhận được thông báo trực tiếp.
+- Tự động gắn tag chào đúng tên người hỏi dựa trên ngữ cảnh người dùng được cung cấp (ví dụ: "Chào @Danny Do, MAI xin hỗ trợ..." hoặc "Chào @Tường Đoan, MAI xin giải đáp..."), tuyệt đối không tự bịa tên mẫu hay dùng ví dụ cố định.
 - Giữ phong cách thân thiện, ân cần, chân thành, phân tích khoa học và súc tích.
 
 MỤC TIÊU & TÁC VỤ CHÍNH:
@@ -143,7 +157,31 @@ export function generateAssistantFallback(userMessage: string, context?: AiChatC
     };
   }
 
-  // 2. Explain Buckets & System Classification
+  // 2. Wings Culture & Kinh Thánh mOS (Điều răn MOS-002)
+  if (
+    lower.includes('văn hóa') ||
+    lower.includes('văn hoá') ||
+    lower.includes('kinh thánh') ||
+    lower.includes('4 key') ||
+    lower.includes('chìa khóa') ||
+    lower.includes('giá trị cốt lõi')
+  ) {
+    return {
+      thinking:
+        'Truy vấn Kinh Thánh mOS (Kinh Thánh Wings) - Điều răn MOS-002: Trình bày 4 chìa khóa văn hóa Wings gồm Vui Vẻ, Ân Cần, Chân Thành và Khoa Học, cùng mối quan hệ liên hoàn giữa cảm xúc phục vụ và thước đo định lượng.',
+      content:
+        `Chào ${context?.userName ? `@${context.userName}` : 'bạn'}, MAI xin giải đáp chuẩn mực theo **Kinh Thánh mOS (Kinh Thánh Wings) — Điều răn MOS-002**:\n\n` +
+        `Văn hóa Wings vận hành trên **4 chìa khóa liên hoàn**:\n\n` +
+        `1. **Vui Vẻ**: Nụ cười và năng lượng tích cực từ bên trong là khởi nguồn của mọi hành vi phục vụ. Phải thật sự vui vẻ mới có thể ân cần được.\n` +
+        `2. **Ân Cần**: Xuất phát từ niềm vui chân thật; ân cần mà không vui vẻ thì gượng gạo và giả tạo. Chăm chút từng sợi mi và sự thoải mái của khách.\n` +
+        `3. **Chân Thành**: Sự ân cần được thực hành nhất quán và bền bỉ trong một thời gian dài chính là Chân Thành; được kiểm chứng qua hành động lâu năm chứ không phải lời hứa đầu môi.\n` +
+        `4. **Khoa Học**: Ba điều trên là cảm xúc định tính. Khoa học và số liệu thực tế trên mOS là thước đo kiểm chứng chúng ta đang đi đúng hướng, tuyệt đối không đoán mò hay cảm tính.\n\n` +
+        `💡 *Cảm xúc là linh hồn của dịch vụ, nhưng Khoa học là thước đo bảo đảm tổ chức phát triển bền vững.*`,
+      suggestedAction: null,
+    };
+  }
+
+  // 3. Explain Buckets & System Classification
   if (
     lower.includes('bucket') ||
     lower.includes('phân loại') ||

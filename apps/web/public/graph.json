@@ -8112,7 +8112,7 @@
         "path": "/api/chat/bootstrap",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2054
+        "line": 2052
       }
     },
     {
@@ -8126,7 +8126,7 @@
         "path": "/api/chat/user-prefs",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2139
+        "line": 2137
       }
     },
     {
@@ -8140,7 +8140,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2214
+        "line": 2212
       }
     },
     {
@@ -8154,7 +8154,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2240
+        "line": 2238
       }
     },
     {
@@ -8168,7 +8168,7 @@
         "path": "/api/chat/upload-image",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2289
+        "line": 2287
       }
     },
     {
@@ -8182,7 +8182,7 @@
         "path": "/api/chat/media/:fileName",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2345
+        "line": 2343
       }
     },
     {
@@ -8196,7 +8196,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2437
+        "line": 2435
       }
     },
     {
@@ -8210,7 +8210,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2442
+        "line": 2440
       }
     },
     {
@@ -8224,7 +8224,7 @@
         "path": "/api/chat/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2447
+        "line": 2445
       }
     },
     {
@@ -8238,7 +8238,7 @@
         "path": "/api/chat/threads",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2545
+        "line": 2543
       }
     },
     {
@@ -8252,7 +8252,7 @@
         "path": "/api/chat/threads/move",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2637
+        "line": 2635
       }
     },
     {
@@ -8266,7 +8266,7 @@
         "path": "/api/chat/messages/:messageId/reaction",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2776
+        "line": 2774
       }
     },
     {
@@ -8280,7 +8280,7 @@
         "path": "/api/chat/messages/:messageId/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2865
+        "line": 2863
       }
     },
     {
@@ -8294,7 +8294,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2896
+        "line": 2894
       }
     },
     {
@@ -8308,7 +8308,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2978
+        "line": 2976
       }
     },
     {
@@ -8322,7 +8322,7 @@
         "path": "/api/chat/messages/:messageId/restore",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3053
+        "line": 3051
       }
     },
     {
@@ -8336,7 +8336,7 @@
         "path": "/api/chat/messages/:messageId/buzz",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3135
+        "line": 3133
       }
     },
     {
@@ -8350,7 +8350,7 @@
         "path": "/api/chat/tasks",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3247
+        "line": 3245
       }
     },
     {
@@ -8364,7 +8364,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3437
+        "line": 3435
       }
     },
     {
@@ -8378,7 +8378,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3556
+        "line": 3554
       }
     },
     {
@@ -8392,7 +8392,7 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3605
+        "line": 3603
       }
     },
     {
@@ -8406,7 +8406,7 @@
         "path": "/api/chat/conversations/:id/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3800
+        "line": 3798
       }
     },
     {
@@ -8420,7 +8420,7 @@
         "path": "/api/chat/conversations/:id/threads/:messageId/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3884
+        "line": 3882
       }
     },
     {
@@ -8434,7 +8434,7 @@
         "path": "/api/chat/conversations/:id/unread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3944
+        "line": 3942
       }
     },
     {
@@ -8448,7 +8448,7 @@
         "path": "/api/chat/conversations/:id/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3988
+        "line": 3986
       }
     },
     {
@@ -8462,7 +8462,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4033
+        "line": 4031
       }
     },
     {
@@ -8476,7 +8476,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4139
+        "line": 4137
       }
     },
     {
@@ -8490,7 +8490,7 @@
         "path": "/api/chat/conversations/:id/nickname",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4214
+        "line": 4212
       }
     },
     {
@@ -8504,7 +8504,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4321
+        "line": 4319
       }
     },
     {
@@ -8518,7 +8518,7 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4382
+        "line": 4380
       }
     },
     {
@@ -8532,7 +8532,7 @@
         "path": "/api/chat/workflows",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4435
+        "line": 4433
       }
     },
     {
@@ -8546,7 +8546,7 @@
         "path": "/api/chat/workflows/instances",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4458
+        "line": 4456
       }
     },
     {
@@ -8560,7 +8560,7 @@
         "path": "/api/chat/workflows/instances/:instanceId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4639
+        "line": 4637
       }
     },
     {
@@ -8574,7 +8574,7 @@
         "path": "/api/chat/workflows/templates/from-thread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4816
+        "line": 4814
       }
     },
     {
@@ -25589,6 +25589,78 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:MosBibleProposalTier",
+      "type": "SharedType",
+      "label": "MosBibleProposalTier",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-bible.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosBibleProposalTier",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosBibleProposalStatus",
+      "type": "SharedType",
+      "label": "MosBibleProposalStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-bible.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosBibleProposalStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosBibleProposal",
+      "type": "SharedType",
+      "label": "MosBibleProposal",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-bible.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosBibleProposal",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosBibleQuizOption",
+      "type": "SharedType",
+      "label": "MosBibleQuizOption",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-bible.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosBibleQuizOption",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosBibleQuizQuestion",
+      "type": "SharedType",
+      "label": "MosBibleQuizQuestion",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-bible.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosBibleQuizQuestion",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosBibleQuizSubmissionResult",
+      "type": "SharedType",
+      "label": "MosBibleQuizSubmissionResult",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-bible.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosBibleQuizSubmissionResult",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:MosChatPresenceStatus",
       "type": "SharedType",
       "label": "MosChatPresenceStatus",
@@ -30857,6 +30929,30 @@
       }
     },
     {
+      "id": "uicomp:MosBibleProposalModal",
+      "type": "UIComponent",
+      "label": "<MosBibleProposalModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-bible/MosBibleProposalModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosBibleProposalModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosBibleQuizModal",
+      "type": "UIComponent",
+      "label": "<MosBibleQuizModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-bible/MosBibleQuizModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosBibleQuizModal",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:mos-bible.test",
       "type": "UIComponent",
       "label": "<mos-bible.test />",
@@ -30869,6 +30965,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatMermaidBlock",
+      "type": "UIComponent",
+      "label": "<MosChatMermaidBlock />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/MosChatMermaidBlock.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMermaidBlock",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosGoogleChatPortal",
       "type": "UIComponent",
       "label": "<MosGoogleChatPortal />",
@@ -30877,6 +30985,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "MosGoogleChatPortal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatMermaidBlock.test",
+      "type": "UIComponent",
+      "label": "<MosChatMermaidBlock.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatMermaidBlock.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMermaidBlock.test",
         "isPrimitive": false
       }
     },
@@ -32263,188 +32383,6 @@
       }
     },
     {
-      "id": "file:apps/api/src/generated/crm-client/client.d.ts",
-      "type": "File",
-      "label": "client.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/crm-client/client.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 23,
-        "lineCount": 1,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/crm-client/default.d.ts",
-      "type": "File",
-      "label": "default.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/crm-client/default.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 23,
-        "lineCount": 1,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/crm-client/edge.d.ts",
-      "type": "File",
-      "label": "edge.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/crm-client/edge.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 25,
-        "lineCount": 1,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/crm-client/index.d.ts",
-      "type": "File",
-      "label": "index.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/crm-client/index.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 14246909,
-        "lineCount": 312804,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/crm-client/runtime/index-browser.d.ts",
-      "type": "File",
-      "label": "index-browser.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/crm-client/runtime/index-browser.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 11915,
-        "lineCount": 371,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/crm-client/runtime/library.d.ts",
-      "type": "File",
-      "label": "library.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/crm-client/runtime/library.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 129753,
-        "lineCount": 3983,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/crm-client/wasm.d.ts",
-      "type": "File",
-      "label": "wasm.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/crm-client/wasm.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 25,
-        "lineCount": 1,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/legacy-client/client.d.ts",
-      "type": "File",
-      "label": "client.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/legacy-client/client.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 23,
-        "lineCount": 1,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/legacy-client/default.d.ts",
-      "type": "File",
-      "label": "default.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/legacy-client/default.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 23,
-        "lineCount": 1,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/legacy-client/edge.d.ts",
-      "type": "File",
-      "label": "edge.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/legacy-client/edge.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 25,
-        "lineCount": 1,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/legacy-client/index.d.ts",
-      "type": "File",
-      "label": "index.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/legacy-client/index.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 983545,
-        "lineCount": 25990,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/legacy-client/runtime/index-browser.d.ts",
-      "type": "File",
-      "label": "index-browser.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/legacy-client/runtime/index-browser.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 11915,
-        "lineCount": 371,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/legacy-client/runtime/library.d.ts",
-      "type": "File",
-      "label": "library.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/legacy-client/runtime/library.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 129753,
-        "lineCount": 3983,
-        "ext": ".ts"
-      }
-    },
-    {
-      "id": "file:apps/api/src/generated/legacy-client/wasm.d.ts",
-      "type": "File",
-      "label": "wasm.d.ts",
-      "category": "Source File",
-      "filePath": "apps/api/src/generated/legacy-client/wasm.d.ts",
-      "packageName": "@mos-lab/api",
-      "metadata": {
-        "sizeBytes": 25,
-        "lineCount": 1,
-        "ext": ".ts"
-      }
-    },
-    {
       "id": "file:apps/api/src/middlewares/auth.test.ts",
       "type": "File",
       "label": "auth.test.ts",
@@ -32842,8 +32780,8 @@
       "filePath": "apps/api/src/modules/ai/ai.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 34313,
-        "lineCount": 855,
+        "sizeBytes": 38604,
+        "lineCount": 893,
         "ext": ".ts"
       }
     },
@@ -32868,8 +32806,8 @@
       "filePath": "apps/api/src/modules/ai/routes.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10728,
-        "lineCount": 280,
+        "sizeBytes": 11186,
+        "lineCount": 289,
         "ext": ".ts"
       }
     },
@@ -32881,7 +32819,7 @@
       "filePath": "apps/api/src/modules/ai/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 34166,
+        "sizeBytes": 34151,
         "lineCount": 649,
         "ext": ".ts"
       }
@@ -33039,6 +32977,45 @@
       "metadata": {
         "sizeBytes": 8543,
         "lineCount": 250,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/bible/bible.routes.ts",
+      "type": "File",
+      "label": "bible.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/bible/bible.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 5385,
+        "lineCount": 168,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/bible/bible.service.ts",
+      "type": "File",
+      "label": "bible.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/bible/bible.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 10854,
+        "lineCount": 320,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/bible/bible.test.ts",
+      "type": "File",
+      "label": "bible.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/bible/bible.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 4874,
+        "lineCount": 135,
         "ext": ".ts"
       }
     },
@@ -33804,8 +33781,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 188569,
-        "lineCount": 4908,
+        "sizeBytes": 188561,
+        "lineCount": 4906,
         "ext": ".ts"
       }
     },
@@ -37483,8 +37460,8 @@
       "filePath": "apps/api/src/server.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16925,
-        "lineCount": 422,
+        "sizeBytes": 17048,
+        "lineCount": 424,
         "ext": ".ts"
       }
     },
@@ -43326,6 +43303,19 @@
       }
     },
     {
+      "id": "file:apps/web/lib/api/bible.api.ts",
+      "type": "File",
+      "label": "bible.api.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/api/bible.api.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1486,
+        "lineCount": 45,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/lib/api/bug-reports.api.ts",
       "type": "File",
       "label": "bug-reports.api.ts",
@@ -43424,8 +43414,8 @@
       "filePath": "apps/web/lib/api/index.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1482,
-        "lineCount": 55,
+        "sizeBytes": 1566,
+        "lineCount": 58,
         "ext": ".ts"
       }
     },
@@ -43879,8 +43869,8 @@
       "filePath": "packages/shared/src/business-rules/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 126886,
-        "lineCount": 1749,
+        "sizeBytes": 126938,
+        "lineCount": 1751,
         "ext": ".ts"
       }
     },
@@ -44438,8 +44428,8 @@
       "filePath": "packages/shared/src/types/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 1280,
-        "lineCount": 47,
+        "sizeBytes": 2634,
+        "lineCount": 100,
         "ext": ".ts"
       }
     },
@@ -44451,8 +44441,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 19820,
-        "lineCount": 766,
+        "sizeBytes": 19808,
+        "lineCount": 761,
         "ext": ".ts"
       }
     },
@@ -58166,6 +58156,48 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:MosBibleProposalTier:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosBibleProposalTier",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosBibleProposalStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosBibleProposalStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosBibleProposal:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosBibleProposal",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosBibleQuizOption:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosBibleQuizOption",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosBibleQuizQuestion:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosBibleQuizQuestion",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosBibleQuizSubmissionResult:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosBibleQuizSubmissionResult",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:MosChatPresenceStatus:ws:packages/shared",
       "source": "type:@mos-lab/shared:MosChatPresenceStatus",
       "target": "ws:packages/shared",
@@ -62079,6 +62111,34 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosBibleProposalModal:ws:apps/web",
+      "source": "uicomp:MosBibleProposalModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosBibleProposalModal:token:color:primary",
+      "source": "uicomp:MosBibleProposalModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosBibleQuizModal:ws:apps/web",
+      "source": "uicomp:MosBibleQuizModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosBibleQuizModal:token:color:primary",
+      "source": "uicomp:MosBibleQuizModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:mos-bible.test:ws:apps/web",
       "source": "uicomp:mos-bible.test",
       "target": "ws:apps/web",
@@ -62093,6 +62153,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatMermaidBlock:ws:apps/web",
+      "source": "uicomp:MosChatMermaidBlock",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMermaidBlock:token:color:primary",
+      "source": "uicomp:MosChatMermaidBlock",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosGoogleChatPortal:ws:apps/web",
       "source": "uicomp:MosGoogleChatPortal",
       "target": "ws:apps/web",
@@ -62102,6 +62176,20 @@
     {
       "id": "edge:uicomp:MosGoogleChatPortal:token:color:primary",
       "source": "uicomp:MosGoogleChatPortal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatMermaidBlock.test:ws:apps/web",
+      "source": "uicomp:MosChatMermaidBlock.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMermaidBlock.test:token:color:primary",
+      "source": "uicomp:MosChatMermaidBlock.test",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -63901,6 +63989,27 @@
     {
       "id": "edge:file:apps/api/src/modules/auth/routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/auth/routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/bible/bible.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/bible/bible.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/bible/bible.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/bible/bible.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/bible/bible.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/bible/bible.test.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -67247,6 +67356,13 @@
     {
       "id": "edge:file:apps/web/lib/api/ai.api.ts:ws:packages/shared",
       "source": "file:apps/web/lib/api/ai.api.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/lib/api/bible.api.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/api/bible.api.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -96255,30 +96371,30 @@
   ],
   "stats": {
     "totalNodes": 3433,
-    "totalEdges": 7349,
+    "totalEdges": 7367,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 176,
       "FastifyRoute": 721,
       "Component": 60,
-      "SharedType": 1260,
+      "SharedType": 1266,
       "DesignToken": 12,
-      "UIComponent": 234,
-      "File": 967
+      "UIComponent": 238,
+      "File": 957
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1448,
+      "EXPORTS": 1454,
       "HANDLES_ROUTE": 721,
-      "RENDERS": 294,
-      "USES_TOKEN": 236,
-      "IMPORTS": 528,
+      "RENDERS": 298,
+      "USES_TOKEN": 240,
+      "IMPORTS": 532,
       "QUERIES_MODEL": 406,
       "API_CALL": 3716
     },
     "fastifyRouteCount": 726,
     "prismaModelCount": 176,
     "nextPageCount": 60,
-    "sharedTypeCount": 1260
+    "sharedTypeCount": 1266
   },
   "routes": [
     {

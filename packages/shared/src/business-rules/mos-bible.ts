@@ -97,6 +97,8 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
       'văn hóa',
       'văn hóa Wings',
       '4 key văn hóa',
+      'kinh thánh Wings',
+      'kinh thánh mOS',
       'Vui Vẻ',
       'Ân Cần',
       'Chân Thành',
