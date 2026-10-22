@@ -1,5 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify';
-import type { MosBibleBookKey } from '@mos-lab/shared';
+import type { MosBibleBookKey, MosBibleSpeedQuizSubmissionRequest } from '@mos-lab/shared';
 import { BibleService } from './bible.service.js';
 
 interface CreateProposalBody {
@@ -162,6 +162,52 @@ export const bibleRoutes: FastifyPluginAsync = async (server) => {
       message: result.isCorrect
         ? `Xuất sắc! Bạn đã trả lời đúng và nhận +${result.earnedPoints} điểm Minigame.`
         : 'Chưa chính xác, hãy đọc kỹ phần giải thích theo Kinh Thánh mOS nhé.',
+    });
+  });
+
+  /**
+   * GET /api/bible/quiz/speed/profile - Get staff Speed Quiz & Banana Vault profile
+   */
+  server.get('/bible/quiz/speed/profile', async (request, reply) => {
+    const crm = server.prisma.crm;
+    const user = (request as unknown as { user?: { id?: number } }).user;
+    const staffId = user?.id || 1;
+
+    const profile = await BibleService.getSpeedQuizProfile(crm, staffId);
+    return reply.send({ success: true, data: profile });
+  });
+
+  /**
+   * GET /api/bible/quiz/speed/questions - Get 10 random questions for a Speed Quiz run
+   */
+  server.get('/bible/quiz/speed/questions', async (request, reply) => {
+    const questions = BibleService.getSpeedQuizQuestions(10);
+    const sanitized = questions.map(({ correctKey, explanation, ...rest }) => rest);
+    return reply.send({ success: true, data: sanitized });
+  });
+
+  /**
+   * POST /api/bible/quiz/speed/submit - Submit Speed Quiz run & award Bananas
+   */
+  server.post<{ Body: MosBibleSpeedQuizSubmissionRequest }>('/bible/quiz/speed/submit', async (request, reply) => {
+    const crm = server.prisma.crm;
+    const user = (request as unknown as { user?: { id?: number } }).user;
+    const staffId = user?.id || 1;
+    const { answers } = request.body || {};
+
+    if (!Array.isArray(answers)) {
+      return reply.code(400).send({ success: false, error: 'Danh sách câu trả lời không hợp lệ.' });
+    }
+
+    const result = await BibleService.submitSpeedQuizRun(crm, staffId, answers);
+    if (!result.success) {
+      return reply.code(400).send({ success: false, error: result.error });
+    }
+
+    return reply.send({
+      success: true,
+      data: result.data,
+      message: result.data?.message,
     });
   });
 };

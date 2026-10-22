@@ -287,11 +287,11 @@ export default function MosBibleDrawer({ open, pathname, targetCommandmentId, on
         </Button>
         <Button
           size="small"
-          icon={<AppIcon icon={Award} size="sm" className="text-emerald-500" />}
+          icon={<AppIcon icon={Award} size="sm" className="text-amber-500" />}
           onClick={() => setIsQuizModalOpen(true)}
-          className="font-medium"
+          className="font-medium bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-850 text-amber-800 dark:text-amber-300"
         >
-          Mini-Quiz Tuần (Lead by Example)
+          ⚡ Đấu Trường Quiz · Săn Chuối 🍌
         </Button>
       </div>
 

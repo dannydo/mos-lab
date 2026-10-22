@@ -25661,6 +25661,54 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:MosBibleSpeedQuizProfile",
+      "type": "SharedType",
+      "label": "MosBibleSpeedQuizProfile",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-bible.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosBibleSpeedQuizProfile",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosBibleSpeedQuizAnswerItem",
+      "type": "SharedType",
+      "label": "MosBibleSpeedQuizAnswerItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-bible.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosBibleSpeedQuizAnswerItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosBibleSpeedQuizSubmissionRequest",
+      "type": "SharedType",
+      "label": "MosBibleSpeedQuizSubmissionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-bible.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosBibleSpeedQuizSubmissionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosBibleSpeedQuizResult",
+      "type": "SharedType",
+      "label": "MosBibleSpeedQuizResult",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-bible.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosBibleSpeedQuizResult",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:MosChatPresenceStatus",
       "type": "SharedType",
       "label": "MosChatPresenceStatus",
@@ -33170,8 +33218,8 @@
       "filePath": "apps/api/src/modules/bible/bible.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5385,
-        "lineCount": 168,
+        "sizeBytes": 7119,
+        "lineCount": 214,
         "ext": ".ts"
       }
     },
@@ -33183,8 +33231,8 @@
       "filePath": "apps/api/src/modules/bible/bible.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10824,
-        "lineCount": 314,
+        "sizeBytes": 27426,
+        "lineCount": 786,
         "ext": ".ts"
       }
     },
@@ -33196,8 +33244,8 @@
       "filePath": "apps/api/src/modules/bible/bible.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4874,
-        "lineCount": 135,
+        "sizeBytes": 7979,
+        "lineCount": 221,
         "ext": ".ts"
       }
     },
@@ -43492,8 +43540,8 @@
       "filePath": "apps/web/lib/api/bible.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1475,
-        "lineCount": 46,
+        "sizeBytes": 2394,
+        "lineCount": 75,
         "ext": ".ts"
       }
     },
@@ -44610,8 +44658,8 @@
       "filePath": "packages/shared/src/types/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2634,
-        "lineCount": 100,
+        "sizeBytes": 3318,
+        "lineCount": 131,
         "ext": ".ts"
       }
     },
@@ -58375,6 +58423,34 @@
     {
       "id": "edge:type:@mos-lab/shared:MosBibleQuizSubmissionResult:ws:packages/shared",
       "source": "type:@mos-lab/shared:MosBibleQuizSubmissionResult",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosBibleSpeedQuizProfile:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosBibleSpeedQuizProfile",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosBibleSpeedQuizAnswerItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosBibleSpeedQuizAnswerItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosBibleSpeedQuizSubmissionRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosBibleSpeedQuizSubmissionRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosBibleSpeedQuizResult:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosBibleSpeedQuizResult",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -96552,20 +96628,20 @@
     }
   ],
   "stats": {
-    "totalNodes": 3447,
-    "totalEdges": 7367,
+    "totalNodes": 3451,
+    "totalEdges": 7371,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 176,
       "FastifyRoute": 721,
       "Component": 60,
-      "SharedType": 1266,
+      "SharedType": 1270,
       "DesignToken": 12,
       "UIComponent": 238,
       "File": 971
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1454,
+      "EXPORTS": 1458,
       "HANDLES_ROUTE": 721,
       "RENDERS": 298,
       "USES_TOKEN": 240,
@@ -96576,7 +96652,7 @@
     "fastifyRouteCount": 726,
     "prismaModelCount": 176,
     "nextPageCount": 60,
-    "sharedTypeCount": 1266
+    "sharedTypeCount": 1270
   },
   "routes": [
     {

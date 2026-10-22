@@ -97,3 +97,34 @@ export interface MosBibleQuizSubmissionResult {
   culturalKey: 'Vui Vẻ' | 'Ân Cần' | 'Chân Thành' | 'Khoa Học';
   earnedPoints: number;
 }
+
+export interface MosBibleSpeedQuizProfile {
+  staffId: number;
+  date: string;
+  attemptsToday: number;
+  maxAttemptsPerDay: number;
+  bananasToday: number;
+  maxBananasPerDay: number;
+  totalBananas: number;
+  canPlayToday: boolean;
+  streakBest: number;
+}
+
+export interface MosBibleSpeedQuizAnswerItem {
+  questionId: string;
+  selectedKey: 'A' | 'B' | 'C' | 'D';
+  durationMs: number;
+}
+
+export interface MosBibleSpeedQuizSubmissionRequest {
+  answers: MosBibleSpeedQuizAnswerItem[];
+}
+
+export interface MosBibleSpeedQuizResult {
+  streak: number;
+  correctCount: number;
+  totalAnswered: number;
+  bananasEarned: number;
+  profile: MosBibleSpeedQuizProfile;
+  message: string;
+}

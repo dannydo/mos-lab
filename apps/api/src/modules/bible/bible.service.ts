@@ -4,10 +4,14 @@ import type {
   MosBibleProposalTier,
   MosBibleQuizQuestion,
   MosBibleQuizSubmissionResult,
+  MosBibleSpeedQuizProfile,
+  MosBibleSpeedQuizAnswerItem,
+  MosBibleSpeedQuizResult,
 } from '@mos-lab/shared';
 import type { PrismaClient as CrmPrismaClient } from '../../generated/crm-client/index.js';
 
 const BIBLE_PROPOSALS_CONFIG_KEY = 'MOS_BIBLE_PROPOSALS_REGISTRY';
+const BIBLE_BANANA_VAULT_CONFIG_KEY = 'MOS_BIBLE_BANANA_VAULT';
 
 // Keywords that strictly mandate Danny Do's final approval
 const FINANCIAL_AND_LEGAL_KEYWORDS = [
@@ -29,7 +33,7 @@ const FINANCIAL_AND_LEGAL_KEYWORDS = [
   'doanh thu',
 ];
 
-export const INITIAL_WEEKLY_QUIZ: readonly MosBibleQuizQuestion[] = [
+export const EXPANDED_BIBLE_QUIZ_POOL: readonly MosBibleQuizQuestion[] = [
   {
     id: 'quiz-mos-002-sincerity',
     commandmentId: 'MOS-002',
@@ -120,7 +124,278 @@ export const INITIAL_WEEKLY_QUIZ: readonly MosBibleQuizQuestion[] = [
     culturalKey: 'Khoa Học',
     rewardPoints: 10,
   },
+  {
+    id: 'quiz-cv-001-respect-naming',
+    commandmentId: 'CV-001',
+    title: 'Kỷ luật Ngôn từ & Văn hóa Tôn trọng Nghệ Nhân Wings',
+    scenario:
+      'Trong giao tiếp nội bộ và trên giao diện mOS, danh xưng nào sau đây là CHUẨN MỰC để gọi đội ngũ kỹ thuật nối mi tại Wings?',
+    options: [
+      {
+        key: 'A',
+        text: 'Thợ mi hoặc thợ kỹ thuật.',
+      },
+      {
+        key: 'B',
+        text: 'Thợ cứng hoặc tay nghề thợ.',
+      },
+      {
+        key: 'C',
+        text: 'Chuyên Viên (CV), Chuyên Viên Tự Chủ (CV+), Nghệ Nhân Mi hoặc Thiên Thần.',
+      },
+      {
+        key: 'D',
+        text: 'Nhân viên bậc 1 và bậc 2.',
+      },
+    ],
+    correctKey: 'C',
+    explanation:
+      'Tại Wings, việc gọi là "thợ" bị xem là thiếu tôn trọng. Toàn bộ đội ngũ là Nghệ nhân, Chuyên Viên và Thiên Thần chăm sóc khách hàng.',
+    culturalKey: 'Ân Cần',
+    rewardPoints: 10,
+  },
+  {
+    id: 'quiz-mos-002-cheerfulness',
+    commandmentId: 'MOS-002',
+    title: 'Chìa Khóa "VUI VẺ" trong 4 Chìa Khóa Văn Hóa Wings',
+    scenario:
+      'Theo định nghĩa của Kinh Thánh Wings, tại sao "Vui Vẻ" là chìa khóa đứng đầu tiên trong 4 chìa khóa văn hóa?',
+    options: [
+      {
+        key: 'A',
+        text: 'Vì vui vẻ giúp salon ồn ào và náo nhiệt hơn.',
+      },
+      {
+        key: 'B',
+        text: 'Vì Vui Vẻ là khởi nguồn: phải thật sự vui vẻ từ bên trong thì mới có thể ân cần được; nụ cười và năng lượng tích cực là nền tảng.',
+      },
+      {
+        key: 'C',
+        text: 'Vì vui vẻ là để chiều lòng quản lý ca làm việc.',
+      },
+      {
+        key: 'D',
+        text: 'Vì khách hàng chỉ thích nói chuyện phiếm.',
+      },
+    ],
+    correctKey: 'B',
+    explanation:
+      'VUI VẺ là khởi nguồn. Không có niềm vui tự nhiên bên trong thì mọi hành vi ân cần đều trở nên gượng gạo và giả tạo.',
+    culturalKey: 'Vui Vẻ',
+    rewardPoints: 10,
+  },
+  {
+    id: 'quiz-mos-002-caring',
+    commandmentId: 'MOS-002',
+    title: 'Chìa Khóa "ÂN CẦN" trong 4 Chìa Khóa Văn Hóa Wings',
+    scenario: 'Hành động nào sau đây thể hiện đúng tinh thần "ÂN CẦN" tinh tế tại Wings Lashes?',
+    options: [
+      {
+        key: 'A',
+        text: 'Hỏi han dồn dập ngay cả khi khách đang muốn chợp mắt nghỉ ngơi.',
+      },
+      {
+        key: 'B',
+        text: 'Tinh tế quan sát chỉnh gối nằm, đắp chăn ấm nhẹ nhàng cho khách và điều chỉnh ánh đèn dịu mắt.',
+      },
+      {
+        key: 'C',
+        text: 'Liên tục giới thiệu các gói dịch vụ đắt tiền nhất trong suốt buổi làm.',
+      },
+      {
+        key: 'D',
+        text: 'Làm thật nhanh để khách ra về sớm.',
+      },
+    ],
+    correctKey: 'B',
+    explanation:
+      'ÂN CẦN là tinh tế chăm chút từng nhu cầu nhỏ nhất của khách hàng một cách tự nhiên, tạo cảm giác được nâng niu và tôn trọng.',
+    culturalKey: 'Ân Cần',
+    rewardPoints: 10,
+  },
+  {
+    id: 'quiz-mos-002-science',
+    commandmentId: 'MOS-002',
+    title: 'Chìa Khóa "KHOA HỌC" trong 4 Chìa Khóa Văn Hóa Wings',
+    scenario:
+      'Một salon làm việc rất vui vẻ, ân cần nhưng lượng khách quay lại sụt giảm. Theo Chìa Khóa "KHOA HỌC", đội ngũ quản lý nên làm gì?',
+    options: [
+      {
+        key: 'A',
+        text: 'Tiếp tục vui vẻ và tin rằng mọi thứ rồi sẽ tự tốt lên.',
+      },
+      {
+        key: 'B',
+        text: 'Xem xét số liệu thực tế trên mOS: tỷ lệ rụng mi, thời gian dặm mi, conversion, và tỷ lệ quay lại để tìm ra nguyên nhân cốt lõi và cải tiến kỹ thuật.',
+      },
+      {
+        key: 'C',
+        text: 'Đổ lỗi cho mùa thấp điểm và không cần đo lường gì thêm.',
+      },
+      {
+        key: 'D',
+        text: 'Tăng chi phí quảng cáo để bù đắp số khách không quay lại.',
+      },
+    ],
+    correctKey: 'B',
+    explanation:
+      'KHOA HỌC là thước đo thực tế chứng minh tổ chức đi đúng hướng. Không tự huyễn hoặc theo cảm xúc, luôn dựa trên dữ liệu chuẩn xác của mOS.',
+    culturalKey: 'Khoa Học',
+    rewardPoints: 10,
+  },
+  {
+    id: 'quiz-cs-001-golden-hour',
+    commandmentId: 'CS-001',
+    title: 'Thời điểm Vàng Chăm sóc Khách hàng sau dịch vụ nối mi',
+    scenario:
+      'Sau khi khách hoàn thành dịch vụ nối mi tại salon, thời điểm vàng để Chuyên Viên CS nhắn tin/gọi điện hỏi thăm độ êm và tình trạng mi là khi nào?',
+    options: [
+      {
+        key: 'A',
+        text: 'Ngay sau khi khách bước chân ra khỏi cửa salon 5 phút.',
+      },
+      {
+        key: 'B',
+        text: 'Sau 1 tháng khi mi đã rụng gần hết.',
+      },
+      {
+        key: 'C',
+        text: 'Trong vòng 24 đến 48 giờ sau dịch vụ, khi khách đã trải nghiệm sinh hoạt và rửa mặt với bộ mi mới.',
+      },
+      {
+        key: 'D',
+        text: 'Chỉ hỏi thăm khi khách chủ động nhắn tin phàn nàn.',
+      },
+    ],
+    correctKey: 'C',
+    explanation:
+      '24 - 48 giờ là thời điểm vàng để nắm bắt kịp thời cảm nhận của khách, hướng dẫn cách dưỡng mi và hỗ trợ chỉnh dặm nếu có sợi chưa quen mắt.',
+    culturalKey: 'Ân Cần',
+    rewardPoints: 10,
+  },
+  {
+    id: 'quiz-cc-001-split-rule',
+    commandmentId: 'CC-001',
+    title: 'Quy tắc Thưởng CC Tip 20% khi CC In khác CC Out',
+    scenario:
+      'Đơn hàng có 100.000đ tiền tip từ khách. Bạn CC In tiếp đón và bạn CC Out thanh toán là 2 người khác nhau. Hệ thống mOS chia khoản 20% Thưởng CC Tip (20.000đ) như thế nào?',
+    options: [
+      {
+        key: 'A',
+        text: 'Toàn bộ 20.000đ thuộc về CC In vì có công đón tiếp ban đầu.',
+      },
+      {
+        key: 'B',
+        text: 'Toàn bộ 20.000đ thuộc về CC Out vì có công thanh toán chốt tiền.',
+      },
+      {
+        key: 'C',
+        text: 'Tự động chia đôi 50/50: Mỗi bạn CC nhận 10.000đ (10% tip share).',
+      },
+      {
+        key: 'D',
+        text: 'Hủy khoản thưởng CC vì không cùng 1 người phụ trách.',
+      },
+    ],
+    correctKey: 'C',
+    explanation:
+      'Theo Kinh Thánh mOS: Khi CC In khác CC Out, khoản thưởng CC Tip 20% bắt buộc chia 50/50 để bảo đảm công bằng và tinh thần phối hợp đồng đội.',
+    culturalKey: 'Khoa Học',
+    rewardPoints: 10,
+  },
+  {
+    id: 'quiz-drawer-001-ui-rule',
+    commandmentId: 'UI-007',
+    title: 'Quy chuẩn Đóng Drawer trong hệ thống mOS (UI Invariant)',
+    scenario:
+      'Theo quy chuẩn giao diện mOS UI-007, nút đóng [✕] của tất cả Drawer trong hệ thống bắt buộc phải đặt ở vị trí nào?',
+    options: [
+      {
+        key: 'A',
+        text: 'Ở góc trên bên trái, đứng trước tiêu đề Drawer.',
+      },
+      {
+        key: 'B',
+        text: 'Ở góc trên bên phải (closable: { placement: "end" }), tiêu đề luôn neo ở góc trên bên trái.',
+      },
+      {
+        key: 'C',
+        text: 'Ở thanh footer dưới cùng bên trái.',
+      },
+      {
+        key: 'D',
+        text: 'Không cần nút đóng, chỉ bấm ra ngoài để thoát.',
+      },
+    ],
+    correctKey: 'B',
+    explanation:
+      'UI Invariant mOS quy định nút đóng [✕] bắt buộc nằm ở góc trên bên phải (placement: end) để đồng bộ trải nghiệm thị giác của người dùng.',
+    culturalKey: 'Khoa Học',
+    rewardPoints: 10,
+  },
+  {
+    id: 'quiz-sec-001-privacy',
+    commandmentId: 'SEC-001',
+    title: 'Bảo mật Dữ liệu Khách hàng & Tôn trọng Quyền riêng tư',
+    scenario:
+      'Một người quen nhờ bạn tra số điện thoại và lịch sử dịch vụ của một khách hàng VIP trên mOS. Bạn nên xử lý thế nào?',
+    options: [
+      {
+        key: 'A',
+        text: 'Chụp màn hình gửi ngay vì là bạn bè thân thiết.',
+      },
+      {
+        key: 'B',
+        text: 'Từ chối dứt khoát vì dữ liệu khách hàng là tài sản bảo mật tối cao của salon và quyền riêng tư của khách.',
+      },
+      {
+        key: 'C',
+        text: 'Thu phí dịch vụ tra cứu rồi cung cấp thông tin.',
+      },
+      {
+        key: 'D',
+        text: 'Đọc số điện thoại qua miệng nhưng không gửi tin nhắn.',
+      },
+    ],
+    correctKey: 'B',
+    explanation:
+      'Dữ liệu khách hàng tại Wings được bảo mật nghiêm ngặt. Nghiêm cấm mọi hành vi rò rỉ, tra cứu ngoài mục đích phục vụ khách tại salon.',
+    culturalKey: 'Chân Thành',
+    rewardPoints: 10,
+  },
+  {
+    id: 'quiz-retry-001-complaint',
+    commandmentId: 'MOS-002',
+    title: 'Xử lý Khách chưa hài lòng với Tinh thần Ân Cần & Chân Thành',
+    scenario:
+      'Khách nhắn tin phản ánh mi bị vướng sau 1 ngày làm dịch vụ. Phản hồi chuẩn mực của Chuyên Viên CS là gì?',
+    options: [
+      {
+        key: 'A',
+        text: 'Giải thích là do khách rửa mặt sai cách và không hỗ trợ gì thêm.',
+      },
+      {
+        key: 'B',
+        text: 'Lắng nghe với thái độ ân cần, chân thành xin lỗi vì sự bất tiện của khách, và mời khách ghé salon để Chuyên Viên kiểm tra chỉnh sửa miễn phí ngay.',
+      },
+      {
+        key: 'C',
+        text: 'Bỏ qua tin nhắn đợi khách tự hết khó chịu.',
+      },
+      {
+        key: 'D',
+        text: 'Đổ lỗi cho Chuyên Viên làm ca hôm đó.',
+      },
+    ],
+    correctKey: 'B',
+    explanation:
+      'Khách phản ánh là cơ hội để thể hiện sự ân cần và chân thành vượt trội. Luôn đón nhận với nụ cười và hành động giải quyết thực chất.',
+    culturalKey: 'Ân Cần',
+    rewardPoints: 10,
+  },
 ];
+
+export const INITIAL_WEEKLY_QUIZ: readonly MosBibleQuizQuestion[] = EXPANDED_BIBLE_QUIZ_POOL.slice(0, 3);
 
 export class BibleService {
   /**
@@ -302,7 +577,7 @@ export class BibleService {
     questionId: string,
     selectedKey: 'A' | 'B' | 'C' | 'D'
   ): MosBibleQuizSubmissionResult | null {
-    const question = INITIAL_WEEKLY_QUIZ.find((q) => q.id === questionId);
+    const question = EXPANDED_BIBLE_QUIZ_POOL.find((q) => q.id === questionId);
     if (!question) return null;
 
     const isCorrect = question.correctKey === selectedKey;
@@ -314,6 +589,196 @@ export class BibleService {
       explanation: question.explanation,
       culturalKey: question.culturalKey,
       earnedPoints: isCorrect ? question.rewardPoints : 0,
+    };
+  }
+
+  /**
+   * Get today string in Asia/Ho_Chi_Minh timezone (YYYY-MM-DD)
+   */
+  static getTodayDateStr(): string {
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
+  }
+
+  /**
+   * Get Speed Quiz & Banana Vault Profile for a staff member
+   */
+  static async getSpeedQuizProfile(crm: CrmPrismaClient, staffId: number): Promise<MosBibleSpeedQuizProfile> {
+    const today = this.getTodayDateStr();
+    const record = await crm.crmConfig.findUnique({
+      where: { key: BIBLE_BANANA_VAULT_CONFIG_KEY },
+    });
+
+    let vault: Record<
+      number,
+      { date: string; attemptsToday: number; bananasToday: number; totalBananas: number; streakBest: number }
+    > = {};
+    if (record?.value) {
+      try {
+        vault = JSON.parse(record.value);
+      } catch {
+        vault = {};
+      }
+    }
+
+    const staffData = vault[staffId];
+    if (!staffData || staffData.date !== today) {
+      // New day or first time
+      return {
+        staffId,
+        date: today,
+        attemptsToday: 0,
+        maxAttemptsPerDay: 3,
+        bananasToday: 0,
+        maxBananasPerDay: 6,
+        totalBananas: staffData?.totalBananas || 0,
+        canPlayToday: true,
+        streakBest: staffData?.streakBest || 0,
+      };
+    }
+
+    return {
+      staffId,
+      date: today,
+      attemptsToday: staffData.attemptsToday,
+      maxAttemptsPerDay: 3,
+      bananasToday: staffData.bananasToday,
+      maxBananasPerDay: 6,
+      totalBananas: staffData.totalBananas,
+      canPlayToday: staffData.attemptsToday < 3,
+      streakBest: staffData.streakBest,
+    };
+  }
+
+  /**
+   * Get 10 random questions for a Speed Quiz run
+   */
+  static getSpeedQuizQuestions(count = 10): readonly MosBibleQuizQuestion[] {
+    const shuffled = [...EXPANDED_BIBLE_QUIZ_POOL].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, Math.min(count, shuffled.length));
+  }
+
+  /**
+   * Submit a Speed Quiz run and evaluate streak / bananas
+   */
+  static async submitSpeedQuizRun(
+    crm: CrmPrismaClient,
+    staffId: number,
+    answers: MosBibleSpeedQuizAnswerItem[]
+  ): Promise<{ success: boolean; data?: MosBibleSpeedQuizResult; error?: string }> {
+    const profile = await this.getSpeedQuizProfile(crm, staffId);
+    if (profile.attemptsToday >= 3) {
+      return {
+        success: false,
+        error: 'Bạn đã hoàn tất tối đa 3 lượt chơi trong ngày hôm nay. Hãy quay lại vào ngày mai nhé!',
+      };
+    }
+
+    let currentStreak = 0;
+    let correctCount = 0;
+
+    for (const answer of answers) {
+      const q = EXPANDED_BIBLE_QUIZ_POOL.find((item) => item.id === answer.questionId);
+      if (!q) continue;
+
+      // Allow 10s + 2s network/render grace period (12000ms)
+      const inTime = answer.durationMs <= 12000;
+      const isCorrect = q.correctKey === answer.selectedKey;
+
+      if (isCorrect && inTime) {
+        currentStreak += 1;
+        correctCount += 1;
+      } else {
+        // Sudden death! Streak terminates
+        break;
+      }
+    }
+
+    // Gamification rules:
+    // 10 continuous correct -> 2 bananas
+    // >= 5 continuous correct -> 1 banana
+    // < 5 -> 0 bananas
+    let bananasEarned = 0;
+    if (currentStreak === 10) {
+      bananasEarned = 2;
+    } else if (currentStreak >= 5) {
+      bananasEarned = 1;
+    }
+
+    // Max 6 bananas per day
+    const availableToday = Math.max(0, 6 - profile.bananasToday);
+    const actualBananasAwarded = Math.min(bananasEarned, availableToday);
+
+    const today = this.getTodayDateStr();
+    const record = await crm.crmConfig.findUnique({
+      where: { key: BIBLE_BANANA_VAULT_CONFIG_KEY },
+    });
+    let vault: Record<
+      number,
+      { date: string; attemptsToday: number; bananasToday: number; totalBananas: number; streakBest: number }
+    > = {};
+    if (record?.value) {
+      try {
+        vault = JSON.parse(record.value);
+      } catch {
+        vault = {};
+      }
+    }
+
+    const updatedAttempts = profile.attemptsToday + 1;
+    const updatedBananasToday = profile.bananasToday + actualBananasAwarded;
+    const updatedTotalBananas = profile.totalBananas + actualBananasAwarded;
+    const updatedStreakBest = Math.max(profile.streakBest, currentStreak);
+
+    vault[staffId] = {
+      date: today,
+      attemptsToday: updatedAttempts,
+      bananasToday: updatedBananasToday,
+      totalBananas: updatedTotalBananas,
+      streakBest: updatedStreakBest,
+    };
+
+    await crm.crmConfig.upsert({
+      where: { key: BIBLE_BANANA_VAULT_CONFIG_KEY },
+      create: {
+        key: BIBLE_BANANA_VAULT_CONFIG_KEY,
+        value: JSON.stringify(vault),
+      },
+      update: {
+        value: JSON.stringify(vault),
+      },
+    });
+
+    const updatedProfile: MosBibleSpeedQuizProfile = {
+      staffId,
+      date: today,
+      attemptsToday: updatedAttempts,
+      maxAttemptsPerDay: 3,
+      bananasToday: updatedBananasToday,
+      maxBananasPerDay: 6,
+      totalBananas: updatedTotalBananas,
+      canPlayToday: updatedAttempts < 3,
+      streakBest: updatedStreakBest,
+    };
+
+    let message = '';
+    if (currentStreak === 10) {
+      message = `Đỉnh cao! Bạn đã trả lời đúng liên tục 10/10 câu hỏi và rinh trọn vẹn +${actualBananasAwarded} Chuối 🍌!`;
+    } else if (currentStreak >= 5) {
+      message = `Xuất sắc! Bạn đã vượt mốc 5 câu đúng liên tục và nhận được +${actualBananasAwarded} Chuối 🍌!`;
+    } else {
+      message = `Cố gắng hơn ở lượt sau nhé! Bạn đạt chuỗi ${currentStreak} câu đúng (cần từ 5 câu liên tục để nhận 1 Chuối 🍌).`;
+    }
+
+    return {
+      success: true,
+      data: {
+        streak: currentStreak,
+        correctCount,
+        totalAnswered: answers.length,
+        bananasEarned: actualBananasAwarded,
+        profile: updatedProfile,
+        message,
+      },
     };
   }
 }
