@@ -2485,6 +2485,32 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         (body.customerCard?.name ? `Đính kèm hồ sơ ${body.customerCard.name}` : attachments.length > 0 ? '' : '');
 
       const isAiBot = Boolean(body.isAiBot);
+      if (isAiBot) {
+        const cleanText = fallbackText.trim();
+        const existingMsg = conv.messages
+          .slice(-10)
+          .find(
+            (m) =>
+              (m.isAiBot || m.senderId === 'wings-ai-copilot') &&
+              (m.text.trim() === cleanText ||
+                m.text.trim().replace(/^Chào\s+@[^,]+,\s*/i, '') === cleanText.replace(/^Chào\s+@[^,]+,\s*/i, '')) &&
+              Math.abs(now.getTime() - new Date(m.createdAt).getTime()) < 60_000
+          );
+        if (existingMsg) {
+          if (body.aiThinking && !existingMsg.aiThinking) {
+            existingMsg.aiThinking = String(body.aiThinking).slice(0, 4000);
+          }
+          if (body.aiAction && !existingMsg.aiAction) {
+            existingMsg.aiAction = body.aiAction;
+          }
+          await saveConversations(fastify, conversations);
+          return {
+            success: true,
+            message: existingMsg,
+            conversation: formatConversationForUser(conv, user, staffDirectory),
+          };
+        }
+      }
       const newMessage = {
         id: `msg-${crypto.randomUUID().slice(0, 8)}`,
         conversationId: conv.id,
@@ -2580,6 +2606,34 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
 
       const isAiBot = Boolean(body.isAiBot);
       msg.thread = msg.thread || [];
+
+      if (isAiBot) {
+        const cleanText = text.trim();
+        const existingReply = msg.thread.find(
+          (r) =>
+            (r.isAiBot || r.senderId === 'wings-ai-copilot') &&
+            (r.text.trim() === cleanText ||
+              r.text.trim().replace(/^Chào\s+@[^,]+,\s*/i, '') === cleanText.replace(/^Chào\s+@[^,]+,\s*/i, '')) &&
+            Math.abs(now.getTime() - new Date(r.createdAt).getTime()) < 60_000
+        );
+        if (existingReply) {
+          if (body.aiThinking && !existingReply.aiThinking) {
+            existingReply.aiThinking = String(body.aiThinking).slice(0, 4000);
+          }
+          if (body.aiAction && !existingReply.aiAction) {
+            existingReply.aiAction = body.aiAction;
+          }
+          if (body.aiActions && !existingReply.aiActions) {
+            existingReply.aiActions = body.aiActions;
+          }
+          await saveConversations(fastify, conversations);
+          return {
+            success: true,
+            reply: existingReply,
+            conversation: formatConversationForUser(conv, user, staffDirectory),
+          };
+        }
+      }
       const replyItem = {
         id: `th-${crypto.randomUUID().slice(0, 8)}`,
         senderId: isAiBot ? 'wings-ai-copilot' : user.id,

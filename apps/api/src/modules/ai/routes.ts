@@ -239,7 +239,8 @@ export async function aiRoutes(fastify: FastifyInstance) {
             myRole: request.user.role,
           },
         },
-        fastify.prisma.legacy
+        fastify.prisma.legacy,
+        fastify
       );
 
       return reply.send(response);
@@ -286,10 +287,12 @@ export async function aiRoutes(fastify: FastifyInstance) {
       },
     });
 
-    // Late completion recovery & auto-delivery to chat space
-    if (response?.content) {
+    const archivedJob = AgChatBridgeService.getArchivedJob(jobId);
+
+    // Late completion recovery & auto-delivery to chat space ONLY if the job had timed out (!ok)
+    // When ok is true, the active in-flight AiAssistantService.sendMessage is awaiting this job and will deliver the response.
+    if (!ok && !archivedJob?.delivered && response?.content) {
       try {
-        const archivedJob = AgChatBridgeService.getArchivedJob(jobId);
         if (archivedJob?.targetChatConvId) {
           if (archivedJob.targetChatThreadId) {
             await appendBotThreadReplyToChatConversation(
@@ -328,8 +331,11 @@ export async function aiRoutes(fastify: FastifyInstance) {
             });
           }
         }
-      } catch (err) {
-        fastify.log.warn({ err }, 'Failed to apply late chat completion update');
+        if (archivedJob) {
+          archivedJob.delivered = true;
+        }
+      } catch (recoveryErr) {
+        fastify.log.warn({ err: recoveryErr }, 'Failed to deliver late AG response to chat space');
       }
     }
 

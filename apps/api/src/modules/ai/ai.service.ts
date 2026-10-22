@@ -11,8 +11,13 @@ import type {
 
 import type { PrismaClient as CrmPrismaClient } from '../../generated/crm-client/index.js';
 import type { PrismaClient as LegacyPrismaClient } from '../../generated/legacy-client/index.js';
+import type { FastifyInstance } from 'fastify';
 import { LiveCustomerContextService } from './live-customer-context.service.js';
 import { AgChatBridgeService } from './ag-chat-bridge.service.js';
+import {
+  appendBotMessageToChatConversation,
+  appendBotThreadReplyToChatConversation,
+} from '../chat/chat-repository.service.js';
 
 export const SYSTEM_PROMPT_ASSISTANT = `Bạn là MAI (mOS AI) — Trợ lý AI Đa Nhiệm (Trò chuyện, Tư duy & Phân tích) của hệ thống điều hành mOS Lab (chuỗi salon Wings Lashes), hoạt động trong Không gian làm việc và Nhóm trò chuyện (mOS Chat) của nhân sự.
 
@@ -547,7 +552,8 @@ export class AiAssistantService {
       scope?: string;
       context?: AiChatContext;
     },
-    legacyPrisma?: LegacyPrismaClient
+    legacyPrisma?: LegacyPrismaClient,
+    fastify?: FastifyInstance
   ): Promise<AiAssistantChatResponse> {
     const { message, scope = 'customers', context } = params;
     const trimmedMessage = message.trim();
@@ -676,6 +682,9 @@ Quy định phản hồi:
             parsedResponse = agResult.response;
             agConversationId = agResult.conversationId;
             source = 'ag';
+            if (agResult.jobId) {
+              AgChatBridgeService.markJobDelivered(agResult.jobId);
+            }
           }
         } catch {
           // Remote bridge timed out or no agent connected; will fall back below
@@ -779,15 +788,37 @@ Quy định phản hồi:
       },
     });
 
-    // 8. Auto-deliver to chat space if this message was triggered in a group chat
+    // 8. Auto-deliver to chat space or thread if this message was triggered in a group chat
     if (targetChatConvId && parsedResponse.content) {
-      await this.appendBotMessageToChatConversation(crm, targetChatConvId, {
-        text: parsedResponse.content,
-        thinking: parsedResponse.thinking,
-        suggestedAction: parsedResponse.suggestedAction,
-        suggestedActions: parsedResponse.suggestedActions,
-        userName: context?.userName,
-      });
+      if (targetChatThreadId) {
+        if (fastify) {
+          await appendBotThreadReplyToChatConversation(fastify, targetChatConvId, targetChatThreadId, {
+            text: parsedResponse.content,
+            thinking: parsedResponse.thinking,
+            suggestedAction: parsedResponse.suggestedAction,
+            suggestedActions: parsedResponse.suggestedActions,
+            recipientName: context?.userName,
+          });
+        }
+      } else {
+        if (fastify) {
+          await appendBotMessageToChatConversation(fastify, targetChatConvId, {
+            text: parsedResponse.content,
+            thinking: parsedResponse.thinking,
+            suggestedAction: parsedResponse.suggestedAction,
+            suggestedActions: parsedResponse.suggestedActions,
+            recipientName: context?.userName,
+          });
+        } else {
+          await this.appendBotMessageToChatConversation(crm, targetChatConvId, {
+            text: parsedResponse.content,
+            thinking: parsedResponse.thinking,
+            suggestedAction: parsedResponse.suggestedAction,
+            suggestedActions: parsedResponse.suggestedActions,
+            userName: context?.userName,
+          });
+        }
+      }
     }
 
     return {

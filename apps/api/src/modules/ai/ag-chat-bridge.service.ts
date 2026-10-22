@@ -22,11 +22,12 @@ export interface AgChatBridgeJob {
   targetChatConvId?: string;
   targetChatThreadId?: string;
   userName?: string;
+  delivered?: boolean;
 }
 
 interface PendingBridgeJobEntry {
   job: AgChatBridgeJob;
-  resolve: (res: { conversationId: string; response: ParsedAiResponse }) => void;
+  resolve: (res: { conversationId: string; response: ParsedAiResponse; jobId: string }) => void;
   reject: (err: Error) => void;
   timer: NodeJS.Timeout;
   claimedAt?: number;
@@ -45,6 +46,13 @@ export class AgChatBridgeService {
 
   static getArchivedJob(jobId: string): AgChatBridgeJob | undefined {
     return this.archivedJobs.get(jobId);
+  }
+
+  static markJobDelivered(jobId: string): void {
+    const archived = this.archivedJobs.get(jobId);
+    if (archived) {
+      archived.delivered = true;
+    }
   }
 
   /**
@@ -379,7 +387,7 @@ export class AgChatBridgeService {
     timeoutMs = 90_000,
     sessionId?: string,
     metadata?: { scope?: string; targetChatConvId?: string; targetChatThreadId?: string; userName?: string }
-  ): Promise<{ conversationId: string; response: ParsedAiResponse }> {
+  ): Promise<{ conversationId: string; response: ParsedAiResponse; jobId: string }> {
     if (!this.isRemotePollerActive()) {
       return Promise.reject(new Error('No active remote Antigravity bridge poller connected'));
     }
@@ -470,7 +478,7 @@ export class AgChatBridgeService {
 
     clearTimeout(entry.timer);
     this.pendingBridgeJobs.delete(jobId);
-    entry.resolve(result);
+    entry.resolve({ ...result, jobId });
     return true;
   }
 }

@@ -3404,30 +3404,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         if (aiRes?.session?.id) {
           setAiSessionId(aiRes.session.id);
         }
-        const rawAiReplyText = aiRes?.message?.content || 'MAI đã phân tích xong thông tin cho nhóm.';
-        let aiReplyText = rawAiReplyText
-          .replace(/<action[\s\S]*?<\/action>/gi, '')
-          .replace(/<\/?action[^>]*>/gi, '')
-          .trim();
-        if (senderName && !aiReplyText.includes(`@${senderName}`)) {
-          aiReplyText = `Chào @${senderName}, ${aiReplyText}`;
-        }
-        const aiActions =
-          aiRes?.message?.suggestedActions ||
-          aiRes?.message?.suggestedAction?.actions ||
-          (aiRes?.message?.suggestedAction ? [aiRes.message.suggestedAction] : null);
-        const postedAi = await apiClient.chat.sendMessage({
-          conversationId: targetConvId,
-          text: aiReplyText,
-          isAiBot: true,
-          aiThinking: aiRes?.message?.thinking || null,
-          aiAction: aiRes?.message?.suggestedAction || null,
-          aiActions,
-        });
-        if (postedAi?.conversation) {
-          setConversations((prev) => prev.map((c) => (c.id === targetConvId ? postedAi.conversation : c)));
-        }
+        // Backend auto-delivers the bot reply directly to targetConvId in DB!
+        // Sync fresh conversation state from server to immediately display MAI's reply
+        await fetchBootstrap(true);
         notifyLivePeers();
+        scrollToChatBottom('main', 'smooth');
       } catch (_) {
         // ignore space AI error
       } finally {
@@ -4450,31 +4431,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         if (aiRes?.session?.id) {
           setAiSessionId(aiRes.session.id);
         }
-        const rawAiReplyText = aiRes?.message?.content || 'MAI đã phân tích xong thông tin cho luồng thảo luận.';
-        let aiReplyText = rawAiReplyText
-          .replace(/<action[\s\S]*?<\/action>/gi, '')
-          .replace(/<\/?action[^>]*>/gi, '')
-          .trim();
-        if (senderName && !aiReplyText.includes(`@${senderName}`)) {
-          aiReplyText = `Chào @${senderName}, ${aiReplyText}`;
-        }
-        const aiActions =
-          aiRes?.message?.suggestedActions ||
-          aiRes?.message?.suggestedAction?.actions ||
-          (aiRes?.message?.suggestedAction ? [aiRes.message.suggestedAction] : null);
-
-        const postedAi = await apiClient.chat.sendThreadReply({
-          conversationId: activeConversation.id,
-          messageId: activeThreadMsgId,
-          text: aiReplyText,
-          isAiBot: true,
-          aiThinking: aiRes?.message?.thinking || null,
-          aiAction: aiRes?.message?.suggestedAction || null,
-          aiActions,
-        });
-        if (postedAi?.conversation) {
-          setConversations((prev) => prev.map((c) => (c.id === activeConversation.id ? postedAi.conversation! : c)));
-        }
+        // Backend auto-delivers the bot reply directly to activeThreadMsgId in DB!
+        // Sync fresh conversation state from server to immediately display MAI's thread reply
+        await fetchBootstrap(true);
         notifyLivePeers();
         scrollToChatBottom('thread', 'smooth');
       } catch (_) {
