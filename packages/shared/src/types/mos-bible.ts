@@ -44,3 +44,56 @@ export interface MosBibleCommandment {
   interactiveComponent?: string;
   sources: readonly MosBibleSourceReference[];
 }
+
+export type MosBibleProposalTier = 'DANNY_FINAL' | 'CORE_TEAM';
+
+export type MosBibleProposalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface MosBibleProposal {
+  id: string;
+  proposedByStaffId: number;
+  proposedByName: string;
+  proposedByRole: string;
+  tier: MosBibleProposalTier;
+  book: MosBibleBookKey;
+  title: string;
+  summary: string;
+  commandments: readonly string[];
+  rationale: string;
+  examples?: readonly string[];
+  tags: readonly string[];
+  status: MosBibleProposalStatus;
+  reviewedByStaffId?: number;
+  reviewedByName?: string;
+  reviewedAt?: string;
+  reviewNote?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MosBibleQuizOption {
+  key: 'A' | 'B' | 'C' | 'D';
+  text: string;
+}
+
+export interface MosBibleQuizQuestion {
+  id: string;
+  commandmentId: string;
+  title: string;
+  scenario: string;
+  options: readonly MosBibleQuizOption[];
+  correctKey: 'A' | 'B' | 'C' | 'D';
+  explanation: string;
+  culturalKey: 'Vui Vẻ' | 'Ân Cần' | 'Chân Thành' | 'Khoa Học';
+  rewardPoints: number;
+}
+
+export interface MosBibleQuizSubmissionResult {
+  questionId: string;
+  selectedKey: 'A' | 'B' | 'C' | 'D';
+  isCorrect: boolean;
+  correctKey: 'A' | 'B' | 'C' | 'D';
+  explanation: string;
+  culturalKey: 'Vui Vẻ' | 'Ân Cần' | 'Chân Thành' | 'Khoa Học';
+  earnedPoints: number;
+}

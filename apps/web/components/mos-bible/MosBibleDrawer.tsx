@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Collapse, Input, Segmented, Select, Tag, Typography, theme } from 'antd';
-import { BookOpenCheck, Search, Sparkles } from 'lucide-react';
+import { Button, Collapse, Input, Segmented, Select, Tag, Typography, theme } from 'antd';
+import { BookOpenCheck, Search, Sparkles, PlusCircle, Award } from 'lucide-react';
 import {
   filterMosBibleCommandments,
   getMosBibleBook,
@@ -16,6 +16,8 @@ import {
 } from '@mos-lab/shared';
 import { AdaptiveDrawer, AppIcon, StatePanel, StatusTag } from '../ui';
 import { SalarySimulator } from '../salary-explainer';
+import MosBibleProposalModal from './MosBibleProposalModal';
+import MosBibleQuizModal from './MosBibleQuizModal';
 import styles from './MosBibleDrawer.module.css';
 
 const { Text } = Typography;
@@ -156,6 +158,8 @@ export default function MosBibleDrawer({ open, pathname, targetCommandmentId, on
   }, [targetCommandmentId, open]);
 
   const [activeCollapseKeys, setActiveCollapseKeys] = useState<string[]>([]);
+  const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
+  const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -271,6 +275,26 @@ export default function MosBibleDrawer({ open, pathname, targetCommandmentId, on
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <Button
+          type="primary"
+          size="small"
+          icon={<AppIcon icon={PlusCircle} size="sm" />}
+          onClick={() => setIsProposalModalOpen(true)}
+          className="bg-amber-600 hover:bg-amber-500 font-medium"
+        >
+          Đề xuất Điều răn
+        </Button>
+        <Button
+          size="small"
+          icon={<AppIcon icon={Award} size="sm" className="text-emerald-500" />}
+          onClick={() => setIsQuizModalOpen(true)}
+          className="font-medium"
+        >
+          Mini-Quiz Tuần (Lead by Example)
+        </Button>
+      </div>
+
       <div className={styles.toolbar}>
         <Input
           allowClear
@@ -330,6 +354,10 @@ export default function MosBibleDrawer({ open, pathname, targetCommandmentId, on
       <div className={styles.footerNote} style={{ color: token.colorTextTertiary }}>
         “Kinh” được sửa qua từng Công đồng sản phẩm. Mỗi lần sửa đều phải có phiên bản, ngày hiệu lực và nguồn.
       </div>
+
+      <MosBibleProposalModal open={isProposalModalOpen} onClose={() => setIsProposalModalOpen(false)} />
+
+      <MosBibleQuizModal open={isQuizModalOpen} onClose={() => setIsQuizModalOpen(false)} />
     </AdaptiveDrawer>
   );
 }

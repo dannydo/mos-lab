@@ -48,6 +48,7 @@ import { pilotRoutes } from './modules/pilot/routes.js';
 import { careerRoutes } from './modules/career/career.routes.js';
 import { telesaleCompetencyRoutes } from './modules/telesale-competency/telesale-competency.routes.js';
 import { mosChatRoutes } from './modules/chat/routes.js';
+import { bibleRoutes } from './modules/bible/bible.routes.js';
 import { cashFlowRoutes } from './modules/cash-flow/routes.js';
 import notificationRoutes from './modules/notifications/routes.js';
 import { startBugReportCleanup } from './modules/bug-reports/bug-report.service.js';
@@ -361,6 +362,7 @@ const start = async () => {
     await server.register(careerRoutes, { prefix: '/api' });
     await server.register(telesaleCompetencyRoutes, { prefix: '/api' });
     await server.register(mosChatRoutes, { prefix: '/api' });
+    await server.register(bibleRoutes, { prefix: '/api' });
     await server.register(cashFlowRoutes, { prefix: '/api' });
     await server.register(notificationRoutes, { prefix: '/api' });
 

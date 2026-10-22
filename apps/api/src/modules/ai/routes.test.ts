@@ -124,6 +124,15 @@ test('generateAssistantFallback provides domain thinking and filter payload for 
   const res3 = generateAssistantFallback('Tệp khách hàng của tôi');
   assert.ok(res3.suggestedAction);
   assert.equal(res3.suggestedAction.payload.assignedStaffId, 'me');
+
+  // 4. Wings Culture & Kinh Thánh mOS query (MOS-002)
+  const res4 = generateAssistantFallback('4 key văn hóa của Wings là gì?');
+  assert.ok(res4.thinking && res4.thinking.includes('MOS-002'));
+  assert.ok(res4.content.includes('Vui Vẻ'));
+  assert.ok(res4.content.includes('Ân Cần'));
+  assert.ok(res4.content.includes('Chân Thành'));
+  assert.ok(res4.content.includes('Khoa Học'));
+  assert.ok(res4.content.includes('Kinh Thánh mOS'));
 });
 
 test('AI Assistant Chat routes enforce Private Workspace isolation between staff members', async () => {
