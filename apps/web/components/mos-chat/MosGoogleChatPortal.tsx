@@ -333,6 +333,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   );
   const [isResizingTarget, setIsResizingTarget] = useState<'panel' | 'sidebar' | 'thread' | null>(null);
   const [hoverResizeHandle, setHoverResizeHandle] = useState<'panel' | 'sidebar' | 'thread' | null>(null);
+  const justFinishedResizingRef = useRef<boolean>(false);
   const [presence, setPresence] = useState<MosChatPresenceStatus>('active');
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -476,6 +477,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     const handleMouseUp = () => {
       persistPersonalLayout();
       setIsResizingTarget(null);
+      justFinishedResizingRef.current = true;
+      window.setTimeout(() => {
+        justFinishedResizingRef.current = false;
+      }, 150);
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -1556,11 +1561,56 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') {
         e.preventDefault();
         onToggle();
+        return;
+      }
+      if (open && e.key === 'Escape') {
+        const hasInnerModalOpen =
+          taskModalOpen ||
+          newRoomModalOpen ||
+          spaceMembersModalOpen ||
+          accessConfigModalOpen ||
+          sidebarCustomizeModalOpen ||
+          quickCreateSectionModalOpen ||
+          driveLinkModalOpen ||
+          negotiateModalOpen ||
+          missionModalOpen ||
+          historyModalOpen ||
+          triggerWorkflowModalOpen ||
+          saveThreadWorkflowModalOpen;
+        if (hasInnerModalOpen) {
+          return;
+        }
+        if (threadOpen) {
+          e.preventDefault();
+          setThreadOpen(false);
+          return;
+        }
+        e.preventDefault();
+        onClose?.();
+        return;
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onToggle, lightboxImage]);
+  }, [
+    onToggle,
+    onClose,
+    open,
+    lightboxImage,
+    threadOpen,
+    taskModalOpen,
+    newRoomModalOpen,
+    spaceMembersModalOpen,
+    accessConfigModalOpen,
+    sidebarCustomizeModalOpen,
+    quickCreateSectionModalOpen,
+    driveLinkModalOpen,
+    negotiateModalOpen,
+    missionModalOpen,
+    historyModalOpen,
+    triggerWorkflowModalOpen,
+    saveThreadWorkflowModalOpen,
+  ]);
 
   // Auto-focus composer input when chat opens or switches room
   useEffect(() => {
@@ -8714,6 +8764,25 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             const target = uploadTargetRef.current;
             void handleProcessImageFiles(e.target.files, 'upload', target.scope, target.convId);
           }
+        }}
+      />
+
+      {/* ================= MOS CHAT BACKDROP / OVERLAY (DIM + BLUR + CLICK-OUTSIDE TO CLOSE) ================= */}
+      <div
+        aria-hidden="true"
+        data-testid="mos-chat-backdrop"
+        onClick={() => {
+          if (isResizingTarget || justFinishedResizingRef.current) return;
+          onClose?.();
+        }}
+        className={`fixed inset-0 transition-opacity duration-300 ${
+          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        style={{
+          background: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(4px)',
+          WebkitBackdropFilter: 'blur(4px)',
+          zIndex: isMobile ? 1190 : 990,
         }}
       />
 

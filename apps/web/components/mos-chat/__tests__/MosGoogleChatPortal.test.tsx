@@ -456,4 +456,40 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
     const buzzBtn = screen.getByRole('button', { name: /Buzz \/ Bump tin nhắn khẩn cấp/i });
     expect(buzzBtn).toBeTruthy();
   });
+
+  it('renders backdrop overlay when open and calls onClose when backdrop is clicked', async () => {
+    const handleClose = vi.fn();
+
+    render(
+      <MosGoogleChatPortal
+        open={true}
+        onClose={handleClose}
+        onToggle={vi.fn()}
+        currentUser={{ id: 99, displayName: 'Danny Do', role: 'Admin' }}
+      />
+    );
+
+    const backdrop = screen.getByTestId('mos-chat-backdrop');
+    expect(backdrop).toBeTruthy();
+    expect(backdrop.className).toContain('opacity-100');
+
+    fireEvent.click(backdrop);
+    expect(handleClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onClose when Escape key is pressed while mOS Chat is open', async () => {
+    const handleClose = vi.fn();
+
+    render(
+      <MosGoogleChatPortal
+        open={true}
+        onClose={handleClose}
+        onToggle={vi.fn()}
+        currentUser={{ id: 99, displayName: 'Danny Do', role: 'Admin' }}
+      />
+    );
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(handleClose).toHaveBeenCalledTimes(1);
+  });
 });
