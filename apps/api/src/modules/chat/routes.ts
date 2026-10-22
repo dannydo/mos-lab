@@ -1,4 +1,4 @@
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, FastifyReply } from 'fastify';
 import crypto from 'crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
@@ -2310,6 +2310,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       .replace(/```[\s\S]*?```/g, '')
       .replace(/`([^`]+)`/g, '$1')
       .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/https?:\/\/\S+/gi, '')
       .replace(/<[^>]+>/g, '')
       .replace(/[*#_~>|]/g, ' ')
       .replace(/[\r\n\t]+/g, ' ')
@@ -2330,24 +2331,25 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
     return '+0%';
   }
 
-  // GET /api/chat/tts - Neural TTS stream with Hoai My voice & customizable playback speed
-  fastify.get('/chat/tts', async (request, reply) => {
-    const query = request.query as {
+  const handleChatTtsRequest = async (
+    params: {
       text?: string;
       voice?: string;
       speed?: string | number;
       rate?: string;
       pitch?: string;
-    };
-    const rawText = query.text || '';
+    },
+    reply: FastifyReply
+  ) => {
+    const rawText = params.text || '';
     const cleanText = cleanChatTextForTts(rawText);
     if (!cleanText) {
       return reply.status(400).send({ error: 'Text is required' });
     }
 
-    const voice = (query.voice || 'vi-VN-HoaiMyNeural').trim();
-    const rate = convertSpeedToRate(query.speed, query.rate);
-    const pitch = (query.pitch || '+0Hz').trim();
+    const voice = (params.voice || 'vi-VN-HoaiMyNeural').trim();
+    const rate = convertSpeedToRate(params.speed, params.rate);
+    const pitch = (params.pitch || '+0Hz').trim();
 
     try {
       const audioBuffer = await TelesaleTargetService.synthesizeCelebrationAudio(cleanText, voice, rate, pitch);
@@ -2362,6 +2364,16 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       fastify.log.error(`Failed to synthesize chat tts audio: ${err.message}`);
       return reply.status(500).send({ error: 'Failed to synthesize chat tts audio' });
     }
+  };
+
+  // GET /api/chat/tts - Neural TTS stream with Hoai My voice & customizable playback speed
+  fastify.get('/chat/tts', async (request, reply) => {
+    return handleChatTtsRequest(request.query as SafeAny, reply);
+  });
+
+  // POST /api/chat/tts - Neural TTS stream via JSON body (no URL length constraints)
+  fastify.post('/chat/tts', async (request, reply) => {
+    return handleChatTtsRequest((request.body || {}) as SafeAny, reply);
   });
 
   // POST /api/chat/messages

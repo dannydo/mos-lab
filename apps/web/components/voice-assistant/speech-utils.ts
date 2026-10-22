@@ -18,6 +18,8 @@ export function cleanMarkdownForSpeech(markdown: string): string {
       .replace(/`([^`]+)`/g, '$1')
       // Remove markdown links [text](url) -> text
       .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      // Remove URLs
+      .replace(/https?:\/\/\S+/gi, '')
       // Remove HTML tags
       .replace(/<[^>]+>/g, '')
       // Remove bold and italic markers
@@ -40,6 +42,57 @@ export function cleanMarkdownForSpeech(markdown: string): string {
       .replace(/\s{2,}/g, ' ')
       .trim()
   );
+}
+
+export function splitTextIntoSpokenChunks(text: string, maxChunkLength = 220): string[] {
+  const clean = cleanMarkdownForSpeech(text);
+  if (!clean) return [];
+
+  if (clean.length <= maxChunkLength) {
+    return [clean];
+  }
+
+  // Split by sentence terminators or linebreaks
+  const sentences = clean
+    .split(/(?<=[.?!;:])\s+|\n+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const chunks: string[] = [];
+  let currentChunk = '';
+
+  for (const sentence of sentences) {
+    if (sentence.length > maxChunkLength) {
+      if (currentChunk) {
+        chunks.push(currentChunk.trim());
+        currentChunk = '';
+      }
+      // Subdivide long sentence by commas or clauses
+      const parts = sentence
+        .split(/(?<=[,])\s+/)
+        .map((p) => p.trim())
+        .filter(Boolean);
+      for (const part of parts) {
+        if ((currentChunk + ' ' + part).trim().length <= maxChunkLength) {
+          currentChunk = (currentChunk + ' ' + part).trim();
+        } else {
+          if (currentChunk) chunks.push(currentChunk.trim());
+          currentChunk = part;
+        }
+      }
+    } else if ((currentChunk + ' ' + sentence).trim().length <= maxChunkLength) {
+      currentChunk = currentChunk ? `${currentChunk} ${sentence}` : sentence;
+    } else {
+      if (currentChunk) chunks.push(currentChunk.trim());
+      currentChunk = sentence;
+    }
+  }
+
+  if (currentChunk.trim()) {
+    chunks.push(currentChunk.trim());
+  }
+
+  return chunks.length > 0 ? chunks : [clean];
 }
 
 export function getBestVietnameseVoice(preferredGender?: 'male' | 'female'): SpeechSynthesisVoice | null {
@@ -95,7 +148,10 @@ export interface SpeakTextOptions {
   onError?: (error?: unknown) => void;
 }
 
-export function speakText(
+/**
+ * Low-level fallback using browser native window.speechSynthesis
+ */
+export function speakTextBrowserOnly(
   text: string,
   optionsOrCallbacks?:
     | SpeakTextOptions
@@ -107,7 +163,6 @@ export function speakText(
 ): SpeechSynthesisUtterance | null {
   if (typeof window === 'undefined' || !window.speechSynthesis) return null;
 
-  // Cancel prior speech
   window.speechSynthesis.cancel();
 
   const spokenText = cleanMarkdownForSpeech(text);
@@ -121,7 +176,7 @@ export function speakText(
     utterance.voice = voice;
   }
   utterance.lang = voice?.lang || 'vi-VN';
-  utterance.rate = options?.rate !== undefined ? options.rate : 1.05; // Natural conversational pacing
+  utterance.rate = options?.rate !== undefined ? options.rate : 1.05;
   utterance.pitch = options?.pitch !== undefined ? options.pitch : 1.0;
 
   utterance.onstart = () => {
@@ -142,8 +197,34 @@ export function speakText(
   return utterance;
 }
 
+/**
+ * Universal speakText: Always uses Azure Neural Hoài My (vi-VN-HoaiMyNeural)
+ * with seamless sentence buffering, falling back gracefully only if offline.
+ */
+export function speakText(
+  text: string,
+  optionsOrCallbacks?:
+    | SpeakTextOptions
+    | {
+        onStart?: () => void;
+        onEnd?: () => void;
+        onError?: () => void;
+      }
+): SpeechSynthesisUtterance | null {
+  const options = optionsOrCallbacks as SpeakTextOptions | undefined;
+  void playNeuralSpeech(text, {
+    voice: 'vi-VN-HoaiMyNeural',
+    speed: options?.rate ?? 1.0,
+    onStart: options?.onStart,
+    onEnd: options?.onEnd,
+    onError: options?.onError,
+  });
+  return null;
+}
+
 let activeNeuralAudio: HTMLAudioElement | null = null;
-let activeNeuralBlobUrl: string | null = null;
+let activeNeuralBlobUrls: string[] = [];
+let activePlaybackId = 0;
 
 export interface NeuralTtsOptions {
   speed?: number;
@@ -154,6 +235,7 @@ export interface NeuralTtsOptions {
 }
 
 export function stopNeuralSpeech() {
+  activePlaybackId++;
   if (activeNeuralAudio) {
     try {
       activeNeuralAudio.pause();
@@ -163,13 +245,15 @@ export function stopNeuralSpeech() {
     }
     activeNeuralAudio = null;
   }
-  if (activeNeuralBlobUrl) {
-    try {
-      URL.revokeObjectURL(activeNeuralBlobUrl);
-    } catch {
-      // ignore revoke error
+  if (activeNeuralBlobUrls.length > 0) {
+    for (const url of activeNeuralBlobUrls) {
+      try {
+        URL.revokeObjectURL(url);
+      } catch {
+        // ignore revoke error
+      }
     }
-    activeNeuralBlobUrl = null;
+    activeNeuralBlobUrls = [];
   }
 }
 
@@ -194,67 +278,163 @@ export function stopSpeaking() {
   }
 }
 
+async function fetchAudioBlob(text: string, voice: string, speed: number, signal?: AbortSignal): Promise<Blob> {
+  const baseUrl = resolveApiBaseUrl();
+
+  // 1. Prefer POST /chat/tts to avoid URL length constraints and header limits
+  try {
+    const res = await fetch(`${baseUrl}/chat/tts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text,
+        voice,
+        speed,
+      }),
+      signal: signal || AbortSignal.timeout(20000),
+    });
+
+    if (res.ok) {
+      return await res.blob();
+    }
+  } catch {
+    // If POST fails, fallback to GET below
+  }
+
+  // 2. Fallback to GET /chat/tts
+  const query = new URLSearchParams({
+    text,
+    voice,
+    speed: String(speed),
+  });
+  const res = await fetch(`${baseUrl}/chat/tts?${query.toString()}`, {
+    mode: 'cors',
+    signal: signal || AbortSignal.timeout(20000),
+  });
+
+  if (!res.ok) {
+    throw new Error(`TTS server returned status ${res.status}`);
+  }
+  return await res.blob();
+}
+
+/**
+ * Plays neural audio stream with Hoài My voice and sentence-level prefetching.
+ * Starts playback in ~1.5s and seamlessly preloads subsequent chunks in the background.
+ */
 export async function playNeuralSpeech(text: string, options?: NeuralTtsOptions): Promise<HTMLAudioElement | null> {
   stopSpeaking();
 
-  const spokenText = cleanMarkdownForSpeech(text);
-  if (!spokenText) return null;
+  const chunks = splitTextIntoSpokenChunks(text);
+  if (chunks.length === 0) return null;
 
   const speed = options?.speed || 1.0;
   const voice = options?.voice || 'vi-VN-HoaiMyNeural';
+  const playbackId = ++activePlaybackId;
+
+  // Prefetch cache map: chunkIndex -> Promise<string (blobUrl)>
+  const blobUrlPromises = new Map<number, Promise<string>>();
+
+  const getOrPrefetchBlobUrl = (idx: number): Promise<string> => {
+    if (idx >= chunks.length) return Promise.reject(new Error('Index out of bounds'));
+    if (!blobUrlPromises.has(idx)) {
+      const p = (async () => {
+        const blob = await fetchAudioBlob(chunks[idx], voice, speed);
+        const url = URL.createObjectURL(blob);
+        activeNeuralBlobUrls.push(url);
+        return url;
+      })();
+      blobUrlPromises.set(idx, p);
+    }
+    return blobUrlPromises.get(idx)!;
+  };
 
   try {
-    const baseUrl = resolveApiBaseUrl();
-    const query = new URLSearchParams({
-      text: spokenText,
-      voice,
-      speed: String(speed),
-    });
-    const url = `${baseUrl}/chat/tts?${query.toString()}`;
+    // Start prefetching chunk 0 immediately
+    await getOrPrefetchBlobUrl(0);
+    if (playbackId !== activePlaybackId) return null;
 
-    const res = await fetch(url, {
-      mode: 'cors',
-      signal: AbortSignal.timeout(25000),
-    });
-
-    if (!res.ok) {
-      throw new Error(`TTS server returned status ${res.status}`);
+    // Start prefetching chunk 1 right away in background
+    if (chunks.length > 1) {
+      void getOrPrefetchBlobUrl(1);
     }
 
-    const blob = await res.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    activeNeuralBlobUrl = blobUrl;
+    let currentAudio: HTMLAudioElement | null = null;
 
-    const audio = new Audio(blobUrl);
-    audio.playbackRate = speed;
-    activeNeuralAudio = audio;
+    const playChunkAt = async (index: number) => {
+      if (playbackId !== activePlaybackId) return;
 
-    audio.onplay = () => {
-      options?.onStart?.();
+      if (index >= chunks.length) {
+        stopNeuralSpeech();
+        options?.onEnd?.();
+        return;
+      }
+
+      try {
+        const blobUrl = await getOrPrefetchBlobUrl(index);
+        if (playbackId !== activePlaybackId) return;
+
+        // Prefetch next chunk in background while current plays
+        if (index + 1 < chunks.length) {
+          void getOrPrefetchBlobUrl(index + 1);
+        }
+
+        const audio = new Audio(blobUrl);
+        audio.playbackRate = speed;
+        activeNeuralAudio = audio;
+        currentAudio = audio;
+
+        audio.onplay = () => {
+          if (index === 0) {
+            options?.onStart?.();
+          }
+        };
+
+        audio.onended = () => {
+          if (playbackId !== activePlaybackId) return;
+          void playChunkAt(index + 1);
+        };
+
+        audio.onerror = () => {
+          if (playbackId !== activePlaybackId) return;
+          if (index + 1 < chunks.length) {
+            void playChunkAt(index + 1);
+          } else {
+            stopNeuralSpeech();
+            options?.onError?.(new Error('Audio playback failed'));
+          }
+        };
+
+        await audio.play();
+      } catch (err) {
+        if (playbackId !== activePlaybackId) return;
+        if (index === 0) {
+          // If first chunk fails on network, fallback to browser synthesis
+          stopNeuralSpeech();
+          const cleanText = cleanMarkdownForSpeech(text);
+          speakTextBrowserOnly(cleanText, {
+            rate: speed,
+            onStart: options?.onStart,
+            onEnd: options?.onEnd,
+            onError: options?.onError,
+          });
+        } else {
+          stopNeuralSpeech();
+          options?.onError?.(err);
+        }
+      }
     };
 
-    audio.onended = () => {
-      stopNeuralSpeech();
-      options?.onEnd?.();
-    };
-
-    audio.onerror = (e) => {
-      stopNeuralSpeech();
-      // Graceful fallback to browser speech synthesis
-      speakText(spokenText, {
-        rate: speed,
-        onStart: options?.onStart,
-        onEnd: options?.onEnd,
-        onError: options?.onError,
-      });
-    };
-
-    await audio.play();
-    return audio;
-  } catch (_err) {
+    await playChunkAt(0);
+    return currentAudio;
+  } catch (err) {
+    if (playbackId !== activePlaybackId) return null;
     stopNeuralSpeech();
     // Fallback to browser speech synthesis on network failure
-    speakText(spokenText, {
+    const cleanText = cleanMarkdownForSpeech(text);
+    speakTextBrowserOnly(cleanText, {
       rate: speed,
       onStart: options?.onStart,
       onEnd: options?.onEnd,
