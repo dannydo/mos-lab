@@ -659,6 +659,30 @@ export async function appendBotMessageToChatConversation(
     }
 
     // Deduplication check: Avoid appending duplicate bot reply to this conversation within 30 seconds
+    const existingPrematureBotMsg = conv.messages.find(
+      (m) =>
+        m.isAiBot &&
+        (m.text.includes('Người dùng hiện tại') ||
+          m.text.includes('Hiện kết nối MAI đang bận') ||
+          (m.text.length < 100 && Math.abs(now.getTime() - new Date(m.createdAt).getTime()) < 120_000))
+    );
+    if (existingPrematureBotMsg) {
+      existingPrematureBotMsg.text = cleanText;
+      existingPrematureBotMsg.aiThinking = message.thinking || existingPrematureBotMsg.aiThinking || null;
+      existingPrematureBotMsg.aiAction = message.suggestedAction || existingPrematureBotMsg.aiAction || null;
+      existingPrematureBotMsg.aiActions =
+        message.suggestedActions ||
+        (message.suggestedAction ? [message.suggestedAction] : existingPrematureBotMsg.aiActions || null);
+      await crm.crmConfig.update({
+        where: { key: 'mos_chat:conversations_v1' },
+        data: { value: JSON.stringify(convs) },
+      });
+      try {
+        await syncConversationsToRelationalDb(fastify, convs);
+      } catch (_) {}
+      return existingPrematureBotMsg;
+    }
+
     const recentBotMsg = conv.messages
       .slice(-5)
       .find(
@@ -704,6 +728,107 @@ export async function appendBotMessageToChatConversation(
     return newMsg;
   } catch (err) {
     fastify.log?.warn?.({ err }, 'Failed to append bot message to chat conversation');
+    return null;
+  }
+}
+
+/**
+ * Append or update an AI bot thread reply directly into a chat conversation's thread.
+ */
+export async function appendBotThreadReplyToChatConversation(
+  fastify: FastifyInstance,
+  conversationId: string,
+  parentMessageId: string,
+  message: {
+    text: string;
+    thinking?: string | null;
+    suggestedAction?: SafeAny;
+    suggestedActions?: SafeAny[];
+    senderName?: string;
+    recipientName?: string;
+  }
+): Promise<MosChatThreadReply | null> {
+  const crm = (fastify as SafeAny)?.prisma?.crm;
+  if (!crm) return null;
+
+  try {
+    const config = await crm.crmConfig.findUnique({ where: { key: 'mos_chat:conversations_v1' } });
+    if (!config) return null;
+    const convs: MosChatConversation[] = JSON.parse(config.value || '[]');
+    const conv = convs.find((c) => c.id === conversationId);
+    if (!conv) return null;
+    const msg = conv.messages.find((m) => m.id === parentMessageId);
+    if (!msg) return null;
+
+    const now = new Date();
+    const timeLabel = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+    let cleanText = (message.text || '')
+      .replace(/<action[\s\S]*?<\/action>/gi, '')
+      .replace(/<\/?action[^>]*>/gi, '')
+      .trim();
+
+    if (message.recipientName && !cleanText.includes(`@${message.recipientName}`)) {
+      cleanText = `Chào @${message.recipientName}, ${cleanText}`;
+    }
+
+    msg.thread = msg.thread || [];
+
+    // Check if premature/short bot message already exists in this thread within 2 minutes
+    const prematureReply = msg.thread.find(
+      (r) =>
+        r.isAiBot &&
+        (r.text.includes('Người dùng hiện tại') ||
+          r.text.includes('Hiện kết nối MAI đang bận') ||
+          (r.text.length < 100 && Math.abs(now.getTime() - new Date(r.createdAt).getTime()) < 120_000))
+    );
+
+    if (prematureReply) {
+      prematureReply.text = cleanText;
+      prematureReply.aiThinking = message.thinking || prematureReply.aiThinking || null;
+      prematureReply.aiAction = message.suggestedAction || prematureReply.aiAction || null;
+      prematureReply.aiActions =
+        message.suggestedActions ||
+        (message.suggestedAction ? [message.suggestedAction] : prematureReply.aiActions || null);
+    } else {
+      // Deduplication check: Avoid duplicate thread reply within 30 seconds
+      const duplicate = msg.thread.find(
+        (r) => r.isAiBot && r.text === cleanText && Math.abs(now.getTime() - new Date(r.createdAt).getTime()) < 30_000
+      );
+      if (duplicate) return duplicate;
+
+      const newReply: MosChatThreadReply = {
+        id: `th-${randomUUID().slice(0, 8)}`,
+        senderId: 'wings-ai-copilot',
+        senderName: message.senderName || '🤖 MAI',
+        senderRole: 'mOS AI',
+        senderAvatar: 'MAI',
+        roleColor: '#8b5cf6',
+        text: cleanText,
+        timeLabel,
+        createdAt: now.toISOString(),
+        isAiBot: true,
+        aiThinking: message.thinking || null,
+        aiAction: message.suggestedAction || null,
+        aiActions: message.suggestedActions || (message.suggestedAction ? [message.suggestedAction] : null),
+      };
+      msg.thread.push(newReply);
+    }
+
+    conv.updatedAt = now.toISOString();
+
+    await crm.crmConfig.update({
+      where: { key: 'mos_chat:conversations_v1' },
+      data: { value: JSON.stringify(convs) },
+    });
+
+    try {
+      await syncConversationsToRelationalDb(fastify, convs);
+    } catch (_) {}
+
+    return msg.thread[msg.thread.length - 1];
+  } catch (err) {
+    fastify.log?.warn?.({ err }, 'Failed to append bot thread reply to chat conversation');
     return null;
   }
 }

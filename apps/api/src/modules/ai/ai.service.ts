@@ -595,11 +595,12 @@ export class AiAssistantService {
     });
 
     // 3. Retrieve recent session history (up to last 10 messages)
-    const recentMessages = await crm.crmAiChatMessage.findMany({
+    const recentMessagesDesc = await crm.crmAiChatMessage.findMany({
       where: { sessionId: session.id },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
       take: 10,
     });
+    const recentMessages = recentMessagesDesc.reverse();
 
     // 4. Fetch live customer context from database for 100% data accuracy
     const liveCustomerText = await LiveCustomerContextService.getLiveCustomerSummary(legacyPrisma, crm, staffId);
@@ -607,11 +608,18 @@ export class AiAssistantService {
     let parsedResponse: ParsedAiResponse | null = null;
     let source: 'ag' | 'gemini' | 'fallback' = 'fallback';
 
-    const targetChatConvId = scope?.startsWith('mos-chat-space:')
-      ? scope.slice('mos-chat-space:'.length)
-      : scope?.startsWith('mos-chat-conv:')
-        ? scope.slice('mos-chat-conv:'.length)
-        : undefined;
+    let targetChatConvId: string | undefined;
+    let targetChatThreadId: string | undefined;
+
+    if (scope?.startsWith('mos-chat-space:')) {
+      targetChatConvId = scope.slice('mos-chat-space:'.length);
+    } else if (scope?.startsWith('mos-chat-conv:')) {
+      targetChatConvId = scope.slice('mos-chat-conv:'.length);
+    } else if (scope?.startsWith('mos-chat-thread:')) {
+      const parts = scope.slice('mos-chat-thread:'.length).split(':');
+      targetChatConvId = parts[0];
+      targetChatThreadId = parts[1];
+    }
 
     // 5. PRIMARY ENGINE: Route through Antigravity (AG) Desktop Bridge
     try {
@@ -655,11 +663,12 @@ Quy định phản hồi:
             agConversationId,
             promptForAg,
             agTitle,
-            20_000,
+            90_000,
             session.id,
             {
               scope,
               targetChatConvId,
+              targetChatThreadId,
               userName: context?.userName,
             }
           );
@@ -702,7 +711,14 @@ Quy định phản hồi:
             context?.selectedCustomerCount || 0
           }]`;
 
-          contents[contents.length - 1].parts[0].text += contextStr;
+          if (contents.length > 0 && contents[contents.length - 1].role === 'user') {
+            contents[contents.length - 1].parts[0].text += contextStr;
+          } else {
+            contents.push({
+              role: 'user',
+              parts: [{ text: `${contextStr}\n${trimmedMessage}` }],
+            });
+          }
 
           const payload = {
             systemInstruction: {

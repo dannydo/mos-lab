@@ -20,6 +20,7 @@ export interface AgChatBridgeJob {
   sessionId?: string;
   scope?: string;
   targetChatConvId?: string;
+  targetChatThreadId?: string;
   userName?: string;
 }
 
@@ -375,9 +376,9 @@ export class AgChatBridgeService {
     conversationId: string | undefined,
     prompt: string,
     title?: string,
-    timeoutMs = 20_000,
+    timeoutMs = 90_000,
     sessionId?: string,
-    metadata?: { scope?: string; targetChatConvId?: string; userName?: string }
+    metadata?: { scope?: string; targetChatConvId?: string; targetChatThreadId?: string; userName?: string }
   ): Promise<{ conversationId: string; response: ParsedAiResponse }> {
     if (!this.isRemotePollerActive()) {
       return Promise.reject(new Error('No active remote Antigravity bridge poller connected'));
@@ -393,6 +394,7 @@ export class AgChatBridgeService {
         sessionId,
         scope: metadata?.scope,
         targetChatConvId: metadata?.targetChatConvId,
+        targetChatThreadId: metadata?.targetChatThreadId,
         userName: metadata?.userName,
       };
 

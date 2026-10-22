@@ -3,7 +3,10 @@ import axios from 'axios';
 import { requireAuth } from '../../middlewares/auth.js';
 import { AiAssistantService } from './ai.service.js';
 import { AgChatBridgeService } from './ag-chat-bridge.service.js';
-import { appendBotMessageToChatConversation } from '../chat/chat-repository.service.js';
+import {
+  appendBotMessageToChatConversation,
+  appendBotThreadReplyToChatConversation,
+} from '../chat/chat-repository.service.js';
 import type {
   AiAssistantChatRequest,
   CreateAiSessionRequest,
@@ -288,12 +291,26 @@ export async function aiRoutes(fastify: FastifyInstance) {
       try {
         const archivedJob = AgChatBridgeService.getArchivedJob(jobId);
         if (archivedJob?.targetChatConvId) {
-          await appendBotMessageToChatConversation(fastify, archivedJob.targetChatConvId, {
-            text: response.content,
-            thinking: response.thinking,
-            suggestedAction: response.suggestedAction,
-            recipientName: archivedJob.userName,
-          });
+          if (archivedJob.targetChatThreadId) {
+            await appendBotThreadReplyToChatConversation(
+              fastify,
+              archivedJob.targetChatConvId,
+              archivedJob.targetChatThreadId,
+              {
+                text: response.content,
+                thinking: response.thinking,
+                suggestedAction: response.suggestedAction,
+                recipientName: archivedJob.userName,
+              }
+            );
+          } else {
+            await appendBotMessageToChatConversation(fastify, archivedJob.targetChatConvId, {
+              text: response.content,
+              thinking: response.thinking,
+              suggestedAction: response.suggestedAction,
+              recipientName: archivedJob.userName,
+            });
+          }
         }
         if (archivedJob?.sessionId) {
           const lastMsg = await fastify.prisma.crm.crmAiChatMessage.findFirst({
