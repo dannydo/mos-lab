@@ -175,6 +175,7 @@ import {
 import { useMosChatBridgeListener } from './store/mos-chat-bridge';
 import { MosChatWorkflowCard } from './workflows/MosChatWorkflowCard';
 import { MosChatSaveThreadWorkflowModal, MosChatTriggerWorkflowModal } from './workflows/MosChatWorkflowModals';
+import { MosChatMermaidBlock } from './MosChatMermaidBlock';
 
 export { AI_COPILOT_CONV_ID };
 
@@ -6977,44 +6978,51 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         if (line.trim().startsWith('```')) {
           if (inCodeBlock) {
             const codeContent = codeBlockLines.join('\n');
-            result.push(
-              <div
-                key={`cb-${idx}`}
-                className="my-2 rounded-xl overflow-hidden shadow-sm text-[11.5px] font-mono select-text"
-                style={{
-                  background: isDark ? '#0f172a' : '#f8fafc',
-                  color: isDark ? '#f1f5f9' : '#0f172a',
-                  border: `1px solid ${borderColor}`,
-                }}
-              >
+            const lang = (codeBlockLang || '').trim().toLowerCase();
+            const isMermaid = lang === 'mermaid' || lang.startsWith('mermaid');
+
+            if (isMermaid) {
+              result.push(<MosChatMermaidBlock key={`cb-mermaid-${idx}`} code={codeContent} isDark={isDark} />);
+            } else {
+              result.push(
                 <div
-                  className="flex items-center justify-between px-3 py-1 text-[10px]"
+                  key={`cb-${idx}`}
+                  className="my-2 rounded-xl overflow-hidden shadow-sm text-[11.5px] font-mono select-text"
                   style={{
-                    background: surfaceRaised,
-                    borderBottom: `1px solid ${borderColor}`,
-                    color: token.colorTextSecondary,
+                    background: isDark ? '#0f172a' : '#f8fafc',
+                    color: isDark ? '#f1f5f9' : '#0f172a',
+                    border: `1px solid ${borderColor}`,
                   }}
                 >
-                  <span className="font-semibold">{codeBlockLang || 'Code'}</span>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      void navigator.clipboard?.writeText(codeContent);
-                      antdMessage.success('Đã sao chép mã code');
+                  <div
+                    className="flex items-center justify-between px-3 py-1 text-[10px]"
+                    style={{
+                      background: surfaceRaised,
+                      borderBottom: `1px solid ${borderColor}`,
+                      color: token.colorTextSecondary,
                     }}
-                    className="cursor-pointer inline-flex items-center gap-1 transition-opacity hover:opacity-80"
-                    style={{ color: accentColor }}
                   >
-                    <Copy size={11} />
-                    <span>Sao chép</span>
-                  </button>
+                    <span className="font-semibold">{codeBlockLang || 'Code'}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        void navigator.clipboard?.writeText(codeContent);
+                        antdMessage.success('Đã sao chép mã code');
+                      }}
+                      className="cursor-pointer inline-flex items-center gap-1 transition-opacity hover:opacity-80"
+                      style={{ color: accentColor }}
+                    >
+                      <Copy size={11} />
+                      <span>Sao chép</span>
+                    </button>
+                  </div>
+                  <pre className="p-3 overflow-x-auto leading-relaxed m-0">
+                    <code>{codeContent}</code>
+                  </pre>
                 </div>
-                <pre className="p-3 overflow-x-auto leading-relaxed m-0">
-                  <code>{codeContent}</code>
-                </pre>
-              </div>
-            );
+              );
+            }
             inCodeBlock = false;
             codeBlockLines = [];
             codeBlockLang = '';
@@ -7144,19 +7152,25 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
       if (inCodeBlock && codeBlockLines.length > 0) {
         const codeContent = codeBlockLines.join('\n');
-        result.push(
-          <pre
-            key="cb-unclosed"
-            className="p-3 my-2 rounded-xl text-[11.5px] font-mono overflow-x-auto leading-relaxed select-text"
-            style={{
-              background: isDark ? '#0f172a' : '#f8fafc',
-              color: isDark ? '#f1f5f9' : '#0f172a',
-              border: `1px solid ${borderColor}`,
-            }}
-          >
-            <code>{codeContent}</code>
-          </pre>
-        );
+        const lang = (codeBlockLang || '').trim().toLowerCase();
+        const isMermaid = lang === 'mermaid' || lang.startsWith('mermaid');
+        if (isMermaid) {
+          result.push(<MosChatMermaidBlock key="cb-mermaid-unclosed" code={codeContent} isDark={isDark} />);
+        } else {
+          result.push(
+            <pre
+              key="cb-unclosed"
+              className="p-3 my-2 rounded-xl text-[11.5px] font-mono overflow-x-auto leading-relaxed select-text"
+              style={{
+                background: isDark ? '#0f172a' : '#f8fafc',
+                color: isDark ? '#f1f5f9' : '#0f172a',
+                border: `1px solid ${borderColor}`,
+              }}
+            >
+              <code>{codeContent}</code>
+            </pre>
+          );
+        }
       }
 
       return <div className="space-y-0.5">{result}</div>;
