@@ -2960,6 +2960,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     setStagedAttachments((prev) => prev.filter((a) => a.id !== attId));
   }, []);
 
+  const isImageOrHeicFile = (f: File): boolean => {
+    if (f.type && f.type.startsWith('image/')) return true;
+    const ext = (f.name.split('.').pop() || '').toLowerCase();
+    return ['heic', 'heif', 'jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'svg'].includes(ext);
+  };
+
   const handleProcessImageFiles = useCallback(
     async (
       files: FileList | File[],
@@ -2967,7 +2973,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       scope: 'main' | 'thread' | 'dock' = 'main',
       convId?: string
     ) => {
-      const imageFiles = Array.from(files).filter((f) => f.type.startsWith('image/'));
+      const imageFiles = Array.from(files).filter(isImageOrHeicFile);
       if (imageFiles.length === 0) return;
 
       setUploadingCount((c) => c + imageFiles.length);
@@ -3006,9 +3012,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         const pastedImages: File[] = [];
         for (let i = 0; i < items.length; i += 1) {
           const item = items[i];
-          if (item.type.startsWith('image/')) {
+          if (item.type.startsWith('image/') || item.kind === 'file') {
             const file = item.getAsFile();
-            if (file) pastedImages.push(file);
+            if (file && isImageOrHeicFile(file)) pastedImages.push(file);
           }
         }
         if (pastedImages.length > 0) {
@@ -8700,7 +8706,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/gif"
+        accept="image/*,.heic,.heif,.HEIC,.HEIF"
         multiple
         className="hidden"
         onChange={(e) => {

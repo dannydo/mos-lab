@@ -2,7 +2,8 @@ export type MosChatPresenceStatus = 'active' | 'dnd' | 'away';
 
 export type MosChatTaskPriority = 'URGENT' | 'HIGH' | 'NORMAL';
 
-export type MosChatImageMimeType = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif';
+export type MosChatImageMimeType =
+  'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' | 'image/heic' | 'image/heif';
 
 export interface MosChatImageAttachment {
   id: string;

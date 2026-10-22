@@ -1,6 +1,8 @@
 import { FastifyInstance, FastifyReply } from 'fastify';
 import crypto from 'crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, unlink } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { resolve, sep } from 'node:path';
 import {
   ActionMosChatMissionRequest,
@@ -71,6 +73,8 @@ const CHAT_MIME_EXTENSIONS: Record<MosChatImageMimeType, string> = {
   'image/png': 'png',
   'image/webp': 'webp',
   'image/gif': 'gif',
+  'image/heic': 'jpg',
+  'image/heif': 'jpg',
 };
 
 const EXT_TO_CHAT_MIME: Record<string, MosChatImageMimeType> = {
@@ -79,6 +83,54 @@ const EXT_TO_CHAT_MIME: Record<string, MosChatImageMimeType> = {
   webp: 'image/webp',
   gif: 'image/gif',
 };
+
+const execFileAsync = promisify(execFile);
+
+async function convertHeicToJpegBuffer(heicBuffer: Buffer): Promise<Buffer> {
+  const rootDir = mosChatMediaRoot();
+  await mkdir(rootDir, { recursive: true, mode: 0o700 });
+  const uniqueId = `heic_conv_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+  const inPath = resolve(rootDir, `${uniqueId}.heic`);
+  const outPath = resolve(rootDir, `${uniqueId}.jpg`);
+
+  try {
+    await writeFile(inPath, heicBuffer, { mode: 0o600 });
+
+    // 1. Try heif-convert (Linux VPS standard)
+    let convertedOk = false;
+    try {
+      await execFileAsync('heif-convert', ['-q', '90', inPath, outPath], { timeout: 20000 });
+      convertedOk = true;
+    } catch {
+      // 2. Fallback to sips (macOS native)
+      try {
+        await execFileAsync('sips', ['-s', 'format', 'jpeg', inPath, '--out', outPath], { timeout: 20000 });
+        convertedOk = true;
+      } catch {
+        // 3. Fallback to ffmpeg
+        try {
+          await execFileAsync('ffmpeg', ['-y', '-i', inPath, '-q:v', '2', outPath], { timeout: 20000 });
+          convertedOk = true;
+        } catch {
+          // All conversion tools failed
+        }
+      }
+    }
+
+    if (!convertedOk) {
+      throw new Error('Máy chủ không thể chuyển đổi tệp HEIC sang JPEG (thiếu heif-convert hoặc sips).');
+    }
+
+    const convertedBuf = await readFile(outPath);
+    if (convertedBuf.length < 50) {
+      throw new Error('Dữ liệu chuyển đổi tệp HEIC không hợp lệ.');
+    }
+    return convertedBuf;
+  } finally {
+    unlink(inPath).catch(() => {});
+    unlink(outPath).catch(() => {});
+  }
+}
 
 function workspaceRoot(): string {
   const cwd = process.cwd();
@@ -94,11 +146,12 @@ function mosChatMediaRoot(): string {
 
 function decodeAndValidateChatImage(input: UploadMosChatImageRequest): Buffer {
   if (!(input.mimeType in CHAT_MIME_EXTENSIONS)) {
-    throw new Error('Định dạng ảnh không được hỗ trợ (chỉ hỗ trợ JPG, PNG, WebP, GIF).');
+    throw new Error('Định dạng ảnh không được hỗ trợ (chỉ hỗ trợ JPG, PNG, WebP, GIF, HEIC).');
   }
   const encoded = String(input.dataBase64 || '')
     .trim()
-    .replace(/^data:image\/(?:jpeg|jpg|png|webp|gif);base64,/i, '');
+    .replace(/^data:image\/(?:jpeg|jpg|png|webp|gif|heic|heif);base64,/i, '')
+    .replace(/^data:[^;]+;base64,/i, '');
   if (!encoded || encoded.length > Math.ceil(MAX_CHAT_IMAGE_BYTES * 1.4)) {
     throw new Error('Ảnh quá lớn (tối đa 8MB) hoặc dữ liệu ảnh không hợp lệ.');
   }
@@ -121,12 +174,14 @@ function decodeAndValidateChatImage(input: UploadMosChatImageRequest): Buffer {
   const isGif =
     buffer.length >= 6 &&
     (buffer.subarray(0, 6).toString('ascii') === 'GIF87a' || buffer.subarray(0, 6).toString('ascii') === 'GIF89a');
+  const isHeic = buffer.length >= 12 && buffer.subarray(4, 8).toString('ascii') === 'ftyp';
 
   if (
     (input.mimeType === 'image/jpeg' && !isJpeg) ||
     (input.mimeType === 'image/png' && !isPng) ||
     (input.mimeType === 'image/webp' && !isWebp) ||
-    (input.mimeType === 'image/gif' && !isGif)
+    (input.mimeType === 'image/gif' && !isGif) ||
+    ((input.mimeType === 'image/heic' || input.mimeType === 'image/heif') && !isHeic)
   ) {
     throw new Error('Nội dung tệp không khớp định dạng ảnh.');
   }
@@ -2238,8 +2293,15 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const body = request.body as UploadMosChatImageRequest;
-        const buffer = decodeAndValidateChatImage(body);
-        const ext = CHAT_MIME_EXTENSIONS[body.mimeType];
+        let buffer = decodeAndValidateChatImage(body);
+        let finalMimeType: MosChatImageMimeType = body.mimeType;
+
+        if (body.mimeType === 'image/heic' || body.mimeType === 'image/heif') {
+          buffer = await convertHeicToJpegBuffer(buffer);
+          finalMimeType = 'image/jpeg';
+        }
+
+        const ext = CHAT_MIME_EXTENSIONS[finalMimeType] || 'jpg';
         const fileUuid = crypto.randomUUID();
         const fileName = `${fileUuid}.${ext}`;
         const rootDir = mosChatMediaRoot();
@@ -2250,11 +2312,14 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         }
         await writeFile(targetPath, buffer, { flag: 'wx', mode: 0o600 });
 
+        const rawName = String(body.fileName || `chat-image.${ext}`);
+        const safeName = rawName.replace(/\.(heic|heif)$/i, `.${ext}`).slice(0, 120);
+
         const attachment: MosChatImageAttachment = {
           id: `att-${fileUuid.slice(0, 8)}`,
           url: `/api/chat/media/${fileName}`,
-          name: String(body.fileName || `chat-image.${ext}`).slice(0, 120),
-          mimeType: body.mimeType,
+          name: safeName,
+          mimeType: finalMimeType,
           sizeBytes: buffer.length,
           width: body.width ? Number(body.width) : undefined,
           height: body.height ? Number(body.height) : undefined,

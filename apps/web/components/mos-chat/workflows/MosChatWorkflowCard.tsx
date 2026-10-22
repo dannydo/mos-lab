@@ -472,7 +472,7 @@ export const MosChatWorkflowCard: React.FC<MosChatWorkflowCardProps> = React.mem
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,.heic,.heif,.HEIC,.HEIF"
                   multiple
                   style={{ display: 'none' }}
                   onChange={handleUploadProof}

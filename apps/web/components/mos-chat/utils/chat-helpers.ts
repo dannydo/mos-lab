@@ -193,6 +193,63 @@ export function parseGoogleDriveImageFromText(rawText: string): MosChatImageAtta
 export async function readOrCompressImagePayload(
   file: File
 ): Promise<{ dataBase64: string; mimeType: MosChatImageMimeType; width?: number; height?: number }> {
+  const isHeic = file.type === 'image/heic' || file.type === 'image/heif' || /\.(heic|heif)$/i.test(file.name);
+
+  if (isHeic) {
+    // 1. Try browser canvas decoding first (Safari on macOS/iOS supports HEIC natively)
+    try {
+      const objectUrl = URL.createObjectURL(file);
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new window.Image();
+        el.onload = () => resolve(el);
+        el.onerror = () => reject(new Error('Browser cannot decode HEIC natively'));
+        el.src = objectUrl;
+      });
+
+      const maxDim = 1600;
+      let width = img.naturalWidth || img.width || 800;
+      let height = img.naturalHeight || img.height || 600;
+      if (width > maxDim || height > maxDim) {
+        const ratio = Math.min(maxDim / width, maxDim / height);
+        width = Math.max(1, Math.round(width * ratio));
+        height = Math.max(1, Math.round(height * ratio));
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        URL.revokeObjectURL(objectUrl);
+        return {
+          dataBase64: dataUrl.replace(/^data:image\/jpeg;base64,/i, ''),
+          mimeType: 'image/jpeg',
+          width,
+          height,
+        };
+      }
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      // Browser (Chrome/Firefox/Edge) cannot decode HEIC natively.
+      // Read raw HEIC bytes and send to server for automatic conversion to JPEG.
+    }
+
+    const rawDataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('Không thể đọc tệp HEIC'));
+      reader.readAsDataURL(file);
+    });
+
+    const base64Data = rawDataUrl.replace(/^data:[^;]+;base64,/i, '');
+    return {
+      dataBase64: base64Data,
+      mimeType: 'image/heic',
+    };
+  }
+
   if (file.type === 'image/gif') {
     const dataUrl = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
