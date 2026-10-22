@@ -178,12 +178,32 @@ export const bibleRoutes: FastifyPluginAsync = async (server) => {
   });
 
   /**
-   * GET /api/bible/quiz/speed/questions - Get 10 random questions for a Speed Quiz run
+   * GET /api/bible/quiz/speed/questions - Get random questions for a Speed Quiz run (Default 5)
    */
   server.get('/bible/quiz/speed/questions', async (request, reply) => {
-    const questions = BibleService.getSpeedQuizQuestions(10);
+    const questions = BibleService.getSpeedQuizQuestions(5);
     const sanitized = questions.map(({ correctKey, explanation, ...rest }) => rest);
     return reply.send({ success: true, data: sanitized });
+  });
+
+  /**
+   * POST /api/bible/quiz/speed/buy-attempt - Buy an additional attempt using 1 Banana
+   */
+  server.post('/bible/quiz/speed/buy-attempt', async (request, reply) => {
+    const crm = server.prisma.crm;
+    const user = (request as unknown as { user?: { id?: number } }).user;
+    const staffId = user?.id || 1;
+
+    const result = await BibleService.buySpeedQuizAttempt(crm, staffId);
+    if (!result.success) {
+      return reply.code(400).send({ success: false, error: result.error });
+    }
+
+    return reply.send({
+      success: true,
+      data: result.profile,
+      message: 'Đã dùng 1 🍌 để mua thêm 1 lượt chơi Speed Quiz thành công. Chúc bạn may mắn!',
+    });
   });
 
   /**

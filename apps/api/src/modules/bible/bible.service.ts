@@ -610,7 +610,15 @@ export class BibleService {
 
     let vault: Record<
       number,
-      { date: string; attemptsToday: number; bananasToday: number; totalBananas: number; streakBest: number }
+      {
+        date: string;
+        attemptsToday: number;
+        purchasedAttemptsToday?: number;
+        purchasedRunsAvailable?: number;
+        bananasToday: number;
+        totalBananas: number;
+        streakBest: number;
+      }
     > = {};
     if (record?.value) {
       try {
@@ -623,42 +631,154 @@ export class BibleService {
     const staffData = vault[staffId];
     if (!staffData || staffData.date !== today) {
       // New day or first time
+      const totalBananas = staffData?.totalBananas || 0;
       return {
         staffId,
         date: today,
         attemptsToday: 0,
         maxAttemptsPerDay: 3,
+        purchasedAttemptsToday: 0,
+        maxPurchasedAttemptsPerDay: 3,
+        purchasedRunsAvailable: 0,
         bananasToday: 0,
         maxBananasPerDay: 6,
-        totalBananas: staffData?.totalBananas || 0,
+        totalBananas,
         canPlayToday: true,
+        canPurchaseAttempt: false,
         streakBest: staffData?.streakBest || 0,
       };
     }
 
+    const attemptsToday = staffData.attemptsToday || 0;
+    const purchasedAttemptsToday = staffData.purchasedAttemptsToday || 0;
+    const purchasedRunsAvailable = staffData.purchasedRunsAvailable || 0;
+    const totalBananas = staffData.totalBananas || 0;
+
+    const canPlayToday = attemptsToday < 3 || purchasedRunsAvailable > 0;
+    const canPurchaseAttempt =
+      attemptsToday >= 3 && purchasedAttemptsToday < 3 && totalBananas >= 1 && purchasedRunsAvailable === 0;
+
     return {
       staffId,
       date: today,
-      attemptsToday: staffData.attemptsToday,
+      attemptsToday,
       maxAttemptsPerDay: 3,
-      bananasToday: staffData.bananasToday,
+      purchasedAttemptsToday,
+      maxPurchasedAttemptsPerDay: 3,
+      purchasedRunsAvailable,
+      bananasToday: staffData.bananasToday || 0,
       maxBananasPerDay: 6,
-      totalBananas: staffData.totalBananas,
-      canPlayToday: staffData.attemptsToday < 3,
-      streakBest: staffData.streakBest,
+      totalBananas,
+      canPlayToday,
+      canPurchaseAttempt,
+      streakBest: staffData.streakBest || 0,
     };
   }
 
   /**
-   * Get 10 random questions for a Speed Quiz run
+   * Buy an additional Speed Quiz attempt using 1 Banana
    */
-  static getSpeedQuizQuestions(count = 10): readonly MosBibleQuizQuestion[] {
+  static async buySpeedQuizAttempt(
+    crm: CrmPrismaClient,
+    staffId: number
+  ): Promise<{ success: boolean; profile?: MosBibleSpeedQuizProfile; error?: string }> {
+    const today = this.getTodayDateStr();
+    const profile = await this.getSpeedQuizProfile(crm, staffId);
+
+    if (profile.attemptsToday < 3) {
+      return {
+        success: false,
+        error: 'Bạn vẫn còn lượt chơi miễn phí trong ngày, chưa cần dùng Chuối để mua thêm lượt.',
+      };
+    }
+
+    if (profile.purchasedAttemptsToday >= 3) {
+      return {
+        success: false,
+        error: 'Bạn đã đạt giới hạn mua tối đa 3 lượt chơi trong ngày hôm nay.',
+      };
+    }
+
+    if (profile.totalBananas < 1) {
+      return {
+        success: false,
+        error: 'Ví của bạn không đủ Chuối để mua thêm lượt (cần tối thiểu 1 🍌).',
+      };
+    }
+
+    if (profile.purchasedRunsAvailable > 0) {
+      return {
+        success: false,
+        error: 'Bạn đang có lượt mua chưa chơi. Hãy hoàn tất lượt này trước khi mua tiếp nhé!',
+      };
+    }
+
+    const record = await crm.crmConfig.findUnique({
+      where: { key: BIBLE_BANANA_VAULT_CONFIG_KEY },
+    });
+    let vault: Record<
+      number,
+      {
+        date: string;
+        attemptsToday: number;
+        purchasedAttemptsToday?: number;
+        purchasedRunsAvailable?: number;
+        bananasToday: number;
+        totalBananas: number;
+        streakBest: number;
+      }
+    > = {};
+    if (record?.value) {
+      try {
+        vault = JSON.parse(record.value);
+      } catch {
+        vault = {};
+      }
+    }
+
+    const staffData = vault[staffId] || {
+      date: today,
+      attemptsToday: profile.attemptsToday,
+      purchasedAttemptsToday: 0,
+      purchasedRunsAvailable: 0,
+      bananasToday: profile.bananasToday,
+      totalBananas: profile.totalBananas,
+      streakBest: profile.streakBest,
+    };
+
+    staffData.date = today;
+    staffData.totalBananas = Math.max(0, staffData.totalBananas - 1);
+    staffData.purchasedAttemptsToday = (staffData.purchasedAttemptsToday || 0) + 1;
+    staffData.purchasedRunsAvailable = (staffData.purchasedRunsAvailable || 0) + 1;
+
+    vault[staffId] = staffData;
+
+    await crm.crmConfig.upsert({
+      where: { key: BIBLE_BANANA_VAULT_CONFIG_KEY },
+      create: {
+        key: BIBLE_BANANA_VAULT_CONFIG_KEY,
+        value: JSON.stringify(vault),
+      },
+      update: {
+        value: JSON.stringify(vault),
+      },
+    });
+
+    const updatedProfile = await this.getSpeedQuizProfile(crm, staffId);
+    return { success: true, profile: updatedProfile };
+  }
+
+  /**
+   * Get random questions for a Speed Quiz run (Default 5 questions per run)
+   */
+  static getSpeedQuizQuestions(count = 5): readonly MosBibleQuizQuestion[] {
     const shuffled = [...EXPANDED_BIBLE_QUIZ_POOL].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, Math.min(count, shuffled.length));
   }
 
   /**
    * Submit a Speed Quiz run and evaluate streak / bananas
+   * Rule: 3 continuous correct = 1 Banana, 5 continuous correct = 2 Bananas
    */
   static async submitSpeedQuizRun(
     crm: CrmPrismaClient,
@@ -666,10 +786,21 @@ export class BibleService {
     answers: MosBibleSpeedQuizAnswerItem[]
   ): Promise<{ success: boolean; data?: MosBibleSpeedQuizResult; error?: string }> {
     const profile = await this.getSpeedQuizProfile(crm, staffId);
-    if (profile.attemptsToday >= 3) {
+
+    const isFreeRun = profile.attemptsToday < 3;
+    const isPurchasedRun = !isFreeRun && profile.purchasedRunsAvailable > 0;
+
+    if (!isFreeRun && !isPurchasedRun) {
+      if (profile.purchasedAttemptsToday >= 3) {
+        return {
+          success: false,
+          error:
+            'Bạn đã hoàn tất tối đa 3 lượt miễn phí và 3 lượt mua trong ngày hôm nay. Hẹn gặp lại vào ngày mai nhé!',
+        };
+      }
       return {
         success: false,
-        error: 'Bạn đã hoàn tất tối đa 3 lượt chơi trong ngày hôm nay. Hãy quay lại vào ngày mai nhé!',
+        error: 'Bạn đã hoàn tất tối đa 3 lượt miễn phí hôm nay. Bạn có thể dùng 1 🍌 để mua thêm lượt chơi!',
       };
     }
 
@@ -693,20 +824,10 @@ export class BibleService {
       }
     }
 
-    // Gamification rules:
-    // 10 continuous correct -> 2 bananas
-    // >= 5 continuous correct -> 1 banana
-    // < 5 -> 0 bananas
-    let bananasEarned = 0;
-    if (currentStreak === 10) {
-      bananasEarned = 2;
-    } else if (currentStreak >= 5) {
-      bananasEarned = 1;
-    }
-
-    // Max 6 bananas per day
-    const availableToday = Math.max(0, 6 - profile.bananasToday);
-    const actualBananasAwarded = Math.min(bananasEarned, availableToday);
+    const bananasEarned = currentStreak >= 5 ? 2 : currentStreak >= 3 ? 1 : 0;
+    const actualBananasAwarded = isFreeRun
+      ? Math.min(bananasEarned, Math.max(0, 6 - profile.bananasToday))
+      : bananasEarned;
 
     const today = this.getTodayDateStr();
     const record = await crm.crmConfig.findUnique({
@@ -714,7 +835,15 @@ export class BibleService {
     });
     let vault: Record<
       number,
-      { date: string; attemptsToday: number; bananasToday: number; totalBananas: number; streakBest: number }
+      {
+        date: string;
+        attemptsToday: number;
+        purchasedAttemptsToday?: number;
+        purchasedRunsAvailable?: number;
+        bananasToday: number;
+        totalBananas: number;
+        streakBest: number;
+      }
     > = {};
     if (record?.value) {
       try {
@@ -724,18 +853,28 @@ export class BibleService {
       }
     }
 
-    const updatedAttempts = profile.attemptsToday + 1;
-    const updatedBananasToday = profile.bananasToday + actualBananasAwarded;
-    const updatedTotalBananas = profile.totalBananas + actualBananasAwarded;
-    const updatedStreakBest = Math.max(profile.streakBest, currentStreak);
-
-    vault[staffId] = {
+    const staffData = vault[staffId] || {
       date: today,
-      attemptsToday: updatedAttempts,
-      bananasToday: updatedBananasToday,
-      totalBananas: updatedTotalBananas,
-      streakBest: updatedStreakBest,
+      attemptsToday: 0,
+      purchasedAttemptsToday: 0,
+      purchasedRunsAvailable: 0,
+      bananasToday: 0,
+      totalBananas: 0,
+      streakBest: 0,
     };
+
+    staffData.date = today;
+    if (isFreeRun) {
+      staffData.attemptsToday = (staffData.attemptsToday || 0) + 1;
+    } else {
+      staffData.purchasedRunsAvailable = Math.max(0, (staffData.purchasedRunsAvailable || 1) - 1);
+    }
+
+    staffData.bananasToday = (staffData.bananasToday || 0) + actualBananasAwarded;
+    staffData.totalBananas = (staffData.totalBananas || 0) + actualBananasAwarded;
+    staffData.streakBest = Math.max(staffData.streakBest || 0, currentStreak);
+
+    vault[staffId] = staffData;
 
     await crm.crmConfig.upsert({
       where: { key: BIBLE_BANANA_VAULT_CONFIG_KEY },
@@ -748,25 +887,25 @@ export class BibleService {
       },
     });
 
-    const updatedProfile: MosBibleSpeedQuizProfile = {
-      staffId,
-      date: today,
-      attemptsToday: updatedAttempts,
-      maxAttemptsPerDay: 3,
-      bananasToday: updatedBananasToday,
-      maxBananasPerDay: 6,
-      totalBananas: updatedTotalBananas,
-      canPlayToday: updatedAttempts < 3,
-      streakBest: updatedStreakBest,
-    };
+    const updatedProfile = await this.getSpeedQuizProfile(crm, staffId);
 
-    let message = '';
-    if (currentStreak === 10) {
-      message = `Đỉnh cao! Bạn đã trả lời đúng liên tục 10/10 câu hỏi và rinh trọn vẹn +${actualBananasAwarded} Chuối 🍌!`;
-    } else if (currentStreak >= 5) {
-      message = `Xuất sắc! Bạn đã vượt mốc 5 câu đúng liên tục và nhận được +${actualBananasAwarded} Chuối 🍌!`;
+    let message: string;
+    if (isPurchasedRun) {
+      if (currentStreak >= 5) {
+        message = '🏆 Đỉnh cao tuyệt đối! Bạn đúng liên tục 5 câu, nhận trọn vẹn 2 🍌 (Lãi ròng +1 Chuối)!';
+      } else if (currentStreak >= 3) {
+        message = `🍌 Rất tốt! Bạn đạt chuỗi ${currentStreak} câu đúng, nhận 1 🍌 (Hoàn vốn 1 Chuối đã mua)!`;
+      } else {
+        message = `Tiếc quá! Chuỗi đúng ${currentStreak} câu (chưa đạt mốc 3 câu). Bạn không nhận được Chuối cho lượt mua này. Hãy cố gắng lần sau nhé!`;
+      }
     } else {
-      message = `Cố gắng hơn ở lượt sau nhé! Bạn đạt chuỗi ${currentStreak} câu đúng (cần từ 5 câu liên tục để nhận 1 Chuối 🍌).`;
+      if (currentStreak >= 5) {
+        message = `🏆 Đỉnh cao tuyệt đối! Bạn đã trả lời đúng liên tục 5 câu hỏi và rinh trọn vẹn +${actualBananasAwarded} Chuối 🍌!`;
+      } else if (currentStreak >= 3) {
+        message = `🍌 Xuất sắc! Bạn đã vượt mốc 3 câu đúng liên tục và nhận được +${actualBananasAwarded} Chuối 🍌!`;
+      } else {
+        message = `Cố gắng hơn ở lượt sau nhé! Bạn đạt chuỗi ${currentStreak} câu đúng (cần từ 3 câu liên tục để nhận 1 Chuối 🍌).`;
+      }
     }
 
     return {

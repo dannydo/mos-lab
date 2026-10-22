@@ -103,10 +103,14 @@ export interface MosBibleSpeedQuizProfile {
   date: string;
   attemptsToday: number;
   maxAttemptsPerDay: number;
+  purchasedAttemptsToday: number;
+  maxPurchasedAttemptsPerDay: number;
+  purchasedRunsAvailable: number;
   bananasToday: number;
   maxBananasPerDay: number;
   totalBananas: number;
   canPlayToday: boolean;
+  canPurchaseAttempt: boolean;
   streakBest: number;
 }
 

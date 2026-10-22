@@ -133,7 +133,7 @@ test('BibleService Weekly Mini-Quiz evaluates situations and rewards points base
   assert.ok(resCorrect.explanation.includes('Chân Thành'));
 });
 
-test('BibleService Speed Quiz evaluates streaks, sudden death, and banana awards', async () => {
+test('BibleService Speed Quiz evaluates streaks, sudden death, updated 3/5 banana rules, and buy-attempt mechanic', async () => {
   let storedConfigValue: string | null = null;
 
   const mockCrm = {
@@ -156,65 +156,83 @@ test('BibleService Speed Quiz evaluates streaks, sudden death, and banana awards
   assert.equal(initialProfile.bananasToday, 0);
   assert.equal(initialProfile.canPlayToday, true);
 
-  // 2. Run with streak 10/10 correct -> Awards 2 bananas
-  const questions10 = EXPANDED_BIBLE_QUIZ_POOL.slice(0, 10);
-  const answers10 = questions10.map((q) => ({
+  // 2. Free Run 1: Streak 5/5 correct -> Awards 2 bananas (New rule: 5 correct = 2 Bananas)
+  const questions5 = EXPANDED_BIBLE_QUIZ_POOL.slice(0, 5);
+  const answers5 = questions5.map((q) => ({
     questionId: q.id,
     selectedKey: q.correctKey,
     durationMs: 4000,
   }));
 
-  const res10 = await BibleService.submitSpeedQuizRun(mockCrm, 101, answers10);
-  assert.equal(res10.success, true);
-  assert.equal(res10.data?.streak, 10);
-  assert.equal(res10.data?.bananasEarned, 2);
-  assert.equal(res10.data?.profile.attemptsToday, 1);
-  assert.equal(res10.data?.profile.bananasToday, 2);
+  const resRun1 = await BibleService.submitSpeedQuizRun(mockCrm, 101, answers5);
+  assert.equal(resRun1.success, true);
+  assert.equal(resRun1.data?.streak, 5);
+  assert.equal(resRun1.data?.bananasEarned, 2);
+  assert.equal(resRun1.data?.profile.attemptsToday, 1);
+  assert.equal(resRun1.data?.profile.bananasToday, 2);
 
-  // 3. Run with streak 5 correct, then wrong at question 6 -> Awards 1 banana (Sudden death)
-  const answers5 = [
-    ...questions10.slice(0, 5).map((q) => ({
+  // 3. Free Run 2: Streak 3 correct, then wrong at question 4 -> Awards 1 banana (New rule: 3 correct = 1 Banana)
+  const answers3 = [
+    ...questions5.slice(0, 3).map((q) => ({
       questionId: q.id,
       selectedKey: q.correctKey,
       durationMs: 5000,
     })),
     {
-      questionId: questions10[5].id,
-      selectedKey: (questions10[5].correctKey === 'A' ? 'B' : 'A') as 'A' | 'B' | 'C' | 'D',
+      questionId: questions5[3].id,
+      selectedKey: (questions5[3].correctKey === 'A' ? 'B' : 'A') as 'A' | 'B' | 'C' | 'D',
       durationMs: 3000,
     },
   ];
 
-  const res5 = await BibleService.submitSpeedQuizRun(mockCrm, 101, answers5);
-  assert.equal(res5.success, true);
-  assert.equal(res5.data?.streak, 5);
-  assert.equal(res5.data?.bananasEarned, 1);
-  assert.equal(res5.data?.profile.attemptsToday, 2);
-  assert.equal(res5.data?.profile.bananasToday, 3);
+  const resRun2 = await BibleService.submitSpeedQuizRun(mockCrm, 101, answers3);
+  assert.equal(resRun2.success, true);
+  assert.equal(resRun2.data?.streak, 3);
+  assert.equal(resRun2.data?.bananasEarned, 1);
+  assert.equal(resRun2.data?.profile.attemptsToday, 2);
+  assert.equal(resRun2.data?.profile.bananasToday, 3);
 
-  // 4. Run with streak 3 correct, then wrong -> 0 bananas
-  const answers3 = [
-    ...questions10.slice(0, 3).map((q) => ({
+  // 4. Free Run 3: Streak 2 correct, then timed out -> Awards 0 bananas (< 3 correct)
+  const answers2 = [
+    ...questions5.slice(0, 2).map((q) => ({
       questionId: q.id,
       selectedKey: q.correctKey,
       durationMs: 4000,
     })),
     {
-      questionId: questions10[3].id,
+      questionId: questions5[2].id,
       selectedKey: 'D' as const,
       durationMs: 15000, // timed out (> 12s)
     },
   ];
 
-  const res3 = await BibleService.submitSpeedQuizRun(mockCrm, 101, answers3);
-  assert.equal(res3.success, true);
-  assert.equal(res3.data?.streak, 3);
-  assert.equal(res3.data?.bananasEarned, 0);
-  assert.equal(res3.data?.profile.attemptsToday, 3);
-  assert.equal(res3.data?.profile.canPlayToday, false);
+  const resRun3 = await BibleService.submitSpeedQuizRun(mockCrm, 101, answers2);
+  assert.equal(resRun3.success, true);
+  assert.equal(resRun3.data?.streak, 2);
+  assert.equal(resRun3.data?.bananasEarned, 0);
+  assert.equal(resRun3.data?.profile.attemptsToday, 3);
+  assert.equal(resRun3.data?.profile.canPlayToday, false);
+  assert.equal(resRun3.data?.profile.canPurchaseAttempt, true); // has 3 bananas in vault!
 
-  // 5. 4th attempt in same day -> MUST BE REJECTED
-  const resOverLimit = await BibleService.submitSpeedQuizRun(mockCrm, 101, answers10);
+  // 5. 4th attempt without buying -> MUST BE REJECTED
+  const resOverLimit = await BibleService.submitSpeedQuizRun(mockCrm, 101, answers5);
   assert.equal(resOverLimit.success, false);
   assert.ok(resOverLimit.error?.includes('tối đa 3 lượt'));
+
+  // 6. Buy 1 attempt using 1 Banana
+  const buyRes = await BibleService.buySpeedQuizAttempt(mockCrm, 101);
+  assert.equal(buyRes.success, true);
+  assert.equal(buyRes.profile?.totalBananas, 2); // 3 - 1 = 2 bananas
+  assert.equal(buyRes.profile?.purchasedAttemptsToday, 1);
+  assert.equal(buyRes.profile?.purchasedRunsAvailable, 1);
+  assert.equal(buyRes.profile?.canPlayToday, true);
+
+  // 7. Play purchased run with streak 3 -> Awards 1 banana (Breaks even: 2 + 1 = 3 bananas)
+  const resPurchasedPlay = await BibleService.submitSpeedQuizRun(mockCrm, 101, answers3);
+  assert.equal(resPurchasedPlay.success, true);
+  assert.equal(resPurchasedPlay.data?.bananasEarned, 1);
+  assert.equal(resPurchasedPlay.data?.profile.totalBananas, 3);
+  assert.equal(resPurchasedPlay.data?.profile.purchasedRunsAvailable, 0);
+  assert.equal(resPurchasedPlay.data?.profile.canPlayToday, false);
+  assert.equal(resPurchasedPlay.data?.profile.canPurchaseAttempt, true);
 });

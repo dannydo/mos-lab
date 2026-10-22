@@ -64,6 +64,11 @@ export const bibleApi = {
       return res.data;
     },
 
+    async buySpeedQuizAttempt(): Promise<{ success: boolean; data: MosBibleSpeedQuizProfile; message: string }> {
+      const res = await api.post('/bible/quiz/speed/buy-attempt');
+      return res.data;
+    },
+
     async submitSpeedQuizRun(
       data: MosBibleSpeedQuizSubmissionRequest
     ): Promise<{ success: boolean; data: MosBibleSpeedQuizResult }> {

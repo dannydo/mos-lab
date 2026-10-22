@@ -33218,8 +33218,8 @@
       "filePath": "apps/api/src/modules/bible/bible.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7119,
-        "lineCount": 214,
+        "sizeBytes": 7833,
+        "lineCount": 234,
         "ext": ".ts"
       }
     },
@@ -33231,8 +33231,8 @@
       "filePath": "apps/api/src/modules/bible/bible.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 27426,
-        "lineCount": 786,
+        "sizeBytes": 32006,
+        "lineCount": 926,
         "ext": ".ts"
       }
     },
@@ -33244,8 +33244,8 @@
       "filePath": "apps/api/src/modules/bible/bible.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7979,
-        "lineCount": 221,
+        "sizeBytes": 9181,
+        "lineCount": 239,
         "ext": ".ts"
       }
     },
@@ -43540,8 +43540,8 @@
       "filePath": "apps/web/lib/api/bible.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 2394,
-        "lineCount": 75,
+        "sizeBytes": 2606,
+        "lineCount": 80,
         "ext": ".ts"
       }
     },
@@ -44658,8 +44658,8 @@
       "filePath": "packages/shared/src/types/mos-bible.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3318,
-        "lineCount": 131,
+        "sizeBytes": 3455,
+        "lineCount": 135,
         "ext": ".ts"
       }
     },

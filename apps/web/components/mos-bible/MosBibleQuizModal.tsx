@@ -1,7 +1,21 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Modal, Radio, Button, Tag, Typography, Alert, Card, Spin, message, theme, Progress, Tabs } from 'antd';
+import {
+  Modal,
+  Radio,
+  Button,
+  Tag,
+  Typography,
+  Alert,
+  Card,
+  Spin,
+  message,
+  theme,
+  Progress,
+  Tabs,
+  Popconfirm,
+} from 'antd';
 import {
   Award,
   CheckCircle2,
@@ -43,12 +57,17 @@ export function MosBibleQuizModal({ open, onClose }: MosBibleQuizModalProps) {
     date: '',
     attemptsToday: 0,
     maxAttemptsPerDay: 3,
+    purchasedAttemptsToday: 0,
+    maxPurchasedAttemptsPerDay: 3,
+    purchasedRunsAvailable: 0,
     bananasToday: 0,
     maxBananasPerDay: 6,
     totalBananas: 0,
     canPlayToday: true,
+    canPurchaseAttempt: false,
     streakBest: 0,
   });
+  const [buyingAttempt, setBuyingAttempt] = useState(false);
 
   // --- WEEKLY QUIZ STATE ---
   const [weeklyLoading, setWeeklyLoading] = useState(false);
@@ -181,10 +200,49 @@ export function MosBibleQuizModal({ open, onClose }: MosBibleQuizModalProps) {
     };
   }, [speedState, speedIndex, handleTimeout]);
 
+  // Buy attempt with 1 Banana
+  const handleBuyAttempt = async () => {
+    setBuyingAttempt(true);
+    try {
+      const res = await apiClient.bible.buySpeedQuizAttempt();
+      if (res.success && res.data) {
+        setProfile(res.data);
+        message.success('Đã dùng 1 🍌 mua lượt chơi thành công! Đang vào trận...');
+        // Auto start the quiz right after purchase!
+        setSpeedLoading(true);
+        try {
+          const qRes = await apiClient.bible.getSpeedQuizQuestions();
+          if (qRes.success && Array.isArray(qRes.data) && qRes.data.length > 0) {
+            setSpeedQuestions(qRes.data);
+            setSpeedIndex(0);
+            setSpeedStreak(0);
+            setSpeedAnswers([]);
+            setSpeedTimeLeft(QUESTION_TIME_LIMIT_SEC);
+            setQuestionStartTime(Date.now());
+            setSpeedState('PLAYING');
+          } else {
+            message.error('Không thể bốc câu hỏi Speed Quiz. Vui lòng bấm chơi lại.');
+          }
+        } catch {
+          message.error('Lỗi khi khởi động câu hỏi sau khi mua lượt.');
+        } finally {
+          setSpeedLoading(false);
+        }
+      } else {
+        message.error(res.message || 'Không thể mua lượt chơi.');
+      }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      message.error(msg || 'Lỗi khi dùng Chuối mua lượt chơi.');
+    } finally {
+      setBuyingAttempt(false);
+    }
+  };
+
   // Start Speed Quiz
   const handleStartSpeedQuiz = async () => {
     if (!profile.canPlayToday) {
-      message.warning('Bạn đã hoàn thành tối đa 3 lượt chơi hôm nay. Hãy quay lại vào ngày mai nhé!');
+      message.warning('Bạn đã hoàn thành tối đa 3 lượt miễn phí hôm nay. Hãy dùng 1 🍌 để mua thêm lượt nhé!');
       return;
     }
 
@@ -298,8 +356,14 @@ export function MosBibleQuizModal({ open, onClose }: MosBibleQuizModalProps) {
             </span>
             <span className="text-[11px] text-slate-400">|</span>
             <span className="text-[11px] text-slate-600 dark:text-zinc-400 tabular-nums">
-              Hôm nay: <strong className="text-amber-600">{profile.bananasToday}/6</strong> · Lượt:{' '}
+              Hôm nay: <strong className="text-amber-600">{profile.bananasToday}/6</strong> · Free:{' '}
               <strong className="text-emerald-600">{profile.attemptsToday}/3</strong>
+              {profile.purchasedAttemptsToday > 0 && (
+                <>
+                  {' '}
+                  · Mua: <strong className="text-indigo-600">{profile.purchasedAttemptsToday}/3</strong>
+                </>
+              )}
             </span>
           </div>
         </div>
@@ -346,7 +410,7 @@ export function MosBibleQuizModal({ open, onClose }: MosBibleQuizModalProps) {
                   <div className="text-3xl p-2 bg-amber-100 dark:bg-amber-900/40 rounded-xl">🍌</div>
                   <div className="space-y-1">
                     <Title level={5} className="!m-0 text-amber-800 dark:text-amber-300">
-                      Thử Thách Tốc Độ: Thợ Săn Chuối (10s/Câu)
+                      Săn Chuối Thần Tốc: 10s Mỗi Câu
                     </Title>
                     <Text className="text-xs text-slate-600 dark:text-zinc-400">
                       Rèn luyện phản xạ chớp nhoáng theo Kinh Thánh mOS và 4 Chìa Khóa Văn Hóa Wings (*Vui Vẻ – Ân Cần –
@@ -382,7 +446,7 @@ export function MosBibleQuizModal({ open, onClose }: MosBibleQuizModalProps) {
                       Thưởng Chuối
                     </div>
                     <Text type="secondary" className="text-[11px]">
-                      Đúng 5 câu = <strong>1 🍌</strong>; Đúng 10 câu = <strong>2 🍌</strong>.
+                      Đúng 3 câu = <strong>1 🍌</strong>; Đúng 5 câu = <strong>2 🍌</strong>.
                     </Text>
                   </div>
                 </div>
@@ -394,29 +458,76 @@ export function MosBibleQuizModal({ open, onClose }: MosBibleQuizModalProps) {
                     <strong className="text-orange-600 tabular-nums">{profile.streakBest} câu</strong>
                   </span>
                   <span>
-                    Lượt còn lại hôm nay:{' '}
+                    Lượt free còn lại:{' '}
                     <strong className="text-emerald-600 tabular-nums">
                       {Math.max(0, 3 - profile.attemptsToday)}/3
                     </strong>
+                    {profile.attemptsToday >= 3 && (
+                      <span className="ml-2 text-indigo-600 font-semibold tabular-nums">
+                        (Đã mua: {profile.purchasedAttemptsToday}/3)
+                      </span>
+                    )}
                   </span>
                 </div>
               </Card>
 
               <div className="text-center pt-2">
-                <Button
-                  type="primary"
-                  size="large"
-                  icon={<AppIcon icon={Zap} size="sm" />}
-                  loading={speedLoading}
-                  disabled={!profile.canPlayToday}
-                  onClick={handleStartSpeedQuiz}
-                  className="bg-amber-600 hover:bg-amber-500 font-semibold px-8 h-11 shadow-md shadow-amber-600/20"
-                >
-                  {profile.canPlayToday ? 'Bắt Đầu Săn Chuối 🍌 (10s/Câu)' : 'Đã Hoàn Tất 3/3 Lượt Hôm Nay'}
-                </Button>
-                {!profile.canPlayToday && (
-                  <div className="text-xs text-slate-400 mt-2">
-                    Lượt chơi sẽ được làm mới vào lúc 00:00 ngày mai. Bạn có thể ôn luyện qua mục Mini-Quiz Tuần!
+                {profile.canPlayToday ? (
+                  <Button
+                    type="primary"
+                    size="large"
+                    icon={<AppIcon icon={Zap} size="sm" />}
+                    loading={speedLoading}
+                    onClick={handleStartSpeedQuiz}
+                    className="bg-amber-600 hover:bg-amber-500 font-semibold px-8 h-11 shadow-md shadow-amber-600/20"
+                  >
+                    {profile.purchasedRunsAvailable > 0
+                      ? 'Vào Trận Lượt Mua Thêm 🍌 (10s/Câu)'
+                      : 'Bắt Đầu Săn Chuối 🍌 (10s/Câu)'}
+                  </Button>
+                ) : profile.attemptsToday >= 3 && profile.purchasedAttemptsToday < 3 ? (
+                  profile.totalBananas >= 1 ? (
+                    <Popconfirm
+                      title="Dùng 1 🍌 mua thêm 1 lượt chơi?"
+                      description={`Hôm nay bạn còn ${3 - profile.purchasedAttemptsToday}/3 lượt mua. Trả lời đúng từ 3 câu hoàn vốn 1 🍌, đúng 5 câu lãi 2 🍌!`}
+                      okText="Đồng ý mua 🍌"
+                      cancelText="Hủy"
+                      okButtonProps={{ className: 'bg-amber-600 hover:bg-amber-500' }}
+                      onConfirm={handleBuyAttempt}
+                    >
+                      <Button
+                        type="primary"
+                        size="large"
+                        icon={<span className="text-base mr-1">🍌</span>}
+                        loading={buyingAttempt}
+                        className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 font-semibold px-8 h-11 shadow-md shadow-orange-600/20"
+                      >
+                        Dùng 1 🍌 Mua Thêm Lượt ({profile.purchasedAttemptsToday}/3)
+                      </Button>
+                    </Popconfirm>
+                  ) : (
+                    <div>
+                      <Button
+                        disabled
+                        size="large"
+                        icon={<span className="text-base mr-1">🍌</span>}
+                        className="h-11 px-8 font-semibold"
+                      >
+                        Dùng 1 🍌 Mua Thêm Lượt ({profile.purchasedAttemptsToday}/3)
+                      </Button>
+                      <div className="text-xs text-rose-500 dark:text-rose-400 mt-2 font-medium">
+                        Ví của bạn đang có 0 🍌. Cần tối thiểu 1 Chuối để mua thêm lượt chơi!
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  <div>
+                    <Button disabled size="large" className="h-11 px-8 font-semibold">
+                      Đã Hoàn Tất Cả 6 Lượt Chơi Hôm Nay
+                    </Button>
+                    <div className="text-xs text-slate-400 mt-2">
+                      Đã dùng hết 3 lượt miễn phí và 3 lượt mua hôm nay. Lượt chơi sẽ làm mới vào 00:00 ngày mai!
+                    </div>
                   </div>
                 )}
               </div>
@@ -440,14 +551,16 @@ export function MosBibleQuizModal({ open, onClose }: MosBibleQuizModalProps) {
 
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] text-slate-400">
-                      {speedStreak < 5 ? (
+                      {speedStreak < 3 ? (
                         <>
-                          Mục tiêu 1: Cần <strong>{5 - speedStreak} câu</strong> $\rightarrow$ 1 🍌
+                          Mục tiêu 1: Cần <strong>{3 - speedStreak} câu</strong> $\rightarrow$ 1 🍌
+                        </>
+                      ) : speedStreak < 5 ? (
+                        <>
+                          Mục tiêu 2: Cần <strong>{5 - speedStreak} câu</strong> $\rightarrow$ 2 🍌
                         </>
                       ) : (
-                        <>
-                          Mục tiêu 2: Cần <strong>{10 - speedStreak} câu</strong> $\rightarrow$ 2 🍌
-                        </>
+                        <span className="text-emerald-500 font-bold">🎉 Đạt mốc tối đa 2 🍌!</span>
                       )}
                     </span>
                     <div
@@ -523,9 +636,9 @@ export function MosBibleQuizModal({ open, onClose }: MosBibleQuizModalProps) {
 
                 <Title level={4} className="!m-0 text-slate-800 dark:text-zinc-100">
                   {speedRunResult.bananasEarned === 2
-                    ? 'Đỉnh Cao Tuyệt Đối! Đúng 10/10 Câu!'
+                    ? 'Đỉnh Cao Tuyệt Đối! Đúng Liên Tục 5/5 Câu!'
                     : speedRunResult.bananasEarned === 1
-                      ? 'Xuất Sắc! Hoàn Thành Mục Tiêu 5+ Câu!'
+                      ? 'Xuất Sắc! Hoàn Thành Mục Tiêu 3+ Câu!'
                       : 'Lượt Chơi Kết Thúc (Sudden Death)'}
                 </Title>
 
@@ -561,7 +674,7 @@ export function MosBibleQuizModal({ open, onClose }: MosBibleQuizModalProps) {
                 </div>
               </div>
 
-              <div className="flex items-center justify-center gap-3 pt-2">
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                 {profile.canPlayToday ? (
                   <Button
                     type="primary"
@@ -569,11 +682,30 @@ export function MosBibleQuizModal({ open, onClose }: MosBibleQuizModalProps) {
                     onClick={handleStartSpeedQuiz}
                     className="bg-amber-600 hover:bg-amber-500 font-semibold h-10 px-6"
                   >
-                    Chơi Lượt Tiếp Theo ({3 - profile.attemptsToday}/3)
+                    {profile.attemptsToday < 3
+                      ? `Chơi Lượt Free Tiếp Theo (${3 - profile.attemptsToday}/3)`
+                      : 'Vào Trận Lượt Mua Tiếp Theo 🍌'}
                   </Button>
+                ) : profile.attemptsToday >= 3 && profile.purchasedAttemptsToday < 3 && profile.totalBananas >= 1 ? (
+                  <Popconfirm
+                    title="Dùng 1 🍌 mua thêm 1 lượt chơi?"
+                    description={`Hôm nay bạn còn ${3 - profile.purchasedAttemptsToday}/3 lượt mua. Trả lời đúng từ 3 câu hoàn vốn 1 🍌, đúng 5 câu lãi 2 🍌!`}
+                    okText="Đồng ý mua 🍌"
+                    cancelText="Hủy"
+                    okButtonProps={{ className: 'bg-amber-600 hover:bg-amber-500' }}
+                    onConfirm={handleBuyAttempt}
+                  >
+                    <Button
+                      type="primary"
+                      loading={buyingAttempt}
+                      className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 font-semibold h-10 px-6"
+                    >
+                      Dùng 1 🍌 Mua Lượt ({profile.purchasedAttemptsToday}/3)
+                    </Button>
+                  </Popconfirm>
                 ) : (
                   <Button disabled className="h-10 px-6">
-                    Đã Hoàn Tất 3/3 Lượt Hôm Nay
+                    {profile.purchasedAttemptsToday >= 3 ? 'Đã Hết Toàn Bộ Lượt Hôm Nay' : 'Đã Hoàn Tất 3/3 Lượt Free'}
                   </Button>
                 )}
                 <Button onClick={onClose} className="h-10 px-6">
