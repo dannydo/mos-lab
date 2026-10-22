@@ -488,7 +488,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     };
   }, [isResizingTarget, persistPersonalLayout]);
 
-  // ================= MOS CHAT & WINGS AI COPILOT ACCESS CONTROL (DEPARTMENT / TEAM / INDIVIDUAL) =================
+  // ================= MOS CHAT & MAI COPILOT ACCESS CONTROL (DEPARTMENT / TEAM / INDIVIDUAL) =================
   const isDannyAccount = useMemo(() => {
     const isCanon = isCanonicalSuperAdminIdentity({ username: currentUser?.username, email: currentUser?.email });
     const roleLower = String(currentUser?.role || '')
@@ -10717,7 +10717,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               >
                                 <span className="inline-flex items-center gap-1.5">
                                   <Sparkles size={12} />
-                                  <span>Quá trình suy luận của Wings AI</span>
+                                  <span>Quá trình suy luận của MAI</span>
                                 </span>
                                 {expandedThinkingIds[m.id] ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                               </button>
@@ -13214,7 +13214,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                 >
                                   <span className="inline-flex items-center gap-1">
                                     <Sparkles size={11} />
-                                    <span>Quá trình tư duy của AI</span>
+                                    <span>Quá trình suy luận của MAI</span>
                                   </span>
                                   {expandedThinkingIds[r.id] ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
                                 </button>
@@ -15692,7 +15692,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         </div>
       </Modal>
 
-      {/* ================= MOS CHAT & WINGS AI COPILOT ACCESS CONTROL MODAL (DEPARTMENT / TEAM / INDIVIDUAL) ================= */}
+      {/* ================= MOS CHAT & MAI COPILOT ACCESS CONTROL MODAL (DEPARTMENT / TEAM / INDIVIDUAL) ================= */}
       <Modal
         className="mos-chat-theme-scope"
         open={accessConfigModalOpen}

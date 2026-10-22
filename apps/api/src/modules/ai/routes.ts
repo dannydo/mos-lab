@@ -361,7 +361,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
 
     try {
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`;
-      const prompt = `Bạn là Wings AI Coach - chuyên gia hình ảnh và thương hiệu cá nhân của hệ thống salon Wings Lashes / mOS Lab.
+      const prompt = `Bạn là MAI Coach - chuyên gia hình ảnh và thương hiệu cá nhân của hệ thống salon Wings Lashes / mOS Lab.
 Nhiệm vụ: Phân tích bức ảnh chân dung này để nhân viên cài làm ảnh đại diện trên hệ thống.
 1. Kiểm tra ảnh có khuôn mặt người thật hay không:
 - Nếu là ảnh phong cảnh, xe cộ, đồ vật, thú cưng, meme, hoạt hình, logo, hoặc không nhìn rõ mặt người: trả về valid = false, overallScore = 0, title = 'Không hợp lệ', và coachFeedback = 'Chưa phát hiện khuôn mặt người rõ ràng. Bạn vui lòng chọn một bức ảnh chụp chân dung để lưu nhé!'.
@@ -432,7 +432,7 @@ Bắt buộc trả về đúng định dạng JSON:
           badge: title,
           coachFeedback: feedback,
           feedback,
-          verdict: valid ? 'Chân dung đạt chuẩn Wings AI Coach' : 'Không nhận diện thấy chân dung',
+          verdict: valid ? 'Chân dung đạt chuẩn MAI Coach' : 'Không nhận diện thấy chân dung',
         };
         return response;
       }
@@ -448,7 +448,7 @@ Bắt buộc trả về đúng định dạng JSON:
         totalScore: 8.7,
         title: 'Nụ Cười Tỏa Nắng ✨',
         badge: 'Nụ Cười Tỏa Nắng ✨',
-        verdict: 'Chân dung đạt chuẩn Wings AI Coach',
+        verdict: 'Chân dung đạt chuẩn MAI Coach',
         feedback:
           'Nụ cười của bạn tràn đầy năng lượng tích cực! Avatar này sẽ cực kỳ nổi bật trên thanh Online của salon.',
         coachFeedback:

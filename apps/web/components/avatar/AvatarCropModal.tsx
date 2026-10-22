@@ -583,7 +583,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({ open, onClose,
           )}
         </div>
 
-        {/* Wings AI Coach & Gemini Vision Scoring Card */}
+        {/* MAI Coach & Gemini Vision Scoring Card */}
         {selectedImageSrc && (
           <div
             className={`mt-4 rounded-2xl p-3.5 relative overflow-hidden backdrop-blur-md border shadow-md ${
@@ -608,7 +608,7 @@ export const AvatarCropModal: React.FC<AvatarCropModalProps> = ({ open, onClose,
                   className={isDark ? 'text-amber-400 animate-pulse' : 'text-amber-600 animate-pulse'}
                 />
                 <span className={`text-xs font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  Wings AI Coach
+                  MAI Coach
                 </span>
                 <span
                   className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
