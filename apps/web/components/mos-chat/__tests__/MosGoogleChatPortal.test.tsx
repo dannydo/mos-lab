@@ -3,6 +3,16 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import MosGoogleChatPortal from '../MosGoogleChatPortal';
 import { apiClient } from '../../../lib/api-client';
+import { playNeuralSpeech } from '../../voice-assistant/speech-utils';
+
+vi.mock('../../voice-assistant/speech-utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../voice-assistant/speech-utils')>();
+  return {
+    ...actual,
+    playNeuralSpeech: vi.fn().mockResolvedValue(null),
+    stopSpeaking: vi.fn(),
+  };
+});
 
 // Mock matchMedia
 beforeEach(() => {
@@ -491,5 +501,150 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
 
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(handleClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('automatically triggers @MAI spoken announcement directly when user is tagged in an urgent buzzed message (MOS-BUG-135)', async () => {
+    const mockUrgentConv = {
+      id: 'space-urgent-4',
+      type: 'space' as const,
+      name: '4-cô-gái-hăng-hái',
+      memberCount: 4,
+      unreadCount: 1,
+      hasUnreadBuzz: true,
+      unreadBuzzCount: 1,
+      updatedAt: new Date().toISOString(),
+      messages: [
+        {
+          id: 'msg-urgent-30k',
+          conversationId: 'space-urgent-4',
+          senderId: 'staff-tam',
+          senderName: 'Tâm Nguyễn',
+          senderRole: 'Admin',
+          text: '@Danny Do 0901406091 cho anh 30K nhen',
+          timeLabel: '13:07',
+          createdAt: new Date().toISOString(),
+          isBuzzed: true,
+          buzzCount: 1,
+          buzzedAt: new Date().toISOString(),
+          latestBuzz: {
+            id: 'b-30k',
+            senderId: 'staff-tam',
+            senderName: 'Tâm Nguyễn',
+            senderRole: 'Admin',
+            buzzedAt: new Date().toISOString(),
+          },
+        },
+      ],
+    };
+
+    (apiClient.chat.bootstrap as any).mockResolvedValue({
+      unchanged: false,
+      version: 1,
+      conversations: [mockUrgentConv],
+      tasks: [],
+      staffDirectory: [
+        { id: 99, displayName: 'Danny Do', role: 'Admin' },
+        { id: 4, displayName: 'Tâm Nguyễn', role: 'Admin' },
+      ],
+      accessConfig: { allowAllStaff: true, allowedGroupKeys: [], allowedStaffIds: [] },
+      canAccessChat: true,
+    });
+
+    render(
+      <MosGoogleChatPortal
+        open={true}
+        onClose={vi.fn()}
+        onToggle={vi.fn()}
+        currentUser={{ id: 99, displayName: 'Danny Do', role: 'Admin' }}
+      />
+    );
+
+    // Verify @MAI voice announcement was scheduled / called for tagged user Danny Do
+    await waitFor(() => {
+      expect(playNeuralSpeech).toHaveBeenCalledWith(
+        expect.stringContaining('Tâm Nguyễn vừa gửi tin nhắn khẩn cấp trong nhóm 4-cô-gái-hăng-hái: 0901406091 cho anh 30K nhen'),
+        expect.objectContaining({ voice: 'vi-VN-HoaiMyNeural' })
+      );
+    });
+
+    // Verify notification warning contains MAI audio badge and Replay button
+    await waitFor(() => {
+      expect(screen.getByText(/@MAI đã phát âm thanh thông báo trực tiếp đến bạn/i)).toBeTruthy();
+      expect(screen.getByText('🔊 Nghe lại')).toBeTruthy();
+    });
+
+    // Open the conversation and verify the '@MAI đọc' button is rendered on the buzzed message header
+    const convItem = screen.getByText('4-cô-gái-hăng-hái');
+    fireEvent.click(convItem);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Nghe @MAI đọc tin nhắn khẩn cấp/i })).toBeTruthy();
+    });
+  });
+
+  it('does NOT trigger @MAI spoken announcement if current user was NOT tagged in a group message (MOS-BUG-135)', async () => {
+    (playNeuralSpeech as any).mockClear();
+
+    const mockUrgentConvOther = {
+      id: 'space-urgent-other',
+      type: 'space' as const,
+      name: '4-cô-gái-hăng-hái',
+      memberCount: 4,
+      unreadCount: 1,
+      hasUnreadBuzz: true,
+      unreadBuzzCount: 1,
+      updatedAt: new Date().toISOString(),
+      messages: [
+        {
+          id: 'msg-other-tagged',
+          conversationId: 'space-urgent-other',
+          senderId: 'staff-tam',
+          senderName: 'Tâm Nguyễn',
+          senderRole: 'Admin',
+          text: '@Đẫm Ti 0901406091 cho anh 30K nhen',
+          timeLabel: '13:07',
+          createdAt: new Date().toISOString(),
+          isBuzzed: true,
+          buzzCount: 1,
+          buzzedAt: new Date().toISOString(),
+          latestBuzz: {
+            id: 'b-other',
+            senderId: 'staff-tam',
+            senderName: 'Tâm Nguyễn',
+            senderRole: 'Admin',
+            buzzedAt: new Date().toISOString(),
+          },
+        },
+      ],
+    };
+
+    (apiClient.chat.bootstrap as any).mockResolvedValue({
+      unchanged: false,
+      version: 1,
+      conversations: [mockUrgentConvOther],
+      tasks: [],
+      staffDirectory: [
+        { id: 99, displayName: 'Danny Do', role: 'Admin' },
+        { id: 4, displayName: 'Tâm Nguyễn', role: 'Admin' },
+        { id: 5, displayName: 'Đẫm Ti', role: 'CV' },
+      ],
+      accessConfig: { allowAllStaff: true, allowedGroupKeys: [], allowedStaffIds: [] },
+      canAccessChat: true,
+    });
+
+    render(
+      <MosGoogleChatPortal
+        open={true}
+        onClose={vi.fn()}
+        onToggle={vi.fn()}
+        currentUser={{ id: 99, displayName: 'Danny Do', role: 'Admin' }}
+      />
+    );
+
+    // Danny was not tagged, so playNeuralSpeech must not be called
+    await waitFor(() => {
+      expect(screen.getByText('BUZZ')).toBeTruthy();
+    });
+    expect(playNeuralSpeech).not.toHaveBeenCalled();
   });
 });

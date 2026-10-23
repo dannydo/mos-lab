@@ -163,8 +163,11 @@ import {
   type SpaceDepartmentOrTeamGroup,
 } from './constants/chat-constants';
 import {
+  buildMaiUrgentVoiceAnnouncement,
+  cleanTextForUrgentVoiceAnnouncement,
   formatCountdown,
   getTaskDeadlineInfo,
+  isUserMentionedInText,
   matchesStaffGroup,
   parseGoogleDriveImageFromText,
   playWebAudioBuzzChime,
@@ -558,6 +561,26 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     }
     setNeuralSpeechSpeed(speed);
   }, []);
+
+  // MOS-BUG-135: MAI Spoken Urgent Announcements (iPhone Siri-style)
+  const [maiVoiceAnnounceEnabled, setMaiVoiceAnnounceEnabled] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    try {
+      const saved = localStorage.getItem('mos_chat_mai_voice_announce_v1');
+      return saved !== null ? saved === 'true' : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const handleToggleMaiVoiceAnnounce = useCallback((enabled: boolean) => {
+    setMaiVoiceAnnounceEnabled(enabled);
+    try {
+      localStorage.setItem('mos_chat_mai_voice_announce_v1', String(enabled));
+    } catch {}
+  }, []);
+
+  const [isUrgentSend, setIsUrgentSend] = useState<boolean>(false);
   const aiHydratedRef = useRef<boolean>(false);
 
   const buildInitialAiWelcomeMessage = useCallback((): MosChatMessage => {
@@ -1371,67 +1394,138 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         if (Array.isArray(res?.conversations)) {
           setConversations(res.conversations);
 
-          // Detect new unread buzzed messages for current user
+          // Detect new unread buzzed messages or replies for current user (MOS-BUG-131, MOS-BUG-135)
           const myId = String(currentUser?.id || '');
-          const myName = String(currentUser?.displayName || currentUser?.username || '')
+          const myStaffId = Number(currentUserStaffMember?.id) || Number(currentUser?.id) || 0;
+          const myName = String(currentUserStaffMember?.displayName || currentUser?.displayName || currentUser?.username || '')
             .trim()
             .toLowerCase();
+
           for (const conv of res.conversations) {
             if (conv.hasUnreadBuzz || (conv.unreadCount || 0) > 0) {
-              for (const m of conv.messages || []) {
-                if (m.isBuzzed && m.buzzedAt) {
-                  const buzzKey = `${m.id}-${m.buzzedAt}`;
-                  const isMine =
-                    String(m.senderId) === myId ||
-                    Boolean(
-                      myName &&
-                      String(m.senderName || '')
-                        .trim()
-                        .toLowerCase() === myName
-                    );
-                  if (!isMine && !notifiedBuzzIdsRef.current.has(buzzKey)) {
-                    notifiedBuzzIdsRef.current.add(buzzKey);
-                    playWebAudioBuzzChime();
-                    triggerBuzzVibration();
-                    const senderLabel = m.latestBuzz?.senderName || m.senderName || 'Đồng nghiệp';
-                    const convLabel = conv.name ? `[${conv.name}]` : '';
-                    const preview = m.text
-                      ? m.text.length > 70
-                        ? `${m.text.slice(0, 70)}...`
-                        : m.text
-                      : 'Tin nhắn khẩn cấp';
-                    notification.warning({
-                      message: `⚡ TIN NHẮN KHẨN CẤP (BUZZ) ${convLabel}`,
-                      description: `${senderLabel} vừa Buzz tin nhắn khẩn cấp: "${preview}"`,
-                      duration: 8,
-                      style: {
-                        background: surfaceRaised,
-                        border: `1.5px solid ${accentColor}`,
-                        color: token.colorText,
-                        boxShadow: 'var(--mos-shadow)',
-                        borderRadius: 12,
-                      },
-                      btn: (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!open) {
-                              onToggle();
-                            }
-                            selectConversation(conv.id);
-                            notification.destroy();
-                          }}
-                          className="px-3 py-1 rounded font-bold text-xs cursor-pointer shadow-sm transition-opacity hover:opacity-90"
-                          style={{
-                            background: accentColor,
-                            color: accentContrast,
-                          }}
-                        >
-                          Xem ngay
-                        </button>
-                      ),
-                      key: `buzz-notify-${m.id}`,
+              const handleUrgentBuzzItem = (item: MosChatMessage | MosChatThreadReply) => {
+                if (!item.isBuzzed || !item.buzzedAt) return;
+                const buzzKey = `${item.id}-${item.buzzedAt}`;
+                const isMine =
+                  String(item.senderId) === myId ||
+                  (myStaffId > 0 && Number(item.senderId) === myStaffId) ||
+                  Boolean(
+                    myName &&
+                    String(item.senderName || '')
+                      .trim()
+                      .toLowerCase() === myName
+                  );
+                if (isMine || notifiedBuzzIdsRef.current.has(buzzKey)) return;
+
+                notifiedBuzzIdsRef.current.add(buzzKey);
+                playWebAudioBuzzChime();
+                triggerBuzzVibration();
+
+                const userObj = {
+                  id: myStaffId || myId,
+                  displayName: currentUserStaffMember?.displayName || currentUser?.displayName,
+                  username: currentUserStaffMember?.username || currentUser?.username,
+                };
+                const isDirectMsg = conv.type === 'dm';
+                const isTargeted = isUserMentionedInText(item.text || '', userObj, {
+                  nicknames: conv.memberNicknames,
+                  isDirectMessage: isDirectMsg,
+                });
+
+                const senderLabel = item.latestBuzz?.senderName || item.senderName || 'Đồng nghiệp';
+                const convLabel = conv.name ? `[${conv.name}]` : '';
+                const preview = item.text
+                  ? item.text.length > 70
+                    ? `${item.text.slice(0, 70)}...`
+                    : item.text
+                  : 'Tin nhắn khẩn cấp';
+
+                // MOS-BUG-135: @MAI tự động phát âm thanh thông báo trực tiếp đến người được tag (Kiểu iPhone)
+                if (isTargeted && maiVoiceAnnounceEnabled) {
+                  const spokenText = buildMaiUrgentVoiceAnnouncement({
+                    senderName: senderLabel,
+                    conversationName: conv.name,
+                    isSpace: conv.type === 'space',
+                    messageText: item.text || '',
+                    note: item.latestBuzz?.note,
+                  });
+
+                  setTimeout(() => {
+                    void playNeuralSpeech(spokenText, {
+                      voice: 'vi-VN-HoaiMyNeural',
+                      speed: ttsSpeed || 1.0,
                     });
+                  }, 380);
+                }
+
+                notification.warning({
+                  message: `⚡ TIN NHẮN KHẨN CẤP (BUZZ) ${convLabel}`,
+                  description: (
+                    <div className="space-y-1">
+                      <div>{`${senderLabel} vừa Buzz tin nhắn khẩn cấp: "${preview}"`}</div>
+                      {isTargeted && maiVoiceAnnounceEnabled && (
+                        <div className="text-[11px] text-amber-600 dark:text-amber-400 font-medium inline-flex items-center gap-1">
+                          <span>🤖</span>
+                          <span>@MAI đã phát âm thanh thông báo trực tiếp đến bạn</span>
+                        </div>
+                      )}
+                    </div>
+                  ),
+                  duration: 9,
+                  style: {
+                    background: surfaceRaised,
+                    border: `1.5px solid ${accentColor}`,
+                    color: token.colorText,
+                    boxShadow: 'var(--mos-shadow)',
+                    borderRadius: 12,
+                  },
+                  btn: (
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const spokenText = buildMaiUrgentVoiceAnnouncement({
+                            senderName: senderLabel,
+                            conversationName: conv.name,
+                            isSpace: conv.type === 'space',
+                            messageText: item.text || '',
+                            note: item.latestBuzz?.note,
+                          });
+                          void playNeuralSpeech(spokenText, { voice: 'vi-VN-HoaiMyNeural', speed: ttsSpeed || 1.0 });
+                        }}
+                        className="px-2.5 py-1 rounded font-semibold text-xs cursor-pointer shadow-sm border border-amber-500/40 hover:bg-amber-500/10 transition-colors"
+                        style={{ color: token.colorText }}
+                      >
+                        🔊 Nghe lại
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!open) {
+                            onToggle();
+                          }
+                          selectConversation(conv.id);
+                          notification.destroy();
+                        }}
+                        className="px-3 py-1 rounded font-bold text-xs cursor-pointer shadow-sm transition-opacity hover:opacity-90"
+                        style={{
+                          background: accentColor,
+                          color: accentContrast,
+                        }}
+                      >
+                        Xem ngay
+                      </button>
+                    </div>
+                  ),
+                  key: `buzz-notify-${item.id}`,
+                });
+              };
+
+              for (const m of conv.messages || []) {
+                handleUrgentBuzzItem(m);
+                if (m.thread && m.thread.length > 0) {
+                  for (const r of m.thread) {
+                    handleUrgentBuzzItem(r);
                   }
                 }
               }
@@ -1451,7 +1545,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         // Fallback state already initialized
       }
     },
-    [userSidebarPrefsStorageKey, staffDirectory.length]
+    [userSidebarPrefsStorageKey, staffDirectory.length, maiVoiceAnnounceEnabled, ttsSpeed]
   );
 
   useMosChatBridgeListener(
@@ -3371,6 +3465,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       scrollToChatBottom({ dockConvId: targetConvId }, 'smooth');
     }
 
+    let sentMessage: MosChatMessage = optimisticMsg;
     try {
       const res = await apiClient.chat.sendMessage({
         conversationId: targetConvId,
@@ -3378,6 +3473,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         customerCard: customerCard || null,
         attachments: cleanAttachments,
       });
+      if (res?.message) {
+        sentMessage = res.message;
+      }
       if (res?.conversation) {
         setConversations((prev) => prev.map((c) => (c.id === targetConvId ? res.conversation : c)));
       }
@@ -3415,6 +3513,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         setAiThinkingActive(false);
       }
     }
+    return sentMessage;
   };
 
   const handleSendMain = async () => {
@@ -3448,13 +3547,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       }
     }
 
+    const wasUrgent = isUrgentSend;
+    if (wasUrgent) {
+      setIsUrgentSend(false);
+    }
+
     setMentionState((prev) => (prev.open ? { ...prev, open: false } : prev));
     setComposerText('');
     setStagedAttachments([]);
     if (composerInputRef.current) {
       composerInputRef.current.value = '';
     }
-    await handleSendMessage(activeConversation.id, text, null, attachmentsToSend);
+    const sent = await handleSendMessage(activeConversation.id, text, null, attachmentsToSend);
+    if (wasUrgent && sent?.id) {
+      void handleBuzzMessage(sent.id);
+    }
   };
 
   const handleSendQuickCustomerCard = async () => {
@@ -10215,6 +10322,46 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               </Tooltip>
             </div>
 
+            {/* MOS-BUG-135: MAI Spoken Urgent Announcements Toggle */}
+            <Tooltip
+              title={
+                maiVoiceAnnounceEnabled
+                  ? 'Đang BẬT @MAI đọc thông báo khẩn cấp khi bạn được tag (Siri-style). Nhấp để tắt tiếng'
+                  : 'Đang TẮT @MAI đọc thông báo khẩn cấp. Nhấp để bật lại'
+              }
+            >
+              <button
+                type="button"
+                aria-label="Bật tắt @MAI đọc thông báo khẩn cấp"
+                onClick={() => {
+                  const next = !maiVoiceAnnounceEnabled;
+                  handleToggleMaiVoiceAnnounce(next);
+                  if (next) {
+                    antdMessage.success('Đã BẬT @MAI tự động phát âm thanh thông báo khẩn cấp khi bạn được tag');
+                    void playNeuralSpeech('MAI đã sẵn sàng đọc thông báo khẩn cấp khi bạn được tag.', {
+                      voice: 'vi-VN-HoaiMyNeural',
+                      speed: ttsSpeed,
+                    });
+                  } else {
+                    antdMessage.info('Đã TẮT @MAI đọc thông báo khẩn cấp');
+                  }
+                }}
+                className="h-7 px-2 rounded-md inline-flex items-center gap-1.5 text-[11px] font-bold cursor-pointer transition-colors"
+                style={{
+                  background: maiVoiceAnnounceEnabled ? 'rgba(212, 168, 75, 0.16)' : 'transparent',
+                  border: `1px solid ${maiVoiceAnnounceEnabled ? 'rgba(212, 168, 75, 0.35)' : borderColor}`,
+                  color: maiVoiceAnnounceEnabled ? '#d4a84b' : token.colorTextSecondary,
+                }}
+              >
+                {maiVoiceAnnounceEnabled ? (
+                  <Volume2 size={13} className="text-amber-500 animate-pulse" />
+                ) : (
+                  <VolumeX size={13} className="opacity-60" />
+                )}
+                <span className="hidden md:inline">@MAI Đọc khẩn cấp</span>
+              </button>
+            </Tooltip>
+
             {/* 100% Icon-only Window Controls (Right-aligned close button invariant) */}
             <div className="flex items-center gap-1">
               {activeConversation && (
@@ -10970,6 +11117,25 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                           </button>
                                         </Popover>
                                       )}
+                                      <button
+                                        type="button"
+                                        aria-label="Nghe @MAI đọc tin nhắn khẩn cấp"
+                                        onClick={() => {
+                                          const spokenText = buildMaiUrgentVoiceAnnouncement({
+                                            senderName: m.latestBuzz?.senderName || m.senderName || 'Đồng nghiệp',
+                                            conversationName: activeConversation?.name,
+                                            isSpace: activeConversation?.type === 'space',
+                                            messageText: m.text || '',
+                                            note: m.latestBuzz?.note,
+                                          });
+                                          void playNeuralSpeech(spokenText, { voice: 'vi-VN-HoaiMyNeural', speed: ttsSpeed || 1.0 });
+                                        }}
+                                        className="text-[10px] font-semibold text-amber-400/90 hover:underline hover:text-amber-300 cursor-pointer inline-flex items-center gap-1 shrink-0 ml-1.5 px-1.5 py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/20"
+                                        title="Nghe @MAI đọc âm thanh thông báo khẩn cấp"
+                                      >
+                                        <Volume2 size={10} />
+                                        <span>@MAI đọc</span>
+                                      </button>
                                     </div>
                                   )}
 
@@ -12150,6 +12316,28 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             </button>
                           </Tooltip>
 
+                          <Tooltip
+                            title={
+                              isUrgentSend
+                                ? 'Đang bật chế độ khẩn cấp (Buzz): Nhấp để tắt'
+                                : 'Bật chế độ khẩn cấp (Buzz): Gửi và tự động phát âm thanh thông báo @MAI đến người được tag'
+                            }
+                          >
+                            <button
+                              type="button"
+                              aria-label="Chế độ khẩn cấp"
+                              onClick={() => setIsUrgentSend((prev) => !prev)}
+                              className={`h-7 px-2 rounded-lg inline-flex items-center gap-1 text-[11px] font-extrabold cursor-pointer transition-all ${
+                                isUrgentSend
+                                  ? 'bg-amber-500 text-slate-950 shadow-sm ring-1 ring-amber-400 font-black'
+                                  : 'hover:bg-amber-500/15 text-amber-500/80 border border-amber-500/30'
+                              }`}
+                            >
+                              <Zap size={13} className={isUrgentSend ? 'animate-bounce' : ''} />
+                              <span>Khẩn cấp</span>
+                            </button>
+                          </Tooltip>
+
                           <Tooltip title="Giao Task & Cài nhắc hẹn mới">
                             <button
                               type="button"
@@ -13289,11 +13477,32 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                     </span>
                                   )}
                                 </div>
-                                {r.latestBuzz && (
-                                  <span className="text-[9.5px] opacity-75 font-normal tabular-nums">
-                                    {dayjs(r.latestBuzz.buzzedAt).format('HH:mm')}
-                                  </span>
-                                )}
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  {r.latestBuzz && (
+                                    <span className="text-[9.5px] opacity-75 font-normal tabular-nums">
+                                      {dayjs(r.latestBuzz.buzzedAt).format('HH:mm')}
+                                    </span>
+                                  )}
+                                  <button
+                                    type="button"
+                                    aria-label="Nghe @MAI đọc câu trả lời khẩn cấp"
+                                    onClick={() => {
+                                      const spokenText = buildMaiUrgentVoiceAnnouncement({
+                                        senderName: r.latestBuzz?.senderName || r.senderName || 'Đồng nghiệp',
+                                        conversationName: activeConversation?.name,
+                                        isSpace: activeConversation?.type === 'space',
+                                        messageText: r.text || '',
+                                        note: r.latestBuzz?.note,
+                                      });
+                                      void playNeuralSpeech(spokenText, { voice: 'vi-VN-HoaiMyNeural', speed: ttsSpeed || 1.0 });
+                                    }}
+                                    className="text-[9px] font-semibold text-amber-400 hover:underline cursor-pointer inline-flex items-center gap-0.5 px-1 py-0.2 rounded bg-amber-500/10 hover:bg-amber-500/20"
+                                    title="Nghe @MAI đọc câu trả lời khẩn cấp"
+                                  >
+                                    <Volume2 size={9} />
+                                    <span>@MAI đọc</span>
+                                  </button>
+                                </div>
                               </div>
                             )}
                             {r.text && (

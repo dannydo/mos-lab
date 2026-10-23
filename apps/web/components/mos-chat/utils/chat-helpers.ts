@@ -1,5 +1,7 @@
 import dayjs from 'dayjs';
 import type { MosChatImageAttachment, MosChatImageMimeType, MosChatStaffMember, SafeAny } from '@mos-lab/shared';
+import { removeVietnameseTones } from '@mos-lab/shared';
+import { cleanMarkdownForSpeech } from '../../voice-assistant/speech-utils';
 
 export function matchesStaffGroup(member: MosChatStaffMember, groupKey: string): boolean {
   const role = String(member.role || '')
@@ -313,4 +315,137 @@ export async function readOrCompressImagePayload(
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
+}
+
+/**
+ * Kiểm tra xem một đoạn tin nhắn có đang tag (mention) trực tiếp người dùng hiện tại hay không.
+ * Hỗ trợ: @displayName, @username, @nickname trong Space, @All, @mọi người,
+ * và tự động khớp trong Direct Message (1-1 DM).
+ */
+export function isUserMentionedInText(
+  text: string,
+  user: { id?: number | string; displayName?: string; username?: string },
+  options?: {
+    nicknames?: Record<string, string>;
+    isDirectMessage?: boolean;
+  }
+): boolean {
+  if (!text) return Boolean(options?.isDirectMessage);
+  if (options?.isDirectMessage) return true;
+
+  // 1. Tag toàn bộ phòng (@all, @mọi người, @moi nguoi)
+  if (/(?:^|\s)@\s*(?:all|mọi\s+người|moi\s+nguoi)\b/i.test(text)) {
+    return true;
+  }
+
+  const rawTextLower = text.toLowerCase();
+  const textNorm = removeVietnameseTones(rawTextLower);
+
+  // 2. Kiểm tra biệt danh (nickname) được gán riêng trong Space
+  const myId = String(user?.id || '');
+  if (myId && options?.nicknames?.[myId]) {
+    const nick = options.nicknames[myId].trim().toLowerCase();
+    const nickNorm = removeVietnameseTones(nick);
+    if (nick && (rawTextLower.includes(`@${nick}`) || textNorm.includes(`@${nickNorm}`))) {
+      return true;
+    }
+  }
+
+  // 3. Kiểm tra username (hoặc phần trước @ nếu username là email)
+  const username = String(user?.username || '').trim().toLowerCase();
+  if (username) {
+    const userHandle = username.split('@')[0];
+    if (rawTextLower.includes(`@${username}`) || (userHandle && rawTextLower.includes(`@${userHandle}`))) {
+      return true;
+    }
+  }
+
+  // 4. Kiểm tra displayName đầy đủ hoặc tên gọi phổ biến
+  const displayName = String(user?.displayName || '').trim().toLowerCase();
+  if (displayName) {
+    const dNameNorm = removeVietnameseTones(displayName);
+    if (rawTextLower.includes(`@${displayName}`) || textNorm.includes(`@${dNameNorm}`)) {
+      return true;
+    }
+    // Hỗ trợ tag từng từ riêng lẻ nếu tên gồm nhiều từ (VD: "@Danny" cho "Danny Do", "@Ti" cho "Đẫm Ti")
+    const parts = displayName.split(/\s+/).filter((p) => p.length >= 2);
+    for (const part of parts) {
+      const partNorm = removeVietnameseTones(part);
+      const regexExact = new RegExp(`(?:^|\\s)@\\s*${part.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}(?:\\b|\\s|$)`, 'i');
+      const regexNorm = new RegExp(`(?:^|\\s)@\\s*${partNorm.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}(?:\\b|\\s|$)`, 'i');
+      if (regexExact.test(rawTextLower) || regexNorm.test(textNorm)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Làm sạch nội dung tin nhắn để đọc âm thanh thông báo khẩn cấp:
+ * Bỏ markup markdown, bỏ tag nhắc tên ở đầu, rút ngắn độ dài vừa đủ để nghe gọn gàng tự nhiên như iPhone.
+ */
+export function cleanTextForUrgentVoiceAnnouncement(text: string, taggedName?: string): string {
+  if (!text) return '';
+  let cleaned = text;
+
+  // 1. Bỏ tag nhắc tên cụ thể nếu có
+  if (taggedName) {
+    const esc = taggedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    cleaned = cleaned.replace(new RegExp(`^@\\s*${esc}\\s*[:,-]?\\s*`, 'i'), '');
+  }
+
+  // 2. Bỏ @all / @mọi người ở đầu
+  cleaned = cleaned.replace(/^@\s*(?:all|mọi người|moi nguoi)\s*[:,-]?\s*/i, '');
+
+  // 3. Bỏ tên viết hoa ở đầu (VD: @Đẫm Ti, @Danny Do)
+  cleaned = cleaned.replace(/^@[\p{Lu}][\p{L}0-9_]*(?:\s+[\p{Lu}][\p{L}0-9_]*)?\s*[:,-]?\s*/u, '');
+
+  // 4. Bỏ mọi @tag còn lại ở đầu
+  cleaned = cleaned.replace(/^@\S+\s*[:,-]?\s*/, '');
+
+  // 5. Làm sạch markdown bằng cleanMarkdownForSpeech
+  cleaned = cleanMarkdownForSpeech(cleaned);
+
+  // 6. Bỏ ký tự @ trước các từ còn lại trong câu nếu có
+  cleaned = cleaned.replace(/@([a-zA-Z0-9_\u00C0-\u1EF9]+)/g, '$1').trim();
+
+  // 7. Cắt ngắn ở ranh giới từ nếu tin nhắn quá dài (> 160 ký tự)
+  if (cleaned.length > 160) {
+    const truncated = cleaned.slice(0, 155);
+    const lastSpace = truncated.lastIndexOf(' ');
+    cleaned = (lastSpace > 100 ? truncated.slice(0, lastSpace) : truncated).trim() + '...';
+  }
+
+  return cleaned;
+}
+
+/**
+ * Tạo câu thoại tự nhiên chuẩn @MAI (vi-VN-HoaiMyNeural) thông báo tin nhắn khẩn cấp kiểu iPhone.
+ */
+export function buildMaiUrgentVoiceAnnouncement(options: {
+  senderName: string;
+  conversationName?: string;
+  isSpace?: boolean;
+  messageText: string;
+  note?: string | null;
+}): string {
+  const sender = options.senderName?.trim() || 'Đồng nghiệp';
+  const cleanBody = cleanTextForUrgentVoiceAnnouncement(options.messageText);
+  const note = options.note?.trim();
+
+  if (note && cleanBody) {
+    return `${sender} vừa gửi tin nhắn khẩn cấp: ${cleanBody}. Ghi chú: ${note}`;
+  }
+
+  if (note && !cleanBody) {
+    return `${sender} vừa gửi tín hiệu Buzz khẩn cấp: ${note}`;
+  }
+
+  if (options.isSpace && options.conversationName) {
+    return `${sender} vừa gửi tin nhắn khẩn cấp trong nhóm ${options.conversationName}: ${cleanBody || 'xin phản hồi ngay'}`;
+  }
+
+  return `${sender} vừa gửi tin nhắn khẩn cấp: ${cleanBody || 'xin phản hồi ngay'}`;
 }
