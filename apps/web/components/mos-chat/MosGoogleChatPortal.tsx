@@ -994,6 +994,29 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const uploadTargetRef = useRef<{ scope: 'main' | 'thread' | 'dock'; convId?: string }>({ scope: 'main' });
 
+  // Global drag listener to reset drag overlays on dragend, drop, or leaving window
+  useEffect(() => {
+    if (!open) return;
+    const handleGlobalDragEnd = () => {
+      setIsDraggingOver(false);
+      setIsDraggingOverThread(false);
+    };
+    const handleWindowDragLeave = (e: DragEvent) => {
+      if (!e.relatedTarget) {
+        setIsDraggingOver(false);
+        setIsDraggingOverThread(false);
+      }
+    };
+    window.addEventListener('dragend', handleGlobalDragEnd);
+    window.addEventListener('drop', handleGlobalDragEnd);
+    window.addEventListener('dragleave', handleWindowDragLeave);
+    return () => {
+      window.removeEventListener('dragend', handleGlobalDragEnd);
+      window.removeEventListener('drop', handleGlobalDragEnd);
+      window.removeEventListener('dragleave', handleWindowDragLeave);
+    };
+  }, [open]);
+
   // Task & Reminder Creation / Edit Modal state
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [taskModalSourceMsg, setTaskModalSourceMsg] = useState<MosChatMessage | null>(null);
@@ -10627,6 +10650,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               {/* VIEW 1: GOOGLE CHAT LEFT-ALIGNED STREAM */}
               {activeSubtab === 'chat' && (
                 <div
+                  data-chat-main-stream="true"
                   className="flex-1 flex flex-col min-h-0 relative"
                   onDragOver={(e) => {
                     if (draggingRootMsgId || e.dataTransfer?.types?.includes('application/x-mos-chat-msg-id')) {
@@ -10636,7 +10660,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     if (!isDraggingOver) setIsDraggingOver(true);
                   }}
                   onDragLeave={(e) => {
-                    if (e.currentTarget === e.target) setIsDraggingOver(false);
+                    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                      setIsDraggingOver(false);
+                    }
                   }}
                   onDrop={(e) => {
                     if (draggingRootMsgId || e.dataTransfer?.types?.includes('application/x-mos-chat-msg-id')) {
@@ -10644,6 +10670,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     }
                     e.preventDefault();
                     setIsDraggingOver(false);
+                    setIsDraggingOverThread(false);
                     if (e.dataTransfer?.files?.length) {
                       void handleProcessImageFiles(e.dataTransfer.files, 'upload', 'main');
                     }
@@ -13025,6 +13052,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     e.stopPropagation();
                     e.dataTransfer.dropEffect = 'copy';
                     if (!isDraggingOverThread) setIsDraggingOverThread(true);
+                    if (isDraggingOver) setIsDraggingOver(false);
                   }
                 }}
                 onDragLeave={(e) => {
@@ -13044,6 +13072,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     setDraggingRootMsgId(null);
                     setDragOverTargetMsgId(null);
                     setDragOverThreadPane(false);
+                    setIsDraggingOver(false);
+                    setIsDraggingOverThread(false);
                     void handleMoveThreadItem({
                       mode: 'MERGE_ROOT_TO_THREAD',
                       sourceMessageId: srcId,
@@ -13055,6 +13085,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   if (e.dataTransfer?.files?.length) {
                     e.preventDefault();
                     e.stopPropagation();
+                    setIsDraggingOver(false);
                     setIsDraggingOverThread(false);
                     void handleProcessImageFiles(e.dataTransfer.files, 'upload', 'thread');
                   }
@@ -14079,6 +14110,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       e.stopPropagation();
                       e.dataTransfer.dropEffect = 'copy';
                       if (!isDraggingOverThread) setIsDraggingOverThread(true);
+                      if (isDraggingOver) setIsDraggingOver(false);
                     }
                   }}
                   onDrop={(e) => {
@@ -14086,6 +14118,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     if (e.dataTransfer?.files?.length) {
                       e.preventDefault();
                       e.stopPropagation();
+                      setIsDraggingOver(false);
                       setIsDraggingOverThread(false);
                       void handleProcessImageFiles(e.dataTransfer.files, 'upload', 'thread');
                     }
@@ -14110,6 +14143,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         e.stopPropagation();
                         e.dataTransfer.dropEffect = 'copy';
                         if (!isDraggingOverThread) setIsDraggingOverThread(true);
+                        if (isDraggingOver) setIsDraggingOver(false);
                       }
                     }}
                     onDrop={(e) => {
@@ -14117,6 +14151,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       if (e.dataTransfer?.files?.length) {
                         e.preventDefault();
                         e.stopPropagation();
+                        setIsDraggingOver(false);
                         setIsDraggingOverThread(false);
                         void handleProcessImageFiles(e.dataTransfer.files, 'upload', 'thread');
                       }
@@ -14136,6 +14171,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           e.stopPropagation();
                           e.dataTransfer.dropEffect = 'copy';
                           if (!isDraggingOverThread) setIsDraggingOverThread(true);
+                          if (isDraggingOver) setIsDraggingOver(false);
                         }
                       }}
                       onDrop={(e) => {
@@ -14143,6 +14179,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         if (e.dataTransfer?.files?.length) {
                           e.preventDefault();
                           e.stopPropagation();
+                          setIsDraggingOver(false);
                           setIsDraggingOverThread(false);
                           void handleProcessImageFiles(e.dataTransfer.files, 'upload', 'thread');
                         }

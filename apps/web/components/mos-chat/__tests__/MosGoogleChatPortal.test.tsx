@@ -751,14 +751,22 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
 
     const threadPane = container.querySelector('[data-chat-thread-pane="true"]')!;
 
-    // Dragover with Files
+    // 1. First drag files over main chat stream -> Main dropzone appears
+    const mainStream = container.querySelector('[data-chat-main-stream="true"]')!;
+    fireEvent.dragOver(mainStream, {
+      dataTransfer: { types: ['Files'] },
+    });
+    expect(screen.getByText(/Thả hình ảnh từ máy tính hoặc Google Drive vào đây/i)).toBeTruthy();
+
+    // 2. Drag into thread pane -> Main dropzone disappears immediately
     fireEvent.dragOver(threadPane, {
       dataTransfer: {
         types: ['Files'],
       },
     });
+    expect(screen.queryByText(/Thả hình ảnh từ máy tính hoặc Google Drive vào đây/i)).toBeNull();
 
-    // Drop file into thread pane
+    // 3. Drop file into thread pane -> Main dropzone stays clean/normal
     const mockFile = new File(['dummy content'], 'test-image.png', { type: 'image/png' });
     (apiClient.chat.uploadImage as any).mockResolvedValue({
       attachment: {
@@ -779,6 +787,7 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
     await waitFor(() => {
       expect(apiClient.chat.uploadImage).toHaveBeenCalled();
     });
+    expect(screen.queryByText(/Thả hình ảnh từ máy tính hoặc Google Drive vào đây/i)).toBeNull();
   });
 
   it('allows pasting image file from clipboard into the subthread textarea and pane', async () => {
