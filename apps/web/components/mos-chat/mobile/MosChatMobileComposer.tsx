@@ -55,6 +55,13 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
     };
   }, []);
 
+  // Auto-focus when replying to a message
+  useEffect(() => {
+    if (replyingToMessage) {
+      textareaRef.current?.focus();
+    }
+  }, [replyingToMessage]);
+
   // Auto-resize textarea height
   useEffect(() => {
     const el = textareaRef.current;

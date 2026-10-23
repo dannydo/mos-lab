@@ -367,4 +367,112 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     const { apiClient } = await import('../../../lib/api-client');
     expect(apiClient.chat.reactToMessage).toHaveBeenCalledWith('m1', 'space-cc', '❤️', undefined);
   });
+
+  it('supports swiping horizontally to reply to message in main chat', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Shop Operations')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('Shop Operations'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Chào cả nhà, hôm nay lịch dặm mi kín chỗ rồi nha!')).toBeTruthy();
+    });
+
+    const msgEl = screen.getByText('Chào cả nhà, hôm nay lịch dặm mi kín chỗ rồi nha!');
+    const msgContainer = msgEl.closest('.relative') as HTMLElement;
+    expect(msgContainer).toBeTruthy();
+
+    // Swipe right gesture (startX: 50, moveX: 110, deltaX = 60 >= 35)
+    fireEvent.touchStart(msgContainer, { touches: [{ clientX: 50, clientY: 100 }] });
+    fireEvent.touchMove(msgContainer, { touches: [{ clientX: 110, clientY: 105 }] });
+    fireEvent.touchEnd(msgContainer);
+
+    // Replying preview banner should appear in composer
+    await waitFor(() => {
+      expect(screen.getByText(/Trả lời Chuyên Viên Mai:/)).toBeTruthy();
+    });
+  });
+
+  it('supports swiping to quote on reply inside subthread', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Shop Operations')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('Shop Operations'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/câu trả lời trong luồng/i)).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText(/câu trả lời trong luồng/i));
+
+    await waitFor(() => {
+      expect(screen.getByText('Dạ để em điều phối thêm khách ca chiều!')).toBeTruthy();
+    });
+
+    const replyEl = screen.getByText('Dạ để em điều phối thêm khách ca chiều!');
+    const replyContainer = replyEl.closest('.relative') as HTMLElement;
+    expect(replyContainer).toBeTruthy();
+
+    // Swipe left gesture (startX: 200, moveX: 140, deltaX = -60, absX = 60 >= 35)
+    fireEvent.touchStart(replyContainer, { touches: [{ clientX: 200, clientY: 100 }] });
+    fireEvent.touchMove(replyContainer, { touches: [{ clientX: 140, clientY: 104 }] });
+    fireEvent.touchEnd(replyContainer);
+
+    // Quoting banner in subthread should appear
+    await waitFor(() => {
+      expect(screen.getByText(/Trả lời Hương CC:/)).toBeTruthy();
+    });
+  });
+
+  it('supports swiping to quote on parent message inside subthread', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Shop Operations')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('Shop Operations'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/câu trả lời trong luồng/i)).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText(/câu trả lời trong luồng/i));
+
+    await waitFor(() => {
+      expect(screen.getByText('Chào cả nhà, hôm nay lịch dặm mi kín chỗ rồi nha!')).toBeTruthy();
+    });
+
+    const parentEl = screen.getByText('Chào cả nhà, hôm nay lịch dặm mi kín chỗ rồi nha!');
+    const parentContainer = parentEl.closest('.relative') as HTMLElement;
+    expect(parentContainer).toBeTruthy();
+
+    // Swipe right on parent card (startX: 50, moveX: 110, deltaX = 60 >= 35)
+    fireEvent.touchStart(parentContainer, { touches: [{ clientX: 50, clientY: 100 }] });
+    fireEvent.touchMove(parentContainer, { touches: [{ clientX: 110, clientY: 104 }] });
+    fireEvent.touchEnd(parentContainer);
+
+    // Quoting banner in subthread should appear
+    await waitFor(() => {
+      expect(screen.getByText(/Trả lời Chuyên Viên Mai:/)).toBeTruthy();
+    });
+  });
 });

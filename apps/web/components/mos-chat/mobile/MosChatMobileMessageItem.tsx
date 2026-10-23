@@ -35,16 +35,23 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
   // Touch Gesture: Swipe to reply
   const touchStartXRef = useRef<number>(0);
   const touchStartYRef = useRef<number>(0);
+  const swipeOffsetRef = useRef<number>(0);
+  const isSwipingRef = useRef<boolean>(false);
+  const isScrollingRef = useRef<boolean>(false);
   const [swipeOffset, setSwipeOffset] = useState<number>(0);
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastTapRef = useRef<number>(0);
   const [showHeartFly, setShowHeartFly] = useState<boolean>(false);
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (!e.touches || e.touches.length === 0) return;
     touchStartXRef.current = e.touches[0].clientX;
     touchStartYRef.current = e.touches[0].clientY;
+    swipeOffsetRef.current = 0;
+    isSwipingRef.current = false;
+    isScrollingRef.current = false;
 
-    // Start long-press timer for context menu
+    // Start long-press timer for context menu (450ms)
     longPressTimerRef.current = setTimeout(() => {
       if (typeof window !== 'undefined' && 'vibrate' in navigator) {
         navigator.vibrate?.(25);
@@ -54,28 +61,46 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    const deltaX = e.touches[0].clientX - touchStartXRef.current;
-    const deltaY = e.touches[0].clientY - touchStartYRef.current;
+    if (!e.touches || e.touches.length === 0) return;
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const deltaX = currentX - touchStartXRef.current;
+    const deltaY = currentY - touchStartYRef.current;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
 
-    // If moving vertically
-    if (Math.abs(deltaY) > 10 || deltaX < 0) {
+    if (isScrollingRef.current) return;
+
+    if (!isSwipingRef.current) {
+      if (absY > 7 && absY > absX) {
+        isScrollingRef.current = true;
+        if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
+        }
+        return;
+      }
+      if (absX > 7 && absX > absY) {
+        isSwipingRef.current = true;
+        if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
+        }
+      }
+    }
+
+    if (isSwipingRef.current) {
       if (longPressTimerRef.current) {
         clearTimeout(longPressTimerRef.current);
         longPressTimerRef.current = null;
       }
-      setSwipeOffset(0);
-      return;
-    }
 
-    // Cancel long press when swiping horizontally
-    if (deltaX > 15 && longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
+      const direction = deltaX > 0 ? 1 : -1;
+      const clampedDist = Math.min(absX, 90);
+      const damped = direction * (clampedDist * 0.85);
 
-    // Swipe right to reply threshold
-    if (deltaX > 0 && deltaX < 80) {
-      setSwipeOffset(deltaX);
+      swipeOffsetRef.current = damped;
+      setSwipeOffset(damped);
     }
   };
 
@@ -85,23 +110,30 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
       longPressTimerRef.current = null;
     }
 
-    if (swipeOffset >= 45) {
+    const currentOffset = swipeOffsetRef.current;
+    if (Math.abs(currentOffset) >= 35) {
       if (typeof window !== 'undefined' && 'vibrate' in navigator) {
         navigator.vibrate?.(15);
       }
       setReplyingToMessage(message);
     }
-    setSwipeOffset(0);
 
-    // Double-tap to heart
-    const now = Date.now();
-    if (now - lastTapRef.current < 280) {
-      reactToMessage(message.id, '❤️');
-      setShowHeartFly(true);
-      setTimeout(() => setShowHeartFly(false), 900);
-      lastTapRef.current = 0;
-    } else {
-      lastTapRef.current = now;
+    swipeOffsetRef.current = 0;
+    setSwipeOffset(0);
+    isSwipingRef.current = false;
+    isScrollingRef.current = false;
+
+    // Double-tap to heart (only when not performing a swipe)
+    if (Math.abs(currentOffset) < 10) {
+      const now = Date.now();
+      if (now - lastTapRef.current < 280) {
+        reactToMessage(message.id, '❤️');
+        setShowHeartFly(true);
+        setTimeout(() => setShowHeartFly(false), 900);
+        lastTapRef.current = 0;
+      } else {
+        lastTapRef.current = now;
+      }
     }
   };
 
@@ -122,15 +154,32 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
       onTouchEnd={handleTouchEnd}
       style={{
         transform: `translateX(${swipeOffset}px)`,
-        transition: swipeOffset === 0 ? 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
+        transition: swipeOffset === 0 ? 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
+        touchAction: 'pan-y',
       }}
       className={`relative flex flex-col my-1 select-none ${isMe ? 'items-end' : 'items-start'}`}
     >
-      {/* Swipe Reply Indicator */}
-      {swipeOffset > 15 && (
+      {/* Swipe Right Indicator */}
+      {swipeOffset > 10 && (
         <div
-          style={{ opacity: Math.min(1, swipeOffset / 45) }}
-          className="absolute -left-9 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center text-slate-950 shadow-md"
+          style={{
+            opacity: Math.min(1, swipeOffset / 35),
+            transform: `scale(${Math.min(1, 0.5 + swipeOffset / 70)}) translateY(-50%)`,
+          }}
+          className="absolute left-2 top-1/2 w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-slate-950 shadow-md z-30 pointer-events-none"
+        >
+          <MessageSquareReply className="w-4 h-4" />
+        </div>
+      )}
+
+      {/* Swipe Left Indicator */}
+      {swipeOffset < -10 && (
+        <div
+          style={{
+            opacity: Math.min(1, Math.abs(swipeOffset) / 35),
+            transform: `scale(${Math.min(1, 0.5 + Math.abs(swipeOffset) / 70)}) translateY(-50%)`,
+          }}
+          className="absolute right-2 top-1/2 w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-slate-950 shadow-md z-30 pointer-events-none"
         >
           <MessageSquareReply className="w-4 h-4" />
         </div>

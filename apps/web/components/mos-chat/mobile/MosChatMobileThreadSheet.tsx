@@ -30,17 +30,23 @@ export const MosChatMobileThreadSheet: React.FC = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Parent Message Heart Animation & Double-tap
+  // Parent Message Swipe & Double-tap
   const lastTapParentRef = useRef<number>(0);
   const [showHeartFlyParent, setShowHeartFlyParent] = useState<boolean>(false);
+  const [parentSwipeOffset, setParentSwipeOffset] = useState<number>(0);
+  const parentSwipeOffsetRef = useRef<number>(0);
+  const parentTouchStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const isParentSwipingRef = useRef<boolean>(false);
+  const isParentScrollingRef = useRef<boolean>(false);
 
-  // Replies Heart Animation & Double-tap
+  // Replies Swipe & Double-tap
   const lastTapReplyRef = useRef<Record<string, number>>({});
   const [showHeartFlyReplyId, setShowHeartFlyReplyId] = useState<string | null>(null);
-
-  // Swipe-to-quote on replies
   const [swipeOffsetMap, setSwipeOffsetMap] = useState<Record<string, number>>({});
+  const replySwipeOffsetRef = useRef<Record<string, number>>({});
   const touchStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const isReplySwipingRef = useRef<Record<string, boolean>>({});
+  const isReplyScrollingRef = useRef<Record<string, boolean>>({});
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Action sheet for long-pressed reply
@@ -48,6 +54,13 @@ export const MosChatMobileThreadSheet: React.FC = () => {
 
   // Replying quote inside thread
   const [replyingToReply, setReplyingToReply] = useState<MosChatThreadReply | null>(null);
+
+  // Auto focus textarea when quoting in thread
+  useEffect(() => {
+    if (replyingToReply) {
+      textareaRef.current?.focus();
+    }
+  }, [replyingToReply]);
 
   // Image attachments
   const [attachedImages, setAttachedImages] = useState<MosChatImageAttachment[]>([]);
@@ -129,29 +142,98 @@ export const MosChatMobileThreadSheet: React.FC = () => {
     }
   };
 
-  // Double-tap on Parent Message
+  // Swipe & Double-tap on Parent Message
+  const handleTouchStartParent = (e: React.TouchEvent) => {
+    if (!e.touches || e.touches.length === 0) return;
+    parentTouchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    };
+    parentSwipeOffsetRef.current = 0;
+    isParentSwipingRef.current = false;
+    isParentScrollingRef.current = false;
+  };
+
+  const handleTouchMoveParent = (e: React.TouchEvent) => {
+    if (!e.touches || e.touches.length === 0) return;
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const deltaX = currentX - parentTouchStartRef.current.x;
+    const deltaY = currentY - parentTouchStartRef.current.y;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+
+    if (isParentScrollingRef.current) return;
+
+    if (!isParentSwipingRef.current) {
+      if (absY > 7 && absY > absX) {
+        isParentScrollingRef.current = true;
+        return;
+      }
+      if (absX > 7 && absX > absY) {
+        isParentSwipingRef.current = true;
+      }
+    }
+
+    if (isParentSwipingRef.current) {
+      const direction = deltaX > 0 ? 1 : -1;
+      const clampedDist = Math.min(absX, 90);
+      const damped = direction * (clampedDist * 0.85);
+
+      parentSwipeOffsetRef.current = damped;
+      setParentSwipeOffset(damped);
+    }
+  };
+
   const handleTouchEndParent = () => {
     if (!activeThreadMsg) return;
-    const now = Date.now();
-    if (now - lastTapParentRef.current < 280) {
+
+    const currentOffset = parentSwipeOffsetRef.current;
+    if (Math.abs(currentOffset) >= 35) {
       if (typeof window !== 'undefined' && 'vibrate' in navigator) {
-        navigator.vibrate?.(10);
+        navigator.vibrate?.(15);
       }
-      reactToMessage(activeThreadMsg.id, '❤️');
-      setShowHeartFlyParent(true);
-      setTimeout(() => setShowHeartFlyParent(false), 900);
-      lastTapParentRef.current = 0;
-    } else {
-      lastTapParentRef.current = now;
+      setReplyingToReply({
+        id: activeThreadMsg.id,
+        senderId: activeThreadMsg.senderId,
+        senderName: activeThreadMsg.senderName,
+        text: activeThreadMsg.text,
+        createdAt: activeThreadMsg.createdAt,
+      } as MosChatThreadReply);
+    }
+
+    parentSwipeOffsetRef.current = 0;
+    setParentSwipeOffset(0);
+    isParentSwipingRef.current = false;
+    isParentScrollingRef.current = false;
+
+    // Double-tap to heart (only when not performing a swipe)
+    if (Math.abs(currentOffset) < 10) {
+      const now = Date.now();
+      if (now - lastTapParentRef.current < 280) {
+        if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+          navigator.vibrate?.(10);
+        }
+        reactToMessage(activeThreadMsg.id, '❤️');
+        setShowHeartFlyParent(true);
+        setTimeout(() => setShowHeartFlyParent(false), 900);
+        lastTapParentRef.current = 0;
+      } else {
+        lastTapParentRef.current = now;
+      }
     }
   };
 
   // Touch handlers for Replies
   const handleTouchStartReply = (e: React.TouchEvent, reply: MosChatThreadReply) => {
+    if (!e.touches || e.touches.length === 0) return;
     touchStartPosRef.current = {
       x: e.touches[0].clientX,
       y: e.touches[0].clientY,
     };
+    replySwipeOffsetRef.current[reply.id] = 0;
+    isReplySwipingRef.current[reply.id] = false;
+    isReplyScrollingRef.current[reply.id] = false;
 
     if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
     longPressTimerRef.current = setTimeout(() => {
@@ -159,22 +241,50 @@ export const MosChatMobileThreadSheet: React.FC = () => {
         navigator.vibrate?.(20);
       }
       setActionSheetReply(reply);
-    }, 500);
+    }, 450);
   };
 
   const handleTouchMoveReply = (e: React.TouchEvent, replyId: string) => {
-    const deltaX = e.touches[0].clientX - touchStartPosRef.current.x;
-    const deltaY = Math.abs(e.touches[0].clientY - touchStartPosRef.current.y);
+    if (!e.touches || e.touches.length === 0) return;
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const deltaX = currentX - touchStartPosRef.current.x;
+    const deltaY = currentY - touchStartPosRef.current.y;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
 
-    if (deltaY > 10 || (deltaX > 15 && longPressTimerRef.current)) {
+    if (isReplyScrollingRef.current[replyId]) return;
+
+    if (!isReplySwipingRef.current[replyId]) {
+      if (absY > 7 && absY > absX) {
+        isReplyScrollingRef.current[replyId] = true;
+        if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
+        }
+        return;
+      }
+      if (absX > 7 && absX > absY) {
+        isReplySwipingRef.current[replyId] = true;
+        if (longPressTimerRef.current) {
+          clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
+        }
+      }
+    }
+
+    if (isReplySwipingRef.current[replyId]) {
       if (longPressTimerRef.current) {
         clearTimeout(longPressTimerRef.current);
         longPressTimerRef.current = null;
       }
-    }
 
-    if (deltaX > 0 && deltaX < 80) {
-      setSwipeOffsetMap((prev) => ({ ...prev, [replyId]: deltaX }));
+      const direction = deltaX > 0 ? 1 : -1;
+      const clampedDist = Math.min(absX, 90);
+      const damped = direction * (clampedDist * 0.85);
+
+      replySwipeOffsetRef.current[replyId] = damped;
+      setSwipeOffsetMap((prev) => ({ ...prev, [replyId]: damped }));
     }
   };
 
@@ -185,27 +295,34 @@ export const MosChatMobileThreadSheet: React.FC = () => {
       longPressTimerRef.current = null;
     }
 
-    const offset = swipeOffsetMap[reply.id] || 0;
-    if (offset >= 45) {
+    const currentOffset = replySwipeOffsetRef.current[reply.id] || 0;
+    if (Math.abs(currentOffset) >= 35) {
       if (typeof window !== 'undefined' && 'vibrate' in navigator) {
         navigator.vibrate?.(15);
       }
       setReplyingToReply(reply);
     }
-    setSwipeOffsetMap((prev) => ({ ...prev, [reply.id]: 0 }));
 
-    const now = Date.now();
-    const lastTap = lastTapReplyRef.current[reply.id] || 0;
-    if (now - lastTap < 280) {
-      if (typeof window !== 'undefined' && 'vibrate' in navigator) {
-        navigator.vibrate?.(10);
+    replySwipeOffsetRef.current[reply.id] = 0;
+    setSwipeOffsetMap((prev) => ({ ...prev, [reply.id]: 0 }));
+    isReplySwipingRef.current[reply.id] = false;
+    isReplyScrollingRef.current[reply.id] = false;
+
+    // Double-tap to heart (only when not performing a swipe)
+    if (Math.abs(currentOffset) < 10) {
+      const now = Date.now();
+      const lastTap = lastTapReplyRef.current[reply.id] || 0;
+      if (now - lastTap < 280) {
+        if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+          navigator.vibrate?.(10);
+        }
+        reactToMessage(activeThreadMsg.id, '❤️', reply.id);
+        setShowHeartFlyReplyId(reply.id);
+        setTimeout(() => setShowHeartFlyReplyId(null), 900);
+        lastTapReplyRef.current[reply.id] = 0;
+      } else {
+        lastTapReplyRef.current[reply.id] = now;
       }
-      reactToMessage(activeThreadMsg.id, '❤️', reply.id);
-      setShowHeartFlyReplyId(reply.id);
-      setTimeout(() => setShowHeartFlyReplyId(null), 900);
-      lastTapReplyRef.current[reply.id] = 0;
-    } else {
-      lastTapReplyRef.current[reply.id] = now;
     }
   };
 
@@ -245,11 +362,44 @@ export const MosChatMobileThreadSheet: React.FC = () => {
 
       {/* Scrollable Replies Feed */}
       <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3">
-        {/* Parent Message Highlight Card with Double-Tap to Heart */}
+        {/* Parent Message Highlight Card with Swipe to Quote & Double-Tap to Heart */}
         <div
+          onTouchStart={handleTouchStartParent}
+          onTouchMove={handleTouchMoveParent}
           onTouchEnd={handleTouchEndParent}
-          className="relative bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-sm active:scale-[0.99] transition-transform cursor-pointer"
+          style={{
+            transform: `translateX(${parentSwipeOffset}px)`,
+            transition: parentSwipeOffset === 0 ? 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
+            touchAction: 'pan-y',
+          }}
+          className="relative bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-sm active:scale-[0.99] transition-transform cursor-pointer select-none"
         >
+          {/* Swipe Right Indicator */}
+          {parentSwipeOffset > 10 && (
+            <div
+              style={{
+                opacity: Math.min(1, parentSwipeOffset / 35),
+                transform: `scale(${Math.min(1, 0.5 + parentSwipeOffset / 70)}) translateY(-50%)`,
+              }}
+              className="absolute left-2 top-1/2 w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white shadow-md z-30 pointer-events-none"
+            >
+              <MessageSquareReply className="w-4 h-4" />
+            </div>
+          )}
+
+          {/* Swipe Left Indicator */}
+          {parentSwipeOffset < -10 && (
+            <div
+              style={{
+                opacity: Math.min(1, Math.abs(parentSwipeOffset) / 35),
+                transform: `scale(${Math.min(1, 0.5 + Math.abs(parentSwipeOffset) / 70)}) translateY(-50%)`,
+              }}
+              className="absolute right-2 top-1/2 w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white shadow-md z-30 pointer-events-none"
+            >
+              <MessageSquareReply className="w-4 h-4" />
+            </div>
+          )}
+
           {/* Floating Heart Animation for Parent Message */}
           {showHeartFlyParent && (
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50 animate-bounce">
@@ -319,6 +469,8 @@ export const MosChatMobileThreadSheet: React.FC = () => {
           const swipeOffset = swipeOffsetMap[reply.id] || 0;
           const showHeartFly = showHeartFlyReplyId === reply.id;
 
+          const replyOffset = swipeOffsetMap[reply.id] || 0;
+
           return (
             <div
               key={reply.id}
@@ -326,16 +478,33 @@ export const MosChatMobileThreadSheet: React.FC = () => {
               onTouchMove={(e) => handleTouchMoveReply(e, reply.id)}
               onTouchEnd={() => handleTouchEndReply(reply)}
               style={{
-                transform: `translateX(${swipeOffset}px)`,
-                transition: swipeOffset === 0 ? 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
+                transform: `translateX(${replyOffset}px)`,
+                transition: replyOffset === 0 ? 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
+                touchAction: 'pan-y',
               }}
               className={`relative flex flex-col my-1 select-none ${isMe ? 'items-end' : 'items-start'}`}
             >
-              {/* Swipe Reply Indicator */}
-              {swipeOffset > 15 && (
+              {/* Swipe Right Indicator */}
+              {replyOffset > 10 && (
                 <div
-                  style={{ opacity: Math.min(1, swipeOffset / 45) }}
-                  className="absolute -left-9 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center text-slate-950 shadow-md"
+                  style={{
+                    opacity: Math.min(1, replyOffset / 35),
+                    transform: `scale(${Math.min(1, 0.5 + replyOffset / 70)}) translateY(-50%)`,
+                  }}
+                  className="absolute left-2 top-1/2 w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white shadow-md z-30 pointer-events-none"
+                >
+                  <MessageSquareReply className="w-4 h-4" />
+                </div>
+              )}
+
+              {/* Swipe Left Indicator */}
+              {replyOffset < -10 && (
+                <div
+                  style={{
+                    opacity: Math.min(1, Math.abs(replyOffset) / 35),
+                    transform: `scale(${Math.min(1, 0.5 + Math.abs(replyOffset) / 70)}) translateY(-50%)`,
+                  }}
+                  className="absolute right-2 top-1/2 w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white shadow-md z-30 pointer-events-none"
                 >
                   <MessageSquareReply className="w-4 h-4" />
                 </div>
@@ -425,8 +594,10 @@ export const MosChatMobileThreadSheet: React.FC = () => {
           <div className="flex items-center justify-between bg-slate-800/90 border border-amber-500/30 rounded-xl px-3 py-1.5 mb-2 text-xs">
             <div className="flex items-center gap-2 truncate">
               <MessageSquareReply className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="text-amber-300 font-semibold truncate">@{replyingToReply.senderName}:</span>
-              <span className="text-slate-300 truncate">{replyingToReply.text}</span>
+              <div className="truncate">
+                <span className="font-semibold text-amber-300">Trả lời {replyingToReply.senderName}:</span>{' '}
+                <span className="text-slate-300 truncate">{replyingToReply.text}</span>
+              </div>
             </div>
             <button
               type="button"
