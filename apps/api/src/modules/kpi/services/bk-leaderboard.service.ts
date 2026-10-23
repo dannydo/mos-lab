@@ -371,8 +371,12 @@ export class BkLeaderboardService {
       LEFT JOIN report_order ro ON ro.order_id = o.id
       WHERE up.user_id IN (${activeTelesalesIds.join(',')})
         AND (o.id IS NULL OR (
-          ((ro.actual_booking_date_start >= '${startPart} 00:00:00' AND ro.actual_booking_date_start <= '${endPart} 23:59:59')
-           OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${startPart} 00:00:00' AND o.booking_date_start <= '${endPart} 23:59:59'))
+          o.booking_date_start >= '${startPart} 00:00:00' - INTERVAL 2 DAY
+          AND o.booking_date_start <= '${endPart} 23:59:59' + INTERVAL 2 DAY
+          AND (
+            (ro.actual_booking_date_start >= '${startPart} 00:00:00' AND ro.actual_booking_date_start <= '${endPart} 23:59:59')
+            OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${startPart} 00:00:00' AND o.booking_date_start <= '${endPart} 23:59:59')
+          )
           ${storeFilter}
         ))
       GROUP BY up.user_id, up.full_name, up.avatar, cs.client_store_key

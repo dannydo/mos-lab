@@ -1666,7 +1666,7 @@ export function moveChatThreadItemInMemory(
   throw new Error('Chế độ di chuyển luồng không hợp lệ.');
 }
 
-async function loadChatState(fastify: FastifyInstance): Promise<{
+export async function loadChatState(fastify: FastifyInstance): Promise<{
   conversations: MosChatConversation[];
   tasks: MosChatTaskItem[];
   accessConfig: MosChatAccessConfig;
