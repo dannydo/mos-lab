@@ -317,6 +317,132 @@ export async function readOrCompressImagePayload(
   }
 }
 
+const COMMON_VIETNAMESE_SURNAMES = new Set([
+  'nguyen',
+  'tran',
+  'le',
+  'pham',
+  'hoang',
+  'huynh',
+  'phan',
+  'vu',
+  'vo',
+  'dang',
+  'bui',
+  'do',
+  'ho',
+  'ngo',
+  'duong',
+  'ly',
+]);
+
+/**
+ * Trích xuất danh sách nhân viên thực sự được nhắc tên (@mention) trong đoạn văn bản.
+ * Thuật toán khớp dài nhất (longest-match first) để ưu tiên tên đầy đủ (@Nguyễn Quang Khải)
+ * trước khi xét tên viết tắt hay người khác có cùng họ.
+ */
+export function extractMentionedStaff<T extends { id?: number | string; displayName?: string; username?: string }>(
+  text: string,
+  staffDirectory: T[],
+  options?: { nicknames?: Record<string, string> }
+): T[] {
+  if (!text || !Array.isArray(staffDirectory) || staffDirectory.length === 0) return [];
+
+  // Tìm tất cả các vị trí @ trong chuỗi mà đứng đầu câu hoặc sau khoảng trắng
+  const atIndices: number[] = [];
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === '@' && (i === 0 || /\s/.test(text[i - 1]))) {
+      atIndices.push(i);
+    }
+  }
+
+  const matchedStaffIds = new Set<string | number>();
+  const result: T[] = [];
+
+  for (let idx = 0; idx < atIndices.length; idx++) {
+    const atPos = atIndices[idx];
+    const nextAtPos = idx + 1 < atIndices.length ? atIndices[idx + 1] : text.length;
+    const windowText = text.slice(atPos + 1, nextAtPos).trim();
+    if (!windowText) continue;
+
+    if (/^(all|mọi người|moi nguoi|mai)\b/i.test(windowText)) {
+      continue;
+    }
+
+    let bestMatch: T | null = null;
+    let longestMatchLen = 0;
+
+    for (const s of staffDirectory) {
+      if (!s || s.id === undefined || s.id === null) continue;
+      const sId = String(s.id);
+      const candidatesToTest: string[] = [];
+
+      // 1. Biệt danh trong Không gian
+      if (options?.nicknames?.[sId]) {
+        candidatesToTest.push(options.nicknames[sId]);
+      }
+
+      // 2. Họ và tên đầy đủ
+      if (s.displayName) {
+        candidatesToTest.push(s.displayName);
+      }
+
+      // 3. Username / Email handle
+      if (s.username) {
+        candidatesToTest.push(s.username);
+        const handle = s.username.split('@')[0];
+        if (handle && handle !== s.username) {
+          candidatesToTest.push(handle);
+        }
+      }
+
+      // 4. Tên gọi riêng (từ cuối, hoặc hai từ cuối, hoặc first name tiếng Anh nếu không phải họ phổ biến)
+      if (s.displayName) {
+        const parts = s.displayName.trim().split(/\s+/).filter(Boolean);
+        if (parts.length > 1) {
+          const lastPart = parts[parts.length - 1];
+          const lastNorm = removeVietnameseTones(lastPart.toLowerCase());
+          if (!COMMON_VIETNAMESE_SURNAMES.has(lastNorm)) {
+            candidatesToTest.push(lastPart);
+          }
+          if (parts.length >= 3) {
+            candidatesToTest.push(`${parts[parts.length - 2]} ${parts[parts.length - 1]}`);
+          }
+          const firstPart = parts[0];
+          const firstNorm = removeVietnameseTones(firstPart.toLowerCase());
+          if (!COMMON_VIETNAMESE_SURNAMES.has(firstNorm) && firstPart.length >= 2) {
+            candidatesToTest.push(firstPart);
+          }
+        }
+      }
+
+      for (const cand of candidatesToTest) {
+        const cTrimmed = cand.trim();
+        if (!cTrimmed || cTrimmed.length < 2) continue;
+
+        const escaped = cTrimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const exactRegex = new RegExp(`^${escaped}(?:\\b|[\\s.,!?;:)\\]]|$)`, 'i');
+        const normEscaped = removeVietnameseTones(escaped);
+        const normRegex = new RegExp(`^${normEscaped}(?:\\b|[\\s.,!?;:)\\]]|$)`, 'i');
+
+        if (exactRegex.test(windowText) || normRegex.test(removeVietnameseTones(windowText))) {
+          if (cTrimmed.length > longestMatchLen) {
+            longestMatchLen = cTrimmed.length;
+            bestMatch = s;
+          }
+        }
+      }
+    }
+
+    if (bestMatch && !matchedStaffIds.has(bestMatch.id!)) {
+      matchedStaffIds.add(bestMatch.id!);
+      result.push(bestMatch);
+    }
+  }
+
+  return result;
+}
+
 /**
  * Kiểm tra xem một đoạn tin nhắn có đang tag (mention) trực tiếp người dùng hiện tại hay không.
  * Hỗ trợ: @displayName, @username, @nickname trong Space, @All, @mọi người,
@@ -352,7 +478,9 @@ export function isUserMentionedInText(
   }
 
   // 3. Kiểm tra username (hoặc phần trước @ nếu username là email)
-  const username = String(user?.username || '').trim().toLowerCase();
+  const username = String(user?.username || '')
+    .trim()
+    .toLowerCase();
   if (username) {
     const userHandle = username.split('@')[0];
     if (rawTextLower.includes(`@${username}`) || (userHandle && rawTextLower.includes(`@${userHandle}`))) {
@@ -361,20 +489,59 @@ export function isUserMentionedInText(
   }
 
   // 4. Kiểm tra displayName đầy đủ hoặc tên gọi phổ biến
-  const displayName = String(user?.displayName || '').trim().toLowerCase();
+  const displayName = String(user?.displayName || '')
+    .trim()
+    .toLowerCase();
   if (displayName) {
     const dNameNorm = removeVietnameseTones(displayName);
-    if (rawTextLower.includes(`@${displayName}`) || textNorm.includes(`@${dNameNorm}`)) {
+    const escapedFull = displayName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escapedFullNorm = dNameNorm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // Khớp tên đầy đủ kèm ranh giới từ/dấu câu
+    const regexFullExact = new RegExp(`(?:^|\\s)@\\s*${escapedFull}(?:\\b|[\\s.,!?;:)\\]]|$)`, 'i');
+    const regexFullNorm = new RegExp(`(?:^|\\s)@\\s*${escapedFullNorm}(?:\\b|[\\s.,!?;:)\\]]|$)`, 'i');
+    if (regexFullExact.test(rawTextLower) || regexFullNorm.test(textNorm)) {
       return true;
     }
-    // Hỗ trợ tag từng từ riêng lẻ nếu tên gồm nhiều từ (VD: "@Danny" cho "Danny Do", "@Ti" cho "Đẫm Ti")
+
+    // Hỗ trợ tag tên riêng (given name / first name) khi tên có nhiều từ (VD: "@Danny" cho "Danny Do", "@Ti" cho "Đẫm Ti", "@Khải" cho "Nguyễn Quang Khải")
+    // TUYỆT ĐỐI KHÔNG khớp họ phổ biến ("Nguyễn", "Trần", "Lê"...) vì sẽ gây dương tính giả cho tất cả đồng nghiệp cùng họ!
     const parts = displayName.split(/\s+/).filter((p) => p.length >= 2);
-    for (const part of parts) {
-      const partNorm = removeVietnameseTones(part);
-      const regexExact = new RegExp(`(?:^|\\s)@\\s*${part.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}(?:\\b|\\s|$)`, 'i');
-      const regexNorm = new RegExp(`(?:^|\\s)@\\s*${partNorm.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}(?:\\b|\\s|$)`, 'i');
-      if (regexExact.test(rawTextLower) || regexNorm.test(textNorm)) {
-        return true;
+    if (parts.length > 1) {
+      const candidates: string[] = [];
+
+      // 1. Tên gọi chính (từ cuối cùng: "Khải", "Ti", "Do") NẾU KHÔNG PHẢI họ tiếng Việt phổ biến
+      const lastPart = parts[parts.length - 1];
+      const lastNorm = removeVietnameseTones(lastPart.toLowerCase());
+      if (!COMMON_VIETNAMESE_SURNAMES.has(lastNorm)) {
+        candidates.push(lastPart);
+      }
+
+      // 2. Hai từ cuối nếu tên 3 từ trở lên (VD: "Quang Khải" trong "Nguyễn Quang Khải")
+      if (parts.length >= 3) {
+        candidates.push(`${parts[parts.length - 2]} ${parts[parts.length - 1]}`);
+      }
+
+      // 3. Tên tiếng Anh / tên gọi đầu tiên (VD: "Danny" trong "Danny Do") NẾU KHÔNG PHẢI họ tiếng Việt phổ biến
+      const firstPart = parts[0];
+      const firstNorm = removeVietnameseTones(firstPart.toLowerCase());
+      if (!COMMON_VIETNAMESE_SURNAMES.has(firstNorm)) {
+        candidates.push(firstPart);
+      }
+
+      for (const cand of candidates) {
+        const candNorm = removeVietnameseTones(cand);
+        const regexExact = new RegExp(
+          `(?:^|\\s)@\\s*${cand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\b|[\\s.,!?;:)\\]]|$)`,
+          'i'
+        );
+        const regexNorm = new RegExp(
+          `(?:^|\\s)@\\s*${candNorm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\b|[\\s.,!?;:)\\]]|$)`,
+          'i'
+        );
+        if (regexExact.test(rawTextLower) || regexNorm.test(textNorm)) {
+          return true;
+        }
       }
     }
   }

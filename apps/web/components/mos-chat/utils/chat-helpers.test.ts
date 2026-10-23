@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   isUserMentionedInText,
+  extractMentionedStaff,
   cleanTextForUrgentVoiceAnnouncement,
   buildMaiUrgentVoiceAnnouncement,
 } from './chat-helpers';
@@ -51,6 +52,56 @@ describe('mOS Chat Urgent Voice Announcement Helpers (MOS-BUG-135)', () => {
     it('always targets recipient in 1-on-1 Direct Message (DM)', () => {
       expect(isUserMentionedInText('Đơn này gấp lắm!', userDanny, { isDirectMessage: true })).toBe(true);
     });
+
+    it('does NOT falsely match other people when tagging a full name like @Nguyễn Quang Khải', () => {
+      const userQuangKhai = { id: 43, displayName: 'Nguyễn Quang Khải' };
+      const userThiHoa = { id: 99, displayName: 'Nguyễn Thị Hoa' };
+      const userVanLong = { id: 100, displayName: 'Nguyễn Văn Long' };
+      const userTamNguyen = { id: 4, displayName: 'Tâm Nguyễn' };
+
+      const text = '@Nguyễn Quang Khải hình như mOS Chat đã chạy khá ổn trên iPhone rồi nhé.';
+      expect(isUserMentionedInText(text, userQuangKhai)).toBe(true);
+      expect(isUserMentionedInText(text, userThiHoa)).toBe(false);
+      expect(isUserMentionedInText(text, userVanLong)).toBe(false);
+      expect(isUserMentionedInText(text, userTamNguyen)).toBe(false);
+    });
+
+    it('allows mentioning by given name without matching common surnames', () => {
+      const userQuangKhai = { id: 43, displayName: 'Nguyễn Quang Khải' };
+      expect(isUserMentionedInText('Alo @Khải ơi', userQuangKhai)).toBe(true);
+      expect(isUserMentionedInText('Alo @Quang Khải ơi', userQuangKhai)).toBe(true);
+    });
+  });
+
+  describe('extractMentionedStaff', () => {
+    const staffDirectory = [
+      { id: 1, displayName: 'Danny Do', username: 'danny.do@wingslashes.com' },
+      { id: 4, displayName: 'Tâm Nguyễn', username: 'tam.nguyen@wingslashes.com' },
+      { id: 43, displayName: 'Nguyễn Quang Khải', username: 'user45103@wingslashes.com' },
+      { id: 99, displayName: 'Nguyễn Thị Hoa', username: 'hoa.nguyen@wingslashes.com' },
+      { id: 105, displayName: 'Hà Booker', username: 'ha.telesale@wingslashes.com' },
+    ];
+
+    it('extracts exactly the mentioned staff without false positive surname matches', () => {
+      const text = '@Nguyễn Quang Khải hình như mOS Chat đã chạy khá ổn trên iPhone rồi nhé.';
+      const mentioned = extractMentionedStaff(text, staffDirectory);
+      expect(mentioned).toHaveLength(1);
+      expect(mentioned[0].id).toBe(43);
+      expect(mentioned[0].displayName).toBe('Nguyễn Quang Khải');
+    });
+
+    it('extracts multiple unique mentioned colleagues', () => {
+      const text = 'Chào @Danny Do và @Hà Booker nhé!';
+      const mentioned = extractMentionedStaff(text, staffDirectory);
+      expect(mentioned).toHaveLength(2);
+      expect(mentioned.map((m) => m.id)).toEqual([1, 105]);
+    });
+
+    it('ignores special tags like @All or @MAI', () => {
+      const text = '@all kiểm tra đơn hàng, @mai tóm tắt giúp';
+      const mentioned = extractMentionedStaff(text, staffDirectory);
+      expect(mentioned).toHaveLength(0);
+    });
   });
 
   describe('cleanTextForUrgentVoiceAnnouncement', () => {
@@ -81,7 +132,9 @@ describe('mOS Chat Urgent Voice Announcement Helpers (MOS-BUG-135)', () => {
         isSpace: true,
         messageText: '@Đẫm Ti 0901406091 cho anh 30K nhen',
       });
-      expect(result).toBe('Tâm Nguyễn vừa gửi tin nhắn khẩn cấp trong nhóm 4-cô-gái-hăng-hái: 0901406091 cho anh 30K nhen');
+      expect(result).toBe(
+        'Tâm Nguyễn vừa gửi tin nhắn khẩn cấp trong nhóm 4-cô-gái-hăng-hái: 0901406091 cho anh 30K nhen'
+      );
     });
 
     it('formats announcement for direct message', () => {
@@ -99,7 +152,9 @@ describe('mOS Chat Urgent Voice Announcement Helpers (MOS-BUG-135)', () => {
         messageText: '0901406091 cho anh 30K nhen',
         note: 'Khách đang đợi tại quầy',
       });
-      expect(result).toBe('Tâm Nguyễn vừa gửi tin nhắn khẩn cấp: 0901406091 cho anh 30K nhen. Ghi chú: Khách đang đợi tại quầy');
+      expect(result).toBe(
+        'Tâm Nguyễn vừa gửi tin nhắn khẩn cấp: 0901406091 cho anh 30K nhen. Ghi chú: Khách đang đợi tại quầy'
+      );
     });
   });
 });

@@ -13,7 +13,7 @@ import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
 import { apiClient } from '../../../lib/api-client';
 import type { MosChatImageAttachment, MosChatThreadReply, SafeAny } from '@mos-lab/shared';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
-import { isUserMentionedInText } from '../utils/chat-helpers';
+import { isUserMentionedInText, extractMentionedStaff } from '../utils/chat-helpers';
 
 export const MosChatMobileThreadSheet: React.FC = () => {
   const {
@@ -118,10 +118,11 @@ export const MosChatMobileThreadSheet: React.FC = () => {
         : [];
       const memberSet = new Set<number>([...memberIds, ...membersList]);
 
-      const nonMemberMentions = (staffDirectory || []).filter((s) => {
-        if (memberSet.has(s.id)) return false;
-        return isUserMentionedInText(trimmed, s);
+      const mentionedStaff = extractMentionedStaff(trimmed, staffDirectory || [], {
+        nicknames: activeConversation.memberNicknames,
       });
+
+      const nonMemberMentions = mentionedStaff.filter((s) => !memberSet.has(Number(s.id)));
 
       if (nonMemberMentions.length > 0) {
         const names = nonMemberMentions.map((s) => s.displayName || s.username).join(', ');
