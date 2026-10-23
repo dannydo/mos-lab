@@ -1204,6 +1204,76 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
       const cashTipVnd = Math.round(Number(tipRows[0]?.totalTip || 0));
       const rateVal = dailyBonusVnd > 0 ? (rawXoayVnd / dailyBonusVnd).toFixed(2) : '0';
 
+      const bonusSalesDayComboRewards: Record<string, SafeAny> = {};
+      dailyRows.forEach((r) => {
+        const dateKey = String(r.date);
+        const totalSales = Number(r.total_sales || 0);
+        const rate = Number(r.commission_rate_percent || 0);
+        const bonus = Number(r.daily_bonus || 0);
+        const pos = rate >= 2.0 ? 3 : rate >= 1.0 ? 2 : 1;
+        bonusSalesDayComboRewards[dateKey] = {
+          position: pos,
+          total_combo_sold_amount: totalSales,
+          reward_percentage: rate,
+          total_reward_amount: bonus,
+        };
+      });
+
+      const bonusSalesDayCombo = {
+        position: 1,
+        total_reward_amount: dailyBonusVnd,
+        reward: bonusSalesDayComboRewards,
+      };
+
+      // Best-effort sync to legacy staff_payroll.tracking_key if a record exists for this month (MOS-BUG-137)
+      try {
+        const monthPart = startPart.substring(0, 7);
+        const existingPayroll = await fastify.prisma.legacy.$queryRawUnsafe<
+          Array<{ id: number; tracking_key: string | null }>
+        >(
+          `SELECT id, tracking_key
+           FROM staff_payroll
+           WHERE user_id = ?
+             AND (date LIKE ? OR date_completed LIKE ?)
+           ORDER BY date DESC
+           LIMIT 1`,
+          targetStaffId,
+          `${monthPart}%`,
+          `${monthPart}%`
+        );
+
+        if (existingPayroll.length > 0 && existingPayroll[0].tracking_key) {
+          try {
+            const tk = JSON.parse(existingPayroll[0].tracking_key);
+            if (tk && Array.isArray(tk.level) && tk.level.length > 0) {
+              for (const lvl of tk.level) {
+                lvl.BonusSalesDayCombo = {
+                  ...(lvl.BonusSalesDayCombo || {}),
+                  position: 1,
+                  total_reward_amount: dailyBonusVnd,
+                  reward: bonusSalesDayComboRewards,
+                };
+                if (lvl.HoldingBonusRelease) {
+                  lvl.HoldingBonusRelease.combo_bonus_amount = dailyBonusVnd;
+                  lvl.HoldingBonusRelease.servicing_combo_bonus_rate = Number(rateVal);
+                }
+              }
+              tk.total_bonus_amount = dailyBonusVnd;
+              const updatedTkJson = JSON.stringify(tk);
+              await fastify.prisma.legacy.$executeRawUnsafe(
+                `UPDATE staff_payroll SET tracking_key = ? WHERE id = ?`,
+                updatedTkJson,
+                existingPayroll[0].id
+              );
+            }
+          } catch (parseErr) {
+            fastify.log.warn(parseErr, 'Failed to parse/update existing staff_payroll tracking_key');
+          }
+        }
+      } catch (dbSyncErr) {
+        fastify.log.warn(dbSyncErr, 'Failed to sync CC bonus to staff_payroll tracking_key');
+      }
+
       return reply.send({
         status: 'success',
         data: {
@@ -1232,6 +1302,7 @@ export async function registerCcPaystubRoutes(fastify: FastifyInstance) {
             tip: {
               '2': { total_tip_amount: String(cashTipVnd) },
             },
+            bonus_sales_day_combo: bonusSalesDayCombo,
           },
         },
       });

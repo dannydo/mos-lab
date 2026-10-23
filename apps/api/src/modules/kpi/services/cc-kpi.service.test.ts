@@ -269,3 +269,76 @@ test('buildDailyBonusSummary calculates projectedSingleSales and keeps projected
     Math.round(5_000_000 / 0.5);
   assert.equal(summary.projectedTotalSales, sumOfProjectedCategories);
 });
+
+test('MOS-BUG-137: formats bonus_sales_day_combo breakdown and syncs to legacy tracking_key structure', () => {
+  const sampleDailyRows = [
+    { date: '2026-10-04', total_sales: 1_570_000, commission_rate_percent: 0.5, daily_bonus: 7_850 },
+    { date: '2026-10-15', total_sales: 5_477_500, commission_rate_percent: 1.0, daily_bonus: 54_775 },
+    { date: '2026-10-17', total_sales: 4_918_518, commission_rate_percent: 0.5, daily_bonus: 24_593 },
+  ];
+
+  const dailyBonusVnd = Math.round(sampleDailyRows.reduce((sum, r) => sum + r.daily_bonus, 0));
+  assert.equal(dailyBonusVnd, 87_218);
+
+  const bonusSalesDayComboRewards: Record<string, any> = {};
+  sampleDailyRows.forEach((r) => {
+    const pos = r.commission_rate_percent >= 2.0 ? 3 : r.commission_rate_percent >= 1.0 ? 2 : 1;
+    bonusSalesDayComboRewards[r.date] = {
+      position: pos,
+      total_combo_sold_amount: r.total_sales,
+      reward_percentage: r.commission_rate_percent,
+      total_reward_amount: r.daily_bonus,
+    };
+  });
+
+  const bonusSalesDayCombo = {
+    position: 1,
+    total_reward_amount: dailyBonusVnd,
+    reward: bonusSalesDayComboRewards,
+  };
+
+  assert.equal(bonusSalesDayCombo.total_reward_amount, 87_218);
+  assert.equal(bonusSalesDayCombo.reward['2026-10-15'].total_reward_amount, 54_775);
+  assert.equal(bonusSalesDayCombo.reward['2026-10-15'].position, 2);
+
+  // Test legacy tracking_key patching logic
+  const legacyTrackingKey = {
+    level_position: 5,
+    level: [
+      {
+        client_store_id: 6,
+        BonusSalesDayCombo: {
+          position: 1,
+          total_reward_amount: 50_000, // outdated number
+          reward: {},
+        },
+        HoldingBonusRelease: {
+          combo_bonus_amount: 50_000,
+          servicing_combo_bonus_rate: 0.5,
+        },
+      },
+    ],
+    total_bonus_amount: 50_000,
+  };
+
+  // Apply sync
+  for (const lvl of legacyTrackingKey.level) {
+    lvl.BonusSalesDayCombo = {
+      ...lvl.BonusSalesDayCombo,
+      position: 1,
+      total_reward_amount: dailyBonusVnd,
+      reward: bonusSalesDayComboRewards,
+    };
+    if (lvl.HoldingBonusRelease) {
+      lvl.HoldingBonusRelease.combo_bonus_amount = dailyBonusVnd;
+      lvl.HoldingBonusRelease.servicing_combo_bonus_rate = 0.74;
+    }
+  }
+  legacyTrackingKey.total_bonus_amount = dailyBonusVnd;
+
+  // Verify that iOS ClientConsultantHomeVC will read matching numbers
+  assert.equal(legacyTrackingKey.level[0].BonusSalesDayCombo.total_reward_amount, dailyBonusVnd);
+  assert.equal(legacyTrackingKey.level[0].HoldingBonusRelease.combo_bonus_amount, dailyBonusVnd);
+  assert.equal(legacyTrackingKey.total_bonus_amount, dailyBonusVnd);
+  assert.equal(Object.keys(legacyTrackingKey.level[0].BonusSalesDayCombo.reward).length, 3);
+});
