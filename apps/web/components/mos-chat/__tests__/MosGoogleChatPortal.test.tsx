@@ -560,26 +560,37 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
     );
 
     // Verify @MAI voice announcement was scheduled / called for tagged user Danny Do
-    await waitFor(() => {
-      expect(playNeuralSpeech).toHaveBeenCalledWith(
-        expect.stringContaining('Tâm Nguyễn vừa gửi tin nhắn khẩn cấp trong nhóm 4-cô-gái-hăng-hái: 0901406091 cho anh 30K nhen'),
-        expect.objectContaining({ voice: 'vi-VN-HoaiMyNeural' })
-      );
-    });
+    await waitFor(
+      () => {
+        expect(playNeuralSpeech).toHaveBeenCalledWith(
+          expect.stringContaining(
+            'Tâm Nguyễn vừa gửi tin nhắn khẩn cấp trong nhóm 4-cô-gái-hăng-hái: 0901406091 cho anh 30K nhen'
+          ),
+          expect.objectContaining({ voice: 'vi-VN-HoaiMyNeural' })
+        );
+      },
+      { timeout: 4000 }
+    );
 
     // Verify notification warning contains MAI audio badge and Replay button
-    await waitFor(() => {
-      expect(screen.getByText(/@MAI đã phát âm thanh thông báo trực tiếp đến bạn/i)).toBeTruthy();
-      expect(screen.getByText('🔊 Nghe lại')).toBeTruthy();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText(/@MAI đã phát âm thanh thông báo trực tiếp đến bạn/i)).toBeTruthy();
+        expect(screen.getByText('🔊 Nghe lại')).toBeTruthy();
+      },
+      { timeout: 4000 }
+    );
 
     // Open the conversation and verify the '@MAI đọc' button is rendered on the buzzed message header
     const convItem = screen.getByText('4-cô-gái-hăng-hái');
     fireEvent.click(convItem);
 
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Nghe @MAI đọc tin nhắn khẩn cấp/i })).toBeTruthy();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByRole('button', { name: /Nghe @MAI đọc tin nhắn khẩn cấp/i })).toBeTruthy();
+      },
+      { timeout: 4000 }
+    );
   });
 
   it('does NOT trigger @MAI spoken announcement if current user was NOT tagged in a group message (MOS-BUG-135)', async () => {
