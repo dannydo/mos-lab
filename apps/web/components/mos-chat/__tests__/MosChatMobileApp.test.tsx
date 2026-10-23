@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MosChatProvider } from '../context/MosChatContext';
 import { MosChatMobileApp } from '../mobile/MosChatMobileApp';
 
@@ -474,5 +474,45 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     await waitFor(() => {
       expect(screen.getByText(/Trả lời Chuyên Viên Mai:/)).toBeTruthy();
     });
+  });
+
+  it('shows mention autocomplete on iPhone when typing @ in composer and allows selecting staff', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Shop Operations')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('Shop Operations'));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Nhắn tin trong #Shop Operations/i)).toBeTruthy();
+    });
+
+    const textarea = screen.getByPlaceholderText(/Nhắn tin trong #Shop Operations/i);
+
+    // Type @ in composer
+    fireEvent.change(textarea, { target: { value: '@' } });
+
+    // Autocomplete dropdown should be visible
+    await waitFor(() => {
+      expect(screen.getByRole('listbox', { name: 'Danh sách gợi ý nhắc tên' })).toBeTruthy();
+    });
+
+    const listbox = screen.getByRole('listbox', { name: 'Danh sách gợi ý nhắc tên' });
+    expect(listbox).toBeTruthy();
+
+    const candidate = within(listbox).getByText('Chuyên Viên Mai');
+    expect(candidate).toBeTruthy();
+
+    // Tap on Chuyên Viên Mai to autocomplete
+    fireEvent.click(candidate);
+
+    // Textarea value should be updated
+    expect((textarea as HTMLTextAreaElement).value).toBe('@Chuyên Viên Mai ');
   });
 });

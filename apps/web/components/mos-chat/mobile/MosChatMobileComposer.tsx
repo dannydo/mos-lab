@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Plus, SendHorizontal, Mic, Smile, X, Sparkles } from 'lucide-react';
 import { useMosChat } from '../context/MosChatContext';
 import type { MosChatStickerPackId } from '../mos-chat-stickers';
+import { MosChatMobileMentionAutocomplete } from './MosChatMobileMentionAutocomplete';
 
 export interface MosChatMobileComposerProps {
   onOpenActionSheet: () => void;
@@ -107,6 +108,13 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
       }}
       className="sticky bottom-0 z-30 bg-slate-900/95 backdrop-blur-md border-t border-slate-800/80 px-3 pt-2 shadow-lg"
     >
+      {/* Autocomplete when typing @mention */}
+      <MosChatMobileMentionAutocomplete
+        text={text}
+        onSelectMention={(nextText) => setText(nextText)}
+        textareaRef={textareaRef}
+      />
+
       {/* Quoted Message Preview Banner */}
       {replyingToMessage && (
         <div className="flex items-center justify-between bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-1.5 mb-2 text-xs">

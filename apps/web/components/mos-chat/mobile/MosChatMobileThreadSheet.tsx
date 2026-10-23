@@ -8,6 +8,7 @@ import { useMosChat } from '../context/MosChatContext';
 import { MosChatMobileStickerSheet } from './MosChatMobileStickerSheet';
 import { formatStickerToken, type MosChatStickerItem } from '../mos-chat-stickers';
 import { MosChatRichText } from '../MosChatRichText';
+import { MosChatMobileMentionAutocomplete } from './MosChatMobileMentionAutocomplete';
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
 import { apiClient } from '../../../lib/api-client';
 import type { MosChatImageAttachment, MosChatThreadReply, SafeAny } from '@mos-lab/shared';
@@ -67,6 +68,27 @@ export const MosChatMobileThreadSheet: React.FC = () => {
 
   // Sticker & Emoji Sheet
   const [stickerPickerOpen, setStickerPickerOpen] = useState<boolean>(false);
+  const [keyboardOffset, setKeyboardOffset] = useState<number>(0);
+
+  // iOS Safari Virtual Keyboard listener using visualViewport
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.visualViewport) return;
+
+    const handleViewportChange = () => {
+      const vv = window.visualViewport;
+      if (!vv) return;
+      const offset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      setKeyboardOffset(offset);
+    };
+
+    window.visualViewport.addEventListener('resize', handleViewportChange);
+    window.visualViewport.addEventListener('scroll', handleViewportChange);
+
+    return () => {
+      window.visualViewport?.removeEventListener('resize', handleViewportChange);
+      window.visualViewport?.removeEventListener('scroll', handleViewportChange);
+    };
+  }, []);
 
   // Auto scroll to bottom of thread
   useEffect(() => {
@@ -588,7 +610,21 @@ export const MosChatMobileThreadSheet: React.FC = () => {
       </div>
 
       {/* Bottom Thread Composer with Sticker & Image Attachments */}
-      <div className="sticky bottom-0 z-30 bg-slate-900/95 backdrop-blur-md border-t border-slate-800/80 px-3 pt-2 pb-[max(env(safe-area-inset-bottom,14px),12px)]">
+      <div
+        style={{
+          transform: keyboardOffset > 0 ? `translateY(-${keyboardOffset}px)` : 'none',
+          transition: 'transform 0.15s ease-out',
+          paddingBottom: keyboardOffset > 50 ? '8px' : 'max(env(safe-area-inset-bottom, 14px), 12px)',
+        }}
+        className="sticky bottom-0 z-30 bg-slate-900/95 backdrop-blur-md border-t border-slate-800/80 px-3 pt-2 shadow-lg"
+      >
+        {/* Autocomplete when typing @mention in subthread */}
+        <MosChatMobileMentionAutocomplete
+          text={text}
+          onSelectMention={(nextText) => setText(nextText)}
+          textareaRef={textareaRef}
+        />
+
         {/* Quoting Preview Banner */}
         {replyingToReply && (
           <div className="flex items-center justify-between bg-slate-800/90 border border-amber-500/30 rounded-xl px-3 py-1.5 mb-2 text-xs">
