@@ -128,6 +128,7 @@ export default function CashFlowForecastPage() {
 
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState<boolean>(false);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState<boolean>(false);
+  const [incomeDefaultCategory, setIncomeDefaultCategory] = useState<string>('REVENUE_ACADEMY');
   const [isAccountModalOpen, setIsAccountModalOpen] = useState<boolean>(false);
   const [isAdjustBalanceModalOpen, setIsAdjustBalanceModalOpen] = useState<boolean>(false);
   const [selectedAccountForEdit, setSelectedAccountForEdit] = useState<CashAccount | null>(null);
@@ -135,6 +136,14 @@ export default function CashFlowForecastPage() {
   const [expenseForm] = Form.useForm();
   const [incomeForm] = Form.useForm();
   const [accountForm] = Form.useForm();
+
+  const handleOpenIncomeModal = (presetCategory?: string) => {
+    incomeForm.resetFields();
+    const cat = presetCategory || 'REVENUE_ACADEMY';
+    setIncomeDefaultCategory(cat);
+    incomeForm.setFieldsValue({ category: cat });
+    setIsIncomeModalOpen(true);
+  };
 
   const fetchForecast = useCallback(async () => {
     setLoading(true);
@@ -257,6 +266,7 @@ export default function CashFlowForecastPage() {
         flowType: 'INFLOW',
         category: values.category,
         title: values.title,
+        projectName: values.projectName,
         description: values.description,
         amount: values.amount,
         hasVat: false,
@@ -345,10 +355,8 @@ export default function CashFlowForecastPage() {
               className="w-44"
               options={[
                 { value: 'all', label: 'Tất cả chi nhánh' },
-                { value: '1', label: 'Chi nhánh Đề Thám' },
-                { value: '2', label: 'Chi nhánh Phan Xích Long' },
-                { value: '3', label: 'Chi nhánh Lê Văn Sỹ' },
-                { value: '4', label: 'Chi nhánh Huỳnh Thúc Kháng' },
+                { value: '6', label: 'Chi nhánh Đề Thám' },
+                { value: '16', label: 'Chi nhánh Estella Place' },
               ]}
             />
             <Select
@@ -452,7 +460,7 @@ export default function CashFlowForecastPage() {
               +{summary ? (summary.totalExpectedInflow / 1000000).toFixed(1) : 0} Tr
             </div>
             <div className="text-xs text-neutral-400 mt-1">
-              Đã thu thực tế: {summary ? (summary.totalActualInflow / 1000000).toFixed(1) : 0} Tr
+              Dự kiến phát sinh đến cuối kỳ
             </div>
           </Card>
         </Col>
@@ -581,8 +589,10 @@ export default function CashFlowForecastPage() {
               <InflowTab
                 inflowItems={inflowItems}
                 entriesLoading={entriesLoading}
+                inflowBreakdown={summary?.inflowBreakdown}
                 onUpdateStatus={handleUpdateStatus}
                 onDeleteEntry={handleDeleteEntry}
+                onOpenIncomeModal={handleOpenIncomeModal}
                 categoryNames={CATEGORY_NAMES}
                 statusMeta={STATUS_META}
               />
@@ -670,6 +680,7 @@ export default function CashFlowForecastPage() {
         onCancel={() => setIsIncomeModalOpen(false)}
         form={incomeForm}
         onFinish={handleCreateIncome}
+        defaultCategory={incomeDefaultCategory}
       />
 
       <AccountModal
