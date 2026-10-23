@@ -30,6 +30,18 @@ vi.mock('../../../lib/api-client', () => ({
                 timeLabel: '10:00',
                 createdAt: new Date().toISOString(),
                 reactions: { '❤️': 3 },
+                thread: [
+                  {
+                    id: 'r1',
+                    senderId: '20',
+                    senderName: 'Hương CC',
+                    senderRole: 'CC',
+                    text: 'Dạ để em điều phối thêm khách ca chiều!',
+                    timeLabel: '10:02',
+                    createdAt: new Date().toISOString(),
+                    reactions: { '👍': 1 },
+                  },
+                ],
               },
             ],
           },
@@ -68,6 +80,18 @@ vi.mock('../../../lib/api-client', () => ({
       }),
       updateTask: vi.fn().mockResolvedValue({ success: true }),
       reactToMessage: vi.fn().mockResolvedValue({ success: true }),
+      sendThreadReply: vi.fn().mockResolvedValue({
+        success: true,
+        reply: {
+          id: 'r2',
+          senderId: 'me',
+          senderName: 'Tôi',
+          senderRole: 'admin',
+          text: 'Phản hồi trong subthread',
+          timeLabel: '10:06',
+          createdAt: new Date().toISOString(),
+        },
+      }),
       togglePinMessage: vi.fn().mockResolvedValue({ success: true }),
       deleteMessage: vi.fn().mockResolvedValue({ success: true }),
     },
@@ -260,5 +284,87 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
       expect(screen.getByText('Tin nhắn trực tiếp mới')).toBeTruthy();
       expect(screen.getByText('Chuyên Viên Mai')).toBeTruthy();
     });
+  });
+
+  it('supports double-tap to heart on replies inside subthread', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Shop Operations')).toBeTruthy();
+    });
+
+    // Enter room
+    fireEvent.click(screen.getByText('Shop Operations'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Chào cả nhà, hôm nay lịch dặm mi kín chỗ rồi nha!')).toBeTruthy();
+    });
+
+    // Click on thread button (1 câu trả lời trong luồng)
+    const threadBtn = screen.getByText(/câu trả lời trong luồng/i);
+    fireEvent.click(threadBtn);
+
+    // Verify inside thread sheet
+    await waitFor(() => {
+      expect(screen.getByText('Dạ để em điều phối thêm khách ca chiều!')).toBeTruthy();
+      expect(screen.getByPlaceholderText('Trả lời trong luồng...')).toBeTruthy();
+    });
+
+    // Double-tap on reply
+    const replyText = screen.getByText('Dạ để em điều phối thêm khách ca chiều!');
+    const replyContainer = replyText.closest('.relative') as HTMLElement;
+    expect(replyContainer).toBeTruthy();
+
+    // First tap
+    fireEvent.touchEnd(replyContainer);
+    // Second tap within 280ms
+    fireEvent.touchEnd(replyContainer);
+
+    // Should call reactToMessage with ❤️ and reply id 'r1'
+    const { apiClient } = await import('../../../lib/api-client');
+    expect(apiClient.chat.reactToMessage).toHaveBeenCalledWith('m1', 'space-cc', '❤️', 'r1');
+  });
+
+  it('supports double-tap to heart on parent message inside subthread', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Shop Operations')).toBeTruthy();
+    });
+
+    // Enter room
+    fireEvent.click(screen.getByText('Shop Operations'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/câu trả lời trong luồng/i)).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText(/câu trả lời trong luồng/i));
+
+    await waitFor(() => {
+      expect(screen.getByText('Dạ để em điều phối thêm khách ca chiều!')).toBeTruthy();
+    });
+
+    // Parent message card in thread sheet
+    const parentMsg = screen.getAllByText('Chào cả nhà, hôm nay lịch dặm mi kín chỗ rồi nha!')[0];
+    const parentCard = parentMsg.closest('.bg-slate-900') as HTMLElement;
+    expect(parentCard).toBeTruthy();
+
+    // First tap
+    fireEvent.touchEnd(parentCard);
+    // Second tap within 280ms
+    fireEvent.touchEnd(parentCard);
+
+    // Should call reactToMessage with ❤️ on parent message 'm1'
+    const { apiClient } = await import('../../../lib/api-client');
+    expect(apiClient.chat.reactToMessage).toHaveBeenCalledWith('m1', 'space-cc', '❤️', undefined);
   });
 });

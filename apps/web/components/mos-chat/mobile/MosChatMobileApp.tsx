@@ -55,6 +55,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
   const edgeTouchStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (!e.touches || e.touches.length === 0) return;
     edgeTouchStartRef.current = {
       x: e.touches[0].clientX,
       y: e.touches[0].clientY,
@@ -62,6 +63,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!e.changedTouches || e.changedTouches.length === 0) return;
     const deltaX = e.changedTouches[0].clientX - edgeTouchStartRef.current.x;
     const deltaY = e.changedTouches[0].clientY - edgeTouchStartRef.current.y;
 

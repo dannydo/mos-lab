@@ -373,12 +373,47 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
         const currentList = prev[activeConvId] || [];
         const nextList = currentList.map((m) => {
           if (m.id !== msgId) return m;
+
+          // If reacting to a reply in thread
+          if (replyId && m.thread) {
+            const nextThread = m.thread.map((r) => {
+              if (r.id !== replyId) return r;
+              const currentCount = r.reactions?.[emoji] || 0;
+              const nextReactions = { ...r.reactions };
+              nextReactions[emoji] = currentCount > 0 ? currentCount + 1 : 1;
+              return { ...r, reactions: nextReactions };
+            });
+            return { ...m, thread: nextThread };
+          }
+
           const currentCount = m.reactions?.[emoji] || 0;
           const nextReactions = { ...m.reactions };
           nextReactions[emoji] = currentCount > 0 ? currentCount + 1 : 1;
           return { ...m, reactions: nextReactions };
         });
         return { ...prev, [activeConvId]: nextList };
+      });
+
+      setActiveThreadMsg((prev) => {
+        if (!prev) return null;
+        if (prev.id === msgId) {
+          if (replyId && prev.thread) {
+            const nextThread = prev.thread.map((r) => {
+              if (r.id !== replyId) return r;
+              const currentCount = r.reactions?.[emoji] || 0;
+              const nextReactions = { ...r.reactions };
+              nextReactions[emoji] = currentCount > 0 ? currentCount + 1 : 1;
+              return { ...r, reactions: nextReactions };
+            });
+            return { ...prev, thread: nextThread };
+          } else if (!replyId) {
+            const currentCount = prev.reactions?.[emoji] || 0;
+            const nextReactions = { ...prev.reactions };
+            nextReactions[emoji] = currentCount > 0 ? currentCount + 1 : 1;
+            return { ...prev, reactions: nextReactions };
+          }
+        }
+        return prev;
       });
 
       try {
@@ -416,6 +451,34 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       }));
       try {
         await apiClient.chat.deleteMessage(msgId, { conversationId: activeConvId });
+      } catch {
+        // ignore
+      }
+    },
+    [activeConvId]
+  );
+
+  // Delete thread reply
+  const deleteThreadReply = useCallback(
+    async (parentMsgId: string, replyId: string) => {
+      setActiveThreadMsg((prev) => {
+        if (!prev || prev.id !== parentMsgId) return prev;
+        return {
+          ...prev,
+          thread: (prev.thread || []).filter((r) => r.id !== replyId),
+        };
+      });
+      setAllMessagesByConv((prev) => {
+        const currentList = prev[activeConvId] || [];
+        return {
+          ...prev,
+          [activeConvId]: currentList.map((m) =>
+            m.id === parentMsgId ? { ...m, thread: (m.thread || []).filter((r) => r.id !== replyId) } : m
+          ),
+        };
+      });
+      try {
+        await apiClient.chat.deleteMessage(replyId, { conversationId: activeConvId });
       } catch {
         // ignore
       }
@@ -566,6 +629,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       reactToMessage,
       togglePinMessage,
       deleteMessage,
+      deleteThreadReply,
       editMessage,
       buzzMessage,
       activeThreadMsg,
@@ -610,6 +674,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       reactToMessage,
       togglePinMessage,
       deleteMessage,
+      deleteThreadReply,
       editMessage,
       buzzMessage,
       activeThreadMsg,

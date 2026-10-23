@@ -1,34 +1,91 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { SendHorizontal, MessageSquareReply, X, CheckCheck } from 'lucide-react';
+import { SendHorizontal, MessageSquareReply, X, CheckCheck, Smile, ImageIcon, Copy, Trash2 } from 'lucide-react';
+import { message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
 import { useMosChat } from '../context/MosChatContext';
+import { MosChatMobileStickerSheet } from './MosChatMobileStickerSheet';
+import { formatStickerToken, type MosChatStickerItem } from '../mos-chat-stickers';
+import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
+import { apiClient } from '../../../lib/api-client';
+import type { MosChatImageAttachment, MosChatThreadReply, SafeAny } from '@mos-lab/shared';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
 
 export const MosChatMobileThreadSheet: React.FC = () => {
-  const { activeThreadMsg, threadReplies, sendThreadReply, currentUser, setMobileView } = useMosChat();
+  const {
+    activeThreadMsg,
+    threadReplies,
+    sendThreadReply,
+    reactToMessage,
+    deleteThreadReply,
+    currentUser,
+    setMobileView,
+  } = useMosChat();
 
   const [text, setText] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Parent Message Heart Animation & Double-tap
+  const lastTapParentRef = useRef<number>(0);
+  const [showHeartFlyParent, setShowHeartFlyParent] = useState<boolean>(false);
+
+  // Replies Heart Animation & Double-tap
+  const lastTapReplyRef = useRef<Record<string, number>>({});
+  const [showHeartFlyReplyId, setShowHeartFlyReplyId] = useState<string | null>(null);
+
+  // Swipe-to-quote on replies
+  const [swipeOffsetMap, setSwipeOffsetMap] = useState<Record<string, number>>({});
+  const touchStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Action sheet for long-pressed reply
+  const [actionSheetReply, setActionSheetReply] = useState<MosChatThreadReply | null>(null);
+
+  // Replying quote inside thread
+  const [replyingToReply, setReplyingToReply] = useState<MosChatThreadReply | null>(null);
+
+  // Image attachments
+  const [attachedImages, setAttachedImages] = useState<MosChatImageAttachment[]>([]);
+
+  // Sticker & Emoji Sheet
+  const [stickerPickerOpen, setStickerPickerOpen] = useState<boolean>(false);
 
   // Auto scroll to bottom of thread
   useEffect(() => {
     bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' });
   }, [threadReplies.length]);
 
+  // Auto-resize textarea
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(100, el.scrollHeight)}px`;
+  }, [text]);
+
   const handleSend = async () => {
     const trimmed = text.trim();
-    if (!trimmed || isSending) return;
+    if ((!trimmed && attachedImages.length === 0) || isSending) return;
+
+    let payloadText = trimmed;
+    if (replyingToReply) {
+      payloadText = `> Trích dẫn @${replyingToReply.senderName}: ${replyingToReply.text}\n\n${trimmed}`;
+    }
 
     setIsSending(true);
-    const success = await sendThreadReply(trimmed);
+    const success = await sendThreadReply(payloadText, {
+      attachments: attachedImages.length > 0 ? attachedImages : undefined,
+    });
     setIsSending(false);
 
     if (success) {
       setText('');
+      setAttachedImages([]);
+      setReplyingToReply(null);
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
@@ -40,6 +97,121 @@ export const MosChatMobileThreadSheet: React.FC = () => {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  // Image upload
+  const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async (evt) => {
+        const base64Data = (evt.target?.result as string)?.split(',')[1];
+        if (!base64Data) return;
+
+        const uploadRes = await apiClient.chat.uploadImage({
+          dataBase64: base64Data,
+          fileName: file.name,
+          mimeType: (file.type as SafeAny) || 'image/jpeg',
+        });
+
+        if (uploadRes && uploadRes.attachment) {
+          setAttachedImages((prev) => [...prev, uploadRes.attachment]);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      antdMessage.error('Không thể tải ảnh lên');
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // Double-tap on Parent Message
+  const handleTouchEndParent = () => {
+    if (!activeThreadMsg) return;
+    const now = Date.now();
+    if (now - lastTapParentRef.current < 280) {
+      if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate?.(10);
+      }
+      reactToMessage(activeThreadMsg.id, '❤️');
+      setShowHeartFlyParent(true);
+      setTimeout(() => setShowHeartFlyParent(false), 900);
+      lastTapParentRef.current = 0;
+    } else {
+      lastTapParentRef.current = now;
+    }
+  };
+
+  // Touch handlers for Replies
+  const handleTouchStartReply = (e: React.TouchEvent, reply: MosChatThreadReply) => {
+    touchStartPosRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    };
+
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = setTimeout(() => {
+      if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate?.(20);
+      }
+      setActionSheetReply(reply);
+    }, 500);
+  };
+
+  const handleTouchMoveReply = (e: React.TouchEvent, replyId: string) => {
+    const deltaX = e.touches[0].clientX - touchStartPosRef.current.x;
+    const deltaY = Math.abs(e.touches[0].clientY - touchStartPosRef.current.y);
+
+    if (deltaY > 10 || (deltaX > 15 && longPressTimerRef.current)) {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+    }
+
+    if (deltaX > 0 && deltaX < 80) {
+      setSwipeOffsetMap((prev) => ({ ...prev, [replyId]: deltaX }));
+    }
+  };
+
+  const handleTouchEndReply = (reply: MosChatThreadReply) => {
+    if (!activeThreadMsg) return;
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+
+    const offset = swipeOffsetMap[reply.id] || 0;
+    if (offset >= 45) {
+      if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate?.(15);
+      }
+      setReplyingToReply(reply);
+    }
+    setSwipeOffsetMap((prev) => ({ ...prev, [reply.id]: 0 }));
+
+    const now = Date.now();
+    const lastTap = lastTapReplyRef.current[reply.id] || 0;
+    if (now - lastTap < 280) {
+      if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate?.(10);
+      }
+      reactToMessage(activeThreadMsg.id, '❤️', reply.id);
+      setShowHeartFlyReplyId(reply.id);
+      setTimeout(() => setShowHeartFlyReplyId(null), 900);
+      lastTapReplyRef.current[reply.id] = 0;
+    } else {
+      lastTapReplyRef.current[reply.id] = now;
+    }
+  };
+
+  const handleSelectSticker = async (sticker: MosChatStickerItem) => {
+    setStickerPickerOpen(false);
+    const token = formatStickerToken(sticker.id);
+    await sendThreadReply(token);
   };
 
   if (!activeThreadMsg) {
@@ -60,12 +232,32 @@ export const MosChatMobileThreadSheet: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden select-none">
+      {/* Hidden File Input for Image Upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageFileChange}
+        className="hidden"
+        aria-label="Tải ảnh đính kèm"
+      />
+
       {/* Scrollable Replies Feed */}
       <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3">
-        {/* Parent Message Highlight Card */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-sm">
+        {/* Parent Message Highlight Card with Double-Tap to Heart */}
+        <div
+          onTouchEnd={handleTouchEndParent}
+          className="relative bg-slate-900 border border-slate-800 rounded-2xl p-3.5 shadow-sm active:scale-[0.99] transition-transform cursor-pointer"
+        >
+          {/* Floating Heart Animation for Parent Message */}
+          {showHeartFlyParent && (
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50 animate-bounce">
+              <span className="text-4xl filter drop-shadow-md">❤️</span>
+            </div>
+          )}
+
           <div className="flex items-center gap-2 mb-1.5">
-            <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center text-[10px] text-white font-bold uppercase">
+            <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-amber-500/30 to-indigo-500/30 border border-amber-500/40 flex items-center justify-center text-[10px] text-amber-300 font-bold uppercase">
               {activeThreadMsg.senderName?.charAt(0) || 'U'}
             </div>
             <span className="text-xs font-bold text-white">{activeThreadMsg.senderName}</span>
@@ -73,9 +265,33 @@ export const MosChatMobileThreadSheet: React.FC = () => {
               {dayjs(activeThreadMsg.createdAt).format('HH:mm DD/MM')}
             </span>
           </div>
+
           <div className="text-sm text-slate-200 whitespace-pre-wrap leading-relaxed select-text">
             {activeThreadMsg.text}
           </div>
+
+          {/* Reaction badges for Parent Message */}
+          {activeThreadMsg.reactions && Object.keys(activeThreadMsg.reactions).length > 0 && (
+            <div className="flex flex-wrap items-center gap-1 mt-2.5 pt-2 border-t border-slate-800/80">
+              {Object.entries(activeThreadMsg.reactions).map(([emoji, count]) => {
+                if (count <= 0) return null;
+                return (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      reactToMessage(activeThreadMsg.id, emoji);
+                    }}
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 active:scale-95 transition-all shadow-sm"
+                  >
+                    <span>{emoji}</span>
+                    <span className="tabular-nums text-[11px] font-semibold text-amber-400">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Divider */}
@@ -91,8 +307,38 @@ export const MosChatMobileThreadSheet: React.FC = () => {
             String(reply.senderId) === String(currentUser?.id) ||
             String(reply.senderName) === String(currentUser?.fullName || currentUser?.name);
 
+          const swipeOffset = swipeOffsetMap[reply.id] || 0;
+          const showHeartFly = showHeartFlyReplyId === reply.id;
+
           return (
-            <div key={reply.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+            <div
+              key={reply.id}
+              onTouchStart={(e) => handleTouchStartReply(e, reply)}
+              onTouchMove={(e) => handleTouchMoveReply(e, reply.id)}
+              onTouchEnd={() => handleTouchEndReply(reply)}
+              style={{
+                transform: `translateX(${swipeOffset}px)`,
+                transition: swipeOffset === 0 ? 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
+              }}
+              className={`relative flex flex-col my-1 select-none ${isMe ? 'items-end' : 'items-start'}`}
+            >
+              {/* Swipe Reply Indicator */}
+              {swipeOffset > 15 && (
+                <div
+                  style={{ opacity: Math.min(1, swipeOffset / 45) }}
+                  className="absolute -left-9 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center text-slate-950 shadow-md"
+                >
+                  <MessageSquareReply className="w-4 h-4" />
+                </div>
+              )}
+
+              {/* Floating Heart Fly Animation */}
+              {showHeartFly && (
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-50 animate-bounce">
+                  <span className="text-3xl filter drop-shadow-md">❤️</span>
+                </div>
+              )}
+
               {!isMe && (
                 <span className="text-[11px] font-semibold text-slate-400 mb-0.5 px-1">{reply.senderName}</span>
               )}
@@ -104,6 +350,22 @@ export const MosChatMobileThreadSheet: React.FC = () => {
                     : 'bg-slate-800/90 text-slate-100 border border-slate-700/60 rounded-tl-sm'
                 }`}
               >
+                {/* Image Attachments */}
+                {reply.attachments && reply.attachments.length > 0 && (
+                  <div className="space-y-1.5 mb-1.5">
+                    {reply.attachments.map((att) => (
+                      <div key={att.id} className="rounded-xl overflow-hidden bg-slate-950/40">
+                        { }
+                        <img
+                          src={resolveMediaUrl(att.url)}
+                          alt={att.name || 'Ảnh đính kèm'}
+                          className="max-h-56 w-full object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <div className="whitespace-pre-wrap leading-relaxed select-text">{reply.text}</div>
 
                 <div
@@ -115,6 +377,29 @@ export const MosChatMobileThreadSheet: React.FC = () => {
                   {isMe && <CheckCheck className="w-3.5 h-3.5 text-slate-800" />}
                 </div>
               </div>
+
+              {/* Reaction Badges for Reply */}
+              {reply.reactions && Object.keys(reply.reactions).length > 0 && (
+                <div className="flex flex-wrap items-center gap-1 mt-1 px-1">
+                  {Object.entries(reply.reactions).map(([emoji, count]) => {
+                    if (count <= 0) return null;
+                    return (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          reactToMessage(activeThreadMsg.id, emoji, reply.id);
+                        }}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-slate-800/90 hover:bg-slate-700/80 border border-slate-700/60 text-slate-200 active:scale-95 transition-all shadow-sm"
+                      >
+                        <span>{emoji}</span>
+                        <span className="tabular-nums text-[11px] font-semibold text-amber-400">{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}
@@ -122,9 +407,72 @@ export const MosChatMobileThreadSheet: React.FC = () => {
         <div ref={bottomRef} className="h-1" />
       </div>
 
-      {/* Bottom Thread Composer */}
+      {/* Bottom Thread Composer with Sticker & Image Attachments */}
       <div className="sticky bottom-0 z-30 bg-slate-900/95 backdrop-blur-md border-t border-slate-800/80 px-3 pt-2 pb-[max(env(safe-area-inset-bottom,14px),12px)]">
-        <div className="flex items-end gap-2">
+        {/* Quoting Preview Banner */}
+        {replyingToReply && (
+          <div className="flex items-center justify-between bg-slate-800/90 border border-amber-500/30 rounded-xl px-3 py-1.5 mb-2 text-xs">
+            <div className="flex items-center gap-2 truncate">
+              <MessageSquareReply className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="text-amber-300 font-semibold truncate">@{replyingToReply.senderName}:</span>
+              <span className="text-slate-300 truncate">{replyingToReply.text}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setReplyingToReply(null)}
+              className="p-0.5 text-slate-400 hover:text-white"
+              aria-label="Hủy trích dẫn"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* Attached Images Preview */}
+        {attachedImages.length > 0 && (
+          <div className="flex items-center gap-2 mb-2 overflow-x-auto no-scrollbar py-1">
+            {attachedImages.map((att) => (
+              <div
+                key={att.id}
+                className="relative w-14 h-14 rounded-xl overflow-hidden border border-amber-500/40 shrink-0"
+              >
+                { }
+                <img src={resolveMediaUrl(att.url)} alt={att.name} className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setAttachedImages((prev) => prev.filter((img) => img.id !== att.id))}
+                  className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-900/90 text-white flex items-center justify-center text-[10px]"
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Composer Input Bar */}
+        <div className="flex items-end gap-1.5">
+          {/* Sticker & Emoji Button */}
+          <button
+            type="button"
+            onClick={() => setStickerPickerOpen(true)}
+            className="w-8 h-8 rounded-full text-slate-400 hover:text-amber-400 active:scale-95 flex items-center justify-center shrink-0 mb-0.5"
+            aria-label="Biểu cảm & Nhãn dán"
+          >
+            <Smile className="w-5 h-5" />
+          </button>
+
+          {/* Image Upload Button */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="w-8 h-8 rounded-full text-slate-400 hover:text-amber-400 active:scale-95 flex items-center justify-center shrink-0 mb-0.5"
+            aria-label="Đính kèm ảnh"
+          >
+            <ImageIcon className="w-5 h-5" />
+          </button>
+
+          {/* Text Area */}
           <div className="flex-1 bg-slate-800/90 border border-slate-700/80 rounded-2xl px-3 py-1.5 focus-within:border-amber-400/80 transition-colors">
             <textarea
               ref={textareaRef}
@@ -137,16 +485,111 @@ export const MosChatMobileThreadSheet: React.FC = () => {
             />
           </div>
 
+          {/* Send Button */}
           <button
             type="button"
             onClick={handleSend}
-            disabled={!text.trim() || isSending}
+            disabled={(!text.trim() && attachedImages.length === 0) || isSending}
             className="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 shadow-md shadow-amber-500/30 active:scale-90 transition-transform shrink-0 mb-0.5 disabled:opacity-50"
+            aria-label="Gửi phản hồi luồng"
           >
             <SendHorizontal className="w-4 h-4 font-bold" />
           </button>
         </div>
       </div>
+
+      {/* Long-press Action Sheet for Subthread Reply */}
+      {actionSheetReply && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end select-none">
+          <div
+            onClick={() => setActionSheetReply(null)}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+          />
+
+          <div className="relative bg-slate-900 border-t border-slate-800 rounded-t-3xl px-4 pt-3 pb-[max(env(safe-area-inset-bottom,20px),16px)] shadow-2xl animate-in slide-in-from-bottom duration-200">
+            <div className="w-10 h-1 bg-slate-700 rounded-full mx-auto mb-3" />
+
+            {/* Quick Reactions */}
+            <div className="flex items-center justify-around bg-slate-800/90 border border-slate-700/60 rounded-2xl py-2 px-3 mb-4 shadow-sm">
+              {GOOGLE_CHAT_QUICK_EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  type="button"
+                  onClick={() => {
+                    reactToMessage(activeThreadMsg.id, emoji, actionSheetReply.id);
+                    setActionSheetReply(null);
+                  }}
+                  className="text-2xl p-1 active:scale-125 transition-transform"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+
+            {/* Actions List */}
+            <div className="space-y-1 divide-y divide-slate-800/60">
+              <button
+                type="button"
+                onClick={() => {
+                  setReplyingToReply(actionSheetReply);
+                  setActionSheetReply(null);
+                }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+              >
+                <MessageSquareReply className="w-4 h-4 text-amber-400" />
+                <span className="font-medium">Trả lời trích dẫn trong luồng</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  if (typeof window !== 'undefined' && navigator.clipboard) {
+                    navigator.clipboard.writeText(actionSheetReply.text);
+                    antdMessage.success('Đã sao chép phản hồi');
+                  }
+                  setActionSheetReply(null);
+                }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+              >
+                <Copy className="w-4 h-4 text-sky-400" />
+                <span className="font-medium">Sao chép phản hồi</span>
+              </button>
+
+              {(String(actionSheetReply.senderId) === String(currentUser?.id) ||
+                String(currentUser?.role || '')
+                  .toLowerCase()
+                  .includes('admin')) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    deleteThreadReply(activeThreadMsg.id, actionSheetReply.id);
+                    setActionSheetReply(null);
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors active:scale-98"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span className="font-medium">Xóa phản hồi</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sticker & Emoji Sheet */}
+      <MosChatMobileStickerSheet
+        open={stickerPickerOpen}
+        onClose={() => setStickerPickerOpen(false)}
+        initialPack="emoji"
+        onSelectSticker={handleSelectSticker}
+        onSelectEmoji={(emoji) => {
+          setText((prev) => `${prev}${emoji}`);
+        }}
+        currentText={text}
+        onSend={() => {
+          handleSend();
+        }}
+      />
     </div>
   );
 };
