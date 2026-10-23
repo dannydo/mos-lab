@@ -167,4 +167,47 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
       expect(screen.getByText('mOS Chat')).toBeTruthy();
     });
   });
+
+  it('opens emoji and sticker sheet when tapping emoji button in composer and allows inserting emojis', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Shop Operations')).toBeTruthy();
+    });
+
+    // Enter room
+    fireEvent.click(screen.getByText('Shop Operations'));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Nhắn tin trong #Shop Operations/i)).toBeTruthy();
+    });
+
+    // Tap Emoji button
+    const emojiBtn = screen.getByLabelText('Biểu cảm Emoji & Nhãn dán');
+    expect(emojiBtn).toBeTruthy();
+    fireEvent.click(emojiBtn);
+
+    // Verifies Sticker & Emoji sheet is open
+    await waitFor(() => {
+      expect(screen.getByText('Biểu cảm & Nhãn dán')).toBeTruthy();
+      expect(screen.getByText('Cảm xúc phổ biến')).toBeTruthy();
+    });
+
+    // Tap an emoji (e.g. ❤️)
+    const heartEmoji = screen.getByRole('button', { name: '❤️' });
+    fireEvent.click(heartEmoji);
+
+    // Close sheet
+    const closeSheetBtn = screen.getByLabelText('Đóng bảng biểu cảm');
+    fireEvent.click(closeSheetBtn);
+
+    // Textarea should contain the inserted emoji and send button is active
+    const textarea = screen.getByPlaceholderText(/Nhắn tin trong #Shop Operations/i) as HTMLTextAreaElement;
+    expect(textarea.value).toContain('❤️');
+    expect(screen.getByLabelText('Gửi tin nhắn')).toBeTruthy();
+  });
 });

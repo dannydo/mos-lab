@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, Sparkles } from 'lucide-react';
 import { removeVietnameseTones } from '@mos-lab/shared';
 
@@ -1474,6 +1474,8 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
   onSelectSticker: (sticker: MosChatStickerItem) => void;
   mode?: 'composer' | 'reaction';
   hasUserReacted?: (key: string) => boolean;
+  defaultPack?: MosChatStickerPackId;
+  width?: number | string;
 }> = ({
   isDark,
   borderColor,
@@ -1484,10 +1486,18 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
   onSelectSticker,
   mode = 'composer',
   hasUserReacted,
+  defaultPack = 'wings',
+  width,
 }) => {
-  const [activePack, setActivePack] = useState<MosChatStickerPackId>('wings');
+  const [activePack, setActivePack] = useState<MosChatStickerPackId>(defaultPack);
   const [searchQuery, setSearchQuery] = useState('');
   const gridScrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (defaultPack) {
+      setActivePack(defaultPack);
+    }
+  }, [defaultPack]);
 
   const filteredStickers = useMemo(() => {
     const q = removeVietnameseTones(searchQuery.trim().toLowerCase());
@@ -1511,7 +1521,7 @@ export const MosChatStickerAndEmojiPicker: React.FC<{
       data-no-chat-autofocus="true"
       onClick={(e) => e.stopPropagation()}
       className="p-2 space-y-2 select-none"
-      style={{ width: 372 }}
+      style={{ width: width ?? 372, maxWidth: '100%' }}
     >
       {/* Top Category Pack Switcher Tabs (Fits all 6 packs cleanly without scrollbar) */}
       <div

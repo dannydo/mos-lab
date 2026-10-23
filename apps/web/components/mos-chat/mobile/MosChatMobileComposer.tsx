@@ -3,19 +3,34 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, SendHorizontal, Mic, Smile, X, Sparkles } from 'lucide-react';
 import { useMosChat } from '../context/MosChatContext';
+import type { MosChatStickerPackId } from '../mos-chat-stickers';
 
 export interface MosChatMobileComposerProps {
   onOpenActionSheet: () => void;
-  onOpenStickerSheet: () => void;
+  onOpenStickerSheet: (pack?: MosChatStickerPackId) => void;
+  text?: string;
+  onTextChange?: (text: string) => void;
 }
 
 export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
   onOpenActionSheet,
   onOpenStickerSheet,
+  text: controlledText,
+  onTextChange,
 }) => {
   const { sendMessage, replyingToMessage, setReplyingToMessage, activeConversation } = useMosChat();
 
-  const [text, setText] = useState<string>('');
+  const [internalText, setInternalText] = useState<string>('');
+  const text = controlledText !== undefined ? controlledText : internalText;
+  const setText = (val: string | ((prev: string) => string)) => {
+    const nextVal = typeof val === 'function' ? val(text) : val;
+    if (onTextChange) {
+      onTextChange(nextVal);
+    } else {
+      setInternalText(nextVal);
+    }
+  };
+
   const [isSending, setIsSending] = useState<boolean>(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [keyboardOffset, setKeyboardOffset] = useState<number>(0);
@@ -129,12 +144,14 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
             className="flex-1 bg-transparent border-none outline-none text-sm text-white placeholder-slate-400 resize-none max-h-[110px] py-1 leading-snug"
           />
 
-          {/* Quick Sticker Icon */}
+          {/* Quick Emoji / Sticker Icon */}
           <button
             type="button"
-            onClick={onOpenStickerSheet}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onOpenStickerSheet('emoji')}
             className="p-1 text-slate-400 hover:text-amber-400 active:scale-90 transition-transform shrink-0"
-            aria-label="Nhãn dán Sticker"
+            aria-label="Biểu cảm Emoji & Nhãn dán"
+            title="Biểu cảm Emoji & Nhãn dán"
           >
             <Smile className="w-4 h-4" />
           </button>

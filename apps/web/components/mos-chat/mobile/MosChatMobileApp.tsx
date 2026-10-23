@@ -13,7 +13,8 @@ import { MosChatMobileActionSheet } from './MosChatMobileActionSheet';
 import { MosChatMobileReactionSheet } from './MosChatMobileReactionSheet';
 import { MosChatMobileThreadSheet } from './MosChatMobileThreadSheet';
 import { MosChatMobileTasksTab } from './MosChatMobileTasksTab';
-import { MosChatStickerAndEmojiPicker, formatStickerToken, type MosChatStickerItem } from '../mos-chat-stickers';
+import { MosChatMobileStickerSheet } from './MosChatMobileStickerSheet';
+import { formatStickerToken, type MosChatStickerItem, type MosChatStickerPackId } from '../mos-chat-stickers';
 import { DEADLINE_PRESETS, GOOGLE_CHAT_REACTION_EMOJIS, WINGS_SIGNATURE_EMOJIS } from '../constants/chat-constants';
 import { apiClient } from '../../../lib/api-client';
 
@@ -36,6 +37,8 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
 
   const [actionSheetOpen, setActionSheetOpen] = useState<boolean>(false);
   const [stickerPickerOpen, setStickerPickerOpen] = useState<boolean>(false);
+  const [stickerPickerInitialPack, setStickerPickerInitialPack] = useState<MosChatStickerPackId>('emoji');
+  const [composerText, setComposerText] = useState<string>('');
 
   // Quick Task Creation Modal
   const [taskModalOpen, setTaskModalOpen] = useState<boolean>(false);
@@ -175,7 +178,12 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
               />
               <MosChatMobileComposer
                 onOpenActionSheet={() => setActionSheetOpen(true)}
-                onOpenStickerSheet={() => setStickerPickerOpen(true)}
+                onOpenStickerSheet={(pack = 'emoji') => {
+                  setStickerPickerInitialPack(pack);
+                  setStickerPickerOpen(true);
+                }}
+                text={composerText}
+                onTextChange={setComposerText}
               />
             </>
           ) : (
@@ -204,7 +212,10 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
           setTaskModalOpen(true);
         }}
         onSelectWorkflow={() => antdMessage.info('Kích hoạt quy trình làm việc')}
-        onSelectSticker={() => setStickerPickerOpen(true)}
+        onSelectSticker={() => {
+          setStickerPickerInitialPack('wings');
+          setStickerPickerOpen(true);
+        }}
         onSelectVoice={() => antdMessage.info('Giữ nút Mic để thu âm giọng nói')}
       />
 
@@ -219,34 +230,29 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         onCreateTaskFromMsg={handleCreateTaskFromMsg}
       />
 
-      {/* Sticker Picker Modal */}
-      <Modal
+      {/* Sticker & Emoji Bottom Sheet */}
+      <MosChatMobileStickerSheet
         open={stickerPickerOpen}
-        onCancel={() => setStickerPickerOpen(false)}
-        footer={null}
-        title="Nhãn dán Wings"
-        centered
-        width={360}
-      >
-        <div className="py-2">
-          <MosChatStickerAndEmojiPicker
-            isDark={true}
-            borderColor="#334155"
-            surfaceRaised="#0f172a"
-            wingsSignatureEmojis={WINGS_SIGNATURE_EMOJIS}
-            popularEmojis={GOOGLE_CHAT_REACTION_EMOJIS}
-            onSelectSticker={handleSelectSticker}
-            onSelectEmoji={(emoji) => {
-              sendMessage(emoji);
-              setStickerPickerOpen(false);
-            }}
-          />
-        </div>
-      </Modal>
+        onClose={() => setStickerPickerOpen(false)}
+        initialPack={stickerPickerInitialPack}
+        onSelectSticker={handleSelectSticker}
+        onSelectEmoji={(emoji) => {
+          setComposerText((prev) => `${prev}${emoji}`);
+        }}
+        currentText={composerText}
+        onSend={() => {
+          const trimmed = composerText.trim();
+          if (trimmed) {
+            sendMessage(trimmed);
+            setComposerText('');
+          }
+        }}
+      />
 
       {/* Create Task Modal */}
       <Modal
         open={taskModalOpen}
+        zIndex={2500}
         onCancel={() => setTaskModalOpen(false)}
         onOk={handleConfirmCreateTask}
         title="Giao việc & Hạn chót"
