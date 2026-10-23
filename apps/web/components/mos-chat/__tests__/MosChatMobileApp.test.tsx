@@ -49,7 +49,7 @@ vi.mock('../../../lib/api-client', () => ({
             createdAt: new Date().toISOString(),
           },
         ],
-        staffDirectory: [{ id: 10, username: 'mai_cv', role: 'CV', fullName: 'Chuyên Viên Mai' }],
+        staffDirectory: [{ id: 10, username: 'mai_cv', role: 'CV', displayName: 'Chuyên Viên Mai' }],
         userPrefs: { pinnedIds: [] },
       }),
       markAsRead: vi.fn().mockResolvedValue({ success: true }),
@@ -209,5 +209,56 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     const textarea = screen.getByPlaceholderText(/Nhắn tin trong #Shop Operations/i) as HTMLTextAreaElement;
     expect(textarea.value).toContain('❤️');
     expect(screen.getByLabelText('Gửi tin nhắn')).toBeTruthy();
+  });
+
+  it('searches colleagues in staff directory directly from main search bar and allows starting DM', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Shop Operations')).toBeTruthy();
+    });
+
+    // Type "Mai" into search bar
+    const searchInput = screen.getByPlaceholderText('Tìm kiếm đồng nghiệp, kênh, tin nhắn...');
+    fireEvent.change(searchInput, { target: { value: 'Mai' } });
+
+    // Should display matching colleague section
+    await waitFor(() => {
+      expect(screen.getByText(/Đồng nghiệp \(1\)/i)).toBeTruthy();
+      expect(screen.getByText('Chuyên Viên Mai')).toBeTruthy();
+    });
+
+    // Clicking on colleague starts DM
+    fireEvent.click(screen.getByText('Chuyên Viên Mai'));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Nhắn tin/i)).toBeTruthy();
+    });
+  });
+
+  it('opens colleague directory modal when tapping new DM button', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Shop Operations')).toBeTruthy();
+    });
+
+    // Tap new DM button
+    const newDmBtn = screen.getByLabelText('Soạn tin nhắn DM mới');
+    fireEvent.click(newDmBtn);
+
+    // Modal opens
+    await waitFor(() => {
+      expect(screen.getByText('Tin nhắn trực tiếp mới')).toBeTruthy();
+      expect(screen.getByText('Chuyên Viên Mai')).toBeTruthy();
+    });
   });
 });

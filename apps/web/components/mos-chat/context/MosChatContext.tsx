@@ -193,6 +193,67 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
     }
   }, []);
 
+  // Start or open direct message with a staff member
+  const startDirectMessage = useCallback(
+    async (staff: MosChatStaffMember): Promise<string | null> => {
+      const peerId = Number(staff.id);
+      const myStaffId = Number(currentUser?.id) || 0;
+      const staffName = staff.displayName || staff.username || `Nhân sự #${staff.id}`;
+
+      // Check if conversation already exists
+      const existing = conversations.find((c) => {
+        if (c.type !== 'dm' || c.isSelf) return false;
+        if (myStaffId > 0 && peerId > 0 && Array.isArray(c.memberIds)) {
+          const nums = c.memberIds.map(Number);
+          if (nums.includes(myStaffId) && nums.includes(peerId)) return true;
+        }
+        return Number(c.participantStaffId) === peerId || c.name === staffName;
+      });
+
+      if (existing) {
+        setActiveConvId(existing.id);
+        markConversationAsRead(existing.id);
+        setMobileView('room');
+        return existing.id;
+      }
+
+      try {
+        const res = await apiClient.chat.createConversation({
+          type: 'dm',
+          name: staffName,
+          participantStaffId: staff.id,
+        });
+        if (res?.conversation) {
+          setConversations((prev) => [res.conversation, ...prev.filter((c) => c.id !== res.conversation.id)]);
+          setActiveConvId(res.conversation.id);
+          markConversationAsRead(res.conversation.id);
+          setMobileView('room');
+          return res.conversation.id;
+        }
+      } catch {
+        // Fallback: create local conversation if offline or API returns error
+        const localDmId = `dm-${staff.id}`;
+        const newDm: MosChatConversation = {
+          id: localDmId,
+          type: 'dm',
+          name: staffName,
+          color: '#3b82f6',
+          participantStaffId: staff.id,
+          memberIds: [myStaffId, peerId],
+          unreadCount: 0,
+          updatedAt: new Date().toISOString(),
+          messages: [],
+        };
+        setConversations((prev) => [newDm, ...prev]);
+        setActiveConvId(localDmId);
+        setMobileView('room');
+        return localDmId;
+      }
+      return null;
+    },
+    [conversations, currentUser, markConversationAsRead]
+  );
+
   // Send message
   const sendMessage = useCallback(
     async (
@@ -497,6 +558,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       setSearchQuery,
       togglePinConversation,
       markConversationAsRead,
+      startDirectMessage,
       messages,
       allMessagesByConv,
       isLoadingMessages,
@@ -540,6 +602,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       searchQuery,
       togglePinConversation,
       markConversationAsRead,
+      startDirectMessage,
       messages,
       allMessagesByConv,
       isLoadingMessages,

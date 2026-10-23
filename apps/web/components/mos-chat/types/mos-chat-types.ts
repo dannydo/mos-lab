@@ -34,6 +34,7 @@ export interface MosChatContextValue {
   setSearchQuery: (q: string) => void;
   togglePinConversation: (id: string) => Promise<void>;
   markConversationAsRead: (id: string) => Promise<void>;
+  startDirectMessage: (staff: MosChatStaffMember) => Promise<string | null>;
 
   // Messages
   messages: MosChatMessage[];
