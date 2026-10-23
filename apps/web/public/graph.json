@@ -5564,7 +5564,7 @@
         "path": "/api/ag-task-bridge/chat/next",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 247
+        "line": 251
       }
     },
     {
@@ -5578,7 +5578,7 @@
         "path": "/api/ai/avatar-score",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 323
+        "line": 346
       }
     },
     {
@@ -5592,7 +5592,7 @@
         "path": "/api/ai/avatar-nudge-message",
         "module": "ai",
         "handler": "inlineHandler",
-        "line": 462
+        "line": 485
       }
     },
     {
@@ -8112,7 +8112,7 @@
         "path": "/api/chat/bootstrap",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2052
+        "line": 2069
       }
     },
     {
@@ -8126,7 +8126,7 @@
         "path": "/api/chat/user-prefs",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2137
+        "line": 2154
       }
     },
     {
@@ -8140,7 +8140,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2212
+        "line": 2229
       }
     },
     {
@@ -8154,7 +8154,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2238
+        "line": 2255
       }
     },
     {
@@ -8168,7 +8168,7 @@
         "path": "/api/chat/upload-image",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2287
+        "line": 2304
       }
     },
     {
@@ -8182,7 +8182,7 @@
         "path": "/api/chat/media/:fileName",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2343
+        "line": 2360
       }
     },
     {
@@ -8196,7 +8196,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2435
+        "line": 2452
       }
     },
     {
@@ -8210,7 +8210,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2440
+        "line": 2457
       }
     },
     {
@@ -8224,7 +8224,7 @@
         "path": "/api/chat/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2445
+        "line": 2462
       }
     },
     {
@@ -8238,7 +8238,7 @@
         "path": "/api/chat/threads",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2543
+        "line": 2586
       }
     },
     {
@@ -8252,7 +8252,7 @@
         "path": "/api/chat/threads/move",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2635
+        "line": 2706
       }
     },
     {
@@ -8266,7 +8266,7 @@
         "path": "/api/chat/messages/:messageId/reaction",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2774
+        "line": 2845
       }
     },
     {
@@ -8280,7 +8280,7 @@
         "path": "/api/chat/messages/:messageId/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2863
+        "line": 2934
       }
     },
     {
@@ -8294,7 +8294,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2894
+        "line": 2965
       }
     },
     {
@@ -8308,7 +8308,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2976
+        "line": 3047
       }
     },
     {
@@ -8322,7 +8322,7 @@
         "path": "/api/chat/messages/:messageId/restore",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3051
+        "line": 3122
       }
     },
     {
@@ -8336,7 +8336,7 @@
         "path": "/api/chat/messages/:messageId/buzz",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3133
+        "line": 3204
       }
     },
     {
@@ -8350,7 +8350,7 @@
         "path": "/api/chat/tasks",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3245
+        "line": 3316
       }
     },
     {
@@ -8364,7 +8364,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3435
+        "line": 3506
       }
     },
     {
@@ -8378,7 +8378,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3554
+        "line": 3625
       }
     },
     {
@@ -8392,7 +8392,7 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3603
+        "line": 3674
       }
     },
     {
@@ -8406,7 +8406,7 @@
         "path": "/api/chat/conversations/:id/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3798
+        "line": 3869
       }
     },
     {
@@ -8420,7 +8420,7 @@
         "path": "/api/chat/conversations/:id/threads/:messageId/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3882
+        "line": 3953
       }
     },
     {
@@ -8434,7 +8434,7 @@
         "path": "/api/chat/conversations/:id/unread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3942
+        "line": 4013
       }
     },
     {
@@ -8448,7 +8448,7 @@
         "path": "/api/chat/conversations/:id/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3986
+        "line": 4057
       }
     },
     {
@@ -8462,7 +8462,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4031
+        "line": 4102
       }
     },
     {
@@ -8476,7 +8476,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4137
+        "line": 4208
       }
     },
     {
@@ -8490,7 +8490,7 @@
         "path": "/api/chat/conversations/:id/nickname",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4212
+        "line": 4283
       }
     },
     {
@@ -8504,7 +8504,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4319
+        "line": 4390
       }
     },
     {
@@ -8518,7 +8518,7 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4380
+        "line": 4451
       }
     },
     {
@@ -8532,7 +8532,7 @@
         "path": "/api/chat/workflows",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4433
+        "line": 4504
       }
     },
     {
@@ -8546,7 +8546,7 @@
         "path": "/api/chat/workflows/instances",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4456
+        "line": 4527
       }
     },
     {
@@ -8560,7 +8560,7 @@
         "path": "/api/chat/workflows/instances/:instanceId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4637
+        "line": 4708
       }
     },
     {
@@ -8574,7 +8574,7 @@
         "path": "/api/chat/workflows/templates/from-thread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4814
+        "line": 4885
       }
     },
     {
@@ -10352,7 +10352,7 @@
         "path": "/api/kpi/bk/tip/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 750
+        "line": 753
       }
     },
     {
@@ -10366,7 +10366,7 @@
         "path": "/api/kpi/bk/revenue/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 906
+        "line": 909
       }
     },
     {
@@ -10380,7 +10380,7 @@
         "path": "/api/kpi/bk/revenue/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 917
+        "line": 920
       }
     },
     {
@@ -10394,7 +10394,7 @@
         "path": "/api/kpi/bk/paystub",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1013
+        "line": 1016
       }
     },
     {
@@ -10408,7 +10408,7 @@
         "path": "/api/kpi/bk/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1046
+        "line": 1049
       }
     },
     {
@@ -10422,7 +10422,7 @@
         "path": "/api/kpi/bk/attendance-exception",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1080
+        "line": 1083
       }
     },
     {
@@ -10436,7 +10436,7 @@
         "path": "/api/kpi/bk/attendance-exception/audit-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1135
+        "line": 1138
       }
     },
     {
@@ -10450,7 +10450,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1153
+        "line": 1156
       }
     },
     {
@@ -10464,7 +10464,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1198
+        "line": 1201
       }
     },
     {
@@ -10478,7 +10478,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1250
+        "line": 1253
       }
     },
     {
@@ -10492,7 +10492,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1262
+        "line": 1265
       }
     },
     {
@@ -10506,7 +10506,7 @@
         "path": "/api/kpi/bk/games/:id/done-bonuses",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1283
+        "line": 1286
       }
     },
     {
@@ -10520,7 +10520,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1306
+        "line": 1309
       }
     },
     {
@@ -10534,7 +10534,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1324
+        "line": 1327
       }
     },
     {
@@ -10548,7 +10548,7 @@
         "path": "/api/kpi/bk/games/:id/finalize",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1345
+        "line": 1348
       }
     },
     {
@@ -10562,7 +10562,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1366
+        "line": 1369
       }
     },
     {
@@ -13367,6 +13367,18 @@
       "filePath": "apps/web/app/campaigns/[slug]/page.tsx",
       "metadata": {
         "routePath": "/campaigns/[slug]",
+        "apiCallsCount": 0,
+        "apiCalls": []
+      }
+    },
+    {
+      "id": "page:/chat",
+      "type": "Component",
+      "label": "App Page: /chat",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/chat/page.tsx",
+      "metadata": {
+        "routePath": "/chat",
         "apiCallsCount": 0,
         "apiCalls": []
       }
@@ -31049,6 +31061,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatMobileApp.test",
+      "type": "UIComponent",
+      "label": "<MosChatMobileApp.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatMobileApp.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileApp.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosGoogleChatPortal.test",
       "type": "UIComponent",
       "label": "<MosGoogleChatPortal.test />",
@@ -31073,6 +31097,138 @@
       }
     },
     {
+      "id": "uicomp:MosChatContext",
+      "type": "UIComponent",
+      "label": "<MosChatContext />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/context/MosChatContext.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatContext",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatMobileActionSheet",
+      "type": "UIComponent",
+      "label": "<MosChatMobileActionSheet />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/MosChatMobileActionSheet.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileActionSheet",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatMobileApp",
+      "type": "UIComponent",
+      "label": "<MosChatMobileApp />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/MosChatMobileApp.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileApp",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatMobileComposer",
+      "type": "UIComponent",
+      "label": "<MosChatMobileComposer />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/MosChatMobileComposer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileComposer",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatMobileHeader",
+      "type": "UIComponent",
+      "label": "<MosChatMobileHeader />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/MosChatMobileHeader.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileHeader",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatMobileInbox",
+      "type": "UIComponent",
+      "label": "<MosChatMobileInbox />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/MosChatMobileInbox.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileInbox",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatMobileMessageItem",
+      "type": "UIComponent",
+      "label": "<MosChatMobileMessageItem />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/MosChatMobileMessageItem.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileMessageItem",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatMobileReactionSheet",
+      "type": "UIComponent",
+      "label": "<MosChatMobileReactionSheet />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/MosChatMobileReactionSheet.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileReactionSheet",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatMobileStream",
+      "type": "UIComponent",
+      "label": "<MosChatMobileStream />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/MosChatMobileStream.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileStream",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatMobileTasksTab",
+      "type": "UIComponent",
+      "label": "<MosChatMobileTasksTab />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/MosChatMobileTasksTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileTasksTab",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatMobileThreadSheet",
+      "type": "UIComponent",
+      "label": "<MosChatMobileThreadSheet />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/MosChatMobileThreadSheet.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileThreadSheet",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:mos-chat-stickers",
       "type": "UIComponent",
       "label": "<mos-chat-stickers />",
@@ -31093,6 +31249,30 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "mos-chat-bridge",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:mos-chat-types",
+      "type": "UIComponent",
+      "label": "<mos-chat-types />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/types/mos-chat-types.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "mos-chat-types",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:chat-helpers.test",
+      "type": "UIComponent",
+      "label": "<chat-helpers.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/utils/chat-helpers.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "chat-helpers.test",
         "isPrimitive": false
       }
     },
@@ -32997,8 +33177,8 @@
       "filePath": "apps/api/src/modules/ai/ag-chat-bridge.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16549,
-        "lineCount": 475,
+        "sizeBytes": 16898,
+        "lineCount": 485,
         "ext": ".ts"
       }
     },
@@ -33010,8 +33190,8 @@
       "filePath": "apps/api/src/modules/ai/ai.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 38604,
-        "lineCount": 893,
+        "sizeBytes": 40500,
+        "lineCount": 940,
         "ext": ".ts"
       }
     },
@@ -33049,8 +33229,8 @@
       "filePath": "apps/api/src/modules/ai/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 34151,
-        "lineCount": 649,
+        "sizeBytes": 35017,
+        "lineCount": 672,
         "ext": ".ts"
       }
     },
@@ -33231,8 +33411,8 @@
       "filePath": "apps/api/src/modules/bible/bible.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 32006,
-        "lineCount": 926,
+        "sizeBytes": 32000,
+        "lineCount": 924,
         "ext": ".ts"
       }
     },
@@ -33699,8 +33879,8 @@
       "filePath": "apps/api/src/modules/campaigns/campaign.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 184204,
-        "lineCount": 5200,
+        "sizeBytes": 187636,
+        "lineCount": 5273,
         "ext": ".ts"
       }
     },
@@ -33933,8 +34113,8 @@
       "filePath": "apps/api/src/modules/chat/chat-repository.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 27543,
-        "lineCount": 710,
+        "sizeBytes": 39172,
+        "lineCount": 1009,
         "ext": ".ts"
       }
     },
@@ -34011,8 +34191,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 188561,
-        "lineCount": 4906,
+        "sizeBytes": 191472,
+        "lineCount": 4977,
         "ext": ".ts"
       }
     },
@@ -34934,8 +35114,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 55088,
-        "lineCount": 1382,
+        "sizeBytes": 55306,
+        "lineCount": 1385,
         "ext": ".ts"
       }
     },
@@ -37952,6 +38132,19 @@
       "metadata": {
         "sizeBytes": 1435,
         "lineCount": 35,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/chat/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/chat/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 892,
+        "lineCount": 32,
         "ext": ".tsx"
       }
     },
@@ -44151,8 +44344,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2693,
-        "lineCount": 69,
+        "sizeBytes": 2761,
+        "lineCount": 70,
         "ext": ".ts"
       }
     },
@@ -51346,6 +51539,13 @@
     {
       "id": "edge:page:/campaigns/[slug]:ws:apps/web",
       "source": "page:/campaigns/[slug]",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
+      "id": "edge:page:/chat:ws:apps/web",
+      "source": "page:/chat",
       "target": "ws:apps/web",
       "type": "RENDERS",
       "label": "PAGE_OF"
@@ -62453,6 +62653,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatMobileApp.test:ws:apps/web",
+      "source": "uicomp:MosChatMobileApp.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileApp.test:token:color:primary",
+      "source": "uicomp:MosChatMobileApp.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosGoogleChatPortal.test:ws:apps/web",
       "source": "uicomp:MosGoogleChatPortal.test",
       "target": "ws:apps/web",
@@ -62481,6 +62695,160 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatContext:ws:apps/web",
+      "source": "uicomp:MosChatContext",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatContext:token:color:primary",
+      "source": "uicomp:MosChatContext",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileActionSheet:ws:apps/web",
+      "source": "uicomp:MosChatMobileActionSheet",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileActionSheet:token:color:primary",
+      "source": "uicomp:MosChatMobileActionSheet",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileApp:ws:apps/web",
+      "source": "uicomp:MosChatMobileApp",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileApp:token:color:primary",
+      "source": "uicomp:MosChatMobileApp",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileComposer:ws:apps/web",
+      "source": "uicomp:MosChatMobileComposer",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileComposer:token:color:primary",
+      "source": "uicomp:MosChatMobileComposer",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileHeader:ws:apps/web",
+      "source": "uicomp:MosChatMobileHeader",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileHeader:token:color:primary",
+      "source": "uicomp:MosChatMobileHeader",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileInbox:ws:apps/web",
+      "source": "uicomp:MosChatMobileInbox",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileInbox:token:color:primary",
+      "source": "uicomp:MosChatMobileInbox",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileMessageItem:ws:apps/web",
+      "source": "uicomp:MosChatMobileMessageItem",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileMessageItem:token:color:primary",
+      "source": "uicomp:MosChatMobileMessageItem",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileReactionSheet:ws:apps/web",
+      "source": "uicomp:MosChatMobileReactionSheet",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileReactionSheet:token:color:primary",
+      "source": "uicomp:MosChatMobileReactionSheet",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileStream:ws:apps/web",
+      "source": "uicomp:MosChatMobileStream",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileStream:token:color:primary",
+      "source": "uicomp:MosChatMobileStream",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileTasksTab:ws:apps/web",
+      "source": "uicomp:MosChatMobileTasksTab",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileTasksTab:token:color:primary",
+      "source": "uicomp:MosChatMobileTasksTab",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileThreadSheet:ws:apps/web",
+      "source": "uicomp:MosChatMobileThreadSheet",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileThreadSheet:token:color:primary",
+      "source": "uicomp:MosChatMobileThreadSheet",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:mos-chat-stickers:ws:apps/web",
       "source": "uicomp:mos-chat-stickers",
       "target": "ws:apps/web",
@@ -62504,6 +62872,34 @@
     {
       "id": "edge:uicomp:mos-chat-bridge:token:color:primary",
       "source": "uicomp:mos-chat-bridge",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:mos-chat-types:ws:apps/web",
+      "source": "uicomp:mos-chat-types",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:mos-chat-types:token:color:primary",
+      "source": "uicomp:mos-chat-types",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:chat-helpers.test:ws:apps/web",
+      "source": "uicomp:chat-helpers.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:chat-helpers.test:token:color:primary",
+      "source": "uicomp:chat-helpers.test",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -96628,30 +97024,30 @@
     }
   ],
   "stats": {
-    "totalNodes": 3451,
-    "totalEdges": 7371,
+    "totalNodes": 3467,
+    "totalEdges": 7400,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 176,
       "FastifyRoute": 721,
-      "Component": 60,
+      "Component": 61,
       "SharedType": 1270,
       "DesignToken": 12,
-      "UIComponent": 238,
-      "File": 971
+      "UIComponent": 252,
+      "File": 972
     },
     "edgeTypeCounts": {
       "EXPORTS": 1458,
       "HANDLES_ROUTE": 721,
-      "RENDERS": 298,
-      "USES_TOKEN": 240,
+      "RENDERS": 313,
+      "USES_TOKEN": 254,
       "IMPORTS": 532,
       "QUERIES_MODEL": 406,
       "API_CALL": 3716
     },
     "fastifyRouteCount": 726,
     "prismaModelCount": 176,
-    "nextPageCount": 60,
+    "nextPageCount": 61,
     "sharedTypeCount": 1270
   },
   "routes": [
