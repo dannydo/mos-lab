@@ -62,12 +62,29 @@ export interface CashFlowEntry {
   recurringInterval?: 'ONCE' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY' | null;
   recurringEndDate?: string | null;
   sourceRef?: string | null;
+  projectName?: string | null;
   createdByStaffId?: number | null;
   createdByName?: string | null;
   approvedByStaffId?: number | null;
   approvedByName?: string | null;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface CashFlowInflowBreakdown {
+  // Wings Lashes (đồng bộ live MOS / CC Leaderboard)
+  wingsLashesAchieved: number;
+  wingsLashesProjectedAdditional: number;
+  wingsLashesTotalProjected: number;
+
+  // Wings Academy (nhập thủ công)
+  academyExpectedInflow: number;
+
+  // Dự án khác (nhập thủ công)
+  otherProjectsExpectedInflow: number;
+
+  // Tổng dự kiến Thu = Dự kiến thêm Wings Lashes + Dự kiến thu Academy + Dự kiến thu Dự án khác
+  totalExpectedInflow: number;
 }
 
 export interface CashFlowForecastSummary {
@@ -86,6 +103,7 @@ export interface CashFlowForecastSummary {
   minSafetyThreshold: number;
   criticalOutflowPending: number; // Tổng các khoản chi CRITICAL & HIGH đang chờ thanh toán
   totalVatOutflow: number; // Tổng tiền thuế VAT trong các khoản chi
+  inflowBreakdown?: CashFlowInflowBreakdown;
   inflowCategoryBreakdown: Record<string, number>;
   outflowCategoryBreakdown: Record<string, number>;
   priorityOutflowBreakdown: Record<string, number>;

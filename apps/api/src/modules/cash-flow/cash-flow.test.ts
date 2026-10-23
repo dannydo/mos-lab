@@ -268,3 +268,132 @@ test('PUT /api/cash-flow/accounts/batch-balance updates multiple accounts at onc
   assert.equal(body.data[0].currentBalance, 80000000);
 });
 
+test('GET /api/cash-flow/forecast calculates Inflow breakdown (Wings Lashes, Academy, Other Projects) correctly', async () => {
+  const app = createMockApp({
+    crmCashFlowEntry: {
+      findMany: async () => [
+        {
+          id: 10,
+          flowType: 'INFLOW',
+          category: 'REVENUE_ACADEMY',
+          title: 'Học phí K15',
+          description: null,
+          amount: 25000000,
+          hasVat: false,
+          vatRate: 0,
+          vatAmount: 0,
+          totalAmount: 25000000,
+          priority: 'MEDIUM',
+          status: 'PENDING',
+          expectedDate: new Date(),
+          dueDate: null,
+          actualDate: null,
+          accountId: 1,
+          storeId: 6,
+          paymentMethod: null,
+          isRecurring: false,
+          recurringInterval: null,
+          recurringEndDate: null,
+          sourceRef: null,
+          createdByStaffId: 1,
+          createdByName: 'Danny Do',
+          approvedByStaffId: null,
+          approvedByName: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: 11,
+          flowType: 'INFLOW',
+          category: 'REVENUE_OTHER',
+          title: 'Thu đợt 1',
+          description: null,
+          amount: 15000000,
+          hasVat: false,
+          vatRate: 0,
+          vatAmount: 0,
+          totalAmount: 15000000,
+          priority: 'MEDIUM',
+          status: 'PENDING',
+          expectedDate: new Date(),
+          dueDate: null,
+          actualDate: null,
+          accountId: 1,
+          storeId: null,
+          paymentMethod: null,
+          isRecurring: false,
+          recurringInterval: null,
+          recurringEndDate: null,
+          sourceRef: 'PROJECT: Dự án Cà phê',
+          createdByStaffId: 1,
+          createdByName: 'Danny Do',
+          approvedByStaffId: null,
+          approvedByName: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ],
+    },
+  });
+  await app.register(cashFlowRoutes, { prefix: '/api' });
+
+  const res = await app.inject({
+    method: 'GET',
+    url: '/api/cash-flow/forecast',
+    headers: AUTH_HEADERS,
+  });
+
+  assert.equal(res.statusCode, 200);
+  const body = res.json();
+  assert.equal(body.success, true);
+  assert.ok(body.data.summary.inflowBreakdown);
+
+  const breakdown = body.data.summary.inflowBreakdown;
+  assert.equal(breakdown.academyExpectedInflow, 25000000);
+  assert.equal(breakdown.otherProjectsExpectedInflow, 15000000);
+  // Total expected inflow must match sum of projected additional + academy + other (without double counting achieved)
+  assert.equal(
+    breakdown.totalExpectedInflow,
+    breakdown.wingsLashesProjectedAdditional + 25000000 + 15000000
+  );
+  assert.equal(body.data.summary.totalExpectedInflow, breakdown.totalExpectedInflow);
+});
+
+test('POST /api/cash-flow/entries supports projectName for REVENUE_OTHER', async () => {
+  let createdPayload: SafeAny = null;
+  const app = createMockApp({
+    crmCashFlowEntry: {
+      create: async (args: SafeAny) => {
+        createdPayload = args.data;
+        return {
+          id: 99,
+          ...args.data,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      },
+    },
+  });
+  await app.register(cashFlowRoutes, { prefix: '/api' });
+
+  const res = await app.inject({
+    method: 'POST',
+    url: '/api/cash-flow/entries',
+    headers: AUTH_HEADERS,
+    payload: {
+      flowType: 'INFLOW',
+      category: 'REVENUE_OTHER',
+      title: 'Thu hoàn vốn quý 4',
+      projectName: 'Dự án Cà Phê Wings',
+      amount: 50000000,
+      expectedDate: '2026-10-30',
+    },
+  });
+
+  assert.equal(res.statusCode, 201);
+  const body = res.json();
+  assert.equal(body.success, true);
+  assert.equal(body.data.projectName, 'Dự án Cà Phê Wings');
+  assert.equal(createdPayload.sourceRef, 'PROJECT: Dự án Cà Phê Wings');
+});
+

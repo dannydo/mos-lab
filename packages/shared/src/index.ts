@@ -6,6 +6,7 @@ export * from './types/academy-campaign.js';
 export * from './types/academy-workshop.js';
 export * from './types/dashboard.js';
 export * from './types/auth.js';
+export { isCvRole, getDefaultRouteForRole } from './types/auth.js';
 export * from './types/plan.js';
 export * from './types/call.js';
 export * from './types/kpi.js';

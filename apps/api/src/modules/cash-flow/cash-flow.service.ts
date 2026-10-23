@@ -12,6 +12,7 @@ import {
   CashFlowTimelinePoint,
   CashFlowType,
 } from '@mos-lab/shared';
+import { CcKpiService } from '../kpi/services/cc-kpi.service.js';
 
 export class CashFlowService {
   constructor(private fastify: FastifyInstance) {}
@@ -60,29 +61,76 @@ export class CashFlowService {
       orderBy: [{ expectedDate: 'asc' }, { priority: 'desc' }],
     });
 
-    // 3. Lấy thực thu từ Legacy Orders (đơn hàng đã hoàn thành)
-    let legacyCompletedOrdersTotal = 0;
+    // 3. Đồng bộ live doanh thu Wings Lashes từ MOS (tham chiếu CC Leaderboard)
+    let wingsLashesAchieved = 0;
+    let wingsLashesTotalProjected = 0;
+    let wingsLashesProjectedAdditional = 0;
+
     try {
-      const legacyOrders = await this.fastify.prisma.legacy.order.findMany({
-        where: {
-          order_state: 'Completed',
-          booking_date_only: {
-            gte: startDateTime,
-            lte: endDateTime,
-          },
-          ...(params.storeId ? { client_store_id: params.storeId } : {}),
-        },
-        select: {
-          total_price: true,
-          booking_date_only: true,
-        },
+      const bonusRes = await CcKpiService.getCcDailySalesBonus(this.fastify, {
+        dateFrom: startDateStr,
+        dateTo: endDateStr,
+        storeId: params.storeId ? String(params.storeId) : 'ALL',
       });
-      legacyCompletedOrdersTotal = legacyOrders.reduce((sum, o) => sum + (o.total_price || 0), 0);
+      if (bonusRes?.summary) {
+        wingsLashesAchieved = Math.round(bonusRes.summary.totalSales || 0);
+        wingsLashesTotalProjected = Math.round(bonusRes.summary.projectedTotalSales || wingsLashesAchieved);
+        wingsLashesProjectedAdditional = Math.max(0, wingsLashesTotalProjected - wingsLashesAchieved);
+      }
     } catch {
-      // Legacy DB fallback
+      // Fallback direct legacy orders query
+      try {
+        const legacyOrders = await this.fastify.prisma.legacy.order.findMany({
+          where: {
+            order_state: 'Completed',
+            booking_date_only: {
+              gte: startDateTime,
+              lte: endDateTime,
+            },
+            ...(params.storeId ? { client_store_id: params.storeId } : {}),
+          },
+          select: {
+            total_price: true,
+          },
+        });
+        wingsLashesAchieved = legacyOrders.reduce((sum, o) => sum + (o.total_price || 0), 0);
+        wingsLashesTotalProjected = wingsLashesAchieved;
+        wingsLashesProjectedAdditional = 0;
+      } catch {
+        // Safe fallback
+      }
     }
 
-    // 4. Xây dựng Timeline theo từng ngày
+    // 4. Phân loại các khoản thu thủ công: Wings Academy & Dự án khác
+    // Chỉ tính các khoản chưa thu (status !== 'CANCELLED' && status !== 'COLLECTED') vào dự kiến
+    let academyExpectedInflow = 0;
+    let otherProjectsExpectedInflow = 0;
+    let otherManualExpectedInflow = 0;
+    let manualCollectedInflow = 0;
+
+    for (const e of entries) {
+      if (e.flowType === 'INFLOW') {
+        if (e.status === 'COLLECTED') {
+          manualCollectedInflow += e.totalAmount;
+        } else {
+          if (e.category === 'REVENUE_ACADEMY') {
+            academyExpectedInflow += e.totalAmount;
+          } else if (e.category === 'REVENUE_OTHER') {
+            otherProjectsExpectedInflow += e.totalAmount;
+          } else {
+            otherManualExpectedInflow += e.totalAmount;
+          }
+        }
+      }
+    }
+
+    // Tổng dự kiến Thu = Dự kiến thêm Wings Lashes + Dự kiến thu Academy + Dự kiến thu Dự án khác
+    // (Chỉ tính phần dự kiến phát sinh từ hiện tại đến cuối kỳ, không cộng doanh thu đã đạt)
+    const totalExpectedInflow =
+      wingsLashesProjectedAdditional + academyExpectedInflow + otherProjectsExpectedInflow + otherManualExpectedInflow;
+    const totalActualInflow = wingsLashesAchieved + manualCollectedInflow;
+
+    // 5. Xây dựng Timeline theo từng ngày
     const timeline: CashFlowTimelinePoint[] = [];
     const dayNames = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
 
@@ -92,16 +140,24 @@ export class CashFlowService {
     let shortfallDate: string | null = null;
     const shortfallRiskAlerts: CashFlowForecastResponse['shortfallRiskAlerts'] = [];
 
-    let totalExpectedInflow = 0;
-    let totalActualInflow = 0;
     let totalExpectedOutflow = 0;
     let totalActualOutflow = 0;
     let criticalOutflowPending = 0;
     let totalVatOutflow = 0;
 
-    const inflowCategoryBreakdown: Record<string, number> = {};
     const outflowCategoryBreakdown: Record<string, number> = {};
     const priorityOutflowBreakdown: Record<string, number> = {};
+
+    const todayStr = today.toISOString().slice(0, 10);
+    const projectionStartDateStr = startDateStr > todayStr ? startDateStr : todayStr;
+    let remainingDaysCount = 0;
+    if (projectionStartDateStr <= endDateStr) {
+      const dStart = new Date(projectionStartDateStr);
+      const dEnd = new Date(endDateStr);
+      remainingDaysCount = Math.max(1, Math.round((dEnd.getTime() - dStart.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+    }
+    const dailyProjectedLashes =
+      remainingDaysCount > 0 ? Math.round(wingsLashesProjectedAdditional / remainingDaysCount) : 0;
 
     const currentDateCursor = new Date(startDateTime);
     while (currentDateCursor <= endDateTime) {
@@ -122,13 +178,17 @@ export class CashFlowService {
       let dayExpectedOutflow = 0;
       let dayActualOutflow = 0;
 
+      // Phân bổ phần dự kiến thêm của Wings Lashes cho các ngày từ hôm nay trở đi
+      if (dateStr >= todayStr && dateStr <= endDateStr) {
+        dayExpectedInflow += dailyProjectedLashes;
+      }
+
       for (const inf of dayInflows) {
         if (inf.status === 'COLLECTED') {
           dayActualInflow += inf.totalAmount;
         } else {
           dayExpectedInflow += inf.totalAmount;
         }
-        inflowCategoryBreakdown[inf.category] = (inflowCategoryBreakdown[inf.category] || 0) + inf.totalAmount;
       }
 
       for (const outf of dayOutflows) {
@@ -171,8 +231,6 @@ export class CashFlowService {
         });
       }
 
-      totalExpectedInflow += dayExpectedInflow;
-      totalActualInflow += dayActualInflow;
       totalExpectedOutflow += dayExpectedOutflow;
       totalActualOutflow += dayActualOutflow;
 
@@ -199,7 +257,7 @@ export class CashFlowService {
     const summary: CashFlowForecastSummary = {
       openingBalance: totalCurrentBalance,
       totalExpectedInflow,
-      totalActualInflow: totalActualInflow + legacyCompletedOrdersTotal,
+      totalActualInflow,
       totalExpectedOutflow,
       totalActualOutflow,
       closingForecastBalance: runningBalance,
@@ -212,7 +270,19 @@ export class CashFlowService {
       minSafetyThreshold: totalSafetyThreshold,
       criticalOutflowPending,
       totalVatOutflow,
-      inflowCategoryBreakdown,
+      inflowBreakdown: {
+        wingsLashesAchieved,
+        wingsLashesProjectedAdditional,
+        wingsLashesTotalProjected,
+        academyExpectedInflow,
+        otherProjectsExpectedInflow,
+        totalExpectedInflow,
+      },
+      inflowCategoryBreakdown: {
+        REVENUE_SERVICE: wingsLashesTotalProjected,
+        REVENUE_ACADEMY: academyExpectedInflow,
+        REVENUE_OTHER: otherProjectsExpectedInflow,
+      },
       outflowCategoryBreakdown,
       priorityOutflowBreakdown,
     };
@@ -290,6 +360,7 @@ export class CashFlowService {
       flowType: CashFlowType;
       category: CashFlowCategory;
       title: string;
+      projectName?: string;
       description?: string;
       amount: number;
       hasVat?: boolean;
@@ -315,6 +386,10 @@ export class CashFlowService {
     const vatAmount = hasVat && vatRate > 0 ? Math.round(amount * (vatRate / 100)) : 0;
     const totalAmount = amount + vatAmount;
 
+    const resolvedSourceRef = data.projectName
+      ? (data.projectName.startsWith('PROJECT:') ? data.projectName : `PROJECT: ${data.projectName}`)
+      : (data.sourceRef || null);
+
     const entry = await this.fastify.prisma.crm.crmCashFlowEntry.create({
       data: {
         flowType: data.flowType,
@@ -337,7 +412,7 @@ export class CashFlowService {
         isRecurring: Boolean(data.isRecurring),
         recurringInterval: data.recurringInterval || null,
         recurringEndDate: data.recurringEndDate ? new Date(`${data.recurringEndDate}T00:00:00.000Z`) : null,
-        sourceRef: data.sourceRef || null,
+        sourceRef: resolvedSourceRef,
         createdByStaffId: staff.id,
         createdByName: staff.displayName,
       },
@@ -367,6 +442,7 @@ export class CashFlowService {
       flowType: CashFlowType;
       category: CashFlowCategory;
       title: string;
+      projectName?: string;
       description?: string;
       amount: number;
       hasVat?: boolean;
@@ -382,6 +458,7 @@ export class CashFlowService {
       isRecurring?: boolean;
       recurringInterval?: 'ONCE' | 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
       recurringEndDate?: string;
+      sourceRef?: string;
     }>,
     staff: { id: number; displayName: string }
   ): Promise<CashFlowEntry> {
@@ -412,6 +489,10 @@ export class CashFlowService {
       approvedByName = staff.displayName;
     }
 
+    const resolvedSourceRef = data.projectName !== undefined
+      ? (data.projectName ? (data.projectName.startsWith('PROJECT:') ? data.projectName : `PROJECT: ${data.projectName}`) : null)
+      : (data.sourceRef !== undefined ? data.sourceRef : undefined);
+
     const updated = await this.fastify.prisma.crm.crmCashFlowEntry.update({
       where: { id },
       data: {
@@ -439,6 +520,7 @@ export class CashFlowService {
         ...(data.recurringEndDate !== undefined
           ? { recurringEndDate: data.recurringEndDate ? new Date(`${data.recurringEndDate}T00:00:00.000Z`) : null }
           : {}),
+        ...(resolvedSourceRef !== undefined ? { sourceRef: resolvedSourceRef } : {}),
         approvedByStaffId,
         approvedByName,
       },
@@ -660,6 +742,9 @@ export class CashFlowService {
       recurringInterval: e.recurringInterval as CashFlowEntry['recurringInterval'],
       recurringEndDate: e.recurringEndDate ? e.recurringEndDate.toISOString().slice(0, 10) : null,
       sourceRef: e.sourceRef,
+      projectName: e.sourceRef?.startsWith('PROJECT:')
+        ? e.sourceRef.replace(/^PROJECT:\s*/, '')
+        : (e.category === 'REVENUE_OTHER' ? e.title : null),
       createdByStaffId: e.createdByStaffId,
       createdByName: e.createdByName,
       approvedByStaffId: e.approvedByStaffId,
