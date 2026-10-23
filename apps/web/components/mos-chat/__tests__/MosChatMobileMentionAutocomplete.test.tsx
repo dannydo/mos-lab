@@ -9,7 +9,9 @@ import {
 import { MosChatProvider } from '../context/MosChatContext';
 import { MosChatMobileApp } from '../mobile/MosChatMobileApp';
 
-// Mock staff directory
+// Mock staff directory and addMemberToSpace
+const mockAddMemberToSpace = vi.fn();
+
 vi.mock('../context/MosChatContext', async () => {
   const actual = await vi.importActual<any>('../context/MosChatContext');
   return {
@@ -30,6 +32,7 @@ vi.mock('../context/MosChatContext', async () => {
       ],
       currentUser: { id: 3, name: 'Danny Do', role: 'super_admin' },
       sendMessage: vi.fn(),
+      addMemberToSpace: mockAddMemberToSpace,
       activeThreadMsg: null,
       threadReplies: [],
       sendThreadReply: vi.fn(),
@@ -141,6 +144,53 @@ describe('MosChatMobileMentionAutocomplete', () => {
 
       expect(onClose).toHaveBeenCalled();
       expect(screen.queryByRole('listbox')).toBeNull();
+    });
+
+    it('partitions outside-group members and requires invitation before tagging', async () => {
+      mockAddMemberToSpace.mockReset();
+      mockAddMemberToSpace.mockResolvedValue({ id: 'conv-space-1' });
+
+      const onSelect = vi.fn();
+      const textarea = document.createElement('textarea');
+      textarea.value = '@ha';
+      textarea.selectionEnd = 3;
+      const ref = { current: textarea };
+
+      render(<MosChatMobileMentionAutocomplete text="@ha" onSelectMention={onSelect} textareaRef={ref} />);
+
+      // Should show outside-group section
+      expect(screen.getByText(/Ngoài nhóm · Phải mời trước/)).toBeTruthy();
+      expect(screen.getByText('Hà Booker')).toBeTruthy();
+      expect(screen.getByText('Mời & Tag')).toBeTruthy();
+
+      // Tap on outside-group member Hà Booker
+      fireEvent.click(screen.getByText('Hà Booker'));
+
+      // Should NOT insert tag immediately
+      expect(onSelect).not.toHaveBeenCalled();
+
+      // Should display confirmation dialog
+      expect(screen.getByRole('dialog', { name: 'Xác nhận mời vào nhóm' })).toBeTruthy();
+      expect(screen.getByText('Mời vào nhóm trước')).toBeTruthy();
+      expect(screen.getByText(/Bạn cần mời vào nhóm trước để có thể nhắc tên/)).toBeTruthy();
+
+      // Test cancel: click Hủy
+      fireEvent.click(screen.getByText('Hủy'));
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(onSelect).not.toHaveBeenCalled();
+      expect(mockAddMemberToSpace).not.toHaveBeenCalled();
+
+      // Re-click Hà Booker to open dialog again
+      fireEvent.click(screen.getByText('Hà Booker'));
+      expect(screen.getByRole('dialog')).toBeTruthy();
+
+      // Confirm invitation: click Mời & Nhắc tên
+      fireEvent.click(screen.getByText('Mời & Nhắc tên'));
+
+      await waitFor(() => {
+        expect(mockAddMemberToSpace).toHaveBeenCalledWith(4);
+        expect(onSelect).toHaveBeenCalledWith('@Hà Booker ');
+      });
     });
   });
 });

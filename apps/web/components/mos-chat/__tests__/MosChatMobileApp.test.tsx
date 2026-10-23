@@ -17,6 +17,7 @@ vi.mock('../../../lib/api-client', () => ({
             subtitle: 'Kênh vận hành salon',
             color: '#d4a72c',
             memberCount: 15,
+            memberIds: [10, 20, 99],
             unreadCount: 2,
             updatedAt: new Date().toISOString(),
             messages: [

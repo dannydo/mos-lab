@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, SendHorizontal, Mic, Smile, X, Sparkles } from 'lucide-react';
+import { message as antdMessage } from 'antd';
 import { useMosChat } from '../context/MosChatContext';
 import type { MosChatStickerPackId } from '../mos-chat-stickers';
 import { MosChatMobileMentionAutocomplete } from './MosChatMobileMentionAutocomplete';
+import { isUserMentionedInText } from '../utils/chat-helpers';
 
 export interface MosChatMobileComposerProps {
   onOpenActionSheet: () => void;
@@ -19,7 +21,7 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
   text: controlledText,
   onTextChange,
 }) => {
-  const { sendMessage, replyingToMessage, setReplyingToMessage, activeConversation } = useMosChat();
+  const { sendMessage, replyingToMessage, setReplyingToMessage, activeConversation, staffDirectory } = useMosChat();
 
   const [internalText, setInternalText] = useState<string>('');
   const text = controlledText !== undefined ? controlledText : internalText;
@@ -74,6 +76,28 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
   const handleSend = async () => {
     const trimmed = text.trim();
     if (!trimmed || isSending) return;
+
+    // Chỉ cho phép tag thành viên trong nhóm. Nếu có người ngoài nhóm, cảnh báo mời vào nhóm trước
+    if (activeConversation?.type === 'space') {
+      const memberIds = Array.isArray(activeConversation.memberIds) ? activeConversation.memberIds.map(Number) : [];
+      const membersList = Array.isArray(activeConversation.members)
+        ? activeConversation.members.map((m) => Number(m.id))
+        : [];
+      const memberSet = new Set<number>([...memberIds, ...membersList]);
+
+      const nonMemberMentions = (staffDirectory || []).filter((s) => {
+        if (memberSet.has(s.id)) return false;
+        return isUserMentionedInText(trimmed, s);
+      });
+
+      if (nonMemberMentions.length > 0) {
+        const names = nonMemberMentions.map((s) => s.displayName || s.username).join(', ');
+        antdMessage.warning(
+          `Đồng nghiệp ${names} chưa tham gia nhóm này. Bạn hãy mời vào nhóm trước khi nhắc tên nhé!`
+        );
+        return;
+      }
+    }
 
     setIsSending(true);
     const success = await sendMessage(trimmed, {

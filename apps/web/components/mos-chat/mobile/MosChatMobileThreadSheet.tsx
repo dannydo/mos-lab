@@ -13,9 +13,12 @@ import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
 import { apiClient } from '../../../lib/api-client';
 import type { MosChatImageAttachment, MosChatThreadReply, SafeAny } from '@mos-lab/shared';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
+import { isUserMentionedInText } from '../utils/chat-helpers';
 
 export const MosChatMobileThreadSheet: React.FC = () => {
   const {
+    activeConversation,
+    staffDirectory,
     activeThreadMsg,
     threadReplies,
     sendThreadReply,
@@ -106,6 +109,28 @@ export const MosChatMobileThreadSheet: React.FC = () => {
   const handleSend = async () => {
     const trimmed = text.trim();
     if ((!trimmed && attachedImages.length === 0) || isSending) return;
+
+    // Enforce in-group tagging check for group spaces
+    if (activeConversation && activeConversation.type?.toLowerCase() === 'space') {
+      const memberIds = Array.isArray(activeConversation.memberIds) ? activeConversation.memberIds.map(Number) : [];
+      const membersList = Array.isArray(activeConversation.members)
+        ? activeConversation.members.map((m) => Number(m.id || (m as SafeAny).staffId))
+        : [];
+      const memberSet = new Set<number>([...memberIds, ...membersList]);
+
+      const nonMemberMentions = (staffDirectory || []).filter((s) => {
+        if (memberSet.has(s.id)) return false;
+        return isUserMentionedInText(trimmed, s);
+      });
+
+      if (nonMemberMentions.length > 0) {
+        const names = nonMemberMentions.map((s) => s.displayName || s.username).join(', ');
+        antdMessage.warning(
+          `Đồng nghiệp ${names} chưa tham gia nhóm này. Bạn hãy mời vào nhóm trước khi nhắc tên nhé!`
+        );
+        return;
+      }
+    }
 
     let payloadText = trimmed;
     if (replyingToReply) {
