@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Check, Copy, ExternalLink, Info, AlertTriangle, AlertCircle, Lightbulb, ShieldAlert } from 'lucide-react';
 import { parseMarkdown, type BlockToken, type InlineToken, type ListItemToken } from './markdown-parser';
+import { KatexMath } from './KatexMath';
 
 export interface RichTextViewerProps {
   content?: string | null;
@@ -62,6 +63,8 @@ function renderInlineTokens(tokens: InlineToken[], keyPrefix = 'tok'): React.Rea
             <ExternalLink className="inline h-3 w-3 shrink-0 opacity-70" />
           </a>
         );
+      case 'inline_math':
+        return <KatexMath key={key} math={token.content} block={false} />;
       case 'soft_break':
         return <br key={key} />;
       default:
@@ -291,6 +294,9 @@ function renderBlock(block: BlockToken, index: number, compact: boolean): React.
 
     case 'code_block':
       return <CodeBlockRenderer key={key} language={block.language} code={block.code} />;
+
+    case 'math_block':
+      return <KatexMath key={key} math={block.content} block={true} />;
 
     case 'table':
       return (

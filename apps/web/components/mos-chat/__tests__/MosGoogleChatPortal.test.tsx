@@ -14,6 +14,19 @@ vi.mock('../../voice-assistant/speech-utils', async (importOriginal) => {
   };
 });
 
+vi.mock('../utils/chat-helpers', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../utils/chat-helpers')>();
+  return {
+    ...actual,
+    readOrCompressImagePayload: vi.fn().mockResolvedValue({
+      dataBase64: 'dGVzdA==',
+      mimeType: 'image/png',
+      width: 100,
+      height: 100,
+    }),
+  };
+});
+
 // Mock matchMedia
 beforeEach(() => {
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
@@ -71,6 +84,15 @@ vi.mock('../../../lib/api-client', () => ({
           senderName: 'Danny Do',
           senderRole: 'Admin',
           buzzedAt: new Date().toISOString(),
+        },
+      }),
+      uploadImage: vi.fn().mockResolvedValue({
+        attachment: {
+          id: 'att-123',
+          url: '/uploads/test-image.png',
+          name: 'test-image.png',
+          width: 100,
+          height: 100,
         },
       }),
     },
@@ -657,5 +679,199 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
       expect(screen.getByText('BUZZ')).toBeTruthy();
     });
     expect(playNeuralSpeech).not.toHaveBeenCalled();
+  });
+
+  it('allows dragging and dropping image file into the subthread pane and composer', async () => {
+    const mockConvWithThread = {
+      id: 'space-test-subthread',
+      type: 'space' as const,
+      name: 'General Discussion',
+      memberCount: 3,
+      unreadCount: 0,
+      updatedAt: new Date().toISOString(),
+      messages: [
+        {
+          id: 'msg-with-thread-1',
+          conversationId: 'space-test-subthread',
+          senderId: 'staff-1',
+          senderName: 'Tâm Nguyễn',
+          senderRole: 'Admin',
+          text: 'Tin nhắn gốc có subthread',
+          timeLabel: '14:00',
+          createdAt: new Date().toISOString(),
+          thread: [
+            {
+              id: 'reply-1',
+              senderId: 'staff-2',
+              senderName: 'Bảo Hân',
+              text: 'Câu trả lời 1',
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        },
+      ],
+    };
+
+    (apiClient.chat.bootstrap as any).mockResolvedValue({
+      unchanged: false,
+      version: 1,
+      conversations: [mockConvWithThread],
+      tasks: [],
+      staffDirectory: [{ id: 99, displayName: 'Danny Do', role: 'Admin' }],
+      accessConfig: { allowAllStaff: true, allowedGroupKeys: [], allowedStaffIds: [] },
+      canAccessChat: true,
+    });
+
+    const { container } = render(
+      <MosGoogleChatPortal
+        open={true}
+        onClose={vi.fn()}
+        onToggle={vi.fn()}
+        currentUser={{ id: 99, displayName: 'Danny Do', role: 'Admin' }}
+      />
+    );
+
+    // Click on conversation in sidebar to open it
+    await waitFor(() => {
+      expect(screen.getByText('General Discussion')).toBeTruthy();
+    });
+    fireEvent.click(screen.getByText('General Discussion'));
+
+    // Wait for message and click thread badge to open thread
+    await waitFor(() => {
+      expect(screen.getByText('1 trả lời')).toBeTruthy();
+    });
+    fireEvent.click(screen.getByText('1 trả lời'));
+
+    // Thread pane should open
+    await waitFor(() => {
+      const threadPane = container.querySelector('[data-chat-thread-pane="true"]');
+      expect(threadPane).toBeTruthy();
+    });
+
+    const threadPane = container.querySelector('[data-chat-thread-pane="true"]')!;
+
+    // Dragover with Files
+    fireEvent.dragOver(threadPane, {
+      dataTransfer: {
+        types: ['Files'],
+      },
+    });
+
+    // Drop file into thread pane
+    const mockFile = new File(['dummy content'], 'test-image.png', { type: 'image/png' });
+    (apiClient.chat.uploadImage as any).mockResolvedValue({
+      attachment: {
+        id: 'att-123',
+        url: '/uploads/test-image.png',
+        name: 'test-image.png',
+        width: 100,
+        height: 100,
+      },
+    });
+
+    fireEvent.drop(threadPane, {
+      dataTransfer: {
+        files: [mockFile],
+      },
+    });
+
+    await waitFor(() => {
+      expect(apiClient.chat.uploadImage).toHaveBeenCalled();
+    });
+  });
+
+  it('allows pasting image file from clipboard into the subthread textarea and pane', async () => {
+    const mockConvWithThread = {
+      id: 'space-test-paste',
+      type: 'space' as const,
+      name: 'General Discussion',
+      memberCount: 3,
+      unreadCount: 0,
+      updatedAt: new Date().toISOString(),
+      messages: [
+        {
+          id: 'msg-with-thread-2',
+          conversationId: 'space-test-paste',
+          senderId: 'staff-1',
+          senderName: 'Tâm Nguyễn',
+          senderRole: 'Admin',
+          text: 'Tin nhắn gốc',
+          timeLabel: '14:00',
+          createdAt: new Date().toISOString(),
+          thread: [
+            {
+              id: 'reply-1',
+              senderId: 'staff-2',
+              senderName: 'Bảo Hân',
+              text: 'Câu trả lời 1',
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        },
+      ],
+    };
+
+    (apiClient.chat.bootstrap as any).mockResolvedValue({
+      unchanged: false,
+      version: 1,
+      conversations: [mockConvWithThread],
+      tasks: [],
+      staffDirectory: [{ id: 99, displayName: 'Danny Do', role: 'Admin' }],
+      accessConfig: { allowAllStaff: true, allowedGroupKeys: [], allowedStaffIds: [] },
+      canAccessChat: true,
+    });
+
+    const { container } = render(
+      <MosGoogleChatPortal
+        open={true}
+        onClose={vi.fn()}
+        onToggle={vi.fn()}
+        currentUser={{ id: 99, displayName: 'Danny Do', role: 'Admin' }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('General Discussion')).toBeTruthy();
+    });
+    fireEvent.click(screen.getByText('General Discussion'));
+
+    await waitFor(() => {
+      expect(screen.getByText('1 trả lời')).toBeTruthy();
+    });
+    fireEvent.click(screen.getByText('1 trả lời'));
+
+    await waitFor(() => {
+      const threadPane = container.querySelector('[data-chat-thread-pane="true"]');
+      expect(threadPane).toBeTruthy();
+    });
+
+    const threadTextarea = screen.getByPlaceholderText(/Trả lời vào luồng.../i);
+    expect(threadTextarea).toBeTruthy();
+
+    (apiClient.chat.uploadImage as any).mockClear();
+    const mockPasteFile = new File(['pasted image data'], 'pasted-screenshot.png', { type: 'image/png' });
+
+    fireEvent.paste(threadTextarea, {
+      clipboardData: {
+        items: [
+          {
+            type: 'image/png',
+            kind: 'file',
+            getAsFile: () => mockPasteFile,
+          },
+        ],
+        getData: vi.fn(),
+      },
+    });
+
+    await waitFor(() => {
+      expect(apiClient.chat.uploadImage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          fileName: 'pasted-screenshot.png',
+          source: 'clipboard',
+        })
+      );
+    });
   });
 });

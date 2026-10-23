@@ -2,6 +2,7 @@ import './suppress-warnings';
 import '@ant-design/v5-patch-for-react-19';
 import type { Metadata, Viewport } from 'next';
 import { AntdRegistry } from '@ant-design/nextjs-registry';
+import 'katex/dist/katex.min.css';
 import './globals.css';
 
 export const viewport: Viewport = {

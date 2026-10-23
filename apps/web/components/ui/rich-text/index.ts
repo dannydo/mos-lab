@@ -4,5 +4,8 @@ export type { RichTextViewerProps } from './RichTextViewer';
 export { RichTextEditor } from './RichTextEditor';
 export type { RichTextEditorProps } from './RichTextEditor';
 
+export { KatexMath, isMathValid } from './KatexMath';
+export type { KatexMathProps } from './KatexMath';
+
 export { parseMarkdown, parseInline } from './markdown-parser';
 export type { BlockToken, InlineToken, ListItemToken, ListBlockToken } from './markdown-parser';

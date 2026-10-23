@@ -1,3 +1,5 @@
+import { isMathValid } from './KatexMath';
+
 export type InlineToken =
   | { type: 'text'; content: string }
   | { type: 'bold'; content: string }
@@ -6,6 +8,7 @@ export type InlineToken =
   | { type: 'strikethrough'; content: string }
   | { type: 'code'; content: string }
   | { type: 'link'; text: string; href: string }
+  | { type: 'inline_math'; content: string }
   | { type: 'soft_break' };
 
 export interface ListItemToken {
@@ -31,6 +34,7 @@ export type BlockToken =
       tokens: InlineToken[];
     }
   | { type: 'code_block'; language: string; code: string }
+  | { type: 'math_block'; content: string }
   | {
       type: 'table';
       headers: InlineToken[][];
@@ -49,9 +53,9 @@ export function parseInline(text: string): InlineToken[] {
   let remaining = text;
 
   // Regex patterns for inline syntax
-  // Order matters: bold_italic before bold/italic, code before text
+  // Order matters: bold_italic before bold/italic, code before text, math
   const inlineRegex =
-    /(\*\*\*(.+?)\*\*\*|___(.+?)___|\*\*(.+?)\*\*|__(.+?)__|~~(.+?)~~|\*(.+?)\*|_(.+?)_|`([^`]+)`|\[([^\]]+)\]\(([^)]+)\))/;
+    /(\*\*\*(.+?)\*\*\*|___(.+?)___|\*\*(.+?)\*\*|__(.+?)__|~~(.+?)~~|\*(.+?)\*|_(.+?)_|`([^`]+)`|\[([^\]]+)\]\(([^)]+)\)|\$([^\$\s\n](?:[^\$\n]*?[^\$\s\n])?)\$)/;
 
   while (remaining.length > 0) {
     const match = remaining.match(inlineRegex);
@@ -78,6 +82,7 @@ export function parseInline(text: string): InlineToken[] {
       code,
       linkText,
       linkHref,
+      mathContent,
     ] = match;
 
     if (boldItalic1 || boldItalic2) {
@@ -92,6 +97,8 @@ export function parseInline(text: string): InlineToken[] {
       tokens.push({ type: 'code', content: code });
     } else if (linkText && linkHref) {
       tokens.push({ type: 'link', text: linkText, href: linkHref });
+    } else if (mathContent && isMathValid(mathContent)) {
+      tokens.push({ type: 'inline_math', content: mathContent });
     } else {
       tokens.push({ type: 'text', content: fullMatch });
     }
@@ -140,6 +147,38 @@ export function parseMarkdown(markdown: string): BlockToken[] {
         type: 'code_block',
         language,
         code: codeLines.join('\n'),
+      });
+      continue;
+    }
+
+    // 2b. Math Block: $$ ... $$
+    if (trimmed.startsWith('$$')) {
+      if (trimmed.endsWith('$$') && trimmed.length > 2) {
+        blocks.push({
+          type: 'math_block',
+          content: trimmed.slice(2, -2).trim(),
+        });
+        i++;
+        continue;
+      }
+      const mathLines: string[] = [];
+      const firstLineContent = trimmed.slice(2).trim();
+      if (firstLineContent) mathLines.push(firstLineContent);
+      i++;
+      while (i < rawLines.length) {
+        const cur = rawLines[i].trim();
+        if (cur.endsWith('$$')) {
+          const rest = cur.slice(0, -2).trim();
+          if (rest) mathLines.push(rest);
+          i++;
+          break;
+        }
+        mathLines.push(rawLines[i]);
+        i++;
+      }
+      blocks.push({
+        type: 'math_block',
+        content: mathLines.join('\n'),
       });
       continue;
     }

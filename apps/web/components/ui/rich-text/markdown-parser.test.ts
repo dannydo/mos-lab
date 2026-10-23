@@ -123,4 +123,27 @@ Với mỗi bước cần có:
       expect(blocks[3].items).toHaveLength(3);
     }
   });
+
+  it('parses inline math correctly and ignores standard currency', () => {
+    const text = 'Sự chênh lệch $\\rightarrow$ khi CC In $\\ne$ CC Out và $\\ge 20\\text{K}$ nhưng giá là $100 và $200';
+    const tokens = parseInline(text);
+    const mathTokens = tokens.filter((t) => t.type === 'inline_math');
+    expect(mathTokens).toHaveLength(3);
+    expect(mathTokens[0]).toEqual({ type: 'inline_math', content: '\\rightarrow' });
+    expect(mathTokens[1]).toEqual({ type: 'inline_math', content: '\\ne' });
+    expect(mathTokens[2]).toEqual({ type: 'inline_math', content: '\\ge 20\\text{K}' });
+  });
+
+  it('parses block math equations correctly', () => {
+    const md = `
+$$\\text{Tổng Thưởng Ngày} = \\text{Thưởng CC Xoay} + \\text{Thưởng Combo/SP} + \\text{Thưởng Tip (20\\%)} + \\text{Thưởng Minigame}$$
+`;
+    const blocks = parseMarkdown(md);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toMatchObject({
+      type: 'math_block',
+      content:
+        '\\text{Tổng Thưởng Ngày} = \\text{Thưởng CC Xoay} + \\text{Thưởng Combo/SP} + \\text{Thưởng Tip (20\\%)} + \\text{Thưởng Minigame}',
+    });
+  });
 });

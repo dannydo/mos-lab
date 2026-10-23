@@ -8132,3 +8132,26 @@ button:not(:disabled):not(.ant-btn-loading):active,
 .light-theme .mos-chat-theme-scope .text-rose-400 {
   color: #be123c !important;
 }
+
+/* ==========================================================================
+   KaTeX Mathematical Formulas Theme Adaptations
+   ========================================================================== */
+.katex {
+  font-size: 1.05em;
+  text-rendering: auto;
+}
+
+.katex-display {
+  margin: 0.35em 0 !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.2em 0;
+}
+
+.dark-theme .katex {
+  color: #f1f5f9;
+}
+
+.light-theme .katex {
+  color: #0f172a;
+}

@@ -179,6 +179,7 @@ import { useMosChatBridgeListener } from './store/mos-chat-bridge';
 import { MosChatWorkflowCard } from './workflows/MosChatWorkflowCard';
 import { MosChatSaveThreadWorkflowModal, MosChatTriggerWorkflowModal } from './workflows/MosChatWorkflowModals';
 import { MosChatMermaidBlock } from './MosChatMermaidBlock';
+import { MosChatMathBlock, MosChatMathInline, isMathValid } from './MosChatMathBlock';
 import { MosChatProvider } from './context/MosChatContext';
 import { MosChatMobileApp } from './mobile/MosChatMobileApp';
 
@@ -981,6 +982,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   // Image Upload / Google Drive Modal / Full-Screen Lightbox state
   const [uploadingCount, setUploadingCount] = useState<number>(0);
   const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
+  const [isDraggingOverThread, setIsDraggingOverThread] = useState<boolean>(false);
   const [driveLinkModalOpen, setDriveLinkModalOpen] = useState<boolean>(false);
   const [driveLinkInput, setDriveLinkInput] = useState<string>('');
   const [lightboxImage, setLightboxImage] = useState<{
@@ -6888,7 +6890,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           : '';
 
       const regex = new RegExp(
-        `(\\*\\*(.+?)\\*\\*)|(~~(.+?)~~)|(<u>(.+?)<\\/u>)|(\`([^\`]+)\`)|\\*([^\\*\\n]+)\\*|(https?:\\/\\/[^\\s<]+)|(@\\s*(?:AI|copilot|all|mọi\\s+người|moi\\s+nguoi)\\b)${staffPattern}|(@[a-zA-Z0-9_\\u00C0-\\u1EF9]+)`,
+        `(\\*\\*(.+?)\\*\\*)|(~~(.+?)~~)|(<u>(.+?)<\\/u>)|(\`([^\`]+)\`)|\\*([^\\*\\n]+)\\*|(https?:\\/\\/[^\\s<]+)|(\\$\\$([^\\$]+?)\\$\\$)|(\\$([^\\$\\s\\n](?:[^\\$\\n]*?[^\\$\\s\\n])?)\\$)|(@\\s*(?:AI|copilot|all|mọi\\s+người|moi\\s+nguoi)\\b)${staffPattern}|(@[a-zA-Z0-9_\\u00C0-\\u1EF9]+)`,
         'gui'
       );
 
@@ -6952,6 +6954,20 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               <ExternalLink size={10} className="inline shrink-0 opacity-70" />
             </a>
           );
+        } else if (fullMatch.startsWith('$$') && fullMatch.endsWith('$$') && fullMatch.length > 2) {
+          const math = fullMatch.slice(2, -2).trim();
+          if (isMathValid(math)) {
+            elements.push(<MosChatMathBlock key={key} math={math} isDark={isDark} />);
+          } else {
+            elements.push(fullMatch);
+          }
+        } else if (fullMatch.startsWith('$') && fullMatch.endsWith('$') && fullMatch.length > 1) {
+          const math = fullMatch.slice(1, -1).trim();
+          if (isMathValid(math)) {
+            elements.push(<MosChatMathInline key={key} math={math} />);
+          } else {
+            elements.push(fullMatch);
+          }
         } else if (fullMatch.startsWith('@')) {
           const cleanTag = fullMatch.replace(/^@\s*/, '').trim().toLowerCase();
           const isAi = cleanTag === 'ai' || cleanTag.includes('copilot');
@@ -7010,6 +7026,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       currentUser?.username,
       knownMultiWordStaffNames,
       activeConversation?.memberNicknames,
+      isDark,
     ]
   );
 
@@ -7040,6 +7057,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       let inCodeBlock = false;
       let codeBlockLang = '';
       let codeBlockLines: string[] = [];
+      let inMathBlock = false;
+      let mathBlockLines: string[] = [];
 
       for (let idx = 0; idx < lines.length; idx++) {
         const line = lines[idx];
@@ -7111,34 +7130,65 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
         const trimmed = line.trim();
 
-        // Heading 1: # Title
-        if (line.startsWith('# ')) {
-          result.push(
-            <div
-              key={`h1-${idx}`}
-              className="text-[15px] font-bold text-amber-500 dark:text-amber-400 tracking-tight mt-1.5 mb-1"
-            >
-              {parseInlineRichText(line.slice(2), `h1-${idx}`)}
-            </div>
-          );
+        // Math Block fences: $$ on its own line or opening a multi-line math formula
+        if (trimmed === '$$') {
+          if (inMathBlock) {
+            const mathContent = mathBlockLines.join('\n');
+            result.push(<MosChatMathBlock key={`mb-${idx}`} math={mathContent} isDark={isDark} />);
+            inMathBlock = false;
+            mathBlockLines = [];
+          } else {
+            inMathBlock = true;
+            mathBlockLines = [];
+          }
           continue;
         }
 
-        // Heading 2: ## Subtitle
-        if (line.startsWith('## ')) {
-          result.push(
-            <div key={`h2-${idx}`} className="text-[13.5px] font-bold opacity-90 mt-1 mb-0.5">
-              {parseInlineRichText(line.slice(3), `h2-${idx}`)}
-            </div>
-          );
+        if (inMathBlock) {
+          if (trimmed.endsWith('$$')) {
+            const lastPart = trimmed.slice(0, -2).trim();
+            if (lastPart) mathBlockLines.push(lastPart);
+            const mathContent = mathBlockLines.join('\n');
+            result.push(<MosChatMathBlock key={`mb-${idx}`} math={mathContent} isDark={isDark} />);
+            inMathBlock = false;
+            mathBlockLines = [];
+          } else {
+            mathBlockLines.push(line);
+          }
           continue;
         }
 
-        // Heading 3: ### Heading
-        if (line.startsWith('### ')) {
+        // Single-line Block Math: $$formula$$
+        if (trimmed.startsWith('$$') && trimmed.endsWith('$$') && trimmed.length > 2) {
+          const mathContent = trimmed.slice(2, -2).trim();
+          result.push(<MosChatMathBlock key={`mb-${idx}`} math={mathContent} isDark={isDark} />);
+          continue;
+        }
+
+        // Horizontal divider / Thematic break: ---, ***, ___
+        if (/^(?:-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
+          result.push(<hr key={`hr-${idx}`} className="my-2 border-t border-slate-200/60 dark:border-slate-700/60" />);
+          continue;
+        }
+
+        // Headings: # H1 through ###### H6
+        const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+        if (headingMatch) {
+          const level = headingMatch[1].length;
+          const content = headingMatch[2];
+          let headingClass = 'text-[12px] font-semibold opacity-80 mt-1 mb-0.5';
+          if (level === 1) {
+            headingClass = 'text-[15px] font-bold text-amber-500 dark:text-amber-400 tracking-tight mt-1.5 mb-1';
+          } else if (level === 2) {
+            headingClass = 'text-[13.5px] font-bold opacity-90 mt-1 mb-0.5 text-amber-600 dark:text-amber-300';
+          } else if (level === 3) {
+            headingClass = 'text-[12.5px] font-semibold opacity-85 mt-1 mb-0.5';
+          } else if (level === 4) {
+            headingClass = 'text-[12px] font-bold tracking-tight text-amber-600 dark:text-amber-400 mt-1 mb-0.5';
+          }
           result.push(
-            <div key={`h3-${idx}`} className="text-[12.5px] font-semibold opacity-85 mt-1 mb-0.5">
-              {parseInlineRichText(line.slice(4), `h3-${idx}`)}
+            <div key={`h${level}-${idx}`} className={headingClass}>
+              {parseInlineRichText(content, `h${level}-${idx}`)}
             </div>
           );
           continue;
@@ -7180,9 +7230,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           continue;
         }
 
-        // Bullet List: - item or * item
-        if (/^[-*]\s/.test(trimmed)) {
-          const content = trimmed.replace(/^[-*]\s/, '');
+        // Bullet List: - item, * item, or • item
+        if (/^[-*•]\s/.test(trimmed) || /^\u2022\s/.test(trimmed)) {
+          const content = trimmed.replace(/^[-*•\u2022]\s+/, '');
           result.push(
             <div key={`bullet-${idx}`} className="flex items-start gap-1.5 my-0.5 text-[12.5px]">
               <span className="text-amber-500 shrink-0 select-none font-bold">•</span>
@@ -7241,6 +7291,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             </pre>
           );
         }
+      }
+
+      if (inMathBlock && mathBlockLines.length > 0) {
+        result.push(<MosChatMathBlock key="mb-unclosed" math={mathBlockLines.join('\n')} isDark={isDark} />);
       }
 
       return <div className="space-y-0.5">{result}</div>;
@@ -8714,7 +8768,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     scope: 'main' | 'thread' | 'dock',
     convId?: string
   ) => {
-    const showUploading = scope === 'main' && uploadingCount > 0;
+    const showUploading = (scope === 'main' || scope === 'thread') && uploadingCount > 0;
     if (items.length === 0 && !showUploading) return null;
     return (
       <div className="flex items-center gap-2 pb-2 overflow-x-auto">
@@ -12955,31 +13009,57 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               <aside
                 data-chat-thread-pane="true"
                 onDragOver={(e) => {
-                  if (!draggingRootMsgId || draggingRootMsgId === activeThreadMessage.id) return;
-                  e.preventDefault();
-                  e.stopPropagation();
-                  e.dataTransfer.dropEffect = 'move';
-                  if (!dragOverThreadPane) setDragOverThreadPane(true);
+                  if (draggingRootMsgId) {
+                    if (draggingRootMsgId === activeThreadMessage.id) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.dataTransfer.dropEffect = 'move';
+                    if (!dragOverThreadPane) setDragOverThreadPane(true);
+                    return;
+                  }
+                  // Dragging files/images into subthread pane
+                  const hasFiles =
+                    Boolean(e.dataTransfer?.types?.includes('Files')) || Boolean(e.dataTransfer?.files?.length);
+                  if (hasFiles) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.dataTransfer.dropEffect = 'copy';
+                    if (!isDraggingOverThread) setIsDraggingOverThread(true);
+                  }
                 }}
                 onDragLeave={(e) => {
                   if (dragOverThreadPane && !e.currentTarget.contains(e.relatedTarget as Node | null)) {
                     setDragOverThreadPane(false);
                   }
+                  if (isDraggingOverThread && !e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                    setIsDraggingOverThread(false);
+                  }
                 }}
                 onDrop={(e) => {
-                  if (!draggingRootMsgId || draggingRootMsgId === activeThreadMessage.id) return;
-                  e.preventDefault();
-                  e.stopPropagation();
-                  const srcId = draggingRootMsgId;
-                  setDraggingRootMsgId(null);
-                  setDragOverTargetMsgId(null);
-                  setDragOverThreadPane(false);
-                  void handleMoveThreadItem({
-                    mode: 'MERGE_ROOT_TO_THREAD',
-                    sourceMessageId: srcId,
-                    targetMessageId: activeThreadMessage.id,
-                  });
+                  if (draggingRootMsgId) {
+                    if (draggingRootMsgId === activeThreadMessage.id) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const srcId = draggingRootMsgId;
+                    setDraggingRootMsgId(null);
+                    setDragOverTargetMsgId(null);
+                    setDragOverThreadPane(false);
+                    void handleMoveThreadItem({
+                      mode: 'MERGE_ROOT_TO_THREAD',
+                      sourceMessageId: srcId,
+                      targetMessageId: activeThreadMessage.id,
+                    });
+                    return;
+                  }
+                  // Dropping files/images into subthread pane
+                  if (e.dataTransfer?.files?.length) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsDraggingOverThread(false);
+                    void handleProcessImageFiles(e.dataTransfer.files, 'upload', 'thread');
+                  }
                 }}
+                onPaste={(e) => handleClipboardPaste(e, 'thread')}
                 className={`${isMobile ? 'absolute inset-0 z-30 w-full' : ''} flex flex-col shrink-0 relative`}
                 style={{
                   width: isMobile ? '100%' : threadWidth,
@@ -12987,7 +13067,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   borderLeft: isMobile
                     ? 'none'
                     : `1px solid ${
-                        dragOverThreadPane || isResizingTarget === 'thread' || hoverResizeHandle === 'thread'
+                        dragOverThreadPane ||
+                        isDraggingOverThread ||
+                        isResizingTarget === 'thread' ||
+                        hoverResizeHandle === 'thread'
                           ? '#d4a84b'
                           : borderColor
                       }`,
@@ -13010,6 +13093,23 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     </div>
                     <div className="text-[11px] text-slate-300 max-w-[260px] truncate">
                       {activeThreadMessage.senderName}: {formatMoveTargetSnippet(activeThreadMessage)}
+                    </div>
+                  </div>
+                )}
+                {isDraggingOverThread && !draggingRootMsgId && (
+                  <div
+                    className="absolute inset-2 rounded-xl z-30 flex flex-col items-center justify-center gap-2 pointer-events-none px-4 text-center select-none"
+                    style={{
+                      background: 'rgba(15, 23, 42, 0.88)',
+                      border: '2px dashed #d4a84b',
+                      color: '#fbbf24',
+                      backdropFilter: 'blur(4px)',
+                    }}
+                  >
+                    <ImagePlus size={32} className="animate-bounce" />
+                    <div className="text-[13px] font-extrabold">Thả hình ảnh vào luồng phụ này</div>
+                    <div className="text-[11px] text-amber-200/80">
+                      Hình ảnh sẽ tự động được tải lên và đính kèm vào câu trả lời luồng
                     </div>
                   </div>
                 )}
@@ -13967,14 +14067,59 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   <div ref={threadMessagesEndRef} />
                 </div>
 
-                <div className="p-2.5 space-y-1.5" style={{ borderTop: `1px solid ${borderColor}` }}>
+                <div
+                  className="p-2.5 space-y-1.5"
+                  style={{ borderTop: `1px solid ${borderColor}` }}
+                  onDragOver={(e) => {
+                    if (draggingRootMsgId) return;
+                    const hasFiles =
+                      Boolean(e.dataTransfer?.types?.includes('Files')) || Boolean(e.dataTransfer?.files?.length);
+                    if (hasFiles) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      e.dataTransfer.dropEffect = 'copy';
+                      if (!isDraggingOverThread) setIsDraggingOverThread(true);
+                    }
+                  }}
+                  onDrop={(e) => {
+                    if (draggingRootMsgId) return;
+                    if (e.dataTransfer?.files?.length) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDraggingOverThread(false);
+                      void handleProcessImageFiles(e.dataTransfer.files, 'upload', 'thread');
+                    }
+                  }}
+                >
                   {renderStagedAttachmentsStrip(threadAttachments, 'thread')}
                   {formatBarOpenThread && renderAppleNotesFormatToolbar('thread')}
                   <div
-                    className="relative rounded-2xl px-3 pt-2 pb-1.5 flex flex-col transition-all shadow-sm focus-within:shadow-md focus-within:border-[#d4a84b]/60"
+                    className={`relative rounded-2xl px-3 pt-2 pb-1.5 flex flex-col transition-all shadow-sm focus-within:shadow-md focus-within:border-[#d4a84b]/60 ${
+                      isDraggingOverThread ? 'ring-2 ring-amber-500/70 border-[#d4a84b]' : ''
+                    }`}
                     style={{
                       background: surfaceRaised,
-                      border: `1px solid ${borderStrong}`,
+                      border: `1px solid ${isDraggingOverThread ? '#d4a84b' : borderStrong}`,
+                    }}
+                    onDragOver={(e) => {
+                      if (draggingRootMsgId) return;
+                      const hasFiles =
+                        Boolean(e.dataTransfer?.types?.includes('Files')) || Boolean(e.dataTransfer?.files?.length);
+                      if (hasFiles) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.dataTransfer.dropEffect = 'copy';
+                        if (!isDraggingOverThread) setIsDraggingOverThread(true);
+                      }
+                    }}
+                    onDrop={(e) => {
+                      if (draggingRootMsgId) return;
+                      if (e.dataTransfer?.files?.length) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsDraggingOverThread(false);
+                        void handleProcessImageFiles(e.dataTransfer.files, 'upload', 'thread');
+                      }
                     }}
                   >
                     {renderMentionAutocompleteDropdown('thread')}
@@ -13982,6 +14127,26 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       ref={threadInputRef}
                       rows={1}
                       value={threadInput}
+                      onDragOver={(e) => {
+                        if (draggingRootMsgId) return;
+                        const hasFiles =
+                          Boolean(e.dataTransfer?.types?.includes('Files')) || Boolean(e.dataTransfer?.files?.length);
+                        if (hasFiles) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          e.dataTransfer.dropEffect = 'copy';
+                          if (!isDraggingOverThread) setIsDraggingOverThread(true);
+                        }
+                      }}
+                      onDrop={(e) => {
+                        if (draggingRootMsgId) return;
+                        if (e.dataTransfer?.files?.length) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setIsDraggingOverThread(false);
+                          void handleProcessImageFiles(e.dataTransfer.files, 'upload', 'thread');
+                        }
+                      }}
                       onChange={(e) => {
                         const val = e.target.value;
                         const cursor = e.target.selectionStart ?? val.length;
