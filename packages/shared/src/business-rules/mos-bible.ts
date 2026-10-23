@@ -617,6 +617,32 @@ export const MOS_BIBLE_COMMANDMENTS: readonly MosBibleCommandment[] = [
     ],
   },
   {
+    id: 'CC-005',
+    book: 'REWARDS',
+    title: 'Đồng nhất số liệu Thưởng Doanh số Ngày (Combo-Sold) giữa KPI Tổng và Bảng Kê Chi Tiết',
+    summary:
+      'Chỉ số Thưởng Doanh số / Combo trên vòng tròn KPI và tổng tiền tích lũy tại thẻ chi tiết Combo-Sold bắt buộc phải khớp nhau 100% theo Single Source of Truth từ engine mOS.',
+    commandments: [
+      'Chỉ số thưởng doanh số ngày trên vòng tròn tiến độ (combo_bonus_amount) là KPI tổng hợp của toàn bộ các khoản thưởng Combo và Sản phẩm phát sinh trong kỳ.',
+      'Thẻ Combo-Sold hiển thị phía dưới là bảng kê chi tiết (Breakdown) diễn giải cho chính khoản thưởng trên; do đó tổng tiền tại tiêu đề thẻ Combo-Sold bắt buộc phải trùng khớp 100% với số hiển thị trên vòng tròn.',
+      'Toàn bộ cấu trúc ngày (reward) và tổng tiền thưởng (total_reward_amount) được mOS tự động đồng bộ sang legacy staff_payroll tracking_key và adapter API để diệt trừ triệt để hiện tượng lệch số giữa các màn hình iOS.',
+    ],
+    rationale:
+      'Tránh gây hoang mang, nhầm lẫn cho tư vấn viên khi theo dõi thưởng ngày, đảm bảo tính minh bạch và độ tin cậy tuyệt đối của hệ thống tính lương.',
+    examples: [
+      'Tư vấn viên Diễm Hương có tổng thưởng Combo trong tháng 10 là 1.692.655đ: Vòng tròn hiển thị 1.692.655đ và tiêu đề thẻ Combo-Sold bên dưới cũng hiển thị chính xác 1.692.655đ (kèm danh sách chi tiết các ngày Fri 2, Thu 15, Sat 17... cộng lại vừa đúng 1.692.655đ).',
+    ],
+    tags: ['CC', 'Combo-Sold', 'Daily Bonus', 'Single Source of Truth', 'Breakdown', 'Đồng bộ'],
+    routeScopes: ['/dashboard/cc', '/dashboard/kpi'],
+    status: 'ACTIVE',
+    version: '1.0.0',
+    effectiveFrom: '2026-10-23',
+    sources: [
+      { label: 'mOS Single Source of Truth Adapter', reference: 'apps/api/src/modules/kpi/routes/cc-paystub.routes.ts' },
+      { label: 'iOS Client Consultant Controller', reference: 'ClientConsultantHomeVC.swift' },
+    ],
+  },
+  {
     id: 'COMBO-002',
     book: 'REWARDS',
     title: 'Doanh số Combo tính theo thực thu, thu nợ chia 50/50 theo ca',
