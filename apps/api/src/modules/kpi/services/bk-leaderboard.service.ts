@@ -615,9 +615,18 @@ export class BkLeaderboardService {
       FROM \`user_profile\` up
       LEFT JOIN \`client_store\` cs ON cs.id = up.client_store_id
       LEFT JOIN (
-        SELECT o2.*, COALESCE(ro.actual_booking_date_start, o2.booking_date_start) as final_date
+        SELECT 
+          o2.id,
+          o2.created_staff_id,
+          o2.total_price,
+          o2.order_state,
+          COALESCE(ro.actual_booking_date_start, o2.booking_date_start) as final_date
         FROM \`order\` o2
         LEFT JOIN report_order ro ON o2.id = ro.order_id
+        WHERE o2.created_staff_id IN (${bkIdsStr})
+          AND o2.order_state = 'Completed'
+          AND o2.booking_date_start >= '${startPart} 00:00:00' - INTERVAL 2 DAY
+          AND o2.booking_date_start <= '${endPart} 23:59:59' + INTERVAL 2 DAY
       ) o ON o.created_staff_id = up.user_id 
         AND o.final_date >= '${startPart} 00:00:00' 
         AND o.final_date <= '${endPart} 23:59:59'

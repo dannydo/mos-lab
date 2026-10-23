@@ -142,13 +142,12 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
       const needsAssignmentTimeSort = isAssignmentTimeSort(sortParam);
 
       // Determine what joins and select fields we need in the inner query to optimize performance
-      const needServiceBalance = bucket && bucket !== 'ALL';
+      // When bucket is COMBO_LIVE, allowedUserIds is already precomputed, avoiding expensive full-table grouping
+      const needServiceBalance = bucket && bucket !== 'ALL' && bucket !== 'COMBO_LIVE';
 
-      const needSpent =
-        (totalSpentMin !== undefined && totalSpentMin !== '') ||
-        (totalSpentMax !== undefined && totalSpentMax !== '') ||
-        sortParam === 'totalSpent_desc' ||
-        sortParam === 'totalSpent_asc';
+      const needSpentFilter =
+        (totalSpentMin !== undefined && totalSpentMin !== '') || (totalSpentMax !== undefined && totalSpentMax !== '');
+      const needSpent = needSpentFilter || sortParam === 'totalSpent_desc' || sortParam === 'totalSpent_asc';
 
       const needVisits =
         (totalVisitsMin !== undefined && totalVisitsMin !== '') ||
@@ -412,7 +411,9 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         }
       } else if (bucket === 'COMBO_ELSA') {
         const elsaScopeFilter =
-          allowedUserIds !== null && allowedUserIds.length > 0 ? `AND legacy_user_id IN (${allowedUserIds.join(',')})` : '';
+          allowedUserIds !== null && allowedUserIds.length > 0
+            ? `AND legacy_user_id IN (${allowedUserIds.join(',')})`
+            : '';
         const elsaUserIds = (
           await fastify.prisma.crm.$queryRawUnsafe<{ legacy_user_id: number }[]>(
             `SELECT DISTINCT legacy_user_id
@@ -592,6 +593,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         allowedUserIds !== null && allowedUserIds.length > 0 ? `WHERE o.user_id IN (${allowedUserIds.join(',')})` : '';
 
       let innerJoins = 'LEFT JOIN user_profile up ON u.id = up.user_id';
+      let countJoins = 'LEFT JOIN user_profile up ON u.id = up.user_id';
       if (needsAssignmentTimeSort) {
         // This is the same current-owner record used to scope a telesales queue.
         // It deliberately does not read allocation history, so recalled or
@@ -600,7 +602,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
           ' LEFT JOIN mos_lab.crm_customer_assignments assignment_sort ON assignment_sort.legacy_user_id = u.id';
       }
       if (needServiceBalance) {
-        const isComboLive = bucket === 'COMBO_LIVE';
+        const isComboLive = (bucket as string) === 'COMBO_LIVE';
         const liveCondition =
           "(normal_count + retain_count) > 0 AND (service_group IS NULL OR service_group != 'LashesUnder') AND (date_expired IS NULL OR date_expired > NOW())";
         const usbFilterClauses: string[] = [];
@@ -612,7 +614,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         }
         const finalUsbWhere = usbFilterClauses.length > 0 ? `WHERE ${usbFilterClauses.join(' AND ')}` : '';
 
-        innerJoins += ` LEFT JOIN (
+        const usbJoinSql = ` LEFT JOIN (
           SELECT 
             user_id,
             SUM(
@@ -629,9 +631,12 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
           ${finalUsbWhere}
           GROUP BY user_id
         ) as usb_agg ON u.id = usb_agg.user_id`;
+
+        innerJoins += usbJoinSql;
+        countJoins += usbJoinSql;
       }
       if (needOrderCounts) {
-        innerJoins += ` LEFT JOIN (
+        const orderCountsJoinSql = ` LEFT JOIN (
           SELECT 
             user_id, 
             COALESCE(SUM(total_price), 0) as totalSpent, 
@@ -640,25 +645,36 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
           WHERE order_state = 'Completed' ${allowedUserIds !== null && allowedUserIds.length > 0 ? `AND user_id IN (${allowedUserIds.join(',')})` : ''}
           GROUP BY user_id
         ) as order_counts ON u.id = order_counts.user_id`;
+
+        innerJoins += orderCountsJoinSql;
+        if (needSpentFilter || needVisits) {
+          countJoins += orderCountsJoinSql;
+        }
       }
       if (needServiceUsage) {
-        innerJoins += buildCompletedServiceUsageJoin(selectedServiceIds);
+        const serviceUsageJoinSql = buildCompletedServiceUsageJoin(selectedServiceIds);
+        innerJoins += serviceUsageJoinSql;
+        countJoins += serviceUsageJoinSql;
       }
       if (needPromo) {
-        innerJoins += ` LEFT JOIN (
+        const promoJoinSql = ` LEFT JOIN (
           SELECT user_id, COUNT(*) as totalPromotionsUsed
           FROM \`order\`
           WHERE order_state = 'Completed' AND (promotion_id IS NOT NULL OR selected_promotion_id IS NOT NULL) ${allowedUserIds !== null && allowedUserIds.length > 0 ? `AND user_id IN (${allowedUserIds.join(',')})` : ''}
           GROUP BY user_id
         ) as promo_counts ON u.id = promo_counts.user_id`;
+        innerJoins += promoJoinSql;
+        countJoins += promoJoinSql;
       }
       if (needReferrals) {
-        innerJoins += ` LEFT JOIN (
+        const refJoinSql = ` LEFT JOIN (
           SELECT referrer_user_id, COUNT(*) as totalReferrals
           FROM user_profile
           WHERE referrer_user_id IS NOT NULL ${allowedUserIds !== null && allowedUserIds.length > 0 ? `AND referrer_user_id IN (${allowedUserIds.join(',')})` : ''}
           GROUP BY referrer_user_id
         ) as ref_counts ON u.id = ref_counts.referrer_user_id`;
+        innerJoins += refJoinSql;
+        countJoins += refJoinSql;
       }
       if (hasFutureBooking === 'true') {
         innerJoins += ` LEFT JOIN (
@@ -757,11 +773,13 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
             WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
           )`);
         } else if (bStr === 'COMBO_LIVE') {
-          innerWhereClauses.push('usb_agg.live_count > 0');
-          innerWhereClauses.push(`u.id NOT IN (
-            SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
-            WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
-          )`);
+          if (needServiceBalance) {
+            innerWhereClauses.push('usb_agg.live_count > 0');
+            innerWhereClauses.push(`u.id NOT IN (
+              SELECT legacy_user_id FROM mos_lab.crm_customer_elsa_reservations
+              WHERE status = 'ACTIVE' AND (end_date IS NULL OR end_date >= NOW())
+            )`);
+          }
         } else if (bStr === 'COMBO_DEAD') {
           innerWhereClauses.push('usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0');
           innerWhereClauses.push(`u.id NOT IN (
@@ -909,12 +927,16 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
 
       // LoCa Campaign Filters
       if (hsd30 === 'true') {
-        innerWhereClauses.push(
-          'usb_agg.expiryDate IS NOT NULL AND DATEDIFF(usb_agg.expiryDate, NOW()) BETWEEN 0 AND 30'
-        );
+        if (needServiceBalance) {
+          innerWhereClauses.push(
+            'usb_agg.expiryDate IS NOT NULL AND DATEDIFF(usb_agg.expiryDate, NOW()) BETWEEN 0 AND 30'
+          );
+        }
       }
       if (lsd1 === 'true') {
-        innerWhereClauses.push('(COALESCE(usb_agg.normalCount, 0) + COALESCE(usb_agg.retainCount, 0)) = 1');
+        if (needServiceBalance) {
+          innerWhereClauses.push('(COALESCE(usb_agg.normalCount, 0) + COALESCE(usb_agg.retainCount, 0)) = 1');
+        }
       }
       if (hasProduct === 'true') {
         innerWhereClauses.push(`u.id IN (
@@ -1155,7 +1177,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
         SELECT COUNT(*) as total FROM (
           SELECT u.id
           FROM user u
-          ${innerJoins}
+          ${countJoins}
           ${innerWhereString}
         ) as p
       `;
@@ -1844,7 +1866,7 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
 
       let innerJoins = 'LEFT JOIN user_profile up ON u.id = up.user_id';
       if (needServiceBalance) {
-        const isComboLive = bucket === 'COMBO_LIVE';
+        const isComboLive = (bucket as string) === 'COMBO_LIVE';
         const liveFilter = isComboLive
           ? "WHERE (normal_count + retain_count) > 0 AND (service_group IS NULL OR service_group != 'LashesUnder') AND (date_expired IS NULL OR date_expired > NOW())"
           : '';
