@@ -7,6 +7,7 @@ import dayjs from 'dayjs';
 import { useMosChat } from '../context/MosChatContext';
 import { MosChatMobileStickerSheet } from './MosChatMobileStickerSheet';
 import { formatStickerToken, type MosChatStickerItem } from '../mos-chat-stickers';
+import { MosChatRichText } from '../MosChatRichText';
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
 import { apiClient } from '../../../lib/api-client';
 import type { MosChatImageAttachment, MosChatThreadReply, SafeAny } from '@mos-lab/shared';
@@ -266,8 +267,16 @@ export const MosChatMobileThreadSheet: React.FC = () => {
             </span>
           </div>
 
-          <div className="text-sm text-slate-200 whitespace-pre-wrap leading-relaxed select-text">
-            {activeThreadMsg.text}
+          {/* Parent Message Content */}
+          <div className="text-sm text-slate-200 select-text">
+            <MosChatRichText
+              content={activeThreadMsg.text}
+              isMe={
+                String(activeThreadMsg.senderId) === String(currentUser?.id) ||
+                String(activeThreadMsg.senderName) === String(currentUser?.fullName || currentUser?.name)
+              }
+              isDark={true}
+            />
           </div>
 
           {/* Reaction badges for Parent Message */}
@@ -355,7 +364,7 @@ export const MosChatMobileThreadSheet: React.FC = () => {
                   <div className="space-y-1.5 mb-1.5">
                     {reply.attachments.map((att) => (
                       <div key={att.id} className="rounded-xl overflow-hidden bg-slate-950/40">
-                        { }
+                        {}
                         <img
                           src={resolveMediaUrl(att.url)}
                           alt={att.name || 'Ảnh đính kèm'}
@@ -366,7 +375,9 @@ export const MosChatMobileThreadSheet: React.FC = () => {
                   </div>
                 )}
 
-                <div className="whitespace-pre-wrap leading-relaxed select-text">{reply.text}</div>
+                <div className="select-text">
+                  <MosChatRichText content={reply.text} isMe={isMe} isDark={true} />
+                </div>
 
                 <div
                   className={`flex items-center justify-end gap-1 mt-1 text-[10px] tabular-nums ${
@@ -436,7 +447,7 @@ export const MosChatMobileThreadSheet: React.FC = () => {
                 key={att.id}
                 className="relative w-14 h-14 rounded-xl overflow-hidden border border-amber-500/40 shrink-0"
               >
-                { }
+                {}
                 <img src={resolveMediaUrl(att.url)} alt={att.name} className="w-full h-full object-cover" />
                 <button
                   type="button"

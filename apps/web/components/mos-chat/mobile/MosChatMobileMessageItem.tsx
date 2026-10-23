@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import type { MosChatMessage } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
 import { parsePureStickerMessage, MosChatStickerVisual } from '../mos-chat-stickers';
+import { MosChatRichText } from '../MosChatRichText';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
 
 export interface MosChatMobileMessageItemProps {
@@ -187,15 +188,8 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
           </div>
         )}
 
-        {/* Pure Sticker Render */}
-        {stickerItem ? (
-          <div className="py-1">
-            <MosChatStickerVisual sticker={stickerItem} size="chat" />
-          </div>
-        ) : (
-          /* Text Content */
-          <div className="whitespace-pre-wrap leading-relaxed select-text">{message.text}</div>
-        )}
+        {/* Rich Text / Markdown / Mermaid / Sticker Render */}
+        <MosChatRichText content={message.text} isMe={isMe} isDark={true} />
 
         {/* Attachments */}
         {message.attachments && message.attachments.length > 0 && (

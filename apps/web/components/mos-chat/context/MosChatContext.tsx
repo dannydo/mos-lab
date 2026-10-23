@@ -30,7 +30,7 @@ import type {
   MosChatSidebarFilter,
 } from '../types/mos-chat-types';
 
-const MosChatContext = createContext<MosChatContextValue | null>(null);
+export const MosChatContext = createContext<MosChatContextValue | null>(null);
 
 export interface MosChatProviderProps {
   children: React.ReactNode;
