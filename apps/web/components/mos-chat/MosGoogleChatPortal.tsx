@@ -100,7 +100,17 @@ import {
   Handshake,
   Activity,
   Zap,
+  FilePenLine,
+  Table as TableIcon,
+  Sigma,
+  GitFork,
+  Heading1,
+  Heading2,
+  Heading3,
+  Columns2,
+  Link as LinkIcon,
 } from 'lucide-react';
+import { MosChatRichEditorModal } from './MosChatRichEditorModal';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { formatRelativeTime } from '../../lib/date-utils';
@@ -945,6 +955,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [sampleCardIndex, setSampleCardIndex] = useState(0);
   const [formatBarOpenMain, setFormatBarOpenMain] = useState(false);
   const [formatBarOpenThread, setFormatBarOpenThread] = useState(false);
+
+  // MOS-FEAT-138: CKEditor Rich Editor Modal & Live Preview states
+  const [richEditorModalState, setRichEditorModalState] = useState<{
+    open: boolean;
+    scope: 'main' | 'thread';
+    title: string;
+  }>({
+    open: false,
+    scope: 'main',
+    title: 'Soạn thảo phong phú (CKEditor)',
+  });
+  const [isPreviewModeMain, setIsPreviewModeMain] = useState(false);
+  const [isPreviewModeThread, setIsPreviewModeThread] = useState(false);
 
   // @Mention Autocomplete state (tagging group/space members)
   const [mentionState, setMentionState] = useState<{
@@ -7326,7 +7349,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   );
 
   /**
-   * Áp dụng cú pháp định dạng Apple Notes vào textarea tại vị trí con trỏ chuột
+   * Áp dụng cú pháp định dạng CKEditor / Markdown nâng cao vào textarea tại vị trí con trỏ chuột
    */
   const handleApplyFormat = useCallback(
     (
@@ -7337,12 +7360,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         | 'underline'
         | 'h1'
         | 'h2'
+        | 'h3'
         | 'todo'
         | 'bullet'
         | 'number'
         | 'quote'
         | 'code'
-        | 'codeblock',
+        | 'codeblock'
+        | 'table'
+        | 'link'
+        | 'divider'
+        | 'mermaid'
+        | 'math'
+        | 'clear',
       scope: 'main' | 'thread'
     ) => {
       const textarea = scope === 'main' ? composerInputRef.current : threadInputRef.current;
@@ -7380,8 +7410,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           cursorOffset = selectedText ? replacement.length : 1;
           break;
         case 'codeblock':
-          replacement = selectedText ? `\`\`\`\n${selectedText}\n\`\`\`` : '```\n// Mã lập trình\n```';
-          cursorOffset = selectedText ? replacement.length : 4;
+          replacement = selectedText ? `\`\`\`typescript\n${selectedText}\n\`\`\`` : '```typescript\n// Mã lập trình\n```';
+          cursorOffset = selectedText ? replacement.length : 14;
           break;
         case 'h1': {
           const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
@@ -7404,6 +7434,18 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           setTimeout(() => {
             textarea.focus();
             textarea.setSelectionRange(start + 3, end + 3);
+          }, 0);
+          return;
+        }
+        case 'h3': {
+          const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
+          const prefix = currentValue.substring(0, lineStart);
+          const rest = currentValue.substring(lineStart);
+          const newText = `${prefix}### ${rest}`;
+          setValue(newText);
+          setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(start + 4, end + 4);
           }, 0);
           return;
         }
@@ -7455,13 +7497,48 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           }, 0);
           return;
         }
+        case 'table':
+          replacement = `\n| Cột 1 | Cột 2 | Cột 3 |\n|---|---|---|\n| Dữ liệu 1 | Dữ liệu 2 | Chi tiết |\n| Dữ liệu 3 | Dữ liệu 4 | Chi tiết |\n`;
+          cursorOffset = replacement.length;
+          break;
+        case 'link':
+          replacement = selectedText ? `[${selectedText}](https://)` : '[Tiêu đề liên kết](https://)';
+          cursorOffset = selectedText ? replacement.length : 19;
+          break;
+        case 'divider':
+          replacement = `\n\n---\n\n`;
+          cursorOffset = replacement.length;
+          break;
+        case 'mermaid':
+          replacement = `\n\`\`\`mermaid\ngraph TD\n  A[Bắt đầu] --> B[Xử lý]\n  B --> C[Hoàn tất]\n\`\`\`\n`;
+          cursorOffset = replacement.length;
+          break;
+        case 'math':
+          replacement = `\n$$\n\\sum_{i=1}^{n} X_i = \\text{Tổng}\n$$\n`;
+          cursorOffset = replacement.length;
+          break;
+        case 'clear':
+          if (!selectedText) return;
+          replacement = selectedText
+            .replace(/\*\*(.*?)\*\*/g, '$1')
+            .replace(/\*(.*?)\*/g, '$1')
+            .replace(/~~(.*?)~~/g, '$1')
+            .replace(/<u>(.*?)<\/u>/g, '$1')
+            .replace(/`([^`]+)`/g, '$1')
+            .replace(/^#+\s+/gm, '')
+            .replace(/^[-*•]\s+/gm, '')
+            .replace(/^\d+\.\s+/gm, '')
+            .replace(/^-\s*\[[ x]\]\s+/gm, '')
+            .replace(/^>\s+/gm, '');
+          cursorOffset = replacement.length;
+          break;
       }
 
       const newValue = currentValue.substring(0, start) + replacement + currentValue.substring(end);
       setValue(newValue);
       setTimeout(() => {
         textarea.focus();
-        if (selectedText) {
+        if (selectedText && formatType !== 'clear') {
           textarea.setSelectionRange(start, start + replacement.length);
         } else {
           textarea.setSelectionRange(start + cursorOffset, start + cursorOffset);
@@ -7472,11 +7549,16 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   );
 
   /**
-   * Thanh công cụ định dạng Apple Notes (phù hợp iPhone & Desktop)
+   * Thanh công cụ định dạng CKEditor / Apple Notes (phù hợp iPhone & Desktop)
    */
   const renderAppleNotesFormatToolbar = useCallback(
     (scope: 'main' | 'thread') => {
       const isMain = scope === 'main';
+      const isPreview = isMain ? isPreviewModeMain : isPreviewModeThread;
+      const togglePreview = () => {
+        if (isMain) setIsPreviewModeMain((prev) => !prev);
+        else setIsPreviewModeThread((prev) => !prev);
+      };
       const close = () => {
         if (isMain) setFormatBarOpenMain(false);
         else setFormatBarOpenThread(false);
@@ -7491,9 +7573,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.1)',
           }}
         >
-          {/* Label Badge Apple Notes */}
+          {/* Label Badge CKEditor / Aa Notes */}
           <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded text-amber-500 bg-amber-500/10 shrink-0 font-serif">
-            Aa Notes
+            CKEditor
           </span>
 
           <div className="h-4 w-[1px] bg-white/10 shrink-0 mx-0.5" />
@@ -7504,10 +7586,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleApplyFormat('bold', scope)}
             title="In đậm (⌘B / **text**)"
-            className="min-w-[36px] h-[34px] px-2 rounded-lg flex items-center justify-center font-bold text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
+            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center font-bold text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
             style={{ color: token.colorText }}
           >
-            <Bold size={15} strokeWidth={2.5} />
+            <Bold size={14} strokeWidth={2.5} />
           </button>
 
           {/* Italic button */}
@@ -7516,10 +7598,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleApplyFormat('italic', scope)}
             title="In nghiêng (⌘I / *text*)"
-            className="min-w-[36px] h-[34px] px-2 rounded-lg flex items-center justify-center italic text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
+            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center italic text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
             style={{ color: token.colorText }}
           >
-            <Italic size={15} />
+            <Italic size={14} />
           </button>
 
           {/* Strikethrough button */}
@@ -7528,10 +7610,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleApplyFormat('strike', scope)}
             title="Gạch ngang (~~text~~)"
-            className="min-w-[36px] h-[34px] px-2 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
+            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
             style={{ color: token.colorText }}
           >
-            <Strikethrough size={15} />
+            <Strikethrough size={14} />
           </button>
 
           {/* Underline button */}
@@ -7540,10 +7622,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleApplyFormat('underline', scope)}
             title="Gạch chân (<u>text</u>)"
-            className="min-w-[36px] h-[34px] px-2 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
+            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
             style={{ color: token.colorText }}
           >
-            <Underline size={15} />
+            <Underline size={14} />
           </button>
 
           <div className="h-4 w-[1px] bg-white/10 shrink-0 mx-0.5" />
@@ -7554,7 +7636,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleApplyFormat('h1', scope)}
             title="Tiêu đề lớn (# Title)"
-            className="min-w-[38px] h-[34px] px-2 rounded-lg flex items-center justify-center font-bold text-[12px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer text-amber-500"
+            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center font-bold text-[12px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer text-amber-500"
           >
             H1
           </button>
@@ -7565,10 +7647,22 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleApplyFormat('h2', scope)}
             title="Tiêu đề phụ (## Subhead)"
-            className="min-w-[38px] h-[34px] px-2 rounded-lg flex items-center justify-center font-semibold text-[11px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer opacity-90"
+            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center font-semibold text-[11px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer opacity-90"
             style={{ color: token.colorText }}
           >
             H2
+          </button>
+
+          {/* H3 Heading button */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => handleApplyFormat('h3', scope)}
+            title="Tiêu đề nhỏ (### Small Header)"
+            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center font-medium text-[10.5px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer opacity-80"
+            style={{ color: token.colorText }}
+          >
+            H3
           </button>
 
           <div className="h-4 w-[1px] bg-white/10 shrink-0 mx-0.5" />
@@ -7579,9 +7673,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleApplyFormat('todo', scope)}
             title="Việc cần làm (- [ ] Việc)"
-            className="min-w-[36px] h-[34px] px-2 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer text-amber-500"
+            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer text-amber-500"
           >
-            <ListTodo size={16} />
+            <ListTodo size={15} />
           </button>
 
           {/* Bullet List button */}
@@ -7590,10 +7684,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleApplyFormat('bullet', scope)}
             title="Danh sách gạch đầu dòng (- Mục)"
-            className="min-w-[36px] h-[34px] px-2 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
+            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
             style={{ color: token.colorText }}
           >
-            <List size={16} />
+            <List size={15} />
           </button>
 
           {/* Numbered List button */}
@@ -7602,10 +7696,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleApplyFormat('number', scope)}
             title="Danh sách đánh số (1. Mục)"
-            className="min-w-[36px] h-[34px] px-2 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
+            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
             style={{ color: token.colorText }}
           >
-            <ListOrdered size={16} />
+            <ListOrdered size={15} />
           </button>
 
           {/* Quote button */}
@@ -7614,10 +7708,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleApplyFormat('quote', scope)}
             title="Trích dẫn (> Trích dẫn)"
-            className="min-w-[36px] h-[34px] px-2 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
+            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
             style={{ color: token.colorText }}
           >
-            <Quote size={15} />
+            <Quote size={14} />
           </button>
 
           {/* Code button */}
@@ -7626,10 +7720,116 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleApplyFormat('code', scope)}
             title="Khối mã code (`code` hoặc ```)"
-            className="min-w-[36px] h-[34px] px-2 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer font-mono"
+            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer font-mono"
             style={{ color: token.colorText }}
           >
-            <Code size={15} />
+            <Code size={14} />
+          </button>
+
+          <div className="h-4 w-[1px] bg-white/10 shrink-0 mx-0.5" />
+
+          {/* Table button */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => handleApplyFormat('table', scope)}
+            title="Chèn bảng dữ liệu Markdown"
+            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
+            style={{ color: token.colorText }}
+          >
+            <TableIcon size={14} />
+          </button>
+
+          {/* Link button */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => handleApplyFormat('link', scope)}
+            title="Chèn liên kết URL [Tên](https://...)"
+            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
+            style={{ color: token.colorText }}
+          >
+            <LinkIcon size={14} />
+          </button>
+
+          {/* Mermaid Diagram button */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => handleApplyFormat('mermaid', scope)}
+            title="Chèn sơ đồ quy trình tương tác Mermaid"
+            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[12px] font-medium text-purple-400 shrink-0 active:scale-95 transition-all hover:bg-purple-500/10 cursor-pointer"
+          >
+            <GitFork size={14} />
+          </button>
+
+          {/* KaTeX Math button */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => handleApplyFormat('math', scope)}
+            title="Chèn công thức toán học KaTeX ($$ ... $$)"
+            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] font-medium text-emerald-400 shrink-0 active:scale-95 transition-all hover:bg-emerald-500/10 cursor-pointer"
+          >
+            <Sigma size={14} />
+          </button>
+
+          {/* Divider button */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => handleApplyFormat('divider', scope)}
+            title="Đường kẻ ngang phân cách (---)"
+            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
+            style={{ color: token.colorText }}
+          >
+            <Minus size={14} />
+          </button>
+
+          {/* Clear Format button */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => handleApplyFormat('clear', scope)}
+            title="Xóa ký tự định dạng"
+            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer opacity-70 hover:opacity-100"
+            style={{ color: token.colorTextSecondary }}
+          >
+            <RotateCcw size={13} />
+          </button>
+
+          <div className="h-4 w-[1px] bg-white/10 shrink-0 mx-0.5" />
+
+          {/* Live Preview Toggle Button */}
+          <button
+            type="button"
+            onClick={togglePreview}
+            title={isPreview ? 'Quay lại chế độ soạn thảo' : 'Xem trước trực quan (WYSIWYG Preview)'}
+            className={`h-[32px] px-2 rounded-lg flex items-center gap-1 text-[11px] font-bold shrink-0 active:scale-95 transition-all cursor-pointer ${
+              isPreview
+                ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                : 'text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/30'
+            }`}
+          >
+            <Eye size={13} />
+            <span className="hidden sm:inline">{isPreview ? 'Đang xem trước' : 'Xem trước'}</span>
+          </button>
+
+          {/* Expand to CKEditor Modal Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setRichEditorModalState({
+                open: true,
+                scope,
+                title: scope === 'main' ? 'Soạn thảo phong phú (CKEditor)' : 'Soạn thảo phản hồi (CKEditor)',
+              });
+            }}
+            title="Mở rộng trình soạn thảo phong phú CKEditor (toàn màn hình, mẫu văn bản & bảng biểu)"
+            className="h-[32px] px-2 rounded-lg flex items-center gap-1 text-[11px] font-bold shrink-0 active:scale-95 transition-all cursor-pointer text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30"
+          >
+            <FilePenLine size={13} />
+            <span className="hidden sm:inline">Mở rộng Editor</span>
           </button>
 
           <div className="h-4 w-[1px] bg-white/10 shrink-0 mx-0.5" />
@@ -7639,7 +7839,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             type="button"
             onClick={close}
             title="Đóng thanh định dạng"
-            className="min-w-[32px] h-[34px] px-1.5 rounded-lg flex items-center justify-center text-[12px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer opacity-70 hover:opacity-100"
+            className="min-w-[30px] h-[32px] px-1 rounded-lg flex items-center justify-center text-[12px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer opacity-70 hover:opacity-100"
             style={{ color: token.colorTextSecondary }}
           >
             <X size={14} />
@@ -7647,7 +7847,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         </div>
       );
     },
-    [handleApplyFormat, isDark, token.colorText, token.colorTextSecondary]
+    [handleApplyFormat, isDark, isPreviewModeMain, isPreviewModeThread, token.colorText, token.colorTextSecondary]
   );
 
   const [brokenAvatarUrls, setBrokenAvatarUrls] = useState<Record<string, boolean>>({});
@@ -12106,6 +12306,30 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                 </span>
                               </button>
                             )}
+
+                            {/* CKEditor Mobile Button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRichEditorModalState({
+                                  open: true,
+                                  scope: 'main',
+                                  title: 'Soạn thảo phong phú (CKEditor)',
+                                });
+                                setMobileActionOpen(false);
+                              }}
+                              className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/5 active:scale-95 transition-transform"
+                            >
+                              <div className="w-9 h-9 rounded-full flex items-center justify-center bg-amber-500/15 text-amber-400 border border-amber-500/30 overflow-hidden shrink-0">
+                                <FilePenLine size={16} />
+                              </div>
+                              <span
+                                className="text-[10.5px] font-medium text-center leading-tight"
+                                style={{ color: token.colorText }}
+                              >
+                                CKEditor
+                              </span>
+                            </button>
                           </div>
                         )}
 
@@ -12274,86 +12498,116 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         >
                           {renderMentionAutocompleteDropdown('main')}
 
-                          {/* Top: 100% Full-Width Textarea with generous min/max height and comfortable typography */}
-                          <textarea
-                            ref={composerInputRef}
-                            rows={1}
-                            value={composerText}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setComposerText(val);
-                              e.target.style.height = 'auto';
-                              e.target.style.height = `${Math.min(e.target.scrollHeight, 180)}px`;
-                              checkForMentionTrigger(val, e.target.selectionStart ?? val.length, 'main');
-                            }}
-                            onClick={(e) => {
-                              const target = e.target as HTMLTextAreaElement;
-                              checkForMentionTrigger(
-                                target.value,
-                                target.selectionStart ?? target.value.length,
-                                'main'
-                              );
-                            }}
-                            onKeyUp={(e) => {
-                              if (['ArrowLeft', 'ArrowRight', 'Home', 'End', 'Backspace', 'Delete'].includes(e.key)) {
+                          {/* Top: Live Preview or 100% Full-Width Textarea */}
+                          {isPreviewModeMain ? (
+                            <div
+                              className="w-full min-h-[58px] max-h-[220px] overflow-y-auto px-1 py-1 rounded-lg select-text mb-1"
+                              style={{ color: token.colorText }}
+                            >
+                              <div className="flex items-center justify-between pb-1 mb-2 border-b border-amber-500/20 text-[11px] font-bold text-amber-500">
+                                <div className="flex items-center gap-1.5">
+                                  <Eye size={13} />
+                                  <span>Đang xem trước trực quan (WYSIWYG)</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setIsPreviewModeMain(false)}
+                                  className="text-[11px] px-2 py-0.5 rounded bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 font-medium transition-colors cursor-pointer"
+                                >
+                                  Quay lại chỉnh sửa
+                                </button>
+                              </div>
+                              {composerText.trim() ? (
+                                <div className="prose max-w-none text-[13.5px]">
+                                  {renderRichTextMessage(composerText, false)}
+                                </div>
+                              ) : (
+                                <div className="text-zinc-500 text-[12px] italic py-2">
+                                  Chưa có nội dung để xem trước... Nhập văn bản để xem hiển thị định dạng.
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <textarea
+                              ref={composerInputRef}
+                              rows={1}
+                              value={composerText}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setComposerText(val);
+                                e.target.style.height = 'auto';
+                                e.target.style.height = `${Math.min(e.target.scrollHeight, 180)}px`;
+                                checkForMentionTrigger(val, e.target.selectionStart ?? val.length, 'main');
+                              }}
+                              onClick={(e) => {
                                 const target = e.target as HTMLTextAreaElement;
                                 checkForMentionTrigger(
                                   target.value,
                                   target.selectionStart ?? target.value.length,
                                   'main'
                                 );
-                              }
-                            }}
-                            onPaste={(e) => handleClipboardPaste(e, 'main')}
-                            onCompositionStart={() => {
-                              isComposingRef.current = true;
-                            }}
-                            onCompositionEnd={() => {
-                              lastCompositionEndMsRef.current = Date.now();
-                              setTimeout(() => {
-                                isComposingRef.current = false;
-                              }, 50);
-                            }}
-                            onKeyDown={(e) => {
-                              if (handleMentionKeyDown(e, 'main')) return;
-                              if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
-                                e.preventDefault();
-                                handleApplyFormat('bold', 'main');
-                                return;
-                              }
-                              if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'i') {
-                                e.preventDefault();
-                                handleApplyFormat('italic', 'main');
-                                return;
-                              }
-                              if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'u') {
-                                e.preventDefault();
-                                handleApplyFormat('underline', 'main');
-                                return;
-                              }
-                              if (e.key === 'Enter' && !e.shiftKey) {
-                                if (
-                                  e.nativeEvent.isComposing ||
-                                  isComposingRef.current ||
-                                  e.keyCode === 229 ||
-                                  Date.now() - lastCompositionEndMsRef.current < 60
-                                ) {
+                              }}
+                              onKeyUp={(e) => {
+                                if (['ArrowLeft', 'ArrowRight', 'Home', 'End', 'Backspace', 'Delete'].includes(e.key)) {
+                                  const target = e.target as HTMLTextAreaElement;
+                                  checkForMentionTrigger(
+                                    target.value,
+                                    target.selectionStart ?? target.value.length,
+                                    'main'
+                                  );
+                                }
+                              }}
+                              onPaste={(e) => handleClipboardPaste(e, 'main')}
+                              onCompositionStart={() => {
+                                isComposingRef.current = true;
+                              }}
+                              onCompositionEnd={() => {
+                                lastCompositionEndMsRef.current = Date.now();
+                                setTimeout(() => {
+                                  isComposingRef.current = false;
+                                }, 50);
+                              }}
+                              onKeyDown={(e) => {
+                                if (handleMentionKeyDown(e, 'main')) return;
+                                if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+                                  e.preventDefault();
+                                  handleApplyFormat('bold', 'main');
                                   return;
                                 }
-                                e.preventDefault();
-                                handleSendMain();
+                                if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'i') {
+                                  e.preventDefault();
+                                  handleApplyFormat('italic', 'main');
+                                  return;
+                                }
+                                if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'u') {
+                                  e.preventDefault();
+                                  handleApplyFormat('underline', 'main');
+                                  return;
+                                }
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                  if (
+                                    e.nativeEvent.isComposing ||
+                                    isComposingRef.current ||
+                                    e.keyCode === 229 ||
+                                    Date.now() - lastCompositionEndMsRef.current < 60
+                                  ) {
+                                    return;
+                                  }
+                                  e.preventDefault();
+                                  handleSendMain();
+                                }
+                              }}
+                              placeholder={
+                                activeConversation?.id === AI_COPILOT_CONV_ID
+                                  ? 'Hỏi MAI, Paste hình (⌘V) hoặc yêu cầu phân tích khách hàng... (Shift+Enter để xuống dòng)'
+                                  : canUseAiCopilot
+                                    ? 'Nhắn tin, gõ @MAI để gọi mOS AI, Paste hình (⌘V)... (Shift+Enter để xuống dòng)'
+                                    : 'Nhắn tin, Paste hình (⌘V) hoặc dán link Google Drive... (Shift+Enter để xuống dòng)'
                               }
-                            }}
-                            placeholder={
-                              activeConversation?.id === AI_COPILOT_CONV_ID
-                                ? 'Hỏi MAI, Paste hình (⌘V) hoặc yêu cầu phân tích khách hàng... (Shift+Enter để xuống dòng)'
-                                : canUseAiCopilot
-                                  ? 'Nhắn tin, gõ @MAI để gọi mOS AI, Paste hình (⌘V)... (Shift+Enter để xuống dòng)'
-                                  : 'Nhắn tin, Paste hình (⌘V) hoặc dán link Google Drive... (Shift+Enter để xuống dòng)'
-                            }
-                            className="w-full bg-transparent border-0 outline-none text-[13.5px] resize-none leading-relaxed px-0.5 py-1 min-h-[42px]"
-                            style={{ color: token.colorText, maxHeight: 180 }}
-                          />
+                              className="w-full bg-transparent border-0 outline-none text-[13.5px] resize-none leading-relaxed px-0.5 py-1 min-h-[42px]"
+                              style={{ color: token.colorText, maxHeight: 180 }}
+                            />
+                          )}
 
                           {/* Bottom Toolbar: Action Icons on Left, Send Button on Right */}
                           <div
@@ -12362,7 +12616,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           >
                             <div className="flex items-center gap-1 flex-wrap">
                               {/* [Aa] Apple Notes Format Button */}
-                              <Tooltip title="Định dạng chữ phong cách Apple Notes (Aa)">
+                              <Tooltip title="Định dạng chữ phong cách Apple Notes / CKEditor (Aa)">
                                 <button
                                   type="button"
                                   aria-label="Định dạng chữ Apple Notes"
@@ -12374,6 +12628,25 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                   }}
                                 >
                                   <span className="font-serif font-bold text-[12.5px] tracking-tight">Aa</span>
+                                </button>
+                              </Tooltip>
+
+                              {/* [CKEditor] Rich Editor Modal Button */}
+                              <Tooltip title="Mở rộng trình soạn thảo phong phú (CKEditor Mode) với mẫu văn bản & bảng biểu">
+                                <button
+                                  type="button"
+                                  aria-label="Mở trình soạn thảo phong phú CKEditor"
+                                  onClick={() => {
+                                    setRichEditorModalState({
+                                      open: true,
+                                      scope: 'main',
+                                      title: 'Soạn thảo phong phú (CKEditor)',
+                                    });
+                                  }}
+                                  className="h-7 px-2 rounded-lg inline-flex items-center gap-1 hover:bg-amber-500/15 cursor-pointer transition-colors text-[11px] font-bold text-amber-500 border border-amber-500/30"
+                                >
+                                  <FilePenLine size={13} />
+                                  <span className="hidden xl:inline">CKEditor</span>
                                 </button>
                               </Tooltip>
 
@@ -14158,99 +14431,129 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     }}
                   >
                     {renderMentionAutocompleteDropdown('thread')}
-                    <textarea
-                      ref={threadInputRef}
-                      rows={1}
-                      value={threadInput}
-                      onDragOver={(e) => {
-                        if (draggingRootMsgId) return;
-                        const hasFiles =
-                          Boolean(e.dataTransfer?.types?.includes('Files')) || Boolean(e.dataTransfer?.files?.length);
-                        if (hasFiles) {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          e.dataTransfer.dropEffect = 'copy';
-                          if (!isDraggingOverThread) setIsDraggingOverThread(true);
-                          if (isDraggingOver) setIsDraggingOver(false);
-                        }
-                      }}
-                      onDrop={(e) => {
-                        if (draggingRootMsgId) return;
-                        if (e.dataTransfer?.files?.length) {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setIsDraggingOver(false);
-                          setIsDraggingOverThread(false);
-                          void handleProcessImageFiles(e.dataTransfer.files, 'upload', 'thread');
-                        }
-                      }}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const cursor = e.target.selectionStart ?? val.length;
-                        setThreadInput(val);
-                        e.target.style.height = 'auto';
-                        e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
-                        checkForMentionTrigger(val, cursor, 'thread');
-                      }}
-                      onClick={(e) => {
-                        const target = e.currentTarget;
-                        checkForMentionTrigger(target.value, target.selectionStart ?? target.value.length, 'thread');
-                      }}
-                      onKeyUp={(e) => {
-                        if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
+                    {isPreviewModeThread ? (
+                      <div
+                        className="w-full min-h-[50px] max-h-[160px] overflow-y-auto px-1 py-1 rounded-lg select-text mb-1"
+                        style={{ color: token.colorText }}
+                      >
+                        <div className="flex items-center justify-between pb-1 mb-1.5 border-b border-amber-500/20 text-[10.5px] font-bold text-amber-500">
+                          <div className="flex items-center gap-1.5">
+                            <Eye size={12} />
+                            <span>Đang xem trước phản hồi luồng</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setIsPreviewModeThread(false)}
+                            className="text-[10.5px] px-2 py-0.5 rounded bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 font-medium transition-colors cursor-pointer"
+                          >
+                            Quay lại sửa
+                          </button>
+                        </div>
+                        {threadInput.trim() ? (
+                          <div className="prose max-w-none text-[13px]">
+                            {renderRichTextMessage(threadInput, false)}
+                          </div>
+                        ) : (
+                          <div className="text-zinc-500 text-[11.5px] italic py-1">
+                            Chưa có nội dung để xem trước...
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <textarea
+                        ref={threadInputRef}
+                        rows={1}
+                        value={threadInput}
+                        onDragOver={(e) => {
+                          if (draggingRootMsgId) return;
+                          const hasFiles =
+                            Boolean(e.dataTransfer?.types?.includes('Files')) || Boolean(e.dataTransfer?.files?.length);
+                          if (hasFiles) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            e.dataTransfer.dropEffect = 'copy';
+                            if (!isDraggingOverThread) setIsDraggingOverThread(true);
+                            if (isDraggingOver) setIsDraggingOver(false);
+                          }
+                        }}
+                        onDrop={(e) => {
+                          if (draggingRootMsgId) return;
+                          if (e.dataTransfer?.files?.length) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setIsDraggingOver(false);
+                            setIsDraggingOverThread(false);
+                            void handleProcessImageFiles(e.dataTransfer.files, 'upload', 'thread');
+                          }
+                        }}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const cursor = e.target.selectionStart ?? val.length;
+                          setThreadInput(val);
+                          e.target.style.height = 'auto';
+                          e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
+                          checkForMentionTrigger(val, cursor, 'thread');
+                        }}
+                        onClick={(e) => {
                           const target = e.currentTarget;
                           checkForMentionTrigger(target.value, target.selectionStart ?? target.value.length, 'thread');
-                        }
-                      }}
-                      onPaste={(e) => handleClipboardPaste(e, 'thread')}
-                      onCompositionStart={() => {
-                        isComposingRef.current = true;
-                      }}
-                      onCompositionEnd={() => {
-                        lastCompositionEndMsRef.current = Date.now();
-                        setTimeout(() => {
-                          isComposingRef.current = false;
-                        }, 50);
-                      }}
-                      onKeyDown={(e) => {
-                        if (handleMentionKeyDown(e, 'thread')) {
-                          return;
-                        }
-                        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
-                          e.preventDefault();
-                          handleApplyFormat('bold', 'thread');
-                          return;
-                        }
-                        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'i') {
-                          e.preventDefault();
-                          handleApplyFormat('italic', 'thread');
-                          return;
-                        }
-                        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'u') {
-                          e.preventDefault();
-                          handleApplyFormat('underline', 'thread');
-                          return;
-                        }
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          if (
-                            e.nativeEvent.isComposing ||
-                            isComposingRef.current ||
-                            e.keyCode === 229 ||
-                            Date.now() - lastCompositionEndMsRef.current < 60
-                          ) {
+                        }}
+                        onKeyUp={(e) => {
+                          if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
+                            const target = e.currentTarget;
+                            checkForMentionTrigger(target.value, target.selectionStart ?? target.value.length, 'thread');
+                          }
+                        }}
+                        onPaste={(e) => handleClipboardPaste(e, 'thread')}
+                        onCompositionStart={() => {
+                          isComposingRef.current = true;
+                        }}
+                        onCompositionEnd={() => {
+                          lastCompositionEndMsRef.current = Date.now();
+                          setTimeout(() => {
+                            isComposingRef.current = false;
+                          }, 50);
+                        }}
+                        onKeyDown={(e) => {
+                          if (handleMentionKeyDown(e, 'thread')) {
                             return;
                           }
-                          e.preventDefault();
-                          handleSendThreadReply();
-                        }
-                      }}
-                      placeholder="Trả lời vào luồng... (gõ @MAI để gọi mOS AI, @ để nhắc tên, Shift+Enter xuống dòng)"
-                      className="w-full bg-transparent border-0 outline-none text-[13px] resize-none leading-relaxed px-0.5 py-1 min-h-[36px]"
-                      style={{
-                        color: token.colorText,
-                        maxHeight: 140,
-                      }}
-                    />
+                          if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+                            e.preventDefault();
+                            handleApplyFormat('bold', 'thread');
+                            return;
+                          }
+                          if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'i') {
+                            e.preventDefault();
+                            handleApplyFormat('italic', 'thread');
+                            return;
+                          }
+                          if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'u') {
+                            e.preventDefault();
+                            handleApplyFormat('underline', 'thread');
+                            return;
+                          }
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            if (
+                              e.nativeEvent.isComposing ||
+                              isComposingRef.current ||
+                              e.keyCode === 229 ||
+                              Date.now() - lastCompositionEndMsRef.current < 60
+                            ) {
+                              return;
+                            }
+                            e.preventDefault();
+                            handleSendThreadReply();
+                          }
+                        }}
+                        placeholder="Trả lời vào luồng... (gõ @MAI để gọi mOS AI, @ để nhắc tên, Shift+Enter xuống dòng)"
+                        className="w-full bg-transparent border-0 outline-none text-[13px] resize-none leading-relaxed px-0.5 py-1 min-h-[36px]"
+                        style={{
+                          color: token.colorText,
+                          maxHeight: 140,
+                        }}
+                      />
+                    )}
 
                     {/* Bottom row: Tools on Left, Send on Right */}
                     <div
@@ -14303,7 +14606,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         </Tooltip>
 
                         {/* [Aa] Apple Notes Format Button in Thread */}
-                        <Tooltip title="Định dạng chữ phong cách Apple Notes (Aa)">
+                        <Tooltip title="Định dạng chữ phong cách Apple Notes / CKEditor (Aa)">
                           <button
                             type="button"
                             aria-label="Định dạng chữ Apple Notes trong luồng"
@@ -14315,6 +14618,24 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             }}
                           >
                             <span className="font-serif font-bold text-[12px] tracking-tight">Aa</span>
+                          </button>
+                        </Tooltip>
+
+                        {/* [CKEditor] Button in Thread */}
+                        <Tooltip title="Mở rộng trình soạn thảo CKEditor cho luồng phản hồi">
+                          <button
+                            type="button"
+                            aria-label="Mở trình soạn thảo phong phú CKEditor trong luồng"
+                            onClick={() => {
+                              setRichEditorModalState({
+                                open: true,
+                                scope: 'thread',
+                                title: 'Soạn thảo phản hồi (CKEditor)',
+                              });
+                            }}
+                            className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-amber-500/15 active:scale-95 transition-all text-amber-500"
+                          >
+                            <FilePenLine size={14} />
                           </button>
                         </Tooltip>
 
@@ -17977,6 +18298,72 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           />
         </>
       )}
+
+      {/* MOS-FEAT-138: CKEditor Rich Editor Modal */}
+      <MosChatRichEditorModal
+        open={richEditorModalState.open}
+        onClose={() => setRichEditorModalState((prev) => ({ ...prev, open: false }))}
+        initialValue={richEditorModalState.scope === 'main' ? composerText : threadInput}
+        onApply={(newText) => {
+          if (richEditorModalState.scope === 'main') {
+            setComposerText(newText);
+            setTimeout(() => composerInputRef.current?.focus(), 50);
+          } else {
+            setThreadInput(newText);
+            setTimeout(() => threadInputRef.current?.focus(), 50);
+          }
+        }}
+        onSend={async (textToSend) => {
+          if (richEditorModalState.scope === 'main') {
+            if (activeConversation) {
+              const attachmentsToSend = stagedAttachments;
+              setComposerText('');
+              setStagedAttachments([]);
+              if (composerInputRef.current) composerInputRef.current.value = '';
+              await handleSendMessage(activeConversation.id, textToSend, null, attachmentsToSend);
+            }
+          } else {
+            if (activeConversation && activeThreadMsgId) {
+              const attachmentsToSend = threadAttachments;
+              setThreadInput('');
+              setThreadAttachments([]);
+              if (threadInputRef.current) {
+                threadInputRef.current.value = '';
+                threadInputRef.current.style.height = 'auto';
+              }
+              const senderName = currentUser?.displayName || 'Danny Do';
+              const newReply = {
+                id: `th-${Date.now()}`,
+                senderId: currentUser?.id || 'me',
+                senderName,
+                senderRole: 'Super Admin',
+                senderAvatar: 'DD',
+                text: textToSend,
+                attachments: attachmentsToSend.length > 0 ? attachmentsToSend : undefined,
+                timeLabel: dayjs().format('HH:mm'),
+                createdAt: new Date().toISOString(),
+              };
+              setConversations((prev) =>
+                prev.map((c) => {
+                  if (c.id !== activeConversation.id) return c;
+                  return {
+                    ...c,
+                    messages: c.messages.map((m) =>
+                      m.id === activeThreadMsgId
+                        ? { ...m, unreadThreadReplyCount: 0, thread: [...(m.thread || []), newReply] }
+                        : m
+                    ),
+                  };
+                })
+              );
+              scrollToChatBottom('thread', 'smooth');
+            }
+          }
+        }}
+        title={richEditorModalState.title}
+        isDark={isDark}
+        canUseAiCopilot={canUseAiCopilot}
+      />
     </>
   );
 };
