@@ -145,4 +145,74 @@ describe('MosChatMobileMediaGallery (Messenger-style mobile image slider)', () =
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(handleClose).toHaveBeenCalledTimes(1);
   });
+
+  it('allows zooming in and out via header zoom buttons and resetting to 100% (MOS-FEAT-147)', () => {
+    render(<MosChatMobileMediaGallery open={true} images={sampleImages} initialIndex={0} onClose={vi.fn()} />);
+
+    // Default zoom is 100%
+    expect(screen.getByText('100%')).toBeTruthy();
+
+    const zoomInBtn = screen.getByRole('button', { name: 'Phóng to ảnh' });
+    const zoomOutBtn = screen.getByRole('button', { name: 'Thu nhỏ ảnh' });
+    const resetBtn = screen.getByRole('button', { name: 'Đặt lại thu phóng' });
+
+    // Tap Zoom In -> 150%
+    fireEvent.click(zoomInBtn);
+    expect(screen.getByText('150%')).toBeTruthy();
+
+    // Tap Zoom In again -> 200%
+    fireEvent.click(zoomInBtn);
+    expect(screen.getByText('200%')).toBeTruthy();
+
+    // Tap Zoom Out -> 150%
+    fireEvent.click(zoomOutBtn);
+    expect(screen.getByText('150%')).toBeTruthy();
+
+    // Tap Reset -> 100%
+    fireEvent.click(resetBtn);
+    expect(screen.getByText('100%')).toBeTruthy();
+  });
+
+  it('zooms into 250% on double-tap and resets on second double-tap (MOS-FEAT-147)', () => {
+    render(<MosChatMobileMediaGallery open={true} images={sampleImages} initialIndex={0} onClose={vi.fn()} />);
+
+    expect(screen.getByText('100%')).toBeTruthy();
+
+    const trackContainer = screen.getByRole('dialog').querySelector('.touch-none') as HTMLElement;
+
+    // First tap
+    fireEvent.touchStart(trackContainer, { touches: [{ clientX: 200, clientY: 300 }] });
+    fireEvent.touchEnd(trackContainer);
+
+    // Second tap within 200ms -> triggers double-tap zoom
+    fireEvent.touchStart(trackContainer, { touches: [{ clientX: 200, clientY: 300 }] });
+    fireEvent.touchEnd(trackContainer);
+
+    expect(screen.getByText('250%')).toBeTruthy();
+
+    // Double tap again to reset back to 100%
+    fireEvent.touchStart(trackContainer, { touches: [{ clientX: 200, clientY: 300 }] });
+    fireEvent.touchEnd(trackContainer);
+    fireEvent.touchStart(trackContainer, { touches: [{ clientX: 200, clientY: 300 }] });
+    fireEvent.touchEnd(trackContainer);
+
+    expect(screen.getByText('100%')).toBeTruthy();
+  });
+
+  it('resets zoom scale back to 100% when navigating between images (MOS-FEAT-147)', () => {
+    render(<MosChatMobileMediaGallery open={true} images={sampleImages} initialIndex={0} onClose={vi.fn()} />);
+
+    // Zoom in to 200%
+    const zoomInBtn = screen.getByRole('button', { name: 'Phóng to ảnh' });
+    fireEvent.click(zoomInBtn);
+    fireEvent.click(zoomInBtn);
+    expect(screen.getByText('200%')).toBeTruthy();
+
+    // Navigate to next image via keyboard ArrowRight
+    fireEvent.keyDown(window, { key: 'ArrowRight' });
+    expect(screen.getByText('2 / 3')).toBeTruthy();
+
+    // Zoom automatically resets to 100%
+    expect(screen.getByText('100%')).toBeTruthy();
+  });
 });
