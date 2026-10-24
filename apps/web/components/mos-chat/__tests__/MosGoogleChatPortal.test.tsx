@@ -883,4 +883,63 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
       );
     });
   });
+
+  it('renders CKEditor action button and opens rich editor modal (MOS-FEAT-138)', async () => {
+    const mockConv = {
+      id: 'space-test-ckeditor',
+      type: 'space' as const,
+      name: 'General Discussion',
+      memberCount: 3,
+      unreadCount: 0,
+      updatedAt: new Date().toISOString(),
+      messages: [
+        {
+          id: 'm-1',
+          conversationId: 'space-test-ckeditor',
+          senderId: 'user-1',
+          senderName: 'Bảo Hân',
+          text: 'Chào cả nhà!',
+          timeLabel: '10:00',
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    };
+
+    (apiClient.chat.bootstrap as any).mockResolvedValue({
+      unchanged: false,
+      version: 1,
+      conversations: [mockConv],
+      tasks: [],
+      staffDirectory: [{ id: 99, displayName: 'Danny Do', role: 'Admin' }],
+      accessConfig: { allowAllStaff: true, allowedGroupKeys: [], allowedStaffIds: [] },
+      canAccessChat: true,
+    });
+
+    render(
+      <MosGoogleChatPortal
+        open={true}
+        onClose={vi.fn()}
+        onToggle={vi.fn()}
+        currentUser={{ id: 99, displayName: 'Danny Do', role: 'Admin' }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('General Discussion')).toBeTruthy();
+    });
+    fireEvent.click(screen.getByText('General Discussion'));
+
+    // Verify CKEditor button is rendered
+    const ckEditorBtn = await screen.findByRole('button', { name: /Mở trình soạn thảo phong phú CKEditor/i });
+    expect(ckEditorBtn).toBeTruthy();
+
+    // Click CKEditor button
+    fireEvent.click(ckEditorBtn);
+
+    // Verify Modal opens with CKEditor title & modes
+    await waitFor(() => {
+      expect(screen.getByText('Soạn thảo phong phú (CKEditor)')).toBeTruthy();
+      expect(screen.getByText('CKEditor Mode')).toBeTruthy();
+    });
+  });
 });
