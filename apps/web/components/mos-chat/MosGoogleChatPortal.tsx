@@ -110,8 +110,15 @@ import {
   Heading3,
   Columns2,
   Link as LinkIcon,
+  SquareCode,
 } from 'lucide-react';
-import { MosChatRichEditorModal } from './MosChatRichEditorModal';
+import {
+  MosChatRichEditorModal,
+  detectActiveFormatsAtCursor,
+  handleSmartListEnterKey,
+  QUICK_TEXT_COLORS,
+  type RichEditorViewMode,
+} from './MosChatRichEditorModal';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import { formatRelativeTime } from '../../lib/date-utils';
@@ -963,7 +970,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [composerText, setComposerText] = useState('');
   const [stagedAttachments, setStagedAttachments] = useState<MosChatImageAttachment[]>([]);
   const [sampleCardIndex, setSampleCardIndex] = useState(0);
-  const [formatBarOpenMain, setFormatBarOpenMain] = useState(false);
+  const [formatBarOpenMain, setFormatBarOpenMain] = useState(true);
   const [formatBarOpenThread, setFormatBarOpenThread] = useState(false);
 
   // MOS-FEAT-138: CKEditor Rich Editor Modal & Live Preview states
@@ -971,13 +978,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     open: boolean;
     scope: 'main' | 'thread';
     title: string;
+    initialMode?: RichEditorViewMode;
   }>({
     open: false,
     scope: 'main',
     title: 'Soạn thảo phong phú (CKEditor)',
+    initialMode: 'split',
   });
   const [isPreviewModeMain, setIsPreviewModeMain] = useState(false);
   const [isPreviewModeThread, setIsPreviewModeThread] = useState(false);
+  const [composerCursorPos, setComposerCursorPos] = useState(0);
+  const [threadCursorPos, setThreadCursorPos] = useState(0);
+  const [inlineTextColor, setInlineTextColor] = useState('#f59e0b');
+  const [colorPopoverScope, setColorPopoverScope] = useState<'main' | 'thread' | null>(null);
 
   // @Mention Autocomplete state (tagging group/space members)
   const [mentionState, setMentionState] = useState<{
@@ -7503,7 +7516,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   );
 
   /**
-   * Áp dụng cú pháp định dạng CKEditor / Markdown nâng cao vào textarea tại vị trí con trỏ chuột
+   * Áp dụng cú pháp định dạng CKEditor / Quick-Type vào textarea tại vị trí con trỏ chuột.
+   * Hỗ trợ bật/tắt (toggle) thông minh cho dấu đầu dòng (•), đánh số (1.), việc cần làm (- [ ]),
+   * và đặt con trỏ ngay chính giữa cặp định dạng (**|**, *|*, <u>|</u>, ~~|~~) để gõ nhanh không vướng chữ thừa.
    */
   const handleApplyFormat = useCallback(
     (
@@ -7512,6 +7527,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         | 'italic'
         | 'strike'
         | 'underline'
+        | 'color'
         | 'h1'
         | 'h2'
         | 'h3'
@@ -7527,11 +7543,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         | 'mermaid'
         | 'math'
         | 'clear',
-      scope: 'main' | 'thread'
+      scope: 'main' | 'thread',
+      customColorHex?: string
     ) => {
       const textarea = scope === 'main' ? composerInputRef.current : threadInputRef.current;
       const currentValue = scope === 'main' ? composerText : threadInput;
       const setValue = scope === 'main' ? setComposerText : setThreadInput;
+      const setCursor = scope === 'main' ? setComposerCursorPos : setThreadCursorPos;
 
       if (!textarea) return;
 
@@ -7539,127 +7557,146 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       const end = textarea.selectionEnd ?? currentValue.length;
       const selectedText = currentValue.substring(start, end);
 
+      const toggleLinePrefixInComposer = (targetPrefix: string, stripPattern: RegExp) => {
+        const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
+        const nextNewline = currentValue.indexOf('\n', start);
+        const lineEnd = nextNewline === -1 ? currentValue.length : nextNewline;
+
+        const beforeLine = currentValue.substring(0, lineStart);
+        const currentLine = currentValue.substring(lineStart, lineEnd);
+        const afterLine = currentValue.substring(lineEnd);
+
+        let updatedLine: string;
+        let delta = 0;
+
+        if (stripPattern.test(currentLine)) {
+          updatedLine = currentLine.replace(stripPattern, '');
+          delta = updatedLine.length - currentLine.length;
+        } else {
+          const cleanedLine = currentLine.replace(/^(?:-\s\[[ xX]\]\s|[•\-*]\s|\d+\.\s|>\s|#{1,3}\s)/, '');
+          updatedLine = `${targetPrefix}${cleanedLine}`;
+          delta = updatedLine.length - currentLine.length;
+        }
+
+        const newText = `${beforeLine}${updatedLine}${afterLine}`;
+        const nextStart = Math.max(lineStart, start + delta);
+        const nextEnd = Math.max(lineStart, end + delta);
+        setValue(newText);
+        setCursor(nextStart);
+        setTimeout(() => {
+          textarea.focus();
+          textarea.setSelectionRange(nextStart, nextEnd);
+        }, 0);
+      };
+
+      const toggleInlineInComposer = (openTag: string, closeTag: string) => {
+        const before = currentValue.substring(0, start);
+        const after = currentValue.substring(end);
+
+        if (!selectedText && before.endsWith(openTag) && after.startsWith(closeTag)) {
+          const newText = before.slice(0, -openTag.length) + after.slice(closeTag.length);
+          const nextPos = start - openTag.length;
+          setValue(newText);
+          setCursor(nextPos);
+          setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(nextPos, nextPos);
+          }, 0);
+          return;
+        }
+
+        if (
+          selectedText.startsWith(openTag) &&
+          selectedText.endsWith(closeTag) &&
+          selectedText.length >= openTag.length + closeTag.length
+        ) {
+          const unwrapped = selectedText.slice(openTag.length, -closeTag.length);
+          const newText = before + unwrapped + after;
+          setValue(newText);
+          setCursor(start + unwrapped.length);
+          setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(start, start + unwrapped.length);
+          }, 0);
+          return;
+        }
+
+        const wrapped = `${openTag}${selectedText}${closeTag}`;
+        const newText = before + wrapped + after;
+        const nextPos = selectedText ? start + wrapped.length : start + openTag.length;
+        setValue(newText);
+        setCursor(nextPos);
+        setTimeout(() => {
+          textarea.focus();
+          if (selectedText) {
+            textarea.setSelectionRange(start, start + wrapped.length);
+          } else {
+            textarea.setSelectionRange(nextPos, nextPos);
+          }
+        }, 0);
+      };
+
+      switch (formatType) {
+        case 'bold':
+          toggleInlineInComposer('**', '**');
+          return;
+        case 'italic':
+          toggleInlineInComposer('*', '*');
+          return;
+        case 'strike':
+          toggleInlineInComposer('~~', '~~');
+          return;
+        case 'underline':
+          toggleInlineInComposer('<u>', '</u>');
+          return;
+        case 'color': {
+          const hex = customColorHex || inlineTextColor || '#f59e0b';
+          toggleInlineInComposer(`<span style="color:${hex}">`, '</span>');
+          return;
+        }
+        case 'code':
+          toggleInlineInComposer('`', '`');
+          return;
+        case 'h1':
+          toggleLinePrefixInComposer('# ', /^#\s/);
+          return;
+        case 'h2':
+          toggleLinePrefixInComposer('## ', /^##\s/);
+          return;
+        case 'h3':
+          toggleLinePrefixInComposer('### ', /^###\s/);
+          return;
+        case 'todo':
+          toggleLinePrefixInComposer('- [ ] ', /^-\s\[[ xX]\]\s/);
+          return;
+        case 'bullet':
+          toggleLinePrefixInComposer('• ', /^[•\-*]\s/);
+          return;
+        case 'number':
+          toggleLinePrefixInComposer('1. ', /^\d+\.\s/);
+          return;
+        case 'quote':
+          toggleLinePrefixInComposer('> ', /^>\s?/);
+          return;
+        default:
+          break;
+      }
+
       let replacement = '';
       let cursorOffset = 0;
 
       switch (formatType) {
-        case 'bold':
-          replacement = selectedText ? `**${selectedText}**` : '**chữ đậm**';
-          cursorOffset = selectedText ? replacement.length : 2;
-          break;
-        case 'italic':
-          replacement = selectedText ? `*${selectedText}*` : '*chữ nghiêng*';
-          cursorOffset = selectedText ? replacement.length : 1;
-          break;
-        case 'strike':
-          replacement = selectedText ? `~~${selectedText}~~` : '~~gạch ngang~~';
-          cursorOffset = selectedText ? replacement.length : 2;
-          break;
-        case 'underline':
-          replacement = selectedText ? `<u>${selectedText}</u>` : '<u>gạch chân</u>';
-          cursorOffset = selectedText ? replacement.length : 3;
-          break;
-        case 'code':
-          replacement = selectedText ? `\`${selectedText}\`` : '`mã code`';
-          cursorOffset = selectedText ? replacement.length : 1;
-          break;
         case 'codeblock':
-          replacement = selectedText
-            ? `\`\`\`typescript\n${selectedText}\n\`\`\``
-            : '```typescript\n// Mã lập trình\n```';
-          cursorOffset = selectedText ? replacement.length : 14;
+          replacement = selectedText ? `\`\`\`\n${selectedText}\n\`\`\`` : '```\n\n```';
+          cursorOffset = selectedText ? replacement.length : 4;
           break;
-        case 'h1': {
-          const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
-          const prefix = currentValue.substring(0, lineStart);
-          const rest = currentValue.substring(lineStart);
-          const newText = `${prefix}# ${rest}`;
-          setValue(newText);
-          setTimeout(() => {
-            textarea.focus();
-            textarea.setSelectionRange(start + 2, end + 2);
-          }, 0);
-          return;
-        }
-        case 'h2': {
-          const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
-          const prefix = currentValue.substring(0, lineStart);
-          const rest = currentValue.substring(lineStart);
-          const newText = `${prefix}## ${rest}`;
-          setValue(newText);
-          setTimeout(() => {
-            textarea.focus();
-            textarea.setSelectionRange(start + 3, end + 3);
-          }, 0);
-          return;
-        }
-        case 'h3': {
-          const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
-          const prefix = currentValue.substring(0, lineStart);
-          const rest = currentValue.substring(lineStart);
-          const newText = `${prefix}### ${rest}`;
-          setValue(newText);
-          setTimeout(() => {
-            textarea.focus();
-            textarea.setSelectionRange(start + 4, end + 4);
-          }, 0);
-          return;
-        }
-        case 'todo': {
-          const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
-          const prefix = currentValue.substring(0, lineStart);
-          const rest = currentValue.substring(lineStart);
-          const newText = `${prefix}- [ ] ${rest}`;
-          setValue(newText);
-          setTimeout(() => {
-            textarea.focus();
-            textarea.setSelectionRange(start + 6, end + 6);
-          }, 0);
-          return;
-        }
-        case 'bullet': {
-          const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
-          const prefix = currentValue.substring(0, lineStart);
-          const rest = currentValue.substring(lineStart);
-          const newText = `${prefix}- ${rest}`;
-          setValue(newText);
-          setTimeout(() => {
-            textarea.focus();
-            textarea.setSelectionRange(start + 2, end + 2);
-          }, 0);
-          return;
-        }
-        case 'number': {
-          const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
-          const prefix = currentValue.substring(0, lineStart);
-          const rest = currentValue.substring(lineStart);
-          const newText = `${prefix}1. ${rest}`;
-          setValue(newText);
-          setTimeout(() => {
-            textarea.focus();
-            textarea.setSelectionRange(start + 3, end + 3);
-          }, 0);
-          return;
-        }
-        case 'quote': {
-          const lineStart = currentValue.lastIndexOf('\n', start - 1) + 1;
-          const prefix = currentValue.substring(0, lineStart);
-          const rest = currentValue.substring(lineStart);
-          const newText = `${prefix}> ${rest}`;
-          setValue(newText);
-          setTimeout(() => {
-            textarea.focus();
-            textarea.setSelectionRange(start + 2, end + 2);
-          }, 0);
-          return;
-        }
         case 'table':
           replacement = `\n| Cột 1 | Cột 2 | Cột 3 |\n|---|---|---|\n| Dữ liệu 1 | Dữ liệu 2 | Chi tiết |\n| Dữ liệu 3 | Dữ liệu 4 | Chi tiết |\n`;
           cursorOffset = replacement.length;
           break;
         case 'link':
-          replacement = selectedText ? `[${selectedText}](https://)` : '[Tiêu đề liên kết](https://)';
-          cursorOffset = selectedText ? replacement.length : 19;
+          replacement = selectedText ? `[${selectedText}](https://)` : '[Liên kết](https://)';
+          cursorOffset = selectedText ? replacement.length - 1 : 19;
           break;
         case 'divider':
           replacement = `\n\n---\n\n`;
@@ -7676,6 +7713,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         case 'clear':
           if (!selectedText) return;
           replacement = selectedText
+            .replace(/<span\s+style=["']color:[^"']+["']>([\s\S]*?)<\/span>/gi, '$1')
             .replace(/\*\*(.*?)\*\*/g, '$1')
             .replace(/\*(.*?)\*/g, '$1')
             .replace(/~~(.*?)~~/g, '$1')
@@ -7684,7 +7722,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             .replace(/^#+\s+/gm, '')
             .replace(/^[-*•]\s+/gm, '')
             .replace(/^\d+\.\s+/gm, '')
-            .replace(/^-\s*\[[ x]\]\s+/gm, '')
+            .replace(/^-\s*\[[ xX]\]\s+/gm, '')
             .replace(/^>\s+/gm, '');
           cursorOffset = replacement.length;
           break;
@@ -7692,25 +7730,31 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
       const newValue = currentValue.substring(0, start) + replacement + currentValue.substring(end);
       setValue(newValue);
+      setCursor(start + cursorOffset);
       setTimeout(() => {
         textarea.focus();
-        if (selectedText && formatType !== 'clear') {
+        if (selectedText && formatType !== 'clear' && formatType !== 'link') {
           textarea.setSelectionRange(start, start + replacement.length);
         } else {
           textarea.setSelectionRange(start + cursorOffset, start + cursorOffset);
         }
       }, 0);
     },
-    [composerText, threadInput]
+    [composerText, threadInput, inlineTextColor]
   );
 
   /**
-   * Thanh công cụ định dạng CKEditor / Apple Notes (phù hợp iPhone & Desktop)
+   * Thanh công cụ định dạng gọn gõ nhanh kiểu Google Chat / CKEditor Inline (phù hợp cả iPhone & Desktop)
+   * Tích hợp liền mạch ngay đầu khung nhập chữ hoặc nổi phía trên trên di động.
    */
   const renderAppleNotesFormatToolbar = useCallback(
-    (scope: 'main' | 'thread') => {
+    (scope: 'main' | 'thread', variant: 'inline' | 'floating' = 'floating') => {
       const isMain = scope === 'main';
       const isPreview = isMain ? isPreviewModeMain : isPreviewModeThread;
+      const currentVal = isMain ? composerText : threadInput;
+      const currentPos = isMain ? composerCursorPos : threadCursorPos;
+      const activeFormats = detectActiveFormatsAtCursor(currentVal, currentPos);
+
       const togglePreview = () => {
         if (isMain) setIsPreviewModeMain((prev) => !prev);
         else setIsPreviewModeThread((prev) => !prev);
@@ -7720,290 +7764,291 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         else setFormatBarOpenThread(false);
       };
 
+      const getInlineBtnClass = (isActive?: boolean) =>
+        `min-w-[28px] h-[28px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all cursor-pointer ${
+          isActive
+            ? 'bg-pink-500/20 text-pink-400 border border-pink-500/40 font-bold shadow-xs'
+            : 'hover:bg-black/5 dark:hover:bg-white/10'
+        }`;
+
+      const isInline = variant === 'inline';
+
       return (
         <div
-          className="flex items-center gap-1 px-2 py-1.5 overflow-x-auto no-scrollbar rounded-xl mb-1.5 shadow-md border animate-in slide-in-from-bottom-2 duration-150 select-none"
-          style={{
-            background: isDark ? 'rgba(28, 28, 30, 0.96)' : 'rgba(242, 242, 247, 0.96)',
-            backdropFilter: 'blur(16px)',
-            borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.1)',
-          }}
+          data-format-toolbar={scope}
+          data-testid={`chat-format-toolbar-${scope}`}
+          className={
+            isInline
+              ? 'flex items-center gap-0.5 pb-1.5 mb-1.5 border-b overflow-x-auto no-scrollbar select-none'
+              : 'flex items-center gap-1 px-2 py-1.5 overflow-x-auto no-scrollbar rounded-xl mb-1.5 shadow-md border animate-in slide-in-from-bottom-2 duration-150 select-none'
+          }
+          style={
+            isInline
+              ? {
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.07)',
+                }
+              : {
+                  background: isDark ? 'rgba(28, 28, 30, 0.96)' : 'rgba(242, 242, 247, 0.96)',
+                  backdropFilter: 'blur(16px)',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.1)',
+                }
+          }
         >
-          {/* Label Badge CKEditor / Aa Notes */}
-          <span className="text-[10px] font-extrabold uppercase px-1.5 py-0.5 rounded text-amber-500 bg-amber-500/10 shrink-0 font-serif">
-            CKEditor
-          </span>
-
-          <div className="h-4 w-[1px] bg-white/10 shrink-0 mx-0.5" />
-
-          {/* Bold button */}
+          {/* Bold (B) */}
           <button
             type="button"
+            aria-label="In đậm"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleApplyFormat('bold', scope)}
-            title="In đậm (⌘B / **text**)"
-            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center font-bold text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
-            style={{ color: token.colorText }}
+            title="In đậm (⌘B)"
+            className={getInlineBtnClass(activeFormats.bold)}
+            style={{ color: activeFormats.bold ? undefined : token.colorText }}
           >
             <Bold size={14} strokeWidth={2.5} />
           </button>
 
-          {/* Italic button */}
+          {/* Italic (I) */}
           <button
             type="button"
+            aria-label="In nghiêng"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleApplyFormat('italic', scope)}
-            title="In nghiêng (⌘I / *text*)"
-            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center italic text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
-            style={{ color: token.colorText }}
+            title="In nghiêng (⌘I)"
+            className={getInlineBtnClass(activeFormats.italic)}
+            style={{ color: activeFormats.italic ? undefined : token.colorText }}
           >
             <Italic size={14} />
           </button>
 
-          {/* Strikethrough button */}
+          {/* Underline (U) */}
           <button
             type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => handleApplyFormat('strike', scope)}
-            title="Gạch ngang (~~text~~)"
-            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
-            style={{ color: token.colorText }}
-          >
-            <Strikethrough size={14} />
-          </button>
-
-          {/* Underline button */}
-          <button
-            type="button"
+            aria-label="Gạch chân"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleApplyFormat('underline', scope)}
-            title="Gạch chân (<u>text</u>)"
-            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
-            style={{ color: token.colorText }}
+            title="Gạch chân (⌘U)"
+            className={getInlineBtnClass(activeFormats.underline)}
+            style={{ color: activeFormats.underline ? undefined : token.colorText }}
           >
             <Underline size={14} />
           </button>
 
-          <div className="h-4 w-[1px] bg-white/10 shrink-0 mx-0.5" />
+          {/* Text Color (A with color bar underneath — matching Google Chat) */}
+          <Popover
+            open={colorPopoverScope === scope}
+            onOpenChange={(vis) => setColorPopoverScope(vis ? scope : null)}
+            trigger="click"
+            placement="top"
+            content={
+              <div className="p-1.5 flex items-center gap-1.5">
+                {QUICK_TEXT_COLORS.map((c) => (
+                  <Tooltip key={c.id} title={c.label}>
+                    <button
+                      type="button"
+                      aria-label={`Màu chữ ${c.label}`}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => {
+                        setInlineTextColor(c.hex);
+                        setColorPopoverScope(null);
+                        handleApplyFormat('color', scope, c.hex);
+                      }}
+                      className="w-6 h-6 rounded-full border border-white/20 flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"
+                      style={{ background: c.hex }}
+                    >
+                      {inlineTextColor === c.hex && <Check size={12} className="text-slate-950 stroke-[3]" />}
+                    </button>
+                  </Tooltip>
+                ))}
+              </div>
+            }
+          >
+            <button
+              type="button"
+              aria-label="Màu chữ"
+              onMouseDown={(e) => e.preventDefault()}
+              title="Màu chữ nổi bật (A)"
+              className="min-w-[28px] h-[28px] px-1.5 rounded-lg flex flex-col items-center justify-center shrink-0 active:scale-95 transition-all hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+              style={{ color: token.colorText }}
+            >
+              <span className="font-bold text-[12px] leading-none">A</span>
+              <span className="w-3.5 h-[2.5px] rounded-full mt-0.5" style={{ background: inlineTextColor }} />
+            </button>
+          </Popover>
 
-          {/* H1 Heading button */}
+          {/* Strikethrough (S) */}
           <button
             type="button"
+            aria-label="Gạch ngang"
             onMouseDown={(e) => e.preventDefault()}
-            onClick={() => handleApplyFormat('h1', scope)}
-            title="Tiêu đề lớn (# Title)"
-            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center font-bold text-[12px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer text-amber-500"
+            onClick={() => handleApplyFormat('strike', scope)}
+            title="Gạch ngang (~~text~~)"
+            className={getInlineBtnClass(activeFormats.strike)}
+            style={{ color: activeFormats.strike ? undefined : token.colorText }}
           >
-            H1
+            <Strikethrough size={14} />
           </button>
 
-          {/* H2 Heading button */}
+          <div className="h-4 w-[1px] bg-zinc-500/20 shrink-0 mx-0.5" />
+
+          {/* Bullet List (• ≡) — highlighted when current line is bullet */}
           <button
             type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => handleApplyFormat('h2', scope)}
-            title="Tiêu đề phụ (## Subhead)"
-            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center font-semibold text-[11px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer opacity-90"
-            style={{ color: token.colorText }}
-          >
-            H2
-          </button>
-
-          {/* H3 Heading button */}
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => handleApplyFormat('h3', scope)}
-            title="Tiêu đề nhỏ (### Small Header)"
-            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center font-medium text-[10.5px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer opacity-80"
-            style={{ color: token.colorText }}
-          >
-            H3
-          </button>
-
-          <div className="h-4 w-[1px] bg-white/10 shrink-0 mx-0.5" />
-
-          {/* Checklist / Todo button */}
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => handleApplyFormat('todo', scope)}
-            title="Việc cần làm (- [ ] Việc)"
-            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer text-amber-500"
-          >
-            <ListTodo size={15} />
-          </button>
-
-          {/* Bullet List button */}
-          <button
-            type="button"
+            aria-label="Danh sách dấu đầu dòng"
+            data-testid={`chat-format-btn-${scope}-bullet`}
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleApplyFormat('bullet', scope)}
-            title="Danh sách gạch đầu dòng (- Mục)"
-            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
-            style={{ color: token.colorText }}
+            title="Danh sách dấu đầu dòng (• Mục) — Shift+Enter để tự động thêm • dòng tiếp theo"
+            className={getInlineBtnClass(activeFormats.bullet)}
+            style={{ color: activeFormats.bullet ? undefined : token.colorText }}
           >
             <List size={15} />
           </button>
 
-          {/* Numbered List button */}
+          {/* Numbered List (1. ≡) */}
           <button
             type="button"
+            aria-label="Danh sách đánh số"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleApplyFormat('number', scope)}
-            title="Danh sách đánh số (1. Mục)"
-            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
-            style={{ color: token.colorText }}
+            title="Danh sách đánh số (1. Mục) — Shift+Enter tự tăng số thứ tự"
+            className={getInlineBtnClass(activeFormats.number)}
+            style={{ color: activeFormats.number ? undefined : token.colorText }}
           >
             <ListOrdered size={15} />
           </button>
 
-          {/* Quote button */}
+          {/* Checklist / Todo (- [ ]) */}
           <button
             type="button"
+            aria-label="Danh sách việc cần làm"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => handleApplyFormat('todo', scope)}
+            title="Việc cần làm (- [ ] Việc)"
+            className={getInlineBtnClass(activeFormats.todo)}
+            style={{ color: activeFormats.todo ? undefined : '#f59e0b' }}
+          >
+            <ListTodo size={15} />
+          </button>
+
+          <div className="h-4 w-[1px] bg-zinc-500/20 shrink-0 mx-0.5" />
+
+          {/* Quote (“) */}
+          <button
+            type="button"
+            aria-label="Trích dẫn"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleApplyFormat('quote', scope)}
             title="Trích dẫn (> Trích dẫn)"
-            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
-            style={{ color: token.colorText }}
+            className={getInlineBtnClass(activeFormats.quote)}
+            style={{ color: activeFormats.quote ? undefined : token.colorText }}
           >
             <Quote size={14} />
           </button>
 
-          {/* Code button */}
+          {/* Link (🔗) */}
           <button
             type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => handleApplyFormat('code', scope)}
-            title="Khối mã code (`code` hoặc ```)"
-            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer font-mono"
-            style={{ color: token.colorText }}
-          >
-            <Code size={14} />
-          </button>
-
-          <div className="h-4 w-[1px] bg-white/10 shrink-0 mx-0.5" />
-
-          {/* Table button */}
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => handleApplyFormat('table', scope)}
-            title="Chèn bảng dữ liệu Markdown"
-            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
-            style={{ color: token.colorText }}
-          >
-            <TableIcon size={14} />
-          </button>
-
-          {/* Link button */}
-          <button
-            type="button"
+            aria-label="Chèn liên kết"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => handleApplyFormat('link', scope)}
             title="Chèn liên kết URL [Tên](https://...)"
-            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
+            className={getInlineBtnClass(false)}
             style={{ color: token.colorText }}
           >
             <LinkIcon size={14} />
           </button>
 
-          {/* Mermaid Diagram button */}
+          <div className="h-4 w-[1px] bg-zinc-500/20 shrink-0 mx-0.5" />
+
+          {/* Inline Code (<>) */}
           <button
             type="button"
+            aria-label="Mã nội dòng"
             onMouseDown={(e) => e.preventDefault()}
-            onClick={() => handleApplyFormat('mermaid', scope)}
-            title="Chèn sơ đồ quy trình tương tác Mermaid"
-            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[12px] font-medium text-purple-400 shrink-0 active:scale-95 transition-all hover:bg-purple-500/10 cursor-pointer"
+            onClick={() => handleApplyFormat('code', scope)}
+            title="Mã nội dòng (`code`)"
+            className={getInlineBtnClass(activeFormats.code)}
+            style={{ color: activeFormats.code ? undefined : token.colorText }}
           >
-            <GitFork size={14} />
+            <Code size={14} />
           </button>
 
-          {/* KaTeX Math button */}
+          {/* Code Block ([<>]) */}
           <button
             type="button"
+            aria-label="Khối mã code"
             onMouseDown={(e) => e.preventDefault()}
-            onClick={() => handleApplyFormat('math', scope)}
-            title="Chèn công thức toán học KaTeX ($$ ... $$)"
-            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] font-medium text-emerald-400 shrink-0 active:scale-95 transition-all hover:bg-emerald-500/10 cursor-pointer"
-          >
-            <Sigma size={14} />
-          </button>
-
-          {/* Divider button */}
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => handleApplyFormat('divider', scope)}
-            title="Đường kẻ ngang phân cách (---)"
-            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer"
+            onClick={() => handleApplyFormat('codeblock', scope)}
+            title="Khối mã đa dòng (```)"
+            className={getInlineBtnClass(false)}
             style={{ color: token.colorText }}
           >
-            <Minus size={14} />
+            <SquareCode size={14} />
           </button>
 
-          {/* Clear Format button */}
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => handleApplyFormat('clear', scope)}
-            title="Xóa ký tự định dạng"
-            className="min-w-[34px] h-[32px] px-1.5 rounded-lg flex items-center justify-center text-[13px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer opacity-70 hover:opacity-100"
-            style={{ color: token.colorTextSecondary }}
-          >
-            <RotateCcw size={13} />
-          </button>
+          {/* Right side quick actions */}
+          <div className="ml-auto flex items-center gap-1 pl-1 shrink-0">
+            {/* Live Preview Toggle Button */}
+            <button
+              type="button"
+              onClick={togglePreview}
+              title={isPreview ? 'Quay lại chế độ soạn thảo' : 'Xem trước trực quan (WYSIWYG Preview)'}
+              className={`h-[26px] px-2 rounded-lg flex items-center gap-1 text-[10.5px] font-bold shrink-0 active:scale-95 transition-all cursor-pointer ${
+                isPreview
+                  ? 'bg-emerald-500 text-slate-950 shadow-sm'
+                  : 'text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/30'
+              }`}
+            >
+              <Eye size={12} />
+              <span className="hidden sm:inline">{isPreview ? 'Đang xem' : 'Xem trước'}</span>
+            </button>
 
-          <div className="h-4 w-[1px] bg-white/10 shrink-0 mx-0.5" />
+            {/* Quick Compact Popup Editor Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setRichEditorModalState({
+                  open: true,
+                  scope,
+                  title: scope === 'main' ? 'Soạn thảo phong phú (CKEditor)' : 'Soạn thảo phản hồi (CKEditor)',
+                  initialMode: 'compact',
+                });
+              }}
+              title="Mở cửa sổ Bản gọn (Type nhanh) — nhấn Enter tự xuống dòng •"
+              className="h-[26px] px-2 rounded-lg flex items-center gap-1 text-[10.5px] font-bold shrink-0 active:scale-95 transition-all cursor-pointer text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30"
+            >
+              <Zap size={12} />
+              <span className="hidden sm:inline">Bản gọn</span>
+            </button>
 
-          {/* Live Preview Toggle Button */}
-          <button
-            type="button"
-            onClick={togglePreview}
-            title={isPreview ? 'Quay lại chế độ soạn thảo' : 'Xem trước trực quan (WYSIWYG Preview)'}
-            className={`h-[32px] px-2 rounded-lg flex items-center gap-1 text-[11px] font-bold shrink-0 active:scale-95 transition-all cursor-pointer ${
-              isPreview
-                ? 'bg-emerald-500 text-slate-950 shadow-sm'
-                : 'text-emerald-400 hover:bg-emerald-500/10 border border-emerald-500/30'
-            }`}
-          >
-            <Eye size={13} />
-            <span className="hidden sm:inline">{isPreview ? 'Đang xem trước' : 'Xem trước'}</span>
-          </button>
-
-          {/* Expand to CKEditor Modal Button */}
-          <button
-            type="button"
-            onClick={() => {
-              setRichEditorModalState({
-                open: true,
-                scope,
-                title: scope === 'main' ? 'Soạn thảo phong phú (CKEditor)' : 'Soạn thảo phản hồi (CKEditor)',
-              });
-            }}
-            title="Mở rộng trình soạn thảo phong phú CKEditor (toàn màn hình, mẫu văn bản & bảng biểu)"
-            className="h-[32px] px-2 rounded-lg flex items-center gap-1 text-[11px] font-bold shrink-0 active:scale-95 transition-all cursor-pointer text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30"
-          >
-            <FilePenLine size={13} />
-            <span className="hidden sm:inline">Mở rộng Editor</span>
-          </button>
-
-          <div className="h-4 w-[1px] bg-white/10 shrink-0 mx-0.5" />
-
-          {/* Close button */}
-          <button
-            type="button"
-            onClick={close}
-            title="Đóng thanh định dạng"
-            className="min-w-[30px] h-[32px] px-1 rounded-lg flex items-center justify-center text-[12px] shrink-0 active:scale-95 transition-all hover:bg-white/10 cursor-pointer opacity-70 hover:opacity-100"
-            style={{ color: token.colorTextSecondary }}
-          >
-            <X size={14} />
-          </button>
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={close}
+              title="Đóng thanh định dạng"
+              className="w-[26px] h-[26px] rounded-lg flex items-center justify-center text-[12px] shrink-0 active:scale-95 transition-all hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer opacity-70 hover:opacity-100"
+              style={{ color: token.colorTextSecondary }}
+            >
+              <X size={13} />
+            </button>
+          </div>
         </div>
       );
     },
-    [handleApplyFormat, isDark, isPreviewModeMain, isPreviewModeThread, token.colorText, token.colorTextSecondary]
+    [
+      handleApplyFormat,
+      isDark,
+      isPreviewModeMain,
+      isPreviewModeThread,
+      composerText,
+      threadInput,
+      composerCursorPos,
+      threadCursorPos,
+      colorPopoverScope,
+      inlineTextColor,
+      token.colorText,
+      token.colorTextSecondary,
+    ]
   );
 
   const [brokenAvatarUrls, setBrokenAvatarUrls] = useState<Record<string, boolean>>({});
@@ -12690,7 +12735,6 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     ) : (
                       /* Desktop Layout: Spacious, 2-Tier Modern Google Chat Workspace Composer Card */
                       <div className="space-y-1.5">
-                        {formatBarOpenMain && renderAppleNotesFormatToolbar('main')}
                         <div
                           className="relative rounded-2xl px-3.5 pt-2.5 pb-2 flex flex-col transition-all shadow-sm focus-within:shadow-md focus-within:border-[#d4a84b]/60"
                           style={{
@@ -12699,6 +12743,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           }}
                         >
                           {renderMentionAutocompleteDropdown('main')}
+
+                          {/* Inline Compact Format Toolbar (Google Chat Quick-Type Style) */}
+                          {formatBarOpenMain && renderAppleNotesFormatToolbar('main', 'inline')}
 
                           {/* Top: Live Preview or 100% Full-Width Textarea */}
                           {isPreviewModeMain ? (
@@ -12736,27 +12783,25 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               value={composerText}
                               onChange={(e) => {
                                 const val = e.target.value;
+                                const cur = e.target.selectionStart ?? val.length;
                                 setComposerText(val);
+                                setComposerCursorPos(cur);
                                 e.target.style.height = 'auto';
                                 e.target.style.height = `${Math.min(e.target.scrollHeight, 180)}px`;
-                                checkForMentionTrigger(val, e.target.selectionStart ?? val.length, 'main');
+                                checkForMentionTrigger(val, cur, 'main');
                               }}
                               onClick={(e) => {
                                 const target = e.target as HTMLTextAreaElement;
-                                checkForMentionTrigger(
-                                  target.value,
-                                  target.selectionStart ?? target.value.length,
-                                  'main'
-                                );
+                                const cur = target.selectionStart ?? target.value.length;
+                                setComposerCursorPos(cur);
+                                checkForMentionTrigger(target.value, cur, 'main');
                               }}
                               onKeyUp={(e) => {
+                                const target = e.target as HTMLTextAreaElement;
+                                const cur = target.selectionStart ?? target.value.length;
+                                setComposerCursorPos(cur);
                                 if (['ArrowLeft', 'ArrowRight', 'Home', 'End', 'Backspace', 'Delete'].includes(e.key)) {
-                                  const target = e.target as HTMLTextAreaElement;
-                                  checkForMentionTrigger(
-                                    target.value,
-                                    target.selectionStart ?? target.value.length,
-                                    'main'
-                                  );
+                                  checkForMentionTrigger(target.value, cur, 'main');
                                 }
                               }}
                               onPaste={(e) => handleClipboardPaste(e, 'main')}
@@ -12785,6 +12830,24 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                   e.preventDefault();
                                   handleApplyFormat('underline', 'main');
                                   return;
+                                }
+                                if (e.key === 'Enter' && e.shiftKey) {
+                                  const el = e.currentTarget;
+                                  const smart = handleSmartListEnterKey(
+                                    composerText,
+                                    el.selectionStart ?? composerText.length,
+                                    el.selectionEnd ?? composerText.length
+                                  );
+                                  if (smart.handled) {
+                                    e.preventDefault();
+                                    setComposerText(smart.nextText);
+                                    setComposerCursorPos(smart.nextCursor);
+                                    setTimeout(() => {
+                                      el.focus();
+                                      el.setSelectionRange(smart.nextCursor, smart.nextCursor);
+                                    }, 0);
+                                    return;
+                                  }
                                 }
                                 if (e.key === 'Enter' && !e.shiftKey) {
                                   if (
@@ -12817,23 +12880,48 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             style={{ borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)' }}
                           >
                             <div className="flex items-center gap-1 flex-wrap">
-                              {/* [Aa] Apple Notes Format Button */}
-                              <Tooltip title="Định dạng chữ phong cách Apple Notes / CKEditor (Aa)">
+                              {/* [Aa] Inline Quick-Type Format Bar Toggle */}
+                              <Tooltip title="Thanh định dạng gọn gõ nhanh (B, I, U, Màu chữ, Danh sách •)">
                                 <button
                                   type="button"
                                   aria-label="Định dạng chữ Apple Notes"
                                   onClick={() => setFormatBarOpenMain((prev) => !prev)}
-                                  className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-all"
+                                  className="w-7 h-7 rounded-lg inline-flex flex-col items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-all"
                                   style={{
-                                    background: formatBarOpenMain ? '#d4a84b' : 'transparent',
-                                    color: formatBarOpenMain ? '#000' : token.colorTextSecondary,
+                                    background: formatBarOpenMain ? 'rgba(236, 72, 153, 0.18)' : 'transparent',
+                                    color: formatBarOpenMain ? '#f472b6' : token.colorTextSecondary,
+                                    border: formatBarOpenMain ? '1px solid rgba(236, 72, 153, 0.35)' : 'none',
                                   }}
                                 >
-                                  <span className="font-serif font-bold text-[12.5px] tracking-tight">Aa</span>
+                                  <span className="font-serif font-bold text-[12px] leading-none tracking-tight">Aa</span>
+                                  <span
+                                    className="w-3.5 h-[2px] rounded-full mt-0.5"
+                                    style={{ background: formatBarOpenMain ? '#f472b6' : 'currentColor', opacity: 0.75 }}
+                                  />
                                 </button>
                               </Tooltip>
 
-                              {/* [CKEditor] Rich Editor Modal Button */}
+                              {/* [⚡ Gọn] Compact Quick-Type Editor Button */}
+                              <Tooltip title="Mở Bản gọn (Type nhanh) — Nhấn Enter tự động xuống dòng dấu • như Google Chat">
+                                <button
+                                  type="button"
+                                  aria-label="Mở trình soạn thảo Bản gọn Type nhanh"
+                                  onClick={() => {
+                                    setRichEditorModalState({
+                                      open: true,
+                                      scope: 'main',
+                                      title: 'Soạn thảo phong phú (CKEditor)',
+                                      initialMode: 'compact',
+                                    });
+                                  }}
+                                  className="h-7 px-2 rounded-lg inline-flex items-center gap-1 hover:bg-pink-500/15 cursor-pointer transition-colors text-[11px] font-bold text-pink-400 border border-pink-500/30"
+                                >
+                                  <Zap size={12} />
+                                  <span className="hidden xl:inline">Bản gọn</span>
+                                </button>
+                              </Tooltip>
+
+                              {/* [CKEditor] Full Studio Rich Editor Modal Button */}
                               <Tooltip title="Mở rộng trình soạn thảo phong phú (CKEditor Mode) với mẫu văn bản & bảng biểu">
                                 <button
                                   type="button"
@@ -12843,6 +12931,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                       open: true,
                                       scope: 'main',
                                       title: 'Soạn thảo phong phú (CKEditor)',
+                                      initialMode: 'split',
                                     });
                                   }}
                                   className="h-7 px-2 rounded-lg inline-flex items-center gap-1 hover:bg-amber-500/15 cursor-pointer transition-colors text-[11px] font-bold text-amber-500 border border-amber-500/30"
@@ -14600,7 +14689,6 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   }}
                 >
                   {renderStagedAttachmentsStrip(threadAttachments, 'thread')}
-                  {formatBarOpenThread && renderAppleNotesFormatToolbar('thread')}
                   <div
                     className={`relative rounded-2xl px-3 pt-2 pb-1.5 flex flex-col transition-all shadow-sm focus-within:shadow-md focus-within:border-[#d4a84b]/60 ${
                       isDraggingOverThread ? 'ring-2 ring-amber-500/70 border-[#d4a84b]' : ''
@@ -14633,6 +14721,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     }}
                   >
                     {renderMentionAutocompleteDropdown('thread')}
+
+                    {/* Inline Compact Format Toolbar in Thread */}
+                    {formatBarOpenThread && renderAppleNotesFormatToolbar('thread', 'inline')}
+
                     {isPreviewModeThread ? (
                       <div
                         className="w-full min-h-[50px] max-h-[160px] overflow-y-auto px-1 py-1 rounded-lg select-text mb-1"
@@ -14692,22 +14784,23 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           const val = e.target.value;
                           const cursor = e.target.selectionStart ?? val.length;
                           setThreadInput(val);
+                          setThreadCursorPos(cursor);
                           e.target.style.height = 'auto';
                           e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
                           checkForMentionTrigger(val, cursor, 'thread');
                         }}
                         onClick={(e) => {
                           const target = e.currentTarget;
-                          checkForMentionTrigger(target.value, target.selectionStart ?? target.value.length, 'thread');
+                          const cursor = target.selectionStart ?? target.value.length;
+                          setThreadCursorPos(cursor);
+                          checkForMentionTrigger(target.value, cursor, 'thread');
                         }}
                         onKeyUp={(e) => {
-                          if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
-                            const target = e.currentTarget;
-                            checkForMentionTrigger(
-                              target.value,
-                              target.selectionStart ?? target.value.length,
-                              'thread'
-                            );
+                          const target = e.currentTarget;
+                          const cursor = target.selectionStart ?? target.value.length;
+                          setThreadCursorPos(cursor);
+                          if (['ArrowLeft', 'ArrowRight', 'Home', 'End', 'Backspace', 'Delete'].includes(e.key)) {
+                            checkForMentionTrigger(target.value, cursor, 'thread');
                           }
                         }}
                         onPaste={(e) => handleClipboardPaste(e, 'thread')}
@@ -14738,6 +14831,24 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             e.preventDefault();
                             handleApplyFormat('underline', 'thread');
                             return;
+                          }
+                          if (e.key === 'Enter' && e.shiftKey) {
+                            const el = e.currentTarget;
+                            const smart = handleSmartListEnterKey(
+                              threadInput,
+                              el.selectionStart ?? threadInput.length,
+                              el.selectionEnd ?? threadInput.length
+                            );
+                            if (smart.handled) {
+                              e.preventDefault();
+                              setThreadInput(smart.nextText);
+                              setThreadCursorPos(smart.nextCursor);
+                              setTimeout(() => {
+                                el.focus();
+                                el.setSelectionRange(smart.nextCursor, smart.nextCursor);
+                              }, 0);
+                              return;
+                            }
                           }
                           if (e.key === 'Enter' && !e.shiftKey) {
                             if (
@@ -14811,19 +14922,43 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           </button>
                         </Tooltip>
 
-                        {/* [Aa] Apple Notes Format Button in Thread */}
-                        <Tooltip title="Định dạng chữ phong cách Apple Notes / CKEditor (Aa)">
+                        {/* [Aa] Inline Quick-Type Format Bar Button in Thread */}
+                        <Tooltip title="Thanh định dạng gọn gõ nhanh (B, I, U, Màu chữ, Danh sách •)">
                           <button
                             type="button"
                             aria-label="Định dạng chữ Apple Notes trong luồng"
                             onClick={() => setFormatBarOpenThread((prev) => !prev)}
-                            className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all"
+                            className="w-7 h-7 rounded-lg inline-flex flex-col items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-all"
                             style={{
-                              background: formatBarOpenThread ? '#d4a84b' : 'transparent',
-                              color: formatBarOpenThread ? '#000' : token.colorTextSecondary,
+                              background: formatBarOpenThread ? 'rgba(236, 72, 153, 0.18)' : 'transparent',
+                              color: formatBarOpenThread ? '#f472b6' : token.colorTextSecondary,
+                              border: formatBarOpenThread ? '1px solid rgba(236, 72, 153, 0.35)' : 'none',
                             }}
                           >
-                            <span className="font-serif font-bold text-[12px] tracking-tight">Aa</span>
+                            <span className="font-serif font-bold text-[11.5px] leading-none tracking-tight">Aa</span>
+                            <span
+                              className="w-3 h-[2px] rounded-full mt-0.5"
+                              style={{ background: formatBarOpenThread ? '#f472b6' : 'currentColor', opacity: 0.75 }}
+                            />
+                          </button>
+                        </Tooltip>
+
+                        {/* [⚡ Gọn] Compact Quick-Type Editor in Thread */}
+                        <Tooltip title="Mở Bản gọn (Type nhanh) cho luồng phản hồi">
+                          <button
+                            type="button"
+                            aria-label="Mở trình soạn thảo Bản gọn trong luồng"
+                            onClick={() => {
+                              setRichEditorModalState({
+                                open: true,
+                                scope: 'thread',
+                                title: 'Soạn thảo phản hồi (CKEditor)',
+                                initialMode: 'compact',
+                              });
+                            }}
+                            className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-pink-500/15 active:scale-95 transition-all text-pink-400"
+                          >
+                            <Zap size={13} />
                           </button>
                         </Tooltip>
 
@@ -14837,6 +14972,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                 open: true,
                                 scope: 'thread',
                                 title: 'Soạn thảo phản hồi (CKEditor)',
+                                initialMode: 'split',
                               });
                             }}
                             className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-amber-500/15 active:scale-95 transition-all text-amber-500"
@@ -18540,6 +18676,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         open={richEditorModalState.open}
         onClose={() => setRichEditorModalState((prev) => ({ ...prev, open: false }))}
         initialValue={richEditorModalState.scope === 'main' ? composerText : threadInput}
+        initialMode={richEditorModalState.initialMode}
         onApply={(newText) => {
           if (richEditorModalState.scope === 'main') {
             setComposerText(newText);

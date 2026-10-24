@@ -990,13 +990,24 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
     const ckEditorBtn = await screen.findByRole('button', { name: /Mở trình soạn thảo phong phú CKEditor/i });
     expect(ckEditorBtn).toBeTruthy();
 
+    // Verify inline compact format toolbar is rendered inside the composer
+    const inlineToolbar = screen.getByTestId('chat-format-toolbar-main');
+    expect(inlineToolbar).toBeTruthy();
+
+    // Click bullet list button on the inline compact toolbar -> inserts "• " directly without placeholder text
+    const bulletBtn = screen.getByTestId('chat-format-btn-main-bullet');
+    fireEvent.click(bulletBtn);
+    const mainTextarea = screen.getByPlaceholderText(/Nhắn tin/i) as HTMLTextAreaElement;
+    expect(mainTextarea.value).toBe('• ');
+
     // Click CKEditor button
     fireEvent.click(ckEditorBtn);
 
-    // Verify Modal opens with CKEditor title & modes
+    // Verify Modal opens with CKEditor title & modes (including Bản gọn)
     await waitFor(() => {
       expect(screen.getByText('Soạn thảo phong phú (CKEditor)')).toBeTruthy();
       expect(screen.getByText('CKEditor Mode')).toBeTruthy();
+      expect(screen.getByTestId('rich-editor-mode-compact')).toBeTruthy();
     });
   });
 

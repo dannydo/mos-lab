@@ -4,6 +4,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MosChatProvider, useMosChat } from '../context/MosChatContext';
 import { MosChatMobileThreadSheet } from '../mobile/MosChatMobileThreadSheet';
 import { apiClient } from '../../../lib/api-client';
+import type { MosChatMissionSummary } from '@mos-lab/shared';
 
 // Mock apiClient.chat
 vi.mock('../../../lib/api-client', () => ({
@@ -24,7 +25,7 @@ describe('MosChatMobileThreadSheet - Subthread Gate Approval on iPhone', () => {
     role: 'super_admin',
   };
 
-  const mockMissionGate1 = {
+  const mockMissionGate1: MosChatMissionSummary = {
     reportId: 138,
     key: 'MOS-FEAT-138',
     missionKey: 'MOS-FEAT-138',
@@ -43,6 +44,7 @@ describe('MosChatMobileThreadSheet - Subthread Gate Approval on iPhone', () => {
     canSuperAdminApproveCommit: false,
     canSuperAdminApproveDeploy: false,
     canReporterAccept: false,
+    updatedAt: '2026-10-24T08:00:00.000Z',
     superAdminActions: {
       canApproveImplementation: true,
       canApproveCommit: false,

@@ -75,20 +75,21 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
           : '';
 
       // Khớp theo thứ tự ưu tiên:
-      // 1. **bold**
-      // 2. ~~strike~~
-      // 3. <u>underline</u>
-      // 4. `code`
-      // 5. *italic*
-      // 6. link https?://
-      // 7. $$math$$
-      // 8. $math$
-      // 9. @AI / @all
-      // 10. Staff pattern từ directory
-      // 11. Tên viết hoa 2-3 từ dạng @Tên Đệm Tên
-      // 12. @username đơn từ
+      // 1. <span style="color:...">text</span>
+      // 2. [label](https?://...)
+      // 3. **bold**
+      // 4. ~~strike~~
+      // 5. <u>underline</u>
+      // 6. `code`
+      // 7. *italic*
+      // 8. link https?://
+      // 9. $$math$$
+      // 10. $math$
+      // 11. @AI / @all
+      // 12. Staff pattern từ directory
+      // 13. @username đơn từ
       const regex = new RegExp(
-        `(\\*\\*(.+?)\\*\\*)|(~~(.+?)~~)|(<u>(.+?)<\\/u>)|(\`([^\`]+)\`)|\\*([^\\*\\n]+)\\*|(https?:\\/\\/[^\\s<]+)|(\\$\\$([^\\$]+?)\\$\\$)|(\\$([^\\$\\s\\n](?:[^\\$\\n]*?[^\\$\\s\\n])?)\\$)|(@\\s*(?:AI|copilot|all|mọi\\s+người|moi\\s+nguoi)\\b)${staffPattern}|(@[a-zA-Z0-9_\\u00C0-\\u1EF9]+)`,
+        `(<span\\s+style=["']color:\\s*([^"';>]+);?["']>([\\s\\S]+?)<\\/span>)|(\\[([^\\]\\n]+)\\]\\((https?:\\/\\/[^\\s)]+)\\))|(\\*\\*(.+?)\\*\\*)|(~~(.+?)~~)|(<u>(.+?)<\\/u>)|(\`([^\`]+)\`)|\\*([^\\*\\n]+)\\*|(https?:\\/\\/[^\\s<)]+)|(\\$\\$([^\\$]+?)\\$\\$)|(\\$([^\\$\\s\\n](?:[^\\$\\n]*?[^\\$\\s\\n])?)\\$)|(@\\s*(?:AI|copilot|all|mọi\\s+người|moi\\s+nguoi)\\b)${staffPattern}|(@[a-zA-Z0-9_\\u00C0-\\u1EF9]+)`,
         'gui'
       );
 
@@ -105,7 +106,38 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
         const fullMatch = match[0];
         const key = `${keyPrefix}-${i++}`;
 
-        if (fullMatch.startsWith('**') && fullMatch.endsWith('**')) {
+        const colorSpanMatch = fullMatch.match(/^<span\s+style=["']color:\s*([^"';>]+);?["']>([\s\S]+?)<\/span>$/i);
+        const mdLinkMatch = fullMatch.match(/^\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)$/i);
+
+        if (colorSpanMatch) {
+          const safeColor = colorSpanMatch[1].trim();
+          const innerContent = colorSpanMatch[2];
+          elements.push(
+            <span key={key} style={{ color: safeColor }} className="font-medium">
+              {innerContent}
+            </span>
+          );
+        } else if (mdLinkMatch) {
+          const linkLabel = mdLinkMatch[1];
+          const linkHref = mdLinkMatch[2];
+          elements.push(
+            <a
+              key={key}
+              href={linkHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className={`inline-flex items-center gap-0.5 break-all font-medium ${
+                isMe
+                  ? 'text-slate-950 underline font-semibold'
+                  : 'text-sky-400 hover:text-sky-300 underline underline-offset-2'
+              }`}
+            >
+              <span>{linkLabel}</span>
+              <ExternalLink size={10} className="inline shrink-0 opacity-70" />
+            </a>
+          );
+        } else if (fullMatch.startsWith('**') && fullMatch.endsWith('**')) {
           elements.push(
             <strong
               key={key}
