@@ -100,6 +100,8 @@ export interface BkDoneRecord {
   isSingle?: boolean;
   /** Order contains recognized sold combo packages. */
   isComboSold?: boolean;
+  /** Done Khách Mới: Khách hàng mới lần đầu hoàn tất dịch vụ trên toàn hệ thống Wings. */
+  isNewCustomer?: boolean;
   netRevenue?: number;
   /** Recognized combo sold with this completed order. */
   comboName?: string;
@@ -124,6 +126,10 @@ export interface BkDoneLeaderboardEntry {
   avatar?: string | null;
   store: string;
   doneCount: number;
+  /** Done Khách Mới: Số khách mới hoàn tất dịch vụ trên toàn hệ thống Wings. */
+  newCustomerDoneCount?: number;
+  /** Tỷ lệ khách mới (%): Done khách mới / Tổng Done × 100%. Nếu Tổng Done = 0, hiển thị 0%. */
+  newCustomerRatePercent?: number;
   /** Khách lẻ Done (chính thức tính KPI Done & Milestone). */
   singleDoneCount?: number;
   /** Khách có gói combo live Done (tracking bổ trợ, nhận 1.000đ/lượt). */
@@ -148,6 +154,8 @@ export interface BkDoneLeaderboardResponse {
   leaderboard: BkDoneLeaderboardEntry[];
   summary: {
     totalDone: number;
+    totalNewCustomerDone?: number;
+    avgNewCustomerRate?: number;
     totalSingleDone?: number;
     totalComboLiveDone?: number;
     totalComboSold?: number;
@@ -161,7 +169,15 @@ export interface BkDoneLeaderboardResponse {
 }
 
 export type BkDoneDetailsFilter =
-  'ALL' | 'COMPLETED' | 'SINGLE' | 'COMBO_LIVE' | 'COMBO_SOLD' | 'MISSED' | 'TIP' | 'COMBO';
+  | 'ALL'
+  | 'COMPLETED'
+  | 'NEW_CUSTOMER'
+  | 'SINGLE'
+  | 'COMBO_LIVE'
+  | 'COMBO_SOLD'
+  | 'MISSED'
+  | 'TIP'
+  | 'COMBO';
 
 export interface BkDoneDetailsParams {
   bookerId?: string;
@@ -176,6 +192,8 @@ export interface BkDoneResponse {
   total: number;
   summary: {
     totalDone: number;
+    totalNewCustomerDone?: number;
+    avgNewCustomerRate?: number;
     totalSingleDone?: number;
     totalComboLiveDone?: number;
     totalComboSold?: number;

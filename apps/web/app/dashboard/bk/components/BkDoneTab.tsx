@@ -20,7 +20,7 @@ import {
   ExpandOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { CircleCheck, DollarSign, ListFilter, Package, Sparkles } from 'lucide-react';
+import { CircleCheck, DollarSign, ListFilter, Package, Sparkles, UserCheck } from 'lucide-react';
 import {
   BkDoneDetailsFilter,
   BkDoneLeaderboardEntry,
@@ -56,6 +56,8 @@ export const formatStoreCode = (store?: string | null): string => {
 export const BK_DONE_LEADERBOARD_LABELS = {
   booker: 'Booker',
   done: 'Done (Lẻ / Combo)',
+  newCustomerDone: 'Done Khách Mới',
+  newCustomerRate: '% Khách Mới',
   missed: 'Missed',
   doneBonus: 'Thưởng Done',
   rankBonus: 'Thưởng Hạng',
@@ -98,6 +100,8 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
   const [leaderboard, setLeaderboard] = useState<BkDoneLeaderboardEntry[]>([]);
   const [summary, setSummary] = useState<{
     totalDone: number;
+    totalNewCustomerDone?: number;
+    avgNewCustomerRate?: number;
     avgDoneRate: number;
     totalDoneBonus: number;
     totalSingleDone?: number;
@@ -107,6 +111,8 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
     singleToComboRate?: number;
   }>({
     totalDone: 0,
+    totalNewCustomerDone: 0,
+    avgNewCustomerRate: 0,
     avgDoneRate: 0,
     totalDoneBonus: 0,
     totalSingleDone: 0,
@@ -117,6 +123,8 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
   });
   const [previousSummary, setPreviousSummary] = useState<{
     totalDone: number;
+    totalNewCustomerDone?: number;
+    avgNewCustomerRate?: number;
     avgDoneRate: number;
     totalDoneBonus: number;
     totalSingleDone?: number;
@@ -392,6 +400,40 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
     },
     {
       title: (
+        <Tooltip title="Số khách mới lần đầu hoàn tất dịch vụ trên toàn hệ thống Wings (hoàn tất Check-in & Check-out, ghi nhận theo tháng Check-out)">
+          <span className="cursor-help font-semibold text-xs">{BK_DONE_LEADERBOARD_LABELS.newCustomerDone}</span>
+        </Tooltip>
+      ),
+      dataIndex: 'newCustomerDoneCount',
+      key: 'newCustomerDoneCount',
+      align: 'center' as const,
+      sorter: (a: BkDoneLeaderboardEntry, b: BkDoneLeaderboardEntry) =>
+        (a.newCustomerDoneCount ?? 0) - (b.newCustomerDoneCount ?? 0),
+      render: (count: number = 0) => (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 tabular-nums">
+          {count}
+        </span>
+      ),
+    },
+    {
+      title: (
+        <Tooltip title="Tỷ lệ khách mới (%): Done khách mới / Tổng Done × 100%. Nếu Tổng Done = 0, hiển thị 0%.">
+          <span className="cursor-help font-semibold text-xs">{BK_DONE_LEADERBOARD_LABELS.newCustomerRate}</span>
+        </Tooltip>
+      ),
+      dataIndex: 'newCustomerRatePercent',
+      key: 'newCustomerRatePercent',
+      align: 'center' as const,
+      sorter: (a: BkDoneLeaderboardEntry, b: BkDoneLeaderboardEntry) =>
+        (a.newCustomerRatePercent ?? 0) - (b.newCustomerRatePercent ?? 0),
+      render: (rate: number = 0) => (
+        <span className="tabular-nums font-semibold text-xs text-rose-500 dark:text-rose-400">
+          {rate}%
+        </span>
+      ),
+    },
+    {
+      title: (
         <Tooltip title="Số lượng gói Combo bán mới và tỷ lệ chuyển đổi từ Single sang Combo">
           <span className="cursor-help font-semibold text-xs">Bán Combo</span>
         </Tooltip>
@@ -585,6 +627,11 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
       render: (record: BkDoneRecord) => (
         <div>
           <div className="flex items-center gap-1.5 flex-wrap mb-1">
+            {record.isNewCustomer && (
+              <Tag color="magenta" className="font-semibold text-[10px] py-0 px-1.5 m-0 inline-flex items-center gap-1">
+                <UserOutlined /> Khách Mới
+              </Tag>
+            )}
             {record.isComboLive ? (
               <Tag color="cyan" className="font-semibold text-[10px] py-0 px-1.5 m-0 inline-flex items-center gap-1">
                 <Package size={10} /> Combo Live
@@ -718,135 +765,158 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
   return (
     <div className="space-y-6">
       {/* Summary Header */}
-      <Row gutter={[16, 16]}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Card 1: Khách Lẻ Done (KPI Chính) */}
-        <Col xs={24} sm={12} lg={6}>
-          <Card
-            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
-            style={{ background: token.colorBgContainer }}
-          >
-            <Statistic
-              title={
-                <Tooltip title="Đơn khách lẻ hoàn tất check-in trong kỳ. Đây là chỉ số cốt lõi dùng để xếp hạng Rank và tính thưởng bậc thang Milestone Bonus theo Điều răn BK-005.">
-                  <span className="text-xs font-semibold text-slate-500 uppercase flex items-center justify-between">
-                    <span>Khách Lẻ Done</span>
-                    <Tag color="cyan" className="text-[10px] m-0 py-0 px-1 font-bold">
-                      KPI Chính
-                    </Tag>
-                  </span>
-                </Tooltip>
-              }
-              value={summary.totalSingleDone ?? summary.totalDone}
-              className="[&_.ant-statistic-content-value]:text-emerald-500 [&_.ant-statistic-content-value]:font-bold [&_.ant-statistic-content-value]:tabular-nums"
-              prefix={<UserOutlined className="mr-2 text-emerald-500" />}
-            />
-            <PeriodComparison
-              comparison={previousPeriod?.comparison}
-              currentValue={summary.totalSingleDone ?? summary.totalDone}
-              previousValue={previousSummary?.totalSingleDone ?? previousSummary?.totalDone ?? 0}
-              formatter={(value) => `${value.toLocaleString('vi-VN')} lượt`}
-            />
-            {renderForecastSubtext(projectedSingleDone, 'lượt')}
-          </Card>
-        </Col>
+        <Card
+          className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
+          style={{ background: token.colorBgContainer }}
+        >
+          <Statistic
+            title={
+              <Tooltip title="Đơn khách lẻ hoàn tất check-in trong kỳ. Đây là chỉ số cốt lõi dùng để xếp hạng Rank và tính thưởng bậc thang Milestone Bonus theo Điều răn BK-005.">
+                <span className="text-xs font-semibold text-slate-500 uppercase flex items-center justify-between">
+                  <span>Khách Lẻ Done</span>
+                  <Tag color="cyan" className="text-[10px] m-0 py-0 px-1 font-bold">
+                    KPI Chính
+                  </Tag>
+                </span>
+              </Tooltip>
+            }
+            value={summary.totalSingleDone ?? summary.totalDone}
+            className="[&_.ant-statistic-content-value]:text-emerald-500 [&_.ant-statistic-content-value]:font-bold [&_.ant-statistic-content-value]:tabular-nums"
+            prefix={<UserOutlined className="mr-2 text-emerald-500" />}
+          />
+          <PeriodComparison
+            comparison={previousPeriod?.comparison}
+            currentValue={summary.totalSingleDone ?? summary.totalDone}
+            previousValue={previousSummary?.totalSingleDone ?? previousSummary?.totalDone ?? 0}
+            formatter={(value) => `${value.toLocaleString('vi-VN')} lượt`}
+          />
+          {renderForecastSubtext(projectedSingleDone, 'lượt')}
+        </Card>
 
-        {/* Card 2: Combo Live Done */}
-        <Col xs={24} sm={12} lg={6}>
-          <Card
-            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
-            style={{ background: token.colorBgContainer }}
-          >
-            <Statistic
-              title={
-                <Tooltip title="Lượt khách có gói Combo đang hoạt động đến làm dịch vụ trong kỳ. Booker nhận 1.000đ/lượt chăm sóc; không tính vào bậc thang Milestone Bonus theo Điều răn BK-005.">
-                  <span className="text-xs font-semibold text-slate-500 uppercase flex items-center justify-between">
-                    <span>Combo Live Done</span>
-                    <Tag color="purple" className="text-[10px] m-0 py-0 px-1 font-semibold">
-                      +1.000đ/lượt
-                    </Tag>
-                  </span>
-                </Tooltip>
-              }
-              value={summary.totalComboLiveDone ?? 0}
-              className="[&_.ant-statistic-content-value]:text-cyan-500 [&_.ant-statistic-content-value]:font-bold [&_.ant-statistic-content-value]:tabular-nums"
-              prefix={<Package className="mr-2 inline text-cyan-500" size={18} />}
-            />
-            <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5">
-              <span>Tỷ trọng / Tổng Done:</span>
-              <span className="tabular-nums font-semibold text-cyan-400">
-                {summary.totalDone > 0
-                  ? `${(((summary.totalComboLiveDone || 0) / summary.totalDone) * 100).toFixed(1)}%`
-                  : '0%'}
+        {/* Card 2: Done Khách Mới */}
+        <Card className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl">
+          <Statistic
+            title={
+              <Tooltip title="Số khách mới lần đầu hoàn tất dịch vụ trên toàn hệ thống Wings (hoàn tất Check-in & Check-out, tính theo tháng Check-out).">
+                <span className="text-xs font-semibold text-slate-500 uppercase flex items-center justify-between">
+                  <span>Done Khách Mới</span>
+                  <Tag color="magenta" className="text-[10px] m-0 py-0 px-1 font-semibold">
+                    Khách Mới
+                  </Tag>
+                </span>
+              </Tooltip>
+            }
+            value={summary.totalNewCustomerDone ?? 0}
+            className="[&_.ant-statistic-content-value]:text-rose-500 [&_.ant-statistic-content-value]:font-bold [&_.ant-statistic-content-value]:tabular-nums"
+            prefix={<UserCheck className="mr-2 inline text-rose-500" size={18} />}
+          />
+          <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5">
+            <span>Tỷ lệ / Tổng Done:</span>
+            <span className="tabular-nums font-semibold text-rose-400">
+              {summary.avgNewCustomerRate ?? 0}%
+            </span>
+          </div>
+          <PeriodComparison
+            comparison={previousPeriod?.comparison}
+            currentValue={summary.totalNewCustomerDone ?? 0}
+            previousValue={previousSummary?.totalNewCustomerDone ?? 0}
+            formatter={(value) => `${value.toLocaleString('vi-VN')} khách`}
+          />
+        </Card>
+
+        {/* Card 3: Combo Live Done */}
+        <Card
+          className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
+          style={{ background: token.colorBgContainer }}
+        >
+          <Statistic
+            title={
+              <Tooltip title="Lượt khách có gói Combo đang hoạt động đến làm dịch vụ trong kỳ. Booker nhận 1.000đ/lượt chăm sóc; không tính vào bậc thang Milestone Bonus theo Điều răn BK-005.">
+                <span className="text-xs font-semibold text-slate-500 uppercase flex items-center justify-between">
+                  <span>Combo Live Done</span>
+                  <Tag color="purple" className="text-[10px] m-0 py-0 px-1 font-semibold">
+                    +1.000đ/lượt
+                  </Tag>
+                </span>
+              </Tooltip>
+            }
+            value={summary.totalComboLiveDone ?? 0}
+            className="[&_.ant-statistic-content-value]:text-cyan-500 [&_.ant-statistic-content-value]:font-bold [&_.ant-statistic-content-value]:tabular-nums"
+            prefix={<Package className="mr-2 inline text-cyan-500" size={18} />}
+          />
+          <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5">
+            <span>Tỷ trọng / Tổng Done:</span>
+            <span className="tabular-nums font-semibold text-cyan-400">
+              {summary.totalDone > 0
+                ? `${(((summary.totalComboLiveDone || 0) / summary.totalDone) * 100).toFixed(1)}%`
+                : '0%'}
+            </span>
+          </div>
+          {renderForecastSubtext(projectedComboLiveDone, 'lượt')}
+        </Card>
+
+        {/* Card 4: Combo Bán Mới & Chuyển đổi */}
+        <Card
+          className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
+          style={{ background: token.colorBgContainer }}
+        >
+          <Statistic
+            title={
+              <Tooltip title="Số lượng gói Combo bán mới trong kỳ và tỷ lệ chuyển đổi từ Khách Lẻ sang mua Combo (Single ➔ Combo).">
+                <span className="text-xs font-semibold text-slate-500 uppercase flex items-center justify-between">
+                  <span>Combo Bán Mới</span>
+                  <Tag color="magenta" className="text-[10px] m-0 py-0 px-1 font-semibold">
+                    Single ➔ Combo
+                  </Tag>
+                </span>
+              </Tooltip>
+            }
+            value={summary.totalComboSold ?? 0}
+            suffix="gói"
+            className="[&_.ant-statistic-content-value]:text-purple-500 [&_.ant-statistic-content-value]:font-bold [&_.ant-statistic-content-value]:tabular-nums"
+            prefix={<TrophyOutlined className="mr-2 text-purple-500" />}
+          />
+          <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5">
+            <span>Tỷ lệ chuyển đổi:</span>
+            <span className="tabular-nums font-semibold text-purple-400">{summary.singleToComboRate ?? 0}%</span>
+          </div>
+          {(summary.comboRevenue || 0) > 0 && (
+            <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center justify-between pt-1">
+              <span>Doanh thu:</span>
+              <span className="tabular-nums font-medium text-purple-300">
+                {formatCompactVND(summary.comboRevenue || 0)}
               </span>
             </div>
-            {renderForecastSubtext(projectedComboLiveDone, 'lượt')}
-          </Card>
-        </Col>
+          )}
+        </Card>
 
-        {/* Card 3: Combo Bán Mới & Chuyển đổi */}
-        <Col xs={24} sm={12} lg={6}>
-          <Card
-            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
-            style={{ background: token.colorBgContainer }}
-          >
-            <Statistic
-              title={
-                <Tooltip title="Số lượng gói Combo bán mới trong kỳ và tỷ lệ chuyển đổi từ Khách Lẻ sang mua Combo (Single ➔ Combo).">
-                  <span className="text-xs font-semibold text-slate-500 uppercase flex items-center justify-between">
-                    <span>Combo Bán Mới</span>
-                    <Tag color="magenta" className="text-[10px] m-0 py-0 px-1 font-semibold">
-                      Single ➔ Combo
-                    </Tag>
-                  </span>
-                </Tooltip>
-              }
-              value={summary.totalComboSold ?? 0}
-              suffix="gói"
-              className="[&_.ant-statistic-content-value]:text-purple-500 [&_.ant-statistic-content-value]:font-bold [&_.ant-statistic-content-value]:tabular-nums"
-              prefix={<TrophyOutlined className="mr-2 text-purple-500" />}
-            />
-            <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5">
-              <span>Tỷ lệ chuyển đổi:</span>
-              <span className="tabular-nums font-semibold text-purple-400">{summary.singleToComboRate ?? 0}%</span>
-            </div>
-            {(summary.comboRevenue || 0) > 0 && (
-              <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center justify-between pt-1">
-                <span>Doanh thu:</span>
-                <span className="tabular-nums font-medium text-purple-300">
-                  {formatCompactVND(summary.comboRevenue || 0)}
-                </span>
-              </div>
-            )}
-          </Card>
-        </Col>
-
-        {/* Card 4: ∑ Thưởng Done & Check-in */}
-        <Col xs={24} sm={12} lg={6}>
-          <Card
-            className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
-            style={{ background: token.colorBgContainer }}
-          >
-            <Statistic
-              title={
-                <Tooltip title="Tổng tiền thưởng Done bao gồm thưởng check-in cơ bản, thưởng bậc thang Milestone Rank và thưởng/phạt Missed.">
-                  <span className="text-xs font-semibold text-slate-500 uppercase">∑ Thưởng Done & Check-in</span>
-                </Tooltip>
-              }
-              value={summary.totalDoneBonus}
-              formatter={(val) => formatCurrency(Number(val))}
-              className="[&_.ant-statistic-content-value]:text-emerald-600 [&_.ant-statistic-content-value]:font-bold [&_.ant-statistic-content-value]:tabular-nums"
-              prefix={<DollarOutlined className="mr-2" />}
-            />
-            <PeriodComparison
-              comparison={previousPeriod?.comparison}
-              currentValue={summary.totalDoneBonus}
-              previousValue={previousSummary?.totalDoneBonus || 0}
-              formatter={formatCurrency}
-            />
-            {renderForecastSubtext(projectedDoneBonus, 'đ')}
-          </Card>
-        </Col>
-      </Row>
+        {/* Card 5: ∑ Thưởng Done & Check-in */}
+        <Card
+          className="shadow-sm border border-slate-200 dark:border-slate-800 rounded-2xl"
+          style={{ background: token.colorBgContainer }}
+        >
+          <Statistic
+            title={
+              <Tooltip title="Tổng tiền thưởng Done bao gồm thưởng check-in cơ bản, thưởng bậc thang Milestone Rank và thưởng/phạt Missed.">
+                <span className="text-xs font-semibold text-slate-500 uppercase">∑ Thưởng Done & Check-in</span>
+              </Tooltip>
+            }
+            value={summary.totalDoneBonus}
+            formatter={(val) => formatCurrency(Number(val))}
+            className="[&_.ant-statistic-content-value]:text-emerald-600 [&_.ant-statistic-content-value]:font-bold [&_.ant-statistic-content-value]:tabular-nums"
+            prefix={<DollarOutlined className="mr-2" />}
+          />
+          <PeriodComparison
+            comparison={previousPeriod?.comparison}
+            currentValue={summary.totalDoneBonus}
+            previousValue={previousSummary?.totalDoneBonus || 0}
+            formatter={formatCurrency}
+          />
+          {renderForecastSubtext(projectedDoneBonus, 'đ')}
+        </Card>
+      </div>
 
       {/* Done Leaderboard */}
       <BkLeaderboardCard
@@ -862,6 +932,11 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
             label: 'Lẻ / Combo',
             value: `${record.singleDoneCount ?? record.doneCount} Lẻ · +${record.comboLiveDoneCount ?? 0} Combo`,
             tone: 'success',
+          },
+          {
+            label: 'Khách mới',
+            value: `${record.newCustomerDoneCount ?? 0} (${record.newCustomerRatePercent ?? 0}%)`,
+            tone: 'warning',
           },
           { label: 'Missed', value: `${record.missedCount ?? 0} (${record.missedRatePercent ?? 0}%)`, tone: 'danger' },
           { label: 'Thưởng', value: formatCurrency(record.totalDoneBonus ?? 0), tone: 'success' },
@@ -906,11 +981,13 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
                   ? 'Đang hiển thị danh sách Khách hàng COMBO LIVE DONE (làm bằng gói combo, +1.000đ/lượt)'
                   : filterStatus === 'COMBO_SOLD'
                     ? 'Đang hiển thị các đơn Completed có bán gói combo mới'
-                    : filterStatus === 'COMPLETED'
-                      ? 'Đang hiển thị tất cả Khách hàng DONE (cả Lẻ và Combo)'
-                      : filterStatus === 'TIP'
-                        ? 'Đang hiển thị các đơn Completed có tiền tip'
-                        : 'Hiển thị tất cả đơn hàng hoàn thành (Done) của Booker'}
+                    : filterStatus === 'NEW_CUSTOMER'
+                      ? 'Đang hiển thị danh sách Khách hàng MỚI DONE (lần đầu hoàn thành dịch vụ trong lịch sử hệ thống)'
+                      : filterStatus === 'COMPLETED'
+                        ? 'Đang hiển thị tất cả Khách hàng DONE (cả Lẻ và Combo)'
+                        : filterStatus === 'TIP'
+                          ? 'Đang hiển thị các đơn Completed có tiền tip'
+                          : 'Hiển thị tất cả đơn hàng hoàn thành (Done) của Booker'}
             </Text>
           </div>
 
@@ -967,6 +1044,19 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
               >
                 <AppIcon icon={Sparkles} size={14} />
                 <span>Bán Combo</span>
+              </button>
+              <button
+                type="button"
+                aria-pressed={filterStatus === 'NEW_CUSTOMER'}
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md font-medium transition-colors ${
+                  filterStatus === 'NEW_CUSTOMER'
+                    ? 'bg-rose-600 text-white shadow-xs font-semibold'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+                onClick={() => setFilterStatus('NEW_CUSTOMER')}
+              >
+                <AppIcon icon={UserCheck} size={14} />
+                <span>Khách Mới</span>
               </button>
               <button
                 type="button"

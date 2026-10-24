@@ -53,6 +53,8 @@ export interface BkDoneLeaderboardResult {
   leaderboard: BkDoneLeaderboardEntry[];
   summary: {
     totalDone: number;
+    totalNewCustomerDone?: number;
+    avgNewCustomerRate?: number;
     totalMissed?: number;
     avgDoneRate: number;
     avgMissedRate?: number;
@@ -424,9 +426,40 @@ export class BkLeaderboardService {
       GROUP BY matched_orders.created_staff_id
     `;
 
-      const [rows, comboSoldRows] = await Promise.all([
+      // Done Khách Mới: Khách hoàn tất Check-in và Check-out, mỗi khách tính 1 lần duy nhất trên toàn hệ thống Wings,
+      // ghi nhận cho nhân viên tạo lịch hẹn hợp lệ dẫn đến Done, tính theo tháng Check-out.
+      const newCustomerSql = `
+        SELECT 
+          o.id as orderId,
+          o.created_staff_id as bookerId,
+          o.user_id as customerId
+        FROM \`order\` o
+        JOIN report_order ro ON ro.order_id = o.id
+        LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
+        WHERE o.order_state = 'Completed'
+          AND ro.actual_booking_date_start IS NOT NULL
+          AND ro.actual_booking_date_end >= '${startDateTimeStr}'
+          AND ro.actual_booking_date_end <= '${endDateTimeStr}'
+          AND o.created_staff_id IN (${candidateIdsStr})
+          ${storeFilter}
+          AND NOT EXISTS (
+            SELECT 1 FROM \`order\` prev_o
+            JOIN report_order prev_ro ON prev_ro.order_id = prev_o.id
+            WHERE prev_o.user_id = o.user_id
+              AND prev_o.order_state = 'Completed'
+              AND prev_ro.actual_booking_date_start IS NOT NULL
+              AND prev_ro.actual_booking_date_end IS NOT NULL
+              AND (
+                prev_ro.actual_booking_date_end < ro.actual_booking_date_end
+                OR (prev_ro.actual_booking_date_end = ro.actual_booking_date_end AND prev_o.id < o.id)
+              )
+          )
+      `;
+
+      const [rows, comboSoldRows, newCustomerRows] = await Promise.all([
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql),
         fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboSoldSql),
+        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(newCustomerSql),
       ]);
 
       const comboSoldMap = new Map<number, { qty: number; revenue: number }>();
@@ -437,6 +470,12 @@ export class BkLeaderboardService {
         });
       });
 
+      const newCustomerDoneMap = new Map<number, number>();
+      newCustomerRows.forEach((r) => {
+        const bId = Number(r.bookerId);
+        newCustomerDoneMap.set(bId, (newCustomerDoneMap.get(bId) || 0) + 1);
+      });
+
       let grandTotalDone = 0;
       let grandTotalMissed = 0;
       let grandTotalDoneBonus = 0;
@@ -444,6 +483,7 @@ export class BkLeaderboardService {
       let grandTotalComboLiveDone = 0;
       let grandTotalComboSold = 0;
       let grandTotalComboRevenue = 0;
+      let grandTotalNewCustomerDone = 0;
 
       const entries: BkDoneLeaderboardEntry[] = rows.map((r) => {
         const bookerId = Number(r.bookerId);
@@ -452,6 +492,10 @@ export class BkLeaderboardService {
         const totalCount = Number(r.totalCount || 0);
         const doneRatePercent = totalCount > 0 ? Number(((doneCount / totalCount) * 100).toFixed(1)) : 0;
         const missedRatePercent = totalCount > 0 ? Number(((missedCount / totalCount) * 100).toFixed(1)) : 0;
+
+        const newCustomerDoneCount = newCustomerDoneMap.get(bookerId) || 0;
+        const newCustomerRatePercent =
+          doneCount > 0 ? Number(((newCustomerDoneCount / doneCount) * 100).toFixed(1)) : 0;
 
         const singleDoneCount = singleDoneMap.get(bookerId) || 0;
         const comboLiveDoneCount = comboLiveDoneMap.get(bookerId) || 0;
@@ -484,6 +528,7 @@ export class BkLeaderboardService {
         grandTotalComboLiveDone += comboLiveDoneCount;
         grandTotalComboSold += comboSoldCount;
         grandTotalComboRevenue += comboRevenue;
+        grandTotalNewCustomerDone += newCustomerDoneCount;
 
         return {
           rank: 1, // assigned after sorting
@@ -492,6 +537,8 @@ export class BkLeaderboardService {
           avatar: r.avatar ? String(r.avatar) : null,
           store: String(r.store || 'PXL'),
           doneCount,
+          newCustomerDoneCount,
+          newCustomerRatePercent,
           missedCount,
           doneRatePercent,
           missedRatePercent,
@@ -527,10 +574,15 @@ export class BkLeaderboardService {
       const grandSingleToComboRate =
         grandTotalSingleDone > 0 ? Number(((grandTotalComboSold / grandTotalSingleDone) * 100).toFixed(1)) : 0;
 
+      const grandAvgNewCustomerRate =
+        grandTotalDone > 0 ? Number(((grandTotalNewCustomerDone / grandTotalDone) * 100).toFixed(1)) : 0;
+
       const payload: BkDoneLeaderboardResult = {
         leaderboard: entries,
         summary: {
           totalDone: grandTotalDone,
+          totalNewCustomerDone: grandTotalNewCustomerDone,
+          avgNewCustomerRate: grandAvgNewCustomerRate,
           totalMissed: grandTotalMissed,
           avgDoneRate,
           avgMissedRate,

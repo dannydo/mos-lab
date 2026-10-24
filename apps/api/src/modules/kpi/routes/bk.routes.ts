@@ -308,7 +308,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
     const endPart = endStr.includes('T') ? endStr.split('T')[0] : endStr;
 
     const requestedStatus = (status || 'ALL').toUpperCase();
-    const statusParam = ['ALL', 'COMPLETED', 'SINGLE', 'COMBO_LIVE', 'COMBO_SOLD', 'MISSED', 'TIP', 'COMBO'].includes(
+    const statusParam = ['ALL', 'COMPLETED', 'NEW_CUSTOMER', 'SINGLE', 'COMBO_LIVE', 'COMBO_SOLD', 'MISSED', 'TIP', 'COMBO'].includes(
       requestedStatus
     )
       ? requestedStatus
@@ -356,7 +356,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       )`;
       let orderDateField = 'COALESCE(ro.actual_booking_date_start, o.booking_date_start)';
 
-      if (['COMPLETED', 'SINGLE', 'COMBO_LIVE', 'COMBO_SOLD', 'COMBO'].includes(statusParam)) {
+      if (['COMPLETED', 'NEW_CUSTOMER', 'SINGLE', 'COMBO_LIVE', 'COMBO_SOLD', 'COMBO'].includes(statusParam)) {
         stateCondition = `AND (o.order_state IN ('Completed', 'CheckOut') OR ro.actual_booking_date_start IS NOT NULL OR o.total_price > 0)`;
       } else if (statusParam === 'MISSED') {
         stateCondition = `AND o.booking_date_start <= NOW() AND ro.actual_booking_date_start IS NULL AND (o.total_price IS NULL OR o.total_price = 0) AND o.order_state NOT IN ('Completed', 'CheckOut')`;
@@ -404,9 +404,35 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql);
 
       const returnedOrderIds = rows.map((r) => Number(r.orderId)).filter((id) => !!id);
-      const [tipMap, comboSalesByOrder] = await Promise.all([
+
+      const [tipMap, comboSalesByOrder, newCustomerOrderSet] = await Promise.all([
         getCustomerTipAmountByOrderIds(fastify, returnedOrderIds),
         ComboRecognitionService.getRecognizedComboSalesByOrderIds(fastify, returnedOrderIds),
+        (async () => {
+          if (returnedOrderIds.length === 0) return new Set<number>();
+          const newCustRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+            SELECT o.id as orderId
+            FROM \`order\` o
+            JOIN report_order ro ON ro.order_id = o.id
+            WHERE o.id IN (${returnedOrderIds.join(',')})
+              AND o.order_state = 'Completed'
+              AND ro.actual_booking_date_start IS NOT NULL
+              AND ro.actual_booking_date_end IS NOT NULL
+              AND NOT EXISTS (
+                SELECT 1 FROM \`order\` prev_o
+                JOIN report_order prev_ro ON prev_ro.order_id = prev_o.id
+                WHERE prev_o.user_id = o.user_id
+                  AND prev_o.order_state = 'Completed'
+                  AND prev_ro.actual_booking_date_start IS NOT NULL
+                  AND prev_ro.actual_booking_date_end IS NOT NULL
+                  AND (
+                    prev_ro.actual_booking_date_end < ro.actual_booking_date_end
+                    OR (prev_ro.actual_booking_date_end = ro.actual_booking_date_end AND prev_o.id < o.id)
+                  )
+              )
+          `);
+          return new Set<number>(newCustRows.map((r) => Number(r.orderId)));
+        })(),
       ]);
 
       const filteredRows = rows.filter((row) => {
@@ -415,7 +441,11 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         const isCompleted = String(row.orderState) === 'Completed';
         const isComboLive = Boolean(checkinInfo?.isCombo);
         const isComboSold = (comboSalesByOrder.get(orderId)?.netRevenue || 0) > 0;
+        const isNewCustomer = newCustomerOrderSet.has(orderId);
 
+        if (statusParam === 'NEW_CUSTOMER') {
+          return isCompleted && isNewCustomer;
+        }
         if (statusParam === 'TIP') {
           return isCompleted && (tipMap.get(orderId) || 0) > 0;
         }
@@ -461,6 +491,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         const comboSale = comboSalesByOrder.get(orderId);
         const isSingle = isCompletedOrder && !checkinInfo.isCombo;
         const isComboSold = Boolean(comboSale && ((comboSale.netRevenue || 0) > 0 || Boolean(comboSale.comboName)));
+        const isNewCustomer = newCustomerOrderSet.has(orderId);
 
         return {
           orderId,
@@ -480,6 +511,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           isSingle,
           isComboLive: checkinInfo.isCombo,
           isComboSold,
+          isNewCustomer,
           netRevenue: netRev,
           comboName: comboSale?.comboName,
           comboRevenue: comboSale?.netRevenue || 0,
@@ -500,6 +532,7 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
       let totalComboLiveDone = 0;
       let totalComboSold = 0;
       let totalComboRevenue = 0;
+      let totalNewCustomerDone = 0;
 
       data.forEach((d) => {
         if (d.isSingle) totalSingleDone++;
@@ -508,15 +541,19 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           totalComboSold++;
           totalComboRevenue += d.comboRevenue || 0;
         }
+        if (d.isNewCustomer) totalNewCustomerDone++;
       });
 
       const singleToComboRate = totalSingleDone > 0 ? Number(((totalComboSold / totalSingleDone) * 100).toFixed(1)) : 0;
+      const avgNewCustomerRate = data.length > 0 ? Number(((totalNewCustomerDone / data.length) * 100).toFixed(1)) : 0;
 
       const payload = {
         data,
         total: data.length,
         summary: {
           totalDone: data.length,
+          totalNewCustomerDone,
+          avgNewCustomerRate,
           avgDoneRate: 100,
           totalDoneBonus: totalDoneBonusSum,
           totalSingleDone,
