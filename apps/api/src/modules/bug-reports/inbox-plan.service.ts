@@ -322,6 +322,11 @@ export class InboxPlanService {
       include: { comments: { where: { authorType: 'STAFF' }, orderBy: { createdAt: 'desc' }, take: 8 } },
     });
     if (!report || !isInboxPlanEligible(report)) return false;
+    // INVARIANT: Ordinary comments (REPORTER_COMMENT) must NEVER re-plan a ticket that is already approved,
+    // in progress, fixed, or closed. Reopening is handled explicitly via REOPEN_REANALYZED.
+    if (eventKind === 'REPORTER_COMMENT' && (report.status !== 'NEW' || Boolean(report.approvedAt))) {
+      return false;
+    }
     if (eventKind === 'REOPEN_REANALYZED' && !reopen) return false;
     try {
       await fastify.prisma.crm.crmInboxPlanJob.create({

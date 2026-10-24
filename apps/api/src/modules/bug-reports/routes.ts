@@ -683,8 +683,6 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           (await InboxFollowUpService.enqueue(fastify, id, 'REPORTER_REOPENED', data.updatedAt))
         )
           RequestClassifierWorkerHub.notify('inbox_follow_up_available');
-        if (await InboxPlanService.enqueue(fastify, id, 'REPORTER_COMMENT'))
-          RequestClassifierWorkerHub.notify('inbox_plan_available');
         return reply.send({ success: true, data, message: 'Đã ghi nhận phản hồi bản sửa.' });
       } catch (error) {
         return sendError(fastify, reply, error, 'Review fixed bug report failed');
@@ -705,10 +703,16 @@ export async function bugReportRoutes(fastify: FastifyInstance) {
           canManageBugInbox(request.user),
           request.body as CreateBugReportCommentRequest
         );
-        if (await InboxFollowUpService.enqueue(fastify, id, 'REPORTER_COMMENT', data.report.updatedAt))
-          RequestClassifierWorkerHub.notify('inbox_follow_up_available');
-        if (await InboxPlanService.enqueue(fastify, id, 'REPORTER_COMMENT'))
-          RequestClassifierWorkerHub.notify('inbox_plan_available');
+        // Only enqueue follow-up if ticket is actively waiting for reporter clarification
+        if (data.report.clarification?.status === 'WAITING_REPORTER') {
+          if (await InboxFollowUpService.enqueue(fastify, id, 'REPORTER_COMMENT', data.report.updatedAt))
+            RequestClassifierWorkerHub.notify('inbox_follow_up_available');
+        }
+        // Only enqueue initial planning if ticket is still unapproved in NEW state
+        if (data.report.status === 'NEW' && data.report.clarification?.status === 'READY' && !data.report.approvedAt) {
+          if (await InboxPlanService.enqueue(fastify, id, 'REPORTER_COMMENT'))
+            RequestClassifierWorkerHub.notify('inbox_plan_available');
+        }
         return reply.status(201).send({ success: true, data, message: 'Đã gửi bình luận.' });
       } catch (error) {
         return sendError(fastify, reply, error, 'Create bug report comment failed');

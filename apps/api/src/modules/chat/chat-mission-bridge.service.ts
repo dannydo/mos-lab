@@ -930,28 +930,28 @@ export class ChatMissionBridgeService {
         msg.missionSyncedCommentIds.push(latestComment.id);
       }
 
-      if (added?.report?.status === 'FIXED' || added?.report?.status === 'CLOSED') {
-        await fastify.prisma.crm.crmBugReport.update({
-          where: { id: missionId },
-          data: {
-            status: 'NEW',
-            statusSort: 0,
-            clarificationStatus: 'READY',
-            implementationApprovedByStaffId: null,
-            implementationApprovedAt: null,
-            implementationApprovalSourceVersion: null,
-            implementationActiveJobId: null,
-            closedAt: null,
-          },
-        });
-        msg.missionSyncedStage = 'RECEIVED';
+      // INVARIANT: Ordinary chat messages (e.g. "@Bảo Hân em kiểm tra xem...", "ok em", "cảm ơn anh")
+      // must NEVER silently reopen or reset tickets to NEW, must NEVER wipe approvals,
+      // and must NEVER automatically draft new plans or create new tasks!
+      // Reopening is ONLY performed via explicit user action: executeMissionActionFromChat('REQUEST_REWORK')
+      // (when user explicitly clicks "Chưa đạt / Yêu cầu làm lại" on the Live Mission Card).
+
+      // Only enqueue follow-up clarification if the ticket was actively waiting for reporter clarification
+      if (added?.report?.clarification?.status === 'WAITING_REPORTER') {
+        if (await InboxFollowUpService.enqueue(fastify, missionId, 'REPORTER_COMMENT', added.report.updatedAt)) {
+          RequestClassifierWorkerHub.notify('inbox_follow_up_available');
+        }
       }
 
-      if (await InboxFollowUpService.enqueue(fastify, missionId, 'REPORTER_COMMENT', added.report.updatedAt)) {
-        RequestClassifierWorkerHub.notify('inbox_follow_up_available');
-      }
-      if (await InboxPlanService.enqueue(fastify, missionId, 'REPORTER_COMMENT')) {
-        RequestClassifierWorkerHub.notify('inbox_plan_available');
+      // Only enqueue initial planning if the ticket is still in NEW (unapproved) state and READY
+      if (
+        added?.report?.status === 'NEW' &&
+        added?.report?.clarification?.status === 'READY' &&
+        !added?.report?.approvedAt
+      ) {
+        if (await InboxPlanService.enqueue(fastify, missionId, 'REPORTER_COMMENT')) {
+          RequestClassifierWorkerHub.notify('inbox_plan_available');
+        }
       }
     } catch (err) {
       fastify.log.warn({ err, missionId }, 'Non-blocking syncChatReplyToMission warning');

@@ -219,16 +219,23 @@ export async function syncConversationsToRelationalDb(
   try {
     for (const conv of conversations) {
       const { messages, ...convHeader } = conv;
+      const safeSubtitle = conv.subtitle ? String(conv.subtitle).slice(0, 255) : null;
+      const safeName = String(conv.name || conv.id).slice(0, 255);
+      const safeRoleTag = conv.roleTag ? String(conv.roleTag).slice(0, 60) : null;
+      const safeColor = String(conv.color || '#1a73e8').slice(0, 30);
+      const safeAvatar = conv.avatar ? String(conv.avatar).slice(0, 512) : null;
+      const safeType = String(conv.type || 'space').slice(0, 20);
+
       await crm.crmChatConversation.upsert({
         where: { id: conv.id },
         create: {
           id: conv.id,
-          type: conv.type || 'space',
-          name: conv.name || conv.id,
-          subtitle: conv.subtitle ?? null,
-          roleTag: conv.roleTag ?? null,
-          color: conv.color || '#1a73e8',
-          avatar: conv.avatar ?? null,
+          type: safeType,
+          name: safeName,
+          subtitle: safeSubtitle,
+          roleTag: safeRoleTag,
+          color: safeColor,
+          avatar: safeAvatar,
           participantStaffId: conv.participantStaffId ?? null,
           isSelf: Boolean(conv.isSelf),
           memberIdsJson: conv.memberIds ?? [],
@@ -237,12 +244,12 @@ export async function syncConversationsToRelationalDb(
           updatedAt: parseSafeDate(conv.updatedAt),
         },
         update: {
-          type: conv.type || 'space',
-          name: conv.name || conv.id,
-          subtitle: conv.subtitle ?? null,
-          roleTag: conv.roleTag ?? null,
-          color: conv.color || '#1a73e8',
-          avatar: conv.avatar ?? null,
+          type: safeType,
+          name: safeName,
+          subtitle: safeSubtitle,
+          roleTag: safeRoleTag,
+          color: safeColor,
+          avatar: safeAvatar,
           participantStaffId: conv.participantStaffId ?? null,
           isSelf: Boolean(conv.isSelf),
           memberIdsJson: conv.memberIds ?? [],

@@ -309,3 +309,74 @@ test('a stale claimed result is completed without a duplicate native plan', asyn
   assert.equal(jobUpdates[0]?.resultAction, 'STALE');
   assert.equal(jobUpdates[0]?.status, 'COMPLETED');
 });
+
+test('REPORTER_COMMENT is rejected when report is approved, fixed, closed, or already has approvedAt', async () => {
+  const approvedReport = {
+    id: 112,
+    requestType: 'BUG',
+    title: 'Customer Note issue',
+    description: 'details',
+    sourcePath: '/dashboard',
+    status: 'APPROVED',
+    clarificationStatus: 'READY',
+    approvedAt: new Date('2026-10-24T06:32:47.000Z'),
+    comments: [],
+  };
+
+  const fixedReport = {
+    id: 112,
+    requestType: 'BUG',
+    title: 'Customer Note issue',
+    description: 'details',
+    sourcePath: '/dashboard',
+    status: 'FIXED',
+    clarificationStatus: 'READY',
+    approvedAt: new Date('2026-10-24T06:32:47.000Z'),
+    comments: [],
+  };
+
+  const newUnapprovedReport = {
+    id: 112,
+    requestType: 'BUG',
+    title: 'Customer Note issue',
+    description: 'details',
+    sourcePath: '/dashboard',
+    status: 'NEW',
+    clarificationStatus: 'READY',
+    approvedAt: null,
+    comments: [],
+  };
+
+  let currentReport: SafeAny = approvedReport;
+  const createdJobs: Record<string, unknown>[] = [];
+
+  const fastify = {
+    prisma: {
+      crm: {
+        crmBugReport: {
+          findUnique: async () => currentReport,
+        },
+        crmInboxPlanJob: {
+          create: async ({ data }: { data: Record<string, unknown> }) => {
+            createdJobs.push(data);
+            return data;
+          },
+        },
+      },
+    },
+  };
+
+  // 1. APPROVED report must reject REPORTER_COMMENT
+  assert.equal(await InboxPlanService.enqueue(fastify as never, 112, 'REPORTER_COMMENT'), false);
+  assert.equal(createdJobs.length, 0);
+
+  // 2. FIXED report must reject REPORTER_COMMENT
+  currentReport = fixedReport;
+  assert.equal(await InboxPlanService.enqueue(fastify as never, 112, 'REPORTER_COMMENT'), false);
+  assert.equal(createdJobs.length, 0);
+
+  // 3. NEW unapproved report may accept REPORTER_COMMENT
+  currentReport = newUnapprovedReport;
+  assert.equal(await InboxPlanService.enqueue(fastify as never, 112, 'REPORTER_COMMENT'), true);
+  assert.equal(createdJobs.length, 1);
+});

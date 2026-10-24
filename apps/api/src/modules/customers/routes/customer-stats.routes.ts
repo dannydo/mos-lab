@@ -491,9 +491,13 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
         } else if (bStrStats === 'COMBO_LIVE') {
           innerWhereClauses.push('elsa_res.id IS NULL AND usb_agg.live_count > 0');
         } else if (bStrStats === 'COMBO_DEAD') {
-          innerWhereClauses.push('elsa_res.id IS NULL AND usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0');
+          innerWhereClauses.push(
+            'elsa_res.id IS NULL AND usb_agg.user_id IS NOT NULL AND COALESCE(usb_agg.live_count, 0) = 0'
+          );
         } else if (bStrStats === 'NOT_COMBO_LIVE') {
-          innerWhereClauses.push('elsa_res.id IS NULL AND (usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)');
+          innerWhereClauses.push(
+            'elsa_res.id IS NULL AND (usb_agg.user_id IS NULL OR COALESCE(usb_agg.live_count, 0) = 0)'
+          );
           innerWhereClauses.push(`EXISTS (
             SELECT 1 FROM user_contact uc_v
             WHERE uc_v.user_id = u.id AND uc_v.is_disabled = 0 AND uc_v.phone_number IS NOT NULL AND TRIM(uc_v.phone_number) != ''
@@ -1147,6 +1151,16 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
       }
     }
 
+    // Prequery active live combo user IDs to exclude, avoiding correlated NOT EXISTS subquery across 40k users
+    const liveComboRows = await fastify.prisma.legacy.$queryRawUnsafe<Array<{ user_id: number }>>(`
+      SELECT DISTINCT user_id 
+      FROM user_service_balance 
+      WHERE (normal_count + retain_count) > 0 
+        AND (service_group IS NULL OR service_group != 'LashesUnder') 
+        AND (date_expired IS NULL OR date_expired > NOW())
+    `);
+    const liveComboUserIds = liveComboRows.map((r) => r.user_id);
+
     const innerWhereClauses: string[] = [
       'COALESCE(up.is_deleted, 0) = 0',
       'COALESCE(up.is_disabled, 0) = 0',
@@ -1155,18 +1169,11 @@ export async function registerCustomerStatsRoutes(fastify: FastifyInstance) {
       SELECT 1 FROM user_contact uc
       WHERE uc.user_id = u.id AND uc.is_disabled = 0 AND uc.phone_number IS NOT NULL AND TRIM(uc.phone_number) != ''
     )`,
-      `EXISTS (
-      SELECT 1 FROM \`order\` o
-      WHERE o.user_id = u.id AND o.order_state = 'Completed'
-    )`,
-      `NOT EXISTS (
-      SELECT 1 FROM user_service_balance usb
-      WHERE usb.user_id = u.id
-        AND (usb.normal_count + usb.retain_count) > 0
-        AND (usb.service_group IS NULL OR usb.service_group != 'LashesUnder')
-        AND (usb.date_expired IS NULL OR usb.date_expired > NOW())
-    )`,
     ];
+
+    if (liveComboUserIds.length > 0) {
+      innerWhereClauses.push(`u.id NOT IN (${liveComboUserIds.join(',')})`);
+    }
     const innerParams: SafeAny[] = [];
 
     if (allowedUserIds !== null) {

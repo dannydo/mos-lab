@@ -483,4 +483,111 @@ describe('ChatMissionBridgeService.buildMissionSummaryFromReport', () => {
     assert.equal(msg2?.thread?.length, 1);
     assert.equal(msg2?.thread?.[0]?.text, 'Câu trả lời B cần chuyển sang Luồng 2');
   });
+
+  it('syncChatReplyToMission does NOT reset ticket status or clear approvals when ticket is FIXED or CLOSED', async () => {
+    let updatedReport: SafeAny = null;
+    let createdPlanJob: SafeAny = null;
+
+    const mockReport = {
+      id: 112,
+      reporterStaffId: 1,
+      requestType: 'BUG',
+      title: 'Customer Note issue',
+      description: 'details',
+      sourcePath: '/dashboard',
+      status: 'FIXED',
+      statusSort: 0,
+      priority: 'P1',
+      prioritySort: 1,
+      clarificationStatus: 'READY',
+      approvedAt: new Date(),
+      businessContext: null,
+      updatedAt: new Date(),
+      createdAt: new Date(),
+      reporter: { id: 1, displayName: 'Danny Do' },
+      approvedBy: { id: 1, displayName: 'Danny Do' },
+      implementationApprovedBy: null,
+      duplicateOf: null,
+      attachments: [],
+      comments: [
+        {
+          id: 999,
+          reportId: 112,
+          authorStaffId: 1,
+          authorType: 'STAFF',
+          kind: 'COMMENT',
+          body: '@Bảo Hân em kiểm tra xem đã chỉnh lại đúng chưa nhé',
+          createdAt: new Date(),
+          author: { id: 1, displayName: 'Danny Do' },
+          attachments: [],
+        },
+      ],
+      audits: [],
+      resolution: null,
+      inboxImplementationJobs: [],
+    };
+
+    const fastify = {
+      prisma: {
+        crm: {
+          crmBugReport: {
+            findUnique: async () => mockReport,
+            findFirst: async () => mockReport,
+            update: async ({ data }: { data: Record<string, unknown> }) => {
+              updatedReport = data;
+              return data;
+            },
+          },
+          crmBugReportComment: {
+            count: async () => 0,
+            create: async ({ data }: { data: Record<string, unknown> }) => ({ id: 999, ...data }),
+          },
+          crmBugReportAudit: {
+            create: async () => ({}),
+          },
+          crmBugReportAttachment: {
+            findMany: async () => [],
+          },
+          crmInboxPlanJob: {
+            create: async ({ data }: { data: Record<string, unknown> }) => {
+              createdPlanJob = data;
+              return data;
+            },
+          },
+          crmInboxFollowUpJob: {
+            create: async () => ({}),
+          },
+          $transaction: async (cb: (tx: SafeAny) => Promise<SafeAny>) => cb(fastify.prisma.crm),
+        },
+      },
+      log: { warn: () => {} },
+    };
+
+    const msg: SafeAny = {
+      id: 'msg-root-112',
+      missionId: 112,
+      missionSyncedCommentIds: [],
+      missionSyncedStage: 'READY_FOR_REVIEW',
+    };
+
+    const replyItem: SafeAny = {
+      id: 'reply-1',
+      text: '@Bảo Hân em kiểm tra xem đã chỉnh lại đúng chưa nhé',
+    };
+
+    const user: SafeAny = {
+      id: 1,
+      username: 'dannydo',
+      role: 'super_admin',
+    };
+
+    await ChatMissionBridgeService.syncChatReplyToMission(fastify as never, user, msg, replyItem, '/tmp');
+
+    // Must NOT reset status to NEW or clear approvals
+    assert.equal(updatedReport?.status, undefined, 'Report status must NOT be modified by normal chat reply');
+    assert.equal(updatedReport?.implementationApprovedByStaffId, undefined, 'Approvals must NOT be wiped');
+    assert.equal(createdPlanJob, null, 'InboxPlanJob must NOT be created for FIXED ticket chat reply');
+    assert.equal(msg.missionSyncedStage, 'READY_FOR_REVIEW', 'Mission stage must remain intact');
+    assert.ok(msg.missionSyncedCommentIds.includes(999), 'Comment id must be recorded');
+  });
 });
