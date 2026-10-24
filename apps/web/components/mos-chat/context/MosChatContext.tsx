@@ -13,6 +13,8 @@ import type {
   MosChatTaskPriority,
   MosChatWorkflowInstance,
   MosChatWorkflowTemplate,
+  MosChatMissionSummary,
+  MosChatMissionActionType,
   UpdateMosChatTaskRequest,
   SafeAny,
 } from '@mos-lab/shared';
@@ -829,6 +831,55 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
     [activeConvId]
   );
 
+  // Execute mission action (Approve Cổng 1, Approve Commit Cổng 2, Approve Deploy Cổng 3, Nghiệm thu, Reopen)
+  const executeMissionAction = useCallback(
+    async (mission: MosChatMissionSummary, action: MosChatMissionActionType, feedback?: string): Promise<SafeAny> => {
+      try {
+        const res = await apiClient.chat.missionAction(mission.reportId, {
+          conversationId: mission.conversationId || activeConvId,
+          messageId: mission.messageId || null,
+          taskId: mission.taskId || null,
+          action,
+          feedback,
+        });
+
+        if (res?.mission) {
+          // Update task in state
+          setTasks((prev) =>
+            prev.map((t) => {
+              if (t.id === mission.taskId || t.missionId === mission.reportId || t.missionKey === mission.missionKey) {
+                return {
+                  ...t,
+                  mission: res.mission,
+                  done: action === 'REPORTER_ACCEPT' ? true : t.done,
+                };
+              }
+              return t;
+            })
+          );
+          // Also update conversation messages if messageId exists
+          if (mission.messageId) {
+            setAllMessagesByConv((prev) => {
+              const currentList = prev[mission.conversationId || activeConvId] || [];
+              return {
+                ...prev,
+                [mission.conversationId || activeConvId]: currentList.map((m) =>
+                  m.id === mission.messageId ? res.message || { ...m, mission: res.mission } : m
+                ),
+              };
+            });
+          }
+          return res.mission;
+        }
+        return null;
+      } catch (err: SafeAny) {
+        console.error('Failed to execute mission action:', err);
+        throw err;
+      }
+    },
+    [activeConvId]
+  );
+
   // Trigger workflow
   const triggerWorkflow = useCallback(
     async (templateCode: string, title?: string, formData?: Record<string, unknown>): Promise<boolean> => {
@@ -895,6 +946,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       acceptNegotiatedDeadline,
       rejectNegotiatedDeadline,
       dispatchMissionFromTask,
+      executeMissionAction,
       workflowTemplates,
       workflowInstances,
       triggerWorkflow,
@@ -944,6 +996,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       acceptNegotiatedDeadline,
       rejectNegotiatedDeadline,
       dispatchMissionFromTask,
+      executeMissionAction,
       workflowTemplates,
       workflowInstances,
       triggerWorkflow,

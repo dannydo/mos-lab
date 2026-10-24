@@ -305,6 +305,30 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
               .slice(-6)
               .toUpperCase()}`;
 
+            const isMissionAwaitingCommit = Boolean(
+              t.mission &&
+              (t.mission.canSuperAdminApproveCommit ||
+                t.mission.superAdminActions?.canApproveCommit ||
+                t.mission.status === 'AWAITING_DANNY_COMMIT_REVIEW' ||
+                t.mission.superAdminActions?.executionPhase === 'AWAITING_COMMIT_REVIEW')
+            );
+
+            const isMissionAwaitingDeploy = Boolean(
+              t.mission &&
+              (t.mission.canSuperAdminApproveDeploy ||
+                t.mission.superAdminActions?.canApproveDeploy ||
+                t.mission.status === 'AWAITING_DANNY_DEPLOY_APPROVAL' ||
+                t.mission.superAdminActions?.executionPhase === 'AWAITING_DEPLOY_REVIEW')
+            );
+
+            const isMissionAwaitingAccept = Boolean(
+              t.mission &&
+              (t.mission.canReporterAccept ||
+                t.mission.reporterActions?.canAcceptOrReopen ||
+                t.mission.status === 'FIXED' ||
+                t.mission.status === 'AWAITING_REPORTER_ACCEPTANCE')
+            );
+
             return (
               <div
                 key={t.id}
@@ -371,7 +395,30 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
                       {t.mission && (
                         <span className="px-1.5 py-0.2 rounded font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1">
                           <Rocket className="w-2.5 h-2.5" />
-                          <span>Mission #{t.mission.missionKey}</span>
+                          <span>#{t.mission.missionKey}</span>
+                        </span>
+                      )}
+
+                      {/* Gate 2: Duyệt Commit Badge */}
+                      {isMissionAwaitingCommit && (
+                        <span className="px-1.5 py-0.2 rounded font-bold bg-amber-500 text-slate-950 flex items-center gap-1 shadow-sm shadow-amber-500/30 animate-pulse">
+                          <CheckCircle2 className="w-2.5 h-2.5 stroke-[2.5]" />
+                          <span>Duyệt Commit</span>
+                        </span>
+                      )}
+
+                      {/* Gate 3: Duyệt Deploy Badge */}
+                      {isMissionAwaitingDeploy && (
+                        <span className="px-1.5 py-0.2 rounded font-bold bg-emerald-500 text-slate-950 flex items-center gap-1 shadow-sm shadow-emerald-500/30 animate-pulse">
+                          <Rocket className="w-2.5 h-2.5 stroke-[2.5]" />
+                          <span>Duyệt Deploy</span>
+                        </span>
+                      )}
+
+                      {/* Awaiting Acceptance Badge */}
+                      {isMissionAwaitingAccept && (
+                        <span className="px-1.5 py-0.2 rounded font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30 flex items-center gap-1">
+                          <span>Chờ nghiệm thu</span>
                         </span>
                       )}
                     </div>

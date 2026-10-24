@@ -115,6 +115,18 @@ vi.mock('../../../lib/api-client', () => ({
           humanStatusSummary: 'Sẵn sàng khởi động',
         },
       }),
+      missionAction: vi.fn().mockResolvedValue({
+        success: true,
+        mission: {
+          reportId: 138,
+          key: 'MOS-FEAT-138',
+          missionKey: 'MOS-FEAT-138',
+          stage: 'GATE_2_COMMIT_REVIEW',
+          status: 'AWAITING_DANNY_COMMIT_REVIEW',
+          canSuperAdminApproveCommit: true,
+          humanStatusSummary: 'Đã sẵn sàng duyệt commit',
+        },
+      }),
       reactToMessage: vi.fn().mockResolvedValue({ success: true }),
       sendThreadReply: vi.fn().mockResolvedValue({
         success: true,
@@ -1122,6 +1134,112 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
         expect.any(String),
         expect.objectContaining({
           title: 'Kiểm kê khay mi lụa 0.07 CC (Đã cập nhật)',
+        })
+      );
+    });
+  });
+
+  it('shows Gate 2 Duyệt Commit button in task detail sheet and triggers action (MOS-FEAT-150)', async () => {
+    // Override bootstrap to return a task with mission in Gate 2
+    (apiClient.chat.bootstrap as any).mockResolvedValueOnce({
+      unreadCount: 0,
+      conversations: [
+        {
+          id: 'space-cc',
+          name: 'Shop Operations',
+          type: 'SPACE',
+          unreadCount: 0,
+          lastMessageText: 'Tin nhắn mới',
+          lastMessageTime: '10:00',
+          members: [{ id: 1, name: 'Danny Do', role: 'admin' }],
+        },
+      ],
+      messagesByConv: {
+        'space-cc': [],
+      },
+      tasks: [
+        {
+          id: 't-mission-138',
+          conversationId: 'space-cc',
+          conversationName: 'Shop Operations',
+          title: 'Triển khai Gate Control trên iPhone',
+          assigneeName: 'Chuyên Viên Mai',
+          creatorName: 'Danny Do',
+          priority: 'HIGH',
+          dueAt: new Date(Date.now() + 3600000).toISOString(),
+          done: false,
+          createdAt: new Date().toISOString(),
+          missionId: 138,
+          missionKey: 'MOS-FEAT-138',
+          mission: {
+            reportId: 138,
+            key: 'MOS-FEAT-138',
+            missionKey: 'MOS-FEAT-138',
+            missionCode: 'MOS-FEAT-138',
+            requestType: 'FEATURE',
+            title: 'Triển khai Gate Control trên iPhone',
+            status: 'AWAITING_DANNY_COMMIT_REVIEW',
+            stage: 'GATE_2_COMMIT_REVIEW',
+            stepIndex: 2,
+            humanBadge: 'Chờ duyệt commit',
+            stageLabel: 'Cổng 2',
+            humanStatusSummary: 'Đã code xong, đang chờ Danny duyệt commit Cổng 2',
+            canSuperAdminApproveCommit: true,
+            superAdminActions: {
+              canApproveCommit: true,
+              executionPhase: 'AWAITING_COMMIT_REVIEW',
+            },
+          },
+        },
+      ],
+      staffDirectory: [],
+      userPrefs: { pinnedIds: [] },
+    });
+
+    render(
+      <MosChatProvider
+        currentUser={{
+          id: 1,
+          name: 'Danny Do',
+          role: 'super_admin',
+          username: 'admin',
+          email: 'danny.do@wingslashes.com',
+        }}
+      >
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    const tasksPill = screen.getByLabelText('Kho Công việc & Nhắc hẹn (Tasks)');
+    fireEvent.click(tasksPill);
+
+    await waitFor(() => {
+      expect(screen.getByText('Triển khai Gate Control trên iPhone')).toBeTruthy();
+      expect(screen.getByText('#MOS-FEAT-138')).toBeTruthy();
+      expect(screen.getByText('Duyệt Commit')).toBeTruthy();
+    });
+
+    // Open detail sheet
+    const taskCard = screen.getByRole('button', {
+      name: /Mở chi tiết công việc: Triển khai Gate Control trên iPhone/i,
+    });
+    fireEvent.click(taskCard);
+
+    // Verify detail sheet shows Gate 2 action button
+    await waitFor(() => {
+      expect(screen.getByText(/✅ Duyệt Commit \(Cổng 2\)/i)).toBeTruthy();
+      expect(screen.getByText(/Đã code xong, đang chờ Danny duyệt commit Cổng 2/i)).toBeTruthy();
+    });
+
+    // Click Duyệt Commit
+    const approveCommitBtn = screen.getByRole('button', { name: /✅ Duyệt Commit \(Cổng 2\)/i });
+    fireEvent.click(approveCommitBtn);
+
+    await waitFor(() => {
+      expect(apiClient.chat.missionAction).toHaveBeenCalledWith(
+        138,
+        expect.objectContaining({
+          action: 'APPROVE_COMMIT',
         })
       );
     });

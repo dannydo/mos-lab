@@ -9,6 +9,8 @@ import type {
   MosChatTaskPriority,
   MosChatWorkflowInstance,
   MosChatWorkflowTemplate,
+  MosChatMissionSummary,
+  MosChatMissionActionType,
   UpdateMosChatTaskRequest,
   SafeAny,
 } from '@mos-lab/shared';
@@ -85,6 +87,11 @@ export interface MosChatContextValue {
   dispatchMissionFromTask: (
     task: MosChatTaskItem,
     payload: { title?: string; type?: 'BUG' | 'FEATURE'; note?: string }
+  ) => Promise<SafeAny>;
+  executeMissionAction: (
+    mission: MosChatMissionSummary,
+    action: MosChatMissionActionType,
+    feedback?: string
   ) => Promise<SafeAny>;
 
   // Workflows
