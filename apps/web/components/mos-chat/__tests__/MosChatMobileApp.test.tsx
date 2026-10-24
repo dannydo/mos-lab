@@ -95,6 +95,26 @@ vi.mock('../../../lib/api-client', () => ({
         },
       })),
       updateTask: vi.fn().mockResolvedValue({ success: true }),
+      deleteTask: vi.fn().mockResolvedValue({ success: true }),
+      createMission: vi.fn().mockResolvedValue({
+        success: true,
+        mission: {
+          reportId: 555,
+          key: 'MOS-555',
+          missionKey: 'MOS-555',
+          missionCode: 'MOS-555',
+          requestType: 'FEATURE',
+          title: 'Kiểm kê khay mi lụa 0.07 CC',
+          status: 'READY_TO_START',
+          clarificationStatus: 'RESOLVED',
+          stage: 'GATE_1_IMPLEMENTATION',
+          stepIndex: 1,
+          humanBadge: 'Cổng 1',
+          stageLabel: 'Cổng 1',
+          humanSummary: 'Mission tạo từ task chat',
+          humanStatusSummary: 'Sẵn sàng khởi động',
+        },
+      }),
       reactToMessage: vi.fn().mockResolvedValue({ success: true }),
       sendThreadReply: vi.fn().mockResolvedValue({
         success: true,
@@ -850,6 +870,258 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
           conversationId: 'space-cc',
           title: 'Hello hello task test',
           assigneeName: expect.stringMatching(/Danny Do/i),
+        })
+      );
+    });
+  });
+
+  it('opens Task Detail Bottom Sheet when tapping on task card without toggling done (MOS-FEAT-150)', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    // Click on Kho Công việc in inbox
+    const tasksPill = screen.getByLabelText('Kho Công việc & Nhắc hẹn (Tasks)');
+    fireEvent.click(tasksPill);
+
+    await waitFor(() => {
+      expect(screen.getByText('Kho Công Việc & Nhắc Hẹn')).toBeTruthy();
+      expect(screen.getByText('Kiểm kê khay mi lụa 0.07 CC')).toBeTruthy();
+    });
+
+    // Tap on the task card body (not the checkbox)
+    const taskCard = screen.getByRole('button', {
+      name: /Mở chi tiết công việc: Kiểm kê khay mi lụa 0.07 CC/i,
+    });
+    fireEvent.click(taskCard);
+
+    // Verify bottom sheet opened
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: 'Chi tiết công việc mOS' })).toBeTruthy();
+      expect(screen.getByText('Đang thực hiện')).toBeTruthy();
+      expect(screen.getByText('Giao bởi')).toBeTruthy();
+      expect(screen.getByText('Người nhận')).toBeTruthy();
+      expect(screen.getByText('Hạn hoàn thành (Deadline)')).toBeTruthy();
+    });
+
+    // Verify task is NOT toggled done by tapping card
+    expect(apiClient.chat.updateTask).not.toHaveBeenCalled();
+  });
+
+  it('allows toggling task done strictly via checkbox button without opening bottom sheet (MOS-FEAT-150)', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    const tasksPill = screen.getByLabelText('Kho Công việc & Nhắc hẹn (Tasks)');
+    fireEvent.click(tasksPill);
+
+    await waitFor(() => {
+      expect(screen.getByText('Kiểm kê khay mi lụa 0.07 CC')).toBeTruthy();
+    });
+
+    // Find checkbox button
+    const checkboxBtn = screen.getByRole('button', { name: 'Đánh dấu hoàn thành' });
+    fireEvent.click(checkboxBtn);
+
+    // Verify updateTask was called to toggle done
+    await waitFor(() => {
+      expect(apiClient.chat.updateTask).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ done: true })
+      );
+    });
+
+    // Verify bottom sheet is NOT open
+    expect(screen.queryByRole('dialog', { name: 'Chi tiết công việc mOS' })).toBeNull();
+  });
+
+  it('supports real-time search, scope pills, and status pills on iPhone (MOS-FEAT-150)', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    const tasksPill = screen.getByLabelText('Kho Công việc & Nhắc hẹn (Tasks)');
+    fireEvent.click(tasksPill);
+
+    await waitFor(() => {
+      expect(screen.getByText('Kho Công Việc & Nhắc Hẹn')).toBeTruthy();
+    });
+
+    // Check search input exists
+    const searchInput = screen.getByPlaceholderText('Tìm theo tên việc, mã #TASK, người nhận...');
+    expect(searchInput).toBeTruthy();
+
+    // Type query that matches nothing
+    fireEvent.change(searchInput, { target: { value: 'XYZNONEXISTENT' } });
+    await waitFor(() => {
+      expect(screen.getByText('Không tìm thấy công việc nào khớp từ khóa')).toBeTruthy();
+    });
+
+    // Clear search
+    fireEvent.change(searchInput, { target: { value: '' } });
+    await waitFor(() => {
+      expect(screen.getByText('Kiểm kê khay mi lụa 0.07 CC')).toBeTruthy();
+    });
+
+    // Check status pill 'Đã xong'
+    const completedPill = screen.getByRole('button', { name: /Đã xong/i });
+    fireEvent.click(completedPill);
+
+    await waitFor(() => {
+      expect(completedPill.className).toContain('bg-emerald-500/20');
+    });
+  });
+
+  it('allows Super Admin Danny to dispatch task to mOS Mission via detail sheet (MOS-FEAT-150)', async () => {
+    render(
+      <MosChatProvider
+        currentUser={{
+          id: 1,
+          name: 'Danny Do',
+          role: 'super_admin',
+          username: 'admin',
+          email: 'danny.do@wingslashes.com',
+        }}
+      >
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    const tasksPill = screen.getByLabelText('Kho Công việc & Nhắc hẹn (Tasks)');
+    fireEvent.click(tasksPill);
+
+    await waitFor(() => {
+      expect(screen.getByText('Kiểm kê khay mi lụa 0.07 CC')).toBeTruthy();
+    });
+
+    // Open detail sheet
+    const taskCard = screen.getByRole('button', {
+      name: /Mở chi tiết công việc: Kiểm kê khay mi lụa 0.07 CC/i,
+    });
+    fireEvent.click(taskCard);
+
+    // Verify Super Admin button exists
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Chuyển vào mOS Mission \(Super Admin Danny\)/i })).toBeTruthy();
+    });
+
+    // Click dispatch mission button
+    fireEvent.click(screen.getByRole('button', { name: /Chuyển vào mOS Mission \(Super Admin Danny\)/i }));
+
+    // Verify Mission modal opened
+    await waitFor(() => {
+      expect(screen.getByText('Chuyển vào mOS Mission (Gate 1)')).toBeTruthy();
+    });
+
+    // Confirm dispatch
+    const confirmBtn = screen.getByRole('button', { name: 'Chuyển Mission' });
+    fireEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(apiClient.chat.createMission).toHaveBeenCalled();
+    });
+  });
+
+  it('allows negotiating task deadline via detail sheet (MOS-FEAT-150)', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    const tasksPill = screen.getByLabelText('Kho Công việc & Nhắc hẹn (Tasks)');
+    fireEvent.click(tasksPill);
+
+    await waitFor(() => {
+      expect(screen.getByText('Kiểm kê khay mi lụa 0.07 CC')).toBeTruthy();
+    });
+
+    // Open detail sheet
+    const taskCard = screen.getByRole('button', {
+      name: /Mở chi tiết công việc: Kiểm kê khay mi lụa 0.07 CC/i,
+    });
+    fireEvent.click(taskCard);
+
+    // Click "Xin dời hạn"
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Xin dời hạn/i })).toBeTruthy();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Xin dời hạn/i }));
+
+    // Verify negotiate modal opened
+    await waitFor(() => {
+      expect(screen.getByText('Thương lượng dời hạn chót')).toBeTruthy();
+    });
+
+    // Fill reason
+    const reasonInput = screen.getByPlaceholderText(/VD: Em đang ưu tiên hỗ trợ khách/i);
+    fireEvent.change(reasonInput, { target: { value: 'Xin dời 2 tiếng vì bận việc gấp' } });
+
+    // Submit negotiation
+    const submitBtn = screen.getByRole('button', { name: 'Gửi đề xuất dời hạn' });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(apiClient.chat.updateTask).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          negotiationNote: 'Xin dời 2 tiếng vì bận việc gấp',
+        })
+      );
+    });
+  });
+
+  it('allows editing task details via detail sheet (MOS-FEAT-150)', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    const tasksPill = screen.getByLabelText('Kho Công việc & Nhắc hẹn (Tasks)');
+    fireEvent.click(tasksPill);
+
+    await waitFor(() => {
+      expect(screen.getByText('Kiểm kê khay mi lụa 0.07 CC')).toBeTruthy();
+    });
+
+    // Open detail sheet
+    const taskCard = screen.getByRole('button', {
+      name: /Mở chi tiết công việc: Kiểm kê khay mi lụa 0.07 CC/i,
+    });
+    fireEvent.click(taskCard);
+
+    // Click "Chỉnh sửa"
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Chỉnh sửa/i })).toBeTruthy();
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Chỉnh sửa/i }));
+
+    // Verify edit modal opened
+    await waitFor(() => {
+      expect(screen.getByText('Chỉnh sửa công việc')).toBeTruthy();
+    });
+
+    // Edit title
+    const titleInput = screen.getByPlaceholderText('Nhập chi tiết công việc...');
+    fireEvent.change(titleInput, { target: { value: 'Kiểm kê khay mi lụa 0.07 CC (Đã cập nhật)' } });
+
+    // Save
+    const saveBtn = screen.getByRole('button', { name: 'Lưu thay đổi' });
+    fireEvent.click(saveBtn);
+
+    await waitFor(() => {
+      expect(apiClient.chat.updateTask).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          title: 'Kiểm kê khay mi lụa 0.07 CC (Đã cập nhật)',
         })
       );
     });

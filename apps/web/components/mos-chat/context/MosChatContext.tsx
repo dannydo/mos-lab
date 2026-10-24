@@ -13,6 +13,7 @@ import type {
   MosChatTaskPriority,
   MosChatWorkflowInstance,
   MosChatWorkflowTemplate,
+  UpdateMosChatTaskRequest,
   SafeAny,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
@@ -693,6 +694,141 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
     }
   }, []);
 
+  // Update task
+  const updateTask = useCallback(async (taskId: string, payload: UpdateMosChatTaskRequest): Promise<boolean> => {
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== taskId) return t;
+        return {
+          ...t,
+          ...payload,
+          updatedAt: new Date().toISOString(),
+        };
+      })
+    );
+    try {
+      const res = await apiClient.chat.updateTask(taskId, payload);
+      if (res && res.task) {
+        setTasks((prev) => prev.map((t) => (t.id === taskId ? res.task : t)));
+      }
+      return true;
+    } catch (err) {
+      console.error('Failed to update task:', err);
+      return false;
+    }
+  }, []);
+
+  // Delete task
+  const deleteTask = useCallback(async (taskId: string): Promise<boolean> => {
+    setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    try {
+      await apiClient.chat.deleteTask(taskId);
+      return true;
+    } catch (err) {
+      console.error('Failed to delete task:', err);
+      return false;
+    }
+  }, []);
+
+  // Accept negotiated deadline
+  const acceptNegotiatedDeadline = useCallback(async (task: MosChatTaskItem): Promise<boolean> => {
+    if (!task.negotiatedDeadline) return false;
+    const newDeadline = task.negotiatedDeadline;
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === task.id
+          ? {
+              ...t,
+              deadline: newDeadline,
+              dueAt: newDeadline,
+              negotiatedDeadline: null,
+              negotiationNote: null,
+              negotiatedBy: null,
+              negotiatedAt: null,
+              updatedAt: new Date().toISOString(),
+            }
+          : t
+      )
+    );
+    try {
+      await apiClient.chat.updateTask(task.id, { acceptNegotiatedDeadline: true });
+      return true;
+    } catch (err) {
+      console.error('Failed to accept negotiated deadline:', err);
+      return false;
+    }
+  }, []);
+
+  // Reject negotiated deadline
+  const rejectNegotiatedDeadline = useCallback(async (task: MosChatTaskItem): Promise<boolean> => {
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === task.id
+          ? {
+              ...t,
+              negotiatedDeadline: null,
+              negotiationNote: null,
+              negotiatedBy: null,
+              negotiatedAt: null,
+              updatedAt: new Date().toISOString(),
+            }
+          : t
+      )
+    );
+    try {
+      await apiClient.chat.updateTask(task.id, { rejectNegotiatedDeadline: true });
+      return true;
+    } catch (err) {
+      console.error('Failed to reject negotiated deadline:', err);
+      return false;
+    }
+  }, []);
+
+  // Dispatch mission from task
+  const dispatchMissionFromTask = useCallback(
+    async (
+      task: MosChatTaskItem,
+      payload: { title?: string; type?: 'BUG' | 'FEATURE'; note?: string }
+    ): Promise<SafeAny> => {
+      try {
+        const res = await apiClient.chat.createMission({
+          conversationId: task.conversationId || activeConvId,
+          messageId: task.sourceMessageId || '',
+          taskId: task.id,
+          title: payload.title || task.title,
+          type: payload.type || 'FEATURE',
+          note: payload.note || undefined,
+          pageUrl: typeof window !== 'undefined' ? window.location.pathname : '/dashboard',
+        });
+        if (res && res.mission) {
+          if (res.task) {
+            const taskFromApi = res.task;
+            setTasks((prev) => prev.map((t) => (t.id === taskFromApi.id ? taskFromApi : t)));
+          } else {
+            setTasks((prev) =>
+              prev.map((t) =>
+                t.id === task.id
+                  ? {
+                      ...t,
+                      missionId: res.mission.reportId,
+                      missionKey: res.mission.missionKey,
+                      mission: res.mission,
+                    }
+                  : t
+              )
+            );
+          }
+          return res.mission;
+        }
+        return null;
+      } catch (err) {
+        console.error('Failed to dispatch mission from task:', err);
+        throw err;
+      }
+    },
+    [activeConvId]
+  );
+
   // Trigger workflow
   const triggerWorkflow = useCallback(
     async (templateCode: string, title?: string, formData?: Record<string, unknown>): Promise<boolean> => {
@@ -754,6 +890,11 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       pinnedMessages,
       createTask,
       toggleTaskDone,
+      updateTask,
+      deleteTask,
+      acceptNegotiatedDeadline,
+      rejectNegotiatedDeadline,
+      dispatchMissionFromTask,
       workflowTemplates,
       workflowInstances,
       triggerWorkflow,
@@ -798,6 +939,11 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       pinnedMessages,
       createTask,
       toggleTaskDone,
+      updateTask,
+      deleteTask,
+      acceptNegotiatedDeadline,
+      rejectNegotiatedDeadline,
+      dispatchMissionFromTask,
       workflowTemplates,
       workflowInstances,
       triggerWorkflow,

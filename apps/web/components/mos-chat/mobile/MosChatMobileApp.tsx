@@ -3,7 +3,7 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { Modal, Input, Select, DatePicker, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
-import type { MosChatMessage, MosChatTaskPriority, SafeAny } from '@mos-lab/shared';
+import type { MosChatMessage, MosChatTaskItem, MosChatTaskPriority, SafeAny } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
 import { MosChatMobileHeader } from './MosChatMobileHeader';
 import { MosChatMobileInbox } from './MosChatMobileInbox';
@@ -13,6 +13,10 @@ import { MosChatMobileActionSheet } from './MosChatMobileActionSheet';
 import { MosChatMobileReactionSheet } from './MosChatMobileReactionSheet';
 import { MosChatMobileThreadSheet } from './MosChatMobileThreadSheet';
 import { MosChatMobileTasksTab } from './MosChatMobileTasksTab';
+import { MosChatMobileTaskDetailSheet } from './MosChatMobileTaskDetailSheet';
+import { MosChatMobileEditTaskModal } from './MosChatMobileEditTaskModal';
+import { MosChatMobileNegotiateTaskModal } from './MosChatMobileNegotiateTaskModal';
+import { MosChatMobileMissionModal } from './MosChatMobileMissionModal';
 import { MosChatMobileStickerSheet } from './MosChatMobileStickerSheet';
 import { MosChatMobileEditModal } from './MosChatMobileEditModal';
 import { MosChatMobileMediaGallery, type MosChatGalleryImage } from './MosChatMobileMediaGallery';
@@ -30,13 +34,18 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
   const {
     currentUser,
     activeConversation,
+    conversations,
     mobileView,
     setMobileView,
     activeSubtab,
     selectedMsgForAction,
     setSelectedMsgForAction,
     setActiveThreadMsg,
+    setActiveConvId,
+    tasks,
     createTask,
+    updateTask,
+    dispatchMissionFromTask,
     editMessage,
     staffDirectory,
     sendMessage,
@@ -49,6 +58,23 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
   const [editingMessage, setEditingMessage] = useState<MosChatMessage | null>(null);
   const [attachedImages, setAttachedImages] = useState<MosChatImageAttachment[]>([]);
   const [isUploadingImages, setIsUploadingImages] = useState<boolean>(false);
+
+  // Task Detail Bottom Sheet & Modals state
+  const [selectedDetailTaskId, setSelectedDetailTaskId] = useState<string | null>(null);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [negotiatingTaskId, setNegotiatingTaskId] = useState<string | null>(null);
+  const [missionTaskId, setMissionTaskId] = useState<string | null>(null);
+
+  const selectedDetailTask = useMemo(
+    () => tasks.find((t) => t.id === selectedDetailTaskId) || null,
+    [tasks, selectedDetailTaskId]
+  );
+  const editingTask = useMemo(() => tasks.find((t) => t.id === editingTaskId) || null, [tasks, editingTaskId]);
+  const negotiatingTask = useMemo(
+    () => tasks.find((t) => t.id === negotiatingTaskId) || null,
+    [tasks, negotiatingTaskId]
+  );
+  const missionTask = useMemo(() => tasks.find((t) => t.id === missionTaskId) || null, [tasks, missionTaskId]);
 
   // Stream Media Gallery Lightbox state
   const [streamGallery, setStreamGallery] = useState<{
@@ -295,6 +321,72 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
     setStickerPickerOpen(false);
   };
 
+  const handleSaveEditedTask = async (
+    taskId: string,
+    updates: {
+      title: string;
+      assigneeId?: string;
+      assigneeName?: string;
+      dueAt?: string | null;
+      priority: MosChatTaskPriority;
+    }
+  ) => {
+    const success = await updateTask(taskId, updates);
+    if (success) {
+      antdMessage.success('Đã lưu thay đổi công việc');
+    } else {
+      antdMessage.error('Không thể lưu thay đổi công việc');
+    }
+  };
+
+  const handleSubmitNegotiation = async (task: MosChatTaskItem, proposedDeadline: string, reason: string) => {
+    const myName =
+      currentUser?.displayName || currentUser?.fullName || currentUser?.name || currentUser?.username || 'Danny Do';
+    const nowIso = new Date().toISOString();
+
+    const success = await updateTask(task.id, {
+      negotiatedDeadline: proposedDeadline,
+      negotiationNote: reason,
+      negotiatedBy: myName,
+      negotiatedAt: nowIso,
+    });
+    if (success) {
+      antdMessage.success('Đã gửi đề xuất thương lượng dời hạn chót thành công!');
+    } else {
+      antdMessage.error('Không thể gửi đề xuất thương lượng dời hạn');
+    }
+  };
+
+  const handleSubmitMission = async (
+    task: MosChatTaskItem,
+    missionData: { title: string; type: 'BUG' | 'FEATURE'; note: string }
+  ) => {
+    try {
+      const mission = await dispatchMissionFromTask(task, missionData);
+      if (mission) {
+        antdMessage.success(`🚀 Đã chuyển vào mOS Mission #${mission.missionKey} thành công!`);
+      }
+    } catch (err: SafeAny) {
+      antdMessage.error(err?.response?.data?.message || err?.message || 'Không thể chuyển vào mOS Mission');
+    }
+  };
+
+  const handleGoToSourceMessage = (task: MosChatTaskItem) => {
+    if (!task.sourceMessageId) return;
+    if (task.conversationId && task.conversationId !== activeConversation?.id) {
+      setActiveConvId(task.conversationId);
+    }
+    const targetConv = conversations.find((c) => c.id === task.conversationId) || activeConversation;
+    const msg = targetConv?.messages?.find((m) => m.id === task.sourceMessageId);
+    if (msg) {
+      setActiveThreadMsg(msg);
+      setMobileView('thread');
+    } else {
+      setMobileView('room');
+    }
+    setSelectedDetailTaskId(null);
+  };
+
   return (
     <div
       onTouchStart={handleTouchStart}
@@ -350,6 +442,9 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
             <MosChatMobileTasksTab
               onOpenCreateTaskModal={() => {
                 openCreateTaskModal();
+              }}
+              onSelectTask={(task) => {
+                setSelectedDetailTaskId(task.id);
               }}
             />
           )}
@@ -508,6 +603,41 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         images={streamGallery.images}
         initialIndex={streamGallery.initialIndex}
         onClose={() => setStreamGallery((prev) => ({ ...prev, open: false }))}
+      />
+
+      {/* Task Detail Bottom Sheet (iOS Style) */}
+      <MosChatMobileTaskDetailSheet
+        task={selectedDetailTask}
+        open={selectedDetailTask !== null}
+        onClose={() => setSelectedDetailTaskId(null)}
+        onEditTask={(task) => setEditingTaskId(task.id)}
+        onNegotiateDeadline={(task) => setNegotiatingTaskId(task.id)}
+        onDispatchMission={(task) => setMissionTaskId(task.id)}
+        onGoToSourceMessage={handleGoToSourceMessage}
+      />
+
+      {/* Edit Task Modal */}
+      <MosChatMobileEditTaskModal
+        task={editingTask}
+        open={editingTask !== null}
+        onClose={() => setEditingTaskId(null)}
+        onSave={handleSaveEditedTask}
+      />
+
+      {/* Negotiate Task Deadline Modal */}
+      <MosChatMobileNegotiateTaskModal
+        task={negotiatingTask}
+        open={negotiatingTask !== null}
+        onClose={() => setNegotiatingTaskId(null)}
+        onSubmit={handleSubmitNegotiation}
+      />
+
+      {/* Dispatch to mOS Mission Modal */}
+      <MosChatMobileMissionModal
+        task={missionTask}
+        open={missionTask !== null}
+        onClose={() => setMissionTaskId(null)}
+        onSubmit={handleSubmitMission}
       />
     </div>
   );
