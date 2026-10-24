@@ -171,7 +171,14 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
     const interval = setInterval(() => {
       fetchFeed(true);
     }, 15_000);
-    return () => clearInterval(interval);
+    const handleRefresh = () => {
+      void fetchFeed(true);
+    };
+    window.addEventListener('mos-notifications:refresh', handleRefresh);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('mos-notifications:refresh', handleRefresh);
+    };
   }, [fetchFeed]);
 
   useEffect(() => {
@@ -498,7 +505,12 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
       content={popoverContent}
       trigger="click"
       open={isOpen}
-      onOpenChange={(v) => setIsOpen(v)}
+      onOpenChange={(v) => {
+        setIsOpen(v);
+        if (v) {
+          void fetchFeed(true);
+        }
+      }}
       placement="bottomRight"
       arrow={false}
       overlayClassName="mos-notification-popover"

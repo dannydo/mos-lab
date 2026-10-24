@@ -1016,4 +1016,93 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
       expect(setUnreadSpy).toHaveBeenCalledWith('chat', expect.any(Number));
     });
   });
+
+  it('opens the exact conversation via onOpen without toggling closed when mos-chat:open event is dispatched (MOS-BUG-141)', async () => {
+    const onOpenSpy = vi.fn();
+    const onToggleSpy = vi.fn();
+
+    const mockConvs = [
+      {
+        id: 'dm-pair-1-6',
+        type: 'dm' as const,
+        name: 'Danny Do',
+        memberIds: [1, 6],
+        memberCount: 2,
+        unreadCount: 1,
+        updatedAt: new Date().toISOString(),
+        messages: [
+          {
+            id: 'msg-dm-141',
+            conversationId: 'dm-pair-1-6',
+            senderId: 1,
+            senderName: 'Danny Do',
+            text: '@K kiểm tra thông báo hội thoại nhé!',
+            timeLabel: '16:00',
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      },
+      {
+        id: 'dm-pair-4-13',
+        type: 'dm' as const,
+        name: 'Tâm Nguyễn',
+        memberIds: [4, 13],
+        memberCount: 2,
+        unreadCount: 2,
+        updatedAt: new Date().toISOString(),
+        messages: [
+          {
+            id: 'msg-other-dm',
+            conversationId: 'dm-pair-4-13',
+            senderId: 4,
+            senderName: 'Tâm Nguyễn',
+            text: 'Tin nhắn riêng giữa người khác',
+            timeLabel: '16:01',
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      },
+    ];
+
+    (apiClient.chat.bootstrap as any).mockResolvedValue({
+      unchanged: false,
+      version: 1,
+      conversations: mockConvs,
+      tasks: [],
+      staffDirectory: [
+        { id: 1, displayName: 'Danny Do', role: 'super_admin' },
+        { id: 6, displayName: 'Nguyễn Quang Khải', username: 'khai.nguyen@wingslashes.com', role: 'admin' },
+        { id: 4, displayName: 'Tâm Nguyễn', role: 'admin' },
+        { id: 13, displayName: 'Trúc Nhi', role: 'telesales' },
+      ],
+      accessConfig: { allowAllStaff: true, allowedGroupKeys: [], allowedStaffIds: [] },
+      canAccessChat: true,
+    });
+
+    render(
+      <MosGoogleChatPortal
+        open={false}
+        onOpen={onOpenSpy}
+        onClose={vi.fn()}
+        onToggle={onToggleSpy}
+        currentUser={{ id: 6, displayName: 'Nguyễn Quang Khải', username: 'khai.nguyen@wingslashes.com', role: 'admin' }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(apiClient.chat.bootstrap).toHaveBeenCalled();
+    });
+
+    window.dispatchEvent(
+      new CustomEvent('mos-chat:open', {
+        detail: {
+          conversationId: 'dm-pair-1-6',
+          messageId: 'msg-dm-141',
+        },
+      })
+    );
+
+    expect(onOpenSpy).toHaveBeenCalledTimes(1);
+    expect(onToggleSpy).not.toHaveBeenCalled();
+  });
 });

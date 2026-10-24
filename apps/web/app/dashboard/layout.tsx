@@ -1530,6 +1530,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <ErrorBoundary fallback={null}>
             <MosGoogleChatPortal
               open={isMosChatOpen}
+              onOpen={() => setIsMosChatOpen(true)}
               onClose={() => setIsMosChatOpen(false)}
               onToggle={() => setIsMosChatOpen((prev) => !prev)}
               currentUser={user}

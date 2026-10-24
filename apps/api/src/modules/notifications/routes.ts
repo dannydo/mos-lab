@@ -4,11 +4,15 @@ import {
   MosNotificationFeedResponse,
   MosNotificationItem,
   MarkNotificationReadRequest,
-  MosChatConversation,
-  MosChatUserSidebarPrefs,
-  MosChatTaskItem,
+  isCanonicalSuperAdminIdentity,
 } from '@mos-lab/shared';
-import { isDannyOrSuperAdminUser, loadChatState } from '../chat/routes.js';
+import {
+  filterAndFormatConversationsForUser,
+  filterTasksForUser,
+  isStaffMentionedInChatText,
+  loadChatState,
+  loadStaffDirectoryCached,
+} from '../chat/routes.js';
 
 interface CachedUserNotifications {
   data: MosNotificationFeedResponse;
@@ -17,9 +21,15 @@ interface CachedUserNotifications {
 const userNotificationsCache = new Map<number, CachedUserNotifications>();
 const inFlightNotificationPromises = new Map<number, Promise<MosNotificationFeedResponse>>();
 
-const CHAT_CONVERSATIONS_CONFIG_KEY = 'mos_chat:conversations_v1';
-const CHAT_USER_PREFS_CONFIG_KEY = 'mos_chat:user_prefs_v1';
-const CHAT_TASKS_CONFIG_KEY = 'mos_chat:tasks_v1';
+export function invalidateNotificationsCache(staffId?: number): void {
+  if (typeof staffId === 'number' && Number.isFinite(staffId) && staffId > 0) {
+    userNotificationsCache.delete(staffId);
+    inFlightNotificationPromises.delete(staffId);
+  } else {
+    userNotificationsCache.clear();
+    inFlightNotificationPromises.clear();
+  }
+}
 
 function cleanConversationName(name: string, type?: string): string {
   if (!name) return 'nhóm chat';
@@ -122,7 +132,7 @@ async function saveUserReadState(
   });
 }
 
-async function computeNotificationsFeed(
+export async function computeNotificationsFeed(
   fastify: FastifyInstance,
   user: JwtUserPayload,
   staffId: number,
@@ -271,44 +281,84 @@ async function computeNotificationsFeed(
     fastify.log.warn({ err }, 'Fetch inbox notifications error');
   }
 
-  // 2. mOS Chat Mentions & Unread DMs + Tasks directly from memoryChatCache
+  // 2. mOS Chat Mentions, Unread DMs, Thread Replies & Tasks directly from memoryChatCache
   try {
-    const { conversations: convs, userPrefsByUserKey: allPrefs, tasks: chatTasks } = await loadChatState(fastify);
+    const [{ conversations: rawConvs, userPrefsByUserKey: allPrefs, tasks: chatTasks }, staffDirectory] =
+      await Promise.all([loadChatState(fastify), loadStaffDirectoryCached(fastify)]);
     const userPrefs = allPrefs[`staff_${staffId}`] || allPrefs[String(staffId)] || {};
     const readMessageCountByConv = userPrefs.readMessageCountByConv || {};
+    const mutedIdsSet = new Set(userPrefs.mutedIds || []);
 
-    // Build name tokens for matching mentions: e.g. "Danny Do", "Danny", "danhdo", "danh do"
-    const nameKeywords = [
-      userDisplayName.trim().toLowerCase(),
-      String(user.username || '')
-        .trim()
-        .toLowerCase(),
-    ].filter(Boolean);
+    const directoryStaff = staffDirectory.find((s) => Number(s.id) === staffId);
+    const myStaffIdentity = {
+      id: staffId,
+      username: userStaff?.username || directoryStaff?.username || user.username || '',
+      displayName: userDisplayName || directoryStaff?.displayName || '',
+      email: userStaff?.email || undefined,
+    };
 
-    for (const conv of convs) {
+    // Strict Conversation Privacy Invariant: ONLY evaluate conversations accessible to this user
+    const accessibleConvs = filterAndFormatConversationsForUser(
+      rawConvs || [],
+      user,
+      staffDirectory,
+      userPrefs,
+      allPrefs
+    );
+
+    for (const conv of accessibleConvs) {
+      const convIdStr = String(conv.id || '');
+      if (mutedIdsSet.has(convIdStr)) continue;
+      if (conv.isSelf || convIdStr.startsWith('dm-self-')) continue;
+
+      if (conv.type === 'dm') {
+        const dmParticipantIds = Array.isArray(conv.memberIds) ? conv.memberIds.map(Number) : [];
+        if (dmParticipantIds.length !== 2 || !dmParticipantIds.includes(staffId)) {
+          continue;
+        }
+      }
+
+      const explicitSpaceMemberNums =
+        conv.type === 'space' && Array.isArray(conv.memberIds)
+          ? conv.memberIds.map(Number).filter((n) => Number.isFinite(n) && n > 0)
+          : [];
+      const isExplicitSpaceMember =
+        conv.type !== 'space' || explicitSpaceMemberNums.length === 0 || explicitSpaceMemberNums.includes(staffId);
+
       const msgs = conv.messages || [];
-      const readCount = readMessageCountByConv[conv.id] || 0;
-      if (msgs.length <= readCount) continue;
+      const explicitReadCount = readMessageCountByConv[conv.id];
+      const personalizedUnread = conv.unreadCount || 0;
+      const startIndex =
+        typeof explicitReadCount === 'number'
+          ? Math.min(msgs.length, Math.max(0, explicitReadCount))
+          : conv.type === 'dm' && personalizedUnread > 0
+            ? Math.max(0, msgs.length - personalizedUnread)
+            : msgs.length;
 
-      const unreadMsgs = msgs.slice(readCount);
+      const unreadMsgs = msgs
+        .slice(startIndex)
+        .filter((m) => !m.isDeleted && Number(m.senderId) !== staffId);
       let hasMentionInConv = false;
 
       for (const msg of unreadMsgs) {
-        if (Number(msg.senderId) === staffId) continue;
-        const text = String(msg.text || '').toLowerCase();
-        const isAtAll = text.includes('@all') || text.includes('@channel');
-        const isPersonalMention = nameKeywords.some((kw) => text.includes(`@${kw}`));
+        const mentionMatch = isStaffMentionedInChatText(msg.text, myStaffIdentity, {
+          nicknames: conv.memberNicknames,
+          includeAtAll: isExplicitSpaceMember,
+        });
 
-        if (isAtAll || isPersonalMention) {
+        if (mentionMatch.isPersonalMention || mentionMatch.isAtAll) {
           hasMentionInConv = true;
           const notifId = `chat-mention-${conv.id}-${msg.id}`;
           const targetChannelName = cleanConversationName(conv.name, conv.type);
           items.push({
             id: notifId,
-            title: `[Nhắc tên @] ${msg.senderName || 'Thành viên'} trong ${targetChannelName}`,
-            summary: msg.text || '',
+            title:
+              conv.type === 'dm'
+                ? `[Nhắc tên @] từ ${msg.senderName || conv.name}`
+                : `[Nhắc tên @] ${msg.senderName || 'Thành viên'} trong ${targetChannelName}`,
+            summary: msg.text || (msg.attachments?.length ? '[Hình ảnh đính kèm]' : ''),
             category: 'chat_mention',
-            priority: isPersonalMention ? 'urgent' : 'high',
+            priority: mentionMatch.isPersonalMention || msg.isBuzzed ? 'urgent' : 'high',
             action: {
               type: 'open_chat',
               payload: { conversationId: conv.id, messageId: msg.id },
@@ -316,8 +366,8 @@ async function computeNotificationsFeed(
             badgeText: '@Mention',
             isActionable: true,
             actor: {
-              name: msg.senderName,
-              avatarUrl: msg.senderAvatar || undefined,
+              name: msg.senderName || conv.name,
+              avatarUrl: msg.senderAvatar || conv.avatar || undefined,
             },
             createdAt: msg.createdAt || new Date().toISOString(),
           });
@@ -329,12 +379,13 @@ async function computeNotificationsFeed(
         const lastMsg = unreadMsgs[unreadMsgs.length - 1];
         if (Number(lastMsg.senderId) !== staffId) {
           const notifId = `chat-dm-${conv.id}-${lastMsg.id}`;
+          const senderLabel = lastMsg.senderName || conv.name;
           items.push({
             id: notifId,
-            title: `[Tin nhắn riêng] từ ${conv.name}`,
-            summary: lastMsg.text || '',
+            title: `[Tin nhắn riêng] từ ${senderLabel}`,
+            summary: lastMsg.text || (lastMsg.attachments?.length ? '[Hình ảnh đính kèm]' : ''),
             category: 'chat_mention',
-            priority: 'normal',
+            priority: lastMsg.isBuzzed ? 'urgent' : 'high',
             action: {
               type: 'open_chat',
               payload: { conversationId: conv.id, messageId: lastMsg.id },
@@ -342,20 +393,88 @@ async function computeNotificationsFeed(
             badgeText: `${unreadMsgs.length} tin mới`,
             isActionable: true,
             actor: {
-              name: conv.name,
-              avatarUrl: conv.avatar || undefined,
+              name: senderLabel,
+              avatarUrl: lastMsg.senderAvatar || conv.avatar || undefined,
             },
             createdAt: lastMsg.createdAt || new Date().toISOString(),
           });
         }
       }
+
+      // Inspect unread thread replies across all messages in this accessible conversation
+      for (const msg of msgs) {
+        const threadReplies = msg.thread || [];
+        const unreadThreadReplyCount = msg.unreadThreadReplyCount || 0;
+        if (threadReplies.length === 0 || unreadThreadReplyCount <= 0) continue;
+
+        const threadKey = `${conv.id}::${msg.id}`;
+        const explicitThreadRead =
+          userPrefs.readThreadReplyCountByMsg?.[threadKey] ?? userPrefs.readThreadReplyCountByMsg?.[msg.id];
+        let lastMyReplyIdx = -1;
+        for (let i = 0; i < threadReplies.length; i++) {
+          if (Number(threadReplies[i].senderId) === staffId) {
+            lastMyReplyIdx = i;
+          }
+        }
+        const replyStartIdx =
+          typeof explicitThreadRead === 'number'
+            ? Math.max(explicitThreadRead, lastMyReplyIdx >= 0 ? lastMyReplyIdx + 1 : 0)
+            : lastMyReplyIdx >= 0
+              ? lastMyReplyIdx + 1
+              : 0;
+
+        const unreadReplies = threadReplies
+          .slice(replyStartIdx)
+          .filter((r) => !r.isDeleted && Number(r.senderId) !== staffId && !r.isMissionMilestone);
+        if (unreadReplies.length === 0) continue;
+
+        const lastReply = unreadReplies[unreadReplies.length - 1];
+        const hasPersonalMentionInThread = unreadReplies.some(
+          (r) =>
+            isStaffMentionedInChatText(r.text, myStaffIdentity, {
+              nicknames: conv.memberNicknames,
+              includeAtAll: isExplicitSpaceMember,
+            }).isPersonalMention
+        );
+        const notifId = `chat-thread-${conv.id}-${msg.id}-${lastReply.id}`;
+        const targetChannelName = cleanConversationName(conv.name, conv.type);
+        const replySenderName = lastReply.senderName || conv.name || 'Thành viên';
+
+        items.push({
+          id: notifId,
+          title:
+            conv.type === 'dm'
+              ? `[Phản hồi luồng] từ ${replySenderName}`
+              : hasPersonalMentionInThread
+                ? `[Nhắc tên trong luồng @] ${replySenderName} tại ${targetChannelName}`
+                : `[Phản hồi luồng] ${replySenderName} tại ${targetChannelName}`,
+          summary: lastReply.text || (lastReply.attachments?.length ? '[Hình ảnh đính kèm]' : msg.text || ''),
+          category: 'chat_mention',
+          priority: hasPersonalMentionInThread ? 'urgent' : 'high',
+          action: {
+            type: 'open_chat',
+            payload: {
+              conversationId: conv.id,
+              messageId: lastReply.id,
+              threadRootMessageId: msg.id,
+            },
+          },
+          badgeText: hasPersonalMentionInThread ? '@Mention' : `${unreadThreadReplyCount} phản hồi mới`,
+          isActionable: true,
+          actor: {
+            name: replySenderName,
+            avatarUrl: lastReply.senderAvatar || conv.avatar || undefined,
+          },
+          createdAt: lastReply.createdAt || new Date().toISOString(),
+        });
+      }
     }
 
-    // 3. mOS Chat Tasks & Reminders from cached chat state
-    const myTasks = (chatTasks || []).filter((t) => {
+    // 3. mOS Chat Tasks & Reminders from accessible conversations only
+    const accessibleTasks = filterTasksForUser(chatTasks || [], rawConvs || [], user, staffDirectory);
+    const myTasks = accessibleTasks.filter((t) => {
       if (t.done || t.archived) return false;
       if (Number(t.assigneeId) === staffId) return true;
-      if (isDanny && !t.assigneeId) return true;
       return false;
     });
 
@@ -369,7 +488,12 @@ async function computeNotificationsFeed(
         priority: 'normal',
         action: {
           type: 'open_chat',
-          payload: { openTab: 'tasks', taskId: task.id },
+          payload: {
+            openTab: 'tasks',
+            taskId: task.id,
+            conversationId: task.conversationId,
+            messageId: task.sourceMessageId || undefined,
+          },
         },
         badgeText: 'Nhắc việc',
         isActionable: true,
@@ -391,8 +515,11 @@ async function computeNotificationsFeed(
     }
   }
 
-  // Sort items: urgent first, then by createdAt desc
+  // Sort items: unread first, then by priority (urgent > high > normal > low), then by createdAt desc
   items.sort((a, b) => {
+    const aUnread = a.readAt ? 1 : 0;
+    const bUnread = b.readAt ? 1 : 0;
+    if (aUnread !== bUnread) return aUnread - bUnread;
     const priorityOrder: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
     const pDiff = (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2);
     if (pDiff !== 0) return pDiff;
@@ -414,7 +541,7 @@ export default async function notificationRoutes(fastify: FastifyInstance) {
   fastify.get('/notifications', { preHandler: [requireAuth] }, async (request, reply) => {
     const user = request.user as JwtUserPayload;
     const staffId = Number(user.id);
-    const isDanny = isDannyOrSuperAdminUser(user);
+    const isDanny = isCanonicalSuperAdminIdentity(user);
     const now = Date.now();
 
     // SWR Cache 15s per staffId to completely eliminate redundant DB polling

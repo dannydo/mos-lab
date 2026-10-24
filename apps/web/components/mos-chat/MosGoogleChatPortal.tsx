@@ -202,6 +202,7 @@ export { AI_COPILOT_CONV_ID };
 
 export interface MosGoogleChatPortalProps {
   open: boolean;
+  onOpen?: () => void;
   onClose: () => void;
   onToggle: () => void;
   currentUser?: SafeAny;
@@ -218,6 +219,7 @@ export interface MosGoogleChatPortalProps {
 
 export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   open,
+  onOpen,
   onClose,
   onToggle,
   currentUser,
@@ -256,6 +258,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
   const navigateToMessageRef = useRef<(convId: string, msgId?: string) => void>(() => {});
   const pendingNavRef = useRef<{ convId: string; msgId?: string } | null>(null);
+  const retriedMissingMsgRef = useRef<Set<string>>(new Set());
+  const openRef = useRef<boolean>(open);
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
+
+  const ensurePortalOpen = useCallback(() => {
+    if (onOpen) {
+      onOpen();
+    } else if (!openRef.current) {
+      onToggle();
+    }
+  }, [onOpen, onToggle]);
   const personalLayoutStorageKey = useMemo(() => {
     let resolvedKey = String(currentUser?.id || currentUser?.username || '').trim();
     if (!resolvedKey && typeof window !== 'undefined') {
@@ -1470,7 +1485,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             }
           }
 
-          // Detect new unread buzzed messages or replies for current user (MOS-BUG-131, MOS-BUG-135)
+          // Detect new unread buzzed messages or replies for current user (MOS-BUG-131, MOS-BUG-135, MOS-BUG-141)
           const myId = String(currentUser?.id || '');
           const myStaffId = Number(currentUserStaffMember?.id) || Number(currentUser?.id) || 0;
           const myName = String(
@@ -1479,8 +1494,35 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             .trim()
             .toLowerCase();
 
+          // On initial bootstrap, seed ALL existing message and thread reply IDs across all conversations
+          // so old messages in previously-read spaces NEVER trigger false live alerts when a new message arrives later.
+          if (isInitialBootstrapRef.current) {
+            for (const conv of res.conversations) {
+              for (const m of conv.messages || []) {
+                seenMessageIdsRef.current.add(m.id);
+                if (m.thread && m.thread.length > 0) {
+                  for (const r of m.thread) {
+                    seenMessageIdsRef.current.add(r.id);
+                  }
+                }
+              }
+            }
+          }
+
           for (const conv of res.conversations) {
-            if (conv.hasUnreadBuzz || (conv.unreadCount || 0) > 0) {
+            const convIdStr = String(conv.id || '');
+            if (conv.isSelf || convIdStr.startsWith('dm-self-')) continue;
+            if ((userPrefs.mutedIds || []).includes(conv.id)) continue;
+            if (conv.type === 'dm') {
+              const dmIds = Array.isArray(conv.memberIds) ? conv.memberIds.map(Number) : [];
+              if (myStaffId > 0 && dmIds.length === 2 && !dmIds.includes(myStaffId)) continue;
+            }
+            if (conv.type === 'space' && !isStrictDannySuperAdmin && Array.isArray(conv.memberIds) && conv.memberIds.length > 0) {
+              const mNums = conv.memberIds.map(Number).filter((n) => Number.isFinite(n) && n > 0);
+              if (mNums.length > 0 && myStaffId > 0 && !mNums.includes(myStaffId)) continue;
+            }
+
+            if (conv.hasUnreadBuzz || (conv.unreadCount || 0) > 0 || (conv.unreadThreadCount || 0) > 0) {
               const handleUrgentBuzzItem = (item: MosChatMessage | MosChatThreadReply) => {
                 if (!item.isBuzzed || !item.buzzedAt) return;
                 const buzzKey = `${item.id}-${item.buzzedAt}`;
@@ -1495,10 +1537,6 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   );
                 if (isMine || notifiedBuzzIdsRef.current.has(buzzKey)) return;
 
-                notifiedBuzzIdsRef.current.add(buzzKey);
-                playWebAudioBuzzChime();
-                triggerBuzzVibration();
-
                 const userObj = {
                   id: myStaffId || myId,
                   displayName: currentUserStaffMember?.displayName || currentUser?.displayName,
@@ -1509,6 +1547,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   nicknames: conv.memberNicknames,
                   isDirectMessage: isDirectMsg,
                 });
+
+                notifiedBuzzIdsRef.current.add(buzzKey);
+                playWebAudioBuzzChime();
+                triggerBuzzVibration();
 
                 const senderLabel = item.latestBuzz?.senderName || item.senderName || 'Đồng nghiệp';
                 const convLabel = conv.name ? `[${conv.name}]` : '';
@@ -1579,9 +1621,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          if (!open) {
-                            onToggle();
-                          }
+                          ensurePortalOpen();
                           navigateToMessage(conv.id, item.id);
                           notification.destroy(`buzz-notify-${item.id}`);
                         }}
@@ -1596,9 +1636,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     </div>
                   ),
                   onClick: () => {
-                    if (!open) {
-                      onToggle();
-                    }
+                    ensurePortalOpen();
                     navigateToMessage(conv.id, item.id);
                     notification.destroy(`buzz-notify-${item.id}`);
                   },
@@ -1606,8 +1644,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 });
               };
 
-              // MOS-BUG-139: Detect new messages and trigger Messenger-style tab title & favicon alert + chime
-              const handleIncomingMessageItem = (item: MosChatMessage | MosChatThreadReply) => {
+              // MOS-BUG-139 & MOS-BUG-141: Detect new messages directed at current user and trigger alert + chime + toast
+              const handleIncomingMessageItem = (
+                item: MosChatMessage | MosChatThreadReply,
+                parentMsg?: MosChatMessage
+              ) => {
                 if (isInitialBootstrapRef.current) {
                   seenMessageIdsRef.current.add(item.id);
                   return;
@@ -1626,33 +1667,101 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       .toLowerCase() === myName
                   );
 
-                if (!isMine && !item.isBuzzed) {
-                  tabNotificationManager.triggerAlert({
-                    senderName: item.senderName || 'Đồng nghiệp',
-                    snippet: item.text || '',
-                    conversationName: conv.name,
-                    isDirect: conv.type === 'dm',
+                if (isMine || item.isBuzzed || (item as MosChatThreadReply).isMissionMilestone) return;
+
+                const userObj = {
+                  id: myStaffId || myId,
+                  displayName: currentUserStaffMember?.displayName || currentUser?.displayName,
+                  username: currentUserStaffMember?.username || currentUser?.username,
+                };
+                const isDirectMsg = conv.type === 'dm';
+                const isMentioned = isUserMentionedInText(item.text || '', userObj, {
+                  nicknames: conv.memberNicknames,
+                  isDirectMessage: isDirectMsg,
+                });
+                const isMyThreadReply = Boolean(
+                  parentMsg &&
+                    (Number(parentMsg.senderId) === myStaffId ||
+                      String(parentMsg.senderId) === myId ||
+                      isUserMentionedInText(parentMsg.text || '', userObj, {
+                        nicknames: conv.memberNicknames,
+                        isDirectMessage: false,
+                      }) ||
+                      (parentMsg.thread || []).some(
+                        (r) => r.id !== item.id && (Number(r.senderId) === myStaffId || String(r.senderId) === myId)
+                      ))
+                );
+
+                // In Spaces, if a message tags someone else (has '@') and neither mentions current user nor replies to current user's thread, ignore!
+                const tagsSomeoneElseOnly =
+                  !isDirectMsg && !isMentioned && !isMyThreadReply && /@\S+/.test(item.text || '');
+                if (tagsSomeoneElseOnly) return;
+
+                const isPersonalForMe = isDirectMsg || isMentioned || isMyThreadReply;
+
+                if (isPersonalForMe && typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('mos-notifications:refresh'));
+                }
+
+                tabNotificationManager.triggerAlert({
+                  senderName: item.senderName || 'Đồng nghiệp',
+                  snippet: item.text || '',
+                  conversationName: conv.name,
+                  isDirect: isDirectMsg,
+                });
+
+                if (presence !== 'dnd') {
+                  playMessengerChime();
+                }
+
+                if (typeof document !== 'undefined' && document.hidden) {
+                  showDesktopNotification(
+                    isDirectMsg ? item.senderName || 'mOS Chat' : `${conv.name} · ${item.senderName}`,
+                    {
+                      body: item.text
+                        ? item.text.length > 80
+                          ? `${item.text.slice(0, 80)}...`
+                          : item.text
+                        : 'Đã gửi một tin nhắn',
+                      tag: `mos-msg-${conv.id}`,
+                      conversationId: conv.id,
+                      messageId: item.id,
+                    }
+                  );
+                } else if (
+                  isPersonalForMe &&
+                  (!openRef.current || activeConvIdRef.current !== conv.id || activeSubtab !== 'chat')
+                ) {
+                  const senderLabel = item.senderName || conv.name || 'Đồng nghiệp';
+                  const preview = item.text
+                    ? item.text.length > 90
+                      ? `${item.text.slice(0, 90)}...`
+                      : item.text
+                    : 'Đã gửi một hình ảnh / tin nhắn mới';
+                  const toastTitle = isDirectMsg
+                    ? `💬 Tin nhắn mới từ ${senderLabel}`
+                    : isMentioned
+                      ? `💬 ${senderLabel} đã nhắc tên bạn trong #${conv.name}`
+                      : `💬 ${senderLabel} phản hồi luồng của bạn trong #${conv.name}`;
+                  notification.info({
+                    key: `chat-msg-notify-${item.id}`,
+                    message: <span className="font-semibold text-xs">{toastTitle}</span>,
+                    description: <div className="text-xs line-clamp-2">{preview}</div>,
+                    placement: 'topRight',
+                    duration: 5,
+                    style: {
+                      background: surfaceRaised,
+                      border: `1px solid ${borderColor}`,
+                      color: token.colorText,
+                      borderRadius: 12,
+                      cursor: 'pointer',
+                    },
+                    onClick: () => {
+                      ensurePortalOpen();
+                      navigateToMessageRef.current(conv.id, item.id);
+                      notification.destroy(`chat-msg-notify-${item.id}`);
+                    },
                   });
-
-                  if (presence !== 'dnd') {
-                    playMessengerChime();
-                  }
-
-                  if (typeof document !== 'undefined' && document.hidden) {
-                    showDesktopNotification(
-                      conv.type === 'dm' ? item.senderName || 'mOS Chat' : `${conv.name} · ${item.senderName}`,
-                      {
-                        body: item.text
-                          ? item.text.length > 80
-                            ? `${item.text.slice(0, 80)}...`
-                            : item.text
-                          : 'Đã gửi một tin nhắn',
-                        tag: `mos-msg-${conv.id}`,
-                        conversationId: conv.id,
-                        messageId: item.id,
-                      }
-                    );
-                  }
                 }
               };
 
@@ -1662,7 +1771,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 if (m.thread && m.thread.length > 0) {
                   for (const r of m.thread) {
                     handleUrgentBuzzItem(r);
-                    handleIncomingMessageItem(r);
+                    handleIncomingMessageItem(r, m);
                   }
                 }
               }
@@ -2045,7 +2154,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       }
 
       if (conv.type === 'space') {
-        if (isDannyAccount) return true;
+        if (isStrictDannySuperAdmin) return true;
         if (Array.isArray(conv.memberIds) && conv.memberIds.length > 0) {
           const nums = conv.memberIds.map(Number).filter((n) => Number.isFinite(n) && n > 0);
           if (nums.length > 0) {
@@ -2057,7 +2166,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
       return true;
     },
-    [canUseAiCopilot, currentUserStaffMember.id, currentUser?.id, isDannyAccount]
+    [canUseAiCopilot, currentUserStaffMember.id, currentUser?.id, isStrictDannySuperAdmin]
   );
 
   const visibleConversations = useMemo(
@@ -2084,13 +2193,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       const msgs = conv.messages || [];
       if (msgs.length === 0) return 0;
 
+      const unreadThreadTotal = conv.unreadThreadCount || 0;
       const readCount = userPrefs.readMessageCountByConv?.[conv.id];
       if (typeof readCount === 'number') {
         const unreadMsgs = msgs.slice(readCount).filter((m) => {
           const senderNum = Number(m.senderId);
           return senderNum !== myStaffId;
         });
-        return unreadMsgs.length;
+        return unreadMsgs.length + unreadThreadTotal;
       }
 
       // If readCount is undefined:
@@ -2104,10 +2214,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           }
           unread++;
         }
-        return Math.max(conv.unreadCount || 0, unread);
+        return Math.max(conv.unreadCount || 0, unread) + unreadThreadTotal;
       }
 
-      return conv.unreadCount || 0;
+      return (conv.unreadCount || 0) + unreadThreadTotal;
     },
     [
       userPrefs.manualUnreadIds,
@@ -2149,9 +2259,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       }>;
       const detail = customEv.detail || {};
 
-      if (!open) {
-        onToggle();
-      }
+      ensurePortalOpen();
 
       if (detail.openTab) {
         setActiveSubtab(detail.openTab);
@@ -4519,11 +4627,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         return;
       }
 
-      if (isTabVisible) {
-        const msgs = targetConv.messages || [];
-        const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : undefined;
-        markConversationReadOptimisticAndSync(convId, msgs.length, lastMsg?.id);
-      }
+      const msgs = targetConv.messages || [];
+      const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : undefined;
+      markConversationReadOptimisticAndSync(convId, msgs.length, lastMsg?.id);
 
       if (!msgId) {
         scrollToChatBottom('main', 'auto');
@@ -4542,6 +4648,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             break;
           }
         }
+      }
+
+      const retryKey = `${convId}:${msgId}`;
+      if (!rootMsg && !retriedMissingMsgRef.current.has(retryKey)) {
+        retriedMissingMsgRef.current.add(retryKey);
+        pendingNavRef.current = { convId, msgId };
+        void fetchBootstrap(true);
+        return;
       }
 
       if (rootMsg) {

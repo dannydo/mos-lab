@@ -44,8 +44,11 @@ import {
   UpdateMosChatTaskRequest,
   UploadMosChatImageRequest,
   UploadMosChatImageResponse,
+  isCanonicalSuperAdminIdentity,
+  removeVietnameseTones,
 } from '@mos-lab/shared';
 import { requireAuth, JwtUserPayload } from '../../middlewares/auth.js';
+import { invalidateNotificationsCache } from '../notifications/routes.js';
 import { ChatMissionBridgeService } from './chat-mission-bridge.service.js';
 import {
   loadOrMigrateRelationalChatData,
@@ -626,6 +629,131 @@ function resolveDmParticipantIds(conv: MosChatConversation, staffDirectory: MosC
  *   cannot fetch it, cannot read/post messages, and cannot see read receipts.
  * - Public spaces (no memberIds specified) remain open to all active staff.
  */
+const COMMON_VI_SURNAMES_NORM = new Set([
+  'nguyen',
+  'tran',
+  'le',
+  'pham',
+  'hoang',
+  'huynh',
+  'phan',
+  'vu',
+  'vo',
+  'dang',
+  'bui',
+  'do',
+  'ho',
+  'ngo',
+  'duong',
+  'ly',
+]);
+
+/**
+ * Checks whether a chat message or thread reply text mentions a given staff member
+ * (including 1-character Space nicknames such as `@K`, full display name, short given name,
+ * unaccented Vietnamese name, username/email handle) or `@All` / `@channel` / `@mọi người`.
+ */
+export function isStaffMentionedInChatText(
+  text: string | undefined | null,
+  staff:
+    | {
+        id?: number | string | null;
+        username?: string | null;
+        displayName?: string | null;
+        email?: string | null;
+      }
+    | undefined
+    | null,
+  options?: {
+    nicknames?: Record<string, string>;
+    includeAtAll?: boolean;
+  }
+): { isPersonalMention: boolean; isAtAll: boolean } {
+  const rawText = String(text || '');
+  if (!rawText.trim()) {
+    return { isPersonalMention: false, isAtAll: false };
+  }
+
+  const normText = removeVietnameseTones(rawText);
+  const isAtAll =
+    options?.includeAtAll === false
+      ? false
+      : /(?:^|[\s([{"'])@\s*(?:all|channel|moi\s+nguoi)(?=$|\b|[\s.,!?;:)\]}"'])/i.test(normText);
+
+  if (!staff) {
+    return { isPersonalMention: false, isAtAll };
+  }
+
+  const candidates = new Set<string>();
+  const addCandidate = (token: string | undefined | null, allowSingleChar = false) => {
+    const cleaned = removeVietnameseTones(String(token || '').trim().toLowerCase());
+    if (!cleaned) return;
+    if (allowSingleChar ? cleaned.length >= 1 : cleaned.length >= 2) {
+      candidates.add(cleaned);
+    }
+  };
+
+  // 1. Space nickname (supports 1-char nicknames like 'K' in Core Team)
+  if (staff.id != null && options?.nicknames) {
+    const nick = options.nicknames[String(staff.id)];
+    if (nick && nick.trim()) {
+      addCandidate(nick, true);
+    }
+  }
+
+  // 2. Display name tokens (full name, last 2 words, given name)
+  const displayName = String(staff.displayName || '').trim();
+  if (displayName) {
+    addCandidate(displayName);
+    const words = displayName.split(/\s+/).filter(Boolean);
+    if (words.length >= 2) {
+      addCandidate(words.slice(-2).join(' '));
+      const givenName = words[words.length - 1];
+      const givenNorm = removeVietnameseTones(givenName.toLowerCase());
+      if (givenNorm.length >= 2 && !COMMON_VI_SURNAMES_NORM.has(givenNorm)) {
+        addCandidate(givenName);
+      }
+      // Support 2-word names where first word is given name (e.g. "Danny Do")
+      if (words.length === 2) {
+        const firstWord = words[0];
+        const firstNorm = removeVietnameseTones(firstWord.toLowerCase());
+        if (firstNorm.length >= 2 && !COMMON_VI_SURNAMES_NORM.has(firstNorm)) {
+          addCandidate(firstWord);
+        }
+      }
+    }
+  }
+
+  // 3. Username & email handles
+  for (const rawIdent of [staff.username, staff.email]) {
+    const ident = String(rawIdent || '')
+      .trim()
+      .toLowerCase();
+    if (!ident) continue;
+    addCandidate(ident);
+    const localPart = ident.split('@')[0];
+    if (localPart && localPart.length >= 2) {
+      addCandidate(localPart);
+      const firstSegment = localPart.split(/[._-]/)[0];
+      if (firstSegment && firstSegment.length >= 3 && !COMMON_VI_SURNAMES_NORM.has(firstSegment)) {
+        addCandidate(firstSegment);
+      }
+    }
+  }
+
+  let isPersonalMention = false;
+  for (const cand of candidates) {
+    const escaped = cand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(?:^|[\\s([{"'])@\\s*${escaped}(?=$|\\b|[\\s.,!?;:)\\]}"'])`, 'i');
+    if (regex.test(normText)) {
+      isPersonalMention = true;
+      break;
+    }
+  }
+
+  return { isPersonalMention, isAtAll };
+}
+
 export function canUserAccessConversation(
   conv: MosChatConversation,
   user: JwtUserPayload | undefined,
@@ -642,7 +770,7 @@ export function canUserAccessConversation(
     return myStaffId > 0 && dmIds.length === 2 && dmIds.includes(myStaffId);
   }
   if (conv.type === 'space') {
-    if (isDannyOrSuperAdminUser(user)) return true;
+    if (isCanonicalSuperAdminIdentity(user || {})) return true;
     if (Array.isArray(conv.memberIds) && conv.memberIds.length > 0) {
       const memberNums = conv.memberIds.map(Number).filter((n) => Number.isFinite(n) && n > 0);
       if (memberNums.length > 0) {
@@ -950,11 +1078,22 @@ export function computeUnreadThreadReplyCountForUser(
   const isParentMine =
     Number(msg.senderId) === myStaffId ||
     Boolean(myStaff?.displayName && msg.senderName?.trim().toLowerCase() === myStaff.displayName.trim().toLowerCase());
-  if (isParentMine || conv.type === 'dm') {
+  const isParentMentioningMe = isStaffMentionedInChatText(msg.text, myStaff, {
+    nicknames: conv.memberNicknames,
+    includeAtAll: false,
+  }).isPersonalMention;
+  if (isParentMine || conv.type === 'dm' || isParentMentioningMe) {
     return replies.filter((r) => !r.isDeleted && !isReplyByMe(r) && !r.isMissionMilestone).length;
   }
 
-  return 0;
+  return replies.filter((r) => {
+    if (r.isDeleted || isReplyByMe(r) || r.isMissionMilestone) return false;
+    const mentionRes = isStaffMentionedInChatText(r.text, myStaff, {
+      nicknames: conv.memberNicknames,
+      includeAtAll: true,
+    });
+    return mentionRes.isPersonalMention || mentionRes.isAtAll;
+  }).length;
 }
 
 /**
@@ -1087,7 +1226,7 @@ export function formatConversationForUser(
   };
 }
 
-function filterAndFormatConversationsForUser(
+export function filterAndFormatConversationsForUser(
   conversations: MosChatConversation[],
   user: JwtUserPayload | undefined,
   staffDirectory: MosChatStaffMember[],
@@ -1113,7 +1252,7 @@ export function filterTasksForUser(
     if (t.conversationId === 'dm-tuyetnhi' || t.conversationId === 'dm-hamy') return false;
     const conv = convMap.get(t.conversationId);
     if (!conv) {
-      return isDannyOrSuperAdminUser(user);
+      return isCanonicalSuperAdminIdentity(user || {});
     }
     return canUserAccessConversation(conv, user, staffDirectory);
   });
@@ -1838,6 +1977,7 @@ async function saveUserSidebarPrefs(
     memoryChatCache.lastSyncedFromDbAt = nextVersion;
   }
   const snapshot = { ...state.userPrefsByUserKey };
+  invalidateNotificationsCache();
 
   // Debounce the heavy JSON crmConfig persist, and run relational DB sync asynchronously without blocking request
   scheduleUserPrefsPersist(fastify, snapshot);
@@ -1882,6 +2022,7 @@ async function saveConversations(fastify: FastifyInstance, conversations: MosCha
     memoryChatCache.version = nextVersion;
     memoryChatCache.lastSyncedFromDbAt = nextVersion;
   }
+  invalidateNotificationsCache();
   writeChain = writeChain
     .then(async () => {
       await Promise.all([
@@ -1906,6 +2047,7 @@ async function saveTasks(fastify: FastifyInstance, tasks: MosChatTaskItem[]) {
     memoryChatCache.version = nextVersion;
     memoryChatCache.lastSyncedFromDbAt = nextVersion;
   }
+  invalidateNotificationsCache();
   writeChain = writeChain
     .then(async () => {
       await Promise.all([
@@ -1922,7 +2064,7 @@ async function saveTasks(fastify: FastifyInstance, tasks: MosChatTaskItem[]) {
     });
 }
 
-async function loadStaffDirectoryCached(fastify: FastifyInstance): Promise<MosChatStaffMember[]> {
+export async function loadStaffDirectoryCached(fastify: FastifyInstance): Promise<MosChatStaffMember[]> {
   const nowMs = Date.now();
   if (memoryStaffCache && nowMs - memoryStaffCache.fetchedAt < STAFF_DIRECTORY_CACHE_TTL_MS) {
     return memoryStaffCache.staffDirectory;
