@@ -451,6 +451,15 @@ export interface CreateMosChatConversationRequest {
   memberIds?: number[];
   isSelf?: boolean;
   subtitle?: string;
+  avatar?: string;
+  color?: string;
+}
+
+export interface UpdateMosChatSpaceConfigRequest {
+  name?: string;
+  subtitle?: string;
+  avatar?: string;
+  color?: string;
 }
 
 export interface AddMosChatMemberRequest {

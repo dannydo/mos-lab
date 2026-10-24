@@ -36,6 +36,7 @@ import type {
   TogglePinConversationResponse,
   UpdateMosChatAccessConfigRequest,
   UpdateMosChatNicknameRequest,
+  UpdateMosChatSpaceConfigRequest,
   UpdateMosChatTaskRequest,
   UploadMosChatImageRequest,
   UploadMosChatImageResponse,
@@ -216,6 +217,14 @@ export const chatApi = {
       payload: CreateMosChatConversationRequest
     ): Promise<{ success: boolean; conversation: MosChatConversation }> => {
       const res = await api.post('/chat/conversations', payload);
+      invalidateApiGetCache(['/chat/bootstrap']);
+      return res.data;
+    },
+    updateSpaceConfig: async (
+      conversationId: string,
+      payload: UpdateMosChatSpaceConfigRequest
+    ): Promise<{ success: boolean; conversation: MosChatConversation }> => {
+      const res = await api.patch(`/chat/conversations/${encodeURIComponent(conversationId)}`, payload);
       invalidateApiGetCache(['/chat/bootstrap']);
       return res.data;
     },

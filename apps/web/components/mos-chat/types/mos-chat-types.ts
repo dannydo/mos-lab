@@ -38,6 +38,7 @@ export interface MosChatContextValue {
   togglePinConversation: (id: string) => Promise<void>;
   markConversationAsRead: (id: string) => Promise<void>;
   startDirectMessage: (staff: MosChatStaffMember) => Promise<string | null>;
+  updateSpaceConfig?: (id: string, payload: { name?: string; subtitle?: string; avatar?: string; color?: string }) => Promise<boolean>;
 
   // Messages
   messages: MosChatMessage[];

@@ -58,6 +58,7 @@ import {
   Trash2,
   Volume2,
   VolumeX,
+  Settings,
   Copy,
   Users,
   UserMinus,
@@ -170,8 +171,11 @@ import {
   STAFF_DIRECTORY_CACHE_KEY,
   WINGS_SIGNATURE_EMOJIS,
   getInitialStaffDirectory,
+  isSpaceEmoji,
   type SpaceDepartmentOrTeamGroup,
 } from './constants/chat-constants';
+import { MosChatSpaceEmojiColorPicker } from './MosChatSpaceEmojiColorPicker';
+import { MosChatSpaceConfigModal } from './MosChatSpaceConfigModal';
 import {
   buildMaiUrgentVoiceAnnouncement,
   cleanTextForUrgentVoiceAnnouncement,
@@ -1095,6 +1099,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [newRoomType, setNewRoomType] = useState<'space' | 'dm'>('space');
   const [newRoomName, setNewRoomName] = useState('');
   const [newRoomSubtitle, setNewRoomSubtitle] = useState('');
+  const [newRoomEmoji, setNewRoomEmoji] = useState('');
+  const [newRoomColor, setNewRoomColor] = useState('#1a73e8');
   const [selectedMemberIds, setSelectedMemberIds] = useState<number[]>([]);
   const [roomSearchQuery, setRoomSearchQuery] = useState('');
   const [roomGroupFilter, setRoomGroupFilter] = useState<string>('ALL');
@@ -1102,6 +1108,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   // Space Members Management Modal
   const [spaceMembersModalOpen, setSpaceMembersModalOpen] = useState(false);
   const [addMemberSelectedStaffId, setAddMemberSelectedStaffId] = useState<number | null>(null);
+
+  // Space Settings / Configuration Modal (MOS-BUG-140)
+  const [spaceConfigModalOpen, setSpaceConfigModalOpen] = useState(false);
 
   // Personal Sidebar Customization (Google Chat Workspace style - per individual user)
   const userSidebarPrefsStorageKey = useMemo(() => {
@@ -5321,9 +5330,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       antdMessage.warning('Vui lòng nhập tên Không gian (Space)');
       return;
     }
+    const emoji = newRoomEmoji.trim();
+    const color = newRoomColor.trim() || '#1a73e8';
     setNewRoomModalOpen(false);
     setNewRoomName('');
     setNewRoomSubtitle('');
+    setNewRoomEmoji('');
+    setNewRoomColor('#1a73e8');
     const memberIds = [...selectedMemberIds];
     setSelectedMemberIds([]);
     try {
@@ -5331,6 +5344,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         type: 'space',
         name: cleanName,
         subtitle: newRoomSubtitle.trim() || undefined,
+        avatar: emoji || undefined,
+        color,
         memberIds,
       });
       if (res?.conversation) {
@@ -5341,7 +5356,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         notifyLivePeers();
       }
     } catch (_) {
-      antdMessage.error('Không thể tạo Không gian');
+      antdMessage.error('Không thể tạo Không gian làm việc');
     }
   };
 
@@ -10056,6 +10071,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                     <button
                                       type="button"
                                       onClick={() => {
+                                        setOpenConvMenuId(null);
+                                        setActiveConvId(conv.id);
+                                        setSpaceConfigModalOpen(true);
+                                      }}
+                                      className="w-full px-2.5 py-1.5 flex items-center gap-2 rounded-md hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer text-left text-blue-500 font-semibold"
+                                    >
+                                      <Settings size={13} />
+                                      <span>Cài đặt & Cấu hình Space...</span>
+                                    </button>
+                                  )}
+
+                                  {isSpace && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
                                         void handleLeaveOrJoinSpace(conv);
                                         setOpenConvMenuId(null);
                                       }}
@@ -10180,10 +10210,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                   >
                                     {isSpace ? (
                                       <div
-                                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-base"
                                         style={{ background: `${conv.color}22`, color: conv.color }}
                                       >
-                                        <Hash size={16} />
+                                        {conv.avatar && isSpaceEmoji(conv.avatar) ? (
+                                          <span className="select-none leading-none">{conv.avatar}</span>
+                                        ) : (
+                                          <Hash size={16} />
+                                        )}
                                       </div>
                                     ) : (
                                       renderUserAvatarNode({
@@ -10559,15 +10593,25 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   ) : (
                     <>
                       {activeConversation?.type === 'space' ? (
-                        <div
-                          className="w-8 h-8 rounded-lg flex items-center justify-center font-extrabold text-xs shrink-0"
-                          style={{
-                            background: `${activeConversation?.color || '#10b981'}24`,
-                            color: activeConversation?.color || '#10b981',
-                          }}
-                        >
-                          <Hash size={16} />
-                        </div>
+                        <Tooltip title="Cài đặt & Cấu hình Không gian (Tên, Emoji, Màu sắc)">
+                          <div
+                            onClick={() => setSpaceConfigModalOpen(true)}
+                            role="button"
+                            tabIndex={0}
+                            aria-label="Cài đặt Không gian"
+                            className="w-8 h-8 rounded-lg flex items-center justify-center font-extrabold text-base shrink-0 cursor-pointer hover:scale-105 transition-transform"
+                            style={{
+                              background: `${activeConversation?.color || '#10b981'}24`,
+                              color: activeConversation?.color || '#10b981',
+                            }}
+                          >
+                            {activeConversation.avatar && isSpaceEmoji(activeConversation.avatar) ? (
+                              <span className="select-none leading-none">{activeConversation.avatar}</span>
+                            ) : (
+                              <Hash size={16} />
+                            )}
+                          </div>
+                        </Tooltip>
                       ) : (
                         renderUserAvatarNode({
                           staffId: activeConversation?.isSelf
@@ -10629,6 +10673,23 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               }}
                             >
                               <Users size={13} />
+                            </button>
+                          </Tooltip>
+                        )}
+                        {activeConversation?.type === 'space' && (
+                          <Tooltip title="Cài đặt & Cấu hình Không gian (Tên, Emoji, Màu sắc)">
+                            <button
+                              type="button"
+                              aria-label="Cài đặt Không gian"
+                              onClick={() => setSpaceConfigModalOpen(true)}
+                              className="inline-flex items-center justify-center w-6 h-6 rounded-full transition-colors cursor-pointer hover:opacity-90 ml-0.5 shrink-0"
+                              style={{
+                                background: 'rgba(59, 130, 246, 0.15)',
+                                color: '#3b82f6',
+                                border: '1px solid rgba(59, 130, 246, 0.25)',
+                              }}
+                            >
+                              <Settings size={13} />
                             </button>
                           </Tooltip>
                         )}
@@ -15899,6 +15960,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     setRoomSearchQuery('');
                     setRoomGroupFilter('ALL');
                     setSelectedMemberIds([]);
+                    setNewRoomEmoji('');
+                    setNewRoomColor('#1a73e8');
                   }}
                   className="px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer"
                   style={{ background: surfaceRaised, border: `1px solid ${borderColor}`, color: token.colorText }}
@@ -16072,6 +16135,20 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           </div>
         ) : (
           <div className="space-y-3 py-2">
+            <div>
+              <div className="text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">
+                Biểu tượng Emoji & Màu sắc Space
+              </div>
+              <MosChatSpaceEmojiColorPicker
+                selectedEmoji={newRoomEmoji}
+                selectedColor={newRoomColor}
+                spaceName={newRoomName}
+                onEmojiChange={setNewRoomEmoji}
+                onColorChange={setNewRoomColor}
+                size="large"
+              />
+            </div>
+
             <div>
               <div className="text-[11px] font-bold text-slate-400 mb-1">Tên Không gian (Space) *</div>
               <Input
@@ -16507,6 +16584,20 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           </div>
         </div>
       </Modal>
+
+      {/* ================= MODAL: SPACE CONFIGURATION & EMOJI SELECTION (MOS-BUG-140) ================= */}
+      <MosChatSpaceConfigModal
+        open={spaceConfigModalOpen}
+        conversation={activeConversation}
+        onClose={() => setSpaceConfigModalOpen(false)}
+        onUpdated={(updatedConv) => {
+          setConversations((prev) =>
+            prev.map((c) => (c.id === updatedConv.id ? { ...c, ...updatedConv } : c))
+          );
+          notifyLivePeers();
+        }}
+        onOpenMembersModal={() => setSpaceMembersModalOpen(true)}
+      />
 
       {/* ================= MODAL: EDIT MEMBER NICKNAME IN GROUP (PER-SPACE NICKNAMES) ================= */}
       <Modal
