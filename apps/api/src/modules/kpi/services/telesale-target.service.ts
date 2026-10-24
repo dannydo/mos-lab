@@ -1966,6 +1966,7 @@ export class TelesaleTargetService {
             FROM \`order\`
             WHERE user_id IN (${uniqueCustomerIds.join(',')})
               AND order_state = 'Completed'
+              AND date_created >= DATE_SUB('${startDateTimeStr}', INTERVAL 180 DAY)
             ORDER BY user_id, date_created DESC
           `;
           const prevRows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(prevOrdersSql).catch(() => []);

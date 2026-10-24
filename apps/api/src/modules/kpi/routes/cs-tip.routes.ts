@@ -273,65 +273,100 @@ export async function registerCsTipRoutes(fastify: FastifyInstance): Promise<voi
     `;
 
     try {
-      const [summaryRows, storeRows, countRows, recordsRows] = await Promise.all([
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(summarySql, ...dateQueryParams, ...storeQueryParams),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(storeBreakdownSql, ...dateQueryParams, ...storeQueryParams),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          countSql,
-          ...dateQueryParams,
-          ...storeQueryParams,
-          ...recordQueryParams
-        ),
-        fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-          recordsSql,
-          ...dateQueryParams,
-          ...storeQueryParams,
-          ...recordQueryParams,
-          limit,
-          offset
-        ),
-      ]);
+      const metaCacheKey = `kpi:cs-tip:meta:${dateFrom}:${dateTo}:${storeId || 'ALL'}`;
+      const cachedMeta = fastify.cache?.get<{ summary: CsTipSummary; storeBreakdown: CsTipStoreBreakdown[] }>(
+        metaCacheKey
+      );
 
-      const rawSummary = summaryRows[0] || {};
-      const totalVisits = Number(rawSummary.totalVisits || 0);
-      const totalTippedVisits = Number(rawSummary.totalTippedVisits || 0);
-      const totalCustomerTip = Number(rawSummary.totalCustomerTip || 0);
+      let summary: CsTipSummary;
+      let storeBreakdown: CsTipStoreBreakdown[];
+      let countRows: SafeAny[];
+      let recordsRows: SafeAny[];
 
-      const locaVisits = Number(rawSummary.locaVisits || 0);
-      const locaTippedVisits = Number(rawSummary.locaTippedVisits || 0);
-      const locaCustomerTip = Number(rawSummary.locaCustomerTip || 0);
+      if (cachedMeta) {
+        summary = cachedMeta.summary;
+        storeBreakdown = cachedMeta.storeBreakdown;
+        [countRows, recordsRows] = await Promise.all([
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+            countSql,
+            ...dateQueryParams,
+            ...storeQueryParams,
+            ...recordQueryParams
+          ),
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+            recordsSql,
+            ...dateQueryParams,
+            ...storeQueryParams,
+            ...recordQueryParams,
+            limit,
+            offset
+          ),
+        ]);
+      } else {
+        const [summaryRows, storeRows, countRes, recordsRes] = await Promise.all([
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(summarySql, ...dateQueryParams, ...storeQueryParams),
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(storeBreakdownSql, ...dateQueryParams, ...storeQueryParams),
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+            countSql,
+            ...dateQueryParams,
+            ...storeQueryParams,
+            ...recordQueryParams
+          ),
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+            recordsSql,
+            ...dateQueryParams,
+            ...storeQueryParams,
+            ...recordQueryParams,
+            limit,
+            offset
+          ),
+        ]);
+        countRows = countRes;
+        recordsRows = recordsRes;
 
-      const singleVisits = Number(rawSummary.singleVisits || 0);
-      const singleTippedVisits = Number(rawSummary.singleTippedVisits || 0);
-      const singleCustomerTip = Number(rawSummary.singleCustomerTip || 0);
+        const rawSummary = summaryRows[0] || {};
+        const totalVisits = Number(rawSummary.totalVisits || 0);
+        const totalTippedVisits = Number(rawSummary.totalTippedVisits || 0);
+        const totalCustomerTip = Number(rawSummary.totalCustomerTip || 0);
 
-      const summary: CsTipSummary = {
-        csBonusRatePercent: 3,
-        total: calculateGroupMetrics(totalVisits, totalTippedVisits, totalCustomerTip, totalCustomerTip),
-        loca: calculateGroupMetrics(locaVisits, locaTippedVisits, locaCustomerTip, totalCustomerTip),
-        single: calculateGroupMetrics(singleVisits, singleTippedVisits, singleCustomerTip, totalCustomerTip),
-      };
+        const locaVisits = Number(rawSummary.locaVisits || 0);
+        const locaTippedVisits = Number(rawSummary.locaTippedVisits || 0);
+        const locaCustomerTip = Number(rawSummary.locaCustomerTip || 0);
 
-      const storeBreakdown: CsTipStoreBreakdown[] = storeRows.map((row) => {
-        const rowTotalTip = Math.round(Number(row.totalCustomerTip || 0));
-        const rowLocaTip = Math.round(Number(row.locaCustomerTip || 0));
-        const rowSingleTip = Math.round(Number(row.singleCustomerTip || 0));
+        const singleVisits = Number(rawSummary.singleVisits || 0);
+        const singleTippedVisits = Number(rawSummary.singleTippedVisits || 0);
+        const singleCustomerTip = Number(rawSummary.singleCustomerTip || 0);
 
-        return {
-          storeKey: String(row.storeKey || 'DT').toUpperCase(),
-          storeName: String(row.storeName || 'Đề Thám'),
-          totalVisits: Number(row.totalVisits || 0),
-          totalTippedVisits: Number(row.totalTippedVisits || 0),
-          totalCustomerTip: rowTotalTip,
-          totalCsTipBonus: Math.round(rowTotalTip * 0.03),
-          locaVisits: Number(row.locaVisits || 0),
-          locaCustomerTip: rowLocaTip,
-          locaCsTipBonus: Math.round(rowLocaTip * 0.03),
-          singleVisits: Number(row.singleVisits || 0),
-          singleCustomerTip: rowSingleTip,
-          singleCsTipBonus: Math.round(rowSingleTip * 0.03),
+        summary = {
+          csBonusRatePercent: 3,
+          total: calculateGroupMetrics(totalVisits, totalTippedVisits, totalCustomerTip, totalCustomerTip),
+          loca: calculateGroupMetrics(locaVisits, locaTippedVisits, locaCustomerTip, totalCustomerTip),
+          single: calculateGroupMetrics(singleVisits, singleTippedVisits, singleCustomerTip, totalCustomerTip),
         };
-      });
+
+        storeBreakdown = storeRows.map((row) => {
+          const rowTotalTip = Math.round(Number(row.totalCustomerTip || 0));
+          const rowLocaTip = Math.round(Number(row.locaCustomerTip || 0));
+          const rowSingleTip = Math.round(Number(row.singleCustomerTip || 0));
+
+          return {
+            storeKey: String(row.storeKey || 'DT').toUpperCase(),
+            storeName: String(row.storeName || 'Đề Thám'),
+            totalVisits: Number(row.totalVisits || 0),
+            totalTippedVisits: Number(row.totalTippedVisits || 0),
+            totalCustomerTip: rowTotalTip,
+            totalCsTipBonus: Math.round(rowTotalTip * 0.03),
+            locaVisits: Number(row.locaVisits || 0),
+            locaCustomerTip: rowLocaTip,
+            locaCsTipBonus: Math.round(rowLocaTip * 0.03),
+            singleVisits: Number(row.singleVisits || 0),
+            singleCustomerTip: rowSingleTip,
+            singleCsTipBonus: Math.round(rowSingleTip * 0.03),
+          };
+        });
+
+        fastify.cache?.set(metaCacheKey, { summary, storeBreakdown }, 180_000);
+      }
 
       const totalRecords = Number(countRows[0]?.totalCount || 0);
       const records: CsTipRecord[] = recordsRows.map((r) => {
