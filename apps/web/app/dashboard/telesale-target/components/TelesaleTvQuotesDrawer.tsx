@@ -40,6 +40,7 @@ import {
   TelesaleTvPersonaDto,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../../lib/api-client';
+import { resolveApiBaseUrl } from '../../../../lib/api-base-url';
 import { AdaptiveDrawer } from '../../../../components/ui';
 import { useTheme } from '../../../../context/ThemeContext';
 
@@ -166,6 +167,7 @@ export const TelesaleTvQuotesDrawer: React.FC<TelesaleTvQuotesDrawerProps> = ({
   const [playingQuoteId, setPlayingQuoteId] = useState<string | null>(null);
   const [audioLoading, setAudioLoading] = useState(false);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const currentBlobUrlRef = useRef<string | null>(null);
 
   // Form Modal State (Add / Edit)
   const [formModalOpen, setFormModalOpen] = useState(false);
@@ -193,6 +195,9 @@ export const TelesaleTvQuotesDrawer: React.FC<TelesaleTvQuotesDrawerProps> = ({
     } else {
       stopAudio();
     }
+    return () => {
+      stopAudio();
+    };
   }, [open]);
 
   // Stop currently playing preview audio
@@ -201,6 +206,12 @@ export const TelesaleTvQuotesDrawer: React.FC<TelesaleTvQuotesDrawerProps> = ({
       currentAudioRef.current.pause();
       currentAudioRef.current.currentTime = 0;
       currentAudioRef.current = null;
+    }
+    if (currentBlobUrlRef.current) {
+      try {
+        URL.revokeObjectURL(currentBlobUrlRef.current);
+      } catch {}
+      currentBlobUrlRef.current = null;
     }
     setPlayingQuoteId(null);
     setAudioLoading(false);
@@ -237,8 +248,24 @@ export const TelesaleTvQuotesDrawer: React.FC<TelesaleTvQuotesDrawerProps> = ({
         pitch: p.pitch,
       });
 
-      const audioUrl = `/api/kpi/telesale-target/live-celebration-audio?${params.toString()}`;
-      const audio = new Audio(audioUrl);
+      const baseUrl = resolveApiBaseUrl();
+      const audioUrl = `${baseUrl}/kpi/telesale-target/live-celebration-audio?${params.toString()}`;
+
+      // Fetch via CORS as blob to avoid Chrome ORB (Opaque Response Blocking)
+      const res = await fetch(audioUrl, {
+        mode: 'cors',
+        signal: AbortSignal.timeout(25000),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Audio fetch failed: ${res.status}`);
+      }
+
+      const audioBlob = await res.blob();
+      const blobUrl = URL.createObjectURL(audioBlob);
+      currentBlobUrlRef.current = blobUrl;
+
+      const audio = new Audio(blobUrl);
       currentAudioRef.current = audio;
 
       audio.oncanplaythrough = () => {
@@ -246,21 +273,19 @@ export const TelesaleTvQuotesDrawer: React.FC<TelesaleTvQuotesDrawerProps> = ({
       };
 
       audio.onended = () => {
-        setPlayingQuoteId(null);
-        currentAudioRef.current = null;
+        stopAudio();
       };
 
       audio.onerror = () => {
         message.warning('Không thể phát âm thanh nghe thử (mạng hoặc hệ thống TTS bận)');
-        setPlayingQuoteId(null);
-        setAudioLoading(false);
-        currentAudioRef.current = null;
+        stopAudio();
       };
 
       await audio.play();
-    } catch (e: any) {
-      setPlayingQuoteId(null);
       setAudioLoading(false);
+    } catch (e: any) {
+      message.warning('Không thể phát âm thanh nghe thử (mạng hoặc hệ thống TTS bận)');
+      stopAudio();
     }
   };
 

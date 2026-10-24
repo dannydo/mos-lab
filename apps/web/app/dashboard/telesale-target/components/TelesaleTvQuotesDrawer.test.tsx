@@ -81,4 +81,51 @@ describe('TelesaleTvQuotesDrawer', () => {
     render(<TelesaleTvQuotesDrawer open={false} onClose={vi.fn()} />);
     expect(apiClient.telesaleTarget.getCelebrationQuotes).not.toHaveBeenCalled();
   });
+
+  it('triggers audio preview when clicking Nghe thử', async () => {
+    const mockPlay = vi.fn().mockResolvedValue(undefined);
+    const mockPause = vi.fn();
+
+    class MockAudio {
+      src = '';
+      play = mockPlay;
+      pause = mockPause;
+      oncanplaythrough: (() => void) | null = null;
+      onended: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      constructor(src?: string) {
+        this.src = src || '';
+      }
+    }
+    vi.stubGlobal('Audio', MockAudio);
+
+    const mockBlob = new Blob(['mock-audio'], { type: 'audio/mpeg' });
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      blob: vi.fn().mockResolvedValue(mockBlob),
+    } as any);
+
+    global.URL.createObjectURL = vi.fn().mockReturnValue('blob:mock-audio-url');
+    global.URL.revokeObjectURL = vi.fn();
+
+    render(<TelesaleTvQuotesDrawer open={true} onClose={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(apiClient.telesaleTarget.getCelebrationQuotes).toHaveBeenCalled();
+    });
+
+    const previewButtons = screen.getAllByText('Nghe thử');
+    expect(previewButtons.length).toBeGreaterThan(0);
+    previewButtons[0].click();
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/kpi/telesale-target/live-celebration-audio'),
+        expect.objectContaining({ mode: 'cors' })
+      );
+      expect(mockPlay).toHaveBeenCalled();
+    });
+
+    vi.unstubAllGlobals();
+  });
 });
