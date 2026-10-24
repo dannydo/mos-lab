@@ -31163,6 +31163,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatRichEditorModal",
+      "type": "UIComponent",
+      "label": "<MosChatRichEditorModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/MosChatRichEditorModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatRichEditorModal",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatRichText",
       "type": "UIComponent",
       "label": "<MosChatRichText />",
@@ -31243,6 +31255,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "MosChatMobileMentionAutocomplete.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatRichEditorModal.test",
+      "type": "UIComponent",
+      "label": "<MosChatRichEditorModal.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatRichEditorModal.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatRichEditorModal.test",
         "isPrimitive": false
       }
     },
@@ -41933,8 +41957,8 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 60765,
-        "lineCount": 1499,
+        "sizeBytes": 60961,
+        "lineCount": 1504,
         "ext": ".tsx"
       }
     },
@@ -43993,6 +44017,19 @@
       }
     },
     {
+      "id": "file:apps/web/lib/__tests__/tab-notification.test.ts",
+      "type": "File",
+      "label": "tab-notification.test.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/__tests__/tab-notification.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5828,
+        "lineCount": 161,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/lib/academy-workshop-live.test.ts",
       "type": "File",
       "label": "academy-workshop-live.test.ts",
@@ -44561,6 +44598,19 @@
       "metadata": {
         "sizeBytes": 1381,
         "lineCount": 54,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/web/lib/tab-notification.ts",
+      "type": "File",
+      "label": "tab-notification.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/tab-notification.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11016,
+        "lineCount": 373,
         "ext": ".ts"
       }
     },
@@ -63047,6 +63097,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatRichEditorModal:ws:apps/web",
+      "source": "uicomp:MosChatRichEditorModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatRichEditorModal:token:color:primary",
+      "source": "uicomp:MosChatRichEditorModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatRichText:ws:apps/web",
       "source": "uicomp:MosChatRichText",
       "target": "ws:apps/web",
@@ -63140,6 +63204,20 @@
     {
       "id": "edge:uicomp:MosChatMobileMentionAutocomplete.test:token:color:primary",
       "source": "uicomp:MosChatMobileMentionAutocomplete.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatRichEditorModal.test:ws:apps/web",
+      "source": "uicomp:MosChatRichEditorModal.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatRichEditorModal.test:token:color:primary",
+      "source": "uicomp:MosChatRichEditorModal.test",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -68803,6 +68881,13 @@
     {
       "id": "edge:file:apps/web/lib/image-utils.ts:ws:packages/shared",
       "source": "file:apps/web/lib/image-utils.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/lib/tab-notification.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/tab-notification.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -97754,8 +97839,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 3495,
-    "totalEdges": 7455,
+    "totalNodes": 3499,
+    "totalEdges": 7460,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 176,
@@ -97763,15 +97848,15 @@
       "Component": 61,
       "SharedType": 1276,
       "DesignToken": 12,
-      "UIComponent": 268,
-      "File": 975
+      "UIComponent": 270,
+      "File": 977
     },
     "edgeTypeCounts": {
       "EXPORTS": 1464,
       "HANDLES_ROUTE": 724,
-      "RENDERS": 329,
-      "USES_TOKEN": 270,
-      "IMPORTS": 534,
+      "RENDERS": 331,
+      "USES_TOKEN": 272,
+      "IMPORTS": 535,
       "QUERIES_MODEL": 406,
       "API_CALL": 3728
     },

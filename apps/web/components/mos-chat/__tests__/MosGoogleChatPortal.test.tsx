@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import MosGoogleChatPortal from '../MosGoogleChatPortal';
 import { apiClient } from '../../../lib/api-client';
 import { playNeuralSpeech } from '../../voice-assistant/speech-utils';
+import { tabNotificationManager } from '../../../lib/tab-notification';
 
 vi.mock('../../voice-assistant/speech-utils', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../voice-assistant/speech-utils')>();
@@ -940,6 +941,23 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
     await waitFor(() => {
       expect(screen.getByText('Soạn thảo phong phú (CKEditor)')).toBeTruthy();
       expect(screen.getByText('CKEditor Mode')).toBeTruthy();
+    });
+  });
+
+  it('triggers Messenger-style tab alert and sets unread count on tabNotificationManager (MOS-BUG-139)', async () => {
+    const setUnreadSpy = vi.spyOn(tabNotificationManager, 'setUnreadCount');
+
+    render(
+      <MosGoogleChatPortal
+        open={true}
+        onClose={vi.fn()}
+        onToggle={vi.fn()}
+        currentUser={{ id: 99, displayName: 'Danny Do', role: 'Admin' }}
+      />
+    );
+
+    await waitFor(() => {
+      expect(setUnreadSpy).toHaveBeenCalledWith('chat', expect.any(Number));
     });
   });
 });
