@@ -69,6 +69,8 @@ describe('UI primitives', () => {
     expect(BK_DONE_LEADERBOARD_LABELS).toEqual({
       booker: 'Booker',
       done: 'Done (Lẻ / Combo)',
+      newCustomerDone: 'Done Khách Mới',
+      newCustomerRate: '% Khách Mới',
       missed: 'Missed',
       doneBonus: 'Thưởng Done',
       rankBonus: 'Thưởng Hạng',

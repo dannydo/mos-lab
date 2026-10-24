@@ -48,6 +48,7 @@ export const MosChatMobileThreadSheet: React.FC = () => {
     setMobileView,
     tasks,
     executeMissionAction,
+    isAiThinking,
   } = useMosChat();
 
   const [text, setText] = useState<string>('');
@@ -275,7 +276,7 @@ export const MosChatMobileThreadSheet: React.FC = () => {
   // Auto scroll to bottom of thread
   useEffect(() => {
     bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' });
-  }, [threadReplies.length]);
+  }, [threadReplies.length, isAiThinking]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -1099,6 +1100,20 @@ export const MosChatMobileThreadSheet: React.FC = () => {
             </div>
           );
         })}
+
+        {/* MAI Copilot Thinking Shimmer Pill */}
+        {isAiThinking && (
+          <div className="flex items-center gap-2.5 p-3 my-2 rounded-2xl bg-gradient-to-r from-purple-950/70 via-indigo-950/60 to-purple-950/70 border border-purple-500/40 text-xs text-purple-200 animate-pulse shadow-lg">
+            <div className="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-sm shrink-0">
+              🤖
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="font-semibold text-purple-300">MAI Copilot:</span> Đang suy nghĩ và phân tích luồng thảo
+              luận...
+            </div>
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400 shrink-0" />
+          </div>
+        )}
 
         <div ref={bottomRef} className="h-1" />
       </div>

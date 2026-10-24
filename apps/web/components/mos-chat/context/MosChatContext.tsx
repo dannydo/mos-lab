@@ -19,6 +19,7 @@ import type {
   SafeAny,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
+import { resolveMediaUrl } from '../../../lib/api-base-url';
 import { tabNotificationManager } from '../../../lib/tab-notification';
 import {
   FALLBACK_CONVERSATIONS,
@@ -33,6 +34,24 @@ import type {
   MosChatMobileView,
   MosChatSidebarFilter,
 } from '../types/mos-chat-types';
+
+async function convertAttachmentToDataUrl(attachment?: MosChatImageAttachment): Promise<string | undefined> {
+  if (!attachment?.url) return undefined;
+  try {
+    const resolvedUrl = resolveMediaUrl(attachment.url);
+    const resp = await fetch(resolvedUrl);
+    if (!resp.ok) return undefined;
+    const blob = await resp.blob();
+    return await new Promise<string | undefined>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(typeof reader.result === 'string' ? reader.result : undefined);
+      reader.onerror = () => resolve(undefined);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return undefined;
+  }
+}
 
 export const MosChatContext = createContext<MosChatContextValue | null>(null);
 
@@ -104,6 +123,9 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
   // Thread
   const [activeThreadMsg, setActiveThreadMsg] = useState<MosChatMessage | null>(null);
 
+  // AI Copilot
+  const [isAiThinking, setIsAiThinking] = useState<boolean>(false);
+
   // Tasks & Subtab
   const [activeSubtab, setActiveSubtab] = useState<MosChatActiveSubtab>('chat');
   const [tasks, setTasks] = useState<MosChatTaskItem[]>(FALLBACK_TASKS);
@@ -159,6 +181,18 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
           }
         });
         setAllMessagesByConv((prev) => ({ ...prev, ...map }));
+
+        // Keep activeThreadMsg synced with the latest server thread data!
+        setActiveThreadMsg((current) => {
+          if (!current) return null;
+          for (const c of res.conversations) {
+            const found = c.messages?.find((m) => m.id === current.id);
+            if (found) {
+              return found;
+            }
+          }
+          return current;
+        });
       }
       if (res && res.userPrefs?.pinnedIds) {
         setPinnedConvIds(new Set(res.userPrefs.pinnedIds));
@@ -360,9 +394,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       try {
         const res = await apiClient.chat.updateSpaceConfig(convId, payload);
         if (res?.success && res.conversation) {
-          setConversations((prev) =>
-            prev.map((c) => (c.id === res.conversation.id ? res.conversation : c))
-          );
+          setConversations((prev) => prev.map((c) => (c.id === res.conversation.id ? res.conversation : c)));
           return true;
         }
       } catch (err) {
@@ -421,12 +453,40 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
           }));
         }
         setReplyingToMessage(null);
+
+        // If user tagged @MAI, invoke MAI Copilot
+        if (/(?:^|\s)@\s*mai\b/i.test(trimmed)) {
+          const cleanedPrompt =
+            trimmed.replace(/(?:^|\s)@\s*mai\b/gi, '').trim() || 'Hãy phân tích nội dung trên giúp nhóm.';
+          setIsAiThinking(true);
+          void (async () => {
+            try {
+              const imageDataUrl = await convertAttachmentToDataUrl(options?.attachments?.[0]);
+              await apiClient.ai.sendMessage({
+                message: cleanedPrompt,
+                scope: `mos-chat-space:${targetId}`,
+                imageDataUrl,
+                context: {
+                  page: `mos-chat-space:${targetId}`,
+                  userName: currentUser?.fullName || currentUser?.name || 'Tôi',
+                  myRole: currentUser?.role || 'super_admin',
+                },
+              });
+              await fetchBootstrap();
+            } catch {
+              // ignore
+            } finally {
+              setIsAiThinking(false);
+            }
+          })();
+        }
+
         return true;
       } catch {
         return false;
       }
     },
-    [activeConvId, currentUser]
+    [activeConvId, currentUser, fetchBootstrap]
   );
 
   // Send thread reply
@@ -435,6 +495,9 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       if (!activeThreadMsg) return false;
       const trimmed = text.trim();
       if (!trimmed && (!options?.attachments || options.attachments.length === 0)) return false;
+
+      const currentThreadMsg = activeThreadMsg;
+      const targetConv = activeConversation;
 
       const tempReply: MosChatThreadReply = {
         id: `reply_${Date.now()}`,
@@ -460,7 +523,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       try {
         const res = await apiClient.chat.sendThreadReply({
           conversationId: activeConvId,
-          messageId: activeThreadMsg.id,
+          messageId: currentThreadMsg.id,
           text: trimmed,
           attachments: options?.attachments,
         });
@@ -473,12 +536,57 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
             };
           });
         }
+
+        // If user tagged @MAI, invoke MAI Copilot with full thread context!
+        if (/(?:^|\s)@\s*mai\b/i.test(trimmed)) {
+          const cleanedPrompt =
+            trimmed.replace(/(?:^|\s)@\s*mai\b/gi, '').trim() ||
+            'Hãy phân tích nội dung luồng thảo luận trên giúp nhóm.';
+          const rootContent = currentThreadMsg
+            ? `[Tin nhắn gốc từ ${currentThreadMsg.senderName}]: ${currentThreadMsg.text || ''}`
+            : '';
+          const threadRepliesText = (currentThreadMsg?.thread || [])
+            .slice(-10)
+            .map((r) => `- ${r.senderName}: ${r.text || ''}`)
+            .join('\n');
+          const contextPayload = [
+            `[Bối cảnh Luồng thảo luận (Thread) trong không gian "${targetConv?.name || activeConvId}"]:`,
+            rootContent,
+            threadRepliesText ? `[Các phản hồi trước đó trong luồng]:\n${threadRepliesText}` : '',
+            `[Câu hỏi từ ${currentUser?.fullName || currentUser?.name || 'Tôi'}]: ${cleanedPrompt}`,
+          ]
+            .filter(Boolean)
+            .join('\n\n');
+
+          setIsAiThinking(true);
+          void (async () => {
+            try {
+              const imageDataUrl = await convertAttachmentToDataUrl(options?.attachments?.[0]);
+              await apiClient.ai.sendMessage({
+                message: contextPayload,
+                scope: `mos-chat-thread:${activeConvId}:${currentThreadMsg.id}`,
+                imageDataUrl,
+                context: {
+                  page: `mos-chat-thread:${activeConvId}:${currentThreadMsg.id}`,
+                  userName: currentUser?.fullName || currentUser?.name || 'Tôi',
+                  myRole: currentUser?.role || 'super_admin',
+                },
+              });
+              await fetchBootstrap();
+            } catch {
+              // ignore
+            } finally {
+              setIsAiThinking(false);
+            }
+          })();
+        }
+
         return true;
       } catch {
         return false;
       }
     },
-    [activeThreadMsg, activeConvId, currentUser]
+    [activeThreadMsg, activeConvId, activeConversation, currentUser, fetchBootstrap]
   );
 
   // React to message
@@ -986,6 +1094,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       setActiveThreadMsg,
       threadReplies,
       sendThreadReply,
+      isAiThinking,
       activeSubtab,
       setActiveSubtab,
       tasks,
@@ -1038,6 +1147,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       activeThreadMsg,
       threadReplies,
       sendThreadReply,
+      isAiThinking,
       activeSubtab,
       tasks,
       pinnedMessages,

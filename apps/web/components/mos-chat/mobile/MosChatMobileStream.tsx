@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState, useMemo } from 'react';
-import { ArrowDown, MessageSquare, Sparkles, Hash, Lock } from 'lucide-react';
+import { ArrowDown, MessageSquare, Sparkles, Hash, Lock, Loader2 } from 'lucide-react';
 import dayjs from 'dayjs';
 import type { MosChatMessage } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
@@ -13,7 +13,7 @@ export interface MosChatMobileStreamProps {
 }
 
 export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({ onOpenThread, onOpenGallery }) => {
-  const { messages, activeConversation, activeConvId } = useMosChat();
+  const { messages, activeConversation, activeConvId, isAiThinking } = useMosChat();
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [showScrollBottom, setShowScrollBottom] = useState<boolean>(false);
@@ -68,7 +68,7 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({ onOpen
     } else if (isNewMessage) {
       setUnreadBelowCount((c) => c + 1);
     }
-  }, [messages.length]);
+  }, [messages.length, isAiThinking]);
 
   // Scroll to bottom on conversation change
   useEffect(() => {
@@ -130,6 +130,19 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({ onOpen
             </div>
           );
         })}
+
+        {/* MAI Copilot Thinking Shimmer Pill */}
+        {isAiThinking && (
+          <div className="flex items-center gap-2.5 p-3 my-2 mx-1 rounded-2xl bg-gradient-to-r from-purple-950/70 via-indigo-950/60 to-purple-950/70 border border-purple-500/40 text-xs text-purple-200 animate-pulse shadow-lg">
+            <div className="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-sm shrink-0">
+              🤖
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="font-semibold text-purple-300">MAI Copilot:</span> Đang suy nghĩ và trả lời vào nhóm...
+            </div>
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-purple-400 shrink-0" />
+          </div>
+        )}
 
         <div ref={bottomRef} className="h-1" />
       </div>

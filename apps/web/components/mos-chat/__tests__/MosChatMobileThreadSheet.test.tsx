@@ -13,6 +13,10 @@ vi.mock('../../../lib/api-client', () => ({
       bootstrap: vi.fn(),
       missionAction: vi.fn().mockResolvedValue({ success: true }),
       sendThreadReply: vi.fn().mockResolvedValue({ success: true }),
+      sendMessage: vi.fn().mockResolvedValue({ success: true }),
+    },
+    ai: {
+      sendMessage: vi.fn().mockResolvedValue({ success: true }),
     },
   },
 }));
@@ -231,6 +235,66 @@ describe('MosChatMobileThreadSheet - Subthread Gate Approval on iPhone', () => {
         138,
         expect.objectContaining({
           action: 'APPROVE_DEPLOY',
+        })
+      );
+    });
+  });
+
+  it('triggers MAI copilot when tagging @MAI in subthread reply on iPhone', async () => {
+    (apiClient.chat.bootstrap as any).mockResolvedValue({
+      conversations: [
+        {
+          id: 'dm-pair-1-6',
+          messages: [
+            {
+              id: 'msg-parent-1',
+              senderName: 'Nguyễn Quang Khải',
+              text: 'Estella phòng đầu tay trái hư quạt nối mi',
+              thread: [],
+            },
+          ],
+        },
+      ],
+    });
+
+    const TestComponent = () => {
+      const { sendThreadReply, isAiThinking, setActiveThreadMsg, conversations } = useMosChat();
+      React.useEffect(() => {
+        const msg = conversations[0]?.messages?.[0];
+        if (msg) setActiveThreadMsg(msg);
+      }, [conversations, setActiveThreadMsg]);
+
+      return (
+        <div>
+          <button
+            data-testid="send-mai-reply"
+            onClick={() => sendThreadReply('@MAI mình xây qui trình báo lỗi shop cho đội hardware nhé')}
+          >
+            Gửi @MAI
+          </button>
+          {isAiThinking && <div data-testid="mai-thinking">MAI đang suy nghĩ...</div>}
+        </div>
+      );
+    };
+
+    render(
+      <MosChatProvider currentUser={mockCurrentUser} initialConvId="dm-pair-1-6">
+        <TestComponent />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('send-mai-reply')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByTestId('send-mai-reply'));
+
+    await waitFor(() => {
+      expect(apiClient.chat.sendThreadReply).toHaveBeenCalled();
+      expect(apiClient.ai.sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          scope: expect.stringContaining('mos-chat-thread:dm-pair-1-6:'),
+          message: expect.stringContaining('mình xây qui trình báo lỗi shop cho đội hardware nhé'),
         })
       );
     });

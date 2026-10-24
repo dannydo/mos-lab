@@ -38,7 +38,10 @@ export interface MosChatContextValue {
   togglePinConversation: (id: string) => Promise<void>;
   markConversationAsRead: (id: string) => Promise<void>;
   startDirectMessage: (staff: MosChatStaffMember) => Promise<string | null>;
-  updateSpaceConfig?: (id: string, payload: { name?: string; subtitle?: string; avatar?: string; color?: string }) => Promise<boolean>;
+  updateSpaceConfig?: (
+    id: string,
+    payload: { name?: string; subtitle?: string; avatar?: string; color?: string }
+  ) => Promise<boolean>;
 
   // Messages
   messages: MosChatMessage[];
@@ -64,6 +67,9 @@ export interface MosChatContextValue {
   setActiveThreadMsg: (msg: MosChatMessage | null) => void;
   threadReplies: MosChatThreadReply[];
   sendThreadReply: (text: string, options?: { attachments?: MosChatImageAttachment[] }) => Promise<boolean>;
+
+  // AI Copilot
+  isAiThinking: boolean;
 
   // Tasks & Pinned
   activeSubtab: MosChatActiveSubtab;
