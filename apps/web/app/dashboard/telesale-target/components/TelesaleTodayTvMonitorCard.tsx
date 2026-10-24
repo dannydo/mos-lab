@@ -385,8 +385,9 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
         <Button
           type="primary"
           icon={<Sparkles className="w-3.5 h-3.5" />}
-          className="w-full text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 border-0 text-black flex items-center justify-center gap-1.5 shadow-sm py-1.5 h-auto"
+          className="w-full text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 border-0 text-black flex items-center justify-center gap-1.5 shadow-sm py-1.5 h-auto cursor-pointer"
           onClick={() => {
+            setSettingsOpen(false);
             setQuotesDrawerOpen(true);
           }}
         >
@@ -521,7 +522,7 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
       }`}
     >
       <TelesaleTvJournalModal open={journalOpen} onClose={() => setJournalOpen(false)} initialDate={journalDate} />
-      <TelesaleTvQuotesDrawer open={quotesDrawerOpen} onClose={() => setQuotesDrawerOpen(false)} />
+      <TelesaleTvQuotesDrawer open={quotesDrawerOpen} onClose={() => setQuotesDrawerOpen(false)} zIndex={100010} />
 
       {/* 1. Header Bar */}
       <div>

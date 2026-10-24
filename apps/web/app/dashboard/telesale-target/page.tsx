@@ -655,7 +655,7 @@ function TelesaleTargetContent() {
       />
 
       {/* 8. TV QUOTES MANAGER DRAWER */}
-      <TelesaleTvQuotesDrawer open={quotesDrawerOpen} onClose={() => setQuotesDrawerOpen(false)} />
+      <TelesaleTvQuotesDrawer open={quotesDrawerOpen} onClose={() => setQuotesDrawerOpen(false)} zIndex={100010} />
 
       {/* 7. DEDICATED FULLSCREEN TV MONITOR VIEW (MOS-BUG-71) */}
       {overview && (

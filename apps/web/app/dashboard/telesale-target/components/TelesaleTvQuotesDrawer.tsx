@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import type { DrawerProps } from 'antd';
 import {
   Space,
   Button,
@@ -42,9 +43,11 @@ import { apiClient } from '../../../../lib/api-client';
 import { AdaptiveDrawer } from '../../../../components/ui';
 import { useTheme } from '../../../../context/ThemeContext';
 
-interface TelesaleTvQuotesDrawerProps {
+export interface TelesaleTvQuotesDrawerProps {
   open: boolean;
   onClose: () => void;
+  zIndex?: number;
+  getContainer?: string | HTMLElement | (() => HTMLElement) | false;
 }
 
 const EVENT_TYPE_CONFIG: Record<
@@ -140,7 +143,12 @@ const VARIABLE_TAGS = [
   { tag: '[Tên Khách]', label: 'Tên khách (VD: Chị Mai)', desc: 'Khách hàng liên quan' },
 ];
 
-export const TelesaleTvQuotesDrawer: React.FC<TelesaleTvQuotesDrawerProps> = ({ open, onClose }) => {
+export const TelesaleTvQuotesDrawer: React.FC<TelesaleTvQuotesDrawerProps> = ({
+  open,
+  onClose,
+  zIndex = 100010,
+  getContainer,
+}) => {
   const { themeMode } = useTheme();
   const isDark = themeMode === 'dark';
 
@@ -408,6 +416,8 @@ export const TelesaleTvQuotesDrawer: React.FC<TelesaleTvQuotesDrawerProps> = ({ 
         open={open}
         onClose={onClose}
         width={780}
+        zIndex={zIndex}
+        getContainer={getContainer}
         closable={{ placement: 'end' }}
         title={
           <div className="flex items-center gap-2">
@@ -462,6 +472,7 @@ export const TelesaleTvQuotesDrawer: React.FC<TelesaleTvQuotesDrawerProps> = ({ 
                 onConfirm={handleResetToDefaults}
                 okText="Khôi phục"
                 cancelText="Hủy"
+                overlayStyle={{ zIndex: zIndex + 20 }}
               >
                 <Button size="small" icon={<RotateCcw className="w-3.5 h-3.5" />} loading={saving} className="text-xs">
                   Khôi phục gốc
@@ -665,6 +676,7 @@ export const TelesaleTvQuotesDrawer: React.FC<TelesaleTvQuotesDrawerProps> = ({ 
                           okText="Xóa"
                           cancelText="Hủy"
                           okButtonProps={{ danger: true }}
+                          overlayStyle={{ zIndex: zIndex + 20 }}
                         >
                           <Button size="small" danger icon={<Trash2 className="w-3 h-3" />} className="text-xs" />
                         </Popconfirm>
@@ -684,6 +696,8 @@ export const TelesaleTvQuotesDrawer: React.FC<TelesaleTvQuotesDrawerProps> = ({ 
         onCancel={() => setFormModalOpen(false)}
         onOk={handleSaveForm}
         confirmLoading={saving}
+        zIndex={zIndex + 10}
+        getContainer={getContainer}
         title={
           <div className="flex items-center gap-2">
             <span className="text-amber-500 text-base">{editingQuote ? '✍️' : '✨'}</span>

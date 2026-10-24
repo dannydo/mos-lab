@@ -31343,6 +31343,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatMobileEditTaskModal",
+      "type": "UIComponent",
+      "label": "<MosChatMobileEditTaskModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/MosChatMobileEditTaskModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileEditTaskModal",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatMobileHeader",
       "type": "UIComponent",
       "label": "<MosChatMobileHeader />",
@@ -31403,6 +31415,30 @@
       }
     },
     {
+      "id": "uicomp:MosChatMobileMissionModal",
+      "type": "UIComponent",
+      "label": "<MosChatMobileMissionModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/MosChatMobileMissionModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileMissionModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatMobileNegotiateTaskModal",
+      "type": "UIComponent",
+      "label": "<MosChatMobileNegotiateTaskModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/MosChatMobileNegotiateTaskModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileNegotiateTaskModal",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatMobileReactionSheet",
       "type": "UIComponent",
       "label": "<MosChatMobileReactionSheet />",
@@ -31435,6 +31471,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "MosChatMobileStream",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatMobileTaskDetailSheet",
+      "type": "UIComponent",
+      "label": "<MosChatMobileTaskDetailSheet />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/MosChatMobileTaskDetailSheet.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileTaskDetailSheet",
         "isPrimitive": false
       }
     },
@@ -35528,8 +35576,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11912,
-        "lineCount": 309,
+        "sizeBytes": 11946,
+        "lineCount": 313,
         "ext": ".ts"
       }
     },
@@ -35775,8 +35823,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 161349,
-        "lineCount": 3778,
+        "sizeBytes": 161278,
+        "lineCount": 3771,
         "ext": ".ts"
       }
     },
@@ -42938,8 +42986,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 47640,
-        "lineCount": 1033,
+        "sizeBytes": 47707,
+        "lineCount": 1034,
         "ext": ".tsx"
       }
     },
@@ -43042,8 +43090,21 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 78493,
-        "lineCount": 1717,
+        "sizeBytes": 78831,
+        "lineCount": 1723,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvQuotesDrawer.test.tsx",
+      "type": "File",
+      "label": "TelesaleTvQuotesDrawer.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvQuotesDrawer.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 2698,
+        "lineCount": 85,
         "ext": ".tsx"
       }
     },
@@ -43055,8 +43116,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvQuotesDrawer.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30194,
-        "lineCount": 800,
+        "sizeBytes": 30437,
+        "lineCount": 820,
         "ext": ".tsx"
       }
     },
@@ -43120,8 +43181,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30253,
-        "lineCount": 692,
+        "sizeBytes": 30247,
+        "lineCount": 689,
         "ext": ".tsx"
       }
     },
@@ -44134,8 +44195,8 @@
       "filePath": "apps/web/lib/api/kpi.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20379,
-        "lineCount": 528,
+        "sizeBytes": 20355,
+        "lineCount": 524,
         "ext": ".ts"
       }
     },
@@ -63196,6 +63257,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatMobileEditTaskModal:ws:apps/web",
+      "source": "uicomp:MosChatMobileEditTaskModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileEditTaskModal:token:color:primary",
+      "source": "uicomp:MosChatMobileEditTaskModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatMobileHeader:ws:apps/web",
       "source": "uicomp:MosChatMobileHeader",
       "target": "ws:apps/web",
@@ -63266,6 +63341,34 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatMobileMissionModal:ws:apps/web",
+      "source": "uicomp:MosChatMobileMissionModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileMissionModal:token:color:primary",
+      "source": "uicomp:MosChatMobileMissionModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileNegotiateTaskModal:ws:apps/web",
+      "source": "uicomp:MosChatMobileNegotiateTaskModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileNegotiateTaskModal:token:color:primary",
+      "source": "uicomp:MosChatMobileNegotiateTaskModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatMobileReactionSheet:ws:apps/web",
       "source": "uicomp:MosChatMobileReactionSheet",
       "target": "ws:apps/web",
@@ -63303,6 +63406,20 @@
     {
       "id": "edge:uicomp:MosChatMobileStream:token:color:primary",
       "source": "uicomp:MosChatMobileStream",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileTaskDetailSheet:ws:apps/web",
+      "source": "uicomp:MosChatMobileTaskDetailSheet",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileTaskDetailSheet:token:color:primary",
+      "source": "uicomp:MosChatMobileTaskDetailSheet",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -97637,8 +97754,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 3490,
-    "totalEdges": 7447,
+    "totalNodes": 3495,
+    "totalEdges": 7455,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 176,
@@ -97646,14 +97763,14 @@
       "Component": 61,
       "SharedType": 1276,
       "DesignToken": 12,
-      "UIComponent": 264,
-      "File": 974
+      "UIComponent": 268,
+      "File": 975
     },
     "edgeTypeCounts": {
       "EXPORTS": 1464,
       "HANDLES_ROUTE": 724,
-      "RENDERS": 325,
-      "USES_TOKEN": 266,
+      "RENDERS": 329,
+      "USES_TOKEN": 270,
       "IMPORTS": 534,
       "QUERIES_MODEL": 406,
       "API_CALL": 3728
