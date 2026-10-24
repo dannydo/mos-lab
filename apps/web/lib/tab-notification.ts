@@ -350,9 +350,18 @@ export function playMessengerChime(): void {
 }
 
 /**
- * Native desktop notification wrapper with click-to-focus.
+ * Desktop notification options with chat routing support.
  */
-export function showDesktopNotification(title: string, options?: NotificationOptions): void {
+export interface DesktopNotificationOptions extends NotificationOptions {
+  conversationId?: string;
+  messageId?: string;
+  onClick?: (e: Event) => void;
+}
+
+/**
+ * Native desktop notification wrapper with click-to-focus and chat conversation deep-linking (MOS-BUG-141).
+ */
+export function showDesktopNotification(title: string, options?: DesktopNotificationOptions): void {
   if (typeof window === 'undefined' || !('Notification' in window)) return;
   if (Notification.permission === 'granted') {
     try {
@@ -361,9 +370,34 @@ export function showDesktopNotification(title: string, options?: NotificationOpt
         badge: '/apple-touch-icon.png',
         ...options,
       });
-      n.onclick = () => {
-        window.focus();
-        n.close();
+      n.onclick = (e: Event) => {
+        try {
+          window.focus();
+        } catch {
+          // ignore
+        }
+        if (options?.conversationId) {
+          window.dispatchEvent(
+            new CustomEvent('mos-chat:open', {
+              detail: {
+                conversationId: options.conversationId,
+                messageId: options.messageId,
+              },
+            })
+          );
+        }
+        if (options?.onClick) {
+          try {
+            options.onClick(e);
+          } catch {
+            // non-blocking
+          }
+        }
+        try {
+          n.close();
+        } catch {
+          // non-blocking
+        }
       };
     } catch {
       // Non-blocking

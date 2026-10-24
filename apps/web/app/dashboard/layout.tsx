@@ -33,7 +33,7 @@ import {
   UserRound,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTheme } from '../../context/ThemeContext';
 import { SeasonalAccentProvider } from '../../context/SeasonalAccentContext';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
@@ -71,6 +71,34 @@ import { HeaderIconButton } from '../../components/ui/HeaderIconButton';
 import { tabNotificationManager } from '../../lib/tab-notification';
 
 const { Header, Sider, Content } = Layout;
+
+function ChatDeepLinkWatcher({
+  onOpenChat,
+}: {
+  onOpenChat: (convId?: string, msgId?: string) => void;
+}) {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (!searchParams) return;
+    const chatConvId =
+      searchParams.get('chatConvId') ||
+      searchParams.get('conversationId') ||
+      searchParams.get('convId') ||
+      undefined;
+    const chatMsgId =
+      searchParams.get('chatMsgId') ||
+      searchParams.get('messageId') ||
+      searchParams.get('msgId') ||
+      undefined;
+
+    if (chatConvId) {
+      onOpenChat(chatConvId, chatMsgId);
+    }
+  }, [searchParams, onOpenChat]);
+
+  return null;
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -120,6 +148,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     conversationId?: string;
     messageId?: string;
     timestamp?: number;
+    openTab?: 'chat' | 'tasks' | 'pinned';
+    taskId?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -866,14 +896,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </Dropdown>
                 )}
 
+                <Suspense fallback={null}>
+                  <ChatDeepLinkWatcher
+                    onOpenChat={(convId, msgId) => {
+                      setIsMosChatOpen(true);
+                      setTargetChatNavigation({
+                        conversationId: convId,
+                        messageId: msgId,
+                        timestamp: Date.now(),
+                      });
+                    }}
+                  />
+                </Suspense>
+
                 <HeaderNotificationCenter
                   themeMode={themeMode}
-                  onOpenChat={(convId, msgId) => {
+                  onOpenChat={(convId, msgId, payload) => {
                     setIsMosChatOpen(true);
                     setTargetChatNavigation({
                       conversationId: convId,
                       messageId: msgId,
                       timestamp: Date.now(),
+                      openTab: (payload?.openTab as 'chat' | 'tasks' | 'pinned') || undefined,
+                      taskId: (payload?.taskId as string) || undefined,
                     });
                   }}
                 />

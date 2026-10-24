@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import MosGoogleChatPortal from '../MosGoogleChatPortal';
 import { apiClient } from '../../../lib/api-client';
@@ -267,6 +267,62 @@ describe('MosGoogleChatPortal Task & Inbox Navigation', () => {
       />
     );
     expect(container).toBeTruthy();
+  });
+
+  it('calls onToggle when closed and navigates to corresponding conversation upon receiving mos-chat:open event (MOS-BUG-141)', async () => {
+    const onToggle = vi.fn();
+    const { container } = render(
+      <MosGoogleChatPortal
+        open={false}
+        onClose={vi.fn()}
+        onToggle={onToggle}
+        currentUser={{ id: 6, displayName: 'Nguyễn Quang Khải', role: 'admin' }}
+      />
+    );
+
+    // Simulate clicking a notification which dispatches mos-chat:open with target conversation
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('mos-chat:open', {
+          detail: {
+            conversationId: 'dm-pair-1-6',
+            messageId: 'msg-4cb393eb',
+          },
+        })
+      );
+    });
+
+    // Verify onToggle was called to open the chat portal
+    expect(onToggle).toHaveBeenCalled();
+    expect(container).toBeTruthy();
+  });
+
+  it('switches to tasks tab when mos-chat:open event has openTab: tasks (MOS-BUG-141)', async () => {
+    const onToggle = vi.fn();
+    render(
+      <MosGoogleChatPortal
+        open={true}
+        onClose={vi.fn()}
+        onToggle={onToggle}
+        currentUser={{ id: 6, displayName: 'Nguyễn Quang Khải', role: 'admin' }}
+      />
+    );
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('mos-chat:open', {
+          detail: {
+            openTab: 'tasks',
+            taskId: 'task-123',
+          },
+        })
+      );
+    });
+
+    // Task Manager header should appear when switching to tasks tab
+    await waitFor(() => {
+      expect(screen.getByText('Quản Lý Công Việc & Nhắc Hẹn')).toBeTruthy();
+    });
   });
 
   it('marks AI copilot and conversations as read without sticking unread badges (MOS-BUG-127)', async () => {
