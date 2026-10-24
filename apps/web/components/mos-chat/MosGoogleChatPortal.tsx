@@ -211,6 +211,8 @@ export interface MosGoogleChatPortalProps {
     conversationId?: string;
     messageId?: string;
     timestamp?: number;
+    openTab?: 'chat' | 'tasks' | 'pinned';
+    taskId?: string;
   } | null;
 }
 
@@ -253,6 +255,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [saveThreadWorkflowModalOpen, setSaveThreadWorkflowModalOpen] = useState<boolean>(false);
   const [highlightedMsgId, setHighlightedMsgId] = useState<string | null>(null);
   const navigateToMessageRef = useRef<(convId: string, msgId?: string) => void>(() => {});
+  const pendingNavRef = useRef<{ convId: string; msgId?: string } | null>(null);
   const personalLayoutStorageKey = useMemo(() => {
     let resolvedKey = String(currentUser?.id || currentUser?.username || '').trim();
     if (!resolvedKey && typeof window !== 'undefined') {
@@ -1456,6 +1459,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         if (Array.isArray(res?.conversations)) {
           setConversations(res.conversations);
 
+          if (pendingNavRef.current) {
+            const pending = pendingNavRef.current;
+            const foundInLoaded = res.conversations.some((c) => c.id === pending.convId);
+            if (foundInLoaded) {
+              pendingNavRef.current = null;
+              setTimeout(() => {
+                navigateToMessageRef.current(pending.convId, pending.msgId);
+              }, 60);
+            }
+          }
+
           // Detect new unread buzzed messages or replies for current user (MOS-BUG-131, MOS-BUG-135)
           const myId = String(currentUser?.id || '');
           const myStaffId = Number(currentUserStaffMember?.id) || Number(currentUser?.id) || 0;
@@ -1568,8 +1582,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                           if (!open) {
                             onToggle();
                           }
-                          selectConversation(conv.id);
-                          notification.destroy();
+                          navigateToMessage(conv.id, item.id);
+                          notification.destroy(`buzz-notify-${item.id}`);
                         }}
                         className="px-3 py-1 rounded font-bold text-xs cursor-pointer shadow-sm transition-opacity hover:opacity-90"
                         style={{
@@ -1581,6 +1595,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       </button>
                     </div>
                   ),
+                  onClick: () => {
+                    if (!open) {
+                      onToggle();
+                    }
+                    navigateToMessage(conv.id, item.id);
+                    notification.destroy(`buzz-notify-${item.id}`);
+                  },
                   key: `buzz-notify-${item.id}`,
                 });
               };
@@ -1627,6 +1648,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             : item.text
                           : 'Đã gửi một tin nhắn',
                         tag: `mos-msg-${conv.id}`,
+                        conversationId: conv.id,
+                        messageId: item.id,
                       }
                     );
                   }
@@ -2121,8 +2144,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         participantStaffId?: number;
         participantName?: string;
         customerCard?: MosChatCustomerCard;
+        openTab?: 'chat' | 'tasks' | 'pinned';
+        taskId?: string;
       }>;
       const detail = customEv.detail || {};
+
+      if (!open) {
+        onToggle();
+      }
+
+      if (detail.openTab) {
+        setActiveSubtab(detail.openTab);
+      }
+
       if (detail.conversationId) {
         navigateToMessageRef.current(detail.conversationId, detail.messageId);
         return;
@@ -4464,20 +4498,37 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   const navigateToMessage = useCallback(
     (convId: string, msgId?: string) => {
+      if ((userPrefs.hiddenIds || []).includes(convId)) {
+        updateUserSidebarPrefs((prev) => ({
+          ...prev,
+          hiddenIds: (prev.hiddenIds || []).filter((id) => id !== convId),
+        }));
+      }
+      setSidebarFilter('all');
+      setSearchQuery('');
       setActiveConvId(convId);
       setActiveSubtab('chat');
       if (isMobile) setMobileActiveView('conversation');
 
       const targetConv =
         convId === AI_COPILOT_CONV_ID ? aiCopilotConversation : conversations.find((c) => c.id === convId);
-      if (targetConv && isTabVisible) {
+
+      if (!targetConv) {
+        pendingNavRef.current = { convId, msgId };
+        void fetchBootstrap(true);
+        return;
+      }
+
+      if (isTabVisible) {
         const msgs = targetConv.messages || [];
         const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : undefined;
         markConversationReadOptimisticAndSync(convId, msgs.length, lastMsg?.id);
       }
 
-      if (!msgId) return;
-      if (!targetConv) return;
+      if (!msgId) {
+        scrollToChatBottom('main', 'auto');
+        return;
+      }
 
       let rootMsg = targetConv.messages.find((m) => m.id === msgId);
       let isReply = false;
@@ -4529,6 +4580,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       handleOpenThread,
       isTabVisible,
       markConversationReadOptimisticAndSync,
+      userPrefs.hiddenIds,
+      updateUserSidebarPrefs,
+      fetchBootstrap,
+      scrollToChatBottom,
     ]
   );
 
@@ -4539,13 +4594,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const lastProcessedNavRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (targetNavigation?.openTab) {
+      setActiveSubtab(targetNavigation.openTab);
+    }
     if (targetNavigation?.conversationId) {
-      const navKey = `${targetNavigation.conversationId}:${targetNavigation.messageId || ''}:${targetNavigation.timestamp || 0}`;
+      const navKey = `${targetNavigation.conversationId}:${targetNavigation.messageId || ''}:${targetNavigation.timestamp || 0}:${targetNavigation.openTab || ''}`;
       if (lastProcessedNavRef.current === navKey) return;
       lastProcessedNavRef.current = navKey;
       navigateToMessageRef.current(targetNavigation.conversationId, targetNavigation.messageId);
     }
-  }, [targetNavigation?.timestamp, targetNavigation?.conversationId, targetNavigation?.messageId]);
+  }, [
+    targetNavigation?.timestamp,
+    targetNavigation?.conversationId,
+    targetNavigation?.messageId,
+    targetNavigation?.openTab,
+  ]);
 
   const handleMessageTap = (m: MosChatMessage, e: React.MouseEvent) => {
     const target = e.target as HTMLElement;

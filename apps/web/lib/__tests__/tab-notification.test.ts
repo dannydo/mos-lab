@@ -152,5 +152,32 @@ describe('TabNotificationManager (MOS-BUG-139 Messenger-Style Tab Alert)', () =>
       title: 'Nguyễn Quang Khải',
       options: expect.objectContaining({ body: 'Tin nhắn mới' }),
     });
+
+    // Test clicking desktop notification triggers mos-chat:open event (MOS-BUG-141)
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+    const customClick = vi.fn();
+    showDesktopNotification('Nguyễn Quang Khải', {
+      body: 'Có thông báo nè',
+      conversationId: 'dm-pair-1-6',
+      messageId: 'msg-4cb393eb',
+      onClick: customClick,
+    });
+    expect(mockNotificationInstances.length).toBe(2);
+    const secondInst = mockNotificationInstances[1] as {
+      onclick: (e: Event) => void;
+      close: () => void;
+    };
+    expect(typeof secondInst.onclick).toBe('function');
+    secondInst.onclick(new Event('click'));
+    expect(customClick).toHaveBeenCalled();
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'mos-chat:open',
+        detail: {
+          conversationId: 'dm-pair-1-6',
+          messageId: 'msg-4cb393eb',
+        },
+      })
+    );
   });
 });

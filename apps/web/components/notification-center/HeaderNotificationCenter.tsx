@@ -23,7 +23,7 @@ import { HeaderIconButton } from '../ui/HeaderIconButton';
 import { tabNotificationManager } from '../../lib/tab-notification';
 
 export interface HeaderNotificationCenterProps {
-  onOpenChat?: (conversationId?: string, messageId?: string) => void;
+  onOpenChat?: (conversationId?: string, messageId?: string, payload?: Record<string, unknown>) => void;
   themeMode?: 'light' | 'dark';
 }
 
@@ -136,6 +136,10 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
                 ),
                 placement: 'topRight',
                 duration: 6,
+                onClick: () => {
+                  notification.destroy();
+                  handleItemClick(item);
+                },
                 btn: (
                   <Button
                     type="primary"
@@ -238,9 +242,17 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
       const convId = action.payload?.conversationId as string | undefined;
       const msgId = action.payload?.messageId as string | undefined;
       if (onOpenChat) {
-        onOpenChat(convId, msgId);
+        onOpenChat(convId, msgId, action.payload);
       }
-      window.dispatchEvent(new CustomEvent('mos-chat:open', { detail: { conversationId: convId, messageId: msgId } }));
+      window.dispatchEvent(
+        new CustomEvent('mos-chat:open', {
+          detail: {
+            conversationId: convId,
+            messageId: msgId,
+            ...action.payload,
+          },
+        })
+      );
       window.dispatchEvent(new CustomEvent('mos:open_chat', { detail: action.payload }));
     } else if (action.type === 'navigate_customer') {
       const custId = action.payload?.customerId;
