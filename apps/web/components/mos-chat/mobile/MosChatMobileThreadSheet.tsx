@@ -12,6 +12,11 @@ import {
   Trash2,
   Pencil,
   Loader2,
+  Rocket,
+  CheckCircle2,
+  ExternalLink,
+  Check,
+  RotateCcw,
 } from 'lucide-react';
 import { message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
@@ -25,7 +30,7 @@ import { MosChatMobileMediaGallery, type MosChatGalleryImage } from './MosChatMo
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
 import { apiClient } from '../../../lib/api-client';
 import { uploadMultipleChatImages } from '../utils/chat-upload';
-import type { MosChatImageAttachment, MosChatThreadReply, SafeAny } from '@mos-lab/shared';
+import type { MosChatImageAttachment, MosChatMissionActionType, MosChatThreadReply, SafeAny } from '@mos-lab/shared';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
 import { isUserMentionedInText, extractMentionedStaff, isStaffInConversationMembers } from '../utils/chat-helpers';
 
@@ -41,6 +46,8 @@ export const MosChatMobileThreadSheet: React.FC = () => {
     editMessage,
     currentUser,
     setMobileView,
+    tasks,
+    executeMissionAction,
   } = useMosChat();
 
   const [text, setText] = useState<string>('');
@@ -120,6 +127,111 @@ export const MosChatMobileThreadSheet: React.FC = () => {
     const idx = threadGalleryImages.findIndex((img) => (targetId && img.id === targetId) || img.url === targetUrl);
     setGalleryInitialIndex(idx >= 0 ? idx : 0);
     setGalleryOpen(true);
+  };
+
+  // Live Thread Message & Linked Mission State
+  const liveThreadMsg = useMemo(() => {
+    if (!activeThreadMsg) return null;
+    const found = activeConversation?.messages?.find((m) => m.id === activeThreadMsg.id);
+    return found || activeThreadMsg;
+  }, [activeConversation, activeThreadMsg]);
+
+  const linkedTask = useMemo(() => {
+    if (!liveThreadMsg) return null;
+    return (
+      (tasks || []).find(
+        (t) => t.sourceMessageId === liveThreadMsg.id || (liveThreadMsg.taskId && t.id === liveThreadMsg.taskId)
+      ) || null
+    );
+  }, [tasks, liveThreadMsg]);
+
+  const mission = useMemo(() => {
+    return liveThreadMsg?.mission || linkedTask?.mission || null;
+  }, [liveThreadMsg, linkedTask]);
+
+  const isStrictDannySuperAdmin = useMemo(() => {
+    const username = (currentUser?.username || '').toLowerCase().trim();
+    const email = (currentUser?.email || '').toLowerCase().trim();
+    const displayName = (currentUser?.displayName || currentUser?.name || '').toLowerCase().trim();
+    const role = (currentUser?.role || '').toLowerCase().trim();
+    const id = Number(currentUser?.id) || 0;
+    return (
+      username === 'dannydo' ||
+      email.includes('danhdo') ||
+      displayName.includes('danny') ||
+      (role === 'admin' && id === 1) ||
+      role === 'super_admin'
+    );
+  }, [currentUser]);
+
+  const canApproveImplementation = Boolean(
+    mission &&
+    (mission.superAdminActions?.canApproveImplementation ||
+      mission.status === 'NEW' ||
+      (mission.status === 'APPROVED' && !mission.superAdminActions?.activeJobId))
+  );
+
+  const canSuperAdminApproveCommit = Boolean(
+    mission &&
+    (mission.canSuperAdminApproveCommit ||
+      mission.superAdminActions?.canApproveCommit ||
+      mission.status === 'AWAITING_DANNY_COMMIT_REVIEW' ||
+      mission.superAdminActions?.executionPhase === 'AWAITING_COMMIT_REVIEW')
+  );
+
+  const canSuperAdminApproveDeploy = Boolean(
+    mission &&
+    (mission.canSuperAdminApproveDeploy ||
+      mission.superAdminActions?.canApproveDeploy ||
+      mission.status === 'AWAITING_DANNY_DEPLOY_APPROVAL' ||
+      mission.superAdminActions?.executionPhase === 'AWAITING_DEPLOY_REVIEW')
+  );
+
+  const canReporterAccept = Boolean(
+    mission &&
+    (mission.canReporterAccept ||
+      mission.reporterActions?.canAcceptOrReopen ||
+      mission.status === 'FIXED' ||
+      mission.status === 'AWAITING_REPORTER_ACCEPTANCE')
+  );
+
+  const canRequestUpgradeOrRework = Boolean(
+    mission && (canReporterAccept || mission.stage === 'COMPLETED' || mission.status === 'CLOSED')
+  );
+
+  const hasAnyPendingAction = Boolean(
+    (isStrictDannySuperAdmin &&
+      (canApproveImplementation || canSuperAdminApproveCommit || canSuperAdminApproveDeploy)) ||
+    canReporterAccept
+  );
+
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [isReopenOpen, setIsReopenOpen] = useState<boolean>(false);
+  const [reopenFeedback, setReopenFeedback] = useState<string>('');
+
+  const handleExecuteMissionAction = async (action: MosChatMissionActionType, feedback?: string) => {
+    if (!mission) return;
+    setActionLoading(action);
+    try {
+      await executeMissionAction(mission, action, feedback);
+      if (action === 'APPROVE_COMMIT') {
+        antdMessage.success(`✅ Đã duyệt Commit (Cổng 2) cho #${mission.missionKey}!`);
+      } else if (action === 'APPROVE_DEPLOY') {
+        antdMessage.success(`🚀 Đã duyệt Deploy lên Web (Cổng 3) cho #${mission.missionKey}!`);
+      } else if (action === 'APPROVE_IMPLEMENTATION') {
+        antdMessage.success(`🚀 Đã duyệt Cổng 1 mOS Mission #${mission.missionKey}!`);
+      } else if (action === 'REPORTER_ACCEPT') {
+        antdMessage.success(`🎉 Đã nghiệm thu hoàn tất #${mission.missionKey}!`);
+      } else if (action === 'REPORTER_REOPEN') {
+        antdMessage.info(`🔄 Đã gửi yêu cầu chỉnh sửa tiếp cho #${mission.missionKey}!`);
+        setIsReopenOpen(false);
+        setReopenFeedback('');
+      }
+    } catch (err: SafeAny) {
+      antdMessage.error(err?.response?.data?.message || err?.message || 'Có lỗi xảy ra khi thực hiện');
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   // Replying quote inside thread
@@ -624,6 +736,199 @@ export const MosChatMobileThreadSheet: React.FC = () => {
           )}
         </div>
 
+        {/* Pinned Live mOS Mission Card in Thread */}
+        {mission && (
+          <div className="my-2 p-3 rounded-2xl bg-purple-950/30 border border-purple-800/50 space-y-2.5 shadow-sm">
+            {/* Mission header, badge, external link */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Rocket className="w-4 h-4 text-purple-400 shrink-0" />
+                <span className="text-xs font-black text-purple-200 truncate">
+                  mOS Mission #{mission.missionKey || `MSN-${mission.reportId}`}
+                </span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0">
+                  {mission.requestType || 'FEATURE'}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-purple-500/30 text-purple-200 border border-purple-400/30">
+                  {mission.stageLabel || mission.humanBadge || mission.status}
+                </span>
+                <a
+                  href={`/dashboard/bug-reports?reportId=${mission.reportId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-1 rounded text-purple-300 hover:text-white bg-purple-900/40 border border-purple-500/30 active:scale-95 transition-transform cursor-pointer"
+                  aria-label="Xem chi tiết trên mOS Mission"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
+
+            {/* Title */}
+            <p className="text-xs font-bold text-white line-clamp-2 leading-snug">{mission.title}</p>
+
+            {/* 4-Step Progress Bar */}
+            <div className="grid grid-cols-4 gap-1 pt-0.5">
+              {[
+                { idx: 1, label: '1. Tiếp nhận' },
+                { idx: 2, label: '2. Đang xử lý' },
+                { idx: 3, label: '3. Nghiệm thu' },
+                { idx: 4, label: '4. Hoàn tất' },
+              ].map((s) => {
+                const active = (mission.stepIndex || 1) >= s.idx;
+                const current = (mission.stepIndex || 1) === s.idx;
+                return (
+                  <div key={s.idx} className="space-y-1">
+                    <div
+                      className={`h-1.5 rounded-full transition-all ${
+                        active ? 'bg-purple-500' : 'bg-slate-800'
+                      } ${current ? 'ring-2 ring-purple-400/60 shadow-sm shadow-purple-500/50' : ''}`}
+                    />
+                    <div
+                      className={`text-[9.5px] truncate font-medium ${
+                        active ? 'text-purple-300 font-bold' : 'text-slate-500'
+                      }`}
+                    >
+                      {s.label}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Human Explanation Box */}
+            <div className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-[11px] text-slate-300 leading-relaxed">
+              {mission.humanStatusSummary ||
+                mission.humanSummary ||
+                'Nhiệm vụ đang được triển khai trên hệ thống mOS Mission.'}
+            </div>
+
+            {/* Super Admin Inline Gate Controls (Cổng 1, Cổng 2, Cổng 3) */}
+            {isStrictDannySuperAdmin && (
+              <div className="space-y-2 pt-1">
+                {/* Gate 1: Approve Implementation */}
+                {canApproveImplementation && (
+                  <button
+                    type="button"
+                    disabled={actionLoading === 'APPROVE_IMPLEMENTATION'}
+                    onClick={() => handleExecuteMissionAction('APPROVE_IMPLEMENTATION')}
+                    className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md shadow-purple-950/40 active:scale-98 transition-transform disabled:opacity-50 cursor-pointer"
+                  >
+                    {actionLoading === 'APPROVE_IMPLEMENTATION' ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Rocket className="w-4 h-4" />
+                    )}
+                    <span>Duyệt nâng cấp tiếp · Cổng 1 (mOS Mission)</span>
+                  </button>
+                )}
+
+                {/* Gate 2: Approve Commit */}
+                {canSuperAdminApproveCommit && (
+                  <button
+                    type="button"
+                    disabled={actionLoading === 'APPROVE_COMMIT'}
+                    onClick={() => handleExecuteMissionAction('APPROVE_COMMIT')}
+                    className="w-full py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/30 active:scale-98 transition-transform disabled:opacity-50 cursor-pointer"
+                  >
+                    {actionLoading === 'APPROVE_COMMIT' ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                    ) : (
+                      <CheckCircle2 className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+                    )}
+                    <span>✅ Duyệt Commit (Cổng 2)</span>
+                  </button>
+                )}
+
+                {/* Gate 3: Approve Deploy */}
+                {canSuperAdminApproveDeploy && (
+                  <button
+                    type="button"
+                    disabled={actionLoading === 'APPROVE_DEPLOY'}
+                    onClick={() => handleExecuteMissionAction('APPROVE_DEPLOY')}
+                    className="w-full py-2.5 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/30 active:scale-98 transition-transform disabled:opacity-50 cursor-pointer"
+                  >
+                    {actionLoading === 'APPROVE_DEPLOY' ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                    ) : (
+                      <Rocket className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+                    )}
+                    <span>🚀 Duyệt Deploy lên Web (Cổng 3)</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Reporter & Staff Acceptance & Rework Controls */}
+            {canReporterAccept && (
+              <button
+                type="button"
+                disabled={actionLoading === 'REPORTER_ACCEPT'}
+                onClick={() => handleExecuteMissionAction('REPORTER_ACCEPT')}
+                className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md shadow-emerald-950/40 active:scale-98 transition-transform disabled:opacity-50 cursor-pointer"
+              >
+                {actionLoading === 'REPORTER_ACCEPT' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Check className="w-4 h-4 stroke-[3]" />
+                )}
+                <span>🎉 Đã đúng ý (Nghiệm thu hoàn tất)</span>
+              </button>
+            )}
+
+            {canRequestUpgradeOrRework && (
+              <div className="pt-1">
+                {!isReopenOpen ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsReopenOpen(true)}
+                    className="w-full py-1.5 px-3 rounded-xl bg-slate-800/80 border border-slate-700 text-amber-300 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-98 transition-transform cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>🔄 Yêu cầu chỉnh sửa thêm / Nâng cấp tiếp</span>
+                  </button>
+                ) : (
+                  <div className="space-y-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                    <label className="text-[11px] font-semibold text-slate-300 block">
+                      Nội dung cần chỉnh thêm hoặc nâng cấp:
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={reopenFeedback}
+                      onChange={(e) => setReopenFeedback(e.target.value)}
+                      placeholder="Nhập nội dung cần điều chỉnh thêm..."
+                      className="w-full p-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                    />
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsReopenOpen(false);
+                          setReopenFeedback('');
+                        }}
+                        className="px-2.5 py-1 rounded-lg text-xs text-slate-400 hover:text-white cursor-pointer"
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!reopenFeedback.trim() || actionLoading === 'REPORTER_REOPEN'}
+                        onClick={() => handleExecuteMissionAction('REPORTER_REOPEN', reopenFeedback.trim())}
+                        className="px-3 py-1 rounded-lg bg-amber-500 text-slate-950 text-xs font-bold disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                      >
+                        {actionLoading === 'REPORTER_REOPEN' ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                        <span>Gửi yêu cầu</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Divider */}
         <div className="flex items-center gap-2 my-2 text-slate-500 text-xs font-medium">
           <span className="h-px flex-1 bg-slate-800" />
@@ -807,6 +1112,89 @@ export const MosChatMobileThreadSheet: React.FC = () => {
         }}
         className="sticky bottom-0 z-30 bg-slate-900/95 backdrop-blur-md border-t border-slate-800/80 px-3 pt-2 shadow-lg"
       >
+        {/* Sticky Action Bar for mOS Mission Gate Controls & Acceptance */}
+        {hasAnyPendingAction && mission && (
+          <div className="mb-2 p-2 rounded-xl bg-purple-950/40 border border-purple-800/50 shadow-md backdrop-blur-md">
+            <div className="flex items-center justify-between gap-1.5 mb-1.5 px-0.5">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Rocket className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                <span className="text-[11px] font-bold text-purple-200 truncate">
+                  {mission.stageLabel || mission.humanBadge || 'Chờ duyệt'}
+                </span>
+              </div>
+              <span className="text-[10px] text-purple-300 font-semibold truncate">
+                #{mission.missionKey || `MSN-${mission.reportId}`}
+              </span>
+            </div>
+
+            <div className="space-y-1.5">
+              {isStrictDannySuperAdmin && canApproveImplementation && (
+                <button
+                  type="button"
+                  disabled={actionLoading === 'APPROVE_IMPLEMENTATION'}
+                  onClick={() => handleExecuteMissionAction('APPROVE_IMPLEMENTATION')}
+                  className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-700 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md shadow-purple-950/40 active:scale-98 transition-transform disabled:opacity-50 cursor-pointer"
+                >
+                  {actionLoading === 'APPROVE_IMPLEMENTATION' ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Rocket className="w-4 h-4" />
+                  )}
+                  <span>Duyệt nâng cấp tiếp · Cổng 1 (mOS Mission)</span>
+                </button>
+              )}
+
+              {isStrictDannySuperAdmin && canSuperAdminApproveCommit && (
+                <button
+                  type="button"
+                  disabled={actionLoading === 'APPROVE_COMMIT'}
+                  onClick={() => handleExecuteMissionAction('APPROVE_COMMIT')}
+                  className="w-full py-2 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black flex items-center justify-center gap-1.5 shadow-lg shadow-amber-500/30 active:scale-98 transition-transform disabled:opacity-50 cursor-pointer"
+                >
+                  {actionLoading === 'APPROVE_COMMIT' ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+                  )}
+                  <span>✅ Duyệt Commit (Cổng 2)</span>
+                </button>
+              )}
+
+              {isStrictDannySuperAdmin && canSuperAdminApproveDeploy && (
+                <button
+                  type="button"
+                  disabled={actionLoading === 'APPROVE_DEPLOY'}
+                  onClick={() => handleExecuteMissionAction('APPROVE_DEPLOY')}
+                  className="w-full py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/30 active:scale-98 transition-transform disabled:opacity-50 cursor-pointer"
+                >
+                  {actionLoading === 'APPROVE_DEPLOY' ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                  ) : (
+                    <Rocket className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+                  )}
+                  <span>🚀 Duyệt Deploy lên Web (Cổng 3)</span>
+                </button>
+              )}
+
+              {canReporterAccept && (
+                <button
+                  type="button"
+                  disabled={actionLoading === 'REPORTER_ACCEPT'}
+                  onClick={() => handleExecuteMissionAction('REPORTER_ACCEPT')}
+                  className="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black flex items-center justify-center gap-1.5 shadow-md shadow-emerald-950/40 active:scale-98 transition-transform disabled:opacity-50 cursor-pointer"
+                >
+                  {actionLoading === 'REPORTER_ACCEPT' ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Check className="w-4 h-4 stroke-[3]" />
+                  )}
+                  <span>🎉 Đã đúng ý (Nghiệm thu hoàn tất)</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Autocomplete when typing @mention in subthread */}
         <MosChatMobileMentionAutocomplete
           text={text}

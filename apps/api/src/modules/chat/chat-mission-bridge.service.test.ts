@@ -590,4 +590,73 @@ describe('ChatMissionBridgeService.buildMissionSummaryFromReport', () => {
     assert.equal(msg.missionSyncedStage, 'READY_FOR_REVIEW', 'Mission stage must remain intact');
     assert.ok(msg.missionSyncedCommentIds.includes(999), 'Comment id must be recorded');
   });
+
+  it('creates a milestone thread reply when a mission transitions back to RECEIVED upon reopen', async () => {
+    const fastify: SafeAny = {
+      prisma: {
+        crm: {
+          crmBugReport: {
+            findMany: async () => [
+              {
+                id: 138,
+                requestType: 'FEATURE',
+                title: 'Soạn thảo phong phú',
+                status: 'NEW',
+                clarificationStatus: 'READY',
+                clarificationSummary: null,
+                implementationApprovedAt: null,
+                implementationActiveJobId: null,
+                reporterStaffId: 6,
+                reporter: { id: 6, displayName: 'Nguyễn Quang Khải' },
+                resolution: null,
+                comments: [
+                  {
+                    id: 498,
+                    authorType: 'STAFF',
+                    kind: 'COMMENT',
+                    body: 'tôi cần 1 bản gọn để type nhanh nữa',
+                    createdAt: new Date('2026-10-24T07:12:16.000Z'),
+                  },
+                ],
+                updatedAt: new Date('2026-10-24T07:15:00.000Z'),
+              },
+            ],
+          },
+        },
+      },
+      log: { warn: () => {} },
+    };
+
+    const conv: SafeAny = {
+      id: 'dm-pair-1-6',
+      messages: [
+        {
+          id: 'msg-101454cb',
+          missionId: 138,
+          missionSyncedStage: 'READY_FOR_REVIEW',
+          missionSyncedCommentIds: [],
+          thread: [
+            {
+              id: 'th-msn-ready',
+              isMissionMilestone: true,
+              missionStage: 'READY_FOR_REVIEW',
+              text: 'Đã deploy bản thay đổi đã duyệt',
+            },
+          ],
+        },
+      ],
+    };
+
+    const mutated = await ChatMissionBridgeService.syncLinkedMissionsIntoChatState(fastify as never, [conv], []);
+
+    assert.equal(mutated, true);
+    const msg = conv.messages[0];
+    assert.equal(msg.missionSyncedStage, 'RECEIVED');
+    assert.equal(msg.thread.length, 2);
+    const lastReply = msg.thread[1];
+    assert.equal(lastReply.isMissionMilestone, true);
+    assert.equal(lastReply.missionStage, 'RECEIVED');
+    assert.ok(lastReply.text.includes('tôi cần 1 bản gọn để type nhanh nữa'));
+    assert.ok(lastReply.text.includes('#MSN-138'));
+  });
 });

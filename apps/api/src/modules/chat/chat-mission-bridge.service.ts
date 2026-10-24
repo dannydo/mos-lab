@@ -518,6 +518,25 @@ export class ChatMissionBridgeService {
             msg.thread.push(createMilestoneThreadReply(mId, 'COMPLETED', replyText, now));
             conv.updatedAt = now.toISOString();
             stateMutated = true;
+          } else if (
+            summary.stage === 'RECEIVED' &&
+            (lastSyncedStage === 'READY_FOR_REVIEW' || lastSyncedStage === 'COMPLETED')
+          ) {
+            const hasExistingReopenReply = msg.thread.some(
+              (r) => r.isMissionMilestone && r.missionStage === 'RECEIVED'
+            );
+            if (!hasExistingReopenReply) {
+              const latestStaffComment = (report.comments || [])
+                .filter((c) => c.authorType === 'STAFF')
+                .slice(-1)[0]?.body;
+              const reworkReason = latestStaffComment ? `\n• **Yêu cầu phản hồi**: *"${latestStaffComment}"*` : '';
+              const replyText =
+                `🔄 **Ghi nhận yêu cầu nâng cấp / chỉnh sửa bổ sung (#${summary.missionCode})**${reworkReason}\n` +
+                `Đang chờ anh Danny bấm **[🚀 Duyệt nâng cấp tiếp · Cổng 1 (mOS Mission)]** để triển khai.`;
+              msg.thread.push(createMilestoneThreadReply(mId, 'RECEIVED', replyText, now));
+              conv.updatedAt = now.toISOString();
+              stateMutated = true;
+            }
           }
           msg.missionSyncedStage = summary.stage;
         } else if (!lastSyncedStage) {
