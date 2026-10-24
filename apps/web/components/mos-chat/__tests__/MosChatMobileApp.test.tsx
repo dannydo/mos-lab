@@ -99,6 +99,16 @@ vi.mock('../../../lib/api-client', () => ({
       togglePinMessage: vi.fn().mockResolvedValue({ success: true }),
       deleteMessage: vi.fn().mockResolvedValue({ success: true }),
       editMessage: vi.fn().mockResolvedValue({ success: true }),
+      uploadImage: vi.fn().mockImplementation(async ({ fileName }: { fileName: string }) => ({
+        success: true,
+        attachment: {
+          id: `att-${fileName.replace(/[^a-zA-Z0-9]/g, '')}`,
+          url: `/uploads/${fileName}`,
+          name: fileName,
+          mimeType: 'image/jpeg',
+          sizeBytes: 2048,
+        },
+      })),
     },
   },
 }));
@@ -634,6 +644,151 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
 
     await waitFor(() => {
       expect(screen.queryByRole('dialog', { name: 'Xem hình ảnh đính kèm' })).toBeNull();
+    });
+  });
+
+  it('supports selecting multiple images on iPhone, previewing thumbnails with delete buttons, and batch sending in main room (MOS-FEAT-146)', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Shop Operations')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('Shop Operations'));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Nhắn tin trong #Shop Operations/i)).toBeTruthy();
+    });
+
+    // 1. Check file input has multiple and supports heic/heif
+    const fileInput = screen.getByLabelText('Tải nhiều ảnh đính kèm') as HTMLInputElement;
+    expect(fileInput).toBeTruthy();
+    expect(fileInput.multiple).toBe(true);
+    expect(fileInput.accept).toContain('.heic');
+
+    // 2. Select 3 files (including iPhone HEIC)
+    const file1 = new File(['content1'], 'photo1.jpg', { type: 'image/jpeg' });
+    const file2 = new File(['content2'], 'photo2.jpg', { type: 'image/jpeg' });
+    const file3 = new File(['content3'], 'photo3.heic', { type: 'image/heic' });
+
+    fireEvent.change(fileInput, {
+      target: { files: [file1, file2, file3] },
+    });
+
+    // 3. Wait for all 3 images to be uploaded and shown in preview
+    await waitFor(() => {
+      expect(apiClient.chat.uploadImage).toHaveBeenCalledTimes(3);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByAltText('photo1.jpg')).toBeTruthy();
+      expect(screen.getByAltText('photo2.jpg')).toBeTruthy();
+      expect(screen.getByAltText('photo3.heic')).toBeTruthy();
+    });
+
+    // 4. Remove image 2
+    const removeBtn2 = screen.getByLabelText('Xóa ảnh 2');
+    fireEvent.click(removeBtn2);
+
+    await waitFor(() => {
+      expect(screen.queryByAltText('photo2.jpg')).toBeNull();
+      expect(screen.getByAltText('photo1.jpg')).toBeTruthy();
+      expect(screen.getByAltText('photo3.heic')).toBeTruthy();
+    });
+
+    // 5. Type a message caption
+    const textarea = screen.getByPlaceholderText(/Nhắn tin trong #Shop Operations/i);
+    fireEvent.change(textarea, { target: { value: 'Bộ mi Katun hoàn thành' } });
+
+    // 6. Send the message with attachments
+    const sendBtn = screen.getByRole('button', { name: 'Gửi tin nhắn' });
+    fireEvent.click(sendBtn);
+
+    await waitFor(() => {
+      expect(apiClient.chat.sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: 'Bộ mi Katun hoàn thành',
+          attachments: expect.arrayContaining([
+            expect.objectContaining({ name: 'photo1.jpg' }),
+            expect.objectContaining({ name: 'photo3.heic' }),
+          ]),
+        })
+      );
+    });
+
+    // 7. Preview and text should be cleared
+    await waitFor(() => {
+      expect(screen.queryByAltText('photo1.jpg')).toBeNull();
+      expect(screen.queryByAltText('photo3.heic')).toBeNull();
+    });
+  });
+
+  it('supports selecting multiple images, previewing, and batch sending in subthread sheet (MOS-FEAT-146)', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Shop Operations')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('Shop Operations'));
+
+    // Open subthread
+    await waitFor(() => {
+      expect(screen.getByText(/câu trả lời trong luồng/i)).toBeTruthy();
+    });
+    fireEvent.click(screen.getByText(/câu trả lời trong luồng/i));
+
+    // Check thread file input
+    await waitFor(() => {
+      expect(screen.getByLabelText('Tải nhiều ảnh đính kèm trong luồng')).toBeTruthy();
+    });
+    const threadFileInput = screen.getByLabelText('Tải nhiều ảnh đính kèm trong luồng') as HTMLInputElement;
+    expect(threadFileInput.multiple).toBe(true);
+
+    // Select 2 files in thread
+    const tFile1 = new File(['t1'], 'thread-a.jpg', { type: 'image/jpeg' });
+    const tFile2 = new File(['t2'], 'thread-b.png', { type: 'image/png' });
+
+    fireEvent.change(threadFileInput, {
+      target: { files: [tFile1, tFile2] },
+    });
+
+    await waitFor(() => {
+      expect(apiClient.chat.uploadImage).toHaveBeenCalled();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByAltText('thread-a.jpg')).toBeTruthy();
+      expect(screen.getByAltText('thread-b.png')).toBeTruthy();
+    });
+
+    // Send thread reply with multiple images
+    const threadSendBtn = screen.getByRole('button', { name: 'Gửi phản hồi luồng' });
+    fireEvent.click(threadSendBtn);
+
+    await waitFor(() => {
+      expect(apiClient.chat.sendThreadReply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          attachments: expect.arrayContaining([
+            expect.objectContaining({ name: 'thread-a.jpg' }),
+            expect.objectContaining({ name: 'thread-b.png' }),
+          ]),
+        })
+      );
+    });
+
+    // Preview should be cleared after send
+    await waitFor(() => {
+      expect(screen.queryByAltText('thread-a.jpg')).toBeNull();
+      expect(screen.queryByAltText('thread-b.png')).toBeNull();
     });
   });
 });

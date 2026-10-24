@@ -19,6 +19,8 @@ import { MosChatMobileMediaGallery, type MosChatGalleryImage } from './MosChatMo
 import { formatStickerToken, type MosChatStickerItem, type MosChatStickerPackId } from '../mos-chat-stickers';
 import { DEADLINE_PRESETS, GOOGLE_CHAT_REACTION_EMOJIS, WINGS_SIGNATURE_EMOJIS } from '../constants/chat-constants';
 import { apiClient } from '../../../lib/api-client';
+import { uploadMultipleChatImages } from '../utils/chat-upload';
+import type { MosChatImageAttachment } from '@mos-lab/shared';
 
 export interface MosChatMobileAppProps {
   standalone?: boolean;
@@ -43,6 +45,8 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
   const [stickerPickerInitialPack, setStickerPickerInitialPack] = useState<MosChatStickerPackId>('emoji');
   const [composerText, setComposerText] = useState<string>('');
   const [editingMessage, setEditingMessage] = useState<MosChatMessage | null>(null);
+  const [attachedImages, setAttachedImages] = useState<MosChatImageAttachment[]>([]);
+  const [isUploadingImages, setIsUploadingImages] = useState<boolean>(false);
 
   // Stream Media Gallery Lightbox state
   const [streamGallery, setStreamGallery] = useState<{
@@ -127,32 +131,31 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
   };
 
   const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const count = files.length;
+    setIsUploadingImages(true);
+    const hideMsg = antdMessage.loading(`Đang tải ${count} ảnh lên...`, 0);
 
     try {
-      const reader = new FileReader();
-      reader.onload = async (evt) => {
-        const base64Data = (evt.target?.result as string)?.split(',')[1];
-        if (!base64Data) return;
-
-        const uploadRes = await apiClient.chat.uploadImage({
-          dataBase64: base64Data,
-          fileName: file.name,
-          mimeType: (file.type as SafeAny) || 'image/jpeg',
-        });
-
-        if (uploadRes && uploadRes.attachment) {
-          await sendMessage('', {
-            attachments: [uploadRes.attachment],
-          });
-          antdMessage.success('Đã gửi hình ảnh thành công');
+      const uploaded = await uploadMultipleChatImages(files);
+      hideMsg();
+      if (uploaded.length > 0) {
+        setAttachedImages((prev) => [...prev, ...uploaded]);
+        if (uploaded.length === count) {
+          antdMessage.success(`Đã đính kèm ${uploaded.length} ảnh`);
+        } else {
+          antdMessage.warning(`Đã tải ${uploaded.length}/${count} ảnh`);
         }
-      };
-      reader.readAsDataURL(file);
+      } else {
+        antdMessage.error('Không thể tải ảnh lên, vui lòng thử lại');
+      }
     } catch {
-      antdMessage.error('Không thể tải ảnh lên, vui lòng thử lại');
+      hideMsg();
+      antdMessage.error('Có lỗi xảy ra khi tải ảnh lên');
     } finally {
+      setIsUploadingImages(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -205,8 +208,16 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         standalone ? 'h-[100dvh] w-screen fixed inset-0 z-50' : 'h-full w-full'
       }`}
     >
-      {/* Hidden file input */}
-      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageFileChange} className="hidden" />
+      {/* Hidden file input supporting multiple images & iPhone HEIC/HEIF */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept="image/*,.heic,.heif,.HEIC,.HEIF"
+        onChange={handleImageFileChange}
+        className="hidden"
+        aria-label="Tải nhiều ảnh đính kèm"
+      />
 
       {/* Top Header */}
       <MosChatMobileHeader />
@@ -231,6 +242,11 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
                   setStickerPickerInitialPack(pack);
                   setStickerPickerOpen(true);
                 }}
+                onSelectImage={() => fileInputRef.current?.click()}
+                attachedImages={attachedImages}
+                onRemoveAttachment={(id) => setAttachedImages((prev) => prev.filter((img) => img.id !== id))}
+                isUploadingImages={isUploadingImages}
+                onSendSuccess={() => setAttachedImages([])}
                 text={composerText}
                 onTextChange={setComposerText}
               />

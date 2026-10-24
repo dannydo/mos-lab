@@ -248,24 +248,57 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
 
         {/* Attachments */}
         {message.attachments && message.attachments.length > 0 && (
-          <div className="mt-2 space-y-1.5">
-            {message.attachments.map((att, idx) => (
+          <div className="mt-2">
+            {message.attachments.length === 1 ? (
               <div
-                key={idx}
                 onClick={(e) => {
                   e.stopPropagation();
-                  onOpenGallery?.(message, idx);
+                  onOpenGallery?.(message, 0);
                 }}
                 className="rounded-xl overflow-hidden border border-black/10 cursor-pointer active:opacity-90 transition-opacity"
               >
                 <img
-                  src={resolveMediaUrl(att.url)}
+                  src={resolveMediaUrl(message.attachments[0].url)}
                   alt="Đính kèm"
                   className="max-h-60 w-full object-cover rounded-xl"
                   loading="lazy"
                 />
               </div>
-            ))}
+            ) : (
+              <div className="grid grid-cols-2 gap-1.5 rounded-xl overflow-hidden">
+                {message.attachments.slice(0, 4).map((att, idx) => {
+                  const total = message.attachments!.length;
+                  const isFirstOfThree = total === 3 && idx === 0;
+                  const isFourthInMany = total > 4 && idx === 3;
+                  const remaining = total - 3;
+
+                  return (
+                    <div
+                      key={att.id || idx}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenGallery?.(message, idx);
+                      }}
+                      className={`relative overflow-hidden cursor-pointer active:opacity-90 transition-opacity rounded-lg ${
+                        isFirstOfThree ? 'col-span-2 h-36' : 'h-28'
+                      }`}
+                    >
+                      <img
+                        src={resolveMediaUrl(att.url)}
+                        alt={att.name || `Hình ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      {isFourthInMany && (
+                        <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] flex items-center justify-center text-white font-bold text-base">
+                          +{remaining}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

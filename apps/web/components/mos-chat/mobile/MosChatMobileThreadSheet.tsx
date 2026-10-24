@@ -11,6 +11,7 @@ import {
   Copy,
   Trash2,
   Pencil,
+  Loader2,
 } from 'lucide-react';
 import { message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
@@ -23,6 +24,7 @@ import { MosChatMobileEditModal } from './MosChatMobileEditModal';
 import { MosChatMobileMediaGallery, type MosChatGalleryImage } from './MosChatMobileMediaGallery';
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
 import { apiClient } from '../../../lib/api-client';
+import { uploadMultipleChatImages } from '../utils/chat-upload';
 import type { MosChatImageAttachment, MosChatThreadReply, SafeAny } from '@mos-lab/shared';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
 import { isUserMentionedInText, extractMentionedStaff, isStaffInConversationMembers } from '../utils/chat-helpers';
@@ -132,6 +134,7 @@ export const MosChatMobileThreadSheet: React.FC = () => {
 
   // Image attachments
   const [attachedImages, setAttachedImages] = useState<MosChatImageAttachment[]>([]);
+  const [isUploadingImages, setIsUploadingImages] = useState<boolean>(false);
 
   // Sticker & Emoji Sheet
   const [stickerPickerOpen, setStickerPickerOpen] = useState<boolean>(false);
@@ -172,7 +175,7 @@ export const MosChatMobileThreadSheet: React.FC = () => {
 
   const handleSend = async () => {
     const trimmed = text.trim();
-    if ((!trimmed && attachedImages.length === 0) || isSending) return;
+    if ((!trimmed && attachedImages.length === 0) || isSending || isUploadingImages) return;
 
     // Enforce in-group tagging check for group spaces
     if (activeConversation && activeConversation.type?.toLowerCase() === 'space') {
@@ -223,29 +226,31 @@ export const MosChatMobileThreadSheet: React.FC = () => {
 
   // Image upload
   const handleImageFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const count = files.length;
+    setIsUploadingImages(true);
+    const hideMsg = antdMessage.loading(`Đang tải ${count} ảnh lên...`, 0);
 
     try {
-      const reader = new FileReader();
-      reader.onload = async (evt) => {
-        const base64Data = (evt.target?.result as string)?.split(',')[1];
-        if (!base64Data) return;
-
-        const uploadRes = await apiClient.chat.uploadImage({
-          dataBase64: base64Data,
-          fileName: file.name,
-          mimeType: (file.type as SafeAny) || 'image/jpeg',
-        });
-
-        if (uploadRes && uploadRes.attachment) {
-          setAttachedImages((prev) => [...prev, uploadRes.attachment]);
+      const uploaded = await uploadMultipleChatImages(files);
+      hideMsg();
+      if (uploaded.length > 0) {
+        setAttachedImages((prev) => [...prev, ...uploaded]);
+        if (uploaded.length === count) {
+          antdMessage.success(`Đã đính kèm ${uploaded.length} ảnh trong luồng`);
+        } else {
+          antdMessage.warning(`Đã tải ${uploaded.length}/${count} ảnh`);
         }
-      };
-      reader.readAsDataURL(file);
+      } else {
+        antdMessage.error('Không thể tải ảnh lên');
+      }
     } catch {
+      hideMsg();
       antdMessage.error('Không thể tải ảnh lên');
     } finally {
+      setIsUploadingImages(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
@@ -458,14 +463,15 @@ export const MosChatMobileThreadSheet: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden select-none">
-      {/* Hidden File Input for Image Upload */}
+      {/* Hidden File Input for Multi-Image Upload */}
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        multiple
+        accept="image/*,.heic,.heif,.HEIC,.HEIF"
         onChange={handleImageFileChange}
         className="hidden"
-        aria-label="Tải ảnh đính kèm"
+        aria-label="Tải nhiều ảnh đính kèm trong luồng"
       />
 
       {/* Scrollable Replies Feed */}
@@ -540,24 +546,57 @@ export const MosChatMobileThreadSheet: React.FC = () => {
 
           {/* Parent Message Attachments */}
           {activeThreadMsg.attachments && activeThreadMsg.attachments.length > 0 && (
-            <div className="space-y-1.5 mt-2.5">
-              {activeThreadMsg.attachments.map((att, idx) => (
+            <div className="mt-2.5">
+              {activeThreadMsg.attachments.length === 1 ? (
                 <div
-                  key={att.id || idx}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleOpenGallery(att.url, att.id);
+                    handleOpenGallery(activeThreadMsg.attachments![0].url, activeThreadMsg.attachments![0].id);
                   }}
                   className="rounded-xl overflow-hidden bg-slate-950/40 cursor-pointer active:opacity-90 transition-opacity"
                 >
                   <img
-                    src={resolveMediaUrl(att.url)}
-                    alt={att.name || 'Ảnh đính kèm'}
+                    src={resolveMediaUrl(activeThreadMsg.attachments[0].url)}
+                    alt={activeThreadMsg.attachments[0].name || 'Ảnh đính kèm'}
                     className="max-h-60 w-full object-cover rounded-xl"
                     loading="lazy"
                   />
                 </div>
-              ))}
+              ) : (
+                <div className="grid grid-cols-2 gap-1.5 rounded-xl overflow-hidden">
+                  {activeThreadMsg.attachments.slice(0, 4).map((att, idx) => {
+                    const total = activeThreadMsg.attachments!.length;
+                    const isFirstOfThree = total === 3 && idx === 0;
+                    const isFourthInMany = total > 4 && idx === 3;
+                    const remaining = total - 3;
+
+                    return (
+                      <div
+                        key={att.id || idx}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenGallery(att.url, att.id);
+                        }}
+                        className={`relative overflow-hidden cursor-pointer active:opacity-90 transition-opacity rounded-lg ${
+                          isFirstOfThree ? 'col-span-2 h-36' : 'h-28'
+                        }`}
+                      >
+                        <img
+                          src={resolveMediaUrl(att.url)}
+                          alt={att.name || `Hình ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                        {isFourthInMany && (
+                          <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] flex items-center justify-center text-white font-bold text-base">
+                            +{remaining}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -662,23 +701,56 @@ export const MosChatMobileThreadSheet: React.FC = () => {
               >
                 {/* Image Attachments */}
                 {reply.attachments && reply.attachments.length > 0 && (
-                  <div className="space-y-1.5 mb-1.5">
-                    {reply.attachments.map((att) => (
+                  <div className="mb-1.5">
+                    {reply.attachments.length === 1 ? (
                       <div
-                        key={att.id}
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleOpenGallery(att.url, att.id);
+                          handleOpenGallery(reply.attachments![0].url, reply.attachments![0].id);
                         }}
                         className="rounded-xl overflow-hidden bg-slate-950/40 cursor-pointer active:opacity-90 transition-opacity"
                       >
                         <img
-                          src={resolveMediaUrl(att.url)}
-                          alt={att.name || 'Ảnh đính kèm'}
+                          src={resolveMediaUrl(reply.attachments[0].url)}
+                          alt={reply.attachments[0].name || 'Ảnh đính kèm'}
                           className="max-h-56 w-full object-cover"
                         />
                       </div>
-                    ))}
+                    ) : (
+                      <div className="grid grid-cols-2 gap-1.5 rounded-xl overflow-hidden">
+                        {reply.attachments.slice(0, 4).map((att, idx) => {
+                          const total = reply.attachments!.length;
+                          const isFirstOfThree = total === 3 && idx === 0;
+                          const isFourthInMany = total > 4 && idx === 3;
+                          const remaining = total - 3;
+
+                          return (
+                            <div
+                              key={att.id || idx}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenGallery(att.url, att.id);
+                              }}
+                              className={`relative overflow-hidden cursor-pointer active:opacity-90 transition-opacity rounded-lg ${
+                                isFirstOfThree ? 'col-span-2 h-36' : 'h-24'
+                              }`}
+                            >
+                              <img
+                                src={resolveMediaUrl(att.url)}
+                                alt={att.name || `Hình ${idx + 1}`}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                              />
+                              {isFourthInMany && (
+                                <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] flex items-center justify-center text-white font-bold text-sm">
+                                  +{remaining}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -769,7 +841,7 @@ export const MosChatMobileThreadSheet: React.FC = () => {
             {attachedImages.map((att) => (
               <div
                 key={att.id}
-                className="relative w-14 h-14 rounded-xl overflow-hidden border border-amber-500/40 shrink-0"
+                className="relative w-14 h-14 rounded-xl overflow-hidden border border-amber-500/40 shrink-0 bg-slate-800 shadow-sm"
               >
                 {}
                 <img src={resolveMediaUrl(att.url)} alt={att.name} className="w-full h-full object-cover" />
@@ -777,11 +849,26 @@ export const MosChatMobileThreadSheet: React.FC = () => {
                   type="button"
                   onClick={() => setAttachedImages((prev) => prev.filter((img) => img.id !== att.id))}
                   className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-900/90 text-white flex items-center justify-center text-[10px]"
+                  aria-label="Xóa ảnh đính kèm"
                 >
                   <X className="w-2.5 h-2.5" />
                 </button>
               </div>
             ))}
+            {isUploadingImages && (
+              <div className="w-14 h-14 rounded-xl border border-dashed border-amber-500/50 bg-amber-500/10 flex flex-col items-center justify-center shrink-0">
+                <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />
+                <span className="text-[9px] text-amber-300 mt-0.5 font-medium">Tải...</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Uploading Banner when no images are ready yet */}
+        {isUploadingImages && attachedImages.length === 0 && (
+          <div className="flex items-center gap-2 px-3 py-1.5 mb-2 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300">
+            <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0 text-amber-400" />
+            <span>Đang tải hình ảnh lên...</span>
           </div>
         )}
 
@@ -801,8 +888,10 @@ export const MosChatMobileThreadSheet: React.FC = () => {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="w-8 h-8 rounded-full text-slate-400 hover:text-amber-400 active:scale-95 flex items-center justify-center shrink-0 mb-0.5"
-            aria-label="Đính kèm ảnh"
+            disabled={isUploadingImages}
+            className="w-8 h-8 rounded-full text-slate-400 hover:text-amber-400 active:scale-95 flex items-center justify-center shrink-0 mb-0.5 disabled:opacity-50"
+            aria-label="Đính kèm nhiều ảnh"
+            title="Đính kèm nhiều ảnh"
           >
             <ImageIcon className="w-5 h-5" />
           </button>
@@ -824,11 +913,15 @@ export const MosChatMobileThreadSheet: React.FC = () => {
           <button
             type="button"
             onClick={handleSend}
-            disabled={(!text.trim() && attachedImages.length === 0) || isSending}
+            disabled={(!text.trim() && attachedImages.length === 0) || isSending || isUploadingImages}
             className="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 shadow-md shadow-amber-500/30 active:scale-90 transition-transform shrink-0 mb-0.5 disabled:opacity-50"
             aria-label="Gửi phản hồi luồng"
           >
-            <SendHorizontal className="w-4 h-4 font-bold" />
+            {isSending || isUploadingImages ? (
+              <Loader2 className="w-4 h-4 text-slate-950 animate-spin" />
+            ) : (
+              <SendHorizontal className="w-4 h-4 text-slate-950 font-bold" />
+            )}
           </button>
         </div>
       </div>
