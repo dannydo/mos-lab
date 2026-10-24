@@ -6871,22 +6871,45 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           const assignee = task.assigneeName || 'Chung';
 
           return (
-            <div className="flex items-center gap-2 text-[11px] text-slate-400 flex-wrap">
-              <div className="flex items-center gap-1" title={`Người tạo: ${creator}`}>
-                <PenLine size={12} className="text-indigo-400" />
-                <span className="opacity-70">Tạo:</span>
+            <div className="flex items-center gap-2.5 text-[11px] text-slate-400 flex-wrap py-0.5">
+              <div className="flex items-center gap-1.5" title={`Người tạo: ${creator}`}>
+                <PenLine size={12} className="text-indigo-400 shrink-0" />
+                <span className="opacity-70 text-[10.5px]">Tạo:</span>
+                {renderUserAvatarNode({
+                  name: creator,
+                  sizeClass: 'w-[18px] h-[18px]',
+                  textSizeClass: 'text-[8.5px]',
+                  roundedClass: 'rounded-full',
+                  bgColor: '#6366f1',
+                })}
                 <span className="font-semibold text-slate-300">{creator}</span>
               </div>
-              <span className="text-slate-600">→</span>
-              <div className="flex items-center gap-1" title={`Người giao: ${assigner}`}>
-                <Send size={11} className="text-sky-400" />
-                <span className="opacity-70">Giao:</span>
+              <span className="text-slate-600 select-none">→</span>
+              <div className="flex items-center gap-1.5" title={`Người giao: ${assigner}`}>
+                <Send size={11} className="text-sky-400 shrink-0" />
+                <span className="opacity-70 text-[10.5px]">Giao:</span>
+                {renderUserAvatarNode({
+                  staffId: task.assignerId,
+                  name: assigner,
+                  sizeClass: 'w-[18px] h-[18px]',
+                  textSizeClass: 'text-[8.5px]',
+                  roundedClass: 'rounded-full',
+                  bgColor: '#0284c7',
+                })}
                 <span className="font-semibold text-slate-300">{assigner}</span>
               </div>
-              <span className="text-slate-600">→</span>
-              <div className="flex items-center gap-1" title={`Người nhận: ${assignee}`}>
-                <UserCheck size={12} className="text-amber-400" />
-                <span className="opacity-70">Nhận:</span>
+              <span className="text-slate-600 select-none">→</span>
+              <div className="flex items-center gap-1.5" title={`Người nhận: ${assignee}`}>
+                <UserCheck size={12} className="text-amber-400 shrink-0" />
+                <span className="opacity-70 text-[10.5px]">Nhận:</span>
+                {renderUserAvatarNode({
+                  staffId: task.assigneeId,
+                  name: assignee,
+                  sizeClass: 'w-[18px] h-[18px]',
+                  textSizeClass: 'text-[8.5px]',
+                  roundedClass: 'rounded-full',
+                  bgColor: '#d97706',
+                })}
                 <span className="font-semibold text-amber-400">{assignee}</span>
               </div>
             </div>
@@ -10536,36 +10559,6 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             </button>
                           </Tooltip>
                         )}
-                        {activeConversation?.type === 'space' &&
-                          (() => {
-                            const myId = Number(currentUserStaffMember.id) || Number(currentUser?.id) || 0;
-                            const myNick = activeConversation.memberNicknames?.[String(myId)];
-                            return (
-                              <Tooltip
-                                title={
-                                  myNick
-                                    ? `Biệt danh của bạn trong nhóm: "${myNick}" (Bấm để đổi)`
-                                    : 'Đặt biệt danh của bạn trong nhóm này'
-                                }
-                              >
-                                <button
-                                  type="button"
-                                  aria-label={
-                                    myNick ? `Biệt danh của bạn: "${myNick}" (Bấm để đổi)` : 'Đặt biệt danh trong nhóm'
-                                  }
-                                  onClick={() => handleOpenNicknameModal(myId)}
-                                  className="w-7 h-7 rounded-md inline-flex items-center justify-center transition-all cursor-pointer hover:opacity-90 ml-1 shrink-0"
-                                  style={{
-                                    background: myNick ? 'rgba(16, 185, 129, 0.15)' : 'rgba(212, 168, 75, 0.14)',
-                                    color: myNick ? '#10b981' : '#d4a84b',
-                                    border: `1px solid ${myNick ? 'rgba(16, 185, 129, 0.3)' : 'rgba(212, 168, 75, 0.25)'}`,
-                                  }}
-                                >
-                                  <Pencil size={12} />
-                                </button>
-                              </Tooltip>
-                            );
-                          })()}
                       </div>
                     </>
                   )}
