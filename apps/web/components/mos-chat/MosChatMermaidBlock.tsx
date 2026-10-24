@@ -170,34 +170,38 @@ export const MosChatMermaidBlock: React.FC<MosChatMermaidBlockProps> = ({ code, 
                   borderColor: toolbarBorder,
                 }}
               >
-                <button
-                  type="button"
-                  onClick={() => setViewMode('diagram')}
-                  className={`px-2 py-0.5 rounded-md font-medium flex items-center gap-1 transition-all cursor-pointer ${
-                    viewMode === 'diagram'
-                      ? 'bg-purple-600 text-white shadow-xs'
-                      : isDark
-                        ? 'text-slate-400 hover:text-white'
-                        : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Eye size={11} />
-                  <span>Sơ đồ</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setViewMode('code')}
-                  className={`px-2 py-0.5 rounded-md font-medium flex items-center gap-1 transition-all cursor-pointer ${
-                    viewMode === 'code'
-                      ? 'bg-purple-600 text-white shadow-xs'
-                      : isDark
-                        ? 'text-slate-400 hover:text-white'
-                        : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Code2 size={11} />
-                  <span>Mã code</span>
-                </button>
+                <Tooltip title="Xem sơ đồ trực quan">
+                  <button
+                    type="button"
+                    aria-label="Xem sơ đồ trực quan"
+                    onClick={() => setViewMode('diagram')}
+                    className={`p-1.5 rounded-md font-medium flex items-center justify-center transition-all cursor-pointer ${
+                      viewMode === 'diagram'
+                        ? 'bg-purple-600 text-white shadow-xs'
+                        : isDark
+                          ? 'text-slate-400 hover:text-white hover:bg-white/5'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                    }`}
+                  >
+                    <Eye size={13} />
+                  </button>
+                </Tooltip>
+                <Tooltip title="Xem mã nguồn Mermaid">
+                  <button
+                    type="button"
+                    aria-label="Xem mã nguồn Mermaid"
+                    onClick={() => setViewMode('code')}
+                    className={`p-1.5 rounded-md font-medium flex items-center justify-center transition-all cursor-pointer ${
+                      viewMode === 'code'
+                        ? 'bg-purple-600 text-white shadow-xs'
+                        : isDark
+                          ? 'text-slate-400 hover:text-white hover:bg-white/5'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                    }`}
+                  >
+                    <Code2 size={13} />
+                  </button>
+                </Tooltip>
               </div>
             )}
 
@@ -206,23 +210,24 @@ export const MosChatMermaidBlock: React.FC<MosChatMermaidBlockProps> = ({ code, 
               <Tooltip title="Xem toàn màn hình / Phóng to sơ đồ">
                 <button
                   type="button"
+                  aria-label="Xem toàn màn hình"
                   onClick={() => setIsModalOpen(true)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-colors cursor-pointer"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-colors cursor-pointer flex items-center justify-center"
                 >
-                  <Maximize2 size={12} />
+                  <Maximize2 size={13} />
                 </button>
               </Tooltip>
             )}
 
             {/* Copy Button */}
-            <Tooltip title="Sao chép mã nguồn Mermaid">
+            <Tooltip title={isCopied ? 'Đã sao chép mã Mermaid' : 'Sao chép mã nguồn Mermaid'}>
               <button
                 type="button"
+                aria-label="Sao chép mã nguồn Mermaid"
                 onClick={handleCopy}
-                className="p-1 rounded-lg text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-colors cursor-pointer flex items-center gap-1 text-[10.5px]"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-purple-400 hover:bg-purple-500/10 transition-colors cursor-pointer flex items-center justify-center"
               >
-                {isCopied ? <Check size={12} className="text-emerald-500" /> : <Copy size={12} />}
-                <span>{isCopied ? 'Đã chép' : 'Sao chép'}</span>
+                {isCopied ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
               </button>
             </Tooltip>
           </div>

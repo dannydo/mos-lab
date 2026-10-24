@@ -126,6 +126,23 @@ describe('MosChatRichText', () => {
     expect(screen.getByText('Danny Do')).toBeDefined();
   });
 
+  it('renders multi-word Vietnamese staff names, emojis, @MAI, and avoids muddy color in isMe bubbles', () => {
+    const md = 'Chào bạn @Bùi Sinh Nguyên, bạn @Tường Đoan 🪽, bạn @MAI';
+    const { container } = render(<MosChatRichText content={md} isMe={true} isDark={true} />);
+
+    expect(screen.getByText('Bùi Sinh Nguyên')).toBeDefined();
+    expect(screen.getByText('Tường Đoan 🪽')).toBeDefined();
+    expect(screen.getByText('MAI')).toBeDefined();
+
+    // Check that mention tags do NOT have the muddy dark color bg-slate-950/20 text-slate-950
+    const mentionSpans = container.querySelectorAll('span.inline-flex.items-center');
+    expect(mentionSpans.length).toBeGreaterThanOrEqual(3);
+    mentionSpans.forEach((span) => {
+      expect(span.className).not.toContain('bg-slate-950/20');
+      expect(span.className).not.toContain('text-slate-950');
+    });
+  });
+
   it('renders inline HTML tags: <b>, <strong>, <i>, <em>, <u>, <s>, <del>, <code>, <mark>, <a href="...">', () => {
     const htmlText =
       '<b>Bold HTML</b>, <strong>Strong HTML</strong>, <i>Italic HTML</i>, ' +

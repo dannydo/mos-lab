@@ -7236,7 +7236,16 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const renderRichTextMessage = useCallback(
     (rawText?: string | null, _isMine = false): React.ReactNode => {
       if (!rawText) return null;
-      return <MosChatRichText content={rawText} isMe={_isMine} isDark={isDark} />;
+      return (
+        <MosChatRichText
+          content={rawText}
+          isMe={_isMine}
+          isDark={isDark}
+          staffDirectory={staffDirectory}
+          memberNicknames={activeConversation?.memberNicknames}
+          currentUser={currentUser}
+        />
+      );
     },
     [isDark]
   );
@@ -10541,17 +10550,18 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               >
                                 <button
                                   type="button"
-                                  aria-label="Đổi biệt danh trong nhóm"
+                                  aria-label={
+                                    myNick ? `Biệt danh của bạn: "${myNick}" (Bấm để đổi)` : 'Đặt biệt danh trong nhóm'
+                                  }
                                   onClick={() => handleOpenNicknameModal(myId)}
-                                  className="inline-flex items-center gap-1 h-6 px-2 rounded-full transition-all cursor-pointer hover:opacity-90 ml-1 shrink-0 text-[11px]"
+                                  className="w-7 h-7 rounded-md inline-flex items-center justify-center transition-all cursor-pointer hover:opacity-90 ml-1 shrink-0"
                                   style={{
                                     background: myNick ? 'rgba(16, 185, 129, 0.15)' : 'rgba(212, 168, 75, 0.14)',
                                     color: myNick ? '#10b981' : '#d4a84b',
                                     border: `1px solid ${myNick ? 'rgba(16, 185, 129, 0.3)' : 'rgba(212, 168, 75, 0.25)'}`,
                                   }}
                                 >
-                                  <Pencil size={10} />
-                                  <span className="font-bold max-w-[100px] truncate">{myNick || 'Đặt biệt danh'}</span>
+                                  <Pencil size={12} />
                                 </button>
                               </Tooltip>
                             );
@@ -10563,46 +10573,48 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
                 {/* Sub-tabs: Chat | Tasks | Pinned */}
                 <div
-                  className="flex items-center gap-0.5 p-1 rounded-lg"
+                  className="flex items-center gap-0.5 p-0.5 rounded-lg"
                   style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
                 >
                   <Tooltip title="Luồng trò chuyện">
                     <button
                       type="button"
+                      aria-label="Luồng trò chuyện"
                       onClick={() => setActiveSubtab('chat')}
-                      className="h-7 px-2 sm:px-2.5 rounded-md inline-flex items-center gap-1.5 text-[11.5px] font-bold cursor-pointer"
+                      className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer transition-colors"
                       style={{
                         background: activeSubtab === 'chat' ? surfaceBg : 'transparent',
                         color: activeSubtab === 'chat' ? '#d4a84b' : token.colorTextSecondary,
                       }}
                     >
                       <MessageSquare size={14} />
-                      {!isMobile && <span>Chat</span>}
                     </button>
                   </Tooltip>
 
-                  <Tooltip title="Công việc & Nhắc hẹn từ tin nhắn">
+                  <Tooltip title={`Công việc & Nhắc hẹn (${uniqueTasks.filter((t) => !t.done).length} đang mở)`}>
                     <button
                       type="button"
+                      aria-label="Tab Tasks"
                       onClick={() => setActiveSubtab('tasks')}
-                      className="h-7 px-2 sm:px-2.5 rounded-md inline-flex items-center gap-1.5 text-[11.5px] font-bold cursor-pointer tabular-nums"
+                      className="h-7 px-1.5 rounded-md inline-flex items-center gap-1 text-[11px] font-bold cursor-pointer tabular-nums transition-colors"
                       style={{
                         background: activeSubtab === 'tasks' ? surfaceBg : 'transparent',
                         color: activeSubtab === 'tasks' ? '#d4a84b' : token.colorTextSecondary,
                       }}
                     >
                       <CheckSquare size={14} />
-                      {!isMobile && <span>Tasks</span>}
-                      <span className="text-amber-500">{uniqueTasks.filter((t) => !t.done).length}</span>
+                      <span className="text-amber-500 font-extrabold">{uniqueTasks.filter((t) => !t.done).length}</span>
                     </button>
                   </Tooltip>
 
-                  <Tooltip title="Tin nhắn đã ghim">
+                  <Tooltip
+                    title={`Tin nhắn đã ghim (${activeConversation?.messages.filter((m) => m.pinned).length || 0})`}
+                  >
                     <button
                       type="button"
                       aria-label="Tab tin nhắn đã ghim"
                       onClick={() => setActiveSubtab('pinned')}
-                      className="h-7 px-2 rounded-md inline-flex items-center gap-1 text-[11.5px] font-bold cursor-pointer tabular-nums"
+                      className="h-7 px-1.5 rounded-md inline-flex items-center gap-1 text-[11px] font-bold cursor-pointer tabular-nums transition-colors"
                       style={{
                         background: activeSubtab === 'pinned' ? surfaceBg : 'transparent',
                         color: activeSubtab === 'pinned' ? '#d4a84b' : token.colorTextSecondary,
@@ -10638,7 +10650,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                         antdMessage.info('Đã TẮT @MAI đọc thông báo khẩn cấp');
                       }
                     }}
-                    className="h-7 px-2 rounded-md inline-flex items-center gap-1.5 text-[11px] font-bold cursor-pointer transition-colors"
+                    className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer transition-colors"
                     style={{
                       background: maiVoiceAnnounceEnabled ? 'rgba(212, 168, 75, 0.16)' : 'transparent',
                       border: `1px solid ${maiVoiceAnnounceEnabled ? 'rgba(212, 168, 75, 0.35)' : borderColor}`,
@@ -10646,11 +10658,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     }}
                   >
                     {maiVoiceAnnounceEnabled ? (
-                      <Volume2 size={13} className="text-amber-500 animate-pulse" />
+                      <Volume2 size={14} className="text-amber-500 animate-pulse" />
                     ) : (
-                      <VolumeX size={13} className="opacity-60" />
+                      <VolumeX size={14} className="opacity-60" />
                     )}
-                    <span className="hidden md:inline">@MAI Đọc khẩn cấp</span>
                   </button>
                 </Tooltip>
 
@@ -11539,7 +11550,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                       type="button"
                                       aria-label="Đọc câu trả lời AI"
                                       onClick={() => handleSpeakAiMessage(m)}
-                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold cursor-pointer transition-colors"
+                                      className="inline-flex items-center justify-center p-1.5 rounded-md cursor-pointer transition-all hover:scale-105 active:scale-95"
                                       style={{
                                         background: speakingMsgId === m.id ? 'rgba(139, 92, 246, 0.2)' : surfaceRaised,
                                         border: `1px solid ${speakingMsgId === m.id ? 'rgba(139, 92, 246, 0.5)' : borderColor}`,
@@ -11547,11 +11558,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                       }}
                                     >
                                       {speakingMsgId === m.id ? (
-                                        <VolumeX size={12} className="animate-pulse" />
+                                        <VolumeX size={13} className="animate-pulse" />
                                       ) : (
-                                        <Volume2 size={12} />
+                                        <Volume2 size={13} />
                                       )}
-                                      <span>{speakingMsgId === m.id ? 'Dừng đọc' : 'Nghe'}</span>
                                     </button>
                                   </Tooltip>
 
@@ -11599,15 +11609,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                         void navigator.clipboard?.writeText(m.text);
                                         antdMessage.success('Đã sao chép nội dung câu trả lời AI');
                                       }}
-                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold cursor-pointer"
+                                      className="inline-flex items-center justify-center p-1.5 rounded-md cursor-pointer transition-all hover:scale-105 active:scale-95"
                                       style={{
                                         background: surfaceRaised,
                                         border: `1px solid ${borderColor}`,
                                         color: token.colorTextSecondary,
                                       }}
                                     >
-                                      <Copy size={11} />
-                                      <span>Sao chép</span>
+                                      <Copy size={13} />
                                     </button>
                                   </Tooltip>
                                 </div>
@@ -13528,17 +13537,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       <MessageSquareReply size={14} className="shrink-0 text-amber-500" />
                       <span>Luồng trả lời</span>
                     </span>
-                    {!isMobile && (
-                      <span className="text-[10px] text-slate-400 tabular-nums font-normal ml-1">
-                        ({threadWidth}px)
-                      </span>
-                    )}
                   </div>
                   <div className="flex items-center gap-1">
                     {isStrictDannySuperAdmin && !activeThreadMessage.mission && (
-                      <Tooltip title="Đóng gói trọn luồng này (tin nhắn gốc + câu trả lời + hình ảnh) chuyển vào mOS Mission (Cổng 1)">
+                      <Tooltip title="Chuyển vào mOS Mission (Đóng gói trọn luồng & hình ảnh)">
                         <button
                           type="button"
+                          aria-label="Chuyển vào mOS Mission"
                           onClick={() =>
                             openMissionModalFromChat(
                               activeThreadMessage,
@@ -13548,32 +13553,31 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               ) || null
                             )
                           }
-                          className="h-7 px-2.5 rounded-md inline-flex items-center gap-1 text-[11px] font-extrabold cursor-pointer transition-all hover:scale-[1.02] shrink-0 whitespace-nowrap"
+                          className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 shrink-0"
                           style={{
                             background: 'rgba(139, 92, 246, 0.2)',
                             border: '1px solid rgba(139, 92, 246, 0.45)',
                             color: '#c4b5fd',
                           }}
                         >
-                          <Rocket size={12} />
-                          <span>Chuyển vào mOS Mission</span>
+                          <Rocket size={14} />
                         </button>
                       </Tooltip>
                     )}
                     {isStrictDannySuperAdmin && (
-                      <Tooltip title="✨ Chuẩn hóa luồng thảo luận này thành Workflow hoặc Nâng cấp Workflow (Chỉ Super Admin)">
+                      <Tooltip title="✨ Chuẩn hóa luồng thảo luận này thành Quy trình (Workflow)">
                         <button
                           type="button"
+                          aria-label="Lưu thành Workflow"
                           onClick={() => setSaveThreadWorkflowModalOpen(true)}
-                          className="h-7 px-2.5 rounded-md inline-flex items-center gap-1 text-[11px] font-extrabold cursor-pointer transition-all hover:scale-[1.02]"
+                          className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95 shrink-0"
                           style={{
                             background: 'rgba(59, 130, 246, 0.18)',
                             border: '1px solid rgba(59, 130, 246, 0.45)',
                             color: '#93c5fd',
                           }}
                         >
-                          <Activity size={12} />
-                          <span>✨ Lưu Workflow</span>
+                          <Activity size={14} />
                         </button>
                       </Tooltip>
                     )}
@@ -13656,7 +13660,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               type="button"
                               aria-label="Đọc câu trả lời AI trong luồng"
                               onClick={() => handleSpeakAiMessage(activeThreadMessage)}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold cursor-pointer transition-colors"
+                              className="inline-flex items-center justify-center p-1.5 rounded-md cursor-pointer transition-all hover:scale-105 active:scale-95"
                               style={{
                                 background:
                                   speakingMsgId === activeThreadMessage.id ? 'rgba(139, 92, 246, 0.2)' : surfaceRaised,
@@ -13667,11 +13671,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                               }}
                             >
                               {speakingMsgId === activeThreadMessage.id ? (
-                                <VolumeX size={12} className="animate-pulse" />
+                                <VolumeX size={13} className="animate-pulse" />
                               ) : (
-                                <Volume2 size={12} />
+                                <Volume2 size={13} />
                               )}
-                              <span>{speakingMsgId === activeThreadMessage.id ? 'Dừng đọc' : 'Nghe'}</span>
                             </button>
                           </Tooltip>
 
@@ -13718,15 +13721,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                 void navigator.clipboard?.writeText(activeThreadMessage.text);
                                 antdMessage.success('Đã sao chép nội dung câu trả lời AI');
                               }}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold cursor-pointer"
+                              className="inline-flex items-center justify-center p-1.5 rounded-md cursor-pointer transition-all hover:scale-105 active:scale-95"
                               style={{
                                 background: surfaceRaised,
                                 border: `1px solid ${borderColor}`,
                                 color: token.colorTextSecondary,
                               }}
                             >
-                              <Copy size={11} />
-                              <span>Sao chép</span>
+                              <Copy size={13} />
                             </button>
                           </Tooltip>
                         </div>
@@ -14046,7 +14048,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                         type="button"
                                         aria-label="Đọc câu trả lời AI trong luồng"
                                         onClick={() => handleSpeakAiMessage(r as SafeAny)}
-                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold cursor-pointer transition-colors"
+                                        className="inline-flex items-center justify-center p-1.5 rounded-md cursor-pointer transition-all hover:scale-105 active:scale-95"
                                         style={{
                                           background:
                                             speakingMsgId === r.id ? 'rgba(139, 92, 246, 0.2)' : surfaceRaised,
@@ -14057,11 +14059,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                         }}
                                       >
                                         {speakingMsgId === r.id ? (
-                                          <VolumeX size={12} className="animate-pulse" />
+                                          <VolumeX size={13} className="animate-pulse" />
                                         ) : (
-                                          <Volume2 size={12} />
+                                          <Volume2 size={13} />
                                         )}
-                                        <span>{speakingMsgId === r.id ? 'Dừng đọc' : 'Nghe'}</span>
                                       </button>
                                     </Tooltip>
 
@@ -14108,15 +14109,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                           void navigator.clipboard?.writeText(r.text);
                                           antdMessage.success('Đã sao chép nội dung câu trả lời AI');
                                         }}
-                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold cursor-pointer"
+                                        className="inline-flex items-center justify-center p-1.5 rounded-md cursor-pointer transition-all hover:scale-105 active:scale-95"
                                         style={{
                                           background: surfaceRaised,
                                           border: `1px solid ${borderColor}`,
                                           color: token.colorTextSecondary,
                                         }}
                                       >
-                                        <Copy size={11} />
-                                        <span>Sao chép</span>
+                                        <Copy size={13} />
                                       </button>
                                     </Tooltip>
                                   </div>

@@ -40,9 +40,9 @@ flowchart TD
       expect(screen.getByTestId('mock-mermaid-svg')).toBeDefined();
     });
 
-    // View toggle buttons are present
-    expect(screen.getByText('Sơ đồ')).toBeDefined();
-    expect(screen.getByText('Mã code')).toBeDefined();
+    // View toggle buttons are present (icon-only with aria-label)
+    expect(screen.getByRole('button', { name: /Xem sơ đồ/i })).toBeDefined();
+    expect(screen.getByRole('button', { name: /Xem mã nguồn/i })).toBeDefined();
   });
 
   it('allows toggling between diagram view and code view', async () => {
@@ -54,14 +54,14 @@ flowchart TD
     });
 
     // Switch to code view
-    const codeBtn = screen.getByText('Mã code');
+    const codeBtn = screen.getByRole('button', { name: /Xem mã nguồn/i });
     fireEvent.click(codeBtn);
 
     // Should display the raw code in a code tag
     expect(container.querySelector('code')?.textContent?.trim()).toBe('graph LR\n  Start --> Stop');
 
     // Switch back to diagram
-    const diagramBtn = screen.getByText('Sơ đồ');
+    const diagramBtn = screen.getByRole('button', { name: /Xem sơ đồ/i });
     fireEvent.click(diagramBtn);
 
     await waitFor(() => {
@@ -78,7 +78,7 @@ flowchart TD
     });
 
     // Click code mode to see cleaned code
-    fireEvent.click(screen.getByText('Mã code'));
+    fireEvent.click(screen.getByRole('button', { name: /Xem mã nguồn/i }));
     expect(container.querySelector('code')?.textContent?.trim()).toBe('sequenceDiagram\n  Alice->>Bob: Hello');
   });
 

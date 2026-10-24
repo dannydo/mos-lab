@@ -14,6 +14,9 @@ export interface MosChatRichTextProps {
   isMe?: boolean;
   isDark?: boolean;
   className?: string;
+  staffDirectory?: any[];
+  memberNicknames?: Record<string, string>;
+  currentUser?: any;
 }
 
 /**
@@ -91,28 +94,46 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
   isMe = false,
   isDark = true,
   className = '',
+  staffDirectory: propStaffDirectory,
+  memberNicknames: propMemberNicknames,
+  currentUser: propCurrentUser,
 }) => {
   const chatContext = useContext(MosChatContext);
 
-  const currentUser = chatContext?.currentUser;
-  const staffDirectory = chatContext?.staffDirectory || [];
-  const activeConversation = chatContext?.activeConversation;
+  const currentUser = propCurrentUser || chatContext?.currentUser;
+  const staffDirectory = propStaffDirectory || chatContext?.staffDirectory || [];
+  const memberNicknames = propMemberNicknames || chatContext?.activeConversation?.memberNicknames;
 
   // Danh sách tên nhân sự nhiều từ để khớp chính xác @Tên Đầy Đủ
   const knownMultiWordStaffNames = useMemo(() => {
-    const set = new Set<string>(['Danny Do', 'Bảo Hân', 'Diễm Hương']);
-    staffDirectory.forEach((s) => {
-      if (s.displayName && s.displayName.includes(' ')) set.add(s.displayName.trim());
-      const extraName = (s as any).realName || (s as any).nickname;
-      if (typeof extraName === 'string' && extraName.includes(' ')) set.add(extraName.trim());
+    const set = new Set<string>(['Danny Do', 'Bảo Hân', 'Diễm Hương', 'Bùi Sinh Nguyên', 'Tường Đoan', 'Sinh Nguyên']);
+    staffDirectory.forEach((s: any) => {
+      const candidates = [s.displayName, s.fullName, s.name, s.realName, s.nickname, s.username];
+      candidates.forEach((name) => {
+        if (typeof name === 'string' && name.trim()) {
+          const clean = name.trim();
+          set.add(clean);
+          const withoutEmoji = clean.replace(/[\p{Extended_Pictographic}\uFE0F\u200D]+/gu, '').trim();
+          if (withoutEmoji && withoutEmoji.length > 1) {
+            set.add(withoutEmoji);
+          }
+        }
+      });
     });
-    if (activeConversation?.memberNicknames) {
-      Object.values(activeConversation.memberNicknames).forEach((nick) => {
-        if (nick && nick.includes(' ')) set.add(nick.trim());
+    if (memberNicknames) {
+      Object.values(memberNicknames).forEach((nick) => {
+        if (typeof nick === 'string' && nick.trim()) {
+          const clean = nick.trim();
+          set.add(clean);
+          const withoutEmoji = clean.replace(/[\p{Extended_Pictographic}\uFE0F\u200D]+/gu, '').trim();
+          if (withoutEmoji && withoutEmoji.length > 1) {
+            set.add(withoutEmoji);
+          }
+        }
       });
     }
     return Array.from(set).sort((a, b) => b.length - a.length);
-  }, [staffDirectory, activeConversation]);
+  }, [staffDirectory, memberNicknames]);
 
   /**
    * Phân tích inline markup sang React Nodes:
@@ -125,7 +146,7 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
 
       const staffPattern =
         knownMultiWordStaffNames.length > 0
-          ? `|(@(?:${knownMultiWordStaffNames.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b)`
+          ? `|(@(?:${knownMultiWordStaffNames.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(?:\\s*[\\p{Extended_Pictographic}\\uFE0F\\u200D]+)?(?=\\s|[.,!?:;]|$))`
           : '';
 
       // Thứ tự ưu tiên khớp:
@@ -173,8 +194,8 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
           `(https?:\\/\\/[^\\s<)]+)|` +
           `(\\$\\$([^\\$]+?)\\$\\$)|` +
           `(\\$([^\\$\\s\\n](?:[^\\$\\n]*?[^\\$\\s\\n])?)\\$)|` +
-          `(@\\s*(?:AI|copilot|all|mọi\\s+người|moi\\s+nguoi)\\b)${staffPattern}|` +
-          `(@[a-zA-Z0-9_\\u00C0-\\u1EF9]+)`,
+          `(@\\s*(?:AI|copilot|MAI|mai|all|mọi\\s+người|moi\\s+nguoi)(?=\\s|[.,!?:;]|$))${staffPattern}|` +
+          `(@[A-ZÀ-Ỹa-zà-ỹ0-9_]+(?:\\s+[A-ZÀ-Ỹ][a-zà-ỹ0-9_]*)*(?:\\s*[\\p{Extended_Pictographic}\\uFE0F\\u200D]+)?(?=\\s|[.,!?:;]|$))`,
         'gui'
       );
 
@@ -465,11 +486,12 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
         }
         // 22. Tag @mention
         else if (fullMatch.startsWith('@')) {
-          const cleanTag = fullMatch.replace(/^@\s*/, '').trim().toLowerCase();
-          const isAi = cleanTag === 'ai' || cleanTag.includes('copilot');
+          const rawTag = fullMatch.replace(/^@\s*/, '').trim();
+          const cleanTag = rawTag.toLowerCase();
+          const isAi = cleanTag === 'ai' || cleanTag === 'mai' || cleanTag.includes('copilot');
           const isAll = cleanTag === 'all' || cleanTag === 'mọi người' || cleanTag === 'moi nguoi';
           const myId = Number(currentUser?.id) || 0;
-          const myNick = activeConversation?.memberNicknames?.[String(myId)];
+          const myNick = memberNicknames?.[String(myId)];
           const myNickNorm = myNick ? removeVietnameseTones(myNick.toLowerCase()) : '';
           const myName = removeVietnameseTones(
             (
@@ -489,21 +511,34 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
             isAll
           );
 
+          // Tinh chỉnh màu sắc sắc nét, thẩm mỹ cao cho nhãn @mention (không bị xỉn màu khi ở trong bong bóng của tôi)
+          const badgeClass = isAi
+            ? isDark
+              ? 'bg-purple-500/25 text-purple-200 border border-purple-400/50 shadow-xs font-semibold'
+              : 'bg-purple-100 text-purple-900 border border-purple-300 font-semibold'
+            : isAll
+              ? isDark
+                ? 'bg-amber-500/30 text-amber-200 border border-amber-400/60 shadow-xs ring-1 ring-amber-400/30 font-bold'
+                : 'bg-amber-100 text-amber-900 border border-amber-400 font-bold shadow-xs'
+              : isMentioningMe
+                ? isDark
+                  ? 'bg-amber-500/30 text-amber-100 border border-amber-400/70 shadow-xs ring-1 ring-amber-400/40 font-bold'
+                  : 'bg-amber-200/90 text-amber-950 border border-amber-500 font-bold shadow-xs'
+                : isMe
+                  ? isDark
+                    ? 'bg-sky-500/25 text-sky-200 border border-sky-400/50 font-semibold shadow-xs'
+                    : 'bg-sky-100 text-sky-900 border border-sky-400/60 font-semibold shadow-xs'
+                  : isDark
+                    ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
+                    : 'bg-sky-50 text-sky-800 border border-sky-300';
+
           elements.push(
             <span
               key={key}
-              className={`inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-md text-[11px] font-semibold select-text transition-all ${
-                isMe
-                  ? 'bg-slate-950/20 text-slate-950 border border-slate-950/30'
-                  : isAi
-                    ? 'bg-purple-500/25 text-purple-300 border border-purple-500/40'
-                    : isMentioningMe
-                      ? 'bg-amber-500/30 text-amber-200 border border-amber-400/60 shadow-xs ring-1 ring-amber-400/40 font-bold'
-                      : 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
-              }`}
+              className={`inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-md text-[11px] select-text transition-all ${badgeClass}`}
             >
               <AtSign size={10} className="shrink-0 opacity-80" />
-              <span>{isAi ? 'AI' : fullMatch.replace(/^@\s*/, '')}</span>
+              <span>{isAi && cleanTag === 'ai' ? 'AI' : isAi && cleanTag === 'mai' ? 'MAI' : rawTag}</span>
             </span>
           );
         } else {
@@ -519,7 +554,7 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
 
       return elements.length > 0 ? elements : [decodeHtmlEntities(text)];
     },
-    [knownMultiWordStaffNames, isMe, isDark, currentUser, activeConversation]
+    [knownMultiWordStaffNames, isMe, isDark, currentUser, memberNicknames]
   );
 
   // Phân tích toàn bộ khối tin nhắn
