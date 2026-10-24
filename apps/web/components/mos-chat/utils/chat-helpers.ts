@@ -416,9 +416,12 @@ export function extractMentionedStaff<T extends { id?: number | string; displayN
         }
       }
 
+      const explicitNickname = options?.nicknames?.[sId]?.trim();
+
       for (const cand of candidatesToTest) {
         const cTrimmed = cand.trim();
-        if (!cTrimmed || cTrimmed.length < 2) continue;
+        const isExplicitNick = Boolean(explicitNickname && cTrimmed === explicitNickname);
+        if (!cTrimmed || (!isExplicitNick && cTrimmed.length < 2)) continue;
 
         const escaped = cTrimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const exactRegex = new RegExp(`^${escaped}(?:\\b|[\\s.,!?;:)\\]]|$)`, 'i');
@@ -467,13 +470,19 @@ export function isUserMentionedInText(
   const rawTextLower = text.toLowerCase();
   const textNorm = removeVietnameseTones(rawTextLower);
 
-  // 2. Kiểm tra biệt danh (nickname) được gán riêng trong Space
+  // 2. Kiểm tra biệt danh (nickname) được gán riêng trong Space (hỗ trợ cả biệt danh 1 ký tự như '@K')
   const myId = String(user?.id || '');
   if (myId && options?.nicknames?.[myId]) {
     const nick = options.nicknames[myId].trim().toLowerCase();
     const nickNorm = removeVietnameseTones(nick);
-    if (nick && (rawTextLower.includes(`@${nick}`) || textNorm.includes(`@${nickNorm}`))) {
-      return true;
+    if (nick) {
+      const escapedNick = nick.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escapedNickNorm = nickNorm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regexNickExact = new RegExp(`(?:^|[\\s([{"'])@\\s*${escapedNick}(?:$|\\b|[\\s.,!?;:)\\]}"'])`, 'i');
+      const regexNickNorm = new RegExp(`(?:^|[\\s([{"'])@\\s*${escapedNickNorm}(?:$|\\b|[\\s.,!?;:)\\]}"'])`, 'i');
+      if (regexNickExact.test(rawTextLower) || regexNickNorm.test(textNorm)) {
+        return true;
+      }
     }
   }
 

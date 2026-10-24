@@ -88,6 +88,12 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
   const [conversations, setConversations] = useState<MosChatConversation[]>(FALLBACK_CONVERSATIONS);
   const [activeConvId, setActiveConvId] = useState<string>(initialConvId);
   const [sidebarFilter, setSidebarFilter] = useState<MosChatSidebarFilter>('all');
+
+  useEffect(() => {
+    if (initialConvId) {
+      setActiveConvId(initialConvId);
+    }
+  }, [initialConvId]);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [pinnedConvIds, setPinnedConvIds] = useState<Set<string>>(new Set());
 
@@ -194,6 +200,27 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       }
     }, [])
   );
+
+  // Also listen to global 'mos-chat:open' event for mobile / context-driven views
+  useEffect(() => {
+    const handleGlobalOpen = (ev: Event) => {
+      const customEv = ev as CustomEvent<{
+        conversationId?: string;
+        messageId?: string;
+        openTab?: MosChatActiveSubtab;
+      }>;
+      const detail = customEv.detail || {};
+      if (detail.openTab) {
+        setActiveSubtab(detail.openTab);
+      }
+      if (detail.conversationId) {
+        setActiveConvId(detail.conversationId);
+        setMobileView('room');
+      }
+    };
+    window.addEventListener('mos-chat:open', handleGlobalOpen);
+    return () => window.removeEventListener('mos-chat:open', handleGlobalOpen);
+  }, []);
 
   // Mark conversation as read
   const markConversationAsRead = useCallback(async (convId: string) => {
