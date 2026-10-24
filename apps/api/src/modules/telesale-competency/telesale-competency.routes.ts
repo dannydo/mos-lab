@@ -1,11 +1,222 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { requireAuth, requireSuperAdmin } from '../../middlewares/auth.js';
 import { TelesaleCompetencyService } from './telesale-competency.service.js';
-import { TelesaleTier, TelesaleCompetencyGlobalConfig } from '@mos-lab/shared';
+import { TelesaleTier, TelesaleCompetencyGlobalConfig, TelesaleCompetencyConfigVersion } from '@mos-lab/shared';
 
 export const telesaleCompetencyRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   /**
-   * Lấy cấu hình Khung Năng Lực Telesale
+   * -------------------------------------------------------------
+   * Quản Lý Cấu Hình Khung Năng Lực & Quản Lý Phiên Bản (MOS-FEAT-142)
+   * -------------------------------------------------------------
+   */
+
+  /**
+   * Lấy danh sách các phiên bản cấu hình
+   * GET /api/telesale-competency/config-versions
+   */
+  fastify.get(
+    '/telesale-competency/config-versions',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const versions = await TelesaleCompetencyService.listConfigVersions(fastify);
+        return reply.send({ success: true, data: versions });
+      } catch (err: any) {
+        fastify.log.error({ err }, 'Failed to list competency config versions');
+        return reply.status(500).send({ success: false, message: 'Lỗi tải danh sách phiên bản cấu hình' });
+      }
+    }
+  );
+
+  /**
+   * Lấy chi tiết một phiên bản cấu hình
+   * GET /api/telesale-competency/config-versions/:id
+   */
+  fastify.get<{ Params: { id: string } }>(
+    '/telesale-competency/config-versions/:id',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      try {
+        const version = await TelesaleCompetencyService.getConfigVersion(fastify, id);
+        if (!version) {
+          return reply.status(404).send({ success: false, message: 'Không tìm thấy phiên bản cấu hình' });
+        }
+        return reply.send({ success: true, data: version });
+      } catch (err: any) {
+        fastify.log.error({ err, id }, 'Failed to get config version details');
+        return reply.status(500).send({ success: false, message: 'Lỗi tải chi tiết phiên bản cấu hình' });
+      }
+    }
+  );
+
+  /**
+   * Tạo bản nháp cấu hình mới (Chỉ Super Admin / Admin)
+   * POST /api/telesale-competency/config-versions
+   */
+  fastify.post<{ Body: Partial<TelesaleCompetencyConfigVersion> }>(
+    '/telesale-competency/config-versions',
+    {
+      preHandler: [requireAuth, requireSuperAdmin],
+    },
+    async (request, reply) => {
+      const user = (request as any).user;
+      try {
+        const draft = await TelesaleCompetencyService.createDraftVersion(
+          fastify,
+          request.body || {},
+          { id: user?.id, name: user?.name || user?.username || 'Admin' }
+        );
+        return reply.send({
+          success: true,
+          message: `Đã tạo bản nháp "${draft.name}" thành công`,
+          data: draft,
+        });
+      } catch (err: any) {
+        fastify.log.error({ err }, 'Failed to create draft config version');
+        return reply.status(400).send({ success: false, message: err.message || 'Lỗi tạo bản nháp cấu hình' });
+      }
+    }
+  );
+
+  /**
+   * Cập nhật bản nháp cấu hình
+   * PUT /api/telesale-competency/config-versions/:id
+   */
+  fastify.put<{ Params: { id: string }; Body: Partial<TelesaleCompetencyConfigVersion> }>(
+    '/telesale-competency/config-versions/:id',
+    {
+      preHandler: [requireAuth, requireSuperAdmin],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      try {
+        const updated = await TelesaleCompetencyService.updateDraftVersion(fastify, id, request.body || {});
+        return reply.send({
+          success: true,
+          message: 'Đã cập nhật bản nháp cấu hình thành công',
+          data: updated,
+        });
+      } catch (err: any) {
+        fastify.log.error({ err, id }, 'Failed to update draft config version');
+        return reply.status(400).send({ success: false, message: err.message || 'Lỗi cập nhật bản nháp cấu hình' });
+      }
+    }
+  );
+
+  /**
+   * Xóa bản nháp cấu hình
+   * DELETE /api/telesale-competency/config-versions/:id
+   */
+  fastify.delete<{ Params: { id: string } }>(
+    '/telesale-competency/config-versions/:id',
+    {
+      preHandler: [requireAuth, requireSuperAdmin],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      try {
+        await TelesaleCompetencyService.deleteDraftVersion(fastify, id);
+        return reply.send({
+          success: true,
+          message: 'Đã xóa bản nháp cấu hình thành công',
+        });
+      } catch (err: any) {
+        fastify.log.error({ err, id }, 'Failed to delete draft config version');
+        return reply.status(400).send({ success: false, message: err.message || 'Lỗi xóa bản nháp cấu hình' });
+      }
+    }
+  );
+
+  /**
+   * Kiểm tra tính hợp lệ của bản nháp trước khi ban hành
+   * POST /api/telesale-competency/config-versions/:id/validate
+   */
+  fastify.post<{ Params: { id: string } }>(
+    '/telesale-competency/config-versions/:id/validate',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      try {
+        const target = await TelesaleCompetencyService.getConfigVersion(fastify, id);
+        if (!target) {
+          return reply.status(404).send({ success: false, message: 'Không tìm thấy phiên bản cấu hình' });
+        }
+        const validation = TelesaleCompetencyService.validateConfigVersion(target);
+        return reply.send({
+          success: true,
+          data: validation,
+        });
+      } catch (err: any) {
+        fastify.log.error({ err, id }, 'Failed to validate config version');
+        return reply.status(400).send({ success: false, message: err.message || 'Lỗi kiểm tra tính hợp lệ cấu hình' });
+      }
+    }
+  );
+
+  /**
+   * Ban hành chính thức phiên bản cấu hình
+   * POST /api/telesale-competency/config-versions/:id/publish
+   */
+  fastify.post<{ Params: { id: string }; Body: { effectiveDate?: string } }>(
+    '/telesale-competency/config-versions/:id/publish',
+    {
+      preHandler: [requireAuth, requireSuperAdmin],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const user = (request as any).user;
+      const effectiveDate = request.body?.effectiveDate || new Date().toISOString().slice(0, 7);
+      try {
+        const published = await TelesaleCompetencyService.publishConfigVersion(fastify, id, effectiveDate, {
+          id: user?.id,
+          name: user?.name || user?.username || 'Admin',
+        });
+        return reply.send({
+          success: true,
+          message: `Đã ban hành chính thức phiên bản "${published.name}" áp dụng từ kỳ ${published.effectiveDate}`,
+          data: published,
+        });
+      } catch (err: any) {
+        fastify.log.error({ err, id }, 'Failed to publish config version');
+        return reply.status(400).send({ success: false, message: err.message || 'Lỗi ban hành phiên bản cấu hình' });
+      }
+    }
+  );
+
+  /**
+   * Xem trước kết quả tính điểm trước khi áp dụng
+   * POST /api/telesale-competency/config-versions/:id/preview
+   */
+  fastify.post<{ Params: { id: string }; Body: { month?: string } }>(
+    '/telesale-competency/config-versions/:id/preview',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      const { id } = request.params;
+      const month = request.body?.month || new Date().toISOString().slice(0, 7);
+      try {
+        const preview = await TelesaleCompetencyService.previewCalculation(fastify, id, month);
+        return reply.send({
+          success: true,
+          data: preview,
+        });
+      } catch (err: any) {
+        fastify.log.error({ err, id, month }, 'Failed to preview config version calculation');
+        return reply.status(400).send({ success: false, message: err.message || 'Lỗi xem trước kết quả tính điểm' });
+      }
+    }
+  );
+
+  /**
+   * Lấy cấu hình Khung Năng Lực Telesale (Legacy Fallback)
    * GET /api/telesale-competency/config
    */
   fastify.get(

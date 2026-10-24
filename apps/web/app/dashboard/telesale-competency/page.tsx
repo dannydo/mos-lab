@@ -19,6 +19,7 @@ import {
   BookOpen,
   ArrowUpRight,
   ArrowDownRight,
+  Settings,
 } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
 import {
@@ -34,6 +35,7 @@ import { TelesaleTeamMatrixTab } from './components/TelesaleTeamMatrixTab';
 import { TelesalePillarsDetail } from './components/TelesalePillarsDetail';
 import { TelesaleLadderModal } from './components/TelesaleLadderModal';
 import { TelesaleActionModal } from './components/TelesaleActionModal';
+import { TelesaleConfigTab } from './components/TelesaleConfigTab';
 
 export default function TelesaleCompetencyPage() {
   const [selectedMonth, setSelectedMonth] = useState<Dayjs>(dayjs('2026-10'));
@@ -306,10 +308,21 @@ export default function TelesaleCompetencyPage() {
               </span>
             ),
           },
+          {
+            key: 'config',
+            label: (
+              <span className="flex items-center gap-1.5 font-medium">
+                <Settings className="w-4 h-4 text-emerald-500" />
+                Cấu Hình Khung Năng Lực
+              </span>
+            ),
+          },
         ]}
       />
 
-      {activeTab === 'team-matrix' ? (
+      {activeTab === 'config' ? (
+        <TelesaleConfigTab currentMonth={monthStr} />
+      ) : activeTab === 'team-matrix' ? (
         <TelesaleTeamMatrixTab
           teamMatrix={teamMatrix}
           loading={matrixLoading}
