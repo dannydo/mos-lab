@@ -182,6 +182,11 @@ import { MosChatMermaidBlock } from './MosChatMermaidBlock';
 import { MosChatMathBlock, MosChatMathInline, isMathValid } from './MosChatMathBlock';
 import { MosChatProvider } from './context/MosChatContext';
 import { MosChatMobileApp } from './mobile/MosChatMobileApp';
+import {
+  tabNotificationManager,
+  playMessengerChime,
+  showDesktopNotification,
+} from '../../lib/tab-notification';
 
 export { AI_COPILOT_CONV_ID };
 
@@ -354,6 +359,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [heartFlyMsgId, setHeartFlyMsgId] = useState<string | null>(null);
   const lastTapRef = useRef<{ msgId: string; time: number }>({ msgId: '', time: 0 });
   const notifiedBuzzIdsRef = useRef<Set<string>>(new Set());
+  const seenMessageIdsRef = useRef<Set<string>>(new Set());
+  const isInitialBootstrapRef = useRef<boolean>(true);
 
   useEffect(() => {
     setMobileActionOpen(false);
@@ -1550,15 +1557,70 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 });
               };
 
+              // MOS-BUG-139: Detect new messages and trigger Messenger-style tab title & favicon alert + chime
+              const handleIncomingMessageItem = (item: MosChatMessage | MosChatThreadReply) => {
+                if (isInitialBootstrapRef.current) {
+                  seenMessageIdsRef.current.add(item.id);
+                  return;
+                }
+
+                if (seenMessageIdsRef.current.has(item.id)) return;
+                seenMessageIdsRef.current.add(item.id);
+
+                const isMine =
+                  String(item.senderId) === myId ||
+                  (myStaffId > 0 && Number(item.senderId) === myStaffId) ||
+                  Boolean(
+                    myName &&
+                    String(item.senderName || '')
+                      .trim()
+                      .toLowerCase() === myName
+                  );
+
+                if (!isMine && !item.isBuzzed) {
+                  tabNotificationManager.triggerAlert({
+                    senderName: item.senderName || 'Đồng nghiệp',
+                    snippet: item.text || '',
+                    conversationName: conv.name,
+                    isDirect: conv.type === 'dm',
+                  });
+
+                  if (presence !== 'dnd') {
+                    playMessengerChime();
+                  }
+
+                  if (typeof document !== 'undefined' && document.hidden) {
+                    showDesktopNotification(
+                      conv.type === 'dm'
+                        ? item.senderName || 'mOS Chat'
+                        : `${conv.name} · ${item.senderName}`,
+                      {
+                        body: item.text
+                          ? item.text.length > 80
+                            ? `${item.text.slice(0, 80)}...`
+                            : item.text
+                          : 'Đã gửi một tin nhắn',
+                        tag: `mos-msg-${conv.id}`,
+                      }
+                    );
+                  }
+                }
+              };
+
               for (const m of conv.messages || []) {
                 handleUrgentBuzzItem(m);
+                handleIncomingMessageItem(m);
                 if (m.thread && m.thread.length > 0) {
                   for (const r of m.thread) {
                     handleUrgentBuzzItem(r);
+                    handleIncomingMessageItem(r);
                   }
                 }
               }
             }
+          }
+          if (isInitialBootstrapRef.current) {
+            isInitialBootstrapRef.current = false;
           }
         }
         if (res?.tasks) {
@@ -1603,13 +1665,32 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   useEffect(() => {
     fetchBootstrap();
-    const pollIntervalMs = open || dockedConvIds.length > 0 ? 4000 : 25000;
-    const interval = setInterval(() => {
-      if (typeof document === 'undefined' || document.visibilityState === 'visible') {
+    let timer: NodeJS.Timeout;
+
+    const scheduleNext = () => {
+      const isHidden = typeof document !== 'undefined' && document.hidden;
+      // In background tab: poll every 8000ms so tab title & favicon alerts trigger in near-real-time!
+      // In visible active tab: poll every 4000ms (if open or docked) or 15000ms.
+      const delay = isHidden ? 8000 : open || dockedConvIds.length > 0 ? 4000 : 15000;
+      timer = setTimeout(() => {
+        fetchBootstrap();
+        scheduleNext();
+      }, delay);
+    };
+
+    scheduleNext();
+
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined' && !document.hidden) {
         fetchBootstrap();
       }
-    }, pollIntervalMs);
-    return () => clearInterval(interval);
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [fetchBootstrap, open, dockedConvIds.length]);
 
   useEffect(() => {
@@ -2146,6 +2227,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     }, 0);
     const openTaskCount = uniqueTasks.filter((t) => !t.done && !t.archived).length;
     onUnreadCountChange?.(totalUnread, openTaskCount);
+    tabNotificationManager.setUnreadCount('chat', totalUnread);
   }, [visibleConversations, uniqueTasks, userPrefs.mutedIds, getEffectiveUnreadCount, onUnreadCountChange]);
 
   const triggerTaskReminderAlert = useCallback(

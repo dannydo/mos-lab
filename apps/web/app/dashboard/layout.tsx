@@ -68,6 +68,7 @@ import HeaderLeftToolbar from '../../components/layout/HeaderLeftToolbar';
 import { HeaderNotificationCenter } from '../../components/notification-center/HeaderNotificationCenter';
 import { HeaderActionIndicator } from '../../components/ui/HeaderActionIndicator';
 import { HeaderIconButton } from '../../components/ui/HeaderIconButton';
+import { tabNotificationManager } from '../../lib/tab-notification';
 
 const { Header, Sider, Content } = Layout;
 
@@ -128,6 +129,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       // ignore storage quota error
     }
   }, [isMosChatOpen]);
+
+  useEffect(() => {
+    tabNotificationManager.setUnreadCount('chat-header', mosChatUnreadCount);
+  }, [mosChatUnreadCount]);
 
   useEffect(() => {
     const handleOpenBible = (event: Event) => {

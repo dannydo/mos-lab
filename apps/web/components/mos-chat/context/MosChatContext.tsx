@@ -17,6 +17,7 @@ import type {
   SafeAny,
 } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
+import { tabNotificationManager } from '../../../lib/tab-notification';
 import {
   FALLBACK_CONVERSATIONS,
   FALLBACK_TASKS,
@@ -134,6 +135,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
 
   useEffect(() => {
     onUnreadCountChange?.(totalUnreadCount, totalTaskCount);
+    tabNotificationManager.setUnreadCount('chat-context', totalUnreadCount);
   }, [totalUnreadCount, totalTaskCount, onUnreadCountChange]);
 
   // Bootstrap data fetch

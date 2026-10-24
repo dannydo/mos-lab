@@ -20,6 +20,7 @@ import type { MosNotificationFeedResponse, MosNotificationItem, NotificationCate
 import { apiClient } from '../../lib/api-client';
 import { HeaderActionIndicator } from '../ui/HeaderActionIndicator';
 import { HeaderIconButton } from '../ui/HeaderIconButton';
+import { tabNotificationManager } from '../../lib/tab-notification';
 
 export interface HeaderNotificationCenterProps {
   onOpenChat?: (conversationId?: string, messageId?: string) => void;
@@ -109,6 +110,10 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
           for (const item of urgentLiveItems) {
             if (!seenUrgentIdsRef.current.has(item.id)) {
               seenUrgentIdsRef.current.add(item.id);
+              tabNotificationManager.triggerAlert({
+                senderName: 'mOS Inbox',
+                snippet: cleanNotificationTitle(item.title),
+              });
               const isDark = themeMode === 'dark';
               notification.open({
                 className: isDark ? 'mos-dark-toast' : 'mos-light-toast',
@@ -164,6 +169,10 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
     }, 15_000);
     return () => clearInterval(interval);
   }, [fetchFeed]);
+
+  useEffect(() => {
+    tabNotificationManager.setUnreadCount('inbox', feed?.unreadCount || 0);
+  }, [feed?.unreadCount]);
 
   // Global hotkey: Command+I or Ctrl+I toggles notifications
   useEffect(() => {
