@@ -29,6 +29,7 @@ import { useTelesaleTvLiveCelebration } from '../hooks/useTelesaleTvLiveCelebrat
 import { TelesaleTvLiveCelebrationBanner } from './TelesaleTvLiveCelebrationBanner';
 import { TelesaleTvStaffContributionGrid } from './TelesaleTvStaffContributionGrid';
 import { TelesaleTvJournalModal } from './TelesaleTvJournalModal';
+import { TelesaleTvQuotesDrawer } from './TelesaleTvQuotesDrawer';
 import { TelesaleTvBookSidePanel } from './TelesaleTvBookSidePanel';
 import { TelesaleTvCheckinSidePanel } from './TelesaleTvCheckinSidePanel';
 import { SemicircleGauge } from './SemicircleGauge';
@@ -59,6 +60,7 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
   const [isBrowserFullscreen, setIsBrowserFullscreen] = useState<boolean>(false);
   const [showStaffGrid, setShowStaffGrid] = useState<boolean>(true);
   const [journalOpen, setJournalOpen] = useState<boolean>(false);
+  const [quotesDrawerOpen, setQuotesDrawerOpen] = useState<boolean>(false);
   const [showBookPanel, setShowBookPanel] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
     return localStorage.getItem('mos_tv_panel_book_open') !== 'false';
@@ -553,6 +555,19 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
           onChange={(checked) => updateVoiceSettings({ quietModeEnabled: checked })}
           className={isDark ? 'bg-zinc-700' : undefined}
         />
+      </div>
+
+      <div className={`border-t pt-2.5 ${isDark ? 'border-zinc-800' : 'border-slate-200'}`}>
+        <Button
+          type="primary"
+          icon={<Sparkles className="w-3.5 h-3.5" />}
+          className="w-full text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 border-0 text-black flex items-center justify-center gap-1.5 shadow-sm py-1.5 h-auto"
+          onClick={() => {
+            setQuotesDrawerOpen(true);
+          }}
+        >
+          📣 Quản lý thông điệp cổ vũ
+        </Button>
       </div>
 
       <div className={`border-t pt-2.5 flex flex-col gap-1.5 ${isDark ? 'border-zinc-800' : 'border-slate-200'}`}>
@@ -1690,6 +1705,9 @@ export const TelesaleTvMonitorFullscreen: React.FC<TelesaleTvMonitorFullscreenPr
         onClose={() => setJournalOpen(false)}
         staffList={overview.staffTargets || []}
       />
+
+      {/* TV Quotes Manager Drawer */}
+      <TelesaleTvQuotesDrawer open={quotesDrawerOpen} onClose={() => setQuotesDrawerOpen(false)} />
     </div>
   );
 };

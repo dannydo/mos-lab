@@ -857,6 +857,75 @@ test('TelesaleTargetService.synthesizeCelebrationAudio throws on empty text and 
   await assert.rejects(async () => TelesaleTargetService.synthesizeCelebrationAudio(''), /empty/);
 });
 
+test('TelesaleTargetService Celebration Quotes Manager - CRUD, seed, overview and template rendering', async () => {
+  const defaultQuotes = TelesaleTargetService.getDefaultCelebrationQuotes();
+  assert.ok(defaultQuotes.length >= 40, 'Should have at least 40 default celebration quotes');
+
+  // Verify all 5 personas are present in default library
+  const personas = ['MC_HOI_CHO', 'DRAMA_QUEEN', 'THAY_BOI', 'GEN_Z', 'TONG_TAI'];
+  for (const p of personas) {
+    const quotesForP = defaultQuotes.filter((q) => q.personaKey === p);
+    assert.ok(quotesForP.length >= 5, `Persona ${p} should have at least 5 quotes`);
+  }
+
+  // Mock DB for Fastify
+  let storedConfigValue: string | null = null;
+  const mockFastify = {
+    log: { warn: () => {}, error: () => {} },
+    prisma: {
+      crm: {
+        crmConfig: {
+          findUnique: async () => (storedConfigValue ? { value: storedConfigValue } : null),
+          upsert: async (args: any) => {
+            storedConfigValue = args.create.value;
+            return { key: args.where.key, value: storedConfigValue };
+          },
+        },
+      },
+    },
+  } as any;
+
+  // 1. First fetch triggers auto-seed
+  const initialConfig = await TelesaleTargetService.getCelebrationQuotesConfig(mockFastify);
+  assert.ok(initialConfig.quotes.length >= 40);
+  assert.equal(initialConfig.updatedBy, 'system');
+
+  // 2. Overview returns stats
+  const overview = await TelesaleTargetService.getCelebrationQuotesOverview(mockFastify);
+  assert.equal(overview.stats.totalQuotes, initialConfig.quotes.length);
+  assert.equal(overview.stats.activeQuotes, initialConfig.quotes.length);
+  assert.equal(overview.personas.length, 5);
+
+  // 3. Save custom quotes
+  const customQuote = {
+    id: 'custom-1',
+    personaKey: 'MC_HOI_CHO' as const,
+    eventType: 'BOOK' as const,
+    template: 'Bùng nổ rồi [Tên] ơi! Đỉnh chóp!',
+    isActive: true,
+    isCustom: true,
+  };
+  const updatedConfig = await TelesaleTargetService.saveCelebrationQuotesConfig(
+    mockFastify,
+    [customQuote, ...initialConfig.quotes],
+    'danny'
+  );
+  assert.equal(updatedConfig.updatedBy, 'danny');
+  assert.equal(updatedConfig.quotes[0].id, 'custom-1');
+
+  // 4. Fallback rendering with custom quote
+  const rendered = TelesaleTargetService.getFallbackCelebrationQuoteWithPersona('BOOK', 'Ngọc Trinh', {
+    personaKey: 'MC_HOI_CHO',
+  });
+  assert.ok(rendered.quote.includes('Ngọc Trinh'));
+  assert.equal(rendered.persona.key, 'MC_HOI_CHO');
+
+  // 5. Reset to default library
+  const resetConfig = await TelesaleTargetService.resetCelebrationQuotesConfig(mockFastify);
+  assert.ok(resetConfig.quotes.length >= 40);
+  assert.ok(!resetConfig.quotes.some((q) => q.id === 'custom-1'));
+});
+
 test('TelesaleTargetService strictly pulls active Telesales staff from HR (crmStaff) and prunes invalid/inactive staff (MOS-BUG-84)', async () => {
   const mockStaffDb = [
     // Active Telesales staff (Must be included)

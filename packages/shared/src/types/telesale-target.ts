@@ -360,3 +360,38 @@ export interface TelesaleCustomerPoolResponse {
   bookedCount: number;
   items: TelesaleCustomerPoolItem[];
 }
+
+export type TelesaleTvQuoteEventType = 'BOOK' | 'CHECKIN' | 'COMBO' | 'TIP' | 'DONE' | 'STREAK' | 'MORNING';
+
+export interface TelesaleTvQuoteItem {
+  id: string;
+  personaKey: TelesaleTvPersonaKey;
+  eventType: TelesaleTvQuoteEventType;
+  template: string;
+  isActive: boolean;
+  isCustom?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface TelesaleTvQuotesConfig {
+  quotes: TelesaleTvQuoteItem[];
+  updatedAt: string;
+  updatedBy?: string;
+}
+
+export interface TelesaleTvQuotesOverviewResponse {
+  quotes: TelesaleTvQuoteItem[];
+  personas: TelesaleTvPersonaDto[];
+  stats: {
+    totalQuotes: number;
+    activeQuotes: number;
+    customQuotes: number;
+    byPersona: Record<string, number>;
+    byEvent: Record<string, number>;
+  };
+}
+
+export interface UpdateTelesaleTvQuotesPayload {
+  quotes: TelesaleTvQuoteItem[];
+}

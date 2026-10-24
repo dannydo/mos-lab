@@ -9,6 +9,7 @@ import type {
   MosChatTaskPriority,
   MosChatWorkflowInstance,
   MosChatWorkflowTemplate,
+  UpdateMosChatTaskRequest,
   SafeAny,
 } from '@mos-lab/shared';
 
@@ -77,6 +78,14 @@ export interface MosChatContextValue {
     }
   ) => Promise<boolean>;
   toggleTaskDone: (taskId: string, done: boolean) => Promise<void>;
+  updateTask: (taskId: string, payload: UpdateMosChatTaskRequest) => Promise<boolean>;
+  deleteTask: (taskId: string) => Promise<boolean>;
+  acceptNegotiatedDeadline: (task: MosChatTaskItem) => Promise<boolean>;
+  rejectNegotiatedDeadline: (task: MosChatTaskItem) => Promise<boolean>;
+  dispatchMissionFromTask: (
+    task: MosChatTaskItem,
+    payload: { title?: string; type?: 'BUG' | 'FEATURE'; note?: string }
+  ) => Promise<SafeAny>;
 
   // Workflows
   workflowTemplates: MosChatWorkflowTemplate[];

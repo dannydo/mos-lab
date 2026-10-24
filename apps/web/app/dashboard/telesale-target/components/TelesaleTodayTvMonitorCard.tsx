@@ -17,6 +17,7 @@ import {
 import { TelesaleTargetOverview, isAdminOrSuperAdminRole, TelesaleDailySnapshotItem } from '@mos-lab/shared';
 import { calculateShiftPacing, calculateTvMonitorMetrics } from '../utils/tv-monitor-pacing';
 import { TelesaleTvJournalModal } from './TelesaleTvJournalModal';
+import { TelesaleTvQuotesDrawer } from './TelesaleTvQuotesDrawer';
 import { SemicircleGauge } from './SemicircleGauge';
 import { RealisticCardFireworks } from './RealisticCardFireworks';
 import { useTelesaleTvLiveCelebration, TvCelebrationSettings } from '../hooks/useTelesaleTvLiveCelebration';
@@ -168,6 +169,7 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
   const [testFireworksBook, setTestFireworksBook] = useState(false);
   const [testFireworksCheckin, setTestFireworksCheckin] = useState(false);
   const [testFireworksDone, setTestFireworksDone] = useState(false);
+  const [quotesDrawerOpen, setQuotesDrawerOpen] = useState(false);
   const testTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const triggerTestFireworks = (type: 'BOOK' | 'DONE' | 'CHECKIN') => {
@@ -378,6 +380,20 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
         />
       </div>
 
+      {/* Button: Quản lý thông điệp cổ vũ */}
+      <div className={`border-t ${isDark ? 'border-zinc-800/80' : 'border-slate-200'} pt-2.5`}>
+        <Button
+          type="primary"
+          icon={<Sparkles className="w-3.5 h-3.5" />}
+          className="w-full text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 border-0 text-black flex items-center justify-center gap-1.5 shadow-sm py-1.5 h-auto"
+          onClick={() => {
+            setQuotesDrawerOpen(true);
+          }}
+        >
+          📣 Quản lý thông điệp cổ vũ
+        </Button>
+      </div>
+
       {/* Section: Test Fireworks */}
       <div className={`border-t ${isDark ? 'border-zinc-800/80' : 'border-slate-200'} pt-2.5 flex flex-col gap-2`}>
         <div className="flex items-center justify-between">
@@ -505,6 +521,7 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
       }`}
     >
       <TelesaleTvJournalModal open={journalOpen} onClose={() => setJournalOpen(false)} initialDate={journalDate} />
+      <TelesaleTvQuotesDrawer open={quotesDrawerOpen} onClose={() => setQuotesDrawerOpen(false)} />
 
       {/* 1. Header Bar */}
       <div>

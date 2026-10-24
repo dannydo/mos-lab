@@ -18,6 +18,7 @@ import {
   Calendar,
   Tv,
   Users,
+  Sparkles,
 } from 'lucide-react';
 import dayjs, { Dayjs } from 'dayjs';
 import { TelesaleTargetOverview, TelesalePipelineStage } from '@mos-lab/shared';
@@ -31,6 +32,7 @@ import { TargetConfigModal } from './components/TargetConfigModal';
 import { PlanCloneModal } from './components/PlanCloneModal';
 import { TeamSelectModal } from './components/TeamSelectModal';
 import { TelesaleTvMonitorFullscreen } from './components/TelesaleTvMonitorFullscreen';
+import { TelesaleTvQuotesDrawer } from './components/TelesaleTvQuotesDrawer';
 import { calculateShiftPacing, calculateTvMonitorMetrics } from './utils/tv-monitor-pacing';
 import { useTelesaleTvLiveCelebration } from './hooks/useTelesaleTvLiveCelebration';
 import { TelesaleTvLiveCelebrationBanner } from './components/TelesaleTvLiveCelebrationBanner';
@@ -60,6 +62,7 @@ function TelesaleTargetContent() {
   const [configModalOpen, setConfigModalOpen] = useState<boolean>(false);
   const [cloneModalOpen, setCloneModalOpen] = useState<boolean>(false);
   const [teamSelectModalOpen, setTeamSelectModalOpen] = useState<boolean>(false);
+  const [quotesDrawerOpen, setQuotesDrawerOpen] = useState<boolean>(false);
 
   // Synchronize with URL query parameter
   useEffect(() => {
@@ -454,6 +457,23 @@ function TelesaleTargetContent() {
               </button>
             </Tooltip>
 
+            {/* Quản lý thông điệp cổ vũ TV */}
+            <Tooltip title="Quản lý kho câu thoại cổ vũ & phát loa TV">
+              <button
+                type="button"
+                aria-label="Thông điệp cổ vũ"
+                onClick={() => setQuotesDrawerOpen(true)}
+                className={`h-7 px-2 rounded-lg border text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
+                  isDark
+                    ? 'border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300'
+                    : 'border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-800 shadow-2xs'
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span className="text-[11px] font-semibold hidden md:inline">Thông Điệp TV</span>
+              </button>
+            </Tooltip>
+
             {/* 5. Cập nhật số liệu tức thì (Refresh) */}
             <Tooltip title="Cập nhật số liệu tức thì">
               <button
@@ -633,6 +653,9 @@ function TelesaleTargetContent() {
           await fetchOverview(selectedMonth, false);
         }}
       />
+
+      {/* 8. TV QUOTES MANAGER DRAWER */}
+      <TelesaleTvQuotesDrawer open={quotesDrawerOpen} onClose={() => setQuotesDrawerOpen(false)} />
 
       {/* 7. DEDICATED FULLSCREEN TV MONITOR VIEW (MOS-BUG-71) */}
       {overview && (

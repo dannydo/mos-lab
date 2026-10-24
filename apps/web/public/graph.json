@@ -8364,7 +8364,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3507
+        "line": 3517
       }
     },
     {
@@ -8378,7 +8378,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3626
+        "line": 3636
       }
     },
     {
@@ -8392,7 +8392,7 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3675
+        "line": 3685
       }
     },
     {
@@ -8406,7 +8406,7 @@
         "path": "/api/chat/conversations/:id/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3870
+        "line": 3880
       }
     },
     {
@@ -8420,7 +8420,7 @@
         "path": "/api/chat/conversations/:id/threads/:messageId/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3954
+        "line": 3964
       }
     },
     {
@@ -8434,7 +8434,7 @@
         "path": "/api/chat/conversations/:id/unread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4014
+        "line": 4024
       }
     },
     {
@@ -8448,7 +8448,7 @@
         "path": "/api/chat/conversations/:id/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4058
+        "line": 4068
       }
     },
     {
@@ -8462,7 +8462,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4103
+        "line": 4113
       }
     },
     {
@@ -8476,7 +8476,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4209
+        "line": 4219
       }
     },
     {
@@ -8490,7 +8490,7 @@
         "path": "/api/chat/conversations/:id/nickname",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4284
+        "line": 4294
       }
     },
     {
@@ -8504,7 +8504,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4391
+        "line": 4401
       }
     },
     {
@@ -8518,7 +8518,7 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4452
+        "line": 4462
       }
     },
     {
@@ -8532,7 +8532,7 @@
         "path": "/api/chat/workflows",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4505
+        "line": 4515
       }
     },
     {
@@ -8546,7 +8546,7 @@
         "path": "/api/chat/workflows/instances",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4528
+        "line": 4538
       }
     },
     {
@@ -8560,7 +8560,7 @@
         "path": "/api/chat/workflows/instances/:instanceId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4709
+        "line": 4719
       }
     },
     {
@@ -8574,7 +8574,7 @@
         "path": "/api/chat/workflows/templates/from-thread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4886
+        "line": 4896
       }
     },
     {
@@ -11151,6 +11151,48 @@
         "module": "kpi",
         "handler": "inlineHandler",
         "line": 255
+      }
+    },
+    {
+      "id": "route:GET:/api/kpi/telesale-target/celebration-quotes",
+      "type": "FastifyRoute",
+      "label": "GET /api/kpi/telesale-target/celebration-quotes",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/kpi/telesale-target/celebration-quotes",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 267
+      }
+    },
+    {
+      "id": "route:PUT:/api/kpi/telesale-target/celebration-quotes",
+      "type": "FastifyRoute",
+      "label": "PUT /api/kpi/telesale-target/celebration-quotes",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
+      "metadata": {
+        "method": "PUT",
+        "path": "/api/kpi/telesale-target/celebration-quotes",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 278
+      }
+    },
+    {
+      "id": "route:POST:/api/kpi/telesale-target/celebration-quotes/reset",
+      "type": "FastifyRoute",
+      "label": "POST /api/kpi/telesale-target/celebration-quotes/reset",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/kpi/telesale-target/celebration-quotes/reset",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 297
       }
     },
     {
@@ -29177,6 +29219,66 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:TelesaleTvQuoteEventType",
+      "type": "SharedType",
+      "label": "TelesaleTvQuoteEventType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-target.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleTvQuoteEventType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TelesaleTvQuoteItem",
+      "type": "SharedType",
+      "label": "TelesaleTvQuoteItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-target.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleTvQuoteItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TelesaleTvQuotesConfig",
+      "type": "SharedType",
+      "label": "TelesaleTvQuotesConfig",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-target.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleTvQuotesConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TelesaleTvQuotesOverviewResponse",
+      "type": "SharedType",
+      "label": "TelesaleTvQuotesOverviewResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-target.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleTvQuotesOverviewResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UpdateTelesaleTvQuotesPayload",
+      "type": "SharedType",
+      "label": "UpdateTelesaleTvQuotesPayload",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-target.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UpdateTelesaleTvQuotesPayload",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:UiExperienceSurface",
       "type": "SharedType",
       "label": "UiExperienceSurface",
@@ -31121,6 +31223,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatMobileMediaGallery.test",
+      "type": "UIComponent",
+      "label": "<MosChatMobileMediaGallery.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatMobileMediaGallery.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileMediaGallery.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatMobileMentionAutocomplete.test",
       "type": "UIComponent",
       "label": "<MosChatMobileMentionAutocomplete.test />",
@@ -31217,6 +31331,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatMobileEditModal",
+      "type": "UIComponent",
+      "label": "<MosChatMobileEditModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/MosChatMobileEditModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileEditModal",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatMobileHeader",
       "type": "UIComponent",
       "label": "<MosChatMobileHeader />",
@@ -31237,6 +31363,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "MosChatMobileInbox",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatMobileMediaGallery",
+      "type": "UIComponent",
+      "label": "<MosChatMobileMediaGallery />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/MosChatMobileMediaGallery.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileMediaGallery",
         "isPrimitive": false
       }
     },
@@ -31381,6 +31519,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "chat-helpers",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:chat-upload",
+      "type": "UIComponent",
+      "label": "<chat-upload />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/utils/chat-upload.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "chat-upload",
         "isPrimitive": false
       }
     },
@@ -34299,8 +34449,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 191550,
-        "lineCount": 4978,
+        "sizeBytes": 192048,
+        "lineCount": 4988,
         "ext": ".ts"
       }
     },
@@ -35378,8 +35528,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 10005,
-        "lineCount": 266,
+        "sizeBytes": 11912,
+        "lineCount": 309,
         "ext": ".ts"
       }
     },
@@ -35612,8 +35762,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 55103,
-        "lineCount": 1553,
+        "sizeBytes": 57822,
+        "lineCount": 1622,
         "ext": ".ts"
       }
     },
@@ -35625,8 +35775,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 141615,
-        "lineCount": 3402,
+        "sizeBytes": 161349,
+        "lineCount": 3778,
         "ext": ".ts"
       }
     },
@@ -42788,8 +42938,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 46764,
-        "lineCount": 1016,
+        "sizeBytes": 47640,
+        "lineCount": 1033,
         "ext": ".tsx"
       }
     },
@@ -42892,8 +43042,21 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 77606,
-        "lineCount": 1696,
+        "sizeBytes": 78493,
+        "lineCount": 1717,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvQuotesDrawer.tsx",
+      "type": "File",
+      "label": "TelesaleTvQuotesDrawer.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTvQuotesDrawer.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 30194,
+        "lineCount": 800,
         "ext": ".tsx"
       }
     },
@@ -42957,8 +43120,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 29014,
-        "lineCount": 666,
+        "sizeBytes": 30253,
+        "lineCount": 692,
         "ext": ".tsx"
       }
     },
@@ -43971,8 +44134,8 @@
       "filePath": "apps/web/lib/api/kpi.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19607,
-        "lineCount": 509,
+        "sizeBytes": 20379,
+        "lineCount": 528,
         "ext": ".ts"
       }
     },
@@ -45245,8 +45408,8 @@
       "filePath": "packages/shared/src/types/telesale-target.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 9429,
-        "lineCount": 363,
+        "sizeBytes": 10276,
+        "lineCount": 398,
         "ext": ".ts"
       }
     },
@@ -50547,6 +50710,27 @@
     {
       "id": "edge:route:POST:/api/kpi/telesale-target/tv-journal/sync:ws:apps/api",
       "source": "route:POST:/api/kpi/telesale-target/tv-journal/sync",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/kpi/telesale-target/celebration-quotes:ws:apps/api",
+      "source": "route:GET:/api/kpi/telesale-target/celebration-quotes",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:PUT:/api/kpi/telesale-target/celebration-quotes:ws:apps/api",
+      "source": "route:PUT:/api/kpi/telesale-target/celebration-quotes",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/kpi/telesale-target/celebration-quotes/reset:ws:apps/api",
+      "source": "route:POST:/api/kpi/telesale-target/celebration-quotes/reset",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -60793,6 +60977,41 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:TelesaleTvQuoteEventType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleTvQuoteEventType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TelesaleTvQuoteItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleTvQuoteItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TelesaleTvQuotesConfig:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleTvQuotesConfig",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TelesaleTvQuotesOverviewResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleTvQuotesOverviewResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UpdateTelesaleTvQuotesPayload:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UpdateTelesaleTvQuotesPayload",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:UiExperienceSurface:ws:packages/shared",
       "source": "type:@mos-lab/shared:UiExperienceSurface",
       "target": "ws:packages/shared",
@@ -62837,6 +63056,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatMobileMediaGallery.test:ws:apps/web",
+      "source": "uicomp:MosChatMobileMediaGallery.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileMediaGallery.test:token:color:primary",
+      "source": "uicomp:MosChatMobileMediaGallery.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatMobileMentionAutocomplete.test:ws:apps/web",
       "source": "uicomp:MosChatMobileMentionAutocomplete.test",
       "target": "ws:apps/web",
@@ -62949,6 +63182,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatMobileEditModal:ws:apps/web",
+      "source": "uicomp:MosChatMobileEditModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileEditModal:token:color:primary",
+      "source": "uicomp:MosChatMobileEditModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatMobileHeader:ws:apps/web",
       "source": "uicomp:MosChatMobileHeader",
       "target": "ws:apps/web",
@@ -62972,6 +63219,20 @@
     {
       "id": "edge:uicomp:MosChatMobileInbox:token:color:primary",
       "source": "uicomp:MosChatMobileInbox",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileMediaGallery:ws:apps/web",
+      "source": "uicomp:MosChatMobileMediaGallery",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileMediaGallery:token:color:primary",
+      "source": "uicomp:MosChatMobileMediaGallery",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -63140,6 +63401,20 @@
     {
       "id": "edge:uicomp:chat-helpers:token:color:primary",
       "source": "uicomp:chat-helpers",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:chat-upload:ws:apps/web",
+      "source": "uicomp:chat-upload",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:chat-upload:token:color:primary",
+      "source": "uicomp:chat-upload",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -68089,6 +68364,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvMonitorFullscreen.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-target/components/TelesaleTvQuotesDrawer.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-target/components/TelesaleTvQuotesDrawer.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -77341,6 +77623,27 @@
       "label": "CALLS kpi.getCcXoayReport"
     },
     {
+      "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/telesale-target/celebration-quotes",
+      "source": "page:/dashboard/cc",
+      "target": "route:GET:/api/kpi/telesale-target/celebration-quotes",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
+      "id": "edge:page:/dashboard/cc:route:PUT:/api/kpi/telesale-target/celebration-quotes",
+      "source": "page:/dashboard/cc",
+      "target": "route:PUT:/api/kpi/telesale-target/celebration-quotes",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
+      "id": "edge:page:/dashboard/cc:route:POST:/api/kpi/telesale-target/celebration-quotes/reset",
+      "source": "page:/dashboard/cc",
+      "target": "route:POST:/api/kpi/telesale-target/celebration-quotes/reset",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
       "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/export-booker-salary",
       "source": "page:/dashboard/cc",
       "target": "route:GET:/api/kpi/export-booker-salary",
@@ -82731,6 +83034,27 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/telesale-target/celebration-quotes",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/kpi/telesale-target/celebration-quotes",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PUT:/api/kpi/telesale-target/celebration-quotes",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:PUT:/api/kpi/telesale-target/celebration-quotes",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/kpi/telesale-target/celebration-quotes/reset",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/kpi/telesale-target/celebration-quotes/reset",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/export-booker-salary",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/kpi/export-booker-salary",
@@ -87774,6 +88098,27 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/kpi/telesale-target/tv-journal/sync",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/kpi/telesale-target/tv-journal/sync",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/telesale-target/celebration-quotes",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/kpi/telesale-target/celebration-quotes",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:PUT:/api/kpi/telesale-target/celebration-quotes",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:PUT:/api/kpi/telesale-target/celebration-quotes",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/kpi/telesale-target/celebration-quotes/reset",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/kpi/telesale-target/celebration-quotes/reset",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -96115,6 +96460,27 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/telesale-target/celebration-quotes",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/kpi/telesale-target/celebration-quotes",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:PUT:/api/kpi/telesale-target/celebration-quotes",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:PUT:/api/kpi/telesale-target/celebration-quotes",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/kpi/telesale-target/celebration-quotes/reset",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/kpi/telesale-target/celebration-quotes/reset",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/export-booker-salary",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/kpi/export-booker-salary",
@@ -97271,31 +97637,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3477,
-    "totalEdges": 7418,
+    "totalNodes": 3490,
+    "totalEdges": 7447,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 176,
-      "FastifyRoute": 721,
+      "FastifyRoute": 724,
       "Component": 61,
-      "SharedType": 1271,
+      "SharedType": 1276,
       "DesignToken": 12,
-      "UIComponent": 260,
-      "File": 973
+      "UIComponent": 264,
+      "File": 974
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1459,
-      "HANDLES_ROUTE": 721,
-      "RENDERS": 321,
-      "USES_TOKEN": 262,
-      "IMPORTS": 533,
+      "EXPORTS": 1464,
+      "HANDLES_ROUTE": 724,
+      "RENDERS": 325,
+      "USES_TOKEN": 266,
+      "IMPORTS": 534,
       "QUERIES_MODEL": 406,
-      "API_CALL": 3716
+      "API_CALL": 3728
     },
-    "fastifyRouteCount": 726,
+    "fastifyRouteCount": 729,
     "prismaModelCount": 176,
     "nextPageCount": 61,
-    "sharedTypeCount": 1271
+    "sharedTypeCount": 1276
   },
   "routes": [
     {
@@ -101270,6 +101636,27 @@
     {
       "method": "POST",
       "path": "/api/kpi/telesale-target/tv-journal/sync",
+      "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "GET",
+      "path": "/api/kpi/telesale-target/celebration-quotes",
+      "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/kpi/telesale-target/celebration-quotes",
+      "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "POST",
+      "path": "/api/kpi/telesale-target/celebration-quotes/reset",
       "filePath": "apps/api/src/modules/kpi/routes/telesale-target.routes.ts",
       "handler": "inlineHandler",
       "moduleName": "kpi"

@@ -74,6 +74,9 @@ import type {
   TelesaleTvPersonaDto,
   TelesaleTvPersonaKey,
   TelesaleTvEdginessLevel,
+  TelesaleTvQuoteItem,
+  TelesaleTvQuotesConfig,
+  TelesaleTvQuotesOverviewResponse,
 } from '@mos-lab/shared';
 
 import { api } from './base';
@@ -502,6 +505,18 @@ export const kpiApi = {
     },
     syncTvJournal: async (records: TelesaleTvEventLog[]): Promise<{ success: boolean; count: number }> => {
       const response = await api.post('/kpi/telesale-target/tv-journal/sync', { records });
+      return response.data;
+    },
+    getCelebrationQuotes: async (): Promise<TelesaleTvQuotesOverviewResponse> => {
+      const response = await api.get('/kpi/telesale-target/celebration-quotes');
+      return response.data;
+    },
+    saveCelebrationQuotes: async (quotes: TelesaleTvQuoteItem[]): Promise<TelesaleTvQuotesConfig> => {
+      const response = await api.put('/kpi/telesale-target/celebration-quotes', { quotes });
+      return response.data;
+    },
+    resetCelebrationQuotes: async (personaKey?: string): Promise<TelesaleTvQuotesConfig> => {
+      const response = await api.post('/kpi/telesale-target/celebration-quotes/reset', { personaKey });
       return response.data;
     },
   },

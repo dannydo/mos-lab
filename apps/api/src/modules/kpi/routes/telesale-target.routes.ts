@@ -262,4 +262,51 @@ export async function registerTelesaleTargetRoutes(fastify: FastifyInstance) {
       return reply.status(500).send({ error: err.message || 'Internal Server Error' });
     }
   });
+
+  // 10. Get Celebration Quotes & Overview (Quotes Manager)
+  fastify.get('/kpi/telesale-target/celebration-quotes', async (request, reply) => {
+    try {
+      const result = await TelesaleTargetService.getCelebrationQuotesOverview(fastify);
+      return reply.send(result);
+    } catch (err: SafeAny) {
+      fastify.log.error(`Failed to get celebration quotes: ${err.message}`);
+      return reply.status(500).send({ error: err.message || 'Internal Server Error' });
+    }
+  });
+
+  // 11. Update Celebration Quotes Config
+  fastify.put('/kpi/telesale-target/celebration-quotes', { preHandler: [requireAuth] }, async (request, reply) => {
+    const user = (request as SafeAny).user;
+    const { quotes } = (request.body as { quotes?: SafeAny[] }) || {};
+
+    if (!Array.isArray(quotes)) {
+      return reply.status(400).send({ error: 'Quotes array is required' });
+    }
+
+    try {
+      const updatedBy = user?.name || user?.username || 'user';
+      const result = await TelesaleTargetService.saveCelebrationQuotesConfig(fastify, quotes, updatedBy);
+      return reply.send(result);
+    } catch (err: SafeAny) {
+      fastify.log.error(`Failed to save celebration quotes: ${err.message}`);
+      return reply.status(500).send({ error: err.message || 'Internal Server Error' });
+    }
+  });
+
+  // 12. Reset Celebration Quotes Config to Default Library
+  fastify.post(
+    '/kpi/telesale-target/celebration-quotes/reset',
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      const { personaKey } = (request.body as { personaKey?: string }) || {};
+
+      try {
+        const result = await TelesaleTargetService.resetCelebrationQuotesConfig(fastify, personaKey);
+        return reply.send(result);
+      } catch (err: SafeAny) {
+        fastify.log.error(`Failed to reset celebration quotes: ${err.message}`);
+        return reply.status(500).send({ error: err.message || 'Internal Server Error' });
+      }
+    }
+  );
 }
