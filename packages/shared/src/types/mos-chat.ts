@@ -277,6 +277,7 @@ export interface MosChatStaffMember {
   isOnline?: boolean;
   departmentCodes?: string[];
   teamCodes?: string[];
+  legacyStaffId?: number | null;
 }
 
 export interface MosChatAccessConfig {

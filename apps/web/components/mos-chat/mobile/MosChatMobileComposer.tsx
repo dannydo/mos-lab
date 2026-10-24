@@ -6,7 +6,7 @@ import { message as antdMessage } from 'antd';
 import { useMosChat } from '../context/MosChatContext';
 import type { MosChatStickerPackId } from '../mos-chat-stickers';
 import { MosChatMobileMentionAutocomplete } from './MosChatMobileMentionAutocomplete';
-import { isUserMentionedInText, extractMentionedStaff } from '../utils/chat-helpers';
+import { isUserMentionedInText, extractMentionedStaff, isStaffInConversationMembers } from '../utils/chat-helpers';
 
 export interface MosChatMobileComposerProps {
   onOpenActionSheet: () => void;
@@ -79,17 +79,13 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
 
     // Chỉ cho phép tag thành viên trong nhóm. Nếu có người ngoài nhóm, cảnh báo mời vào nhóm trước
     if (activeConversation?.type?.toLowerCase() === 'space') {
-      const memberIds = Array.isArray(activeConversation.memberIds) ? activeConversation.memberIds.map(Number) : [];
-      const membersList = Array.isArray(activeConversation.members)
-        ? activeConversation.members.map((m) => Number(m.id || (m as any).staffId))
-        : [];
-      const memberSet = new Set<number>([...memberIds, ...membersList]);
-
       const mentionedStaff = extractMentionedStaff(trimmed, staffDirectory || [], {
         nicknames: activeConversation.memberNicknames,
       });
 
-      const nonMemberMentions = mentionedStaff.filter((s) => !memberSet.has(Number(s.id)));
+      const nonMemberMentions = mentionedStaff.filter(
+        (s) => !isStaffInConversationMembers(s, activeConversation, staffDirectory)
+      );
 
       if (nonMemberMentions.length > 0) {
         const names = nonMemberMentions.map((s) => s.displayName || s.username).join(', ');

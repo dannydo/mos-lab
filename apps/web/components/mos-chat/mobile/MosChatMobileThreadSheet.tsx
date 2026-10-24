@@ -13,7 +13,7 @@ import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
 import { apiClient } from '../../../lib/api-client';
 import type { MosChatImageAttachment, MosChatThreadReply, SafeAny } from '@mos-lab/shared';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
-import { isUserMentionedInText, extractMentionedStaff } from '../utils/chat-helpers';
+import { isUserMentionedInText, extractMentionedStaff, isStaffInConversationMembers } from '../utils/chat-helpers';
 
 export const MosChatMobileThreadSheet: React.FC = () => {
   const {
@@ -112,17 +112,13 @@ export const MosChatMobileThreadSheet: React.FC = () => {
 
     // Enforce in-group tagging check for group spaces
     if (activeConversation && activeConversation.type?.toLowerCase() === 'space') {
-      const memberIds = Array.isArray(activeConversation.memberIds) ? activeConversation.memberIds.map(Number) : [];
-      const membersList = Array.isArray(activeConversation.members)
-        ? activeConversation.members.map((m) => Number(m.id || (m as SafeAny).staffId))
-        : [];
-      const memberSet = new Set<number>([...memberIds, ...membersList]);
-
       const mentionedStaff = extractMentionedStaff(trimmed, staffDirectory || [], {
         nicknames: activeConversation.memberNicknames,
       });
 
-      const nonMemberMentions = mentionedStaff.filter((s) => !memberSet.has(Number(s.id)));
+      const nonMemberMentions = mentionedStaff.filter(
+        (s) => !isStaffInConversationMembers(s, activeConversation, staffDirectory)
+      );
 
       if (nonMemberMentions.length > 0) {
         const names = nonMemberMentions.map((s) => s.displayName || s.username).join(', ');

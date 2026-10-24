@@ -616,3 +616,126 @@ export function buildMaiUrgentVoiceAnnouncement(options: {
 
   return `${sender} vừa gửi tin nhắn khẩn cấp: ${cleanBody || 'xin phản hồi ngay'}`;
 }
+
+/**
+ * Kiểm tra xem một nhân sự có thuộc về Không gian (Space) hoặc cuộc trò chuyện hay không.
+ * Xử lý thông minh hiện tượng 2 tài khoản (Dual Account) phổ biến trong mos-lab:
+ * Tài khoản Google Workspace (id: 6 - khai.nguyen@wingslashes.com)
+ * vs Tài khoản Legacy CRM (id: 43 - user45103@wingslashes.com, legacyStaffId: 45103).
+ *
+ * Kiểm tra qua:
+ * 1. Khớp ID trực tiếp (id hoặc legacyStaffId)
+ * 2. Khớp theo Biệt danh (memberNicknames)
+ * 3. Khớp chéo theo Tên hiển thị chuẩn hóa (removeVietnameseTones):
+ *    Nếu bất kỳ tài khoản nào của cùng nhân sự trong danh bạ (cùng tên hiển thị)
+ *    đã nằm trong danh sách thành viên của nhóm, nhân sự đó được tính là THÀNH VIÊN TRONG NHÓM.
+ */
+export function isStaffInConversationMembers<
+  TStaff extends { id?: number | string; displayName?: string; username?: string; legacyStaffId?: number | null },
+  TConv extends {
+    type?: string;
+    memberIds?: number[];
+    members?: Array<{
+      id?: number | string;
+      displayName?: string;
+      username?: string;
+      legacyStaffId?: number | null;
+      staffId?: number | string;
+    }>;
+    memberNicknames?: Record<string, string>;
+    participantStaffId?: number;
+  },
+>(staff: TStaff | null | undefined, conversation: TConv | null | undefined, staffDirectory?: TStaff[]): boolean {
+  if (!staff) return false;
+  if (!conversation) return true;
+
+  // Nếu không phải Không gian (ví dụ 1-1 DM), không áp dụng giới hạn thành viên nhóm
+  if (conversation.type && conversation.type.toLowerCase() !== 'space') {
+    return true;
+  }
+
+  const staffIdNum = Number(staff.id);
+  const staffLegacyIdNum = staff.legacyStaffId ? Number(staff.legacyStaffId) : null;
+
+  // Thu thập tất cả Member IDs của cuộc trò chuyện
+  const memberIdSet = new Set<number>();
+  if (Array.isArray(conversation.memberIds)) {
+    for (const mid of conversation.memberIds) {
+      if (mid !== undefined && mid !== null) memberIdSet.add(Number(mid));
+    }
+  }
+  if (Array.isArray(conversation.members)) {
+    for (const m of conversation.members) {
+      const mid = Number(m.id ?? (m as SafeAny).staffId);
+      if (mid) memberIdSet.add(mid);
+      const mLegacy = (m as SafeAny).legacyStaffId ? Number((m as SafeAny).legacyStaffId) : null;
+      if (mLegacy) memberIdSet.add(mLegacy);
+    }
+  }
+
+  // 1. Khớp ID trực tiếp
+  if (staffIdNum && memberIdSet.has(staffIdNum)) return true;
+  if (staffLegacyIdNum && memberIdSet.has(staffLegacyIdNum)) return true;
+
+  // 2. Khớp qua Nickname được gán trong Space
+  if (conversation.memberNicknames) {
+    if (staffIdNum && conversation.memberNicknames[String(staffIdNum)]) return true;
+    if (staffLegacyIdNum && conversation.memberNicknames[String(staffLegacyIdNum)]) return true;
+  }
+
+  // Chuẩn bị tên chuẩn hóa của staff cần kiểm tra
+  const targetName = staff.displayName || staff.username || '';
+  const targetNorm = targetName ? removeVietnameseTones(targetName.trim().toLowerCase()) : '';
+
+  // 3. Khớp qua danh sách members đã tải trong conversation (nếu có)
+  if (targetNorm && Array.isArray(conversation.members)) {
+    for (const m of conversation.members) {
+      const mName = m.displayName || m.username || '';
+      if (mName && removeVietnameseTones(mName.trim().toLowerCase()) === targetNorm) {
+        return true;
+      }
+    }
+  }
+
+  // 4. Khớp chéo qua staffDirectory (Dual-account detection):
+  // Tìm tất cả các record tài khoản trong danh bạ có cùng Tên hiển thị chuẩn hóa hoặc cùng legacyStaffId
+  if (Array.isArray(staffDirectory) && staffDirectory.length > 0) {
+    for (const s of staffDirectory) {
+      if (!s || s.id === undefined || s.id === null) continue;
+      const sId = Number(s.id);
+
+      // Nếu s đã nằm trong nhóm (hoặc có nickname trong nhóm)
+      const isRecordInGroup =
+        memberIdSet.has(sId) ||
+        (s.legacyStaffId && memberIdSet.has(Number(s.legacyStaffId))) ||
+        Boolean(conversation.memberNicknames?.[String(sId)]);
+
+      if (!isRecordInGroup) continue;
+
+      // Kiểm tra xem record s này có đại diện cho cùng một người với `staff` không:
+      // a) Cùng legacyStaffId
+      if (staffLegacyIdNum && s.legacyStaffId && Number(s.legacyStaffId) === staffLegacyIdNum) {
+        return true;
+      }
+
+      // b) Cùng tên hiển thị chuẩn hóa (VD: "Nguyễn Quang Khải" vs "Nguyễn Quang Khải")
+      if (targetNorm && s.displayName) {
+        const sNorm = removeVietnameseTones(s.displayName.trim().toLowerCase());
+        if (sNorm && sNorm === targetNorm) {
+          return true;
+        }
+      }
+
+      // c) Cùng email hoặc username prefix (VD: "khai.nguyen")
+      if (staff.username && s.username) {
+        const u1 = staff.username.split('@')[0].toLowerCase();
+        const u2 = s.username.split('@')[0].toLowerCase();
+        if (u1 && u2 && u1 === u2) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}

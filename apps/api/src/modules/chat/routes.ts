@@ -2055,6 +2055,7 @@ async function loadStaffDirectoryCached(fastify: FastifyInstance): Promise<MosCh
       isOnline: Boolean(s.lastActiveAt && nowMs - new Date(s.lastActiveAt).getTime() < 5 * 60 * 1000),
       departmentCodes: Array.from(deptSet),
       teamCodes: Array.from(teamSet),
+      legacyStaffId: s.legacyStaffId ? Number(s.legacyStaffId) : null,
     };
   });
   memoryStaffCache = {

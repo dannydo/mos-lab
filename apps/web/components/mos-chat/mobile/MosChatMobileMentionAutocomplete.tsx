@@ -5,6 +5,7 @@ import { AtSign, X, UserPlus, Users, AlertCircle } from 'lucide-react';
 import { message as antdMessage } from 'antd';
 import { useMosChat } from '../context/MosChatContext';
 import { removeVietnameseTones } from '@mos-lab/shared';
+import { isStaffInConversationMembers } from '../utils/chat-helpers';
 
 export interface MosChatMentionCandidate {
   id: string;
@@ -192,8 +193,8 @@ export const MosChatMobileMentionAutocomplete: React.FC<MosChatMobileMentionAuto
       // Xác định trạng thái thành viên nhóm
       let isGroupMember = false;
       if (isSpace) {
-        // Trong Không gian: phải nằm trong memberSet
-        isGroupMember = memberSet.has(s.id);
+        // Trong Không gian: kiểm tra thành viên nhóm thông minh (hỗ trợ Dual-Account)
+        isGroupMember = isStaffInConversationMembers(s, activeConversation, directory);
       } else if (activeConversation?.type === 'dm') {
         // Trong 1-1 DM: chỉ người trò chuyện cùng (peer) hoặc chính mình là trong cuộc trò chuyện
         isGroupMember = s.id === peerId || s.id === myId || memberSet.has(s.id);

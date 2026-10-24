@@ -4,6 +4,7 @@ import {
   extractMentionedStaff,
   cleanTextForUrgentVoiceAnnouncement,
   buildMaiUrgentVoiceAnnouncement,
+  isStaffInConversationMembers,
 } from './chat-helpers';
 
 describe('mOS Chat Urgent Voice Announcement Helpers (MOS-BUG-135)', () => {
@@ -155,6 +156,62 @@ describe('mOS Chat Urgent Voice Announcement Helpers (MOS-BUG-135)', () => {
       expect(result).toBe(
         'Tâm Nguyễn vừa gửi tin nhắn khẩn cấp: 0901406091 cho anh 30K nhen. Ghi chú: Khách đang đợi tại quầy'
       );
+    });
+  });
+
+  describe('isStaffInConversationMembers (Dual-Account Invariant MOS-BUG-143)', () => {
+    const coreTeamConversation = {
+      id: 'space-core-team',
+      name: 'core-team',
+      type: 'space' as const,
+      memberIds: [1, 4, 14, 15, 21, 43], // Notice: 43 is Khải's legacy ID, 21 is Hân's legacy ID
+      memberNicknames: { '6': 'K' },
+    };
+
+    const mockStaffDirectory = [
+      { id: 1, displayName: 'Danny Do', username: 'danny.do@wingslashes.com' },
+      { id: 4, displayName: 'Tâm Nguyễn', username: 'tam.nguyen@wingslashes.com' },
+      { id: 6, displayName: 'Nguyễn Quang Khải', username: 'khai.nguyen@wingslashes.com' }, // Active Google account
+      { id: 43, displayName: 'Nguyễn Quang Khải', username: 'user45103@wingslashes.com', legacyStaffId: 45103 }, // Legacy account
+      { id: 13, displayName: 'Bảo Hân', username: 'bao.han@wingslashes.com' }, // Active Google account
+      { id: 21, displayName: 'Bảo Hân', username: 'user45104@wingslashes.com', legacyStaffId: 45104 }, // Legacy account
+      { id: 99, displayName: 'Nguyễn Thị Hoa', username: 'hoa.nguyen@wingslashes.com' }, // Outsider
+    ];
+
+    it('returns true when staff ID directly exists in memberIds', () => {
+      const staffDanny = { id: 1, displayName: 'Danny Do' };
+      expect(isStaffInConversationMembers(staffDanny, coreTeamConversation, mockStaffDirectory)).toBe(true);
+    });
+
+    it('returns true for dual-account staff (e.g. Khải ID 6) when alternate record (ID 43) is in memberIds', () => {
+      const staffKhaiActive = { id: 6, displayName: 'Nguyễn Quang Khải', username: 'khai.nguyen@wingslashes.com' };
+      // Even though ID 6 is NOT directly in memberIds [1, 4, 14, 15, 21, 43], Khải is recognized via ID 43!
+      expect(isStaffInConversationMembers(staffKhaiActive, coreTeamConversation, mockStaffDirectory)).toBe(true);
+    });
+
+    it('returns true for dual-account staff (e.g. Bảo Hân ID 13) when legacy record (ID 21) is in memberIds', () => {
+      const staffHanActive = { id: 13, displayName: 'Bảo Hân', username: 'bao.han@wingslashes.com' };
+      expect(isStaffInConversationMembers(staffHanActive, coreTeamConversation, mockStaffDirectory)).toBe(true);
+    });
+
+    it('returns true when staff has a nickname in the space', () => {
+      const staffKhai = { id: 6, displayName: 'Khải' };
+      expect(isStaffInConversationMembers(staffKhai, coreTeamConversation, mockStaffDirectory)).toBe(true);
+    });
+
+    it('returns false for true non-members who are not in the space under any account', () => {
+      const staffOutsider = { id: 99, displayName: 'Nguyễn Thị Hoa', username: 'hoa.nguyen@wingslashes.com' };
+      expect(isStaffInConversationMembers(staffOutsider, coreTeamConversation, mockStaffDirectory)).toBe(false);
+    });
+
+    it('returns true for all staff in 1-on-1 Direct Messages (DM)', () => {
+      const dmConversation = {
+        id: 'dm-1-99',
+        type: 'dm' as const,
+        participantStaffId: 99,
+      };
+      const staffOutsider = { id: 99, displayName: 'Nguyễn Thị Hoa' };
+      expect(isStaffInConversationMembers(staffOutsider, dmConversation, mockStaffDirectory)).toBe(true);
     });
   });
 });
