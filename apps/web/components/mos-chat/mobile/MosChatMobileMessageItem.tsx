@@ -13,12 +13,14 @@ export interface MosChatMobileMessageItemProps {
   message: MosChatMessage;
   prevMessage?: MosChatMessage;
   onOpenThread?: (msg: MosChatMessage) => void;
+  onOpenGallery?: (message: MosChatMessage, attachmentIndex: number) => void;
 }
 
 export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> = ({
   message,
   prevMessage,
   onOpenThread,
+  onOpenGallery,
 }) => {
   const { currentUser, reactToMessage, setSelectedMsgForAction, setReplyingToMessage, messages } = useMosChat();
 
@@ -248,7 +250,14 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
         {message.attachments && message.attachments.length > 0 && (
           <div className="mt-2 space-y-1.5">
             {message.attachments.map((att, idx) => (
-              <div key={idx} className="rounded-xl overflow-hidden border border-black/10">
+              <div
+                key={idx}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenGallery?.(message, idx);
+                }}
+                className="rounded-xl overflow-hidden border border-black/10 cursor-pointer active:opacity-90 transition-opacity"
+              >
                 <img
                   src={resolveMediaUrl(att.url)}
                   alt="Đính kèm"

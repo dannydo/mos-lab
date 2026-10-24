@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   SendHorizontal,
   MessageSquareReply,
@@ -20,6 +20,7 @@ import { formatStickerToken, type MosChatStickerItem } from '../mos-chat-sticker
 import { MosChatRichText } from '../MosChatRichText';
 import { MosChatMobileMentionAutocomplete } from './MosChatMobileMentionAutocomplete';
 import { MosChatMobileEditModal } from './MosChatMobileEditModal';
+import { MosChatMobileMediaGallery, type MosChatGalleryImage } from './MosChatMobileMediaGallery';
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
 import { apiClient } from '../../../lib/api-client';
 import type { MosChatImageAttachment, MosChatThreadReply, SafeAny } from '@mos-lab/shared';
@@ -70,6 +71,54 @@ export const MosChatMobileThreadSheet: React.FC = () => {
 
   // Edit reply modal state
   const [editingReply, setEditingReply] = useState<MosChatThreadReply | null>(null);
+
+  // Media Gallery Lightbox state
+  const [galleryOpen, setGalleryOpen] = useState<boolean>(false);
+  const [galleryInitialIndex, setGalleryInitialIndex] = useState<number>(0);
+
+  // All images in active thread (parent message + replies in chronological order)
+  const threadGalleryImages: MosChatGalleryImage[] = useMemo(() => {
+    if (!activeThreadMsg) return [];
+    const list: MosChatGalleryImage[] = [];
+
+    // 1. Parent message attachments
+    if (activeThreadMsg.attachments && activeThreadMsg.attachments.length > 0) {
+      activeThreadMsg.attachments.forEach((att, idx) => {
+        list.push({
+          id: att.id || `parent-${activeThreadMsg.id}-att-${idx}`,
+          url: att.url,
+          name: att.name,
+          senderName: activeThreadMsg.senderName,
+          senderRole: activeThreadMsg.senderRole,
+          createdAt: activeThreadMsg.createdAt,
+        });
+      });
+    }
+
+    // 2. Thread replies attachments
+    (threadReplies || []).forEach((reply) => {
+      if (reply.attachments && reply.attachments.length > 0) {
+        reply.attachments.forEach((att, idx) => {
+          list.push({
+            id: att.id || `reply-${reply.id}-att-${idx}`,
+            url: att.url,
+            name: att.name,
+            senderName: reply.senderName,
+            senderRole: reply.senderRole,
+            createdAt: reply.createdAt,
+          });
+        });
+      }
+    });
+
+    return list;
+  }, [activeThreadMsg, threadReplies]);
+
+  const handleOpenGallery = (targetUrl: string, targetId?: string) => {
+    const idx = threadGalleryImages.findIndex((img) => (targetId && img.id === targetId) || img.url === targetUrl);
+    setGalleryInitialIndex(idx >= 0 ? idx : 0);
+    setGalleryOpen(true);
+  };
 
   // Replying quote inside thread
   const [replyingToReply, setReplyingToReply] = useState<MosChatThreadReply | null>(null);
@@ -489,6 +538,29 @@ export const MosChatMobileThreadSheet: React.FC = () => {
             />
           </div>
 
+          {/* Parent Message Attachments */}
+          {activeThreadMsg.attachments && activeThreadMsg.attachments.length > 0 && (
+            <div className="space-y-1.5 mt-2.5">
+              {activeThreadMsg.attachments.map((att, idx) => (
+                <div
+                  key={att.id || idx}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenGallery(att.url, att.id);
+                  }}
+                  className="rounded-xl overflow-hidden bg-slate-950/40 cursor-pointer active:opacity-90 transition-opacity"
+                >
+                  <img
+                    src={resolveMediaUrl(att.url)}
+                    alt={att.name || 'Ảnh đính kèm'}
+                    className="max-h-60 w-full object-cover rounded-xl"
+                    loading="lazy"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Reaction badges for Parent Message */}
           {activeThreadMsg.reactions && Object.keys(activeThreadMsg.reactions).length > 0 && (
             <div className="flex flex-wrap items-center gap-1 mt-2.5 pt-2 border-t border-slate-800/80">
@@ -592,8 +664,14 @@ export const MosChatMobileThreadSheet: React.FC = () => {
                 {reply.attachments && reply.attachments.length > 0 && (
                   <div className="space-y-1.5 mb-1.5">
                     {reply.attachments.map((att) => (
-                      <div key={att.id} className="rounded-xl overflow-hidden bg-slate-950/40">
-                        {}
+                      <div
+                        key={att.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenGallery(att.url, att.id);
+                        }}
+                        className="rounded-xl overflow-hidden bg-slate-950/40 cursor-pointer active:opacity-90 transition-opacity"
+                      >
                         <img
                           src={resolveMediaUrl(att.url)}
                           alt={att.name || 'Ảnh đính kèm'}
@@ -864,6 +942,14 @@ export const MosChatMobileThreadSheet: React.FC = () => {
           title="Chỉnh sửa phản hồi"
         />
       )}
+
+      {/* Thread Image Media Gallery Modal */}
+      <MosChatMobileMediaGallery
+        open={galleryOpen}
+        images={threadGalleryImages}
+        initialIndex={galleryInitialIndex}
+        onClose={() => setGalleryOpen(false)}
+      />
 
       {/* Sticker & Emoji Sheet */}
       <MosChatMobileStickerSheet

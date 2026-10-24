@@ -9,9 +9,10 @@ import { MosChatMobileMessageItem } from './MosChatMobileMessageItem';
 
 export interface MosChatMobileStreamProps {
   onOpenThread: (msg: MosChatMessage) => void;
+  onOpenGallery?: (message: MosChatMessage, attachmentIndex: number) => void;
 }
 
-export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({ onOpenThread }) => {
+export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({ onOpenThread, onOpenGallery }) => {
   const { messages, activeConversation, activeConvId } = useMosChat();
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -123,6 +124,7 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({ onOpen
                   message={msg}
                   prevMessage={idx > 0 ? group.items[idx - 1] : undefined}
                   onOpenThread={onOpenThread}
+                  onOpenGallery={onOpenGallery}
                 />
               ))}
             </div>

@@ -32,6 +32,7 @@ vi.mock('../../../lib/api-client', () => ({
                 timeLabel: '10:00',
                 createdAt: new Date().toISOString(),
                 reactions: { '❤️': 3 },
+                attachments: [{ id: 'att-1', url: '/uploads/sample-1.jpg', name: 'Mẫu mi 1' }],
                 thread: [
                   {
                     id: 'r1',
@@ -42,6 +43,7 @@ vi.mock('../../../lib/api-client', () => ({
                     timeLabel: '10:02',
                     createdAt: new Date().toISOString(),
                     reactions: { '👍': 1 },
+                    attachments: [{ id: 'att-2', url: '/uploads/sample-2.jpg', name: 'Mẫu mi 2' }],
                   },
                 ],
               },
@@ -575,6 +577,63 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
           text: 'Chào cả nhà, hôm nay lịch dặm mi kín chỗ rồi nha! [CẬP NHẬT]',
         })
       );
+    });
+  });
+
+  it('opens Messenger-style image gallery when tapping an image in a thread and allows sliding between images (MOS-FEAT-145)', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Shop Operations')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('Shop Operations'));
+
+    // Open subthread
+    await waitFor(() => {
+      expect(screen.getByText(/câu trả lời trong luồng/i)).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText(/câu trả lời trong luồng/i));
+
+    // Images from parent and replies should be visible in thread
+    await waitFor(() => {
+      expect(screen.getByAltText('Mẫu mi 1')).toBeTruthy();
+      expect(screen.getByAltText('Mẫu mi 2')).toBeTruthy();
+    });
+
+    // Tap on image 'Mẫu mi 1'
+    fireEvent.click(screen.getByAltText('Mẫu mi 1'));
+
+    // Messenger-style gallery dialog should open
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: 'Xem hình ảnh đính kèm' })).toBeTruthy();
+    });
+
+    const galleryModal = screen.getByRole('dialog', { name: 'Xem hình ảnh đính kèm' });
+
+    // Shows 1 / 2 counter and author of image 1
+    expect(within(galleryModal).getByText('1 / 2')).toBeTruthy();
+    expect(within(galleryModal).getByText('Chuyên Viên Mai')).toBeTruthy();
+
+    // Tap next chevron to slide to image 2
+    const nextBtn = within(galleryModal).getByRole('button', { name: 'Xem hình tiếp theo' });
+    fireEvent.click(nextBtn);
+
+    // Counter updates to 2 / 2 and author to Hương CC
+    expect(within(galleryModal).getByText('2 / 2')).toBeTruthy();
+    expect(within(galleryModal).getByText('Hương CC')).toBeTruthy();
+
+    // Close gallery
+    const closeBtn = within(galleryModal).getByRole('button', { name: 'Đóng xem hình' });
+    fireEvent.click(closeBtn);
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog', { name: 'Xem hình ảnh đính kèm' })).toBeNull();
     });
   });
 });

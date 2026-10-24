@@ -15,6 +15,7 @@ import { MosChatMobileThreadSheet } from './MosChatMobileThreadSheet';
 import { MosChatMobileTasksTab } from './MosChatMobileTasksTab';
 import { MosChatMobileStickerSheet } from './MosChatMobileStickerSheet';
 import { MosChatMobileEditModal } from './MosChatMobileEditModal';
+import { MosChatMobileMediaGallery, type MosChatGalleryImage } from './MosChatMobileMediaGallery';
 import { formatStickerToken, type MosChatStickerItem, type MosChatStickerPackId } from '../mos-chat-stickers';
 import { DEADLINE_PRESETS, GOOGLE_CHAT_REACTION_EMOJIS, WINGS_SIGNATURE_EMOJIS } from '../constants/chat-constants';
 import { apiClient } from '../../../lib/api-client';
@@ -42,6 +43,48 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
   const [stickerPickerInitialPack, setStickerPickerInitialPack] = useState<MosChatStickerPackId>('emoji');
   const [composerText, setComposerText] = useState<string>('');
   const [editingMessage, setEditingMessage] = useState<MosChatMessage | null>(null);
+
+  // Stream Media Gallery Lightbox state
+  const [streamGallery, setStreamGallery] = useState<{
+    open: boolean;
+    images: MosChatGalleryImage[];
+    initialIndex: number;
+  }>({
+    open: false,
+    images: [],
+    initialIndex: 0,
+  });
+
+  const handleOpenStreamGallery = (msg: MosChatMessage, attIdx: number) => {
+    const list: MosChatGalleryImage[] = [];
+    (msg.attachments || []).forEach((att, idx) => {
+      list.push({
+        id: att.id || `msg-${msg.id}-att-${idx}`,
+        url: att.url,
+        name: att.name,
+        senderName: msg.senderName,
+        senderRole: msg.senderRole,
+        createdAt: msg.createdAt,
+      });
+    });
+    (msg.thread || []).forEach((reply) => {
+      (reply.attachments || []).forEach((att, idx) => {
+        list.push({
+          id: att.id || `reply-${reply.id}-att-${idx}`,
+          url: att.url,
+          name: att.name,
+          senderName: reply.senderName,
+          senderRole: reply.senderRole,
+          createdAt: reply.createdAt,
+        });
+      });
+    });
+    setStreamGallery({
+      open: true,
+      images: list,
+      initialIndex: attIdx,
+    });
+  };
 
   // Quick Task Creation Modal
   const [taskModalOpen, setTaskModalOpen] = useState<boolean>(false);
@@ -180,6 +223,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
                   setActiveThreadMsg(msg);
                   setMobileView('thread');
                 }}
+                onOpenGallery={handleOpenStreamGallery}
               />
               <MosChatMobileComposer
                 onOpenActionSheet={() => setActionSheetOpen(true)}
@@ -349,6 +393,14 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
           </div>
         </div>
       </Modal>
+
+      {/* Stream Image Media Gallery Modal */}
+      <MosChatMobileMediaGallery
+        open={streamGallery.open}
+        images={streamGallery.images}
+        initialIndex={streamGallery.initialIndex}
+        onClose={() => setStreamGallery((prev) => ({ ...prev, open: false }))}
+      />
     </div>
   );
 };
