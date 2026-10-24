@@ -370,3 +370,247 @@ export const DEFAULT_TELESALE_COMPETENCY_CONFIG: TelesaleCompetencyGlobalConfig 
   maxOverflowBonusRate: 1.2,
   defaultStandardWorkingDays: 26,
 };
+
+/**
+ * ------------------------------------------------------------------
+ * Cấu hình Khung Năng Lực Nâng Cao & Quản Lý Phiên Bản (MOS-FEAT-142)
+ * ------------------------------------------------------------------
+ */
+
+export type TelesaleLevel = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+
+export interface TelesalePillarsWeightConfig {
+  pillarAWeight: number; // Mặc định 40 (Hiệu suất công việc)
+  pillarBWeight: number; // Mặc định 25 (Kỹ năng nghiệp vụ)
+  pillarCWeight: number; // Mặc định 20 (Chất lượng công việc)
+  pillarDWeight: number; // Mặc định 15 (Kỷ luật & Thái độ)
+  totalWeight: number; // Luôn bắt buộc = 100
+}
+
+export interface TelesaleLevelKpiConfig {
+  level: number; // 1 -> 9
+  title: string; // "Level 1" -> "Level 9"
+  tier: TelesaleTier; // 'FRESHER' | 'JUNIOR' | 'MID_LEVEL' | 'SENIOR'
+  doneTarget: number; // Level 1-9: 100, 150, 200, 250, 300, 350, 400, 450, 500 Done/tháng
+  newCustomersTarget: number; // Khách mới Done (ví dụ: 35, 50, 70, ...)
+  revenueTarget: number; // Doanh thu Done (đ)
+  callsTarget: number; // Tổng cuộc gọi
+  connectedCallsTarget: number; // Cuộc gọi kết nối
+}
+
+export interface TelesalePillarAKpiConfig {
+  doneKpi: {
+    name: string;
+    maxScore: number; // Mặc định 12 điểm
+    formulaDescription: string; // "MIN(Done thực tế / KPI theo Level, 1) × Điểm tối đa"
+    allowOverflowBonus: boolean;
+  };
+  newCustomersKpi: {
+    name: string;
+    maxScore: number; // Mặc định 8 điểm
+    formulaDescription: string;
+  };
+  revenueKpi: {
+    name: string;
+    maxScore: number; // Mặc định 8 điểm
+    formulaDescription: string;
+  };
+  conversionKpi: {
+    name: string;
+    maxScore: number; // Mặc định 6 điểm
+    targetDoneBookRate: number; // 0.7 (70%)
+    targetBookCallRate: number; // 0.15 (15%)
+    formulaDescription: string;
+  };
+  callProductivityKpi: {
+    name: string;
+    maxScore: number; // Mặc định 6 điểm
+    formulaDescription: string;
+  };
+  totalPillarAScore: number; // 40
+}
+
+export interface TelesaleTierPromotionRule {
+  tier: TelesaleTier;
+  label: string;
+  levelRange: [number, number]; // [minLevel, maxLevel]
+  minTenureMonths: number;
+  passingScore: number;
+  consecutiveMonthsRequired: number; // N tháng liên tiếp đạt điểm chuẩn để thăng bậc
+  demotionConsecutiveFailMonths: number; // N tháng liên tiếp trượt để cảnh báo / giáng bậc
+  fresherGracePeriodMonths: number; // Quy tắc Fresher: số tháng bảo lưu / học việc
+  badgeColor: string;
+  description: string;
+}
+
+export type TelesaleConfigStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+
+export interface TelesaleCompetencyConfigVersion {
+  versionId: string;
+  versionNumber: number;
+  name: string;
+  status: TelesaleConfigStatus;
+  effectiveDate: string; // YYYY-MM
+  createdAt: string;
+  updatedAt: string;
+  publishedAt?: string;
+  publishedByStaffId?: number;
+  publishedByName?: string;
+  authorStaffId?: number;
+  authorName?: string;
+  changelog?: string;
+
+  // Cấu trúc danh mục cấu hình
+  pillarsWeight: TelesalePillarsWeightConfig;
+  pillarAConfig: TelesalePillarAKpiConfig;
+  levelTargets: TelesaleLevelKpiConfig[];
+  tierRules: Record<TelesaleTier, TelesaleTierPromotionRule>;
+  standardWorkingDays: number;
+  maxOverflowBonusRate: number;
+}
+
+export interface TelesaleConfigValidationResult {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+export interface TelesaleConfigPreviewRow {
+  staffId: number;
+  staffName: string;
+  currentTier: TelesaleTier;
+  currentScore: number;
+  previewScore: number;
+  scoreDiff: number;
+  currentStatus: TelesaleRuleEngineStatus;
+  previewStatus: TelesaleRuleEngineStatus;
+  pillarAScoreDiff: number;
+}
+
+export interface TelesaleConfigPreviewResult {
+  versionId: string;
+  month: string;
+  staffCount: number;
+  rows: TelesaleConfigPreviewRow[];
+  averageScoreDiff: number;
+}
+
+export const DEFAULT_LEVEL_TARGETS: TelesaleLevelKpiConfig[] = [
+  { level: 1, title: 'Level 1', tier: 'FRESHER', doneTarget: 100, newCustomersTarget: 35, revenueTarget: 35000000, callsTarget: 1200, connectedCallsTarget: 400 },
+  { level: 2, title: 'Level 2', tier: 'FRESHER', doneTarget: 150, newCustomersTarget: 50, revenueTarget: 52500000, callsTarget: 1300, connectedCallsTarget: 450 },
+  { level: 3, title: 'Level 3', tier: 'JUNIOR', doneTarget: 200, newCustomersTarget: 70, revenueTarget: 70000000, callsTarget: 1400, connectedCallsTarget: 500 },
+  { level: 4, title: 'Level 4', tier: 'JUNIOR', doneTarget: 250, newCustomersTarget: 85, revenueTarget: 87500000, callsTarget: 1500, connectedCallsTarget: 550 },
+  { level: 5, title: 'Level 5', tier: 'MID_LEVEL', doneTarget: 300, newCustomersTarget: 100, revenueTarget: 105000000, callsTarget: 1600, connectedCallsTarget: 600 },
+  { level: 6, title: 'Level 6', tier: 'MID_LEVEL', doneTarget: 350, newCustomersTarget: 120, revenueTarget: 122500000, callsTarget: 1700, connectedCallsTarget: 650 },
+  { level: 7, title: 'Level 7', tier: 'SENIOR', doneTarget: 400, newCustomersTarget: 140, revenueTarget: 140000000, callsTarget: 1800, connectedCallsTarget: 700 },
+  { level: 8, title: 'Level 8', tier: 'SENIOR', doneTarget: 450, newCustomersTarget: 155, revenueTarget: 157500000, callsTarget: 1900, connectedCallsTarget: 750 },
+  { level: 9, title: 'Level 9', tier: 'SENIOR', doneTarget: 500, newCustomersTarget: 175, revenueTarget: 175000000, callsTarget: 2000, connectedCallsTarget: 800 },
+];
+
+export const DEFAULT_PILLAR_A_CONFIG: TelesalePillarAKpiConfig = {
+  doneKpi: {
+    name: 'KPI Done',
+    maxScore: 12,
+    formulaDescription: 'MIN(Done thực tế / KPI theo Level, 1) × Điểm tối đa (12đ)',
+    allowOverflowBonus: true,
+  },
+  newCustomersKpi: {
+    name: 'Done Khách Mới',
+    maxScore: 8,
+    formulaDescription: 'MIN(Khách mới thực tế / Target theo Level, 1) × Điểm tối đa (8đ)',
+  },
+  revenueKpi: {
+    name: 'Doanh Thu',
+    maxScore: 8,
+    formulaDescription: 'MIN(Doanh thu thực tế / Target theo Level, 1) × Điểm tối đa (8đ)',
+  },
+  conversionKpi: {
+    name: 'Tỷ Lệ Chuyển Đổi',
+    maxScore: 6,
+    targetDoneBookRate: 0.7,
+    targetBookCallRate: 0.15,
+    formulaDescription: 'Đánh giá tỷ lệ Done/Book (chuẩn 70%) và Book/Connected Calls (chuẩn 15%)',
+  },
+  callProductivityKpi: {
+    name: 'Năng Suất Cuộc Gọi',
+    maxScore: 6,
+    formulaDescription: 'Đánh giá sản lượng tổng cuộc gọi và cuộc gọi kết nối thành công',
+  },
+  totalPillarAScore: 40,
+};
+
+export const DEFAULT_TIER_RULES: Record<TelesaleTier, TelesaleTierPromotionRule> = {
+  FRESHER: {
+    tier: 'FRESHER',
+    label: 'Fresher Booker',
+    levelRange: [1, 2],
+    minTenureMonths: 0,
+    passingScore: 70,
+    consecutiveMonthsRequired: 2,
+    demotionConsecutiveFailMonths: 2,
+    fresherGracePeriodMonths: 2,
+    badgeColor: 'blue',
+    description: 'Tư vấn viên mới gia nhập, áp dụng quy tắc đặc xá 2 tháng đầu học việc, không giáng bậc trong thời gian bảo lưu.',
+  },
+  JUNIOR: {
+    tier: 'JUNIOR',
+    label: 'Junior Booker',
+    levelRange: [3, 4],
+    minTenureMonths: 2,
+    passingScore: 75,
+    consecutiveMonthsRequired: 3,
+    demotionConsecutiveFailMonths: 2,
+    fresherGracePeriodMonths: 0,
+    badgeColor: 'cyan',
+    description: 'Tư vấn viên đạt độ ổn định về năng suất gọi, xử lý từ chối cơ bản và chốt lịch hẹn vững vàng.',
+  },
+  MID_LEVEL: {
+    tier: 'MID_LEVEL',
+    label: 'Mid-level Booker',
+    levelRange: [5, 6],
+    minTenureMonths: 6,
+    passingScore: 80,
+    consecutiveMonthsRequired: 3,
+    demotionConsecutiveFailMonths: 2,
+    fresherGracePeriodMonths: 0,
+    badgeColor: 'gold',
+    description: 'Chuyên viên tư vấn xuất sắc, đọc vị khách hàng tinh tế, tỷ lệ Done/Book cao và chuyển đổi đều đặn.',
+  },
+  SENIOR: {
+    tier: 'SENIOR',
+    label: 'Senior Booker',
+    levelRange: [7, 9],
+    minTenureMonths: 12,
+    passingScore: 85,
+    consecutiveMonthsRequired: 3,
+    demotionConsecutiveFailMonths: 2,
+    fresherGracePeriodMonths: 0,
+    badgeColor: 'purple',
+    description: 'Bậc thầy Telesale/Booking, dẫn dắt đội ngũ, xử lý các tình huống khó khăn và đạt hiệu suất cao.',
+  },
+};
+
+export const DEFAULT_TELESALE_CONFIG_VERSION: TelesaleCompetencyConfigVersion = {
+  versionId: 'cfg-v1-init',
+  versionNumber: 1,
+  name: 'Khung Năng Lực Telesale Tiêu Chuẩn 2026',
+  status: 'PUBLISHED',
+  effectiveDate: '2026-01',
+  createdAt: '2026-01-01T00:00:00.000Z',
+  updatedAt: '2026-01-01T00:00:00.000Z',
+  publishedAt: '2026-01-01T00:00:00.000Z',
+  publishedByName: 'Ban Quản Trị Wings Lashes',
+  changelog: 'Phiên bản ban hành tiêu chuẩn ban đầu với 4 trụ cột A (40%), B (25%), C (20%), D (15%) và thang 9 Level KPI Done.',
+  pillarsWeight: {
+    pillarAWeight: 40,
+    pillarBWeight: 25,
+    pillarCWeight: 20,
+    pillarDWeight: 15,
+    totalWeight: 100,
+  },
+  pillarAConfig: DEFAULT_PILLAR_A_CONFIG,
+  levelTargets: DEFAULT_LEVEL_TARGETS,
+  tierRules: DEFAULT_TIER_RULES,
+  standardWorkingDays: 26,
+  maxOverflowBonusRate: 1.2,
+};

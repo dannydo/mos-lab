@@ -211,3 +211,48 @@ test('TelesaleCompetency: Rule Engine checks promotion and demotion workflows', 
   assert.equal(juniorFail2.ruleEngineStatus, 'DEMOTION_FLAGGED');
   assert.equal(juniorFail2.recommendedTier, 'FRESHER');
 });
+
+test('TelesaleCompetency: validateConfigVersion enforces 100% pillar weight and valid level targets (MOS-FEAT-142)', async () => {
+  const { DEFAULT_TELESALE_CONFIG_VERSION } = await import('@mos-lab/shared');
+
+  // 1. Cấu hình mặc định phải valid
+  const validResult = TelesaleCompetencyService.validateConfigVersion(DEFAULT_TELESALE_CONFIG_VERSION);
+  assert.equal(validResult.valid, true);
+  assert.equal(validResult.errors.length, 0);
+
+  // 2. Tổng trọng số !== 100 phải báo lỗi
+  const invalidPillars = {
+    ...DEFAULT_TELESALE_CONFIG_VERSION,
+    pillarsWeight: {
+      ...DEFAULT_TELESALE_CONFIG_VERSION.pillarsWeight,
+      pillarAWeight: 50, // 50 + 25 + 20 + 15 = 110%
+    },
+  };
+  const invalidResult1 = TelesaleCompetencyService.validateConfigVersion(invalidPillars);
+  assert.equal(invalidResult1.valid, false);
+  assert.ok(invalidResult1.errors.some((e) => e.includes('100%')));
+
+  // 3. Level Done target giảm dần hoặc <= 0 phải báo lỗi
+  const invalidTargets = {
+    ...DEFAULT_TELESALE_CONFIG_VERSION,
+    levelTargets: DEFAULT_TELESALE_CONFIG_VERSION.levelTargets.map((l) =>
+      l.level === 3 ? { ...l, doneTarget: 80 } : l // L3 = 80 < L2 (150)
+    ),
+  };
+  const invalidResult2 = TelesaleCompetencyService.validateConfigVersion(invalidTargets);
+  assert.equal(invalidResult2.valid, false);
+  assert.ok(invalidResult2.errors.some((e) => e.includes('không được thấp hơn')));
+});
+
+test('TelesaleCompetency: Rule Engine applies Fresher grace period (MOS-FEAT-142)', () => {
+  // Fresher có thâm niên 1 tháng (< grace period 2 tháng) trượt 2 tháng liên tiếp
+  // không bị gắn cờ DEMOTION_FLAGGED
+  const fresherInGrace = TelesaleCompetencyService.evaluateRuleEngine(
+    'FRESHER',
+    1, // 1 tháng thâm niên
+    60, // trượt
+    [{ month: '2026-09', totalScore: 55, isPassed: false }] // tháng 1 cũng trượt
+  );
+  assert.equal(fresherInGrace.isPassed, false);
+  assert.notEqual(fresherInGrace.ruleEngineStatus, 'DEMOTION_FLAGGED');
+});

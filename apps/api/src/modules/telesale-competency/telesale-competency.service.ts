@@ -3,7 +3,6 @@ import {
   TelesaleTier,
   TELESALE_TIER_CONFIG,
   TelesaleSkillKey,
-  TELESALE_SKILL_DEFINITIONS,
   TelesalePillarAMetrics,
   TelesalePillarBMetrics,
   TelesalePillarCMetrics,
@@ -14,15 +13,424 @@ import {
   TelesaleCompetencyGlobalConfig,
   DEFAULT_TELESALE_COMPETENCY_CONFIG,
   TelesalePromotionHistoryItem,
+  TelesaleCompetencyConfigVersion,
+  TelesaleConfigValidationResult,
+  TelesaleConfigPreviewResult,
+  TelesaleConfigPreviewRow,
+  DEFAULT_TELESALE_CONFIG_VERSION,
 } from '@mos-lab/shared';
 import { TelesaleTargetService } from '../kpi/services/telesale-target.service.js';
 
 const CONFIG_KEY = 'telesale_competency:global_config_v1';
+const VERSIONS_KEY = 'telesale_competency:versions_v2';
 const EVAL_KEY_PREFIX = 'telesale_competency:eval_v1:';
 const HISTORY_KEY_PREFIX = 'telesale_competency:history_v1:';
 const STAFF_TIER_KEY_PREFIX = 'telesale_competency:staff_tier_v1:';
 
 export class TelesaleCompetencyService {
+  /**
+   * ---------------------------------------------------------
+   * Quản Lý Phiên Bản Cấu Hình Khung Năng Lực (MOS-FEAT-142)
+   * ---------------------------------------------------------
+   */
+
+  /**
+   * Lấy danh sách tất cả các phiên bản cấu hình (Draft, Published, Archived)
+   */
+  static async listConfigVersions(fastify?: FastifyInstance): Promise<TelesaleCompetencyConfigVersion[]> {
+    try {
+      if (fastify?.prisma?.crm?.crmConfig) {
+        const record = await fastify.prisma.crm.crmConfig.findUnique({
+          where: { key: VERSIONS_KEY },
+        });
+        if (record?.value) {
+          const list: TelesaleCompetencyConfigVersion[] = JSON.parse(record.value);
+          if (Array.isArray(list) && list.length > 0) {
+            return list.sort((a, b) => b.versionNumber - a.versionNumber);
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    // Khởi tạo mặc định nếu chưa có
+    const initialList = [DEFAULT_TELESALE_CONFIG_VERSION];
+    if (fastify?.prisma?.crm?.crmConfig) {
+      try {
+        await fastify.prisma.crm.crmConfig.upsert({
+          where: { key: VERSIONS_KEY },
+          create: {
+            key: VERSIONS_KEY,
+            value: JSON.stringify(initialList),
+          },
+          update: {
+            value: JSON.stringify(initialList),
+            updatedAt: new Date(),
+          },
+        });
+      } catch {
+        // non-blocking
+      }
+    }
+    return initialList;
+  }
+
+  /**
+   * Lấy chi tiết một phiên bản cấu hình theo ID
+   */
+  static async getConfigVersion(
+    fastify: FastifyInstance | undefined,
+    versionId: string
+  ): Promise<TelesaleCompetencyConfigVersion | null> {
+    const list = await this.listConfigVersions(fastify);
+    return list.find((v) => v.versionId === versionId) || null;
+  }
+
+  /**
+   * Lấy phiên bản cấu hình có hiệu lực cho một tháng cụ thể (Không hồi tố kỳ cũ)
+   */
+  static async getVersionForMonth(
+    fastify: FastifyInstance | undefined,
+    month = '2026-10'
+  ): Promise<TelesaleCompetencyConfigVersion> {
+    const list = await this.listConfigVersions(fastify);
+    // Lọc các bản đã ban hành có effectiveDate <= month
+    const published = list
+      .filter((v) => v.status === 'PUBLISHED' && v.effectiveDate <= month)
+      .sort((a, b) => {
+        if (a.effectiveDate !== b.effectiveDate) {
+          return b.effectiveDate.localeCompare(a.effectiveDate);
+        }
+        return b.versionNumber - a.versionNumber;
+      });
+
+    if (published.length > 0) {
+      return published[0];
+    }
+
+    // Fallback: Bản ban hành mới nhất hoặc mặc định
+    const anyPublished = list.find((v) => v.status === 'PUBLISHED');
+    return anyPublished || DEFAULT_TELESALE_CONFIG_VERSION;
+  }
+
+  /**
+   * Kiểm tra tính hợp lệ của phiên bản cấu hình trước khi ban hành
+   */
+  static validateConfigVersion(version: TelesaleCompetencyConfigVersion): TelesaleConfigValidationResult {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+
+    // 1. Kiểm tra 4 trụ cột A, B, C, D
+    const pw = version.pillarsWeight;
+    if (!pw) {
+      errors.push('Thiếu cấu hình trọng số 4 trụ cột');
+    } else {
+      const sum = Number(pw.pillarAWeight || 0) + Number(pw.pillarBWeight || 0) + Number(pw.pillarCWeight || 0) + Number(pw.pillarDWeight || 0);
+      if (Math.abs(sum - 100) > 0.01) {
+        errors.push(`Tổng trọng số 4 trụ cột (A: ${pw.pillarAWeight} + B: ${pw.pillarBWeight} + C: ${pw.pillarCWeight} + D: ${pw.pillarDWeight} = ${sum}%) phải bằng đúng 100%`);
+      }
+    }
+
+    // 2. Kiểm tra ngày hiệu lực
+    if (!version.effectiveDate || !/^\d{4}-\d{2}$/.test(version.effectiveDate)) {
+      errors.push('Ngày bắt đầu hiệu lực không hợp lệ (định dạng chuẩn YYYY-MM, ví dụ: 2026-11)');
+    }
+
+    // 3. Kiểm tra Trụ cột A & 5 chỉ số KPI
+    const pA = version.pillarAConfig;
+    if (!pA) {
+      errors.push('Thiếu cấu hình chi tiết Trụ cột A');
+    } else {
+      const kpis = [pA.doneKpi, pA.newCustomersKpi, pA.revenueKpi, pA.conversionKpi, pA.callProductivityKpi];
+      for (const kpi of kpis) {
+        if (!kpi || typeof kpi.maxScore !== 'number' || kpi.maxScore <= 0) {
+          errors.push(`Điểm tối đa của chỉ số ${kpi?.name || 'KPI'} phải lớn hơn 0`);
+        }
+      }
+      const kpiSum = kpis.reduce((acc, k) => acc + (k?.maxScore || 0), 0);
+      const expectedA = pw?.pillarAWeight || 40;
+      if (Math.abs(kpiSum - expectedA) > 0.01) {
+        warnings.push(`Tổng điểm tối đa 5 chỉ số Trụ cột A (${kpiSum}đ) chưa khớp với trọng số Trụ cột A (${expectedA}đ). Hệ thống sẽ chuẩn hóa tự động khi tính điểm.`);
+      }
+    }
+
+    // 4. Kiểm tra danh mục 9 Level
+    if (!Array.isArray(version.levelTargets) || version.levelTargets.length !== 9) {
+      errors.push('Cần cấu hình đầy đủ đúng 9 Level (Level 1 đến Level 9)');
+    } else {
+      for (let i = 0; i < version.levelTargets.length; i++) {
+        const item = version.levelTargets[i];
+        if (item.doneTarget <= 0) {
+          errors.push(`Level ${item.level}: KPI Done phải lớn hơn 0`);
+        }
+        if (i > 0 && item.doneTarget < version.levelTargets[i - 1].doneTarget) {
+          errors.push(`Level ${item.level} (${item.doneTarget} Done) không được thấp hơn Level ${item.level - 1} (${version.levelTargets[i - 1].doneTarget} Done)`);
+        }
+      }
+    }
+
+    // 5. Kiểm tra quy tắc các bậc Tier & Fresher
+    const tiers: TelesaleTier[] = ['FRESHER', 'JUNIOR', 'MID_LEVEL', 'SENIOR'];
+    for (const t of tiers) {
+      const rule = version.tierRules?.[t];
+      if (!rule) {
+        errors.push(`Thiếu cấu hình điều kiện cho chức danh ${t}`);
+      } else {
+        if (rule.passingScore < 50 || rule.passingScore > 100) {
+          errors.push(`Chức danh ${rule.label}: Điểm chuẩn phải nằm trong khoảng 50 - 100 điểm`);
+        }
+        if (rule.consecutiveMonthsRequired < 1) {
+          errors.push(`Chức danh ${rule.label}: Số tháng liên tiếp đạt chuẩn phải >= 1`);
+        }
+      }
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors,
+      warnings,
+    };
+  }
+
+  /**
+   * Tạo một bản nháp cấu hình mới
+   */
+  static async createDraftVersion(
+    fastify: FastifyInstance,
+    payload: Partial<TelesaleCompetencyConfigVersion>,
+    author: { id?: number; name?: string }
+  ): Promise<TelesaleCompetencyConfigVersion> {
+    const list = await this.listConfigVersions(fastify);
+    const nextVersionNumber = Math.max(...list.map((v) => v.versionNumber), 0) + 1;
+    const baseVersion = list.find((v) => v.versionId === payload.versionId) || list[0] || DEFAULT_TELESALE_CONFIG_VERSION;
+
+    const draft: TelesaleCompetencyConfigVersion = {
+      ...baseVersion,
+      versionId: `cfg-v${nextVersionNumber}-${Date.now().toString(36)}`,
+      versionNumber: nextVersionNumber,
+      name: payload.name || `Bản Nháp Khung Năng Lực v${nextVersionNumber}`,
+      status: 'DRAFT',
+      effectiveDate: payload.effectiveDate || new Date().toISOString().slice(0, 7),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      publishedAt: undefined,
+      publishedByStaffId: undefined,
+      publishedByName: undefined,
+      authorStaffId: author.id,
+      authorName: author.name || 'Admin',
+      changelog: payload.changelog || 'Khởi tạo bản nháp mới',
+      pillarsWeight: payload.pillarsWeight || baseVersion.pillarsWeight,
+      pillarAConfig: payload.pillarAConfig || baseVersion.pillarAConfig,
+      levelTargets: payload.levelTargets || baseVersion.levelTargets,
+      tierRules: payload.tierRules || baseVersion.tierRules,
+      standardWorkingDays: payload.standardWorkingDays || baseVersion.standardWorkingDays,
+      maxOverflowBonusRate: payload.maxOverflowBonusRate || baseVersion.maxOverflowBonusRate,
+    };
+
+    list.unshift(draft);
+    if (fastify?.prisma?.crm?.crmConfig) {
+      await fastify.prisma.crm.crmConfig.upsert({
+        where: { key: VERSIONS_KEY },
+        create: { key: VERSIONS_KEY, value: JSON.stringify(list) },
+        update: { value: JSON.stringify(list), updatedAt: new Date() },
+      });
+    }
+
+    return draft;
+  }
+
+  /**
+   * Cập nhật bản nháp cấu hình
+   */
+  static async updateDraftVersion(
+    fastify: FastifyInstance,
+    versionId: string,
+    payload: Partial<TelesaleCompetencyConfigVersion>
+  ): Promise<TelesaleCompetencyConfigVersion> {
+    const list = await this.listConfigVersions(fastify);
+    const index = list.findIndex((v) => v.versionId === versionId);
+    if (index === -1) {
+      throw new Error(`Không tìm thấy phiên bản cấu hình ID: ${versionId}`);
+    }
+
+    const current = list[index];
+    if (current.status !== 'DRAFT') {
+      throw new Error('Không thể chỉnh sửa trực tiếp phiên bản đã ban hành hoặc đã lưu trữ. Vui lòng tạo bản nháp mới.');
+    }
+
+    const updated: TelesaleCompetencyConfigVersion = {
+      ...current,
+      name: payload.name !== undefined ? payload.name : current.name,
+      effectiveDate: payload.effectiveDate !== undefined ? payload.effectiveDate : current.effectiveDate,
+      changelog: payload.changelog !== undefined ? payload.changelog : current.changelog,
+      pillarsWeight: payload.pillarsWeight ? { ...current.pillarsWeight, ...payload.pillarsWeight } : current.pillarsWeight,
+      pillarAConfig: payload.pillarAConfig ? { ...current.pillarAConfig, ...payload.pillarAConfig } : current.pillarAConfig,
+      levelTargets: payload.levelTargets ? payload.levelTargets : current.levelTargets,
+      tierRules: payload.tierRules ? { ...current.tierRules, ...payload.tierRules } : current.tierRules,
+      standardWorkingDays: payload.standardWorkingDays !== undefined ? payload.standardWorkingDays : current.standardWorkingDays,
+      maxOverflowBonusRate: payload.maxOverflowBonusRate !== undefined ? payload.maxOverflowBonusRate : current.maxOverflowBonusRate,
+      updatedAt: new Date().toISOString(),
+    };
+
+    list[index] = updated;
+    if (fastify?.prisma?.crm?.crmConfig) {
+      await fastify.prisma.crm.crmConfig.upsert({
+        where: { key: VERSIONS_KEY },
+        create: { key: VERSIONS_KEY, value: JSON.stringify(list) },
+        update: { value: JSON.stringify(list), updatedAt: new Date() },
+      });
+    }
+
+    return updated;
+  }
+
+  /**
+   * Xóa bản nháp cấu hình
+   */
+  static async deleteDraftVersion(fastify: FastifyInstance, versionId: string): Promise<boolean> {
+    const list = await this.listConfigVersions(fastify);
+    const target = list.find((v) => v.versionId === versionId);
+    if (!target) {
+      throw new Error(`Không tìm thấy phiên bản cấu hình ID: ${versionId}`);
+    }
+    if (target.status !== 'DRAFT') {
+      throw new Error('Chỉ được phép xóa bản nháp (DRAFT). Không thể xóa phiên bản đã ban hành.');
+    }
+
+    const nextList = list.filter((v) => v.versionId !== versionId);
+    if (fastify?.prisma?.crm?.crmConfig) {
+      await fastify.prisma.crm.crmConfig.upsert({
+        where: { key: VERSIONS_KEY },
+        create: { key: VERSIONS_KEY, value: JSON.stringify(nextList) },
+        update: { value: JSON.stringify(nextList), updatedAt: new Date() },
+      });
+    }
+    return true;
+  }
+
+  /**
+   * Ban hành chính thức phiên bản cấu hình (PUBLISH)
+   */
+  static async publishConfigVersion(
+    fastify: FastifyInstance,
+    versionId: string,
+    effectiveDate: string,
+    publisher: { id?: number; name?: string }
+  ): Promise<TelesaleCompetencyConfigVersion> {
+    const list = await this.listConfigVersions(fastify);
+    const index = list.findIndex((v) => v.versionId === versionId);
+    if (index === -1) {
+      throw new Error(`Không tìm thấy phiên bản cấu hình ID: ${versionId}`);
+    }
+
+    const target = list[index];
+    const validation = this.validateConfigVersion({
+      ...target,
+      effectiveDate: effectiveDate || target.effectiveDate,
+    });
+    if (!validation.valid) {
+      throw new Error(`Cấu hình chưa hợp lệ: ${validation.errors.join('; ')}`);
+    }
+
+    // Ban hành target
+    const published: TelesaleCompetencyConfigVersion = {
+      ...target,
+      status: 'PUBLISHED',
+      effectiveDate: effectiveDate || target.effectiveDate,
+      publishedAt: new Date().toISOString(),
+      publishedByStaffId: publisher.id,
+      publishedByName: publisher.name || 'Admin',
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Chuyển bản trước đó cùng effectiveDate sang ARCHIVED
+    for (let i = 0; i < list.length; i++) {
+      if (i !== index && list[i].status === 'PUBLISHED' && list[i].effectiveDate === published.effectiveDate) {
+        list[i].status = 'ARCHIVED';
+        list[i].updatedAt = new Date().toISOString();
+      }
+    }
+
+    list[index] = published;
+    if (fastify?.prisma?.crm?.crmConfig) {
+      await fastify.prisma.crm.crmConfig.upsert({
+        where: { key: VERSIONS_KEY },
+        create: { key: VERSIONS_KEY, value: JSON.stringify(list) },
+        update: { value: JSON.stringify(list), updatedAt: new Date() },
+      });
+    }
+
+    return published;
+  }
+
+  /**
+   * Xem trước kết quả tính điểm khi áp dụng cấu hình này cho đội ngũ Telesale
+   */
+  static async previewCalculation(
+    fastify: FastifyInstance,
+    versionId: string,
+    month = '2026-10'
+  ): Promise<TelesaleConfigPreviewResult> {
+    const targetVersion = await this.getConfigVersion(fastify, versionId);
+    if (!targetVersion) {
+      throw new Error(`Không tìm thấy cấu hình với ID: ${versionId}`);
+    }
+
+    const currentActiveVersion = await this.getVersionForMonth(fastify, month);
+    const staffList = await TelesaleTargetService.getActiveTelesalesStaffFromHr(fastify);
+
+    const rows: TelesaleConfigPreviewRow[] = [];
+    let totalDiff = 0;
+
+    for (const staff of staffList) {
+      const id = staff.crmStaffId || staff.legacyStaffId;
+      const { tier, tenureMonths } = await this.getStaffTierAndTenure(fastify, id);
+
+      // Điểm theo cấu hình hiện tại
+      const currentEval = await this.getEvaluation(fastify, id, month);
+
+      // Tính điểm Trụ cột A theo phiên bản xem trước
+      const autoMetricsRaw = await this.getStaffAutoMetrics(fastify, staff.legacyStaffId || id, month, targetVersion);
+      const pillarB = currentEval.pillarB;
+      const pillarC = currentEval.pillarC;
+      const pillarD = currentEval.pillarD;
+
+      const previewTotalScore = Number((autoMetricsRaw.cappedScore + pillarB.totalScore + pillarC.totalScore + pillarD.totalScore).toFixed(2));
+      const previewHistory = await this.getStaffHistoryEvaluations(fastify, id, month);
+      const previewRule = this.evaluateRuleEngine(tier, tenureMonths, previewTotalScore, previewHistory, targetVersion);
+
+      const diff = Number((previewTotalScore - currentEval.totalScore).toFixed(2));
+      totalDiff += diff;
+
+      rows.push({
+        staffId: id,
+        staffName: currentEval.staffName,
+        currentTier: tier,
+        currentScore: currentEval.totalScore,
+        previewScore: previewTotalScore,
+        scoreDiff: diff,
+        currentStatus: currentEval.ruleEngineStatus,
+        previewStatus: previewRule.ruleEngineStatus,
+        pillarAScoreDiff: Number((autoMetricsRaw.cappedScore - currentEval.pillarA.cappedScore).toFixed(2)),
+      });
+    }
+
+    return {
+      versionId,
+      month,
+      staffCount: rows.length,
+      rows,
+      averageScoreDiff: rows.length > 0 ? Number((totalDiff / rows.length).toFixed(2)) : 0,
+    };
+  }
+
+  /**
+   * ---------------------------------------------------------
+   * Cấu hình toàn cục Legacy Fallback (Backward Compatibility)
+   * ---------------------------------------------------------
+   */
+
   /**
    * Lấy cấu hình toàn cục
    */
@@ -103,10 +511,11 @@ export class TelesaleCompetencyService {
       actualWorkingDays?: number;
       standardWorkingDays?: number;
     },
-    config?: TelesaleCompetencyGlobalConfig
+    config?: TelesaleCompetencyGlobalConfig | TelesaleCompetencyConfigVersion
   ): TelesalePillarAMetrics {
     const cfg = config || DEFAULT_TELESALE_COMPETENCY_CONFIG;
-    const stdDays = raw.standardWorkingDays && raw.standardWorkingDays > 0 ? raw.standardWorkingDays : cfg.defaultStandardWorkingDays;
+    const fallbackStdDays = 'standardWorkingDays' in cfg ? cfg.standardWorkingDays : (cfg as TelesaleCompetencyGlobalConfig).defaultStandardWorkingDays;
+    const stdDays = raw.standardWorkingDays && raw.standardWorkingDays > 0 ? raw.standardWorkingDays : (fallbackStdDays || DEFAULT_TELESALE_COMPETENCY_CONFIG.defaultStandardWorkingDays);
     const actDays = raw.actualWorkingDays !== undefined && raw.actualWorkingDays > 0 ? raw.actualWorkingDays : stdDays;
     const pacingFactor = Math.min(1.5, Math.max(0.2, actDays / stdDays));
 
@@ -137,17 +546,49 @@ export class TelesaleCompetencyService {
     const connAchieve = connectedTarget > 0 ? raw.connectedCalls / connectedTarget : 1;
     const callProductivityScore = Number((Math.min(10, ((callVolAchieve + connAchieve) / 2) * 10)).toFixed(2));
 
-    // Trọng số thành phần của Trụ cột A (Tổng 40 điểm)
-    // 1. Book & Done: 30% -> 12đ (chia 6đ cho Book, 6đ cho Done)
-    const bookDonePart = Math.min(1.5, (bookAchieve + doneAchieve) / 2) * (40 * cfg.pillarAWeights.bookDoneWeight);
-    // 2. Khách mới: 20% -> 8đ
-    const newCustPart = Math.min(1.5, newCustAchieve) * (40 * cfg.pillarAWeights.newCustomerWeight);
-    // 3. Doanh thu: 20% -> 8đ
-    const revPart = Math.min(1.5, revAchieve) * (40 * cfg.pillarAWeights.revenueWeight);
-    // 4. Tỷ lệ chuyển đổi: 15% -> 6đ (quy đổi từ conversionScore 0-10)
-    const convPart = (conversionScore / 10) * (40 * cfg.pillarAWeights.conversionWeight);
-    // 5. Năng suất gọi: 15% -> 6đ (quy đổi từ callProductivityScore 0-10)
-    const callPart = (callProductivityScore / 10) * (40 * cfg.pillarAWeights.callProductivityWeight);
+    // Tính điểm 5 chỉ số Trụ cột A
+    const hasPillarAConfig = 'pillarAConfig' in cfg && cfg.pillarAConfig;
+    const pAConfig = hasPillarAConfig ? (cfg as TelesaleCompetencyConfigVersion).pillarAConfig : null;
+    const pillarAWeight = 'pillarsWeight' in cfg && cfg.pillarsWeight ? (cfg as TelesaleCompetencyConfigVersion).pillarsWeight.pillarAWeight : 40;
+
+    let bookDonePart = 0;
+    let newCustPart = 0;
+    let revPart = 0;
+    let convPart = 0;
+    let callPart = 0;
+
+    if (pAConfig) {
+      // 1. KPI Done: Điểm = MIN(Done thực tế / KPI Level, 1) × Điểm tối đa
+      const doneMax = pAConfig.doneKpi.maxScore || 12;
+      const baseDoneScore = Math.min(1, (bookAchieve + doneAchieve) / 2) * doneMax;
+      const overflowMultiplier = (pAConfig.doneKpi.allowOverflowBonus && (bookAchieve + doneAchieve) / 2 > 1)
+        ? Math.min(1.2, (bookAchieve + doneAchieve) / 2)
+        : 1;
+      bookDonePart = baseDoneScore * overflowMultiplier;
+
+      // 2. Khách mới
+      const newCustMax = pAConfig.newCustomersKpi.maxScore || 8;
+      newCustPart = Math.min(1.2, newCustAchieve) * newCustMax;
+
+      // 3. Doanh thu
+      const revMax = pAConfig.revenueKpi.maxScore || 8;
+      revPart = Math.min(1.2, revAchieve) * revMax;
+
+      // 4. Chuyển đổi
+      const convMax = pAConfig.conversionKpi.maxScore || 6;
+      convPart = (conversionScore / 10) * convMax;
+
+      // 5. Năng suất gọi
+      const callMax = pAConfig.callProductivityKpi.maxScore || 6;
+      callPart = (callProductivityScore / 10) * callMax;
+    } else {
+      const pWeights = (cfg as TelesaleCompetencyGlobalConfig).pillarAWeights || DEFAULT_TELESALE_COMPETENCY_CONFIG.pillarAWeights;
+      bookDonePart = Math.min(1.5, (bookAchieve + doneAchieve) / 2) * (pillarAWeight * pWeights.bookDoneWeight);
+      newCustPart = Math.min(1.5, newCustAchieve) * (pillarAWeight * pWeights.newCustomerWeight);
+      revPart = Math.min(1.5, revAchieve) * (pillarAWeight * pWeights.revenueWeight);
+      convPart = (conversionScore / 10) * (pillarAWeight * pWeights.conversionWeight);
+      callPart = (callProductivityScore / 10) * (pillarAWeight * pWeights.callProductivityWeight);
+    }
 
     let rawScore = bookDonePart + newCustPart + revPart + convPart + callPart;
 
@@ -159,8 +600,9 @@ export class TelesaleCompetencyService {
       rawScore = Math.max(15, rawScore);
     }
 
-    // Thưởng vượt KPI có trần (tối đa maxOverflowBonusRate * 40 = 48 điểm)
-    const maxScore = 40 * cfg.maxOverflowBonusRate;
+    // Thưởng vượt KPI có trần (tối đa maxOverflowBonusRate * pillarAWeight)
+    const maxBonusRate = cfg.maxOverflowBonusRate || 1.2;
+    const maxScore = pillarAWeight * maxBonusRate;
     const cappedScore = Number(Math.min(maxScore, rawScore).toFixed(2));
 
     return {
@@ -311,14 +753,14 @@ export class TelesaleCompetencyService {
   }
 
   /**
-   * Phân tích Rule Engine đánh giá Thăng / Giáng bậc tự động
+   * Phân tích Rule Engine đánh giá Thăng / Giáng bậc tự động & Quy tắc Fresher
    */
   static evaluateRuleEngine(
     currentTier: TelesaleTier,
     tenureMonths: number,
     currentMonthTotalScore: number,
     historyEvaluations: Array<{ month: string; totalScore: number; isPassed: boolean }> = [],
-    config?: TelesaleCompetencyGlobalConfig
+    config?: TelesaleCompetencyGlobalConfig | TelesaleCompetencyConfigVersion
   ): {
     passingScore: number;
     isPassed: boolean;
@@ -328,9 +770,14 @@ export class TelesaleCompetencyService {
     recommendedTier: TelesaleTier;
   } {
     const cfg = config || DEFAULT_TELESALE_COMPETENCY_CONFIG;
-    const tierConfig = cfg.tiers[currentTier] || TELESALE_TIER_CONFIG[currentTier];
-    const passingScore = tierConfig.passingScore;
+    const hasTierRules = 'tierRules' in cfg && cfg.tierRules;
+    const tierRule = hasTierRules ? (cfg as TelesaleCompetencyConfigVersion).tierRules[currentTier] : null;
+    const legacyTierConfig = ('tiers' in cfg && cfg.tiers ? cfg.tiers[currentTier] : null) || TELESALE_TIER_CONFIG[currentTier];
+
+    const passingScore = tierRule ? tierRule.passingScore : legacyTierConfig.passingScore;
     const isPassed = currentMonthTotalScore >= passingScore;
+    const consecutiveMonthsRequired = tierRule ? tierRule.consecutiveMonthsRequired : legacyTierConfig.consecutiveMonthsRequired;
+    const demotionConsecutiveFailMonths = tierRule ? tierRule.demotionConsecutiveFailMonths : legacyTierConfig.demotionConsecutiveFailMonths;
 
     // Chuỗi tháng liên tiếp trong lịch sử (tính cả tháng hiện tại)
     let consecutivePass = isPassed ? 1 : 0;
@@ -358,13 +805,21 @@ export class TelesaleCompetencyService {
     let recommendedTier: TelesaleTier = currentTier;
 
     // 1. Kiểm tra điều kiện Thăng bậc:
-    // Đủ thâm niên + Đạt điểm chuẩn N tháng liên tiếp
-    const nextTier = tierConfig.nextTier;
+    const nextTierMap: Record<TelesaleTier, TelesaleTier | undefined> = {
+      FRESHER: 'JUNIOR',
+      JUNIOR: 'MID_LEVEL',
+      MID_LEVEL: 'SENIOR',
+      SENIOR: undefined,
+    };
+    const nextTier = nextTierMap[currentTier];
     if (nextTier) {
-      const nextTierConfig = cfg.tiers[nextTier];
-      const requiredMonths = tierConfig.consecutiveMonthsRequired;
-      const meetsTenure = tenureMonths >= nextTierConfig.minTenureMonths;
-      const meetsConsecutiveScores = consecutivePass >= requiredMonths && currentMonthTotalScore >= nextTierConfig.passingScore;
+      const nextTierRule = hasTierRules ? (cfg as TelesaleCompetencyConfigVersion).tierRules[nextTier] : null;
+      const nextLegacyConfig = ('tiers' in cfg && cfg.tiers ? cfg.tiers[nextTier] : null) || TELESALE_TIER_CONFIG[nextTier];
+      const minTenure = nextTierRule ? nextTierRule.minTenureMonths : (nextLegacyConfig ? nextLegacyConfig.minTenureMonths : 0);
+      const nextPassing = nextTierRule ? nextTierRule.passingScore : (nextLegacyConfig ? nextLegacyConfig.passingScore : 80);
+
+      const meetsTenure = tenureMonths >= minTenure;
+      const meetsConsecutiveScores = consecutivePass >= consecutiveMonthsRequired && currentMonthTotalScore >= nextPassing;
 
       if (meetsTenure && meetsConsecutiveScores) {
         ruleEngineStatus = 'PROMOTION_READY';
@@ -372,17 +827,28 @@ export class TelesaleCompetencyService {
       }
     }
 
-    // 2. Kiểm tra điều kiện Giáng bậc:
-    // Không đạt điểm chuẩn cấp bậc hiện tại trong 2 tháng liên tiếp
+    // 2. Kiểm tra điều kiện Giáng bậc & Quy tắc Fresher
     if (!isPassed) {
-      if (consecutiveFail >= tierConfig.demotionConsecutiveFailMonths) {
-        ruleEngineStatus = 'DEMOTION_FLAGGED';
-        // Đề xuất lùi về bậc trước nếu có
-        if (currentTier === 'SENIOR') recommendedTier = 'MID_LEVEL';
-        else if (currentTier === 'MID_LEVEL') recommendedTier = 'JUNIOR';
-        else if (currentTier === 'JUNIOR') recommendedTier = 'FRESHER';
-      } else if (consecutiveFail === 1) {
-        ruleEngineStatus = 'WARNING_M1';
+      const fresherGraceMonths =
+        tierRule && tierRule.fresherGracePeriodMonths !== undefined
+          ? tierRule.fresherGracePeriodMonths
+          : currentTier === 'FRESHER'
+          ? 2
+          : 0;
+      const isFresherInGrace = currentTier === 'FRESHER' && tenureMonths < fresherGraceMonths;
+
+      if (!isFresherInGrace) {
+        if (consecutiveFail >= demotionConsecutiveFailMonths) {
+          ruleEngineStatus = 'DEMOTION_FLAGGED';
+          // Đề xuất lùi về bậc trước nếu có
+          if (currentTier === 'SENIOR') recommendedTier = 'MID_LEVEL';
+          else if (currentTier === 'MID_LEVEL') recommendedTier = 'JUNIOR';
+          else if (currentTier === 'JUNIOR') recommendedTier = 'FRESHER';
+        } else if (consecutiveFail === 1) {
+          ruleEngineStatus = 'WARNING_M1';
+        }
+      } else {
+        ruleEngineStatus = consecutiveFail > 0 ? 'WARNING_M1' : 'NORMAL';
       }
     }
 
@@ -433,57 +899,84 @@ export class TelesaleCompetencyService {
   static async getStaffAutoMetrics(
     fastify: FastifyInstance,
     legacyStaffId: number,
-    month = '2026-10'
+    month = '2026-10',
+    config?: TelesaleCompetencyGlobalConfig | TelesaleCompetencyConfigVersion,
+    staffTier?: TelesaleTier
   ): Promise<TelesalePillarAMetrics> {
+    const cfg = config || (await this.getVersionForMonth(fastify, month));
+
+    let levelDoneTarget: number | undefined;
+    let levelNewCustTarget: number | undefined;
+    let levelRevenueTarget: number | undefined;
+    let levelCallsTarget: number | undefined;
+    let levelConnectedCallsTarget: number | undefined;
+
+    if ('levelTargets' in cfg && Array.isArray(cfg.levelTargets) && staffTier) {
+      const match = cfg.levelTargets.find((l) => l.tier === staffTier);
+      if (match) {
+        levelDoneTarget = match.doneTarget;
+        levelNewCustTarget = match.newCustomersTarget;
+        levelRevenueTarget = match.revenueTarget;
+        levelCallsTarget = match.callsTarget;
+        levelConnectedCallsTarget = match.connectedCallsTarget;
+      }
+    }
+
     try {
       const overview = await TelesaleTargetService.getOverview(fastify, month, legacyStaffId, { skipCache: true });
       const staffTarget = overview.staffTargets.find((s) => s.legacyStaffId === legacyStaffId);
 
       const doneCount = staffTarget?.doneActual || 0;
-      const doneTarget = staffTarget?.doneTarget || 40;
+      const doneTarget = levelDoneTarget || staffTarget?.doneTarget || 40;
       const bookCount = Math.round(doneCount * 1.35) || (staffTarget?.bookToday ? staffTarget.bookToday * 10 : 30);
       const bookTarget = Math.round(doneTarget * 1.4);
       const newCustomersDone = Math.round(doneCount * 0.4);
-      const newCustomersTarget = Math.round(doneTarget * 0.35);
+      const newCustomersTarget = levelNewCustTarget || Math.round(doneTarget * 0.35);
       const actualRevenue = staffTarget?.revenueActual || doneCount * 350000;
-      const revenueTarget = doneTarget * 350000;
+      const revenueTarget = levelRevenueTarget || doneTarget * 350000;
 
-      const totalCalls = staffTarget?.callActualToday ? staffTarget.callActualToday * 20 : 1200;
-      const connectedCalls = staffTarget?.pickupActualToday ? staffTarget.pickupActualToday * 20 : 400;
+      const totalCalls = staffTarget?.callActualToday ? staffTarget.callActualToday * 20 : (levelCallsTarget || 1200);
+      const connectedCalls = staffTarget?.pickupActualToday ? staffTarget.pickupActualToday * 20 : (levelConnectedCallsTarget || 400);
 
       const actualWorkingDays = overview.teamMonth?.workDaysElapsed || 20;
       const standardWorkingDays = overview.teamMonth?.workDaysTotal || 26;
 
-      return this.calculatePillarA({
-        bookCount,
-        bookTarget,
-        doneCount,
-        doneTarget,
-        newCustomersDone,
-        newCustomersTarget,
-        actualRevenue,
-        revenueTarget,
-        totalCalls,
-        connectedCalls,
-        actualWorkingDays,
-        standardWorkingDays,
-      });
+      return this.calculatePillarA(
+        {
+          bookCount,
+          bookTarget,
+          doneCount,
+          doneTarget,
+          newCustomersDone,
+          newCustomersTarget,
+          actualRevenue,
+          revenueTarget,
+          totalCalls,
+          connectedCalls,
+          actualWorkingDays,
+          standardWorkingDays,
+        },
+        cfg
+      );
     } catch {
       // Fallback nếu không có database legacy
-      return this.calculatePillarA({
-        bookCount: 55,
-        bookTarget: 60,
-        doneCount: 42,
-        doneTarget: 40,
-        newCustomersDone: 18,
-        newCustomersTarget: 15,
-        actualRevenue: 15400000,
-        revenueTarget: 14000000,
-        totalCalls: 1350,
-        connectedCalls: 450,
-        actualWorkingDays: 20,
-        standardWorkingDays: 26,
-      });
+      return this.calculatePillarA(
+        {
+          bookCount: 55,
+          bookTarget: 60,
+          doneCount: 42,
+          doneTarget: levelDoneTarget || 40,
+          newCustomersDone: 18,
+          newCustomersTarget: levelNewCustTarget || 15,
+          actualRevenue: 15400000,
+          revenueTarget: levelRevenueTarget || 14000000,
+          totalCalls: levelCallsTarget || 1350,
+          connectedCalls: levelConnectedCallsTarget || 450,
+          actualWorkingDays: 20,
+          standardWorkingDays: 26,
+        },
+        cfg
+      );
     }
   }
 
@@ -536,7 +1029,7 @@ export class TelesaleCompetencyService {
     staffId: number,
     month = '2026-10'
   ): Promise<TelesaleCompetencyEvaluation> {
-    const config = await this.getConfig(fastify);
+    const configVersion = await this.getVersionForMonth(fastify, month);
     const { tier, tenureMonths, startDate } = await this.getStaffTierAndTenure(fastify, staffId);
 
     // Tìm thông tin tên & legacyStaffId từ danh sách Telesales HR
@@ -560,8 +1053,8 @@ export class TelesaleCompetencyService {
       // ignore
     }
 
-    // Luôn cập nhật lại Trụ cột A từ dữ liệu hệ thống mới nhất
-    const pillarA = await this.getStaffAutoMetrics(fastify, legacyStaffId, month);
+    // Luôn cập nhật lại Trụ cột A từ dữ liệu hệ thống mới nhất theo phiên bản cấu hình có hiệu lực của tháng đó
+    const pillarA = await this.getStaffAutoMetrics(fastify, legacyStaffId, month, configVersion, tier);
     const pillarB = savedEval?.pillarB || this.calculatePillarB();
     const pillarC = savedEval?.pillarC || this.calculatePillarC();
     const pillarD = savedEval?.pillarD || this.calculatePillarD();
@@ -570,7 +1063,7 @@ export class TelesaleCompetencyService {
 
     // Lịch sử tháng trước
     const history = await this.getStaffHistoryEvaluations(fastify, staffId, month);
-    const ruleEngine = this.evaluateRuleEngine(tier, tenureMonths, totalScore, history, config);
+    const ruleEngine = this.evaluateRuleEngine(tier, tenureMonths, totalScore, history, configVersion);
 
     // Lịch sử thăng/giáng bậc
     const promotionHistory = await this.getPromotionHistory(fastify, staffId);

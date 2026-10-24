@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { TelesaleTeamMatrixTab } from '../components/TelesaleTeamMatrixTab';
 import { TelesaleLadderModal } from '../components/TelesaleLadderModal';
 import { TelesaleActionModal } from '../components/TelesaleActionModal';
+import { TelesaleConfigTab } from '../components/TelesaleConfigTab';
 import { TelesaleCompetencyMatrixRow } from '@mos-lab/shared';
 
 describe('TelesaleCompetency Web Components', () => {
@@ -91,5 +92,17 @@ describe('TelesaleCompetency Web Components', () => {
 
     expect(screen.getByText('Xác Nhận Phê Duyệt Thăng Bậc')).toBeDefined();
     expect(screen.getByText(/Phượng Telesales đã đủ điều kiện thăng cấp/i)).toBeDefined();
+  });
+
+  it('renders TelesaleConfigTab with version controls and level table (MOS-FEAT-142)', () => {
+    render(<TelesaleConfigTab currentMonth="2026-10" />);
+
+    expect(screen.getByText('Phiên bản cấu hình:')).toBeDefined();
+    expect(screen.getByText('Thông Tin Phiên Bản')).toBeDefined();
+    expect(screen.getByText('Trọng Số 4 Trụ Cột')).toBeDefined();
+    expect(screen.getByText('5 Chỉ Số Trụ Cột A & Điểm Tối Đa')).toBeDefined();
+    expect(screen.getByText('Quy Chuẩn Thăng/Giáng Bậc & Quy Tắc Fresher')).toBeDefined();
+    expect(screen.getByText('Kiểm Tra Tính Hợp Lệ')).toBeDefined();
+    expect(screen.getByText('Xem Trước Điểm Kỳ Này')).toBeDefined();
   });
 });

@@ -6,11 +6,21 @@ import { DEFAULT_TELESALE_COMPETENCY_CONFIG } from '@mos-lab/shared';
 
 function createTestApp() {
   const app = Fastify();
+  const configStore = new Map<string, string>();
+
   app.decorate('prisma', {
     crm: {
       crmConfig: {
-        findUnique: async () => null,
-        upsert: async ({ create }: any) => ({ key: create.key, value: create.value }),
+        findUnique: async ({ where }: any) => {
+          const val = configStore.get(where.key);
+          return val ? { key: where.key, value: val } : null;
+        },
+        upsert: async ({ create, update }: any) => {
+          const key = create?.key || update?.key;
+          const val = create?.value || update?.value;
+          configStore.set(key, val);
+          return { key, value: val };
+        },
       },
       crmStaff: {
         findMany: async () => [
@@ -148,4 +158,50 @@ test('POST /api/telesale-competency/action promotes staff', async () => {
   const json = res.json();
   assert.equal(json.success, true);
   assert.equal(json.data.newTier, 'MID_LEVEL');
+});
+
+test('GET /api/telesale-competency/config-versions returns version list (MOS-FEAT-142)', async () => {
+  const app = createTestApp();
+  const res = await app.inject({
+    method: 'GET',
+    url: '/api/telesale-competency/config-versions',
+    headers: { authorization: 'Bearer test' },
+  });
+
+  assert.equal(res.statusCode, 200);
+  const json = res.json();
+  assert.equal(json.success, true);
+  assert.ok(Array.isArray(json.data));
+  assert.ok(json.data.length >= 1);
+  assert.equal(json.data[0].status, 'PUBLISHED');
+});
+
+test('POST /api/telesale-competency/config-versions creates draft & validates (MOS-FEAT-142)', async () => {
+  const app = createTestApp();
+  const resCreate = await app.inject({
+    method: 'POST',
+    url: '/api/telesale-competency/config-versions',
+    headers: { authorization: 'Bearer test', 'x-test-role': 'super_admin' },
+    payload: {
+      name: 'Bản Nháp Test 2026',
+      effectiveDate: '2026-11',
+    },
+  });
+
+  assert.equal(resCreate.statusCode, 200);
+  const jsonCreate = resCreate.json();
+  assert.equal(jsonCreate.success, true);
+  assert.equal(jsonCreate.data.status, 'DRAFT');
+  const draftId = jsonCreate.data.versionId;
+
+  // Validate draft
+  const resVal = await app.inject({
+    method: 'POST',
+    url: `/api/telesale-competency/config-versions/${draftId}/validate`,
+    headers: { authorization: 'Bearer test' },
+  });
+  assert.equal(resVal.statusCode, 200);
+  const jsonVal = resVal.json();
+  assert.equal(jsonVal.success, true);
+  assert.equal(jsonVal.data.valid, true);
 });
