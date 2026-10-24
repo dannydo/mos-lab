@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
-import dayjs from 'dayjs';
+import { X, ChevronLeft, ChevronRight, Download, ZoomIn, ZoomOut } from 'lucide-react';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
 
 export interface MosChatGalleryImage {
@@ -87,7 +86,7 @@ export const MosChatMobileMediaGallery: React.FC<MosChatMobileMediaGalleryProps>
     }
   }, [currentIndex, open]);
 
-  // Keyboard navigation (ArrowLeft, ArrowRight, Escape)
+  // Keyboard navigation (ArrowLeft, ArrowRight, Escape, +, -, 0)
   useEffect(() => {
     if (!open) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -364,67 +363,52 @@ export const MosChatMobileMediaGallery: React.FC<MosChatMobileMediaGalleryProps>
       role="dialog"
       aria-label="Xem hình ảnh đính kèm"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex flex-col justify-between overflow-hidden select-none"
+      className="fixed inset-0 z-50 flex flex-col justify-between overflow-hidden select-none bg-black/95"
       style={{
         backgroundColor: `rgba(0, 0, 0, ${backdropOpacity})`,
-        backdropFilter: 'blur(16px)',
+        backdropFilter: 'blur(20px)',
         transition: isDragging ? 'none' : 'background-color 0.25s ease-out',
       }}
     >
-      {/* Top Header Bar */}
+      {/* Floating Minimalist Top Bar */}
       <div
-        className={`relative z-20 flex items-center justify-between px-3 pt-[max(env(safe-area-inset-top),16px)] pb-3 transition-all duration-200 ${
-          showControls ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-6 pointer-events-none'
+        className={`absolute top-0 inset-x-0 z-30 flex items-center justify-between px-3 pt-[max(env(safe-area-inset-top),10px)] pb-2 pointer-events-none transition-all duration-200 ${
+          showControls ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
         }`}
-        style={{
-          background: 'linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%)',
-        }}
-        onClick={(e) => e.stopPropagation()}
       >
-        {/* Left: Sender Information */}
-        <div className="flex flex-col min-w-0 pr-2 max-w-[35%]">
-          <span className="text-sm font-bold text-white truncate drop-shadow-sm">
-            {currentImage.senderName || 'Người gửi'}
-          </span>
-          {currentImage.createdAt && (
-            <span className="text-[11px] text-slate-300 tabular-nums drop-shadow-sm">
-              {dayjs(currentImage.createdAt).format('HH:mm DD/MM')}
+        {/* Left: Minimal Sender Chip */}
+        <div className="pointer-events-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/50 border border-white/10 backdrop-blur-md max-w-[45%] shadow-lg">
+          <span className="text-xs font-semibold text-white/95 truncate">{currentImage.senderName || 'Người gửi'}</span>
+          {totalImages > 1 && (
+            <span className="text-[11px] font-bold text-amber-400 tabular-nums shrink-0 ml-0.5">
+              {currentIndex + 1} / {totalImages}
             </span>
           )}
         </div>
 
-        {/* Center: Image Count Indicator */}
-        {totalImages > 1 && (
-          <div className="px-2.5 py-1 rounded-full bg-slate-900/80 border border-white/10 text-xs font-bold text-amber-400 tabular-nums shadow-lg backdrop-blur-md shrink-0">
-            {currentIndex + 1} / {totalImages}
-          </div>
-        )}
-
-        {/* Right: Zoom Controls, Download & Close */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        {/* Right: Compact Floating Glass Controls Capsule */}
+        <div className="pointer-events-auto flex items-center gap-0.5 p-1 rounded-full bg-black/50 border border-white/10 backdrop-blur-md shadow-lg">
           {/* Zoom Out Button */}
           <button
             type="button"
             onClick={handleZoomOut}
             disabled={zoomScale <= 1}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center text-white backdrop-blur-md transition-all shadow-sm disabled:opacity-30 disabled:pointer-events-none"
+            className="w-7 h-7 rounded-full text-white/80 hover:text-white active:scale-90 flex items-center justify-center transition-all disabled:opacity-25 disabled:pointer-events-none"
             aria-label="Thu nhỏ ảnh"
-            title="Thu nhỏ ảnh (-0.5x)"
+            title="Thu nhỏ (-0.5x)"
           >
-            <ZoomOut className="w-4 h-4" />
+            <ZoomOut className="w-3.5 h-3.5" />
           </button>
 
-          {/* Zoom Percentage Badge / Reset button */}
+          {/* Zoom Percentage Badge / Reset */}
           <button
             type="button"
             onClick={resetZoom}
-            className={`px-2 py-0.5 rounded-full text-xs font-bold tabular-nums transition-all active:scale-95 ${
-              isZoomedIn
-                ? 'bg-amber-400 text-slate-950 shadow-md ring-1 ring-amber-300'
-                : 'bg-white/10 text-slate-300 hover:text-white'
+            className={`px-1.5 py-0.5 rounded-full text-[11px] font-bold tabular-nums transition-all active:scale-95 ${
+              isZoomedIn ? 'text-amber-400 bg-amber-400/20' : 'text-slate-300 hover:text-white'
             }`}
             aria-label="Đặt lại thu phóng"
-            title="Chạm để đặt lại về 100%"
+            title="Đặt lại về 100%"
           >
             {Math.round(zoomScale * 100)}%
           </button>
@@ -434,31 +418,34 @@ export const MosChatMobileMediaGallery: React.FC<MosChatMobileMediaGalleryProps>
             type="button"
             onClick={handleZoomIn}
             disabled={zoomScale >= 4}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center text-white backdrop-blur-md transition-all shadow-sm disabled:opacity-30 disabled:pointer-events-none"
+            className="w-7 h-7 rounded-full text-white/80 hover:text-white active:scale-90 flex items-center justify-center transition-all disabled:opacity-25 disabled:pointer-events-none"
             aria-label="Phóng to ảnh"
-            title="Phóng to ảnh (+0.5x)"
+            title="Phóng to (+0.5x)"
           >
-            <ZoomIn className="w-4 h-4" />
+            <ZoomIn className="w-3.5 h-3.5" />
           </button>
 
-          {/* Open / Download */}
+          {/* Divider */}
+          <div className="w-[1px] h-3.5 bg-white/15 mx-0.5" />
+
+          {/* Download Original Link */}
           <a
             href={resolveMediaUrl(currentImage.url)}
             target="_blank"
             rel="noopener noreferrer"
             download={currentImage.name || `photo-${currentIndex + 1}.jpg`}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center text-white backdrop-blur-md transition-all shadow-sm ml-0.5"
+            className="w-7 h-7 rounded-full text-white/80 hover:text-white active:scale-90 flex items-center justify-center transition-all"
             aria-label="Mở hoặc tải ảnh gốc"
             title="Mở hoặc tải ảnh gốc"
           >
-            <Download className="w-4 h-4" />
+            <Download className="w-3.5 h-3.5" />
           </a>
 
-          {/* Close */}
+          {/* Close Button */}
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 flex items-center justify-center text-white backdrop-blur-md transition-all shadow-sm"
+            className="w-7 h-7 rounded-full text-white/80 hover:text-white active:scale-90 flex items-center justify-center transition-all ml-0.5"
             aria-label="Đóng xem hình"
           >
             <X className="w-4 h-4" />
@@ -466,9 +453,9 @@ export const MosChatMobileMediaGallery: React.FC<MosChatMobileMediaGalleryProps>
         </div>
       </div>
 
-      {/* Main Swipeable & Zoomable Slides Viewport */}
+      {/* Main Full-Viewport Image Area (100% Height & Width, Zero Outer Padding) */}
       <div
-        className="flex-1 relative overflow-hidden flex items-center justify-center touch-none"
+        className="absolute inset-0 z-10 flex items-center justify-center touch-none overflow-hidden"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -494,21 +481,20 @@ export const MosChatMobileMediaGallery: React.FC<MosChatMobileMediaGalleryProps>
             return (
               <div
                 key={img.id || idx}
-                className="w-screen h-full flex-shrink-0 flex items-center justify-center p-2 overflow-hidden"
+                className="w-screen h-full flex-shrink-0 flex items-center justify-center p-0 overflow-hidden"
                 style={{ width: '100vw' }}
               >
                 <img
                   src={fullUrl}
                   alt={img.name || `Hình ảnh ${idx + 1}`}
                   draggable={false}
-                  className="max-w-full max-h-[82vh] object-contain rounded-lg select-none"
+                  className="w-full h-full max-w-full max-h-full object-contain select-none"
                   style={{
                     transform: isCurrent
                       ? `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomScale})`
                       : 'scale(1)',
                     transformOrigin: 'center center',
                     transition: isDragging ? 'none' : 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-                    filter: isCurrent ? 'drop-shadow(0 10px 25px rgba(0,0,0,0.5))' : 'none',
                     cursor: isCurrent ? (isZoomedIn ? 'grab' : 'zoom-in') : 'default',
                     touchAction: 'none',
                   }}
@@ -518,7 +504,7 @@ export const MosChatMobileMediaGallery: React.FC<MosChatMobileMediaGalleryProps>
           })}
         </div>
 
-        {/* Previous Chevron Button (Edge Tap) */}
+        {/* Minimal Chevron Previous (Edge Tap) */}
         {totalImages > 1 && currentIndex > 0 && showControls && !isZoomedIn && (
           <button
             type="button"
@@ -526,14 +512,14 @@ export const MosChatMobileMediaGallery: React.FC<MosChatMobileMediaGalleryProps>
               e.stopPropagation();
               goPrev();
             }}
-            className="absolute left-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-slate-900/70 hover:bg-slate-800/90 border border-white/10 backdrop-blur-md flex items-center justify-center text-white active:scale-90 transition-transform shadow-xl"
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 border border-white/10 backdrop-blur-md flex items-center justify-center text-white active:scale-90 transition-transform shadow-lg"
             aria-label="Xem hình trước"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-5 h-5" />
           </button>
         )}
 
-        {/* Next Chevron Button (Edge Tap) */}
+        {/* Minimal Chevron Next (Edge Tap) */}
         {totalImages > 1 && currentIndex < totalImages - 1 && showControls && !isZoomedIn && (
           <button
             type="button"
@@ -541,70 +527,51 @@ export const MosChatMobileMediaGallery: React.FC<MosChatMobileMediaGalleryProps>
               e.stopPropagation();
               goNext();
             }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-slate-900/70 hover:bg-slate-800/90 border border-white/10 backdrop-blur-md flex items-center justify-center text-white active:scale-90 transition-transform shadow-xl"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 border border-white/10 backdrop-blur-md flex items-center justify-center text-white active:scale-90 transition-transform shadow-lg"
             aria-label="Xem hình tiếp theo"
           >
-            <ChevronRight className="w-6 h-6" />
+            <ChevronRight className="w-5 h-5" />
           </button>
         )}
       </div>
 
-      {/* Bottom Thumbnails & Interactive Helper Text */}
-      <div
-        className={`relative z-20 px-4 pb-[max(env(safe-area-inset-bottom),16px)] pt-3 transition-all duration-200 ${
-          showControls ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6 pointer-events-none'
-        }`}
-        style={{
-          background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%)',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {totalImages > 1 ? (
-          <div className="flex flex-col items-center gap-2">
-            {/* Horizontal Mini Thumbnails Strip */}
-            <div
-              ref={thumbnailsRef}
-              className="flex items-center gap-2 overflow-x-auto no-scrollbar max-w-full px-2 py-1 scroll-smooth"
-            >
-              {images.map((img, idx) => {
-                const isSelected = idx === currentIndex;
-                return (
-                  <button
-                    key={img.id || idx}
-                    type="button"
-                    aria-label={`Xem hình ${idx + 1}`}
-                    onClick={() => {
-                      setCurrentIndex(idx);
-                      resetZoom();
-                    }}
-                    className={`relative w-11 h-11 rounded-lg overflow-hidden shrink-0 transition-all active:scale-95 ${
-                      isSelected ? 'ring-2 ring-amber-400 scale-105 opacity-100' : 'opacity-50 hover:opacity-80'
-                    }`}
-                  >
-                    <img
-                      src={resolveMediaUrl(img.url)}
-                      alt={img.name || `Hình thu nhỏ ${idx + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                );
-              })}
-            </div>
-
-            <p className="text-[11px] text-slate-400 font-medium tracking-tight">
-              {isZoomedIn
-                ? `Đang phóng to ${Math.round(zoomScale * 100)}% · Kéo ngón tay để di chuyển · Chạm 2 lần để đặt lại`
-                : 'Chụm 2 ngón tay hoặc chạm 2 lần để phóng to · Vuốt ngang để đổi hình · Vuốt xuống để đóng'}
-            </p>
+      {/* Minimal Floating Mini-Thumbnails Strip (Only when multiple images, ZERO redundant text) */}
+      {totalImages > 1 && (
+        <div
+          className={`absolute bottom-0 inset-x-0 z-30 pb-[max(env(safe-area-inset-bottom),12px)] pt-1 pointer-events-none flex justify-center transition-all duration-200 ${
+            showControls && !isZoomedIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}
+        >
+          <div
+            ref={thumbnailsRef}
+            className="pointer-events-auto flex items-center gap-1.5 p-1 rounded-2xl bg-black/50 border border-white/10 backdrop-blur-md max-w-[85vw] overflow-x-auto no-scrollbar shadow-lg"
+          >
+            {images.map((img, idx) => {
+              const isSelected = idx === currentIndex;
+              return (
+                <button
+                  key={img.id || idx}
+                  type="button"
+                  aria-label={`Xem hình ${idx + 1}`}
+                  onClick={() => {
+                    setCurrentIndex(idx);
+                    resetZoom();
+                  }}
+                  className={`relative w-8 h-8 rounded-xl overflow-hidden shrink-0 transition-all active:scale-90 ${
+                    isSelected ? 'ring-2 ring-amber-400 scale-105 opacity-100' : 'opacity-40 hover:opacity-75'
+                  }`}
+                >
+                  <img
+                    src={resolveMediaUrl(img.url)}
+                    alt={img.name || `Hình thu nhỏ ${idx + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              );
+            })}
           </div>
-        ) : (
-          <p className="text-[11px] text-slate-400 text-center font-medium">
-            {isZoomedIn
-              ? `Đang phóng to ${Math.round(zoomScale * 100)}% · Kéo ngón tay để di chuyển · Chạm 2 lần để đặt lại`
-              : 'Chụm 2 ngón tay hoặc chạm 2 lần để phóng to · Vuốt xuống để đóng'}
-          </p>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
