@@ -7,6 +7,7 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import type { MosChatTaskItem } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
+import { MosChatAvatar } from '../MosChatAvatar';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -23,7 +24,7 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
   onOpenCreateTaskModal,
   onSelectTask,
 }) => {
-  const { tasks, toggleTaskDone, activeConvId, currentUser, activeConversation } = useMosChat();
+  const { tasks, toggleTaskDone, activeConvId, currentUser, activeConversation, staffDirectory } = useMosChat();
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [scopeFilter, setScopeFilter] = useState<MosChatTaskScope>('all');
@@ -447,13 +448,38 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
                         </span>
                       )}
 
-                      {/* Assignee */}
-                      {t.assigneeName && (
-                        <span className="flex items-center gap-1 text-[11px] text-slate-400">
-                          <User className="w-3 h-3 text-slate-500" />
-                          <span className="truncate max-w-[120px]">{t.assigneeName}</span>
-                        </span>
-                      )}
+                      {/* People Flow: Creator -> Assignee */}
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                        {/* Creator */}
+                        <div
+                          className="flex items-center gap-1"
+                          title={`Người giao: ${t.creatorName || t.sourceAuthorName || 'Hệ thống'}`}
+                        >
+                          <MosChatAvatar
+                            size="xs"
+                            name={t.creatorName || t.sourceAuthorName || 'Hệ thống'}
+                            staffDirectory={staffDirectory}
+                          />
+                          <span className="truncate max-w-[95px] text-slate-400">
+                            {t.creatorName || t.sourceAuthorName || 'Hệ thống'}
+                          </span>
+                        </div>
+
+                        <span className="text-slate-600 text-[10px] select-none">→</span>
+
+                        {/* Assignee */}
+                        <div className="flex items-center gap-1" title={`Người nhận: ${t.assigneeName || 'Chung'}`}>
+                          <MosChatAvatar
+                            size="xs"
+                            name={t.assigneeName || 'Chung'}
+                            staffId={t.assigneeId}
+                            staffDirectory={staffDirectory}
+                          />
+                          <span className="truncate max-w-[105px] text-amber-300 font-medium">
+                            {t.assigneeName || 'Chung'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

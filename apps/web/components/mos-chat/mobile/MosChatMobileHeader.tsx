@@ -18,6 +18,7 @@ import type { MenuProps } from 'antd';
 import { useMosChat } from '../context/MosChatContext';
 import type { MosChatPresenceStatus } from '@mos-lab/shared';
 import { isSpaceEmoji } from '../constants/chat-constants';
+import { MosChatAvatar } from '../MosChatAvatar';
 
 export interface MosChatMobileHeaderProps {
   onOpenSettings?: () => void;
@@ -35,6 +36,7 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({ onOpen
     setActiveSubtab,
     tasks,
     totalUnreadCount,
+    staffDirectory,
   } = useMosChat();
 
   const presenceMenuItems: MenuProps['items'] = [
@@ -168,26 +170,37 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({ onOpen
       <div
         onClick={isSpace ? onOpenSettings : undefined}
         role={isSpace ? 'button' : undefined}
-        className={`flex-1 min-w-0 mx-2 text-center flex flex-col items-center ${isSpace ? 'cursor-pointer active:opacity-75' : ''}`}
+        className={`flex-1 min-w-0 mx-2 flex items-center justify-center ${isSpace ? 'cursor-pointer active:opacity-75' : ''}`}
       >
-        <div className="flex items-center gap-1.5 max-w-[230px] justify-center">
-          {isSpace ? (
-            activeConversation?.avatar && isSpaceEmoji(activeConversation.avatar) ? (
-              <span className="text-base shrink-0 leading-none">{activeConversation.avatar}</span>
-            ) : (
-              <Hash className="w-4 h-4 text-amber-400 shrink-0" />
-            )
-          ) : (
-            <div className="relative shrink-0">
-              <div className="w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center text-[10px] text-slate-200 font-bold uppercase">
-                {roomTitle.charAt(0)}
-              </div>
-              <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 border border-slate-900" />
+        {isSpace ? (
+          <div className="flex flex-col items-center text-center">
+            <div className="flex items-center gap-1.5 max-w-[230px] justify-center">
+              {activeConversation?.avatar && isSpaceEmoji(activeConversation.avatar) ? (
+                <span className="text-base shrink-0 leading-none">{activeConversation.avatar}</span>
+              ) : (
+                <Hash className="w-4 h-4 text-amber-400 shrink-0" />
+              )}
+              <h2 className="text-sm font-bold text-white truncate">{roomTitle}</h2>
             </div>
-          )}
-          <h2 className="text-sm font-bold text-white truncate">{roomTitle}</h2>
-        </div>
-        <p className="text-[11px] text-slate-400 truncate max-w-[220px]">{subtitle}</p>
+            <p className="text-[11px] text-slate-400 truncate max-w-[220px]">{subtitle}</p>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2.5 max-w-[240px] text-left">
+            <MosChatAvatar
+              size="md"
+              src={activeConversation?.avatar}
+              name={roomTitle}
+              staffId={activeConversation?.participantStaffId}
+              staffDirectory={staffDirectory}
+              showOnline={true}
+              isOnline={true}
+            />
+            <div className="min-w-0">
+              <h2 className="text-sm font-bold text-white truncate leading-snug">{roomTitle}</h2>
+              <p className="text-[11px] text-slate-400 truncate leading-none mt-0.5">{subtitle}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Right actions: Tasks toggle & Phone call */}

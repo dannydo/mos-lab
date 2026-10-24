@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 import type { MosChatImageAttachment, MosChatImageMimeType, MosChatStaffMember, SafeAny } from '@mos-lab/shared';
 import { removeVietnameseTones } from '@mos-lab/shared';
 import { cleanMarkdownForSpeech } from '../../voice-assistant/speech-utils';
+import { resolveMediaUrl } from '../../../lib/api-base-url';
 
 export function matchesStaffGroup(member: MosChatStaffMember, groupKey: string): boolean {
   const role = String(member.role || '')
@@ -747,4 +748,119 @@ export function isStaffInConversationMembers<
   }
 
   return false;
+}
+
+export const AVATAR_COLOR_PALETTES = [
+  { bg: 'from-amber-600 to-amber-700', border: 'border-amber-500/40', text: 'text-amber-100' },
+  { bg: 'from-blue-600 to-indigo-700', border: 'border-blue-500/40', text: 'text-blue-100' },
+  { bg: 'from-emerald-600 to-teal-700', border: 'border-emerald-500/40', text: 'text-emerald-100' },
+  { bg: 'from-purple-600 to-indigo-700', border: 'border-purple-500/40', text: 'text-purple-100' },
+  { bg: 'from-rose-600 to-pink-700', border: 'border-rose-500/40', text: 'text-rose-100' },
+  { bg: 'from-cyan-600 to-blue-700', border: 'border-cyan-500/40', text: 'text-cyan-100' },
+  { bg: 'from-violet-600 to-fuchsia-700', border: 'border-violet-500/40', text: 'text-violet-100' },
+];
+
+export function getAvatarColorPalette(name?: string | null): { bg: string; border: string; text: string } {
+  if (!name) return AVATAR_COLOR_PALETTES[0];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = (hash << 5) - hash + name.charCodeAt(i);
+    hash |= 0;
+  }
+  const idx = Math.abs(hash) % AVATAR_COLOR_PALETTES.length;
+  return AVATAR_COLOR_PALETTES[idx];
+}
+
+export function getAvatarInitials(name?: string | null, fallback?: string | null): string {
+  const cleanFallback = String(fallback || '').trim();
+  if (cleanFallback && cleanFallback.length <= 3 && !cleanFallback.includes('/') && !cleanFallback.includes('.')) {
+    return cleanFallback.toUpperCase();
+  }
+  const clean = String(name || '')
+    .replace(/\s*\(Ghi chú cho tôi\)\s*$/i, '')
+    .replace(/^Chuyên Viên\s+/i, '')
+    .replace(/^(CV|KTV|Admin|Super Admin)\s+/i, '')
+    .trim();
+  if (!clean) return 'NV';
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    const first = parts[0][0] || '';
+    const last = parts[parts.length - 1][0] || '';
+    return `${first}${last}`.toUpperCase();
+  }
+  return clean.slice(0, 2).toUpperCase();
+}
+
+export function normalizeAvatarImageUrl(raw?: string | null): string | null {
+  if (!raw || typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const isLikelyImageUrl =
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('/api/') ||
+    trimmed.startsWith('/uploads/') ||
+    trimmed.startsWith('data:image/') ||
+    /\.(?:jpg|jpeg|png|webp|gif|svg)(?:\?|$)/i.test(trimmed);
+  if (!isLikelyImageUrl) return null;
+  const formatted = trimmed.replace(/^https?:\/\/(s|api|www)?\.?wingslashes\.com/, 'https://cdn.wingslashes.com');
+  return resolveMediaUrl(formatted);
+}
+
+export function resolveStaffAvatarUrl({
+  staffId,
+  name,
+  username,
+  rawAvatar,
+  staffDirectory,
+}: {
+  staffId?: number | string | null;
+  name?: string | null;
+  username?: string | null;
+  rawAvatar?: string | null;
+  staffDirectory?: MosChatStaffMember[];
+}): string | null {
+  const direct = normalizeAvatarImageUrl(rawAvatar);
+  if (direct) return direct;
+
+  if (!staffDirectory || staffDirectory.length === 0) return null;
+
+  const targetId = staffId && !isNaN(Number(staffId)) ? Number(staffId) : null;
+  const cleanName = String(name || '')
+    .replace(/\s*\(Ghi chú cho tôi\)\s*$/i, '')
+    .replace(/^Chuyên Viên\s+/i, '')
+    .trim()
+    .toLowerCase();
+  const cleanNameNorm = removeVietnameseTones(cleanName);
+
+  const cleanUser = String(username || '')
+    .trim()
+    .toLowerCase();
+
+  const matched = staffDirectory.find((s) => {
+    if (targetId && Number(s.id) === targetId) return true;
+    if (targetId && s.legacyStaffId && Number(s.legacyStaffId) === targetId) return true;
+
+    const sName = String(s.displayName || '')
+      .trim()
+      .toLowerCase();
+    const sNameNorm = removeVietnameseTones(sName);
+    if (cleanName && sName && (sName === cleanName || sName.endsWith(` ${cleanName}`))) return true;
+    if (cleanNameNorm && sNameNorm && (sNameNorm === cleanNameNorm || sNameNorm.endsWith(` ${cleanNameNorm}`)))
+      return true;
+
+    const sUser = String(s.username || '')
+      .trim()
+      .toLowerCase();
+    if (cleanUser && sUser && sUser === cleanUser) return true;
+    if (cleanName && sUser && (sUser.includes(cleanName) || cleanName.includes(sUser))) return true;
+
+    return false;
+  });
+
+  if (matched?.avatarUrl) {
+    return normalizeAvatarImageUrl(matched.avatarUrl);
+  }
+
+  return null;
 }

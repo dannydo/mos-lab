@@ -31,6 +31,7 @@ import type { MosChatTaskItem, MosChatMissionActionType, SafeAny } from '@mos-la
 import { isCanonicalSuperAdminIdentity, isSuperAdminRole } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
 import { Popconfirm, message as antdMessage } from 'antd';
+import { MosChatAvatar } from '../MosChatAvatar';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -62,6 +63,7 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
     acceptNegotiatedDeadline,
     rejectNegotiatedDeadline,
     executeMissionAction,
+    staffDirectory,
   } = useMosChat();
 
   const [actionLoading, setActionLoading] = useState<MosChatMissionActionType | null>(null);
@@ -310,8 +312,12 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
             <div className="space-y-1">
               <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Giao bởi</span>
               <div className="flex items-center gap-1.5 text-slate-200 font-medium">
-                <User className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span className="truncate">{task.creatorName || 'Hệ thống'}</span>
+                <MosChatAvatar
+                  size="sm"
+                  name={task.creatorName || task.sourceAuthorName || 'Hệ thống'}
+                  staffDirectory={staffDirectory}
+                />
+                <span className="truncate">{task.creatorName || task.sourceAuthorName || 'Hệ thống'}</span>
               </div>
             </div>
 
@@ -319,8 +325,13 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
             <div className="space-y-1">
               <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Người nhận</span>
               <div className="flex items-center gap-1.5 text-slate-200 font-medium">
-                <User className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                <span className="truncate">{task.assigneeName || 'Chính tôi'}</span>
+                <MosChatAvatar
+                  size="sm"
+                  name={task.assigneeName || 'Chung'}
+                  staffId={task.assigneeId}
+                  staffDirectory={staffDirectory}
+                />
+                <span className="truncate text-amber-300">{task.assigneeName || 'Chính tôi'}</span>
               </div>
             </div>
 
