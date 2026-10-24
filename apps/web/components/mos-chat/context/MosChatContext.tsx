@@ -531,15 +531,49 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
 
   // Edit message
   const editMessage = useCallback(
-    async (msgId: string, newText: string) => {
-      setAllMessagesByConv((prev) => ({
-        ...prev,
-        [activeConvId]: (prev[activeConvId] || []).map((m) => (m.id === msgId ? { ...m, text: newText } : m)),
-      }));
+    async (msgId: string, newText: string, options?: { replyId?: string }) => {
+      const nowIso = new Date().toISOString();
+
+      if (options?.replyId) {
+        const replyId = options.replyId;
+        setActiveThreadMsg((prev) => {
+          if (!prev || prev.id !== msgId) return prev;
+          return {
+            ...prev,
+            thread: (prev.thread || []).map((r) => (r.id === replyId ? { ...r, text: newText, editedAt: nowIso } : r)),
+          };
+        });
+        setAllMessagesByConv((prev) => {
+          const currentList = prev[activeConvId] || [];
+          return {
+            ...prev,
+            [activeConvId]: currentList.map((m) => {
+              if (m.id !== msgId) return m;
+              return {
+                ...m,
+                thread: (m.thread || []).map((r) => (r.id === replyId ? { ...r, text: newText, editedAt: nowIso } : r)),
+              };
+            }),
+          };
+        });
+      } else {
+        setAllMessagesByConv((prev) => ({
+          ...prev,
+          [activeConvId]: (prev[activeConvId] || []).map((m) =>
+            m.id === msgId ? { ...m, text: newText, editedAt: nowIso } : m
+          ),
+        }));
+        setActiveThreadMsg((prev) => {
+          if (!prev || prev.id !== msgId) return prev;
+          return { ...prev, text: newText, editedAt: nowIso };
+        });
+      }
+
       try {
         await apiClient.chat.editMessage(msgId, {
           conversationId: activeConvId,
           text: newText,
+          replyId: options?.replyId,
         });
       } catch {
         // ignore

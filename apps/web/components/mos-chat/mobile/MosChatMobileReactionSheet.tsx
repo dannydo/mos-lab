@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { MessageSquareReply, Copy, Pin, CheckSquare, Trash2, Share2, X } from 'lucide-react';
+import { MessageSquareReply, Copy, Pin, CheckSquare, Trash2, Share2, X, Pencil } from 'lucide-react';
 import { message as antdMessage } from 'antd';
 import type { MosChatMessage } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
@@ -12,6 +12,7 @@ export interface MosChatMobileReactionSheetProps {
   onClose: () => void;
   onOpenThread: (msg: MosChatMessage) => void;
   onCreateTaskFromMsg: (msg: MosChatMessage) => void;
+  onEditMessage?: (msg: MosChatMessage) => void;
 }
 
 export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProps> = ({
@@ -19,6 +20,7 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
   onClose,
   onOpenThread,
   onCreateTaskFromMsg,
+  onEditMessage,
 }) => {
   const { reactToMessage, togglePinMessage, deleteMessage, setReplyingToMessage, currentUser } = useMosChat();
 
@@ -27,6 +29,11 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
   const isMe =
     String(message.senderId) === String(currentUser?.id) ||
     String(message.senderName) === String(currentUser?.fullName || currentUser?.name);
+  const canEdit =
+    isMe ||
+    String(currentUser?.role || '')
+      .toLowerCase()
+      .includes('admin');
 
   const handleEmojiClick = (emoji: string) => {
     reactToMessage(message.id, emoji);
@@ -134,6 +141,20 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
             <CheckSquare className="w-4 h-4 text-emerald-400" />
             <span className="font-medium">Giao việc từ tin nhắn này</span>
           </button>
+
+          {canEdit && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onEditMessage?.(message);
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+            >
+              <Pencil className="w-4 h-4 text-amber-400" />
+              <span className="font-medium">Chỉnh sửa tin nhắn</span>
+            </button>
+          )}
 
           {isMe && (
             <button

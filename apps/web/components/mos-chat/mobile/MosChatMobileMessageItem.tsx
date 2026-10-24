@@ -152,6 +152,10 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        setSelectedMsgForAction(message);
+      }}
       style={{
         transform: `translateX(${swipeOffset}px)`,
         transition: swipeOffset === 0 ? 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',

@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MosChatProvider } from '../context/MosChatContext';
 import { MosChatMobileApp } from '../mobile/MosChatMobileApp';
+import { apiClient } from '../../../lib/api-client';
 
 // Mock apiClient.chat
 vi.mock('../../../lib/api-client', () => ({
@@ -95,6 +96,7 @@ vi.mock('../../../lib/api-client', () => ({
       }),
       togglePinMessage: vi.fn().mockResolvedValue({ success: true }),
       deleteMessage: vi.fn().mockResolvedValue({ success: true }),
+      editMessage: vi.fn().mockResolvedValue({ success: true }),
     },
   },
 }));
@@ -515,5 +517,64 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
 
     // Textarea value should be updated
     expect((textarea as HTMLTextAreaElement).value).toBe('@Chuyên Viên Mai ');
+  });
+
+  it('allows editing a message on iPhone via action sheet and edit modal (MOS-FEAT-144)', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Shop Operations')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('Shop Operations'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Chào cả nhà, hôm nay lịch dặm mi kín chỗ rồi nha!')).toBeTruthy();
+    });
+
+    const msgEl = screen.getByText('Chào cả nhà, hôm nay lịch dặm mi kín chỗ rồi nha!');
+    const msgContainer = msgEl.closest('.relative') as HTMLElement;
+    expect(msgContainer).toBeTruthy();
+
+    // Trigger action sheet via context menu
+    fireEvent.contextMenu(msgContainer);
+
+    // Reaction and action sheet should open with "Chỉnh sửa tin nhắn"
+    await waitFor(() => {
+      expect(screen.getByText('Chỉnh sửa tin nhắn')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('Chỉnh sửa tin nhắn'));
+
+    // Edit modal should be open
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: 'Chỉnh sửa tin nhắn' })).toBeTruthy();
+    });
+
+    const editTextarea = screen.getByPlaceholderText('Nhập nội dung chỉnh sửa...');
+    expect((editTextarea as HTMLTextAreaElement).value).toBe('Chào cả nhà, hôm nay lịch dặm mi kín chỗ rồi nha!');
+
+    // Change text and click Lưu
+    fireEvent.change(editTextarea, {
+      target: { value: 'Chào cả nhà, hôm nay lịch dặm mi kín chỗ rồi nha! [CẬP NHẬT]' },
+    });
+
+    const saveBtn = screen.getByRole('button', { name: /Lưu/i });
+    fireEvent.click(saveBtn);
+
+    // Should call editMessage and display updated text
+    await waitFor(() => {
+      expect(apiClient.chat.editMessage).toHaveBeenCalledWith(
+        'm1',
+        expect.objectContaining({
+          conversationId: 'space-cc',
+          text: 'Chào cả nhà, hôm nay lịch dặm mi kín chỗ rồi nha! [CẬP NHẬT]',
+        })
+      );
+    });
   });
 });

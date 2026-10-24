@@ -52,7 +52,7 @@ export interface MosChatContextValue {
   togglePinMessage: (msgId: string) => Promise<void>;
   deleteMessage: (msgId: string) => Promise<void>;
   deleteThreadReply: (parentMsgId: string, replyId: string) => Promise<void>;
-  editMessage: (msgId: string, newText: string) => Promise<void>;
+  editMessage: (msgId: string, newText: string, options?: { replyId?: string }) => Promise<void>;
   buzzMessage: (msgId: string) => Promise<void>;
 
   // Thread

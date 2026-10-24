@@ -14,6 +14,7 @@ import { MosChatMobileReactionSheet } from './MosChatMobileReactionSheet';
 import { MosChatMobileThreadSheet } from './MosChatMobileThreadSheet';
 import { MosChatMobileTasksTab } from './MosChatMobileTasksTab';
 import { MosChatMobileStickerSheet } from './MosChatMobileStickerSheet';
+import { MosChatMobileEditModal } from './MosChatMobileEditModal';
 import { formatStickerToken, type MosChatStickerItem, type MosChatStickerPackId } from '../mos-chat-stickers';
 import { DEADLINE_PRESETS, GOOGLE_CHAT_REACTION_EMOJIS, WINGS_SIGNATURE_EMOJIS } from '../constants/chat-constants';
 import { apiClient } from '../../../lib/api-client';
@@ -31,6 +32,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
     setSelectedMsgForAction,
     setActiveThreadMsg,
     createTask,
+    editMessage,
     staffDirectory,
     sendMessage,
   } = useMosChat();
@@ -39,6 +41,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
   const [stickerPickerOpen, setStickerPickerOpen] = useState<boolean>(false);
   const [stickerPickerInitialPack, setStickerPickerInitialPack] = useState<MosChatStickerPackId>('emoji');
   const [composerText, setComposerText] = useState<string>('');
+  const [editingMessage, setEditingMessage] = useState<MosChatMessage | null>(null);
 
   // Quick Task Creation Modal
   const [taskModalOpen, setTaskModalOpen] = useState<boolean>(false);
@@ -230,6 +233,20 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
           setMobileView('thread');
         }}
         onCreateTaskFromMsg={handleCreateTaskFromMsg}
+        onEditMessage={(msg) => setEditingMessage(msg)}
+      />
+
+      {/* Edit Message Modal */}
+      <MosChatMobileEditModal
+        open={editingMessage !== null}
+        initialText={editingMessage?.text || ''}
+        title="Chỉnh sửa tin nhắn"
+        onClose={() => setEditingMessage(null)}
+        onSave={async (newText) => {
+          if (!editingMessage) return;
+          await editMessage(editingMessage.id, newText);
+          antdMessage.success('Đã lưu chỉnh sửa tin nhắn');
+        }}
       />
 
       {/* Sticker & Emoji Bottom Sheet */}

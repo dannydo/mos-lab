@@ -1,7 +1,17 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { SendHorizontal, MessageSquareReply, X, CheckCheck, Smile, ImageIcon, Copy, Trash2 } from 'lucide-react';
+import {
+  SendHorizontal,
+  MessageSquareReply,
+  X,
+  CheckCheck,
+  Smile,
+  ImageIcon,
+  Copy,
+  Trash2,
+  Pencil,
+} from 'lucide-react';
 import { message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
 import { useMosChat } from '../context/MosChatContext';
@@ -9,6 +19,7 @@ import { MosChatMobileStickerSheet } from './MosChatMobileStickerSheet';
 import { formatStickerToken, type MosChatStickerItem } from '../mos-chat-stickers';
 import { MosChatRichText } from '../MosChatRichText';
 import { MosChatMobileMentionAutocomplete } from './MosChatMobileMentionAutocomplete';
+import { MosChatMobileEditModal } from './MosChatMobileEditModal';
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
 import { apiClient } from '../../../lib/api-client';
 import type { MosChatImageAttachment, MosChatThreadReply, SafeAny } from '@mos-lab/shared';
@@ -24,6 +35,7 @@ export const MosChatMobileThreadSheet: React.FC = () => {
     sendThreadReply,
     reactToMessage,
     deleteThreadReply,
+    editMessage,
     currentUser,
     setMobileView,
   } = useMosChat();
@@ -55,6 +67,9 @@ export const MosChatMobileThreadSheet: React.FC = () => {
 
   // Action sheet for long-pressed reply
   const [actionSheetReply, setActionSheetReply] = useState<MosChatThreadReply | null>(null);
+
+  // Edit reply modal state
+  const [editingReply, setEditingReply] = useState<MosChatThreadReply | null>(null);
 
   // Replying quote inside thread
   const [replyingToReply, setReplyingToReply] = useState<MosChatThreadReply | null>(null);
@@ -456,8 +471,9 @@ export const MosChatMobileThreadSheet: React.FC = () => {
               {activeThreadMsg.senderName?.charAt(0) || 'U'}
             </div>
             <span className="text-xs font-bold text-white">{activeThreadMsg.senderName}</span>
-            <span className="text-[10px] text-slate-500 tabular-nums">
-              {dayjs(activeThreadMsg.createdAt).format('HH:mm DD/MM')}
+            <span className="text-[10px] text-slate-500 tabular-nums flex items-center gap-1">
+              {activeThreadMsg.editedAt && <span className="italic text-slate-400">đã sửa</span>}
+              <span>{dayjs(activeThreadMsg.createdAt).format('HH:mm DD/MM')}</span>
             </span>
           </div>
 
@@ -597,6 +613,7 @@ export const MosChatMobileThreadSheet: React.FC = () => {
                     isMe ? 'text-slate-800' : 'text-slate-400'
                   }`}
                 >
+                  {reply.editedAt && <span className="italic mr-0.5">đã sửa</span>}
                   <span>{dayjs(reply.createdAt).format('HH:mm')}</span>
                   {isMe && <CheckCheck className="w-3.5 h-3.5 text-slate-800" />}
                 </div>
@@ -802,6 +819,23 @@ export const MosChatMobileThreadSheet: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
+                    setEditingReply(actionSheetReply);
+                    setActionSheetReply(null);
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-amber-400 hover:bg-amber-500/10 rounded-xl transition-colors active:scale-98"
+                >
+                  <Pencil className="w-4 h-4" />
+                  <span className="font-medium">Chỉnh sửa phản hồi</span>
+                </button>
+              )}
+
+              {(String(actionSheetReply.senderId) === String(currentUser?.id) ||
+                String(currentUser?.role || '')
+                  .toLowerCase()
+                  .includes('admin')) && (
+                <button
+                  type="button"
+                  onClick={() => {
                     deleteThreadReply(activeThreadMsg.id, actionSheetReply.id);
                     setActionSheetReply(null);
                   }}
@@ -814,6 +848,21 @@ export const MosChatMobileThreadSheet: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Edit Reply Modal */}
+      {editingReply && activeThreadMsg && (
+        <MosChatMobileEditModal
+          open={!!editingReply}
+          initialText={editingReply.text}
+          onClose={() => setEditingReply(null)}
+          onSave={async (newText) => {
+            await editMessage(activeThreadMsg.id, newText, { replyId: editingReply.id });
+            antdMessage.success('Đã lưu chỉnh sửa phản hồi');
+            setEditingReply(null);
+          }}
+          title="Chỉnh sửa phản hồi"
+        />
       )}
 
       {/* Sticker & Emoji Sheet */}
