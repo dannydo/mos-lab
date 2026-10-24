@@ -151,3 +151,68 @@ test('Customer Notes Routes: GET /customers/:id/notes repairs missing legacy att
   const repairAttrInsert = executedQueries.find((q) => q.includes('INSERT INTO item_attribute_value'));
   assert.ok(repairAttrInsert, 'repair query must insert missing item_attribute_value');
 });
+
+test('Customer Notes Routes: POST /customers/:id/notes/:noteId/pin updates date_updated and self-heals', async () => {
+  const app = Fastify();
+
+  app.decorateRequest('user', null as SafeAny);
+  app.addHook('onRequest', async (req) => {
+    (req as SafeAny).user = { id: 1, role: 'admin' };
+    (req as SafeAny).jwtVerify = async () => {};
+  });
+
+  const executedQueries: string[] = [];
+
+  const mockLegacy = {
+    $executeRawUnsafe: async (sql: string, ...params: SafeAny[]) => {
+      executedQueries.push(sql);
+      return 1;
+    },
+    $queryRawUnsafe: async (sql: string, ...params: SafeAny[]) => {
+      executedQueries.push(sql);
+      if (sql.includes('SELECT attribute_group_key, note_field_key, date_created FROM user_note')) {
+        return [
+          {
+            attribute_group_key: null,
+            note_field_key: 'note',
+            date_created: new Date('2026-09-13T16:08:56.000Z'),
+          },
+        ];
+      }
+      if (sql.includes('SELECT id FROM item_attribute_value')) {
+        return [];
+      }
+      return [];
+    },
+    $transaction: async (cb: (tx: SafeAny) => Promise<SafeAny>) => {
+      return cb(mockLegacy);
+    },
+  };
+
+  const mockCrm = {
+    crmStaff: {
+      findUnique: async () => ({ legacyStaffId: 99, role: 'admin', isActive: true }),
+      update: async () => ({}),
+    },
+  };
+
+  app.decorate('prisma', { legacy: mockLegacy, crm: mockCrm } as SafeAny);
+
+  await app.register(registerCustomerNotesRoutes);
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/customers/43554/notes/699133/pin',
+  });
+
+  assert.equal(response.statusCode, 200);
+  const body = response.json();
+  assert.equal(body.success, true);
+
+  const pinUpdate = executedQueries.find((q) => q.includes('UPDATE user_note SET is_sticky = 1'));
+  assert.ok(pinUpdate, 'pin query must set is_sticky = 1');
+  assert.ok(pinUpdate.includes('date_updated'), 'pin query must update date_updated');
+
+  const attrInsert = executedQueries.find((q) => q.includes('INSERT INTO item_attribute_value'));
+  assert.ok(attrInsert, 'pin self-healing must insert missing item_attribute_value');
+});
