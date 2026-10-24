@@ -3344,18 +3344,14 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
 
       const rawAssigneeName = String(body.assigneeName || '').trim();
       const rawAssigneeId = Number(body.assigneeId) || 0;
-      if (!rawAssigneeName && rawAssigneeId <= 0) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Vui lòng chọn Người phụ trách từ danh sách nhân sự đang hoạt động.',
-        });
-      }
-
       const normAssignee = rawAssigneeName.toLowerCase();
-      const matchedAssignee = staffDirectory.find(
+      const isGenericAssignee =
+        !normAssignee || ['staff', 'thành viên', 'chính tôi', 'tôi', 'me'].includes(normAssignee);
+
+      let matchedAssignee = staffDirectory.find(
         (s) =>
           (rawAssigneeId > 0 && s.id === rawAssigneeId) ||
-          (normAssignee &&
+          (!isGenericAssignee &&
             (String(s.displayName || '')
               .trim()
               .toLowerCase() === normAssignee ||
@@ -3363,10 +3359,21 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
                 .trim()
                 .toLowerCase() === normAssignee))
       );
+
+      // Self-assign fallback: if unassigned, generic label, or assignee not found, fallback to creator
+      if (!matchedAssignee) {
+        const myStaffId = resolveUserStaffId(user, staffDirectory);
+        if (myStaffId > 0) {
+          matchedAssignee = staffDirectory.find((s) => s.id === myStaffId);
+        } else if (Number(user.id) > 0) {
+          matchedAssignee = staffDirectory.find((s) => s.id === Number(user.id));
+        }
+      }
+
       if (!matchedAssignee) {
         return reply.status(400).send({
           error: 'Bad Request',
-          message: 'Người phụ trách không hợp lệ hoặc đã nghỉ việc. Vui lòng chọn nhân sự đang hoạt động.',
+          message: 'Vui lòng chọn Người phụ trách từ danh sách nhân sự đang hoạt động.',
         });
       }
 
@@ -3454,7 +3461,10 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           senderRole: roleInfo.label,
           senderAvatar: getInitials(creatorName, user.username),
           roleColor: roleInfo.color,
-          text: `Giao việc cho ${canonicalAssigneeName}:`,
+          text:
+            canonicalAssigneeId === Number(user.id) || canonicalAssigneeId === resolveUserStaffId(user, staffDirectory)
+              ? 'Tự tạo việc cho chính mình:'
+              : `Giao việc cho ${canonicalAssigneeName}:`,
           timeLabel: formatTimeLabel(now),
           createdAt: now.toISOString(),
           taskId,

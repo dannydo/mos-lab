@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { Modal, Input, Select, DatePicker, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
 import type { MosChatMessage, MosChatTaskPriority, SafeAny } from '@mos-lab/shared';
@@ -28,6 +28,8 @@ export interface MosChatMobileAppProps {
 
 export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone = false }) => {
   const {
+    currentUser,
+    activeConversation,
     mobileView,
     setMobileView,
     activeSubtab,
@@ -98,6 +100,63 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
   const [taskPriority, setTaskPriority] = useState<MosChatTaskPriority>('NORMAL');
   const [taskSourceMsg, setTaskSourceMsg] = useState<MosChatMessage | null>(null);
 
+  // Match current user in staff directory
+  const currentStaff = useMemo(() => {
+    if (!currentUser) return undefined;
+    const cid = Number(currentUser.id);
+    const cUser = String(currentUser.username || '').toLowerCase();
+    const cName = String(currentUser.fullName || currentUser.name || currentUser.displayName || '').toLowerCase();
+    return staffDirectory.find(
+      (s) =>
+        (cid > 0 && Number(s.id) === cid) ||
+        (cUser && String(s.username || '').toLowerCase() === cUser) ||
+        (cName && String(s.displayName || '').toLowerCase() === cName)
+    );
+  }, [currentUser, staffDirectory]);
+
+  // Options for task assignee select
+  const assigneeOptions = useMemo(() => {
+    const list = [...staffDirectory];
+    const myId = currentStaff?.id || Number(currentUser?.id) || 0;
+    const myName =
+      currentStaff?.displayName ||
+      currentStaff?.username ||
+      currentUser?.displayName ||
+      currentUser?.fullName ||
+      currentUser?.name ||
+      'Danny Do';
+
+    const hasMeInList = myId > 0 && list.some((s) => s.id === myId);
+
+    list.sort((a, b) => {
+      if (a.id === myId) return -1;
+      if (b.id === myId) return 1;
+      const nameA = a.displayName || a.username || '';
+      const nameB = b.displayName || b.username || '';
+      return nameA.localeCompare(nameB, 'vi');
+    });
+
+    const opts = list.map((s) => {
+      const isMe = s.id === myId;
+      const roleStr = s.role ? ` (${s.role})` : '';
+      const name = s.displayName || s.username;
+      const emailHint = s.username && s.displayName && s.username !== s.displayName ? ` · ${s.username}` : '';
+      return {
+        value: String(s.id),
+        label: isMe ? `⭐ Chính tôi (${name})` : `${name}${emailHint}${roleStr}`,
+      };
+    });
+
+    if (!hasMeInList && myId > 0) {
+      opts.unshift({
+        value: String(myId),
+        label: `⭐ Chính tôi (${myName})`,
+      });
+    }
+
+    return opts;
+  }, [staffDirectory, currentStaff, currentUser]);
+
   // Hidden file input for image uploads
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -160,10 +219,30 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
     }
   };
 
-  const handleCreateTaskFromMsg = (msg: MosChatMessage) => {
-    setTaskTitle(msg.text.slice(0, 100));
-    setTaskSourceMsg(msg);
+  const openCreateTaskModal = (initialTitle = '', sourceMsg: MosChatMessage | null = null) => {
+    setTaskTitle(initialTitle);
+    setTaskSourceMsg(sourceMsg);
+
+    const myId = currentStaff?.id || Number(currentUser?.id) || 0;
+    let initialAssigneeId: string | undefined = undefined;
+
+    if (activeConversation?.isSelf) {
+      initialAssigneeId = myId > 0 ? String(myId) : undefined;
+    } else if (activeConversation?.type === 'dm') {
+      const peerId = activeConversation.memberIds?.find((id: SafeAny) => Number(id) !== myId);
+      initialAssigneeId = peerId ? String(peerId) : myId > 0 ? String(myId) : undefined;
+    } else {
+      initialAssigneeId = myId > 0 ? String(myId) : undefined;
+    }
+
+    setTaskAssigneeId(initialAssigneeId);
+    setTaskDueAt(null);
+    setTaskPriority('NORMAL');
     setTaskModalOpen(true);
+  };
+
+  const handleCreateTaskFromMsg = (msg: MosChatMessage) => {
+    openCreateTaskModal(msg.text.slice(0, 100), msg);
   };
 
   const handleConfirmCreateTask = async () => {
@@ -173,18 +252,34 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
       return;
     }
 
-    const assignee = staffDirectory.find((s) => String(s.id) === String(taskAssigneeId));
+    const myId = currentStaff?.id || Number(currentUser?.id) || 0;
+    const resolvedId = taskAssigneeId || (myId > 0 ? String(myId) : undefined);
+    const assignee = staffDirectory.find((s) => String(s.id) === String(resolvedId)) || currentStaff;
+
+    const resolvedAssigneeId = assignee ? String(assignee.id) : resolvedId;
+    const resolvedAssigneeName =
+      assignee?.displayName ||
+      assignee?.username ||
+      currentUser?.displayName ||
+      currentUser?.fullName ||
+      currentUser?.name ||
+      'Danny Do';
 
     const success = await createTask(trimmed, {
-      assigneeStaffId: taskAssigneeId,
-      assigneeName: assignee?.username || 'Staff',
+      assigneeStaffId: resolvedAssigneeId,
+      assigneeName: resolvedAssigneeName,
       dueAt: taskDueAt,
       priority: taskPriority,
       sourceMessageId: taskSourceMsg?.id,
     });
 
     if (success) {
-      antdMessage.success('Đã tạo và giao việc thành công');
+      const isSelf = String(resolvedAssigneeId) === String(myId);
+      antdMessage.success(
+        isSelf
+          ? `Đã tạo việc cho chính mình (${resolvedAssigneeName})`
+          : `Đã giao việc thành công cho ${resolvedAssigneeName}`
+      );
       setTaskModalOpen(false);
       setTaskTitle('');
       setTaskAssigneeId(undefined);
@@ -254,9 +349,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
           ) : (
             <MosChatMobileTasksTab
               onOpenCreateTaskModal={() => {
-                setTaskTitle('');
-                setTaskSourceMsg(null);
-                setTaskModalOpen(true);
+                openCreateTaskModal();
               }}
             />
           )}
@@ -272,9 +365,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         onSelectImage={() => fileInputRef.current?.click()}
         onSelectDrive={() => antdMessage.info('Mở liên kết Google Drive')}
         onSelectTask={() => {
-          setTaskTitle('');
-          setTaskSourceMsg(null);
-          setTaskModalOpen(true);
+          openCreateTaskModal();
         }}
         onSelectWorkflow={() => antdMessage.info('Kích hoạt quy trình làm việc')}
         onSelectSticker={() => {
@@ -354,16 +445,17 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
             <label className="text-xs font-semibold text-slate-300 block mb-1">Người thực hiện</label>
             <Select
               className="w-full"
-              placeholder="Chọn người được giao"
+              placeholder="Chọn người được giao (Mặc định: Chính tôi)"
               value={taskAssigneeId}
               onChange={(val) => setTaskAssigneeId(val)}
               allowClear
               showSearch
-              filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-              options={staffDirectory.map((s) => ({
-                value: String(s.id),
-                label: `${s.username} (${s.role || 'Staff'})`,
-              }))}
+              filterOption={(input, option) =>
+                String(option?.label ?? '')
+                  .toLowerCase()
+                  .includes(input.toLowerCase())
+              }
+              options={assigneeOptions}
             />
           </div>
 

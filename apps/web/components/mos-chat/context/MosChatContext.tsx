@@ -45,6 +45,28 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
   initialConvId = 'space-cc',
   onUnreadCountChange,
 }) => {
+  // Sync currentUser with local storage fallback
+  const [localUser, setLocalUser] = useState<SafeAny>(currentUser);
+
+  useEffect(() => {
+    if (currentUser) {
+      setLocalUser(currentUser);
+      return;
+    }
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = window.localStorage.getItem('mos_user');
+        if (stored) {
+          setLocalUser(JSON.parse(stored));
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, [currentUser]);
+
+  const effectiveUser = currentUser || localUser;
+
   // Staff Directory
   const [staffDirectory, setStaffDirectory] = useState<MosChatStaffMember[]>(() => {
     if (typeof window !== 'undefined') {
@@ -609,15 +631,26 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       const trimmed = title.trim();
       if (!trimmed) return false;
 
+      const effectiveCreatorName =
+        effectiveUser?.displayName ||
+        effectiveUser?.fullName ||
+        effectiveUser?.name ||
+        effectiveUser?.username ||
+        'Danny Do';
+
+      const effectiveAssigneeName = options?.assigneeName || effectiveCreatorName;
+      const effectiveAssigneeId =
+        options?.assigneeStaffId || (effectiveUser?.id ? String(effectiveUser.id) : undefined);
+
       const tempTask: MosChatTaskItem = {
         id: `task_${Date.now()}`,
         conversationId: activeConvId,
         conversationName: activeConversation?.name || 'Không gian',
         title: trimmed,
         done: false,
-        assigneeId: options?.assigneeStaffId,
-        assigneeName: options?.assigneeName || 'Thành viên',
-        creatorName: currentUser?.fullName || currentUser?.name || 'Tôi',
+        assigneeId: effectiveAssigneeId ? Number(effectiveAssigneeId) : undefined,
+        assigneeName: effectiveAssigneeName,
+        creatorName: effectiveCreatorName,
         dueAt: options?.dueAt || null,
         priority: options?.priority || 'NORMAL',
         sourceMessageId: options?.sourceMessageId,
@@ -631,8 +664,8 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
         const res = await apiClient.chat.createTask({
           conversationId: activeConvId,
           title: trimmed,
-          assigneeId: options?.assigneeStaffId,
-          assigneeName: options?.assigneeName || 'Thành viên',
+          assigneeId: effectiveAssigneeId,
+          assigneeName: effectiveAssigneeName,
           dueAt: options?.dueAt || null,
           priority: options?.priority || 'NORMAL',
           sourceMessageId: options?.sourceMessageId,
@@ -641,11 +674,13 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
           setTasks((prev) => prev.map((t) => (t.id === tempTask.id ? res.task : t)));
         }
         return true;
-      } catch {
+      } catch (err: SafeAny) {
+        console.error('Failed to create task in MosChatContext:', err?.response?.data || err?.message || err);
+        setTasks((prev) => prev.filter((t) => t.id !== tempTask.id));
         return false;
       }
     },
-    [activeConvId, activeConversation, currentUser]
+    [activeConvId, activeConversation, effectiveUser]
   );
 
   // Toggle task done
@@ -681,7 +716,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
 
   const value = useMemo<MosChatContextValue>(
     () => ({
-      currentUser,
+      currentUser: effectiveUser,
       staffDirectory,
       presence,
       setPresence,
@@ -734,7 +769,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       refresh: fetchBootstrap,
     }),
     [
-      currentUser,
+      effectiveUser,
       staffDirectory,
       presence,
       conversations,

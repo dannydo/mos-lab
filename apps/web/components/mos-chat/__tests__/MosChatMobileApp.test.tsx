@@ -82,6 +82,18 @@ vi.mock('../../../lib/api-client', () => ({
           createdAt: new Date().toISOString(),
         },
       }),
+      createTask: vi.fn().mockImplementation(async (payload: any) => ({
+        success: true,
+        task: {
+          id: 'task-new-1',
+          conversationId: payload.conversationId,
+          title: payload.title,
+          assigneeId: payload.assigneeId,
+          assigneeName: payload.assigneeName,
+          done: false,
+          createdAt: new Date().toISOString(),
+        },
+      })),
       updateTask: vi.fn().mockResolvedValue({ success: true }),
       reactToMessage: vi.fn().mockResolvedValue({ success: true }),
       sendThreadReply: vi.fn().mockResolvedValue({
@@ -789,6 +801,57 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     await waitFor(() => {
       expect(screen.queryByAltText('thread-a.jpg')).toBeNull();
       expect(screen.queryByAltText('thread-b.png')).toBeNull();
+    });
+  });
+
+  it('allows creating a task/reminder for oneself on iPhone via action sheet (MOS-FEAT-149)', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Shop Operations')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('Shop Operations'));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Nhắn tin trong #Shop Operations/i)).toBeTruthy();
+    });
+
+    // Open action sheet (+)
+    const plusBtn = screen.getByRole('button', { name: 'Tác vụ đính kèm' });
+    fireEvent.click(plusBtn);
+
+    // Tap "Giao việc & Hạn chót"
+    await waitFor(() => {
+      expect(screen.getByText('Giao việc & Hạn chót')).toBeTruthy();
+    });
+    fireEvent.click(screen.getByText('Giao việc & Hạn chót'));
+
+    // Verify modal appears
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Nhập chi tiết công việc cần giao...')).toBeTruthy();
+    });
+
+    // Enter title
+    const titleInput = screen.getByPlaceholderText('Nhập chi tiết công việc cần giao...');
+    fireEvent.change(titleInput, { target: { value: 'Hello hello task test' } });
+
+    // Submit task without picking someone (defaults to self Danny Do)
+    const submitBtn = screen.getByRole('button', { name: 'Tạo công việc' });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(apiClient.chat.createTask).toHaveBeenCalledWith(
+        expect.objectContaining({
+          conversationId: 'space-cc',
+          title: 'Hello hello task test',
+          assigneeName: expect.stringMatching(/Danny Do/i),
+        })
+      );
     });
   });
 });
