@@ -8112,7 +8112,7 @@
         "path": "/api/chat/bootstrap",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2071
+        "line": 2213
       }
     },
     {
@@ -8126,7 +8126,7 @@
         "path": "/api/chat/user-prefs",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2156
+        "line": 2298
       }
     },
     {
@@ -8140,7 +8140,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2231
+        "line": 2373
       }
     },
     {
@@ -8154,7 +8154,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2257
+        "line": 2399
       }
     },
     {
@@ -8168,7 +8168,7 @@
         "path": "/api/chat/upload-image",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2306
+        "line": 2448
       }
     },
     {
@@ -8182,7 +8182,7 @@
         "path": "/api/chat/media/:fileName",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2362
+        "line": 2504
       }
     },
     {
@@ -8196,7 +8196,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2454
+        "line": 2596
       }
     },
     {
@@ -8210,7 +8210,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2459
+        "line": 2601
       }
     },
     {
@@ -8224,7 +8224,7 @@
         "path": "/api/chat/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2464
+        "line": 2606
       }
     },
     {
@@ -8238,7 +8238,7 @@
         "path": "/api/chat/threads",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2588
+        "line": 2730
       }
     },
     {
@@ -8252,7 +8252,7 @@
         "path": "/api/chat/threads/move",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2708
+        "line": 2850
       }
     },
     {
@@ -8266,7 +8266,7 @@
         "path": "/api/chat/messages/:messageId/reaction",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2847
+        "line": 2989
       }
     },
     {
@@ -8280,7 +8280,7 @@
         "path": "/api/chat/messages/:messageId/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2936
+        "line": 3078
       }
     },
     {
@@ -8294,7 +8294,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2967
+        "line": 3109
       }
     },
     {
@@ -8308,7 +8308,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3049
+        "line": 3191
       }
     },
     {
@@ -8322,7 +8322,7 @@
         "path": "/api/chat/messages/:messageId/restore",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3124
+        "line": 3266
       }
     },
     {
@@ -8336,7 +8336,7 @@
         "path": "/api/chat/messages/:messageId/buzz",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3206
+        "line": 3348
       }
     },
     {
@@ -8350,7 +8350,7 @@
         "path": "/api/chat/tasks",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3318
+        "line": 3460
       }
     },
     {
@@ -8364,7 +8364,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3518
+        "line": 3661
       }
     },
     {
@@ -8378,7 +8378,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3637
+        "line": 3780
       }
     },
     {
@@ -8392,7 +8392,7 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3686
+        "line": 3829
       }
     },
     {
@@ -8406,7 +8406,7 @@
         "path": "/api/chat/conversations/:id/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3881
+        "line": 4024
       }
     },
     {
@@ -8420,7 +8420,7 @@
         "path": "/api/chat/conversations/:id/threads/:messageId/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3965
+        "line": 4108
       }
     },
     {
@@ -8434,7 +8434,7 @@
         "path": "/api/chat/conversations/:id/unread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4025
+        "line": 4168
       }
     },
     {
@@ -8448,7 +8448,7 @@
         "path": "/api/chat/conversations/:id/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4069
+        "line": 4212
       }
     },
     {
@@ -8462,7 +8462,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4114
+        "line": 4257
       }
     },
     {
@@ -8476,7 +8476,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4220
+        "line": 4363
       }
     },
     {
@@ -8490,7 +8490,7 @@
         "path": "/api/chat/conversations/:id/nickname",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4295
+        "line": 4438
       }
     },
     {
@@ -8504,7 +8504,7 @@
         "path": "/api/chat/conversations/:id",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4401
+        "line": 4544
       }
     },
     {
@@ -8518,7 +8518,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4517
+        "line": 4660
       }
     },
     {
@@ -8532,7 +8532,7 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4578
+        "line": 4721
       }
     },
     {
@@ -8546,7 +8546,7 @@
         "path": "/api/chat/workflows",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4631
+        "line": 4774
       }
     },
     {
@@ -8560,7 +8560,7 @@
         "path": "/api/chat/workflows/instances",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4654
+        "line": 4797
       }
     },
     {
@@ -8574,7 +8574,7 @@
         "path": "/api/chat/workflows/instances/:instanceId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4835
+        "line": 4978
       }
     },
     {
@@ -8588,7 +8588,7 @@
         "path": "/api/chat/workflows/templates/from-thread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5012
+        "line": 5155
       }
     },
     {
@@ -10352,7 +10352,7 @@
         "path": "/api/kpi/bk/tip/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 585
+        "line": 622
       }
     },
     {
@@ -10366,7 +10366,7 @@
         "path": "/api/kpi/bk/tip/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 753
+        "line": 790
       }
     },
     {
@@ -10380,7 +10380,7 @@
         "path": "/api/kpi/bk/revenue/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 909
+        "line": 946
       }
     },
     {
@@ -10394,7 +10394,7 @@
         "path": "/api/kpi/bk/revenue/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 920
+        "line": 957
       }
     },
     {
@@ -10408,7 +10408,7 @@
         "path": "/api/kpi/bk/paystub",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1016
+        "line": 1053
       }
     },
     {
@@ -10422,7 +10422,7 @@
         "path": "/api/kpi/bk/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1049
+        "line": 1086
       }
     },
     {
@@ -10436,7 +10436,7 @@
         "path": "/api/kpi/bk/attendance-exception",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1083
+        "line": 1120
       }
     },
     {
@@ -10450,7 +10450,7 @@
         "path": "/api/kpi/bk/attendance-exception/audit-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1138
+        "line": 1175
       }
     },
     {
@@ -10464,7 +10464,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1156
+        "line": 1193
       }
     },
     {
@@ -10478,7 +10478,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1201
+        "line": 1238
       }
     },
     {
@@ -10492,7 +10492,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1253
+        "line": 1290
       }
     },
     {
@@ -10506,7 +10506,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1265
+        "line": 1302
       }
     },
     {
@@ -10520,7 +10520,7 @@
         "path": "/api/kpi/bk/games/:id/done-bonuses",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1286
+        "line": 1323
       }
     },
     {
@@ -10534,7 +10534,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1309
+        "line": 1346
       }
     },
     {
@@ -10548,7 +10548,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1327
+        "line": 1364
       }
     },
     {
@@ -10562,7 +10562,7 @@
         "path": "/api/kpi/bk/games/:id/finalize",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1348
+        "line": 1385
       }
     },
     {
@@ -10576,7 +10576,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1369
+        "line": 1406
       }
     },
     {
@@ -11388,7 +11388,7 @@
         "path": "/api/notifications",
         "module": "notifications",
         "handler": "inlineHandler",
-        "line": 414
+        "line": 541
       }
     },
     {
@@ -11402,7 +11402,7 @@
         "path": "/api/notifications/read",
         "module": "notifications",
         "handler": "inlineHandler",
-        "line": 463
+        "line": 590
       }
     },
     {
@@ -13170,6 +13170,20 @@
       }
     },
     {
+      "id": "route:GET:/api/telesale-competency/config-versions",
+      "type": "FastifyRoute",
+      "label": "GET /api/telesale-competency/config-versions",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/telesale-competency/telesale-competency.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/telesale-competency/config-versions",
+        "module": "telesale-competency",
+        "handler": "inlineHandler",
+        "line": 17
+      }
+    },
+    {
       "id": "route:GET:/api/telesale-competency/config",
       "type": "FastifyRoute",
       "label": "GET /api/telesale-competency/config",
@@ -13180,7 +13194,7 @@
         "path": "/api/telesale-competency/config",
         "module": "telesale-competency",
         "handler": "inlineHandler",
-        "line": 11
+        "line": 222
       }
     },
     {
@@ -28993,6 +29007,126 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:TelesaleLevel",
+      "type": "SharedType",
+      "label": "TelesaleLevel",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-competency.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleLevel",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TelesalePillarsWeightConfig",
+      "type": "SharedType",
+      "label": "TelesalePillarsWeightConfig",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-competency.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesalePillarsWeightConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TelesaleLevelKpiConfig",
+      "type": "SharedType",
+      "label": "TelesaleLevelKpiConfig",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-competency.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleLevelKpiConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TelesalePillarAKpiConfig",
+      "type": "SharedType",
+      "label": "TelesalePillarAKpiConfig",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-competency.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesalePillarAKpiConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TelesaleTierPromotionRule",
+      "type": "SharedType",
+      "label": "TelesaleTierPromotionRule",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-competency.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleTierPromotionRule",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TelesaleConfigStatus",
+      "type": "SharedType",
+      "label": "TelesaleConfigStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-competency.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleConfigStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TelesaleCompetencyConfigVersion",
+      "type": "SharedType",
+      "label": "TelesaleCompetencyConfigVersion",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-competency.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleCompetencyConfigVersion",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TelesaleConfigValidationResult",
+      "type": "SharedType",
+      "label": "TelesaleConfigValidationResult",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-competency.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleConfigValidationResult",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TelesaleConfigPreviewRow",
+      "type": "SharedType",
+      "label": "TelesaleConfigPreviewRow",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-competency.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleConfigPreviewRow",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TelesaleConfigPreviewResult",
+      "type": "SharedType",
+      "label": "TelesaleConfigPreviewResult",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/telesale-competency.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TelesaleConfigPreviewResult",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:TelesalePipelineStageKey",
       "type": "SharedType",
       "label": "TelesalePipelineStageKey",
@@ -31177,6 +31311,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatAvatar",
+      "type": "UIComponent",
+      "label": "<MosChatAvatar />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/MosChatAvatar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatAvatar",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatMathBlock",
       "type": "UIComponent",
       "label": "<MosChatMathBlock />",
@@ -31261,6 +31407,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatAvatar.test",
+      "type": "UIComponent",
+      "label": "<MosChatAvatar.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatAvatar.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatAvatar.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatMathBlock.test",
       "type": "UIComponent",
       "label": "<MosChatMathBlock.test />",
@@ -31317,6 +31475,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "MosChatMobileMentionAutocomplete.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatMobileThreadSheet.test",
+      "type": "UIComponent",
+      "label": "<MosChatMobileThreadSheet.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatMobileThreadSheet.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileThreadSheet.test",
         "isPrimitive": false
       }
     },
@@ -34491,8 +34661,8 @@
       "filePath": "apps/api/src/modules/chat/chat-mission-bridge.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 20730,
-        "lineCount": 594,
+        "sizeBytes": 23045,
+        "lineCount": 663,
         "ext": ".ts"
       }
     },
@@ -34504,8 +34674,8 @@
       "filePath": "apps/api/src/modules/chat/chat-mission-bridge.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 53741,
-        "lineCount": 1350,
+        "sizeBytes": 54872,
+        "lineCount": 1369,
         "ext": ".ts"
       }
     },
@@ -34517,8 +34687,8 @@
       "filePath": "apps/api/src/modules/chat/chat-repository.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 39497,
-        "lineCount": 1016,
+        "sizeBytes": 39632,
+        "lineCount": 1018,
         "ext": ".ts"
       }
     },
@@ -34608,8 +34778,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 196378,
-        "lineCount": 5104,
+        "sizeBytes": 200968,
+        "lineCount": 5247,
         "ext": ".ts"
       }
     },
@@ -35531,8 +35701,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 55306,
-        "lineCount": 1385,
+        "sizeBytes": 57150,
+        "lineCount": 1422,
         "ext": ".ts"
       }
     },
@@ -35596,8 +35766,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cs-tip.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 16576,
-        "lineCount": 381,
+        "sizeBytes": 17786,
+        "lineCount": 416,
         "ext": ".ts"
       }
     },
@@ -35758,6 +35928,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/kpi/services/bk-leaderboard.service.test.ts",
+      "type": "File",
+      "label": "bk-leaderboard.service.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/bk-leaderboard.service.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 5749,
+        "lineCount": 182,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/kpi/services/bk-leaderboard.service.ts",
       "type": "File",
       "label": "bk-leaderboard.service.ts",
@@ -35765,8 +35948,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-leaderboard.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 27709,
-        "lineCount": 731,
+        "sizeBytes": 30186,
+        "lineCount": 783,
         "ext": ".ts"
       }
     },
@@ -35934,8 +36117,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 161278,
-        "lineCount": 3771,
+        "sizeBytes": 161362,
+        "lineCount": 3772,
         "ext": ".ts"
       }
     },
@@ -36018,6 +36201,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/notifications/notifications.test.ts",
+      "type": "File",
+      "label": "notifications.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/notifications/notifications.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 11927,
+        "lineCount": 340,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/notifications/routes.ts",
       "type": "File",
       "label": "routes.ts",
@@ -36025,8 +36221,8 @@
       "filePath": "apps/api/src/modules/notifications/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17605,
-        "lineCount": 512,
+        "sizeBytes": 23236,
+        "lineCount": 639,
         "ext": ".ts"
       }
     },
@@ -36961,8 +37157,8 @@
       "filePath": "apps/api/src/modules/telesale-competency/telesale-competency.routes.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4635,
-        "lineCount": 152,
+        "sizeBytes": 6504,
+        "lineCount": 208,
         "ext": ".ts"
       }
     },
@@ -36974,8 +37170,8 @@
       "filePath": "apps/api/src/modules/telesale-competency/telesale-competency.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7253,
-        "lineCount": 214,
+        "sizeBytes": 15021,
+        "lineCount": 425,
         "ext": ".ts"
       }
     },
@@ -36987,8 +37183,8 @@
       "filePath": "apps/api/src/modules/telesale-competency/telesale-competency.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7469,
-        "lineCount": 214,
+        "sizeBytes": 9498,
+        "lineCount": 259,
         "ext": ".ts"
       }
     },
@@ -37000,8 +37196,8 @@
       "filePath": "apps/api/src/modules/telesale-competency/telesale-competency.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 30811,
-        "lineCount": 833,
+        "sizeBytes": 51365,
+        "lineCount": 1326,
         "ext": ".ts"
       }
     },
@@ -37366,6 +37562,19 @@
       "metadata": {
         "sizeBytes": 2527,
         "lineCount": 74,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/scripts/apply-legacy-query-perf-phase6-indexes.ts",
+      "type": "File",
+      "label": "apply-legacy-query-perf-phase6-indexes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/scripts/apply-legacy-query-perf-phase6-indexes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 2191,
+        "lineCount": 64,
         "ext": ".ts"
       }
     },
@@ -39834,8 +40043,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkDoneTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 43431,
-        "lineCount": 1047,
+        "sizeBytes": 47971,
+        "lineCount": 1137,
         "ext": ".tsx"
       }
     },
@@ -42057,8 +42266,8 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 62324,
-        "lineCount": 1549,
+        "sizeBytes": 62376,
+        "lineCount": 1550,
         "ext": ".tsx"
       }
     },
@@ -42863,8 +43072,8 @@
       "filePath": "apps/web/app/dashboard/telesale-competency/__tests__/TelesaleCompetency.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3067,
-        "lineCount": 96,
+        "sizeBytes": 3861,
+        "lineCount": 109,
         "ext": ".tsx"
       }
     },
@@ -42878,6 +43087,19 @@
       "metadata": {
         "sizeBytes": 2706,
         "lineCount": 90,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/telesale-competency/components/TelesaleConfigTab.tsx",
+      "type": "File",
+      "label": "TelesaleConfigTab.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/telesale-competency/components/TelesaleConfigTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 51952,
+        "lineCount": 1302,
         "ext": ".tsx"
       }
     },
@@ -42928,8 +43150,8 @@
       "filePath": "apps/web/app/dashboard/telesale-competency/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21296,
-        "lineCount": 513,
+        "sizeBytes": 21760,
+        "lineCount": 526,
         "ext": ".tsx"
       }
     },
@@ -44449,8 +44671,8 @@
       "filePath": "apps/web/lib/api/telesale-competency.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3314,
-        "lineCount": 101,
+        "sizeBytes": 6771,
+        "lineCount": 186,
         "ext": ".ts"
       }
     },
@@ -45021,8 +45243,8 @@
       "filePath": "packages/shared/src/types/bk.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 11713,
-        "lineCount": 446,
+        "sizeBytes": 12315,
+        "lineCount": 464,
         "ext": ".ts"
       }
     },
@@ -45359,8 +45581,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 20007,
-        "lineCount": 771,
+        "sizeBytes": 20064,
+        "lineCount": 773,
         "ext": ".ts"
       }
     },
@@ -45606,8 +45828,8 @@
       "filePath": "packages/shared/src/types/telesale-competency.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 13033,
-        "lineCount": 373,
+        "sizeBytes": 22287,
+        "lineCount": 617,
         "ext": ".ts"
       }
     },
@@ -51929,6 +52151,13 @@
     {
       "id": "edge:route:POST:/api/telemetry/frontend-issues/sync:ws:apps/api",
       "source": "route:POST:/api/telemetry/frontend-issues/sync",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/telesale-competency/config-versions:ws:apps/api",
+      "source": "route:GET:/api/telesale-competency/config-versions",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -61055,6 +61284,76 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:TelesaleLevel:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleLevel",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TelesalePillarsWeightConfig:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesalePillarsWeightConfig",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TelesaleLevelKpiConfig:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleLevelKpiConfig",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TelesalePillarAKpiConfig:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesalePillarAKpiConfig",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TelesaleTierPromotionRule:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleTierPromotionRule",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TelesaleConfigStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleConfigStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TelesaleCompetencyConfigVersion:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleCompetencyConfigVersion",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TelesaleConfigValidationResult:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleConfigValidationResult",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TelesaleConfigPreviewRow:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleConfigPreviewRow",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TelesaleConfigPreviewResult:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TelesaleConfigPreviewResult",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:TelesalePipelineStageKey:ws:packages/shared",
       "source": "type:@mos-lab/shared:TelesalePipelineStageKey",
       "target": "ws:packages/shared",
@@ -63190,6 +63489,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatAvatar:ws:apps/web",
+      "source": "uicomp:MosChatAvatar",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatAvatar:token:color:primary",
+      "source": "uicomp:MosChatAvatar",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatMathBlock:ws:apps/web",
       "source": "uicomp:MosChatMathBlock",
       "target": "ws:apps/web",
@@ -63288,6 +63601,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatAvatar.test:ws:apps/web",
+      "source": "uicomp:MosChatAvatar.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatAvatar.test:token:color:primary",
+      "source": "uicomp:MosChatAvatar.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatMathBlock.test:ws:apps/web",
       "source": "uicomp:MosChatMathBlock.test",
       "target": "ws:apps/web",
@@ -63353,6 +63680,20 @@
     {
       "id": "edge:uicomp:MosChatMobileMentionAutocomplete.test:token:color:primary",
       "source": "uicomp:MosChatMobileMentionAutocomplete.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileThreadSheet.test:ws:apps/web",
+      "source": "uicomp:MosChatMobileThreadSheet.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileThreadSheet.test:token:color:primary",
+      "source": "uicomp:MosChatMobileThreadSheet.test",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -66361,6 +66702,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/notifications/notifications.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/notifications/notifications.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/notifications/routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/notifications/routes.ts",
       "target": "ws:packages/shared",
@@ -68582,6 +68930,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/telesale-competency/components/TelesaleActionModal.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/telesale-competency/components/TelesaleActionModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/telesale-competency/components/TelesaleConfigTab.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/telesale-competency/components/TelesaleConfigTab.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -77281,6 +77636,13 @@
       "label": "CALLS career.getConfig"
     },
     {
+      "id": "edge:page:/dashboard/career-path:route:GET:/api/telesale-competency/config-versions",
+      "source": "page:/dashboard/career-path",
+      "target": "route:GET:/api/telesale-competency/config-versions",
+      "type": "API_CALL",
+      "label": "CALLS career.getConfig"
+    },
+    {
       "id": "edge:page:/dashboard/career-path:route:GET:/api/telesale-competency/config",
       "source": "page:/dashboard/career-path",
       "target": "route:GET:/api/telesale-competency/config",
@@ -84414,6 +84776,13 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/telesale-competency/config-versions",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/telesale-competency/config-versions",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/telesale-competency/config",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/telesale-competency/config",
@@ -89489,6 +89858,13 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/telesale-competency/config-versions",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/telesale-competency/config-versions",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/telesale-competency/config",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/telesale-competency/config",
@@ -90054,6 +90430,13 @@
       "target": "route:GET:/api/teams/staff-ids/:code",
       "type": "API_CALL",
       "label": "CALLS staff.list"
+    },
+    {
+      "id": "edge:page:/dashboard/omicall:route:GET:/api/telesale-competency/config-versions",
+      "source": "page:/dashboard/omicall",
+      "target": "route:GET:/api/telesale-competency/config-versions",
+      "type": "API_CALL",
+      "label": "CALLS omicall.deleteConfig"
     },
     {
       "id": "edge:page:/dashboard/omicall:route:GET:/api/telesale-competency/config",
@@ -97854,6 +98237,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/telesale-competency/config-versions",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/telesale-competency/config-versions",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/telesale-competency/config",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/telesale-competency/config",
@@ -98030,31 +98420,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3507,
-    "totalEdges": 7473,
+    "totalNodes": 3525,
+    "totalEdges": 7497,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 176,
-      "FastifyRoute": 725,
+      "FastifyRoute": 726,
       "Component": 62,
-      "SharedType": 1277,
+      "SharedType": 1287,
       "DesignToken": 12,
-      "UIComponent": 273,
-      "File": 979
+      "UIComponent": 276,
+      "File": 983
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1465,
-      "HANDLES_ROUTE": 725,
-      "RENDERS": 335,
-      "USES_TOKEN": 275,
-      "IMPORTS": 536,
+      "EXPORTS": 1475,
+      "HANDLES_ROUTE": 726,
+      "RENDERS": 338,
+      "USES_TOKEN": 278,
+      "IMPORTS": 538,
       "QUERIES_MODEL": 406,
-      "API_CALL": 3731
+      "API_CALL": 3736
     },
-    "fastifyRouteCount": 730,
+    "fastifyRouteCount": 731,
     "prismaModelCount": 176,
     "nextPageCount": 62,
-    "sharedTypeCount": 1277
+    "sharedTypeCount": 1287
   },
   "routes": [
     {
@@ -103075,6 +103465,13 @@
       "filePath": "apps/api/src/modules/telemetry/routes.ts",
       "handler": "preHandler",
       "moduleName": "telemetry"
+    },
+    {
+      "method": "GET",
+      "path": "/api/telesale-competency/config-versions",
+      "filePath": "apps/api/src/modules/telesale-competency/telesale-competency.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "telesale-competency"
     },
     {
       "method": "GET",

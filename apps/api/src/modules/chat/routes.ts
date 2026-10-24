@@ -686,7 +686,11 @@ export function isStaffMentionedInChatText(
 
   const candidates = new Set<string>();
   const addCandidate = (token: string | undefined | null, allowSingleChar = false) => {
-    const cleaned = removeVietnameseTones(String(token || '').trim().toLowerCase());
+    const cleaned = removeVietnameseTones(
+      String(token || '')
+        .trim()
+        .toLowerCase()
+    );
     if (!cleaned) return;
     if (allowSingleChar ? cleaned.length >= 1 : cleaned.length >= 2) {
       candidates.add(cleaned);
@@ -3635,6 +3639,7 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         assigneeId: canonicalAssigneeId,
         assigneeName: canonicalAssigneeName,
         creatorName,
+        assignerName: (body as SafeAny).assignerName || creatorName,
         priority: body.priority || 'HIGH',
         remindAt: remindAtDate.toISOString(),
         dueAt: deadlineIso,

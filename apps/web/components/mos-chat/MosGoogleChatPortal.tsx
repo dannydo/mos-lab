@@ -111,6 +111,9 @@ import {
   Columns2,
   Link as LinkIcon,
   SquareCode,
+  PenLine,
+  Send,
+  UserCheck,
 } from 'lucide-react';
 import {
   MosChatRichEditorModal,
@@ -201,6 +204,7 @@ import { MosChatWorkflowCard } from './workflows/MosChatWorkflowCard';
 import { MosChatSaveThreadWorkflowModal, MosChatTriggerWorkflowModal } from './workflows/MosChatWorkflowModals';
 import { MosChatMermaidBlock } from './MosChatMermaidBlock';
 import { MosChatMathBlock, MosChatMathInline, isMathValid } from './MosChatMathBlock';
+import { MosChatRichText } from './MosChatRichText';
 import { MosChatProvider } from './context/MosChatContext';
 import { MosChatMobileApp } from './mobile/MosChatMobileApp';
 import { tabNotificationManager, playMessengerChime, showDesktopNotification } from '../../lib/tab-notification';
@@ -1530,7 +1534,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               const dmIds = Array.isArray(conv.memberIds) ? conv.memberIds.map(Number) : [];
               if (myStaffId > 0 && dmIds.length === 2 && !dmIds.includes(myStaffId)) continue;
             }
-            if (conv.type === 'space' && !isStrictDannySuperAdmin && Array.isArray(conv.memberIds) && conv.memberIds.length > 0) {
+            if (
+              conv.type === 'space' &&
+              !isStrictDannySuperAdmin &&
+              Array.isArray(conv.memberIds) &&
+              conv.memberIds.length > 0
+            ) {
               const mNums = conv.memberIds.map(Number).filter((n) => Number.isFinite(n) && n > 0);
               if (mNums.length > 0 && myStaffId > 0 && !mNums.includes(myStaffId)) continue;
             }
@@ -1694,15 +1703,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 });
                 const isMyThreadReply = Boolean(
                   parentMsg &&
-                    (Number(parentMsg.senderId) === myStaffId ||
-                      String(parentMsg.senderId) === myId ||
-                      isUserMentionedInText(parentMsg.text || '', userObj, {
-                        nicknames: conv.memberNicknames,
-                        isDirectMessage: false,
-                      }) ||
-                      (parentMsg.thread || []).some(
-                        (r) => r.id !== item.id && (Number(r.senderId) === myStaffId || String(r.senderId) === myId)
-                      ))
+                  (Number(parentMsg.senderId) === myStaffId ||
+                    String(parentMsg.senderId) === myId ||
+                    isUserMentionedInText(parentMsg.text || '', userObj, {
+                      nicknames: conv.memberNicknames,
+                      isDirectMessage: false,
+                    }) ||
+                    (parentMsg.thread || []).some(
+                      (r) => r.id !== item.id && (Number(r.senderId) === myStaffId || String(r.senderId) === myId)
+                    ))
                 );
 
                 // In Spaces, if a message tags someone else (has '@') and neither mentions current user nor replies to current user's thread, ignore!
@@ -6855,18 +6864,34 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           {task.title}
         </div>
 
-        {/* People Flow (Creator -> Assignee) */}
-        <div className="flex items-center gap-2 text-[11px] text-slate-400 flex-wrap">
-          <div className="flex items-center gap-1">
-            <span className="opacity-70">Giao bởi:</span>
-            <span className="font-semibold text-slate-300">{task.creatorName || 'Hệ thống'}</span>
-          </div>
-          <span>→</span>
-          <div className="flex items-center gap-1">
-            <span className="opacity-70">Người nhận:</span>
-            <span className="font-semibold text-amber-400">{task.assigneeName || 'Chung'}</span>
-          </div>
-        </div>
+        {/* People Flow (Creator -> Assigner -> Assignee) */}
+        {(() => {
+          const creator = task.sourceAuthorName || task.creatorName || 'Hệ thống';
+          const assigner = task.assignerName || task.creatorName || task.sourceAuthorName || 'Hệ thống';
+          const assignee = task.assigneeName || 'Chung';
+
+          return (
+            <div className="flex items-center gap-2 text-[11px] text-slate-400 flex-wrap">
+              <div className="flex items-center gap-1" title={`Người tạo: ${creator}`}>
+                <PenLine size={12} className="text-indigo-400" />
+                <span className="opacity-70">Tạo:</span>
+                <span className="font-semibold text-slate-300">{creator}</span>
+              </div>
+              <span className="text-slate-600">→</span>
+              <div className="flex items-center gap-1" title={`Người giao: ${assigner}`}>
+                <Send size={11} className="text-sky-400" />
+                <span className="opacity-70">Giao:</span>
+                <span className="font-semibold text-slate-300">{assigner}</span>
+              </div>
+              <span className="text-slate-600">→</span>
+              <div className="flex items-center gap-1" title={`Người nhận: ${assignee}`}>
+                <UserCheck size={12} className="text-amber-400" />
+                <span className="opacity-70">Nhận:</span>
+                <span className="font-semibold text-amber-400">{assignee}</span>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Deadline & Reminder visual row */}
         <div className="flex items-center gap-2 flex-wrap pt-0.5">
@@ -7205,428 +7230,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   }, [staffDirectory, activeConversation?.memberNicknames]);
 
   /**
-   * Tokenizer phân tích inline markup an toàn thành React Nodes:
-   * **đậm**, *nghiêng*, ~~gạch ngang~~, <u>gạch chân</u>, `code`, https://..., @mentions
-   */
-  const parseInlineRichText = useCallback(
-    (text: string, keyPrefix = 'inline'): React.ReactNode[] => {
-      if (!text) return [];
-      const staffPattern =
-        knownMultiWordStaffNames.length > 0
-          ? `|(@(?:${knownMultiWordStaffNames.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b)`
-          : '';
-
-      const regex = new RegExp(
-        `(\\*\\*(.+?)\\*\\*)|(~~(.+?)~~)|(<u>(.+?)<\\/u>)|(\`([^\`]+)\`)|\\*([^\\*\\n]+)\\*|(https?:\\/\\/[^\\s<]+)|(\\$\\$([^\\$]+?)\\$\\$)|(\\$([^\\$\\s\\n](?:[^\\$\\n]*?[^\\$\\s\\n])?)\\$)|(@\\s*(?:AI|copilot|all|mọi\\s+người|moi\\s+nguoi)\\b)${staffPattern}|(@[a-zA-Z0-9_\\u00C0-\\u1EF9]+)`,
-        'gui'
-      );
-
-      const elements: React.ReactNode[] = [];
-      let lastIndex = 0;
-      let match: RegExpExecArray | null;
-      let i = 0;
-
-      while ((match = regex.exec(text)) !== null) {
-        if (match.index > lastIndex) {
-          elements.push(text.substring(lastIndex, match.index));
-        }
-
-        const fullMatch = match[0];
-        const key = `${keyPrefix}-${i++}`;
-
-        if (fullMatch.startsWith('**') && fullMatch.endsWith('**')) {
-          elements.push(
-            <strong key={key} className="font-bold text-amber-500/90 dark:text-amber-400">
-              {fullMatch.slice(2, -2)}
-            </strong>
-          );
-        } else if (fullMatch.startsWith('~~') && fullMatch.endsWith('~~')) {
-          elements.push(
-            <del key={key} className="line-through opacity-70">
-              {fullMatch.slice(2, -2)}
-            </del>
-          );
-        } else if (fullMatch.startsWith('<u>') && fullMatch.endsWith('</u>')) {
-          elements.push(
-            <u key={key} className="underline underline-offset-2">
-              {fullMatch.slice(3, -4)}
-            </u>
-          );
-        } else if (fullMatch.startsWith('`') && fullMatch.endsWith('`')) {
-          elements.push(
-            <code
-              key={key}
-              className="px-1.5 py-0.5 rounded text-[11.5px] font-mono bg-black/15 dark:bg-white/10 text-amber-600 dark:text-amber-300"
-            >
-              {fullMatch.slice(1, -1)}
-            </code>
-          );
-        } else if (fullMatch.startsWith('*') && fullMatch.endsWith('*')) {
-          elements.push(
-            <em key={key} className="italic opacity-90">
-              {fullMatch.slice(1, -1)}
-            </em>
-          );
-        } else if (fullMatch.startsWith('http://') || fullMatch.startsWith('https://')) {
-          elements.push(
-            <a
-              key={key}
-              href={fullMatch}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="text-blue-500 dark:text-blue-400 hover:underline inline-flex items-center gap-0.5 break-all font-medium"
-            >
-              <span>{fullMatch}</span>
-              <ExternalLink size={10} className="inline shrink-0 opacity-70" />
-            </a>
-          );
-        } else if (fullMatch.startsWith('$$') && fullMatch.endsWith('$$') && fullMatch.length > 2) {
-          const math = fullMatch.slice(2, -2).trim();
-          if (isMathValid(math)) {
-            elements.push(<MosChatMathBlock key={key} math={math} isDark={isDark} />);
-          } else {
-            elements.push(fullMatch);
-          }
-        } else if (fullMatch.startsWith('$') && fullMatch.endsWith('$') && fullMatch.length > 1) {
-          const math = fullMatch.slice(1, -1).trim();
-          if (isMathValid(math)) {
-            elements.push(<MosChatMathInline key={key} math={math} />);
-          } else {
-            elements.push(fullMatch);
-          }
-        } else if (fullMatch.startsWith('@')) {
-          const cleanTag = fullMatch.replace(/^@\s*/, '').trim().toLowerCase();
-          const isAi = cleanTag === 'ai' || cleanTag.includes('copilot');
-          const isAll = cleanTag === 'all' || cleanTag === 'mọi người' || cleanTag === 'moi nguoi';
-          const myId = Number(currentUserStaffMember.id) || Number(currentUser?.id) || 0;
-          const myNick = activeConversation?.memberNicknames?.[String(myId)];
-          const myNickNorm = myNick ? removeVietnameseTones(myNick.toLowerCase()) : '';
-          const myName = removeVietnameseTones(
-            (
-              currentUserStaffMember.displayName ||
-              currentUser?.displayName ||
-              currentUser?.username ||
-              ''
-            ).toLowerCase()
-          );
-          const myUname = (currentUser?.username || '').toLowerCase();
-          const tagNorm = removeVietnameseTones(cleanTag);
-          const isMentioningMe = Boolean(
-            (myName && (tagNorm.includes(myName) || myName.includes(tagNorm))) ||
-            (myUname && cleanTag.includes(myUname)) ||
-            (myNickNorm && (tagNorm.includes(myNickNorm) || myNickNorm.includes(tagNorm))) ||
-            isAll
-          );
-
-          elements.push(
-            <span
-              key={key}
-              className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[11.5px] transition-all font-semibold select-text ${
-                isAi
-                  ? 'bg-purple-500/20 text-purple-600 dark:text-purple-300 border border-purple-500/30'
-                  : isMentioningMe
-                    ? 'bg-amber-500/25 text-amber-800 dark:text-amber-200 border border-amber-500/50 shadow-sm ring-1 ring-amber-500/30 font-bold'
-                    : 'bg-sky-500/15 text-sky-700 dark:text-sky-300 border border-sky-500/30'
-              }`}
-            >
-              <AtSign size={10.5} className="shrink-0 opacity-80" />
-              <span>{isAi ? 'AI' : fullMatch.replace(/^@\s*/, '')}</span>
-            </span>
-          );
-        } else {
-          elements.push(fullMatch);
-        }
-
-        lastIndex = regex.lastIndex;
-      }
-
-      if (lastIndex < text.length) {
-        elements.push(text.substring(lastIndex));
-      }
-
-      return elements.length > 0 ? elements : [text];
-    },
-    [
-      currentUserStaffMember.displayName,
-      currentUser?.displayName,
-      currentUser?.username,
-      knownMultiWordStaffNames,
-      activeConversation?.memberNicknames,
-      isDark,
-    ]
-  );
-
-  /**
-   * Bộ Renderer chuẩn Rich Text phong cách Apple Notes cho bong bóng chat:
-   * Hỗ trợ Headings (#, ##, ###), Checklist Todo (- [ ] / - [x]), Bullet (- / *), Number (1.),
-   * Blockquote (>), Code Block (```), Inline styles.
+   * Bộ Renderer chuẩn Rich Text / Markdown / HTML cho bong bóng chat và thread/subthread:
+   * Hỗ trợ toàn diện bảng biểu Markdown, thẻ HTML (<br>, <b>, <i>, <u>, <table>...), Headings, KaTeX, Mermaid.
    */
   const renderRichTextMessage = useCallback(
     (rawText?: string | null, _isMine = false): React.ReactNode => {
       if (!rawText) return null;
-
-      const cleanText = rawText
-        .replace(/<action[\s\S]*?<\/action>/gi, '')
-        .replace(/<\/?action[^>]*>/gi, '')
-        .replace(/\n{3,}/g, '\n\n')
-        .trim();
-      if (!cleanText) return null;
-
-      // Pure Sticker Message: render large animated borderless sticker (Zalo / Telegram style)
-      const pureSticker = parsePureStickerMessage(cleanText);
-      if (pureSticker) {
-        return <MosChatStickerVisual sticker={pureSticker} size="chat" />;
-      }
-
-      const lines = cleanText.split('\n');
-      const result: React.ReactNode[] = [];
-      let inCodeBlock = false;
-      let codeBlockLang = '';
-      let codeBlockLines: string[] = [];
-      let inMathBlock = false;
-      let mathBlockLines: string[] = [];
-
-      for (let idx = 0; idx < lines.length; idx++) {
-        const line = lines[idx];
-
-        // Code block fences
-        if (line.trim().startsWith('```')) {
-          if (inCodeBlock) {
-            const codeContent = codeBlockLines.join('\n');
-            const lang = (codeBlockLang || '').trim().toLowerCase();
-            const isMermaid = lang === 'mermaid' || lang.startsWith('mermaid');
-
-            if (isMermaid) {
-              result.push(<MosChatMermaidBlock key={`cb-mermaid-${idx}`} code={codeContent} isDark={isDark} />);
-            } else {
-              result.push(
-                <div
-                  key={`cb-${idx}`}
-                  className="my-2 rounded-xl overflow-hidden shadow-sm text-[11.5px] font-mono select-text"
-                  style={{
-                    background: isDark ? '#0f172a' : '#f8fafc',
-                    color: isDark ? '#f1f5f9' : '#0f172a',
-                    border: `1px solid ${borderColor}`,
-                  }}
-                >
-                  <div
-                    className="flex items-center justify-between px-3 py-1 text-[10px]"
-                    style={{
-                      background: surfaceRaised,
-                      borderBottom: `1px solid ${borderColor}`,
-                      color: token.colorTextSecondary,
-                    }}
-                  >
-                    <span className="font-semibold">{codeBlockLang || 'Code'}</span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void navigator.clipboard?.writeText(codeContent);
-                        antdMessage.success('Đã sao chép mã code');
-                      }}
-                      className="cursor-pointer inline-flex items-center gap-1 transition-opacity hover:opacity-80"
-                      style={{ color: accentColor }}
-                    >
-                      <Copy size={11} />
-                      <span>Sao chép</span>
-                    </button>
-                  </div>
-                  <pre className="p-3 overflow-x-auto leading-relaxed m-0">
-                    <code>{codeContent}</code>
-                  </pre>
-                </div>
-              );
-            }
-            inCodeBlock = false;
-            codeBlockLines = [];
-            codeBlockLang = '';
-          } else {
-            inCodeBlock = true;
-            codeBlockLang = line.trim().slice(3).trim();
-            codeBlockLines = [];
-          }
-          continue;
-        }
-
-        if (inCodeBlock) {
-          codeBlockLines.push(line);
-          continue;
-        }
-
-        const trimmed = line.trim();
-
-        // Math Block fences: $$ on its own line or opening a multi-line math formula
-        if (trimmed === '$$') {
-          if (inMathBlock) {
-            const mathContent = mathBlockLines.join('\n');
-            result.push(<MosChatMathBlock key={`mb-${idx}`} math={mathContent} isDark={isDark} />);
-            inMathBlock = false;
-            mathBlockLines = [];
-          } else {
-            inMathBlock = true;
-            mathBlockLines = [];
-          }
-          continue;
-        }
-
-        if (inMathBlock) {
-          if (trimmed.endsWith('$$')) {
-            const lastPart = trimmed.slice(0, -2).trim();
-            if (lastPart) mathBlockLines.push(lastPart);
-            const mathContent = mathBlockLines.join('\n');
-            result.push(<MosChatMathBlock key={`mb-${idx}`} math={mathContent} isDark={isDark} />);
-            inMathBlock = false;
-            mathBlockLines = [];
-          } else {
-            mathBlockLines.push(line);
-          }
-          continue;
-        }
-
-        // Single-line Block Math: $$formula$$
-        if (trimmed.startsWith('$$') && trimmed.endsWith('$$') && trimmed.length > 2) {
-          const mathContent = trimmed.slice(2, -2).trim();
-          result.push(<MosChatMathBlock key={`mb-${idx}`} math={mathContent} isDark={isDark} />);
-          continue;
-        }
-
-        // Horizontal divider / Thematic break: ---, ***, ___
-        if (/^(?:-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
-          result.push(<hr key={`hr-${idx}`} className="my-2 border-t border-slate-200/60 dark:border-slate-700/60" />);
-          continue;
-        }
-
-        // Headings: # H1 through ###### H6
-        const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
-        if (headingMatch) {
-          const level = headingMatch[1].length;
-          const content = headingMatch[2];
-          let headingClass = 'text-[12px] font-semibold opacity-80 mt-1 mb-0.5';
-          if (level === 1) {
-            headingClass = 'text-[15px] font-bold text-amber-500 dark:text-amber-400 tracking-tight mt-1.5 mb-1';
-          } else if (level === 2) {
-            headingClass = 'text-[13.5px] font-bold opacity-90 mt-1 mb-0.5 text-amber-600 dark:text-amber-300';
-          } else if (level === 3) {
-            headingClass = 'text-[12.5px] font-semibold opacity-85 mt-1 mb-0.5';
-          } else if (level === 4) {
-            headingClass = 'text-[12px] font-bold tracking-tight text-amber-600 dark:text-amber-400 mt-1 mb-0.5';
-          }
-          result.push(
-            <div key={`h${level}-${idx}`} className={headingClass}>
-              {parseInlineRichText(content, `h${level}-${idx}`)}
-            </div>
-          );
-          continue;
-        }
-
-        // Blockquote: > text
-        if (line.startsWith('> ') || line === '>') {
-          result.push(
-            <blockquote
-              key={`quote-${idx}`}
-              className="my-1 pl-2.5 py-0.5 border-l-2 border-amber-500/70 italic text-[12.5px] opacity-90 rounded-r bg-amber-500/5"
-            >
-              {parseInlineRichText(line.replace(/^>\s?/, ''), `q-${idx}`)}
-            </blockquote>
-          );
-          continue;
-        }
-
-        // Apple Notes Checklist / Todo: - [ ] or - [x]
-        if (/^-\s?\[([ xX])\]\s/.test(trimmed)) {
-          const isChecked = trimmed.startsWith('- [x]') || trimmed.startsWith('- [X]');
-          const content = trimmed.replace(/^-\s?\[([ xX])\]\s/, '');
-          result.push(
-            <div key={`todo-${idx}`} className="flex items-start gap-2 my-0.5 text-[12.5px]">
-              <span
-                className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-all ${
-                  isChecked
-                    ? 'bg-amber-500 text-black font-bold'
-                    : 'border-2 border-amber-500/70 hover:border-amber-400'
-                }`}
-              >
-                {isChecked ? <Check size={11} strokeWidth={3} /> : null}
-              </span>
-              <span className={`flex-1 break-words ${isChecked ? 'line-through opacity-60' : ''}`}>
-                {parseInlineRichText(content, `t-${idx}`)}
-              </span>
-            </div>
-          );
-          continue;
-        }
-
-        // Bullet List: - item, * item, or • item
-        if (/^[-*•]\s/.test(trimmed) || /^\u2022\s/.test(trimmed)) {
-          const content = trimmed.replace(/^[-*•\u2022]\s+/, '');
-          result.push(
-            <div key={`bullet-${idx}`} className="flex items-start gap-1.5 my-0.5 text-[12.5px]">
-              <span className="text-amber-500 shrink-0 select-none font-bold">•</span>
-              <span className="flex-1 break-words">{parseInlineRichText(content, `b-${idx}`)}</span>
-            </div>
-          );
-          continue;
-        }
-
-        // Numbered List: 1. item
-        const numMatch = trimmed.match(/^(\d+)\.\s(.*)$/);
-        if (numMatch) {
-          const num = numMatch[1];
-          const content = numMatch[2];
-          result.push(
-            <div key={`num-${idx}`} className="flex items-start gap-1.5 my-0.5 text-[12.5px]">
-              <span className="text-amber-500 shrink-0 tabular-nums select-none font-semibold text-[11.5px] min-w-[14px]">
-                {num}.
-              </span>
-              <span className="flex-1 break-words">{parseInlineRichText(content, `n-${idx}`)}</span>
-            </div>
-          );
-          continue;
-        }
-
-        // Blank lines or standard text
-        if (line === '') {
-          result.push(<div key={`blank-${idx}`} className="h-2" />);
-        } else {
-          result.push(
-            <div key={`p-${idx}`} className="break-words leading-relaxed">
-              {parseInlineRichText(line, `p-${idx}`)}
-            </div>
-          );
-        }
-      }
-
-      if (inCodeBlock && codeBlockLines.length > 0) {
-        const codeContent = codeBlockLines.join('\n');
-        const lang = (codeBlockLang || '').trim().toLowerCase();
-        const isMermaid = lang === 'mermaid' || lang.startsWith('mermaid');
-        if (isMermaid) {
-          result.push(<MosChatMermaidBlock key="cb-mermaid-unclosed" code={codeContent} isDark={isDark} />);
-        } else {
-          result.push(
-            <pre
-              key="cb-unclosed"
-              className="p-3 my-2 rounded-xl text-[11.5px] font-mono overflow-x-auto leading-relaxed select-text"
-              style={{
-                background: isDark ? '#0f172a' : '#f8fafc',
-                color: isDark ? '#f1f5f9' : '#0f172a',
-                border: `1px solid ${borderColor}`,
-              }}
-            >
-              <code>{codeContent}</code>
-            </pre>
-          );
-        }
-      }
-
-      if (inMathBlock && mathBlockLines.length > 0) {
-        result.push(<MosChatMathBlock key="mb-unclosed" math={mathBlockLines.join('\n')} isDark={isDark} />);
-      }
-
-      return <div className="space-y-0.5">{result}</div>;
+      return <MosChatRichText content={rawText} isMe={_isMine} isDark={isDark} />;
     },
-    [parseInlineRichText, isDark, borderColor, surfaceRaised, token.colorTextSecondary, accentColor, antdMessage]
+    [isDark]
   );
 
   /**
@@ -13007,10 +12619,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                     border: formatBarOpenMain ? '1px solid rgba(236, 72, 153, 0.35)' : 'none',
                                   }}
                                 >
-                                  <span className="font-serif font-bold text-[12px] leading-none tracking-tight">Aa</span>
+                                  <span className="font-serif font-bold text-[12px] leading-none tracking-tight">
+                                    Aa
+                                  </span>
                                   <span
                                     className="w-3.5 h-[2px] rounded-full mt-0.5"
-                                    style={{ background: formatBarOpenMain ? '#f472b6' : 'currentColor', opacity: 0.75 }}
+                                    style={{
+                                      background: formatBarOpenMain ? '#f472b6' : 'currentColor',
+                                      opacity: 0.75,
+                                    }}
                                   />
                                 </button>
                               </Tooltip>
@@ -16904,9 +16521,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         conversation={activeConversation}
         onClose={() => setSpaceConfigModalOpen(false)}
         onUpdated={(updatedConv) => {
-          setConversations((prev) =>
-            prev.map((c) => (c.id === updatedConv.id ? { ...c, ...updatedConv } : c))
-          );
+          setConversations((prev) => prev.map((c) => (c.id === updatedConv.id ? { ...c, ...updatedConv } : c)));
           notifyLivePeers();
         }}
         onOpenMembersModal={() => setSpaceMembersModalOpen(true)}

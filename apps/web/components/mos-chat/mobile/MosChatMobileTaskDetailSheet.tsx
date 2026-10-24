@@ -23,6 +23,9 @@ import {
   RotateCcw,
   ExternalLink,
   Check,
+  PenLine,
+  Send,
+  UserCheck,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -307,69 +310,93 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
           </div>
 
           {/* Metadata Grid */}
-          <div className="grid grid-cols-2 gap-2.5 bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80 text-xs">
-            {/* Creator */}
-            <div className="space-y-1">
-              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Giao bởi</span>
-              <div className="flex items-center gap-1.5 text-slate-200 font-medium">
-                <MosChatAvatar
-                  size="sm"
-                  name={task.creatorName || task.sourceAuthorName || 'Hệ thống'}
-                  staffDirectory={staffDirectory}
-                />
-                <span className="truncate">{task.creatorName || task.sourceAuthorName || 'Hệ thống'}</span>
-              </div>
-            </div>
+          {(() => {
+            const creator = task.sourceAuthorName || task.creatorName || 'Hệ thống';
+            const assigner = task.assignerName || task.creatorName || task.sourceAuthorName || 'Hệ thống';
+            const assignee = task.assigneeName || 'Chính tôi';
 
-            {/* Assignee */}
-            <div className="space-y-1">
-              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Người nhận</span>
-              <div className="flex items-center gap-1.5 text-slate-200 font-medium">
-                <MosChatAvatar
-                  size="sm"
-                  name={task.assigneeName || 'Chung'}
-                  staffId={task.assigneeId}
-                  staffDirectory={staffDirectory}
-                />
-                <span className="truncate text-amber-300">{task.assigneeName || 'Chính tôi'}</span>
-              </div>
-            </div>
-
-            {/* Deadline */}
-            <div className="space-y-1 col-span-2 pt-1 border-t border-slate-800/60">
-              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
-                Hạn hoàn thành (Deadline)
-              </span>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-slate-200 font-medium tabular-nums">
-                  <Clock
-                    className={`w-3.5 h-3.5 shrink-0 ${
-                      isOverdue ? 'text-rose-400' : isDueSoon ? 'text-amber-400' : 'text-slate-400'
-                    }`}
-                  />
-                  <span>{deadlineDate ? dayjs(deadlineDate).format('HH:mm DD/MM/YYYY') : 'Không giới hạn'}</span>
+            return (
+              <div className="grid grid-cols-3 gap-2 bg-slate-950/60 p-3 rounded-2xl border border-slate-800/80 text-xs">
+                {/* Người tạo */}
+                <div className="space-y-1 min-w-0" title={`Người tạo: ${creator}`}>
+                  <div className="flex items-center gap-1 text-[10px] font-semibold text-indigo-400 uppercase tracking-wider">
+                    <PenLine className="w-2.5 h-2.5 shrink-0" />
+                    <span>Người tạo</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-slate-200 font-medium min-w-0">
+                    <MosChatAvatar size="xs" name={creator} staffDirectory={staffDirectory} />
+                    <span className="truncate text-[11px]">{creator}</span>
+                  </div>
                 </div>
-                {deadlineDate && !task.done && (
-                  <span
-                    className={`text-[11px] font-bold ${
-                      isOverdue ? 'text-rose-400' : isDueSoon ? 'text-amber-400' : 'text-slate-400'
-                    }`}
-                  >
-                    ({formatCountdown(deadlineDate)})
-                  </span>
-                )}
-              </div>
-            </div>
 
-            {/* Created At */}
-            <div className="space-y-1 col-span-2 pt-1 border-t border-slate-800/60">
-              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Ngày tạo việc</span>
-              <div className="flex items-center gap-1.5 text-slate-400 tabular-nums">
-                <Calendar className="w-3.5 h-3.5 shrink-0" />
-                <span>{dayjs(task.createdAt).format('HH:mm DD/MM/YYYY')}</span>
+                {/* Người giao (Giao bởi) */}
+                <div className="space-y-1 min-w-0" title={`Người giao: ${assigner}`}>
+                  <div className="flex items-center gap-1 text-[10px] font-semibold text-sky-400 uppercase tracking-wider">
+                    <Send className="w-2.5 h-2.5 shrink-0" />
+                    <span>Giao bởi</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-slate-200 font-medium min-w-0">
+                    <MosChatAvatar size="xs" name={assigner} staffDirectory={staffDirectory} />
+                    <span className="truncate text-[11px]">{assigner}</span>
+                  </div>
+                </div>
+
+                {/* Người nhận */}
+                <div className="space-y-1 min-w-0" title={`Người nhận: ${assignee}`}>
+                  <div className="flex items-center gap-1 text-[10px] font-semibold text-amber-400 uppercase tracking-wider">
+                    <UserCheck className="w-2.5 h-2.5 shrink-0" />
+                    <span>Người nhận</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-slate-200 font-medium min-w-0">
+                    <MosChatAvatar
+                      size="xs"
+                      name={assignee}
+                      staffId={task.assigneeId}
+                      staffDirectory={staffDirectory}
+                    />
+                    <span className="truncate text-[11px] text-amber-300">{assignee}</span>
+                  </div>
+                </div>
+
+                {/* Deadline */}
+                <div className="space-y-1 col-span-3 pt-2 border-t border-slate-800/60">
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Hạn hoàn thành (Deadline)
+                  </span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-slate-200 font-medium tabular-nums">
+                      <Clock
+                        className={`w-3.5 h-3.5 shrink-0 ${
+                          isOverdue ? 'text-rose-400' : isDueSoon ? 'text-amber-400' : 'text-slate-400'
+                        }`}
+                      />
+                      <span>{deadlineDate ? dayjs(deadlineDate).format('HH:mm DD/MM/YYYY') : 'Không giới hạn'}</span>
+                    </div>
+                    {deadlineDate && !task.done && (
+                      <span
+                        className={`text-[11px] font-bold ${
+                          isOverdue ? 'text-rose-400' : isDueSoon ? 'text-amber-400' : 'text-slate-400'
+                        }`}
+                      >
+                        ({formatCountdown(deadlineDate)})
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Created At */}
+                <div className="space-y-1 col-span-3 pt-1 border-t border-slate-800/60">
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                    Ngày tạo việc
+                  </span>
+                  <div className="flex items-center gap-1.5 text-slate-400 tabular-nums">
+                    <Calendar className="w-3.5 h-3.5 shrink-0" />
+                    <span>{dayjs(task.createdAt).format('HH:mm DD/MM/YYYY')}</span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Negotiation Banner if requested */}
           {hasNegotiation && (

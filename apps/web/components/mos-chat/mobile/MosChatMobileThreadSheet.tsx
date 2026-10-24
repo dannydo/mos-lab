@@ -14,6 +14,8 @@ import {
   Loader2,
   Rocket,
   CheckCircle2,
+  CheckSquare,
+  Square,
   ExternalLink,
   Check,
   RotateCcw,
@@ -30,11 +32,27 @@ import { MosChatMobileMediaGallery, type MosChatGalleryImage } from './MosChatMo
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
 import { apiClient } from '../../../lib/api-client';
 import { uploadMultipleChatImages } from '../utils/chat-upload';
-import type { MosChatImageAttachment, MosChatMissionActionType, MosChatThreadReply, SafeAny } from '@mos-lab/shared';
+import type {
+  MosChatImageAttachment,
+  MosChatMissionActionType,
+  MosChatThreadReply,
+  MosChatMessage,
+  MosChatTaskItem,
+  SafeAny,
+} from '@mos-lab/shared';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
 import { isUserMentionedInText, extractMentionedStaff, isStaffInConversationMembers } from '../utils/chat-helpers';
 
-export const MosChatMobileThreadSheet: React.FC = () => {
+export interface MosChatMobileThreadSheetProps {
+  onOpenTaskModal?: (params?: {
+    initialTitle?: string;
+    sourceMsg?: MosChatMessage | null;
+    existingTask?: MosChatTaskItem | null;
+    sourceReply?: MosChatThreadReply | null;
+  }) => void;
+}
+
+export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> = ({ onOpenTaskModal }) => {
   const {
     activeConversation,
     staffDirectory,
@@ -47,6 +65,7 @@ export const MosChatMobileThreadSheet: React.FC = () => {
     currentUser,
     setMobileView,
     tasks,
+    toggleTaskDone,
     executeMissionAction,
     isAiThinking,
   } = useMosChat();
@@ -735,6 +754,117 @@ export const MosChatMobileThreadSheet: React.FC = () => {
               })}
             </div>
           )}
+
+          {/* Interactive Main Task Card embedded in Parent Message */}
+          {linkedTask ? (
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenTaskModal?.({
+                  sourceMsg: liveThreadMsg,
+                  existingTask: linkedTask,
+                });
+              }}
+              className="mt-3 p-2.5 rounded-xl bg-slate-950/60 border border-slate-700/80 hover:border-slate-600 transition-colors shadow-sm cursor-pointer"
+            >
+              <div className="flex items-start gap-2.5">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleTaskDone(linkedTask.id, !linkedTask.done);
+                  }}
+                  className="mt-0.5 p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-emerald-400 active:scale-90 transition-transform"
+                  aria-label={linkedTask.done ? 'Đánh dấu chưa xong' : 'Đánh dấu hoàn thành'}
+                >
+                  {linkedTask.done ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 fill-emerald-500/20" />
+                  ) : (
+                    <Square className="w-5 h-5 text-slate-400" />
+                  )}
+                </button>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1.5 mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1">
+                      <CheckSquare className="w-3 h-3" />
+                      <span>Main Task</span>
+                    </span>
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                        linkedTask.priority === 'URGENT'
+                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                          : linkedTask.priority === 'HIGH'
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                            : 'bg-slate-700/50 text-slate-300'
+                      }`}
+                    >
+                      {linkedTask.priority === 'URGENT' ? 'Khẩn' : linkedTask.priority === 'HIGH' ? 'Cao' : 'Thường'}
+                    </span>
+                  </div>
+
+                  <p
+                    className={`text-xs font-semibold leading-snug line-clamp-2 ${
+                      linkedTask.done ? 'line-through text-slate-500' : 'text-slate-100'
+                    }`}
+                  >
+                    {linkedTask.title}
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[11px] text-slate-400">
+                    <span className="flex items-center gap-1 text-slate-300 font-medium">
+                      👤 {linkedTask.assigneeName || 'Chưa gán'}
+                    </span>
+                    {(linkedTask.dueAt || linkedTask.deadline) && (
+                      <span
+                        className={`tabular-nums ${
+                          !linkedTask.done && dayjs(linkedTask.dueAt || linkedTask.deadline).isBefore(dayjs())
+                            ? 'text-rose-400 font-semibold'
+                            : 'text-slate-400'
+                        }`}
+                      >
+                        ⏱️ {dayjs(linkedTask.dueAt || linkedTask.deadline).format('HH:mm DD/MM')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenTaskModal?.({
+                      sourceMsg: liveThreadMsg,
+                      existingTask: linkedTask,
+                    });
+                  }}
+                  className="p-1 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-amber-400 active:scale-95 transition-all"
+                  aria-label="Chỉnh sửa Main Task"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-2.5 pt-2 border-t border-slate-800/60 flex items-center justify-between">
+              <span className="text-[11px] text-slate-400">Chưa gắn công việc chính</span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenTaskModal?.({
+                    initialTitle: liveThreadMsg?.text.slice(0, 100) || '',
+                    sourceMsg: liveThreadMsg,
+                    existingTask: null,
+                  });
+                }}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 active:scale-95 transition-all"
+              >
+                <CheckSquare className="w-3.5 h-3.5" />
+                <span>+ Giao việc cho tin nhắn này</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Pinned Live mOS Mission Card in Thread */}
@@ -1369,6 +1499,26 @@ export const MosChatMobileThreadSheet: React.FC = () => {
               >
                 <MessageSquareReply className="w-4 h-4 text-amber-400" />
                 <span className="font-medium">Trả lời trích dẫn trong luồng</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const replyText = actionSheetReply.text.slice(0, 150);
+                  setActionSheetReply(null);
+                  onOpenTaskModal?.({
+                    initialTitle: replyText,
+                    sourceMsg: liveThreadMsg,
+                    existingTask: linkedTask,
+                    sourceReply: actionSheetReply,
+                  });
+                }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+              >
+                <CheckSquare className="w-4 h-4 text-emerald-400" />
+                <span className="font-medium">
+                  {linkedTask ? 'Cập nhật Main Task từ phản hồi này' : 'Giao việc cho Main Task'}
+                </span>
               </button>
 
               <button

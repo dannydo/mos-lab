@@ -834,6 +834,22 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
         });
         if (res && res.task) {
           setTasks((prev) => prev.map((t) => (t.id === tempTask.id ? res.task : t)));
+          if (options?.sourceMessageId) {
+            setConversations((prev) =>
+              prev.map((c) => ({
+                ...c,
+                messages: (c.messages || []).map((m) =>
+                  m.id === options.sourceMessageId ? { ...m, taskId: res.task.id } : m
+                ),
+              }))
+            );
+            setActiveThreadMsg((prev) => {
+              if (prev && prev.id === options.sourceMessageId) {
+                return { ...prev, taskId: res.task.id };
+              }
+              return prev;
+            });
+          }
         }
         return true;
       } catch (err: SafeAny) {

@@ -1,7 +1,22 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { CheckSquare, Square, Clock, User, Plus, CheckCircle2, Search, X, Hash, Handshake, Rocket } from 'lucide-react';
+import {
+  CheckSquare,
+  Square,
+  Clock,
+  User,
+  Plus,
+  CheckCircle2,
+  Search,
+  X,
+  Hash,
+  Handshake,
+  Rocket,
+  PenLine,
+  Send,
+  UserCheck,
+} from 'lucide-react';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
@@ -44,7 +59,10 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
         const isAssignedToMe =
           (myId && String(t.assigneeId) === myId) ||
           (t.assigneeName && t.assigneeName.toLowerCase().includes(myName.toLowerCase()));
-        const isCreatedByMe = t.creatorName && t.creatorName.toLowerCase().includes(myName.toLowerCase());
+        const isCreatedByMe =
+          (t.creatorName && t.creatorName.toLowerCase().includes(myName.toLowerCase())) ||
+          (t.sourceAuthorName && t.sourceAuthorName.toLowerCase().includes(myName.toLowerCase())) ||
+          (t.assignerName && t.assignerName.toLowerCase().includes(myName.toLowerCase()));
         if (!isAssignedToMe && !isCreatedByMe) return false;
       }
 
@@ -76,8 +94,18 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
         const matchCode = code.includes(q);
         const matchAssignee = (t.assigneeName || '').toLowerCase().includes(q);
         const matchCreator = (t.creatorName || '').toLowerCase().includes(q);
+        const matchSourceAuthor = (t.sourceAuthorName || '').toLowerCase().includes(q);
+        const matchAssigner = (t.assignerName || '').toLowerCase().includes(q);
         const matchSpace = (t.conversationName || '').toLowerCase().includes(q);
-        if (!matchTitle && !matchCode && !matchAssignee && !matchCreator && !matchSpace) {
+        if (
+          !matchTitle &&
+          !matchCode &&
+          !matchAssignee &&
+          !matchCreator &&
+          !matchSourceAuthor &&
+          !matchAssigner &&
+          !matchSpace
+        ) {
           return false;
         }
       }
@@ -112,7 +140,10 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
       const isAssigned =
         (myId && String(t.assigneeId) === myId) ||
         (t.assigneeName && t.assigneeName.toLowerCase().includes(myName.toLowerCase()));
-      const isCreated = t.creatorName && t.creatorName.toLowerCase().includes(myName.toLowerCase());
+      const isCreated =
+        (t.creatorName && t.creatorName.toLowerCase().includes(myName.toLowerCase())) ||
+        (t.sourceAuthorName && t.sourceAuthorName.toLowerCase().includes(myName.toLowerCase())) ||
+        (t.assignerName && t.assignerName.toLowerCase().includes(myName.toLowerCase()));
       return isAssigned || isCreated;
     });
 
@@ -306,6 +337,10 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
               .slice(-6)
               .toUpperCase()}`;
 
+            const creator = t.sourceAuthorName || t.creatorName || 'Hệ thống';
+            const assigner = t.assignerName || t.creatorName || t.sourceAuthorName || 'Hệ thống';
+            const assignee = t.assigneeName || 'Chung';
+
             const isMissionAwaitingCommit = Boolean(
               t.mission &&
               (t.mission.canSuperAdminApproveCommit ||
@@ -433,52 +468,55 @@ export const MosChatMobileTasksTab: React.FC<MosChatMobileTasksTabProps> = ({
                       {t.title}
                     </p>
 
-                    {/* Bottom Row: Due date & People */}
-                    <div className="flex flex-wrap items-center gap-2.5 mt-2">
-                      {/* Due date */}
-                      {deadline && (
-                        <span
-                          className={`flex items-center gap-1 text-[11px] font-medium tabular-nums ${
-                            isOverdue ? 'text-rose-400 font-bold' : t.done ? 'text-slate-500' : 'text-slate-400'
+                    {/* Due date if present */}
+                    {deadline && (
+                      <div className="flex items-center gap-1 mt-2 text-[11px] font-medium tabular-nums">
+                        <Clock
+                          className={`w-3 h-3 shrink-0 ${
+                            isOverdue ? 'text-rose-400' : t.done ? 'text-slate-500' : 'text-slate-400'
                           }`}
+                        />
+                        <span
+                          className={
+                            isOverdue ? 'text-rose-400 font-bold' : t.done ? 'text-slate-500' : 'text-slate-400'
+                          }
                         >
-                          <Clock className="w-3 h-3" />
-                          <span>{dayjs(deadline).format('HH:mm DD/MM')}</span>
-                          {isOverdue && !t.done && <span>(Quá hạn)</span>}
+                          {dayjs(deadline).format('HH:mm DD/MM')}
                         </span>
-                      )}
-
-                      {/* People Flow: Creator -> Assignee */}
-                      <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-                        {/* Creator */}
-                        <div
-                          className="flex items-center gap-1"
-                          title={`Người giao: ${t.creatorName || t.sourceAuthorName || 'Hệ thống'}`}
-                        >
-                          <MosChatAvatar
-                            size="xs"
-                            name={t.creatorName || t.sourceAuthorName || 'Hệ thống'}
-                            staffDirectory={staffDirectory}
-                          />
-                          <span className="truncate max-w-[95px] text-slate-400">
-                            {t.creatorName || t.sourceAuthorName || 'Hệ thống'}
+                        {isOverdue && !t.done && (
+                          <span className="text-[10px] font-bold text-rose-400 bg-rose-500/15 px-1 py-0.2 rounded border border-rose-500/30">
+                            Quá hạn
                           </span>
-                        </div>
+                        )}
+                      </div>
+                    )}
 
-                        <span className="text-slate-600 text-[10px] select-none">→</span>
+                    {/* 3 Cột trên 1 dòng: Người tạo · Người giao · Người nhận (Minimalist, Avatar & Icon là chính) */}
+                    <div className="grid grid-cols-3 divide-x divide-slate-800/50 items-center mt-2 pt-2 border-t border-slate-800/60 text-[11px]">
+                      {/* Cột 1: Người tạo */}
+                      <div className="flex items-center gap-1 min-w-0 pr-1" title={`Người tạo: ${creator}`}>
+                        <PenLine className="w-2.5 h-2.5 text-indigo-400 shrink-0" />
+                        <MosChatAvatar size="xs" name={creator} staffDirectory={staffDirectory} />
+                        <span className="truncate text-[11px] text-slate-300">{creator}</span>
+                      </div>
 
-                        {/* Assignee */}
-                        <div className="flex items-center gap-1" title={`Người nhận: ${t.assigneeName || 'Chung'}`}>
-                          <MosChatAvatar
-                            size="xs"
-                            name={t.assigneeName || 'Chung'}
-                            staffId={t.assigneeId}
-                            staffDirectory={staffDirectory}
-                          />
-                          <span className="truncate max-w-[105px] text-amber-300 font-medium">
-                            {t.assigneeName || 'Chung'}
-                          </span>
-                        </div>
+                      {/* Cột 2: Người giao */}
+                      <div className="flex items-center gap-1 min-w-0 px-1" title={`Người giao: ${assigner}`}>
+                        <Send className="w-2.5 h-2.5 text-sky-400 shrink-0" />
+                        <MosChatAvatar size="xs" name={assigner} staffDirectory={staffDirectory} />
+                        <span className="truncate text-[11px] text-slate-300">{assigner}</span>
+                      </div>
+
+                      {/* Cột 3: Người nhận */}
+                      <div className="flex items-center gap-1 min-w-0 pl-1" title={`Người nhận: ${assignee}`}>
+                        <UserCheck className="w-2.5 h-2.5 text-amber-400 shrink-0" />
+                        <MosChatAvatar
+                          size="xs"
+                          name={assignee}
+                          staffId={t.assigneeId}
+                          staffDirectory={staffDirectory}
+                        />
+                        <span className="truncate text-[11px] text-amber-300 font-medium">{assignee}</span>
                       </div>
                     </div>
                   </div>

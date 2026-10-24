@@ -299,4 +299,145 @@ describe('MosChatMobileThreadSheet - Subthread Gate Approval on iPhone', () => {
       );
     });
   });
+
+  it('renders interactive Main Task card when linkedTask exists in subthread', async () => {
+    const mockTask = {
+      id: 'task-test-1',
+      conversationId: 'dm-pair-1-6',
+      conversationName: 'Nguyễn Quang Khải',
+      sourceMessageId: 'msg-parent-task',
+      title: 'Xây dựng tính năng tạo task từ subthread',
+      assigneeName: 'Danny Do',
+      assigneeId: 1,
+      creatorName: 'Danny Do',
+      priority: 'HIGH' as const,
+      done: false,
+      createdAt: new Date().toISOString(),
+      remindAt: new Date().toISOString(),
+    };
+
+    const mockMsgWithTask = {
+      id: 'msg-parent-task',
+      conversationId: 'dm-pair-1-6',
+      senderId: '1',
+      senderName: 'Danny Do',
+      senderRole: 'Super Admin',
+      text: 'Thảo luận phương án tạo task trong subthread',
+      timeLabel: '10:00',
+      createdAt: new Date().toISOString(),
+      taskId: 'task-test-1',
+      reactions: {},
+      attachments: [],
+      thread: [
+        {
+          id: 'reply-1',
+          senderId: '6',
+          senderName: 'Khải',
+          senderRole: 'Admin',
+          text: 'Thống nhất cập nhật trực tiếp vào Main Task',
+          timeLabel: '10:05',
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    };
+
+    (apiClient.chat.bootstrap as any).mockResolvedValue({
+      conversations: [
+        {
+          id: 'dm-pair-1-6',
+          type: 'dm',
+          name: 'Nguyễn Quang Khải',
+          messages: [mockMsgWithTask],
+        },
+      ],
+      tasks: [mockTask],
+      staffDirectory: [{ id: 1, displayName: 'Danny Do', role: 'Super Admin' }],
+      accessConfig: { allowAllStaff: true, allowedGroupKeys: [], allowedStaffIds: [] },
+      canAccessChat: true,
+    });
+
+    const TestHost: React.FC = () => {
+      const { setActiveThreadMsg, setMobileView } = useMosChat();
+      React.useEffect(() => {
+        setActiveThreadMsg(mockMsgWithTask as any);
+        setMobileView('thread');
+      }, [setActiveThreadMsg, setMobileView]);
+
+      return <MosChatMobileThreadSheet />;
+    };
+
+    render(
+      <MosChatProvider currentUser={mockCurrentUser} initialConvId="dm-pair-1-6">
+        <TestHost />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Main Task')).toBeTruthy();
+      expect(screen.getByText('Xây dựng tính năng tạo task từ subthread')).toBeTruthy();
+      expect(screen.getAllByText(/Danny Do/).length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  it('renders "+ Giao việc cho tin nhắn này" when no linkedTask exists', async () => {
+    const mockMsgWithoutTask = {
+      id: 'msg-parent-no-task',
+      conversationId: 'dm-pair-1-6',
+      senderId: '1',
+      senderName: 'Danny Do',
+      senderRole: 'Super Admin',
+      text: 'Tin nhắn chưa có task nào',
+      timeLabel: '11:00',
+      createdAt: new Date().toISOString(),
+      reactions: {},
+      attachments: [],
+      thread: [],
+    };
+
+    (apiClient.chat.bootstrap as any).mockResolvedValue({
+      conversations: [
+        {
+          id: 'dm-pair-1-6',
+          type: 'dm',
+          name: 'Nguyễn Quang Khải',
+          messages: [mockMsgWithoutTask],
+        },
+      ],
+      tasks: [],
+      staffDirectory: [{ id: 1, displayName: 'Danny Do', role: 'Super Admin' }],
+      accessConfig: { allowAllStaff: true, allowedGroupKeys: [], allowedStaffIds: [] },
+      canAccessChat: true,
+    });
+
+    const mockOnOpenTaskModal = vi.fn();
+
+    const TestHost: React.FC = () => {
+      const { setActiveThreadMsg, setMobileView } = useMosChat();
+      React.useEffect(() => {
+        setActiveThreadMsg(mockMsgWithoutTask as any);
+        setMobileView('thread');
+      }, [setActiveThreadMsg, setMobileView]);
+
+      return <MosChatMobileThreadSheet onOpenTaskModal={mockOnOpenTaskModal} />;
+    };
+
+    render(
+      <MosChatProvider currentUser={mockCurrentUser} initialConvId="dm-pair-1-6">
+        <TestHost />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('+ Giao việc cho tin nhắn này')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('+ Giao việc cho tin nhắn này'));
+
+    expect(mockOnOpenTaskModal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        initialTitle: 'Tin nhắn chưa có task nào',
+        existingTask: null,
+      })
+    );
+  });
 });

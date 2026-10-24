@@ -17,20 +17,74 @@ export interface MosChatRichTextProps {
 }
 
 /**
- * Component render nội dung tin nhắn phong cách Rich Text / Markdown nâng cao cho mOS Chat:
+ * Giải mã các thực thể HTML thông dụng an toàn
+ */
+export const decodeHtmlEntities = (str: string): string => {
+  if (!str || typeof str !== 'string' || !str.includes('&')) return str;
+  return str
+    .replace(/&nbsp;/gi, '\u00A0')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&#(\d+);/g, (_, dec) => {
+      try {
+        return String.fromCharCode(Number(dec));
+      } catch {
+        return _;
+      }
+    })
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => {
+      try {
+        return String.fromCharCode(parseInt(hex, 16));
+      } catch {
+        return _;
+      }
+    });
+};
+
+/**
+ * Kiểm tra xem một dòng có phải là dòng phân cách bảng Markdown (|---|---| hoặc |:---|:---:|---:|) không
+ */
+const isTableSeparatorLine = (lineStr?: string): boolean => {
+  if (!lineStr) return false;
+  const s = lineStr.trim();
+  return /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?$/.test(s);
+};
+
+/**
+ * Phân tích các ô trong một dòng bảng Markdown
+ */
+const parseTableRowCells = (rowText: string): string[] => {
+  return rowText
+    .trim()
+    .replace(/^\|/, '')
+    .replace(/\|$/, '')
+    .split('|')
+    .map((c) => c.trim());
+};
+
+/**
+ * Component render nội dung tin nhắn phong cách Rich Text / Markdown / HTML nâng cao cho mOS Chat:
  * Hỗ trợ hoàn chỉnh:
- * 1. Headings (# H1 đến ###### H6)
- * 2. Đường kẻ phân cách (---, ***, ___)
+ * 1. Headings (# H1 đến ###### H6, <h1> đến <h6>)
+ * 2. Đường kẻ phân cách (---, ***, ___, <hr>)
  * 3. Sơ đồ tương tác Mermaid (```mermaid) với zoom modal & chế độ xem
- * 4. Khối code cú pháp (```lang) kèm nút sao chép và thanh cuộn ngang
+ * 4. Khối code cú pháp (```lang, <pre><code>) kèm nút sao chép
  * 5. Công thức toán học KaTeX ($$block$$ và $inline$)
- * 6. Bảng biểu Markdown (| Col 1 | Col 2 |) hỗ trợ responsive cuộn ngang trên điện thoại
- * 7. Trích dẫn phong cách Blockquote (> text)
+ * 6. Bảng biểu Markdown (| Col 1 | Col 2 |) & HTML (<table>) hỗ trợ căn lề (:---, :---:, ---:)
+ *    và tự động xuống dòng mượt mà khi chứa thẻ <br>
+ * 7. Trích dẫn phong cách Blockquote (> text, <blockquote>)
  * 8. Danh sách công việc / Todo checklist (- [ ] / - [x])
- * 9. Danh sách dấu đầu dòng (- , * , • ) và số thứ tự (1. )
- * 10. Định dạng chữ: **đậm**, *nghiêng*, ~~gạch ngang~~, <u>gạch chân</u>, `code nội dòng`
+ * 9. Danh sách dấu đầu dòng (- , * , • , <ul><li>) và số thứ tự (1. , <ol><li>)
+ * 10. Định dạng chữ: **đậm** / <b> / <strong>, *nghiêng* / <i> / <em>,
+ *     ~~gạch ngang~~ / <s> / <del> / <strike>, <u>gạch chân</u> / <ins>,
+ *     `code nội dòng` / <code>, <mark>highlight</mark>, <small>, <sub>, <sup>,
+ *     <span style="color:...">
  * 11. Nhãn @mentions thông minh (@Danny Do, @Bảo Hân, @AI, @all)
  * 12. Tự động nhận diện Sticker động độc quyền của Wings
+ * 13. Giải mã HTML entities (&nbsp;, &amp;, &lt;, &gt;, &quot;, &#39;)
  */
 export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
   content,
@@ -38,7 +92,6 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
   isDark = true,
   className = '',
 }) => {
-  // Trích xuất ngữ cảnh chat an toàn không vi phạm rules of hooks
   const chatContext = useContext(MosChatContext);
 
   const currentUser = chatContext?.currentUser;
@@ -63,33 +116,65 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
 
   /**
    * Phân tích inline markup sang React Nodes:
-   * **đậm**, *nghiêng*, ~~gạch~~, <u>gạch chân</u>, `code`, https://..., $math$, @mentions
+   * Hỗ trợ lồng nhau an toàn (recursive with depth guard)
    */
   const parseInlineRichText = useCallback(
-    (text: string, keyPrefix = 'inline'): React.ReactNode[] => {
+    (text: string, keyPrefix = 'inline', depth = 0): React.ReactNode[] => {
       if (!text) return [];
+      if (depth > 5) return [decodeHtmlEntities(text)];
 
       const staffPattern =
         knownMultiWordStaffNames.length > 0
           ? `|(@(?:${knownMultiWordStaffNames.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})\\b)`
           : '';
 
-      // Khớp theo thứ tự ưu tiên:
-      // 1. <span style="color:...">text</span>
-      // 2. [label](https?://...)
-      // 3. **bold**
-      // 4. ~~strike~~
-      // 5. <u>underline</u>
-      // 6. `code`
-      // 7. *italic*
-      // 8. link https?://
-      // 9. $$math$$
-      // 10. $math$
-      // 11. @AI / @all
-      // 12. Staff pattern từ directory
-      // 13. @username đơn từ
+      // Thứ tự ưu tiên khớp:
+      // 1. <br> / <br/>
+      // 2. <span style="...">...</span>
+      // 3. <a href="...">...</a>
+      // 4. [label](url)
+      // 5. <b> / <strong>
+      // 6. **bold**
+      // 7. <i> / <em>
+      // 8. *italic*
+      // 9. <u> / <ins>
+      // 10. <s> / <del> / <strike>
+      // 11. ~~strike~~
+      // 12. <code>...</code>
+      // 13. `code`
+      // 14. <mark>...</mark>
+      // 15. <small>...</small>
+      // 16. <sub>...</sub>
+      // 17. <sup>...</sup>
+      // 18. <p> / <div> inline
+      // 19. Link URL https?://
+      // 20. $$math$$
+      // 21. $math$
+      // 22. @mentions
       const regex = new RegExp(
-        `(<span\\s+style=["']color:\\s*([^"';>]+);?["']>([\\s\\S]+?)<\\/span>)|(\\[([^\\]\\n]+)\\]\\((https?:\\/\\/[^\\s)]+)\\))|(\\*\\*(.+?)\\*\\*)|(~~(.+?)~~)|(<u>(.+?)<\\/u>)|(\`([^\`]+)\`)|\\*([^\\*\\n]+)\\*|(https?:\\/\\/[^\\s<)]+)|(\\$\\$([^\\$]+?)\\$\\$)|(\\$([^\\$\\s\\n](?:[^\\$\\n]*?[^\\$\\s\\n])?)\\$)|(@\\s*(?:AI|copilot|all|mọi\\s+người|moi\\s+nguoi)\\b)${staffPattern}|(@[a-zA-Z0-9_\\u00C0-\\u1EF9]+)`,
+        `(<br\\s*\\/?>)|` +
+          `(<span\\s+[^>]*>[\\s\\S]+?<\\/span>)|` +
+          `(<a\\s+[^>]*href=["'][^"']+["'][^>]*>[\\s\\S]+?<\\/a>)|` +
+          `(\\[([^\\]\\n]+)\\]\\((https?:\\/\\/[^\\s)]+)\\))|` +
+          `(<(?:b|strong)[^>]*>[\\s\\S]+?<\\/(?:b|strong)>)|` +
+          `(\\*\\*(.+?)\\*\\*)|` +
+          `(<(?:i|em)[^>]*>[\\s\\S]+?<\\/(?:i|em)>)|` +
+          `(\\*([^\\*\\n]+)\\*)|` +
+          `(<(?:u|ins)[^>]*>[\\s\\S]+?<\\/(?:u|ins)>)|` +
+          `(<(?:s|del|strike)[^>]*>[\\s\\S]+?<\\/(?:s|del|strike)>)|` +
+          `(~~(.+?)~~)|` +
+          `(<code[^>]*>[\\s\\S]+?<\\/code>)|` +
+          `(\`([^\`]+)\`)|` +
+          `(<mark[^>]*>[\\s\\S]+?<\\/mark>)|` +
+          `(<small[^>]*>[\\s\\S]+?<\\/small>)|` +
+          `(<sub[^>]*>[\\s\\S]+?<\\/sub>)|` +
+          `(<sup[^>]*>[\\s\\S]+?<\\/sup>)|` +
+          `(<(?:p|div)[^>]*>[\\s\\S]+?<\\/(?:p|div)>)|` +
+          `(https?:\\/\\/[^\\s<)]+)|` +
+          `(\\$\\$([^\\$]+?)\\$\\$)|` +
+          `(\\$([^\\$\\s\\n](?:[^\\$\\n]*?[^\\$\\s\\n])?)\\$)|` +
+          `(@\\s*(?:AI|copilot|all|mọi\\s+người|moi\\s+nguoi)\\b)${staffPattern}|` +
+          `(@[a-zA-Z0-9_\\u00C0-\\u1EF9]+)`,
         'gui'
       );
 
@@ -100,44 +185,90 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
 
       while ((match = regex.exec(text)) !== null) {
         if (match.index > lastIndex) {
-          elements.push(text.substring(lastIndex, match.index));
+          elements.push(decodeHtmlEntities(text.substring(lastIndex, match.index)));
         }
 
         const fullMatch = match[0];
         const key = `${keyPrefix}-${i++}`;
 
-        const colorSpanMatch = fullMatch.match(/^<span\s+style=["']color:\s*([^"';>]+);?["']>([\s\S]+?)<\/span>$/i);
-        const mdLinkMatch = fullMatch.match(/^\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)$/i);
-
-        if (colorSpanMatch) {
-          const safeColor = colorSpanMatch[1].trim();
-          const innerContent = colorSpanMatch[2];
-          elements.push(
-            <span key={key} style={{ color: safeColor }} className="font-medium">
-              {innerContent}
-            </span>
-          );
-        } else if (mdLinkMatch) {
-          const linkLabel = mdLinkMatch[1];
-          const linkHref = mdLinkMatch[2];
-          elements.push(
-            <a
-              key={key}
-              href={linkHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className={`inline-flex items-center gap-0.5 break-all font-medium ${
-                isMe
-                  ? 'text-slate-950 underline font-semibold'
-                  : 'text-sky-400 hover:text-sky-300 underline underline-offset-2'
-              }`}
-            >
-              <span>{linkLabel}</span>
-              <ExternalLink size={10} className="inline shrink-0 opacity-70" />
-            </a>
-          );
-        } else if (fullMatch.startsWith('**') && fullMatch.endsWith('**')) {
+        // 1. Thẻ ngắt dòng <br> / <br/> / <br />
+        if (/^<br\s*\/?>$/i.test(fullMatch)) {
+          elements.push(<br key={key} />);
+        }
+        // 2. Thẻ <span style="..." class="...">
+        else if (/^<span\s+[^>]*>/i.test(fullMatch) && fullMatch.endsWith('</span>')) {
+          const spanMatch = fullMatch.match(/^<span\s+([^>]*?)>([\s\S]+?)<\/span>$/i);
+          if (spanMatch) {
+            const attrs = spanMatch[1];
+            const inner = spanMatch[2];
+            const colorMatch = attrs.match(/color:\s*([^"';>]+)/i);
+            const safeColor = colorMatch ? colorMatch[1].trim() : undefined;
+            elements.push(
+              <span key={key} style={safeColor ? { color: safeColor } : undefined} className="font-medium">
+                {parseInlineRichText(inner, `${key}-sp`, depth + 1)}
+              </span>
+            );
+          } else {
+            elements.push(fullMatch);
+          }
+        }
+        // 3. Thẻ liên kết HTML <a href="...">...</a>
+        else if (/^<a\s+[^>]*href=/i.test(fullMatch) && fullMatch.endsWith('</a>')) {
+          const aMatch = fullMatch.match(/^<a\s+[^>]*href=["']([^"']+)["'][^>]*>([\s\S]+?)<\/a>$/i);
+          if (aMatch) {
+            const linkHref = aMatch[1].trim();
+            const linkLabel = aMatch[2];
+            elements.push(
+              <a
+                key={key}
+                href={linkHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className={`inline-flex items-center gap-0.5 break-all font-medium ${
+                  isMe
+                    ? 'text-slate-950 underline font-semibold'
+                    : 'text-sky-400 hover:text-sky-300 underline underline-offset-2'
+                }`}
+              >
+                <span>{parseInlineRichText(linkLabel, `${key}-a`, depth + 1)}</span>
+                <ExternalLink size={10} className="inline shrink-0 opacity-70" />
+              </a>
+            );
+          } else {
+            elements.push(fullMatch);
+          }
+        }
+        // 4. Markdown Link [label](url)
+        else if (fullMatch.startsWith('[') && fullMatch.includes('](') && fullMatch.endsWith(')')) {
+          const mdLinkMatch = fullMatch.match(/^\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)$/i);
+          if (mdLinkMatch) {
+            const linkLabel = mdLinkMatch[1];
+            const linkHref = mdLinkMatch[2];
+            elements.push(
+              <a
+                key={key}
+                href={linkHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className={`inline-flex items-center gap-0.5 break-all font-medium ${
+                  isMe
+                    ? 'text-slate-950 underline font-semibold'
+                    : 'text-sky-400 hover:text-sky-300 underline underline-offset-2'
+                }`}
+              >
+                <span>{decodeHtmlEntities(linkLabel)}</span>
+                <ExternalLink size={10} className="inline shrink-0 opacity-70" />
+              </a>
+            );
+          } else {
+            elements.push(fullMatch);
+          }
+        }
+        // 5. In đậm HTML <b>...</b> hoặc <strong>...</strong>
+        else if (/^<(?:b|strong)[^>]*>[\s\S]+?<\/(?:b|strong)>$/i.test(fullMatch)) {
+          const inner = fullMatch.replace(/^<(?:b|strong)[^>]*>/i, '').replace(/<\/(?:b|strong)>$/i, '');
           elements.push(
             <strong
               key={key}
@@ -147,22 +278,74 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
                   : 'font-bold text-amber-400 dark:text-amber-300 drop-shadow-xs'
               }
             >
-              {fullMatch.slice(2, -2)}
+              {parseInlineRichText(inner, `${key}-b`, depth + 1)}
             </strong>
           );
-        } else if (fullMatch.startsWith('~~') && fullMatch.endsWith('~~')) {
+        }
+        // 6. In đậm Markdown **...**
+        else if (fullMatch.startsWith('**') && fullMatch.endsWith('**') && fullMatch.length >= 4) {
+          const inner = fullMatch.slice(2, -2);
           elements.push(
-            <del key={key} className="line-through opacity-70">
-              {fullMatch.slice(2, -2)}
-            </del>
+            <strong
+              key={key}
+              className={
+                isMe
+                  ? 'font-black text-slate-950 drop-shadow-none'
+                  : 'font-bold text-amber-400 dark:text-amber-300 drop-shadow-xs'
+              }
+            >
+              {parseInlineRichText(inner, `${key}-b`, depth + 1)}
+            </strong>
           );
-        } else if (fullMatch.startsWith('<u>') && fullMatch.endsWith('</u>')) {
+        }
+        // 7. In nghiêng HTML <i>...</i> hoặc <em>...</em>
+        else if (/^<(?:i|em)[^>]*>[\s\S]+?<\/(?:i|em)>$/i.test(fullMatch)) {
+          const inner = fullMatch.replace(/^<(?:i|em)[^>]*>/i, '').replace(/<\/(?:i|em)>$/i, '');
+          elements.push(
+            <em key={key} className="italic opacity-90">
+              {parseInlineRichText(inner, `${key}-i`, depth + 1)}
+            </em>
+          );
+        }
+        // 8. In nghiêng Markdown *...*
+        else if (fullMatch.startsWith('*') && fullMatch.endsWith('*') && fullMatch.length >= 2) {
+          const inner = fullMatch.slice(1, -1);
+          elements.push(
+            <em key={key} className="italic opacity-90">
+              {parseInlineRichText(inner, `${key}-i`, depth + 1)}
+            </em>
+          );
+        }
+        // 9. Gạch chân HTML <u>...</u> hoặc <ins>...</ins>
+        else if (/^<(?:u|ins)[^>]*>[\s\S]+?<\/(?:u|ins)>$/i.test(fullMatch)) {
+          const inner = fullMatch.replace(/^<(?:u|ins)[^>]*>/i, '').replace(/<\/(?:u|ins)>$/i, '');
           elements.push(
             <u key={key} className="underline underline-offset-2">
-              {fullMatch.slice(3, -4)}
+              {parseInlineRichText(inner, `${key}-u`, depth + 1)}
             </u>
           );
-        } else if (fullMatch.startsWith('`') && fullMatch.endsWith('`')) {
+        }
+        // 10. Gạch ngang HTML <s>, <del>, <strike>
+        else if (/^<(?:s|del|strike)[^>]*>[\s\S]+?<\/(?:s|del|strike)>$/i.test(fullMatch)) {
+          const inner = fullMatch.replace(/^<(?:s|del|strike)[^>]*>/i, '').replace(/<\/(?:s|del|strike)>$/i, '');
+          elements.push(
+            <del key={key} className="line-through opacity-70">
+              {parseInlineRichText(inner, `${key}-d`, depth + 1)}
+            </del>
+          );
+        }
+        // 11. Gạch ngang Markdown ~~...~~
+        else if (fullMatch.startsWith('~~') && fullMatch.endsWith('~~') && fullMatch.length >= 4) {
+          const inner = fullMatch.slice(2, -2);
+          elements.push(
+            <del key={key} className="line-through opacity-70">
+              {parseInlineRichText(inner, `${key}-d`, depth + 1)}
+            </del>
+          );
+        }
+        // 12. Code nội dòng HTML <code>...</code>
+        else if (/^<code[^>]*>[\s\S]+?<\/code>$/i.test(fullMatch)) {
+          const inner = fullMatch.replace(/^<code[^>]*>/i, '').replace(/<\/code>$/i, '');
           elements.push(
             <code
               key={key}
@@ -172,16 +355,78 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
                   : 'bg-black/40 text-amber-300 border border-slate-700/60 font-medium'
               }`}
             >
-              {fullMatch.slice(1, -1)}
+              {decodeHtmlEntities(inner)}
             </code>
           );
-        } else if (fullMatch.startsWith('*') && fullMatch.endsWith('*')) {
+        }
+        // 13. Code nội dòng Markdown `...`
+        else if (fullMatch.startsWith('`') && fullMatch.endsWith('`') && fullMatch.length >= 2) {
+          const inner = fullMatch.slice(1, -1);
           elements.push(
-            <em key={key} className="italic opacity-90">
-              {fullMatch.slice(1, -1)}
-            </em>
+            <code
+              key={key}
+              className={`px-1.5 py-0.5 rounded text-[11.5px] font-mono select-text ${
+                isMe
+                  ? 'bg-amber-600/30 text-slate-950 border border-amber-600/40 font-bold'
+                  : 'bg-black/40 text-amber-300 border border-slate-700/60 font-medium'
+              }`}
+            >
+              {decodeHtmlEntities(inner)}
+            </code>
           );
-        } else if (fullMatch.startsWith('http://') || fullMatch.startsWith('https://')) {
+        }
+        // 14. Thẻ đánh dấu nổi bật <mark>...</mark>
+        else if (/^<mark[^>]*>[\s\S]+?<\/mark>$/i.test(fullMatch)) {
+          const inner = fullMatch.replace(/^<mark[^>]*>/i, '').replace(/<\/mark>$/i, '');
+          elements.push(
+            <mark
+              key={key}
+              className={`px-1 py-0.2 rounded text-[11.5px] font-semibold ${
+                isMe ? 'bg-slate-950/20 text-slate-950' : 'bg-amber-500/25 text-amber-200 border border-amber-400/40'
+              }`}
+            >
+              {parseInlineRichText(inner, `${key}-m`, depth + 1)}
+            </mark>
+          );
+        }
+        // 15. Chữ nhỏ <small>...</small>
+        else if (/^<small[^>]*>[\s\S]+?<\/small>$/i.test(fullMatch)) {
+          const inner = fullMatch.replace(/^<small[^>]*>/i, '').replace(/<\/small>$/i, '');
+          elements.push(
+            <small key={key} className="text-[10.5px] opacity-80">
+              {parseInlineRichText(inner, `${key}-sm`, depth + 1)}
+            </small>
+          );
+        }
+        // 16. Chỉ số dưới <sub>...</sub>
+        else if (/^<sub[^>]*>[\s\S]+?<\/sub>$/i.test(fullMatch)) {
+          const inner = fullMatch.replace(/^<sub[^>]*>/i, '').replace(/<\/sub>$/i, '');
+          elements.push(
+            <sub key={key} className="text-[10px]">
+              {parseInlineRichText(inner, `${key}-sub`, depth + 1)}
+            </sub>
+          );
+        }
+        // 17. Chỉ số trên <sup>...</sup>
+        else if (/^<sup[^>]*>[\s\S]+?<\/sup>$/i.test(fullMatch)) {
+          const inner = fullMatch.replace(/^<sup[^>]*>/i, '').replace(/<\/sup>$/i, '');
+          elements.push(
+            <sup key={key} className="text-[10px]">
+              {parseInlineRichText(inner, `${key}-sup`, depth + 1)}
+            </sup>
+          );
+        }
+        // 18. Khối phân đoạn inline <p> / <div>
+        else if (/^<(?:p|div)[^>]*>[\s\S]+?<\/(?:p|div)>$/i.test(fullMatch)) {
+          const inner = fullMatch.replace(/^<(?:p|div)[^>]*>/i, '').replace(/<\/(?:p|div)>$/i, '');
+          elements.push(
+            <span key={key} className="block my-0.5">
+              {parseInlineRichText(inner, `${key}-block`, depth + 1)}
+            </span>
+          );
+        }
+        // 19. Link URL thuần
+        else if (fullMatch.startsWith('http://') || fullMatch.startsWith('https://')) {
           elements.push(
             <a
               key={key}
@@ -199,21 +444,27 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
               <ExternalLink size={10} className="inline shrink-0 opacity-70" />
             </a>
           );
-        } else if (fullMatch.startsWith('$$') && fullMatch.endsWith('$$') && fullMatch.length > 2) {
+        }
+        // 20. KaTeX Block Math inline $$...$$
+        else if (fullMatch.startsWith('$$') && fullMatch.endsWith('$$') && fullMatch.length > 2) {
           const math = fullMatch.slice(2, -2).trim();
           if (isMathValid(math)) {
             elements.push(<MosChatMathBlock key={key} math={math} isDark={isDark} />);
           } else {
             elements.push(fullMatch);
           }
-        } else if (fullMatch.startsWith('$') && fullMatch.endsWith('$') && fullMatch.length > 1) {
+        }
+        // 21. KaTeX Inline Math $...$
+        else if (fullMatch.startsWith('$') && fullMatch.endsWith('$') && fullMatch.length > 1) {
           const math = fullMatch.slice(1, -1).trim();
           if (isMathValid(math)) {
             elements.push(<MosChatMathInline key={key} math={math} />);
           } else {
             elements.push(fullMatch);
           }
-        } else if (fullMatch.startsWith('@')) {
+        }
+        // 22. Tag @mention
+        else if (fullMatch.startsWith('@')) {
           const cleanTag = fullMatch.replace(/^@\s*/, '').trim().toLowerCase();
           const isAi = cleanTag === 'ai' || cleanTag.includes('copilot');
           const isAll = cleanTag === 'all' || cleanTag === 'mọi người' || cleanTag === 'moi nguoi';
@@ -256,17 +507,17 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
             </span>
           );
         } else {
-          elements.push(fullMatch);
+          elements.push(decodeHtmlEntities(fullMatch));
         }
 
         lastIndex = regex.lastIndex;
       }
 
       if (lastIndex < text.length) {
-        elements.push(text.substring(lastIndex));
+        elements.push(decodeHtmlEntities(text.substring(lastIndex)));
       }
 
-      return elements.length > 0 ? elements : [text];
+      return elements.length > 0 ? elements : [decodeHtmlEntities(text)];
     },
     [knownMultiWordStaffNames, isMe, isDark, currentUser, activeConversation]
   );
@@ -275,7 +526,12 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
   const renderedContent = useMemo(() => {
     if (!content) return null;
 
+    // Loại bỏ script độc hại hoặc action tags nội bộ
     const cleanText = content
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[\s\S]*?<\/style>/gi, '')
+      .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
+      .replace(/<object[\s\S]*?<\/object>/gi, '')
       .replace(/<action[\s\S]*?<\/action>/gi, '')
       .replace(/<\/?action[^>]*>/gi, '')
       .replace(/\n{3,}/g, '\n\n')
@@ -293,6 +549,34 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
       );
     }
 
+    // Helper tạo style cho bảng responsive theo ngữ cảnh theme
+    const tableTheme = isMe
+      ? {
+          wrapper: 'border-slate-950/25 bg-black/5',
+          thead: 'bg-slate-950/15 text-slate-950',
+          th: 'text-slate-950 border-b border-slate-950/20',
+          divider: 'divide-slate-950/15',
+          trEven: 'even:bg-black/5 hover:bg-black/10',
+          td: 'text-slate-900',
+        }
+      : !isDark
+        ? {
+            wrapper: 'border-slate-300 bg-white/80',
+            thead: 'bg-slate-100 text-slate-800',
+            th: 'text-slate-800 border-b border-slate-300',
+            divider: 'divide-slate-200',
+            trEven: 'even:bg-slate-50 hover:bg-slate-100',
+            td: 'text-slate-700',
+          }
+        : {
+            wrapper: 'border-slate-700/80 bg-slate-950/70',
+            thead: 'bg-slate-900/95 text-amber-300',
+            th: 'text-amber-400 dark:text-amber-300 border-b border-slate-700/80',
+            divider: 'divide-slate-800/80',
+            trEven: 'odd:bg-transparent even:bg-slate-900/30 hover:bg-slate-800/40',
+            td: 'text-slate-200',
+          };
+
     const lines = cleanText.split('\n');
     const result: React.ReactNode[] = [];
     let inCodeBlock = false;
@@ -304,7 +588,7 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
     for (let idx = 0; idx < lines.length; idx++) {
       const line = lines[idx];
 
-      // Code block fences (```)
+      // Khối mã Code block fences (```)
       if (line.trim().startsWith('```')) {
         if (inCodeBlock) {
           const codeContent = codeBlockLines.join('\n');
@@ -414,53 +698,188 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
         continue;
       }
 
-      // Markdown Tables (| cell | cell |)
-      if (
-        trimmed.startsWith('|') &&
-        idx + 1 < lines.length &&
-        lines[idx + 1].trim().startsWith('|') &&
-        lines[idx + 1].includes('-')
-      ) {
-        const headerCells = trimmed
-          .split('|')
-          .slice(1, -1)
-          .map((c) => c.trim());
-        idx += 2; // bỏ qua header và dòng gạch ngang |---|---|
-        const rows: string[][] = [];
-
-        while (idx < lines.length && lines[idx].trim().startsWith('|')) {
-          const cells = lines[idx]
-            .split('|')
-            .slice(1, -1)
-            .map((c) => c.trim());
-          rows.push(cells);
+      // Khối HTML <pre><code>...</code></pre>
+      if (/^<pre[^>]*><code/i.test(trimmed)) {
+        const preLines: string[] = [];
+        while (idx < lines.length) {
+          preLines.push(lines[idx]);
+          if (/<\/code><\/pre>/i.test(lines[idx])) break;
           idx++;
         }
-        idx--; // điều chỉnh vị trí vòng for
+        const fullPre = preLines.join('\n');
+        const preMatch = fullPre.match(
+          /^<pre[^>]*><code(?:\s+class=["'](?:language-)?([a-z0-9_-]+)["'])?[^>]*>([\s\S]+?)<\/code><\/pre>$/i
+        );
+        if (preMatch) {
+          const lang = preMatch[1] || 'Code';
+          const codeText = decodeHtmlEntities(preMatch[2]);
+          result.push(
+            <div
+              key={`html-cb-${idx}`}
+              className="my-2 rounded-xl overflow-hidden shadow-sm text-xs font-mono select-text border border-slate-700/80 bg-slate-950"
+            >
+              <div className="flex items-center justify-between px-3 py-1.5 text-[10.5px] bg-slate-900 border-b border-slate-800 text-slate-400">
+                <span className="font-semibold uppercase tracking-wider">{lang}</span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void navigator.clipboard?.writeText(codeText);
+                    antdMessage.success('Đã sao chép mã code');
+                  }}
+                  className="cursor-pointer inline-flex items-center gap-1 text-slate-400 hover:text-slate-200 transition-colors"
+                >
+                  <Copy size={11} />
+                  <span>Sao chép</span>
+                </button>
+              </div>
+              <pre className="p-3 overflow-x-auto leading-relaxed text-slate-200 m-0">
+                <code>{codeText}</code>
+              </pre>
+            </div>
+          );
+          continue;
+        }
+      }
+
+      // Khối HTML Table: <table ...> ... </table>
+      if (/^<table\b/i.test(trimmed)) {
+        const tableLines: string[] = [];
+        while (idx < lines.length) {
+          tableLines.push(lines[idx]);
+          if (/<\/table>/i.test(lines[idx])) break;
+          idx++;
+        }
+        const tableHtml = tableLines.join('\n');
+
+        const thList: string[] = [];
+        const thRegex = /<th\b[^>]*>([\s\S]*?)<\/th>/gi;
+        let thMatch: RegExpExecArray | null;
+        while ((thMatch = thRegex.exec(tableHtml)) !== null) {
+          thList.push(thMatch[1].trim());
+        }
+
+        const trRegex = /<tr\b[^>]*>([\s\S]*?)<\/tr>/gi;
+        const rows: string[][] = [];
+        let trMatch: RegExpExecArray | null;
+        while ((trMatch = trRegex.exec(tableHtml)) !== null) {
+          const trContent = trMatch[1];
+          const tdList: string[] = [];
+          const tdRegex = /<td\b[^>]*>([\s\S]*?)<\/td>/gi;
+          let tdMatch: RegExpExecArray | null;
+          while ((tdMatch = tdRegex.exec(trContent)) !== null) {
+            tdList.push(tdMatch[1].trim());
+          }
+          if (tdList.length > 0) {
+            rows.push(tdList);
+          }
+        }
+
+        if (thList.length > 0 || rows.length > 0) {
+          result.push(
+            <div
+              key={`html-table-${idx}`}
+              className={`my-3 max-w-full overflow-x-auto rounded-xl border shadow-sm ${tableTheme.wrapper}`}
+            >
+              <table className={`w-full min-w-full text-xs divide-y border-collapse ${tableTheme.divider}`}>
+                {thList.length > 0 && (
+                  <thead className={`font-bold sticky top-0 ${tableTheme.thead}`}>
+                    <tr>
+                      {thList.map((h, hIdx) => (
+                        <th
+                          key={`html-th-${idx}-${hIdx}`}
+                          className={`px-3.5 py-2.5 font-bold tracking-wide text-[11.5px] min-w-[110px] leading-snug break-words text-left ${tableTheme.th}`}
+                        >
+                          {parseInlineRichText(h, `hth-${idx}-${hIdx}`)}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                )}
+                <tbody className={`divide-y ${tableTheme.divider}`}>
+                  {rows.map((row, rIdx) => (
+                    <tr key={`html-tr-${idx}-${rIdx}`} className={`transition-colors ${tableTheme.trEven}`}>
+                      {row.map((cell, cIdx) => (
+                        <td
+                          key={`html-td-${idx}-${rIdx}-${cIdx}`}
+                          className={`px-3.5 py-2.5 text-[12px] leading-relaxed align-top break-words min-w-[120px] text-left ${tableTheme.td}`}
+                        >
+                          {parseInlineRichText(cell, `htd-${idx}-${rIdx}-${cIdx}`)}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          );
+          continue;
+        }
+      }
+
+      // Khối Markdown Tables (| col | col |) hỗ trợ căn lề :---, :---:, ---: và thẻ <br>
+      if (trimmed.includes('|') && idx + 1 < lines.length && isTableSeparatorLine(lines[idx + 1])) {
+        const headerCells = parseTableRowCells(trimmed);
+        const separatorLine = lines[idx + 1];
+        const rawAlignments = parseTableRowCells(separatorLine).map((col) => {
+          const startColon = col.startsWith(':');
+          const endColon = col.endsWith(':');
+          if (startColon && endColon) return 'text-center';
+          if (endColon) return 'text-right';
+          return 'text-left';
+        });
+
+        idx += 2; // Bỏ qua dòng tiêu đề và dòng gạch ngang
+        const rows: string[][] = [];
+
+        while (idx < lines.length) {
+          const rowTrimmed = lines[idx].trim();
+          if (!rowTrimmed || rowTrimmed.startsWith('```') || rowTrimmed.startsWith('#') || rowTrimmed.startsWith('>')) {
+            break;
+          }
+          if (!rowTrimmed.includes('|')) {
+            break;
+          }
+          rows.push(parseTableRowCells(rowTrimmed));
+          idx++;
+        }
+        idx--; // Điều chỉnh chỉ số vòng lặp
 
         result.push(
           <div
             key={`table-${idx}`}
-            className="my-2.5 max-w-full overflow-x-auto rounded-xl border border-slate-700/70 shadow-sm"
+            className={`my-3 max-w-full overflow-x-auto rounded-xl border shadow-sm ${tableTheme.wrapper}`}
           >
-            <table className="min-w-full text-xs text-left divide-y divide-slate-700/70">
-              <thead className="bg-slate-900/90 text-amber-300 font-bold">
+            <table className={`w-full min-w-full text-xs divide-y border-collapse ${tableTheme.divider}`}>
+              <thead className={`font-bold sticky top-0 ${tableTheme.thead}`}>
                 <tr>
-                  {headerCells.map((h, hIdx) => (
-                    <th key={`th-${hIdx}`} className="px-3 py-2 whitespace-nowrap">
-                      {parseInlineRichText(h, `th-${idx}-${hIdx}`)}
-                    </th>
-                  ))}
+                  {headerCells.map((h, hIdx) => {
+                    const alignClass = rawAlignments[hIdx] || 'text-left';
+                    return (
+                      <th
+                        key={`th-${idx}-${hIdx}`}
+                        className={`px-3.5 py-2.5 font-bold tracking-wide text-[11.5px] min-w-[110px] leading-snug break-words ${tableTheme.th} ${alignClass}`}
+                      >
+                        {parseInlineRichText(h, `th-${idx}-${hIdx}`)}
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/80 bg-slate-950/60">
+              <tbody className={`divide-y ${tableTheme.divider}`}>
                 {rows.map((row, rIdx) => (
-                  <tr key={`tr-${rIdx}`} className="hover:bg-slate-800/40 transition-colors">
-                    {row.map((cell, cIdx) => (
-                      <td key={`td-${rIdx}-${cIdx}`} className="px-3 py-1.5 whitespace-nowrap text-slate-200">
-                        {parseInlineRichText(cell, `td-${idx}-${rIdx}-${cIdx}`)}
-                      </td>
-                    ))}
+                  <tr key={`tr-${idx}-${rIdx}`} className={`transition-colors ${tableTheme.trEven}`}>
+                    {row.map((cell, cIdx) => {
+                      const alignClass = rawAlignments[cIdx] || 'text-left';
+                      return (
+                        <td
+                          key={`td-${idx}-${rIdx}-${cIdx}`}
+                          className={`px-3.5 py-2.5 text-[12px] leading-relaxed align-top break-words min-w-[120px] ${tableTheme.td} ${alignClass}`}
+                        >
+                          {parseInlineRichText(cell, `td-${idx}-${rIdx}-${cIdx}`)}
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>
@@ -470,15 +889,117 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
         continue;
       }
 
-      // Đường kẻ phân cách (Horizontal Divider): ---, ***, ___
-      if (/^(?:-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
+      // Khối danh sách HTML: <ul ...> ... </ul> hoặc <ol ...> ... </ol>
+      if (/^<(?:ul|ol)\b/i.test(trimmed)) {
+        const isOrdered = /^<ol\b/i.test(trimmed);
+        const listLines: string[] = [];
+        const endTag = isOrdered ? /<\/ol>/i : /<\/ul>/i;
+        while (idx < lines.length) {
+          listLines.push(lines[idx]);
+          if (endTag.test(lines[idx])) break;
+          idx++;
+        }
+        const listHtml = listLines.join('\n');
+        const liMatches = Array.from(listHtml.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/gi)).map((m) => m[1].trim());
+
+        if (liMatches.length > 0) {
+          result.push(
+            <div key={`html-list-${idx}`} className="my-1.5 space-y-1">
+              {liMatches.map((liText, liIdx) => (
+                <div key={`html-li-${idx}-${liIdx}`} className="flex items-start gap-1.5 text-xs select-text">
+                  {isOrdered ? (
+                    <span
+                      className={`shrink-0 tabular-nums select-none font-semibold text-[11.5px] min-w-[14px] ${
+                        isMe ? 'text-slate-950' : 'text-amber-400'
+                      }`}
+                    >
+                      {liIdx + 1}.
+                    </span>
+                  ) : (
+                    <span className={`shrink-0 select-none font-bold ${isMe ? 'text-slate-950' : 'text-amber-400'}`}>
+                      •
+                    </span>
+                  )}
+                  <span className="flex-1 break-words">{parseInlineRichText(liText, `hli-${idx}-${liIdx}`)}</span>
+                </div>
+              ))}
+            </div>
+          );
+          continue;
+        }
+      }
+
+      // Khối trích dẫn HTML: <blockquote ...> ... </blockquote>
+      if (/^<blockquote\b/i.test(trimmed)) {
+        const bqLines: string[] = [];
+        while (idx < lines.length) {
+          bqLines.push(lines[idx]);
+          if (/<\/blockquote>/i.test(lines[idx])) break;
+          idx++;
+        }
+        const bqHtml = bqLines
+          .join('\n')
+          .replace(/^<blockquote[^>]*>/i, '')
+          .replace(/<\/blockquote>$/i, '')
+          .trim();
+
+        result.push(
+          <blockquote
+            key={`html-quote-${idx}`}
+            className={`my-1.5 pl-2.5 py-1 border-l-2 italic text-xs rounded-r ${
+              isMe
+                ? 'border-slate-950/60 bg-black/10 text-slate-900'
+                : 'border-amber-500/80 bg-amber-500/10 text-slate-200'
+            }`}
+          >
+            {parseInlineRichText(bqHtml, `hbq-${idx}`)}
+          </blockquote>
+        );
+        continue;
+      }
+
+      // Đường kẻ phân cách (Horizontal Divider): ---, ***, ___, <hr>
+      if (/^<hr\s*\/?>$/i.test(trimmed) || /^(?:-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
         result.push(
           <hr key={`hr-${idx}`} className={`my-2.5 border-t ${isMe ? 'border-slate-950/30' : 'border-slate-700/70'}`} />
         );
         continue;
       }
 
-      // Headings: # H1 qua ###### H6
+      // Headings HTML: <h1> đến <h6>
+      const htmlHMatch = trimmed.match(/^<h([1-6])[^>]*>([\s\S]+?)<\/h\1>$/i);
+      if (htmlHMatch) {
+        const level = parseInt(htmlHMatch[1], 10);
+        const headingText = htmlHMatch[2];
+        let headingClass = 'text-xs font-semibold opacity-90 mt-1.5 mb-1';
+
+        if (level === 1) {
+          headingClass = isMe
+            ? 'text-base font-black text-slate-950 tracking-tight mt-2.5 mb-1.5'
+            : 'text-base font-bold text-amber-400 tracking-tight mt-2.5 mb-1.5';
+        } else if (level === 2) {
+          headingClass = isMe
+            ? 'text-sm font-extrabold text-slate-950 mt-2 mb-1'
+            : 'text-sm font-bold text-amber-300 mt-2 mb-1';
+        } else if (level === 3) {
+          headingClass = isMe
+            ? 'text-xs font-bold text-slate-950 mt-1.5 mb-1'
+            : 'text-[13px] font-bold text-amber-200 mt-1.5 mb-1';
+        } else {
+          headingClass = isMe
+            ? 'text-xs font-bold text-slate-950 mt-1 mb-0.5'
+            : 'text-xs font-semibold text-slate-200 mt-1 mb-0.5';
+        }
+
+        result.push(
+          <div key={`html-h${level}-${idx}`} className={headingClass}>
+            {parseInlineRichText(headingText, `hh${level}-${idx}`)}
+          </div>
+        );
+        continue;
+      }
+
+      // Headings Markdown: # H1 qua ###### H6
       const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
       if (headingMatch) {
         const level = headingMatch[1].length;
@@ -511,7 +1032,7 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
         continue;
       }
 
-      // Blockquote: > text
+      // Blockquote Markdown: > text
       if (line.startsWith('> ') || line === '>') {
         result.push(
           <blockquote
@@ -555,7 +1076,7 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
         continue;
       }
 
-      // Bullet List: - item, * item, hoặc • item
+      // Bullet List Markdown: - item, * item, hoặc • item
       if (/^[-*•]\s/.test(trimmed) || /^\u2022\s/.test(trimmed)) {
         const itemContent = trimmed.replace(/^[-*•\u2022]\s+/, '');
         result.push(
@@ -567,7 +1088,7 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
         continue;
       }
 
-      // Numbered List: 1. item
+      // Numbered List Markdown: 1. item
       const numMatch = trimmed.match(/^(\d+)\.\s(.*)$/);
       if (numMatch) {
         const num = numMatch[1];

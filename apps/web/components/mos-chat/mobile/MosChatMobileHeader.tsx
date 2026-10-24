@@ -23,9 +23,14 @@ import { MosChatAvatar } from '../MosChatAvatar';
 export interface MosChatMobileHeaderProps {
   onOpenSettings?: () => void;
   onCallRoom?: () => void;
+  onOpenTaskModal?: () => void;
 }
 
-export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({ onOpenSettings, onCallRoom }) => {
+export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
+  onOpenSettings,
+  onCallRoom,
+  onOpenTaskModal,
+}) => {
   const {
     mobileView,
     setMobileView,
@@ -37,7 +42,17 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({ onOpen
     tasks,
     totalUnreadCount,
     staffDirectory,
+    activeThreadMsg,
   } = useMosChat();
+
+  const linkedTask = React.useMemo(() => {
+    if (!activeThreadMsg) return null;
+    return (
+      (tasks || []).find(
+        (t) => t.sourceMessageId === activeThreadMsg.id || (activeThreadMsg.taskId && t.id === activeThreadMsg.taskId)
+      ) || null
+    );
+  }, [tasks, activeThreadMsg]);
 
   const presenceMenuItems: MenuProps['items'] = [
     {
@@ -138,7 +153,25 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({ onOpen
           <p className="text-[11px] text-slate-400 leading-none">Trả lời tin nhắn</p>
         </div>
 
-        <div className="w-16" />
+        <div className="flex items-center justify-end min-w-[70px]">
+          <button
+            type="button"
+            onClick={onOpenTaskModal}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold transition-all active:scale-95 border ${
+              linkedTask
+                ? linkedTask.done
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                  : 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+            }`}
+            title={linkedTask ? `Main Task: ${linkedTask.title}` : 'Giao việc cho tin nhắn cha'}
+          >
+            <CheckSquare className="w-3.5 h-3.5" />
+            <span className="truncate max-w-[70px]">
+              {linkedTask ? (linkedTask.done ? 'Đã xong' : 'Việc') : '+ Việc'}
+            </span>
+          </button>
+        </div>
       </header>
     );
   }

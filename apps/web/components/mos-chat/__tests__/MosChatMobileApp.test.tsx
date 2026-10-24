@@ -1244,4 +1244,80 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
       );
     });
   });
+
+  it('allows creating Main Task directly inside subthread on iPhone via Header and sending confirmation reply', async () => {
+    (apiClient.chat.createTask as any).mockResolvedValue({
+      success: true,
+      task: {
+        id: 'task-new-1',
+        conversationId: 'space-cc',
+        conversationName: 'Shop Operations',
+        sourceMessageId: 'm1',
+        title: 'Chuẩn bị phòng dặm mi ca chiều',
+        assigneeName: 'Danny Do',
+        assigneeId: 99,
+        creatorName: 'Danny Do',
+        priority: 'NORMAL',
+        done: false,
+        createdAt: new Date().toISOString(),
+      },
+    });
+
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Shop Operations')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('Shop Operations'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/câu trả lời trong luồng/i)).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText(/câu trả lời trong luồng/i));
+
+    // Wait for subthread view
+    await waitFor(() => {
+      expect(screen.getByText('+ Việc')).toBeTruthy();
+    });
+
+    // Click + Việc button on header
+    fireEvent.click(screen.getByText('+ Việc'));
+
+    // Verify task creation modal opens
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeTruthy();
+      expect(screen.getByText('Giao việc cho Main Task')).toBeTruthy();
+    });
+
+    // Type task title
+    const textarea = screen.getByPlaceholderText(/Nhập chi tiết công việc cần giao.../i);
+    fireEvent.change(textarea, { target: { value: 'Chuẩn bị phòng dặm mi ca chiều' } });
+
+    // Confirm creation
+    const okBtn = screen.getByRole('button', { name: /Tạo công việc/i });
+    fireEvent.click(okBtn);
+
+    await waitFor(() => {
+      expect(apiClient.chat.createTask).toHaveBeenCalledWith(
+        expect.objectContaining({
+          conversationId: 'space-cc',
+          title: 'Chuẩn bị phòng dặm mi ca chiều',
+          sourceMessageId: 'm1',
+        })
+      );
+      expect(apiClient.chat.sendThreadReply).toHaveBeenCalledWith(
+        expect.objectContaining({
+          conversationId: 'space-cc',
+          messageId: 'm1',
+          text: expect.stringContaining('📌 Đã giao việc cho Main Task: "Chuẩn bị phòng dặm mi ca chiều"'),
+        })
+      );
+    });
+  });
 });

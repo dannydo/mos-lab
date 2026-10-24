@@ -3,7 +3,13 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { Modal, Input, Select, DatePicker, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
-import type { MosChatMessage, MosChatTaskItem, MosChatTaskPriority, SafeAny } from '@mos-lab/shared';
+import type {
+  MosChatMessage,
+  MosChatTaskItem,
+  MosChatTaskPriority,
+  MosChatThreadReply,
+  SafeAny,
+} from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
 import { MosChatMobileHeader } from './MosChatMobileHeader';
 import { MosChatMobileInbox } from './MosChatMobileInbox';
@@ -41,6 +47,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
     activeSubtab,
     selectedMsgForAction,
     setSelectedMsgForAction,
+    activeThreadMsg,
     setActiveThreadMsg,
     setActiveConvId,
     tasks,
@@ -50,6 +57,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
     editMessage,
     staffDirectory,
     sendMessage,
+    sendThreadReply,
     updateSpaceConfig,
   } = useMosChat();
 
@@ -123,6 +131,11 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
 
   // Quick Task Creation Modal
   const [taskModalOpen, setTaskModalOpen] = useState<boolean>(false);
+  const [editingTaskForModal, setEditingTaskForModal] = useState<MosChatTaskItem | null>(null);
+  const [taskThreadContext, setTaskThreadContext] = useState<{
+    inThread: boolean;
+    sourceReply?: MosChatThreadReply | null;
+  } | null>(null);
   const [taskTitle, setTaskTitle] = useState<string>('');
   const [taskAssigneeId, setTaskAssigneeId] = useState<string | undefined>(undefined);
   const [taskDueAt, setTaskDueAt] = useState<string | null>(null);
@@ -249,6 +262,8 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
   };
 
   const openCreateTaskModal = (initialTitle = '', sourceMsg: MosChatMessage | null = null) => {
+    setEditingTaskForModal(null);
+    setTaskThreadContext(null);
     setTaskTitle(initialTitle);
     setTaskSourceMsg(sourceMsg);
 
@@ -267,6 +282,54 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
     setTaskAssigneeId(initialAssigneeId);
     setTaskDueAt(null);
     setTaskPriority('NORMAL');
+    setTaskModalOpen(true);
+  };
+
+  const openTaskModalForThread = (params?: {
+    initialTitle?: string;
+    sourceMsg?: MosChatMessage | null;
+    existingTask?: MosChatTaskItem | null;
+    sourceReply?: MosChatThreadReply | null;
+  }) => {
+    const sourceMsg = params?.sourceMsg || activeThreadMsg || null;
+    const existing =
+      params?.existingTask ||
+      (sourceMsg
+        ? tasks.find((t) => t.sourceMessageId === sourceMsg.id || (sourceMsg.taskId && t.id === sourceMsg.taskId)) ||
+          null
+        : null);
+
+    setEditingTaskForModal(existing);
+    setTaskSourceMsg(sourceMsg);
+    setTaskThreadContext({
+      inThread: true,
+      sourceReply: params?.sourceReply || null,
+    });
+
+    if (existing) {
+      setTaskTitle(params?.initialTitle || existing.title);
+      setTaskAssigneeId(existing.assigneeId ? String(existing.assigneeId) : undefined);
+      setTaskDueAt(existing.dueAt || existing.deadline || null);
+      setTaskPriority(existing.priority || 'NORMAL');
+    } else {
+      setTaskTitle(params?.initialTitle || sourceMsg?.text.slice(0, 100) || '');
+      const myId = currentStaff?.id || Number(currentUser?.id) || 0;
+      let initialAssigneeId: string | undefined = undefined;
+
+      if (activeConversation?.isSelf) {
+        initialAssigneeId = myId > 0 ? String(myId) : undefined;
+      } else if (activeConversation?.type === 'dm') {
+        const peerId = activeConversation.memberIds?.find((id: SafeAny) => Number(id) !== myId);
+        initialAssigneeId = peerId ? String(peerId) : myId > 0 ? String(myId) : undefined;
+      } else {
+        initialAssigneeId = myId > 0 ? String(myId) : undefined;
+      }
+
+      setTaskAssigneeId(initialAssigneeId);
+      setTaskDueAt(null);
+      setTaskPriority('NORMAL');
+    }
+
     setTaskModalOpen(true);
   };
 
@@ -294,28 +357,72 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
       currentUser?.name ||
       'Danny Do';
 
-    const success = await createTask(trimmed, {
-      assigneeStaffId: resolvedAssigneeId,
-      assigneeName: resolvedAssigneeName,
-      dueAt: taskDueAt,
-      priority: taskPriority,
-      sourceMessageId: taskSourceMsg?.id,
-    });
+    const isThreadContext = taskThreadContext?.inThread && activeThreadMsg;
 
-    if (success) {
-      const isSelf = String(resolvedAssigneeId) === String(myId);
-      antdMessage.success(
-        isSelf
-          ? `Đã tạo việc cho chính mình (${resolvedAssigneeName})`
-          : `Đã giao việc thành công cho ${resolvedAssigneeName}`
-      );
-      setTaskModalOpen(false);
-      setTaskTitle('');
-      setTaskAssigneeId(undefined);
-      setTaskDueAt(null);
-      setTaskSourceMsg(null);
+    if (editingTaskForModal) {
+      const success = await updateTask(editingTaskForModal.id, {
+        title: trimmed,
+        assigneeId: resolvedAssigneeId,
+        assigneeName: resolvedAssigneeName,
+        dueAt: taskDueAt,
+        deadline: taskDueAt,
+        priority: taskPriority,
+      });
+
+      if (success) {
+        antdMessage.success(`Đã cập nhật Main Task cho ${resolvedAssigneeName}`);
+
+        if (isThreadContext) {
+          const dueFormatted = taskDueAt ? dayjs(taskDueAt).format('HH:mm DD/MM') : 'Không có';
+          await sendThreadReply(
+            `📌 Đã cập nhật Main Task: "${trimmed}" · Người nhận: @${resolvedAssigneeName} · Hạn chót: ${dueFormatted}`
+          );
+        }
+
+        setTaskModalOpen(false);
+        setEditingTaskForModal(null);
+        setTaskThreadContext(null);
+        setTaskTitle('');
+        setTaskAssigneeId(undefined);
+        setTaskDueAt(null);
+        setTaskSourceMsg(null);
+      } else {
+        antdMessage.error('Không thể cập nhật công việc, vui lòng thử lại');
+      }
     } else {
-      antdMessage.error('Không thể tạo việc, vui lòng thử lại');
+      const success = await createTask(trimmed, {
+        assigneeStaffId: resolvedAssigneeId,
+        assigneeName: resolvedAssigneeName,
+        dueAt: taskDueAt,
+        priority: taskPriority,
+        sourceMessageId: taskSourceMsg?.id,
+      });
+
+      if (success) {
+        const isSelf = String(resolvedAssigneeId) === String(myId);
+        antdMessage.success(
+          isSelf
+            ? `Đã tạo việc cho chính mình (${resolvedAssigneeName})`
+            : `Đã giao việc thành công cho ${resolvedAssigneeName}`
+        );
+
+        if (isThreadContext) {
+          const dueFormatted = taskDueAt ? dayjs(taskDueAt).format('HH:mm DD/MM') : 'Không có';
+          await sendThreadReply(
+            `📌 Đã giao việc cho Main Task: "${trimmed}" · Người nhận: @${resolvedAssigneeName} · Hạn chót: ${dueFormatted}`
+          );
+        }
+
+        setTaskModalOpen(false);
+        setEditingTaskForModal(null);
+        setTaskThreadContext(null);
+        setTaskTitle('');
+        setTaskAssigneeId(undefined);
+        setTaskDueAt(null);
+        setTaskSourceMsg(null);
+      } else {
+        antdMessage.error('Không thể tạo việc, vui lòng thử lại');
+      }
     }
   };
 
@@ -410,7 +517,10 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
       />
 
       {/* Top Header */}
-      <MosChatMobileHeader onOpenSettings={() => setSpaceConfigModalOpen(true)} />
+      <MosChatMobileHeader
+        onOpenSettings={() => setSpaceConfigModalOpen(true)}
+        onOpenTaskModal={() => openTaskModalForThread()}
+      />
 
       {/* Dynamic Screen View */}
       {mobileView === 'inbox' && <MosChatMobileInbox />}
@@ -454,7 +564,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         </>
       )}
 
-      {mobileView === 'thread' && <MosChatMobileThreadSheet />}
+      {mobileView === 'thread' && <MosChatMobileThreadSheet onOpenTaskModal={openTaskModalForThread} />}
 
       {/* Bottom Action Sheet */}
       <MosChatMobileActionSheet
@@ -517,14 +627,24 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         }}
       />
 
-      {/* Create Task Modal */}
+      {/* Create / Edit Task Modal */}
       <Modal
         open={taskModalOpen}
         zIndex={2500}
-        onCancel={() => setTaskModalOpen(false)}
+        onCancel={() => {
+          setTaskModalOpen(false);
+          setEditingTaskForModal(null);
+          setTaskThreadContext(null);
+        }}
         onOk={handleConfirmCreateTask}
-        title="Giao việc & Hạn chót"
-        okText="Tạo công việc"
+        title={
+          editingTaskForModal
+            ? 'Cập nhật Main Task'
+            : taskThreadContext?.inThread
+              ? 'Giao việc cho Main Task'
+              : 'Giao việc & Hạn chót'
+        }
+        okText={editingTaskForModal ? 'Lưu thay đổi' : 'Tạo công việc'}
         cancelText="Hủy"
         centered
       >

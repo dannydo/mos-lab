@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { MosChatRichText } from '../MosChatRichText';
+import { MosChatRichText, decodeHtmlEntities } from '../MosChatRichText';
 
 // Mock mermaid module to prevent canvas / DOM exceptions in jsdom
 vi.mock('mermaid', () => ({
@@ -73,6 +73,34 @@ describe('MosChatRichText', () => {
     expect(screen.getByText('150.000đ')).toBeDefined();
   });
 
+  it('renders markdown tables with column alignment and br tags inside cells', () => {
+    const tableMd =
+      '| Hạng Mục | Người Chịu Trách Nhiệm Chính | Vai Trò & Hành Động Cụ Thể |\n' +
+      '| :--- | :---: | ---: |\n' +
+      '| An toàn & Vận hành | Ban Giám Đốc | - Ban hành hướng dẫn.<br>- Phê duyệt kế hoạch.<br>- Thẩm định định kỳ. |';
+
+    const { container } = render(<MosChatRichText content={tableMd} isDark={true} />);
+
+    expect(screen.getByText('Hạng Mục')).toBeDefined();
+    expect(screen.getByText('Người Chịu Trách Nhiệm Chính')).toBeDefined();
+    expect(screen.getByText('Vai Trò & Hành Động Cụ Thể')).toBeDefined();
+    expect(screen.getByText('An toàn & Vận hành')).toBeDefined();
+    expect(screen.getByText('Ban Giám Đốc')).toBeDefined();
+
+    // Check line breaks (<br>) rendered inside td
+    const tdList = container.querySelectorAll('td');
+    expect(tdList.length).toBe(3);
+    const lastTd = tdList[2];
+    const brTags = lastTd.querySelectorAll('br');
+    expect(brTags.length).toBe(2);
+
+    // Check text alignment classes
+    const thList = container.querySelectorAll('th');
+    expect(thList[0].className).toContain('text-left');
+    expect(thList[1].className).toContain('text-center');
+    expect(thList[2].className).toContain('text-right');
+  });
+
   it('renders checklist items (- [ ] and - [x])', () => {
     const md = '- [ ] Việc cần làm\n- [x] Việc đã xong';
     render(<MosChatRichText content={md} isDark={true} />);
@@ -96,5 +124,83 @@ describe('MosChatRichText', () => {
 
     expect(screen.getByText('AI')).toBeDefined();
     expect(screen.getByText('Danny Do')).toBeDefined();
+  });
+
+  it('renders inline HTML tags: <b>, <strong>, <i>, <em>, <u>, <s>, <del>, <code>, <mark>, <a href="...">', () => {
+    const htmlText =
+      '<b>Bold HTML</b>, <strong>Strong HTML</strong>, <i>Italic HTML</i>, ' +
+      '<em>Em HTML</em>, <u>Underline HTML</u>, <s>Strike HTML</s>, <del>Del HTML</del>, ' +
+      '<code>code_snippet</code>, <mark>Highlight</mark>, và <a href="https://masteros.app">Trang chủ</a>.';
+
+    const { container } = render(<MosChatRichText content={htmlText} isDark={true} />);
+
+    expect(screen.getByText('Bold HTML')).toBeDefined();
+    expect(screen.getByText('Strong HTML')).toBeDefined();
+    expect(screen.getByText('Italic HTML')).toBeDefined();
+    expect(screen.getByText('Em HTML')).toBeDefined();
+    expect(screen.getByText('Underline HTML')).toBeDefined();
+    expect(screen.getByText('Strike HTML')).toBeDefined();
+    expect(screen.getByText('Del HTML')).toBeDefined();
+    expect(screen.getByText('code_snippet')).toBeDefined();
+    expect(screen.getByText('Highlight')).toBeDefined();
+
+    const link = container.querySelector('a[href="https://masteros.app"]');
+    expect(link).not.toBeNull();
+    expect(link?.textContent).toContain('Trang chủ');
+  });
+
+  it('renders HTML tables properly', () => {
+    const htmlTable =
+      '<table>\n' +
+      '  <thead><tr><th>Cột 1</th><th>Cột 2</th></tr></thead>\n' +
+      '  <tbody><tr><td>Dữ liệu 1</td><td>Dữ liệu 2</td></tr></tbody>\n' +
+      '</table>';
+
+    render(<MosChatRichText content={htmlTable} isDark={true} />);
+
+    expect(screen.getByText('Cột 1')).toBeDefined();
+    expect(screen.getByText('Cột 2')).toBeDefined();
+    expect(screen.getByText('Dữ liệu 1')).toBeDefined();
+    expect(screen.getByText('Dữ liệu 2')).toBeDefined();
+  });
+
+  it('renders HTML lists (<ul>, <ol>, <li>) properly', () => {
+    const htmlLists =
+      '<ul><li>Mục danh sách A</li><li>Mục danh sách B</li></ul>\n' +
+      '<ol><li>Bước số một</li><li>Bước số hai</li></ol>';
+
+    render(<MosChatRichText content={htmlLists} isDark={true} />);
+
+    expect(screen.getByText('Mục danh sách A')).toBeDefined();
+    expect(screen.getByText('Mục danh sách B')).toBeDefined();
+    expect(screen.getByText('Bước số một')).toBeDefined();
+    expect(screen.getByText('Bước số hai')).toBeDefined();
+  });
+
+  it('renders HTML headings (<h1>, <h2>, <h3>) and blockquote', () => {
+    const htmlBlocks = '<h2>Tiêu đề HTML H2</h2>\n' + '<blockquote>Lời khuyên quản trị viên</blockquote>\n' + '<hr>';
+
+    const { container } = render(<MosChatRichText content={htmlBlocks} isDark={true} />);
+
+    expect(screen.getByText('Tiêu đề HTML H2')).toBeDefined();
+    expect(screen.getByText('Lời khuyên quản trị viên')).toBeDefined();
+    expect(container.querySelector('hr')).not.toBeNull();
+  });
+
+  it('decodes HTML entities correctly', () => {
+    const rawEntities = 'H&amp;M &lt;quy trình&gt; &quot;thành công&quot; &#39;chuẩn&#39; &nbsp; OK';
+    render(<MosChatRichText content={rawEntities} isDark={true} />);
+
+    expect(screen.getByText(/H&M <quy trình> "thành công" 'chuẩn'/)).toBeDefined();
+    expect(decodeHtmlEntities('&lt;div&gt;&amp;&nbsp;')).toBe('<div>&\u00A0');
+  });
+
+  it('preserves raw HTML code inside markdown code blocks without executing it', () => {
+    const codeBlock = '```html\n<div class="test"><span>Raw Code</span></div>\n```';
+    const { container } = render(<MosChatRichText content={codeBlock} isDark={true} />);
+
+    expect(screen.getByText(/Raw Code/)).toBeDefined();
+    // It should not render an actual div with class "test"
+    expect(container.querySelector('.test')).toBeNull();
   });
 });

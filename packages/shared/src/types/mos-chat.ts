@@ -226,6 +226,8 @@ export interface MosChatTaskItem {
   assigneeId?: number | string;
   assigneeName: string;
   creatorName: string;
+  assignerName?: string;
+  assignerId?: number | string;
   priority: MosChatTaskPriority;
   remindAt: string;
   dueAt?: string | null;
