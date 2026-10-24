@@ -8,6 +8,7 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import { useMosChat } from '../context/MosChatContext';
 import type { MosChatConversation, MosChatStaffMember } from '@mos-lab/shared';
 import { formatChatPreviewWithStickers } from '../mos-chat-stickers';
+import { isSpaceEmoji } from '../constants/chat-constants';
 
 dayjs.extend(relativeTime);
 
@@ -156,8 +157,19 @@ export const MosChatMobileInbox: React.FC = () => {
               <Sparkles className="w-6 h-6 animate-pulse" />
             </div>
           ) : isSpace ? (
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-lg shadow-sm">
-              <Hash className="w-6 h-6" />
+            <div
+              className="w-12 h-12 rounded-2xl border flex items-center justify-center font-bold text-2xl shadow-sm"
+              style={{
+                background: `${c.color || '#f59e0b'}22`,
+                borderColor: `${c.color || '#f59e0b'}44`,
+                color: c.color || '#f59e0b',
+              }}
+            >
+              {c.avatar && isSpaceEmoji(c.avatar) ? (
+                <span className="select-none leading-none">{c.avatar}</span>
+              ) : (
+                <Hash className="w-6 h-6" />
+              )}
             </div>
           ) : (
             <div className="w-12 h-12 rounded-2xl bg-slate-700/80 border border-slate-600/50 flex items-center justify-center text-white font-bold text-base shadow-sm">

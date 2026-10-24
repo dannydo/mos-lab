@@ -40,6 +40,7 @@ import {
   SaveThreadAsWorkflowTemplateRequest,
   UpdateMosChatAccessConfigRequest,
   UpdateMosChatNicknameRequest,
+  UpdateMosChatSpaceConfigRequest,
   UpdateMosChatTaskRequest,
   UploadMosChatImageRequest,
   UploadMosChatImageResponse,
@@ -3860,8 +3861,8 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         name: normalizedName,
         subtitle: body.subtitle || 'Không gian phối hợp trên mOS',
         roleTag: String(initialMemberIds.length || 1),
-        color: '#3b82f6',
-        avatar: getInitials(rawName, user.username),
+        color: body.color?.trim() || '#3b82f6',
+        avatar: body.avatar?.trim() || getInitials(rawName, user.username),
         memberCount: Math.max(1, initialMemberIds.length),
         memberIds: initialMemberIds,
         members: initialMembers,
@@ -4392,6 +4393,121 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         success: true,
         conversation: conv,
         memberNicknames: conv.memberNicknames,
+      };
+    }
+  );
+
+  // PATCH /api/chat/conversations/:id (Cấu hình Không gian Space: Tên, Mô tả, Emoji đại diện, Màu chủ đạo)
+  fastify.patch(
+    '/chat/conversations/:id',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      const user = request.user as JwtUserPayload;
+      const { id } = request.params as { id: string };
+      const body = (request.body || {}) as UpdateMosChatSpaceConfigRequest;
+
+      const [{ conversations }, staffDirectory] = await Promise.all([
+        loadChatState(fastify),
+        loadStaffDirectoryCached(fastify),
+      ]);
+      const conv = conversations.find((c) => c.id === id);
+      if (!conv) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy cuộc hội thoại' });
+      }
+
+      if (conv.type !== 'space') {
+        return reply.status(400).send({
+          error: 'Bad Request',
+          message: 'Chỉ hỗ trợ chỉnh sửa cấu hình cho Không gian làm việc (Space).',
+        });
+      }
+
+      if (!canUserAccessConversation(conv, user, staffDirectory)) {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền truy cập không gian này.' });
+      }
+
+      const myStaffId = resolveUserStaffId(user, staffDirectory);
+      const isMember = conv.memberIds ? conv.memberIds.includes(myStaffId) : true;
+      const isAdmin = isDannyOrSuperAdminUser(user);
+
+      if (!isMember && !isAdmin) {
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: 'Chỉ thành viên của Không gian hoặc Quản trị viên mới được chỉnh sửa cấu hình.',
+        });
+      }
+
+      const changes: string[] = [];
+
+      // 1. Tên Không gian
+      if (body.name !== undefined) {
+        const cleanName = String(body.name).trim().toLowerCase().replace(/\s+/g, '-');
+        if (!cleanName) {
+          return reply.status(400).send({ error: 'Bad Request', message: 'Tên Không gian không được để trống.' });
+        }
+        if (conv.name !== cleanName) {
+          changes.push(`tên thành "#${cleanName}"`);
+          conv.name = cleanName;
+        }
+      }
+
+      // 2. Mục đích hoạt động
+      if (body.subtitle !== undefined) {
+        const cleanSubtitle = String(body.subtitle).trim() || undefined;
+        if (conv.subtitle !== cleanSubtitle) {
+          conv.subtitle = cleanSubtitle;
+          changes.push('mô tả hoạt động');
+        }
+      }
+
+      // 3. Emoji đại diện cho Space
+      if (body.avatar !== undefined) {
+        const cleanEmoji = String(body.avatar).trim();
+        if (conv.avatar !== cleanEmoji) {
+          conv.avatar = cleanEmoji || undefined;
+          changes.push(`biểu tượng Emoji thành ${cleanEmoji || '(mặc định)'}`);
+        }
+      }
+
+      // 4. Màu chủ đạo
+      if (body.color !== undefined) {
+        const cleanColor = String(body.color).trim();
+        if (cleanColor && conv.color !== cleanColor) {
+          conv.color = cleanColor;
+          changes.push('màu chủ đạo');
+        }
+      }
+
+      const now = new Date();
+      conv.updatedAt = now.toISOString();
+
+      // Nếu có thay đổi, ghi system message vào luồng chat của Space
+      if (changes.length > 0) {
+        const operatorStaff = staffDirectory.find((s) => s.id === myStaffId);
+        const operatorName = operatorStaff?.displayName || user.displayName || user.username || 'Thành viên';
+        conv.messages.push({
+          id: `msg-${crypto.randomUUID().slice(0, 8)}`,
+          conversationId: conv.id,
+          senderId: 'system',
+          senderName: 'Hệ thống mOS',
+          senderRole: 'Cấu hình Space',
+          senderAvatar: conv.avatar || '⚙️',
+          roleColor: conv.color || '#3b82f6',
+          text: `${operatorName} đã cập nhật cấu hình Không gian: đổi ${changes.join(', ')}.`,
+          timeLabel: formatTimeLabel(now),
+          createdAt: now.toISOString(),
+          reactions: {},
+          thread: [],
+          isSystemReminder: true,
+        });
+      }
+
+      await saveConversations(fastify, conversations);
+      return {
+        success: true,
+        conversation: conv,
       };
     }
   );

@@ -320,6 +320,28 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
     [activeConvId, staffDirectory]
   );
 
+  // Update space config
+  const updateSpaceConfig = useCallback(
+    async (
+      convId: string,
+      payload: { name?: string; subtitle?: string; avatar?: string; color?: string }
+    ): Promise<boolean> => {
+      try {
+        const res = await apiClient.chat.updateSpaceConfig(convId, payload);
+        if (res?.success && res.conversation) {
+          setConversations((prev) =>
+            prev.map((c) => (c.id === res.conversation.id ? res.conversation : c))
+          );
+          return true;
+        }
+      } catch (err) {
+        console.error('Failed to update space config:', err);
+      }
+      return false;
+    },
+    []
+  );
+
   // Send message
   const sendMessage = useCallback(
     async (
@@ -907,6 +929,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       totalUnreadCount,
       totalTaskCount,
       addMemberToSpace,
+      updateSpaceConfig,
       refresh: fetchBootstrap,
     }),
     [
@@ -953,6 +976,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       totalUnreadCount,
       totalTaskCount,
       addMemberToSpace,
+      updateSpaceConfig,
       fetchBootstrap,
     ]
   );

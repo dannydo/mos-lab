@@ -17,6 +17,7 @@ import { Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
 import { useMosChat } from '../context/MosChatContext';
 import type { MosChatPresenceStatus } from '@mos-lab/shared';
+import { isSpaceEmoji } from '../constants/chat-constants';
 
 export interface MosChatMobileHeaderProps {
   onOpenSettings?: () => void;
@@ -164,10 +165,18 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({ onOpen
       </button>
 
       {/* Room identity info */}
-      <div className="flex-1 min-w-0 mx-2 text-center flex flex-col items-center">
+      <div
+        onClick={isSpace ? onOpenSettings : undefined}
+        role={isSpace ? 'button' : undefined}
+        className={`flex-1 min-w-0 mx-2 text-center flex flex-col items-center ${isSpace ? 'cursor-pointer active:opacity-75' : ''}`}
+      >
         <div className="flex items-center gap-1.5 max-w-[230px] justify-center">
           {isSpace ? (
-            <Hash className="w-4 h-4 text-amber-400 shrink-0" />
+            activeConversation?.avatar && isSpaceEmoji(activeConversation.avatar) ? (
+              <span className="text-base shrink-0 leading-none">{activeConversation.avatar}</span>
+            ) : (
+              <Hash className="w-4 h-4 text-amber-400 shrink-0" />
+            )
           ) : (
             <div className="relative shrink-0">
               <div className="w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center text-[10px] text-slate-200 font-bold uppercase">

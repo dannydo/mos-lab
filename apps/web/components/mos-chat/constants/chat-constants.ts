@@ -438,3 +438,167 @@ export const GOOGLE_CHAT_REACTION_EMOJIS = [
   '👑',
   '🫡',
 ] as const;
+
+export interface SpacePaletteColor {
+  color: string;
+  name: string;
+}
+
+export const GOOGLE_CHAT_SPACE_PALETTE: SpacePaletteColor[] = [
+  { color: '#1a73e8', name: 'Google Blue' },
+  { color: '#10b981', name: 'Emerald' },
+  { color: '#8b5cf6', name: 'Purple' },
+  { color: '#ec4899', name: 'Rose Pink' },
+  { color: '#f59e0b', name: 'Amber Gold' },
+  { color: '#ef4444', name: 'Crimson' },
+  { color: '#06b6d4', name: 'Cyan' },
+  { color: '#14b8a6', name: 'Teal Mint' },
+  { color: '#6366f1', name: 'Violet' },
+  { color: '#64748b', name: 'Slate' },
+];
+
+export interface SpaceEmojiCategory {
+  id: string;
+  label: string;
+  icon: string;
+  emojis: string[];
+}
+
+export const GOOGLE_CHAT_SPACE_EMOJI_CATEGORIES: SpaceEmojiCategory[] = [
+  {
+    id: 'popular',
+    label: 'Đề xuất & Phổ biến',
+    icon: '⭐',
+    emojis: [
+      '🚀',
+      '💬',
+      '🎯',
+      '💎',
+      '🔥',
+      '🏆',
+      '📦',
+      '🛠️',
+      '📊',
+      '📢',
+      '💡',
+      '📝',
+      '🤖',
+      '🛡️',
+      '⚙️',
+      '📂',
+      '📌',
+      '🔔',
+      '✨',
+      '👑',
+    ],
+  },
+  {
+    id: 'projects',
+    label: 'Dự án & Mục tiêu',
+    icon: '🚀',
+    emojis: [
+      '🚀',
+      '🎯',
+      '⚡',
+      '💡',
+      '🔥',
+      '📈',
+      '📊',
+      '🏆',
+      '🎖️',
+      '🥇',
+      '💎',
+      '🔑',
+      '🧭',
+      '🏁',
+      '⭐',
+      '🌟',
+      '💥',
+      '☀️',
+    ],
+  },
+  {
+    id: 'operations',
+    label: 'Vận hành & Kỹ thuật',
+    icon: '🛠️',
+    emojis: [
+      '🛠️',
+      '📦',
+      '⚙️',
+      '🛡️',
+      '🤖',
+      '💻',
+      '🔒',
+      '📋',
+      '📝',
+      '📂',
+      '🏷️',
+      '⏰',
+      '⏳',
+      '🔍',
+      '🚨',
+      '🧹',
+      '🔌',
+      '📡',
+    ],
+  },
+  {
+    id: 'wings',
+    label: 'Wings & Sắc đẹp',
+    icon: '🪽',
+    emojis: [
+      '🪽',
+      '🌸',
+      '💄',
+      '💅',
+      '👑',
+      '☕',
+      '🥑',
+      '🧘',
+      '💆‍♀️',
+      '✨',
+      '💖',
+      '🥰',
+      '🕊️',
+      '🌿',
+      '🍀',
+      '🍓',
+      '🎀',
+      '🎉',
+    ],
+  },
+  {
+    id: 'teams',
+    label: 'Đội ngũ & Phối hợp',
+    icon: '👥',
+    emojis: [
+      '👥',
+      '🤝',
+      '🏢',
+      '🎓',
+      '📞',
+      '🎧',
+      '🏅',
+      '🏠',
+      '💬',
+      '🗣️',
+      '💌',
+      '📬',
+      '❤️',
+      '👏',
+      '🙌',
+      '🫡',
+      '💪',
+      '🥳',
+    ],
+  },
+];
+
+export const isSpaceEmoji = (val?: string | null): boolean => {
+  if (!val || typeof val !== 'string') return false;
+  const s = val.trim();
+  if (!s || s.startsWith('http://') || s.startsWith('https://') || s.startsWith('data:')) return false;
+  // If length is short and contains non-ascii or emoji characters
+  const hasEmojiChar = /\p{Extended_Pictographic}/u.test(s);
+  return hasEmojiChar || (s.length <= 4 && !/^[A-Za-z0-9]{1,4}$/.test(s));
+};

@@ -20,6 +20,7 @@ import { MosChatMobileMissionModal } from './MosChatMobileMissionModal';
 import { MosChatMobileStickerSheet } from './MosChatMobileStickerSheet';
 import { MosChatMobileEditModal } from './MosChatMobileEditModal';
 import { MosChatMobileMediaGallery, type MosChatGalleryImage } from './MosChatMobileMediaGallery';
+import { MosChatSpaceConfigModal } from '../MosChatSpaceConfigModal';
 import { formatStickerToken, type MosChatStickerItem, type MosChatStickerPackId } from '../mos-chat-stickers';
 import { DEADLINE_PRESETS, GOOGLE_CHAT_REACTION_EMOJIS, WINGS_SIGNATURE_EMOJIS } from '../constants/chat-constants';
 import { apiClient } from '../../../lib/api-client';
@@ -49,8 +50,10 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
     editMessage,
     staffDirectory,
     sendMessage,
+    updateSpaceConfig,
   } = useMosChat();
 
+  const [spaceConfigModalOpen, setSpaceConfigModalOpen] = useState<boolean>(false);
   const [actionSheetOpen, setActionSheetOpen] = useState<boolean>(false);
   const [stickerPickerOpen, setStickerPickerOpen] = useState<boolean>(false);
   const [stickerPickerInitialPack, setStickerPickerInitialPack] = useState<MosChatStickerPackId>('emoji');
@@ -407,7 +410,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
       />
 
       {/* Top Header */}
-      <MosChatMobileHeader />
+      <MosChatMobileHeader onOpenSettings={() => setSpaceConfigModalOpen(true)} />
 
       {/* Dynamic Screen View */}
       {mobileView === 'inbox' && <MosChatMobileInbox />}
@@ -638,6 +641,23 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         open={missionTask !== null}
         onClose={() => setMissionTaskId(null)}
         onSubmit={handleSubmitMission}
+      />
+
+      {/* Space Configuration & Emoji Selection Modal */}
+      <MosChatSpaceConfigModal
+        open={spaceConfigModalOpen}
+        conversation={activeConversation}
+        onClose={() => setSpaceConfigModalOpen(false)}
+        onUpdated={(updated) => {
+          if (updateSpaceConfig && activeConversation) {
+            void updateSpaceConfig(activeConversation.id, {
+              name: updated.name,
+              subtitle: updated.subtitle,
+              avatar: updated.avatar,
+              color: updated.color,
+            });
+          }
+        }}
       />
     </div>
   );
