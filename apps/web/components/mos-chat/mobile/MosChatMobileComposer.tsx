@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, SendHorizontal, Mic, Smile, X, ImagePlus, Loader2 } from 'lucide-react';
+import { Plus, SendHorizontal, Mic, Smile, X, ImagePlus, Loader2, FileText, File } from 'lucide-react';
 import { message as antdMessage } from 'antd';
 import type { MosChatImageAttachment } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
 import type { MosChatStickerPackId } from '../mos-chat-stickers';
 import { MosChatMobileMentionAutocomplete } from './MosChatMobileMentionAutocomplete';
-import { extractMentionedStaff, isStaffInConversationMembers } from '../utils/chat-helpers';
+import { extractMentionedStaff, isStaffInConversationMembers, isImageAttachment, getFileExtension } from '../utils/chat-helpers';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
 
 export interface MosChatMobileComposerProps {
@@ -173,31 +173,72 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
         </div>
       )}
 
-      {/* Attached Images Preview Strip */}
+      {/* Attached Files & Images Preview Strip */}
       {hasAttachments && (
         <div className="flex items-center gap-2 mb-2 overflow-x-auto no-scrollbar py-1">
-          {attachedImages.map((att, idx) => (
-            <div
-              key={att.id || idx}
-              className="relative w-14 h-14 rounded-xl overflow-hidden border border-amber-500/40 shrink-0 group bg-slate-800 shadow-sm"
-            >
-              <img
-                src={resolveMediaUrl(att.url)}
-                alt={att.name || 'Ảnh đính kèm'}
-                className="w-full h-full object-cover"
-              />
-              {onRemoveAttachment && (
-                <button
-                  type="button"
-                  onClick={() => onRemoveAttachment(att.id)}
-                  className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-900/90 text-white flex items-center justify-center text-[10px] active:scale-90 shadow"
-                  aria-label={`Xóa ảnh ${idx + 1}`}
+          {attachedImages.map((att, idx) => {
+            const isImg = isImageAttachment(att);
+            const ext = getFileExtension(att.name || att.url);
+            const isPdf = ext.toLowerCase() === 'pdf' || att.mimeType === 'application/pdf';
+
+            if (isImg) {
+              return (
+                <div
+                  key={att.id || idx}
+                  className="relative w-14 h-14 rounded-xl overflow-hidden border border-amber-500/40 shrink-0 group bg-slate-800 shadow-sm"
                 >
-                  <X className="w-2.5 h-2.5" />
-                </button>
-              )}
-            </div>
-          ))}
+                  <img
+                    src={resolveMediaUrl(att.url)}
+                    alt={att.name || 'Ảnh đính kèm'}
+                    className="w-full h-full object-cover"
+                  />
+                  {onRemoveAttachment && (
+                    <button
+                      type="button"
+                      onClick={() => onRemoveAttachment(att.id)}
+                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-900/90 text-white flex items-center justify-center text-[10px] active:scale-90 shadow"
+                      aria-label={`Xóa ảnh ${idx + 1}`}
+                    >
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  )}
+                </div>
+              );
+            }
+
+            return (
+              <div
+                key={att.id || idx}
+                className="relative h-14 min-w-[120px] max-w-[170px] px-2.5 rounded-xl border border-amber-500/40 shrink-0 flex items-center gap-2 bg-slate-800 shadow-sm"
+              >
+                <div
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-bold text-[10px] ${
+                    isPdf
+                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                      : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                  }`}
+                >
+                  {isPdf ? <FileText size={16} /> : <File size={16} />}
+                </div>
+                <div className="flex-1 min-w-0 pr-3">
+                  <p className="text-[11px] font-semibold text-slate-100 truncate" title={att.name}>
+                    {att.name}
+                  </p>
+                  <span className="text-[9.5px] text-slate-400 uppercase font-extrabold">{ext}</span>
+                </div>
+                {onRemoveAttachment && (
+                  <button
+                    type="button"
+                    onClick={() => onRemoveAttachment(att.id)}
+                    className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-slate-900/90 text-white flex items-center justify-center text-[10px] active:scale-90 shadow"
+                    aria-label={`Xóa tệp ${idx + 1}`}
+                  >
+                    <X className="w-2.5 h-2.5" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
           {isUploadingImages && (
             <div className="w-14 h-14 rounded-xl border border-dashed border-amber-500/50 bg-amber-500/10 flex flex-col items-center justify-center shrink-0">
               <Loader2 className="w-4 h-4 text-amber-400 animate-spin" />

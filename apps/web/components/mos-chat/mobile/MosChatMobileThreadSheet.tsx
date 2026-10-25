@@ -363,7 +363,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
     const count = files.length;
     setIsUploadingImages(true);
-    const hideMsg = antdMessage.loading(`Đang tải ${count} ảnh lên...`, 0);
+    const hideMsg = antdMessage.loading(`Đang tải ${count} tệp lên...`, 0);
 
     try {
       const uploaded = await uploadMultipleChatImages(files);
@@ -371,16 +371,16 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
       if (uploaded.length > 0) {
         setAttachedImages((prev) => [...prev, ...uploaded]);
         if (uploaded.length === count) {
-          antdMessage.success(`Đã đính kèm ${uploaded.length} ảnh trong luồng`);
+          antdMessage.success(`Đã đính kèm ${uploaded.length} tệp trong luồng`);
         } else {
-          antdMessage.warning(`Đã tải ${uploaded.length}/${count} ảnh`);
+          antdMessage.warning(`Đã tải ${uploaded.length}/${count} tệp`);
         }
       } else {
-        antdMessage.error('Không thể tải ảnh lên');
+        antdMessage.error('Không thể tải tệp lên');
       }
     } catch {
       hideMsg();
-      antdMessage.error('Không thể tải ảnh lên');
+      antdMessage.error('Không thể tải tệp lên');
     } finally {
       setIsUploadingImages(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -595,12 +595,12 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-950 overflow-hidden select-none">
-      {/* Hidden File Input for Multi-Image Upload */}
+      {/* Hidden File Input for Multi-File & Image Upload */}
       <input
         ref={fileInputRef}
         type="file"
         multiple
-        accept="image/*,.heic,.heif,.HEIC,.HEIF"
+        accept="image/*,.heic,.heif,.HEIC,.HEIF,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.zip,.rar"
         onChange={handleImageFileChange}
         className="hidden"
         aria-label="Tải nhiều ảnh đính kèm trong luồng"

@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { Pin, MessageSquareReply, CheckCheck, Heart } from 'lucide-react';
+import { Pin, MessageSquareReply, CheckCheck, Heart, FileText, FileSpreadsheet, FileArchive, File, Download } from 'lucide-react';
 import dayjs from 'dayjs';
 import type { MosChatMessage } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
 import { parsePureStickerMessage, MosChatStickerVisual } from '../mos-chat-stickers';
 import { MosChatRichText } from '../MosChatRichText';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
+import { isImageAttachment, formatFileSize, getFileExtension } from '../utils/chat-helpers';
 
 export interface MosChatMobileMessageItemProps {
   message: MosChatMessage;
@@ -247,60 +248,143 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
         <MosChatRichText content={message.text} isMe={isMe} isDark={true} />
 
         {/* Attachments */}
-        {message.attachments && message.attachments.length > 0 && (
-          <div className="mt-2">
-            {message.attachments.length === 1 ? (
-              <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenGallery?.(message, 0);
-                }}
-                className="rounded-xl overflow-hidden border border-black/10 cursor-pointer active:opacity-90 transition-opacity"
-              >
-                <img
-                  src={resolveMediaUrl(message.attachments[0].url)}
-                  alt="Đính kèm"
-                  className="max-h-60 w-full object-cover rounded-xl"
-                  loading="lazy"
-                />
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-1.5 rounded-xl overflow-hidden">
-                {message.attachments.slice(0, 4).map((att, idx) => {
-                  const total = message.attachments!.length;
-                  const isFirstOfThree = total === 3 && idx === 0;
-                  const isFourthInMany = total > 4 && idx === 3;
-                  const remaining = total - 3;
+        {message.attachments && message.attachments.length > 0 && (() => {
+          const imageAttachments = message.attachments.filter(isImageAttachment);
+          const fileAttachments = message.attachments.filter((att) => !isImageAttachment(att));
 
-                  return (
+          return (
+            <div className="mt-2 space-y-2">
+              {/* File / PDF attachments */}
+              {fileAttachments.length > 0 && (
+                <div className="space-y-1.5">
+                  {fileAttachments.map((att) => {
+                    const fullUrl = resolveMediaUrl(att.url);
+                    const ext = getFileExtension(att.name || att.url).toLowerCase();
+                    const isPdf = ext === 'pdf' || att.mimeType === 'application/pdf';
+                    const isExcel = ['xls', 'xlsx', 'csv'].includes(ext);
+                    const isWord = ['doc', 'docx'].includes(ext);
+                    const isZip = ['zip', 'rar', '7z'].includes(ext);
+
+                    return (
+                      <div
+                        key={att.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(fullUrl, '_blank');
+                        }}
+                        className={`flex items-center gap-2.5 p-2 rounded-xl border cursor-pointer active:scale-[0.98] transition-transform ${
+                          isMe
+                            ? 'bg-amber-600/20 border-amber-900/40 text-slate-900'
+                            : 'bg-slate-900/70 border-slate-700/60 text-slate-100'
+                        }`}
+                      >
+                        <div
+                          className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 font-bold text-xs shadow-sm ${
+                            isPdf
+                              ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                              : isExcel
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                : isWord
+                                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                  : isZip
+                                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                                    : 'bg-slate-500/20 text-slate-400 border border-slate-500/30'
+                          }`}
+                        >
+                          {isPdf ? (
+                            <FileText size={18} className="text-rose-400" />
+                          ) : isExcel ? (
+                            <FileSpreadsheet size={18} className="text-emerald-400" />
+                          ) : isWord ? (
+                            <FileText size={18} className="text-blue-400" />
+                          ) : isZip ? (
+                            <FileArchive size={18} className="text-amber-400" />
+                          ) : (
+                            <File size={18} className="text-slate-400" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold truncate leading-tight">{att.name}</p>
+                          <div className="flex items-center gap-1.5 mt-0.5 text-[10px] opacity-75">
+                            <span className="uppercase font-bold tracking-wider">{ext}</span>
+                            {att.sizeBytes > 0 && <span className="tabular-nums">· {formatFileSize(att.sizeBytes)}</span>}
+                          </div>
+                        </div>
+                        <a
+                          href={fullUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          download={att.name}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-7 h-7 rounded-lg inline-flex items-center justify-center text-slate-400 hover:text-amber-400 active:scale-95 transition-transform shrink-0"
+                          aria-label={`Tải ${att.name}`}
+                        >
+                          <Download size={14} />
+                        </a>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Image attachments gallery */}
+              {imageAttachments.length > 0 && (
+                <div>
+                  {imageAttachments.length === 1 ? (
                     <div
-                      key={att.id || idx}
                       onClick={(e) => {
                         e.stopPropagation();
-                        onOpenGallery?.(message, idx);
+                        onOpenGallery?.(message, 0);
                       }}
-                      className={`relative overflow-hidden cursor-pointer active:opacity-90 transition-opacity rounded-lg ${
-                        isFirstOfThree ? 'col-span-2 h-36' : 'h-28'
-                      }`}
+                      className="rounded-xl overflow-hidden border border-black/10 cursor-pointer active:opacity-90 transition-opacity"
                     >
                       <img
-                        src={resolveMediaUrl(att.url)}
-                        alt={att.name || `Hình ${idx + 1}`}
-                        className="w-full h-full object-cover"
+                        src={resolveMediaUrl(imageAttachments[0].url)}
+                        alt="Đính kèm"
+                        className="max-h-60 w-full object-cover rounded-xl"
                         loading="lazy"
                       />
-                      {isFourthInMany && (
-                        <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] flex items-center justify-center text-white font-bold text-base">
-                          +{remaining}
-                        </div>
-                      )}
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
+                  ) : (
+                    <div className="grid grid-cols-2 gap-1.5 rounded-xl overflow-hidden">
+                      {imageAttachments.slice(0, 4).map((att, idx) => {
+                        const total = imageAttachments.length;
+                        const isFirstOfThree = total === 3 && idx === 0;
+                        const isFourthInMany = total > 4 && idx === 3;
+                        const remaining = total - 3;
+
+                        return (
+                          <div
+                            key={att.id || idx}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onOpenGallery?.(message, idx);
+                            }}
+                            className={`relative overflow-hidden cursor-pointer active:opacity-90 transition-opacity rounded-lg ${
+                              isFirstOfThree ? 'col-span-2 h-36' : 'h-28'
+                            }`}
+                          >
+                            <img
+                              src={resolveMediaUrl(att.url)}
+                              alt={att.name || `Hình ${idx + 1}`}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                            {isFourthInMany && (
+                              <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] flex items-center justify-center text-white font-bold text-base">
+                                +{remaining}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Time & Read status */}
         <div

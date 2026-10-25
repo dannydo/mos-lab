@@ -114,6 +114,12 @@ import {
   PenLine,
   Send,
   UserCheck,
+  Paperclip,
+  FileText,
+  FileSpreadsheet,
+  FileArchive,
+  File,
+  Download,
 } from 'lucide-react';
 import {
   MosChatRichEditorModal,
@@ -198,6 +204,10 @@ import {
   playWebAudioReminderChime,
   readOrCompressImagePayload,
   triggerBuzzVibration,
+  isImageAttachment,
+  isPdfAttachment,
+  formatFileSize,
+  getFileExtension,
 } from './utils/chat-helpers';
 import { useMosChatBridgeListener } from './store/mos-chat-bridge';
 import { mergeDeltaConversations, mergeDeltaTasks, useChatRealtimeSync } from './store/useChatRealtimeSync';
@@ -3432,6 +3442,25 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     return ['heic', 'heif', 'jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'svg'].includes(ext);
   };
 
+  const isSupportedChatFile = (f: File): boolean => {
+    if (isImageOrHeicFile(f)) return true;
+    if (
+      f.type &&
+      (f.type.startsWith('text/') ||
+        f.type.includes('pdf') ||
+        f.type.includes('document') ||
+        f.type.includes('sheet') ||
+        f.type.includes('presentation') ||
+        f.type.includes('zip'))
+    ) {
+      return true;
+    }
+    const ext = (f.name.split('.').pop() || '').toLowerCase();
+    return ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'json', 'zip', 'rar', '7z'].includes(
+      ext
+    );
+  };
+
   const handleProcessImageFiles = useCallback(
     async (
       files: FileList | File[],
@@ -3439,26 +3468,67 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       scope: 'main' | 'thread' | 'dock' = 'main',
       convId?: string
     ) => {
-      const imageFiles = Array.from(files).filter(isImageOrHeicFile);
-      if (imageFiles.length === 0) return;
+      const candidateFiles = Array.from(files).filter(isSupportedChatFile);
+      if (candidateFiles.length === 0) {
+        antdMessage.warning('Định dạng tệp không được hỗ trợ (hỗ trợ PDF, Excel, Word, TXT, ZIP và hình ảnh).');
+        return;
+      }
 
-      setUploadingCount((c) => c + imageFiles.length);
-      for (const file of imageFiles.slice(0, 6)) {
+      setUploadingCount((c) => c + candidateFiles.length);
+      for (const file of candidateFiles.slice(0, 10)) {
         try {
-          const compressed = await readOrCompressImagePayload(file);
-          const uploaded = await apiClient.chat.uploadImage({
-            dataBase64: compressed.dataBase64,
-            mimeType: compressed.mimeType,
-            fileName: file.name || `paste-${Date.now()}.webp`,
-            width: compressed.width,
-            height: compressed.height,
-            source,
-          });
-          if (uploaded?.attachment) {
-            appendAttachmentToTarget(uploaded.attachment, scope, convId);
+          if (isImageOrHeicFile(file)) {
+            const compressed = await readOrCompressImagePayload(file);
+            const uploaded = await apiClient.chat.uploadImage({
+              dataBase64: compressed.dataBase64,
+              mimeType: compressed.mimeType,
+              fileName: file.name || `paste-${Date.now()}.webp`,
+              width: compressed.width,
+              height: compressed.height,
+              source,
+            });
+            if (uploaded?.attachment) {
+              appendAttachmentToTarget(uploaded.attachment, scope, convId);
+            }
+          } else {
+            // General document / PDF upload without image canvas compression
+            const base64Data = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = (evt) => {
+                const result = evt.target?.result as string;
+                resolve(result?.split(',')[1] || '');
+              };
+              reader.onerror = () => reject(new Error('Không thể đọc tệp tin'));
+              reader.readAsDataURL(file);
+            });
+            if (!base64Data) continue;
+
+            const ext = (file.name.split('.').pop() || '').toLowerCase();
+            let mimeType = file.type || '';
+            if (!mimeType || mimeType === 'application/octet-stream') {
+              if (ext === 'pdf') mimeType = 'application/pdf';
+              else if (ext === 'xlsx') mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+              else if (ext === 'xls') mimeType = 'application/vnd.ms-excel';
+              else if (ext === 'docx') mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+              else if (ext === 'doc') mimeType = 'application/msword';
+              else if (ext === 'txt') mimeType = 'text/plain';
+              else if (ext === 'csv') mimeType = 'text/csv';
+              else if (ext === 'zip') mimeType = 'application/zip';
+              else mimeType = 'application/octet-stream';
+            }
+
+            const uploaded = await apiClient.chat.uploadFile({
+              dataBase64: base64Data,
+              mimeType: mimeType as SafeAny,
+              fileName: file.name,
+              source,
+            });
+            if (uploaded?.attachment) {
+              appendAttachmentToTarget(uploaded.attachment, scope, convId);
+            }
           }
         } catch (err: SafeAny) {
-          antdMessage.error(err?.response?.data?.message || err?.message || 'Không thể tải ảnh lên.');
+          antdMessage.error(err?.response?.data?.message || err?.message || 'Không thể tải tệp lên.');
         } finally {
           setUploadingCount((c) => Math.max(0, c - 1));
         }
@@ -3475,17 +3545,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     ) => {
       const items = e.clipboardData?.items;
       if (items && items.length > 0) {
-        const pastedImages: File[] = [];
+        const pastedFiles: File[] = [];
         for (let i = 0; i < items.length; i += 1) {
           const item = items[i];
           if (item.type.startsWith('image/') || item.kind === 'file') {
             const file = item.getAsFile();
-            if (file && isImageOrHeicFile(file)) pastedImages.push(file);
+            if (file && isSupportedChatFile(file)) pastedFiles.push(file);
           }
         }
-        if (pastedImages.length > 0) {
+        if (pastedFiles.length > 0) {
           e.preventDefault();
-          void handleProcessImageFiles(pastedImages, 'clipboard', scope, convId);
+          void handleProcessImageFiles(pastedFiles, 'clipboard', scope, convId);
           return;
         }
       }
@@ -7177,81 +7247,174 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   const renderMessageAttachments = (attachments?: MosChatImageAttachment[], compact = false) => {
     if (!attachments || attachments.length === 0) return null;
-    const total = attachments.length;
+    const images = attachments.filter(isImageAttachment);
+    const files = attachments.filter((att) => !isImageAttachment(att));
+    const totalImages = images.length;
+
     return (
-      <div className="mt-1.5 flex flex-wrap gap-2">
-        {attachments.map((att, idx) => {
-          const fullUrl = resolveMediaUrl(att.url);
-          return (
-            <Tooltip
-              key={att.id}
-              title={
-                total > 1
-                  ? `Nhấn để phóng to (${idx + 1}/${total} · Dùng phím ← → để chuyển hình)`
-                  : 'Nhấn để phóng to xem chi tiết'
-              }
-            >
-              <button
-                type="button"
-                data-no-chat-autofocus="true"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openLightbox(attachments, idx);
-                }}
-                className="relative rounded-xl overflow-hidden group/img cursor-zoom-in text-left block p-0"
-                style={{
-                  border: `1px solid ${borderStrong}`,
-                  background: surfaceRaised,
-                  maxWidth: compact ? 180 : 280,
-                }}
-              >
-                <img
-                  src={fullUrl}
-                  alt={att.name || 'Hình đính kèm'}
+      <div className="mt-1.5 flex flex-col gap-2">
+        {/* Document & File Attachments (PDF, Excel, Word, ZIP...) */}
+        {files.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {files.map((att) => {
+              const fullUrl = resolveMediaUrl(att.url);
+              const ext = getFileExtension(att.name || att.url).toLowerCase();
+              const isPdf = ext === 'pdf' || att.mimeType === 'application/pdf';
+              const isExcel = ['xls', 'xlsx', 'csv'].includes(ext);
+              const isWord = ['doc', 'docx'].includes(ext);
+              const isZip = ['zip', 'rar', '7z'].includes(ext);
+
+              return (
+                <div
+                  key={att.id}
+                  onClick={() => window.open(fullUrl, '_blank')}
+                  className="flex items-center gap-3 p-2.5 rounded-xl border cursor-pointer transition-all hover:scale-[1.01] hover:shadow-md select-none group/file"
                   style={{
-                    maxHeight: compact ? 120 : 200,
-                    maxWidth: compact ? 180 : 280,
-                    objectFit: 'cover',
-                    display: 'block',
+                    background: surfaceRaised,
+                    borderColor: borderStrong,
+                    maxWidth: compact ? 220 : 320,
+                    minWidth: compact ? 180 : 240,
                   }}
-                />
-                <span className="opacity-0 group-hover/img:opacity-100 transition-opacity absolute inset-0 bg-black/35 flex items-center justify-center pointer-events-none">
-                  <span
-                    className="w-8 h-8 rounded-full inline-flex items-center justify-center shadow-lg"
+                >
+                  <div
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 font-bold text-xs shadow-sm ${
+                      isPdf
+                        ? 'bg-rose-500/15 text-rose-500 border border-rose-500/30'
+                        : isExcel
+                          ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
+                          : isWord
+                            ? 'bg-blue-500/15 text-blue-500 border border-blue-500/30'
+                            : isZip
+                              ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30'
+                              : 'bg-slate-500/15 text-slate-400 border border-slate-500/30'
+                    }`}
+                  >
+                    {isPdf ? (
+                      <FileText size={20} className="text-rose-500" />
+                    ) : isExcel ? (
+                      <FileSpreadsheet size={20} className="text-emerald-500" />
+                    ) : isWord ? (
+                      <FileText size={20} className="text-blue-500" />
+                    ) : isZip ? (
+                      <FileArchive size={20} className="text-amber-500" />
+                    ) : (
+                      <File size={20} className="text-slate-400" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className="text-xs font-semibold truncate group-hover/file:text-amber-400 transition-colors"
+                      title={att.name}
+                      style={{ color: token.colorText }}
+                    >
+                      {att.name}
+                    </p>
+                    <div className="flex items-center gap-2 mt-0.5 text-[10.5px]" style={{ color: token.colorTextSecondary }}>
+                      <span
+                        className="uppercase font-extrabold tracking-wider text-[9px] px-1 py-0.2 rounded"
+                        style={{ background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)' }}
+                      >
+                        {ext.toUpperCase()}
+                      </span>
+                      {att.sizeBytes > 0 && <span className="tabular-nums">{formatFileSize(att.sizeBytes)}</span>}
+                    </div>
+                  </div>
+                  <Tooltip title="Mở / Tải về tệp này">
+                    <a
+                      href={fullUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      download={att.name}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 transition-colors shrink-0"
+                      style={{ color: token.colorTextSecondary }}
+                    >
+                      <Download size={14} />
+                    </a>
+                  </Tooltip>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Image Attachments */}
+        {images.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {images.map((att, idx) => {
+              const fullUrl = resolveMediaUrl(att.url);
+              return (
+                <Tooltip
+                  key={att.id}
+                  title={
+                    totalImages > 1
+                      ? `Nhấn để phóng to (${idx + 1}/${totalImages} · Dùng phím ← → để chuyển hình)`
+                      : 'Nhấn để phóng to xem chi tiết'
+                  }
+                >
+                  <button
+                    type="button"
+                    data-no-chat-autofocus="true"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openLightbox(images, idx);
+                    }}
+                    className="relative rounded-xl overflow-hidden group/img cursor-zoom-in text-left block p-0"
                     style={{
-                      background: 'rgba(15, 23, 42, 0.88)',
-                      color: '#fbbf24',
-                      border: '1px solid rgba(251, 191, 36, 0.45)',
+                      border: `1px solid ${borderStrong}`,
+                      background: surfaceRaised,
+                      maxWidth: compact ? 180 : 280,
                     }}
                   >
-                    <ZoomIn size={15} />
-                  </span>
-                </span>
-                {total > 1 && (
-                  <span
-                    className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full text-[9.5px] font-extrabold tabular-nums pointer-events-none"
-                    style={{
-                      background: 'rgba(15, 23, 42, 0.82)',
-                      color: '#f8fafc',
-                      border: '1px solid rgba(255, 255, 255, 0.16)',
-                    }}
-                  >
-                    {idx + 1}/{total}
-                  </span>
-                )}
-                {att.source === 'drive' && (
-                  <span
-                    className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded text-[9.5px] font-bold inline-flex items-center gap-1 pointer-events-none"
-                    style={{ background: 'rgba(15, 23, 42, 0.82)', color: '#fbbf24' }}
-                  >
-                    <HardDrive size={10} />
-                    <span>Drive</span>
-                  </span>
-                )}
-              </button>
-            </Tooltip>
-          );
-        })}
+                    <img
+                      src={fullUrl}
+                      alt={att.name || 'Hình đính kèm'}
+                      style={{
+                        maxHeight: compact ? 120 : 200,
+                        maxWidth: compact ? 180 : 280,
+                        objectFit: 'cover',
+                        display: 'block',
+                      }}
+                    />
+                    <span className="opacity-0 group-hover/img:opacity-100 transition-opacity absolute inset-0 bg-black/35 flex items-center justify-center pointer-events-none">
+                      <span
+                        className="w-8 h-8 rounded-full inline-flex items-center justify-center shadow-lg"
+                        style={{
+                          background: 'rgba(15, 23, 42, 0.88)',
+                          color: '#fbbf24',
+                          border: '1px solid rgba(251, 191, 36, 0.45)',
+                        }}
+                      >
+                        <ZoomIn size={15} />
+                      </span>
+                    </span>
+                    {totalImages > 1 && (
+                      <span
+                        className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full text-[9.5px] font-extrabold tabular-nums pointer-events-none"
+                        style={{
+                          background: 'rgba(15, 23, 42, 0.82)',
+                          color: '#f8fafc',
+                          border: '1px solid rgba(255, 255, 255, 0.16)',
+                        }}
+                      >
+                        {idx + 1}/{totalImages}
+                      </span>
+                    )}
+                    {att.source === 'drive' && (
+                      <span
+                        className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded text-[9.5px] font-bold inline-flex items-center gap-1 pointer-events-none"
+                        style={{ background: 'rgba(15, 23, 42, 0.82)', color: '#fbbf24' }}
+                      >
+                        <HardDrive size={10} />
+                        <span>Drive</span>
+                      </span>
+                    )}
+                  </button>
+                </Tooltip>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   };
@@ -8974,58 +9137,108 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     if (items.length === 0 && !showUploading) return null;
     return (
       <div className="flex items-center gap-2 pb-2 overflow-x-auto">
-        {items.map((att, idx) => (
-          <div
-            key={att.id}
-            data-no-chat-autofocus="true"
-            className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 group/stage"
-            style={{ border: `1px solid ${borderStrong}`, background: surfaceRaised }}
-          >
-            <Tooltip title="Nhấn để phóng to xem chi tiết">
-              <button
-                type="button"
+        {items.map((att, idx) => {
+          const isImg = isImageAttachment(att);
+          const ext = getFileExtension(att.name || att.url);
+          const isPdf = ext.toLowerCase() === 'pdf' || att.mimeType === 'application/pdf';
+
+          if (isImg) {
+            return (
+              <div
+                key={att.id}
                 data-no-chat-autofocus="true"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openLightbox(items, idx);
-                }}
-                className="w-full h-full block p-0 cursor-zoom-in relative"
+                className="relative w-14 h-14 rounded-lg overflow-hidden shrink-0 group/stage"
+                style={{ border: `1px solid ${borderStrong}`, background: surfaceRaised }}
               >
-                <img src={resolveMediaUrl(att.url)} alt={att.name} className="w-full h-full object-cover block" />
-                <span className="opacity-0 group-hover/stage:opacity-100 transition-opacity absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none">
-                  <ZoomIn size={14} className="text-amber-400" />
+                <Tooltip title="Nhấn để phóng to xem chi tiết">
+                  <button
+                    type="button"
+                    data-no-chat-autofocus="true"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openLightbox(items.filter(isImageAttachment), idx);
+                    }}
+                    className="w-full h-full block p-0 cursor-zoom-in relative"
+                  >
+                    <img src={resolveMediaUrl(att.url)} alt={att.name} className="w-full h-full object-cover block" />
+                    <span className="opacity-0 group-hover/stage:opacity-100 transition-opacity absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none">
+                      <ZoomIn size={14} className="text-amber-400" />
+                    </span>
+                  </button>
+                </Tooltip>
+                <span
+                  className="absolute bottom-0.5 left-0.5 px-1 py-0.2 rounded text-[8.5px] font-bold leading-tight pointer-events-none"
+                  style={{ background: 'rgba(0,0,0,0.75)', color: '#fbbf24' }}
+                >
+                  {att.source === 'clipboard' ? '⌘V' : att.source === 'drive' ? 'Drive' : 'Ảnh'}
                 </span>
-              </button>
-            </Tooltip>
-            <span
-              className="absolute bottom-0.5 left-0.5 px-1 py-0.2 rounded text-[8.5px] font-bold leading-tight pointer-events-none"
-              style={{ background: 'rgba(0,0,0,0.75)', color: '#fbbf24' }}
+                <Tooltip title="Bỏ hình này">
+                  <button
+                    type="button"
+                    aria-label="Bỏ hình đính kèm"
+                    data-no-chat-autofocus="true"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeStagedAttachment(att.id, scope, convId);
+                    }}
+                    className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/80 text-white inline-flex items-center justify-center cursor-pointer hover:bg-rose-500 z-10"
+                  >
+                    <X size={10} />
+                  </button>
+                </Tooltip>
+              </div>
+            );
+          }
+
+          return (
+            <div
+              key={att.id}
+              data-no-chat-autofocus="true"
+              className="relative h-14 min-w-[130px] max-w-[200px] px-2.5 rounded-lg flex items-center gap-2 shrink-0 group/stage border"
+              style={{ border: `1px solid ${borderStrong}`, background: surfaceRaised }}
             >
-              {att.source === 'clipboard' ? '⌘V' : att.source === 'drive' ? 'Drive' : 'Ảnh'}
-            </span>
-            <Tooltip title="Bỏ hình này">
-              <button
-                type="button"
-                aria-label="Bỏ hình đính kèm"
-                data-no-chat-autofocus="true"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeStagedAttachment(att.id, scope, convId);
-                }}
-                className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/80 text-white inline-flex items-center justify-center cursor-pointer hover:bg-rose-500 z-10"
+              <div
+                className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 font-extrabold text-[10px] ${
+                  isPdf
+                    ? 'bg-rose-500/15 text-rose-500 border border-rose-500/30'
+                    : 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
+                }`}
               >
-                <X size={10} />
-              </button>
-            </Tooltip>
-          </div>
-        ))}
+                {isPdf ? <FileText size={18} /> : <File size={18} />}
+              </div>
+              <div className="flex-1 min-w-0 pr-3">
+                <p className="text-[11px] font-semibold truncate" title={att.name} style={{ color: token.colorText }}>
+                  {att.name}
+                </p>
+                <div className="flex items-center gap-1.5 text-[9.5px]" style={{ color: token.colorTextSecondary }}>
+                  <span className="font-extrabold">{ext}</span>
+                  {att.sizeBytes > 0 && <span className="tabular-nums">· {formatFileSize(att.sizeBytes)}</span>}
+                </div>
+              </div>
+              <Tooltip title="Bỏ tệp này">
+                <button
+                  type="button"
+                  aria-label="Bỏ tệp đính kèm"
+                  data-no-chat-autofocus="true"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeStagedAttachment(att.id, scope, convId);
+                  }}
+                  className="absolute top-1 right-1 w-4 h-4 rounded-full bg-black/80 text-white inline-flex items-center justify-center cursor-pointer hover:bg-rose-500 z-10"
+                >
+                  <X size={10} />
+                </button>
+              </Tooltip>
+            </div>
+          );
+        })}
         {showUploading && (
           <div
             className="h-14 px-3 rounded-lg inline-flex items-center gap-1.5 text-[11px] font-semibold shrink-0"
             style={{ border: `1px dashed ${borderStrong}`, background: surfaceRaised, color: '#d4a84b' }}
           >
             <Loader2 size={14} className="animate-spin" />
-            <span>Đang tải ảnh ({uploadingCount})...</span>
+            <span>Đang tải tệp ({uploadingCount})...</span>
           </div>
         )}
       </div>
@@ -9096,7 +9309,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*,.heic,.heif,.HEIC,.HEIF"
+        accept="image/*,.heic,.heif,.HEIC,.HEIF,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.zip,.rar,.7z"
         multiple
         className="hidden"
         onChange={(e) => {
@@ -12713,6 +12926,18 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                                 </Tooltip>
                               </Popover>
 
+                              <Tooltip title="Đính kèm tệp tin & tài liệu (PDF, Excel, Word, ZIP...)">
+                                <button
+                                  type="button"
+                                  aria-label="Đính kèm tệp tin & tài liệu"
+                                  onClick={() => triggerFilePicker('main')}
+                                  className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
+                                  style={{ color: token.colorTextSecondary }}
+                                >
+                                  <Paperclip size={16} />
+                                </button>
+                              </Tooltip>
+
                               <Tooltip title="Tải hình từ Ổ đĩa / Google Drive Desktop hoặc Paste ảnh (⌘V)">
                                 <button
                                   type="button"
@@ -14743,6 +14968,18 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                             </button>
                           </Tooltip>
                         </Popover>
+
+                        <Tooltip title="Đính kèm tệp tin (PDF, Excel, Word...)">
+                          <button
+                            type="button"
+                            aria-label="Đính kèm tệp tin vào luồng"
+                            onClick={() => triggerFilePicker('thread')}
+                            className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-transform"
+                            style={{ color: token.colorTextSecondary }}
+                          >
+                            <Paperclip size={15} />
+                          </button>
+                        </Tooltip>
 
                         <Tooltip title="Tải hình vào luồng">
                           <button

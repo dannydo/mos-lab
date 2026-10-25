@@ -1,4 +1,4 @@
-import { FastifyInstance, FastifyReply } from 'fastify';
+import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import crypto from 'crypto';
 import { mkdir, readFile, writeFile, unlink } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
@@ -77,22 +77,55 @@ const CHAT_TASKS_CONFIG_KEY = 'mos_chat:tasks_v1';
 const CHAT_ACCESS_CONFIG_KEY = 'mos_chat:access_config_v1';
 const CHAT_USER_PREFS_CONFIG_KEY = 'mos_chat:user_prefs_v1';
 const MAX_CHAT_IMAGE_BYTES = 8 * 1024 * 1024; // 8 MB max per image
-const CHAT_IMAGE_BODY_LIMIT = 15 * 1024 * 1024; // 15 MB body limit for base64 payload
+const MAX_CHAT_FILE_BYTES = 25 * 1024 * 1024; // 25 MB max per file / PDF / document
+const CHAT_IMAGE_BODY_LIMIT = 35 * 1024 * 1024; // 35 MB body limit for base64 payload
 
-const CHAT_MIME_EXTENSIONS: Record<MosChatImageMimeType, string> = {
+const CHAT_MIME_EXTENSIONS: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
   'image/webp': 'webp',
   'image/gif': 'gif',
   'image/heic': 'jpg',
   'image/heif': 'jpg',
+  'image/svg+xml': 'svg',
+  'image/bmp': 'bmp',
+  'application/pdf': 'pdf',
+  'application/msword': 'doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/vnd.ms-excel': 'xls',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+  'application/vnd.ms-powerpoint': 'ppt',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+  'text/plain': 'txt',
+  'text/csv': 'csv',
+  'application/json': 'json',
+  'application/zip': 'zip',
+  'application/x-zip-compressed': 'zip',
+  'application/x-rar-compressed': 'rar',
+  'application/x-7z-compressed': '7z',
 };
 
-const EXT_TO_CHAT_MIME: Record<string, MosChatImageMimeType> = {
+const EXT_TO_CHAT_MIME: Record<string, string> = {
   jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
   png: 'image/png',
   webp: 'image/webp',
   gif: 'image/gif',
+  svg: 'image/svg+xml',
+  bmp: 'image/bmp',
+  pdf: 'application/pdf',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ppt: 'application/vnd.ms-powerpoint',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  txt: 'text/plain',
+  csv: 'text/csv',
+  json: 'application/json',
+  zip: 'application/zip',
+  rar: 'application/x-rar-compressed',
+  '7z': 'application/x-7z-compressed',
 };
 
 const execFileAsync = promisify(execFile);
@@ -155,6 +188,86 @@ function mosChatMediaRoot(): string {
   return resolve(workspaceRoot(), 'scratch', 'mos-chat-media');
 }
 
+export async function decodeAndValidateChatFile(input: UploadMosChatImageRequest): Promise<{
+  buffer: Buffer;
+  finalMimeType: string;
+  ext: string;
+}> {
+  const rawFileName = String(input.fileName || '').trim();
+  const fileExtFromFileName = (rawFileName.split('.').pop() || '').toLowerCase();
+  let mimeType = String(input.mimeType || '').trim().toLowerCase();
+
+  if ((!mimeType || mimeType === 'application/octet-stream') && fileExtFromFileName in EXT_TO_CHAT_MIME) {
+    mimeType = EXT_TO_CHAT_MIME[fileExtFromFileName];
+  }
+
+  let ext = CHAT_MIME_EXTENSIONS[mimeType] || (fileExtFromFileName in EXT_TO_CHAT_MIME ? fileExtFromFileName : '');
+  if (!ext) {
+    throw new Error(
+      'Định dạng tệp không được hỗ trợ (hệ thống hỗ trợ PDF, Excel, Word, PowerPoint, TXT, CSV, ZIP và hình ảnh).'
+    );
+  }
+  if (!mimeType || !(mimeType in CHAT_MIME_EXTENSIONS)) {
+    mimeType = EXT_TO_CHAT_MIME[ext] || 'application/octet-stream';
+  }
+
+  const encoded = String(input.dataBase64 || '')
+    .trim()
+    .replace(/^data:[^;]+;base64,/i, '');
+  const maxBytes = mimeType.startsWith('image/') ? MAX_CHAT_IMAGE_BYTES : MAX_CHAT_FILE_BYTES;
+  if (!encoded || encoded.length > Math.ceil(maxBytes * 1.45)) {
+    throw new Error(
+      `Tệp quá lớn (tối đa ${mimeType.startsWith('image/') ? '8MB' : '25MB'}) hoặc dữ liệu tệp không hợp lệ.`
+    );
+  }
+  let buffer = Buffer.from(encoded, 'base64');
+  if (buffer.length <= 0 || buffer.length > maxBytes) {
+    throw new Error(`Tệp quá lớn (tối đa ${mimeType.startsWith('image/') ? '8MB' : '25MB'}).`);
+  }
+
+  let finalMimeType = mimeType;
+  if (mimeType === 'image/heic' || mimeType === 'image/heif') {
+    const converted = await convertHeicToJpegBuffer(buffer);
+    buffer = Buffer.from(converted);
+    finalMimeType = 'image/jpeg';
+    ext = 'jpg';
+  } else if (mimeType.startsWith('image/')) {
+    const isJpeg =
+      buffer[0] === 0xff &&
+      buffer[1] === 0xd8 &&
+      buffer[buffer.length - 2] === 0xff &&
+      buffer[buffer.length - 1] === 0xd9;
+    const isPng =
+      buffer.length >= 8 &&
+      buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+    const isWebp =
+      buffer.length >= 12 &&
+      buffer.subarray(0, 4).toString('ascii') === 'RIFF' &&
+      buffer.subarray(8, 12).toString('ascii') === 'WEBP';
+    const isGif =
+      buffer.length >= 6 &&
+      (buffer.subarray(0, 6).toString('ascii') === 'GIF87a' || buffer.subarray(0, 6).toString('ascii') === 'GIF89a');
+
+    if (
+      (mimeType === 'image/jpeg' && !isJpeg) ||
+      (mimeType === 'image/png' && !isPng) ||
+      (mimeType === 'image/webp' && !isWebp) ||
+      (mimeType === 'image/gif' && !isGif)
+    ) {
+      throw new Error('Nội dung tệp không khớp định dạng ảnh.');
+    }
+  } else if (ext === 'pdf' || mimeType === 'application/pdf') {
+    const isPdf = buffer.length >= 5 && buffer.subarray(0, 5).toString('ascii') === '%PDF-';
+    if (!isPdf) {
+      throw new Error('Nội dung tệp không phải định dạng PDF hợp lệ.');
+    }
+    finalMimeType = 'application/pdf';
+    ext = 'pdf';
+  }
+
+  return { buffer, finalMimeType, ext };
+}
+
 function decodeAndValidateChatImage(input: UploadMosChatImageRequest): Buffer {
   if (!(input.mimeType in CHAT_MIME_EXTENSIONS)) {
     throw new Error('Định dạng ảnh không được hỗ trợ (chỉ hỗ trợ JPG, PNG, WebP, GIF, HEIC).');
@@ -199,10 +312,10 @@ function decodeAndValidateChatImage(input: UploadMosChatImageRequest): Buffer {
   return buffer;
 }
 
-function sanitizeChatAttachments(raw?: MosChatImageAttachment[]): MosChatImageAttachment[] {
+export function sanitizeChatAttachments(raw?: MosChatImageAttachment[]): MosChatImageAttachment[] {
   if (!Array.isArray(raw) || raw.length === 0) return [];
   return raw
-    .slice(0, 8)
+    .slice(0, 12)
     .filter((item) => {
       if (!item || typeof item.url !== 'string') return false;
       const u = item.url.trim();
@@ -214,16 +327,26 @@ function sanitizeChatAttachments(raw?: MosChatImageAttachment[]): MosChatImageAt
         u.startsWith('https://lh3.googleusercontent.com/')
       );
     })
-    .map((item) => ({
-      id: String(item.id || `att-${crypto.randomUUID().slice(0, 8)}`),
-      url: item.url.trim(),
-      name: String(item.name || 'image.png').slice(0, 120),
-      mimeType: item.mimeType in CHAT_MIME_EXTENSIONS ? item.mimeType : 'image/png',
-      sizeBytes: Math.max(0, Number(item.sizeBytes) || 0),
-      width: item.width ? Number(item.width) : undefined,
-      height: item.height ? Number(item.height) : undefined,
-      source: item.source || 'upload',
-    }));
+    .map((item) => {
+      const itemAny = item as SafeAny;
+      const ext = (item.fileExt || itemAny.ext || item.url.split('.').pop() || '').toLowerCase();
+      const rawName = item.name || itemAny.fileName || (ext ? `file.${ext}` : 'document');
+      const rawSize = Number(item.sizeBytes ?? itemAny.fileSize ?? 0);
+      const fallbackMime =
+        EXT_TO_CHAT_MIME[ext] ||
+        (item.mimeType && item.mimeType in CHAT_MIME_EXTENSIONS ? item.mimeType : 'application/octet-stream');
+      return {
+        id: String(item.id || `att-${crypto.randomUUID().slice(0, 8)}`),
+        url: item.url.trim(),
+        name: String(rawName).slice(0, 150),
+        mimeType: item.mimeType && item.mimeType in CHAT_MIME_EXTENSIONS ? item.mimeType : fallbackMime,
+        sizeBytes: Math.max(0, rawSize || 0),
+        width: item.width ? Number(item.width) : undefined,
+        height: item.height ? Number(item.height) : undefined,
+        source: item.source || 'upload',
+        fileExt: ext || undefined,
+      };
+    });
 }
 
 function formatTimeLabel(date: Date = new Date()): string {
@@ -2513,6 +2636,47 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
     }
   );
 
+  const handleUploadChatFile = async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const body = request.body as UploadMosChatImageRequest;
+      const { buffer, finalMimeType, ext } = await decodeAndValidateChatFile(body);
+
+      const fileUuid = crypto.randomUUID();
+      const fileName = `${fileUuid}.${ext}`;
+      const rootDir = mosChatMediaRoot();
+      await mkdir(rootDir, { recursive: true, mode: 0o700 });
+      const targetPath = resolve(rootDir, fileName);
+      if (!targetPath.startsWith(`${rootDir}${sep}`)) {
+        return reply.status(400).send({ error: 'Bad Request', message: 'Đường dẫn tệp không hợp lệ.' });
+      }
+      await writeFile(targetPath, buffer, { flag: 'wx', mode: 0o600 });
+
+      const rawName = String(body.fileName || `file.${ext}`);
+      const safeName = rawName.replace(/\.(heic|heif)$/i, `.${ext}`).slice(0, 150);
+
+      const attachment: MosChatImageAttachment = {
+        id: `att-${fileUuid.slice(0, 8)}`,
+        url: `/api/chat/media/${fileName}`,
+        name: safeName,
+        mimeType: finalMimeType,
+        sizeBytes: buffer.length,
+        width: body.width ? Number(body.width) : undefined,
+        height: body.height ? Number(body.height) : undefined,
+        source: body.source || 'upload',
+      };
+      const response: UploadMosChatImageResponse = {
+        success: true,
+        attachment,
+      };
+      return response;
+    } catch (err: SafeAny) {
+      return reply.status(400).send({
+        error: 'Bad Request',
+        message: err?.message || 'Không thể tải tệp lên.',
+      });
+    }
+  };
+
   // POST /api/chat/upload-image
   fastify.post(
     '/chat/upload-image',
@@ -2520,53 +2684,17 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       preHandler: [requireAuth],
       bodyLimit: CHAT_IMAGE_BODY_LIMIT,
     },
-    async (request, reply) => {
-      try {
-        const body = request.body as UploadMosChatImageRequest;
-        let buffer = decodeAndValidateChatImage(body);
-        let finalMimeType: MosChatImageMimeType = body.mimeType;
+    handleUploadChatFile
+  );
 
-        if (body.mimeType === 'image/heic' || body.mimeType === 'image/heif') {
-          buffer = await convertHeicToJpegBuffer(buffer);
-          finalMimeType = 'image/jpeg';
-        }
-
-        const ext = CHAT_MIME_EXTENSIONS[finalMimeType] || 'jpg';
-        const fileUuid = crypto.randomUUID();
-        const fileName = `${fileUuid}.${ext}`;
-        const rootDir = mosChatMediaRoot();
-        await mkdir(rootDir, { recursive: true, mode: 0o700 });
-        const targetPath = resolve(rootDir, fileName);
-        if (!targetPath.startsWith(`${rootDir}${sep}`)) {
-          return reply.status(400).send({ error: 'Bad Request', message: 'Đường dẫn tệp không hợp lệ.' });
-        }
-        await writeFile(targetPath, buffer, { flag: 'wx', mode: 0o600 });
-
-        const rawName = String(body.fileName || `chat-image.${ext}`);
-        const safeName = rawName.replace(/\.(heic|heif)$/i, `.${ext}`).slice(0, 120);
-
-        const attachment: MosChatImageAttachment = {
-          id: `att-${fileUuid.slice(0, 8)}`,
-          url: `/api/chat/media/${fileName}`,
-          name: safeName,
-          mimeType: finalMimeType,
-          sizeBytes: buffer.length,
-          width: body.width ? Number(body.width) : undefined,
-          height: body.height ? Number(body.height) : undefined,
-          source: body.source || 'upload',
-        };
-        const response: UploadMosChatImageResponse = {
-          success: true,
-          attachment,
-        };
-        return response;
-      } catch (err: SafeAny) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: err?.message || 'Không thể tải ảnh lên.',
-        });
-      }
-    }
+  // POST /api/chat/upload-file (MOS-BUG-147: Upload PDF, Word, Excel & general documents)
+  fastify.post(
+    '/chat/upload-file',
+    {
+      preHandler: [requireAuth],
+      bodyLimit: CHAT_IMAGE_BODY_LIMIT,
+    },
+    handleUploadChatFile
   );
 
   // GET /api/chat/media/:fileName
@@ -2574,23 +2702,27 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
     try {
       const { fileName } = request.params as { fileName: string };
       const normalized = String(fileName || '').trim();
-      const match = normalized.match(/^([a-f0-9-]{36})\.(jpg|png|webp|gif)$/);
+      const match = normalized.match(/^([a-f0-9-]{36})\.([a-z0-9]{2,6})$/i);
       if (!match) {
-        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy ảnh.' });
+        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tệp đính kèm.' });
       }
-      const ext = match[2];
-      const mimeType = EXT_TO_CHAT_MIME[ext] || 'image/png';
+      const ext = match[2].toLowerCase();
+      if (!(ext in EXT_TO_CHAT_MIME)) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Định dạng tệp không được hỗ trợ.' });
+      }
+      const mimeType = EXT_TO_CHAT_MIME[ext] || 'application/octet-stream';
       const rootDir = mosChatMediaRoot();
       const targetPath = resolve(rootDir, normalized);
       if (!targetPath.startsWith(`${rootDir}${sep}`)) {
-        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy ảnh.' });
+        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tệp đính kèm.' });
       }
       const buffer = await readFile(targetPath);
       reply.header('Content-Type', mimeType);
       reply.header('Cache-Control', 'public, max-age=31536000, immutable');
+      reply.header('Content-Disposition', `inline; filename="${encodeURIComponent(normalized)}"`);
       return reply.send(buffer);
     } catch (_) {
-      return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy ảnh.' });
+      return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tệp đính kèm.' });
     }
   });
 

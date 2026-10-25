@@ -237,7 +237,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
 
     const count = files.length;
     setIsUploadingImages(true);
-    const hideMsg = antdMessage.loading(`Đang tải ${count} ảnh lên...`, 0);
+    const hideMsg = antdMessage.loading(`Đang tải ${count} tệp lên...`, 0);
 
     try {
       const uploaded = await uploadMultipleChatImages(files);
@@ -245,12 +245,12 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
       if (uploaded.length > 0) {
         setAttachedImages((prev) => [...prev, ...uploaded]);
         if (uploaded.length === count) {
-          antdMessage.success(`Đã đính kèm ${uploaded.length} ảnh`);
+          antdMessage.success(`Đã đính kèm ${uploaded.length} tệp`);
         } else {
-          antdMessage.warning(`Đã tải ${uploaded.length}/${count} ảnh`);
+          antdMessage.warning(`Đã tải ${uploaded.length}/${count} tệp`);
         }
       } else {
-        antdMessage.error('Không thể tải ảnh lên, vui lòng thử lại');
+        antdMessage.error('Không thể tải tệp lên, vui lòng thử lại');
       }
     } catch {
       hideMsg();
@@ -505,12 +505,12 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         standalone ? 'h-[100dvh] w-screen fixed inset-0 z-50' : 'h-full w-full'
       }`}
     >
-      {/* Hidden file input supporting multiple images & iPhone HEIC/HEIF */}
+      {/* Hidden file input supporting multiple files, images & documents */}
       <input
         ref={fileInputRef}
         type="file"
         multiple
-        accept="image/*,.heic,.heif,.HEIC,.HEIF"
+        accept="image/*,.heic,.heif,.HEIC,.HEIF,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.json,.zip,.rar"
         onChange={handleImageFileChange}
         className="hidden"
         aria-label="Tải nhiều ảnh đính kèm"
@@ -570,6 +570,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
       <MosChatMobileActionSheet
         open={actionSheetOpen}
         onClose={() => setActionSheetOpen(false)}
+        onSelectFile={() => fileInputRef.current?.click()}
         onSelectImage={() => fileInputRef.current?.click()}
         onSelectDrive={() => antdMessage.info('Mở liên kết Google Drive')}
         onSelectTask={() => {
