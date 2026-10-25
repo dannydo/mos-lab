@@ -375,6 +375,13 @@ async function main() {
     writeFileSync(resolve(outputPath), `${JSON.stringify(payload.data)}\n`, { mode: 0o600 });
     chmodSync(resolve(outputPath), 0o600);
     process.stdout.write('IDE handoff delivered to the requested private file.\n');
+    if (Array.isArray(payload.data?.recentComments) && payload.data.recentComments.length > 0) {
+      process.stdout.write('\n💬 [mOS Inbox] Lịch sử trao đổi / Bình luận mới nhất trong Subthread:\n');
+      for (const c of [...payload.data.recentComments].reverse()) {
+        process.stdout.write(`- [${c.authorName || 'Người dùng'}]: ${c.content}\n`);
+      }
+      process.stdout.write('\n');
+    }
     return;
   }
 

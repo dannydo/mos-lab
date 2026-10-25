@@ -44,12 +44,41 @@ export interface MosChatBuzzEvent {
 export type MosChatMissionStage =
   'RECEIVED' | 'NEEDS_INFO' | 'BUILDING' | 'AWAITING_RELEASE' | 'READY_FOR_REVIEW' | 'COMPLETED' | 'NOT_PROCEEDING';
 
+export type MosChatMissionExecutionTrack = 'CODE_ENGINEERING' | 'PROCESS_CANON' | 'DATA_DECISION';
+
+export interface MosChatMissionArtifactPreview {
+  track: MosChatMissionExecutionTrack;
+  trackLabel: string;
+  gate1Label: string;
+  gate2Label: string;
+  gate3Label: string;
+  codeReceipt?: {
+    changedFilesCount?: number;
+    diffStat?: string | null;
+    testsSummary?: string | null;
+  } | null;
+  processDiff?: {
+    canonRuleCode?: string | null;
+    workflowCode?: string | null;
+    beforeSummary?: string | null;
+    afterSummary?: string | null;
+  } | null;
+  dataDryRun?: {
+    targetTable?: string | null;
+    affectedRows?: number;
+    impactSummary?: string | null;
+    rollbackReady?: boolean;
+  } | null;
+}
+
 export interface MosChatMissionSummary {
   reportId: number;
   key: string;
   missionKey: string;
   missionCode: string;
   requestType: 'BUG' | 'FEATURE';
+  executionTrack?: MosChatMissionExecutionTrack;
+  artifactPreview?: MosChatMissionArtifactPreview | null;
   title: string;
   status: string;
   clarificationStatus: string;
@@ -522,6 +551,7 @@ export interface CreateMosChatMissionRequest {
   taskId?: string | null;
   requestType?: 'BUG' | 'FEATURE';
   type?: 'BUG' | 'FEATURE';
+  executionTrack?: MosChatMissionExecutionTrack;
   priority?: 'P0' | 'P1' | 'P2' | 'P3';
   dannyNote?: string | null;
   note?: string | null;
@@ -769,4 +799,52 @@ export interface SaveThreadAsWorkflowTemplateResponse {
   template: MosChatWorkflowTemplate;
   systemMessage?: MosChatMessage | null;
   systemReply?: MosChatThreadReply | null;
+}
+
+// ================= ENTERPRISE SCALE SYNC, PAGINATION & REALTIME EVENT TYPES =================
+
+export interface MosChatPaginatedMessagesQuery {
+  before?: string;
+  after?: string;
+  limit?: number;
+}
+
+export interface MosChatPaginatedMessagesResponse {
+  success: boolean;
+  conversationId: string;
+  messages: MosChatMessage[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+export interface MosChatDeltaSyncResponse {
+  success: boolean;
+  cursor: string;
+  serverTime: string;
+  updatedConversations: MosChatConversation[];
+  updatedMessages: MosChatMessage[];
+  updatedTasks: MosChatTaskItem[];
+  updatedMissions: MosChatMissionSummary[];
+  hasFullReloadRequired?: boolean;
+}
+
+export type MosChatRealtimeEventType =
+  | 'MESSAGE_CREATED'
+  | 'MESSAGE_UPDATED'
+  | 'MESSAGE_DELETED'
+  | 'THREAD_REPLY_CREATED'
+  | 'REACTION_UPDATED'
+  | 'MESSAGE_BUZZED'
+  | 'TASK_UPDATED'
+  | 'MISSION_UPDATED'
+  | 'CONVERSATION_UPDATED'
+  | 'HEARTBEAT';
+
+export interface MosChatRealtimeEvent {
+  id: string;
+  type: MosChatRealtimeEventType;
+  conversationId?: string | null;
+  timestamp: string;
+  actorStaffId?: number | string | null;
+  payload: Record<string, unknown>;
 }

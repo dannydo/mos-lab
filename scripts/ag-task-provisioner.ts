@@ -365,6 +365,16 @@ export async function prepareAgWorktree(request: InboxIdeTaskProvisioningRequest
 }
 
 export function buildAgentPrompt(request: InboxIdeTaskProvisioningRequest, worktreePath: string): string {
+  let commentsSection = '';
+  if (request.recentComments && request.recentComments.length > 0) {
+    commentsSection = `\n## 💬 Lịch sử Trao đổi & Bình luận Mới nhất trong Subthread:\n`;
+    for (const c of [...request.recentComments].reverse()) {
+      const author = c.authorName || 'Người dùng';
+      const time = new Date(c.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      commentsSection += `> **[${author} @ ${time}]**: ${c.content.trim()}\n>\n`;
+    }
+  }
+
   return `# 🎯 Nhiệm vụ mOS Inbox: [${request.ticketKey}] ${request.title}
 
 - **Ticket ID**: ${request.reportId} (${request.ticketKey})
@@ -374,21 +384,22 @@ export function buildAgentPrompt(request: InboxIdeTaskProvisioningRequest, workt
 - **Request ID**: ${request.requestId}
 - **Source Version**: ${request.sourceVersion}
 - **Plan Version**: ${request.planVersion}
-
+${commentsSection}
 ## 📌 Quy trình Thực thi Chuẩn mOS Inbox Flow (Kinh Thánh mOS Điều răn UI-007):
 - **Bất biến cốt lõi**: TUYỆT ĐỐI KHÔNG commit vào nhánh main trực tiếp; chỉ làm việc trong worktree và nộp receipt qua bridge.
 1. **Chuyển thư mục công việc**: Làm việc trực tiếp bên trong worktree riêng biệt này:
    \`cd ${worktreePath}\`
 2. **Tiếp nhận Handoff ngay khi bắt đầu (Gate 1 Handshake)**:
    \`npx tsx scripts/ide-task-bridge.ts receive --task-id ${request.jobId} --out /tmp/handoff-${request.reportId}.json\`
-3. **Triển khai code và test**: Viết code và bổ sung các bài kiểm thử tương ứng theo đúng phương án đã duyệt.
-4. **Chạy kiểm chứng toàn diện**: Chạy \`pnpm verify:quick\`, \`pnpm check:ui-contract\` để đảm bảo không phát sinh regression.
-5. **Nộp Code/Test Receipt để kích hoạt Cổng 2 (Gate 2 Activation)**:
+3. **Đọc kỹ bình luận trong Subthread**: BẮT BUỘC đọc kỹ các bình luận và phản hồi mới nhất của anh Danny / người dùng trong subthread ở trên (và trong tệp handoff) để hiểu chính xác vấn đề trước khi code.
+4. **Triển khai code và test**: Viết code và bổ sung các bài kiểm thử tương ứng theo đúng phương án đã duyệt và chỉ đạo thực tế.
+5. **Chạy kiểm chứng toàn diện**: Chạy \`pnpm verify:quick\`, \`pnpm check:ui-contract\` để đảm bảo không phát sinh regression.
+6. **Nộp Code/Test Receipt để kích hoạt Cổng 2 (Gate 2 Activation)**:
    - Thu thập \`changedFiles\`, \`diffStat\`, \`baseCommit\`, \`patchHash\` từ worktree.
    - Chuẩn bị tệp biên nhận \`/tmp/receipt-${request.reportId}.json\` gồm \`handoff\` (lấy từ tệp handoff ở bước 2), \`result\` (summary, tests - lưu ý cần có test Playwright visual QA PASSED nếu sửa \`apps/web/\`, risksAndRollback), \`changedFiles\`, \`diffStat\`, \`baseCommit\`, \`patchHash\`.
    - Nộp biên nhận: \`npx tsx scripts/ide-task-bridge.ts submit --task-id ${request.jobId} --receipt /tmp/receipt-${request.reportId}.json\`
    - Sau lệnh này, trạng thái ticket trên mOS Inbox tự động chuyển sang **\`AWAITING_DANNY_COMMIT_REVIEW\`** ("Chờ Danny duyệt commit") và hiển thị nút "Duyệt commit" trên web.
-6. **Lắng nghe Duyệt Web & Tự Động Toàn Bộ (Single-Approval Web Workflow)**:
+7. **Lắng nghe Duyệt Web & Tự Động Toàn Bộ (Single-Approval Web Workflow)**:
    - Danny CHỈ DUYỆT TRÊN WEB (Duyệt commit & Duyệt deploy), tuyệt đối không yêu cầu Danny duyệt thêm trong chat.
    - Ngay sau khi nộp receipt, chạy lệnh lắng nghe nền kèm cờ \`--auto-deploy\`:
      \`npx tsx scripts/ide-task-bridge.ts wait-and-commit --task-id ${request.jobId} --worktree ${worktreePath} --message "feat(${request.ticketKey.toLowerCase()}): ${request.title.replace(/"/g, '')}" --auto-deploy\`

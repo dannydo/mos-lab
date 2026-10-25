@@ -28,6 +28,7 @@ import {
   STAFF_DIRECTORY_CACHE_KEY,
 } from '../constants/chat-constants';
 import { useMosChatBridgeListener } from '../store/mos-chat-bridge';
+import { mergeDeltaConversations, mergeDeltaTasks, useChatRealtimeSync } from '../store/useChatRealtimeSync';
 import type {
   MosChatActiveSubtab,
   MosChatContextValue,
@@ -224,6 +225,26 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
     const interval = setInterval(fetchBootstrap, 5000);
     return () => clearInterval(interval);
   }, [fetchBootstrap]);
+
+  // Enterprise Incremental Delta Sync on visibility / background cadence
+  useChatRealtimeSync({
+    enabled: true,
+    intervalMs: 12_000,
+    onDeltaSynced: (delta) => {
+      if (
+        delta.updatedConversations.length > 0 ||
+        delta.updatedMessages.length > 0 ||
+        delta.updatedMissions.length > 0
+      ) {
+        setConversations((prev) =>
+          mergeDeltaConversations(prev, delta.updatedConversations, delta.updatedMessages, delta.updatedMissions)
+        );
+      }
+      if (delta.updatedTasks.length > 0 || delta.updatedMissions.length > 0) {
+        setTasks((prev) => mergeDeltaTasks(prev, delta.updatedTasks, delta.updatedMissions));
+      }
+    },
+  });
 
   // Global Bridge listener
   useMosChatBridgeListener(

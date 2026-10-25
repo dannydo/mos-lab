@@ -50,11 +50,18 @@ import {
 import { requireAuth, JwtUserPayload } from '../../middlewares/auth.js';
 import { invalidateNotificationsCache } from '../notifications/routes.js';
 import { ChatMissionBridgeService } from './chat-mission-bridge.service.js';
+import { chatRealtimeHub, computeDeltaFromSnapshot } from './chat-realtime.hub.js';
 import {
+  deleteSingleTaskFromRelationalDb,
   loadOrMigrateRelationalChatData,
+  paginateConversationMessages,
   syncConversationsToRelationalDb,
   syncTasksToRelationalDb,
   syncUserPrefsToRelationalDb,
+  upsertSingleConversationHeaderToRelationalDb,
+  upsertSingleMessageToRelationalDb,
+  upsertSingleTaskToRelationalDb,
+  upsertSingleThreadReplyToRelationalDb,
 } from './chat-repository.service.js';
 import {
   computeInventoryReconciliation,
@@ -2018,7 +2025,19 @@ async function saveAccessConfig(fastify: FastifyInstance, accessConfig: MosChatA
   return normalized;
 }
 
-async function saveConversations(fastify: FastifyInstance, conversations: MosChatConversation[]) {
+async function saveConversations(
+  fastify: FastifyInstance,
+  conversations: MosChatConversation[],
+  hint?: {
+    touchedConversation?: MosChatConversation;
+    touchedMessage?: MosChatMessage;
+    touchedReply?: {
+      conversationId: string;
+      parentMessageId: string;
+      reply: MosChatThreadReply;
+    };
+  }
+) {
   const trimmed = trimConversationsRetention(conversations);
   const nextVersion = Date.now();
   if (memoryChatCache) {
@@ -2029,13 +2048,40 @@ async function saveConversations(fastify: FastifyInstance, conversations: MosCha
   invalidateNotificationsCache();
   writeChain = writeChain
     .then(async () => {
+      const relationalPromise = (async () => {
+        if (hint?.touchedReply) {
+          if (hint.touchedConversation) {
+            await upsertSingleConversationHeaderToRelationalDb(fastify, hint.touchedConversation);
+          }
+          await upsertSingleThreadReplyToRelationalDb(
+            fastify,
+            hint.touchedReply.conversationId,
+            hint.touchedReply.parentMessageId,
+            hint.touchedReply.reply
+          );
+          return;
+        }
+        if (hint?.touchedMessage && hint.touchedConversation) {
+          await Promise.all([
+            upsertSingleConversationHeaderToRelationalDb(fastify, hint.touchedConversation),
+            upsertSingleMessageToRelationalDb(fastify, hint.touchedConversation.id, hint.touchedMessage),
+          ]);
+          return;
+        }
+        if (hint?.touchedConversation && !hint.touchedMessage) {
+          await upsertSingleConversationHeaderToRelationalDb(fastify, hint.touchedConversation);
+          return;
+        }
+        await syncConversationsToRelationalDb(fastify, trimmed);
+      })();
+
       await Promise.all([
         fastify.prisma.crm.crmConfig.upsert({
           where: { key: CHAT_CONVERSATIONS_CONFIG_KEY },
           update: { value: JSON.stringify(trimmed) },
           create: { key: CHAT_CONVERSATIONS_CONFIG_KEY, value: JSON.stringify(trimmed) },
         }),
-        syncConversationsToRelationalDb(fastify, trimmed),
+        relationalPromise,
       ]);
     })
     .catch((err) => {
@@ -2043,7 +2089,14 @@ async function saveConversations(fastify: FastifyInstance, conversations: MosCha
     });
 }
 
-async function saveTasks(fastify: FastifyInstance, tasks: MosChatTaskItem[]) {
+async function saveTasks(
+  fastify: FastifyInstance,
+  tasks: MosChatTaskItem[],
+  hint?: {
+    touchedTask?: MosChatTaskItem;
+    deletedTaskId?: string;
+  }
+) {
   const trimmed = trimTasksRetention(tasks, memoryChatCache?.conversations);
   const nextVersion = Date.now();
   if (memoryChatCache) {
@@ -2054,13 +2107,25 @@ async function saveTasks(fastify: FastifyInstance, tasks: MosChatTaskItem[]) {
   invalidateNotificationsCache();
   writeChain = writeChain
     .then(async () => {
+      const relationalPromise = (async () => {
+        if (hint?.deletedTaskId) {
+          await deleteSingleTaskFromRelationalDb(fastify, hint.deletedTaskId);
+          return;
+        }
+        if (hint?.touchedTask) {
+          await upsertSingleTaskToRelationalDb(fastify, hint.touchedTask);
+          return;
+        }
+        await syncTasksToRelationalDb(fastify, trimmed);
+      })();
+
       await Promise.all([
         fastify.prisma.crm.crmConfig.upsert({
           where: { key: CHAT_TASKS_CONFIG_KEY },
           update: { value: JSON.stringify(trimmed) },
           create: { key: CHAT_TASKS_CONFIG_KEY, value: JSON.stringify(trimmed) },
         }),
-        syncTasksToRelationalDb(fastify, trimmed),
+        relationalPromise,
       ]);
     })
     .catch((err) => {
@@ -2698,7 +2763,20 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
 
       conv.messages.push(newMessage);
       conv.updatedAt = now.toISOString();
-      await saveConversations(fastify, conversations);
+      await saveConversations(fastify, conversations, {
+        touchedConversation: conv,
+        touchedMessage: newMessage,
+      });
+
+      chatRealtimeHub.publish({
+        type: 'MESSAGE_CREATED',
+        conversationId: conv.id,
+        actorStaffId: user.id,
+        payload: {
+          conversationId: conv.id,
+          message: newMessage,
+        },
+      });
 
       // Advance sender's read count for this conversation in userPrefs
       const userPrefKey = resolveUserPrefKey(user, staffDirectory);
@@ -2822,7 +2900,25 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         await ChatMissionBridgeService.syncChatReplyToMission(fastify, user, msg, replyItem, mosChatMediaRoot());
       }
 
-      await saveConversations(fastify, conversations);
+      await saveConversations(fastify, conversations, {
+        touchedConversation: conv,
+        touchedReply: {
+          conversationId: conv.id,
+          parentMessageId: msg.id,
+          reply: replyItem,
+        },
+      });
+
+      chatRealtimeHub.publish({
+        type: 'THREAD_REPLY_CREATED',
+        conversationId: conv.id,
+        actorStaffId: user.id,
+        payload: {
+          conversationId: conv.id,
+          messageId: msg.id,
+          reply: replyItem,
+        },
+      });
 
       // Advance sender's read count for this sub-thread in userPrefs
       const userPrefKey = resolveUserPrefKey(user, staffDirectory);
@@ -4702,7 +4798,27 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           mosChatMediaRoot()
         );
 
-        await Promise.all([saveConversations(fastify, conversations), saveTasks(fastify, tasks)]);
+        await Promise.all([
+          saveConversations(fastify, conversations, {
+            touchedConversation: conv,
+            touchedMessage: result.message,
+          }),
+          saveTasks(fastify, tasks, {
+            touchedTask: result.task || undefined,
+          }),
+        ]);
+
+        chatRealtimeHub.publish({
+          type: 'MISSION_UPDATED',
+          conversationId: conv.id,
+          actorStaffId: user.id,
+          payload: {
+            conversationId: conv.id,
+            mission: result.mission,
+            message: result.message || null,
+            task: result.task || null,
+          },
+        });
 
         return {
           success: true,
@@ -4751,7 +4867,25 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
           tasks
         );
 
-        await Promise.all([saveConversations(fastify, conversations), saveTasks(fastify, tasks)]);
+        await Promise.all([
+          saveConversations(fastify, conversations),
+          saveTasks(fastify, tasks, {
+            touchedTask: result.task || undefined,
+          }),
+        ]);
+
+        chatRealtimeHub.publish({
+          type: 'MISSION_UPDATED',
+          conversationId: result.mission.conversationId || body.conversationId || null,
+          actorStaffId: user.id,
+          payload: {
+            conversationId: result.mission.conversationId || body.conversationId || null,
+            mission: result.mission,
+            message: result.message || null,
+            task: result.task || null,
+            systemReply: result.systemReply || null,
+          },
+        });
 
         return {
           success: true,
@@ -5244,6 +5378,149 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         return reply
           .status(500)
           .send({ error: 'Internal Server Error', message: 'Không thể lưu quy trình từ luồng chat.' });
+      }
+    }
+  );
+
+  // ================= ENTERPRISE SCALE: SSE STREAM, DELTA SYNC & LAZY ROOM PAGINATION =================
+
+  // GET /api/chat/stream (Server-Sent Events real-time stream for 100+ concurrent staff)
+  fastify.get(
+    '/chat/stream',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      const user = (request as SafeAny).user as JwtUserPayload | undefined;
+      chatRealtimeHub.registerSseClient(reply, user?.id ?? null);
+      return reply;
+    }
+  );
+
+  // GET /api/chat/sync?since=<isoTimestamp> (Incremental Delta Sync)
+  fastify.get(
+    '/chat/sync',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const user = (request as SafeAny).user as JwtUserPayload | undefined;
+        const query = (request.query || {}) as { since?: string };
+        const [{ conversations, tasks, accessConfig, userPrefsByUserKey }, staffDirectory] = await Promise.all([
+          loadChatState(fastify),
+          loadStaffDirectoryCached(fastify),
+        ]);
+
+        if (!evaluateCanUserAccessMosChat(user, staffDirectory, accessConfig)) {
+          return reply.status(403).send({
+            error: 'Forbidden',
+            message: 'Tài khoản của bạn chưa được cấp quyền truy cập mOS Chat.',
+          });
+        }
+
+        const didSyncMissions = await ChatMissionBridgeService.syncLinkedMissionsIntoChatState(
+          fastify,
+          conversations,
+          tasks
+        );
+        if (didSyncMissions) {
+          await Promise.all([saveConversations(fastify, conversations), saveTasks(fastify, tasks)]);
+        }
+
+        const userPrefKey = resolveUserPrefKey(user, staffDirectory);
+        const currentUserPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
+
+        const visibleConversations = conversations
+          .filter((c) => canUserAccessConversation(c, user, staffDirectory))
+          .map((c) => formatConversationForUser(c, user, staffDirectory, currentUserPrefs, userPrefsByUserKey));
+
+        const visibleConvIds = new Set(visibleConversations.map((c) => c.id));
+        const visibleTasks = tasks.filter((t) => visibleConvIds.has(t.conversationId));
+
+        const delta = computeDeltaFromSnapshot(
+          {
+            conversations: visibleConversations,
+            tasks: visibleTasks,
+          },
+          query.since
+        );
+
+        return {
+          success: true,
+          ...delta,
+        };
+      } catch (err: SafeAny) {
+        fastify.log.error('GET /chat/sync error:', err);
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Không thể đồng bộ dữ liệu mOS Chat.',
+        });
+      }
+    }
+  );
+
+  // GET /api/chat/conversations/:conversationId/messages?before=<cursor>&after=<cursor>&limit=<n>
+  fastify.get(
+    '/chat/conversations/:conversationId/messages',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const user = (request as SafeAny).user as JwtUserPayload | undefined;
+        const { conversationId } = request.params as { conversationId: string };
+        const query = (request.query || {}) as { before?: string; after?: string; limit?: string | number };
+
+        const [{ conversations, userPrefsByUserKey }, staffDirectory] = await Promise.all([
+          loadChatState(fastify),
+          loadStaffDirectoryCached(fastify),
+        ]);
+
+        const conv = conversations.find((c) => c.id === conversationId);
+        if (!conv) {
+          return reply.status(404).send({
+            error: 'Not Found',
+            message: 'Không tìm thấy cuộc trò chuyện.',
+          });
+        }
+
+        if (!canUserAccessConversation(conv, user, staffDirectory)) {
+          return reply.status(403).send({
+            error: 'Forbidden',
+            message: 'Bạn không có quyền truy cập cuộc trò chuyện này.',
+          });
+        }
+
+        const userPrefKey = resolveUserPrefKey(user, staffDirectory);
+        const currentUserPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
+        const formattedConv = formatConversationForUser(
+          conv,
+          user,
+          staffDirectory,
+          currentUserPrefs,
+          userPrefsByUserKey
+        );
+
+        const page = paginateConversationMessages(formattedConv.messages || [], {
+          before: query.before || null,
+          after: query.after || null,
+          limit: query.limit != null ? Number(query.limit) : 50,
+        });
+
+        return {
+          success: true,
+          conversationId: conv.id,
+          messages: page.messages,
+          nextCursor: page.nextCursor,
+          hasMore: page.hasMore,
+        };
+      } catch (err: SafeAny) {
+        fastify.log.error('GET /chat/conversations/:conversationId/messages error:', err);
+        return reply.status(500).send({
+          error: 'Internal Server Error',
+          message: 'Không thể tải lịch sử tin nhắn.',
+        });
       }
     }
   );

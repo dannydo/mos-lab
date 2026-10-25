@@ -200,6 +200,7 @@ import {
   triggerBuzzVibration,
 } from './utils/chat-helpers';
 import { useMosChatBridgeListener } from './store/mos-chat-bridge';
+import { mergeDeltaConversations, mergeDeltaTasks, useChatRealtimeSync } from './store/useChatRealtimeSync';
 import { MosChatWorkflowCard } from './workflows/MosChatWorkflowCard';
 import { MosChatSaveThreadWorkflowModal, MosChatTriggerWorkflowModal } from './workflows/MosChatWorkflowModals';
 import { MosChatMermaidBlock } from './MosChatMermaidBlock';
@@ -1872,6 +1873,25 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [fetchBootstrap, open, dockedConvIds.length]);
+
+  useChatRealtimeSync({
+    enabled: Boolean(open || dockedConvIds.length > 0),
+    intervalMs: 12_000,
+    onDeltaSynced: (delta) => {
+      if (
+        delta.updatedConversations.length > 0 ||
+        delta.updatedMessages.length > 0 ||
+        delta.updatedMissions.length > 0
+      ) {
+        setConversations((prev) =>
+          mergeDeltaConversations(prev, delta.updatedConversations, delta.updatedMessages, delta.updatedMissions)
+        );
+      }
+      if (delta.updatedTasks.length > 0 || delta.updatedMissions.length > 0) {
+        setTasks((prev) => mergeDeltaTasks(prev, delta.updatedTasks, delta.updatedMissions));
+      }
+    },
+  });
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof BroadcastChannel === 'undefined') return;

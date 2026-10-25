@@ -21,7 +21,10 @@ import type {
   MosChatAccessConfig,
   MosChatBootstrapResponse,
   MosChatConversation,
+  MosChatDeltaSyncResponse,
   MosChatMessage,
+  MosChatPaginatedMessagesQuery,
+  MosChatPaginatedMessagesResponse,
   MosChatTaskItem,
   MosChatThreadReply,
   MosChatUserSidebarPrefs,
@@ -56,6 +59,25 @@ export const chatApi = {
         options
       );
       return res;
+    },
+    syncDelta: async (since?: string, options?: ApiRequestOptions): Promise<MosChatDeltaSyncResponse> => {
+      return dedupeApiGet<MosChatDeltaSyncResponse>('/chat/sync', since ? { since } : undefined, 1500, options);
+    },
+    listConversationMessages: async (
+      conversationId: string,
+      params?: MosChatPaginatedMessagesQuery,
+      options?: ApiRequestOptions
+    ): Promise<MosChatPaginatedMessagesResponse> => {
+      const query: Record<string, string> = {};
+      if (params?.before) query.before = params.before;
+      if (params?.after) query.after = params.after;
+      if (params?.limit != null) query.limit = String(params.limit);
+      return dedupeApiGet<MosChatPaginatedMessagesResponse>(
+        `/chat/conversations/${encodeURIComponent(conversationId)}/messages`,
+        Object.keys(query).length > 0 ? query : undefined,
+        1500,
+        options
+      );
     },
     getAccessConfig: async (
       options?: ApiRequestOptions

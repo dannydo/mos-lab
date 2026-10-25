@@ -8112,7 +8112,7 @@
         "path": "/api/chat/bootstrap",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2213
+        "line": 2282
       }
     },
     {
@@ -8126,7 +8126,7 @@
         "path": "/api/chat/user-prefs",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2298
+        "line": 2367
       }
     },
     {
@@ -8140,7 +8140,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2373
+        "line": 2442
       }
     },
     {
@@ -8154,7 +8154,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2399
+        "line": 2468
       }
     },
     {
@@ -8168,7 +8168,7 @@
         "path": "/api/chat/upload-image",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2448
+        "line": 2517
       }
     },
     {
@@ -8182,7 +8182,7 @@
         "path": "/api/chat/media/:fileName",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2504
+        "line": 2573
       }
     },
     {
@@ -8196,7 +8196,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2596
+        "line": 2665
       }
     },
     {
@@ -8210,7 +8210,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2601
+        "line": 2670
       }
     },
     {
@@ -8224,7 +8224,7 @@
         "path": "/api/chat/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2606
+        "line": 2675
       }
     },
     {
@@ -8238,7 +8238,7 @@
         "path": "/api/chat/threads",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2730
+        "line": 2812
       }
     },
     {
@@ -8252,7 +8252,7 @@
         "path": "/api/chat/threads/move",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2850
+        "line": 2950
       }
     },
     {
@@ -8266,7 +8266,7 @@
         "path": "/api/chat/messages/:messageId/reaction",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2989
+        "line": 3089
       }
     },
     {
@@ -8280,7 +8280,7 @@
         "path": "/api/chat/messages/:messageId/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3078
+        "line": 3178
       }
     },
     {
@@ -8294,7 +8294,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3109
+        "line": 3209
       }
     },
     {
@@ -8308,7 +8308,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3191
+        "line": 3291
       }
     },
     {
@@ -8322,7 +8322,7 @@
         "path": "/api/chat/messages/:messageId/restore",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3266
+        "line": 3366
       }
     },
     {
@@ -8336,7 +8336,7 @@
         "path": "/api/chat/messages/:messageId/buzz",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3348
+        "line": 3448
       }
     },
     {
@@ -8350,7 +8350,7 @@
         "path": "/api/chat/tasks",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3460
+        "line": 3560
       }
     },
     {
@@ -8364,7 +8364,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3661
+        "line": 3761
       }
     },
     {
@@ -8378,7 +8378,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3780
+        "line": 3880
       }
     },
     {
@@ -8392,7 +8392,7 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3829
+        "line": 3929
       }
     },
     {
@@ -8406,7 +8406,7 @@
         "path": "/api/chat/conversations/:id/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4024
+        "line": 4124
       }
     },
     {
@@ -8420,7 +8420,7 @@
         "path": "/api/chat/conversations/:id/threads/:messageId/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4108
+        "line": 4208
       }
     },
     {
@@ -8434,7 +8434,7 @@
         "path": "/api/chat/conversations/:id/unread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4168
+        "line": 4268
       }
     },
     {
@@ -8448,7 +8448,7 @@
         "path": "/api/chat/conversations/:id/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4212
+        "line": 4312
       }
     },
     {
@@ -8462,7 +8462,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4257
+        "line": 4357
       }
     },
     {
@@ -8476,7 +8476,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4363
+        "line": 4463
       }
     },
     {
@@ -8490,7 +8490,7 @@
         "path": "/api/chat/conversations/:id/nickname",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4438
+        "line": 4538
       }
     },
     {
@@ -8504,7 +8504,7 @@
         "path": "/api/chat/conversations/:id",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4544
+        "line": 4644
       }
     },
     {
@@ -8518,7 +8518,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4660
+        "line": 4760
       }
     },
     {
@@ -8532,7 +8532,7 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4721
+        "line": 4841
       }
     },
     {
@@ -8546,7 +8546,7 @@
         "path": "/api/chat/workflows",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4774
+        "line": 4912
       }
     },
     {
@@ -8560,7 +8560,7 @@
         "path": "/api/chat/workflows/instances",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4797
+        "line": 4935
       }
     },
     {
@@ -8574,7 +8574,7 @@
         "path": "/api/chat/workflows/instances/:instanceId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4978
+        "line": 5116
       }
     },
     {
@@ -8588,7 +8588,49 @@
         "path": "/api/chat/workflows/templates/from-thread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 5155
+        "line": 5293
+      }
+    },
+    {
+      "id": "route:GET:/api/chat/stream",
+      "type": "FastifyRoute",
+      "label": "GET /api/chat/stream",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/chat/stream",
+        "module": "chat",
+        "handler": "inlineHandler",
+        "line": 5388
+      }
+    },
+    {
+      "id": "route:GET:/api/chat/sync",
+      "type": "FastifyRoute",
+      "label": "GET /api/chat/sync",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/chat/sync",
+        "module": "chat",
+        "handler": "inlineHandler",
+        "line": 5401
+      }
+    },
+    {
+      "id": "route:GET:/api/chat/conversations/:conversationId/messages",
+      "type": "FastifyRoute",
+      "label": "GET /api/chat/conversations/:conversationId/messages",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/chat/conversations/:conversationId/messages",
+        "module": "chat",
+        "handler": "inlineHandler",
+        "line": 5464
       }
     },
     {
@@ -8980,7 +9022,7 @@
         "path": "/api/customers/booking",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 31
+        "line": 32
       }
     },
     {
@@ -8994,7 +9036,7 @@
         "path": "/api/customers/booking/:id/promotions",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 408
+        "line": 409
       }
     },
     {
@@ -9008,7 +9050,7 @@
         "path": "/api/customers/booking/:id/reschedule-eligibility",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 455
+        "line": 456
       }
     },
     {
@@ -9022,7 +9064,7 @@
         "path": "/api/customers/booking/:id",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 487
+        "line": 488
       }
     },
     {
@@ -9036,7 +9078,7 @@
         "path": "/api/customers/booking/:id",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 864
+        "line": 879
       }
     },
     {
@@ -9050,7 +9092,7 @@
         "path": "/api/customers/booking-slots",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 957
+        "line": 972
       }
     },
     {
@@ -19095,6 +19137,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:InboxIdeTaskRecentComment",
+      "type": "SharedType",
+      "label": "InboxIdeTaskRecentComment",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/bug-report.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "InboxIdeTaskRecentComment",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:InboxIdeTaskProvisioningRequest",
       "type": "SharedType",
       "label": "InboxIdeTaskProvisioningRequest",
@@ -25911,6 +25965,30 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:MosChatMissionExecutionTrack",
+      "type": "SharedType",
+      "label": "MosChatMissionExecutionTrack",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatMissionExecutionTrack",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatMissionArtifactPreview",
+      "type": "SharedType",
+      "label": "MosChatMissionArtifactPreview",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatMissionArtifactPreview",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:MosChatMissionSummary",
       "type": "SharedType",
       "label": "MosChatMissionSummary",
@@ -26627,6 +26705,66 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "SaveThreadAsWorkflowTemplateResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatPaginatedMessagesQuery",
+      "type": "SharedType",
+      "label": "MosChatPaginatedMessagesQuery",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatPaginatedMessagesQuery",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatPaginatedMessagesResponse",
+      "type": "SharedType",
+      "label": "MosChatPaginatedMessagesResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatPaginatedMessagesResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatDeltaSyncResponse",
+      "type": "SharedType",
+      "label": "MosChatDeltaSyncResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatDeltaSyncResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatRealtimeEventType",
+      "type": "SharedType",
+      "label": "MosChatRealtimeEventType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatRealtimeEventType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatRealtimeEvent",
+      "type": "SharedType",
+      "label": "MosChatRealtimeEvent",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatRealtimeEvent",
         "package": "@mos-lab/shared"
       }
     },
@@ -31407,6 +31545,18 @@
       }
     },
     {
+      "id": "uicomp:MissionGateCard.test",
+      "type": "UIComponent",
+      "label": "<MissionGateCard.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MissionGateCard.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MissionGateCard.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatAvatar.test",
       "type": "UIComponent",
       "label": "<MosChatAvatar.test />",
@@ -31791,6 +31941,54 @@
       }
     },
     {
+      "id": "uicomp:MissionArtifactPreview",
+      "type": "UIComponent",
+      "label": "<MissionArtifactPreview />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/shared/missions/MissionArtifactPreview.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MissionArtifactPreview",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MissionGateCard",
+      "type": "UIComponent",
+      "label": "<MissionGateCard />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/shared/missions/MissionGateCard.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MissionGateCard",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MissionProposalModal",
+      "type": "UIComponent",
+      "label": "<MissionProposalModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/shared/missions/MissionProposalModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MissionProposalModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:TaskPeopleFlowBadge",
+      "type": "UIComponent",
+      "label": "<TaskPeopleFlowBadge />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/shared/tasks/TaskPeopleFlowBadge.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "TaskPeopleFlowBadge",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:mos-chat-bridge",
       "type": "UIComponent",
       "label": "<mos-chat-bridge />",
@@ -31799,6 +31997,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "mos-chat-bridge",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:useChatRealtimeSync",
+      "type": "UIComponent",
+      "label": "<useChatRealtimeSync />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/store/useChatRealtimeSync.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "useChatRealtimeSync",
         "isPrimitive": false
       }
     },
@@ -34024,7 +34234,7 @@
       "filePath": "apps/api/src/modules/bug-reports/bug-report.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 128227,
+        "sizeBytes": 128241,
         "lineCount": 3064,
         "ext": ".ts"
       }
@@ -34180,8 +34390,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-implementation.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 81111,
-        "lineCount": 2251,
+        "sizeBytes": 82442,
+        "lineCount": 2297,
         "ext": ".ts"
       }
     },
@@ -34193,8 +34403,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-implementation.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 159837,
-        "lineCount": 4005,
+        "sizeBytes": 162018,
+        "lineCount": 4075,
         "ext": ".ts"
       }
     },
@@ -34641,6 +34851,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/chat/chat-enterprise-sync.test.ts",
+      "type": "File",
+      "label": "chat-enterprise-sync.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-enterprise-sync.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 5706,
+        "lineCount": 174,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/chat/chat-message-edit-permission.test.ts",
       "type": "File",
       "label": "chat-message-edit-permission.test.ts",
@@ -34661,8 +34884,8 @@
       "filePath": "apps/api/src/modules/chat/chat-mission-bridge.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 23045,
-        "lineCount": 663,
+        "sizeBytes": 26949,
+        "lineCount": 779,
         "ext": ".ts"
       }
     },
@@ -34674,8 +34897,21 @@
       "filePath": "apps/api/src/modules/chat/chat-mission-bridge.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 54872,
-        "lineCount": 1369,
+        "sizeBytes": 59849,
+        "lineCount": 1515,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/chat/chat-realtime.hub.ts",
+      "type": "File",
+      "label": "chat-realtime.hub.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-realtime.hub.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7997,
+        "lineCount": 258,
         "ext": ".ts"
       }
     },
@@ -34687,8 +34923,8 @@
       "filePath": "apps/api/src/modules/chat/chat-repository.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 39632,
-        "lineCount": 1018,
+        "sizeBytes": 49856,
+        "lineCount": 1314,
         "ext": ".ts"
       }
     },
@@ -34778,8 +35014,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 200968,
-        "lineCount": 5247,
+        "sizeBytes": 209985,
+        "lineCount": 5528,
         "ext": ".ts"
       }
     },
@@ -34986,8 +35222,8 @@
       "filePath": "apps/api/src/modules/customers/routes/booking.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 62325,
-        "lineCount": 1451,
+        "sizeBytes": 62935,
+        "lineCount": 1466,
         "ext": ".ts"
       }
     },
@@ -35324,8 +35560,8 @@
       "filePath": "apps/api/src/modules/customers/services/booking-update.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 1848,
-        "lineCount": 58,
+        "sizeBytes": 4871,
+        "lineCount": 134,
         "ext": ".ts"
       }
     },
@@ -35337,8 +35573,8 @@
       "filePath": "apps/api/src/modules/customers/services/booking-update.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4775,
-        "lineCount": 126,
+        "sizeBytes": 5605,
+        "lineCount": 144,
         "ext": ".ts"
       }
     },
@@ -44515,8 +44751,8 @@
       "filePath": "apps/web/lib/api/chat.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12195,
-        "lineCount": 304,
+        "sizeBytes": 13249,
+        "lineCount": 334,
         "ext": ".ts"
       }
     },
@@ -45256,8 +45492,8 @@
       "filePath": "packages/shared/src/types/bug-report.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 46090,
-        "lineCount": 1431,
+        "sizeBytes": 46318,
+        "lineCount": 1440,
         "ext": ".ts"
       }
     },
@@ -45581,8 +45817,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 20064,
-        "lineCount": 773,
+        "sizeBytes": 22120,
+        "lineCount": 851,
         "ext": ".ts"
       }
     },
@@ -49862,6 +50098,27 @@
     {
       "id": "edge:route:POST:/api/chat/workflows/templates/from-thread:ws:apps/api",
       "source": "route:POST:/api/chat/workflows/templates/from-thread",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/chat/stream:ws:apps/api",
+      "source": "route:GET:/api/chat/stream",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/chat/sync:ws:apps/api",
+      "source": "route:GET:/api/chat/sync",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/chat/conversations/:conversationId/messages:ws:apps/api",
+      "source": "route:GET:/api/chat/conversations/:conversationId/messages",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -55502,6 +55759,13 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:InboxIdeTaskRecentComment:ws:packages/shared",
+      "source": "type:@mos-lab/shared:InboxIdeTaskRecentComment",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:InboxIdeTaskProvisioningRequest:ws:packages/shared",
       "source": "type:@mos-lab/shared:InboxIdeTaskProvisioningRequest",
       "target": "ws:packages/shared",
@@ -59478,6 +59742,20 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:MosChatMissionExecutionTrack:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatMissionExecutionTrack",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatMissionArtifactPreview:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatMissionArtifactPreview",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:MosChatMissionSummary:ws:packages/shared",
       "source": "type:@mos-lab/shared:MosChatMissionSummary",
       "target": "ws:packages/shared",
@@ -59893,6 +60171,41 @@
     {
       "id": "edge:type:@mos-lab/shared:SaveThreadAsWorkflowTemplateResponse:ws:packages/shared",
       "source": "type:@mos-lab/shared:SaveThreadAsWorkflowTemplateResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatPaginatedMessagesQuery:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatPaginatedMessagesQuery",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatPaginatedMessagesResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatPaginatedMessagesResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatDeltaSyncResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatDeltaSyncResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatRealtimeEventType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatRealtimeEventType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatRealtimeEvent:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatRealtimeEvent",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -63601,6 +63914,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MissionGateCard.test:ws:apps/web",
+      "source": "uicomp:MissionGateCard.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MissionGateCard.test:token:color:primary",
+      "source": "uicomp:MissionGateCard.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatAvatar.test:ws:apps/web",
       "source": "uicomp:MosChatAvatar.test",
       "target": "ws:apps/web",
@@ -64049,6 +64376,62 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MissionArtifactPreview:ws:apps/web",
+      "source": "uicomp:MissionArtifactPreview",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MissionArtifactPreview:token:color:primary",
+      "source": "uicomp:MissionArtifactPreview",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MissionGateCard:ws:apps/web",
+      "source": "uicomp:MissionGateCard",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MissionGateCard:token:color:primary",
+      "source": "uicomp:MissionGateCard",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MissionProposalModal:ws:apps/web",
+      "source": "uicomp:MissionProposalModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MissionProposalModal:token:color:primary",
+      "source": "uicomp:MissionProposalModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:TaskPeopleFlowBadge:ws:apps/web",
+      "source": "uicomp:TaskPeopleFlowBadge",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:TaskPeopleFlowBadge:token:color:primary",
+      "source": "uicomp:TaskPeopleFlowBadge",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:mos-chat-bridge:ws:apps/web",
       "source": "uicomp:mos-chat-bridge",
       "target": "ws:apps/web",
@@ -64058,6 +64441,20 @@
     {
       "id": "edge:uicomp:mos-chat-bridge:token:color:primary",
       "source": "uicomp:mos-chat-bridge",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:useChatRealtimeSync:ws:apps/web",
+      "source": "uicomp:useChatRealtimeSync",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:useChatRealtimeSync:token:color:primary",
+      "source": "uicomp:useChatRealtimeSync",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -66114,6 +66511,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/chat/chat-enterprise-sync.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-enterprise-sync.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/chat/chat-message-edit-permission.test.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/chat/chat-message-edit-permission.test.ts",
       "target": "ws:packages/shared",
@@ -66123,6 +66527,13 @@
     {
       "id": "edge:file:apps/api/src/modules/chat/chat-mission-bridge.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/chat/chat-mission-bridge.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/chat-realtime.hub.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-realtime.hub.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -76509,6 +76920,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/architecture:route:GET:/api/chat/conversations/:conversationId/messages",
+      "source": "page:/dashboard/architecture",
+      "target": "route:GET:/api/chat/conversations/:conversationId/messages",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/architecture:route:GET:/api/cs/tickets/department-handlers",
       "source": "page:/dashboard/architecture",
       "target": "route:GET:/api/cs/tickets/department-handlers",
@@ -79067,6 +79485,13 @@
       "id": "edge:page:/dashboard/design-system:route:PUT:/api/chat/conversations/:id/nickname",
       "source": "page:/dashboard/design-system",
       "target": "route:PUT:/api/chat/conversations/:id/nickname",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:GET:/api/chat/conversations/:conversationId/messages",
+      "source": "page:/dashboard/design-system",
+      "target": "route:GET:/api/chat/conversations/:conversationId/messages",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -82483,6 +82908,27 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/chat/workflows/templates/from-thread",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/chat/workflows/templates/from-thread",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/chat/stream",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/chat/stream",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/chat/sync",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/chat/sync",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/chat/conversations/:conversationId/messages",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/chat/conversations/:conversationId/messages",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -87569,6 +88015,27 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/chat/stream",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/chat/stream",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/chat/sync",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/chat/sync",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/chat/conversations/:conversationId/messages",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/chat/conversations/:conversationId/messages",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/cs/happy-calls",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/cs/happy-calls",
@@ -92581,6 +93048,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/chat/conversations/:conversationId/messages",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:GET:/api/chat/conversations/:conversationId/messages",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/cs/tickets/department-handlers",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:GET:/api/cs/tickets/department-handlers",
@@ -95948,6 +96422,27 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/chat/stream",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/chat/stream",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/chat/sync",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/chat/sync",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/chat/conversations/:conversationId/messages",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/chat/conversations/:conversationId/messages",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/cs/happy-calls",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/cs/happy-calls",
@@ -98420,31 +98915,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3525,
-    "totalEdges": 7497,
+    "totalNodes": 3544,
+    "totalEdges": 7534,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 176,
-      "FastifyRoute": 726,
+      "FastifyRoute": 729,
       "Component": 62,
-      "SharedType": 1287,
+      "SharedType": 1295,
       "DesignToken": 12,
-      "UIComponent": 276,
-      "File": 983
+      "UIComponent": 282,
+      "File": 985
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1475,
-      "HANDLES_ROUTE": 726,
-      "RENDERS": 338,
-      "USES_TOKEN": 278,
-      "IMPORTS": 538,
+      "EXPORTS": 1483,
+      "HANDLES_ROUTE": 729,
+      "RENDERS": 344,
+      "USES_TOKEN": 284,
+      "IMPORTS": 540,
       "QUERIES_MODEL": 406,
-      "API_CALL": 3736
+      "API_CALL": 3748
     },
-    "fastifyRouteCount": 731,
+    "fastifyRouteCount": 734,
     "prismaModelCount": 176,
     "nextPageCount": 62,
-    "sharedTypeCount": 1287
+    "sharedTypeCount": 1295
   },
   "routes": [
     {
@@ -101138,6 +101633,27 @@
     {
       "method": "POST",
       "path": "/api/chat/workflows/templates/from-thread",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "chat"
+    },
+    {
+      "method": "GET",
+      "path": "/api/chat/stream",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "chat"
+    },
+    {
+      "method": "GET",
+      "path": "/api/chat/sync",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "chat"
+    },
+    {
+      "method": "GET",
+      "path": "/api/chat/conversations/:conversationId/messages",
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "chat"

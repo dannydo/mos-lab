@@ -2099,6 +2099,52 @@ test('Antigravity (AG) task bridge claims provisioning for eligible execution ow
   });
 });
 
+test('Antigravity task bridge provisioning includes recent subthread comments when present', async () => {
+  const commentCreatedAt = new Date('2026-10-25T11:00:00.000Z');
+  const job = {
+    id: 'ag-job-2',
+    reportId: 112,
+    branchName: 'task/mos-bug-112-comments',
+    sourceVersion: 'source-v3',
+    planVersion: 'plan-v3',
+    ideProvisioningRequestId: 'ag-req-2',
+    progressLabel: null,
+    report: {
+      id: 112,
+      requestType: 'BUG',
+      title: 'Customer note crash',
+      comments: [
+        {
+          id: 513,
+          body: 'Modal không hiện ra, kiểm tra lại dữ liệu note cũ',
+          authorType: 'STAFF',
+          createdAt: commentCreatedAt,
+          author: { displayName: 'Danny Do' },
+        },
+      ],
+    },
+  };
+  const fastify = {
+    prisma: {
+      crm: {
+        crmInboxImplementationJob: {
+          findFirst: async () => job,
+          updateMany: async () => ({ count: 1 }),
+        },
+      },
+    },
+  };
+  const claimed = await InboxImplementationService.claimAgTaskProvisioning(fastify as never, 'antigravity-worker');
+  assert.deepEqual(claimed?.recentComments, [
+    {
+      id: 513,
+      authorName: 'Danny Do',
+      content: 'Modal không hiện ra, kiểm tra lại dữ liệu note cũ',
+      createdAt: commentCreatedAt.toISOString(),
+    },
+  ]);
+});
+
 test('approveImplementation is idempotent and creates only one IMPLEMENTATION_APPROVED audit for same source version', async () => {
   let auditsCreated = 0;
   let updatesCount = 0;

@@ -569,6 +569,13 @@ export interface BindInboxIdeTaskRequest {
   taskId: string;
 }
 
+export interface InboxIdeTaskRecentComment {
+  id: number;
+  authorName?: string | null;
+  content: string;
+  createdAt: string;
+}
+
 /** A bounded local-only request. It never contains a receipt nonce or task prompt. */
 export interface InboxIdeTaskProvisioningRequest {
   jobId: string;
@@ -580,6 +587,7 @@ export interface InboxIdeTaskProvisioningRequest {
   sourceVersion: string;
   planVersion: string;
   modelTier?: InboxImplementationModelTier;
+  recentComments?: InboxIdeTaskRecentComment[];
 }
 
 export interface CompleteInboxIdeTaskProvisioningRequest {
@@ -600,6 +608,7 @@ export interface InboxIdeTaskBridgeHandoff {
   sourceVersion: string;
   planVersion: string;
   receiptNonce: string;
+  recentComments?: InboxIdeTaskRecentComment[];
 }
 
 /**

@@ -864,3 +864,78 @@ export function resolveStaffAvatarUrl({
 
   return null;
 }
+
+export interface TaskPersonNode {
+  key: string;
+  name: string;
+  avatar: string | null;
+  color: string;
+}
+
+export function resolveTaskPeopleFlow(
+  task: {
+    creatorName?: string | null;
+    assignerId?: number | string | null;
+    assignerName?: string | null;
+    assigneeId?: number | string | null;
+    assigneeName?: string | null;
+    sourceAuthorName?: string | null;
+  },
+  staffDirectory: MosChatStaffMember[] = []
+): {
+  creator: TaskPersonNode;
+  assigner: TaskPersonNode;
+  assignee: TaskPersonNode;
+  participants: TaskPersonNode[];
+} {
+  const creatorName = task.sourceAuthorName || task.creatorName || 'Hệ thống';
+  const assignerName = task.assignerName || task.creatorName || creatorName;
+  const assigneeName = task.assigneeName || 'Chung';
+
+  const creatorAvatar = resolveStaffAvatarUrl({
+    name: creatorName,
+    staffDirectory,
+  });
+  const assignerAvatar = resolveStaffAvatarUrl({
+    staffId: task.assignerId,
+    name: assignerName,
+    staffDirectory,
+  });
+  const assigneeAvatar = resolveStaffAvatarUrl({
+    staffId: task.assigneeId,
+    name: assigneeName,
+    staffDirectory,
+  });
+
+  const participants: TaskPersonNode[] = [];
+  if (creatorName && creatorName !== assignerName && creatorName !== assigneeName) {
+    participants.push({
+      key: `creator-${creatorName}`,
+      name: creatorName,
+      avatar: creatorAvatar,
+      color: '#6366f1',
+    });
+  }
+
+  return {
+    creator: {
+      key: `creator-${creatorName}`,
+      name: creatorName,
+      avatar: creatorAvatar,
+      color: '#6366f1',
+    },
+    assigner: {
+      key: `assigner-${assignerName}`,
+      name: assignerName,
+      avatar: assignerAvatar,
+      color: '#0284c7',
+    },
+    assignee: {
+      key: `assignee-${assigneeName}`,
+      name: assigneeName,
+      avatar: assigneeAvatar,
+      color: '#d97706',
+    },
+    participants,
+  };
+}

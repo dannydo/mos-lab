@@ -859,7 +859,26 @@ export class InboxImplementationService {
           { ideProvisioningState: 'LEASED', ideProvisioningLeaseExpiresAt: { lt: now } },
         ],
       },
-      include: { report: { select: { id: true, requestType: true, title: true } } },
+      include: {
+        report: {
+          select: {
+            id: true,
+            requestType: true,
+            title: true,
+            comments: {
+              select: {
+                id: true,
+                body: true,
+                authorType: true,
+                createdAt: true,
+                author: { select: { displayName: true } },
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 8,
+            },
+          },
+        },
+      },
       orderBy: { createdAt: 'asc' },
     });
     if (!candidate?.ideProvisioningRequestId) return null;
@@ -891,6 +910,12 @@ export class InboxImplementationService {
       },
     });
     if (!claimed.count) return null;
+    const recentComments = (candidate.report.comments || []).map((c) => ({
+      id: c.id,
+      authorName: c.author?.displayName || (c.authorType === 'AGENT' ? 'Antigravity' : c.authorType),
+      content: c.body,
+      createdAt: c.createdAt ? new Date(c.createdAt).toISOString() : new Date().toISOString(),
+    }));
     return {
       jobId: candidate.id,
       requestId: candidate.ideProvisioningRequestId,
@@ -904,6 +929,7 @@ export class InboxImplementationService {
       sourceVersion: candidate.sourceVersion,
       planVersion: candidate.planVersion,
       ...(modelTier ? { modelTier } : {}),
+      ...(recentComments.length > 0 ? { recentComments } : {}),
     };
   }
 
@@ -925,7 +951,26 @@ export class InboxImplementationService {
           { ideProvisioningState: 'LEASED', ideProvisioningLeaseExpiresAt: { lt: now } },
         ],
       },
-      include: { report: { select: { id: true, requestType: true, title: true } } },
+      include: {
+        report: {
+          select: {
+            id: true,
+            requestType: true,
+            title: true,
+            comments: {
+              select: {
+                id: true,
+                body: true,
+                authorType: true,
+                createdAt: true,
+                author: { select: { displayName: true } },
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 8,
+            },
+          },
+        },
+      },
       orderBy: { createdAt: 'asc' },
     });
     if (!candidate?.ideProvisioningRequestId) return null;
@@ -954,6 +999,12 @@ export class InboxImplementationService {
       },
     });
     if (!claimed.count) return null;
+    const recentComments = (candidate.report.comments || []).map((c) => ({
+      id: c.id,
+      authorName: c.author?.displayName || (c.authorType === 'AGENT' ? 'Antigravity' : c.authorType),
+      content: c.body,
+      createdAt: c.createdAt ? new Date(c.createdAt).toISOString() : new Date().toISOString(),
+    }));
     return {
       jobId: candidate.id,
       requestId: candidate.ideProvisioningRequestId,
@@ -966,6 +1017,7 @@ export class InboxImplementationService {
       branchName: candidate.branchName,
       sourceVersion: candidate.sourceVersion,
       planVersion: candidate.planVersion,
+      ...(recentComments.length > 0 ? { recentComments } : {}),
     };
   }
 
@@ -1399,6 +1451,18 @@ export class InboxImplementationService {
         progressLabel: `${job.executionOwner === 'AG' ? 'Antigravity' : 'Codex'} đang triển khai code và kiểm thử`,
       },
     });
+    const comments = await fastify.prisma.crm.crmBugReportComment.findMany({
+      where: { reportId: job.reportId },
+      select: {
+        id: true,
+        body: true,
+        authorType: true,
+        createdAt: true,
+        author: { select: { displayName: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 8,
+    });
     return {
       phase: job.executionPhase as 'IDE_HANDOFF_READY' | 'IDE_COMMIT_HANDOFF',
       reportId: job.reportId,
@@ -1406,6 +1470,12 @@ export class InboxImplementationService {
       sourceVersion: job.sourceVersion,
       planVersion: job.planVersion,
       receiptNonce: job.ideReceiptNonce,
+      recentComments: comments.map((c) => ({
+        id: c.id,
+        authorName: c.author?.displayName || (c.authorType === 'AGENT' ? 'Antigravity' : c.authorType),
+        content: c.body,
+        createdAt: c.createdAt.toISOString(),
+      })),
     };
   }
   /** Retire only the reviewed plan, preserving its content and all historical evidence. */

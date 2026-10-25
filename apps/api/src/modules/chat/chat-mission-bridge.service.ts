@@ -17,6 +17,8 @@ import {
   type MosChatConversation,
   type MosChatImageAttachment,
   type MosChatMessage,
+  type MosChatMissionArtifactPreview,
+  type MosChatMissionExecutionTrack,
   type MosChatMissionStage,
   type MosChatMissionSummary,
   type MosChatStaffMember,
@@ -61,6 +63,88 @@ function inferRequestTypeFromText(text: string, explicit?: 'BUG' | 'FEATURE'): B
     return 'BUG';
   }
   return 'FEATURE';
+}
+
+export function inferMissionExecutionTrack(
+  text: string,
+  explicit?: MosChatMissionExecutionTrack
+): MosChatMissionExecutionTrack {
+  if (explicit === 'CODE_ENGINEERING' || explicit === 'PROCESS_CANON' || explicit === 'DATA_DECISION') {
+    return explicit;
+  }
+
+  const normalized = (text || '').toLowerCase();
+  const hasProcessKeywords =
+    /\b(kinh thánh|điều răn|quy trình|chính sách|workflow|kịch bản|nội quy|khung năng lực|biểu mẫu)\b/i.test(
+      normalized
+    );
+  const hasDataDecisionKeywords =
+    /\b(đối soát|sổ cái|ledger|cộng thêm|điều chỉnh lương|điều chỉnh tip|phân bổ lại|chuyển tệp|dữ liệu khách|gộp trùng)\b/i.test(
+      normalized
+    ) || /\b0\d{9}\s+cho\s+(anh|chị|em)\b/i.test(normalized);
+
+  if (hasDataDecisionKeywords) {
+    return 'DATA_DECISION';
+  }
+  if (hasProcessKeywords) {
+    return 'PROCESS_CANON';
+  }
+  return 'CODE_ENGINEERING';
+}
+
+export function buildMissionArtifactPreview(
+  track: MosChatMissionExecutionTrack,
+  options?: {
+    changedFilesCount?: number;
+    diffStat?: string | null;
+    summary?: string | null;
+    title?: string | null;
+  }
+): MosChatMissionArtifactPreview {
+  if (track === 'PROCESS_CANON') {
+    return {
+      track: 'PROCESS_CANON',
+      trackLabel: 'Quy trình & Kinh Thánh mOS',
+      gate1Label: 'Cổng 1: Duyệt Phương Án Quy Trình',
+      gate2Label: 'Cổng 2: Duyệt Bản Thảo Điều Răn',
+      gate3Label: 'Cổng 3: Áp Dụng Quy Trình Mới',
+      processDiff: {
+        canonRuleCode: null,
+        workflowCode: null,
+        beforeSummary: 'Quy chuẩn vận hành hiện hành',
+        afterSummary: options?.summary || options?.title || 'Cập nhật quy trình / điều răn mới',
+      },
+    };
+  }
+
+  if (track === 'DATA_DECISION') {
+    return {
+      track: 'DATA_DECISION',
+      trackLabel: 'Xử lý Dữ liệu & Ra Quyết Định',
+      gate1Label: 'Cổng 1: Duyệt Phương Án Dữ Liệu',
+      gate2Label: 'Cổng 2: Duyệt Kết Quả Dry-Run',
+      gate3Label: 'Cổng 3: Thực Thi Thay Đổi Dữ Liệu',
+      dataDryRun: {
+        targetTable: 'crm / legacy',
+        affectedRows: options?.changedFilesCount || 1,
+        impactSummary: options?.summary || options?.title || 'Mô phỏng tác động dữ liệu an toàn',
+        rollbackReady: true,
+      },
+    };
+  }
+
+  return {
+    track: 'CODE_ENGINEERING',
+    trackLabel: 'Kỹ thuật & Mã nguồn',
+    gate1Label: 'Cổng 1: Duyệt Phương Án Kỹ Thuật',
+    gate2Label: 'Cổng 2: Duyệt Commit & Test',
+    gate3Label: 'Cổng 3: Duyệt Deploy Production',
+    codeReceipt: {
+      changedFilesCount: options?.changedFilesCount ?? 0,
+      diffStat: options?.diffStat ?? null,
+      testsSummary: options?.summary ?? null,
+    },
+  };
 }
 
 function parseSafeStringList(json: string | null | undefined): string[] {
@@ -108,9 +192,11 @@ export function buildMissionSummaryFromReport(
     conversationId?: string;
     messageId?: string;
     taskId?: string | null;
+    executionTrack?: MosChatMissionExecutionTrack;
   }
 ): MosChatMissionSummary {
   const requestType: 'BUG' | 'FEATURE' = report.requestType === 'FEATURE' ? 'FEATURE' : 'BUG';
+  const executionTrack = inferMissionExecutionTrack(report.title || '', context?.executionTrack);
   const key = formatBugReportKey(report.id, requestType);
   const missionCode = `MSN-${report.id}`;
   const reporterName = report.reporter?.displayName || null;
@@ -216,6 +302,13 @@ export function buildMissionSummaryFromReport(
   const canConfirmClose = report.status === 'FIXED';
 
   const updatedAtDate = activeJob && activeJob.updatedAt > report.updatedAt ? activeJob.updatedAt : report.updatedAt;
+  const agentSummary = activeJob?.summary || report.resolution?.solutionSummary || null;
+  const artifactPreview = buildMissionArtifactPreview(executionTrack, {
+    changedFilesCount: changedFiles.length,
+    diffStat: activeJob?.diffStat || null,
+    summary: agentSummary,
+    title: report.title,
+  });
 
   return {
     reportId: report.id,
@@ -223,6 +316,8 @@ export function buildMissionSummaryFromReport(
     missionKey: key,
     missionCode,
     requestType,
+    executionTrack,
+    artifactPreview,
     title: report.title,
     status: report.status,
     clarificationStatus: report.clarificationStatus,
@@ -1286,16 +1381,18 @@ export class ChatMissionBridgeService {
         });
 
         if (report.reporterStaffId && report.reporterStaffId !== actorStaffId) {
-          await tx.crmBugReportNotification.create({
-            data: {
-              reportId,
-              recipientStaffId: report.reporterStaffId,
-              type: 'REPORTER_REOPENED',
-              title: `Đề xuất nâng cấp #${reportId}`,
-              message: `${user.username || 'Nhân sự'} đã gửi đề xuất nâng cấp / chỉnh thêm: ${reworkReason}`,
-              actionUrl: `/dashboard/inbox?reportId=${reportId}`,
-            },
-          }).catch(() => {});
+          await tx.crmBugReportNotification
+            .create({
+              data: {
+                reportId,
+                recipientStaffId: report.reporterStaffId,
+                type: 'REPORTER_REOPENED',
+                title: `Đề xuất nâng cấp #${reportId}`,
+                message: `${user.username || 'Nhân sự'} đã gửi đề xuất nâng cấp / chỉnh thêm: ${reworkReason}`,
+                actionUrl: `/dashboard/inbox?reportId=${reportId}`,
+              },
+            })
+            .catch(() => {});
         }
       });
 
