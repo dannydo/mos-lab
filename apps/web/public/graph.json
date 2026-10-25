@@ -31533,6 +31533,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatSpaceMembersModal",
+      "type": "UIComponent",
+      "label": "<MosChatSpaceMembersModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/MosChatSpaceMembersModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatSpaceMembersModal",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosGoogleChatPortal",
       "type": "UIComponent",
       "label": "<MosGoogleChatPortal />",
@@ -31673,6 +31685,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "MosChatSpaceConfig.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatSpaceMembersModal.test",
+      "type": "UIComponent",
+      "label": "<MosChatSpaceMembersModal.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatSpaceMembersModal.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatSpaceMembersModal.test",
         "isPrimitive": false
       }
     },
@@ -33584,8 +33608,8 @@
       "filePath": "apps/api/src/middlewares/auth.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 1631,
-        "lineCount": 45,
+        "sizeBytes": 1814,
+        "lineCount": 48,
         "ext": ".ts"
       }
     },
@@ -34858,8 +34882,8 @@
       "filePath": "apps/api/src/modules/chat/chat-enterprise-sync.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5706,
-        "lineCount": 174,
+        "sizeBytes": 5658,
+        "lineCount": 162,
         "ext": ".ts"
       }
     },
@@ -34897,8 +34921,8 @@
       "filePath": "apps/api/src/modules/chat/chat-mission-bridge.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 59849,
-        "lineCount": 1515,
+        "sizeBytes": 59877,
+        "lineCount": 1513,
         "ext": ".ts"
       }
     },
@@ -34910,8 +34934,8 @@
       "filePath": "apps/api/src/modules/chat/chat-realtime.hub.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 7997,
-        "lineCount": 258,
+        "sizeBytes": 7985,
+        "lineCount": 256,
         "ext": ".ts"
       }
     },
@@ -34923,8 +34947,8 @@
       "filePath": "apps/api/src/modules/chat/chat-repository.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 49856,
-        "lineCount": 1314,
+        "sizeBytes": 49844,
+        "lineCount": 1308,
         "ext": ".ts"
       }
     },
@@ -44751,8 +44775,8 @@
       "filePath": "apps/web/lib/api/chat.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13249,
-        "lineCount": 334,
+        "sizeBytes": 13191,
+        "lineCount": 326,
         "ext": ".ts"
       }
     },
@@ -45453,8 +45477,8 @@
       "filePath": "packages/shared/src/types/auth.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 6641,
-        "lineCount": 249,
+        "sizeBytes": 6684,
+        "lineCount": 252,
         "ext": ".ts"
       }
     },
@@ -63900,6 +63924,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatSpaceMembersModal:ws:apps/web",
+      "source": "uicomp:MosChatSpaceMembersModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatSpaceMembersModal:token:color:primary",
+      "source": "uicomp:MosChatSpaceMembersModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosGoogleChatPortal:ws:apps/web",
       "source": "uicomp:MosGoogleChatPortal",
       "target": "ws:apps/web",
@@ -64063,6 +64101,20 @@
     {
       "id": "edge:uicomp:MosChatSpaceConfig.test:token:color:primary",
       "source": "uicomp:MosChatSpaceConfig.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatSpaceMembersModal.test:ws:apps/web",
+      "source": "uicomp:MosChatSpaceMembersModal.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatSpaceMembersModal.test:token:color:primary",
+      "source": "uicomp:MosChatSpaceMembersModal.test",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -98915,8 +98967,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 3544,
-    "totalEdges": 7534,
+    "totalNodes": 3546,
+    "totalEdges": 7538,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 176,
@@ -98924,14 +98976,14 @@
       "Component": 62,
       "SharedType": 1295,
       "DesignToken": 12,
-      "UIComponent": 282,
+      "UIComponent": 284,
       "File": 985
     },
     "edgeTypeCounts": {
       "EXPORTS": 1483,
       "HANDLES_ROUTE": 729,
-      "RENDERS": 344,
-      "USES_TOKEN": 284,
+      "RENDERS": 346,
+      "USES_TOKEN": 286,
       "IMPORTS": 540,
       "QUERIES_MODEL": 406,
       "API_CALL": 3748

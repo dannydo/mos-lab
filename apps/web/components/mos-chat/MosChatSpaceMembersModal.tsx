@@ -29,13 +29,7 @@ export const MosChatSpaceMembersModal: React.FC<MosChatSpaceMembersModalProps> =
   onClose,
   onUpdated,
 }) => {
-  const {
-    staffDirectory,
-    currentUser,
-    addMemberToSpace,
-    removeMemberFromSpace,
-    updateMemberNickname,
-  } = useMosChat();
+  const { staffDirectory, currentUser, addMemberToSpace, removeMemberFromSpace, updateMemberNickname } = useMosChat();
 
   const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
   const [searchMemberQuery, setSearchMemberQuery] = useState<string>('');
@@ -52,6 +46,7 @@ export const MosChatSpaceMembersModal: React.FC<MosChatSpaceMembersModalProps> =
   }, [currentUser]);
 
   const isSuperAdmin = useMemo(() => {
+    if (!currentUser) return false;
     return isCanonicalSuperAdminIdentity(currentUser) || Boolean(currentUser?.role?.toLowerCase().includes('admin'));
   }, [currentUser]);
 
@@ -289,9 +284,7 @@ export const MosChatSpaceMembersModal: React.FC<MosChatSpaceMembersModalProps> =
             <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               Danh sách thành viên hiện tại
             </span>
-            <span className="text-emerald-500 font-extrabold tabular-nums text-xs">
-              {totalMembers} người
-            </span>
+            <span className="text-emerald-500 font-extrabold tabular-nums text-xs">{totalMembers} người</span>
           </div>
 
           {/* Search within members */}
@@ -310,9 +303,7 @@ export const MosChatSpaceMembersModal: React.FC<MosChatSpaceMembersModalProps> =
 
           <div className="max-h-72 overflow-y-auto space-y-1.5 pr-1">
             {filteredMembers.length === 0 ? (
-              <div className="py-6 text-center text-xs text-slate-400">
-                Không tìm thấy thành viên phù hợp
-              </div>
+              <div className="py-6 text-center text-xs text-slate-400">Không tìm thấy thành viên phù hợp</div>
             ) : (
               filteredMembers.map((m) => {
                 const isMe = Number(m.id) === myStaffId;
@@ -390,9 +381,7 @@ export const MosChatSpaceMembersModal: React.FC<MosChatSpaceMembersModalProps> =
                             </div>
                             <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
                               <span>{m.role || 'Nhân sự'}</span>
-                              {nick && (
-                                <span className="text-emerald-500/80 font-medium">· Biệt danh</span>
-                              )}
+                              {nick && <span className="text-emerald-500/80 font-medium">· Biệt danh</span>}
                             </div>
                           </>
                         )}

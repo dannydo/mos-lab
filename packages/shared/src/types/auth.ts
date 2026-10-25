@@ -105,7 +105,10 @@ export function canAccessLoca(role?: string | null): boolean {
   );
 }
 
-export function isCanonicalSuperAdminIdentity(identity: { username?: string | null; email?: string | null }): boolean {
+export function isCanonicalSuperAdminIdentity(
+  identity?: { username?: string | null; email?: string | null } | null
+): boolean {
+  if (!identity) return false;
   const username = String(identity.username || '')
     .trim()
     .toLowerCase();

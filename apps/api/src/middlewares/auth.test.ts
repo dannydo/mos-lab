@@ -15,6 +15,9 @@ test('only Danny Do canonical account identities bootstrap as Super Admin', () =
   assert.equal(isCanonicalSuperAdminIdentity({ username: 'admin' }), true);
   assert.equal(isCanonicalSuperAdminIdentity({ email: 'danny.do@wingslashes.com' }), true);
   assert.equal(isCanonicalSuperAdminIdentity({ username: 'another-admin' }), false);
+  assert.equal(isCanonicalSuperAdminIdentity(null), false);
+  assert.equal(isCanonicalSuperAdminIdentity(undefined), false);
+  assert.equal(isCanonicalSuperAdminIdentity({}), false);
 });
 
 test('ordinary Admin is rejected by a Super Admin-only guard', async () => {
