@@ -11,6 +11,7 @@ import type {
   MosChatWorkflowTemplate,
   MosChatMissionSummary,
   MosChatMissionActionType,
+  MosChatThreadMoveMode,
   UpdateMosChatTaskRequest,
   SafeAny,
 } from '@mos-lab/shared';
@@ -67,6 +68,13 @@ export interface MosChatContextValue {
   setActiveThreadMsg: (msg: MosChatMessage | null) => void;
   threadReplies: MosChatThreadReply[];
   sendThreadReply: (text: string, options?: { attachments?: MosChatImageAttachment[] }) => Promise<boolean>;
+  moveThreadItem: (params: {
+    mode: MosChatThreadMoveMode;
+    sourceMessageId: string;
+    replyId?: string;
+    targetMessageId?: string;
+  }) => Promise<boolean>;
+  markThreadAsRead: (convId: string, msgId: string) => Promise<void>;
 
   // AI Copilot
   isAiThinking: boolean;

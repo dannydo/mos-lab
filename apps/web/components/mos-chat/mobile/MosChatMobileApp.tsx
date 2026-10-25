@@ -25,6 +25,7 @@ import { MosChatMobileNegotiateTaskModal } from './MosChatMobileNegotiateTaskMod
 import { MosChatMobileMissionModal } from './MosChatMobileMissionModal';
 import { MosChatMobileStickerSheet } from './MosChatMobileStickerSheet';
 import { MosChatMobileEditModal } from './MosChatMobileEditModal';
+import { MosChatMobileMoveThreadModal } from './MosChatMobileMoveThreadModal';
 import { MosChatMobileMediaGallery, type MosChatGalleryImage } from './MosChatMobileMediaGallery';
 import { MosChatSpaceConfigModal } from '../MosChatSpaceConfigModal';
 import { MosChatSpaceMembersModal } from '../MosChatSpaceMembersModal';
@@ -43,6 +44,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
     currentUser,
     activeConversation,
     conversations,
+    messages,
     mobileView,
     setMobileView,
     activeSubtab,
@@ -69,8 +71,19 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
   const [stickerPickerInitialPack, setStickerPickerInitialPack] = useState<MosChatStickerPackId>('emoji');
   const [composerText, setComposerText] = useState<string>('');
   const [editingMessage, setEditingMessage] = useState<MosChatMessage | null>(null);
+  const [movingMsgForThread, setMovingMsgForThread] = useState<MosChatMessage | null>(null);
+  const [movingReplyForThread, setMovingReplyForThread] = useState<{ parentMsg: MosChatMessage; replyId: string } | null>(
+    null
+  );
   const [attachedImages, setAttachedImages] = useState<MosChatImageAttachment[]>([]);
   const [isUploadingImages, setIsUploadingImages] = useState<boolean>(false);
+
+  const prevMsgForMoving = useMemo(() => {
+    if (!movingMsgForThread) return null;
+    const idx = messages.findIndex((m) => m.id === movingMsgForThread.id);
+    if (idx > 0) return messages[idx - 1];
+    return null;
+  }, [messages, movingMsgForThread]);
 
   // Task Detail Bottom Sheet & Modals state
   const [selectedDetailTaskId, setSelectedDetailTaskId] = useState<string | null>(null);
@@ -567,7 +580,12 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         </>
       )}
 
-      {mobileView === 'thread' && <MosChatMobileThreadSheet onOpenTaskModal={openTaskModalForThread} />}
+      {mobileView === 'thread' && (
+        <MosChatMobileThreadSheet
+          onOpenTaskModal={openTaskModalForThread}
+          onOpenMoveReply={(sourceMsg, replyId) => setMovingReplyForThread({ parentMsg: sourceMsg, replyId })}
+        />
+      )}
 
       {/* Bottom Action Sheet */}
       <MosChatMobileActionSheet
@@ -596,6 +614,22 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         }}
         onCreateTaskFromMsg={handleCreateTaskFromMsg}
         onEditMessage={(msg) => setEditingMessage(msg)}
+        onOpenMoveThread={(msg) => setMovingMsgForThread(msg)}
+      />
+
+      {/* Move / Merge to Thread Modals */}
+      <MosChatMobileMoveThreadModal
+        open={movingMsgForThread !== null}
+        sourceMessage={movingMsgForThread}
+        prevMessage={prevMsgForMoving}
+        onClose={() => setMovingMsgForThread(null)}
+      />
+
+      <MosChatMobileMoveThreadModal
+        open={movingReplyForThread !== null}
+        sourceMessage={movingReplyForThread?.parentMsg || null}
+        replyId={movingReplyForThread?.replyId}
+        onClose={() => setMovingReplyForThread(null)}
       />
 
       {/* Edit Message Modal */}

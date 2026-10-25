@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Search, X, Hash, MessageSquare, Users, Sparkles, CheckSquare, UserPlus } from 'lucide-react';
+import { Search, X, Hash, MessageSquare, Users, Sparkles, CheckSquare, UserPlus, MessageSquareReply } from 'lucide-react';
 import { Modal } from 'antd';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -207,11 +207,19 @@ export const MosChatMobileInbox: React.FC = () => {
             <p className={`text-xs truncate ${unread > 0 ? 'text-slate-200 font-medium' : 'text-slate-400'}`}>
               {preview}
             </p>
-            {unread > 0 && (
-              <span className="min-w-[18px] h-[18px] px-1.5 flex items-center justify-center text-[10px] font-bold text-white bg-rose-500 rounded-full tabular-nums shadow-sm shadow-rose-500/40 shrink-0">
-                {unread > 99 ? '99+' : unread}
-              </span>
-            )}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {(c.unreadThreadCount || 0) > 0 && (
+                <span className="h-[18px] px-1.5 flex items-center gap-0.5 justify-center text-[10px] font-bold text-indigo-300 bg-indigo-500/25 border border-indigo-500/40 rounded-full tabular-nums">
+                  <MessageSquareReply className="w-2.5 h-2.5" />
+                  {c.unreadThreadCount}
+                </span>
+              )}
+              {unread > 0 && (
+                <span className="min-w-[18px] h-[18px] px-1.5 flex items-center justify-center text-[10px] font-bold text-white bg-rose-500 rounded-full tabular-nums shadow-sm shadow-rose-500/40">
+                  {unread > 99 ? '99+' : unread}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>

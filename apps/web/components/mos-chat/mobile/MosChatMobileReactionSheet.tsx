@@ -1,11 +1,12 @@
 'use client';
 
 import React from 'react';
-import { MessageSquareReply, Copy, Pin, CheckSquare, Trash2, Share2, X, Pencil } from 'lucide-react';
+import { MessageSquareReply, Copy, Pin, CheckSquare, Trash2, Share2, X, Pencil, CornerDownRight } from 'lucide-react';
 import { message as antdMessage } from 'antd';
 import type { MosChatMessage } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
+import { isUserMessageOwner } from '../utils/chat-helpers';
 
 export interface MosChatMobileReactionSheetProps {
   message: MosChatMessage | null;
@@ -13,6 +14,7 @@ export interface MosChatMobileReactionSheetProps {
   onOpenThread: (msg: MosChatMessage) => void;
   onCreateTaskFromMsg: (msg: MosChatMessage) => void;
   onEditMessage?: (msg: MosChatMessage) => void;
+  onOpenMoveThread?: (msg: MosChatMessage) => void;
 }
 
 export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProps> = ({
@@ -21,15 +23,19 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
   onOpenThread,
   onCreateTaskFromMsg,
   onEditMessage,
+  onOpenMoveThread,
 }) => {
   const { reactToMessage, togglePinMessage, deleteMessage, setReplyingToMessage, currentUser } = useMosChat();
 
   if (!message) return null;
 
-  const isMe =
-    String(message.senderId) === String(currentUser?.id) ||
-    String(message.senderName) === String(currentUser?.fullName || currentUser?.name);
+  const isMe = isUserMessageOwner(message, currentUser);
   const canEdit =
+    isMe ||
+    String(currentUser?.role || '')
+      .toLowerCase()
+      .includes('admin');
+  const canDelete =
     isMe ||
     String(currentUser?.role || '')
       .toLowerCase()
@@ -114,6 +120,18 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
 
           <button
             type="button"
+            onClick={() => {
+              onClose();
+              onOpenMoveThread?.(message);
+            }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+          >
+            <CornerDownRight className="w-4 h-4 text-amber-400" />
+            <span className="font-medium">Gộp tin nhắn vào luồng khác...</span>
+          </button>
+
+          <button
+            type="button"
             onClick={handleCopy}
             className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
           >
@@ -156,7 +174,7 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
             </button>
           )}
 
-          {isMe && (
+          {canDelete && (
             <button
               type="button"
               onClick={handleDelete}

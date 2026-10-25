@@ -15,9 +15,11 @@ import type {
   MosChatWorkflowTemplate,
   MosChatMissionSummary,
   MosChatMissionActionType,
+  MosChatThreadMoveMode,
   UpdateMosChatTaskRequest,
   SafeAny,
 } from '@mos-lab/shared';
+import { message as antdMessage } from 'antd';
 import { apiClient } from '../../../lib/api-client';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
 import { tabNotificationManager } from '../../../lib/tab-notification';
@@ -282,6 +284,43 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
     setConversations((prev) => prev.map((c) => (c.id === convId ? { ...c, unreadCount: 0 } : c)));
     try {
       await apiClient.chat.markAsRead(convId);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Mark thread as read
+  const markThreadAsRead = useCallback(async (convId: string, msgId: string) => {
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id !== convId) return c;
+        const updatedMessages = (c.messages || []).map((m) =>
+          m.id === msgId ? { ...m, unreadThreadReplyCount: 0 } : m
+        );
+        const newUnreadThreadCount = updatedMessages.reduce(
+          (sum, m) => sum + (m.unreadThreadReplyCount || 0),
+          0
+        );
+        return {
+          ...c,
+          messages: updatedMessages,
+          unreadThreadCount: newUnreadThreadCount,
+        };
+      })
+    );
+    setAllMessagesByConv((prev) => {
+      const list = prev[convId] || [];
+      return {
+        ...prev,
+        [convId]: list.map((m) => (m.id === msgId ? { ...m, unreadThreadReplyCount: 0 } : m)),
+      };
+    });
+    setActiveThreadMsg((current) => {
+      if (!current || current.id !== msgId) return current;
+      return { ...current, unreadThreadReplyCount: 0 };
+    });
+    try {
+      await apiClient.chat.markThreadAsRead(convId, msgId);
     } catch {
       // ignore
     }
@@ -758,13 +797,20 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
         ...prev,
         [activeConvId]: (prev[activeConvId] || []).filter((m) => m.id !== msgId),
       }));
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === activeConvId ? { ...c, messages: (c.messages || []).filter((m) => m.id !== msgId) } : c
+        )
+      );
       try {
         await apiClient.chat.deleteMessage(msgId, { conversationId: activeConvId });
-      } catch {
-        // ignore
+        antdMessage.success('Đã xoá tin nhắn');
+      } catch (err: SafeAny) {
+        antdMessage.error(err?.response?.data?.message || err?.message || 'Không thể xoá tin nhắn');
+        fetchBootstrap();
       }
     },
-    [activeConvId]
+    [activeConvId, fetchBootstrap]
   );
 
   // Delete thread reply
@@ -786,13 +832,93 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
           ),
         };
       });
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== activeConvId) return c;
+          return {
+            ...c,
+            messages: (c.messages || []).map((m) =>
+              m.id === parentMsgId ? { ...m, thread: (m.thread || []).filter((r) => r.id !== replyId) } : m
+            ),
+          };
+        })
+      );
       try {
-        await apiClient.chat.deleteMessage(replyId, { conversationId: activeConvId });
-      } catch {
-        // ignore
+        await apiClient.chat.deleteMessage(parentMsgId, { conversationId: activeConvId, replyId });
+        antdMessage.success('Đã xoá phản hồi trong luồng');
+      } catch (err: SafeAny) {
+        antdMessage.error(err?.response?.data?.message || err?.message || 'Không thể xoá phản hồi trong luồng');
+        fetchBootstrap();
       }
     },
-    [activeConvId]
+    [activeConvId, fetchBootstrap]
+  );
+
+  // Move thread item (merge root to thread, promote reply to root, move reply between threads)
+  const moveThreadItem = useCallback(
+    async (params: {
+      mode: MosChatThreadMoveMode;
+      sourceMessageId: string;
+      replyId?: string;
+      targetMessageId?: string;
+    }): Promise<boolean> => {
+      if (!activeConvId || activeConvId === 'ai-copilot') return false;
+      try {
+        const res = await apiClient.chat.moveThreadItem({
+          conversationId: activeConvId,
+          mode: params.mode,
+          sourceMessageId: params.sourceMessageId,
+          replyId: params.replyId,
+          targetMessageId: params.targetMessageId,
+        });
+
+        if (res?.conversation) {
+          setConversations((prev) =>
+            prev.map((c) => (c.id === activeConvId ? res.conversation : c))
+          );
+          if (res.conversation.messages) {
+            setAllMessagesByConv((prev) => ({
+              ...prev,
+              [activeConvId]: res.conversation.messages,
+            }));
+          }
+        }
+        if (res?.tasks) {
+          setTasks(res.tasks);
+        }
+        if (
+          (params.mode === 'MERGE_ROOT_TO_THREAD' || params.mode === 'MOVE_REPLY_TO_THREAD') &&
+          params.targetMessageId
+        ) {
+          const targetMsg =
+            res?.conversation?.messages?.find((m) => m.id === params.targetMessageId) ||
+            messages.find((m) => m.id === params.targetMessageId);
+          if (targetMsg) {
+            setActiveThreadMsg(targetMsg);
+            setMobileView('thread');
+          }
+        } else if (params.mode === 'PROMOTE_REPLY_TO_ROOT') {
+          if (activeThreadMsg && res?.conversation?.messages) {
+            const updatedParent = res.conversation.messages.find((m) => m.id === activeThreadMsg.id);
+            if (updatedParent) setActiveThreadMsg(updatedParent);
+          }
+        }
+        if (params.mode === 'MERGE_ROOT_TO_THREAD') {
+          antdMessage.success('Đã gộp tin nhắn vào luồng trả lời phụ!');
+        } else if (params.mode === 'PROMOTE_REPLY_TO_ROOT') {
+          antdMessage.success('Đã tách phản hồi ra thành tin nhắn độc lập ở luồng chính!');
+        } else {
+          antdMessage.success('Đã chuyển phản hồi sang luồng trả lời đích!');
+        }
+        return true;
+      } catch (err: SafeAny) {
+        antdMessage.error(
+          err?.response?.data?.message || err?.message || 'Không thể di chuyển tin nhắn / luồng trả lời.'
+        );
+        return false;
+      }
+    },
+    [activeConvId, messages, activeThreadMsg]
   );
 
   // Edit message
@@ -1192,6 +1318,8 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       setActiveThreadMsg,
       threadReplies,
       sendThreadReply,
+      moveThreadItem,
+      markThreadAsRead,
       isAiThinking,
       activeSubtab,
       setActiveSubtab,
@@ -1247,6 +1375,8 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       activeThreadMsg,
       threadReplies,
       sendThreadReply,
+      moveThreadItem,
+      markThreadAsRead,
       isAiThinking,
       activeSubtab,
       tasks,
