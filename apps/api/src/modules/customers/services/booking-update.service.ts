@@ -89,6 +89,10 @@ export const resolveBookingUpdateFields = (
     ? String(input.bookingNote || '').trim() || null
     : current.bookingNote || null;
 
+  const isStoreChanged = requestedStoreId !== current.storeId;
+  const isDateChanged = bookingDate !== currentBookingDate;
+  const isTimeChanged = bookingTime !== currentBookingTime;
+
   return {
     storeId: requestedStoreId,
     technicianId,
@@ -96,9 +100,23 @@ export const resolveBookingUpdateFields = (
     bookingTime,
     bookingNote,
     currentBookingDateStart,
-    isLockedScheduleUpdateRequested:
-      hasOwn(input, 'storeId') || hasOwn(input, 'bookingDate') || hasOwn(input, 'bookingTime'),
+    isLockedScheduleUpdateRequested: isStoreChanged || isDateChanged || isTimeChanged,
   };
+};
+
+/**
+ * State Machine Guard Invariant (MOS-BUG-144):
+ * An order that has already been received at the salon, is in service, is in checkout,
+ * or has reached a terminal state must NEVER be degraded back to 'New'.
+ * Only initial pre-service appointments ('New', 'Confirmed') can be reset to 'New' upon rescheduling.
+ */
+export const resolveFinalOrderState = (
+  currentOrderState: string,
+  isLockedScheduleUpdateRequested: boolean
+): string => {
+  const normalizedCurrent = String(currentOrderState || 'New');
+  const canResetToNew = normalizedCurrent === 'New' || normalizedCurrent === 'Confirmed';
+  return isLockedScheduleUpdateRequested && canResetToNew ? 'New' : normalizedCurrent;
 };
 
 export const buildLegacyBookingWindow = (

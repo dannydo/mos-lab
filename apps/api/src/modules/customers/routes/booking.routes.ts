@@ -13,6 +13,7 @@ import {
   BookingUpdateValidationError,
   buildLegacyBookingWindow,
   resolveBookingUpdateFields,
+  resolveFinalOrderState,
 } from '../services/booking-update.service.js';
 import { BookingAuditService } from '../services/booking-audit.service.js';
 import { CustomerCreationError, CustomerCreationService } from '../services/customer-creation.service.js';
@@ -554,6 +555,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       );
       const finalStoreId = resolvedUpdate.storeId;
       const finalTechnicianId = resolvedUpdate.technicianId;
+      const currentOrderState = String(order.order_state || 'New');
 
       const oldData = {
         bookingDateStart: order.booking_date_start ? new Date(order.booking_date_start).toISOString() : null,
@@ -562,6 +564,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         bookingNote: order.booking_note || null,
         promotionId: order.selected_promotion_id ? Number(order.selected_promotion_id) : null,
         campaignId: order.campaign_id ? Number(order.campaign_id) : null,
+        orderState: currentOrderState,
       };
 
       const { reasonCategory, reasonNote } = (request.body || {}) as {
@@ -707,7 +710,19 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         actionType = 'CHANGE_STORE';
       }
 
-      const finalOrderState = resolvedUpdate.isLockedScheduleUpdateRequested ? 'New' : String(order.order_state);
+      // State Machine Guard Invariant (MOS-BUG-144):
+      // An order that has already been received at the salon, is in service, is in checkout,
+      // or has reached a terminal state must NEVER be degraded back to 'New'.
+      // Only initial pre-service appointments ('New', 'Confirmed') can be reset to 'New' upon rescheduling.
+      const finalOrderState = resolveFinalOrderState(
+        currentOrderState,
+        resolvedUpdate.isLockedScheduleUpdateRequested
+      );
+
+      const auditNewData = {
+        ...newData,
+        orderState: finalOrderState,
+      };
 
       const didTechnicianChange = Number(order.assigned_staff_id || 0) !== Number(finalTechnicianId || 0);
       const userServiceType = await UserServiceTypeService.determineUserServiceType(
@@ -843,7 +858,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         reasonCategory,
         reasonNote,
         oldData,
-        newData,
+        newData: auditNewData,
         ipAddress: request.ip,
       });
 

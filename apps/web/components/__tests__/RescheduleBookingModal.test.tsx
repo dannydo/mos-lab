@@ -179,5 +179,46 @@ describe('RescheduleBookingModal (MOS-BUG-114 1-Step Consolidation)', () => {
       })
     );
   });
+
+  it('sends promotionId and campaignPromotionId when promotion options are loaded (MOS-BUG-144)', async () => {
+    apiMocks.getBookingPromotionOptions.mockResolvedValue({
+      mode: 'STANDARD',
+      campaign: null,
+      selectedCampaignPromotionId: null,
+      selectedPromotionId: 766,
+      promotions: [
+        { id: 766, source: 'STANDARD', name: 'Giảm 20%', label: 'Giảm 20%' },
+        { id: 765, source: 'STANDARD', name: 'Giảm 10%', label: 'Giảm 10%' },
+      ],
+    });
+
+    render(
+      <RescheduleBookingModal
+        open={true}
+        booking={mockBooking}
+        onClose={vi.fn()}
+        onSuccess={vi.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(apiMocks.getBookingPromotionOptions).toHaveBeenCalledWith(12345);
+    });
+
+    const saveButton = screen.getByRole('button', { name: /hoàn tất & lưu/i });
+    fireEvent.click(saveButton);
+
+    await waitFor(() => {
+      expect(apiMocks.updateBooking).toHaveBeenCalledTimes(1);
+    });
+
+    expect(apiMocks.updateBooking).toHaveBeenCalledWith(
+      12345,
+      expect.objectContaining({
+        promotionId: 766,
+        campaignPromotionId: null,
+      })
+    );
+  });
 });
 
