@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
-import { Pin, MessageSquareReply, CheckCheck, Heart } from 'lucide-react';
+import { Pin, MessageSquareReply, CheckCheck, Heart, Trash2 } from 'lucide-react';
 import dayjs from 'dayjs';
 import type { MosChatMessage } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
@@ -46,6 +46,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
   const [showHeartFly, setShowHeartFly] = useState<boolean>(false);
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    if (message.isDeleted) return;
     if (!e.touches || e.touches.length === 0) return;
     touchStartXRef.current = e.touches[0].clientX;
     touchStartYRef.current = e.touches[0].clientY;
@@ -63,6 +64,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    if (message.isDeleted) return;
     if (!e.touches || e.touches.length === 0) return;
     const currentX = e.touches[0].clientX;
     const currentY = e.touches[0].clientY;
@@ -107,6 +109,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
   };
 
   const handleTouchEnd = () => {
+    if (message.isDeleted) return;
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
@@ -156,6 +159,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
       onTouchEnd={handleTouchEnd}
       onContextMenu={(e) => {
         e.preventDefault();
+        if (message.isDeleted) return;
         setSelectedMsgForAction(message);
       }}
       style={{
@@ -214,108 +218,122 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
       )}
 
       {/* Message Bubble Box */}
-      <div
-        className={`relative max-w-[85%] rounded-2xl px-3.5 py-2 text-sm break-words shadow-sm transition-colors ${
-          isMe
-            ? 'bg-amber-500 text-slate-950 font-medium rounded-tr-sm shadow-amber-500/10'
-            : 'bg-slate-800/90 text-slate-100 border border-slate-700/70 rounded-tl-sm'
-        }`}
-      >
-        {/* Pinned Badge */}
-        {message.pinned && (
-          <div className="flex items-center gap-1 text-[11px] font-semibold text-amber-300 mb-1 pb-1 border-b border-white/20">
-            <Pin className="w-3 h-3 fill-amber-300" />
-            Đã ghim trong kênh
-          </div>
-        )}
-
-        {/* Quoted Message Preview */}
-        {quotedMessage && (
-          <div
-            className={`text-xs px-2.5 py-1.5 rounded-lg mb-2 border-l-2 ${
-              isMe
-                ? 'bg-amber-600/30 border-amber-900 text-slate-900'
-                : 'bg-slate-900/60 border-amber-500 text-slate-300'
-            }`}
-          >
-            <p className="font-bold text-[11px] truncate">{quotedMessage.senderName}</p>
-            <p className="line-clamp-1 text-[11px] opacity-80">{quotedMessage.text}</p>
-          </div>
-        )}
-
-        {/* Rich Text / Markdown / Mermaid / Sticker Render */}
-        <MosChatRichText content={message.text} isMe={isMe} isDark={true} />
-
-        {/* Attachments */}
-        {message.attachments && message.attachments.length > 0 && (
-          <div className="mt-2">
-            {message.attachments.length === 1 ? (
-              <div
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenGallery?.(message, 0);
-                }}
-                className="rounded-xl overflow-hidden border border-black/10 cursor-pointer active:opacity-90 transition-opacity"
-              >
-                <img
-                  src={resolveMediaUrl(message.attachments[0].url)}
-                  alt="Đính kèm"
-                  className="max-h-60 w-full object-cover rounded-xl"
-                  loading="lazy"
-                />
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-1.5 rounded-xl overflow-hidden">
-                {message.attachments.slice(0, 4).map((att, idx) => {
-                  const total = message.attachments!.length;
-                  const isFirstOfThree = total === 3 && idx === 0;
-                  const isFourthInMany = total > 4 && idx === 3;
-                  const remaining = total - 3;
-
-                  return (
-                    <div
-                      key={att.id || idx}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onOpenGallery?.(message, idx);
-                      }}
-                      className={`relative overflow-hidden cursor-pointer active:opacity-90 transition-opacity rounded-lg ${
-                        isFirstOfThree ? 'col-span-2 h-36' : 'h-28'
-                      }`}
-                    >
-                      <img
-                        src={resolveMediaUrl(att.url)}
-                        alt={att.name || `Hình ${idx + 1}`}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                      {isFourthInMany && (
-                        <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] flex items-center justify-center text-white font-bold text-base">
-                          +{remaining}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Time & Read status */}
+      {message.isDeleted ? (
         <div
-          className={`flex items-center justify-end gap-1 mt-1 text-[10px] tabular-nums ${
-            isMe ? 'text-slate-800' : 'text-slate-400'
+          className={`relative max-w-[85%] rounded-2xl px-3.5 py-2 text-xs italic break-words shadow-sm transition-colors flex items-center gap-2 select-none ${
+            isMe
+              ? 'bg-amber-500/10 text-amber-300/80 border border-dashed border-amber-500/30 rounded-tr-sm'
+              : 'bg-slate-800/60 text-slate-400 border border-dashed border-slate-700/60 rounded-tl-sm'
           }`}
         >
-          {message.editedAt && <span className="italic mr-0.5">đã sửa</span>}
-          <span>{timeFormatted}</span>
-          {isMe && <CheckCheck className="w-3.5 h-3.5 text-slate-800" />}
+          <Trash2 className="w-3.5 h-3.5 opacity-60 shrink-0" />
+          <span>Tin nhắn này đã bị xoá</span>
+          {message.deletedByName && <span className="opacity-75">({message.deletedByName})</span>}
         </div>
-      </div>
+      ) : (
+        <div
+          className={`relative max-w-[85%] rounded-2xl px-3.5 py-2 text-sm break-words shadow-sm transition-colors ${
+            isMe
+              ? 'bg-amber-500 text-slate-950 font-medium rounded-tr-sm shadow-amber-500/10'
+              : 'bg-slate-800/90 text-slate-100 border border-slate-700/70 rounded-tl-sm'
+          }`}
+        >
+          {/* Pinned Badge */}
+          {message.pinned && (
+            <div className="flex items-center gap-1 text-[11px] font-semibold text-amber-300 mb-1 pb-1 border-b border-white/20">
+              <Pin className="w-3 h-3 fill-amber-300" />
+              Đã ghim trong kênh
+            </div>
+          )}
+
+          {/* Quoted Message Preview */}
+          {quotedMessage && (
+            <div
+              className={`text-xs px-2.5 py-1.5 rounded-lg mb-2 border-l-2 ${
+                isMe
+                  ? 'bg-amber-600/30 border-amber-900 text-slate-900'
+                  : 'bg-slate-900/60 border-amber-500 text-slate-300'
+              }`}
+            >
+              <p className="font-bold text-[11px] truncate">{quotedMessage.senderName}</p>
+              <p className="line-clamp-1 text-[11px] opacity-80">{quotedMessage.text}</p>
+            </div>
+          )}
+
+          {/* Rich Text / Markdown / Mermaid / Sticker Render */}
+          <MosChatRichText content={message.text} isMe={isMe} isDark={true} />
+
+          {/* Attachments */}
+          {message.attachments && message.attachments.length > 0 && (
+            <div className="mt-2">
+              {message.attachments.length === 1 ? (
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenGallery?.(message, 0);
+                  }}
+                  className="rounded-xl overflow-hidden border border-black/10 cursor-pointer active:opacity-90 transition-opacity"
+                >
+                  <img
+                    src={resolveMediaUrl(message.attachments[0].url)}
+                    alt="Đính kèm"
+                    className="max-h-60 w-full object-cover rounded-xl"
+                    loading="lazy"
+                  />
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-1.5 rounded-xl overflow-hidden">
+                  {message.attachments.slice(0, 4).map((att, idx) => {
+                    const total = message.attachments!.length;
+                    const isFirstOfThree = total === 3 && idx === 0;
+                    const isFourthInMany = total > 4 && idx === 3;
+                    const remaining = total - 3;
+
+                    return (
+                      <div
+                        key={att.id || idx}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onOpenGallery?.(message, idx);
+                        }}
+                        className={`relative overflow-hidden cursor-pointer active:opacity-90 transition-opacity rounded-lg ${
+                          isFirstOfThree ? 'col-span-2 h-36' : 'h-28'
+                        }`}
+                      >
+                        <img
+                          src={resolveMediaUrl(att.url)}
+                          alt={att.name || `Hình ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                        {isFourthInMany && (
+                          <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] flex items-center justify-center text-white font-bold text-base">
+                            +{remaining}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Time & Read status */}
+          <div
+            className={`flex items-center justify-end gap-1 mt-1 text-[10px] tabular-nums ${
+              isMe ? 'text-slate-800' : 'text-slate-400'
+            }`}
+          >
+            {message.editedAt && <span className="italic mr-0.5">đã sửa</span>}
+            <span>{timeFormatted}</span>
+            {isMe && <CheckCheck className="w-3.5 h-3.5 text-slate-800" />}
+          </div>
+        </div>
+      )}
 
       {/* Reactions Bar Below Bubble */}
-      {message.reactions && Object.keys(message.reactions).length > 0 && (
+      {!message.isDeleted && message.reactions && Object.keys(message.reactions).length > 0 && (
         <div className={`flex flex-wrap items-center gap-1 mt-1 px-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
           {Object.entries(message.reactions).map(([emoji, count]) => {
             if (count <= 0) return null;

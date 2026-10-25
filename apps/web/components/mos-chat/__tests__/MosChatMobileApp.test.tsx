@@ -634,6 +634,44 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     });
   });
 
+  it('allows deleting a message on iPhone via action sheet and renders soft-deleted indicator (MOS-BUG-149)', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Shop Operations')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('Shop Operations'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Chào cả nhà, hôm nay lịch dặm mi kín chỗ rồi nha!')).toBeTruthy();
+    });
+
+    const msgEl = screen.getByText('Chào cả nhà, hôm nay lịch dặm mi kín chỗ rồi nha!');
+    const msgContainer = msgEl.closest('.relative') as HTMLElement;
+    expect(msgContainer).toBeTruthy();
+
+    // Trigger action sheet via context menu
+    fireEvent.contextMenu(msgContainer);
+
+    // Reaction and action sheet should open with "Xóa tin nhắn"
+    await waitFor(() => {
+      expect(screen.getByText('Xóa tin nhắn')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('Xóa tin nhắn'));
+
+    // Should call deleteMessage and display soft deleted message banner
+    await waitFor(() => {
+      expect(apiClient.chat.deleteMessage).toHaveBeenCalledWith('m1', { conversationId: 'space-cc' });
+      expect(screen.getByText(/Tin nhắn này đã bị xoá/i)).toBeTruthy();
+    });
+  });
+
   it('opens Messenger-style image gallery when tapping an image in a thread and allows sliding between images (MOS-FEAT-145)', async () => {
     render(
       <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>

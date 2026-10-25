@@ -14,6 +14,7 @@ vi.mock('../../../lib/api-client', () => ({
       missionAction: vi.fn().mockResolvedValue({ success: true }),
       sendThreadReply: vi.fn().mockResolvedValue({ success: true }),
       sendMessage: vi.fn().mockResolvedValue({ success: true }),
+      deleteMessage: vi.fn().mockResolvedValue({ success: true }),
     },
     ai: {
       sendMessage: vi.fn().mockResolvedValue({ success: true }),
@@ -439,5 +440,89 @@ describe('MosChatMobileThreadSheet - Subthread Gate Approval on iPhone', () => {
         existingTask: null,
       })
     );
+  });
+
+  it('allows deleting a thread reply on iPhone via action sheet and renders soft-deleted indicator (MOS-BUG-149)', async () => {
+    const mockReply = {
+      id: 'reply-del-1',
+      senderId: '1',
+      senderName: 'Danny Do',
+      senderRole: 'Super Admin',
+      text: 'Phản hồi cần xoá trong thread',
+      timeLabel: '11:05',
+      createdAt: new Date().toISOString(),
+      reactions: {},
+      attachments: [],
+    };
+    const mockParentMsgWithReply = {
+      id: 'msg-parent-del',
+      conversationId: 'dm-pair-1-6',
+      senderId: '1',
+      senderName: 'Danny Do',
+      senderRole: 'Super Admin',
+      text: 'Tin nhắn gốc có reply',
+      timeLabel: '11:00',
+      createdAt: new Date().toISOString(),
+      reactions: {},
+      attachments: [],
+      thread: [mockReply],
+    };
+
+    (apiClient.chat.bootstrap as any).mockResolvedValue({
+      conversations: [
+        {
+          id: 'dm-pair-1-6',
+          type: 'dm',
+          name: 'Nguyễn Quang Khải',
+          messages: [mockParentMsgWithReply],
+        },
+      ],
+      tasks: [],
+      staffDirectory: [{ id: 1, displayName: 'Danny Do', role: 'Super Admin' }],
+      accessConfig: { allowAllStaff: true, allowedGroupKeys: [], allowedStaffIds: [] },
+      canAccessChat: true,
+    });
+
+    const TestHost: React.FC = () => {
+      const { setActiveThreadMsg, setMobileView } = useMosChat();
+      React.useEffect(() => {
+        setActiveThreadMsg(mockParentMsgWithReply as any);
+        setMobileView('thread');
+      }, [setActiveThreadMsg, setMobileView]);
+
+      return <MosChatMobileThreadSheet />;
+    };
+
+    render(
+      <MosChatProvider currentUser={mockCurrentUser} initialConvId="dm-pair-1-6">
+        <TestHost />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Phản hồi cần xoá trong thread')).toBeTruthy();
+    });
+
+    const replyEl = screen.getByText('Phản hồi cần xoá trong thread');
+    const replyContainer = replyEl.closest('.relative') as HTMLElement;
+    expect(replyContainer).toBeTruthy();
+
+    // Trigger context menu on reply
+    fireEvent.contextMenu(replyContainer);
+
+    // Wait for long-press action sheet
+    await waitFor(() => {
+      expect(screen.getByText('Xóa phản hồi')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('Xóa phản hồi'));
+
+    await waitFor(() => {
+      expect(apiClient.chat.deleteMessage).toHaveBeenCalledWith('msg-parent-del', {
+        conversationId: 'dm-pair-1-6',
+        replyId: 'reply-del-1',
+      });
+      expect(screen.getByText(/Phản hồi này đã bị xoá/i)).toBeTruthy();
+    });
   });
 });
