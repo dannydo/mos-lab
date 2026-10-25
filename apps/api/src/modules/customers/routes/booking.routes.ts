@@ -498,30 +498,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
     const { serviceId, promotionId, campaignPromotionId } = updateInput;
 
     try {
-      // Verify that the current user has linked legacy staff account
-      const crmStaff = await fastify.prisma.crm.crmStaff.findUnique({
-        where: { id: user.id },
-        select: { legacyStaffId: true },
-      });
-
-      if (!crmStaff || !crmStaff.legacyStaffId) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message:
-            'Tài khoản của bạn chưa được liên kết với hệ thống cũ. Vui lòng liên hệ Admin để cấu hình liên kết tài khoản trước khi thực hiện đặt lịch.',
-        });
-      }
-
-      const staffExists = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
-        `SELECT id FROM user WHERE id = ? LIMIT 1`,
-        crmStaff.legacyStaffId
-      );
-      if (staffExists.length === 0) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message: 'Tài khoản liên kết bên hệ thống cũ không tồn tại hoặc đã bị xóa. Vui lòng liên hệ Admin.',
-        });
-      }
+      const actorLegacyStaffId = await CustomerCreationService.resolveLegacyStaffId(fastify, user);
 
       // 1. Fetch current order details before updating
       const existingOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
@@ -781,7 +758,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
               created_staff_id, order_id, client_store_id, assigned_staff_id,
               booking_note, booking_duration_minute, booking_date_start, booking_date_end, date_created
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-            crmStaff.legacyStaffId,
+            actorLegacyStaffId,
             orderId,
             finalStoreId,
             finalTechnicianId,
@@ -853,7 +830,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       await BookingAuditService.logAction(fastify, {
         orderId,
         actionType,
-        actorStaffId: crmStaff.legacyStaffId,
+        actorStaffId: actorLegacyStaffId,
         originalStaffId,
         reasonCategory,
         reasonNote,
@@ -897,18 +874,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
     };
 
     try {
-      const crmStaff = await fastify.prisma.crm.crmStaff.findUnique({
-        where: { id: user.id },
-        select: { legacyStaffId: true },
-      });
-
-      if (!crmStaff || !crmStaff.legacyStaffId) {
-        return reply.status(400).send({
-          error: 'Bad Request',
-          message:
-            'Tài khoản của bạn chưa được liên kết với hệ thống cũ. Vui lòng liên hệ Admin để cấu hình liên kết tài khoản trước khi thực hiện đặt lịch.',
-        });
-      }
+      const actorLegacyStaffId = await CustomerCreationService.resolveLegacyStaffId(fastify, user);
 
       // 1. Fetch the order details first to verify existence & original creator
       const existingOrders = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
@@ -947,7 +913,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
       await BookingAuditService.logAction(fastify, {
         orderId,
         actionType: 'CANCEL',
-        actorStaffId: crmStaff.legacyStaffId,
+        actorStaffId: actorLegacyStaffId,
         originalStaffId,
         reasonCategory,
         reasonNote,
@@ -956,7 +922,7 @@ export async function registerBookingRoutes(fastify: FastifyInstance) {
         ipAddress: request.ip,
       });
 
-      const isCrossAction = Boolean(originalStaffId && crmStaff.legacyStaffId !== originalStaffId);
+      const isCrossAction = Boolean(originalStaffId && actorLegacyStaffId !== originalStaffId);
 
       return reply.send({ success: true, orderId, isCrossAction });
     } catch (err: SafeAny) {
