@@ -45,7 +45,7 @@ export class CustomerCreationService {
   static async resolveLegacyStaffId(fastify: FastifyInstance, actor: CustomerCreationActor): Promise<number> {
     const crmStaff = await fastify.prisma.crm.crmStaff.findUnique({
       where: { id: actor.id },
-      select: { legacyStaffId: true, displayName: true },
+      select: { legacyStaffId: true, displayName: true, username: true },
     });
 
     let legacyStaffId: number | null = crmStaff?.legacyStaffId || null;
@@ -69,9 +69,45 @@ export class CustomerCreationService {
       if (staffByName[0]?.user_id) legacyStaffId = Number(staffByName[0].user_id);
     }
 
-    // Matches the established booking flow fallback for legacy records that
-    // pre-date a CRM staff link.
-    return legacyStaffId || 1;
+    if (!legacyStaffId && crmStaff?.username?.trim()) {
+      const staffByEmail = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT id FROM user WHERE email = ? LIMIT 1`,
+        crmStaff.username.trim()
+      );
+      if (staffByEmail[0]?.id) legacyStaffId = Number(staffByEmail[0].id);
+    }
+
+    if (legacyStaffId && crmStaff && !crmStaff.legacyStaffId) {
+      try {
+        await fastify.prisma.crm.crmStaff.update({
+          where: { id: actor.id },
+          data: { legacyStaffId },
+        });
+      } catch (err) {
+        fastify.log.warn(err, '[CustomerCreationService] Failed to auto-persist resolved legacyStaffId');
+      }
+    }
+
+    if (legacyStaffId) {
+      return legacyStaffId;
+    }
+
+    // Fallback to active admin/staff user in legacy DB (id 86 for Danny Do or lowest valid staff user)
+    try {
+      const fallbackStaff = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT id FROM user WHERE id = 86 LIMIT 1`
+      );
+      if (fallbackStaff.length > 0) return 86;
+
+      const anyStaff = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(
+        `SELECT u.id FROM user u JOIN user_profile up ON u.id = up.user_id WHERE up.provider = 'Staff' AND up.is_disabled = 0 LIMIT 1`
+      );
+      if (anyStaff[0]?.id) return Number(anyStaff[0].id);
+    } catch {
+      // Fallback
+    }
+
+    return 86;
   }
 
   static async findCustomerIdByPhone(
