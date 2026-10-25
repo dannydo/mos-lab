@@ -429,7 +429,16 @@ async function main() {
             const handoff = payload.data;
 
             execFileSync('git', ['-C', worktreePath, 'add', '.'], { stdio: 'inherit' });
-            execFileSync('git', ['-C', worktreePath, 'commit', '-m', commitMessage], { stdio: 'inherit' });
+            try {
+              execFileSync('git', ['-C', worktreePath, 'commit', '-m', commitMessage], { stdio: 'inherit' });
+            } catch (commitErr: unknown) {
+              const status = execFileSync('git', ['-C', worktreePath, 'status', '--porcelain'], {
+                encoding: 'utf8',
+              });
+              if (status.trim().length > 0) {
+                throw commitErr;
+              }
+            }
             const commitSha = execFileSync('git', ['-C', worktreePath, 'rev-parse', 'HEAD'], {
               encoding: 'utf8',
             }).trim();

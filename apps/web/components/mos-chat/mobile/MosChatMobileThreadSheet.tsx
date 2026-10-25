@@ -19,6 +19,7 @@ import {
   ExternalLink,
   Check,
   RotateCcw,
+  CornerDownRight,
 } from 'lucide-react';
 import { message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
@@ -41,7 +42,12 @@ import type {
   SafeAny,
 } from '@mos-lab/shared';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
-import { isUserMentionedInText, extractMentionedStaff, isStaffInConversationMembers } from '../utils/chat-helpers';
+import {
+  isUserMentionedInText,
+  extractMentionedStaff,
+  isStaffInConversationMembers,
+  isUserMessageOwner,
+} from '../utils/chat-helpers';
 
 export interface MosChatMobileThreadSheetProps {
   onOpenTaskModal?: (params?: {
@@ -50,9 +56,13 @@ export interface MosChatMobileThreadSheetProps {
     existingTask?: MosChatTaskItem | null;
     sourceReply?: MosChatThreadReply | null;
   }) => void;
+  onOpenMoveReply?: (sourceMsg: MosChatMessage, replyId: string) => void;
 }
 
-export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> = ({ onOpenTaskModal }) => {
+export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> = ({
+  onOpenTaskModal,
+  onOpenMoveReply,
+}) => {
   const {
     activeConversation,
     staffDirectory,
@@ -61,6 +71,8 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
     sendThreadReply,
     reactToMessage,
     deleteThreadReply,
+    moveThreadItem,
+    markThreadAsRead,
     editMessage,
     currentUser,
     setMobileView,
@@ -75,6 +87,13 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto mark open thread as read
+  useEffect(() => {
+    if (activeThreadMsg && activeConversation?.id && (activeThreadMsg.unreadThreadReplyCount || 0) > 0) {
+      markThreadAsRead(activeConversation.id, activeThreadMsg.id);
+    }
+  }, [activeThreadMsg?.id, activeThreadMsg?.unreadThreadReplyCount, activeConversation?.id, markThreadAsRead]);
 
   // Parent Message Swipe & Double-tap
   const lastTapParentRef = useRef<number>(0);
@@ -745,27 +764,29 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
           )}
 
           {/* Reaction badges for Parent Message */}
-          {!activeThreadMsg.isDeleted && activeThreadMsg.reactions && Object.keys(activeThreadMsg.reactions).length > 0 && (
-            <div className="flex flex-wrap items-center gap-1 mt-2.5 pt-2 border-t border-slate-800/80">
-              {Object.entries(activeThreadMsg.reactions).map(([emoji, count]) => {
-                if (count <= 0) return null;
-                return (
-                  <button
-                    key={emoji}
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      reactToMessage(activeThreadMsg.id, emoji);
-                    }}
-                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 active:scale-95 transition-all shadow-sm"
-                  >
-                    <span>{emoji}</span>
-                    <span className="tabular-nums text-[11px] font-semibold text-amber-400">{count}</span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          {!activeThreadMsg.isDeleted &&
+            activeThreadMsg.reactions &&
+            Object.keys(activeThreadMsg.reactions).length > 0 && (
+              <div className="flex flex-wrap items-center gap-1 mt-2.5 pt-2 border-t border-slate-800/80">
+                {Object.entries(activeThreadMsg.reactions).map(([emoji, count]) => {
+                  if (count <= 0) return null;
+                  return (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        reactToMessage(activeThreadMsg.id, emoji);
+                      }}
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 active:scale-95 transition-all shadow-sm"
+                    >
+                      <span>{emoji}</span>
+                      <span className="tabular-nums text-[11px] font-semibold text-amber-400">{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
           {/* Interactive Main Task Card embedded in Parent Message */}
           {linkedTask ? (
@@ -1567,47 +1588,88 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                 <span className="font-medium">Sao chép phản hồi</span>
               </button>
 
-              {(String(actionSheetReply.senderId) === String(currentUser?.id) ||
-                String(currentUser?.role || '')
-                  .toLowerCase()
-                  .includes('admin')) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingReply(actionSheetReply);
-                    setActionSheetReply(null);
-                  }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-amber-400 hover:bg-amber-500/10 rounded-xl transition-colors active:scale-98"
-                >
-                  <Pencil className="w-4 h-4" />
-                  <span className="font-medium">Chỉnh sửa phản hồi</span>
-                </button>
-              )}
+              {(() => {
+                const isReplyOwner = isUserMessageOwner(actionSheetReply, currentUser);
+                const isDannyAccount =
+                  String(currentUser?.id) === '1' ||
+                  String(currentUser?.username || '').toLowerCase() === 'dannydo' ||
+                  String(currentUser?.role || '')
+                    .toLowerCase()
+                    .includes('admin');
+                const canManageReply = isReplyOwner || isDannyAccount;
 
-              {(String(actionSheetReply.senderId) === String(currentUser?.id) ||
-                String(currentUser?.id) === '1' ||
-                String(currentUser?.username || '').toLowerCase() === 'dannydo' ||
-                String(currentUser?.role || '')
-                  .toLowerCase()
-                  .includes('admin')) && (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const targetReply = actionSheetReply;
-                    setActionSheetReply(null);
-                    try {
-                      await deleteThreadReply(activeThreadMsg.id, targetReply.id);
-                      antdMessage.success('Đã xoá phản hồi');
-                    } catch {
-                      antdMessage.error('Không thể xoá phản hồi');
-                    }
-                  }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors active:scale-98"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span className="font-medium">Xóa phản hồi</span>
-                </button>
-              )}
+                return (
+                  <>
+                    {canManageReply && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const replyToMove = actionSheetReply;
+                          setActionSheetReply(null);
+                          await moveThreadItem({
+                            mode: 'PROMOTE_REPLY_TO_ROOT',
+                            sourceMessageId: activeThreadMsg.id,
+                            replyId: replyToMove.id,
+                          });
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-indigo-300 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+                      >
+                        <CornerDownRight className="w-4 h-4 text-indigo-400" />
+                        <span className="font-medium">Tách ra tin nhắn độc lập ở luồng chính</span>
+                      </button>
+                    )}
+
+                    {canManageReply && onOpenMoveReply && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const replyToMove = actionSheetReply;
+                          setActionSheetReply(null);
+                          onOpenMoveReply(activeThreadMsg, replyToMove.id);
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-amber-300 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+                      >
+                        <CornerDownRight className="w-4 h-4 text-amber-400" />
+                        <span className="font-medium">Chuyển sang luồng khác...</span>
+                      </button>
+                    )}
+
+                    {canManageReply && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingReply(actionSheetReply);
+                          setActionSheetReply(null);
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-amber-400 hover:bg-amber-500/10 rounded-xl transition-colors active:scale-98"
+                      >
+                        <Pencil className="w-4 h-4" />
+                        <span className="font-medium">Chỉnh sửa phản hồi</span>
+                      </button>
+                    )}
+
+                    {canManageReply && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const targetReply = actionSheetReply;
+                          setActionSheetReply(null);
+                          try {
+                            await deleteThreadReply(activeThreadMsg.id, targetReply.id);
+                            antdMessage.success('Đã xoá phản hồi');
+                          } catch {
+                            antdMessage.error('Không thể xoá phản hồi');
+                          }
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors active:scale-98"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span className="font-medium">Xóa phản hồi</span>
+                      </button>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>

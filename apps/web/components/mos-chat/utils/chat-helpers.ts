@@ -968,3 +968,40 @@ export function getFileExtension(nameOrUrl?: string): string {
   if (parts.length <= 1) return 'FILE';
   return (parts.pop() || 'FILE').toUpperCase();
 }
+
+export function isUserMessageOwner(
+  message:
+    | {
+        senderId?: number | string | null;
+        senderName?: string | null;
+        isAiBot?: boolean;
+        isSystemReminder?: boolean;
+      }
+    | null
+    | undefined,
+  currentUser: SafeAny
+): boolean {
+  if (!message || message.isAiBot || message.isSystemReminder || message.senderId === 'system-reminder') {
+    return false;
+  }
+  if (message.senderId === 'me') return true;
+  if (currentUser?.id && message.senderId && String(message.senderId) === String(currentUser.id)) {
+    return true;
+  }
+  const senderClean = String(message.senderName || '')
+    .trim()
+    .toLowerCase();
+  const myNameClean = String(currentUser?.displayName || currentUser?.name || currentUser?.fullName || '')
+    .trim()
+    .toLowerCase();
+  const myUserClean = String(currentUser?.username || '')
+    .trim()
+    .toLowerCase();
+  if (senderClean && ((myNameClean && senderClean === myNameClean) || (myUserClean && senderClean === myUserClean))) {
+    return true;
+  }
+  if (!currentUser?.id && senderClean === 'danny do') {
+    return true;
+  }
+  return false;
+}

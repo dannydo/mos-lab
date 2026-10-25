@@ -19,7 +19,7 @@ import { useMosChat } from '../context/MosChatContext';
 import { parsePureStickerMessage, MosChatStickerVisual } from '../mos-chat-stickers';
 import { MosChatRichText } from '../MosChatRichText';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
-import { isImageAttachment, formatFileSize, getFileExtension } from '../utils/chat-helpers';
+import { isImageAttachment, formatFileSize, getFileExtension, isUserMessageOwner } from '../utils/chat-helpers';
 
 export interface MosChatMobileMessageItemProps {
   message: MosChatMessage;
@@ -36,9 +36,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
 }) => {
   const { currentUser, reactToMessage, setSelectedMsgForAction, setReplyingToMessage, messages } = useMosChat();
 
-  const isMe =
-    String(message.senderId) === String(currentUser?.id) ||
-    String(message.senderName) === String(currentUser?.fullName || currentUser?.name);
+  const isMe = isUserMessageOwner(message, currentUser);
 
   // Grouping consecutive messages from same sender within 2 minutes
   const isConsecutive =
@@ -452,18 +450,31 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
       )}
 
       {/* Thread reply counter badge (Google Chat style) */}
-      {threadCount > 0 && (
-        <button
-          type="button"
-          onClick={() => onOpenThread?.(message)}
-          className={`mt-1.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-950/80 border border-indigo-700/60 text-indigo-300 active:scale-95 transition-all ${
-            isMe ? 'self-end' : 'self-start'
-          }`}
-        >
-          <MessageSquareReply className="w-3.5 h-3.5 text-indigo-400" />
-          <span>{threadCount} câu trả lời trong luồng</span>
-        </button>
-      )}
+      {threadCount > 0 &&
+        (() => {
+          const unreadThreadCount = message.unreadThreadReplyCount || 0;
+          return (
+            <button
+              type="button"
+              onClick={() => onOpenThread?.(message)}
+              className={`mt-1.5 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                unreadThreadCount > 0
+                  ? 'bg-indigo-900/90 border-indigo-500 text-indigo-200 shadow-md shadow-indigo-950/50'
+                  : 'bg-indigo-950/80 border-indigo-700/60 text-indigo-300'
+              } border active:scale-95 transition-all ${isMe ? 'self-end' : 'self-start'}`}
+            >
+              <MessageSquareReply
+                className={`w-3.5 h-3.5 ${unreadThreadCount > 0 ? 'text-indigo-300' : 'text-indigo-400'}`}
+              />
+              <span>{threadCount} câu trả lời trong luồng</span>
+              {unreadThreadCount > 0 && (
+                <span className="inline-flex items-center justify-center leading-none px-1.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-extrabold tabular-nums">
+                  +{unreadThreadCount} mới
+                </span>
+              )}
+            </button>
+          );
+        })()}
     </div>
   );
 };
