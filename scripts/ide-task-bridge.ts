@@ -189,7 +189,14 @@ async function handleWaitAndDeploy(
       execFileSync('git', ['-C', mainRepo, 'merge-base', '--is-ancestor', commitSha, 'HEAD']);
       isAlreadyMerged = true;
     } catch {
-      isAlreadyMerged = false;
+      try {
+        const log = execFileSync('git', ['-C', mainRepo, 'log', '-n', '10', '--oneline'], { encoding: 'utf8' });
+        if (log.includes(ticketBranch) || (ticketId && log.includes(`mos-bug-${ticketId}`))) {
+          isAlreadyMerged = true;
+        }
+      } catch {
+        isAlreadyMerged = false;
+      }
     }
 
     if (!isAlreadyMerged) {
