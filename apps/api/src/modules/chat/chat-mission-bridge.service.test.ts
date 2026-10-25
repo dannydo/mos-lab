@@ -659,4 +659,120 @@ describe('ChatMissionBridgeService.buildMissionSummaryFromReport', () => {
     assert.ok(lastReply.text.includes('tôi cần 1 bản gọn để type nhanh nữa'));
     assert.ok(lastReply.text.includes('#MSN-138'));
   });
+
+  it('allows non-Danny chat peer (e.g. Bảo Hân) to submit upgrade proposal (REPORTER_REOPEN) on a CLOSED ticket without permission or locking error', async () => {
+    let createdComment: SafeAny = null;
+    let createdAudit: SafeAny = null;
+    let updatedReportData: SafeAny = null;
+    let notificationRecipient: SafeAny = null;
+
+    const fastify: SafeAny = {
+      prisma: {
+        crm: {
+          crmBugReport: {
+            findUnique: async () => ({
+              id: 114,
+              requestType: 'BUG',
+              title: 'Cập nhật thông tin khách hàng (note) và đổi lịch trên mOS',
+              status: 'CLOSED',
+              clarificationStatus: 'READY',
+              clarificationSummary: 'Đã hoàn tất',
+              reporterStaffId: 1, // Danny
+              reporter: { id: 1, displayName: 'Danny Do' },
+              resolution: { solutionSummary: 'Đã sửa', verificationSummary: 'Đã nghiệm thu', releaseUrl: null },
+              comments: [],
+              updatedAt: new Date(),
+            }),
+            update: async ({ data }: SafeAny) => {
+              updatedReportData = data;
+              return {
+                id: 114,
+                ...data,
+                reporterStaffId: 1,
+              };
+            },
+          },
+          crmBugReportComment: {
+            create: async ({ data }: SafeAny) => {
+              createdComment = data;
+              return { id: 888, ...data };
+            },
+          },
+          crmInboxImplementationJob: {
+            updateMany: async () => ({ count: 1 }),
+          },
+          crmBugReportAudit: {
+            create: async ({ data }: SafeAny) => {
+              createdAudit = data;
+              return { id: 999, ...data };
+            },
+          },
+          crmBugReportNotification: {
+            updateMany: async () => ({ count: 0 }),
+            create: async ({ data }: SafeAny) => {
+              notificationRecipient = data;
+              return { id: 777, ...data };
+            },
+          },
+          crmInboxFollowUpJob: {
+            upsert: async () => ({ id: 'fu-1' }),
+            findMany: async () => [],
+          },
+          crmInboxPlanJob: {
+            upsert: async () => ({ id: 'plan-1' }),
+            findMany: async () => [],
+          },
+          $transaction: async (fn: SafeAny) => {
+            return fn(fastify.prisma.crm);
+          },
+        },
+      },
+      log: { error: () => {}, warn: () => {} },
+    };
+
+    const user: SafeAny = {
+      id: '13',
+      username: 'bao-han',
+      role: 'staff',
+    };
+
+    const conv: SafeAny = {
+      id: 'dm-1-13',
+      messages: [
+        {
+          id: 'msg-114',
+          missionId: 114,
+          missionSyncedStage: 'COMPLETED',
+          thread: [],
+        },
+      ],
+    };
+
+    const res = await ChatMissionBridgeService.executeMissionActionFromChat(
+      fastify as never,
+      user,
+      114,
+      {
+        conversationId: 'dm-1-13',
+        messageId: 'msg-114',
+        action: 'REPORTER_REOPEN',
+        feedback: 'Em cần nâng cấp thêm ở mục chọn chuyên viên',
+      },
+      [conv],
+      []
+    );
+
+    assert.ok(res.mission);
+    assert.equal(createdComment.reportId, 114);
+    assert.equal(createdComment.authorStaffId, 13);
+    assert.ok(createdComment.body.includes('Em cần nâng cấp thêm ở mục chọn chuyên viên'));
+    assert.equal(updatedReportData.status, 'NEW');
+    assert.equal(updatedReportData.clarificationStatus, 'READY');
+    assert.equal(updatedReportData.closedAt, null);
+    assert.equal(createdAudit.action, 'REPORTER_REOPENED');
+    assert.equal(createdAudit.actorStaffId, 13);
+    assert.equal(notificationRecipient?.recipientStaffId, 1);
+    assert.equal(conv.messages[0].missionSyncedStage, 'RECEIVED');
+    assert.ok(conv.messages[0].thread[0].text.includes('Yêu cầu nâng cấp / chỉnh thêm'));
+  });
 });

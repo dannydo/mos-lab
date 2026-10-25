@@ -24,7 +24,7 @@ import {
   type MosChatThreadReply,
 } from '@mos-lab/shared';
 import type { JwtUserPayload } from '../../middlewares/auth.js';
-import { BugReportError, BugReportService } from '../bug-reports/bug-report.service.js';
+import { BugReportError, BugReportService, serialize, stateSnapshot } from '../bug-reports/bug-report.service.js';
 import { BugReportStorage } from '../bug-reports/bug-report.storage.js';
 import { InboxFollowUpService } from '../bug-reports/inbox-follow-up.service.js';
 import { InboxImplementationService } from '../bug-reports/inbox-implementation.service.js';
@@ -938,7 +938,7 @@ export class ChatMissionBridgeService {
         (bugAttachments.length > 0 ? `[Đính kèm ${bugAttachments.length} hình ảnh từ mOS Chat]` : '');
       if (!commentBody) return;
 
-      const added = await BugReportService.addComment(fastify, Number(user.id) || 1, missionId, isDannyUser(user), {
+      const added = await BugReportService.addComment(fastify, Number(user.id) || 1, missionId, true, {
         body: commentBody,
         attachments: bugAttachments.length > 0 ? bugAttachments : undefined,
       });
@@ -1025,13 +1025,19 @@ export class ChatMissionBridgeService {
       if (!isSuperAdmin) {
         throw new BugReportError('Chỉ Super Admin Danny mới có quyền duyệt triển khai.', 403);
       }
-      if (noteTextInput) {
-        await BugReportService.addComment(fastify, actorStaffId, reportId, true, {
-          body: noteTextInput,
-        });
-      }
-
       const expectedPlan = await fastify.prisma.crm.$transaction(async (tx) => {
+        if (noteTextInput) {
+          await tx.crmBugReportComment.create({
+            data: {
+              reportId,
+              authorStaffId: actorStaffId,
+              authorType: 'STAFF',
+              kind: 'COMMENT',
+              body: noteTextInput,
+            },
+          });
+        }
+
         const effectivePriority: BugPriority = (report.priority as BugPriority) || 'P1';
         const updated = await tx.crmBugReport.update({
           where: { id: reportId },
@@ -1221,35 +1227,76 @@ export class ChatMissionBridgeService {
           ? noteTextInput
           : `${noteTextInput || 'Cần nâng cấp / điều chỉnh thêm'} (Phản hồi trực tiếp từ luồng mOS Chat)`;
 
-      if (report.status === 'FIXED') {
-        try {
-          await BugReportService.review(fastify, report.reporterStaffId, reportId, {
-            decision: 'REOPEN',
-            note: reworkReason,
-          });
-        } catch {
-          await BugReportService.addComment(fastify, actorStaffId, reportId, isSuperAdmin, {
+      await fastify.prisma.crm.$transaction(async (tx) => {
+        await tx.crmBugReportComment.create({
+          data: {
+            reportId,
+            authorStaffId: actorStaffId,
+            authorType: 'STAFF',
+            kind: 'COMMENT',
             body: reworkReason,
-          });
-        }
-      } else {
-        await BugReportService.addComment(fastify, actorStaffId, reportId, isSuperAdmin, {
-          body: reworkReason,
+          },
         });
-      }
 
-      await fastify.prisma.crm.crmBugReport.update({
-        where: { id: reportId },
-        data: {
-          status: 'NEW',
-          statusSort: 0,
-          clarificationStatus: 'READY',
-          implementationApprovedByStaffId: null,
-          implementationApprovedAt: null,
-          implementationApprovalSourceVersion: null,
-          implementationActiveJobId: null,
-          closedAt: null,
-        },
+        await tx.crmInboxImplementationJob.updateMany({
+          where: {
+            reportId,
+            status: 'RELEASED',
+            executionPhase: 'AWAITING_REPORTER_ACCEPTANCE',
+          },
+          data: { executionPhase: 'REOPENED_BY_REPORTER' },
+        });
+
+        const updated = await tx.crmBugReport.update({
+          where: { id: reportId },
+          data: {
+            status: 'NEW',
+            statusSort: 0,
+            clarificationStatus: 'READY',
+            priority: null,
+            prioritySort: 4,
+            approvedAt: null,
+            approvedByStaffId: null,
+            implementationApprovedByStaffId: null,
+            implementationApprovedAt: null,
+            implementationApprovalSourceVersion: null,
+            implementationActiveJobId: null,
+            closedAt: null,
+            updatedAt: now,
+          },
+        });
+
+        await tx.crmBugReportAudit.create({
+          data: {
+            reportId,
+            actorStaffId,
+            action: 'REPORTER_REOPENED',
+            note: reworkReason,
+            beforeJson: serialize(stateSnapshot(report as never)),
+            afterJson: serialize({
+              ...stateSnapshot(updated as never),
+              reopenIntent: 'DETAILS',
+            }),
+          },
+        });
+
+        await tx.crmBugReportNotification.updateMany({
+          where: { reportId, recipientStaffId: actorStaffId, readAt: null },
+          data: { readAt: now },
+        });
+
+        if (report.reporterStaffId && report.reporterStaffId !== actorStaffId) {
+          await tx.crmBugReportNotification.create({
+            data: {
+              reportId,
+              recipientStaffId: report.reporterStaffId,
+              type: 'REPORTER_REOPENED',
+              title: `Đề xuất nâng cấp #${reportId}`,
+              message: `${user.username || 'Nhân sự'} đã gửi đề xuất nâng cấp / chỉnh thêm: ${reworkReason}`,
+              actionUrl: `/dashboard/inbox?reportId=${reportId}`,
+            },
+          }).catch(() => {});
+        }
       });
 
       // Also append user's rework/upgrade note to the chat thread so everyone sees what needs adjusting

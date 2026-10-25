@@ -495,7 +495,7 @@ export function sanitizeBugReportContext(value: unknown): BugReportContext {
   };
 }
 
-function serialize(value: unknown): string {
+export function serialize(value: unknown): string {
   return JSON.stringify(value, (_key, item) => (typeof item === 'bigint' ? Number(item) : item));
 }
 
@@ -1621,7 +1621,7 @@ function notificationDto(value: {
   };
 }
 
-function stateSnapshot(row: CrmBugReport) {
+export function stateSnapshot(row: CrmBugReport) {
   return {
     requestType: row.requestType,
     requestMetadataJson: row.requestMetadataJson,
