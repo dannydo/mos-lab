@@ -602,6 +602,14 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
         ? Number(promotionSelection.replace('CUSTOM_CAMPAIGN:', ''))
         : null;
 
+      const hasPromotionSelection = promotionOptions !== null;
+      const promotionFields = hasPromotionSelection
+        ? { promotionId: selectedPromotionId, campaignPromotionId: selectedCampaignPromotionId }
+        : {
+            ...(selectedPromotionId ? { promotionId: selectedPromotionId } : {}),
+            ...(selectedCampaignPromotionId ? { campaignPromotionId: selectedCampaignPromotionId } : {}),
+          };
+
       const payload: UpdateBookingRequest = {
         storeId: selectedCN.id,
         technicianId: selectedCV?.id || null,
@@ -609,8 +617,7 @@ export const RescheduleBookingModal: React.FC<RescheduleBookingModalProps> = ({
         bookingTime: selectedSlot,
         bookingNote: checkAndAppendLowerLashNote(bookingNote, comboBalances),
         ...(Number.isInteger(parsedServiceId) && parsedServiceId >= 0 ? { serviceId: parsedServiceId } : {}),
-        ...(selectedPromotionId ? { promotionId: selectedPromotionId } : {}),
-        ...(selectedCampaignPromotionId ? { campaignPromotionId: selectedCampaignPromotionId } : {}),
+        ...promotionFields,
         reasonCategory: 'Đổi lịch & Cập nhật thông tin đơn hàng',
         reasonNote: 'Cập nhật từ mOS CRM',
       };
