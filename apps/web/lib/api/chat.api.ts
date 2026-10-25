@@ -41,6 +41,8 @@ import type {
   UpdateMosChatNicknameRequest,
   UpdateMosChatSpaceConfigRequest,
   UpdateMosChatTaskRequest,
+  UploadMosChatFileRequest,
+  UploadMosChatFileResponse,
   UploadMosChatImageRequest,
   UploadMosChatImageResponse,
 } from '@mos-lab/shared';
@@ -129,6 +131,10 @@ export const chatApi = {
     },
     uploadImage: async (payload: UploadMosChatImageRequest): Promise<UploadMosChatImageResponse> => {
       const res = await api.post('/chat/upload-image', payload);
+      return res.data;
+    },
+    uploadFile: async (payload: UploadMosChatFileRequest): Promise<UploadMosChatFileResponse> => {
+      const res = await api.post('/chat/upload-file', payload);
       return res.data;
     },
     sendMessage: async (

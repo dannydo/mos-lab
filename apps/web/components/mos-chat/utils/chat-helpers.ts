@@ -939,3 +939,32 @@ export function resolveTaskPeopleFlow(
     participants,
   };
 }
+
+export function isImageAttachment(att?: MosChatImageAttachment | null): boolean {
+  if (!att) return false;
+  if (att.mimeType && att.mimeType.startsWith('image/')) return true;
+  const ext = ((att.name || att.url || '').split('.').pop() || '').toLowerCase();
+  return ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'svg', 'heic', 'heif'].includes(ext);
+}
+
+export function isPdfAttachment(att?: MosChatImageAttachment | null): boolean {
+  if (!att) return false;
+  if (att.mimeType === 'application/pdf') return true;
+  const ext = ((att.name || att.url || '').split('.').pop() || '').toLowerCase();
+  return ext === 'pdf';
+}
+
+export function formatFileSize(bytes?: number): string {
+  if (!bytes || bytes <= 0) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+export function getFileExtension(nameOrUrl?: string): string {
+  if (!nameOrUrl) return 'FILE';
+  const clean = nameOrUrl.split('?')[0].split('#')[0];
+  const parts = clean.split('.');
+  if (parts.length <= 1) return 'FILE';
+  return (parts.pop() || 'FILE').toUpperCase();
+}

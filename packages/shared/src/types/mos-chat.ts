@@ -3,18 +3,46 @@ export type MosChatPresenceStatus = 'active' | 'dnd' | 'away';
 export type MosChatTaskPriority = 'URGENT' | 'HIGH' | 'NORMAL';
 
 export type MosChatImageMimeType =
-  'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' | 'image/heic' | 'image/heif';
+  | 'image/jpeg'
+  | 'image/png'
+  | 'image/webp'
+  | 'image/gif'
+  | 'image/heic'
+  | 'image/heif'
+  | 'image/svg+xml'
+  | 'image/bmp';
+
+export type MosChatFileMimeType =
+  | MosChatImageMimeType
+  | 'application/pdf'
+  | 'application/msword'
+  | 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  | 'application/vnd.ms-excel'
+  | 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  | 'application/vnd.ms-powerpoint'
+  | 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  | 'text/plain'
+  | 'text/csv'
+  | 'application/json'
+  | 'application/zip'
+  | 'application/x-zip-compressed'
+  | 'application/x-rar-compressed'
+  | 'application/x-7z-compressed'
+  | string;
 
 export interface MosChatImageAttachment {
   id: string;
   url: string;
   name: string;
-  mimeType: MosChatImageMimeType;
+  mimeType: MosChatFileMimeType;
   sizeBytes: number;
   width?: number;
   height?: number;
   source?: 'clipboard' | 'drive' | 'upload';
+  fileExt?: string;
 }
+
+export type MosChatAttachment = MosChatImageAttachment;
 
 export interface MosChatCustomerCard {
   customerId?: number;
@@ -449,17 +477,21 @@ export interface CreateMosChatThreadReplyRequest {
 
 export interface UploadMosChatImageRequest {
   dataBase64: string;
-  mimeType: MosChatImageMimeType;
+  mimeType: MosChatFileMimeType;
   fileName?: string;
   width?: number;
   height?: number;
   source?: 'clipboard' | 'drive' | 'upload';
 }
 
+export type UploadMosChatFileRequest = UploadMosChatImageRequest;
+
 export interface UploadMosChatImageResponse {
   success: boolean;
   attachment: MosChatImageAttachment;
 }
+
+export type UploadMosChatFileResponse = UploadMosChatImageResponse;
 
 export interface CreateMosChatTaskRequest {
   conversationId: string;

@@ -1,10 +1,32 @@
 import { apiClient } from '../../../lib/api-client';
 import type { MosChatImageAttachment, SafeAny } from '@mos-lab/shared';
 
+const EXT_TO_MIME_FALLBACK: Record<string, string> = {
+  pdf: 'application/pdf',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  xls: 'application/vnd.ms-excel',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  doc: 'application/msword',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  ppt: 'application/vnd.ms-powerpoint',
+  txt: 'text/plain',
+  csv: 'text/csv',
+  json: 'application/json',
+  zip: 'application/zip',
+  rar: 'application/x-rar-compressed',
+  '7z': 'application/x-7z-compressed',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  gif: 'image/gif',
+  svg: 'image/svg+xml',
+};
+
 /**
- * Reads a local image file as Base64 and uploads it to mOS Chat Media Storage
+ * Reads any local file (image, PDF, Excel, Word, ZIP, etc.) as Base64 and uploads it to mOS Chat Storage
  */
-export async function uploadSingleChatImage(file: File): Promise<MosChatImageAttachment | null> {
+export async function uploadSingleChatFile(file: File): Promise<MosChatImageAttachment | null> {
   const base64Data = await new Promise<string | null>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (evt) => {
@@ -12,26 +34,37 @@ export async function uploadSingleChatImage(file: File): Promise<MosChatImageAtt
       const base64 = result?.split(',')[1] || null;
       resolve(base64);
     };
-    reader.onerror = () => reject(new Error('Không thể đọc tệp hình ảnh'));
+    reader.onerror = () => reject(new Error('Không thể đọc tệp tin'));
     reader.readAsDataURL(file);
   });
 
   if (!base64Data) return null;
 
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  let mimeType = file.type || '';
+  if (!mimeType || mimeType === 'application/octet-stream') {
+    mimeType = EXT_TO_MIME_FALLBACK[ext] || 'application/octet-stream';
+  }
+
   const res = await apiClient.chat.uploadImage({
     dataBase64: base64Data,
     fileName: file.name,
-    mimeType: (file.type as SafeAny) || 'image/jpeg',
+    mimeType: mimeType as SafeAny,
   });
 
   return res?.attachment || null;
 }
 
 /**
- * Uploads multiple image files concurrently in parallel, reporting progress
- * and returning all successfully uploaded attachments without aborting on partial errors.
+ * Backward compatible alias for uploading a single image or file
  */
-export async function uploadMultipleChatImages(
+export const uploadSingleChatImage = uploadSingleChatFile;
+
+/**
+ * Uploads multiple files (images, PDFs, documents) concurrently in parallel,
+ * reporting progress and returning all successfully uploaded attachments.
+ */
+export async function uploadMultipleChatFiles(
   files: File[] | FileList,
   onProgress?: (completed: number, total: number) => void
 ): Promise<MosChatImageAttachment[]> {
@@ -42,7 +75,7 @@ export async function uploadMultipleChatImages(
   const results = await Promise.allSettled(
     fileArray.map(async (file) => {
       try {
-        const att = await uploadSingleChatImage(file);
+        const att = await uploadSingleChatFile(file);
         completed++;
         onProgress?.(completed, fileArray.length);
         return att;
@@ -63,3 +96,8 @@ export async function uploadMultipleChatImages(
 
   return successful;
 }
+
+/**
+ * Backward compatible alias for multi-file upload
+ */
+export const uploadMultipleChatImages = uploadMultipleChatFiles;
