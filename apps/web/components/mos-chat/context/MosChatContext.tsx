@@ -365,7 +365,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
 
   // Add member to space
   const addMemberToSpace = useCallback(
-    async (staffId: number, spaceId?: string): Promise<MosChatConversation | null> => {
+    async (staffId: number | number[], spaceId?: string): Promise<MosChatConversation | null> => {
       const targetSpaceId = spaceId || activeConvId;
       if (!targetSpaceId) return null;
 
@@ -381,16 +381,20 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
 
       // Optimistic fallback for mock/local environments
       let updatedConv: MosChatConversation | null = null;
+      const idsToAdd = Array.isArray(staffId) ? staffId.map(Number) : [Number(staffId)];
       setConversations((prev) =>
         prev.map((c) => {
           if (c.id !== targetSpaceId) return c;
           const currentIds = Array.isArray(c.memberIds) ? c.memberIds.map(Number) : [];
-          if (currentIds.includes(Number(staffId))) return c;
-          const updatedIds = [...currentIds, Number(staffId)];
-          const targetStaff = staffDirectory.find((s) => Number(s.id) === Number(staffId));
+          const newIds = idsToAdd.filter((id) => !currentIds.includes(id));
+          if (newIds.length === 0) return c;
+          const updatedIds = [...currentIds, ...newIds];
           const updatedMembers = Array.isArray(c.members) ? [...c.members] : [];
-          if (targetStaff && !updatedMembers.some((m) => Number(m.id) === Number(staffId))) {
-            updatedMembers.push(targetStaff);
+          for (const id of newIds) {
+            const targetStaff = staffDirectory.find((s) => Number(s.id) === id);
+            if (targetStaff && !updatedMembers.some((m) => Number(m.id) === id)) {
+              updatedMembers.push(targetStaff);
+            }
           }
           updatedConv = {
             ...c,
@@ -404,6 +408,63 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       return updatedConv;
     },
     [activeConvId, staffDirectory]
+  );
+
+  // Remove member from space
+  const removeMemberFromSpace = useCallback(
+    async (staffId: number, spaceId?: string): Promise<MosChatConversation | null> => {
+      const targetSpaceId = spaceId || activeConvId;
+      if (!targetSpaceId) return null;
+
+      try {
+        const res = await apiClient.chat.removeMember(targetSpaceId, staffId);
+        if (res?.conversation) {
+          setConversations((prev) => prev.map((c) => (c.id === res.conversation.id ? res.conversation : c)));
+          return res.conversation;
+        }
+      } catch (err: SafeAny) {
+        console.warn('apiClient.chat.removeMember failed or mocked, applying optimistic fallback:', err);
+      }
+
+      let updatedConv: MosChatConversation | null = null;
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== targetSpaceId) return c;
+          const currentIds = Array.isArray(c.memberIds) ? c.memberIds.map(Number) : [];
+          const updatedIds = currentIds.filter((id) => id !== Number(staffId));
+          const updatedMembers = (c.members || []).filter((m) => Number(m.id) !== Number(staffId));
+          updatedConv = {
+            ...c,
+            memberIds: updatedIds,
+            members: updatedMembers,
+            memberCount: updatedIds.length,
+          };
+          return updatedConv;
+        })
+      );
+      return updatedConv;
+    },
+    [activeConvId]
+  );
+
+  // Update member nickname in space
+  const updateMemberNickname = useCallback(
+    async (staffId: number, nickname: string, spaceId?: string): Promise<boolean> => {
+      const targetSpaceId = spaceId || activeConvId;
+      if (!targetSpaceId) return false;
+
+      try {
+        const res = await apiClient.chat.updateNickname(targetSpaceId, { targetStaffId: staffId, nickname });
+        if (res?.success && res.conversation) {
+          setConversations((prev) => prev.map((c) => (c.id === res.conversation.id ? res.conversation : c)));
+          return true;
+        }
+      } catch (err: SafeAny) {
+        console.warn('apiClient.chat.updateNickname failed or mocked:', err);
+      }
+      return false;
+    },
+    [activeConvId]
   );
 
   // Update space config
@@ -1156,6 +1217,8 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       totalUnreadCount,
       totalTaskCount,
       addMemberToSpace,
+      removeMemberFromSpace,
+      updateMemberNickname,
       updateSpaceConfig,
       refresh: fetchBootstrap,
     }),
@@ -1205,6 +1268,8 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       totalUnreadCount,
       totalTaskCount,
       addMemberToSpace,
+      removeMemberFromSpace,
+      updateMemberNickname,
       updateSpaceConfig,
       fetchBootstrap,
     ]

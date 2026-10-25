@@ -119,7 +119,9 @@ export interface MosChatContextValue {
   totalTaskCount: number;
 
   // Space Management
-  addMemberToSpace: (staffId: number, spaceId?: string) => Promise<MosChatConversation | null>;
+  addMemberToSpace: (staffId: number | number[], spaceId?: string) => Promise<MosChatConversation | null>;
+  removeMemberFromSpace?: (staffId: number, spaceId?: string) => Promise<MosChatConversation | null>;
+  updateMemberNickname?: (staffId: number, nickname: string, spaceId?: string) => Promise<boolean>;
 
   // Refresh
   refresh: () => Promise<void>;

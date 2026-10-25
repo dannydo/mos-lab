@@ -12,6 +12,7 @@ import {
   MessageSquare,
   Sparkles,
   Users,
+  UserPlus,
 } from 'lucide-react';
 import { Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
@@ -24,12 +25,14 @@ export interface MosChatMobileHeaderProps {
   onOpenSettings?: () => void;
   onCallRoom?: () => void;
   onOpenTaskModal?: () => void;
+  onOpenMembersModal?: () => void;
 }
 
 export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
   onOpenSettings,
   onCallRoom,
   onOpenTaskModal,
+  onOpenMembersModal,
 }) => {
   const {
     mobileView,
@@ -215,7 +218,17 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
               )}
               <h2 className="text-sm font-bold text-white truncate">{roomTitle}</h2>
             </div>
-            <p className="text-[11px] text-slate-400 truncate max-w-[220px]">{subtitle}</p>
+            <p
+              onClick={(e) => {
+                if (onOpenMembersModal) {
+                  e.stopPropagation();
+                  onOpenMembersModal();
+                }
+              }}
+              className="text-[11px] text-slate-400 hover:text-emerald-400 transition-colors truncate max-w-[220px]"
+            >
+              {subtitle}
+            </p>
           </div>
         ) : (
           <div className="flex items-center gap-2.5 max-w-[240px] text-left">
@@ -236,8 +249,20 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
         )}
       </div>
 
-      {/* Right actions: Tasks toggle & Phone call */}
+      {/* Right actions: Space Members & Tasks toggle & Phone call */}
       <div className="flex items-center gap-1">
+        {isSpace && (
+          <button
+            type="button"
+            onClick={onOpenMembersModal}
+            className="p-2 text-slate-300 hover:text-white rounded-full hover:bg-slate-800 transition-colors active:scale-95 cursor-pointer"
+            aria-label="Thành viên Không gian"
+            title="Thêm và quản lý thành viên Không gian"
+          >
+            <UserPlus className="w-4 h-4 text-emerald-400" />
+          </button>
+        )}
+
         {/* Toggle between Chat & Tasks */}
         <button
           type="button"

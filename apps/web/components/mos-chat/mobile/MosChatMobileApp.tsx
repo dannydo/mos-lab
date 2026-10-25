@@ -27,6 +27,7 @@ import { MosChatMobileStickerSheet } from './MosChatMobileStickerSheet';
 import { MosChatMobileEditModal } from './MosChatMobileEditModal';
 import { MosChatMobileMediaGallery, type MosChatGalleryImage } from './MosChatMobileMediaGallery';
 import { MosChatSpaceConfigModal } from '../MosChatSpaceConfigModal';
+import { MosChatSpaceMembersModal } from '../MosChatSpaceMembersModal';
 import { formatStickerToken, type MosChatStickerItem, type MosChatStickerPackId } from '../mos-chat-stickers';
 import { DEADLINE_PRESETS, GOOGLE_CHAT_REACTION_EMOJIS, WINGS_SIGNATURE_EMOJIS } from '../constants/chat-constants';
 import { apiClient } from '../../../lib/api-client';
@@ -62,6 +63,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
   } = useMosChat();
 
   const [spaceConfigModalOpen, setSpaceConfigModalOpen] = useState<boolean>(false);
+  const [spaceMembersModalOpen, setSpaceMembersModalOpen] = useState<boolean>(false);
   const [actionSheetOpen, setActionSheetOpen] = useState<boolean>(false);
   const [stickerPickerOpen, setStickerPickerOpen] = useState<boolean>(false);
   const [stickerPickerInitialPack, setStickerPickerInitialPack] = useState<MosChatStickerPackId>('emoji');
@@ -519,6 +521,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
       {/* Top Header */}
       <MosChatMobileHeader
         onOpenSettings={() => setSpaceConfigModalOpen(true)}
+        onOpenMembersModal={() => setSpaceMembersModalOpen(true)}
         onOpenTaskModal={() => openTaskModalForThread()}
       />
 
@@ -768,6 +771,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         open={spaceConfigModalOpen}
         conversation={activeConversation}
         onClose={() => setSpaceConfigModalOpen(false)}
+        onOpenMembersModal={() => setSpaceMembersModalOpen(true)}
         onUpdated={(updated) => {
           if (updateSpaceConfig && activeConversation) {
             void updateSpaceConfig(activeConversation.id, {
@@ -778,6 +782,13 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
             });
           }
         }}
+      />
+
+      {/* Space Members & Management Modal */}
+      <MosChatSpaceMembersModal
+        open={spaceMembersModalOpen}
+        conversation={activeConversation}
+        onClose={() => setSpaceMembersModalOpen(false)}
       />
     </div>
   );
