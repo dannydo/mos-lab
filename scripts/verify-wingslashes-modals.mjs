@@ -30,13 +30,14 @@ try {
     );
   }, userData);
 
-  const targetUrl = 'https://wingslashes.com/admin/online-consultant/user/customer?phone=0702610128';
+  const phone = process.argv[2] || '0989662323';
+  const targetUrl = `https://wingslashes.com/admin/online-consultant/user/customer?phone=${phone}`;
   console.log('Navigating to:', targetUrl);
   await page.goto(targetUrl, { waitUntil: 'networkidle', timeout: 25000 });
   await page.waitForTimeout(3000);
 
   // 1. Select the customer first
-  console.log('Selecting customer Bảo Hân in list...');
+  console.log(`Selecting customer (${phone}) in list...`);
   const customerItem = page.locator('app-customer-list .detail').first();
   await customerItem.click();
   await page.waitForTimeout(2000);
@@ -48,8 +49,8 @@ try {
   console.log('Waiting for Edit User modal...');
   await page.waitForSelector('mat-dialog-container', { timeout: 8000 });
   await page.waitForTimeout(1000);
-  await page.screenshot({ path: '/tmp/modal_edit_user_success.png' });
-  console.log('✅ Edit user modal opened successfully! Saved /tmp/modal_edit_user_success.png');
+  await page.screenshot({ path: `/tmp/modal_edit_user_${phone}.png` });
+  console.log(`✅ Edit user modal opened successfully! Saved /tmp/modal_edit_user_${phone}.png`);
 
   // Close modal via Escape
   await page.keyboard.press('Escape');
@@ -62,8 +63,8 @@ try {
   console.log('Waiting for Booking modal...');
   await page.waitForSelector('mat-dialog-container', { timeout: 8000 });
   await page.waitForTimeout(1000);
-  await page.screenshot({ path: '/tmp/modal_booking_success.png' });
-  console.log('✅ Booking modal opened successfully! Saved /tmp/modal_booking_success.png');
+  await page.screenshot({ path: `/tmp/modal_booking_${phone}.png` });
+  console.log(`✅ Booking modal opened successfully! Saved /tmp/modal_booking_${phone}.png`);
 
   console.log('All verification passed with flying colors!');
 } catch (e) {
