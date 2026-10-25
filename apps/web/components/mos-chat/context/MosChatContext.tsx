@@ -754,45 +754,174 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
   // Delete message
   const deleteMessage = useCallback(
     async (msgId: string) => {
-      setAllMessagesByConv((prev) => ({
-        ...prev,
-        [activeConvId]: (prev[activeConvId] || []).filter((m) => m.id !== msgId),
-      }));
-      try {
-        await apiClient.chat.deleteMessage(msgId, { conversationId: activeConvId });
-      } catch {
-        // ignore
-      }
-    },
-    [activeConvId]
-  );
+      const now = new Date();
+      const myId = effectiveUser?.id || currentUser?.id || 'me';
+      const myName =
+        effectiveUser?.displayName ||
+        effectiveUser?.fullName ||
+        effectiveUser?.name ||
+        currentUser?.displayName ||
+        currentUser?.fullName ||
+        currentUser?.name ||
+        'Bạn';
 
-  // Delete thread reply
-  const deleteThreadReply = useCallback(
-    async (parentMsgId: string, replyId: string) => {
       setActiveThreadMsg((prev) => {
-        if (!prev || prev.id !== parentMsgId) return prev;
+        if (!prev || prev.id !== msgId) return prev;
         return {
           ...prev,
-          thread: (prev.thread || []).filter((r) => r.id !== replyId),
+          originalText: prev.originalText || prev.text,
+          isDeleted: true,
+          deletedAt: now.toISOString(),
+          deletedBy: myId,
+          deletedByName: myName,
         };
       });
+
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== activeConvId) return c;
+          return {
+            ...c,
+            messages: (c.messages || []).map((m) =>
+              m.id === msgId
+                ? {
+                    ...m,
+                    originalText: m.originalText || m.text,
+                    isDeleted: true,
+                    deletedAt: now.toISOString(),
+                    deletedBy: myId,
+                    deletedByName: myName,
+                  }
+                : m
+            ),
+          };
+        })
+      );
+
       setAllMessagesByConv((prev) => {
         const currentList = prev[activeConvId] || [];
         return {
           ...prev,
           [activeConvId]: currentList.map((m) =>
-            m.id === parentMsgId ? { ...m, thread: (m.thread || []).filter((r) => r.id !== replyId) } : m
+            m.id === msgId
+              ? {
+                  ...m,
+                  originalText: m.originalText || m.text,
+                  isDeleted: true,
+                  deletedAt: now.toISOString(),
+                  deletedBy: myId,
+                  deletedByName: myName,
+                }
+              : m
           ),
         };
       });
+
       try {
-        await apiClient.chat.deleteMessage(replyId, { conversationId: activeConvId });
-      } catch {
-        // ignore
+        await apiClient.chat.deleteMessage(msgId, { conversationId: activeConvId });
+      } catch (err) {
+        console.error('Failed to delete message:', err);
+        throw err;
       }
     },
-    [activeConvId]
+    [activeConvId, currentUser, effectiveUser]
+  );
+
+  // Delete thread reply
+  const deleteThreadReply = useCallback(
+    async (parentMsgId: string, replyId: string) => {
+      const now = new Date();
+      const myId = effectiveUser?.id || currentUser?.id || 'me';
+      const myName =
+        effectiveUser?.displayName ||
+        effectiveUser?.fullName ||
+        effectiveUser?.name ||
+        currentUser?.displayName ||
+        currentUser?.fullName ||
+        currentUser?.name ||
+        'Bạn';
+
+      setActiveThreadMsg((prev) => {
+        if (!prev || prev.id !== parentMsgId) return prev;
+        return {
+          ...prev,
+          thread: (prev.thread || []).map((r) =>
+            r.id === replyId
+              ? {
+                  ...r,
+                  originalText: r.originalText || r.text,
+                  isDeleted: true,
+                  deletedAt: now.toISOString(),
+                  deletedBy: myId,
+                  deletedByName: myName,
+                }
+              : r
+          ),
+        };
+      });
+
+      setConversations((prev) =>
+        prev.map((c) => {
+          if (c.id !== activeConvId) return c;
+          return {
+            ...c,
+            messages: (c.messages || []).map((m) =>
+              m.id === parentMsgId
+                ? {
+                    ...m,
+                    thread: (m.thread || []).map((r) =>
+                      r.id === replyId
+                        ? {
+                            ...r,
+                            originalText: r.originalText || r.text,
+                            isDeleted: true,
+                            deletedAt: now.toISOString(),
+                            deletedBy: myId,
+                            deletedByName: myName,
+                          }
+                        : r
+                    ),
+                  }
+                : m
+            ),
+          };
+        })
+      );
+
+      setAllMessagesByConv((prev) => {
+        const currentList = prev[activeConvId] || [];
+        return {
+          ...prev,
+          [activeConvId]: currentList.map((m) =>
+            m.id === parentMsgId
+              ? {
+                  ...m,
+                  thread: (m.thread || []).map((r) =>
+                    r.id === replyId
+                      ? {
+                          ...r,
+                          originalText: r.originalText || r.text,
+                          isDeleted: true,
+                          deletedAt: now.toISOString(),
+                          deletedBy: myId,
+                          deletedByName: myName,
+                        }
+                      : r
+                  ),
+                }
+              : m
+          ),
+        };
+      });
+
+      try {
+        await apiClient.chat.deleteMessage(parentMsgId, { conversationId: activeConvId, replyId });
+      } catch (err) {
+        console.error('Failed to delete thread reply:', err);
+        throw err;
+      }
+    },
+    [activeConvId, currentUser, effectiveUser]
   );
 
   // Edit message

@@ -29,11 +29,14 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
   const isMe =
     String(message.senderId) === String(currentUser?.id) ||
     String(message.senderName) === String(currentUser?.fullName || currentUser?.name);
-  const canEdit =
-    isMe ||
+  const isDannyAccount =
+    String(currentUser?.id) === '1' ||
+    String(currentUser?.username || '').toLowerCase() === 'dannydo' ||
     String(currentUser?.role || '')
       .toLowerCase()
       .includes('admin');
+  const canEdit = isMe || isDannyAccount;
+  const canDelete = isMe || isDannyAccount;
 
   const handleEmojiClick = (emoji: string) => {
     reactToMessage(message.id, emoji);
@@ -63,9 +66,14 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
     onClose();
   };
 
-  const handleDelete = () => {
-    deleteMessage(message.id);
+  const handleDelete = async () => {
     onClose();
+    try {
+      await deleteMessage(message.id);
+      antdMessage.success('Đã xoá tin nhắn');
+    } catch {
+      antdMessage.error('Không thể xoá tin nhắn');
+    }
   };
 
   return (
@@ -156,7 +164,7 @@ export const MosChatMobileReactionSheet: React.FC<MosChatMobileReactionSheetProp
             </button>
           )}
 
-          {isMe && (
+          {canDelete && (
             <button
               type="button"
               onClick={handleDelete}

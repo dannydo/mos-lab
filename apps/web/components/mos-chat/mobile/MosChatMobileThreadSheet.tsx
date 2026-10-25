@@ -471,6 +471,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
   // Touch handlers for Replies
   const handleTouchStartReply = (e: React.TouchEvent, reply: MosChatThreadReply) => {
+    if (reply.isDeleted) return;
     if (!e.touches || e.touches.length === 0) return;
     touchStartPosRef.current = {
       x: e.touches[0].clientX,
@@ -490,6 +491,8 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
   };
 
   const handleTouchMoveReply = (e: React.TouchEvent, replyId: string) => {
+    const r = threadReplies.find((item) => item.id === replyId);
+    if (r?.isDeleted) return;
     if (!e.touches || e.touches.length === 0) return;
     const currentX = e.touches[0].clientX;
     const currentY = e.touches[0].clientY;
@@ -534,6 +537,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
   };
 
   const handleTouchEndReply = (reply: MosChatThreadReply) => {
+    if (reply.isDeleted) return;
     if (!activeThreadMsg) return;
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
@@ -665,19 +669,27 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
           </div>
 
           {/* Parent Message Content */}
-          <div className="text-sm text-slate-200 select-text">
-            <MosChatRichText
-              content={activeThreadMsg.text}
-              isMe={
-                String(activeThreadMsg.senderId) === String(currentUser?.id) ||
-                String(activeThreadMsg.senderName) === String(currentUser?.fullName || currentUser?.name)
-              }
-              isDark={true}
-            />
-          </div>
+          {activeThreadMsg.isDeleted ? (
+            <div className="flex items-center gap-2 py-1.5 px-3 rounded-xl bg-slate-950/40 border border-dashed border-slate-700/60 text-xs italic text-slate-400 select-none">
+              <Trash2 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+              <span>Tin nhắn gốc đã bị xoá</span>
+              {activeThreadMsg.deletedByName && <span className="opacity-75">({activeThreadMsg.deletedByName})</span>}
+            </div>
+          ) : (
+            <div className="text-sm text-slate-200 select-text">
+              <MosChatRichText
+                content={activeThreadMsg.text}
+                isMe={
+                  String(activeThreadMsg.senderId) === String(currentUser?.id) ||
+                  String(activeThreadMsg.senderName) === String(currentUser?.fullName || currentUser?.name)
+                }
+                isDark={true}
+              />
+            </div>
+          )}
 
           {/* Parent Message Attachments */}
-          {activeThreadMsg.attachments && activeThreadMsg.attachments.length > 0 && (
+          {!activeThreadMsg.isDeleted && activeThreadMsg.attachments && activeThreadMsg.attachments.length > 0 && (
             <div className="mt-2.5">
               {activeThreadMsg.attachments.length === 1 ? (
                 <div
@@ -733,7 +745,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
           )}
 
           {/* Reaction badges for Parent Message */}
-          {activeThreadMsg.reactions && Object.keys(activeThreadMsg.reactions).length > 0 && (
+          {!activeThreadMsg.isDeleted && activeThreadMsg.reactions && Object.keys(activeThreadMsg.reactions).length > 0 && (
             <div className="flex flex-wrap items-center gap-1 mt-2.5 pt-2 border-t border-slate-800/80">
               {Object.entries(activeThreadMsg.reactions).map(([emoji, count]) => {
                 if (count <= 0) return null;
@@ -1084,6 +1096,11 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
               onTouchStart={(e) => handleTouchStartReply(e, reply)}
               onTouchMove={(e) => handleTouchMoveReply(e, reply.id)}
               onTouchEnd={() => handleTouchEndReply(reply)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                if (reply.isDeleted) return;
+                setActionSheetReply(reply);
+              }}
               style={{
                 transform: `translateX(${replyOffset}px)`,
                 transition: replyOffset === 0 ? 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
@@ -1124,89 +1141,103 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                 </div>
               )}
 
-              {!isMe && (
+              {!isMe && !reply.isDeleted && (
                 <span className="text-[11px] font-semibold text-slate-400 mb-0.5 px-1">{reply.senderName}</span>
               )}
 
-              <div
-                className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm break-words shadow-sm ${
-                  isMe
-                    ? 'bg-amber-500 text-slate-950 font-medium rounded-tr-sm'
-                    : 'bg-slate-800/90 text-slate-100 border border-slate-700/60 rounded-tl-sm'
-                }`}
-              >
-                {/* Image Attachments */}
-                {reply.attachments && reply.attachments.length > 0 && (
-                  <div className="mb-1.5">
-                    {reply.attachments.length === 1 ? (
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenGallery(reply.attachments![0].url, reply.attachments![0].id);
-                        }}
-                        className="rounded-xl overflow-hidden bg-slate-950/40 cursor-pointer active:opacity-90 transition-opacity"
-                      >
-                        <img
-                          src={resolveMediaUrl(reply.attachments[0].url)}
-                          alt={reply.attachments[0].name || 'Ảnh đính kèm'}
-                          className="max-h-56 w-full object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-1.5 rounded-xl overflow-hidden">
-                        {reply.attachments.slice(0, 4).map((att, idx) => {
-                          const total = reply.attachments!.length;
-                          const isFirstOfThree = total === 3 && idx === 0;
-                          const isFourthInMany = total > 4 && idx === 3;
-                          const remaining = total - 3;
-
-                          return (
-                            <div
-                              key={att.id || idx}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenGallery(att.url, att.id);
-                              }}
-                              className={`relative overflow-hidden cursor-pointer active:opacity-90 transition-opacity rounded-lg ${
-                                isFirstOfThree ? 'col-span-2 h-36' : 'h-24'
-                              }`}
-                            >
-                              <img
-                                src={resolveMediaUrl(att.url)}
-                                alt={att.name || `Hình ${idx + 1}`}
-                                className="w-full h-full object-cover"
-                                loading="lazy"
-                              />
-                              {isFourthInMany && (
-                                <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] flex items-center justify-center text-white font-bold text-sm">
-                                  +{remaining}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="select-text">
-                  <MosChatRichText content={reply.text} isMe={isMe} isDark={true} />
-                </div>
-
+              {reply.isDeleted ? (
                 <div
-                  className={`flex items-center justify-end gap-1 mt-1 text-[10px] tabular-nums ${
-                    isMe ? 'text-slate-800' : 'text-slate-400'
+                  className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs italic break-words flex items-center gap-2 select-none ${
+                    isMe
+                      ? 'bg-amber-500/10 text-amber-300/80 border border-dashed border-amber-500/30 rounded-tr-sm self-end'
+                      : 'bg-slate-800/60 text-slate-400 border border-dashed border-slate-700/60 rounded-tl-sm self-start'
                   }`}
                 >
-                  {reply.editedAt && <span className="italic mr-0.5">đã sửa</span>}
-                  <span>{dayjs(reply.createdAt).format('HH:mm')}</span>
-                  {isMe && <CheckCheck className="w-3.5 h-3.5 text-slate-800" />}
+                  <Trash2 className="w-3.5 h-3.5 opacity-60 shrink-0" />
+                  <span>Phản hồi này đã bị xoá</span>
+                  {reply.deletedByName && <span className="opacity-75">({reply.deletedByName})</span>}
                 </div>
-              </div>
+              ) : (
+                <div
+                  className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm break-words shadow-sm ${
+                    isMe
+                      ? 'bg-amber-500 text-slate-950 font-medium rounded-tr-sm'
+                      : 'bg-slate-800/90 text-slate-100 border border-slate-700/60 rounded-tl-sm'
+                  }`}
+                >
+                  {/* Image Attachments */}
+                  {reply.attachments && reply.attachments.length > 0 && (
+                    <div className="mb-1.5">
+                      {reply.attachments.length === 1 ? (
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenGallery(reply.attachments![0].url, reply.attachments![0].id);
+                          }}
+                          className="rounded-xl overflow-hidden bg-slate-950/40 cursor-pointer active:opacity-90 transition-opacity"
+                        >
+                          <img
+                            src={resolveMediaUrl(reply.attachments[0].url)}
+                            alt={reply.attachments[0].name || 'Ảnh đính kèm'}
+                            className="max-h-56 w-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-1.5 rounded-xl overflow-hidden">
+                          {reply.attachments.slice(0, 4).map((att, idx) => {
+                            const total = reply.attachments!.length;
+                            const isFirstOfThree = total === 3 && idx === 0;
+                            const isFourthInMany = total > 4 && idx === 3;
+                            const remaining = total - 3;
+
+                            return (
+                              <div
+                                key={att.id || idx}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenGallery(att.url, att.id);
+                                }}
+                                className={`relative overflow-hidden cursor-pointer active:opacity-90 transition-opacity rounded-lg ${
+                                  isFirstOfThree ? 'col-span-2 h-36' : 'h-24'
+                                }`}
+                              >
+                                <img
+                                  src={resolveMediaUrl(att.url)}
+                                  alt={att.name || `Hình ${idx + 1}`}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                />
+                                {isFourthInMany && (
+                                  <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] flex items-center justify-center text-white font-bold text-sm">
+                                    +{remaining}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="select-text">
+                    <MosChatRichText content={reply.text} isMe={isMe} isDark={true} />
+                  </div>
+
+                  <div
+                    className={`flex items-center justify-end gap-1 mt-1 text-[10px] tabular-nums ${
+                      isMe ? 'text-slate-800' : 'text-slate-400'
+                    }`}
+                  >
+                    {reply.editedAt && <span className="italic mr-0.5">đã sửa</span>}
+                    <span>{dayjs(reply.createdAt).format('HH:mm')}</span>
+                    {isMe && <CheckCheck className="w-3.5 h-3.5 text-slate-800" />}
+                  </div>
+                </div>
+              )}
 
               {/* Reaction Badges for Reply */}
-              {reply.reactions && Object.keys(reply.reactions).length > 0 && (
+              {!reply.isDeleted && reply.reactions && Object.keys(reply.reactions).length > 0 && (
                 <div className="flex flex-wrap items-center gap-1 mt-1 px-1">
                   {Object.entries(reply.reactions).map(([emoji, count]) => {
                     if (count <= 0) return null;
@@ -1554,14 +1585,22 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
               )}
 
               {(String(actionSheetReply.senderId) === String(currentUser?.id) ||
+                String(currentUser?.id) === '1' ||
+                String(currentUser?.username || '').toLowerCase() === 'dannydo' ||
                 String(currentUser?.role || '')
                   .toLowerCase()
                   .includes('admin')) && (
                 <button
                   type="button"
-                  onClick={() => {
-                    deleteThreadReply(activeThreadMsg.id, actionSheetReply.id);
+                  onClick={async () => {
+                    const targetReply = actionSheetReply;
                     setActionSheetReply(null);
+                    try {
+                      await deleteThreadReply(activeThreadMsg.id, targetReply.id);
+                      antdMessage.success('Đã xoá phản hồi');
+                    } catch {
+                      antdMessage.error('Không thể xoá phản hồi');
+                    }
                   }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 rounded-xl transition-colors active:scale-98"
                 >
