@@ -188,7 +188,13 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           o.user_id as customerId,
           COALESCE(up_c.full_name, 'Khách hàng') as clientName,
           up_c.avatar as clientAvatar,
-          COALESCE(uc_c.phone_number, '') as clientPhone,
+          COALESCE((
+          SELECT uc.phone_number
+          FROM user_contact uc
+          WHERE uc.user_id = o.user_id AND uc.is_disabled = 0
+          ORDER BY uc.id DESC
+          LIMIT 1
+        ), '') as clientPhone,
           o.booking_channels as bookingChannel,
           o.booking_date_start as bookingDate,
           o.date_created as createdDate,
@@ -200,12 +206,6 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           up_b.avatar as bookerAvatar
         FROM \`order\` o
         LEFT JOIN \`user_profile\` up_c ON up_c.user_id = o.user_id
-        LEFT JOIN (
-          SELECT user_id, MAX(phone_number) as phone_number
-          FROM user_contact
-          WHERE is_disabled = 0
-          GROUP BY user_id
-        ) uc_c ON uc_c.user_id = o.user_id
         LEFT JOIN \`user_profile\` up_b ON up_b.user_id = o.created_staff_id
         LEFT JOIN \`client_store\` cs ON cs.id = o.client_store_id
         WHERE o.date_created >= '${startDateTimeStr}' 
@@ -308,9 +308,17 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
     const endPart = endStr.includes('T') ? endStr.split('T')[0] : endStr;
 
     const requestedStatus = (status || 'ALL').toUpperCase();
-    const statusParam = ['ALL', 'COMPLETED', 'NEW_CUSTOMER', 'SINGLE', 'COMBO_LIVE', 'COMBO_SOLD', 'MISSED', 'TIP', 'COMBO'].includes(
-      requestedStatus
-    )
+    const statusParam = [
+      'ALL',
+      'COMPLETED',
+      'NEW_CUSTOMER',
+      'SINGLE',
+      'COMBO_LIVE',
+      'COMBO_SOLD',
+      'MISSED',
+      'TIP',
+      'COMBO',
+    ].includes(requestedStatus)
       ? requestedStatus
       : 'ALL';
 
@@ -375,7 +383,13 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           COALESCE(ro.actual_booking_date_start, o.booking_date_start) as orderDate,
           COALESCE(up_c.full_name, 'Khách hàng') as clientName,
           up_c.avatar as clientAvatar,
-          COALESCE(uc_c.phone_number, '') as clientPhone,
+          COALESCE((
+          SELECT uc.phone_number
+          FROM user_contact uc
+          WHERE uc.user_id = o.user_id AND uc.is_disabled = 0
+          ORDER BY uc.id DESC
+          LIMIT 1
+        ), '') as clientPhone,
           UPPER(COALESCE(cs.client_store_key, 'PXL')) as store,
           COALESCE(o.total_price, 0) as totalPrice,
           up_b.full_name as bookerName,
@@ -383,12 +397,6 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           o.order_state as orderState
         FROM \`order\` o
         LEFT JOIN \`user_profile\` up_c ON up_c.user_id = o.user_id
-        LEFT JOIN (
-          SELECT user_id, MAX(phone_number) as phone_number
-          FROM user_contact
-          WHERE is_disabled = 0
-          GROUP BY user_id
-        ) uc_c ON uc_c.user_id = o.user_id
         LEFT JOIN \`user_profile\` up_b ON up_b.user_id = o.created_staff_id
         LEFT JOIN \`client_store\` cs ON cs.id = COALESCE(o.client_store_id, up_b.client_store_id)
         LEFT JOIN report_order ro ON o.id = ro.order_id
