@@ -5013,8 +5013,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     }
   };
 
-  const handleSendThreadReply = async () => {
-    const text = threadInput.trim();
+  const handleSendThreadReply = async (replyTextOverride?: string) => {
+    const text = (typeof replyTextOverride === 'string' ? replyTextOverride : threadInput).trim();
     const attachmentsToSend = threadAttachments;
     if ((!text && attachmentsToSend.length === 0) || !activeConversation || !activeThreadMsgId) return;
     setMentionState((prev) => (prev.open ? { ...prev, open: false } : prev));

@@ -716,6 +716,20 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                                   <span className="font-bold">{reply.senderName}</span>
                                   <span>·</span>
                                   <span className="tabular-nums">{reply.timeLabel}</span>
+                                  <button
+                                    type="button"
+                                    aria-label="Trả lời trong luồng"
+                                    title="Trả lời phản hồi này"
+                                    onClick={() => {
+                                      setThreadReplyInputs((p) => ({
+                                        ...p,
+                                        [cid]: `> Trích dẫn @${reply.senderName}: ${reply.text}\n\n${p[cid] || ''}`,
+                                      }));
+                                    }}
+                                    className="opacity-60 hover:opacity-100 p-0.5 hover:bg-black/10 dark:hover:bg-white/10 rounded cursor-pointer transition-opacity text-amber-500"
+                                  >
+                                    <MessageSquareReply size={10} />
+                                  </button>
                                 </div>
                                 <div className="break-words leading-relaxed">
                                   {renderRichTextMessage(reply.text, isMine)}

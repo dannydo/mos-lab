@@ -285,6 +285,25 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
     const [formatBarOpenThread, setFormatBarOpenThread] = useState<boolean>(true);
     const [isPreviewModeThread, setIsPreviewModeThread] = useState<boolean>(false);
     const [moveThreadSearchQuery, setMoveThreadSearchQuery] = useState<string>('');
+    const [replyingToReply, setReplyingToReply] = useState<{ id: string; senderName: string; text: string } | null>(
+      null
+    );
+
+    // Auto reset reply quote when active subthread changes
+    React.useEffect(() => {
+      setReplyingToReply(null);
+    }, [activeThreadMessage?.id, threadOpen]);
+
+    const handleThreadSubmit = () => {
+      const trimmed = threadInput.trim();
+      if (!trimmed && threadAttachments.length === 0) return;
+      let finalText = trimmed;
+      if (replyingToReply) {
+        finalText = `> Trích dẫn @${replyingToReply.senderName}: ${replyingToReply.text}\n\n${trimmed}`;
+        setReplyingToReply(null);
+      }
+      handleSendThreadReply(finalText);
+    };
 
     if (!threadOpen || !activeThreadMessage) return null;
 
@@ -702,15 +721,37 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                   : undefined,
             }}
           >
-            <div className="flex items-center gap-1.5 font-bold mb-1">
-              {renderUserAvatarNode({
-                name: activeThreadMessage.senderName,
-                avatarUrl: activeThreadMessage.senderAvatar,
-                sizeClass: 'w-5 h-5',
-                textClass: 'text-[9px]',
-              })}
-              <span className="truncate">{activeThreadMessage.senderName}</span>
-              <span className="text-slate-400 text-[10.5px] tabular-nums">· {activeThreadMessage.timeLabel}</span>
+            <div className="flex items-center justify-between font-bold mb-1">
+              <div className="flex items-center gap-1.5 min-w-0">
+                {renderUserAvatarNode({
+                  name: activeThreadMessage.senderName,
+                  avatarUrl: activeThreadMessage.senderAvatar,
+                  sizeClass: 'w-5 h-5',
+                  textClass: 'text-[9px]',
+                })}
+                <span className="truncate">{activeThreadMessage.senderName}</span>
+                <span className="text-slate-400 text-[10.5px] tabular-nums">· {activeThreadMessage.timeLabel}</span>
+              </div>
+              <Tooltip title="Trả lời / Trích dẫn tin nhắn gốc này">
+                <button
+                  type="button"
+                  aria-label="Trả lời tin nhắn gốc trong luồng"
+                  onClick={() => {
+                    setReplyingToReply({
+                      id: activeThreadMessage.id,
+                      senderName: activeThreadMessage.senderName,
+                      text: activeThreadMessage.text || '',
+                    });
+                    setTimeout(() => {
+                      threadInputRef.current?.focus();
+                    }, 50);
+                  }}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium text-amber-500 hover:bg-amber-500/10 cursor-pointer transition-colors shrink-0"
+                >
+                  <MessageSquareReply size={12} />
+                  <span>Trả lời</span>
+                </button>
+              </Tooltip>
             </div>
             {activeThreadMessage.text && (
               <div className="text-[13px] leading-relaxed break-words">
@@ -876,6 +917,18 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                     isAiBot: isAiReply,
                   })}
                   <div
+                    onDoubleClick={() => {
+                      if (!r.isDeleted) {
+                        setReplyingToReply({
+                          id: r.id,
+                          senderName: r.senderName,
+                          text: r.text || '',
+                        });
+                        setTimeout(() => {
+                          threadInputRef.current?.focus();
+                        }, 50);
+                      }
+                    }}
                     className={`max-w-[85%] p-2 rounded-xl text-[12px] group relative transition-all ${
                       isReplyMine ? 'rounded-tr-sm text-right' : 'rounded-tl-sm text-left'
                     }`}
@@ -1159,6 +1212,27 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                     >
                       {!r.isDeleted && (
                         <>
+                          {/* Reply / Quote inside Thread Button */}
+                          <Tooltip title="Trả lời phản hồi này">
+                            <button
+                              type="button"
+                              aria-label="Trả lời phản hồi này trong luồng"
+                              onClick={() => {
+                                setReplyingToReply({
+                                  id: r.id,
+                                  senderName: r.senderName,
+                                  text: r.text || '',
+                                });
+                                setTimeout(() => {
+                                  threadInputRef.current?.focus();
+                                }, 50);
+                              }}
+                              className="w-5 h-5 rounded-full inline-flex items-center justify-center hover:bg-amber-500/20 cursor-pointer text-amber-500 transition-transform hover:scale-110"
+                            >
+                              <MessageSquareReply size={11} />
+                            </button>
+                          </Tooltip>
+
                           {GOOGLE_CHAT_QUICK_EMOJIS.slice(0, 3).map((emoji) => {
                             const reactedByMe = hasUserReacted(r, emoji);
                             return (
@@ -1428,6 +1502,36 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
             {/* Inline Compact Format Toolbar in Thread */}
             {formatBarOpenThread && renderAppleNotesFormatToolbar('thread', 'inline')}
 
+            {/* Quoting Preview Banner inside Subthread */}
+            {replyingToReply && (
+              <div
+                className="flex items-center justify-between px-3 py-1.5 rounded-xl text-xs animate-in fade-in slide-in-from-bottom-1 duration-150 mb-1.5"
+                style={{
+                  background: isDark ? 'rgba(212, 168, 75, 0.12)' : 'rgba(212, 168, 75, 0.08)',
+                  border: `1px solid ${accentBorder}`,
+                }}
+              >
+                <div className="flex items-center gap-2 truncate pr-2">
+                  <MessageSquareReply size={13} className="text-amber-500 shrink-0" />
+                  <div className="truncate text-[11.5px]">
+                    <span className="font-bold text-amber-500">Trả lời {replyingToReply.senderName}:</span>{' '}
+                    <span className="truncate opacity-80" style={{ color: token.colorTextSecondary }}>
+                      {replyingToReply.text}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReplyingToReply(null)}
+                  className="p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10 text-slate-400 hover:text-slate-200 cursor-pointer shrink-0 transition-colors"
+                  aria-label="Hủy trích dẫn"
+                  title="Hủy trích dẫn (Esc)"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            )}
+
             {isPreviewModeThread ? (
               <div
                 className="w-full min-h-[50px] max-h-[160px] overflow-y-auto px-1 py-1 rounded-lg select-text mb-1"
@@ -1524,6 +1628,11 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                       return;
                     }
                   }
+                  if (e.key === 'Escape' && replyingToReply) {
+                    e.preventDefault();
+                    setReplyingToReply(null);
+                    return;
+                  }
                   if (e.key === 'Enter' && !e.shiftKey) {
                     if (
                       e.nativeEvent.isComposing ||
@@ -1534,7 +1643,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                       return;
                     }
                     e.preventDefault();
-                    handleSendThreadReply();
+                    handleThreadSubmit();
                   }
                 }}
                 placeholder="Trả lời vào luồng... (gõ @MAI để gọi mOS AI, @ để nhắc tên, Shift+Enter xuống dòng)"
@@ -1703,7 +1812,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                 <button
                   type="button"
                   aria-label="Gửi vào luồng"
-                  onClick={() => void handleSendThreadReply()}
+                  onClick={() => void handleThreadSubmit()}
                   className="w-7 h-7 rounded-full inline-flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-sm"
                   style={{
                     background:
