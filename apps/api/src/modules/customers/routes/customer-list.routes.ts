@@ -1,6 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../../../middlewares/auth.js';
-import { BucketType, SafeAny, maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
+import { BucketType, SafeAny, isCvRole, maskPhoneNumber, shouldMaskCustomerPhone } from '@mos-lab/shared';
 import { CustomerAccessService } from '../services/customer-access.service.js';
 import { BookingReschedulePermissionService } from '../services/booking-reschedule-permission.service.js';
 import { isAssignmentTimeSort, resolveCustomerListSort } from '../customer-list-sort.js';
@@ -126,6 +126,13 @@ export async function registerCustomerListRoutes(fastify: FastifyInstance) {
     const pageNum = parseInt(page, 10) || 1;
     const offsetNum = (pageNum - 1) * limitNum;
     const adminUser = request.user as { id: number; role: string };
+
+    if (isCvRole(adminUser?.role)) {
+      return reply.status(403).send({
+        error: 'Forbidden',
+        message: 'Tài khoản Chuyên Viên không có quyền truy cập danh sách khách hàng CRM.',
+      });
+    }
 
     const hasGlobalRescheduleAccess = await BookingReschedulePermissionService.hasGlobalRescheduleAccess(
       fastify,

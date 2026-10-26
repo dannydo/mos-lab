@@ -117,6 +117,24 @@ function ChatDeepLinkWatcher({
   return null;
 }
 
+const isCvRestrictedPath = (path: string): boolean => {
+  return (
+    path === '/dashboard' ||
+    path.startsWith('/dashboard/customers') ||
+    path.startsWith('/dashboard/nyc') ||
+    path.startsWith('/dashboard/loca') ||
+    path.startsWith('/dashboard/plans') ||
+    path.startsWith('/dashboard/calls') ||
+    path.startsWith('/dashboard/omicall') ||
+    path.startsWith('/dashboard/cskh') ||
+    path.startsWith('/dashboard/telesale') ||
+    path.startsWith('/dashboard/cc') ||
+    path.startsWith('/dashboard/bk') ||
+    path.startsWith('/dashboard/cs') ||
+    path.startsWith('/dashboard/kpi')
+  );
+};
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -585,7 +603,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setIsImpersonating(hasOriginal);
         setLoading(false);
 
-        if (isCvRole(parsed.role) && pathname === '/dashboard') {
+        if (isCvRole(parsed.role) && isCvRestrictedPath(pathname)) {
           router.replace('/dashboard/cv');
           return;
         }
@@ -618,10 +636,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   }, [pathname, router]);
 
-  // Invariant: CV accounts must never access management dashboard (/dashboard).
+  // Invariant: CV accounts must never access management dashboard (/dashboard)
+  // or CRM customer management (/dashboard/customers).
   // Always redirect directly to the CV report (/dashboard/cv).
   useEffect(() => {
-    if (user && isCvRole(user.role) && pathname === '/dashboard') {
+    if (user && isCvRole(user.role) && isCvRestrictedPath(pathname)) {
       router.replace('/dashboard/cv');
     }
   }, [user, pathname, router]);

@@ -24,7 +24,8 @@ import {
   StatePanel,
 } from '../../../components/ui';
 import { useResponsiveTier } from '../../../hooks/useResponsiveTier';
-import { canManageCustomerAllocation } from '@mos-lab/shared';
+import { useRouter } from 'next/navigation';
+import { canManageCustomerAllocation, isCvRole } from '@mos-lab/shared';
 
 const UndoReasonModal = dynamic(() => import('./components/UndoReasonModal').then((m) => m.UndoReasonModal), {
   ssr: false,
@@ -73,6 +74,7 @@ const PRESET_FILTERS = [
 ];
 
 function CustomersPageContent() {
+  const router = useRouter();
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
   const responsiveTier = useResponsiveTier();
@@ -85,6 +87,13 @@ function CustomersPageContent() {
     onInfo: (msg) => message.info(msg),
     onWarning: (msg) => message.warning(msg),
   });
+
+  const isCv = isCvRole(data.currentUser?.role);
+  React.useEffect(() => {
+    if (isCv) {
+      router.replace('/dashboard/cv');
+    }
+  }, [isCv, router]);
 
   const {
     setModalVisible,
@@ -193,6 +202,10 @@ function CustomersPageContent() {
     window.addEventListener('mos-ai-copilot-apply-customer-filter', handleApplyAiFilter);
     return () => window.removeEventListener('mos-ai-copilot-apply-customer-filter', handleApplyAiFilter);
   }, [data]);
+
+  if (isCv) {
+    return null;
+  }
 
   return (
     <ResourceListPage

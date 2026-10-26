@@ -8112,7 +8112,7 @@
         "path": "/api/chat/bootstrap",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1274
+        "line": 1293
       }
     },
     {
@@ -8126,7 +8126,7 @@
         "path": "/api/chat/unread-summary",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1359
+        "line": 1378
       }
     },
     {
@@ -8140,7 +8140,7 @@
         "path": "/api/chat/user-prefs",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1414
+        "line": 1435
       }
     },
     {
@@ -8154,7 +8154,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1489
+        "line": 1510
       }
     },
     {
@@ -8168,7 +8168,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1515
+        "line": 1536
       }
     },
     {
@@ -8182,7 +8182,7 @@
         "path": "/api/chat/upload-image",
         "module": "chat",
         "handler": "preHandler",
-        "line": 1605
+        "line": 1626
       }
     },
     {
@@ -8196,7 +8196,7 @@
         "path": "/api/chat/upload-file",
         "module": "chat",
         "handler": "preHandler",
-        "line": 1615
+        "line": 1636
       }
     },
     {
@@ -8210,7 +8210,7 @@
         "path": "/api/chat/media/:fileName",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1625
+        "line": 1646
       }
     },
     {
@@ -8224,7 +8224,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1721
+        "line": 1742
       }
     },
     {
@@ -8238,7 +8238,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1726
+        "line": 1747
       }
     },
     {
@@ -8252,7 +8252,7 @@
         "path": "/api/chat/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1731
+        "line": 1752
       }
     },
     {
@@ -8266,7 +8266,7 @@
         "path": "/api/chat/threads",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1868
+        "line": 1889
       }
     },
     {
@@ -8280,7 +8280,7 @@
         "path": "/api/chat/threads/move",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2006
+        "line": 2027
       }
     },
     {
@@ -8294,7 +8294,7 @@
         "path": "/api/chat/messages/:messageId/reaction",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2145
+        "line": 2168
       }
     },
     {
@@ -8308,7 +8308,7 @@
         "path": "/api/chat/messages/:messageId/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2234
+        "line": 2257
       }
     },
     {
@@ -8322,7 +8322,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2265
+        "line": 2288
       }
     },
     {
@@ -8336,7 +8336,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2347
+        "line": 2370
       }
     },
     {
@@ -8350,7 +8350,7 @@
         "path": "/api/chat/messages/:messageId/restore",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2422
+        "line": 2445
       }
     },
     {
@@ -8364,7 +8364,7 @@
         "path": "/api/chat/messages/:messageId/buzz",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2504
+        "line": 2527
       }
     },
     {
@@ -8378,7 +8378,7 @@
         "path": "/api/chat/tasks",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2616
+        "line": 2639
       }
     },
     {
@@ -8392,7 +8392,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2817
+        "line": 2840
       }
     },
     {
@@ -8406,7 +8406,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2936
+        "line": 2959
       }
     },
     {
@@ -8420,7 +8420,7 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2985
+        "line": 3008
       }
     },
     {
@@ -8434,7 +8434,7 @@
         "path": "/api/chat/conversations/:id/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3180
+        "line": 3203
       }
     },
     {
@@ -8448,7 +8448,7 @@
         "path": "/api/chat/conversations/:id/threads/:messageId/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3264
+        "line": 3287
       }
     },
     {
@@ -8462,7 +8462,7 @@
         "path": "/api/chat/conversations/:id/unread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3324
+        "line": 3347
       }
     },
     {
@@ -8476,7 +8476,7 @@
         "path": "/api/chat/conversations/:id/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3368
+        "line": 3391
       }
     },
     {
@@ -8490,7 +8490,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3413
+        "line": 3436
       }
     },
     {
@@ -8504,7 +8504,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3519
+        "line": 3542
       }
     },
     {
@@ -8518,7 +8518,7 @@
         "path": "/api/chat/conversations/:id/nickname",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3594
+        "line": 3617
       }
     },
     {
@@ -8532,7 +8532,7 @@
         "path": "/api/chat/conversations/:id",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3700
+        "line": 3723
       }
     },
     {
@@ -8546,7 +8546,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3816
+        "line": 3839
       }
     },
     {
@@ -8560,7 +8560,7 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3897
+        "line": 3920
       }
     },
     {
@@ -8574,7 +8574,7 @@
         "path": "/api/chat/workflows",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3968
+        "line": 3991
       }
     },
     {
@@ -8588,7 +8588,7 @@
         "path": "/api/chat/workflows/instances",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3991
+        "line": 4014
       }
     },
     {
@@ -8602,7 +8602,7 @@
         "path": "/api/chat/workflows/instances/:instanceId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4172
+        "line": 4195
       }
     },
     {
@@ -8616,7 +8616,7 @@
         "path": "/api/chat/workflows/templates/from-thread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4349
+        "line": 4372
       }
     },
     {
@@ -8630,7 +8630,7 @@
         "path": "/api/chat/stream",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4444
+        "line": 4467
       }
     },
     {
@@ -8644,7 +8644,7 @@
         "path": "/api/chat/sync",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4457
+        "line": 4480
       }
     },
     {
@@ -8658,7 +8658,7 @@
         "path": "/api/chat/conversations/:conversationId/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4520
+        "line": 4543
       }
     },
     {
@@ -9498,7 +9498,7 @@
         "path": "/api/customers/random-ids",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1810
+        "line": 1817
       }
     },
     {
@@ -9722,7 +9722,7 @@
         "path": "/api/customers/loca-stats",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 826
+        "line": 833
       }
     },
     {
@@ -9736,7 +9736,7 @@
         "path": "/api/customers/nyc-stats",
         "module": "customers",
         "handler": "inlineHandler",
-        "line": 1292
+        "line": 1299
       }
     },
     {
@@ -35363,8 +35363,8 @@
       "filePath": "apps/api/src/modules/chat/chat-mission-bridge.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 26949,
-        "lineCount": 779,
+        "sizeBytes": 29408,
+        "lineCount": 846,
         "ext": ".ts"
       }
     },
@@ -35402,8 +35402,8 @@
       "filePath": "apps/api/src/modules/chat/chat-repository.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 49844,
-        "lineCount": 1308,
+        "sizeBytes": 53683,
+        "lineCount": 1422,
         "ext": ".ts"
       }
     },
@@ -35493,8 +35493,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 175377,
-        "lineCount": 4584,
+        "sizeBytes": 176262,
+        "lineCount": 4607,
         "ext": ".ts"
       }
     },
@@ -35733,6 +35733,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/customers/routes/customer-cv-guard.test.ts",
+      "type": "File",
+      "label": "customer-cv-guard.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/customers/routes/customer-cv-guard.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 2256,
+        "lineCount": 64,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/customers/routes/customer-detail.routes.ts",
       "type": "File",
       "label": "customer-detail.routes.ts",
@@ -35792,8 +35805,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-list.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 93854,
-        "lineCount": 2257,
+        "sizeBytes": 94090,
+        "lineCount": 2264,
         "ext": ".ts"
       }
     },
@@ -35857,8 +35870,8 @@
       "filePath": "apps/api/src/modules/customers/routes/customer-stats.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 56160,
-        "lineCount": 1379,
+        "sizeBytes": 56397,
+        "lineCount": 1386,
         "ext": ".ts"
       }
     },
@@ -36117,8 +36130,8 @@
       "filePath": "apps/api/src/modules/customers/services/customer-access.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 8223,
-        "lineCount": 251,
+        "sizeBytes": 8277,
+        "lineCount": 252,
         "ext": ".ts"
       }
     },
@@ -39549,7 +39562,7 @@
       "filePath": "apps/web/app/chat/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3131,
+        "sizeBytes": 3166,
         "lineCount": 104,
         "ext": ".tsx"
       }
@@ -41889,8 +41902,8 @@
       "filePath": "apps/web/app/dashboard/chat/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 8566,
-        "lineCount": 224,
+        "sizeBytes": 8505,
+        "lineCount": 207,
         "ext": ".tsx"
       }
     },
@@ -42344,8 +42357,8 @@
       "filePath": "apps/web/app/dashboard/customers/hooks/useCustomerData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 19186,
-        "lineCount": 483,
+        "sizeBytes": 19254,
+        "lineCount": 484,
         "ext": ".ts"
       }
     },
@@ -42370,8 +42383,8 @@
       "filePath": "apps/web/app/dashboard/customers/hooks/useCustomerList.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17314,
-        "lineCount": 422,
+        "sizeBytes": 17455,
+        "lineCount": 425,
         "ext": ".ts"
       }
     },
@@ -42409,8 +42422,8 @@
       "filePath": "apps/web/app/dashboard/customers/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23243,
-        "lineCount": 624,
+        "sizeBytes": 23523,
+        "lineCount": 637,
         "ext": ".tsx"
       }
     },
@@ -43046,8 +43059,8 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 69511,
-        "lineCount": 1751,
+        "sizeBytes": 70187,
+        "lineCount": 1770,
         "ext": ".tsx"
       }
     },
@@ -46361,8 +46374,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 23152,
-        "lineCount": 891,
+        "sizeBytes": 23136,
+        "lineCount": 884,
         "ext": ".ts"
       }
     },
@@ -67659,6 +67672,13 @@
     {
       "id": "edge:file:apps/api/src/modules/customers/routes/customer-allocation.routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/customers/routes/customer-allocation.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/customers/routes/customer-cv-guard.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/customers/routes/customer-cv-guard.test.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -100082,8 +100102,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 3588,
-    "totalEdges": 7623,
+    "totalNodes": 3589,
+    "totalEdges": 7624,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 176,
@@ -100092,14 +100112,14 @@
       "SharedType": 1300,
       "DesignToken": 12,
       "UIComponent": 307,
-      "File": 997
+      "File": 998
     },
     "edgeTypeCounts": {
       "EXPORTS": 1488,
       "HANDLES_ROUTE": 731,
       "RENDERS": 369,
       "USES_TOKEN": 309,
-      "IMPORTS": 551,
+      "IMPORTS": 552,
       "QUERIES_MODEL": 421,
       "API_CALL": 3754
     },

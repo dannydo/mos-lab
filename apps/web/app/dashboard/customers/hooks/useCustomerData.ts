@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import dayjs from 'dayjs';
 import { apiClient } from '../../../../lib/api-client';
-import { canManageCustomerAllocation, Customer, Staff, BookerAllocationBatchSummary } from '@mos-lab/shared';
+import { canManageCustomerAllocation, isCvRole, Customer, Staff, BookerAllocationBatchSummary } from '@mos-lab/shared';
 
 // Import sub-hooks
 import { useCustomerFilters } from './useCustomerFilters';
@@ -62,6 +62,7 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
   const [addingIds, setAddingIds] = useState<number[]>([]);
 
   const fetchTodayPlans = useCallback(async () => {
+    if (isCvRole(currentUser?.role)) return;
     try {
       const response = await apiClient.plans.listToday();
       if (response && Array.isArray(response)) {
@@ -136,7 +137,7 @@ export function useCustomerData(options?: UseCustomerDataOptions) {
   }, [rawFilterParams, serviceFilterCategories]);
 
   // Customer List hook
-  const listHook = useCustomerList(filterParams, activeRandomIds, optionsRef);
+  const listHook = useCustomerList(filterParams, activeRandomIds, optionsRef, currentUser);
   const { refreshListAndStats, setCustomers, total } = listHook;
 
   // Customer Assignment hook

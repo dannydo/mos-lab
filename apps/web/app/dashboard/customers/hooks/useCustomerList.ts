@@ -1,12 +1,13 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { apiClient } from '../../../../lib/api-client';
-import { Customer, ListCustomersParams } from '@mos-lab/shared';
+import { isCvRole, Customer, ListCustomersParams, Staff } from '@mos-lab/shared';
 
 export const useCustomerList = (
   filterParams: SafeAny,
   randomSelectedIds: number[] | null,
-  optionsRef: React.MutableRefObject<SafeAny>
+  optionsRef: React.MutableRefObject<SafeAny>,
+  currentUser?: Staff | null
 ) => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
@@ -51,6 +52,7 @@ export const useCustomerList = (
 
   const fetchStats = useCallback(
     async (overrideSearchVal?: string) => {
+      if (isCvRole(currentUser?.role)) return;
       if (statsAbortControllerRef.current) {
         statsAbortControllerRef.current.abort('NEW_STATS_REQUEST');
       }
@@ -172,6 +174,7 @@ export const useCustomerList = (
 
   const fetchCustomers = useCallback(
     async (page: number, limit: number, overrideIds?: number[]) => {
+      if (isCvRole(currentUser?.role)) return;
       const currentFetchId = ++fetchIdRef.current;
       if (abortControllerRef.current) {
         abortControllerRef.current.abort('NEW_SEARCH_OR_PAGE');

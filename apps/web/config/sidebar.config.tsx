@@ -573,6 +573,32 @@ export function getSidebarGroups(
       if (isCv && item.key === 'dashboard') return [];
       // Invariant: CV accounts must always have access to CV report
       if (isCv && item.key === 'cv') return [item];
+      // Invariant: CV accounts must never see customer CRM, telesales, campaigns & other role reports
+      if (
+        isCv &&
+        [
+          'customers-parent',
+          'customers-all',
+          'my-customers',
+          'referrals',
+          'nyc-parent',
+          'nyc-main',
+          'nyc-campaigns-mgmt',
+          'loca',
+          'cs-hub',
+          'telesale-target',
+          'telesale-competency',
+          'plans',
+          'calls',
+          'omicall',
+          'kpi',
+          'cc',
+          'bk',
+          'cs',
+        ].includes(item.key)
+      ) {
+        return [];
+      }
       // Dynamic campaign links do not have individual static menu keys. Their
       // parent category therefore enforces the category policy for every child.
       if (!isCrmCategoryVisible && item.key === 'nyc-parent') return [];

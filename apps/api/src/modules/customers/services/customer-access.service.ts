@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { isAdminOrSuperAdminRole, isTelesalesRole } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, isCvRole, isTelesalesRole } from '@mos-lab/shared';
 
 export interface CustomerAccessUser {
   id: number;
@@ -36,6 +36,7 @@ export class CustomerAccessService {
     requestedAssignedStaffId: string | undefined,
     bucket?: string
   ): string | undefined {
+    if (isCvRole(user.role)) return 'none';
     if (this.isTelesales(user)) return 'me';
     if (this.hasGlobalCustomerListAccess(user)) return requestedAssignedStaffId;
 
@@ -133,8 +134,7 @@ export class CustomerAccessService {
       if (!isMember) continue;
 
       const isClaimedActive =
-        record.poolStatus === 'CLAIMED' &&
-        Boolean(record.claimExpiresAt && record.claimExpiresAt > now);
+        record.poolStatus === 'CLAIMED' && Boolean(record.claimExpiresAt && record.claimExpiresAt > now);
 
       const isClaimedByMe = isClaimedActive && Number(record.claimedByStaffId) === Number(staffId);
       const isClaimedByOther = isClaimedActive && Number(record.claimedByStaffId) !== Number(staffId);
