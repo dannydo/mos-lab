@@ -212,7 +212,10 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       if (res && res.staffDirectory && res.staffDirectory.length > 0) {
         setStaffDirectory(res.staffDirectory);
         try {
-          localStorage.setItem(STAFF_DIRECTORY_CACHE_KEY, JSON.stringify(res.staffDirectory));
+          const serialized = JSON.stringify(res.staffDirectory);
+          if (localStorage.getItem(STAFF_DIRECTORY_CACHE_KEY) !== serialized) {
+            localStorage.setItem(STAFF_DIRECTORY_CACHE_KEY, serialized);
+          }
         } catch {
           // ignore
         }
@@ -224,7 +227,8 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
 
   useEffect(() => {
     fetchBootstrap();
-    const interval = setInterval(fetchBootstrap, 5000);
+    // Background fallback interval every 30s (incremental delta sync handles real-time updates every 12s)
+    const interval = setInterval(fetchBootstrap, 30000);
     return () => clearInterval(interval);
   }, [fetchBootstrap]);
 

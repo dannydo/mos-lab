@@ -253,6 +253,17 @@ export interface MosGoogleChatPortalProps {
   } | null;
 }
 
+const LiveTaskCountdownBadge: React.FC<{ remindAt: string }> = React.memo(({ remindAt }) => {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return <span>{formatCountdown(remindAt, now)}</span>;
+});
+LiveTaskCountdownBadge.displayName = 'LiveTaskCountdownBadge';
+
 export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   open,
   onOpen,
@@ -1375,7 +1386,6 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   // Live Reminder Alert Toast & IME Composition Guards
   const [activeAlertTask, setActiveAlertTask] = useState<MosChatTaskItem | null>(null);
-  const [nowMs, setNowMs] = useState<number>(() => Date.now());
   const firedTaskIdsRef = useRef<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const mainMessagesContainerRef = useRef<HTMLDivElement | null>(null);
@@ -2579,11 +2589,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     [presence, userPrefs.mutedIds, notifyLivePeers]
   );
 
-  // 1-second ticker for live task countdowns
+  // 1-second ticker for task reminder alerts
   useEffect(() => {
     const timer = setInterval(() => {
       const currentNow = Date.now();
-      setNowMs(currentNow);
       uniqueTasks.forEach((t) => {
         if (!t.done && !t.archived && !t.fired && !firedTaskIdsRef.current.has(t.id)) {
           const remainMs = new Date(t.remindAt).getTime() - currentNow;
@@ -6937,7 +6946,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   <Tooltip title={`Nhắc hẹn: ${dayjs(task.remindAt).format('HH:mm DD/MM')}`}>
                     <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/25 tabular-nums">
                       <Bell size={10} />
-                      <span>{formatCountdown(task.remindAt, nowMs)}</span>
+                      <LiveTaskCountdownBadge remindAt={task.remindAt} />
                     </div>
                   </Tooltip>
                 )}

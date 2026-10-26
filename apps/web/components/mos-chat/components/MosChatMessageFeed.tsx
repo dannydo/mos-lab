@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Tooltip, Popover, Popconfirm, Dropdown, Input } from 'antd';
 import dayjs from 'dayjs';
 import {
@@ -139,399 +139,411 @@ export interface MosChatMessageFeedProps {
   renderMessageAttachments?: (attachments?: SafeAny[], compact?: boolean, isMine?: boolean) => React.ReactNode;
 }
 
-export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = ({
-  isMobile,
-  activeConversation,
-  currentUser,
-  isDark,
-  token,
-  surfaceRaised,
-  borderColor,
-  borderStrong,
-  accentSoftBg,
-  accentBorder,
-  pinnedMessages,
-  pinnedBannerIndex,
-  setPinnedBannerIndex,
-  navigateToMessage,
-  setActiveSubtab,
-  handleTogglePin,
-  formatMoveTargetSnippet,
-  mainMessagesContainerRef,
-  messagesEndRef,
-  uniqueTasks,
-  isMessageFromCurrentUser,
-  getMessageReadBreakdown,
-  stoppedReadersByMsgId,
-  canManageChatThreads,
-  AI_COPILOT_CONV_ID,
-  draggingRootMsgId,
-  setDraggingRootMsgId,
-  dragOverTargetMsgId,
-  setDragOverTargetMsgId,
-  setDragOverThreadPane,
-  handleMoveThreadItem,
-  highlightedMsgId,
-  getMemberNickname,
-  renderReadStatusCheckmark,
-  renderUserAvatarNode,
-  expandedThinkingIds,
-  setExpandedThinkingIds,
-  editingMessageId,
-  editingReplyId,
-  editingText,
-  setEditingText,
-  handleCancelEdit,
-  handleSaveEdit,
-  isSavingEdit,
-  isComposingRef,
-  lastCompositionEndMsRef,
-  setHistoryModalMessage,
-  setHistoryModalOpen,
-  isDannyAccount,
-  handleRestoreMessage,
-  handleMessageTap,
-  heartFlyMsgId,
-  renderRichTextMessage,
-  appliedActionIds,
-  handleExecuteAiAction,
-  speakingMsgId,
-  ttsSpeed,
-  handleSpeakAiMessage,
-  handleSetTtsSpeed,
-  hasUserReacted,
-  handleToggleReaction,
-  mobileActiveMsgId,
-  openMovePopoverKey,
-  setOpenMovePopoverKey,
-  openStickerPopoverKey,
-  setOpenStickerPopoverKey,
-  renderReactionPickerContent,
-  handleOpenThread,
-  openTaskModalFromMessage,
-  isStrictDannySuperAdmin,
-  openMissionModalFromChat,
-  handleBuzzMessage,
-  handleStartEdit,
-  handleDeleteMessage,
-  renderMiniSeenAvatarStack,
-  aiThinkingActive,
-  aiElapsedSec,
-  getThreadReplyReadBreakdown,
-  renderTaskCard,
-  renderLiveMissionCard,
-  workflowInstances,
-  setWorkflowInstances,
-  currentUserStaffMember,
-  fetchBootstrap,
-  setLightboxImage,
-  movingThreadItemKey,
-  threadOpen,
-  activeThreadMessage,
-  isDraggingOver,
-  antdMessage,
-  renderMessageAttachments,
-}) => {
-  const [moveThreadSearchQuery, setMoveThreadSearchQuery] = useState<string>('');
+export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
+  ({
+    isMobile,
+    activeConversation,
+    currentUser,
+    isDark,
+    token,
+    surfaceRaised,
+    borderColor,
+    borderStrong,
+    accentSoftBg,
+    accentBorder,
+    pinnedMessages,
+    pinnedBannerIndex,
+    setPinnedBannerIndex,
+    navigateToMessage,
+    setActiveSubtab,
+    handleTogglePin,
+    formatMoveTargetSnippet,
+    mainMessagesContainerRef,
+    messagesEndRef,
+    uniqueTasks,
+    isMessageFromCurrentUser,
+    getMessageReadBreakdown,
+    stoppedReadersByMsgId,
+    canManageChatThreads,
+    AI_COPILOT_CONV_ID,
+    draggingRootMsgId,
+    setDraggingRootMsgId,
+    dragOverTargetMsgId,
+    setDragOverTargetMsgId,
+    setDragOverThreadPane,
+    handleMoveThreadItem,
+    highlightedMsgId,
+    getMemberNickname,
+    renderReadStatusCheckmark,
+    renderUserAvatarNode,
+    expandedThinkingIds,
+    setExpandedThinkingIds,
+    editingMessageId,
+    editingReplyId,
+    editingText,
+    setEditingText,
+    handleCancelEdit,
+    handleSaveEdit,
+    isSavingEdit,
+    isComposingRef,
+    lastCompositionEndMsRef,
+    setHistoryModalMessage,
+    setHistoryModalOpen,
+    isDannyAccount,
+    handleRestoreMessage,
+    handleMessageTap,
+    heartFlyMsgId,
+    renderRichTextMessage,
+    appliedActionIds,
+    handleExecuteAiAction,
+    speakingMsgId,
+    ttsSpeed,
+    handleSpeakAiMessage,
+    handleSetTtsSpeed,
+    hasUserReacted,
+    handleToggleReaction,
+    mobileActiveMsgId,
+    openMovePopoverKey,
+    setOpenMovePopoverKey,
+    openStickerPopoverKey,
+    setOpenStickerPopoverKey,
+    renderReactionPickerContent,
+    handleOpenThread,
+    openTaskModalFromMessage,
+    isStrictDannySuperAdmin,
+    openMissionModalFromChat,
+    handleBuzzMessage,
+    handleStartEdit,
+    handleDeleteMessage,
+    renderMiniSeenAvatarStack,
+    aiThinkingActive,
+    aiElapsedSec,
+    getThreadReplyReadBreakdown,
+    renderTaskCard,
+    renderLiveMissionCard,
+    workflowInstances,
+    setWorkflowInstances,
+    currentUserStaffMember,
+    fetchBootstrap,
+    setLightboxImage,
+    movingThreadItemKey,
+    threadOpen,
+    activeThreadMessage,
+    isDraggingOver,
+    antdMessage,
+    renderMessageAttachments,
+  }) => {
+    const [moveThreadSearchQuery, setMoveThreadSearchQuery] = useState<string>('');
 
-  const renderMoveRootToThreadPopover = (
-    sourceMsg: MosChatMessage,
-    prevMsg: MosChatMessage | null,
-    allVisibleMessages: MosChatMessage[]
-  ) => {
-    const qNorm = removeVietnameseTones(moveThreadSearchQuery.trim().toLowerCase());
-    const candidates = allVisibleMessages
-      .filter((m) => m.id !== sourceMsg.id && !m.isDeleted && !m.isSystemReminder)
-      .slice()
-      .reverse()
-      .filter((m) => {
-        if (!qNorm) return true;
-        const hay = removeVietnameseTones(
-          `${m.senderName} ${m.text || ''} ${m.mission?.missionKey || ''}`.toLowerCase()
-        );
-        return hay.includes(qNorm);
+    const taskByMsgOrTaskId = useMemo(() => {
+      const map = new Map<string, MosChatTaskItem>();
+      uniqueTasks.forEach((t) => {
+        if (t.id) map.set(t.id, t);
+        if (t.sourceMessageId) map.set(t.sourceMessageId, t);
       });
+      return map;
+    }, [uniqueTasks]);
 
-    const isBusy = movingThreadItemKey === `MERGE_ROOT_TO_THREAD:${sourceMsg.id}:`;
-    const openThreadTarget =
-      threadOpen && activeThreadMessage && activeThreadMessage.id !== sourceMsg.id && !activeThreadMessage.isDeleted
-        ? activeThreadMessage
-        : null;
+    const visibleMessages = useMemo(() => {
+      return (activeConversation?.messages || []).filter(
+        (m) =>
+          !m.isSystemReminder &&
+          m.senderId !== 'system-reminder' &&
+          m.senderName !== 'mOS Reminder' &&
+          !String(m.text || '').startsWith('Đến giờ nhắc việc:') &&
+          m.senderName !== 'Hà My'
+      );
+    }, [activeConversation?.messages]);
+
+    const renderMoveRootToThreadPopover = (
+      sourceMsg: MosChatMessage,
+      prevMsg: MosChatMessage | null,
+      allVisibleMessages: MosChatMessage[]
+    ) => {
+      const qNorm = removeVietnameseTones(moveThreadSearchQuery.trim().toLowerCase());
+      const candidates = allVisibleMessages
+        .filter((m) => m.id !== sourceMsg.id && !m.isDeleted && !m.isSystemReminder)
+        .slice()
+        .reverse()
+        .filter((m) => {
+          if (!qNorm) return true;
+          const hay = removeVietnameseTones(
+            `${m.senderName} ${m.text || ''} ${m.mission?.missionKey || ''}`.toLowerCase()
+          );
+          return hay.includes(qNorm);
+        });
+
+      const isBusy = movingThreadItemKey === `MERGE_ROOT_TO_THREAD:${sourceMsg.id}:`;
+      const openThreadTarget =
+        threadOpen && activeThreadMessage && activeThreadMessage.id !== sourceMsg.id && !activeThreadMessage.isDeleted
+          ? activeThreadMessage
+          : null;
+
+      return (
+        <div
+          data-no-chat-autofocus="true"
+          onClick={(e) => e.stopPropagation()}
+          className="w-[320px] space-y-2 text-[12px]"
+          style={{ color: token.colorText }}
+        >
+          <div
+            className="flex items-center justify-between gap-2 pb-1"
+            style={{ borderBottom: `1px solid ${borderColor}` }}
+          >
+            <div className="font-extrabold flex items-center gap-1.5 text-[12.5px]">
+              <CornerDownRight size={14} className="text-amber-500 shrink-0" />
+              <span>Gộp tin nhắn vào luồng phụ (Subthread)</span>
+            </div>
+          </div>
+
+          {/* 1-Click Primary Action: Merge into the message immediately above */}
+          {prevMsg && !prevMsg.isDeleted && (
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={() =>
+                void handleMoveThreadItem({
+                  mode: 'MERGE_ROOT_TO_THREAD',
+                  sourceMessageId: sourceMsg.id,
+                  targetMessageId: prevMsg.id,
+                })
+              }
+              className="w-full p-2 rounded-lg text-left cursor-pointer transition-all hover:brightness-105 disabled:opacity-50"
+              style={{
+                background: isDark ? 'rgba(212, 168, 75, 0.16)' : 'rgba(245, 158, 11, 0.12)',
+                border: '1px solid rgba(212, 168, 75, 0.45)',
+              }}
+            >
+              <div
+                className="flex items-center justify-between gap-1.5 font-extrabold text-[11.5px]"
+                style={{ color: '#d4a84b' }}
+              >
+                <span>⚡ Gộp vào luồng ngay phía trên (1-Click)</span>
+                <span className="tabular-nums text-[10.5px]">
+                  {(prevMsg.thread || []).filter((r) => !r.deletedAt).length} trả lời
+                </span>
+              </div>
+              <div className="mt-0.5 text-[11px] truncate" style={{ color: token.colorText }}>
+                <span className="font-bold">{prevMsg.senderName}:</span> {formatMoveTargetSnippet(prevMsg)}
+              </div>
+            </button>
+          )}
+
+          {/* 1-Click Secondary Action: Merge into the currently open Right-Side Thread */}
+          {openThreadTarget && openThreadTarget.id !== prevMsg?.id && (
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={() =>
+                void handleMoveThreadItem({
+                  mode: 'MERGE_ROOT_TO_THREAD',
+                  sourceMessageId: sourceMsg.id,
+                  targetMessageId: openThreadTarget.id,
+                })
+              }
+              className="w-full p-2 rounded-lg text-left cursor-pointer transition-all hover:brightness-105 disabled:opacity-50"
+              style={{
+                background: isDark ? 'rgba(99, 102, 241, 0.16)' : 'rgba(99, 102, 241, 0.1)',
+                border: '1px solid rgba(99, 102, 241, 0.42)',
+              }}
+            >
+              <div className="flex items-center justify-between gap-1.5 font-extrabold text-[11.5px] text-indigo-400">
+                <span>👉 Gộp vào luồng đang mở bên phải</span>
+                <span className="tabular-nums text-[10.5px]">
+                  {(openThreadTarget.thread || []).filter((r) => !r.deletedAt).length} trả lời
+                </span>
+              </div>
+              <div className="mt-0.5 text-[11px] truncate" style={{ color: token.colorText }}>
+                <span className="font-bold">{openThreadTarget.senderName}:</span>{' '}
+                {formatMoveTargetSnippet(openThreadTarget)}
+              </div>
+            </button>
+          )}
+
+          {/* Search & Pick any other message / thread in conversation */}
+          <div className="space-y-1.5 pt-0.5">
+            <Input
+              size="small"
+              allowClear
+              placeholder="Tìm luồng / tin nhắn đích..."
+              value={moveThreadSearchQuery}
+              onChange={(e) => setMoveThreadSearchQuery(e.target.value)}
+              prefix={<Search size={12} className="text-slate-400" />}
+            />
+            <div className="max-h-[190px] overflow-y-auto space-y-1 pr-0.5">
+              {candidates.length === 0 ? (
+                <div className="py-3 text-center text-[11px] text-slate-400">Không tìm thấy tin nhắn đích phù hợp</div>
+              ) : (
+                candidates.slice(0, 25).map((target) => {
+                  const replyCount = (target.thread || []).filter((r) => !r.deletedAt).length;
+                  const missionKey = target.mission?.missionKey;
+                  return (
+                    <button
+                      key={target.id}
+                      type="button"
+                      disabled={isBusy}
+                      onClick={() =>
+                        void handleMoveThreadItem({
+                          mode: 'MERGE_ROOT_TO_THREAD',
+                          sourceMessageId: sourceMsg.id,
+                          targetMessageId: target.id,
+                        })
+                      }
+                      className="w-full px-2 py-1.5 rounded-md text-left cursor-pointer transition-colors hover:bg-black/5 dark:hover:bg-white/10 flex flex-col gap-0.5"
+                      style={{ border: `1px solid ${borderColor}` }}
+                    >
+                      <div className="flex items-center justify-between gap-1.5 text-[11px]">
+                        <span className="font-bold truncate">
+                          {target.senderName}{' '}
+                          <span className="text-slate-400 font-normal tabular-nums">· {target.timeLabel}</span>
+                        </span>
+                        <span className="inline-flex items-center gap-1 shrink-0 tabular-nums text-[10px] font-bold text-blue-400">
+                          {missionKey && (
+                            <span className="px-1 py-0.2 rounded bg-purple-500/20 text-purple-300">#{missionKey}</span>
+                          )}
+                          <span>💬 {replyCount}</span>
+                        </span>
+                      </div>
+                      <div className="text-[11px] truncate" style={{ color: token.colorTextSecondary }}>
+                        {formatMoveTargetSnippet(target)}
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
 
     return (
-      <div
-        data-no-chat-autofocus="true"
-        onClick={(e) => e.stopPropagation()}
-        className="w-[320px] space-y-2 text-[12px]"
-        style={{ color: token.colorText }}
-      >
-        <div
-          className="flex items-center justify-between gap-2 pb-1"
-          style={{ borderBottom: `1px solid ${borderColor}` }}
-        >
-          <div className="font-extrabold flex items-center gap-1.5 text-[12.5px]">
-            <CornerDownRight size={14} className="text-amber-500 shrink-0" />
-            <span>Gộp tin nhắn vào luồng phụ (Subthread)</span>
-          </div>
-        </div>
-
-        {/* 1-Click Primary Action: Merge into the message immediately above */}
-        {prevMsg && !prevMsg.isDeleted && (
-          <button
-            type="button"
-            disabled={isBusy}
-            onClick={() =>
-              void handleMoveThreadItem({
-                mode: 'MERGE_ROOT_TO_THREAD',
-                sourceMessageId: sourceMsg.id,
-                targetMessageId: prevMsg.id,
-              })
-            }
-            className="w-full p-2 rounded-lg text-left cursor-pointer transition-all hover:brightness-105 disabled:opacity-50"
-            style={{
-              background: isDark ? 'rgba(212, 168, 75, 0.16)' : 'rgba(245, 158, 11, 0.12)',
-              border: '1px solid rgba(212, 168, 75, 0.45)',
-            }}
-          >
-            <div
-              className="flex items-center justify-between gap-1.5 font-extrabold text-[11.5px]"
-              style={{ color: '#d4a84b' }}
-            >
-              <span>⚡ Gộp vào luồng ngay phía trên (1-Click)</span>
-              <span className="tabular-nums text-[10.5px]">
-                {(prevMsg.thread || []).filter((r) => !r.deletedAt).length} trả lời
-              </span>
-            </div>
-            <div className="mt-0.5 text-[11px] truncate" style={{ color: token.colorText }}>
-              <span className="font-bold">{prevMsg.senderName}:</span> {formatMoveTargetSnippet(prevMsg)}
-            </div>
-          </button>
-        )}
-
-        {/* 1-Click Secondary Action: Merge into the currently open Right-Side Thread */}
-        {openThreadTarget && openThreadTarget.id !== prevMsg?.id && (
-          <button
-            type="button"
-            disabled={isBusy}
-            onClick={() =>
-              void handleMoveThreadItem({
-                mode: 'MERGE_ROOT_TO_THREAD',
-                sourceMessageId: sourceMsg.id,
-                targetMessageId: openThreadTarget.id,
-              })
-            }
-            className="w-full p-2 rounded-lg text-left cursor-pointer transition-all hover:brightness-105 disabled:opacity-50"
-            style={{
-              background: isDark ? 'rgba(99, 102, 241, 0.16)' : 'rgba(99, 102, 241, 0.1)',
-              border: '1px solid rgba(99, 102, 241, 0.42)',
-            }}
-          >
-            <div className="flex items-center justify-between gap-1.5 font-extrabold text-[11.5px] text-indigo-400">
-              <span>👉 Gộp vào luồng đang mở bên phải</span>
-              <span className="tabular-nums text-[10.5px]">
-                {(openThreadTarget.thread || []).filter((r) => !r.deletedAt).length} trả lời
-              </span>
-            </div>
-            <div className="mt-0.5 text-[11px] truncate" style={{ color: token.colorText }}>
-              <span className="font-bold">{openThreadTarget.senderName}:</span>{' '}
-              {formatMoveTargetSnippet(openThreadTarget)}
-            </div>
-          </button>
-        )}
-
-        {/* Search & Pick any other message / thread in conversation */}
-        <div className="space-y-1.5 pt-0.5">
-          <Input
-            size="small"
-            allowClear
-            placeholder="Tìm luồng / tin nhắn đích..."
-            value={moveThreadSearchQuery}
-            onChange={(e) => setMoveThreadSearchQuery(e.target.value)}
-            prefix={<Search size={12} className="text-slate-400" />}
-          />
-          <div className="max-h-[190px] overflow-y-auto space-y-1 pr-0.5">
-            {candidates.length === 0 ? (
-              <div className="py-3 text-center text-[11px] text-slate-400">Không tìm thấy tin nhắn đích phù hợp</div>
-            ) : (
-              candidates.slice(0, 25).map((target) => {
-                const replyCount = (target.thread || []).filter((r) => !r.deletedAt).length;
-                const missionKey = target.mission?.missionKey;
-                return (
-                  <button
-                    key={target.id}
-                    type="button"
-                    disabled={isBusy}
-                    onClick={() =>
-                      void handleMoveThreadItem({
-                        mode: 'MERGE_ROOT_TO_THREAD',
-                        sourceMessageId: sourceMsg.id,
-                        targetMessageId: target.id,
-                      })
-                    }
-                    className="w-full px-2 py-1.5 rounded-md text-left cursor-pointer transition-colors hover:bg-black/5 dark:hover:bg-white/10 flex flex-col gap-0.5"
-                    style={{ border: `1px solid ${borderColor}` }}
-                  >
-                    <div className="flex items-center justify-between gap-1.5 text-[11px]">
-                      <span className="font-bold truncate">
-                        {target.senderName}{' '}
-                        <span className="text-slate-400 font-normal tabular-nums">· {target.timeLabel}</span>
-                      </span>
-                      <span className="inline-flex items-center gap-1 shrink-0 tabular-nums text-[10px] font-bold text-blue-400">
-                        {missionKey && (
-                          <span className="px-1 py-0.2 rounded bg-purple-500/20 text-purple-300">#{missionKey}</span>
-                        )}
-                        <span>💬 {replyCount}</span>
-                      </span>
-                    </div>
-                    <div className="text-[11px] truncate" style={{ color: token.colorTextSecondary }}>
-                      {formatMoveTargetSnippet(target)}
-                    </div>
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <>
-      {isDraggingOver && !draggingRootMsgId && (
-        <div
-          className="absolute inset-2 rounded-xl z-20 flex flex-col items-center justify-center gap-1.5 pointer-events-none"
-          style={{
-            background: 'rgba(15, 23, 42, 0.84)',
-            border: '2px dashed #d4a84b',
-            color: '#fbbf24',
-          }}
-        >
-          <ImagePlus size={28} />
-          <span className="text-[13px] font-bold">Thả hình ảnh từ máy tính hoặc Google Drive vào đây</span>
-        </div>
-      )}
-
-      {/* STICKY PINNED MESSAGE BANNER */}
-      {pinnedMessages.length > 0 && activeConversation && (
-        <div
-          className="px-3 py-1.5 flex items-center justify-between gap-2 shrink-0 z-10 transition-colors text-[12px]"
-          style={{
-            background: isDark ? 'rgba(30, 41, 59, 0.72)' : 'rgba(254, 243, 199, 0.65)',
-            borderBottom: `1px solid ${borderColor}`,
-            backdropFilter: 'blur(6px)',
-          }}
-        >
-          {/* Left: Icon + Text snippet (click to navigate) */}
+      <>
+        {isDraggingOver && !draggingRootMsgId && (
           <div
-            onClick={() => {
-              const msg = pinnedMessages[pinnedBannerIndex % pinnedMessages.length];
-              if (msg) navigateToMessage(activeConversation.id, msg.id);
+            className="absolute inset-2 rounded-xl z-20 flex flex-col items-center justify-center gap-1.5 pointer-events-none"
+            style={{
+              background: 'rgba(15, 23, 42, 0.84)',
+              border: '2px dashed #d4a84b',
+              color: '#fbbf24',
             }}
-            className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer hover:opacity-85 transition-opacity"
-            title="Nhấn để đi đến tin nhắn đã ghim"
           >
-            <div
-              className="w-6 h-6 rounded-md inline-flex items-center justify-center shrink-0"
-              style={{ background: 'rgba(212, 168, 75, 0.2)', color: '#d4a84b' }}
-            >
-              <Pin size={13} className="fill-amber-400" />
-            </div>
-
-            <div className="flex items-center gap-1.5 min-w-0 truncate">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-500 shrink-0">
-                {pinnedMessages.length > 1
-                  ? `Ghim (${(pinnedBannerIndex % pinnedMessages.length) + 1}/${pinnedMessages.length}):`
-                  : 'Đã ghim:'}
-              </span>
-              <span className="font-semibold text-slate-800 dark:text-slate-100 shrink-0">
-                {pinnedMessages[pinnedBannerIndex % pinnedMessages.length]?.senderName}:
-              </span>
-              <span className="text-slate-600 dark:text-slate-300 truncate">
-                {formatMoveTargetSnippet(pinnedMessages[pinnedBannerIndex % pinnedMessages.length])}
-              </span>
-            </div>
+            <ImagePlus size={28} />
+            <span className="text-[13px] font-bold">Thả hình ảnh từ máy tính hoặc Google Drive vào đây</span>
           </div>
+        )}
 
-          {/* Right: Actions */}
-          <div className="flex items-center gap-1 shrink-0">
-            {/* Cycle pinned messages if > 1 */}
-            {pinnedMessages.length > 1 && (
-              <Tooltip title="Xem tin nhắn đã ghim tiếp theo">
+        {/* STICKY PINNED MESSAGE BANNER */}
+        {pinnedMessages.length > 0 && activeConversation && (
+          <div
+            className="px-3 py-1.5 flex items-center justify-between gap-2 shrink-0 z-10 transition-colors text-[12px]"
+            style={{
+              background: isDark ? 'rgba(30, 41, 59, 0.72)' : 'rgba(254, 243, 199, 0.65)',
+              borderBottom: `1px solid ${borderColor}`,
+              backdropFilter: 'blur(6px)',
+            }}
+          >
+            {/* Left: Icon + Text snippet (click to navigate) */}
+            <div
+              onClick={() => {
+                const msg = pinnedMessages[pinnedBannerIndex % pinnedMessages.length];
+                if (msg) navigateToMessage(activeConversation.id, msg.id);
+              }}
+              className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer hover:opacity-85 transition-opacity"
+              title="Nhấn để đi đến tin nhắn đã ghim"
+            >
+              <div
+                className="w-6 h-6 rounded-md inline-flex items-center justify-center shrink-0"
+                style={{ background: 'rgba(212, 168, 75, 0.2)', color: '#d4a84b' }}
+              >
+                <Pin size={13} className="fill-amber-400" />
+              </div>
+
+              <div className="flex items-center gap-1.5 min-w-0 truncate">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-500 shrink-0">
+                  {pinnedMessages.length > 1
+                    ? `Ghim (${(pinnedBannerIndex % pinnedMessages.length) + 1}/${pinnedMessages.length}):`
+                    : 'Đã ghim:'}
+                </span>
+                <span className="font-semibold text-slate-800 dark:text-slate-100 shrink-0">
+                  {pinnedMessages[pinnedBannerIndex % pinnedMessages.length]?.senderName}:
+                </span>
+                <span className="text-slate-600 dark:text-slate-300 truncate">
+                  {formatMoveTargetSnippet(pinnedMessages[pinnedBannerIndex % pinnedMessages.length])}
+                </span>
+              </div>
+            </div>
+
+            {/* Right: Actions */}
+            <div className="flex items-center gap-1 shrink-0">
+              {/* Cycle pinned messages if > 1 */}
+              {pinnedMessages.length > 1 && (
+                <Tooltip title="Xem tin nhắn đã ghim tiếp theo">
+                  <button
+                    type="button"
+                    aria-label="Tin nhắn ghim tiếp theo"
+                    onClick={() => setPinnedBannerIndex((prev) => (prev + 1) % pinnedMessages.length)}
+                    className="w-6 h-6 rounded inline-flex items-center justify-center text-slate-400 hover:text-amber-500 hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+                  >
+                    <ChevronRight size={13} />
+                  </button>
+                </Tooltip>
+              )}
+
+              {/* Nút bấm dẫn đến tin nhắn */}
+              <Tooltip title="Đi đến tin nhắn này trong cuộc trò chuyện">
                 <button
                   type="button"
-                  aria-label="Tin nhắn ghim tiếp theo"
-                  onClick={() => setPinnedBannerIndex((prev) => (prev + 1) % pinnedMessages.length)}
-                  className="w-6 h-6 rounded inline-flex items-center justify-center text-slate-400 hover:text-amber-500 hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+                  aria-label="Đi đến tin nhắn đã ghim"
+                  onClick={() => {
+                    const msg = pinnedMessages[pinnedBannerIndex % pinnedMessages.length];
+                    if (msg) navigateToMessage(activeConversation.id, msg.id);
+                  }}
+                  className="h-6 px-2 rounded-md inline-flex items-center gap-1 text-[11px] font-bold cursor-pointer transition-colors"
+                  style={{
+                    background: 'rgba(212, 168, 75, 0.18)',
+                    color: '#d4a84b',
+                    border: '1px solid rgba(212, 168, 75, 0.35)',
+                  }}
                 >
-                  <ChevronRight size={13} />
+                  <CornerDownRight size={12} />
+                  <span className="hidden sm:inline">Đi đến tin nhắn</span>
                 </button>
               </Tooltip>
-            )}
 
-            {/* Nút bấm dẫn đến tin nhắn */}
-            <Tooltip title="Đi đến tin nhắn này trong cuộc trò chuyện">
-              <button
-                type="button"
-                aria-label="Đi đến tin nhắn đã ghim"
-                onClick={() => {
-                  const msg = pinnedMessages[pinnedBannerIndex % pinnedMessages.length];
-                  if (msg) navigateToMessage(activeConversation.id, msg.id);
-                }}
-                className="h-6 px-2 rounded-md inline-flex items-center gap-1 text-[11px] font-bold cursor-pointer transition-colors"
-                style={{
-                  background: 'rgba(212, 168, 75, 0.18)',
-                  color: '#d4a84b',
-                  border: '1px solid rgba(212, 168, 75, 0.35)',
-                }}
-              >
-                <CornerDownRight size={12} />
-                <span className="hidden sm:inline">Đi đến tin nhắn</span>
-              </button>
-            </Tooltip>
+              {/* Xem danh sách tất cả tin ghim */}
+              <Tooltip title="Xem danh sách tất cả tin nhắn đã ghim">
+                <button
+                  type="button"
+                  aria-label="Xem tất cả tin ghim"
+                  onClick={() => setActiveSubtab('pinned')}
+                  className="h-6 px-1.5 rounded-md inline-flex items-center text-[11px] font-semibold text-slate-400 hover:text-amber-500 hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+                >
+                  Tất cả ({pinnedMessages.length})
+                </button>
+              </Tooltip>
 
-            {/* Xem danh sách tất cả tin ghim */}
-            <Tooltip title="Xem danh sách tất cả tin nhắn đã ghim">
-              <button
-                type="button"
-                aria-label="Xem tất cả tin ghim"
-                onClick={() => setActiveSubtab('pinned')}
-                className="h-6 px-1.5 rounded-md inline-flex items-center text-[11px] font-semibold text-slate-400 hover:text-amber-500 hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
-              >
-                Tất cả ({pinnedMessages.length})
-              </button>
-            </Tooltip>
-
-            {/* Bỏ ghim */}
-            <Tooltip title="Bỏ ghim tin nhắn này">
-              <button
-                type="button"
-                aria-label="Bỏ ghim"
-                onClick={() => {
-                  const msg = pinnedMessages[pinnedBannerIndex % pinnedMessages.length];
-                  if (msg) handleTogglePin(msg.id);
-                }}
-                className="w-6 h-6 rounded-md inline-flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-colors"
-              >
-                <PinOff size={13} />
-              </button>
-            </Tooltip>
+              {/* Bỏ ghim */}
+              <Tooltip title="Bỏ ghim tin nhắn này">
+                <button
+                  type="button"
+                  aria-label="Bỏ ghim"
+                  onClick={() => {
+                    const msg = pinnedMessages[pinnedBannerIndex % pinnedMessages.length];
+                    if (msg) handleTogglePin(msg.id);
+                  }}
+                  className="w-6 h-6 rounded-md inline-flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 cursor-pointer transition-colors"
+                >
+                  <PinOff size={13} />
+                </button>
+              </Tooltip>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div ref={mainMessagesContainerRef} className="flex-1 overflow-y-auto py-3">
-        {(activeConversation?.messages || [])
-          .filter(
-            (m) =>
-              !m.isSystemReminder &&
-              m.senderId !== 'system-reminder' &&
-              m.senderName !== 'mOS Reminder' &&
-              !String(m.text || '').startsWith('Đến giờ nhắc việc:') &&
-              m.senderName !== 'Hà My'
-          )
-          .map((m, idx, filteredMessages) => {
-            const linkedTask = uniqueTasks.find((t) => t.id === m.taskId || t.sourceMessageId === m.id);
+        <div ref={mainMessagesContainerRef} className="flex-1 overflow-y-auto py-3">
+          {visibleMessages.map((m, idx, filteredMessages) => {
+            const linkedTask = (m.taskId ? taskByMsgOrTaskId.get(m.taskId) : undefined) || taskByMsgOrTaskId.get(m.id);
             const isMine = isMessageFromCurrentUser(m);
             const prevMsg = idx > 0 ? filteredMessages[idx - 1] : null;
             const prevIsMine = prevMsg ? isMessageFromCurrentUser(prevMsg) : false;
@@ -1551,32 +1563,35 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = ({
             );
           })}
 
-        {aiThinkingActive && (
-          <div className="px-4 py-2 flex items-center gap-2.5">
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0"
-              style={{
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 55%, #d4a84b 100%)',
-              }}
-            >
-              <Loader2 size={15} className="animate-spin" />
+          {aiThinkingActive && (
+            <div className="px-4 py-2 flex items-center gap-2.5">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white shrink-0"
+                style={{
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #6366f1 55%, #d4a84b 100%)',
+                }}
+              >
+                <Loader2 size={15} className="animate-spin" />
+              </div>
+              <div
+                className="px-3 py-1.5 rounded-xl text-[12px] font-semibold inline-flex items-center gap-2 tabular-nums"
+                style={{
+                  background: 'rgba(139, 92, 246, 0.12)',
+                  border: '1px solid rgba(139, 92, 246, 0.3)',
+                  color: isDark ? '#c4b5fd' : '#6d28d9',
+                }}
+              >
+                <Sparkles size={13} />
+                <span>MAI đang suy luận & phân tích dữ liệu... ({aiElapsedSec}s)</span>
+              </div>
             </div>
-            <div
-              className="px-3 py-1.5 rounded-xl text-[12px] font-semibold inline-flex items-center gap-2 tabular-nums"
-              style={{
-                background: 'rgba(139, 92, 246, 0.12)',
-                border: '1px solid rgba(139, 92, 246, 0.3)',
-                color: isDark ? '#c4b5fd' : '#6d28d9',
-              }}
-            >
-              <Sparkles size={13} />
-              <span>MAI đang suy luận & phân tích dữ liệu... ({aiElapsedSec}s)</span>
-            </div>
-          </div>
-        )}
+          )}
 
-        <div ref={messagesEndRef} />
-      </div>
-    </>
-  );
-};
+          <div ref={messagesEndRef} />
+        </div>
+      </>
+    );
+  }
+);
+
+MosChatMessageFeed.displayName = 'MosChatMessageFeed';
