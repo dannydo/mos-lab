@@ -226,7 +226,11 @@ import { MosChatThreadDrawer } from './components/MosChatThreadDrawer';
 import { MosChatModals } from './components/MosChatModals';
 import { MosChatTasksPane } from './components/MosChatTasksPane';
 import { MosChatPinnedPane } from './components/MosChatPinnedPane';
-import { MosChatDockedWindows } from './components/MosChatDockedWindows';
+import {
+  MosChatDockedWindows,
+  DOCKED_STORAGE_KEY_V2,
+  type MosChatDockDimension,
+} from './components/MosChatDockedWindows';
 import { MosChatReminderAlert } from './components/MosChatReminderAlert';
 import { tabNotificationManager, playMessengerChime, showDesktopNotification } from '../../lib/tab-notification';
 
@@ -1059,11 +1063,108 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [nicknameInputVal, setNicknameInputVal] = useState('');
   const [isUpdatingNickname, setIsUpdatingNickname] = useState(false);
 
-  // Mini Docked Pop-out Windows (Bottom right like Gmail)
-  const [dockedConvIds, setDockedConvIds] = useState<string[]>([]);
-  const [collapsedDockIds, setCollapsedDockIds] = useState<Record<string, boolean>>({});
-  const [dockInputs, setDockInputs] = useState<Record<string, string>>({});
+  // Mini Docked Pop-out Windows (iPhone Cupertino style with full F5 persistence)
+  const [dockedConvIds, setDockedConvIds] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = window.localStorage.getItem(DOCKED_STORAGE_KEY_V2);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed.dockedConvIds)) return parsed.dockedConvIds;
+      }
+    } catch (_) {}
+    return [];
+  });
+
+  const [collapsedDockIds, setCollapsedDockIds] = useState<Record<string, boolean>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = window.localStorage.getItem(DOCKED_STORAGE_KEY_V2);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.collapsedDockIds && typeof parsed.collapsedDockIds === 'object') {
+          return parsed.collapsedDockIds;
+        }
+      }
+    } catch (_) {}
+    return {};
+  });
+
+  const [dockInputs, setDockInputs] = useState<Record<string, string>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = window.localStorage.getItem(DOCKED_STORAGE_KEY_V2);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.dockInputs && typeof parsed.dockInputs === 'object') {
+          return parsed.dockInputs;
+        }
+      }
+    } catch (_) {}
+    return {};
+  });
+
+  const [dockDimensions, setDockDimensions] = useState<Record<string, MosChatDockDimension>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = window.localStorage.getItem(DOCKED_STORAGE_KEY_V2);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.dimensions && typeof parsed.dimensions === 'object') {
+          return parsed.dimensions;
+        }
+      }
+    } catch (_) {}
+    return {};
+  });
+
+  const [dockActiveTabs, setDockActiveTabs] = useState<Record<string, 'chat' | 'tasks'>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = window.localStorage.getItem(DOCKED_STORAGE_KEY_V2);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.activeTabs && typeof parsed.activeTabs === 'object') {
+          return parsed.activeTabs;
+        }
+      }
+    } catch (_) {}
+    return {};
+  });
+
+  const [dockActiveThreadMsgIds, setDockActiveThreadMsgIds] = useState<Record<string, string | null>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = window.localStorage.getItem(DOCKED_STORAGE_KEY_V2);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.activeThreadMsgIds && typeof parsed.activeThreadMsgIds === 'object') {
+          return parsed.activeThreadMsgIds;
+        }
+      }
+    } catch (_) {}
+    return {};
+  });
+
   const [dockAttachments, setDockAttachments] = useState<Record<string, MosChatImageAttachment[]>>({});
+
+  // Persist docked state to localStorage on changes
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(
+        DOCKED_STORAGE_KEY_V2,
+        JSON.stringify({
+          dockedConvIds,
+          collapsedDockIds,
+          dockInputs,
+          dimensions: dockDimensions,
+          activeTabs: dockActiveTabs,
+          activeThreadMsgIds: dockActiveThreadMsgIds,
+        })
+      );
+    } catch (_) {}
+  }, [dockedConvIds, collapsedDockIds, dockInputs, dockDimensions, dockActiveTabs, dockActiveThreadMsgIds]);
 
   // Image Upload / Google Drive Modal / Full-Screen Lightbox state
   const [uploadingCount, setUploadingCount] = useState<number>(0);
@@ -5563,6 +5664,96 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     onClose();
   };
 
+  const handleQuickCreateTaskForDock = async ({ conversationId, title }: { conversationId: string; title: string }) => {
+    const cleanTitle = (title || '').trim();
+    if (!cleanTitle) return;
+
+    const tempTaskId = `task_temp_${Date.now()}`;
+    const myName = currentUser?.displayName || currentUser?.fullName || 'Danny Do';
+    const myId = currentUser?.id ? String(currentUser.id) : 'me';
+    const targetConv = conversations.find((c) => c.id === conversationId);
+    const convName = targetConv?.name || 'Không gian';
+
+    const optimisticTask: MosChatTaskItem = {
+      id: tempTaskId,
+      conversationId,
+      conversationName: convName,
+      title: cleanTitle,
+      done: false,
+      priority: 'NORMAL',
+      creatorName: myName,
+      assigneeName: myName,
+      assigneeId: myId,
+      remindAt: new Date(Date.now() + 3600 * 1000).toISOString(),
+      createdAt: new Date().toISOString(),
+    };
+
+    setTasks((prev) => [optimisticTask, ...prev]);
+
+    try {
+      const res = await apiClient.chat.createTask({
+        conversationId,
+        title: cleanTitle,
+        assigneeName: myName,
+        assigneeId: myId,
+        priority: 'NORMAL',
+      });
+      if (res?.task) {
+        setTasks((prev) => prev.map((t) => (t.id === tempTaskId ? res.task : t)));
+      }
+      notifyLivePeers();
+    } catch (_) {}
+  };
+
+  const handleSendThreadReplyForDock = async (
+    convId: string,
+    rootMsgId: string,
+    text: string,
+    attachments?: MosChatImageAttachment[]
+  ) => {
+    const cleanText = (text || '').trim();
+    const attsToSend = attachments || [];
+    if (!cleanText && attsToSend.length === 0) return;
+
+    const senderName = currentUser?.displayName || 'Danny Do';
+    const newReply: MosChatThreadReply = {
+      id: `th-${Date.now()}`,
+      senderId: currentUser?.id || 'me',
+      senderName,
+      senderRole: 'Super Admin',
+      senderAvatar: 'DD',
+      text: cleanText,
+      attachments: attsToSend.length > 0 ? attsToSend : undefined,
+      timeLabel: dayjs().format('HH:mm'),
+      createdAt: new Date().toISOString(),
+    };
+
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id !== convId) return c;
+        return {
+          ...c,
+          messages: c.messages.map((m) =>
+            m.id === rootMsgId ? { ...m, unreadThreadReplyCount: 0, thread: [...(m.thread || []), newReply] } : m
+          ),
+        };
+      })
+    );
+
+    try {
+      const res = await apiClient.chat.sendThreadReply({
+        conversationId: convId,
+        messageId: rootMsgId,
+        text: cleanText,
+        attachments: attsToSend.length > 0 ? attsToSend : undefined,
+      });
+      if (res?.conversation) {
+        setConversations((prev) => prev.map((c) => (c.id === convId ? res.conversation! : c)));
+      }
+      notifyLivePeers();
+    } catch (_) {}
+  };
+
   const handleSelectSelfChat = async () => {
     setNewRoomModalOpen(false);
     const selfId = `dm-self-${currentUser?.id || 'me'}`;
@@ -10050,6 +10241,16 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         setOpenStickerPopoverKey={setOpenStickerPopoverKey}
         renderComposerEmojiPickerContent={renderComposerEmojiPickerContent}
         triggerFilePicker={triggerFilePicker}
+        tasks={tasks}
+        onToggleTaskDone={handleToggleTaskDone}
+        onQuickCreateTask={handleQuickCreateTaskForDock}
+        onSendThreadReply={handleSendThreadReplyForDock}
+        dockDimensions={dockDimensions}
+        setDockDimensions={setDockDimensions}
+        dockActiveTabs={dockActiveTabs}
+        setDockActiveTabs={setDockActiveTabs}
+        dockActiveThreadMsgIds={dockActiveThreadMsgIds}
+        setDockActiveThreadMsgIds={setDockActiveThreadMsgIds}
       />
 
       {/* ================= LIVE REMINDER ALERT TOAST POPUP ================= */}

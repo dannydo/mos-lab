@@ -1182,7 +1182,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                 <div
                   className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-sm break-words shadow-sm ${
                     isMe
-                      ? 'bg-amber-500 text-slate-950 font-medium rounded-tr-sm'
+                      ? 'bg-amber-500/20 text-slate-100 border border-amber-500/40 font-normal rounded-tr-sm'
                       : 'bg-slate-800/90 text-slate-100 border border-slate-700/60 rounded-tl-sm'
                   }`}
                 >
@@ -1247,12 +1247,12 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
                   <div
                     className={`flex items-center justify-end gap-1 mt-1 text-[10px] tabular-nums ${
-                      isMe ? 'text-slate-800' : 'text-slate-400'
+                      isMe ? 'text-amber-300/80' : 'text-slate-400'
                     }`}
                   >
                     {reply.editedAt && <span className="italic mr-0.5">đã sửa</span>}
                     <span>{dayjs(reply.createdAt).format('HH:mm')}</span>
-                    {isMe && <CheckCheck className="w-3.5 h-3.5 text-slate-800" />}
+                    {isMe && <CheckCheck className="w-3.5 h-3.5 text-amber-400" />}
                   </div>
                 </div>
               )}

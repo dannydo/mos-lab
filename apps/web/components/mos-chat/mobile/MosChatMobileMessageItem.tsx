@@ -244,7 +244,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
         <div
           className={`relative max-w-[85%] rounded-2xl px-3.5 py-2 text-sm break-words shadow-sm transition-colors ${
             isMe
-              ? 'bg-amber-500 text-slate-950 font-medium rounded-tr-sm shadow-amber-500/10'
+              ? 'bg-amber-500/20 text-slate-100 border border-amber-500/40 font-normal rounded-tr-sm shadow-amber-500/10'
               : 'bg-slate-800/90 text-slate-100 border border-slate-700/70 rounded-tl-sm'
           }`}
         >
@@ -261,7 +261,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
             <div
               className={`text-xs px-2.5 py-1.5 rounded-lg mb-2 border-l-2 ${
                 isMe
-                  ? 'bg-amber-600/30 border-amber-900 text-slate-900'
+                  ? 'bg-amber-500/20 border-amber-400 text-slate-200'
                   : 'bg-slate-900/60 border-amber-500 text-slate-300'
               }`}
             >
@@ -419,12 +419,12 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
           {/* Time & Read status */}
           <div
             className={`flex items-center justify-end gap-1 mt-1 text-[10px] tabular-nums ${
-              isMe ? 'text-slate-800' : 'text-slate-400'
+              isMe ? 'text-amber-300/80' : 'text-slate-400'
             }`}
           >
             {message.editedAt && <span className="italic mr-0.5">đã sửa</span>}
             <span>{timeFormatted}</span>
-            {isMe && <CheckCheck className="w-3.5 h-3.5 text-slate-800" />}
+            {isMe && <CheckCheck className="w-3.5 h-3.5 text-amber-400" />}
           </div>
         </div>
       )}

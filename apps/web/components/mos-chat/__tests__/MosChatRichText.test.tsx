@@ -220,4 +220,21 @@ describe('MosChatRichText', () => {
     // It should not render an actual div with class "test"
     expect(container.querySelector('.test')).toBeNull();
   });
+
+  it('renders bold text and bullets with high contrast and without black text in dark mode when isMe is true', () => {
+    const text =
+      '@All cả nhà giúp anh ra 1 kế hoạch số cho **tuần này** và **tháng 11** nhé.\n• cần hoàn tất trong hôm nay';
+    const { container } = render(<MosChatRichText content={text} isMe={true} isDark={true} />);
+
+    const boldEls = container.querySelectorAll('strong');
+    expect(boldEls.length).toBe(2);
+    boldEls.forEach((el) => {
+      expect(el.className).not.toContain('text-slate-950');
+      expect(el.className).toContain('text-amber-300');
+    });
+
+    const bullet = screen.getByText('•');
+    expect(bullet.className).not.toContain('text-slate-950');
+    expect(bullet.className).toContain('text-amber-400');
+  });
 });

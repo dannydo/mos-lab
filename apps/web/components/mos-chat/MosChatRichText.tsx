@@ -247,9 +247,9 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
                 className={`inline-flex items-center gap-0.5 break-all font-medium ${
-                  isMe
-                    ? 'text-slate-950 underline font-semibold'
-                    : 'text-sky-400 hover:text-sky-300 underline underline-offset-2'
+                  isDark
+                    ? 'text-sky-400 hover:text-sky-300 underline underline-offset-2'
+                    : 'text-sky-600 hover:text-sky-700 underline underline-offset-2'
                 }`}
               >
                 <span>{parseInlineRichText(linkLabel, `${key}-a`, depth + 1)}</span>
@@ -274,9 +274,9 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
                 className={`inline-flex items-center gap-0.5 break-all font-medium ${
-                  isMe
-                    ? 'text-slate-950 underline font-semibold'
-                    : 'text-sky-400 hover:text-sky-300 underline underline-offset-2'
+                  isDark
+                    ? 'text-sky-400 hover:text-sky-300 underline underline-offset-2'
+                    : 'text-sky-600 hover:text-sky-700 underline underline-offset-2'
                 }`}
               >
                 <span>{decodeHtmlEntities(linkLabel)}</span>
@@ -293,11 +293,7 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
           elements.push(
             <strong
               key={key}
-              className={
-                isMe
-                  ? 'font-black text-slate-950 drop-shadow-none'
-                  : 'font-bold text-amber-400 dark:text-amber-300 drop-shadow-xs'
-              }
+              className={isDark ? 'font-bold text-amber-300 drop-shadow-xs' : 'font-bold text-amber-800'}
             >
               {parseInlineRichText(inner, `${key}-b`, depth + 1)}
             </strong>
@@ -309,11 +305,7 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
           elements.push(
             <strong
               key={key}
-              className={
-                isMe
-                  ? 'font-black text-slate-950 drop-shadow-none'
-                  : 'font-bold text-amber-400 dark:text-amber-300 drop-shadow-xs'
-              }
+              className={isDark ? 'font-bold text-amber-300 drop-shadow-xs' : 'font-bold text-amber-800'}
             >
               {parseInlineRichText(inner, `${key}-b`, depth + 1)}
             </strong>
@@ -371,9 +363,9 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
             <code
               key={key}
               className={`px-1.5 py-0.5 rounded text-[11.5px] font-mono select-text ${
-                isMe
-                  ? 'bg-amber-600/30 text-slate-950 border border-amber-600/40 font-bold'
-                  : 'bg-black/40 text-amber-300 border border-slate-700/60 font-medium'
+                isDark
+                  ? 'bg-black/40 text-amber-300 border border-slate-700/60 font-medium'
+                  : 'bg-amber-50 text-amber-800 border border-amber-200/80 font-medium'
               }`}
             >
               {decodeHtmlEntities(inner)}
@@ -387,9 +379,9 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
             <code
               key={key}
               className={`px-1.5 py-0.5 rounded text-[11.5px] font-mono select-text ${
-                isMe
-                  ? 'bg-amber-600/30 text-slate-950 border border-amber-600/40 font-bold'
-                  : 'bg-black/40 text-amber-300 border border-slate-700/60 font-medium'
+                isDark
+                  ? 'bg-black/40 text-amber-300 border border-slate-700/60 font-medium'
+                  : 'bg-amber-50 text-amber-800 border border-amber-200/80 font-medium'
               }`}
             >
               {decodeHtmlEntities(inner)}
@@ -403,7 +395,9 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
             <mark
               key={key}
               className={`px-1 py-0.2 rounded text-[11.5px] font-semibold ${
-                isMe ? 'bg-slate-950/20 text-slate-950' : 'bg-amber-500/25 text-amber-200 border border-amber-400/40'
+                isDark
+                  ? 'bg-amber-500/25 text-amber-200 border border-amber-400/40'
+                  : 'bg-amber-100 text-amber-900 border border-amber-300'
               }`}
             >
               {parseInlineRichText(inner, `${key}-m`, depth + 1)}
@@ -456,9 +450,9 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
               className={`inline-flex items-center gap-0.5 break-all font-medium ${
-                isMe
-                  ? 'text-slate-950 underline font-semibold'
-                  : 'text-sky-400 hover:text-sky-300 underline underline-offset-2'
+                isDark
+                  ? 'text-sky-400 hover:text-sky-300 underline underline-offset-2'
+                  : 'text-sky-600 hover:text-sky-700 underline underline-offset-2'
               }`}
             >
               <span>{fullMatch}</span>
@@ -585,32 +579,23 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
     }
 
     // Helper tạo style cho bảng responsive theo ngữ cảnh theme
-    const tableTheme = isMe
+    const tableTheme = isDark
       ? {
-          wrapper: 'border-slate-950/25 bg-black/5',
-          thead: 'bg-slate-950/15 text-slate-950',
-          th: 'text-slate-950 border-b border-slate-950/20',
-          divider: 'divide-slate-950/15',
-          trEven: 'even:bg-black/5 hover:bg-black/10',
-          td: 'text-slate-900',
+          wrapper: 'border-slate-700/80 bg-slate-950/70',
+          thead: 'bg-slate-900/95 text-amber-300',
+          th: 'text-amber-400 dark:text-amber-300 border-b border-slate-700/80',
+          divider: 'divide-slate-800/80',
+          trEven: 'odd:bg-transparent even:bg-slate-900/30 hover:bg-slate-800/40',
+          td: 'text-slate-200',
         }
-      : !isDark
-        ? {
-            wrapper: 'border-slate-300 bg-white/80',
-            thead: 'bg-slate-100 text-slate-800',
-            th: 'text-slate-800 border-b border-slate-300',
-            divider: 'divide-slate-200',
-            trEven: 'even:bg-slate-50 hover:bg-slate-100',
-            td: 'text-slate-700',
-          }
-        : {
-            wrapper: 'border-slate-700/80 bg-slate-950/70',
-            thead: 'bg-slate-900/95 text-amber-300',
-            th: 'text-amber-400 dark:text-amber-300 border-b border-slate-700/80',
-            divider: 'divide-slate-800/80',
-            trEven: 'odd:bg-transparent even:bg-slate-900/30 hover:bg-slate-800/40',
-            td: 'text-slate-200',
-          };
+      : {
+          wrapper: 'border-slate-300 bg-white/80',
+          thead: 'bg-slate-100 text-slate-800',
+          th: 'text-slate-800 border-b border-slate-300',
+          divider: 'divide-slate-200',
+          trEven: 'even:bg-slate-50 hover:bg-slate-100',
+          td: 'text-slate-700',
+        };
 
     const lines = cleanText.split('\n');
     const result: React.ReactNode[] = [];
@@ -945,13 +930,13 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
                   {isOrdered ? (
                     <span
                       className={`shrink-0 tabular-nums select-none font-semibold text-[11.5px] min-w-[14px] ${
-                        isMe ? 'text-slate-950' : 'text-amber-400'
+                        isDark ? 'text-amber-400 dark:text-amber-300' : 'text-amber-700'
                       }`}
                     >
                       {liIdx + 1}.
                     </span>
                   ) : (
-                    <span className={`shrink-0 select-none font-bold ${isMe ? 'text-slate-950' : 'text-amber-400'}`}>
+                    <span className={`shrink-0 select-none font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
                       •
                     </span>
                   )}
@@ -982,9 +967,9 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
           <blockquote
             key={`html-quote-${idx}`}
             className={`my-1.5 pl-2.5 py-1 border-l-2 italic text-xs rounded-r ${
-              isMe
-                ? 'border-slate-950/60 bg-black/10 text-slate-900'
-                : 'border-amber-500/80 bg-amber-500/10 text-slate-200'
+              isDark
+                ? 'border-amber-500/80 bg-amber-500/10 text-slate-200'
+                : 'border-amber-600/80 bg-amber-50 text-slate-700'
             }`}
           >
             {parseInlineRichText(bqHtml, `hbq-${idx}`)}
@@ -996,7 +981,7 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
       // Đường kẻ phân cách (Horizontal Divider): ---, ***, ___, <hr>
       if (/^<hr\s*\/?>$/i.test(trimmed) || /^(?:-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
         result.push(
-          <hr key={`hr-${idx}`} className={`my-2.5 border-t ${isMe ? 'border-slate-950/30' : 'border-slate-700/70'}`} />
+          <hr key={`hr-${idx}`} className={`my-2.5 border-t ${isDark ? 'border-slate-700/70' : 'border-slate-300'}`} />
         );
         continue;
       }
@@ -1009,21 +994,21 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
         let headingClass = 'text-xs font-semibold opacity-90 mt-1.5 mb-1';
 
         if (level === 1) {
-          headingClass = isMe
-            ? 'text-base font-black text-slate-950 tracking-tight mt-2.5 mb-1.5'
-            : 'text-base font-bold text-amber-400 tracking-tight mt-2.5 mb-1.5';
+          headingClass = isDark
+            ? 'text-base font-bold text-amber-400 tracking-tight mt-2.5 mb-1.5'
+            : 'text-base font-bold text-amber-800 tracking-tight mt-2.5 mb-1.5';
         } else if (level === 2) {
-          headingClass = isMe
-            ? 'text-sm font-extrabold text-slate-950 mt-2 mb-1'
-            : 'text-sm font-bold text-amber-300 mt-2 mb-1';
+          headingClass = isDark
+            ? 'text-sm font-bold text-amber-300 mt-2 mb-1'
+            : 'text-sm font-bold text-amber-700 mt-2 mb-1';
         } else if (level === 3) {
-          headingClass = isMe
-            ? 'text-xs font-bold text-slate-950 mt-1.5 mb-1'
-            : 'text-[13px] font-bold text-amber-200 mt-1.5 mb-1';
+          headingClass = isDark
+            ? 'text-xs font-bold text-amber-200 mt-1.5 mb-1'
+            : 'text-[13px] font-bold text-amber-700 mt-1.5 mb-1';
         } else {
-          headingClass = isMe
-            ? 'text-xs font-bold text-slate-950 mt-1 mb-0.5'
-            : 'text-xs font-semibold text-slate-200 mt-1 mb-0.5';
+          headingClass = isDark
+            ? 'text-xs font-semibold text-slate-200 mt-1 mb-0.5'
+            : 'text-xs font-semibold text-slate-800 mt-1 mb-0.5';
         }
 
         result.push(
@@ -1042,21 +1027,21 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
         let headingClass = 'text-xs font-semibold opacity-90 mt-1.5 mb-1';
 
         if (level === 1) {
-          headingClass = isMe
-            ? 'text-base font-black text-slate-950 tracking-tight mt-2.5 mb-1.5'
-            : 'text-base font-bold text-amber-400 tracking-tight mt-2.5 mb-1.5';
+          headingClass = isDark
+            ? 'text-base font-bold text-amber-400 tracking-tight mt-2.5 mb-1.5'
+            : 'text-base font-bold text-amber-800 tracking-tight mt-2.5 mb-1.5';
         } else if (level === 2) {
-          headingClass = isMe
-            ? 'text-sm font-extrabold text-slate-950 mt-2 mb-1'
-            : 'text-sm font-bold text-amber-300 mt-2 mb-1';
+          headingClass = isDark
+            ? 'text-sm font-bold text-amber-300 mt-2 mb-1'
+            : 'text-sm font-bold text-amber-700 mt-2 mb-1';
         } else if (level === 3) {
-          headingClass = isMe
-            ? 'text-xs font-bold text-slate-950 mt-1.5 mb-1'
-            : 'text-[13px] font-bold text-amber-200 mt-1.5 mb-1';
+          headingClass = isDark
+            ? 'text-xs font-bold text-amber-200 mt-1.5 mb-1'
+            : 'text-[13px] font-bold text-amber-700 mt-1.5 mb-1';
         } else {
-          headingClass = isMe
-            ? 'text-xs font-bold text-slate-950 mt-1 mb-0.5'
-            : 'text-xs font-semibold text-slate-200 mt-1 mb-0.5';
+          headingClass = isDark
+            ? 'text-xs font-semibold text-slate-200 mt-1 mb-0.5'
+            : 'text-xs font-semibold text-slate-800 mt-1 mb-0.5';
         }
 
         result.push(
@@ -1073,9 +1058,9 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
           <blockquote
             key={`quote-${idx}`}
             className={`my-1.5 pl-2.5 py-1 border-l-2 italic text-xs rounded-r ${
-              isMe
-                ? 'border-slate-950/60 bg-black/10 text-slate-900'
-                : 'border-amber-500/80 bg-amber-500/10 text-slate-200'
+              isDark
+                ? 'border-amber-500/80 bg-amber-500/10 text-slate-200'
+                : 'border-amber-600/80 bg-amber-50 text-slate-700'
             }`}
           >
             {parseInlineRichText(line.replace(/^>\s?/, ''), `q-${idx}`)}
@@ -1093,12 +1078,12 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
             <span
               className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-all ${
                 isChecked
-                  ? isMe
-                    ? 'bg-slate-950 text-white font-bold'
-                    : 'bg-amber-500 text-black font-bold'
-                  : isMe
-                    ? 'border-2 border-slate-950/70'
-                    : 'border-2 border-amber-500/70'
+                  ? isDark
+                    ? 'bg-amber-400 text-slate-950 font-bold'
+                    : 'bg-amber-600 text-white font-bold'
+                  : isDark
+                    ? 'border-2 border-amber-400/70'
+                    : 'border-2 border-amber-600/70'
               }`}
             >
               {isChecked ? <Check size={11} strokeWidth={3} /> : null}
@@ -1116,7 +1101,7 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
         const itemContent = trimmed.replace(/^[-*•\u2022]\s+/, '');
         result.push(
           <div key={`bullet-${idx}`} className="flex items-start gap-1.5 my-0.5 text-xs select-text">
-            <span className={`shrink-0 select-none font-bold ${isMe ? 'text-slate-950' : 'text-amber-400'}`}>•</span>
+            <span className={`shrink-0 select-none font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>•</span>
             <span className="flex-1 break-words">{parseInlineRichText(itemContent, `b-${idx}`)}</span>
           </div>
         );
@@ -1132,7 +1117,7 @@ export const MosChatRichText: React.FC<MosChatRichTextProps> = ({
           <div key={`num-${idx}`} className="flex items-start gap-1.5 my-0.5 text-xs select-text">
             <span
               className={`shrink-0 tabular-nums select-none font-semibold text-[11.5px] min-w-[14px] ${
-                isMe ? 'text-slate-950' : 'text-amber-400'
+                isDark ? 'text-amber-400 dark:text-amber-300' : 'text-amber-700'
               }`}
             >
               {num}.
