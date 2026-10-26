@@ -104,6 +104,11 @@ import { SharedPoolOverviewBanner } from '../../../../../components/campaign/Sha
 import { SharedPoolAuditDrawer } from '../../../../../components/campaign/SharedPoolAuditDrawer';
 import { SharedPoolHistoryRecoveryDrawer } from '../../../../../components/campaign/SharedPoolHistoryRecoveryDrawer';
 import { SharedPoolExcludedDrawer } from '../../../../../components/campaign/SharedPoolExcludedDrawer';
+import { CampaignKpiHeaderBar } from '../../../../../components/campaign/CampaignKpiHeaderBar';
+import { CampaignClaimCountdown } from '../../../../../components/campaign/CampaignClaimCountdown';
+import { CampaignEditModal } from '../../../../../components/campaign/CampaignEditModal';
+import { BatchAllocationModal, RandomSelectModal } from '../../../../../components/campaign/modals/CampaignBatchModals';
+import { useCampaignCustomerColumns } from '../../../../../components/campaign/CampaignCustomerTableColumns';
 
 const KissIcon: React.FC<{ size?: number; style?: React.CSSProperties; className?: string }> = ({
   size = 16,
@@ -248,49 +253,6 @@ const CAMPAIGN_BOOKING_STATUS_OPTIONS: Array<{
     activeClassName: 'bg-rose-600 text-white shadow-xs font-semibold',
   },
 ];
-
-const ClaimCountdown: React.FC<{ expiresAt: string | null; onExpire?: () => void }> = ({ expiresAt, onExpire }) => {
-  const [secondsLeft, setSecondsLeft] = useState<number>(() => {
-    if (!expiresAt) return 0;
-    const diff = Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000);
-    return Math.max(0, diff);
-  });
-
-  const onExpireRef = useRef(onExpire);
-  onExpireRef.current = onExpire;
-
-  useEffect(() => {
-    if (!expiresAt) return;
-    const initialDiff = Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000);
-    setSecondsLeft(Math.max(0, initialDiff));
-    if (initialDiff <= 0) {
-      onExpireRef.current?.();
-      return;
-    }
-    const interval = setInterval(() => {
-      const diff = Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000);
-      const remaining = Math.max(0, diff);
-      setSecondsLeft(remaining);
-      if (remaining <= 0) {
-        clearInterval(interval);
-        onExpireRef.current?.();
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [expiresAt]);
-
-  if (secondsLeft <= 0) {
-    return <span className="text-rose-500 font-bold text-[10px]">HẾT GIỜ</span>;
-  }
-
-  const mins = Math.floor(secondsLeft / 60);
-  const secs = secondsLeft % 60;
-  return (
-    <span className="font-mono tabular-nums text-[10px] text-amber-600 dark:text-amber-400 font-bold">
-      {mins}:{secs < 10 ? `0${secs}` : secs}
-    </span>
-  );
-};
 
 export default function CampaignDetailPage() {
   const router = useRouter();
@@ -883,9 +845,12 @@ export default function CampaignDetailPage() {
               ) {
                 const targetId = auditCustomerRef.current.id || auditCustomerRef.current.legacyUserId;
                 if (campaign?.id && targetId) {
-                  apiClient.campaigns.getSharedPoolLogs(campaign.id, targetId).then((logs) => {
-                    setAuditLogs(logs);
-                  }).catch(() => {});
+                  apiClient.campaigns
+                    .getSharedPoolLogs(campaign.id, targetId)
+                    .then((logs) => {
+                      setAuditLogs(logs);
+                    })
+                    .catch(() => {});
                 }
               }
             } else if (['BATCH_ADVANCED', 'POOL_PAUSED', 'POOL_RESUMED', 'OVERVIEW_UPDATED'].includes(data.type)) {
@@ -945,7 +910,8 @@ export default function CampaignDetailPage() {
               claimedByStaffId: currentUser?.id,
               claimedByStaffName: currentUser?.displayName || currentUser?.username,
               claimedAt: new Date().toISOString(),
-              claimExpiresAt: (res as any)?.customer?.claimExpiresAt || new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+              claimExpiresAt:
+                (res as any)?.customer?.claimExpiresAt || new Date(Date.now() + 15 * 60 * 1000).toISOString(),
               isClaimedByMe: true,
               canClaim: false,
               canCall: true,
@@ -1526,569 +1492,36 @@ export default function CampaignDetailPage() {
     }));
   }, [touchpoints]);
 
-  // Customer Table Columns (Matching NYC Main Table)
-  const columns: ColumnsType<any> = [
-    {
-      title: <TableIndexHeader />,
-      key: 'stt',
-      width: 45,
-      align: 'center' as const,
-      render: (_: any, __: any, index: number) => (
-        <span className="tabular-nums font-mono text-[11px] text-gray-500 font-medium">
-          {(currentPage - 1) * pageSize + index + 1}
-        </span>
-      ),
+  // Customer Table Columns (Using extracted modular hook)
+  const columns = useCampaignCustomerColumns({
+    currentPage,
+    pageSize,
+    themeMode,
+    token,
+    displayTouchpoints,
+    campaign,
+    isAdmin,
+    actionLoadingId,
+    onSelectCustomer: setSelectedCustomer,
+    onOpenCustomerDetail: () => setDetailDrawerVisible(true),
+    onMakeCall: makeCall,
+    onToggleTouchpoint: handleToggleTouchpoint,
+    onOpenBooking: (cust: any) => {
+      setBookingInitialCustomer(cust);
+      setBookingWizardVisible(true);
     },
-    {
-      title: 'Khách hàng',
-      key: 'customer',
-      width: 160,
-      render: (_: any, record: any) => {
-        const name = record.customerName || record.name || 'Khách hàng';
-        const phone = record.customerPhone || record.phone || record.phones?.[0]?.phone_number;
-        return (
-          <Space
-            size={6}
-            style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}
-            onClick={() => {
-              setSelectedCustomer(record);
-              setDetailDrawerVisible(true);
-            }}
-          >
-            <Avatar
-              size={24}
-              src={record.avatar || undefined}
-              icon={<UserOutlined style={{ fontSize: '12px' }} />}
-              style={{
-                backgroundColor: token.colorBgContainer,
-                color: token.colorPrimary,
-                border: `1px solid ${token.colorBorderSecondary}`,
-                flexShrink: 0,
-              }}
-            />
-            <div>
-              <div
-                style={{
-                  fontSize: '12px',
-                  fontWeight: '600',
-                  color: themeMode === 'dark' ? '#f3f4f6' : '#111827',
-                  lineHeight: '1.2',
-                }}
-                className="hover:underline transition-all"
-              >
-                {name}
-              </div>
-              {phone && (
-                <div className="flex items-center gap-1 mt-0.5">
-                  <div
-                    style={{ fontSize: '11px', color: '#D4A84B', fontWeight: '500', lineHeight: '1.2' }}
-                    className="hover:underline cursor-pointer flex items-center gap-1 tabular-nums font-mono"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      makeCall(phone);
-                    }}
-                  >
-                    <PhoneOutlined style={{ fontSize: '9px' }} />
-                    <span>{phone}</span>
-                  </div>
-                  <CopyPhoneButton phone={phone} size="xs" />
-                </div>
-              )}
-            </div>
-          </Space>
-        );
-      },
+    onOpenSMS: (cust: any) => {
+      setSelectedCustomer(cust);
+      setSmsModalVisible(true);
     },
-    {
-      title: 'Chưa tới tiệm (Ngày)',
-      dataIndex: 'daysSinceLastVisit',
-      key: 'daysSinceLastVisit',
-      width: 130,
-      render: (_: any, record: any) => {
-        const days = record.daysSinceLastVisit;
-        const daysDisplay = days !== null && days !== undefined ? (
-          <span className="tabular-nums font-semibold text-xs">{days} ngày</span>
-        ) : (
-          <span className="text-gray-400 italic text-xs">Chưa tới</span>
-        );
-
-        const hasCallback = record.callbackDate
-          ? new Date(record.callbackDate) >= new Date(new Date().setHours(0, 0, 0, 0))
-          : false;
-        if (hasCallback) {
-          const callbackFormatted = dayjs(record.callbackDate).format('DD/MM/YYYY');
-          return (
-            <div className="flex flex-col">
-              {daysDisplay}
-              <span style={{ color: themeMode === 'dark' ? '#ffd666' : '#855b00', fontWeight: 'bold', fontSize: '11px' }}>
-                🕒 Hẹn gọi: {callbackFormatted}
-              </span>
-            </div>
-          );
-        }
-
-        const lastBookingDate = record.lastBookingDate || record.bookingDate;
-        const lastBookingState = record.lastBookingState || record.bookingState;
-
-        const isBookingInFuture = lastBookingDate ? new Date(lastBookingDate) > new Date() : false;
-        if (isBookingInFuture) {
-          const isBooked = lastBookingState === 'New' || lastBookingState === 'Confirmed';
-          if (isBooked) {
-            const bookingFormatted = dayjs(lastBookingDate).format('DD/MM/YYYY');
-            return (
-              <div className="flex flex-col">
-                {daysDisplay}
-                <span
-                  style={{ color: themeMode === 'dark' ? '#95de64' : '#237804', fontWeight: 'bold', fontSize: '11px' }}
-                >
-                  📅 Booked: {bookingFormatted}
-                </span>
-              </div>
-            );
-          }
-        }
-
-        const isBookingInPast = lastBookingDate ? new Date(lastBookingDate) < new Date() : false;
-        if (isBookingInPast) {
-          const isMissed =
-            lastBookingState &&
-            lastBookingState !== 'Completed' &&
-            lastBookingState !== 'ServiceCompleted' &&
-            lastBookingState !== 'CheckIn' &&
-            lastBookingState !== 'CheckOut' &&
-            lastBookingState !== 'ServiceStart';
-          if (isMissed) {
-            let missedDays = record.daysSinceLastVisit ?? 0;
-            if (lastBookingDate) {
-              const bookingDate = new Date(lastBookingDate);
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              bookingDate.setHours(0, 0, 0, 0);
-              const diffMs = today.getTime() - bookingDate.getTime();
-              missedDays = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
-            }
-            return (
-              <div className="flex flex-col">
-                {daysDisplay}
-                <span
-                  style={{ color: themeMode === 'dark' ? '#ff7875' : '#cf1322', fontWeight: 'bold', fontSize: '11px' }}
-                >
-                  ⚠️ Missed: {missedDays}n
-                </span>
-              </div>
-            );
-          }
-        }
-
-        return daysDisplay;
-      },
-    },
-    {
-      title: '∑ Chi Tiêu',
-      dataIndex: 'totalSpent',
-      key: 'totalSpent',
-      align: 'right',
-      width: 110,
-      render: (val: number, record: any) => {
-        const spent = val ?? record.totalSpent ?? 0;
-        return <span className="tabular-nums font-medium text-xs">{formatVND(spent)}</span>;
-      },
-    },
-    {
-      title: 'Booker phụ trách',
-      key: 'booker',
-      width: 120,
-      render: (_: any, record: any) => {
-        const bookerName =
-          record.assignedBookerName || record.assignedBooker?.name || record.assignedStaff?.displayName;
-        return bookerName ? (
-          <Tag color="cyan" className="font-semibold text-[11px] px-1.5 py-0 m-0">
-            {bookerName}
-          </Tag>
-        ) : (
-          <span className="text-gray-400 italic text-xs">Chưa phân bổ</span>
-        );
-      },
-    },
-    {
-      key: 'touchpointGroup',
-      title: (
-        <div
-          style={{
-            textAlign: 'center',
-            fontWeight: 'bold',
-            color: themeMode === 'dark' ? '#fbbf24' : '#d97706',
-            fontSize: '12px',
-            background: themeMode === 'dark' ? 'rgba(212, 168, 75, 0.12)' : 'rgba(212, 168, 75, 0.08)',
-            padding: '1px 6px',
-            borderRadius: '4px',
-          }}
-        >
-          ✨ Tiến Trình Chạm CSKH
-        </div>
-      ),
-      children: displayTouchpoints.map((tp, tpIndex) => {
-        const rawLabel = (tp.label || tp.key).replace(/^Chạm\s*/i, '').replace(/^Chăm sóc\s*/i, '');
-        let displayLabel = rawLabel.replace(/n$/i, '');
-        if (tp.key === '24h' || rawLabel === '24h') displayLabel = '24h';
-        else if (tp.key === '30plus' || rawLabel === '30+' || rawLabel === '30n+') displayLabel = '30+';
-
-        const labelStr = tp.label || `Chạm ${displayLabel}`;
-        const daysStr =
-          tp.daysMin !== undefined && tp.daysMin !== null
-            ? ` (Ngày ${tp.daysMin}${tp.daysMax !== null && tp.daysMax !== undefined ? (tp.daysMax === tp.daysMin ? '' : `-${tp.daysMax}`) : '+'})`
-            : '';
-        const fullTooltipText = `${labelStr}${daysStr}`;
-
-        // Dynamically resolve vector icon / emoji component for header
-        const rawSortOrder = (tp as any).sortOrder;
-        const idx = typeof rawSortOrder === 'number' ? rawSortOrder - 1 : tpIndex;
-        const iconKey =
-          tp.icon ||
-          (idx === 0
-            ? 'Smile'
-            : idx === 1
-              ? 'Handshake'
-              : idx === 2
-                ? 'Kiss'
-                : idx === 3
-                  ? 'Heart'
-                  : idx === 4
-                    ? 'BedDouble'
-                    : tp.key);
-        const headerIconNode = getIconComponent(iconKey);
-
-        return {
-          title: (
-            <Tooltip title={fullTooltipText}>
-              <div
-                data-ui="campaign-touchpoint-header"
-                data-touchpoint-icon={iconKey}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  color: themeMode === 'dark' ? '#cbd5e1' : '#475569',
-                }}
-              >
-                {headerIconNode}
-              </div>
-            </Tooltip>
-          ),
-          key: `tp_${tp.key || tp.id}`,
-          width: 44,
-          align: 'center' as const,
-          render: (_: any, record: any) => (
-            <CampaignTouchpointCell
-              customer={record}
-              touchpoint={tp}
-              themeMode={themeMode}
-              onToggle={handleToggleTouchpoint}
-              onOpenBooking={(cust: any) => {
-                setBookingInitialCustomer(cust);
-                setBookingWizardVisible(true);
-              }}
-            />
-          ),
-        };
-      }),
-    },
-    {
-      title: 'Ngày gọi gần nhất',
-      key: 'lastCallDate',
-      width: 120,
-      render: (_: any, record: any) => {
-        const date = record.lastCallAt || record.lastCall?.createdAt;
-        if (!date) return '-';
-        return <span className="tabular-nums text-[11px]">{dayjs(date).format('DD/MM HH:mm')}</span>;
-      },
-    },
-    {
-      title: 'Thời lượng',
-      key: 'lastCallDuration',
-      width: 80,
-      render: (_: any, record: any) => {
-        const secs = record.lastCallDuration ?? record.lastCall?.durationSec;
-        if (secs === undefined || secs === null) return '-';
-        return <span className="tabular-nums text-[11px]">{formatDuration(secs)}</span>;
-      },
-    },
-    {
-      title: 'Trạng thái cuộc gọi',
-      key: 'lastCallResult',
-      width: 120,
-      render: (_: any, record: any) => {
-        const result = record.lastCallResult || record.lastCall?.callResult;
-        if (!result) return '-';
-        const label = (CALL_RESULT_LABELS as Record<string, string>)[result] || result;
-        let color = 'default';
-        if (result === 'ANSWERED' || result === 'Có bắt máy') color = 'success';
-        else if (result === 'NO_ANSWER' || result === 'Không nghe máy') color = 'warning';
-        else if (result === 'BUSY' || result === 'Bận') color = 'orange';
-        else if (result === 'FAILED' || result === 'WRONG_NUMBER' || result === 'Sai số') color = 'error';
-        return (
-          <Tag color={color} className="text-[11px] px-1 m-0">
-            {label}
-          </Tag>
-        );
-      },
-    },
-    {
-      title: 'Ghi chú cuộc gọi',
-      key: 'lastCallNote',
-      width: 130,
-      render: (_: any, record: any) => {
-        const note = record.lastCallNote || record.lastCall?.note;
-        if (!note) return '-';
-        const compactNote = note.length > 20 ? `${note.substring(0, 20)}...` : note;
-        return (
-          <Tooltip title={note}>
-            <span className="cursor-pointer text-[11px] italic text-gray-300 line-clamp-1">{compactNote}</span>
-          </Tooltip>
-        );
-      },
-    },
-    {
-      title: 'Đã phân bổ',
-      key: 'allocatedDays',
-      width: 100,
-      render: (_: any, record: any) => {
-        const assignedAt = record.assignedAt || record.assignedStaff?.assignedAt || record.lastAllocation?.assignedAt;
-        if (!assignedAt) {
-          return <span className="text-gray-400 italic text-[11px]">Chưa phân bổ</span>;
-        }
-        const assignedDate = dayjs(assignedAt);
-        const today = dayjs();
-        const diffDays = Math.max(0, today.diff(assignedDate, 'day'));
-        const formattedDate = assignedDate.format('DD/MM/YYYY HH:mm');
-        const staffName =
-          record.assignedBookerName ||
-          record.assignedBooker?.name ||
-          record.assignedStaff?.displayName ||
-          record.lastAllocation?.staffName;
-        const tooltipTitle = `Phân bổ cho: ${staffName || 'Booker'} (từ ${formattedDate})`;
-        return (
-          <Tooltip title={tooltipTitle}>
-            <span className="tabular-nums font-semibold text-[11px]">{diffDays} ngày</span>
-          </Tooltip>
-        );
-      },
-    },
-    ...(campaign?.operationMode === 'SHARED_POOL'
-      ? [
-          {
-            title: 'Trạng thái Pool',
-            key: 'poolStatus',
-            width: 170,
-            render: (_: any, record: any) => {
-              const rawStatus = record.poolStatus || 'AVAILABLE';
-              const isClaimExpired =
-                rawStatus === 'CLAIMED' &&
-                record.claimExpiresAt &&
-                new Date(record.claimExpiresAt).getTime() <= Date.now();
-              const isRecycleExpired =
-                (rawStatus === 'RECYCLING' || rawStatus === 'RECYCLE') &&
-                record.availableAt &&
-                new Date(record.availableAt).getTime() <= Date.now();
-              const status = isClaimExpired || isRecycleExpired ? 'AVAILABLE' : rawStatus;
-              const isClaimed = status === 'CLAIMED';
-              const isMe = isClaimed && record.isClaimedByMe;
-              const hasCooldown = record.cooldownUntil && new Date(record.cooldownUntil) > new Date();
-              const cooldownMinutes = hasCooldown
-                ? Math.ceil((new Date(record.cooldownUntil).getTime() - Date.now()) / (60 * 1000))
-                : 0;
-
-              return (
-                <div className="flex flex-col gap-1 text-xs">
-                  <div className="flex items-center gap-1 flex-wrap">
-                    {status === 'AVAILABLE' && (
-                      <Tag color="success" className="font-bold text-[11px] m-0">
-                        🟢 SẴN SÀNG
-                      </Tag>
-                    )}
-                    {status === 'CLAIMED' && (
-                      <Tag
-                        color={isMe ? 'purple' : 'orange'}
-                        className="font-bold text-[11px] m-0 inline-flex items-center gap-1"
-                      >
-                        <LockOutlined />
-                        <span>{isMe ? 'BẠN ĐANG GIỮ' : `ĐANG GIỮ: ${record.claimedByStaffName || 'NV'}`}</span>
-                        <ClaimCountdown
-                          expiresAt={record.claimExpiresAt}
-                          onExpire={() => handleClaimExpiredLocally(record)}
-                        />
-                      </Tag>
-                    )}
-                    {(status === 'RECYCLING' || status === 'RECYCLE') && (
-                      <Tag color="magenta" className="font-semibold text-[11px] m-0">
-                        🟣 CHỜ QUAY LẠI {record.availableAt ? `(${dayjs(record.availableAt).format('DD/MM HH:mm')})` : ''}
-                      </Tag>
-                    )}
-                    {status === 'EXPLOITED' && (
-                      <Tag color="default" className="text-[11px] m-0">
-                        ⚪ ĐÃ GỌI {record.lastCallStaffName ? `(${record.lastCallStaffName})` : ''}
-                      </Tag>
-                    )}
-                    {status === 'BOOKED' && (
-                      <Tag color="processing" className="font-bold text-[11px] m-0 inline-flex items-center gap-1">
-                        <CheckCircleOutlined /> ĐÃ BOOKING ({record.bookedByStaffName || 'NV'})
-                      </Tag>
-                    )}
-                    {status === 'EXCLUDED' && (
-                      <Tag color="error" className="text-[11px] m-0">
-                        🔴 ĐÃ LOẠI
-                      </Tag>
-                    )}
-                  </div>
-
-                  {hasCooldown && (
-                    <Tag color="warning" className="text-[10px] tabular-nums m-0 inline-flex items-center gap-1 w-fit">
-                      <ClockCircleOutlined /> Giãn cách còn {cooldownMinutes}p
-                    </Tag>
-                  )}
-                </div>
-              );
-            },
-          },
-        ]
-      : []),
-    {
-      title: 'Thao tác',
-      key: 'actions',
-      width: campaign?.operationMode === 'SHARED_POOL' ? 180 : 100,
-      align: 'center' as const,
-      render: (_: any, record: any) => {
-        const phone = record.customerPhone || record.phone || record.phones?.[0]?.phone_number;
-        const isSharedPool = campaign?.operationMode === 'SHARED_POOL';
-        const isLoadingThis = actionLoadingId === (record.id || record.legacyUserId);
-        const isClaimExpired =
-          record.poolStatus === 'CLAIMED' &&
-          record.claimExpiresAt &&
-          new Date(record.claimExpiresAt).getTime() <= Date.now();
-        const isRecycleExpired =
-          (record.poolStatus === 'RECYCLING' || record.poolStatus === 'RECYCLE') &&
-          record.availableAt &&
-          new Date(record.availableAt).getTime() <= Date.now();
-        const effectiveCanClaim = record.canClaim || isClaimExpired || isRecycleExpired;
-        const effectiveIsClaimedByMe = record.isClaimedByMe && !isClaimExpired;
-
-        return (
-          <Space size="small" wrap>
-            {isSharedPool && (
-              <>
-                {effectiveCanClaim && (
-                  <Tooltip title="Nhận khách này vào xử lý (Claim)">
-                    <Button
-                      size="small"
-                      type="primary"
-                      icon={<LockOutlined />}
-                      loading={isLoadingThis}
-                      onClick={() => handleClaimCustomer(record)}
-                      className="bg-emerald-600 hover:bg-emerald-500 font-semibold text-white text-xs"
-                    >
-                      Nhận
-                    </Button>
-                  </Tooltip>
-                )}
-
-                {effectiveIsClaimedByMe && (
-                  <>
-                    <Tooltip title="Gọi khách qua luồng chuẩn mOS">
-                      <Button
-                        size="small"
-                        type="primary"
-                        icon={<PhoneOutlined />}
-                        onClick={() => handleCallClaimedCustomer(record)}
-                        className="bg-purple-600 hover:bg-purple-500 font-semibold text-white text-xs"
-                      >
-                        Gọi khách
-                      </Button>
-                    </Tooltip>
-
-                    <Tooltip title="Nhả khách lại về Shared Pool">
-                      <Button
-                        size="small"
-                        icon={<UnlockOutlined />}
-                        loading={isLoadingThis}
-                        onClick={() => handleReleaseCustomer(record)}
-                        className="text-xs"
-                      >
-                        Nhả
-                      </Button>
-                    </Tooltip>
-                  </>
-                )}
-
-                <Tooltip title="Lịch sử tương tác & Chống tranh công">
-                  <Button size="small" icon={<HistoryOutlined />} onClick={() => handleOpenAuditLogs(record)} />
-                </Tooltip>
-
-                {isAdmin && (
-                  <Popconfirm
-                    title="Thao tác quản lý khách hàng"
-                    description="Chọn hành động đối với khách hàng trong Shared Pool"
-                    okText="Đưa về Pool"
-                    cancelText="Hủy"
-                    onConfirm={() => handleManagerCustomerAction(record, 'RETURN_TO_POOL')}
-                  >
-                    <Tooltip title="Menu Quản lý Pool">
-                      <Button size="small" icon={<SettingOutlined />} />
-                    </Tooltip>
-                  </Popconfirm>
-                )}
-              </>
-            )}
-
-            <Tooltip title="Gửi SMS">
-              <Button
-                size="small"
-                icon={<MessageOutlined style={{ color: '#D4A84B' }} />}
-                onClick={() => {
-                  setSelectedCustomer(record);
-                  setSmsModalVisible(true);
-                }}
-                style={{ borderColor: '#D4A84B', color: '#D4A84B' }}
-              />
-            </Tooltip>
-            <Tooltip title="Đặt lịch hẹn">
-              <Button
-                type="primary"
-                size="small"
-                icon={<CalendarPlusIcon fontSize={14} />}
-                style={{
-                  backgroundColor: '#D4A84B',
-                  borderColor: '#D4A84B',
-                  color: '#ffffff',
-                  borderRadius: '6px',
-                }}
-                onClick={() => {
-                  setBookingInitialCustomer(record);
-                  setBookingWizardVisible(true);
-                }}
-              />
-            </Tooltip>
-            {isAdmin && (
-              <Tooltip title="Xóa khỏi chiến dịch">
-                <Button
-                  size="small"
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={() =>
-                    handleRemoveCustomer(
-                      record.legacyUserId || record.customerId || record.id,
-                      record.customerName || record.name
-                    )
-                  }
-                />
-              </Tooltip>
-            )}
-          </Space>
-        );
-      },
-    },
-  ];
+    onClaimCustomer: handleClaimCustomer,
+    onCallClaimedCustomer: handleCallClaimedCustomer,
+    onReleaseCustomer: handleReleaseCustomer,
+    onOpenAuditLogs: handleOpenAuditLogs,
+    onManagerCustomerAction: handleManagerCustomerAction,
+    onRemoveCustomer: handleRemoveCustomer,
+    onClaimExpiredLocally: handleClaimExpiredLocally,
+  });
 
   if (loading) {
     return (
@@ -2133,173 +1566,22 @@ export default function CampaignDetailPage() {
   return (
     <div className="responsive-page responsive-workspace nyc-campaign-detail-page">
       {modalContextHolder}
-      {/* UNIFIED MINIMALIST CAMPAIGN HEADER (1 SINGLE ROW WITH ICON+TOOLTIP KPIs) */}
-      <div
-        className={`p-3 rounded-2xl mb-3 flex flex-wrap items-center justify-between gap-3 border shadow-sm transition-all ${
-          themeMode === 'dark'
-            ? 'bg-gradient-to-r from-[#141a29]/90 via-[#111827]/95 to-[#192238]/90 border-amber-500/20 shadow-lg shadow-black/40'
-            : 'bg-gradient-to-r from-white via-amber-50/30 to-slate-50 border-amber-200/60'
-        }`}
-      >
-        {/* Left: Navigation & Campaign Title & Status */}
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <Button
-            type="text"
-            size="small"
-            icon={<ArrowLeftOutlined />}
-            onClick={() => router.push('/dashboard/nyc/campaigns')}
-            className="text-xs font-medium opacity-80 hover:opacity-100"
-          >
-            Danh sách
-          </Button>
-          <Title level={4} style={{ margin: 0, fontWeight: '800', fontSize: '18px' }}>
-            {campaign.name}
-          </Title>
-          <Tag color="gold" className="font-mono text-[11px] m-0">
-            slug: {campaign.slug}
-          </Tag>
-          {campaign.status === 'ACTIVE' ? (
-            <Tag color="success" className="font-bold m-0 text-[11px]">
-              HOẠT ĐỘNG
-            </Tag>
-          ) : (
-            <Tag color="default" className="m-0 text-[11px]">
-              {campaign.status}
-            </Tag>
-          )}
-        </div>
-
-        {/* Center: Minimalist Icon + Tooltip 5 KPI Badges */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* KPI 1: Total Customers */}
-          <Tooltip title={`Tổng số: ${stats?.totalCustomers ?? customers.length} khách hàng`}>
-            <div
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold ${
-                themeMode === 'dark'
-                  ? 'bg-white/5 border-white/10 text-slate-200'
-                  : 'bg-slate-100 border-slate-200 text-slate-700'
-              }`}
-            >
-              <UserOutlined className="text-slate-400" />
-              <span className="tabular-nums">{stats?.totalCustomers ?? customers.length}</span>
-              <span className="text-[10px] text-slate-400 font-normal">KH</span>
-            </div>
-          </Tooltip>
-
-          {/* KPI 2: Booked Rate */}
-          <Tooltip title={`Tỷ lệ đặt lịch: ${stats?.bookedRate ?? 0}% (${stats?.bookedCount ?? 0} đơn)`}>
-            <div
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold ${
-                themeMode === 'dark'
-                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                  : 'bg-emerald-50 border-emerald-200 text-emerald-700'
-              }`}
-            >
-              <CheckCircleOutlined className="text-emerald-500" />
-              <span className="tabular-nums">{stats?.bookedRate ?? 0}%</span>
-            </div>
-          </Tooltip>
-
-          {/* KPI 3: Touchpoint Progress */}
-          <Tooltip title={`Tiến độ điểm chạm: ${stats?.totalTouchpointLogs ?? 0} lượt hoàn thành`}>
-            <div
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold ${
-                themeMode === 'dark'
-                  ? 'bg-purple-500/10 border-purple-500/20 text-purple-300'
-                  : 'bg-purple-50 border-purple-200 text-purple-700'
-              }`}
-            >
-              <FieldTimeOutlined className="text-purple-400" />
-              <span className="tabular-nums">{stats?.totalTouchpointLogs ?? 0}</span>
-              <span className="text-[10px] text-slate-400 font-normal">lượt</span>
-            </div>
-          </Tooltip>
-
-          {/* KPI 4: Calls Today */}
-          <Tooltip title={`Cuộc gọi hôm nay: ${stats?.totalCallsToday ?? 0} cuộc`}>
-            <div
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold ${
-                themeMode === 'dark'
-                  ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
-                  : 'bg-blue-50 border-blue-200 text-blue-700'
-              }`}
-            >
-              <PhoneOutlined className="text-blue-400" />
-              <span className="tabular-nums">{stats?.totalCallsToday ?? 0}</span>
-            </div>
-          </Tooltip>
-
-          {/* KPI 5: Campaign Revenue */}
-          <Tooltip title={`Doanh thu chiến dịch: ${formatVND(stats?.campaignRevenue ?? 0)}`}>
-            <div
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold ${
-                themeMode === 'dark'
-                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                  : 'bg-amber-50 border-amber-200 text-amber-700'
-              }`}
-            >
-              <DollarOutlined style={{ color: themeMode === 'dark' ? '#D4A84B' : '#87640a' }} />
-              <span className="tabular-nums">{formatVND(stats?.campaignRevenue ?? 0)}</span>
-            </div>
-          </Tooltip>
-        </div>
-
-        {/* Right: Date Range, Promotions & Edit Button */}
-        <div className="flex items-center gap-2.5 text-xs flex-wrap">
-          <Tooltip
-            title={`Thời gian: ${campaign.startDate ? dayjs(campaign.startDate).format('DD/MM/YYYY') : 'Tùy chỉnh'} - ${campaign.endDate ? dayjs(campaign.endDate).format('DD/MM/YYYY') : 'Không giới hạn'}`}
-          >
-            <span className="tabular-nums text-slate-400 flex items-center gap-1 text-xs">
-              <CalendarOutlined className="text-amber-500" />
-              <span>
-                {campaign.startDate ? dayjs(campaign.startDate).format('DD/MM') : ''}-
-                {campaign.endDate ? dayjs(campaign.endDate).format('DD/MM/YYYY') : ''}
-              </span>
-            </span>
-          </Tooltip>
-
-          {promotions.length > 0 && (
-            <Tooltip
-              title={promotions
-                .map(
-                  (p) =>
-                    `${p.name}: ${p.type === 'PERCENT_DISCOUNT' ? `${p.value}%` : p.type === 'FIXED_FINAL_PRICE' ? `Đồng giá ${formatVND(p.value)}` : formatVND(p.value)}`
-                )
-                .join(', ')}
-            >
-              <div className="flex items-center gap-1">
-                <GiftOutlined className="text-purple-400" />
-                {promotions.map((p) => (
-                  <Tag key={p.id} color="purple" className="m-0 text-[10px] font-medium">
-                    {p.name} (
-                    {p.type === 'PERCENT_DISCOUNT'
-                      ? `${p.value}%`
-                      : p.type === 'FIXED_FINAL_PRICE'
-                        ? `Đồng giá ${formatVND(p.value)}`
-                        : formatVND(p.value)}
-                    )
-                  </Tag>
-                ))}
-              </div>
-            </Tooltip>
-          )}
-
-          {isAdmin && (
-            <Tooltip title="Chỉnh sửa chiến dịch">
-              <Button
-                type="primary"
-                size="small"
-                icon={<EditOutlined />}
-                style={{
-                  backgroundColor: themeMode === 'dark' ? '#D4A84B' : '#a07818',
-                  borderColor: themeMode === 'dark' ? '#D4A84B' : '#a07818',
-                }}
-                onClick={handleOpenEditModal}
-              />
-            </Tooltip>
-          )}
-        </div>
-      </div>
+      <CampaignKpiHeaderBar
+        campaign={{
+          name: campaign.name,
+          slug: campaign.slug,
+          status: campaign.status,
+          startDate: campaign.startDate,
+          endDate: campaign.endDate,
+        }}
+        stats={stats}
+        customersCount={customers.length}
+        promotions={promotions}
+        themeMode={themeMode}
+        isAdmin={isAdmin}
+        onBack={() => router.push('/dashboard/nyc/campaigns')}
+        onEdit={handleOpenEditModal}
+      />
 
       {/* SHARED POOL OVERVIEW & CONTROL BANNER */}
       {campaign?.operationMode === 'SHARED_POOL' && (
@@ -2618,28 +1900,16 @@ export default function CampaignDetailPage() {
       />
 
       {/* Admin Batch Allocation Modal */}
-      <Modal
-        title="Tạo đợt phân bổ Booker cho khách hàng chiến dịch"
+      <BatchAllocationModal
         open={batchAllocationModalVisible}
         onCancel={() => setBatchAllocationModalVisible(false)}
         onOk={handleBatchAllocate}
         confirmLoading={allocating}
-        okText="Xác nhận Phân bổ"
-        cancelText="Hủy"
-      >
-        <div className="my-4">
-          <Text className="block mb-2 font-semibold">
-            Chọn Booker nhận {selectedRowKeys.length} khách hàng đã chọn:
-          </Text>
-          <Select
-            placeholder="Chọn Booker..."
-            style={{ width: '100%' }}
-            value={targetBookerId}
-            onChange={(val) => setTargetBookerId(val)}
-            options={bookerStaffList.map((s) => ({ value: s.id, label: s.displayName }))}
-          />
-        </div>
-      </Modal>
+        selectedCount={selectedRowKeys.length}
+        targetBookerId={targetBookerId}
+        onTargetBookerChange={setTargetBookerId}
+        bookerStaffList={bookerStaffList}
+      />
 
       {/* Customer Detail Drawer */}
       <CustomerDetailDrawer
@@ -2664,544 +1934,38 @@ export default function CampaignDetailPage() {
       <SMSModal open={smsModalVisible} onClose={() => setSmsModalVisible(false)} customer={selectedCustomer} />
 
       {/* Edit Campaign Modal */}
-      <AdaptiveModal
-        intent="form"
-        className="nyc-campaign-edit-overlay"
-        title={
-          <div className="nyc-campaign-edit-title">
-            <span>Chỉnh sửa chiến dịch NYC:</span>
-            <span className="nyc-campaign-edit-title-name">{campaign?.name}</span>
-          </div>
-        }
+      <CampaignEditModal
         open={editCampaignModalVisible}
         onCancel={() => setEditCampaignModalVisible(false)}
-        footer={null}
-        width={720}
-        destroyOnHidden
-      >
-        <Form
-          form={editForm}
-          layout="vertical"
-          onFinish={handleEditSubmit}
-          onFinishFailed={(errorInfo) => {
-            console.error('Campaign form validation failed:', errorInfo);
-            message.error('Vui lòng kiểm tra lại các thông tin bắt buộc (Tên chiến dịch, Điểm chạm, Ưu đãi)');
-          }}
-          className="mt-4 nyc-campaign-edit-form"
-        >
-          <Tabs
-            activeKey={editModalTab}
-            onChange={setEditModalTab}
-            className="campaign-minimal-tabs nyc-campaign-edit-tabs"
-            items={[
-              {
-                key: 'info',
-                label: (
-                  <span className="flex items-center gap-1.5 text-sm font-medium">
-                    <SettingOutlined className="text-slate-500" /> Thông tin
-                  </span>
-                ),
-                children: (
-                  <div className="pt-2 nyc-campaign-edit-info">
-                    <ResponsiveFormGrid columns={2}>
-                      <Form.Item
-                        name="name"
-                        label="Tên chiến dịch"
-                        rules={[{ required: true, message: 'Vui lòng nhập tên chiến dịch' }]}
-                      >
-                        <Input placeholder="VD: Chiến dịch NYC Tri ân Tháng 8" />
-                      </Form.Item>
-                      <Form.Item
-                        name="slug"
-                        label="Slug (Đường dẫn)"
-                        tooltip="Tùy chọn. Nếu để trống hệ thống sẽ tự sinh từ tên."
-                      >
-                        <Input placeholder="VD: tri-an-thang-8" />
-                      </Form.Item>
-                      <Form.Item name="dates" label="Thời gian diễn ra">
-                        <RangePicker
-                          style={{ width: '100%' }}
-                          format="DD/MM/YYYY"
-                          placeholder={['Ngày bắt đầu', 'Ngày kết thúc']}
-                        />
-                      </Form.Item>
-                      <Form.Item name="status" label="Trạng thái">
-                        <Select
-                          options={[
-                            { value: 'ACTIVE', label: 'ACTIVE (Hoạt động)' },
-                            { value: 'ENDED', label: 'ENDED (Đã kết thúc)' },
-                            { value: 'ARCHIVED', label: 'ARCHIVED (Lưu trữ)' },
-                          ]}
-                        />
-                      </Form.Item>
-                      <div className="responsive-form-field-full">
-                        <Form.Item name="description" label="Mô tả chiến dịch">
-                          <Input.TextArea
-                            rows={2}
-                            placeholder="Mô tả ngắn gọn về mục tiêu và quy định của chiến dịch..."
-                          />
-                        </Form.Item>
-                      </div>
-                      <div className="responsive-form-field-full">
-                        <Form.Item
-                          name="assignedStaffIds"
-                          label={
-                            <span className="inline-flex items-center gap-1.5">
-                              <TeamOutlined className="text-blue-500" />
-                              <span>Thành viên được phép truy cập (Team Booker)</span>
-                            </span>
-                          }
-                          tooltip="Chọn các nhân sự thuộc Team Booker được phép xem và thao tác trên chiến dịch này. Nếu để trống, tất cả nhân sự đều xem được."
-                        >
-                          <Select
-                            mode="multiple"
-                            allowClear
-                            showSearch
-                            loading={campaignFormOptionsLoading}
-                            placeholder="Chừa trống = Công Khai (Tất cả nhân sự xem được)"
-                            filterOption={vietnameseSearchFilter}
-                            optionFilterProp="label"
-                            notFoundContent={
-                              campaignFormOptionsLoading
-                                ? 'Đang tải thành viên...'
-                                : campaignFormOptionsError || 'Không có nhân sự hoạt động'
-                            }
-                            style={{ width: '100%' }}
-                            tagRender={(props) => {
-                              const { label, closable, onClose } = props;
-                              const cleanLabel = typeof label === 'string' ? label.split('(')[0].trim() : label;
-                              return (
-                                <Tag
-                                  color="blue"
-                                  closable={closable}
-                                  onClose={onClose}
-                                  style={{ marginRight: 4 }}
-                                  className="rounded-md font-medium text-xs py-0.5 px-2 inline-flex items-center gap-1"
-                                >
-                                  <UserOutlined className="text-blue-500 text-xs" />
-                                  <span>{cleanLabel}</span>
-                                </Tag>
-                              );
-                            }}
-                            options={staffList.map((s) => ({
-                              value: s.id,
-                              label: `${s.displayName || s.username} (${s.username})`,
-                            }))}
-                          />
-                        </Form.Item>
-                      </div>
-                    </ResponsiveFormGrid>
-                  </div>
-                ),
-              },
-              {
-                key: 'touchpoints',
-                label: (
-                  <span className="flex items-center gap-1.5 text-sm font-medium">
-                    <EnvironmentOutlined className="text-rose-500 text-base" /> Điểm chạm
-                  </span>
-                ),
-                children: (
-                  <div className="pt-2">
-                    <Form.List name="touchpoints">
-                      {(fields, { add, remove }) => (
-                        <div>
-                          {fields.length > 0 && (
-                            <div className="campaign-edit-list-header campaign-edit-touchpoint-header flex items-center gap-2 px-1 py-1.5 mb-2 text-xs font-semibold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
-                              <div className="flex-1 min-w-[120px]">Tên điểm chạm</div>
-                              <div className="w-[140px] text-center">Biểu tượng (Icon)</div>
-                              <div className="w-16 text-center">Từ ngày</div>
-                              <div className="w-16 text-center">Đến ngày</div>
-                              <div className="w-[95px] text-center">Màu sắc</div>
-                              <div className="w-8 text-center">Xóa</div>
-                            </div>
-                          )}
-                          <div className="space-y-2">
-                            {fields.map(({ key, name, ...restField }) => (
-                              <div
-                                key={key}
-                                className="campaign-edit-list-row campaign-edit-touchpoint-row flex items-center gap-2 py-0.5"
-                              >
-                                <Form.Item {...restField} name={[name, 'id']} hidden>
-                                  <Input />
-                                </Form.Item>
-                                <Form.Item {...restField} name={[name, 'key']} hidden>
-                                  <Input />
-                                </Form.Item>
-                                <div className="campaign-edit-field campaign-edit-touchpoint-label flex-1 min-w-[120px]">
-                                  <Form.Item
-                                    {...restField}
-                                    name={[name, 'label']}
-                                    rules={[{ required: true, message: 'Nhập tên' }]}
-                                    style={{ marginBottom: 0 }}
-                                  >
-                                    <Input placeholder="Tên chạm (VD: Chạm D1)" />
-                                  </Form.Item>
-                                </div>
-                                <div className="campaign-edit-field campaign-edit-touchpoint-icon w-[140px]">
-                                  <Form.Item {...restField} name={[name, 'icon']} style={{ marginBottom: 0 }}>
-                                    <TouchpointIconPicker size="small" />
-                                  </Form.Item>
-                                </div>
-                                <div className="campaign-edit-field campaign-edit-touchpoint-days-min w-16">
-                                  <Form.Item
-                                    {...restField}
-                                    name={[name, 'daysMin']}
-                                    rules={[{ required: true, message: 'Nhập ngày' }]}
-                                    style={{ marginBottom: 0 }}
-                                  >
-                                    <InputNumber min={0} placeholder="D+" style={{ width: '100%' }} />
-                                  </Form.Item>
-                                </div>
-                                <div className="campaign-edit-field campaign-edit-touchpoint-days-max w-16">
-                                  <Form.Item {...restField} name={[name, 'daysMax']} style={{ marginBottom: 0 }}>
-                                    <InputNumber min={0} placeholder="D+" style={{ width: '100%' }} />
-                                  </Form.Item>
-                                </div>
-                                <div className="campaign-edit-field campaign-edit-touchpoint-color w-[95px] flex justify-center">
-                                  <Form.Item {...restField} name={[name, 'color']} style={{ marginBottom: 0 }}>
-                                    <GoogleSheetColorPicker size="small" />
-                                  </Form.Item>
-                                </div>
-                                <div className="campaign-edit-field campaign-edit-touchpoint-delete w-8 flex justify-center">
-                                  <Button
-                                    type="text"
-                                    danger
-                                    icon={<MinusCircleOutlined />}
-                                    onClick={() => remove(name)}
-                                  />
-                                </div>
-                              </div>
-                            ))}
-                            <Button
-                              type="dashed"
-                              onClick={() => {
-                                const nextIdx = fields.length;
-                                const defaultIcon =
-                                  nextIdx === 0
-                                    ? 'Smile'
-                                    : nextIdx === 1
-                                      ? 'Handshake'
-                                      : nextIdx === 2
-                                        ? 'Kiss'
-                                        : nextIdx === 3
-                                          ? 'Heart'
-                                          : nextIdx === 4
-                                            ? 'BedDouble'
-                                            : 'Sparkles';
-                                const defaultLabel = `Chạm D${nextIdx === 0 ? 1 : nextIdx === 1 ? 3 : nextIdx === 2 ? 7 : nextIdx === 3 ? 14 : nextIdx === 4 ? 21 : (nextIdx + 1) * 5}`;
-                                const defaultDays =
-                                  nextIdx === 0
-                                    ? 1
-                                    : nextIdx === 1
-                                      ? 3
-                                      : nextIdx === 2
-                                        ? 7
-                                        : nextIdx === 3
-                                          ? 14
-                                          : nextIdx === 4
-                                            ? 21
-                                            : (nextIdx + 1) * 5;
-                                add({
-                                  label: defaultLabel,
-                                  color: '#3b82f6',
-                                  daysMin: defaultDays,
-                                  daysMax: defaultDays,
-                                  icon: defaultIcon,
-                                });
-                              }}
-                              block
-                              icon={<PlusOutlined />}
-                              className="rounded-xl h-10 border-dashed mt-2"
-                            >
-                              Thêm điểm chạm mới
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </Form.List>
-                  </div>
-                ),
-              },
-              {
-                key: 'promotions',
-                label: (
-                  <span className="flex items-center gap-1.5 text-sm font-medium">
-                    <GiftOutlined className="text-amber-500 text-base" /> Ưu đãi
-                  </span>
-                ),
-                children: (
-                  <div className="pt-2">
-                    <Form.List name="promotions">
-                      {(fields, { add, remove }) => (
-                        <div>
-                          {fields.length > 0 && (
-                            <div className="campaign-edit-list-header campaign-edit-promotion-header flex items-center gap-2 px-1 py-1.5 mb-2 text-xs font-semibold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
-                              <div className="flex-1">Tên ưu đãi</div>
-                              <div className="w-36 text-left">Loại ưu đãi</div>
-                              <div className="w-24 text-center">Giá trị</div>
-                              <div className="w-28 text-left">Mã voucher</div>
-                              <div className="w-8 text-center">Xóa</div>
-                            </div>
-                          )}
-                          <div className="space-y-2">
-                            {fields.map(({ key, name, ...restField }) => (
-                              <React.Fragment key={key}>
-                                <div className="campaign-edit-list-row campaign-edit-promotion-row flex items-center gap-2 py-0.5">
-                                  <div className="campaign-edit-field campaign-edit-promotion-name flex-1">
-                                    <Form.Item
-                                      {...restField}
-                                      name={[name, 'name']}
-                                      rules={[{ required: true, message: 'Nhập tên' }]}
-                                      style={{ marginBottom: 0 }}
-                                    >
-                                      <Input placeholder="Tên ưu đãi (VD: Giảm 50%)" />
-                                    </Form.Item>
-                                  </div>
-                                  <div className="campaign-edit-field campaign-edit-promotion-type w-36">
-                                    <Form.Item
-                                      {...restField}
-                                      name={[name, 'type']}
-                                      rules={[{ required: true, message: 'Chọn loại' }]}
-                                      style={{ marginBottom: 0 }}
-                                    >
-                                      <Select
-                                        options={[
-                                          { value: 'PERCENT_DISCOUNT', label: 'Giảm %' },
-                                          { value: 'FIXED_DISCOUNT', label: 'Giảm số tiền' },
-                                          { value: 'FIXED_FINAL_PRICE', label: 'Giá đồng nhất' },
-                                          { value: 'FREE_SERVICE', label: 'Tặng dịch vụ' },
-                                          { value: 'FREE_PRODUCT', label: 'Tặng sản phẩm' },
-                                        ]}
-                                      />
-                                    </Form.Item>
-                                  </div>
-                                  <div className="campaign-edit-field campaign-edit-promotion-value w-24">
-                                    <Form.Item
-                                      {...restField}
-                                      name={[name, 'value']}
-                                      rules={[{ required: true, message: 'Nhập giá trị' }]}
-                                      style={{ marginBottom: 0 }}
-                                    >
-                                      <InputNumber min={0} placeholder="Giá trị" style={{ width: '100%' }} />
-                                    </Form.Item>
-                                  </div>
-                                  <div className="campaign-edit-field campaign-edit-promotion-code w-28">
-                                    <Form.Item {...restField} name={[name, 'code']} style={{ marginBottom: 0 }}>
-                                      <Input placeholder="Mã Code" />
-                                    </Form.Item>
-                                  </div>
-                                  <div className="campaign-edit-field campaign-edit-promotion-delete w-8 flex justify-center">
-                                    <Button
-                                      type="text"
-                                      danger
-                                      icon={<MinusCircleOutlined />}
-                                      onClick={() => remove(name)}
-                                    />
-                                  </div>
-                                </div>
-                                <Form.Item
-                                  noStyle
-                                  shouldUpdate={(previous, current) =>
-                                    previous.promotions?.[name]?.type !== current.promotions?.[name]?.type ||
-                                    previous.promotions?.[name]?.eligibleServiceSelection !==
-                                      current.promotions?.[name]?.eligibleServiceSelection ||
-                                    previous.promotions?.[name]?.value !== current.promotions?.[name]?.value
-                                  }
-                                >
-                                  {({ getFieldValue }) => {
-                                    const selection = splitFixedFinalPriceSelection(
-                                      getFieldValue(['promotions', name, 'eligibleServiceSelection'])
-                                    );
-                                    const scope = getFixedFinalPriceScopeSummary(
-                                      selection.eligibleServiceIds,
-                                      selection.eligibleServiceCategoryKeys,
-                                      fixedFinalPriceServices,
-                                      fixedFinalPriceCategories
-                                    );
-                                    return getFieldValue(['promotions', name, 'type']) === 'FIXED_FINAL_PRICE' ? (
-                                      <div className="ml-1 mr-10 mb-2 rounded-lg border border-violet-200 bg-violet-50/70 p-2.5 dark:border-violet-500/30 dark:bg-violet-500/10">
-                                        <Form.Item
-                                          {...restField}
-                                          name={[name, 'eligibleServiceSelection']}
-                                          label="Dịch vụ / thể loại nối mi áp dụng"
-                                          rules={[
-                                            {
-                                              required: true,
-                                              type: 'array',
-                                              min: 1,
-                                              message: 'Chọn ít nhất một dịch vụ lẻ nối mi hoặc thể loại.',
-                                            },
-                                          ]}
-                                          style={{ marginBottom: 0 }}
-                                        >
-                                          <Select
-                                            mode="multiple"
-                                            allowClear
-                                            showSearch
-                                            loading={campaignFormOptionsLoading}
-                                            filterOption={vietnameseSearchFilter}
-                                            optionFilterProp="label"
-                                            placeholder="Chọn thể loại (VD: HyperLight) hoặc dịch vụ cụ thể"
-                                            notFoundContent={
-                                              campaignFormOptionsLoading
-                                                ? 'Đang tải dịch vụ từ Bộ lọc nâng cao...'
-                                                : campaignFormOptionsError ||
-                                                  'Không có dịch vụ lẻ nối mi hoặc thể loại hợp lệ'
-                                            }
-                                            options={[
-                                              {
-                                                label: 'Thể loại dịch vụ',
-                                                options: fixedFinalPriceCategories.map((category) => ({
-                                                  value: `category:${category.key}`,
-                                                  label: `${category.label} — ${category.serviceIds.length} dịch vụ, giá từ ${category.minimumPrice.toLocaleString('vi-VN')}đ`,
-                                                })),
-                                              },
-                                              {
-                                                label: 'Dịch vụ cụ thể',
-                                                options: fixedFinalPriceServices.map((service) => ({
-                                                  value: String(service.id),
-                                                  label: `${service.name} — ${service.price.toLocaleString('vi-VN')}đ`,
-                                                })),
-                                              },
-                                            ]}
-                                          />
-                                        </Form.Item>
-                                        <Text type="secondary" className="mt-1 block text-xs">
-                                          Chọn HyperLight sẽ áp dụng toàn bộ biến thể nối mi Normal của HyperLight. Dùng
-                                          cùng catalog với Bộ lọc nâng cao ở Tất cả KH; giá chốt không cộng dồn ưu đãi
-                                          khác.
-                                        </Text>
-                                        {scope.minimumListedPrice !== null && (
-                                          <Text className="mt-1 block text-xs text-violet-700 dark:text-violet-200">
-                                            Phạm vi hiện tại: {scope.services.length} dịch vụ. Giá đồng nhất tối đa:{' '}
-                                            {scope.minimumListedPrice.toLocaleString('vi-VN')}đ.
-                                          </Text>
-                                        )}
-                                      </div>
-                                    ) : null;
-                                  }}
-                                </Form.Item>
-                              </React.Fragment>
-                            ))}
-                            <Button
-                              type="dashed"
-                              onClick={() => add({ name: 'Ưu đãi mới', type: 'PERCENT_DISCOUNT', value: 50 })}
-                              block
-                              icon={<PlusOutlined />}
-                              className="rounded-xl h-10 border-dashed mt-2"
-                            >
-                              Thêm ưu đãi mới
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </Form.List>
-                  </div>
-                ),
-              },
-            ]}
-          />
-
-          <AdaptiveOverlayFooter className="nyc-campaign-edit-actions">
-            <Button onClick={() => setEditCampaignModalVisible(false)}>Hủy</Button>
-            <Button type="primary" htmlType="submit" loading={editingSubmitting}>
-              Lưu thay đổi
-            </Button>
-          </AdaptiveOverlayFooter>
-        </Form>
-      </AdaptiveModal>
+        onSubmit={handleEditSubmit}
+        form={editForm}
+        campaign={campaign}
+        submitting={editingSubmitting}
+        activeTab={editModalTab}
+        onTabChange={setEditModalTab}
+        staffList={staffList}
+        campaignFormOptionsLoading={campaignFormOptionsLoading}
+        campaignFormOptionsError={campaignFormOptionsError}
+        fixedFinalPriceCategories={fixedFinalPriceCategories}
+        fixedFinalPriceServices={fixedFinalPriceServices}
+      />
 
       {/* RANDOM SELECTOR MODAL */}
-      <Modal
-        title={
-          <span style={{ color: '#D4A84B', fontSize: '18px', fontWeight: 'bold' }}>Chọn Ngẫu Nhiên Khách Hàng</span>
-        }
+      <RandomSelectModal
         open={randomModalVisible}
         onCancel={() => setRandomModalVisible(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setRandomModalVisible(false)}>
-            Hủy
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            loading={randomLoading}
-            onClick={handleRandomSelect}
-            style={{ backgroundColor: '#D4A84B', borderColor: '#D4A84B', color: '#000', fontWeight: 'bold' }}
-          >
-            Chọn
-          </Button>,
-        ]}
-      >
-        <div style={{ margin: '16px 0' }}>
-          <p style={{ color: token.colorTextDescription, marginBottom: '16px', fontSize: '13px' }}>
-            Hệ thống sẽ tự động tìm kiếm và chọn ngẫu nhiên các khách hàng thỏa mãn bộ lọc hiện tại của anh/chị.
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ color: token.colorText, fontWeight: 500 }}>Số lượng khách hàng:</span>
-                <Input
-                  type="number"
-                  min={1}
-                  max={1000}
-                  placeholder="Nhập số..."
-                  value={randomCount}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === '') {
-                      setRandomCount('');
-                    } else {
-                      const num = parseInt(val, 10);
-                      setRandomCount(isNaN(num) ? '' : num);
-                    }
-                  }}
-                  style={{ width: '110px', borderRadius: '6px' }}
-                />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
-                <span style={{ fontSize: '12px', color: token.colorTextDescription }}>Preset chọn nhanh:</span>
-                {[10, 20, 50, 100, 200].map((preset) => (
-                  <Tag.CheckableTag
-                    key={preset}
-                    checked={randomCount === preset}
-                    onChange={() => setRandomCount(preset)}
-                    style={{
-                      borderRadius: '12px',
-                      padding: '2px 10px',
-                      fontSize: '13px',
-                      cursor: 'pointer',
-                      border: `1px solid ${
-                        randomCount === preset ? '#D4A84B' : themeMode === 'dark' ? '#434343' : '#d9d9d9'
-                      }`,
-                    }}
-                  >
-                    {preset} KH
-                  </Tag.CheckableTag>
-                ))}
-              </div>
-            </div>
-
-            <Divider style={{ margin: '8px 0' }} />
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <Checkbox checked={excludeAssigned} onChange={(e) => setExcludeAssigned(e.target.checked)}>
-                Chỉ chọn khách hàng chưa được phân bổ Booker
-              </Checkbox>
-              <Checkbox
-                checked={excludeUnconfirmedAllocation}
-                onChange={(e) => setExcludeUnconfirmedAllocation(e.target.checked)}
-              >
-                Bỏ khách hàng đã phân bổ, chưa xác nhận
-              </Checkbox>
-              <Checkbox checked={excludeFutureBooking} onChange={(e) => setExcludeFutureBooking(e.target.checked)}>
-                Bỏ khách hàng đã có lịch book tương lai
-              </Checkbox>
-            </div>
-          </div>
-        </div>
-      </Modal>
+        onSubmit={handleRandomSelect}
+        loading={randomLoading}
+        randomCount={randomCount}
+        onRandomCountChange={setRandomCount}
+        excludeAssigned={excludeAssigned}
+        onExcludeAssignedChange={setExcludeAssigned}
+        excludeUnconfirmedAllocation={excludeUnconfirmedAllocation}
+        onExcludeUnconfirmedAllocationChange={setExcludeUnconfirmedAllocation}
+        excludeFutureBooking={excludeFutureBooking}
+        onExcludeFutureBookingChange={setExcludeFutureBooking}
+        themeMode={themeMode}
+      />
 
       {/* Shared Pool Immutable Audit Logs Drawer */}
       <SharedPoolAuditDrawer

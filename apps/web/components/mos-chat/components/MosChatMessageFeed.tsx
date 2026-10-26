@@ -1127,9 +1127,8 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = ({
                   {/* Inline Task & Reminder Card (mOS Mission Inspired) */}
                   {linkedTask && renderTaskCard(linkedTask, m, 'inline')}
 
-                  {/* Live mOS Mission Card (Synced 2-way with AG & mOS Mission) */}
-                  {(m.mission || linkedTask?.mission) &&
-                    renderLiveMissionCard((m.mission || linkedTask?.mission)!, m, 'inline')}
+                  {/* Live mOS Mission Card (Only when not already embedded inside linkedTask) */}
+                  {!linkedTask && m.mission && renderLiveMissionCard(m.mission, m, 'inline')}
 
                   {/* Interactive Operational Workflow Card (Cash Advance -> Thu Chi, Inventory Audit -> mOS Kho) */}
                   {(m.workflow ||

@@ -18,6 +18,7 @@ import {
 import {
   MessageSquare,
   MessageSquareReply,
+  Flag,
   AlarmClock,
   AlarmClockPlus,
   Calendar,
@@ -4693,7 +4694,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   );
 
   const handleOpenThread = useCallback(
-    (msgId: string, convIdOverride?: string) => {
+    (msgId: string, convIdOverride?: string, options?: { autoFocus?: boolean }) => {
       setActiveThreadMsgId(msgId);
       setThreadOpen(true);
       if (isMobile) {
@@ -4713,6 +4714,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         markThreadReadOptimisticAndSync(targetConvId, msgId);
       }
       scrollToChatBottom('thread', 'auto');
+      if (options?.autoFocus !== false) {
+        setTimeout(() => {
+          threadInputRef.current?.focus();
+        }, 120);
+      }
     },
     [
       isMobile,
@@ -6108,7 +6114,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const renderLiveMissionCard = (
     mission: MosChatMissionSummary,
     msg?: MosChatMessage | null,
-    mode: 'thread' | 'inline' | 'task' = 'inline'
+    mode: 'thread' | 'inline' | 'task' | 'embedded' = 'inline'
   ) => {
     const stageColors: Record<
       MosChatMissionSummary['stage'],
@@ -6175,11 +6181,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       <div
         data-no-chat-autofocus="true"
         onClick={(e) => e.stopPropagation()}
-        className={`rounded-xl p-2.5 text-left space-y-2 transition-all ${
+        className={`rounded-xl ${mode === 'embedded' ? 'p-2 mt-1' : 'p-2.5'} text-left space-y-2 transition-all ${
           mode === 'inline' ? 'mt-1.5 w-full max-w-[88%]' : 'w-full'
         }`}
         style={{
-          background: palette.bg,
+          background: mode === 'embedded' ? (isDark ? 'rgba(0, 0, 0, 0.22)' : 'rgba(255, 255, 255, 0.6)') : palette.bg,
           border: `1px solid ${palette.border}`,
           borderLeft: `3.5px solid ${palette.accent}`,
         }}
@@ -6210,7 +6216,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
-            {mode !== 'thread' && msg && (
+            {mode !== 'thread' && mode !== 'embedded' && msg && (
               <Tooltip title="Mở luồng trao đổi & theo dõi tiến độ mOS Mission">
                 <button
                   type="button"
@@ -6250,10 +6256,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           </div>
         </div>
 
-        {/* Mission Title */}
-        <div className="text-[12.5px] font-extrabold leading-snug" style={{ color: token.colorText }}>
-          {mission.title}
-        </div>
+        {/* Mission Title (omitted in embedded mode) */}
+        {mode !== 'embedded' && (
+          <div className="text-[12.5px] font-extrabold leading-snug" style={{ color: token.colorText }}>
+            {mission.title}
+          </div>
+        )}
 
         {/* 4-Step Human Progress Bar */}
         <div className="grid grid-cols-4 gap-1 pt-0.5">
@@ -6473,41 +6481,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     let priorityBg = 'rgba(59, 130, 246, 0.15)';
     let priorityColor = '#60a5fa';
     let priorityBorder = 'rgba(59, 130, 246, 0.35)';
+    let priorityCode = 'P2';
     let priorityLabel = 'P2 · Thường';
 
     if (task.priority === 'URGENT') {
       priorityBg = 'rgba(239, 68, 68, 0.18)';
       priorityColor = '#f87171';
       priorityBorder = 'rgba(239, 68, 68, 0.4)';
+      priorityCode = 'P0';
       priorityLabel = 'P0 · Khẩn cấp';
     } else if (task.priority === 'HIGH') {
       priorityBg = 'rgba(245, 158, 11, 0.18)';
       priorityColor = '#fbbf24';
       priorityBorder = 'rgba(245, 158, 11, 0.4)';
+      priorityCode = 'P1';
       priorityLabel = 'P1 · Quan trọng';
-    }
-
-    // Status badge styling
-    let statusBg = 'rgba(100, 116, 139, 0.18)';
-    let statusColor = '#94a3b8';
-    let statusBorder = 'rgba(100, 116, 139, 0.35)';
-    let statusLabel = 'ĐANG THỰC HIỆN';
-
-    if (isDone) {
-      statusBg = 'rgba(16, 185, 129, 0.18)';
-      statusColor = '#34d399';
-      statusBorder = 'rgba(16, 185, 129, 0.4)';
-      statusLabel = 'ĐÃ HOÀN THÀNH';
-    } else if (deadlineInfo?.isOverdue) {
-      statusBg = 'rgba(239, 68, 68, 0.2)';
-      statusColor = '#f87171';
-      statusBorder = 'rgba(239, 68, 68, 0.45)';
-      statusLabel = 'QUÁ HẠN';
-    } else if (deadlineInfo?.isDueSoon) {
-      statusBg = 'rgba(245, 158, 11, 0.2)';
-      statusColor = '#fbbf24';
-      statusBorder = 'rgba(245, 158, 11, 0.45)';
-      statusLabel = 'SẮP ĐẾN HẠN';
     }
 
     const isCreator = Boolean(
@@ -6515,29 +6503,51 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     );
     const canApproveNegotiation = isCreator || isStrictDannySuperAdmin;
     const taskConv = conversations.find((c) => c.id === task.conversationId);
+    const taskMission = task.mission || sourceMsg?.mission || null;
+    const threadReplyCount = sourceMsg?.thread?.length || 0;
 
     return (
       <div
         key={task.id}
-        className={`rounded-xl transition-all ${mode === 'inline' ? 'mt-2 max-w-[92%]' : 'w-full'} p-3 space-y-2.5 text-left`}
+        className={`group/task relative rounded-xl transition-all ${
+          mode === 'inline' ? 'mt-2 max-w-[92%]' : 'w-full'
+        } p-3 space-y-2 text-left`}
         style={{
           background: isDark ? 'rgba(15, 23, 42, 0.72)' : 'rgba(255, 255, 255, 0.95)',
-          border: `1.5px solid ${isDone ? 'rgba(16, 185, 129, 0.4)' : deadlineInfo?.isOverdue ? 'rgba(239, 68, 68, 0.45)' : 'rgba(212, 168, 75, 0.4)'}`,
-          boxShadow: isDark ? '0 4px 18px rgba(0, 0, 0, 0.35)' : '0 4px 14px rgba(15, 23, 42, 0.06)',
-          opacity: isDone ? 0.85 : 1,
+          border: `1.5px solid ${
+            isDone
+              ? 'rgba(16, 185, 129, 0.3)'
+              : deadlineInfo?.isOverdue
+                ? 'rgba(239, 68, 68, 0.45)'
+                : isDark
+                  ? 'rgba(255, 255, 255, 0.08)'
+                  : 'rgba(0, 0, 0, 0.08)'
+          }`,
+          boxShadow: isDark ? '0 3px 12px rgba(0, 0, 0, 0.3)' : '0 2px 8px rgba(15, 23, 42, 0.05)',
+          opacity: isDone ? 0.75 : 1,
         }}
       >
-        {/* Header: Task Code + Space Badge + Priority + Status Badge + Done Toggle */}
+        {/* Header: Done Checkbox + Task Code + Space Badge + Priority Icon + Overdue Badge + Thread Button */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span
-              className="px-2 py-0.5 rounded-md text-[10.5px] font-black tracking-wider uppercase tabular-nums"
-              style={{
-                background: isDark ? 'rgba(212, 168, 75, 0.18)' : '#fef3c7',
-                color: isDark ? '#fbbf24' : '#b45309',
-                border: '1px solid rgba(212, 168, 75, 0.35)',
-              }}
-            >
+          <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+            {/* Minimalist Circular Done Checkbox */}
+            <Tooltip title={isDone ? 'Mở lại công việc' : 'Đánh dấu hoàn thành'}>
+              <button
+                type="button"
+                aria-label={isDone ? 'Mở lại công việc' : 'Đánh dấu hoàn thành'}
+                onClick={() => handleToggleTaskDone(task.id)}
+                className={`w-5 h-5 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                  isDone
+                    ? 'bg-emerald-500 text-white shadow-xs'
+                    : 'border border-slate-500/40 hover:border-emerald-500 hover:bg-emerald-500/10 text-transparent hover:text-emerald-500'
+                }`}
+              >
+                <Check size={11} strokeWidth={isDone ? 3 : 2} />
+              </button>
+            </Tooltip>
+
+            {/* Task Code */}
+            <span className="font-mono text-[10.5px] font-black tracking-wider uppercase tabular-nums text-slate-400 select-all">
               {taskCode}
             </span>
 
@@ -6552,228 +6562,203 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                       selectConversation(task.conversationId);
                     }
                   }}
-                  className="px-2 py-0.5 rounded-md text-[10px] font-extrabold inline-flex items-center gap-1 cursor-pointer transition-all hover:opacity-85"
+                  className="px-1.5 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-1 cursor-pointer transition-all hover:opacity-85"
                   style={{
                     background:
                       taskConv.type === 'space'
                         ? isDark
-                          ? 'rgba(59, 130, 246, 0.18)'
+                          ? 'rgba(59, 130, 246, 0.15)'
                           : '#eff6ff'
                         : isDark
-                          ? 'rgba(168, 85, 247, 0.18)'
+                          ? 'rgba(168, 85, 247, 0.15)'
                           : '#faf5ff',
                     color:
                       taskConv.type === 'space' ? (isDark ? '#93c5fd' : '#2563eb') : isDark ? '#c084fc' : '#7e22ce',
-                    border: `1px solid ${
-                      taskConv.type === 'space'
-                        ? isDark
-                          ? 'rgba(59, 130, 246, 0.35)'
-                          : 'rgba(59, 130, 246, 0.25)'
-                        : isDark
-                          ? 'rgba(168, 85, 247, 0.35)'
-                          : 'rgba(168, 85, 247, 0.25)'
-                    }`,
                   }}
                 >
-                  {taskConv.type === 'space' ? <Hash size={10} /> : <MessageSquare size={10} />}
-                  <span className="truncate max-w-[120px]">
+                  {taskConv.type === 'space' ? <Hash size={9} /> : <MessageSquare size={9} />}
+                  <span className="truncate max-w-[110px]">
                     {taskConv.name || task.conversationName || 'Hội thoại'}
                   </span>
                 </button>
               </Tooltip>
             )}
 
-            <span
-              className="px-2 py-0.5 rounded-md text-[10px] font-extrabold"
-              style={{
-                background: priorityBg,
-                color: priorityColor,
-                border: `1px solid ${priorityBorder}`,
-              }}
-            >
-              {priorityLabel}
-            </span>
-
-            <span
-              className="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wide flex items-center gap-1"
-              style={{
-                background: statusBg,
-                color: statusColor,
-                border: `1px solid ${statusBorder}`,
-              }}
-            >
+            {/* Priority Flag Icon Pill */}
+            <Tooltip title={`Mức ưu tiên: ${priorityLabel}`}>
               <span
-                className="w-1.5 h-1.5 rounded-full"
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-extrabold cursor-default"
                 style={{
-                  background: statusColor,
-                  boxShadow:
-                    !isDone && (deadlineInfo?.isOverdue || deadlineInfo?.isDueSoon) ? `0 0 6px ${statusColor}` : 'none',
+                  background: priorityBg,
+                  color: priorityColor,
+                  border: `1px solid ${priorityBorder}`,
                 }}
-              />
-              {statusLabel}
-            </span>
+              >
+                <Flag size={9} fill={priorityColor} />
+                <span>{priorityCode}</span>
+              </span>
+            </Tooltip>
+
+            {/* Overdue alert badge */}
+            {deadlineInfo?.isOverdue && !isDone && (
+              <span className="px-1.5 py-0.5 rounded text-[9.5px] font-extrabold uppercase tracking-wide bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
+                QUÁ HẠN
+              </span>
+            )}
 
             {task.archived && (
-              <span className="px-1.5 py-0.5 rounded text-[9.5px] font-bold bg-slate-500/20 text-slate-400 border border-slate-500/30">
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-500/20 text-slate-400 border border-slate-500/30">
                 Lưu trữ
               </span>
             )}
           </div>
 
+          {/* Header Right: Instant Reply Thread Button with auto-focus */}
           <div className="flex items-center gap-1.5 shrink-0">
-            {mode !== 'thread' && sourceMsg && (
-              <Tooltip title="Mở luồng tin nhắn trao đổi">
+            {mode !== 'thread' && (sourceMsg || task.sourceMessageId || task.conversationId) && (
+              <Tooltip title="Mở luồng trao đổi & gõ phản hồi tức thì">
                 <button
                   type="button"
                   onClick={() => {
-                    if (task.conversationId && task.conversationId !== activeConversation?.id) {
-                      selectConversation(task.conversationId);
+                    const targetConvId = task.conversationId;
+                    if (targetConvId && targetConvId !== activeConversation?.id) {
+                      selectConversation(targetConvId);
                     }
-                    handleOpenThread(sourceMsg.id);
+                    const msgId = sourceMsg?.id || task.sourceMessageId;
+                    if (msgId) {
+                      handleOpenThread(msgId, targetConvId, { autoFocus: true });
+                    }
                   }}
-                  className="h-6 px-2 rounded-md inline-flex items-center gap-1 text-[10.5px] font-bold cursor-pointer hover:opacity-90"
+                  className="h-6 px-2 rounded-md inline-flex items-center gap-1 text-[10.5px] font-bold cursor-pointer transition-all hover:bg-amber-500/15 text-slate-300 hover:text-amber-400"
                   style={{
                     background: surfaceRaised,
                     border: `1px solid ${borderColor}`,
-                    color: token.colorText,
                   }}
                 >
-                  <MessageSquareReply size={11} className="text-amber-400" />
-                  <span>Luồng</span>
+                  <MessageSquareReply size={12} className="text-amber-400" />
+                  {threadReplyCount > 0 ? (
+                    <span className="text-[10px] tabular-nums font-bold text-amber-400">{threadReplyCount}</span>
+                  ) : (
+                    <span className="text-[10px] opacity-80">Luồng</span>
+                  )}
                 </button>
               </Tooltip>
             )}
-
-            <Tooltip title={isDone ? 'Mở lại công việc' : 'Đánh dấu hoàn thành'}>
-              <button
-                type="button"
-                aria-label={isDone ? 'Mở lại công việc' : 'Đánh dấu hoàn thành'}
-                onClick={() => handleToggleTaskDone(task.id)}
-                className="h-6 px-2.5 rounded-md inline-flex items-center gap-1.5 text-[11px] font-extrabold cursor-pointer transition-all"
-                style={{
-                  background: isDone ? '#10b981' : isDark ? 'rgba(16, 185, 129, 0.15)' : '#ecfdf5',
-                  color: isDone ? '#fff' : '#059669',
-                  border: `1.5px solid ${isDone ? '#10b981' : 'rgba(16, 185, 129, 0.4)'}`,
-                }}
-              >
-                <Check size={12} strokeWidth={isDone ? 3 : 2} />
-                <span>{isDone ? 'Đã xong' : 'Hoàn thành'}</span>
-              </button>
-            </Tooltip>
           </div>
         </div>
 
         {/* Task Title */}
         <div
-          className={`text-[13px] font-bold leading-snug ${isDone ? 'line-through opacity-70' : ''}`}
+          className={`text-[13px] font-semibold leading-snug ${isDone ? 'line-through opacity-65' : ''}`}
           style={{ color: token.colorText }}
         >
           {task.title}
         </div>
 
-        {/* People Flow (Creator -> Assigner -> Assignee) */}
+        {/* Assignee-centric & Meta Row (People + Deadline) */}
         {(() => {
           const creator = task.sourceAuthorName || task.creatorName || 'Hệ thống';
           const assigner = task.assignerName || task.creatorName || task.sourceAuthorName || 'Hệ thống';
           const assignee = task.assigneeName || 'Chung';
+          const isSelfAssigned = creator === assignee && assigner === assignee;
 
           return (
-            <div className="flex items-center gap-2.5 text-[11px] text-slate-400 flex-wrap py-0.5">
-              <div className="flex items-center gap-1.5" title={`Người tạo: ${creator}`}>
-                <PenLine size={12} className="text-indigo-400 shrink-0" />
-                <span className="opacity-70 text-[10.5px]">Tạo:</span>
-                {renderUserAvatarNode({
-                  name: creator,
-                  sizeClass: 'w-[18px] h-[18px]',
-                  textSizeClass: 'text-[8.5px]',
-                  roundedClass: 'rounded-full',
-                  bgColor: '#6366f1',
-                })}
-                <span className="font-semibold text-slate-300">{creator}</span>
+            <div className="flex items-center justify-between gap-2 flex-wrap text-[11px] pt-0.5">
+              {/* Left: Assignee + Sender */}
+              <div className="flex items-center gap-1.5 text-slate-400 min-w-0">
+                <div className="flex items-center gap-1.5" title={`Người nhận việc: ${assignee}`}>
+                  {renderUserAvatarNode({
+                    staffId: task.assigneeId,
+                    name: assignee,
+                    sizeClass: 'w-[18px] h-[18px]',
+                    textSizeClass: 'text-[8.5px]',
+                    roundedClass: 'rounded-full',
+                    bgColor: '#d97706',
+                  })}
+                  <span className="font-semibold text-amber-400 truncate max-w-[130px]">{assignee}</span>
+                </div>
+
+                {!isSelfAssigned && (
+                  <span
+                    className="text-[10.5px] text-slate-400 opacity-75 truncate max-w-[110px]"
+                    title={`Giao bởi: ${assigner}`}
+                  >
+                    từ {assigner}
+                  </span>
+                )}
               </div>
-              <span className="text-slate-600 select-none">→</span>
-              <div className="flex items-center gap-1.5" title={`Người giao: ${assigner}`}>
-                <Send size={11} className="text-sky-400 shrink-0" />
-                <span className="opacity-70 text-[10.5px]">Giao:</span>
-                {renderUserAvatarNode({
-                  staffId: task.assignerId,
-                  name: assigner,
-                  sizeClass: 'w-[18px] h-[18px]',
-                  textSizeClass: 'text-[8.5px]',
-                  roundedClass: 'rounded-full',
-                  bgColor: '#0284c7',
-                })}
-                <span className="font-semibold text-slate-300">{assigner}</span>
-              </div>
-              <span className="text-slate-600 select-none">→</span>
-              <div className="flex items-center gap-1.5" title={`Người nhận: ${assignee}`}>
-                <UserCheck size={12} className="text-amber-400 shrink-0" />
-                <span className="opacity-70 text-[10.5px]">Nhận:</span>
-                {renderUserAvatarNode({
-                  staffId: task.assigneeId,
-                  name: assignee,
-                  sizeClass: 'w-[18px] h-[18px]',
-                  textSizeClass: 'text-[8.5px]',
-                  roundedClass: 'rounded-full',
-                  bgColor: '#d97706',
-                })}
-                <span className="font-semibold text-amber-400">{assignee}</span>
+
+              {/* Right: Deadline & Reminder */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {deadlineInfo ? (
+                  <Tooltip title={`Hạn chót: ${dayjs(task.deadline).format('HH:mm DD/MM/YYYY')}`}>
+                    <div
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-bold tabular-nums"
+                      style={{
+                        background: isDone
+                          ? 'rgba(16, 185, 129, 0.12)'
+                          : deadlineInfo.isOverdue
+                            ? 'rgba(239, 68, 68, 0.16)'
+                            : deadlineInfo.isDueSoon
+                              ? 'rgba(245, 158, 11, 0.16)'
+                              : isDark
+                                ? 'rgba(139, 92, 246, 0.12)'
+                                : '#f5f3ff',
+                        color: isDone
+                          ? '#10b981'
+                          : deadlineInfo.isOverdue
+                            ? '#ef4444'
+                            : deadlineInfo.isDueSoon
+                              ? '#f59e0b'
+                              : '#8b5cf6',
+                        border: `1px solid ${
+                          isDone
+                            ? 'rgba(16, 185, 129, 0.3)'
+                            : deadlineInfo.isOverdue
+                              ? 'rgba(239, 68, 68, 0.35)'
+                              : deadlineInfo.isDueSoon
+                                ? 'rgba(245, 158, 11, 0.35)'
+                                : 'rgba(139, 92, 246, 0.35)'
+                        }`,
+                      }}
+                    >
+                      <CalendarClock size={11} className="shrink-0" />
+                      <span>{deadlineInfo.relative}</span>
+                    </div>
+                  </Tooltip>
+                ) : (
+                  !isDone && (
+                    <Tooltip title="Đặt hạn chót cho công việc">
+                      <button
+                        type="button"
+                        onClick={() => openEditTaskModal(task)}
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all cursor-pointer border border-transparent hover:border-white/10"
+                      >
+                        <CalendarClock size={11} className="opacity-60" />
+                        <span className="opacity-75">Đặt hạn</span>
+                      </button>
+                    </Tooltip>
+                  )
+                )}
+
+                {task.remindAt && !isDone && (
+                  <Tooltip title={`Nhắc hẹn: ${dayjs(task.remindAt).format('HH:mm DD/MM')}`}>
+                    <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/25 tabular-nums">
+                      <Bell size={10} />
+                      <span>{formatCountdown(task.remindAt, nowMs)}</span>
+                    </div>
+                  </Tooltip>
+                )}
               </div>
             </div>
           );
         })()}
 
-        {/* Deadline & Reminder visual row */}
-        <div className="flex items-center gap-2 flex-wrap pt-0.5">
-          {deadlineInfo ? (
-            <div
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold tabular-nums"
-              style={{
-                background: isDone
-                  ? 'rgba(16, 185, 129, 0.12)'
-                  : deadlineInfo.isOverdue
-                    ? 'rgba(239, 68, 68, 0.16)'
-                    : deadlineInfo.isDueSoon
-                      ? 'rgba(245, 158, 11, 0.16)'
-                      : isDark
-                        ? 'rgba(139, 92, 246, 0.15)'
-                        : '#f5f3ff',
-                color: isDone
-                  ? '#10b981'
-                  : deadlineInfo.isOverdue
-                    ? '#ef4444'
-                    : deadlineInfo.isDueSoon
-                      ? '#f59e0b'
-                      : '#8b5cf6',
-                border: `1px solid ${
-                  isDone
-                    ? 'rgba(16, 185, 129, 0.3)'
-                    : deadlineInfo.isOverdue
-                      ? 'rgba(239, 68, 68, 0.35)'
-                      : deadlineInfo.isDueSoon
-                        ? 'rgba(245, 158, 11, 0.35)'
-                        : 'rgba(139, 92, 246, 0.35)'
-                }`,
-              }}
-            >
-              <CalendarClock size={13} className="shrink-0" />
-              <span>Hạn: {deadlineInfo.label}</span>
-              <span className="font-extrabold opacity-90">({deadlineInfo.relative})</span>
-            </div>
-          ) : (
-            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10.5px] text-slate-400 bg-slate-500/10 border border-slate-500/20">
-              <CalendarClock size={12} className="opacity-60" />
-              <span>Chưa đặt hạn chót</span>
-            </div>
-          )}
-
-          {task.remindAt && !isDone && (
-            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold text-amber-400 bg-amber-500/10 border border-amber-500/25 tabular-nums">
-              <Bell size={11} />
-              <span>Nhắc: {formatCountdown(task.remindAt, nowMs)}</span>
-            </div>
-          )}
-        </div>
+        {/* Embedded mOS Mission Section (Unified Card - avoids duplicated cards and titles) */}
+        {taskMission && (
+          <div className="pt-0.5">{renderLiveMissionCard(taskMission, sourceMsg || null, 'embedded')}</div>
+        )}
 
         {/* Negotiation Banner (if negotiatedDeadline is pending) */}
         {hasNegotiation && !isDone && (
@@ -6846,37 +6831,39 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           </div>
         )}
 
-        {/* Card Actions Footer */}
+        {/* Card Actions Footer: Icon-first buttons */}
         <div className="pt-1 border-t border-white/5 flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-1.5">
             {!isDone && (
-              <button
-                type="button"
-                onClick={() => handleOpenNegotiateModal(task)}
-                className="h-6 px-2 rounded-md inline-flex items-center gap-1 text-[10.5px] font-bold cursor-pointer transition-all hover:bg-amber-500/20 text-amber-400"
-                style={{
-                  background: isDark ? 'rgba(245, 158, 11, 0.12)' : '#fef3c7',
-                  border: '1px solid rgba(245, 158, 11, 0.3)',
-                }}
-              >
-                <Handshake size={12} />
-                <span>{hasNegotiation ? 'Sửa đề xuất hạn' : 'Xin dời hạn'}</span>
-              </button>
+              <Tooltip title={hasNegotiation ? 'Sửa đề xuất dời hạn' : 'Xin dời hạn chót'}>
+                <button
+                  type="button"
+                  onClick={() => handleOpenNegotiateModal(task)}
+                  className="h-6 px-2 rounded-md inline-flex items-center gap-1 text-[10.5px] font-bold cursor-pointer transition-all hover:bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                  style={{
+                    background: isDark ? 'rgba(245, 158, 11, 0.1)' : '#fef3c7',
+                  }}
+                >
+                  <Handshake size={12} />
+                  <span>{hasNegotiation ? 'Đề xuất hạn' : 'Dời hạn'}</span>
+                </button>
+              </Tooltip>
             )}
 
-            {isStrictDannySuperAdmin && !task.mission && (
-              <button
-                type="button"
-                onClick={() => openMissionModalFromChat(sourceMsg || null, task, task.conversationId)}
-                className="h-6 px-2 rounded-md inline-flex items-center gap-1 text-[10.5px] font-bold cursor-pointer transition-all hover:opacity-90 shrink-0 whitespace-nowrap"
-                style={{
-                  background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
-                  color: '#fff',
-                }}
-              >
-                <Rocket size={11} />
-                <span>Chuyển mOS Mission</span>
-              </button>
+            {isStrictDannySuperAdmin && !taskMission && (
+              <Tooltip title="Chuyển công việc này thành mOS Mission">
+                <button
+                  type="button"
+                  onClick={() => openMissionModalFromChat(sourceMsg || null, task, task.conversationId)}
+                  className="h-6 px-2 rounded-md inline-flex items-center gap-1 text-[10.5px] font-bold cursor-pointer transition-all hover:opacity-90 shrink-0 whitespace-nowrap text-white"
+                  style={{
+                    background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                  }}
+                >
+                  <Rocket size={11} />
+                  <span>mOS Mission</span>
+                </button>
+              </Tooltip>
             )}
           </div>
 
@@ -6886,10 +6873,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 type="button"
                 aria-label="Chỉnh sửa công việc"
                 onClick={() => openEditTaskModal(task)}
-                className="w-6 h-6 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-white/10"
+                className="w-6 h-6 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-white/10 text-amber-400"
                 style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
               >
-                <Pencil size={11} className="text-amber-400" />
+                <Pencil size={11} />
               </button>
             </Tooltip>
 

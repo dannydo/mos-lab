@@ -30839,6 +30839,54 @@
       }
     },
     {
+      "id": "uicomp:CampaignClaimCountdown",
+      "type": "UIComponent",
+      "label": "<CampaignClaimCountdown />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/CampaignClaimCountdown.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "CampaignClaimCountdown",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:CampaignCustomerTableColumns",
+      "type": "UIComponent",
+      "label": "<CampaignCustomerTableColumns />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/CampaignCustomerTableColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "CampaignCustomerTableColumns",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:CampaignEditModal",
+      "type": "UIComponent",
+      "label": "<CampaignEditModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/CampaignEditModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "CampaignEditModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:CampaignKpiHeaderBar",
+      "type": "UIComponent",
+      "label": "<CampaignKpiHeaderBar />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/CampaignKpiHeaderBar.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "CampaignKpiHeaderBar",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:CampaignTouchpointCell",
       "type": "UIComponent",
       "label": "<CampaignTouchpointCell />",
@@ -30955,6 +31003,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "TouchpointIconPicker",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:CampaignBatchModals",
+      "type": "UIComponent",
+      "label": "<CampaignBatchModals />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/campaign/modals/CampaignBatchModals.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "CampaignBatchModals",
         "isPrimitive": false
       }
     },
@@ -34953,8 +35013,8 @@
       "filePath": "apps/api/src/modules/campaigns/campaign.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 187636,
-        "lineCount": 5273,
+        "sizeBytes": 44359,
+        "lineCount": 1333,
         "ext": ".ts"
       }
     },
@@ -34968,6 +35028,45 @@
       "metadata": {
         "sizeBytes": 40339,
         "lineCount": 977,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/campaigns/services/campaign-customer.service.ts",
+      "type": "File",
+      "label": "campaign-customer.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/campaigns/services/campaign-customer.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 41455,
+        "lineCount": 1091,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/campaigns/services/campaign-promotion-stats.service.ts",
+      "type": "File",
+      "label": "campaign-promotion-stats.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/campaigns/services/campaign-promotion-stats.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 20051,
+        "lineCount": 555,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/campaigns/services/campaign-shared-pool.service.ts",
+      "type": "File",
+      "label": "campaign-shared-pool.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/campaigns/services/campaign-shared-pool.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 92193,
+        "lineCount": 2601,
         "ext": ".ts"
       }
     },
@@ -36747,8 +36846,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-target.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 78880,
-        "lineCount": 1934,
+        "sizeBytes": 78870,
+        "lineCount": 1928,
         "ext": ".ts"
       }
     },
@@ -36760,8 +36859,8 @@
       "filePath": "apps/api/src/modules/kpi/services/telesale-tv-celebration.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 61506,
-        "lineCount": 1277,
+        "sizeBytes": 61513,
+        "lineCount": 1281,
         "ext": ".ts"
       }
     },
@@ -41648,8 +41747,8 @@
       "filePath": "apps/web/app/dashboard/cc/components/CcThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 61728,
-        "lineCount": 1548,
+        "sizeBytes": 61726,
+        "lineCount": 1546,
         "ext": ".tsx"
       }
     },
@@ -42987,8 +43086,8 @@
       "filePath": "apps/web/app/dashboard/nyc/campaigns/[slug]/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 136181,
-        "lineCount": 3251,
+        "sizeBytes": 77778,
+        "lineCount": 2011,
         "ext": ".tsx"
       }
     },
@@ -63460,6 +63559,62 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:CampaignClaimCountdown:ws:apps/web",
+      "source": "uicomp:CampaignClaimCountdown",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:CampaignClaimCountdown:token:color:primary",
+      "source": "uicomp:CampaignClaimCountdown",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:CampaignCustomerTableColumns:ws:apps/web",
+      "source": "uicomp:CampaignCustomerTableColumns",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:CampaignCustomerTableColumns:token:color:primary",
+      "source": "uicomp:CampaignCustomerTableColumns",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:CampaignEditModal:ws:apps/web",
+      "source": "uicomp:CampaignEditModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:CampaignEditModal:token:color:primary",
+      "source": "uicomp:CampaignEditModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:CampaignKpiHeaderBar:ws:apps/web",
+      "source": "uicomp:CampaignKpiHeaderBar",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:CampaignKpiHeaderBar:token:color:primary",
+      "source": "uicomp:CampaignKpiHeaderBar",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:CampaignTouchpointCell:ws:apps/web",
       "source": "uicomp:CampaignTouchpointCell",
       "target": "ws:apps/web",
@@ -63595,6 +63750,20 @@
     {
       "id": "edge:uicomp:TouchpointIconPicker:token:color:primary",
       "source": "uicomp:TouchpointIconPicker",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:CampaignBatchModals:ws:apps/web",
+      "source": "uicomp:CampaignBatchModals",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:CampaignBatchModals:token:color:primary",
+      "source": "uicomp:CampaignBatchModals",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -67123,6 +67292,27 @@
     {
       "id": "edge:file:apps/api/src/modules/campaigns/routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/campaigns/routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-customer.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-customer.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-promotion-stats.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-promotion-stats.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-shared-pool.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-shared-pool.service.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -71391,34 +71581,6 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/campaigns/campaign.service.ts:prisma:crm:CrmDailyPlan",
-      "source": "file:apps/api/src/modules/campaigns/campaign.service.ts",
-      "target": "prisma:crm:CrmDailyPlan",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/campaigns/campaign.service.ts:prisma:crm:CrmCallLog",
-      "source": "file:apps/api/src/modules/campaigns/campaign.service.ts",
-      "target": "prisma:crm:CrmCallLog",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/campaigns/campaign.service.ts:prisma:crm:CrmCustomerAssignment",
-      "source": "file:apps/api/src/modules/campaigns/campaign.service.ts",
-      "target": "prisma:crm:CrmCustomerAssignment",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/campaigns/campaign.service.ts:prisma:crm:CrmAllocationBatchItem",
-      "source": "file:apps/api/src/modules/campaigns/campaign.service.ts",
-      "target": "prisma:crm:CrmAllocationBatchItem",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
       "id": "edge:file:apps/api/src/modules/campaigns/campaign.service.ts:prisma:crm:CrmCustomCampaign",
       "source": "file:apps/api/src/modules/campaigns/campaign.service.ts",
       "target": "prisma:crm:CrmCustomCampaign",
@@ -71429,13 +71591,6 @@
       "id": "edge:file:apps/api/src/modules/campaigns/campaign.service.ts:prisma:crm:CrmCampaignCustomer",
       "source": "file:apps/api/src/modules/campaigns/campaign.service.ts",
       "target": "prisma:crm:CrmCampaignCustomer",
-      "type": "QUERIES_MODEL",
-      "label": "MUTATES_CRM_MODEL"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/campaigns/campaign.service.ts:prisma:crm:CrmCampaignSharedPoolLog",
-      "source": "file:apps/api/src/modules/campaigns/campaign.service.ts",
-      "target": "prisma:crm:CrmCampaignSharedPoolLog",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -71454,22 +71609,148 @@
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/campaigns/campaign.service.ts:prisma:crm:CrmCampaignTouchpointLog",
-      "source": "file:apps/api/src/modules/campaigns/campaign.service.ts",
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-customer.service.ts:prisma:crm:CrmDailyPlan",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-customer.service.ts",
+      "target": "prisma:crm:CrmDailyPlan",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-customer.service.ts:prisma:crm:CrmCustomerAssignment",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-customer.service.ts",
+      "target": "prisma:crm:CrmCustomerAssignment",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-customer.service.ts:prisma:crm:CrmAllocationBatchItem",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-customer.service.ts",
+      "target": "prisma:crm:CrmAllocationBatchItem",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-customer.service.ts:prisma:crm:CrmCustomCampaign",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-customer.service.ts",
+      "target": "prisma:crm:CrmCustomCampaign",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-customer.service.ts:prisma:crm:CrmCampaignCustomer",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-customer.service.ts",
+      "target": "prisma:crm:CrmCampaignCustomer",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-customer.service.ts:prisma:crm:CrmCampaignTouchpointLog",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-customer.service.ts",
       "target": "prisma:crm:CrmCampaignTouchpointLog",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/campaigns/campaign.service.ts:prisma:legacy:user_contact",
-      "source": "file:apps/api/src/modules/campaigns/campaign.service.ts",
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-customer.service.ts:prisma:legacy:user_contact",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-customer.service.ts",
       "target": "prisma:legacy:user_contact",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
     },
     {
-      "id": "edge:file:apps/api/src/modules/campaigns/campaign.service.ts:prisma:legacy:user_profile",
-      "source": "file:apps/api/src/modules/campaigns/campaign.service.ts",
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-customer.service.ts:prisma:legacy:user_profile",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-customer.service.ts",
+      "target": "prisma:legacy:user_profile",
+      "type": "QUERIES_MODEL",
+      "label": "READS_LEGACY_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-promotion-stats.service.ts:prisma:crm:CrmCallLog",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-promotion-stats.service.ts",
+      "target": "prisma:crm:CrmCallLog",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-promotion-stats.service.ts:prisma:crm:CrmCustomerAssignment",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-promotion-stats.service.ts",
+      "target": "prisma:crm:CrmCustomerAssignment",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-promotion-stats.service.ts:prisma:crm:CrmCustomCampaign",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-promotion-stats.service.ts",
+      "target": "prisma:crm:CrmCustomCampaign",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-promotion-stats.service.ts:prisma:crm:CrmCampaignCustomer",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-promotion-stats.service.ts",
+      "target": "prisma:crm:CrmCampaignCustomer",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-promotion-stats.service.ts:prisma:crm:CrmCampaignPromotion",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-promotion-stats.service.ts",
+      "target": "prisma:crm:CrmCampaignPromotion",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-promotion-stats.service.ts:prisma:crm:CrmCampaignTouchpointLog",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-promotion-stats.service.ts",
+      "target": "prisma:crm:CrmCampaignTouchpointLog",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-shared-pool.service.ts:prisma:crm:CrmStaff",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-shared-pool.service.ts",
+      "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-shared-pool.service.ts:prisma:crm:CrmCallLog",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-shared-pool.service.ts",
+      "target": "prisma:crm:CrmCallLog",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-shared-pool.service.ts:prisma:crm:CrmCustomCampaign",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-shared-pool.service.ts",
+      "target": "prisma:crm:CrmCustomCampaign",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-shared-pool.service.ts:prisma:crm:CrmCampaignCustomer",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-shared-pool.service.ts",
+      "target": "prisma:crm:CrmCampaignCustomer",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-shared-pool.service.ts:prisma:crm:CrmCampaignSharedPoolLog",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-shared-pool.service.ts",
+      "target": "prisma:crm:CrmCampaignSharedPoolLog",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-shared-pool.service.ts:prisma:legacy:user_contact",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-shared-pool.service.ts",
+      "target": "prisma:legacy:user_contact",
+      "type": "QUERIES_MODEL",
+      "label": "READS_LEGACY_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/campaigns/services/campaign-shared-pool.service.ts:prisma:legacy:user_profile",
+      "source": "file:apps/api/src/modules/campaigns/services/campaign-shared-pool.service.ts",
       "target": "prisma:legacy:user_profile",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
@@ -99714,8 +99995,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 3577,
-    "totalEdges": 7590,
+    "totalNodes": 3585,
+    "totalEdges": 7616,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 176,
@@ -99723,16 +100004,16 @@
       "Component": 62,
       "SharedType": 1299,
       "DesignToken": 12,
-      "UIComponent": 301,
-      "File": 994
+      "UIComponent": 306,
+      "File": 997
     },
     "edgeTypeCounts": {
       "EXPORTS": 1487,
       "HANDLES_ROUTE": 730,
-      "RENDERS": 363,
-      "USES_TOKEN": 303,
-      "IMPORTS": 548,
-      "QUERIES_MODEL": 408,
+      "RENDERS": 368,
+      "USES_TOKEN": 308,
+      "IMPORTS": 551,
+      "QUERIES_MODEL": 421,
       "API_CALL": 3751
     },
     "fastifyRouteCount": 735,

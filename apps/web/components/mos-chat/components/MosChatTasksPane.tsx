@@ -270,13 +270,7 @@ export const MosChatTasksPane: React.FC<MosChatTasksPaneProps> = ({
                   const taskConv = conversations.find((c) => c.id === t.conversationId);
                   const taskSourceMsg =
                     taskConv?.messages.find((m) => m.id === t.sourceMessageId || m.taskId === t.id) || null;
-                  const taskMission = t.mission || taskSourceMsg?.mission || null;
-                  return (
-                    <div key={t.id} className="space-y-1.5">
-                      {renderTaskCard(t, taskSourceMsg, 'list')}
-                      {taskMission && renderLiveMissionCard(taskMission, taskSourceMsg, 'task')}
-                    </div>
-                  );
+                  return <div key={t.id}>{renderTaskCard(t, taskSourceMsg, 'list')}</div>;
                 })}
               </div>
             ) : (
@@ -328,13 +322,7 @@ export const MosChatTasksPane: React.FC<MosChatTasksPaneProps> = ({
                     const taskConv = conversations.find((c) => c.id === t.conversationId);
                     const taskSourceMsg =
                       taskConv?.messages.find((m) => m.id === t.sourceMessageId || m.taskId === t.id) || null;
-                    const taskMission = t.mission || taskSourceMsg?.mission || null;
-                    return (
-                      <div key={t.id} className="space-y-1.5">
-                        {renderTaskCard(t, taskSourceMsg, 'list')}
-                        {taskMission && renderLiveMissionCard(taskMission, taskSourceMsg, 'task')}
-                      </div>
-                    );
+                    return <div key={t.id}>{renderTaskCard(t, taskSourceMsg, 'list')}</div>;
                   })}
                 </div>
               )}
@@ -348,13 +336,7 @@ export const MosChatTasksPane: React.FC<MosChatTasksPaneProps> = ({
             const taskConv = conversations.find((c) => c.id === t.conversationId);
             const taskSourceMsg =
               taskConv?.messages.find((m) => m.id === t.sourceMessageId || m.taskId === t.id) || null;
-            const taskMission = t.mission || taskSourceMsg?.mission || null;
-            return (
-              <div key={t.id} className="space-y-1.5">
-                {renderTaskCard(t, taskSourceMsg, 'list')}
-                {taskMission && renderLiveMissionCard(taskMission, taskSourceMsg, 'task')}
-              </div>
-            );
+            return <div key={t.id}>{renderTaskCard(t, taskSourceMsg, 'list')}</div>;
           })}
         </div>
       )}
