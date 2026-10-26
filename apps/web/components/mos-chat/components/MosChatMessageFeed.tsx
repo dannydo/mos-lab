@@ -136,6 +136,7 @@ export interface MosChatMessageFeedProps {
   activeThreadMessage: MosChatMessage | null;
   isDraggingOver: boolean;
   antdMessage: SafeAny;
+  renderMessageAttachments?: (attachments?: SafeAny[], compact?: boolean, isMine?: boolean) => React.ReactNode;
 }
 
 export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = ({
@@ -229,6 +230,7 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = ({
   activeThreadMessage,
   isDraggingOver,
   antdMessage,
+  renderMessageAttachments,
 }) => {
   const [moveThreadSearchQuery, setMoveThreadSearchQuery] = useState<string>('');
 
@@ -856,113 +858,125 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = ({
                         </div>
                       )}
                     </div>
-                  ) : m.text ? (
-                    (() => {
-                      const isPureSticker = Boolean(parsePureStickerMessage(m.text));
-                      const hasSubthread = Boolean(m.thread && m.thread.length > 0);
-                      return (
-                        <div
-                          onClick={(e) => handleMessageTap(m, e)}
-                          title={
-                            hasSubthread ? `Nhấn để mở luồng trả lời phụ (${m.thread?.length} phản hồi)` : undefined
-                          }
-                          className={`relative inline-block text-left ${
-                            isPureSticker
-                              ? 'px-1 py-0.5 rounded-2xl'
-                              : `px-3.5 py-2 rounded-2xl ${isMine ? 'rounded-tr-sm' : 'rounded-tl-sm'}`
-                          } text-[13px] leading-relaxed whitespace-pre-wrap break-words max-w-[85%] cursor-pointer select-none active:scale-[0.985] transition-all ${
-                            m.isBuzzed ? 'ring-2 ring-amber-500/70 shadow-lg shadow-amber-500/15' : ''
-                          } ${hasSubthread ? 'hover:ring-1 hover:ring-amber-500/50' : ''}`}
-                          style={{
-                            background: isPureSticker
-                              ? 'transparent'
-                              : m.isBuzzed
-                                ? isDark
-                                  ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.22) 0%, rgba(225, 29, 72, 0.14) 100%)'
-                                  : 'linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, rgba(225, 29, 72, 0.1) 100%)'
-                                : isMine
-                                  ? accentSoftBg
-                                  : surfaceRaised,
-                            border: isPureSticker
-                              ? 'none'
-                              : m.isBuzzed
-                                ? '1px solid rgba(245, 158, 11, 0.8)'
-                                : `1px solid ${isMine ? accentBorder : borderColor}`,
-                            color: token.colorText,
-                          }}
-                        >
-                          {/* Buzz / Bump Urgent Header Banner */}
-                          {m.isBuzzed && (
-                            <div
-                              onClick={(e) => e.stopPropagation()}
-                              className="mb-1.5 px-2 py-1 rounded-md bg-amber-500/20 border border-amber-500/50 flex items-center justify-between gap-1 text-[11px] font-bold text-amber-500 select-none animate-pulse"
-                            >
-                              <div className="flex items-center gap-1.5">
-                                <Zap size={12} className="fill-amber-500" />
-                                <span>
-                                  TIN NHẮN KHẨN CẤP · BUZZ {m.buzzCount && m.buzzCount > 1 ? `(x${m.buzzCount})` : ''}
-                                  {m.latestBuzz?.senderName ? ` · bởi ${m.latestBuzz.senderName}` : ''}
-                                </span>
-                                {m.buzzCount && m.buzzCount > 1 && (
-                                  <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 text-[9.5px] font-extrabold">
-                                    x{m.buzzCount}
-                                  </span>
+                  ) : (
+                    <>
+                      {m.text
+                        ? (() => {
+                            const isPureSticker = Boolean(parsePureStickerMessage(m.text));
+                            const hasSubthread = Boolean(m.thread && m.thread.length > 0);
+                            return (
+                              <div
+                                onClick={(e) => handleMessageTap(m, e)}
+                                title={
+                                  hasSubthread
+                                    ? `Nhấn để mở luồng trả lời phụ (${m.thread?.length} phản hồi)`
+                                    : undefined
+                                }
+                                className={`relative inline-block text-left ${
+                                  isPureSticker
+                                    ? 'px-1 py-0.5 rounded-2xl'
+                                    : `px-3.5 py-2 rounded-2xl ${isMine ? 'rounded-tr-sm' : 'rounded-tl-sm'}`
+                                } text-[13px] leading-relaxed whitespace-pre-wrap break-words max-w-[85%] cursor-pointer select-none active:scale-[0.985] transition-all ${
+                                  m.isBuzzed ? 'ring-2 ring-amber-500/70 shadow-lg shadow-amber-500/15' : ''
+                                } ${hasSubthread ? 'hover:ring-1 hover:ring-amber-500/50' : ''}`}
+                                style={{
+                                  background: isPureSticker
+                                    ? 'transparent'
+                                    : m.isBuzzed
+                                      ? isDark
+                                        ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.22) 0%, rgba(225, 29, 72, 0.14) 100%)'
+                                        : 'linear-gradient(135deg, rgba(245, 158, 11, 0.18) 0%, rgba(225, 29, 72, 0.1) 100%)'
+                                      : isMine
+                                        ? accentSoftBg
+                                        : surfaceRaised,
+                                  border: isPureSticker
+                                    ? 'none'
+                                    : m.isBuzzed
+                                      ? '1px solid rgba(245, 158, 11, 0.8)'
+                                      : `1px solid ${isMine ? accentBorder : borderColor}`,
+                                  color: token.colorText,
+                                }}
+                              >
+                                {/* Buzz / Bump Urgent Header Banner */}
+                                {m.isBuzzed && (
+                                  <div
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="mb-1.5 px-2 py-1 rounded-md bg-amber-500/20 border border-amber-500/50 flex items-center justify-between gap-1 text-[11px] font-bold text-amber-500 select-none animate-pulse"
+                                  >
+                                    <div className="flex items-center gap-1.5">
+                                      <Zap size={12} className="fill-amber-500" />
+                                      <span>
+                                        TIN NHẮN KHẨN CẤP · BUZZ{' '}
+                                        {m.buzzCount && m.buzzCount > 1 ? `(x${m.buzzCount})` : ''}
+                                        {m.latestBuzz?.senderName ? ` · bởi ${m.latestBuzz.senderName}` : ''}
+                                      </span>
+                                      {m.buzzCount && m.buzzCount > 1 && (
+                                        <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-slate-950 text-[9.5px] font-extrabold">
+                                          x{m.buzzCount}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <button
+                                      type="button"
+                                      aria-label="Nghe @MAI đọc tin nhắn khẩn cấp"
+                                      onClick={() => {
+                                        const spokenText = buildMaiUrgentVoiceAnnouncement({
+                                          senderName: m.latestBuzz?.senderName || m.senderName || 'Đồng nghiệp',
+                                          conversationName: activeConversation?.name,
+                                          isSpace: activeConversation?.type === 'space',
+                                          messageText: m.text || '',
+                                          note: m.latestBuzz?.note,
+                                        });
+                                        void playNeuralSpeech(spokenText, {
+                                          voice: 'vi-VN-HoaiMyNeural',
+                                          speed: ttsSpeed || 1.0,
+                                        });
+                                      }}
+                                      className="text-[10px] font-semibold text-amber-400/90 hover:underline hover:text-amber-300 cursor-pointer inline-flex items-center gap-1 shrink-0 ml-1.5 px-1.5 py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/20"
+                                      title="Nghe @MAI đọc tin nhắn khẩn cấp"
+                                    >
+                                      <Volume2 size={10} />
+                                      <span>@MAI đọc</span>
+                                    </button>
+                                  </div>
+                                )}
+
+                                {renderRichTextMessage(m.text, isMine)}
+
+                                {/* Edited Badge with Clickable Audit History */}
+                                {m.editHistory && m.editHistory.length > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setHistoryModalMessage(m);
+                                      setHistoryModalOpen(true);
+                                    }}
+                                    className="inline-flex items-center gap-0.5 text-[10.5px] font-medium text-amber-500/80 hover:text-amber-400 hover:underline cursor-pointer select-none ml-1.5 align-baseline"
+                                    title="Xem lịch sử chỉnh sửa"
+                                  >
+                                    <History size={10} />
+                                    <span>(đã chỉnh sửa)</span>
+                                  </button>
+                                )}
+
+                                {/* Floating Heart Burst on Double-Tap */}
+                                {heartFlyMsgId === m.id && (
+                                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30 select-none overflow-hidden">
+                                    <span className="text-[38px] drop-shadow-xl animate-heart-burst leading-none">
+                                      ❤️
+                                    </span>
+                                  </div>
                                 )}
                               </div>
-                              <button
-                                type="button"
-                                aria-label="Nghe @MAI đọc tin nhắn khẩn cấp"
-                                onClick={() => {
-                                  const spokenText = buildMaiUrgentVoiceAnnouncement({
-                                    senderName: m.latestBuzz?.senderName || m.senderName || 'Đồng nghiệp',
-                                    conversationName: activeConversation?.name,
-                                    isSpace: activeConversation?.type === 'space',
-                                    messageText: m.text || '',
-                                    note: m.latestBuzz?.note,
-                                  });
-                                  void playNeuralSpeech(spokenText, {
-                                    voice: 'vi-VN-HoaiMyNeural',
-                                    speed: ttsSpeed || 1.0,
-                                  });
-                                }}
-                                className="text-[10px] font-semibold text-amber-400/90 hover:underline hover:text-amber-300 cursor-pointer inline-flex items-center gap-1 shrink-0 ml-1.5 px-1.5 py-0.5 rounded bg-amber-500/10 hover:bg-amber-500/20"
-                                title="Nghe @MAI đọc tin nhắn khẩn cấp"
-                              >
-                                <Volume2 size={10} />
-                                <span>@MAI đọc</span>
-                              </button>
-                            </div>
-                          )}
+                            );
+                          })()
+                        : null}
 
-                          {renderRichTextMessage(m.text, isMine)}
-
-                          {/* Edited Badge with Clickable Audit History */}
-                          {m.editHistory && m.editHistory.length > 0 && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setHistoryModalMessage(m);
-                                setHistoryModalOpen(true);
-                              }}
-                              className="inline-flex items-center gap-0.5 text-[10.5px] font-medium text-amber-500/80 hover:text-amber-400 hover:underline cursor-pointer select-none ml-1.5 align-baseline"
-                              title="Xem lịch sử chỉnh sửa"
-                            >
-                              <History size={10} />
-                              <span>(đã chỉnh sửa)</span>
-                            </button>
-                          )}
-
-                          {/* Floating Heart Burst on Double-Tap */}
-                          {heartFlyMsgId === m.id && (
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30 select-none overflow-hidden">
-                              <span className="text-[38px] drop-shadow-xl animate-heart-burst leading-none">❤️</span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()
-                  ) : null}
+                      {/* Attachments (Images, Files, Documents) */}
+                      {renderMessageAttachments && renderMessageAttachments(m.attachments, isMobile, isMine)}
+                    </>
+                  )}
 
                   {/* Suggested AI Action Button(s) (e.g. APPLY_FILTER) */}
                   {(() => {

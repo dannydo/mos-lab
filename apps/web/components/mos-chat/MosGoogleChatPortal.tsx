@@ -6949,17 +6949,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     });
   }, []);
 
-  const renderMessageAttachments = (attachments?: MosChatImageAttachment[], compact = false) => {
+  const renderMessageAttachments = (attachments?: MosChatImageAttachment[], compact = false, isMine = false) => {
     if (!attachments || attachments.length === 0) return null;
     const images = attachments.filter(isImageAttachment);
     const files = attachments.filter((att) => !isImageAttachment(att));
     const totalImages = images.length;
 
     return (
-      <div className="mt-1.5 flex flex-col gap-2">
+      <div className={`mt-1.5 flex flex-col gap-2 ${isMine ? 'items-end' : 'items-start'}`}>
         {/* Document & File Attachments (PDF, Excel, Word, ZIP...) */}
         {files.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div className={`flex flex-wrap gap-2 ${isMine ? 'justify-end' : 'justify-start'}`}>
             {files.map((att) => {
               const fullUrl = resolveMediaUrl(att.url);
               const ext = getFileExtension(att.name || att.url).toLowerCase();
@@ -7047,7 +7047,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
         {/* Image Attachments */}
         {images.length > 0 && (
-          <div className="flex flex-wrap gap-2">
+          <div className={`flex flex-wrap gap-2 ${isMine ? 'justify-end' : 'justify-start'}`}>
             {images.map((att, idx) => {
               const fullUrl = resolveMediaUrl(att.url);
               return (
@@ -9793,6 +9793,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     activeThreadMessage={activeThreadMessage}
                     isDraggingOver={isDraggingOver}
                     antdMessage={antdMessage}
+                    renderMessageAttachments={renderMessageAttachments}
                   />
 
                   {/* Clean Single-Line Composer with Staging Thumbnails, AI Quick Prompts & Icon-only Toolbar */}

@@ -163,7 +163,7 @@ export interface MosChatThreadDrawerProps {
   openMissionModalFromChat: (m: MosChatMessage, linkedTask?: SafeAny) => void;
   uniqueTasks: MosChatTaskItem[];
   setSaveThreadWorkflowModalOpen: (open: boolean) => void;
-  renderMessageAttachments: (attachments?: SafeAny[], isThumb?: boolean) => React.ReactNode;
+  renderMessageAttachments: (attachments?: SafeAny[], isThumb?: boolean, isMine?: boolean) => React.ReactNode;
   renderLiveMissionCard: (mission: SafeAny, msg?: MosChatMessage | null, mode?: SafeAny) => React.ReactNode;
   setHistoryModalMessage: (m: SafeAny) => void;
   setHistoryModalOpen: (open: boolean) => void;
@@ -800,7 +800,11 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = ({
                 </Tooltip>
               </div>
             )}
-          {renderMessageAttachments(activeThreadMessage.attachments, true)}
+          {renderMessageAttachments(
+            activeThreadMessage.attachments,
+            true,
+            activeThreadMessage.senderId === currentUser?.id
+          )}
           {activeThreadMessage.reactions &&
             Object.entries(activeThreadMessage.reactions).filter(([, count]) => count > 0).length > 0 && (
               <div className="mt-1.5 flex flex-wrap items-center gap-1">
@@ -1036,7 +1040,9 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = ({
                         </div>
                       )}
 
-                      <div className="leading-relaxed break-words">{renderRichTextMessage(r.text, isReplyMine)}</div>
+                      {r.text && (
+                        <div className="leading-relaxed break-words">{renderRichTextMessage(r.text, isReplyMine)}</div>
+                      )}
 
                       {/* Quick Voice Read-Aloud for AI Reply in Thread */}
                       {isAiReply && r.text && (
@@ -1090,7 +1096,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = ({
                     </>
                   )}
 
-                  {renderMessageAttachments(r.attachments, true)}
+                  {renderMessageAttachments(r.attachments, true, isReplyMine)}
 
                   {/* Reaction Pills for Thread Reply */}
                   {r.reactions && Object.entries(r.reactions).filter(([, count]) => count > 0).length > 0 && (
