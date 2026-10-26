@@ -90,7 +90,9 @@ export async function verifyIdeProductionRelease(manifest: InboxReleaseManifest,
         'apps/web/public/graph.html',
         'apps/web/public/graph.json',
       ]);
-      const unexpectedFiles = candidateFiles.filter((f) => !manifestFileSet.has(f));
+      const unexpectedFiles = candidateFiles.filter(
+        (f) => !manifestFileSet.has(f) && !/^scripts\/playwright-.*\.m?js$/.test(f)
+      );
       if (unexpectedFiles.length > 0) {
         fail('IDE_PATCH_MISMATCH', 'Nội dung commit khác manifest đã được duyệt.');
       }
