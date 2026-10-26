@@ -6,7 +6,7 @@ import { createRouteHelpers } from './helpers.js';
 export async function repairCustomerNotesIntegrity(tx: SafeAny, customerId: number): Promise<void> {
   try {
     const unhealedNotes = await tx.$queryRawUnsafe(
-      `SELECT id, note_field_key, date_created, attribute_group_key FROM user_note WHERE user_id = ? AND (attribute_group_key IS NULL OR date_updated IS NULL)`,
+      `SELECT id, note_field_key, date_created, attribute_group_key FROM user_note WHERE user_id = ? AND (attribute_group_key IS NULL OR date_updated IS NULL OR NOT EXISTS (SELECT 1 FROM item_attribute_value v WHERE v.item_id = user_note.id AND v.type = 'user-note-attribute'))`,
       customerId
     );
     for (const n of unhealedNotes) {
