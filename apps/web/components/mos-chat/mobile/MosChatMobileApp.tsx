@@ -19,6 +19,7 @@ import { MosChatMobileActionSheet } from './MosChatMobileActionSheet';
 import { MosChatMobileReactionSheet } from './MosChatMobileReactionSheet';
 import { MosChatMobileThreadSheet } from './MosChatMobileThreadSheet';
 import { MosChatMobileTasksTab } from './MosChatMobileTasksTab';
+import { MosChatMobilePinnedTab } from './MosChatMobilePinnedTab';
 import { MosChatMobileTaskDetailSheet } from './MosChatMobileTaskDetailSheet';
 import { MosChatMobileEditTaskModal } from './MosChatMobileEditTaskModal';
 import { MosChatMobileNegotiateTaskModal } from './MosChatMobileNegotiateTaskModal';
@@ -48,6 +49,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
     mobileView,
     setMobileView,
     activeSubtab,
+    setActiveSubtab,
     selectedMsgForAction,
     setSelectedMsgForAction,
     activeThreadMsg,
@@ -544,7 +546,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
 
       {mobileView === 'room' && (
         <>
-          {activeSubtab === 'chat' ? (
+          {activeSubtab === 'chat' && (
             <>
               <MosChatMobileStream
                 onOpenThread={(msg) => {
@@ -552,6 +554,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
                   setMobileView('thread');
                 }}
                 onOpenGallery={handleOpenStreamGallery}
+                onOpenPinnedTab={() => setActiveSubtab('pinned')}
               />
               <MosChatMobileComposer
                 onOpenActionSheet={() => setActionSheetOpen(true)}
@@ -568,7 +571,9 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
                 onTextChange={setComposerText}
               />
             </>
-          ) : (
+          )}
+
+          {activeSubtab === 'tasks' && (
             <MosChatMobileTasksTab
               onOpenCreateTaskModal={() => {
                 openCreateTaskModal();
@@ -576,6 +581,25 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
               onSelectTask={(task) => {
                 setSelectedDetailTaskId(task.id);
               }}
+            />
+          )}
+
+          {activeSubtab === 'pinned' && (
+            <MosChatMobilePinnedTab
+              onGoToMessage={(msg) => {
+                setActiveSubtab('chat');
+                setTimeout(() => {
+                  const el = document.getElementById(`mos-chat-msg-${msg.id}`);
+                  if (el && typeof el.scrollIntoView === 'function') {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.classList.add('ring-2', 'ring-amber-400', 'bg-amber-500/10');
+                    setTimeout(() => {
+                      el.classList.remove('ring-2', 'ring-amber-400', 'bg-amber-500/10');
+                    }, 2500);
+                  }
+                }, 150);
+              }}
+              onBackToChat={() => setActiveSubtab('chat')}
             />
           )}
         </>

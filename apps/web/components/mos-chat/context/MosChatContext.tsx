@@ -62,6 +62,7 @@ export interface MosChatProviderProps {
   children: React.ReactNode;
   currentUser?: SafeAny;
   initialConvId?: string;
+  initialSubtab?: MosChatActiveSubtab;
   onUnreadCountChange?: (unread: number, tasks: number) => void;
 }
 
@@ -69,6 +70,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
   children,
   currentUser,
   initialConvId = 'space-cc',
+  initialSubtab,
   onUnreadCountChange,
 }) => {
   // Sync currentUser with local storage fallback
@@ -130,7 +132,12 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
   const [isAiThinking, setIsAiThinking] = useState<boolean>(false);
 
   // Tasks & Subtab
-  const [activeSubtab, setActiveSubtab] = useState<MosChatActiveSubtab>('chat');
+  const [activeSubtab, setActiveSubtab] = useState<MosChatActiveSubtab>(initialSubtab || 'chat');
+  useEffect(() => {
+    if (initialSubtab) {
+      setActiveSubtab(initialSubtab);
+    }
+  }, [initialSubtab]);
   const [tasks, setTasks] = useState<MosChatTaskItem[]>(FALLBACK_TASKS);
   const [workflowTemplates, setWorkflowTemplates] = useState<MosChatWorkflowTemplate[]>([]);
   const [workflowInstances, setWorkflowInstances] = useState<MosChatWorkflowInstance[]>([]);
@@ -793,17 +800,29 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
   const togglePinMessage = useCallback(
     async (msgId: string) => {
       setAllMessagesByConv((prev) => {
-        const currentList = prev[activeConvId] || [];
+        const currentList = prev[activeConvId] || activeConversation?.messages || [];
         const nextList = currentList.map((m) => (m.id === msgId ? { ...m, pinned: !m.pinned } : m));
         return { ...prev, [activeConvId]: nextList };
       });
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === activeConvId
+            ? {
+                ...c,
+                messages: (c.messages || []).map((m) =>
+                  m.id === msgId ? { ...m, pinned: !m.pinned } : m
+                ),
+              }
+            : c
+        )
+      );
       try {
         await apiClient.chat.togglePinMessage(msgId, activeConvId);
       } catch {
         // ignore
       }
     },
-    [activeConvId]
+    [activeConvId, activeConversation]
   );
 
   // Delete message

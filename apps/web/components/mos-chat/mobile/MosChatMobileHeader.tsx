@@ -13,6 +13,7 @@ import {
   Sparkles,
   Users,
   UserPlus,
+  Pin,
 } from 'lucide-react';
 import { Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
@@ -43,6 +44,7 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
     activeSubtab,
     setActiveSubtab,
     tasks,
+    pinnedMessages,
     totalUnreadCount,
     staffDirectory,
     activeThreadMsg,
@@ -262,6 +264,24 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
             <UserPlus className="w-4 h-4 text-emerald-400" />
           </button>
         )}
+
+        {/* Toggle Pinned Messages */}
+        <button
+          type="button"
+          onClick={() => setActiveSubtab(activeSubtab === 'pinned' ? 'chat' : 'pinned')}
+          className={`relative p-2 rounded-full transition-colors active:scale-95 ${
+            activeSubtab === 'pinned'
+              ? 'bg-amber-500 text-slate-950 font-bold'
+              : 'text-slate-300 hover:bg-slate-800'
+          }`}
+          aria-label="Xem tin nhắn đã ghim"
+          title="Tin nhắn đã ghim"
+        >
+          <Pin className={`w-4 h-4 ${pinnedMessages.length > 0 ? 'fill-current' : ''}`} />
+          {pinnedMessages.length > 0 && activeSubtab !== 'pinned' && (
+            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-400" />
+          )}
+        </button>
 
         {/* Toggle between Chat & Tasks */}
         <button
