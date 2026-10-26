@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   SendHorizontal,
   MessageSquareReply,
@@ -84,6 +84,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
   const [text, setText] = useState<string>('');
   const [isSending, setIsSending] = useState<boolean>(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -311,10 +312,39 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
     };
   }, []);
 
-  // Auto scroll to bottom of thread
+  // Robust scroll to bottom helper
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    const el = containerRef.current;
+    if (el) {
+      if (typeof el.scrollTo === 'function') {
+        try {
+          el.scrollTo({ top: el.scrollHeight, behavior });
+        } catch {}
+      }
+      try {
+        el.scrollTop = el.scrollHeight;
+      } catch {}
+    }
+    if (bottomRef.current && typeof bottomRef.current.scrollIntoView === 'function') {
+      try {
+        bottomRef.current.scrollIntoView({ behavior, block: 'end' });
+      } catch {}
+    }
+  }, []);
+
+  // Auto scroll to bottom of thread on initial open and replies update
   useEffect(() => {
-    bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' });
-  }, [threadReplies.length, isAiThinking]);
+    const execute = () => scrollToBottom('auto');
+    execute();
+    if (typeof window !== 'undefined') {
+      window.requestAnimationFrame(() => {
+        execute();
+        window.setTimeout(execute, 40);
+        window.setTimeout(execute, 150);
+        window.setTimeout(execute, 300);
+      });
+    }
+  }, [activeThreadMsg?.id, threadReplies.length, isAiThinking, scrollToBottom]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -630,7 +660,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
       />
 
       {/* Scrollable Replies Feed */}
-      <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3">
+      <div ref={containerRef} className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 space-y-3">
         {/* Parent Message Highlight Card with Swipe to Quote & Double-Tap to Heart */}
         <div
           onTouchStart={handleTouchStartParent}
