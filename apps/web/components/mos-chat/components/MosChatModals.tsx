@@ -3708,10 +3708,22 @@ export const MosChatModals: React.FC<MosChatModalsProps> = ({
         onApply={(newText: string) => {
           if (richEditorModalState.scope === 'main') {
             setComposerText(newText);
-            setTimeout(() => composerInputRef.current?.focus(), 50);
+            setTimeout(() => {
+              if (composerInputRef.current) {
+                composerInputRef.current.style.height = 'auto';
+                composerInputRef.current.style.height = `${Math.min(composerInputRef.current.scrollHeight, 180)}px`;
+                composerInputRef.current.focus();
+              }
+            }, 50);
           } else {
             setThreadInput(newText);
-            setTimeout(() => threadInputRef.current?.focus(), 50);
+            setTimeout(() => {
+              if (threadInputRef.current) {
+                threadInputRef.current.style.height = 'auto';
+                threadInputRef.current.style.height = `${Math.min(threadInputRef.current.scrollHeight, 180)}px`;
+                threadInputRef.current.focus();
+              }
+            }, 50);
           }
         }}
         onSend={async (textToSend: string) => {

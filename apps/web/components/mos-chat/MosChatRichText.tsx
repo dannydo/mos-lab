@@ -53,7 +53,7 @@ export const decodeHtmlEntities = (str: string): string => {
 const isTableSeparatorLine = (lineStr?: string): boolean => {
   if (!lineStr) return false;
   const s = lineStr.trim();
-  return /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?$/.test(s);
+  return /^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?$/.test(s);
 };
 
 /**
@@ -860,12 +860,13 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
                   <tr>
                     {headerCells.map((h, hIdx) => {
                       const alignClass = rawAlignments[hIdx] || 'text-left';
+                      const parsedHeader = parseInlineRichText(h, `th-${idx}-${hIdx}`);
                       return (
                         <th
                           key={`th-${idx}-${hIdx}`}
                           className={`px-3.5 py-2.5 font-bold tracking-wide text-[11.5px] min-w-[110px] leading-snug break-words ${tableTheme.th} ${alignClass}`}
                         >
-                          {parseInlineRichText(h, `th-${idx}-${hIdx}`)}
+                          {parsedHeader.length > 0 ? parsedHeader : <span className="opacity-0">&nbsp;</span>}
                         </th>
                       );
                     })}
@@ -876,12 +877,13 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
                     <tr key={`tr-${idx}-${rIdx}`} className={`transition-colors ${tableTheme.trEven}`}>
                       {row.map((cell, cIdx) => {
                         const alignClass = rawAlignments[cIdx] || 'text-left';
+                        const parsedCell = parseInlineRichText(cell, `td-${idx}-${rIdx}-${cIdx}`);
                         return (
                           <td
                             key={`td-${idx}-${rIdx}-${cIdx}`}
                             className={`px-3.5 py-2.5 text-[12px] leading-relaxed align-top break-words min-w-[120px] ${tableTheme.td} ${alignClass}`}
                           >
-                            {parseInlineRichText(cell, `td-${idx}-${rIdx}-${cIdx}`)}
+                            {parsedCell.length > 0 ? parsedCell : <span className="opacity-0">&nbsp;</span>}
                           </td>
                         );
                       })}
@@ -1010,10 +1012,10 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
         }
 
         // Headings Markdown: # H1 qua ###### H6
-        const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
+        const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
         if (headingMatch) {
           const level = headingMatch[1].length;
-          const headingText = headingMatch[2];
+          const headingText = headingMatch[2] || '';
           let headingClass = 'text-xs font-semibold opacity-90 mt-1.5 mb-1';
 
           if (level === 1) {
@@ -1036,14 +1038,14 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
 
           result.push(
             <div key={`h${level}-${idx}`} className={headingClass}>
-              {parseInlineRichText(headingText, `h${level}-${idx}`)}
+              {headingText ? parseInlineRichText(headingText, `h${level}-${idx}`) : <span className="opacity-0">&nbsp;</span>}
             </div>
           );
           continue;
         }
 
         // Blockquote Markdown: > text
-        if (line.startsWith('> ') || line === '>') {
+        if (trimmed.startsWith('> ') || trimmed === '>') {
           result.push(
             <blockquote
               key={`quote-${idx}`}
@@ -1053,16 +1055,16 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
                   : 'border-amber-600/80 bg-amber-50 text-slate-700'
               }`}
             >
-              {parseInlineRichText(line.replace(/^>\s?/, ''), `q-${idx}`)}
+              {parseInlineRichText(trimmed.replace(/^>\s?/, ''), `q-${idx}`)}
             </blockquote>
           );
           continue;
         }
 
         // Apple Notes Checklist / Todo: - [ ] hoặc - [x]
-        if (/^-\s?\[([ xX])\]\s/.test(trimmed)) {
+        if (/^-\s?\[([ xX])\](?:\s|$)/.test(trimmed)) {
           const isChecked = trimmed.startsWith('- [x]') || trimmed.startsWith('- [X]');
-          const itemContent = trimmed.replace(/^-\s?\[([ xX])\]\s/, '');
+          const itemContent = trimmed.replace(/^-\s?\[([ xX])\](?:\s+|$)/, '');
           result.push(
             <div key={`todo-${idx}`} className="flex items-start gap-2 my-1 text-xs select-text">
               <span
@@ -1079,7 +1081,7 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
                 {isChecked ? <Check size={11} strokeWidth={3} /> : null}
               </span>
               <span className={`flex-1 break-words ${isChecked ? 'line-through opacity-60' : ''}`}>
-                {parseInlineRichText(itemContent, `t-${idx}`)}
+                {itemContent ? parseInlineRichText(itemContent, `t-${idx}`) : <span className="opacity-0">&nbsp;</span>}
               </span>
             </div>
           );
@@ -1087,26 +1089,38 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
         }
 
         // Bullet List Markdown: - item, * item, hoặc • item
-        if (/^[-*•]\s/.test(trimmed) || /^\u2022\s/.test(trimmed)) {
-          const itemContent = trimmed.replace(/^[-*•\u2022]\s+/, '');
+        if (/^[-*•\u2022](?:\s|$)/.test(trimmed)) {
+          const itemContent = trimmed.replace(/^[-*•\u2022](?:\s+|$)/, '');
+          const indentMatch = line.match(/^(\s+)/);
+          const indentSpaces = indentMatch ? indentMatch[1].replace(/\t/g, '  ').length : 0;
+          const indentLevel = Math.min(Math.floor(indentSpaces / 2), 4);
+          const indentPadding = indentLevel > 0 ? { paddingLeft: indentLevel * 16 } : undefined;
+
           result.push(
-            <div key={`bullet-${idx}`} className="flex items-start gap-1.5 my-0.5 text-xs select-text">
+            <div key={`bullet-${idx}`} style={indentPadding} className="flex items-start gap-1.5 my-0.5 text-xs select-text">
               <span className={`shrink-0 select-none font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
                 •
               </span>
-              <span className="flex-1 break-words">{parseInlineRichText(itemContent, `b-${idx}`)}</span>
+              <span className="flex-1 break-words">
+                {itemContent ? parseInlineRichText(itemContent, `b-${idx}`) : <span className="opacity-0">&nbsp;</span>}
+              </span>
             </div>
           );
           continue;
         }
 
         // Numbered List Markdown: 1. item
-        const numMatch = trimmed.match(/^(\d+)\.\s(.*)$/);
+        const numMatch = trimmed.match(/^(\d+)\.(?:\s+(.*)|$)/);
         if (numMatch) {
           const num = numMatch[1];
-          const itemContent = numMatch[2];
+          const itemContent = numMatch[2] || '';
+          const indentMatch = line.match(/^(\s+)/);
+          const indentSpaces = indentMatch ? indentMatch[1].replace(/\t/g, '  ').length : 0;
+          const indentLevel = Math.min(Math.floor(indentSpaces / 2), 4);
+          const indentPadding = indentLevel > 0 ? { paddingLeft: indentLevel * 16 } : undefined;
+
           result.push(
-            <div key={`num-${idx}`} className="flex items-start gap-1.5 my-0.5 text-xs select-text">
+            <div key={`num-${idx}`} style={indentPadding} className="flex items-start gap-1.5 my-0.5 text-xs select-text">
               <span
                 className={`shrink-0 tabular-nums select-none font-semibold text-[11.5px] min-w-[14px] ${
                   isDark ? 'text-amber-400 dark:text-amber-300' : 'text-amber-700'
@@ -1114,18 +1128,20 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
               >
                 {num}.
               </span>
-              <span className="flex-1 break-words">{parseInlineRichText(itemContent, `n-${idx}`)}</span>
+              <span className="flex-1 break-words">
+                {itemContent ? parseInlineRichText(itemContent, `n-${idx}`) : <span className="opacity-0">&nbsp;</span>}
+              </span>
             </div>
           );
           continue;
         }
 
         // Dòng trống hoặc văn bản tiêu chuẩn
-        if (line === '') {
+        if (trimmed === '') {
           result.push(<div key={`blank-${idx}`} className="h-1.5" />);
         } else {
           result.push(
-            <div key={`p-${idx}`} className="break-words leading-relaxed select-text">
+            <div key={`p-${idx}`} className="break-words leading-relaxed select-text whitespace-pre-wrap">
               {parseInlineRichText(line, `p-${idx}`)}
             </div>
           );

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tooltip, Popover } from 'antd';
 import {
   Sparkles,
@@ -123,6 +123,14 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
     const [formatBarOpenMain, setFormatBarOpenMain] = useState<boolean>(true);
     const [isPreviewModeMain, setIsPreviewModeMain] = useState<boolean>(false);
     const [openStickerPopoverKey, setOpenStickerPopoverKey] = useState<string | null>(null);
+
+    // Tự động căn chỉnh chiều cao textarea khi nội dung thay đổi từ bên ngoài (ví dụ Áp dụng từ CKEditor)
+    useEffect(() => {
+      if (composerInputRef?.current) {
+        composerInputRef.current.style.height = 'auto';
+        composerInputRef.current.style.height = `${Math.min(composerInputRef.current.scrollHeight, 180)}px`;
+      }
+    }, [composerText, composerInputRef]);
 
     return (
       <div className="p-3" style={{ background: surfaceBg, borderTop: `1px solid ${borderColor}` }}>

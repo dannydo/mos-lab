@@ -237,4 +237,86 @@ describe('MosChatRichText', () => {
     expect(bullet.className).not.toContain('text-slate-950');
     expect(bullet.className).toContain('text-amber-400');
   });
+
+  it('renders CKEditor announcement template with headings, empty bullet line, and blockquote', () => {
+    const announcementTmpl =
+      '# 📢 THÔNG BÁO NỘI BỘ\n' +
+      '**Kính gửi:** Toàn thể đội ngũ Wings\n\n' +
+      '## 1. Mục đích thông báo\n' +
+      '• \n\n' +
+      '## 2. Nội dung chi tiết & Thời gian áp dụng\n' +
+      '• **Thời gian áp dụng:** Bắt đầu từ ngày ...\n' +
+      '• **Phạm vi áp dụng:** Toàn bộ chi nhánh\n\n' +
+      '## 3. Lưu ý quan trọng\n' +
+      '> Mọi thắc mắc xin vui lòng phản hồi trực tiếp dưới tin nhắn này để được giải đáp kịp thời.\n';
+
+    const { container } = render(<MosChatRichText content={announcementTmpl} isDark={true} />);
+
+    expect(screen.getByText(/THÔNG BÁO NỘI BỘ/)).toBeDefined();
+    expect(screen.getByText('Kính gửi:')).toBeDefined();
+    expect(screen.getByText(/Mục đích thông báo/)).toBeDefined();
+    expect(screen.getByText('Thời gian áp dụng:')).toBeDefined();
+
+    // Verify blockquote rendered
+    const bq = container.querySelector('blockquote');
+    expect(bq).not.toBeNull();
+    expect(bq?.textContent).toContain('Mọi thắc mắc xin vui lòng phản hồi');
+
+    // Verify bullets are rendered as styled spans, including the empty bullet
+    const bullets = screen.getAllByText('•');
+    expect(bullets.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('renders CKEditor meeting minutes template with empty numbered items (1. and 2.)', () => {
+    const meetingTmpl =
+      '# 📝 BIÊN BẢN CUỘC HỌP\n' +
+      '• **Thời gian:** Ngày 26/10/2026\n' +
+      '• **Thành phần tham dự:** @Danny Do\n\n' +
+      '## 1. Nội dung đã trao đổi\n' +
+      '1. \n' +
+      '2. \n\n' +
+      '## 2. Kết luận & Phân công trách nhiệm\n' +
+      '- [ ] @Danny Do: Phụ trách triển khai ...\n';
+
+    render(<MosChatRichText content={meetingTmpl} isDark={true} />);
+
+    expect(screen.getByText(/BIÊN BẢN CUỘC HỌP/)).toBeDefined();
+    expect(screen.getByText('1.')).toBeDefined();
+    expect(screen.getByText('2.')).toBeDefined();
+    expect(screen.getByText(/Phụ trách triển khai/)).toBeDefined();
+  });
+
+  it('renders markdown tables with minimal separators and empty cells without collapsing', () => {
+    const tableMd =
+      '| Cột 1 | Cột 2 | Cột 3 |\n' +
+      '| - | :-: | -: |\n' +
+      '| Dữ liệu 1 | | Dữ liệu 3 |\n';
+
+    const { container } = render(<MosChatRichText content={tableMd} isDark={true} />);
+
+    expect(screen.getByText('Cột 1')).toBeDefined();
+    expect(screen.getByText('Cột 2')).toBeDefined();
+    expect(screen.getByText('Cột 3')).toBeDefined();
+    expect(screen.getByText('Dữ liệu 1')).toBeDefined();
+    expect(screen.getByText('Dữ liệu 3')).toBeDefined();
+
+    const table = container.querySelector('table');
+    expect(table).not.toBeNull();
+  });
+
+  it('renders indented sub-bullets with visual hierarchy padding', () => {
+    const indentedBullets =
+      '• Mục chính 1\n' +
+      '  • Mục phụ 1.1\n' +
+      '    • Mục phụ 1.1.1\n';
+
+    const { container } = render(<MosChatRichText content={indentedBullets} isDark={true} />);
+
+    const bulletContainers = container.querySelectorAll('.flex.items-start.gap-1\\.5');
+    expect(bulletContainers.length).toBe(3);
+    // 2nd item has indent
+    expect((bulletContainers[1] as HTMLElement).style.paddingLeft).toBe('16px');
+    // 3rd item has double indent
+    expect((bulletContainers[2] as HTMLElement).style.paddingLeft).toBe('32px');
+  });
 });
