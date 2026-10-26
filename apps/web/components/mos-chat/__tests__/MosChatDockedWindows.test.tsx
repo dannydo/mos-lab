@@ -47,6 +47,7 @@ describe('MosChatDockedWindows iPhone Refactor', () => {
       color: '#d4a84b',
       messages: sampleMessages,
       memberCount: 5,
+      unreadCount: 0,
       updatedAt: new Date().toISOString(),
     },
   ];
@@ -139,7 +140,7 @@ describe('MosChatDockedWindows iPhone Refactor', () => {
     expect(screen.getByText('Hôm nay mi lỗi tại chi nhánh gửi về kho nhé')).toBeInTheDocument();
     expect(screen.getByText('💬 Tin nhắn')).toBeInTheDocument();
     expect(screen.getByText('⏱️ Tác vụ')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Nhắn nhanh... (Shift+Enter xuống dòng)')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Nhắn tin...')).toBeInTheDocument();
   });
 
   it('switches to Tasks view and displays pending tasks with completion checkboxes', () => {
@@ -199,5 +200,33 @@ describe('MosChatDockedWindows iPhone Refactor', () => {
     // Returned to main chat
     expect(screen.getByText('💬 Tin nhắn')).toBeInTheDocument();
     expect(screen.getByText('⏱️ Tác vụ')).toBeInTheDocument();
+  });
+
+  it('displays floating scroll to bottom button when scrolled up and scrolls to bottom when clicked', () => {
+    const scrollMock = vi.fn();
+    const { container } = render(<MosChatDockedWindows {...baseProps} />);
+
+    const scrollContainer = container.querySelector('.overflow-y-auto');
+    expect(scrollContainer).toBeDefined();
+
+    if (scrollContainer) {
+      scrollContainer.scrollTo = scrollMock;
+      Object.defineProperty(scrollContainer, 'scrollHeight', { value: 1200, configurable: true });
+      Object.defineProperty(scrollContainer, 'scrollTop', { value: 200, configurable: true });
+      Object.defineProperty(scrollContainer, 'clientHeight', { value: 400, configurable: true });
+
+      fireEvent.scroll(scrollContainer);
+
+      const scrollBottomBtn = screen.getByText('Tin nhắn mới');
+      expect(scrollBottomBtn).toBeInTheDocument();
+
+      fireEvent.click(scrollBottomBtn);
+      expect(scrollMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          top: 1200,
+          behavior: 'smooth',
+        })
+      );
+    }
   });
 });

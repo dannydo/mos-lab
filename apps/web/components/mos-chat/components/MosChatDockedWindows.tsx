@@ -25,6 +25,7 @@ import {
   MoreHorizontal,
   Paperclip,
   Check,
+  ArrowDown,
 } from 'lucide-react';
 import { Tooltip, Popover, Dropdown } from 'antd';
 import dayjs from 'dayjs';
@@ -199,6 +200,80 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = ({
   // Quick task input text per dock
   const [quickTaskInputs, setQuickTaskInputs] = useState<Record<string, string>>({});
   const [taskFilterScopes, setTaskFilterScopes] = useState<Record<string, 'pending' | 'completed' | 'all'>>({});
+
+  // Scroll to bottom detection and handlers per dock
+  const [showScrollBottomByConv, setShowScrollBottomByConv] = useState<Record<string, boolean>>({});
+  const [showScrollBottomThreadByConv, setShowScrollBottomThreadByConv] = useState<Record<string, boolean>>({});
+  const threadFeedRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const prevMsgCountRef = useRef<Record<string, number>>({});
+
+  const handleFeedScroll = (cid: string, e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const isFarFromBottom = target.scrollHeight - target.scrollTop - target.clientHeight > 100;
+    setShowScrollBottomByConv((prev) => {
+      if (prev[cid] === isFarFromBottom) return prev;
+      return { ...prev, [cid]: isFarFromBottom };
+    });
+  };
+
+  const handleThreadFeedScroll = (cid: string, e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const isFarFromBottom = target.scrollHeight - target.scrollTop - target.clientHeight > 80;
+    setShowScrollBottomThreadByConv((prev) => {
+      if (prev[cid] === isFarFromBottom) return prev;
+      return { ...prev, [cid]: isFarFromBottom };
+    });
+  };
+
+  const safeScrollToBottom = (el: HTMLElement | null, smooth = true) => {
+    if (!el) return;
+    if (typeof el.scrollTo === 'function') {
+      el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+    } else {
+      el.scrollTop = el.scrollHeight;
+    }
+  };
+
+  const scrollToBottom = useCallback(
+    (cid: string, smooth = true) => {
+      const el = dockMessagesContainerRefs.current[cid];
+      if (el) {
+        safeScrollToBottom(el, smooth);
+        setShowScrollBottomByConv((prev) => ({ ...prev, [cid]: false }));
+      }
+    },
+    [dockMessagesContainerRefs]
+  );
+
+  const scrollToBottomThread = useCallback((cid: string, smooth = true) => {
+    const el = threadFeedRefs.current[cid];
+    if (el) {
+      safeScrollToBottom(el, smooth);
+      setShowScrollBottomThreadByConv((prev) => ({ ...prev, [cid]: false }));
+    }
+  }, []);
+
+  // Auto scroll to bottom on mount or when messages arrive
+  useEffect(() => {
+    dockedConvIds.forEach((cid) => {
+      const conv = conversations.find((c) => c.id === cid);
+      if (!conv) return;
+      const count = conv.messages.length;
+      const prevCount = prevMsgCountRef.current[cid] ?? 0;
+      const el = dockMessagesContainerRefs.current[cid];
+
+      if (el) {
+        const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
+        if (prevCount === 0 || isNearBottom) {
+          safeScrollToBottom(el, prevCount !== 0);
+          setShowScrollBottomByConv((prev) => ({ ...prev, [cid]: false }));
+        } else if (count > prevCount) {
+          setShowScrollBottomByConv((prev) => ({ ...prev, [cid]: true }));
+        }
+      }
+      prevMsgCountRef.current[cid] = count;
+    });
+  }, [dockedConvIds, conversations, dockMessagesContainerRefs]);
 
   // Resizing state
   const resizingRef = useRef<{
@@ -559,7 +634,7 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = ({
 
                 {/* ================= VIEW 1: THREAD VIEW (PUSH SLIDE TRANSITION) ================= */}
                 {activeThreadId && activeThreadMsg ? (
-                  <div className="flex-1 flex flex-col min-h-0 animate-in fade-in slide-in-from-right-4 duration-200">
+                  <div className="flex-1 flex flex-col min-h-0 animate-in fade-in slide-in-from-right-4 duration-200 relative">
                     {/* Parent Message Card (Pinned Top) */}
                     <div
                       className="p-3 border-b shrink-0 flex flex-col gap-1.5 text-[12px]"
@@ -592,7 +667,13 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = ({
                     </div>
 
                     {/* Thread Replies Feed */}
-                    <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
+                    <div
+                      ref={(el) => {
+                        threadFeedRefs.current[cid] = el;
+                      }}
+                      onScroll={(e) => handleThreadFeedScroll(cid, e)}
+                      className="flex-1 overflow-y-auto p-3 space-y-2.5"
+                    >
                       {(!activeThreadMsg.thread || activeThreadMsg.thread.length === 0) && (
                         <div className="h-full flex flex-col items-center justify-center text-center text-neutral-400 text-[12px] py-8">
                           <MessageSquareReply size={28} className="text-neutral-500 mb-2 opacity-60" />
@@ -639,6 +720,26 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = ({
                         );
                       })}
                     </div>
+
+                    {/* Floating Scroll to Bottom Button in Thread */}
+                    {showScrollBottomThreadByConv[cid] && (
+                      <div className="absolute bottom-14 right-3 z-30 animate-in fade-in zoom-in-90 duration-150">
+                        <button
+                          type="button"
+                          onClick={() => scrollToBottomThread(cid, true)}
+                          className="px-3 py-1 rounded-full shadow-2xl flex items-center gap-1.5 text-[11px] font-extrabold cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 border select-none"
+                          style={{
+                            background: 'linear-gradient(135deg, #d4a84b 0%, #b45309 100%)',
+                            color: '#000',
+                            borderColor: 'rgba(255, 255, 255, 0.4)',
+                            boxShadow: '0 8px 24px -4px rgba(0, 0, 0, 0.7), 0 0 14px rgba(212, 168, 75, 0.5)',
+                          }}
+                        >
+                          <span>Mới nhất</span>
+                          <ArrowDown size={12} className="animate-bounce" />
+                        </button>
+                      </div>
+                    )}
 
                     {/* Dedicated Thread Composer */}
                     <div
@@ -847,11 +948,12 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = ({
                   </div>
                 ) : (
                   /* ================= VIEW 3: MAIN CHAT FEED (iMESSAGE BUBBLES) ================= */
-                  <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-150">
+                  <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-150 relative">
                     <div
                       ref={(el) => {
                         dockMessagesContainerRefs.current[cid] = el;
                       }}
+                      onScroll={(e) => handleFeedScroll(cid, e)}
                       className="flex-1 overflow-y-auto p-3 space-y-3"
                     >
                       {messagesToDisplay.map((m) => {
@@ -968,6 +1070,26 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = ({
                       })}
                     </div>
 
+                    {/* Floating Scroll to Bottom Button in Main Chat */}
+                    {showScrollBottomByConv[cid] && (
+                      <div className="absolute bottom-16 right-4 z-30 animate-in fade-in zoom-in-90 duration-150">
+                        <button
+                          type="button"
+                          onClick={() => scrollToBottom(cid, true)}
+                          className="px-3.5 py-1.5 rounded-full shadow-2xl flex items-center gap-1.5 text-[11px] font-extrabold cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 border select-none"
+                          style={{
+                            background: 'linear-gradient(135deg, #d4a84b 0%, #b45309 100%)',
+                            color: '#000',
+                            borderColor: 'rgba(255, 255, 255, 0.4)',
+                            boxShadow: '0 8px 24px -4px rgba(0, 0, 0, 0.7), 0 0 14px rgba(212, 168, 75, 0.5)',
+                          }}
+                        >
+                          <span>Tin nhắn mới</span>
+                          <ArrowDown size={13} className="animate-bounce" />
+                        </button>
+                      </div>
+                    )}
+
                     {/* ================= iOS PILL COMPOSER ================= */}
                     <div
                       className="p-2.5 border-t select-none"
@@ -1060,7 +1182,7 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = ({
                               handleSendMessage(cid, val, null, atts);
                             }
                           }}
-                          placeholder="Nhắn nhanh... (Shift+Enter xuống dòng)"
+                          placeholder="Nhắn tin..."
                           className="flex-1 min-h-[32px] max-h-[96px] rounded-2xl px-3.5 py-1.5 text-[12.5px] outline-none resize-none leading-relaxed transition-all focus:ring-1 focus:ring-amber-500/40"
                           style={{
                             background: surfaceRaised || 'rgba(255, 255, 255, 0.06)',
