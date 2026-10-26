@@ -12,6 +12,57 @@ import type {
 } from '@mos-lab/shared';
 import { apiClient } from '../../../lib/api-client';
 
+export function sanitizeMovedThreadDuplicates(messages: MosChatMessage[]): MosChatMessage[] {
+  if (!Array.isArray(messages) || messages.length === 0) return messages;
+
+  const movedRootCandidateIds = new Set<string>();
+  const promotedReplyCandidateIds = new Set<string>();
+
+  for (const msg of messages) {
+    if (msg.id.startsWith('msg-pr-') && !msg.isDeleted) {
+      const suffix = msg.id.slice('msg-pr-'.length);
+      if (suffix) {
+        promotedReplyCandidateIds.add(`th-${suffix}`);
+        promotedReplyCandidateIds.add(suffix);
+      }
+    }
+    for (const reply of msg.thread || []) {
+      if (reply.id.startsWith('th-mv-') && !reply.isDeleted) {
+        const suffix = reply.id.slice('th-mv-'.length);
+        if (suffix) {
+          movedRootCandidateIds.add(`msg-${suffix}`);
+          movedRootCandidateIds.add(suffix);
+        }
+      }
+    }
+  }
+
+  if (movedRootCandidateIds.size === 0 && promotedReplyCandidateIds.size === 0) {
+    return messages;
+  }
+
+  const nextMessages: MosChatMessage[] = [];
+  for (const msg of messages) {
+    const hasOwnActiveThread = Array.isArray(msg.thread) && msg.thread.some((r) => !r.isDeleted);
+    const hasOwnTask = Boolean(msg.taskId);
+    if (movedRootCandidateIds.has(msg.id) && !hasOwnActiveThread && !hasOwnTask) {
+      continue;
+    }
+
+    if (promotedReplyCandidateIds.size > 0 && Array.isArray(msg.thread) && msg.thread.length > 0) {
+      const filteredThread = msg.thread.filter((r) => !promotedReplyCandidateIds.has(r.id));
+      if (filteredThread.length !== msg.thread.length) {
+        nextMessages.push({ ...msg, thread: filteredThread });
+        continue;
+      }
+    }
+
+    nextMessages.push(msg);
+  }
+
+  return nextMessages;
+}
+
 export function mergeDeltaConversations(
   prevConversations: MosChatConversation[],
   deltaConversations: MosChatConversation[],
@@ -47,13 +98,32 @@ export function mergeDeltaConversations(
       return conv;
     }
 
+    const incomingConvMsgs = incomingConv?.messages || [];
+    const incomingConvMsgIds = new Set(incomingConvMsgs.map((m) => m.id));
+    const incomingDeltaMsgIds = new Set(incomingMsgs.map((m) => m.id));
+    const isFullTailSnapshot = Boolean(incomingConv && incomingConvMsgs.length < 30);
+    const oldestIncomingWindowMs =
+      incomingConvMsgs.length > 0
+        ? Math.min(
+            ...incomingConvMsgs
+              .map((m) => (m.createdAt ? new Date(m.createdAt).getTime() : Number.POSITIVE_INFINITY))
+              .filter(Number.isFinite)
+          )
+        : Number.POSITIVE_INFINITY;
+
     const msgMap = new Map<string, MosChatMessage>();
     for (const m of conv.messages || []) {
+      if (incomingConv && !incomingConvMsgIds.has(m.id) && !incomingDeltaMsgIds.has(m.id)) {
+        const msgCreatedMs = m.createdAt ? new Date(m.createdAt).getTime() : 0;
+        if (isFullTailSnapshot || (Number.isFinite(oldestIncomingWindowMs) && msgCreatedMs >= oldestIncomingWindowMs)) {
+          continue;
+        }
+      }
       const updatedMsn = m.missionId ? missionByReportId.get(m.missionId) : undefined;
       msgMap.set(m.id, updatedMsn ? { ...m, mission: updatedMsn } : m);
     }
 
-    for (const m of incomingConv?.messages || []) {
+    for (const m of incomingConvMsgs) {
       const existing = msgMap.get(m.id);
       msgMap.set(m.id, existing ? { ...existing, ...m } : m);
     }
@@ -63,8 +133,10 @@ export function mergeDeltaConversations(
       msgMap.set(m.id, existing ? { ...existing, ...m } : m);
     }
 
-    const mergedMessages = Array.from(msgMap.values()).sort(
-      (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+    const mergedMessages = sanitizeMovedThreadDuplicates(
+      Array.from(msgMap.values()).sort(
+        (a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime()
+      )
     );
 
     return {

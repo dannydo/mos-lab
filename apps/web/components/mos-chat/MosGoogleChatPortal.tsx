@@ -6108,6 +6108,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     if (raw) {
       return raw.length > 72 ? `${raw.slice(0, 72)}…` : raw;
     }
+    const linkedTask = uniqueTasks.find(
+      (t) => t.sourceMessageId === msg.id || (msg.taskId && t.id === msg.taskId)
+    );
+    if (linkedTask?.title) {
+      const taskText = `📌 ${linkedTask.title.replace(/\s+/g, ' ').trim()}`;
+      return taskText.length > 72 ? `${taskText.slice(0, 72)}…` : taskText;
+    }
     if (msg.attachments && msg.attachments.length > 0) {
       return `[Đính kèm ${msg.attachments.length} hình ảnh]`;
     }
@@ -6134,6 +6141,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         replyId: params.replyId,
         targetMessageId: params.targetMessageId,
       });
+      lastVersionRef.current = Date.now();
       if (res?.conversation) {
         setConversations((prev) => prev.map((c) => (c.id === convId ? res.conversation : c)));
       }

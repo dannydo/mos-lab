@@ -242,9 +242,24 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
         delta.updatedMessages.length > 0 ||
         delta.updatedMissions.length > 0
       ) {
-        setConversations((prev) =>
-          mergeDeltaConversations(prev, delta.updatedConversations, delta.updatedMessages, delta.updatedMissions)
-        );
+        setConversations((prev) => {
+          const merged = mergeDeltaConversations(
+            prev,
+            delta.updatedConversations,
+            delta.updatedMessages,
+            delta.updatedMissions
+          );
+          setAllMessagesByConv((prevMap) => {
+            const nextMap = { ...prevMap };
+            for (const c of merged) {
+              if (c.messages && c.messages.length > 0) {
+                nextMap[c.id] = c.messages;
+              }
+            }
+            return nextMap;
+          });
+          return merged;
+        });
       }
       if (delta.updatedTasks.length > 0 || delta.updatedMissions.length > 0) {
         setTasks((prev) => mergeDeltaTasks(prev, delta.updatedTasks, delta.updatedMissions));

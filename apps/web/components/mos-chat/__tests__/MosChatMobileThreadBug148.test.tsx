@@ -5,8 +5,12 @@ import { MosChatMobileMessageItem } from '../mobile/MosChatMobileMessageItem';
 import { MosChatMobileMoveThreadModal } from '../mobile/MosChatMobileMoveThreadModal';
 import { MosChatMobileReactionSheet } from '../mobile/MosChatMobileReactionSheet';
 import { MosChatProvider, useMosChat } from '../context/MosChatContext';
+import {
+  mergeDeltaConversations,
+  sanitizeMovedThreadDuplicates,
+} from '../store/useChatRealtimeSync';
 import { apiClient } from '../../../lib/api-client';
-import type { MosChatMessage } from '@mos-lab/shared';
+import type { MosChatConversation, MosChatMessage } from '@mos-lab/shared';
 
 vi.mock('../../../lib/api-client', () => ({
   apiClient: {
@@ -187,5 +191,77 @@ describe('MOS-BUG-148: Mobile Chat Subthread Move, Unread Badge, and Delete Pari
         replyId: 'reply-1',
       })
     );
+  });
+
+  it('evicts moved root messages (e.g. msg-18533f3c -> th-mv-18533f3c) from Desktop feed and delta sync', () => {
+    const movedRootZombie: MosChatMessage = {
+      id: 'msg-18533f3c',
+      conversationId: 'conv-1',
+      senderId: '6',
+      senderName: 'Nguyễn Quang Khải',
+      senderRole: 'manager',
+      text: 'Doanh thu hôm nay là của 8 khách, hay là còn khách chưa kết bill thế em',
+      timeLabel: '22:13',
+      createdAt: '2026-04-19T15:13:34.187Z',
+      reactions: {},
+      attachments: [],
+      thread: [],
+    };
+
+    const targetTaskRoot: MosChatMessage = {
+      id: 'msg-bf5499b3',
+      conversationId: 'conv-1',
+      senderId: '6',
+      senderName: 'Nguyễn Quang Khải',
+      senderRole: 'manager',
+      text: '',
+      taskId: 'task-b7ffc4e2',
+      timeLabel: '22:12',
+      createdAt: '2026-04-19T15:12:48.940Z',
+      reactions: {},
+      attachments: [],
+      thread: [
+        {
+          id: 'th-mv-18533f3c',
+          senderId: '6',
+          senderName: 'Nguyễn Quang Khải',
+          senderRole: 'manager',
+          text: 'Doanh thu hôm nay là của 8 khách, hay là còn khách chưa kết bill thế em',
+          timeLabel: '22:13',
+          createdAt: '2026-04-19T15:13:34.187Z',
+        },
+      ],
+    };
+
+    const sanitized = sanitizeMovedThreadDuplicates([targetTaskRoot, movedRootZombie]);
+    expect(sanitized.map((m) => m.id)).toEqual(['msg-bf5499b3']);
+    expect(sanitized[0].thread?.map((r) => r.id)).toEqual(['th-mv-18533f3c']);
+
+    const prevConversations: MosChatConversation[] = [
+      {
+        id: 'conv-1',
+        type: 'space',
+        name: 'Báo Cáo Kết Ca - Hằng Ngày',
+        color: '#1a73e8',
+        unreadCount: 0,
+        updatedAt: '2026-04-19T15:14:00.000Z',
+        messages: [targetTaskRoot, movedRootZombie],
+      },
+    ];
+
+    const deltaConversations: MosChatConversation[] = [
+      {
+        id: 'conv-1',
+        type: 'space',
+        name: 'Báo Cáo Kết Ca - Hằng Ngày',
+        color: '#1a73e8',
+        unreadCount: 0,
+        updatedAt: '2026-04-19T15:15:00.000Z',
+        messages: [targetTaskRoot],
+      },
+    ];
+
+    const merged = mergeDeltaConversations(prevConversations, deltaConversations, [], []);
+    expect(merged[0].messages.map((m) => m.id)).toEqual(['msg-bf5499b3']);
   });
 });

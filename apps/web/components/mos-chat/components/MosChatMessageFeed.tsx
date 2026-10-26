@@ -40,6 +40,7 @@ import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
 import { buildMaiUrgentVoiceAnnouncement } from '../utils/chat-helpers';
 import { playNeuralSpeech } from '../../voice-assistant/speech-utils';
 import { MosChatWorkflowCard } from '../workflows/MosChatWorkflowCard';
+import { sanitizeMovedThreadDuplicates } from '../store/useChatRealtimeSync';
 
 export interface MosChatMessageFeedProps {
   isMobile: boolean;
@@ -245,7 +246,8 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
     }, [uniqueTasks]);
 
     const visibleMessages = useMemo(() => {
-      return (activeConversation?.messages || []).filter(
+      const deduplicated = sanitizeMovedThreadDuplicates(activeConversation?.messages || []);
+      return deduplicated.filter(
         (m) =>
           !m.isSystemReminder &&
           m.senderId !== 'system-reminder' &&
@@ -267,8 +269,13 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
         .reverse()
         .filter((m) => {
           if (!qNorm) return true;
+          const linkedTask =
+            (m.taskId ? taskByMsgOrTaskId.get(m.taskId) : undefined) || taskByMsgOrTaskId.get(m.id);
+          const taskCode = linkedTask?.id
+            ? `TASK-${linkedTask.id.replace(/[^a-zA-Z0-9]/g, '').slice(-5)}`
+            : '';
           const hay = removeVietnameseTones(
-            `${m.senderName} ${m.text || ''} ${m.mission?.missionKey || ''}`.toLowerCase()
+            `${m.senderName} ${m.text || ''} ${linkedTask?.title || ''} ${taskCode} ${m.mission?.missionKey || ''}`.toLowerCase()
           );
           return hay.includes(qNorm);
         });
@@ -608,10 +615,18 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                   }
                 }}
                 onDrop={(e) => {
-                  if (!draggingRootMsgId || draggingRootMsgId === m.id || m.isDeleted) return;
+                  const srcId =
+                    draggingRootMsgId ||
+                    (() => {
+                      try {
+                        return e.dataTransfer?.getData('application/x-mos-chat-msg-id') || '';
+                      } catch {
+                        return '';
+                      }
+                    })();
+                  if (!srcId || srcId === m.id || m.isDeleted) return;
                   e.preventDefault();
                   e.stopPropagation();
-                  const srcId = draggingRootMsgId;
                   setDraggingRootMsgId(null);
                   setDragOverTargetMsgId(null);
                   setDragOverThreadPane(false);

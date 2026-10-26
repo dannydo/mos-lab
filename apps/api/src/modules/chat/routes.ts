@@ -53,6 +53,8 @@ import { invalidateNotificationsCache } from '../notifications/routes.js';
 import { ChatMissionBridgeService } from './chat-mission-bridge.service.js';
 import { chatRealtimeHub, computeDeltaFromSnapshot } from './chat-realtime.hub.js';
 import {
+  deduplicateMovedMessagesInConversation,
+  deleteChatMessagesFromRelationalDb,
   deleteSingleTaskFromRelationalDb,
   loadOrMigrateRelationalChatData,
   paginateConversationMessages,
@@ -441,10 +443,14 @@ let memoryStaffCache: {
 let writeChain: Promise<void> = Promise.resolve();
 
 function trimConversationsRetention(conversations: MosChatConversation[]): MosChatConversation[] {
-  return conversations.map((c) => ({
-    ...c,
-    messages: Array.isArray(c.messages) ? c.messages.slice(-MAX_MESSAGES_PER_CONVERSATION) : [],
-  }));
+  return conversations.map((c) => {
+    const nextConv: MosChatConversation = {
+      ...c,
+      messages: Array.isArray(c.messages) ? c.messages.slice(-MAX_MESSAGES_PER_CONVERSATION) : [],
+    };
+    deduplicateMovedMessagesInConversation(nextConv);
+    return nextConv;
+  });
 }
 
 function normalizeTaskTitleKey(rawTitle: string | undefined | null): string {
@@ -630,6 +636,7 @@ export function moveChatThreadItemInMemory(
   promotedMessage: MosChatMessage | null;
   movedReplies: MosChatThreadReply[];
   tasksChanged: boolean;
+  deletedMessageIds: string[];
 } {
   const { mode, sourceMessageId, replyId, targetMessageId } = params;
   const sourceIdx = conv.messages.findIndex((m) => m.id === sourceMessageId);
@@ -647,13 +654,18 @@ export function moveChatThreadItemInMemory(
       throw new Error('Không tìm thấy tin nhắn luồng đích.');
     }
 
+    const linkedTask = tasks.find(
+      (t) => t.sourceMessageId === sourceMsg.id || (sourceMsg.taskId && t.id === sourceMsg.taskId)
+    );
+    const resolvedText = (sourceMsg.text || '').trim() || (linkedTask?.title ? `📌 ${linkedTask.title}` : '');
+
     const convertedReply: MosChatThreadReply = {
       id: `th-mv-${sourceMsg.id.replace(/^msg-/, '')}`,
       senderId: sourceMsg.senderId,
       senderName: sourceMsg.senderName,
       senderRole: sourceMsg.senderRole,
       senderAvatar: sourceMsg.senderAvatar,
-      text: sourceMsg.text || '',
+      text: resolvedText,
       attachments: sourceMsg.attachments && sourceMsg.attachments.length > 0 ? sourceMsg.attachments : undefined,
       timeLabel: sourceMsg.timeLabel,
       createdAt: sourceMsg.createdAt || new Date().toISOString(),
@@ -715,6 +727,7 @@ export function moveChatThreadItemInMemory(
       promotedMessage: null,
       movedReplies: toAppend.filter((r) => !r.isMissionMilestone),
       tasksChanged,
+      deletedMessageIds: [sourceMsg.id],
     };
   }
 
@@ -776,6 +789,7 @@ export function moveChatThreadItemInMemory(
       promotedMessage: promotedMsg,
       movedReplies: [],
       tasksChanged: false,
+      deletedMessageIds: [replyId],
     };
   }
 
@@ -803,6 +817,7 @@ export function moveChatThreadItemInMemory(
       promotedMessage: null,
       movedReplies: replyItem.isMissionMilestone ? [] : [replyItem],
       tasksChanged: false,
+      deletedMessageIds: [],
     };
   }
 
@@ -1028,6 +1043,7 @@ async function saveConversations(
       parentMessageId: string;
       reply: MosChatThreadReply;
     };
+    deletedMessageIds?: string[];
   }
 ) {
   const trimmed = trimConversationsRetention(conversations);
@@ -1041,6 +1057,9 @@ async function saveConversations(
   writeChain = writeChain
     .then(async () => {
       const relationalPromise = (async () => {
+        if (hint?.deletedMessageIds && hint.deletedMessageIds.length > 0) {
+          await deleteChatMessagesFromRelationalDb(fastify, hint.deletedMessageIds);
+        }
         if (hint?.touchedReply) {
           if (hint.touchedConversation) {
             await upsertSingleConversationHeaderToRelationalDb(fastify, hint.touchedConversation);
@@ -2094,7 +2113,9 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         await ChatMissionBridgeService.syncLinkedMissionsIntoChatState(fastify, conversations, tasks);
       }
 
-      await saveConversations(fastify, conversations);
+      await saveConversations(fastify, conversations, {
+        deletedMessageIds: moveResult.deletedMessageIds,
+      });
       if (moveResult.tasksChanged || moveResult.targetMessage?.missionId) {
         await saveTasks(fastify, tasks);
       }

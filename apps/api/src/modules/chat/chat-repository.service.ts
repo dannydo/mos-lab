@@ -206,6 +206,102 @@ function parseSafeDate(iso?: string | null): Date {
 }
 
 /**
+ * Removes zombie root messages (`msg-<suffix>`) that were already merged into a thread (`th-mv-<suffix>`)
+ * and zombie thread replies (`th-<suffix>`) that were already promoted to root (`msg-pr-<suffix>`).
+ */
+export function deduplicateMovedMessagesInConversation(conv: MosChatConversation): {
+  removedMessageIds: string[];
+  changed: boolean;
+} {
+  const removedMessageIds: string[] = [];
+  if (!conv || !Array.isArray(conv.messages)) {
+    return { removedMessageIds, changed: false };
+  }
+
+  const movedRootCandidateIds = new Set<string>();
+  const promotedReplyCandidateIds = new Set<string>();
+
+  for (const msg of conv.messages) {
+    if (msg.id.startsWith('msg-pr-') && !msg.isDeleted) {
+      const suffix = msg.id.slice('msg-pr-'.length);
+      if (suffix) {
+        promotedReplyCandidateIds.add(`th-${suffix}`);
+        promotedReplyCandidateIds.add(suffix);
+      }
+    }
+    for (const reply of msg.thread || []) {
+      if (reply.id.startsWith('th-mv-') && !reply.isDeleted) {
+        const suffix = reply.id.slice('th-mv-'.length);
+        if (suffix) {
+          movedRootCandidateIds.add(`msg-${suffix}`);
+          movedRootCandidateIds.add(suffix);
+        }
+      }
+    }
+  }
+
+  if (movedRootCandidateIds.size === 0 && promotedReplyCandidateIds.size === 0) {
+    return { removedMessageIds, changed: false };
+  }
+
+  let changed = false;
+  const nextMessages: MosChatMessage[] = [];
+  for (const msg of conv.messages) {
+    const hasOwnActiveThread = Array.isArray(msg.thread) && msg.thread.some((r) => !r.isDeleted);
+    const hasOwnTask = Boolean(msg.taskId);
+    if (movedRootCandidateIds.has(msg.id) && !hasOwnActiveThread && !hasOwnTask) {
+      removedMessageIds.push(msg.id);
+      changed = true;
+      continue;
+    }
+
+    if (promotedReplyCandidateIds.size > 0 && Array.isArray(msg.thread) && msg.thread.length > 0) {
+      const nextThread: MosChatThreadReply[] = [];
+      for (const reply of msg.thread) {
+        if (promotedReplyCandidateIds.has(reply.id)) {
+          removedMessageIds.push(reply.id);
+          changed = true;
+        } else {
+          nextThread.push(reply);
+        }
+      }
+      if (nextThread.length !== msg.thread.length) {
+        msg.thread = nextThread;
+      }
+    }
+    nextMessages.push(msg);
+  }
+
+  if (changed) {
+    conv.messages = nextMessages;
+  }
+
+  return { removedMessageIds, changed };
+}
+
+/**
+ * Direct O(1) Row Delete for moved/removed chat messages or thread replies.
+ */
+export async function deleteChatMessagesFromRelationalDb(
+  fastify: FastifyInstance,
+  messageIds: string[]
+): Promise<void> {
+  const uniqueIds = Array.from(new Set((messageIds || []).filter(Boolean)));
+  if (uniqueIds.length === 0) return;
+  const ready = await ensureChatRelationalTables(fastify);
+  const crm = (fastify as SafeAny)?.prisma?.crm;
+  if (!ready || !crm?.crmChatMessage) return;
+
+  try {
+    await crm.crmChatMessage.deleteMany({
+      where: { id: { in: uniqueIds } },
+    });
+  } catch (err) {
+    fastify.log?.warn?.({ err }, 'deleteChatMessagesFromRelationalDb warning');
+  }
+}
+
+/**
  * Syncs an array of conversations (including root messages & thread replies) to relational Prisma tables.
  */
 export async function syncConversationsToRelationalDb(
@@ -217,7 +313,12 @@ export async function syncConversationsToRelationalDb(
   if (!ready || !crm?.crmChatConversation) return;
 
   try {
+    const removedIdsToDelete: string[] = [];
     for (const conv of conversations) {
+      const dedup = deduplicateMovedMessagesInConversation(conv);
+      if (dedup.removedMessageIds.length > 0) {
+        removedIdsToDelete.push(...dedup.removedMessageIds);
+      }
       const { messages, ...convHeader } = conv;
       const safeSubtitle = conv.subtitle ? String(conv.subtitle).slice(0, 255) : null;
       const safeName = String(conv.name || conv.id).slice(0, 255);
@@ -332,6 +433,9 @@ export async function syncConversationsToRelationalDb(
           });
         }
       }
+    }
+    if (removedIdsToDelete.length > 0) {
+      await deleteChatMessagesFromRelationalDb(fastify, removedIdsToDelete);
     }
   } catch (err) {
     fastify.log?.warn?.({ err }, 'syncConversationsToRelationalDb warning');
@@ -825,13 +929,14 @@ export async function loadOrMigrateRelationalChatData(
       }
     }
 
+    const zombieMessageIdsToPurge: string[] = [];
     const reconstructedConvs: MosChatConversation[] = dbConvs.map((row: SafeAny) => {
       const payload = (row.payloadJson || {}) as SafeAny;
       const rootMsgs = (rootMessagesByConvId.get(row.id) || []).map((m) => ({
         ...m,
         thread: repliesByParentId.get(m.id) || m.thread || [],
       }));
-      return {
+      const convObj: MosChatConversation = {
         ...payload,
         id: row.id,
         type: (row.type as 'dm' | 'space') || 'space',
@@ -848,7 +953,16 @@ export async function loadOrMigrateRelationalChatData(
         messages: rootMsgs,
         updatedAt: payload.updatedAt || row.updatedAt.toISOString(),
       };
+      const dedup = deduplicateMovedMessagesInConversation(convObj);
+      if (dedup.removedMessageIds.length > 0) {
+        zombieMessageIdsToPurge.push(...dedup.removedMessageIds);
+      }
+      return convObj;
     });
+
+    if (zombieMessageIdsToPurge.length > 0) {
+      await deleteChatMessagesFromRelationalDb(fastify, zombieMessageIdsToPurge);
+    }
 
     // Ensure any new conversations in legacyData not yet in DB are preserved
     const dbConvIds = new Set(reconstructedConvs.map((c) => c.id));

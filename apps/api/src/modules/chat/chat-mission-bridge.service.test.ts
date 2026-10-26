@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { buildMissionSummaryFromReport, ChatMissionBridgeService } from './chat-mission-bridge.service.js';
+import { deduplicateMovedMessagesInConversation } from './chat-repository.service.js';
 import { deduplicateTasks, moveChatThreadItemInMemory } from './routes.js';
 
 describe('ChatMissionBridgeService.buildMissionSummaryFromReport', () => {
@@ -774,5 +775,71 @@ describe('ChatMissionBridgeService.buildMissionSummaryFromReport', () => {
     assert.equal(notificationRecipient?.recipientStaffId, 1);
     assert.equal(conv.messages[0].missionSyncedStage, 'RECEIVED');
     assert.ok(conv.messages[0].thread[0].text.includes('Yêu cầu nâng cấp / chỉnh thêm'));
+  });
+
+  it('MOS-BUG-148: returns deletedMessageIds on MERGE_ROOT_TO_THREAD and deduplicates zombie moved root messages', () => {
+    const conv: SafeAny = {
+      id: 'space-daily-report',
+      name: 'Báo Cáo Kết Ca - Hằng Ngày',
+      type: 'space',
+      color: '#1a73e8',
+      unreadCount: 0,
+      messages: [
+        {
+          id: 'msg-bf5499b3',
+          conversationId: 'space-daily-report',
+          senderId: '6',
+          senderName: 'Nguyễn Quang Khải',
+          senderRole: 'manager',
+          text: '',
+          taskId: 'task-b7ffc4e2',
+          timeLabel: '22:12',
+          createdAt: '2026-04-19T15:12:48.940Z',
+          thread: [],
+        },
+        {
+          id: 'msg-18533f3c',
+          conversationId: 'space-daily-report',
+          senderId: '6',
+          senderName: 'Nguyễn Quang Khải',
+          senderRole: 'manager',
+          text: 'Doanh thu hôm nay là của 8 khách, hay là còn khách chưa kết bill thế em',
+          timeLabel: '22:13',
+          createdAt: '2026-04-19T15:13:34.187Z',
+          thread: [],
+        },
+      ],
+    };
+
+    const moveResult = moveChatThreadItemInMemory(conv, [], {
+      mode: 'MERGE_ROOT_TO_THREAD',
+      sourceMessageId: 'msg-18533f3c',
+      targetMessageId: 'msg-bf5499b3',
+    });
+
+    assert.equal(moveResult.targetMessage?.id, 'msg-bf5499b3');
+    assert.deepEqual(moveResult.deletedMessageIds, ['msg-18533f3c']);
+    assert.equal(conv.messages.length, 1);
+    assert.equal(conv.messages[0].id, 'msg-bf5499b3');
+    assert.equal(conv.messages[0].thread[0].id, 'th-mv-18533f3c');
+
+    // Simulate relational DB reload where zombie root message msg-18533f3c was still in crm_chat_messages
+    conv.messages.push({
+      id: 'msg-18533f3c',
+      conversationId: 'space-daily-report',
+      senderId: '6',
+      senderName: 'Nguyễn Quang Khải',
+      senderRole: 'manager',
+      text: 'Doanh thu hôm nay là của 8 khách, hay là còn khách chưa kết bill thế em',
+      timeLabel: '22:13',
+      createdAt: '2026-04-19T15:13:34.187Z',
+      thread: [],
+    });
+
+    const dedupResult = deduplicateMovedMessagesInConversation(conv);
+    assert.deepEqual(dedupResult.removedMessageIds, ['msg-18533f3c']);
+    assert.equal(dedupResult.changed, true);
+    assert.equal(conv.messages.length, 1);
+    assert.equal(conv.messages[0].id, 'msg-bf5499b3');
   });
 });
