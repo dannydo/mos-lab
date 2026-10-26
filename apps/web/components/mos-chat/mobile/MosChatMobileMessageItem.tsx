@@ -163,6 +163,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        id={`mos-chat-msg-${message.id}`}
         onContextMenu={(e) => {
           e.preventDefault();
           if (message.isDeleted) return;
@@ -173,7 +174,7 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
           transition: swipeOffset === 0 ? 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
           touchAction: 'pan-y',
         }}
-        className={`relative flex flex-col my-1 select-none ${isMe ? 'items-end' : 'items-start'}`}
+        className={`relative flex flex-col my-1 select-none transition-all duration-300 rounded-2xl ${isMe ? 'items-end' : 'items-start'}`}
       >
         {/* Swipe Right Indicator */}
         {swipeOffset > 10 && (

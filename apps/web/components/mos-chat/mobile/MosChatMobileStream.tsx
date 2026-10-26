@@ -1,7 +1,18 @@
 'use client';
 
 import React, { useRef, useEffect, useState, useMemo } from 'react';
-import { ArrowDown, MessageSquare, Sparkles, Hash, Lock, Loader2 } from 'lucide-react';
+import {
+  ArrowDown,
+  MessageSquare,
+  Sparkles,
+  Hash,
+  Lock,
+  Loader2,
+  Pin,
+  PinOff,
+  ChevronRight,
+  CornerDownRight,
+} from 'lucide-react';
 import dayjs from 'dayjs';
 import type { MosChatMessage } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
@@ -10,15 +21,37 @@ import { MosChatMobileMessageItem } from './MosChatMobileMessageItem';
 export interface MosChatMobileStreamProps {
   onOpenThread: (msg: MosChatMessage) => void;
   onOpenGallery?: (message: MosChatMessage, attachmentIndex: number) => void;
+  onOpenPinnedTab?: () => void;
 }
 
-export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({ onOpenThread, onOpenGallery }) => {
-  const { messages, activeConversation, activeConvId, isAiThinking } = useMosChat();
+export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
+  onOpenThread,
+  onOpenGallery,
+  onOpenPinnedTab,
+}) => {
+  const { messages, activeConversation, activeConvId, isAiThinking, pinnedMessages, togglePinMessage } = useMosChat();
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [showScrollBottom, setShowScrollBottom] = useState<boolean>(false);
   const [unreadBelowCount, setUnreadBelowCount] = useState<number>(0);
+  const [pinnedBannerIndex, setPinnedBannerIndex] = useState<number>(0);
   const prevMessagesLengthRef = useRef<number>(messages.length);
+
+  const currentPinnedMsg = useMemo(() => {
+    if (!pinnedMessages || pinnedMessages.length === 0) return null;
+    return pinnedMessages[pinnedBannerIndex % pinnedMessages.length];
+  }, [pinnedMessages, pinnedBannerIndex]);
+
+  const handleScrollToMessage = (msgId: string) => {
+    const el = document.getElementById(`mos-chat-msg-${msgId}`);
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('ring-2', 'ring-amber-400', 'bg-amber-500/10');
+      setTimeout(() => {
+        el.classList.remove('ring-2', 'ring-amber-400', 'bg-amber-500/10');
+      }, 2500);
+    }
+  };
 
   // Group messages by day
   const groupedMessages = useMemo(() => {
@@ -79,6 +112,63 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({ onOpen
 
   return (
     <div className="relative flex-1 flex flex-col h-full bg-slate-950 overflow-hidden">
+      {/* Top Pinned Messages Banner (Google Chat mobile style) */}
+      {pinnedMessages.length > 0 && currentPinnedMsg && (
+        <div className="shrink-0 px-3 py-2 bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-slate-900 border-b border-amber-500/30 flex items-center justify-between gap-2 shadow-sm z-20 backdrop-blur-md">
+          <div
+            onClick={() => handleScrollToMessage(currentPinnedMsg.id)}
+            className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer active:opacity-75"
+            role="button"
+            tabIndex={0}
+            aria-label={`Đi đến tin nhắn đã ghim: ${currentPinnedMsg.senderName}`}
+          >
+            <Pin className="w-4 h-4 text-amber-400 fill-amber-400 shrink-0" />
+            <div className="min-w-0 flex-1 flex items-center gap-1.5 text-xs">
+              <span className="font-bold text-amber-400 shrink-0 tabular-nums">
+                Ghim{pinnedMessages.length > 1 ? ` (${(pinnedBannerIndex % pinnedMessages.length) + 1}/${pinnedMessages.length})` : ''}:
+              </span>
+              <span className="font-semibold text-white shrink-0">{currentPinnedMsg.senderName}:</span>
+              <span className="text-slate-300 truncate">{currentPinnedMsg.text || 'Tệp đính kèm'}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0">
+            {pinnedMessages.length > 1 && (
+              <button
+                type="button"
+                onClick={() => setPinnedBannerIndex((prev) => (prev + 1) % pinnedMessages.length)}
+                className="p-1 rounded text-slate-400 hover:text-amber-400 active:scale-95 transition-transform"
+                aria-label="Tin ghim tiếp theo"
+                title="Tin ghim tiếp theo"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
+
+            {onOpenPinnedTab && (
+              <button
+                type="button"
+                onClick={onOpenPinnedTab}
+                className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 active:scale-95 transition-transform tabular-nums"
+                aria-label="Xem tất cả tin ghim"
+              >
+                Tất cả ({pinnedMessages.length})
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => togglePinMessage(currentPinnedMsg.id)}
+              className="p-1 rounded text-slate-400 hover:text-rose-400 active:scale-95 transition-transform"
+              aria-label="Bỏ ghim tin nhắn"
+              title="Bỏ ghim"
+            >
+              <PinOff className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Scrollable Message Feed */}
       <div
         ref={containerRef}

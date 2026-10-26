@@ -62,7 +62,7 @@ function ChatPageContent() {
 
   if (isMobile) {
     return (
-      <MosChatProvider currentUser={currentUser}>
+      <MosChatProvider currentUser={currentUser} initialConvId={convId} initialSubtab={tab}>
         <MosChatMobileApp standalone={true} />
       </MosChatProvider>
     );

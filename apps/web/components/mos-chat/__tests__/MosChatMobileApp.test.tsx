@@ -1358,4 +1358,157 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
       );
     });
   });
+
+  it('displays pinned message banner in mobile chat room and toggles pinned tab (MOS-BUG-151)', async () => {
+    vi.mocked(apiClient.chat.bootstrap).mockResolvedValueOnce({
+      conversations: [
+        {
+          id: 'space-pinned',
+          type: 'space',
+          name: 'Kênh Thông Báo',
+          subtitle: 'Kênh nội bộ',
+          color: '#d4a72c',
+          memberCount: 10,
+          memberIds: [10, 99],
+          unreadCount: 0,
+          updatedAt: new Date().toISOString(),
+          messages: [
+            {
+              id: 'm-pinned-1',
+              conversationId: 'space-pinned',
+              senderId: '1',
+              senderName: 'Danny Do',
+              senderRole: 'admin',
+              text: 'Nội quy và thông báo quan trọng của salon',
+              timeLabel: '09:00',
+              createdAt: new Date().toISOString(),
+              pinned: true,
+            },
+            {
+              id: 'm-regular',
+              conversationId: 'space-pinned',
+              senderId: '10',
+              senderName: 'Chuyên Viên Mai',
+              senderRole: 'CV',
+              text: 'Chào buổi sáng cả nhà!',
+              timeLabel: '09:05',
+              createdAt: new Date().toISOString(),
+              pinned: false,
+            },
+          ],
+        },
+      ],
+      tasks: [],
+      staffDirectory: [{ id: 10, username: 'mai_cv', role: 'CV', displayName: 'Chuyên Viên Mai' }],
+      userPrefs: { pinnedIds: [] },
+    } as any);
+
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Kênh Thông Báo')).toBeTruthy();
+    });
+
+    // Tap into room
+    fireEvent.click(screen.getByText('Kênh Thông Báo'));
+
+    // Verify pinned message banner is displayed at the top of mobile stream
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Đi đến tin nhắn đã ghim: Danny Do/i)).toBeTruthy();
+      expect(screen.getByRole('button', { name: /Xem tất cả tin ghim/i })).toBeTruthy();
+    });
+
+    // Tap on header pin button to open Pinned tab
+    const pinHeaderBtn = screen.getByLabelText('Xem tin nhắn đã ghim');
+    fireEvent.click(pinHeaderBtn);
+
+    // Verify Pinned Messages tab is displayed
+    await waitFor(() => {
+      expect(screen.getByText('Tin nhắn đã ghim')).toBeTruthy();
+      expect(screen.getByText('Nội quy và thông báo quan trọng của salon')).toBeTruthy();
+      expect(screen.getByRole('button', { name: /Đi đến tin nhắn/i })).toBeTruthy();
+    });
+
+    // Test search inside pinned tab
+    const searchInput = screen.getByPlaceholderText(/Tìm kiếm trong tin nhắn ghim/i);
+    fireEvent.change(searchInput, { target: { value: 'Nội quy' } });
+    expect(screen.getByText('Nội quy và thông báo quan trọng của salon')).toBeTruthy();
+
+    fireEvent.change(searchInput, { target: { value: 'Không có kết quả nào' } });
+    expect(screen.getByText('Không tìm thấy tin nhắn ghim phù hợp')).toBeTruthy();
+
+    // Clear search
+    fireEvent.change(searchInput, { target: { value: '' } });
+
+    // Test navigation back to chat
+    const backToChatBtn = screen.getByRole('button', { name: /Trò chuyện/i });
+    fireEvent.click(backToChatBtn);
+
+    // Verify back to chat stream
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Nhắn tin/i)).toBeTruthy();
+    });
+  });
+
+  it('allows unpinning message from mobile pinned banner (MOS-BUG-151)', async () => {
+    vi.mocked(apiClient.chat.bootstrap).mockResolvedValueOnce({
+      conversations: [
+        {
+          id: 'space-pinned-2',
+          type: 'space',
+          name: 'Kênh Test Ghim',
+          subtitle: 'Kênh test',
+          color: '#d4a72c',
+          memberCount: 5,
+          memberIds: [99],
+          unreadCount: 0,
+          updatedAt: new Date().toISOString(),
+          messages: [
+            {
+              id: 'm-pinned-test',
+              conversationId: 'space-pinned-2',
+              senderId: '1',
+              senderName: 'Danny Do',
+              senderRole: 'admin',
+              text: 'Tin nhắn cần bỏ ghim',
+              timeLabel: '09:00',
+              createdAt: new Date().toISOString(),
+              pinned: true,
+            },
+          ],
+        },
+      ],
+      tasks: [],
+      staffDirectory: [],
+      userPrefs: { pinnedIds: [] },
+    } as any);
+
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Kênh Test Ghim')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('Kênh Test Ghim'));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Đi đến tin nhắn đã ghim: Danny Do/i)).toBeTruthy();
+    });
+
+    // Unpin from banner
+    const unpinBtn = screen.getByRole('button', { name: /Bỏ ghim tin nhắn/i });
+    fireEvent.click(unpinBtn);
+
+    await waitFor(() => {
+      expect(apiClient.chat.togglePinMessage).toHaveBeenCalledWith('m-pinned-test', 'space-pinned-2');
+    });
+  });
 });
