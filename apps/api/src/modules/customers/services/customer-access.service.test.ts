@@ -79,13 +79,17 @@ test('telesales is denied for a different owner, returned-to-pool customer, or s
 });
 
 test('non-manager roles retain their existing narrow list scope', () => {
-  assert.equal(CustomerAccessService.resolveListAssignedStaffId({ id: 61, role: 'technician' }, undefined), 'me');
+  // CV roles always resolve to 'none' per 8d4708ad
+  assert.equal(CustomerAccessService.resolveListAssignedStaffId({ id: 60, role: 'technician' }, undefined), 'none');
+
+  // Other non-manager roles
+  assert.equal(CustomerAccessService.resolveListAssignedStaffId({ id: 61, role: 'receptionist' }, undefined), 'me');
   assert.equal(
-    CustomerAccessService.resolveListAssignedStaffId({ id: 61, role: 'technician' }, 'unassigned'),
+    CustomerAccessService.resolveListAssignedStaffId({ id: 61, role: 'receptionist' }, 'unassigned'),
     'unassigned'
   );
   assert.equal(
-    CustomerAccessService.resolveListAssignedStaffId({ id: 61, role: 'technician' }, undefined, 'NEW_LOCA'),
+    CustomerAccessService.resolveListAssignedStaffId({ id: 61, role: 'receptionist' }, undefined, 'NEW_LOCA'),
     undefined
   );
 });

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, SendHorizontal, Mic, Smile, X, ImagePlus, Loader2, FileText, File } from 'lucide-react';
+import { Plus, SendHorizontal, Mic, Smile, X, ImagePlus, Loader2, FileText, File, Sparkles } from 'lucide-react';
 import { message as antdMessage } from 'antd';
 import type { MosChatImageAttachment } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
@@ -9,6 +9,7 @@ import type { MosChatStickerPackId } from '../mos-chat-stickers';
 import { MosChatMobileMentionAutocomplete } from './MosChatMobileMentionAutocomplete';
 import { extractMentionedStaff, isStaffInConversationMembers, isImageAttachment, getFileExtension } from '../utils/chat-helpers';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
+import { AI_COPILOT_CONV_ID, AI_QUICK_PROMPTS } from '../constants/chat-constants';
 
 export interface MosChatMobileComposerProps {
   onOpenActionSheet: () => void;
@@ -134,8 +135,15 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
     }
   };
 
+  const isAiChat = activeConversation?.id === AI_COPILOT_CONV_ID;
   const isKeyboardOpen = keyboardOffset > 50;
-  const placeholder = activeConversation?.name ? `Nhắn tin trong #${activeConversation.name}...` : 'Nhập tin nhắn...';
+  const placeholder = isAiChat
+    ? 'Hỏi MAI bất kỳ điều gì (báo cáo, khách hàng, số liệu...)...'
+    : replyingToMessage
+      ? 'Nhập câu trả lời...'
+      : activeConversation?.name
+        ? `Nhắn tin trong #${activeConversation.name}...`
+        : 'Nhập tin nhắn...';
 
   return (
     <div
@@ -253,6 +261,29 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
         <div className="flex items-center gap-2 px-3 py-1.5 mb-2 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300">
           <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0 text-amber-400" />
           <span>Đang tải hình ảnh lên...</span>
+        </div>
+      )}
+
+      {/* AI Quick Prompts Bar on Mobile */}
+      {isAiChat && (
+        <div className="flex items-center gap-1.5 pb-2 overflow-x-auto no-scrollbar">
+          {AI_QUICK_PROMPTS.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              onClick={async () => {
+                if (isSending || isUploadingImages) return;
+                setIsSending(true);
+                await sendMessage(item.prompt);
+                setIsSending(false);
+                onSendSuccess?.();
+              }}
+              className="shrink-0 px-2.5 py-1 text-xs rounded-full bg-purple-950/50 hover:bg-purple-900/60 text-purple-200 border border-purple-500/30 active:scale-95 transition-all shadow-sm flex items-center gap-1"
+            >
+              <Sparkles className="w-3 h-3 text-purple-400" />
+              <span>{item.label}</span>
+            </button>
+          ))}
         </div>
       )}
 

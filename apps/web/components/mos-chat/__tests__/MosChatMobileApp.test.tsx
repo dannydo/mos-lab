@@ -154,6 +154,27 @@ vi.mock('../../../lib/api-client', () => ({
         },
       })),
     },
+    ai: {
+      sendMessage: vi.fn().mockResolvedValue({
+        sessionId: 'sess-1',
+        session: { id: 'sess-1' },
+        message: {
+          id: 'msg-ai-res-1',
+          role: 'model',
+          content: 'Chào anh Danny, em là MAI! Em có thể giúp gì cho anh hôm nay?',
+          thinking: 'Đang tra cứu lịch dặm mi của tiệm...',
+          suggestedActions: [
+            {
+              type: 'APPLY_FILTER',
+              label: 'Lọc khách cần chăm sóc',
+              payload: { filter: 'vip' },
+            },
+          ],
+        },
+      }),
+      listSessions: vi.fn().mockResolvedValue({ sessions: [] }),
+      createSession: vi.fn().mockResolvedValue({ session: { id: 'sess-1' } }),
+    },
   },
 }));
 
@@ -1356,6 +1377,104 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
           text: expect.stringContaining('📌 Đã giao việc cho Main Task: "Chuẩn bị phòng dặm mi ca chiều"'),
         })
       );
+    });
+  });
+
+  it('renders AI Copilot (🤖 MAI) on mobile inbox, supports quick prompts and sends message to AI (MOS-BUG-153)', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    // 1. Verify MAI is pinned in inbox
+    await waitFor(() => {
+      expect(screen.getByText('🤖 MAI')).toBeTruthy();
+      expect(screen.getByText(/tích hợp trực tiếp vào/i)).toBeTruthy();
+    });
+
+    // 2. Open AI Copilot room
+    fireEvent.click(screen.getByText('🤖 MAI'));
+
+    // 3. Verify AI Welcome Card and quick prompts are visible
+    await waitFor(() => {
+      expect(screen.getByText('Trợ lý mOS AI (MAI)')).toBeTruthy();
+      expect(screen.getByText('Giải thích nhóm khách (Buckets)')).toBeTruthy();
+    });
+
+    // 4. Click a quick prompt chip
+    fireEvent.click(screen.getByText('Giải thích nhóm khách (Buckets)'));
+
+    // 5. Verify apiClient.ai.sendMessage was called with the corresponding prompt
+    await waitFor(() => {
+      expect(apiClient.ai.sendMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('Giải thích các nhóm khách hàng COMBO_LIVE'),
+        })
+      );
+    });
+
+    // 6. Verify AI reply, reasoning badge, and action button are rendered
+    await waitFor(() => {
+      expect(screen.getByText(/Chào anh Danny/i)).toBeTruthy();
+      expect(screen.getByText('Lọc khách cần chăm sóc')).toBeTruthy();
+      expect(screen.getByText(/Quá trình suy luận của MAI/i)).toBeTruthy();
+    });
+  });
+
+  it('allows opening AI Copilot directly from mobile action sheet and new DM modal (MOS-BUG-153)', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    // 1. Test opening AI from New DM modal in inbox
+    await waitFor(() => {
+      expect(screen.getByLabelText('Soạn tin nhắn DM mới')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByLabelText('Soạn tin nhắn DM mới'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Trợ lý AI · Tra cứu dữ liệu/i)).toBeTruthy();
+    });
+
+    // Click the MAI item inside modal
+    fireEvent.click(screen.getByText(/Trợ lý AI · Tra cứu dữ liệu/i));
+
+    // Verify navigating to AI Copilot room
+    await waitFor(() => {
+      expect(screen.getByText('Trợ lý mOS AI (MAI)')).toBeTruthy();
+    });
+
+    // Back to inbox
+    fireEvent.click(screen.getByLabelText('Quay lại danh sách hội thoại'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Shop Operations')).toBeTruthy();
+    });
+
+    // 2. Navigate to a regular room and open AI from action sheet
+    fireEvent.click(screen.getByText('Shop Operations'));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Tác vụ đính kèm')).toBeTruthy();
+    });
+
+    // Open action sheet
+    fireEvent.click(screen.getByLabelText('Tác vụ đính kèm'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Trợ lý Wings AI')).toBeTruthy();
+    });
+
+    // Tap AI Copilot in Action Sheet
+    fireEvent.click(screen.getByText('Trợ lý Wings AI'));
+
+    // Verify navigating to AI Copilot room
+    await waitFor(() => {
+      expect(screen.getByText('Trợ lý mOS AI (MAI)')).toBeTruthy();
     });
   });
 });

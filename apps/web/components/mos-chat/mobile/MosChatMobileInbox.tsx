@@ -18,7 +18,7 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 import { useMosChat } from '../context/MosChatContext';
 import type { MosChatConversation, MosChatStaffMember } from '@mos-lab/shared';
 import { formatChatPreviewWithStickers } from '../mos-chat-stickers';
-import { isSpaceEmoji } from '../constants/chat-constants';
+import { AI_COPILOT_CONV_ID, isSpaceEmoji } from '../constants/chat-constants';
 import { MosChatAvatar } from '../MosChatAvatar';
 
 dayjs.extend(relativeTime);
@@ -55,7 +55,7 @@ export const MosChatMobileInbox: React.FC = () => {
 
   // Filter conversations
   const filteredConversations = useMemo(() => {
-    return conversations.filter((c) => {
+    const list = conversations.filter((c) => {
       // Search filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
@@ -72,6 +72,12 @@ export const MosChatMobileInbox: React.FC = () => {
       if (sidebarFilter === 'dms') return c.type === 'dm';
 
       return true;
+    });
+
+    return [...list].sort((a, b) => {
+      if (a.id === AI_COPILOT_CONV_ID) return -1;
+      if (b.id === AI_COPILOT_CONV_ID) return 1;
+      return 0;
     });
   }, [conversations, searchQuery, sidebarFilter]);
 
@@ -467,6 +473,37 @@ export const MosChatMobileInbox: React.FC = () => {
 
           {/* Staff List */}
           <div className="flex-1 overflow-y-auto max-h-[50vh] divide-y divide-slate-800/40 overscroll-contain pr-1">
+            {/* Trợ lý mOS AI (MAI) direct shortcut */}
+            {(modalDeptFilter === 'ALL' || modalDeptFilter === 'ADMIN' || !modalSearchQuery || /mai|ai|copilot/i.test(modalSearchQuery)) && (
+              <div
+                onClick={() => {
+                  setNewDmModalOpen(false);
+                  handleSelectConv(AI_COPILOT_CONV_ID);
+                }}
+                role="button"
+                tabIndex={0}
+                className="w-full py-2.5 px-2 flex items-center justify-between hover:bg-slate-800/60 active:bg-slate-800 rounded-xl cursor-pointer transition-colors"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 shrink-0">
+                    <Sparkles className="w-5 h-5 animate-pulse" />
+                  </div>
+                  <div className="min-w-0 text-left">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-semibold text-white truncate">🤖 MAI</p>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 font-bold uppercase border border-purple-500/40">
+                        mOS AI
+                      </span>
+                    </div>
+                    <p className="text-xs text-purple-300/80 truncate">
+                      Trợ lý AI · Tra cứu dữ liệu & Phân tích riêng tư
+                    </p>
+                  </div>
+                </div>
+                <Sparkles className="w-4 h-4 text-purple-400 shrink-0" />
+              </div>
+            )}
+
             {modalStaffList.length === 0 ? (
               <div className="py-8 text-center text-slate-400">
                 <Users className="w-8 h-8 text-slate-600 mx-auto mb-2" />

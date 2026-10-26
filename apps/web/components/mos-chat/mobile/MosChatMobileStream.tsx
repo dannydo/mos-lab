@@ -5,6 +5,7 @@ import { ArrowDown, MessageSquare, Sparkles, Hash, Lock, Loader2 } from 'lucide-
 import dayjs from 'dayjs';
 import type { MosChatMessage } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
+import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
 import { MosChatMobileMessageItem } from './MosChatMobileMessageItem';
 
 export interface MosChatMobileStreamProps {
@@ -86,17 +87,34 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({ onOpen
         className="flex-1 overflow-y-auto overscroll-contain px-3 py-3 space-y-2 select-none"
       >
         {/* Welcome Header */}
-        <div className="pt-6 pb-4 text-center border-b border-slate-800/40 mb-4">
-          <div className="w-14 h-14 mx-auto rounded-3xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 mb-2.5 shadow-sm">
-            {isSpace ? <Hash className="w-7 h-7" /> : <MessageSquare className="w-7 h-7" />}
+        {activeConversation?.id === AI_COPILOT_CONV_ID ? (
+          <div className="pt-6 pb-4 text-center border-b border-purple-500/30 mb-4 bg-gradient-to-b from-purple-950/20 to-transparent rounded-2xl">
+            <div className="w-14 h-14 mx-auto rounded-3xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white mb-2.5 shadow-lg shadow-purple-500/25">
+              <Sparkles className="w-7 h-7 animate-pulse text-white" />
+            </div>
+            <h2 className="text-base font-bold text-white flex items-center justify-center gap-1.5">
+              <span>Trợ lý mOS AI (MAI)</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold uppercase border border-purple-500/40">
+                mOS AI
+              </span>
+            </h2>
+            <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto leading-relaxed">
+              Kênh 1-1 riêng tư · Mọi trao đổi và phân tích dữ liệu chỉ một mình bạn nhìn thấy.
+            </p>
           </div>
-          <h2 className="text-base font-bold text-white">
-            Chào mừng bạn đến với #{activeConversation?.name || 'cuộc trò chuyện'}
-          </h2>
-          <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
-            {activeConversation?.subtitle || 'Không gian trao đổi công việc và điều phối vận hành'}
-          </p>
-        </div>
+        ) : (
+          <div className="pt-6 pb-4 text-center border-b border-slate-800/40 mb-4">
+            <div className="w-14 h-14 mx-auto rounded-3xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 mb-2.5 shadow-sm">
+              {isSpace ? <Hash className="w-7 h-7" /> : <MessageSquare className="w-7 h-7" />}
+            </div>
+            <h2 className="text-base font-bold text-white">
+              Chào mừng bạn đến với #{activeConversation?.name || 'cuộc trò chuyện'}
+            </h2>
+            <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
+              {activeConversation?.subtitle || 'Không gian trao đổi công việc và điều phối vận hành'}
+            </p>
+          </div>
+        )}
 
         {/* Message Groups */}
         {groupedMessages.map((group) => {

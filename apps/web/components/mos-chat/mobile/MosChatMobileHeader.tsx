@@ -13,12 +13,13 @@ import {
   Sparkles,
   Users,
   UserPlus,
+  RefreshCw,
 } from 'lucide-react';
-import { Dropdown } from 'antd';
+import { Dropdown, Modal } from 'antd';
 import type { MenuProps } from 'antd';
 import { useMosChat } from '../context/MosChatContext';
 import type { MosChatPresenceStatus } from '@mos-lab/shared';
-import { isSpaceEmoji } from '../constants/chat-constants';
+import { AI_COPILOT_CONV_ID, isSpaceEmoji } from '../constants/chat-constants';
 import { MosChatAvatar } from '../MosChatAvatar';
 
 export interface MosChatMobileHeaderProps {
@@ -46,6 +47,7 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
     totalUnreadCount,
     staffDirectory,
     activeThreadMsg,
+    resetAiChat,
   } = useMosChat();
 
   const linkedTask = React.useMemo(() => {
@@ -180,6 +182,7 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
   }
 
   // View: ROOM (Active Conversation)
+  const isAiCopilot = activeConversation?.id === AI_COPILOT_CONV_ID;
   const isSpace = activeConversation?.type === 'space';
   const roomTitle = activeConversation?.name || 'Phòng trò chuyện';
   const subtitle =
@@ -208,7 +211,24 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
         role={isSpace ? 'button' : undefined}
         className={`flex-1 min-w-0 mx-2 flex items-center justify-center ${isSpace ? 'cursor-pointer active:opacity-75' : ''}`}
       >
-        {isSpace ? (
+        {isAiCopilot ? (
+          <div className="flex items-center gap-2 max-w-[240px] text-left">
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 shrink-0">
+              <Sparkles className="w-4 h-4 animate-pulse" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <h2 className="text-sm font-bold text-white truncate leading-snug">🤖 MAI</h2>
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 font-bold uppercase border border-purple-500/40">
+                  mOS AI
+                </span>
+              </div>
+              <p className="text-[11px] text-purple-300/80 truncate leading-none mt-0.5">
+                Tra cứu & Phân tích riêng tư
+              </p>
+            </div>
+          </div>
+        ) : isSpace ? (
           <div className="flex flex-col items-center text-center">
             <div className="flex items-center gap-1.5 max-w-[230px] justify-center">
               {activeConversation?.avatar && isSpaceEmoji(activeConversation.avatar) ? (
@@ -251,42 +271,65 @@ export const MosChatMobileHeader: React.FC<MosChatMobileHeaderProps> = ({
 
       {/* Right actions: Space Members & Tasks toggle & Phone call */}
       <div className="flex items-center gap-1">
-        {isSpace && (
+        {isAiCopilot ? (
           <button
             type="button"
-            onClick={onOpenMembersModal}
-            className="p-2 text-slate-300 hover:text-white rounded-full hover:bg-slate-800 transition-colors active:scale-95 cursor-pointer"
-            aria-label="Thành viên Không gian"
-            title="Thêm và quản lý thành viên Không gian"
+            onClick={() => {
+              Modal.confirm({
+                title: 'Làm mới cuộc trò chuyện với MAI?',
+                content: 'Toàn bộ tin nhắn cũ trong phiên làm việc này sẽ được dọn dẹp để bắt đầu câu hỏi mới.',
+                okText: 'Làm mới',
+                cancelText: 'Huỷ',
+                okButtonProps: { danger: true },
+                onOk: () => resetAiChat?.(),
+              });
+            }}
+            className="p-2 text-purple-300 hover:text-white rounded-full hover:bg-slate-800 transition-colors active:scale-95"
+            aria-label="Làm mới cuộc trò chuyện với MAI"
+            title="Làm mới cuộc trò chuyện với MAI"
           >
-            <UserPlus className="w-4 h-4 text-emerald-400" />
+            <RefreshCw className="w-4 h-4" />
           </button>
+        ) : (
+          <>
+            {isSpace && (
+              <button
+                type="button"
+                onClick={onOpenMembersModal}
+                className="p-2 text-slate-300 hover:text-white rounded-full hover:bg-slate-800 transition-colors active:scale-95 cursor-pointer"
+                aria-label="Thành viên Không gian"
+                title="Thêm và quản lý thành viên Không gian"
+              >
+                <UserPlus className="w-4 h-4 text-emerald-400" />
+              </button>
+            )}
+
+            {/* Toggle between Chat & Tasks */}
+            <button
+              type="button"
+              onClick={() => setActiveSubtab(activeSubtab === 'tasks' ? 'chat' : 'tasks')}
+              className={`relative p-2 rounded-full transition-colors active:scale-95 ${
+                activeSubtab === 'tasks' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-300 hover:bg-slate-800'
+              }`}
+              aria-label="Xem danh sách công việc"
+            >
+              <CheckSquare className="w-4 h-4" />
+              {openTaskCount > 0 && activeSubtab !== 'tasks' && (
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-400" />
+              )}
+            </button>
+
+            {/* Quick Phone Call */}
+            <button
+              type="button"
+              onClick={onCallRoom}
+              className="p-2 text-slate-300 hover:text-white rounded-full hover:bg-slate-800 transition-colors active:scale-95"
+              aria-label="Gọi thoại OmiCall"
+            >
+              <Phone className="w-4 h-4 text-emerald-400" />
+            </button>
+          </>
         )}
-
-        {/* Toggle between Chat & Tasks */}
-        <button
-          type="button"
-          onClick={() => setActiveSubtab(activeSubtab === 'tasks' ? 'chat' : 'tasks')}
-          className={`relative p-2 rounded-full transition-colors active:scale-95 ${
-            activeSubtab === 'tasks' ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-300 hover:bg-slate-800'
-          }`}
-          aria-label="Xem danh sách công việc"
-        >
-          <CheckSquare className="w-4 h-4" />
-          {openTaskCount > 0 && activeSubtab !== 'tasks' && (
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-400" />
-          )}
-        </button>
-
-        {/* Quick Phone Call */}
-        <button
-          type="button"
-          onClick={onCallRoom}
-          className="p-2 text-slate-300 hover:text-white rounded-full hover:bg-slate-800 transition-colors active:scale-95"
-          aria-label="Gọi thoại OmiCall"
-        >
-          <Phone className="w-4 h-4 text-emerald-400" />
-        </button>
       </div>
     </header>
   );
