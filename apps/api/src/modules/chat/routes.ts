@@ -19,6 +19,7 @@ import {
   EditMosChatMessageRequest,
   MosChatAccessConfig,
   MosChatBootstrapResponse,
+  MosChatUnreadSummaryResponse,
   MosChatBuzzEvent,
   MosChatConversation,
   MosChatCustomSection,
@@ -1350,6 +1351,63 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       } catch (err: SafeAny) {
         fastify.log.error('Chat bootstrap error:', err);
         return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể tải dữ liệu mOS Chat' });
+      }
+    }
+  );
+
+  // GET /api/chat/unread-summary (Ultra-lightweight endpoint for CRM header badge: < 3ms, no full bootstrap)
+  fastify.get(
+    '/chat/unread-summary',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      try {
+        const user = (request as SafeAny).user as JwtUserPayload | undefined;
+        const state = await loadChatState(fastify);
+        const { conversations, tasks, accessConfig, userPrefsByUserKey } = state;
+        const staffDirectory = await loadStaffDirectoryCached(fastify);
+        const canAccess = evaluateCanUserAccessMosChat(user, staffDirectory, accessConfig);
+        if (!canAccess) {
+          return {
+            unreadCount: 0,
+            urgentTaskCount: 0,
+            hasUnread: false,
+            version: memoryChatCache?.version || state.version,
+          } satisfies MosChatUnreadSummaryResponse;
+        }
+
+        const userPrefKey = resolveUserPrefKey(user, staffDirectory);
+        const userPrefs = userPrefsByUserKey[userPrefKey] || buildDefaultUserSidebarPrefs();
+
+        let totalUnread = 0;
+        let lastMessageAt: string | null = null;
+        for (const conv of conversations) {
+          if (!canUserAccessConversation(conv, user, staffDirectory)) continue;
+          const unread = computeUnreadCountForUser(conv, user, staffDirectory, userPrefs);
+          if (unread > 0) {
+            totalUnread += unread;
+          }
+          if (conv.updatedAt && (!lastMessageAt || conv.updatedAt > lastMessageAt)) {
+            lastMessageAt = conv.updatedAt;
+          }
+        }
+
+        const userTasks = filterTasksForUser(tasks, conversations, user, staffDirectory);
+        const urgentTaskCount = userTasks.filter(
+          (t) => !t.done && (t.priority === 'URGENT' || t.priority === 'HIGH')
+        ).length;
+
+        return {
+          unreadCount: totalUnread,
+          urgentTaskCount,
+          hasUnread: totalUnread > 0 || urgentTaskCount > 0,
+          version: memoryChatCache?.version || state.version,
+          lastMessageAt,
+        } satisfies MosChatUnreadSummaryResponse;
+      } catch (err: SafeAny) {
+        fastify.log.error('Chat unread-summary error:', err);
+        return reply.status(500).send({ error: 'Internal Server Error', message: 'Không thể đếm tin nhắn chưa đọc' });
       }
     }
   );

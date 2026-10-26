@@ -4,16 +4,7 @@ import React, { Suspense, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Button, Card, Typography, Space } from 'antd';
 import { StatusTag } from '../../../components/ui/StatusTag';
-import {
-  MessageSquare,
-  Users,
-  Bot,
-  CheckSquare,
-  Sparkles,
-  ArrowRight,
-  ShieldCheck,
-  Zap,
-} from 'lucide-react';
+import { MessageSquare, Users, Bot, CheckSquare, Sparkles, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 
 const { Title, Text, Paragraph } = Typography;
@@ -25,15 +16,9 @@ function ChatPageContent() {
   const isDark = themeMode === 'dark';
 
   const convId =
-    searchParams?.get('chatConvId') ||
-    searchParams?.get('conversationId') ||
-    searchParams?.get('convId') ||
-    undefined;
+    searchParams?.get('chatConvId') || searchParams?.get('conversationId') || searchParams?.get('convId') || undefined;
   const msgId =
-    searchParams?.get('chatMsgId') ||
-    searchParams?.get('messageId') ||
-    searchParams?.get('msgId') ||
-    undefined;
+    searchParams?.get('chatMsgId') || searchParams?.get('messageId') || searchParams?.get('msgId') || undefined;
   const tab = searchParams?.get('tab') as 'chat' | 'tasks' | 'pinned' | undefined;
 
   useEffect(() => {
@@ -49,27 +34,21 @@ function ChatPageContent() {
   }, [convId, msgId, tab]);
 
   const handleOpenGeneral = () => {
-    window.dispatchEvent(
-      new CustomEvent('mos-chat:open', {
-        detail: { openTab: 'chat' },
-      })
-    );
+    if (typeof window !== 'undefined') {
+      window.open('/chat', 'mOS_Chat_Window');
+    }
   };
 
   const handleOpenTasks = () => {
-    window.dispatchEvent(
-      new CustomEvent('mos-chat:open', {
-        detail: { openTab: 'tasks' },
-      })
-    );
+    if (typeof window !== 'undefined') {
+      window.open('/chat?tab=tasks', 'mOS_Chat_Window');
+    }
   };
 
   const handleOpenAi = () => {
-    window.dispatchEvent(
-      new CustomEvent('mos-chat:open', {
-        detail: { conversationId: 'ai-copilot', openTab: 'chat' },
-      })
-    );
+    if (typeof window !== 'undefined') {
+      window.open('/chat?convId=ai-copilot&tab=chat', 'mOS_Chat_Window');
+    }
   };
 
   return (
@@ -218,9 +197,7 @@ export default function ChatPage() {
   return (
     <Suspense
       fallback={
-        <div className="p-8 text-center text-sm text-neutral-500">
-          Đang tải không gian làm việc mOS Chat...
-        </div>
+        <div className="p-8 text-center text-sm text-neutral-500">Đang tải không gian làm việc mOS Chat...</div>
       }
     >
       <ChatPageContent />

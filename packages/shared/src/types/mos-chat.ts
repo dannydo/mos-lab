@@ -3,14 +3,7 @@ export type MosChatPresenceStatus = 'active' | 'dnd' | 'away';
 export type MosChatTaskPriority = 'URGENT' | 'HIGH' | 'NORMAL';
 
 export type MosChatImageMimeType =
-  | 'image/jpeg'
-  | 'image/png'
-  | 'image/webp'
-  | 'image/gif'
-  | 'image/heic'
-  | 'image/heif'
-  | 'image/svg+xml'
-  | 'image/bmp';
+  'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif' | 'image/heic' | 'image/heif' | 'image/svg+xml' | 'image/bmp';
 
 export type MosChatFileMimeType =
   | MosChatImageMimeType
@@ -396,6 +389,14 @@ export interface MosChatBootstrapResponse {
   workflowTemplates?: MosChatWorkflowTemplate[];
   workflowInstances?: MosChatWorkflowInstance[];
   storageEngine?: 'PRISMA_RELATIONAL' | 'HYBRID';
+}
+
+export interface MosChatUnreadSummaryResponse {
+  unreadCount: number;
+  urgentTaskCount: number;
+  hasUnread: boolean;
+  version?: number;
+  lastMessageAt?: string | null;
 }
 
 export interface CreateMosChatMessageRequest {

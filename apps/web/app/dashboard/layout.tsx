@@ -24,9 +24,11 @@ import {
   CalendarPlus,
   Clock3,
   EllipsisVertical,
+  ExternalLink,
   Menu,
   MessageSquare,
   Moon,
+  PanelRightOpen,
   Phone,
   Search,
   Sun,
@@ -72,28 +74,43 @@ import { tabNotificationManager } from '../../lib/tab-notification';
 
 const { Header, Sider, Content } = Layout;
 
+function openMosChatWindow(options?: {
+  conversationId?: string;
+  messageId?: string;
+  openTab?: string;
+  taskId?: string;
+}) {
+  if (typeof window === 'undefined') return;
+  const params = new URLSearchParams();
+  if (options?.conversationId) params.set('convId', options.conversationId);
+  if (options?.messageId) params.set('msgId', options.messageId);
+  if (options?.openTab) params.set('tab', options.openTab);
+  if (options?.taskId) params.set('taskId', options.taskId);
+  const qs = params.toString();
+  const url = qs ? `/chat?${qs}` : '/chat';
+  window.open(url, 'mOS_Chat_Window');
+}
+
 function ChatDeepLinkWatcher({
   onOpenChat,
 }: {
-  onOpenChat: (convId?: string, msgId?: string) => void;
+  onOpenChat?: (options: { conversationId?: string; messageId?: string }) => void;
 }) {
   const searchParams = useSearchParams();
 
   useEffect(() => {
     if (!searchParams) return;
     const chatConvId =
-      searchParams.get('chatConvId') ||
-      searchParams.get('conversationId') ||
-      searchParams.get('convId') ||
-      undefined;
+      searchParams.get('chatConvId') || searchParams.get('conversationId') || searchParams.get('convId') || undefined;
     const chatMsgId =
-      searchParams.get('chatMsgId') ||
-      searchParams.get('messageId') ||
-      searchParams.get('msgId') ||
-      undefined;
+      searchParams.get('chatMsgId') || searchParams.get('messageId') || searchParams.get('msgId') || undefined;
 
     if (chatConvId) {
-      onOpenChat(chatConvId, chatMsgId);
+      if (onOpenChat) {
+        onOpenChat({ conversationId: chatConvId, messageId: chatMsgId });
+      } else {
+        openMosChatWindow({ conversationId: chatConvId, messageId: chatMsgId });
+      }
     }
   }, [searchParams, onOpenChat]);
 
@@ -132,6 +149,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [deployedAt, setDeployedAt] = useState<string | null>(null);
   const [isMosBibleOpen, setIsMosBibleOpen] = useState(false);
   const [targetBibleCommandmentId, setTargetBibleCommandmentId] = useState<string | undefined>();
+  const [mosChatUnreadCount, setMosChatUnreadCount] = useState(0);
+  const [mosChatTaskCount, setMosChatTaskCount] = useState(0);
+  const [canAccessMosChat, setCanAccessMosChat] = useState(false);
+  const effectiveCanAccessMosChat = isAdminOrSuperAdminRole(user?.role) || canAccessMosChat;
+
+  const [chatDisplayMode, setChatDisplayMode] = useState<'embedded' | 'tab'>(() => {
+    if (typeof window === 'undefined') return 'embedded';
+    try {
+      return (window.localStorage.getItem('mos_chat_display_mode_v1') as 'embedded' | 'tab') || 'embedded';
+    } catch {
+      return 'embedded';
+    }
+  });
+
+  const [hasEverOpenedEmbeddedChat, setHasEverOpenedEmbeddedChat] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return window.localStorage.getItem('mos_chat_is_open_v1') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
   const [isMosChatOpen, setIsMosChatOpen] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     try {
@@ -140,10 +180,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return false;
     }
   });
-  const [mosChatUnreadCount, setMosChatUnreadCount] = useState(4);
-  const [mosChatTaskCount, setMosChatTaskCount] = useState(2);
-  const [canAccessMosChat, setCanAccessMosChat] = useState(false);
-  const effectiveCanAccessMosChat = isAdminOrSuperAdminRole(user?.role) || canAccessMosChat;
+
   const [targetChatNavigation, setTargetChatNavigation] = useState<{
     conversationId?: string;
     messageId?: string;
@@ -152,17 +189,141 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     taskId?: string;
   } | null>(null);
 
+  const setAndPersistChatDisplayMode = useCallback((mode: 'embedded' | 'tab') => {
+    setChatDisplayMode(mode);
+    try {
+      window.localStorage.setItem('mos_chat_display_mode_v1', mode);
+    } catch {}
+  }, []);
+
+  const openChatWithMode = useCallback(
+    (
+      modeOverride?: 'embedded' | 'tab',
+      navOptions?: {
+        conversationId?: string;
+        messageId?: string;
+        openTab?: 'chat' | 'tasks' | 'pinned';
+        taskId?: string;
+      }
+    ) => {
+      const mode = modeOverride || chatDisplayMode;
+      if (mode === 'tab') {
+        openMosChatWindow(navOptions);
+        return;
+      }
+      setHasEverOpenedEmbeddedChat(true);
+      setIsMosChatOpen(true);
+      if (navOptions?.conversationId || navOptions?.messageId || navOptions?.openTab || navOptions?.taskId) {
+        setTargetChatNavigation({
+          conversationId: navOptions.conversationId,
+          messageId: navOptions.messageId,
+          openTab: navOptions.openTab,
+          taskId: navOptions.taskId,
+          timestamp: Date.now(),
+        });
+      }
+    },
+    [chatDisplayMode]
+  );
+
   useEffect(() => {
     try {
       window.localStorage.setItem('mos_chat_is_open_v1', String(isMosChatOpen));
-    } catch {
-      // ignore storage quota error
-    }
+    } catch {}
   }, [isMosChatOpen]);
 
   useEffect(() => {
     tabNotificationManager.setUnreadCount('chat-header', mosChatUnreadCount);
   }, [mosChatUnreadCount]);
+
+  useEffect(() => {
+    const handleOpenChat = (event: Event) => {
+      const customEvent = event as CustomEvent<{
+        conversationId?: string;
+        messageId?: string;
+        openTab?: 'chat' | 'tasks' | 'pinned';
+        taskId?: string;
+        forceMode?: 'embedded' | 'tab';
+      }>;
+      openChatWithMode(customEvent.detail?.forceMode, customEvent.detail);
+    };
+    window.addEventListener('mos-chat:open', handleOpenChat);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') {
+        e.preventDefault();
+        if (chatDisplayMode === 'tab') {
+          openMosChatWindow();
+        } else {
+          setHasEverOpenedEmbeddedChat(true);
+          setIsMosChatOpen((prev) => !prev);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('mos-chat:open', handleOpenChat);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [chatDisplayMode, openChatWithMode]);
+
+  // Ultra-lightweight unread summary polling + BroadcastChannel 0ms sync
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    let channel: BroadcastChannel | null = null;
+
+    const fetchUnread = async () => {
+      try {
+        const res = await apiClient.chat.getUnreadSummary({ isPolling: true });
+        if (res) {
+          setMosChatUnreadCount(res.unreadCount || 0);
+          setMosChatTaskCount(res.urgentTaskCount || 0);
+          setCanAccessMosChat(true);
+        }
+      } catch {
+        // ignore network error
+      }
+    };
+
+    fetchUnread();
+
+    const scheduleNext = () => {
+      const delay = typeof document !== 'undefined' && document.hidden ? 60_000 : 35_000;
+      timer = setTimeout(() => {
+        fetchUnread();
+        scheduleNext();
+      }, delay);
+    };
+    scheduleNext();
+
+    if (typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined') {
+      channel = new BroadcastChannel('mos_chat_sync');
+      channel.onmessage = (e) => {
+        if (e.data?.type === 'UNREAD_UPDATE') {
+          if (typeof e.data.unreadCount === 'number') {
+            setMosChatUnreadCount(e.data.unreadCount);
+          }
+          if (typeof e.data.activeTaskCount === 'number') {
+            setMosChatTaskCount(e.data.activeTaskCount);
+          }
+        }
+      };
+    }
+
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        fetchUnread();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearTimeout(timer);
+      channel?.close();
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
 
   useEffect(() => {
     const handleOpenBible = (event: Event) => {
@@ -898,13 +1059,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                 <Suspense fallback={null}>
                   <ChatDeepLinkWatcher
-                    onOpenChat={(convId, msgId) => {
-                      setIsMosChatOpen(true);
-                      setTargetChatNavigation({
-                        conversationId: convId,
-                        messageId: msgId,
-                        timestamp: Date.now(),
-                      });
+                    onOpenChat={({ conversationId, messageId }) => {
+                      openChatWithMode(undefined, { conversationId, messageId });
                     }}
                   />
                 </Suspense>
@@ -912,11 +1068,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <HeaderNotificationCenter
                   themeMode={themeMode}
                   onOpenChat={(convId, msgId, payload) => {
-                    setIsMosChatOpen(true);
-                    setTargetChatNavigation({
+                    openChatWithMode(undefined, {
                       conversationId: convId,
                       messageId: msgId,
-                      timestamp: Date.now(),
                       openTab: (payload?.openTab as 'chat' | 'tasks' | 'pinned') || undefined,
                       taskId: (payload?.taskId as string) || undefined,
                     });
@@ -924,20 +1078,67 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 />
 
                 {effectiveCanAccessMosChat && (
-                  <HeaderActionIndicator variant="count" count={mosChatUnreadCount}>
-                    <HeaderIconButton
-                      action="mos-chat"
-                      label={
-                        mosChatUnreadCount > 0
-                          ? `mOS Google Chat & Spaces (⌘J) · ${mosChatUnreadCount} tin chưa đọc · ${mosChatTaskCount} nhắc hẹn`
-                          : 'mOS Google Chat & Spaces (⌘J)'
-                      }
-                      icon={MessageSquare}
-                      tone={isMosChatOpen ? 'accent' : 'quiet'}
-                      aria-pressed={isMosChatOpen}
-                      onClick={() => setIsMosChatOpen((prev) => !prev)}
-                    />
-                  </HeaderActionIndicator>
+                  <Dropdown
+                    trigger={['contextMenu']}
+                    placement="bottomRight"
+                    menu={{
+                      items: [
+                        {
+                          key: 'open-embedded',
+                          label: 'Mở cửa sổ nhúng (Trượt phải)',
+                          icon: <PanelRightOpen size={16} />,
+                          onClick: () => {
+                            setAndPersistChatDisplayMode('embedded');
+                            openChatWithMode('embedded');
+                          },
+                        },
+                        {
+                          key: 'open-tab',
+                          label: 'Mở tab trình duyệt mới (/chat)',
+                          icon: <ExternalLink size={16} />,
+                          onClick: () => {
+                            setAndPersistChatDisplayMode('tab');
+                            openChatWithMode('tab');
+                          },
+                        },
+                        { type: 'divider' },
+                        {
+                          key: 'current-mode',
+                          disabled: true,
+                          label: (
+                            <span className="text-xs text-slate-400">
+                              Mặc định: {chatDisplayMode === 'embedded' ? 'Cửa sổ nhúng' : 'Tab mới'} (Click phải để
+                              đổi)
+                            </span>
+                          ),
+                        },
+                      ],
+                    }}
+                  >
+                    <div>
+                      <HeaderActionIndicator variant="count" count={mosChatUnreadCount}>
+                        <HeaderIconButton
+                          action="mos-chat"
+                          label={
+                            mosChatUnreadCount > 0
+                              ? `mOS Google Chat (${chatDisplayMode === 'embedded' ? 'Nhúng' : 'Tab'} · ⌘J) · ${mosChatUnreadCount} tin chưa đọc · ${mosChatTaskCount} nhắc hẹn`
+                              : `mOS Google Chat (${chatDisplayMode === 'embedded' ? 'Nhúng' : 'Tab'} · ⌘J)`
+                          }
+                          icon={MessageSquare}
+                          tone={isMosChatOpen ? 'accent' : 'quiet'}
+                          aria-pressed={isMosChatOpen}
+                          onClick={() => {
+                            if (chatDisplayMode === 'embedded') {
+                              setHasEverOpenedEmbeddedChat(true);
+                              setIsMosChatOpen((prev) => !prev);
+                            } else {
+                              openChatWithMode('tab');
+                            }
+                          }}
+                        />
+                      </HeaderActionIndicator>
+                    </div>
+                  </Dropdown>
                 )}
 
                 <UserProfileDropdown
@@ -1526,7 +1727,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           onDateChange={(d) => setCvDrawerDate(d)}
         />
         <AvatarPromptModal currentUser={user} onAvatarUpdated={handleAvatarUpdated} />
-        {(hasAuthenticatedUser || isAdminOrSuperAdminRole(user?.role)) && (
+        {hasEverOpenedEmbeddedChat && (hasAuthenticatedUser || isAdminOrSuperAdminRole(user?.role)) && (
           <ErrorBoundary fallback={null}>
             <MosGoogleChatPortal
               open={isMosChatOpen}

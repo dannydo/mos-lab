@@ -20,6 +20,7 @@ import type {
   MarkThreadAsReadResponse,
   MosChatAccessConfig,
   MosChatBootstrapResponse,
+  MosChatUnreadSummaryResponse,
   MosChatConversation,
   MosChatDeltaSyncResponse,
   MosChatMessage,
@@ -61,6 +62,9 @@ export const chatApi = {
         options
       );
       return res;
+    },
+    getUnreadSummary: async (options?: ApiRequestOptions): Promise<MosChatUnreadSummaryResponse> => {
+      return dedupeApiGet<MosChatUnreadSummaryResponse>('/chat/unread-summary', undefined, 2000, options);
     },
     syncDelta: async (since?: string, options?: ApiRequestOptions): Promise<MosChatDeltaSyncResponse> => {
       return dedupeApiGet<MosChatDeltaSyncResponse>('/chat/sync', since ? { since } : undefined, 1500, options);

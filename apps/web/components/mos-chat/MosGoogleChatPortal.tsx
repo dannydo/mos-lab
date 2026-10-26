@@ -40,6 +40,7 @@ import {
   CheckCheck,
   Clock,
   ExternalLink,
+  PanelRightOpen,
   Search,
   ChevronDown,
   ChevronUp,
@@ -238,6 +239,7 @@ export { AI_COPILOT_CONV_ID };
 
 export interface MosGoogleChatPortalProps {
   open: boolean;
+  standalone?: boolean;
   onOpen?: () => void;
   onClose: () => void;
   onToggle: () => void;
@@ -266,6 +268,7 @@ LiveTaskCountdownBadge.displayName = 'LiveTaskCountdownBadge';
 
 export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   open,
+  standalone = false,
   onOpen,
   onClose,
   onToggle,
@@ -2569,6 +2572,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     const openTaskCount = uniqueTasks.filter((t) => !t.done && !t.archived).length;
     onUnreadCountChange?.(totalUnread, openTaskCount);
     tabNotificationManager.setUnreadCount('chat', totalUnread);
+    if (typeof window !== 'undefined' && typeof BroadcastChannel !== 'undefined') {
+      try {
+        const syncChannel = new BroadcastChannel('mos_chat_sync');
+        syncChannel.postMessage({
+          type: 'UNREAD_UPDATE',
+          unreadCount: totalUnread,
+          activeTaskCount: openTaskCount,
+        });
+        syncChannel.close();
+      } catch {}
+    }
   }, [visibleConversations, uniqueTasks, userPrefs.mutedIds, getEffectiveUnreadCount, onUnreadCountChange]);
 
   const triggerTaskReminderAlert = useCallback(
@@ -9228,23 +9242,25 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       />
 
       {/* ================= MOS CHAT BACKDROP / OVERLAY (DIM + BLUR + CLICK-OUTSIDE TO CLOSE) ================= */}
-      <div
-        aria-hidden="true"
-        data-testid="mos-chat-backdrop"
-        onClick={() => {
-          if (isResizingTarget || justFinishedResizingRef.current) return;
-          onClose?.();
-        }}
-        className={`fixed inset-0 transition-opacity duration-300 ${
-          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
-        style={{
-          background: 'rgba(0, 0, 0, 0.5)',
-          backdropFilter: 'blur(4px)',
-          WebkitBackdropFilter: 'blur(4px)',
-          zIndex: isMobile ? 1190 : 990,
-        }}
-      />
+      {!standalone && (
+        <div
+          aria-hidden="true"
+          data-testid="mos-chat-backdrop"
+          onClick={() => {
+            if (isResizingTarget || justFinishedResizingRef.current) return;
+            onClose?.();
+          }}
+          className={`fixed inset-0 transition-opacity duration-300 ${
+            open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          }`}
+          style={{
+            background: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            zIndex: isMobile ? 1190 : 990,
+          }}
+        />
+      )}
 
       {/* ================= GOOGLE CHAT RIGHT WORKSPACE PANEL (FHD, VECTOR ICONS + TOOLTIPS) ================= */}
       <section
@@ -9252,28 +9268,29 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         className="mos-chat-theme-scope"
         style={{
           position: 'fixed',
-          top: isMobile ? 0 : 52,
+          top: standalone ? 0 : isMobile ? 0 : 52,
           right: 0,
           bottom: 0,
-          left: isMobile ? 0 : undefined,
-          width: isMobile ? '100vw' : maximized ? 'calc(100vw - 224px)' : panelWidth,
-          maxWidth: isMobile ? '100vw' : 'calc(100vw - 56px)',
+          left: standalone || isMobile ? 0 : undefined,
+          width: standalone ? '100vw' : isMobile ? '100vw' : maximized ? 'calc(100vw - 224px)' : panelWidth,
+          maxWidth: standalone ? '100vw' : isMobile ? '100vw' : 'calc(100vw - 56px)',
           background: surfaceBg,
           color: token.colorText,
-          borderLeft: isMobile
-            ? 'none'
-            : `1px solid ${isResizingTarget === 'panel' || hoverResizeHandle === 'panel' ? accentColor : borderStrong}`,
-          boxShadow: 'var(--mos-shadow)',
+          borderLeft:
+            standalone || isMobile
+              ? 'none'
+              : `1px solid ${isResizingTarget === 'panel' || hoverResizeHandle === 'panel' ? accentColor : borderStrong}`,
+          boxShadow: standalone ? 'none' : 'var(--mos-shadow)',
           display: 'flex',
-          zIndex: isMobile ? 1200 : 995,
-          transform: open ? 'translateX(0)' : 'translateX(104%)',
+          zIndex: standalone ? 100 : isMobile ? 1200 : 995,
+          transform: standalone || open ? 'translateX(0)' : 'translateX(104%)',
           transition: isResizingTarget
             ? 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1)'
             : 'transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), width 0.2s ease',
         }}
       >
         {/* LEFT EDGE RESIZE HANDLE (Drag to resize chat panel width, double-click to reset) */}
-        {!isMobile && (
+        {!standalone && !isMobile && (
           <Tooltip
             title="Kéo sang trái/phải để thay đổi kích thước khung Chat (Tự động lưu riêng cho bạn · Nhấp đúp để đặt lại mặc định)"
             placement="left"
@@ -9859,11 +9876,78 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     </Tooltip>
                   )}
 
-                  <Tooltip title="Đóng mOS Chat (⌘J)">
+                  {!standalone && (
+                    <Tooltip title="Mở trong tab riêng biệt (Pop-out sang tab mới)">
+                      <button
+                        type="button"
+                        aria-label="Mở tab Chat riêng biệt"
+                        onClick={() => {
+                          const params = new URLSearchParams();
+                          if (activeConversation?.id) params.set('convId', activeConversation.id);
+                          if (activeThreadMsgId) params.set('msgId', activeThreadMsgId);
+                          if (activeSubtab && activeSubtab !== 'chat') params.set('tab', activeSubtab);
+                          const qs = params.toString();
+                          window.open(qs ? `/chat?${qs}` : '/chat', 'mOS_Chat_Window');
+                          onClose();
+                        }}
+                        className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-white/10"
+                        style={{ color: token.colorTextSecondary }}
+                      >
+                        <ExternalLink size={15} />
+                      </button>
+                    </Tooltip>
+                  )}
+
+                  {standalone && (
+                    <Tooltip title="Ghim lại vào CRM (Mở dạng cửa sổ nhúng trượt phải)">
+                      <button
+                        type="button"
+                        aria-label="Ghim lại vào CRM"
+                        onClick={() => {
+                          if (typeof window !== 'undefined') {
+                            window.localStorage.setItem('mos_chat_display_mode_v1', 'embedded');
+                            window.localStorage.setItem('mos_chat_is_open_v1', 'true');
+                            if (window.opener) {
+                              try {
+                                window.opener.focus();
+                                const evt = new CustomEvent('mos-chat:open', {
+                                  detail: {
+                                    conversationId: activeConversation?.id,
+                                    messageId: activeThreadMsgId || undefined,
+                                    forceMode: 'embedded',
+                                  },
+                                });
+                                window.opener.dispatchEvent(evt);
+                                window.close();
+                                return;
+                              } catch {}
+                            }
+                            window.location.href = '/dashboard';
+                          }
+                        }}
+                        className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-white/10"
+                        style={{ color: token.colorTextSecondary }}
+                      >
+                        <PanelRightOpen size={15} />
+                      </button>
+                    </Tooltip>
+                  )}
+
+                  <Tooltip title={standalone ? 'Quay lại mOS Dashboard' : 'Đóng mOS Chat (⌘J)'}>
                     <button
                       type="button"
                       aria-label="Đóng mOS Chat"
-                      onClick={onClose}
+                      onClick={() => {
+                        if (standalone) {
+                          if (typeof window !== 'undefined' && window.opener) {
+                            window.close();
+                          } else if (typeof window !== 'undefined') {
+                            window.location.href = '/dashboard';
+                          }
+                          return;
+                        }
+                        onClose();
+                      }}
                       className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-rose-500/15 hover:text-rose-400"
                       style={{ color: token.colorTextSecondary }}
                     >
