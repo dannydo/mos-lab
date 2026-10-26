@@ -1435,22 +1435,49 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       const executeScroll = (mode: ScrollBehavior) => {
         if (target === 'main') {
           const el = mainMessagesContainerRef.current;
-          if (el && typeof el.scrollTo === 'function') {
-            el.scrollTo({ top: el.scrollHeight, behavior: mode });
-          } else if (typeof messagesEndRef.current?.scrollIntoView === 'function') {
-            messagesEndRef.current.scrollIntoView({ behavior: mode, block: 'end' });
+          if (el) {
+            if (typeof el.scrollTo === 'function') {
+              try {
+                el.scrollTo({ top: el.scrollHeight, behavior: mode });
+              } catch {}
+            }
+            try {
+              el.scrollTop = el.scrollHeight;
+            } catch {}
+          }
+          if (typeof messagesEndRef.current?.scrollIntoView === 'function') {
+            try {
+              messagesEndRef.current.scrollIntoView({ behavior: mode, block: 'end' });
+            } catch {}
           }
         } else if (target === 'thread') {
           const el = threadMessagesContainerRef.current;
-          if (el && typeof el.scrollTo === 'function') {
-            el.scrollTo({ top: el.scrollHeight, behavior: mode });
-          } else if (typeof threadMessagesEndRef.current?.scrollIntoView === 'function') {
-            threadMessagesEndRef.current.scrollIntoView({ behavior: mode, block: 'end' });
+          if (el) {
+            if (typeof el.scrollTo === 'function') {
+              try {
+                el.scrollTo({ top: el.scrollHeight, behavior: mode });
+              } catch {}
+            }
+            try {
+              el.scrollTop = el.scrollHeight;
+            } catch {}
+          }
+          if (typeof threadMessagesEndRef.current?.scrollIntoView === 'function') {
+            try {
+              threadMessagesEndRef.current.scrollIntoView({ behavior: mode, block: 'end' });
+            } catch {}
           }
         } else if (typeof target === 'object' && target.dockConvId) {
           const el = dockMessagesContainerRefs.current[target.dockConvId];
-          if (el && typeof el.scrollTo === 'function') {
-            el.scrollTo({ top: el.scrollHeight, behavior: mode });
+          if (el) {
+            if (typeof el.scrollTo === 'function') {
+              try {
+                el.scrollTo({ top: el.scrollHeight, behavior: mode });
+              } catch {}
+            }
+            try {
+              el.scrollTop = el.scrollHeight;
+            } catch {}
           }
         }
       };
@@ -1459,6 +1486,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         window.requestAnimationFrame(() => executeScroll(behavior));
         window.setTimeout(() => executeScroll(behavior), 90);
         window.setTimeout(() => executeScroll(behavior), 220);
+        window.setTimeout(() => executeScroll(behavior), 450);
       }
     },
     []

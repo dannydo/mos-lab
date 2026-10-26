@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useState, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
 import { ArrowDown, MessageSquare, Sparkles, Hash, Lock, Loader2 } from 'lucide-react';
 import dayjs from 'dayjs';
 import type { MosChatMessage } from '@mos-lab/shared';
@@ -19,6 +19,8 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({ onOpen
   const [showScrollBottom, setShowScrollBottom] = useState<boolean>(false);
   const [unreadBelowCount, setUnreadBelowCount] = useState<number>(0);
   const prevMessagesLengthRef = useRef<number>(messages.length);
+  const prevConvIdRef = useRef<string | null>(null);
+  const initialScrollDoneForConvRef = useRef<Record<string, boolean>>({});
 
   // Group messages by day
   const groupedMessages = useMemo(() => {
@@ -47,33 +49,117 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({ onOpen
     }
   };
 
-  // Scroll to bottom helper
-  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
-    bottomRef.current?.scrollIntoView?.({ behavior });
-    setUnreadBelowCount(0);
-  };
-
-  // Auto scroll on new messages
-  useEffect(() => {
-    const isNewMessage = messages.length > prevMessagesLengthRef.current;
-    prevMessagesLengthRef.current = messages.length;
-
+  // Robust scroll to bottom helper (sets scrollTop & calls scrollIntoView)
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
     const el = containerRef.current;
-    if (!el) return;
+    if (el) {
+      if (typeof el.scrollTo === 'function') {
+        try {
+          el.scrollTo({ top: el.scrollHeight, behavior });
+        } catch {
+          // Safe fallback
+        }
+      }
+      try {
+        el.scrollTop = el.scrollHeight;
+      } catch {
+        // Safe fallback in mock/restricted environments
+      }
+    }
+    if (bottomRef.current && typeof bottomRef.current.scrollIntoView === 'function') {
+      try {
+        bottomRef.current.scrollIntoView({ behavior, block: 'end' });
+      } catch {
+        // Safe fallback
+      }
+    }
+    setUnreadBelowCount(0);
+  }, []);
+
+  // Multi-pass scroll scheduler to handle image rendering & asynchronous DOM reflow
+  const scheduleScrollToBottom = useCallback(
+    (behavior: ScrollBehavior = 'auto') => {
+      const execute = () => scrollToBottom(behavior);
+      execute();
+      if (typeof window !== 'undefined') {
+        window.requestAnimationFrame(() => {
+          execute();
+          window.setTimeout(execute, 40);
+          window.setTimeout(execute, 120);
+          window.setTimeout(execute, 260);
+          window.setTimeout(execute, 500);
+        });
+      }
+    },
+    [scrollToBottom]
+  );
+
+  // INVARIANT (MOS-BUG-152): Auto scroll to bottom when switching spaces/conversations
+  useEffect(() => {
+    if (!activeConvId) return;
+    const isNewConv = prevConvIdRef.current !== activeConvId;
+    prevConvIdRef.current = activeConvId;
+
+    if (isNewConv) {
+      initialScrollDoneForConvRef.current[activeConvId] = false;
+      prevMessagesLengthRef.current = 0;
+      scheduleScrollToBottom('auto');
+    }
+  }, [activeConvId, scheduleScrollToBottom]);
+
+  // INVARIANT (MOS-BUG-152): Auto scroll on initial space messages load OR new incoming messages
+  useEffect(() => {
+    if (!activeConvId) return;
+    const el = containerRef.current;
+    const currentLen = messages.length;
+    const prevLen = prevMessagesLengthRef.current;
+    const isNewMessage = currentLen > prevLen;
+    prevMessagesLengthRef.current = currentLen;
+
+    const isInitialForThisConv = !initialScrollDoneForConvRef.current[activeConvId];
+
+    // When space messages are loaded or first rendered, ALWAYS scroll to bottom to show the latest messages!
+    if (isInitialForThisConv && currentLen > 0) {
+      initialScrollDoneForConvRef.current[activeConvId] = true;
+      scheduleScrollToBottom('auto');
+      return;
+    }
+
+    if (!isNewMessage || !el) return;
+
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
 
-    // If near bottom, scroll down automatically
-    if (distanceFromBottom < 150) {
-      scrollToBottom('smooth');
-    } else if (isNewMessage) {
-      setUnreadBelowCount((c) => c + 1);
+    // If near bottom (within 160px), automatically follow new messages to the bottom
+    if (distanceFromBottom < 160) {
+      scheduleScrollToBottom('smooth');
+    } else {
+      // User is reading history higher up, notify with floating unread pill
+      setUnreadBelowCount((c) => c + (currentLen - prevLen));
     }
-  }, [messages.length, isAiThinking]);
+  }, [activeConvId, messages.length, isAiThinking, scheduleScrollToBottom]);
 
-  // Scroll to bottom on conversation change
+  // Keep scroll at bottom when content dimensions change (e.g. image loads or emoji/stickers expand)
   useEffect(() => {
-    scrollToBottom('auto');
-  }, [activeConvId]);
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+    const ro = new ResizeObserver(() => {
+      const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      if (distanceFromBottom < 120 || !initialScrollDoneForConvRef.current[activeConvId || '']) {
+        if (resizeTimer) clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          scrollToBottom('auto');
+        }, 30);
+      }
+    });
+
+    ro.observe(el);
+    return () => {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      ro.disconnect();
+    };
+  }, [activeConvId, scrollToBottom]);
 
   const isSpace = activeConversation?.type === 'space';
 
