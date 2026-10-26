@@ -79,13 +79,17 @@ test('telesales is denied for a different owner, returned-to-pool customer, or s
 });
 
 test('non-manager roles retain their existing narrow list scope', () => {
-  assert.equal(CustomerAccessService.resolveListAssignedStaffId({ id: 61, role: 'technician' }, undefined), 'me');
+  // CV roles always resolve to 'none' per 8d4708ad
+  assert.equal(CustomerAccessService.resolveListAssignedStaffId({ id: 60, role: 'technician' }, undefined), 'none');
+
+  // Other non-manager roles
+  assert.equal(CustomerAccessService.resolveListAssignedStaffId({ id: 61, role: 'receptionist' }, undefined), 'me');
   assert.equal(
-    CustomerAccessService.resolveListAssignedStaffId({ id: 61, role: 'technician' }, 'unassigned'),
+    CustomerAccessService.resolveListAssignedStaffId({ id: 61, role: 'receptionist' }, 'unassigned'),
     'unassigned'
   );
   assert.equal(
-    CustomerAccessService.resolveListAssignedStaffId({ id: 61, role: 'technician' }, undefined, 'NEW_LOCA'),
+    CustomerAccessService.resolveListAssignedStaffId({ id: 61, role: 'receptionist' }, undefined, 'NEW_LOCA'),
     undefined
   );
 });
@@ -163,11 +167,7 @@ test('Shared Pool - verified campaign member can read customer history in Active
     },
   };
 
-  const canAccess = await CustomerAccessService.canAccessCustomer(
-    fastify as never,
-    { id: 41, role: 'telesales' },
-    888
-  );
+  const canAccess = await CustomerAccessService.canAccessCustomer(fastify as never, { id: 41, role: 'telesales' }, 888);
 
   assert.equal(canAccess, true);
 });
@@ -201,11 +201,7 @@ test('Shared Pool - denied read access if staff is not in campaign assignedStaff
     },
   };
 
-  const canAccess = await CustomerAccessService.canAccessCustomer(
-    fastify as never,
-    { id: 41, role: 'telesales' },
-    888
-  );
+  const canAccess = await CustomerAccessService.canAccessCustomer(fastify as never, { id: 41, role: 'telesales' }, 888);
 
   assert.equal(canAccess, false);
 });
@@ -239,11 +235,7 @@ test('Shared Pool - denied read access if customer is in an unactivated future b
     },
   };
 
-  const canAccess = await CustomerAccessService.canAccessCustomer(
-    fastify as never,
-    { id: 41, role: 'telesales' },
-    888
-  );
+  const canAccess = await CustomerAccessService.canAccessCustomer(fastify as never, { id: 41, role: 'telesales' }, 888);
 
   assert.equal(canAccess, false);
 });
@@ -277,15 +269,10 @@ test('Shared Pool - allows read access for EXCLUDED customer in active batch', a
     },
   };
 
-  const canAccess = await CustomerAccessService.canAccessCustomer(
-    fastify as never,
-    { id: 41, role: 'telesales' },
-    888
-  );
+  const canAccess = await CustomerAccessService.canAccessCustomer(fastify as never, { id: 41, role: 'telesales' }, 888);
 
   assert.equal(canAccess, true);
 });
-
 
 test('Shared Pool - mutate access requires an active Claim lock', async () => {
   const now = new Date();

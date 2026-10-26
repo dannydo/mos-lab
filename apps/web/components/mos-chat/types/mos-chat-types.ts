@@ -131,6 +131,7 @@ export interface MosChatContextValue {
   removeMemberFromSpace?: (staffId: number, spaceId?: string) => Promise<MosChatConversation | null>;
   updateMemberNickname?: (staffId: number, nickname: string, spaceId?: string) => Promise<boolean>;
 
-  // Refresh
+  // Refresh & AI
+  resetAiChat?: () => Promise<void>;
   refresh: () => Promise<void>;
 }

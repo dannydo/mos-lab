@@ -12,7 +12,16 @@ import {
   FileArchive,
   File,
   Download,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  Sliders,
+  Check,
+  Volume2,
+  VolumeX,
+  Copy,
 } from 'lucide-react';
+import { message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
 import type { MosChatMessage } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
@@ -20,6 +29,7 @@ import { parsePureStickerMessage, MosChatStickerVisual } from '../mos-chat-stick
 import { MosChatRichText } from '../MosChatRichText';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
 import { isImageAttachment, formatFileSize, getFileExtension, isUserMessageOwner } from '../utils/chat-helpers';
+import { speakText, stopSpeaking } from '../../voice-assistant/speech-utils';
 
 export interface MosChatMobileMessageItemProps {
   message: MosChatMessage;
@@ -50,6 +60,10 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
     const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
     const lastTapRef = useRef<number>(0);
     const [showHeartFly, setShowHeartFly] = useState<boolean>(false);
+    const [thinkingOpen, setThinkingOpen] = useState<boolean>(false);
+    const [appliedActions, setAppliedActions] = useState<Record<string, boolean>>({});
+    const [isSpeaking, setIsSpeaking] = useState<boolean>(false);
+    const isAiBot = Boolean(message.isAiBot || message.senderId === 'wings-ai-copilot');
 
     const handleTouchStart = (e: React.TouchEvent) => {
       if (message.isDeleted) return;
@@ -212,15 +226,27 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
         {/* Sender info for others */}
         {!isMe && !isConsecutive && (
           <div className="flex items-center gap-2 mb-1 px-1">
-            <div className="w-5 h-5 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center text-[10px] text-white font-bold uppercase">
-              {message.senderName?.charAt(0) || 'U'}
-            </div>
-            <span className="text-xs font-semibold text-slate-300">{message.senderName}</span>
-            {message.senderRole && (
+            {isAiBot ? (
+              <div className="w-5 h-5 rounded-lg bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-sm shrink-0">
+                <Sparkles className="w-3 h-3" />
+              </div>
+            ) : (
+              <div className="w-5 h-5 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center text-[10px] text-white font-bold uppercase">
+                {message.senderName?.charAt(0) || 'U'}
+              </div>
+            )}
+            <span className={`text-xs font-semibold ${isAiBot ? 'text-purple-300' : 'text-slate-300'}`}>
+              {message.senderName}
+            </span>
+            {isAiBot ? (
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 font-bold uppercase border border-purple-500/40">
+                mOS AI
+              </span>
+            ) : message.senderRole ? (
               <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 font-medium uppercase border border-slate-700/50">
                 {message.senderRole}
               </span>
-            )}
+            ) : null}
           </div>
         )}
 
@@ -242,7 +268,9 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
             className={`relative max-w-[85%] rounded-2xl px-3.5 py-2 text-sm break-words shadow-sm transition-colors ${
               isMe
                 ? 'bg-amber-500/20 text-slate-100 border border-amber-500/40 font-normal rounded-tr-sm shadow-amber-500/10'
-                : 'bg-slate-800/90 text-slate-100 border border-slate-700/70 rounded-tl-sm'
+                : isAiBot
+                  ? 'bg-slate-900 text-slate-100 border border-purple-500/40 rounded-tl-sm shadow-md shadow-purple-950/20'
+                  : 'bg-slate-800/90 text-slate-100 border border-slate-700/70 rounded-tl-sm'
             }`}
           >
             {/* Pinned Badge */}
@@ -264,6 +292,31 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
               >
                 <p className="font-bold text-[11px] truncate">{quotedMessage.senderName}</p>
                 <p className="line-clamp-1 text-[11px] opacity-80">{quotedMessage.text}</p>
+              </div>
+            )}
+
+            {/* Collapsible AI Reasoning (<thinking>) Block */}
+            {message.aiThinking && (
+              <div className="mb-2 rounded-xl overflow-hidden w-full bg-purple-950/40 border border-purple-500/30">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setThinkingOpen((prev) => !prev);
+                  }}
+                  className="w-full px-2.5 py-1.5 flex items-center justify-between text-xs font-bold text-purple-300 active:bg-purple-900/40 transition-colors"
+                >
+                  <span className="inline-flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                    <span>Quá trình suy luận của MAI</span>
+                  </span>
+                  {thinkingOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
+                {thinkingOpen && (
+                  <div className="px-2.5 pb-2 pt-1 text-xs leading-relaxed whitespace-pre-wrap text-slate-300 border-t border-dashed border-purple-500/20 text-left">
+                    {message.aiThinking}
+                  </div>
+                )}
               </div>
             )}
 
@@ -412,6 +465,91 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
                   </div>
                 );
               })()}
+
+            {/* AI Action Buttons */}
+            {(() => {
+              const actions = message.aiActions || (message.aiAction ? [message.aiAction] : []);
+              if (!actions || actions.length === 0) return null;
+              return (
+                <div className="mt-2.5 pt-2 border-t border-purple-500/20 flex flex-wrap gap-1.5">
+                  {actions.map((act, aIdx) => {
+                    const actionKey = `${message.id}_${aIdx}`;
+                    const isApplied = Boolean(appliedActions[actionKey]);
+                    return (
+                      <button
+                        key={actionKey}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (typeof window !== 'undefined' && act.payload) {
+                            window.dispatchEvent(
+                              new CustomEvent('mos-ai-copilot-apply-customer-filter', { detail: act.payload })
+                            );
+                          }
+                          setAppliedActions((prev) => ({ ...prev, [actionKey]: true }));
+                          antdMessage.success(`Đã kích hoạt: ${act.label}`);
+                        }}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold active:scale-95 transition-all shadow-sm ${
+                          isApplied
+                            ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
+                            : 'bg-purple-500/20 border border-purple-500/40 text-purple-300 hover:bg-purple-500/30'
+                        }`}
+                      >
+                        {isApplied ? <Check className="w-3.5 h-3.5" /> : <Sliders className="w-3.5 h-3.5" />}
+                        <span>{isApplied ? `Đã áp dụng: ${act.label}` : act.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {/* Quick Voice TTS & Copy Bar for AI Bot Replies */}
+            {isAiBot && message.text && (
+              <div className="mt-2 pt-1.5 border-t border-purple-500/20 flex items-center justify-between gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isSpeaking) {
+                      stopSpeaking();
+                      setIsSpeaking(false);
+                    } else {
+                      setIsSpeaking(true);
+                      speakText(message.text, {
+                        onEnd: () => setIsSpeaking(false),
+                        onError: () => setIsSpeaking(false),
+                      });
+                    }
+                  }}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-colors ${
+                    isSpeaking ? 'bg-purple-500/30 text-purple-200' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {isSpeaking ? (
+                    <VolumeX className="w-3.5 h-3.5 animate-pulse text-purple-400" />
+                  ) : (
+                    <Volume2 className="w-3.5 h-3.5" />
+                  )}
+                  <span>{isSpeaking ? 'Dừng đọc' : 'Đọc'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+                      await navigator.clipboard.writeText(message.text);
+                      antdMessage.success('Đã sao chép câu trả lời của MAI');
+                    }
+                  }}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-slate-400 hover:text-white transition-colors"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Sao chép</span>
+                </button>
+              </div>
+            )}
 
             {/* Time & Read status */}
             <div

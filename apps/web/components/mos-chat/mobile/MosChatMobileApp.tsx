@@ -31,7 +31,12 @@ import { MosChatMobileMediaGallery, type MosChatGalleryImage } from './MosChatMo
 import { MosChatSpaceConfigModal } from '../MosChatSpaceConfigModal';
 import { MosChatSpaceMembersModal } from '../MosChatSpaceMembersModal';
 import { formatStickerToken, type MosChatStickerItem, type MosChatStickerPackId } from '../mos-chat-stickers';
-import { DEADLINE_PRESETS, GOOGLE_CHAT_REACTION_EMOJIS, WINGS_SIGNATURE_EMOJIS } from '../constants/chat-constants';
+import {
+  AI_COPILOT_CONV_ID,
+  DEADLINE_PRESETS,
+  GOOGLE_CHAT_REACTION_EMOJIS,
+  WINGS_SIGNATURE_EMOJIS,
+} from '../constants/chat-constants';
 import { apiClient } from '../../../lib/api-client';
 import { uploadMultipleChatImages } from '../utils/chat-upload';
 import type { MosChatImageAttachment } from '@mos-lab/shared';
@@ -628,6 +633,11 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
           setStickerPickerOpen(true);
         }}
         onSelectVoice={() => antdMessage.info('Giữ nút Mic để thu âm giọng nói')}
+        onSelectAiCopilot={() => {
+          setActiveConvId(AI_COPILOT_CONV_ID);
+          setMobileView('room');
+          setActiveSubtab('chat');
+        }}
       />
 
       {/* Long-press Reaction & Action Sheet */}

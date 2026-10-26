@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import dayjs from 'dayjs';
 import type {
   MosChatConversation,
@@ -24,6 +24,7 @@ import { apiClient } from '../../../lib/api-client';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
 import { tabNotificationManager } from '../../../lib/tab-notification';
 import {
+  AI_COPILOT_CONV_ID,
   FALLBACK_CONVERSATIONS,
   FALLBACK_TASKS,
   getInitialStaffDirectory,
@@ -130,6 +131,99 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
 
   // AI Copilot
   const [isAiThinking, setIsAiThinking] = useState<boolean>(false);
+  const aiPersonalStorageKey = useMemo(
+    () => `mos_chat_ai_private_conv_v1_${effectiveUser?.id || effectiveUser?.username || 'default'}`,
+    [effectiveUser?.id, effectiveUser?.username]
+  );
+  const [aiSessionId, setAiSessionId] = useState<string | null>(null);
+  const [aiMessages, setAiMessages] = useState<MosChatMessage[]>([]);
+  const aiHydratedRef = useRef<boolean>(false);
+
+  const buildInitialAiWelcomeMessage = useCallback((): MosChatMessage => {
+    const userDisplayName =
+      effectiveUser?.displayName || effectiveUser?.fullName || effectiveUser?.name || effectiveUser?.username || 'Bạn';
+    return {
+      id: 'msg-ai-welcome',
+      conversationId: AI_COPILOT_CONV_ID,
+      senderId: 'wings-ai-copilot',
+      senderName: '🤖 MAI',
+      senderRole: 'mOS AI',
+      senderAvatar: 'MAI',
+      roleColor: '#8b5cf6',
+      isAiBot: true,
+      text:
+        `Xin chào ${userDisplayName}! MAI là **mOS AI** đã được tích hợp trực tiếp vào **mOS Chat**.\n` +
+        '• **Kênh 1-1 riêng tư**: Mọi trao đổi và phân tích dữ liệu tại đây chỉ một mình bạn nhìn thấy.\n' +
+        '• **Gọi @MAI trong #Space**: Gõ `@MAI` kèm câu hỏi trong bất kỳ nhóm Space nào để MAI phân tích và trả lời công khai cho cả nhóm.',
+      timeLabel: dayjs().format('HH:mm'),
+      createdAt: new Date().toISOString(),
+      reactions: {},
+      thread: [],
+    };
+  }, [effectiveUser]);
+
+  // Hydrate AI messages from localStorage
+  useEffect(() => {
+    aiHydratedRef.current = false;
+    if (typeof window === 'undefined') return;
+    try {
+      const rawAi = window.localStorage.getItem(aiPersonalStorageKey);
+      if (rawAi) {
+        const parsedAi = JSON.parse(rawAi) as {
+          sessionId?: string | null;
+          messages?: MosChatMessage[];
+        };
+        if (parsedAi.sessionId) setAiSessionId(parsedAi.sessionId);
+        if (Array.isArray(parsedAi.messages) && parsedAi.messages.length > 0) {
+          setAiMessages(parsedAi.messages);
+          aiHydratedRef.current = true;
+          return;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    setAiMessages([buildInitialAiWelcomeMessage()]);
+    aiHydratedRef.current = true;
+  }, [aiPersonalStorageKey, buildInitialAiWelcomeMessage]);
+
+  // Persist AI messages to localStorage
+  useEffect(() => {
+    if (!aiHydratedRef.current || typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(
+        aiPersonalStorageKey,
+        JSON.stringify({
+          sessionId: aiSessionId,
+          messages: aiMessages.slice(-80),
+          updatedAt: Date.now(),
+        })
+      );
+    } catch {
+      // ignore
+    }
+  }, [aiPersonalStorageKey, aiSessionId, aiMessages]);
+
+  const aiCopilotConversation = useMemo<MosChatConversation>(() => {
+    return {
+      id: AI_COPILOT_CONV_ID,
+      type: 'dm',
+      name: '🤖 MAI',
+      subtitle: 'mOS AI · Tra cứu dữ liệu & Phân tích riêng tư',
+      roleTag: 'mOS AI',
+      color: '#8b5cf6',
+      avatar: 'MAI',
+      unreadCount: 0,
+      messages: aiMessages,
+      updatedAt: aiMessages[aiMessages.length - 1]?.createdAt || new Date().toISOString(),
+    };
+  }, [aiMessages]);
+
+  const displayConversations = useMemo<MosChatConversation[]>(() => {
+    const hasAi = conversations.some((c) => c.id === AI_COPILOT_CONV_ID);
+    if (hasAi) return conversations;
+    return [aiCopilotConversation, ...conversations];
+  }, [conversations, aiCopilotConversation]);
 
   // Tasks & Subtab
   const [activeSubtab, setActiveSubtab] = useState<MosChatActiveSubtab>(initialSubtab || 'chat');
@@ -148,12 +242,18 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
   const [replyingToMessage, setReplyingToMessage] = useState<MosChatMessage | null>(null);
 
   const activeConversation = useMemo(() => {
-    return conversations.find((c) => c.id === activeConvId) || conversations[0] || null;
-  }, [conversations, activeConvId]);
+    if (activeConvId === AI_COPILOT_CONV_ID) {
+      return aiCopilotConversation;
+    }
+    return conversations.find((c) => c.id === activeConvId) || aiCopilotConversation || conversations[0] || null;
+  }, [conversations, activeConvId, aiCopilotConversation]);
 
   const messages = useMemo(() => {
+    if (activeConvId === AI_COPILOT_CONV_ID) {
+      return aiMessages;
+    }
     return allMessagesByConv[activeConvId] || activeConversation?.messages || [];
-  }, [allMessagesByConv, activeConvId, activeConversation]);
+  }, [allMessagesByConv, activeConvId, activeConversation, aiMessages]);
 
   const pinnedMessages = useMemo(() => {
     return messages.filter((m) => m.pinned);
@@ -563,6 +663,113 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       const trimmed = text.trim();
       if (!trimmed && (!options?.attachments || options.attachments.length === 0)) return false;
 
+      // Handle Private 1-on-1 AI Copilot (MAI) Conversation
+      if (targetId === AI_COPILOT_CONV_ID) {
+        const userMsg: MosChatMessage = {
+          id: `msg-user-${Date.now()}`,
+          conversationId: AI_COPILOT_CONV_ID,
+          senderId: currentUser?.id || 'me',
+          senderName: currentUser?.fullName || currentUser?.displayName || currentUser?.name || 'Tôi',
+          senderRole: currentUser?.role || 'user',
+          senderAvatar: currentUser?.avatarUrl,
+          text: trimmed,
+          timeLabel: dayjs().format('HH:mm'),
+          createdAt: new Date().toISOString(),
+          attachments: options?.attachments,
+          reactions: {},
+        };
+        setAiMessages((prev) => [...prev, userMsg]);
+        setIsAiThinking(true);
+
+        try {
+          const imageDataUrl = await convertAttachmentToDataUrl(options?.attachments?.[0]);
+          const senderName = currentUser?.fullName || currentUser?.displayName || currentUser?.name || 'Tôi';
+          const aiRes = await apiClient.ai.sendMessage({
+            sessionId: aiSessionId || undefined,
+            message: trimmed,
+            scope: 'mos-chat-private',
+            imageDataUrl,
+            context: {
+              page: 'mos-chat-private',
+              userName: senderName,
+              myRole: currentUser?.role || 'super_admin',
+            },
+          });
+
+          if (aiRes?.session?.id) {
+            setAiSessionId(aiRes.session.id);
+          }
+
+          const rawContent = aiRes?.message?.content || 'MAI đã xử lý xong yêu cầu của bạn.';
+          const actionMatches: NonNullable<MosChatMessage['aiAction']>[] = [];
+          const regex = /<action(?:\s+type="([^"]*)")?(?:\s+label="([^"]*)")?>([\s\S]*?)<\/action>/gi;
+          let match: RegExpExecArray | null;
+          while ((match = regex.exec(rawContent)) !== null) {
+            try {
+              actionMatches.push({
+                type: match[1]?.trim() || 'APPLY_FILTER',
+                label: match[2]?.trim() || 'Áp dụng bộ lọc gợi ý',
+                payload: JSON.parse(match[3]?.trim() || '{}'),
+              });
+            } catch {
+              // ignore
+            }
+          }
+          const cleanText = rawContent
+            .replace(/<action[\s\S]*?<\/action>/gi, '')
+            .replace(/<\/?action[^>]*>/gi, '')
+            .trim();
+
+          const existingActions =
+            aiRes?.message?.suggestedActions ||
+            aiRes?.message?.suggestedAction?.actions ||
+            (aiRes?.message?.suggestedAction ? [aiRes.message.suggestedAction] : []);
+          const allActions = [...existingActions, ...actionMatches].filter(
+            (act, index, self) =>
+              index ===
+              self.findIndex((a) => a.label === act.label && JSON.stringify(a.payload) === JSON.stringify(act.payload))
+          );
+
+          const botMsg: MosChatMessage = {
+            id: aiRes?.message?.id || `msg-ai-${Date.now()}`,
+            conversationId: AI_COPILOT_CONV_ID,
+            senderId: 'wings-ai-copilot',
+            senderName: '🤖 MAI',
+            senderRole: 'mOS AI',
+            senderAvatar: 'MAI',
+            roleColor: '#8b5cf6',
+            isAiBot: true,
+            text: cleanText,
+            aiThinking: aiRes?.message?.thinking || null,
+            aiAction: allActions[0] || null,
+            aiActions: allActions.length > 0 ? allActions : null,
+            timeLabel: dayjs().format('HH:mm'),
+            createdAt: new Date().toISOString(),
+            reactions: {},
+          };
+          setAiMessages((prev) => [...prev, botMsg]);
+        } catch {
+          const errorMsg: MosChatMessage = {
+            id: `msg-ai-err-${Date.now()}`,
+            conversationId: AI_COPILOT_CONV_ID,
+            senderId: 'wings-ai-copilot',
+            senderName: '🤖 MAI',
+            senderRole: 'mOS AI',
+            senderAvatar: 'MAI',
+            roleColor: '#8b5cf6',
+            isAiBot: true,
+            text: 'Rất tiếc, đã có lỗi kết nối đến máy chủ AI. Bạn vui lòng thử lại sau giây lát nhé.',
+            timeLabel: dayjs().format('HH:mm'),
+            createdAt: new Date().toISOString(),
+            reactions: {},
+          };
+          setAiMessages((prev) => [...prev, errorMsg]);
+        } finally {
+          setIsAiThinking(false);
+        }
+        return true;
+      }
+
       const tempId = `temp_${Date.now()}`;
       const optimisticMsg: MosChatMessage = {
         id: tempId,
@@ -809,9 +1016,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
           c.id === activeConvId
             ? {
                 ...c,
-                messages: (c.messages || []).map((m) =>
-                  m.id === msgId ? { ...m, pinned: !m.pinned } : m
-                ),
+                messages: (c.messages || []).map((m) => (m.id === msgId ? { ...m, pinned: !m.pinned } : m)),
               }
             : c
         )
@@ -1426,13 +1631,24 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
     [activeConvId]
   );
 
+  // Reset/Clear AI Chat Conversation
+  const resetAiChat = useCallback(async () => {
+    setAiSessionId(null);
+    setAiMessages([buildInitialAiWelcomeMessage()]);
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.removeItem(aiPersonalStorageKey);
+      } catch {}
+    }
+  }, [aiPersonalStorageKey, buildInitialAiWelcomeMessage]);
+
   const value = useMemo<MosChatContextValue>(
     () => ({
       currentUser: effectiveUser,
       staffDirectory,
       presence,
       setPresence,
-      conversations,
+      conversations: displayConversations,
       activeConvId,
       activeConversation,
       setActiveConvId: (id: string) => {
@@ -1490,13 +1706,14 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       removeMemberFromSpace,
       updateMemberNickname,
       updateSpaceConfig,
+      resetAiChat,
       refresh: fetchBootstrap,
     }),
     [
       effectiveUser,
       staffDirectory,
       presence,
-      conversations,
+      displayConversations,
       activeConvId,
       activeConversation,
       sidebarFilter,
