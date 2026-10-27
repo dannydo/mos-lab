@@ -19,6 +19,7 @@ import {
 import type { PilotSession } from '@mos-lab/shared';
 import { AppIcon } from '../../../../components/ui/AppIcon';
 import { PilotCriteriaSopDetail } from './PilotCriteriaSopDetail';
+import { PilotSafetyRiskSopDetail } from './PilotSafetyRiskSopDetail';
 
 interface TrainingModuleItem {
   id: string;
@@ -147,6 +148,17 @@ export function SopTrainingPlaceholder({
     );
   }
 
+  // If Hạng mục 4 is active, render Safety & Risk SOP specification
+  if (activeModuleId === 'safety') {
+    return (
+      <PilotSafetyRiskSopDetail
+        onBack={() => setActiveModuleId(null)}
+        sessions={sessions}
+        onOpenSessionFlow={onOpenSessionFlow}
+      />
+    );
+  }
+
   return (
     <div className="space-y-4 antialiased" data-testid="sop-training-placeholder">
       {/* Banner Giới thiệu Placeholder */}
@@ -160,7 +172,7 @@ export function SopTrainingPlaceholder({
               </span>
               <span className="inline-flex items-center justify-center leading-none px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                 <AppIcon icon={Clock} size={12} className="mr-1" />
-                Khung 5 hạng mục · Hạng mục 1 đã hoàn thiện
+                Khung 5 hạng mục · Hạng mục 1 &amp; 4 đã hoàn thiện
               </span>
             </div>
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight m-0">
@@ -201,7 +213,7 @@ export function SopTrainingPlaceholder({
         <div className="mt-3.5 pt-3 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
           <AppIcon icon={Info} size={14} className="text-emerald-500 shrink-0" />
           <span>
-            <strong className="text-emerald-700 dark:text-emerald-300">Hạng mục 1 đã có nội dung chi tiết:</strong> Nhấp vào Hạng mục 1 bên dưới để xem hướng dẫn quan sát 5 tiêu chí, minh chứng thực tế 17 ca Pilot và quy trình xử lý điều kiện mi.
+            <strong className="text-emerald-700 dark:text-emerald-300">Hạng mục 1 &amp; Hạng mục 4 đã có nội dung chi tiết:</strong> Nhấp vào Hạng mục 1 (Tiêu chí dáng mi) hoặc Hạng mục 4 (Quản trị an toàn, rủi ro &amp; xử lý sự cố) bên dưới để xem quy trình SOP, checklist và biên bản an toàn.
           </span>
         </div>
       </div>
@@ -212,6 +224,7 @@ export function SopTrainingPlaceholder({
           const IconComp = mod.icon;
           const badgeClass = BADGE_CLASSES[mod.badgeColor] || BADGE_CLASSES.blue;
           const isCriteriaModule = mod.id === 'criteria';
+          const isSafetyModule = mod.id === 'safety';
 
           return (
             <Card
@@ -220,9 +233,17 @@ export function SopTrainingPlaceholder({
               className={`rounded-2xl transition-all duration-300 flex flex-col justify-between ${
                 isCriteriaModule
                   ? 'border-emerald-500/40 bg-gradient-to-b from-emerald-500/[0.04] to-transparent ring-1 ring-emerald-500/20 hover:shadow-md cursor-pointer'
-                  : 'border-slate-200 dark:border-slate-800 hover:shadow-md'
+                  : isSafetyModule
+                    ? 'border-rose-500/40 bg-gradient-to-b from-rose-500/[0.04] to-transparent ring-1 ring-rose-500/20 hover:shadow-md cursor-pointer'
+                    : 'border-slate-200 dark:border-slate-800 hover:shadow-md'
               }`}
-              onClick={isCriteriaModule ? () => setActiveModuleId('criteria') : undefined}
+              onClick={
+                isCriteriaModule
+                  ? () => setActiveModuleId('criteria')
+                  : isSafetyModule
+                    ? () => setActiveModuleId('safety')
+                    : undefined
+              }
               data-testid={`training-module-card-${mod.id}`}
             >
               <div className="space-y-3 flex-1">
@@ -233,7 +254,9 @@ export function SopTrainingPlaceholder({
                       className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
                         isCriteriaModule
                           ? 'bg-emerald-500 text-white shadow-xs'
-                          : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                          : isSafetyModule
+                            ? 'bg-rose-500 text-white shadow-xs'
+                            : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                       }`}
                     >
                       <AppIcon icon={IconComp} size={16} />
@@ -289,6 +312,25 @@ export function SopTrainingPlaceholder({
                       }}
                       className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-bold inline-flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
                       data-testid="view-criteria-sop-btn"
+                    >
+                      <span>Xem chi tiết SOP</span>
+                      <AppIcon icon={ArrowRight} size={12} />
+                    </button>
+                  </>
+                ) : isSafetyModule ? (
+                  <>
+                    <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 font-bold">
+                      <ShieldCheck size={12} />
+                      <span>Đã hoàn thiện nội dung</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveModuleId('safety');
+                      }}
+                      className="text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 font-bold inline-flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
+                      data-testid="view-safety-sop-btn"
                     >
                       <span>Xem chi tiết SOP</span>
                       <AppIcon icon={ArrowRight} size={12} />

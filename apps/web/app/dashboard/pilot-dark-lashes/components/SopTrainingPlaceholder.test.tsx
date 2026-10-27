@@ -64,4 +64,25 @@ describe('SopTrainingPlaceholder', () => {
     // Should return to overview
     expect(screen.getByTestId('sop-training-placeholder')).toBeInTheDocument();
   });
+
+  it('navigates to Hạng mục 4 Safety & Risk SOP Detail when clicking "Xem chi tiết SOP" on card and navigates back', () => {
+    render(<SopTrainingPlaceholder />);
+
+    // Click "Xem chi tiết SOP" button on Hạng mục 4
+    const viewSafetyBtn = screen.getByTestId('view-safety-sop-btn');
+    fireEvent.click(viewSafetyBtn);
+
+    // Should now show PilotSafetyRiskSopDetail
+    expect(screen.getByTestId('pilot-safety-risk-sop-detail')).toBeInTheDocument();
+    expect(
+      screen.getByText('SOP Quản Trị An Toàn Giác Mạc, Phòng Ngừa Rủi Ro & Xử Lý Sự Cố')
+    ).toBeInTheDocument();
+
+    // Click back button
+    const backBtn = screen.getByTestId('sop-safety-back-button');
+    fireEvent.click(backBtn);
+
+    // Should return to overview
+    expect(screen.getByTestId('sop-training-placeholder')).toBeInTheDocument();
+  });
 });
