@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Button, Card, Form, Input, Popconfirm, Radio, Tooltip, Typography, message } from 'antd';
+import { Button, Card, Form, Input, Popconfirm, Radio, Tabs, Tooltip, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   AlertTriangle,
@@ -9,6 +9,7 @@ import {
   CheckCircle,
   Clock,
   Edit,
+  GraduationCap,
   HeartHandshake,
   ListOrdered,
   Package,
@@ -47,6 +48,7 @@ import { PilotMaterialModal } from './components/PilotMaterialModal';
 import { PilotFlowDrawer } from './components/PilotFlowDrawer';
 import { PilotSopModal } from './components/PilotSopModal';
 import { PilotCriteriaModal } from './components/PilotCriteriaModal';
+import { SopTrainingPlaceholder } from './components/SopTrainingPlaceholder';
 
 const { Title } = Typography;
 
@@ -58,10 +60,72 @@ function formatVND(value: number): string {
   }).format(value);
 }
 
+const OP_STATUS_CONFIG: Record<DarkLashesSessionStatus, { text: string; badge: string }> = {
+  BOOKED: { text: '1. Đã đặt lịch', badge: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' },
+  CHECKED_IN: { text: '2. Đã đến shop', badge: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20' },
+  ASSESSED: { text: '3. Đã đánh giá đạt', badge: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20' },
+  INELIGIBLE: { text: 'Không đủ điều kiện', badge: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20' },
+  BEFORE_PHOTO: { text: '4. Đã chụp Before', badge: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' },
+  SERVICE_DONE: { text: '5. Làm xong', badge: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20' },
+  AFTER_PHOTO: { text: '6. Đã chụp After', badge: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20' },
+  FEEDBACK_DONE: { text: '7. Đã feedback', badge: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20' },
+  CHECKED_OUT: { text: '8. Đã check-out', badge: 'bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/20' },
+};
+
+function renderFollowUpBadge(status: PilotFollowUpStatus, hours: '24h' | '72h') {
+  if (status === 'DONE') {
+    return (
+      <span className="inline-flex items-center justify-center leading-none px-2 py-1 rounded-md border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-medium">
+        <AppIcon icon={CheckCircle} size="sm" className="mr-1" /> Đã gọi {hours}
+      </span>
+    );
+  }
+  if (status === 'SKIPPED') {
+    return <span className="text-slate-400 px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-xs">Bỏ qua</span>;
+  }
+  const is24 = hours === '24h';
+  return (
+    <span
+      className={`inline-flex items-center justify-center leading-none px-2 py-1 rounded-md border text-xs font-medium ${
+        is24
+          ? 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300'
+          : 'border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300'
+      }`}
+    >
+      <AppIcon icon={is24 ? Clock : AlertTriangle} size="sm" className={`mr-1 ${is24 ? '' : 'text-rose-500'}`} /> Chờ gọi {hours}
+    </span>
+  );
+}
+
 export default function PilotDarkLashesPage() {
   const [loading, setLoading] = useState(false);
   const [sessions, setSessions] = useState<PilotSession[]>([]);
   const [metrics, setMetrics] = useState<PilotMetricsSummary | null>(null);
+  const [activeTab, setActiveTab] = useState<'sessions' | 'sop'>('sessions');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam === 'sop' || tabParam === 'sop-training') {
+        setActiveTab('sop');
+      }
+    }
+  }, []);
+
+  const handleTabChange = (key: string) => {
+    const nextTab = key === 'sop' ? 'sop' : 'sessions';
+    setActiveTab(nextTab);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (nextTab === 'sop') {
+        url.searchParams.set('tab', 'sop');
+      } else {
+        url.searchParams.delete('tab');
+      }
+      window.history.replaceState({}, '', url.toString());
+    }
+  };
 
   // Filters
   const [searchText, setSearchText] = useState('');
@@ -133,23 +197,14 @@ export default function PilotDarkLashesPage() {
 
   // Open drawer for Create
   const handleOpenCreate = () => {
+    setActiveTab('sessions');
     setEditingSession(null);
     form.resetFields();
     form.setFieldsValue({
-      pilotCode: 'DARK_LASHES',
-      branchCode: 'detham',
-      sessionDate: dayjs().format('YYYY-MM-DD'),
-      technicianName: 'Cô Đẫm',
-      revenue: 990000,
-      materialCost: 50000,
-      technicianCost: 150000,
-      commissionAmount: 50000,
-      promoAmount: 0,
-      refundAmount: 0,
-      followUp24hStatus: 'PENDING',
-      followUp72hStatus: 'PENDING',
-      source: 'Facebook',
-      materials: [],
+      pilotCode: 'DARK_LASHES', branchCode: 'detham', sessionDate: dayjs().format('YYYY-MM-DD'),
+      technicianName: 'Cô Đẫm', revenue: 990000, materialCost: 50000, technicianCost: 150000,
+      commissionAmount: 50000, promoAmount: 0, refundAmount: 0,
+      followUp24hStatus: 'PENDING', followUp72hStatus: 'PENDING', source: 'Facebook', materials: [],
     });
     setCreateDrawerOpen(true);
   };
@@ -159,27 +214,14 @@ export default function PilotDarkLashesPage() {
     setEditingSession(session);
     form.resetFields();
     form.setFieldsValue({
-      customerName: session.customerName,
-      customerPhone: session.customerPhone,
-      sessionDate: session.sessionDate,
-      technicianName: session.technicianName,
-      revenue: session.revenue,
-      materialCost: session.materialCost,
-      technicianCost: session.technicianCost,
-      commissionAmount: session.commissionAmount,
-      promoAmount: session.promoAmount,
-      refundAmount: session.refundAmount,
-      followUp24hStatus: session.followUp24hStatus,
-      followUp72hStatus: session.followUp72hStatus,
-      csatScore: session.csatScore,
-      issues: session.issues,
-      notes: session.notes,
-      source: session.source,
-      materials:
-        session.materials?.map((m) => ({
-          materialId: m.materialId,
-          usageAmount: m.usageAmount,
-        })) || [],
+      customerName: session.customerName, customerPhone: session.customerPhone,
+      sessionDate: session.sessionDate, technicianName: session.technicianName,
+      revenue: session.revenue, materialCost: session.materialCost,
+      technicianCost: session.technicianCost, commissionAmount: session.commissionAmount,
+      promoAmount: session.promoAmount, refundAmount: session.refundAmount,
+      followUp24hStatus: session.followUp24hStatus, followUp72hStatus: session.followUp72hStatus,
+      csatScore: session.csatScore, issues: session.issues, notes: session.notes, source: session.source,
+      materials: session.materials?.map((m) => ({ materialId: m.materialId, usageAmount: m.usageAmount })) || [],
     });
     setCreateDrawerOpen(true);
   };
@@ -342,54 +384,7 @@ export default function PilotDarkLashesPage() {
       width: 175,
       render: (_, r) => {
         const status = r.status || 'BOOKED';
-        const labels: Record<DarkLashesSessionStatus, { text: string; color: string; badge: string }> = {
-          BOOKED: {
-            text: '1. Đã đặt lịch',
-            color: 'blue',
-            badge: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-          },
-          CHECKED_IN: {
-            text: '2. Đã đến shop',
-            color: 'cyan',
-            badge: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
-          },
-          ASSESSED: {
-            text: '3. Đã đánh giá đạt',
-            color: 'emerald',
-            badge: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
-          },
-          INELIGIBLE: {
-            text: 'Không đủ điều kiện',
-            color: 'rose',
-            badge: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20',
-          },
-          BEFORE_PHOTO: {
-            text: '4. Đã chụp Before',
-            color: 'purple',
-            badge: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
-          },
-          SERVICE_DONE: {
-            text: '5. Làm xong',
-            color: 'gold',
-            badge: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20',
-          },
-          AFTER_PHOTO: {
-            text: '6. Đã chụp After',
-            color: 'geekblue',
-            badge: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
-          },
-          FEEDBACK_DONE: {
-            text: '7. Đã feedback',
-            color: 'orange',
-            badge: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
-          },
-          CHECKED_OUT: {
-            text: '8. Đã check-out',
-            color: 'emerald',
-            badge: 'bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/20',
-          },
-        };
-        const cfg = labels[status] || labels.BOOKED;
+        const cfg = OP_STATUS_CONFIG[status] || OP_STATUS_CONFIG.BOOKED;
 
         return (
           <div className="flex flex-col gap-1.5 items-start">
@@ -421,46 +416,26 @@ export default function PilotDarkLashesPage() {
       key: 'photos',
       width: 140,
       render: (_, r) => {
-        if (!r.beforePhotoUrl && !r.afterPhotoUrl) {
-          return <span className="text-slate-400 text-xs">Chưa có ảnh</span>;
-        }
-
+        if (!r.beforePhotoUrl && !r.afterPhotoUrl) return <span className="text-slate-400 text-xs">Chưa có ảnh</span>;
         return (
           <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => handleOpenFlow(r)}>
             {r.beforePhotoUrl ? (
               <Tooltip title="Xem ảnh Before">
                 <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-900 shrink-0">
-                  <img
-                    src={resolveMediaUrl(r.beforePhotoUrl)}
-                    alt="Before"
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                    decoding="async"
-                  />
+                  <img src={resolveMediaUrl(r.beforePhotoUrl)} alt="Before" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                 </div>
               </Tooltip>
             ) : (
-              <div className="w-10 h-10 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center text-[10px] text-slate-400 shrink-0">
-                Tr
-              </div>
+              <div className="w-10 h-10 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center text-[10px] text-slate-400 shrink-0">Tr</div>
             )}
-
             {r.afterPhotoUrl ? (
               <Tooltip title="Xem ảnh After">
                 <div className="w-10 h-10 rounded-lg overflow-hidden border border-emerald-300 dark:border-emerald-700 bg-slate-900 shrink-0">
-                  <img
-                    src={resolveMediaUrl(r.afterPhotoUrl)}
-                    alt="After"
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                    decoding="async"
-                  />
+                  <img src={resolveMediaUrl(r.afterPhotoUrl)} alt="After" className="w-full h-full object-cover" loading="lazy" decoding="async" />
                 </div>
               </Tooltip>
             ) : (
-              <div className="w-10 h-10 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center text-[10px] text-slate-400 shrink-0">
-                Sau
-              </div>
+              <div className="w-10 h-10 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center text-[10px] text-slate-400 shrink-0">Sau</div>
             )}
           </div>
         );
@@ -471,33 +446,21 @@ export default function PilotDarkLashesPage() {
       key: 'duration',
       width: 130,
       render: (_, r) => {
-        const totalTechnicalMin =
-          r.totalTechnicalDurationSeconds && r.totalTechnicalDurationSeconds > 0
-            ? Math.round(r.totalTechnicalDurationSeconds / 60)
-            : null;
-
+        const totalTechnicalMin = r.totalTechnicalDurationSeconds && r.totalTechnicalDurationSeconds > 0 ? Math.round(r.totalTechnicalDurationSeconds / 60) : null;
         return (
           <div className="flex flex-col gap-0.5">
             {r.totalDurationMinutes ? (
               <div className="flex items-center gap-1">
-                <span className="tabular-nums font-bold text-emerald-700 dark:text-emerald-400 text-xs">
-                  {r.totalDurationMinutes} phút
-                </span>
+                <span className="tabular-nums font-bold text-emerald-700 dark:text-emerald-400 text-xs">{r.totalDurationMinutes} phút</span>
                 <span className="text-[10px] text-slate-400">(Visit)</span>
               </div>
             ) : r.checkInAt ? (
-              <span className="inline-flex items-center text-[11px] text-cyan-600 dark:text-cyan-400 font-medium">
-                Đang làm...
-              </span>
+              <span className="inline-flex items-center text-[11px] text-cyan-600 dark:text-cyan-400 font-medium">Đang làm...</span>
             ) : (
               <span className="text-slate-400 text-xs">--</span>
             )}
             {totalTechnicalMin !== null && (
-              <Tooltip
-                title={`Tổng thời gian kỹ thuật (SOP): ${Math.floor(r.totalTechnicalDurationSeconds! / 60)} phút ${
-                  r.totalTechnicalDurationSeconds! % 60
-                }s`}
-              >
+              <Tooltip title={`Tổng thời gian kỹ thuật (SOP): ${Math.floor(r.totalTechnicalDurationSeconds! / 60)} phút ${r.totalTechnicalDurationSeconds! % 60}s`}>
                 <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-700 dark:text-teal-300 tabular-nums">
                   <AppIcon icon={Clock} size="sm" /> KT: {totalTechnicalMin}p
                 </span>
@@ -615,50 +578,14 @@ export default function PilotDarkLashesPage() {
       dataIndex: 'followUp24hStatus',
       key: 'followUp24hStatus',
       width: 120,
-      render: (status: PilotFollowUpStatus) => {
-        if (status === 'DONE') {
-          return (
-            <span className="inline-flex items-center justify-center leading-none px-2 py-1 rounded-md border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-medium">
-              <AppIcon icon={CheckCircle} size="sm" className="mr-1" /> Đã gọi 24h
-            </span>
-          );
-        }
-        if (status === 'SKIPPED') {
-          return (
-            <span className="text-slate-400 px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-xs">Bỏ qua</span>
-          );
-        }
-        return (
-          <span className="inline-flex items-center justify-center leading-none px-2 py-1 rounded-md border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 font-medium text-xs">
-            <AppIcon icon={Clock} size="sm" className="mr-1" /> Chờ gọi 24h
-          </span>
-        );
-      },
+      render: (status: PilotFollowUpStatus) => renderFollowUpBadge(status, '24h'),
     },
     {
       title: 'Follow-up 72h',
       dataIndex: 'followUp72hStatus',
       key: 'followUp72hStatus',
       width: 120,
-      render: (status: PilotFollowUpStatus) => {
-        if (status === 'DONE') {
-          return (
-            <span className="inline-flex items-center justify-center leading-none px-2 py-1 rounded-md border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-medium">
-              <AppIcon icon={CheckCircle} size="sm" className="mr-1" /> Đã gọi 72h
-            </span>
-          );
-        }
-        if (status === 'SKIPPED') {
-          return (
-            <span className="text-slate-400 px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-xs">Bỏ qua</span>
-          );
-        }
-        return (
-          <span className="inline-flex items-center justify-center leading-none px-2 py-1 rounded-md border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 font-medium text-xs">
-            <AppIcon icon={AlertTriangle} size="sm" className="mr-1 text-rose-500" /> Chờ gọi 72h
-          </span>
-        );
-      },
+      render: (status: PilotFollowUpStatus) => renderFollowUpBadge(status, '72h'),
     },
     {
       title: 'Thao tác',
@@ -794,68 +721,116 @@ export default function PilotDarkLashesPage() {
         </div>
       </div>
 
-      {/* Top 5 Metrics Cards */}
-      <PilotMetricsGrid metrics={metrics} />
+      {/* Navigation Tabs: Ca dịch vụ & Hiệu quả vs SOP & Đào tạo KTV */}
+      <Tabs
+        activeKey={activeTab}
+        onChange={handleTabChange}
+        className="pilot-dark-lashes-tabs"
+        items={[
+          {
+            key: 'sessions',
+            label: (
+              <span className="flex items-center gap-1.5 font-semibold text-xs sm:text-sm">
+                <AppIcon icon={Sparkles} size={15} />
+                <span>Ca dịch vụ &amp; Hiệu quả</span>
+              </span>
+            ),
+            children: (
+              <div className="space-y-3 sm:space-y-3.5 mt-1">
+                {/* Top 5 Metrics Cards */}
+                <PilotMetricsGrid metrics={metrics} />
 
-      {/* Main Table Card */}
-      <Card variant="outlined" className="rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 w-full">
-        {/* Table Filters & Actions */}
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2 flex-wrap flex-1">
-            <Input
-              placeholder="Tìm theo tên KH, SĐT, CV..."
-              prefix={<AppIcon icon={Search} size="sm" className="text-slate-400" />}
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              className="w-64 rounded-xl"
-              allowClear
-            />
-            <Radio.Group
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              buttonStyle="solid"
-              className="rounded-xl"
-            >
-              <Radio.Button value="ALL">Tất cả ({sessions.length})</Radio.Button>
-              <Radio.Button value="PENDING_24H">Chờ 24h ({metrics?.pendingFollowUp24hCount ?? 0})</Radio.Button>
-              <Radio.Button value="PENDING_72H">Chờ 72h ({metrics?.pendingFollowUp72hCount ?? 0})</Radio.Button>
-              <Radio.Button value="DONE">Hoàn tất chăm sóc</Radio.Button>
-            </Radio.Group>
+                {/* Main Table Card */}
+                <Card
+                  variant="outlined"
+                  className="rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 w-full"
+                >
+                  {/* Table Filters & Actions */}
+                  <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-2 flex-wrap flex-1">
+                      <Input
+                        placeholder="Tìm theo tên KH, SĐT, CV..."
+                        prefix={<AppIcon icon={Search} size="sm" className="text-slate-400" />}
+                        value={searchText}
+                        onChange={(e) => setSearchText(e.target.value)}
+                        className="w-64 rounded-xl"
+                        allowClear
+                      />
+                      <Radio.Group
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        buttonStyle="solid"
+                        className="rounded-xl"
+                      >
+                        <Radio.Button value="ALL">Tất cả ({sessions.length})</Radio.Button>
+                        <Radio.Button value="PENDING_24H">
+                          Chờ 24h ({metrics?.pendingFollowUp24hCount ?? 0})
+                        </Radio.Button>
+                        <Radio.Button value="PENDING_72H">
+                          Chờ 72h ({metrics?.pendingFollowUp72hCount ?? 0})
+                        </Radio.Button>
+                        <Radio.Button value="DONE">Hoàn tất chăm sóc</Radio.Button>
+                      </Radio.Group>
 
-            <Radio.Group
-              value={opStatusFilter}
-              onChange={(e) => setOpStatusFilter(e.target.value)}
-              buttonStyle="solid"
-              className="rounded-xl"
-            >
-              <Radio.Button value="ALL">Mọi tiến trình</Radio.Button>
-              <Radio.Button value="IN_SHOP">Đang tại shop</Radio.Button>
-              <Radio.Button value="INELIGIBLE">Không đủ điều kiện</Radio.Button>
-              <Radio.Button value="CHECKED_OUT">Đã check-out</Radio.Button>
-            </Radio.Group>
-          </div>
+                      <Radio.Group
+                        value={opStatusFilter}
+                        onChange={(e) => setOpStatusFilter(e.target.value)}
+                        buttonStyle="solid"
+                        className="rounded-xl"
+                      >
+                        <Radio.Button value="ALL">Mọi tiến trình</Radio.Button>
+                        <Radio.Button value="IN_SHOP">Đang tại shop</Radio.Button>
+                        <Radio.Button value="INELIGIBLE">Không đủ điều kiện</Radio.Button>
+                        <Radio.Button value="CHECKED_OUT">Đã check-out</Radio.Button>
+                      </Radio.Group>
+                    </div>
 
-          <div className="text-xs text-slate-500 tabular-nums shrink-0">
-            Hiển thị <span className="font-semibold">{filteredSessions.length}</span> ca dịch vụ
-          </div>
-        </div>
+                    <div className="text-xs text-slate-500 tabular-nums shrink-0">
+                      Hiển thị <span className="font-semibold">{filteredSessions.length}</span> ca dịch vụ
+                    </div>
+                  </div>
 
-        {/* Data Table */}
-        <DataTable<PilotSession>
-          columns={columns}
-          dataSource={filteredSessions}
-          rowKey="id"
-          loading={loading}
-          pagination={{
-            pageSize: 15,
-            showSizeChanger: true,
-            pageSizeOptions: ['15', '30', '50'],
-            showTotal: (total) => `Tổng cộng ${total} ca`,
-          }}
-          scroll={{ x: 'max-content' }}
-          className="rounded-xl w-full"
-        />
-      </Card>
+                  {/* Data Table */}
+                  <DataTable<PilotSession>
+                    columns={columns}
+                    dataSource={filteredSessions}
+                    rowKey="id"
+                    loading={loading}
+                    pagination={{
+                      pageSize: 15,
+                      showSizeChanger: true,
+                      pageSizeOptions: ['15', '30', '50'],
+                      showTotal: (total) => `Tổng cộng ${total} ca`,
+                    }}
+                    scroll={{ x: 'max-content' }}
+                    className="rounded-xl w-full"
+                  />
+                </Card>
+              </div>
+            ),
+          },
+          {
+            key: 'sop',
+            label: (
+              <span
+                className="flex items-center gap-1.5 font-semibold text-xs sm:text-sm"
+                data-testid="sop-training-tab-header"
+              >
+                <AppIcon icon={GraduationCap} size={15} />
+                <span>SOP &amp; Đào tạo KTV</span>
+              </span>
+            ),
+            children: (
+              <div className="mt-1">
+                <SopTrainingPlaceholder
+                  onOpenSopModal={() => setSopModalOpen(true)}
+                  onOpenCriteriaModal={() => setCriteriaModalOpen(true)}
+                />
+              </div>
+            ),
+          },
+        ]}
+      />
 
       {/* Drawers & Modals */}
       <PilotSessionDrawer
