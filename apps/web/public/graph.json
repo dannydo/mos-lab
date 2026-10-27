@@ -14229,14 +14229,8 @@
       "filePath": "apps/web/app/dashboard/staff/menu-access/page.tsx",
       "metadata": {
         "routePath": "/dashboard/staff/menu-access",
-        "apiCallsCount": 5,
-        "apiCalls": [
-          "menuAccess.getConfiguration",
-          "auth.me",
-          "menuAccess.updateRoleGroupMatrix",
-          "menuAccess.inspectPermissions",
-          "menuAccess.updatePolicy"
-        ]
+        "apiCallsCount": 3,
+        "apiCalls": ["menuAccess.getConfiguration", "auth.me", "menuAccess.updatePolicy"]
       }
     },
     {
@@ -37227,8 +37221,8 @@
       "filePath": "apps/api/src/modules/menu-access/menu-access.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 13842,
-        "lineCount": 271,
+        "sizeBytes": 14077,
+        "lineCount": 329,
         "ext": ".ts"
       }
     },
@@ -37240,8 +37234,8 @@
       "filePath": "apps/api/src/modules/menu-access/menu-access.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 46900,
-        "lineCount": 1133,
+        "sizeBytes": 47086,
+        "lineCount": 1151,
         "ext": ".ts"
       }
     },
@@ -37253,8 +37247,8 @@
       "filePath": "apps/api/src/modules/menu-access/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3797,
-        "lineCount": 104,
+        "sizeBytes": 3757,
+        "lineCount": 100,
         "ext": ".ts"
       }
     },
@@ -44071,6 +44065,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/staff/menu-access/components/SecurityMatrixAndInspector.tsx",
+      "type": "File",
+      "label": "SecurityMatrixAndInspector.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/staff/menu-access/components/SecurityMatrixAndInspector.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 12952,
+        "lineCount": 319,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/staff/menu-access/page.tsx",
       "type": "File",
       "label": "page.tsx",
@@ -44078,8 +44085,8 @@
       "filePath": "apps/web/app/dashboard/staff/menu-access/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 36933,
-        "lineCount": 899,
+        "sizeBytes": 25649,
+        "lineCount": 636,
         "ext": ".tsx"
       }
     },
@@ -46613,8 +46620,8 @@
       "filePath": "packages/shared/src/types/menu-access.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 22310,
-        "lineCount": 755,
+        "sizeBytes": 22359,
+        "lineCount": 762,
         "ext": ".ts"
       }
     },
@@ -70800,6 +70807,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/staff/hooks/useStaffData.ts:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/staff/hooks/useStaffData.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/staff/menu-access/components/SecurityMatrixAndInspector.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/staff/menu-access/components/SecurityMatrixAndInspector.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -100724,8 +100738,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 3610,
-    "totalEdges": 7675,
+    "totalNodes": 3611,
+    "totalEdges": 7676,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 176,
@@ -100734,14 +100748,14 @@
       "SharedType": 1312,
       "DesignToken": 12,
       "UIComponent": 312,
-      "File": 999
+      "File": 1000
     },
     "edgeTypeCounts": {
       "EXPORTS": 1500,
       "HANDLES_ROUTE": 734,
       "RENDERS": 374,
       "USES_TOKEN": 314,
-      "IMPORTS": 555,
+      "IMPORTS": 556,
       "QUERIES_MODEL": 422,
       "API_CALL": 3776
     },
