@@ -28,6 +28,7 @@ import {
 } from '../utils/chat-helpers';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
 import { AI_COPILOT_CONV_ID, AI_QUICK_PROMPTS } from '../constants/chat-constants';
+import { MosChatAvatar } from '../MosChatAvatar';
 
 export interface MosChatMobileComposerProps {
   onOpenActionSheet: () => void;
@@ -234,9 +235,16 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
       {/* Quoted Message Preview Banner */}
       {replyingToMessage && (
         <div className="flex items-center justify-between bg-slate-800/80 border border-slate-700/60 rounded-xl px-3 py-1.5 mb-2 text-xs">
-          <div className="flex items-center gap-2 truncate">
+          <div className="flex items-center gap-2 truncate min-w-0">
             <span className="w-1 h-3.5 rounded-full bg-amber-400 shrink-0" />
-            <div className="truncate">
+            <MosChatAvatar
+              size="xs"
+              src={replyingToMessage.senderAvatar}
+              name={replyingToMessage.senderName}
+              staffId={replyingToMessage.senderId}
+              staffDirectory={staffDirectory}
+            />
+            <div className="truncate min-w-0">
               <span className="font-semibold text-amber-300">Trả lời {replyingToMessage.senderName}:</span>{' '}
               <span className="text-slate-300 truncate">{replyingToMessage.text}</span>
             </div>

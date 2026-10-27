@@ -22,6 +22,7 @@ import {
   RotateCcw,
   CornerDownLeft,
   CornerDownRight,
+  Sparkles,
 } from 'lucide-react';
 import { message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
@@ -36,6 +37,7 @@ import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
 import { handleSmartListEnterKey } from '../MosChatRichEditorModal';
 import { apiClient } from '../../../lib/api-client';
 import { uploadMultipleChatImages } from '../utils/chat-upload';
+import { MosChatAvatar } from '../MosChatAvatar';
 import type {
   MosChatImageAttachment,
   MosChatMissionActionType,
@@ -764,10 +766,25 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
           )}
 
           <div className="flex items-center gap-2 mb-1.5">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-amber-500/30 to-indigo-500/30 border border-amber-500/40 flex items-center justify-center text-[10px] text-amber-300 font-bold uppercase">
-              {activeThreadMsg.senderName?.charAt(0) || 'U'}
-            </div>
+            {activeThreadMsg.isAiBot || activeThreadMsg.senderId === 'wings-ai-copilot' ? (
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-sm shrink-0">
+                <Sparkles className="w-3.5 h-3.5" />
+              </div>
+            ) : (
+              <MosChatAvatar
+                size="sm"
+                src={activeThreadMsg.senderAvatar}
+                name={activeThreadMsg.senderName}
+                staffId={activeThreadMsg.senderId}
+                staffDirectory={staffDirectory}
+              />
+            )}
             <span className="text-xs font-bold text-white">{activeThreadMsg.senderName}</span>
+            {activeThreadMsg.senderRole && (
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 font-medium uppercase border border-slate-700/50">
+                {activeThreadMsg.senderRole}
+              </span>
+            )}
             <span className="text-[10px] text-slate-500 tabular-nums flex items-center gap-1">
               {activeThreadMsg.editedAt && <span className="italic text-slate-400">đã sửa</span>}
               <span>{dayjs(activeThreadMsg.createdAt).format('HH:mm DD/MM')}</span>
@@ -1288,7 +1305,21 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
               )}
 
               {!isMe && !reply.isDeleted && (
-                <span className="text-[11px] font-semibold text-slate-400 mb-0.5 px-1">{reply.senderName}</span>
+                <div className="flex items-center gap-1.5 mb-1 px-1">
+                  <MosChatAvatar
+                    size="xs"
+                    src={reply.senderAvatar}
+                    name={reply.senderName}
+                    staffId={reply.senderId}
+                    staffDirectory={staffDirectory}
+                  />
+                  <span className="text-[11px] font-semibold text-slate-300">{reply.senderName}</span>
+                  {reply.senderRole && (
+                    <span className="text-[9px] px-1 py-0.2 rounded bg-slate-800 text-slate-400 font-medium uppercase border border-slate-700/50">
+                      {reply.senderRole}
+                    </span>
+                  )}
+                </div>
               )}
 
               {reply.isDeleted ? (
