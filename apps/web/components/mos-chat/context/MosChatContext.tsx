@@ -9,6 +9,7 @@ import type {
   MosChatTaskItem,
   MosChatStaffMember,
   MosChatImageAttachment,
+  MosChatCustomerCard,
   MosChatPresenceStatus,
   MosChatTaskPriority,
   MosChatWorkflowInstance,
@@ -670,13 +671,14 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       text: string,
       options?: {
         attachments?: MosChatImageAttachment[];
+        customerCard?: MosChatCustomerCard | null;
         targetConvId?: string;
         replyToId?: string;
       }
     ): Promise<boolean> => {
       const targetId = options?.targetConvId || activeConvId;
       const trimmed = text.trim();
-      if (!trimmed && (!options?.attachments || options.attachments.length === 0)) return false;
+      if (!trimmed && (!options?.attachments || options.attachments.length === 0) && !options?.customerCard) return false;
 
       // Handle Private 1-on-1 AI Copilot (MAI) Conversation
       if (targetId === AI_COPILOT_CONV_ID) {
@@ -796,6 +798,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
         text: trimmed,
         timeLabel: dayjs().format('HH:mm'),
         createdAt: new Date().toISOString(),
+        customerCard: options?.customerCard || null,
         attachments: options?.attachments,
         reactions: {},
         pinned: false,
@@ -810,6 +813,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
         const res = await apiClient.chat.sendMessage({
           conversationId: targetId,
           text: trimmed,
+          customerCard: options?.customerCard || null,
           attachments: options?.attachments,
         });
         if (res && res.message) {

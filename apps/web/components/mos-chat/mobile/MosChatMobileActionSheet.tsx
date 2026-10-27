@@ -1,13 +1,14 @@
 'use client';
 
 import React from 'react';
-import { ImagePlus, HardDrive, CheckSquare, Zap, Smile, Mic, Bot, X, Paperclip } from 'lucide-react';
+import { ImagePlus, HardDrive, CheckSquare, Zap, Smile, Mic, Bot, X, Paperclip, UserRoundPlus } from 'lucide-react';
 
 export interface MosChatMobileActionSheetProps {
   open: boolean;
   onClose: () => void;
   onSelectImage: () => void;
   onSelectFile?: () => void;
+  onSelectCustomer?: () => void;
   onSelectDrive: () => void;
   onSelectTask: () => void;
   onSelectWorkflow: () => void;
@@ -21,6 +22,7 @@ export const MosChatMobileActionSheet: React.FC<MosChatMobileActionSheetProps> =
   onClose,
   onSelectImage,
   onSelectFile,
+  onSelectCustomer,
   onSelectDrive,
   onSelectTask,
   onSelectWorkflow,
@@ -31,6 +33,16 @@ export const MosChatMobileActionSheet: React.FC<MosChatMobileActionSheetProps> =
   if (!open) return null;
 
   const actions = [
+    {
+      id: 'customer',
+      label: 'Thẻ khách / Booking',
+      icon: <UserRoundPlus className="w-6 h-6 text-amber-400" />,
+      bg: 'bg-amber-500/15 border-amber-500/30',
+      onClick: () => {
+        onClose();
+        onSelectCustomer?.();
+      },
+    },
     {
       id: 'file',
       label: 'Đính kèm tệp / PDF',

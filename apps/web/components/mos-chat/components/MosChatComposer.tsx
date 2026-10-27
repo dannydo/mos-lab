@@ -21,7 +21,7 @@ import {
   Activity,
   CornerDownLeft,
 } from 'lucide-react';
-import type { MosChatConversation, MosChatMessage, MosChatImageAttachment, SafeAny } from '@mos-lab/shared';
+import type { MosChatConversation, MosChatMessage, MosChatImageAttachment, MosChatCustomerCard, SafeAny } from '@mos-lab/shared';
 import { AI_COPILOT_CONV_ID, AI_QUICK_PROMPTS } from '../constants/chat-constants';
 import { handleSmartListEnterKey } from '../MosChatRichEditorModal';
 
@@ -47,6 +47,8 @@ export interface MosChatComposerProps {
 
   stagedAttachments: MosChatImageAttachment[];
   renderStagedAttachmentsStrip: (attachments: MosChatImageAttachment[], scope: 'main') => React.ReactNode;
+  stagedCustomerCard?: MosChatCustomerCard | null;
+  setStagedCustomerCard?: React.Dispatch<React.SetStateAction<MosChatCustomerCard | null>>;
 
   isUrgentSend: boolean;
   setIsUrgentSend: React.Dispatch<React.SetStateAction<boolean>>;
@@ -54,7 +56,8 @@ export interface MosChatComposerProps {
   handleSendMessage: (convId: string, text: string) => Promise<SafeAny>;
   handleSendMain: () => void;
   triggerFilePicker: (scope: 'main') => void;
-  handleSendQuickCustomerCard: () => void;
+  handleSendQuickCustomerCard?: () => void;
+  handleOpenCustomerPicker?: () => void;
   openTaskModalFromMessage: (msg: MosChatMessage | null) => void;
   checkForMentionTrigger: (text: string, cursor: number, scope: 'main') => void;
   handleClipboardPaste: (e: React.ClipboardEvent<HTMLTextAreaElement>, scope: 'main') => void;
@@ -97,12 +100,15 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
     composerInputRef,
     stagedAttachments,
     renderStagedAttachmentsStrip,
+    stagedCustomerCard,
+    setStagedCustomerCard,
     isUrgentSend,
     setIsUrgentSend,
     handleSendMessage,
     handleSendMain,
     triggerFilePicker,
     handleSendQuickCustomerCard,
+    handleOpenCustomerPicker,
     openTaskModalFromMessage,
     checkForMentionTrigger,
     handleClipboardPaste,
@@ -159,6 +165,35 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
 
         {renderStagedAttachmentsStrip(stagedAttachments, 'main')}
 
+        {stagedCustomerCard && (
+          <div
+            className="flex items-center gap-2 px-3 py-1.5 mb-2 rounded-xl border text-xs animate-in fade-in transition-all"
+            style={{
+              background: isDark ? 'rgba(212, 168, 75, 0.12)' : 'rgba(212, 168, 75, 0.1)',
+              borderColor: 'rgba(212, 168, 75, 0.35)',
+            }}
+          >
+            <UserRoundPlus size={14} className="text-amber-400 shrink-0" />
+            <span className="font-semibold truncate" style={{ color: token.colorText }}>
+              {stagedCustomerCard.name}
+            </span>
+            <span className="truncate text-amber-500 font-medium">({stagedCustomerCard.meta})</span>
+            {stagedCustomerCard.cvName && (
+              <span className="text-slate-400 truncate hidden sm:inline">· {stagedCustomerCard.cvName}</span>
+            )}
+            <button
+              type="button"
+              onClick={() => setStagedCustomerCard?.(null)}
+              className="ml-auto w-5 h-5 rounded-full flex items-center justify-center hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+              style={{ color: token.colorTextSecondary }}
+              title="Bỏ đính kèm thẻ khách hàng"
+              aria-label="Bỏ đính kèm thẻ khách hàng"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        )}
+
         {isMobile ? (
           <div className="flex flex-col gap-2">
             {/* Quick action grid drawer on mobile */}
@@ -212,7 +247,11 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                 <button
                   type="button"
                   onClick={() => {
-                    handleSendQuickCustomerCard();
+                    if (handleOpenCustomerPicker) {
+                      handleOpenCustomerPicker();
+                    } else if (handleSendQuickCustomerCard) {
+                      handleSendQuickCustomerCard();
+                    }
                     setMobileActionOpen(false);
                   }}
                   className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/5 active:scale-95 transition-transform"
@@ -809,9 +848,9 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                     <button
                       type="button"
                       aria-label="Đính kèm thẻ Khách hàng"
-                      onClick={handleSendQuickCustomerCard}
+                      onClick={handleOpenCustomerPicker || handleSendQuickCustomerCard}
                       className="w-7 h-7 rounded-lg inline-flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer transition-colors"
-                      style={{ color: token.colorTextSecondary }}
+                      style={{ color: stagedCustomerCard ? '#d4a84b' : token.colorTextSecondary }}
                     >
                       <UserRoundPlus size={16} />
                     </button>

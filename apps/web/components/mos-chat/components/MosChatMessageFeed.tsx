@@ -138,6 +138,7 @@ export interface MosChatMessageFeedProps {
   isDraggingOver: boolean;
   antdMessage: SafeAny;
   renderMessageAttachments?: (attachments?: SafeAny[], compact?: boolean, isMine?: boolean) => React.ReactNode;
+  openCustomerDetail?: (customerId: number) => void;
 }
 
 export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
@@ -233,6 +234,7 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
     isDraggingOver,
     antdMessage,
     renderMessageAttachments,
+    openCustomerDetail,
   }) => {
     const [moveThreadSearchQuery, setMoveThreadSearchQuery] = useState<string>('');
 
@@ -1137,10 +1139,17 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                   {/* Customer Card Attachment */}
                   {m.customerCard && (
                     <div
-                      className="mt-2 p-2.5 rounded-xl border flex items-center justify-between gap-3 max-w-[85%]"
+                      className="mt-2 p-2.5 rounded-xl border flex items-center justify-between gap-3 max-w-[85%] cursor-pointer hover:border-amber-400/50 transition-colors"
                       style={{
                         background: isDark ? 'rgba(212, 168, 75, 0.1)' : 'rgba(212, 168, 75, 0.08)',
                         borderColor: 'rgba(212, 168, 75, 0.3)',
+                      }}
+                      onClick={() => {
+                        if (m.customerCard?.customerId && openCustomerDetail) {
+                          openCustomerDetail(m.customerCard.customerId);
+                        } else {
+                          antdMessage.info(`Hồ sơ khách hàng: ${m.customerCard?.name}`);
+                        }
                       }}
                     >
                       <div className="min-w-0">
@@ -1155,7 +1164,14 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
                         <button
                           type="button"
                           aria-label="Mở hồ sơ khách hàng"
-                          onClick={() => antdMessage.info(`Đã mở hồ sơ: ${m.customerCard?.name}`)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (m.customerCard?.customerId && openCustomerDetail) {
+                              openCustomerDetail(m.customerCard.customerId);
+                            } else {
+                              antdMessage.info(`Hồ sơ khách hàng: ${m.customerCard?.name}`);
+                            }
+                          }}
                           className="w-7 h-7 rounded-md inline-flex items-center justify-center shrink-0 cursor-pointer"
                           style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
                         >
