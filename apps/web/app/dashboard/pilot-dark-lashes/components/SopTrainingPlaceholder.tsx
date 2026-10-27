@@ -7,7 +7,6 @@ import {
   Sparkles,
   ListOrdered,
   Package,
-  HeartHandshake,
   ShieldCheck,
   CheckCircle2,
   Clock,
@@ -20,18 +19,15 @@ import {
 import type { PilotSession } from '@mos-lab/shared';
 import { AppIcon } from '../../../../components/ui/AppIcon';
 import { PilotCriteriaSopDetail } from './PilotCriteriaSopDetail';
-<<<<<<< HEAD
-import { PilotAssessmentCertSopDetail } from './PilotAssessmentCertSopDetail';
-=======
 import { PilotSafetyRiskSopDetail } from './PilotSafetyRiskSopDetail';
->>>>>>> a50520115aba280b59e87103bb831044ffa57f65
+import { PilotAssessmentCertSopDetail } from './PilotAssessmentCertSopDetail';
 
 interface TrainingModuleItem {
   id: string;
   order: number;
   title: string;
   badge: string;
-  badgeColor: 'blue' | 'purple' | 'amber' | 'emerald' | 'cyan';
+  badgeColor: 'blue' | 'purple' | 'amber' | 'emerald' | 'cyan' | 'rose';
   icon: LucideIcon;
   description: string;
   keyPoints: string[];
@@ -43,6 +39,7 @@ const BADGE_CLASSES: Record<string, string> = {
   purple: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/20',
   amber: 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20',
   cyan: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border border-cyan-500/20',
+  rose: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-500/20',
 };
 
 const TRAINING_MODULES: TrainingModuleItem[] = [
@@ -81,7 +78,7 @@ const TRAINING_MODULES: TrainingModuleItem[] = [
     order: 3,
     title: 'Định mức & Bảo quản vật tư tiêu hao',
     badge: 'Định mức tiêu hao',
-    badgeColor: 'amber',
+    badgeColor: 'purple',
     icon: Package,
     description:
       'Danh mục vật tư tiêu hao, định mức sử dụng theo từng ca, chi phí trên mỗi lượt phục vụ và quy trình bảo quản sản phẩm.',
@@ -92,18 +89,18 @@ const TRAINING_MODULES: TrainingModuleItem[] = [
     ],
   },
   {
-    id: 'communication',
+    id: 'safety',
     order: 4,
-    title: 'Giao tiếp & Tư vấn chăm sóc sau uốn (Aftercare)',
-    badge: 'Kịch bản giao tiếp',
-    badgeColor: 'purple',
-    icon: HeartHandshake,
+    title: 'Quản trị an toàn, rủi ro & Kỹ thuật xử lý sự cố',
+    badge: 'An toàn & Rủi ro',
+    badgeColor: 'rose',
+    icon: ShieldCheck,
     description:
-      'Kịch bản tư vấn khách hàng trước - trong - sau dịch vụ, hướng dưỡng mi tại nhà và quy trình follow-up 24h & 72h.',
+      'Quy định an toàn giác mạc, nhận diện sớm các phản ứng nhạy cảm của khách và phương án xử lý tức thì khi có dấu hiệu cay mắt hoặc kích ứng.',
     keyPoints: [
-      'Bộ câu hỏi khai thác nhu cầu & giải tỏa lo lắng của khách hàng lần đầu uốn mi',
-      'Cẩm nang hướng dẫn khách hàng dưỡng mi tại nhà trong 48 giờ đầu tiên',
-      'Kịch bản cuộc gọi follow-up 24h và 72h nhằm tối ưu CSAT và xử lý khiếu nại sớm',
+      'Quy tắc bảo vệ niêm mạc mắt và đệm bảo vệ',
+      'Nhận diện & xử lý phản ứng nhạy cảm tức thời (3 cấp độ)',
+      'Biên bản ghi nhận sự cố kỹ thuật & chăm sóc bổ sung 24h/48h/72h',
     ],
   },
   {
@@ -157,27 +154,28 @@ export function SopTrainingPlaceholder({
     );
   }
 
-<<<<<<< HEAD
-  // If Hạng mục 5 is active, render detailed Assessment, CSAT & Certificate SOP
-  if (activeModuleId === 'assessment') {
-    return (
-      <PilotAssessmentCertSopDetail
-=======
   // If Hạng mục 4 is active, render Safety & Risk SOP specification
   if (activeModuleId === 'safety') {
     return (
       <PilotSafetyRiskSopDetail
->>>>>>> a50520115aba280b59e87103bb831044ffa57f65
         onBack={() => setActiveModuleId(null)}
         sessions={sessions}
         onOpenSessionFlow={onOpenSessionFlow}
       />
     );
   }
-<<<<<<< HEAD
-=======
 
->>>>>>> a50520115aba280b59e87103bb831044ffa57f65
+  // If Hạng mục 5 is active, render detailed Assessment, CSAT & Certificate SOP
+  if (activeModuleId === 'assessment') {
+    return (
+      <PilotAssessmentCertSopDetail
+        onBack={() => setActiveModuleId(null)}
+        sessions={sessions}
+        onOpenSessionFlow={onOpenSessionFlow}
+      />
+    );
+  }
+
   return (
     <div className="space-y-4 antialiased" data-testid="sop-training-placeholder">
       {/* Banner Giới thiệu Placeholder */}
@@ -191,20 +189,16 @@ export function SopTrainingPlaceholder({
               </span>
               <span className="inline-flex items-center justify-center leading-none px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                 <AppIcon icon={Clock} size={12} className="mr-1" />
-<<<<<<< HEAD
-                Khung 5 hạng mục · Hạng mục 1, 2 &amp; 5 đã sẵn sàng
-=======
-                Khung 5 hạng mục · Hạng mục 1 &amp; 4 đã hoàn thiện
->>>>>>> a50520115aba280b59e87103bb831044ffa57f65
+                Khung 5 hạng mục · Hạng mục 1, 2, 3, 4 &amp; 5 đã sẵn sàng
               </span>
             </div>
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight m-0">
               Khung Đào Tạo &amp; Chuẩn Hóa Tay Nghề Chuyên Viên Kỹ Thuật
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed m-0">
-              Khu vực SOP &amp; Đào tạo KTV đang được phát triển. Đây là hệ thống chuẩn hóa toàn diện từ lý thuyết cấu
-              trúc mi, quy trình kỹ thuật 7 bước, quản trị định mức vật tư đến quy chế sát hạch cấp chứng chỉ cho Chuyên
-              Viên Kỹ Thuật thực hiện dịch vụ Uốn Mi Bóng Tối tại Wings.
+              Khu vực SOP &amp; Đào tạo KTV chuẩn hóa toàn diện từ lý thuyết cấu trúc mi, quy trình kỹ thuật 7 bước,
+              quản trị định mức vật tư, an toàn giác mạc đến quy chế sát hạch cấp chứng chỉ cho Chuyên Viên Kỹ Thuật
+              thực hiện dịch vụ Uốn Mi Bóng Tối tại Wings.
             </p>
           </div>
 
@@ -256,15 +250,10 @@ export function SopTrainingPlaceholder({
         <div className="mt-3.5 pt-3 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
           <AppIcon icon={Info} size={14} className="text-emerald-500 shrink-0" />
           <span>
-<<<<<<< HEAD
             <strong className="text-emerald-700 dark:text-emerald-300">
-              Hạng mục 1, 2 &amp; 5 đã có nội dung chi tiết:
+              Hạng mục 1, 2, 3, 4 &amp; 5 đã có nội dung chi tiết:
             </strong>{' '}
-            Nhấp vào Hạng mục 1 (Tiêu chí dáng mi), Hạng mục 2 (SOP kỹ thuật 7 bước) hoặc Hạng mục 5 (Sát hạch tay nghề,
-            CSAT &amp; Chứng chỉ) để xem chi tiết.
-=======
-            <strong className="text-emerald-700 dark:text-emerald-300">Hạng mục 1 &amp; Hạng mục 4 đã có nội dung chi tiết:</strong> Nhấp vào Hạng mục 1 (Tiêu chí dáng mi) hoặc Hạng mục 4 (Quản trị an toàn, rủi ro &amp; xử lý sự cố) bên dưới để xem quy trình SOP, checklist và biên bản an toàn.
->>>>>>> a50520115aba280b59e87103bb831044ffa57f65
+            Nhấp vào từng Hạng mục bên dưới để xem quy trình SOP, tiêu chuẩn kỹ thuật, checklist và biên bản thực tế.
           </span>
         </div>
       </div>
@@ -275,48 +264,45 @@ export function SopTrainingPlaceholder({
           const IconComp = mod.icon;
           const badgeClass = BADGE_CLASSES[mod.badgeColor] || BADGE_CLASSES.blue;
           const isCriteriaModule = mod.id === 'criteria';
-<<<<<<< HEAD
           const isTechnicalModule = mod.id === 'technical-sop';
-          const isAssessmentModule = mod.id === 'assessment';
-          const isInteractiveModule = isCriteriaModule || isAssessmentModule;
-          const isClickable = isInteractiveModule || (isTechnicalModule && Boolean(onViewSopDetail));
-=======
+          const isMaterialsModule = mod.id === 'materials';
           const isSafetyModule = mod.id === 'safety';
->>>>>>> a50520115aba280b59e87103bb831044ffa57f65
+          const isAssessmentModule = mod.id === 'assessment';
+
+          const isClickable =
+            isCriteriaModule ||
+            isSafetyModule ||
+            isAssessmentModule ||
+            (isTechnicalModule && Boolean(onViewSopDetail)) ||
+            (isMaterialsModule && Boolean(onOpenMaterialsSop));
 
           return (
             <Card
               key={mod.id}
               variant="outlined"
               className={`rounded-2xl transition-all duration-300 flex flex-col justify-between ${
-<<<<<<< HEAD
                 isClickable
                   ? isAssessmentModule
                     ? 'border-amber-500/40 bg-gradient-to-b from-amber-500/[0.04] to-transparent ring-1 ring-amber-500/20 hover:shadow-md cursor-pointer'
-                    : 'border-emerald-500/40 bg-gradient-to-b from-emerald-500/[0.04] to-transparent ring-1 ring-emerald-500/20 hover:shadow-md cursor-pointer'
+                    : isSafetyModule
+                      ? 'border-rose-500/40 bg-gradient-to-b from-rose-500/[0.04] to-transparent ring-1 ring-rose-500/20 hover:shadow-md cursor-pointer'
+                      : isMaterialsModule
+                        ? 'border-purple-500/40 bg-gradient-to-b from-purple-500/[0.04] to-transparent ring-1 ring-purple-500/20 hover:shadow-md cursor-pointer'
+                        : 'border-emerald-500/40 bg-gradient-to-b from-emerald-500/[0.04] to-transparent ring-1 ring-emerald-500/20 hover:shadow-md cursor-pointer'
                   : 'border-slate-200 dark:border-slate-800 hover:shadow-md'
-=======
-                isCriteriaModule
-                  ? 'border-emerald-500/40 bg-gradient-to-b from-emerald-500/[0.04] to-transparent ring-1 ring-emerald-500/20 hover:shadow-md cursor-pointer'
-                  : isSafetyModule
-                    ? 'border-rose-500/40 bg-gradient-to-b from-rose-500/[0.04] to-transparent ring-1 ring-rose-500/20 hover:shadow-md cursor-pointer'
-                    : 'border-slate-200 dark:border-slate-800 hover:shadow-md'
->>>>>>> a50520115aba280b59e87103bb831044ffa57f65
               }`}
               onClick={
                 isCriteriaModule
                   ? () => setActiveModuleId('criteria')
-<<<<<<< HEAD
-                  : isAssessmentModule
-                    ? () => setActiveModuleId('assessment')
-                    : isTechnicalModule && onViewSopDetail
-                      ? onViewSopDetail
-                      : undefined
-=======
                   : isSafetyModule
                     ? () => setActiveModuleId('safety')
-                    : undefined
->>>>>>> a50520115aba280b59e87103bb831044ffa57f65
+                    : isAssessmentModule
+                      ? () => setActiveModuleId('assessment')
+                      : isTechnicalModule && onViewSopDetail
+                        ? onViewSopDetail
+                        : isMaterialsModule && onOpenMaterialsSop
+                          ? onOpenMaterialsSop
+                          : undefined
               }
               data-testid={`training-module-card-${mod.id}`}
             >
@@ -326,19 +312,15 @@ export function SopTrainingPlaceholder({
                   <div className="flex items-center gap-2.5">
                     <div
                       className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-<<<<<<< HEAD
                         isClickable
                           ? isAssessmentModule
                             ? 'bg-amber-500 text-white shadow-xs'
-                            : 'bg-emerald-500 text-white shadow-xs'
+                            : isSafetyModule
+                              ? 'bg-rose-500 text-white shadow-xs'
+                              : isMaterialsModule
+                                ? 'bg-purple-500 text-white shadow-xs'
+                                : 'bg-emerald-500 text-white shadow-xs'
                           : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-=======
-                        isCriteriaModule
-                          ? 'bg-emerald-500 text-white shadow-xs'
-                          : isSafetyModule
-                            ? 'bg-rose-500 text-white shadow-xs'
-                            : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
->>>>>>> a50520115aba280b59e87103bb831044ffa57f65
                       }`}
                     >
                       <AppIcon icon={IconComp} size={16} />
@@ -380,15 +362,9 @@ export function SopTrainingPlaceholder({
 
               {/* Card Footer */}
               <div className="mt-4 pt-2.5 border-t border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px]">
-                {isInteractiveModule ? (
+                {isCriteriaModule ? (
                   <>
-                    <span
-                      className={`inline-flex items-center gap-1 font-bold ${
-                        isAssessmentModule
-                          ? 'text-amber-600 dark:text-amber-400'
-                          : 'text-emerald-600 dark:text-emerald-400'
-                      }`}
-                    >
+                    <span className="inline-flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400">
                       <Sparkles size={12} />
                       <span>Đã hoàn thiện nội dung</span>
                     </span>
@@ -396,38 +372,25 @@ export function SopTrainingPlaceholder({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setActiveModuleId(mod.id);
+                        setActiveModuleId('criteria');
                       }}
-                      className={`font-bold inline-flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0 ${
-                        isAssessmentModule
-                          ? 'text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300'
-                          : 'text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300'
-                      }`}
-                      data-testid={isAssessmentModule ? 'view-assessment-sop-btn' : 'view-criteria-sop-btn'}
+                      className="font-bold inline-flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300"
+                      data-testid="view-criteria-sop-btn"
                     >
                       <span>Xem chi tiết SOP</span>
                       <AppIcon icon={ArrowRight} size={12} />
                     </button>
                   </>
-<<<<<<< HEAD
                 ) : isTechnicalModule ? (
                   <>
                     <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
                       <Clock size={12} />
                       <span>Bản dự thảo 7 bước</span>
-=======
-                ) : isSafetyModule ? (
-                  <>
-                    <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 font-bold">
-                      <ShieldCheck size={12} />
-                      <span>Đã hoàn thiện nội dung</span>
->>>>>>> a50520115aba280b59e87103bb831044ffa57f65
                     </span>
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-<<<<<<< HEAD
                         onViewSopDetail?.();
                       }}
                       className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-bold inline-flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
@@ -437,7 +400,7 @@ export function SopTrainingPlaceholder({
                       <AppIcon icon={ArrowRight} size={12} />
                     </button>
                   </>
-                ) : mod.id === 'materials' && onOpenMaterialsSop ? (
+                ) : isMaterialsModule ? (
                   <>
                     <span className="inline-flex items-center gap-1 text-purple-600 dark:text-purple-400 font-medium">
                       <Sparkles size={12} />
@@ -445,7 +408,10 @@ export function SopTrainingPlaceholder({
                     </span>
                     <button
                       type="button"
-                      onClick={onOpenMaterialsSop}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenMaterialsSop?.();
+                      }}
                       className="text-purple-600 dark:text-purple-400 font-bold hover:underline inline-flex items-center gap-1 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded-lg border border-purple-500/20"
                       data-testid="open-materials-sop-btn"
                     >
@@ -453,7 +419,16 @@ export function SopTrainingPlaceholder({
                       <AppIcon icon={ArrowRight} size={11} />
                     </button>
                   </>
-=======
+                ) : isSafetyModule ? (
+                  <>
+                    <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 font-bold">
+                      <ShieldCheck size={12} />
+                      <span>Đã hoàn thiện nội dung</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setActiveModuleId('safety');
                       }}
                       className="text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 font-bold inline-flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
@@ -463,7 +438,25 @@ export function SopTrainingPlaceholder({
                       <AppIcon icon={ArrowRight} size={12} />
                     </button>
                   </>
->>>>>>> a50520115aba280b59e87103bb831044ffa57f65
+                ) : isAssessmentModule ? (
+                  <>
+                    <span className="inline-flex items-center gap-1 font-bold text-amber-600 dark:text-amber-400">
+                      <Award size={12} />
+                      <span>Đã hoàn thiện nội dung</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveModuleId('assessment');
+                      }}
+                      className="text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 font-bold inline-flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
+                      data-testid="view-assessment-sop-btn"
+                    >
+                      <span>Xem chi tiết SOP</span>
+                      <AppIcon icon={ArrowRight} size={12} />
+                    </button>
+                  </>
                 ) : (
                   <>
                     <span className="inline-flex items-center gap-1 text-slate-400">
