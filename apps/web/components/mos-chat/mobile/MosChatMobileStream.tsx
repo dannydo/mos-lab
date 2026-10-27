@@ -16,8 +16,9 @@ import {
 import dayjs from 'dayjs';
 import type { MosChatMessage } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
-import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
+import { AI_COPILOT_CONV_ID, isSpaceEmoji } from '../constants/chat-constants';
 import { MosChatMobileMessageItem } from './MosChatMobileMessageItem';
+import { MosChatAvatar } from '../MosChatAvatar';
 
 export interface MosChatMobileStreamProps {
   onOpenThread: (msg: MosChatMessage) => void;
@@ -30,7 +31,8 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
   onOpenGallery,
   onOpenPinnedTab,
 }) => {
-  const { messages, activeConversation, activeConvId, isAiThinking, pinnedMessages, togglePinMessage } = useMosChat();
+  const { messages, activeConversation, activeConvId, isAiThinking, pinnedMessages, togglePinMessage, staffDirectory } =
+    useMosChat();
   const bottomRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [showScrollBottom, setShowScrollBottom] = useState<boolean>(false);
@@ -218,6 +220,13 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
                   : ''}
                 :
               </span>
+              <MosChatAvatar
+                size="xs"
+                src={currentPinnedMsg.senderAvatar}
+                name={currentPinnedMsg.senderName}
+                staffId={currentPinnedMsg.senderId}
+                staffDirectory={staffDirectory}
+              />
               <span className="font-semibold text-white shrink-0">{currentPinnedMsg.senderName}:</span>
               <span className="text-slate-300 truncate">{currentPinnedMsg.text || 'Tệp đính kèm'}</span>
             </div>
@@ -284,11 +293,30 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
           </div>
         ) : (
           <div className="pt-6 pb-4 text-center border-b border-slate-800/40 mb-4">
-            <div className="w-14 h-14 mx-auto rounded-3xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 mb-2.5 shadow-sm">
-              {isSpace ? <Hash className="w-7 h-7" /> : <MessageSquare className="w-7 h-7" />}
+            <div className="mx-auto mb-2.5 flex justify-center">
+              {isSpace ? (
+                <div className="w-14 h-14 rounded-3xl bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-400 shadow-sm">
+                  {activeConversation?.avatar && isSpaceEmoji(activeConversation.avatar) ? (
+                    <span className="text-2xl leading-none">{activeConversation.avatar}</span>
+                  ) : (
+                    <Hash className="w-7 h-7" />
+                  )}
+                </div>
+              ) : (
+                <MosChatAvatar
+                  size={56}
+                  shape="square"
+                  src={activeConversation?.avatar}
+                  name={activeConversation?.name}
+                  staffId={activeConversation?.participantStaffId}
+                  staffDirectory={staffDirectory}
+                />
+              )}
             </div>
             <h2 className="text-base font-bold text-white">
-              Chào mừng bạn đến với #{activeConversation?.name || 'cuộc trò chuyện'}
+              {isSpace
+                ? `Chào mừng bạn đến với #${activeConversation?.name || 'cuộc trò chuyện'}`
+                : activeConversation?.name || 'Cuộc trò chuyện'}
             </h2>
             <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
               {activeConversation?.subtitle || 'Không gian trao đổi công việc và điều phối vận hành'}

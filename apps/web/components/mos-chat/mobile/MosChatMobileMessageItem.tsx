@@ -30,6 +30,7 @@ import { MosChatRichText } from '../MosChatRichText';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
 import { isImageAttachment, formatFileSize, getFileExtension, isUserMessageOwner } from '../utils/chat-helpers';
 import { speakText, stopSpeaking } from '../../voice-assistant/speech-utils';
+import { MosChatAvatar } from '../MosChatAvatar';
 
 export interface MosChatMobileMessageItemProps {
   message: MosChatMessage;
@@ -40,7 +41,8 @@ export interface MosChatMobileMessageItemProps {
 
 export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> = React.memo(
   ({ message, prevMessage, onOpenThread, onOpenGallery }) => {
-    const { currentUser, reactToMessage, setSelectedMsgForAction, setReplyingToMessage, messages } = useMosChat();
+    const { currentUser, reactToMessage, setSelectedMsgForAction, setReplyingToMessage, messages, staffDirectory } =
+      useMosChat();
 
     const isMe = isUserMessageOwner(message, currentUser);
 
@@ -227,13 +229,17 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
         {!isMe && !isConsecutive && (
           <div className="flex items-center gap-2 mb-1 px-1">
             {isAiBot ? (
-              <div className="w-5 h-5 rounded-lg bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-sm shrink-0">
-                <Sparkles className="w-3 h-3" />
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-sm shrink-0">
+                <Sparkles className="w-3.5 h-3.5" />
               </div>
             ) : (
-              <div className="w-5 h-5 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center text-[10px] text-white font-bold uppercase">
-                {message.senderName?.charAt(0) || 'U'}
-              </div>
+              <MosChatAvatar
+                size="sm"
+                src={message.senderAvatar}
+                name={message.senderName}
+                staffId={message.senderId}
+                staffDirectory={staffDirectory}
+              />
             )}
             <span className={`text-xs font-semibold ${isAiBot ? 'text-purple-300' : 'text-slate-300'}`}>
               {message.senderName}
@@ -284,14 +290,23 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
             {/* Quoted Message Preview */}
             {quotedMessage && (
               <div
-                className={`text-xs px-2.5 py-1.5 rounded-lg mb-2 border-l-2 ${
+                className={`text-xs px-2.5 py-1.5 rounded-lg mb-2 border-l-2 flex items-center gap-2 ${
                   isMe
                     ? 'bg-amber-500/20 border-amber-400 text-slate-200'
                     : 'bg-slate-900/60 border-amber-500 text-slate-300'
                 }`}
               >
-                <p className="font-bold text-[11px] truncate">{quotedMessage.senderName}</p>
-                <p className="line-clamp-1 text-[11px] opacity-80">{quotedMessage.text}</p>
+                <MosChatAvatar
+                  size="xs"
+                  src={quotedMessage.senderAvatar}
+                  name={quotedMessage.senderName}
+                  staffId={quotedMessage.senderId}
+                  staffDirectory={staffDirectory}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-[11px] truncate">{quotedMessage.senderName}</p>
+                  <p className="line-clamp-1 text-[11px] opacity-80">{quotedMessage.text}</p>
+                </div>
               </div>
             )}
 
