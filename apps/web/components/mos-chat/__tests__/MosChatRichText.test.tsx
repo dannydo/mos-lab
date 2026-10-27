@@ -362,4 +362,34 @@ describe('MosChatRichText', () => {
     // 3rd item has double indent
     expect((bulletContainers[2] as HTMLElement).style.paddingLeft).toBe('32px');
   });
+
+  it('enforces text-left on root and list items for own replies (isMe=true) and parses bold-wrapped numbered headers (**1. ...**)', () => {
+    const reportedThreadReply =
+      'Dạ em gửi anh @Danny Do và Team **mục tiêu tuần 43** của team mình nhé ❤️\n\n' +
+      '**1. 💰 Doanh thu 🅒 + 💄 & Khách vòng ⚪️**\n' +
+      '- Duy trì doanh thu trung bình **20M/ngày**.\n' +
+      '- Đạt tối thiểu **3 Google Reviews**.\n\n' +
+      '**2. 🏬 Estella Shop**\n' +
+      '- Tham gia mini game **“Trang trí cửa hàng theo chủ đề Halloween”** do Estella Mall tổ chức. 🎃';
+
+    const { container } = render(<MosChatRichText content={reportedThreadReply} isMe={true} isDark={true} />);
+
+    const root = container.firstElementChild as HTMLElement;
+    expect(root.className).toContain('text-left');
+    expect(root.className).not.toContain('text-right');
+
+    // Bold-wrapped numbered items (**1. ...**) should render with numbered marker 1. and 2.
+    expect(screen.getByText('1.')).toBeDefined();
+    expect(screen.getByText('2.')).toBeDefined();
+    expect(screen.getByText(/Doanh thu/)).toBeDefined();
+    expect(screen.getByText(/20M\/ngày/)).toBeDefined();
+
+    // Every list row should enforce text-left so bullets/numbers never separate from text
+    const listRows = container.querySelectorAll('.flex.items-start.gap-1\\.5');
+    expect(listRows.length).toBe(5);
+    listRows.forEach((row) => {
+      expect(row.className).toContain('text-left');
+      expect(row.className).not.toContain('text-right');
+    });
+  });
 });

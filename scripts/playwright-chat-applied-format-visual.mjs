@@ -91,6 +91,24 @@ try {
             </tbody>
           </table>
         </div>
+
+        <!-- Message 3: Own Thread Reply Bubble (flex-row-reverse + text-left, MOS-BUG-155 Reopen Fix) -->
+        <div style="display: flex; flex-direction: row-reverse; gap: 8px; align-items: flex-start;">
+          <div class="bubble" id="msg-thread-reply-mine" style="max-width: 85%; border-top-left-radius: 16px; border-top-right-radius: 4px; text-align: left; border-color: rgba(212, 168, 75, 0.45); background: rgba(212, 168, 75, 0.08);">
+            <div style="display: flex; justify-content: flex-end; gap: 4px; font-size: 11px; font-weight: 700; margin-bottom: 4px;">
+              <span style="color: #d4a84b;">Nguyễn Quang Khải</span>
+              <span style="color: #94a3b8;">· 19:51</span>
+            </div>
+            <div style="text-align: left;">
+              <div style="margin-bottom: 6px;">Dạ em gửi anh <span style="color: #fbbf24; font-weight: 700;">@Danny Do</span> và Team <strong>mục tiêu tuần 43</strong> của team mình nhé ❤️</div>
+              <div class="bullet-item" id="num-item-1"><span class="bullet-dot" id="num-marker-1">1.</span> <span id="num-text-1" style="flex: 1; text-align: left;"><strong>💰 Doanh thu 🅒 + 💄 & Khách vòng ⚪️</strong></span></div>
+              <div class="bullet-item" id="bullet-item-1"><span class="bullet-dot" id="bullet-marker-1">•</span> <span id="bullet-text-1" style="flex: 1; text-align: left;">Duy trì doanh thu trung bình <strong>20M/ngày</strong>.</span></div>
+              <div class="bullet-item"><span class="bullet-dot">•</span> <span style="flex: 1; text-align: left;">Đạt tối thiểu <strong>3 Google Reviews</strong>.</span></div>
+              <div class="bullet-item" style="margin-top: 6px;"><span class="bullet-dot">2.</span> <span style="flex: 1; text-align: left;"><strong>🏬 Estella Shop</strong></span></div>
+              <div class="bullet-item"><span class="bullet-dot">•</span> <span style="flex: 1; text-align: left;">Tham gia mini game <strong>“Trang trí cửa hàng theo chủ đề Halloween”</strong> do Estella Mall tổ chức. 🎃</span></div>
+            </div>
+          </div>
+        </div>
       </div>
     </body>
     </html>
@@ -107,6 +125,20 @@ try {
   const tableHeader = await page.textContent('#msg-table th');
   if (!tableHeader?.includes('Hạng mục')) {
     throw new Error('Table visual assertion failed');
+  }
+
+  const replyTextAlign = await page.evaluate(() => {
+    const el = document.querySelector('#msg-thread-reply-mine');
+    return el ? window.getComputedStyle(el).textAlign : null;
+  });
+  if (replyTextAlign !== 'left') {
+    throw new Error(`Expected thread reply bubble textAlign to be left, got ${replyTextAlign}`);
+  }
+
+  const markerBox = await page.locator('#bullet-marker-1').boundingBox();
+  const textBox = await page.locator('#bullet-text-1').boundingBox();
+  if (!markerBox || !textBox || textBox.x - (markerBox.x + markerBox.width) > 20) {
+    throw new Error('Bullet marker and text bounding boxes are misaligned');
   }
 
   mkdirSync(resolve('/tmp/playwright-qa'), { recursive: true });

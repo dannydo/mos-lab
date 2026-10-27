@@ -998,8 +998,8 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                         }, 50);
                       }
                     }}
-                    className={`max-w-[85%] p-2 rounded-xl text-[12px] group relative transition-all ${
-                      isReplyMine ? 'rounded-tr-sm text-right' : 'rounded-tl-sm text-left'
+                    className={`max-w-[85%] p-2 rounded-xl text-[12px] text-left group relative transition-all ${
+                      isReplyMine ? 'rounded-tr-sm' : 'rounded-tl-sm'
                     }`}
                     style={{
                       background: isReplyMine
@@ -1167,7 +1167,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                         )}
 
                         {r.text && (
-                          <div className="leading-relaxed break-words">
+                          <div className="leading-relaxed break-words text-left">
                             {renderRichTextMessage(r.text, isReplyMine)}
                           </div>
                         )}

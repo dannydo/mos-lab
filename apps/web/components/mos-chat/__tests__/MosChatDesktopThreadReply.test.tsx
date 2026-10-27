@@ -277,4 +277,40 @@ describe('MosChatDesktopThreadReply - Reply feature in desktop sub-thread (MOS-B
     // Shortcut hint
     expect(screen.getByText('Enter gửi · Shift+Enter xuống dòng')).toBeInTheDocument();
   });
+
+  it('keeps own thread reply bubble content left-aligned (text-left) while aligning bubble to the right via flex-row-reverse (MOS-BUG-155)', () => {
+    const activeMsgWithMyReply: MosChatMessage = {
+      ...mockActiveMessage,
+      thread: [
+        ...(mockActiveMessage.thread || []),
+        {
+          id: 'reply-mine-155',
+          senderId: 'user-1',
+          senderName: 'Nguyễn Quang Khải',
+          senderRole: 'Admin',
+          text: '**1. 💰 Doanh thu**\n- Duy trì doanh thu trung bình **20M/ngày**.',
+          timeLabel: '19:51',
+          createdAt: '2026-10-26T12:51:09.000Z',
+        },
+      ],
+    };
+
+    const { container } = render(
+      <MosChatThreadDrawer
+        {...defaultProps}
+        activeThreadMessage={activeMsgWithMyReply}
+        isMessageFromCurrentUser={(m: SafeAny) => m.senderId === 'user-1'}
+      />
+    );
+
+    const myReplyRow = container.querySelector('#mos-chat-reply-reply-mine-155');
+    expect(myReplyRow).not.toBeNull();
+    const flexRow = myReplyRow?.firstElementChild as HTMLElement;
+    expect(flexRow.className).toContain('flex-row-reverse');
+
+    const bubble = flexRow.querySelector('.rounded-tr-sm') as HTMLElement;
+    expect(bubble).not.toBeNull();
+    expect(bubble.className).toContain('text-left');
+    expect(bubble.className).not.toContain('text-right');
+  });
 });

@@ -935,7 +935,7 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
             result.push(
               <div key={`html-list-${idx}`} className="my-1.5 space-y-1">
                 {liMatches.map((liText, liIdx) => (
-                  <div key={`html-li-${idx}-${liIdx}`} className="flex items-start gap-1.5 text-xs select-text">
+                  <div key={`html-li-${idx}-${liIdx}`} className="flex items-start gap-1.5 text-xs text-left select-text">
                     {isOrdered ? (
                       <span
                         className={`shrink-0 tabular-nums select-none font-semibold text-[11.5px] min-w-[14px] ${
@@ -951,7 +951,7 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
                         •
                       </span>
                     )}
-                    <span className="flex-1 break-words">{parseInlineRichText(liText, `hli-${idx}-${liIdx}`)}</span>
+                    <span className="flex-1 break-words text-left">{parseInlineRichText(liText, `hli-${idx}-${liIdx}`)}</span>
                   </div>
                 ))}
               </div>
@@ -1092,7 +1092,7 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
           const isChecked = trimmed.startsWith('- [x]') || trimmed.startsWith('- [X]');
           const itemContent = trimmed.replace(/^-\s?\[([ xX])\](?:\s+|$)/, '');
           result.push(
-            <div key={`todo-${idx}`} className="flex items-start gap-2 my-1 text-xs select-text">
+            <div key={`todo-${idx}`} className="flex items-start gap-2 my-1 text-xs text-left select-text">
               <span
                 className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-all ${
                   isChecked
@@ -1106,7 +1106,7 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
               >
                 {isChecked ? <Check size={11} strokeWidth={3} /> : null}
               </span>
-              <span className={`flex-1 break-words ${isChecked ? 'line-through opacity-60' : ''}`}>
+              <span className={`flex-1 break-words text-left ${isChecked ? 'line-through opacity-60' : ''}`}>
                 {itemContent ? parseInlineRichText(itemContent, `t-${idx}`) : <span className="opacity-0">&nbsp;</span>}
               </span>
             </div>
@@ -1114,9 +1114,12 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
           continue;
         }
 
-        // Bullet List Markdown: - item, * item, hoặc • item
-        if (/^[-*•\u2022](?:\s|$)/.test(trimmed)) {
-          const itemContent = trimmed.replace(/^[-*•\u2022](?:\s+|$)/, '');
+        // Bullet List Markdown: - item, * item, • item, hoặc **- item** / **• item**
+        const boldBulletMatch = trimmed.match(/^\*\*[-*•\u2022]\s+([\s\S]+)\*\*$/);
+        if (boldBulletMatch || /^[-*•\u2022](?:\s|$)/.test(trimmed)) {
+          const itemContent = boldBulletMatch
+            ? `**${boldBulletMatch[1]}**`
+            : trimmed.replace(/^[-*•\u2022](?:\s+|$)/, '');
           const indentMatch = line.match(/^(\s+)/);
           const indentSpaces = indentMatch ? indentMatch[1].replace(/\t/g, '  ').length : 0;
           const indentLevel = Math.min(Math.floor(indentSpaces / 2), 4);
@@ -1126,12 +1129,12 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
             <div
               key={`bullet-${idx}`}
               style={indentPadding}
-              className="flex items-start gap-1.5 my-0.5 text-xs select-text"
+              className="flex items-start gap-1.5 my-0.5 text-xs text-left select-text"
             >
               <span className={`shrink-0 select-none font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
                 •
               </span>
-              <span className="flex-1 break-words">
+              <span className="flex-1 break-words text-left">
                 {itemContent ? parseInlineRichText(itemContent, `b-${idx}`) : <span className="opacity-0">&nbsp;</span>}
               </span>
             </div>
@@ -1139,8 +1142,11 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
           continue;
         }
 
-        // Numbered List Markdown: 1. item
-        const numMatch = trimmed.match(/^(\d+)\.(?:\s+(.*)|$)/);
+        // Numbered List Markdown: 1. item hoặc **1. item**
+        const boldNumMatch = trimmed.match(/^\*\*(\d+)\.\s+([\s\S]+)\*\*$/);
+        const numMatch = boldNumMatch
+          ? ([boldNumMatch[0], boldNumMatch[1], `**${boldNumMatch[2]}**`] as RegExpMatchArray)
+          : trimmed.match(/^(\d+)\.(?:\s+(.*)|$)/);
         if (numMatch) {
           const num = numMatch[1];
           const itemContent = numMatch[2] || '';
@@ -1153,7 +1159,7 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
             <div
               key={`num-${idx}`}
               style={indentPadding}
-              className="flex items-start gap-1.5 my-0.5 text-xs select-text"
+              className="flex items-start gap-1.5 my-0.5 text-xs text-left select-text"
             >
               <span
                 className={`shrink-0 tabular-nums select-none font-semibold text-[11.5px] min-w-[14px] ${
@@ -1162,7 +1168,7 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
               >
                 {num}.
               </span>
-              <span className="flex-1 break-words">
+              <span className="flex-1 break-words text-left">
                 {itemContent ? parseInlineRichText(itemContent, `n-${idx}`) : <span className="opacity-0">&nbsp;</span>}
               </span>
             </div>
@@ -1175,7 +1181,7 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
           result.push(<div key={`blank-${idx}`} className="h-1.5" />);
         } else {
           result.push(
-            <div key={`p-${idx}`} className="break-words leading-relaxed select-text whitespace-pre-wrap">
+            <div key={`p-${idx}`} className="break-words leading-relaxed text-left select-text whitespace-pre-wrap">
               {parseInlineRichText(line, `p-${idx}`)}
             </div>
           );
@@ -1225,7 +1231,7 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
 
     if (!renderedContent) return null;
 
-    return <div className={`space-y-0.5 ${className}`}>{renderedContent}</div>;
+    return <div className={`space-y-0.5 text-left ${className}`}>{renderedContent}</div>;
   }
 );
 

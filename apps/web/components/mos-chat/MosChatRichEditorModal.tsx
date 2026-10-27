@@ -410,6 +410,40 @@ export const MosChatRichEditorModal: React.FC<MosChatRichEditorModalProps> = ({
         return;
       }
 
+      // Nếu chọn cả dòng có tiền tố danh sách / tiêu đề (VD: "1. Doanh thu", "• Duy trì") -> Giữ tiền tố ngoài cặp thẻ để không làm hỏng cú pháp danh sách
+      const isAtLineStart = start === 0 || content[start - 1] === '\n';
+      const singleLinePrefixMatch =
+        isAtLineStart && !selected.includes('\n')
+          ? selected.match(/^(\s*(?:-\s\[[ xX]\]\s+|[•\-*]\s+|\d+\.\s+|>\s+|#{1,6}\s+))(.+)$/)
+          : null;
+      if (singleLinePrefixMatch) {
+        const [, linePrefix, itemBody] = singleLinePrefixMatch;
+        if (
+          itemBody.startsWith(openTag) &&
+          itemBody.endsWith(closeTag) &&
+          itemBody.length >= openTag.length + closeTag.length
+        ) {
+          const unwrappedLine = `${linePrefix}${itemBody.slice(openTag.length, -closeTag.length)}`;
+          const nextVal = before + unwrappedLine + after;
+          setContent(nextVal);
+          setCursorPos(start + unwrappedLine.length);
+          setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(start, start + unwrappedLine.length);
+          }, 0);
+          return;
+        }
+        const wrappedLine = `${linePrefix}${openTag}${itemBody}${closeTag}`;
+        const nextVal = before + wrappedLine + after;
+        setContent(nextVal);
+        setCursorPos(start + wrappedLine.length);
+        setTimeout(() => {
+          textarea.focus();
+          textarea.setSelectionRange(start, start + wrappedLine.length);
+        }, 0);
+        return;
+      }
+
       const wrapped = `${openTag}${selected}${closeTag}`;
       const nextVal = before + wrapped + after;
       const nextCursor = selected ? start + wrapped.length : start + openTag.length;
