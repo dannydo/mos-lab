@@ -24,6 +24,7 @@ import type {
   StockInventoryItem,
   PilotAiAnalyzeRequest,
   PilotAiAssessmentResponse,
+  PilotSopEmpiricalStatsResponse,
 } from '@mos-lab/shared';
 
 import { api } from './base';
@@ -131,6 +132,10 @@ export const pilotApi = {
     },
     seedDefaultSopSteps: async (params?: { pilotCode?: string }): Promise<PilotSopStep[]> => {
       const response = await api.post('/pilot/sop-steps/seed-defaults', params || {});
+      return response.data;
+    },
+    getSopEmpiricalStats: async (params?: { pilotCode?: string }): Promise<PilotSopEmpiricalStatsResponse> => {
+      const response = await api.get('/pilot/sop-steps/empirical-stats', { params });
       return response.data;
     },
     getSessionSteps: async (sessionId: number): Promise<PilotSessionStep[]> => {

@@ -208,6 +208,16 @@ export async function pilotRoutes(fastify: FastifyInstance) {
     }
   });
 
+  fastify.get('/pilot/sop-steps/empirical-stats', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const query = request.query as { pilotCode?: string };
+      const stats = await PilotService.getSopEmpiricalStats(fastify, query?.pilotCode);
+      return reply.send(stats);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Get pilot SOP empirical stats error');
+    }
+  });
+
   // ═══════════════════════════════════════════
   // Pilot Lash Assessment Criteria Endpoints
   // ═══════════════════════════════════════════

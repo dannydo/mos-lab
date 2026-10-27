@@ -1194,3 +1194,73 @@ test('PilotService: aiAnalyzeSession persists AI assessment JSON to session', as
   const parsed = JSON.parse(savedData.aiAssessmentJson);
   assert.equal(parsed.suitability, 'PASS');
 });
+
+test('PilotService: getSopEmpiricalStats aggregates empirical metrics accurately (MOS-FEAT-163)', async () => {
+  const fakeFastify: SafeAny = {
+    prisma: {
+      crm: {
+        crmPilotSopStep: {
+          count: async () => 7,
+          findMany: async () => [
+            { id: 1, pilotCode: 'DARK_LASHES', name: 'Kiểm tra & làm sạch mi', stepOrder: 1, targetMinutes: 5, isActive: true },
+            { id: 2, pilotCode: 'DARK_LASHES', name: 'Làm mềm', stepOrder: 2, targetMinutes: 15, isActive: true },
+          ],
+        },
+        crmPilotSession: {
+          count: async () => 18,
+        },
+        crmPilotSessionStep: {
+          findMany: async () => [
+            {
+              id: 101,
+              sessionId: 18,
+              stepOrder: 1,
+              stepName: 'Kiểm tra & làm sạch mi',
+              status: 'COMPLETED',
+              durationSeconds: 406,
+              note: null,
+              session: {
+                id: 18,
+                customerName: 'Nguyệt',
+                technicianName: 'Cô Đẫm',
+                sessionDate: new Date('2026-10-27'),
+                status: 'CHECKED_OUT',
+              },
+            },
+            {
+              id: 102,
+              sessionId: 17,
+              stepOrder: 1,
+              stepName: 'Kiểm tra & làm sạch mi',
+              status: 'COMPLETED',
+              durationSeconds: 300,
+              note: null,
+              session: {
+                id: 17,
+                customerName: 'Rosa',
+                technicianName: 'Cô Đẫm',
+                sessionDate: new Date('2026-10-21'),
+                status: 'FEEDBACK_DONE',
+              },
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  const res = await PilotService.getSopEmpiricalStats(fakeFastify, 'DARK_LASHES');
+  assert.equal(res.pilotCode, 'DARK_LASHES');
+  assert.equal(res.totalSessionsCount, 18);
+  assert.equal(res.stats.length, 2);
+
+  const step1 = res.stats[0];
+  assert.equal(step1.stepName, 'Kiểm tra & làm sạch mi');
+  assert.equal(step1.totalRecorded, 2);
+  assert.equal(step1.completedCount, 2);
+  assert.equal(step1.avgDurationSeconds, 353);
+  assert.equal(step1.minDurationSeconds, 300);
+  assert.equal(step1.maxDurationSeconds, 406);
+  assert.equal(step1.sampleSessions.length, 2);
+  assert.equal(step1.sampleSessions[0].customerName, 'Nguyệt');
+});

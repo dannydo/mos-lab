@@ -32,6 +32,9 @@ import type {
   PilotAiAssessment,
   PilotAiAnalyzeRequest,
   PilotAiAssessmentResponse,
+  PilotSopEmpiricalStatsResponse,
+  PilotSopStepEmpiricalStat,
+  PilotStepSampleSession,
 } from '@mos-lab/shared';
 import { DEFAULT_DARK_LASH_SOP_STEPS } from '@mos-lab/shared';
 import { PilotAiService } from './pilot-ai.service.js';
@@ -1364,6 +1367,97 @@ export class PilotService {
     });
 
     return this.listSopSteps(fastify, code);
+  }
+
+  static async getSopEmpiricalStats(
+    fastify: FastifyInstance,
+    pilotCode?: string
+  ): Promise<PilotSopEmpiricalStatsResponse> {
+    const code = pilotCode || this.DEFAULT_PILOT_CODE;
+
+    // 1. Fetch template steps (or seed defaults if empty)
+    const templateSteps = await this.listSopSteps(fastify, code);
+
+    // 2. Count total sessions in this pilot
+    const totalSessionsCount = await fastify.prisma.crm.crmPilotSession.count({
+      where: { pilotCode: code },
+    });
+
+    // 3. Fetch all session steps with their session info
+    const sessionSteps = await fastify.prisma.crm.crmPilotSessionStep.findMany({
+      where: {
+        session: {
+          pilotCode: code,
+        },
+      },
+      include: {
+        session: {
+          select: {
+            id: true,
+            customerName: true,
+            technicianName: true,
+            sessionDate: true,
+            status: true,
+          },
+        },
+      },
+      orderBy: {
+        id: 'desc',
+      },
+    });
+
+    // 4. Group session steps by stepOrder or stepName
+    const stats: PilotSopStepEmpiricalStat[] = templateSteps.map((tpl) => {
+      const matchingSteps = sessionSteps.filter(
+        (s: SafeAny) => s.stepOrder === tpl.stepOrder || s.stepName?.trim().toLowerCase() === tpl.name?.trim().toLowerCase()
+      );
+
+      const totalRecorded = matchingSteps.length;
+      const completedSteps = matchingSteps.filter(
+        (s: SafeAny) => s.status === 'COMPLETED' && typeof s.durationSeconds === 'number' && s.durationSeconds > 0
+      );
+      const completedCount = completedSteps.length;
+
+      let avgDurationSeconds = 0;
+      let minDurationSeconds = 0;
+      let maxDurationSeconds = 0;
+
+      if (completedCount > 0) {
+        const durations = completedSteps.map((s: SafeAny) => s.durationSeconds as number);
+        const sum = durations.reduce((acc: number, val: number) => acc + val, 0);
+        avgDurationSeconds = Math.round(sum / completedCount);
+        minDurationSeconds = Math.min(...durations);
+        maxDurationSeconds = Math.max(...durations);
+      }
+
+      const sampleSessions: PilotStepSampleSession[] = completedSteps.slice(0, 5).map((s: SafeAny) => ({
+        sessionId: s.sessionId,
+        customerName: s.session?.customerName || 'Khách hàng',
+        technicianName: s.session?.technicianName || 'Chuyên Viên Kỹ Thuật',
+        sessionDate: s.session?.sessionDate ? new Date(s.session.sessionDate).toISOString().split('T')[0] : '',
+        durationSeconds: s.durationSeconds || 0,
+        status: s.status,
+        note: s.note || null,
+      }));
+
+      return {
+        stepOrder: tpl.stepOrder,
+        stepName: tpl.name,
+        targetMinutes: tpl.targetMinutes || 10,
+        totalRecorded,
+        completedCount,
+        avgDurationSeconds,
+        minDurationSeconds,
+        maxDurationSeconds,
+        sampleSessions,
+      };
+    });
+
+    return {
+      pilotCode: code,
+      totalSessionsCount,
+      stats,
+    };
   }
 
   // ═══════════════════════════════════════════
