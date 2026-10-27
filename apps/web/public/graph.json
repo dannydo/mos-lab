@@ -10664,6 +10664,20 @@
       }
     },
     {
+      "id": "route:GET:/api/kpi/cb-live-telemetry",
+      "type": "FastifyRoute",
+      "label": "GET /api/kpi/cb-live-telemetry",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/kpi/routes/cb-telemetry.routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/kpi/cb-live-telemetry",
+        "module": "kpi",
+        "handler": "inlineHandler",
+        "line": 7
+      }
+    },
+    {
       "id": "route:GET:/api/kpi/cc-paystub",
       "type": "FastifyRoute",
       "label": "GET /api/kpi/cc-paystub",
@@ -11304,7 +11318,7 @@
         "path": "/api/kpi/export-booker-salary",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 238
+        "line": 240
       }
     },
     {
@@ -11318,7 +11332,7 @@
         "path": "/api/kpi/salary-config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 604
+        "line": 606
       }
     },
     {
@@ -11332,7 +11346,7 @@
         "path": "/api/kpi/salary-config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 610
+        "line": 612
       }
     },
     {
@@ -11346,7 +11360,7 @@
         "path": "/api/kpi/staff-levels",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 651
+        "line": 653
       }
     },
     {
@@ -11360,7 +11374,7 @@
         "path": "/api/kpi/staff-levels",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 670
+        "line": 672
       }
     },
     {
@@ -11374,7 +11388,7 @@
         "path": "/api/kpi/summary",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 708
+        "line": 710
       }
     },
     {
@@ -11388,7 +11402,7 @@
         "path": "/api/kpi/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 868
+        "line": 870
       }
     },
     {
@@ -11402,7 +11416,7 @@
         "path": "/api/kpi/booker-appointments",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1172
+        "line": 1174
       }
     },
     {
@@ -11416,7 +11430,7 @@
         "path": "/api/kpi/trends",
         "module": "kpi",
         "handler": "preHandler",
-        "line": 1490
+        "line": 1492
       }
     },
     {
@@ -11854,6 +11868,20 @@
       }
     },
     {
+      "id": "route:GET:/api/pilot/sop-steps/empirical-stats",
+      "type": "FastifyRoute",
+      "label": "GET /api/pilot/sop-steps/empirical-stats",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/pilot/sop-steps/empirical-stats",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 211
+      }
+    },
+    {
       "id": "route:GET:/api/pilot/assessment-criteria",
       "type": "FastifyRoute",
       "label": "GET /api/pilot/assessment-criteria",
@@ -11864,7 +11892,7 @@
         "path": "/api/pilot/assessment-criteria",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 215
+        "line": 225
       }
     },
     {
@@ -11878,7 +11906,7 @@
         "path": "/api/pilot/assessment-criteria",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 225
+        "line": 235
       }
     },
     {
@@ -11892,7 +11920,7 @@
         "path": "/api/pilot/assessment-criteria/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 235
+        "line": 245
       }
     },
     {
@@ -11906,7 +11934,7 @@
         "path": "/api/pilot/assessment-criteria/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 250
+        "line": 260
       }
     },
     {
@@ -11920,7 +11948,7 @@
         "path": "/api/pilot/assessment-criteria/reorder",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 264
+        "line": 274
       }
     },
     {
@@ -11934,7 +11962,7 @@
         "path": "/api/pilot/sessions/:id/assessment",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 275
+        "line": 285
       }
     },
     {
@@ -11948,7 +11976,7 @@
         "path": "/api/pilot/sessions/:id/ai-analyze",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 291
+        "line": 301
       }
     },
     {
@@ -11962,7 +11990,7 @@
         "path": "/api/pilot/sessions/:id/steps",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 311
+        "line": 321
       }
     },
     {
@@ -11976,7 +12004,7 @@
         "path": "/api/pilot/sessions/:id/steps/:stepId/start",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 326
+        "line": 336
       }
     },
     {
@@ -11990,7 +12018,7 @@
         "path": "/api/pilot/sessions/:id/steps/:stepId/finish",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 343
+        "line": 353
       }
     },
     {
@@ -12004,7 +12032,7 @@
         "path": "/api/pilot/sessions/:id/steps/:stepId/note",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 360
+        "line": 370
       }
     },
     {
@@ -12018,7 +12046,7 @@
         "path": "/api/pilot/sessions/:id/steps/:stepId/reset",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 377
+        "line": 387
       }
     },
     {
@@ -12032,7 +12060,7 @@
         "path": "/api/pilot/sessions",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 393
+        "line": 403
       }
     },
     {
@@ -12046,7 +12074,7 @@
         "path": "/api/pilot/metrics",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 404
+        "line": 414
       }
     },
     {
@@ -12060,7 +12088,7 @@
         "path": "/api/pilot/sessions",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 415
+        "line": 425
       }
     },
     {
@@ -12074,7 +12102,7 @@
         "path": "/api/pilot/sessions/:id/check-in",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 427
+        "line": 437
       }
     },
     {
@@ -12088,7 +12116,7 @@
         "path": "/api/pilot/sessions/:id/before-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 443
+        "line": 453
       }
     },
     {
@@ -12102,7 +12130,7 @@
         "path": "/api/pilot/sessions/:id/service-done",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 459
+        "line": 469
       }
     },
     {
@@ -12116,7 +12144,7 @@
         "path": "/api/pilot/sessions/:id/after-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 475
+        "line": 485
       }
     },
     {
@@ -12130,7 +12158,7 @@
         "path": "/api/pilot/sessions/:id/feedback",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 491
+        "line": 501
       }
     },
     {
@@ -12144,7 +12172,7 @@
         "path": "/api/pilot/sessions/:id/check-out",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 507
+        "line": 517
       }
     },
     {
@@ -12158,7 +12186,7 @@
         "path": "/api/pilot/upload-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 523
+        "line": 533
       }
     },
     {
@@ -12172,7 +12200,7 @@
         "path": "/api/pilot/sessions/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 534
+        "line": 544
       }
     },
     {
@@ -12186,7 +12214,7 @@
         "path": "/api/pilot/sessions/:id/deduct-stock",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 550
+        "line": 560
       }
     },
     {
@@ -12200,7 +12228,7 @@
         "path": "/api/pilot/inventory",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 565
+        "line": 575
       }
     },
     {
@@ -12214,7 +12242,7 @@
         "path": "/api/pilot/sessions/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 576
+        "line": 586
       }
     },
     {
@@ -13843,6 +13871,18 @@
           "catalog.createProduct",
           "catalog.deleteProduct"
         ]
+      }
+    },
+    {
+      "id": "page:/dashboard/cb",
+      "type": "Component",
+      "label": "App Page: /dashboard/cb",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/dashboard/cb/page.tsx",
+      "metadata": {
+        "routePath": "/dashboard/cb",
+        "apiCallsCount": 0,
+        "apiCalls": []
       }
     },
     {
@@ -22123,6 +22163,66 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:CbRevenueTelemetry",
+      "type": "SharedType",
+      "label": "CbRevenueTelemetry",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cb-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CbRevenueTelemetry",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CbGreenFunnelTelemetry",
+      "type": "SharedType",
+      "label": "CbGreenFunnelTelemetry",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cb-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CbGreenFunnelTelemetry",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CbRetentionTelemetry",
+      "type": "SharedType",
+      "label": "CbRetentionTelemetry",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cb-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CbRetentionTelemetry",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CbLiveTelemetryResponse",
+      "type": "SharedType",
+      "label": "CbLiveTelemetryResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cb-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CbLiveTelemetryResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CbTelemetryQueryParams",
+      "type": "SharedType",
+      "label": "CbTelemetryQueryParams",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cb-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CbTelemetryQueryParams",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:CcDiamondEntry",
       "type": "SharedType",
       "label": "CcDiamondEntry",
@@ -28183,6 +28283,78 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:PilotSopMaterialItem",
+      "type": "SharedType",
+      "label": "PilotSopMaterialItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotSopMaterialItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotSopCommonError",
+      "type": "SharedType",
+      "label": "PilotSopCommonError",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotSopCommonError",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotSopStepDetail",
+      "type": "SharedType",
+      "label": "PilotSopStepDetail",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotSopStepDetail",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotStepSampleSession",
+      "type": "SharedType",
+      "label": "PilotStepSampleSession",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotStepSampleSession",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotSopStepEmpiricalStat",
+      "type": "SharedType",
+      "label": "PilotSopStepEmpiricalStat",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotSopStepEmpiricalStat",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotSopEmpiricalStatsResponse",
+      "type": "SharedType",
+      "label": "PilotSopEmpiricalStatsResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotSopEmpiricalStatsResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:PinnedLinkItem",
       "type": "SharedType",
       "label": "PinnedLinkItem",
@@ -31867,6 +32039,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatCustomerPickerModal",
+      "type": "UIComponent",
+      "label": "<MosChatCustomerPickerModal />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/MosChatCustomerPickerModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatCustomerPickerModal",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatMathBlock",
       "type": "UIComponent",
       "label": "<MosChatMathBlock />",
@@ -31983,6 +32167,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "MosChatAvatar.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatCustomerPicker.test",
+      "type": "UIComponent",
+      "label": "<MosChatCustomerPicker.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatCustomerPicker.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatCustomerPicker.test",
         "isPrimitive": false
       }
     },
@@ -36756,6 +36952,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/kpi/routes/cb-telemetry.routes.ts",
+      "type": "File",
+      "label": "cb-telemetry.routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/routes/cb-telemetry.routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 925,
+        "lineCount": 24,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/kpi/routes/cc-paystub.routes.ts",
       "type": "File",
       "label": "cc-paystub.routes.ts",
@@ -36919,8 +37128,8 @@
       "filePath": "apps/api/src/modules/kpi/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 60066,
-        "lineCount": 1615,
+        "sizeBytes": 60187,
+        "lineCount": 1617,
         "ext": ".ts"
       }
     },
@@ -37025,6 +37234,32 @@
       "metadata": {
         "sizeBytes": 62581,
         "lineCount": 1806,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/cb-live-telemetry.service.test.ts",
+      "type": "File",
+      "label": "cb-live-telemetry.service.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/cb-live-telemetry.service.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 2736,
+        "lineCount": 93,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/kpi/services/cb-live-telemetry.service.ts",
+      "type": "File",
+      "label": "cb-live-telemetry.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/kpi/services/cb-live-telemetry.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 8106,
+        "lineCount": 200,
         "ext": ".ts"
       }
     },
@@ -37257,8 +37492,8 @@
       "filePath": "apps/api/src/modules/menu-access/menu-access.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14077,
-        "lineCount": 329,
+        "sizeBytes": 14344,
+        "lineCount": 337,
         "ext": ".ts"
       }
     },
@@ -37270,8 +37505,8 @@
       "filePath": "apps/api/src/modules/menu-access/menu-access.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 47086,
-        "lineCount": 1151,
+        "sizeBytes": 47167,
+        "lineCount": 1153,
         "ext": ".ts"
       }
     },
@@ -37868,8 +38103,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 39547,
-        "lineCount": 1197,
+        "sizeBytes": 41927,
+        "lineCount": 1267,
         "ext": ".ts"
       }
     },
@@ -37881,8 +38116,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 66855,
-        "lineCount": 1939,
+        "sizeBytes": 69918,
+        "lineCount": 2033,
         "ext": ".ts"
       }
     },
@@ -37894,8 +38129,8 @@
       "filePath": "apps/api/src/modules/pilot/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 25334,
-        "lineCount": 590,
+        "sizeBytes": 25755,
+        "lineCount": 600,
         "ext": ".ts"
       }
     },
@@ -41995,6 +42230,45 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/cb/__tests__/CbDashboard.test.tsx",
+      "type": "File",
+      "label": "CbDashboard.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cb/__tests__/CbDashboard.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3818,
+        "lineCount": 107,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cb/components/CbLiveTelemetryWidget.tsx",
+      "type": "File",
+      "label": "CbLiveTelemetryWidget.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cb/components/CbLiveTelemetryWidget.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 20319,
+        "lineCount": 429,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/cb/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/cb/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4426,
+        "lineCount": 85,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/cc/components/CcAvatar.tsx",
       "type": "File",
       "label": "CcAvatar.tsx",
@@ -42184,8 +42458,8 @@
       "filePath": "apps/web/app/dashboard/cc/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17539,
-        "lineCount": 508,
+        "sizeBytes": 18358,
+        "lineCount": 534,
         "ext": ".tsx"
       }
     },
@@ -43464,6 +43738,19 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/nyc/hooks/__tests__/useNycData.test.ts",
+      "type": "File",
+      "label": "useNycData.test.ts",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/nyc/hooks/__tests__/useNycData.test.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3144,
+        "lineCount": 100,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/nyc/hooks/useNycData.ts",
       "type": "File",
       "label": "useNycData.ts",
@@ -43471,8 +43758,8 @@
       "filePath": "apps/web/app/dashboard/nyc/hooks/useNycData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21374,
-        "lineCount": 618,
+        "sizeBytes": 21423,
+        "lineCount": 621,
         "ext": ".ts"
       }
     },
@@ -43529,6 +43816,32 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotAssessmentCertSopDetail.test.tsx",
+      "type": "File",
+      "label": "PilotAssessmentCertSopDetail.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotAssessmentCertSopDetail.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7876,
+        "lineCount": 196,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotAssessmentCertSopDetail.tsx",
+      "type": "File",
+      "label": "PilotAssessmentCertSopDetail.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotAssessmentCertSopDetail.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 70555,
+        "lineCount": 1295,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaModal.tsx",
       "type": "File",
       "label": "PilotCriteriaModal.tsx",
@@ -43538,6 +43851,32 @@
       "metadata": {
         "sizeBytes": 11806,
         "lineCount": 329,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaSopDetail.test.tsx",
+      "type": "File",
+      "label": "PilotCriteriaSopDetail.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaSopDetail.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6564,
+        "lineCount": 152,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaSopDetail.tsx",
+      "type": "File",
+      "label": "PilotCriteriaSopDetail.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaSopDetail.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 62709,
+        "lineCount": 1209,
         "ext": ".tsx"
       }
     },
@@ -43607,6 +43946,32 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopDetailView.test.tsx",
+      "type": "File",
+      "label": "PilotSopDetailView.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopDetailView.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 6841,
+        "lineCount": 172,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopDetailView.tsx",
+      "type": "File",
+      "label": "PilotSopDetailView.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopDetailView.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 42020,
+        "lineCount": 756,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopModal.tsx",
       "type": "File",
       "label": "PilotSopModal.tsx",
@@ -43633,6 +43998,58 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/SopTrainingPlaceholder.test.tsx",
+      "type": "File",
+      "label": "SopTrainingPlaceholder.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/SopTrainingPlaceholder.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 4416,
+        "lineCount": 103,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/SopTrainingPlaceholder.tsx",
+      "type": "File",
+      "label": "SopTrainingPlaceholder.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/SopTrainingPlaceholder.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 18403,
+        "lineCount": 387,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-table-columns.tsx",
+      "type": "File",
+      "label": "pilot-table-columns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/pilot-table-columns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 15196,
+        "lineCount": 385,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/page.test.tsx",
+      "type": "File",
+      "label": "page.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/page.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 1992,
+        "lineCount": 64,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/pilot-dark-lashes/page.tsx",
       "type": "File",
       "label": "page.tsx",
@@ -43640,8 +44057,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 35440,
-        "lineCount": 896,
+        "sizeBytes": 23066,
+        "lineCount": 561,
         "ext": ".tsx"
       }
     },
@@ -45655,8 +46072,8 @@
       "filePath": "apps/web/lib/api/kpi.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20355,
-        "lineCount": 524,
+        "sizeBytes": 20645,
+        "lineCount": 530,
         "ext": ".ts"
       }
     },
@@ -45707,8 +46124,8 @@
       "filePath": "apps/web/lib/api/pilot.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9120,
-        "lineCount": 215,
+        "sizeBytes": 9387,
+        "lineCount": 220,
         "ext": ".ts"
       }
     },
@@ -46162,8 +46579,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2761,
-        "lineCount": 70,
+        "sizeBytes": 2802,
+        "lineCount": 71,
         "ext": ".ts"
       }
     },
@@ -46305,8 +46722,8 @@
       "filePath": "packages/shared/src/types/auth.test.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2090,
-        "lineCount": 49,
+        "sizeBytes": 3004,
+        "lineCount": 69,
         "ext": ".ts"
       }
     },
@@ -46424,6 +46841,19 @@
       "metadata": {
         "sizeBytes": 12850,
         "lineCount": 459,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:packages/shared/src/types/cb-telemetry.ts",
+      "type": "File",
+      "label": "cb-telemetry.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/cb-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 1133,
+        "lineCount": 49,
         "ext": ".ts"
       }
     },
@@ -46656,8 +47086,8 @@
       "filePath": "packages/shared/src/types/menu-access.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 22359,
-        "lineCount": 762,
+        "sizeBytes": 22815,
+        "lineCount": 771,
         "ext": ".ts"
       }
     },
@@ -46766,6 +47196,19 @@
       }
     },
     {
+      "id": "file:packages/shared/src/types/pilot.test.ts",
+      "type": "File",
+      "label": "pilot.test.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/pilot.test.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 3002,
+        "lineCount": 64,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/types/pilot.ts",
       "type": "File",
       "label": "pilot.ts",
@@ -46773,8 +47216,8 @@
       "filePath": "packages/shared/src/types/pilot.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 12221,
-        "lineCount": 452,
+        "sizeBytes": 31657,
+        "lineCount": 751,
         "ext": ".ts"
       }
     },
@@ -52004,6 +52447,13 @@
       "label": "REGISTERED_IN"
     },
     {
+      "id": "edge:route:GET:/api/kpi/cb-live-telemetry:ws:apps/api",
+      "source": "route:GET:/api/kpi/cb-live-telemetry",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
       "id": "edge:route:GET:/api/kpi/cc-paystub:ws:apps/api",
       "source": "route:GET:/api/kpi/cc-paystub",
       "target": "ws:apps/api",
@@ -52594,6 +53044,13 @@
     {
       "id": "edge:route:POST:/api/pilot/sop-steps/seed-defaults:ws:apps/api",
       "source": "route:POST:/api/pilot/sop-steps/seed-defaults",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/pilot/sop-steps/empirical-stats:ws:apps/api",
+      "source": "route:GET:/api/pilot/sop-steps/empirical-stats",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -53581,6 +54038,13 @@
     {
       "id": "edge:page:/dashboard/catalog:ws:apps/web",
       "source": "page:/dashboard/catalog",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
+      "id": "edge:page:/dashboard/cb:ws:apps/web",
+      "source": "page:/dashboard/cb",
       "target": "ws:apps/web",
       "type": "RENDERS",
       "label": "PAGE_OF"
@@ -58360,6 +58824,41 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:CbRevenueTelemetry:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CbRevenueTelemetry",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CbGreenFunnelTelemetry:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CbGreenFunnelTelemetry",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CbRetentionTelemetry:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CbRetentionTelemetry",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CbLiveTelemetryResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CbLiveTelemetryResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CbTelemetryQueryParams:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CbTelemetryQueryParams",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:CcDiamondEntry:ws:packages/shared",
       "source": "type:@mos-lab/shared:CcDiamondEntry",
       "target": "ws:packages/shared",
@@ -61895,6 +62394,48 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:PilotSopMaterialItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotSopMaterialItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotSopCommonError:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotSopCommonError",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotSopStepDetail:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotSopStepDetail",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotStepSampleSession:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotStepSampleSession",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotSopStepEmpiricalStat:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotSopStepEmpiricalStat",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotSopEmpiricalStatsResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotSopEmpiricalStatsResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:PinnedLinkItem:ws:packages/shared",
       "source": "type:@mos-lab/shared:PinnedLinkItem",
       "target": "ws:packages/shared",
@@ -64989,6 +65530,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatCustomerPickerModal:ws:apps/web",
+      "source": "uicomp:MosChatCustomerPickerModal",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatCustomerPickerModal:token:color:primary",
+      "source": "uicomp:MosChatCustomerPickerModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatMathBlock:ws:apps/web",
       "source": "uicomp:MosChatMathBlock",
       "target": "ws:apps/web",
@@ -65124,6 +65679,20 @@
     {
       "id": "edge:uicomp:MosChatAvatar.test:token:color:primary",
       "source": "uicomp:MosChatAvatar.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatCustomerPicker.test:ws:apps/web",
+      "source": "uicomp:MosChatCustomerPicker.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatCustomerPicker.test:token:color:primary",
+      "source": "uicomp:MosChatCustomerPicker.test",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -68475,6 +69044,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/kpi/routes/cb-telemetry.routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/routes/cb-telemetry.routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/kpi/routes/cc-paystub.routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/kpi/routes/cc-paystub.routes.ts",
       "target": "ws:packages/shared",
@@ -68589,6 +69165,20 @@
     {
       "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/kpi/services/bk-salary.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/cb-live-telemetry.service.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/cb-live-telemetry.service.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/cb-live-telemetry.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/kpi/services/cb-live-telemetry.service.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -70078,6 +70668,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/cb/components/CbLiveTelemetryWidget.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cb/components/CbLiveTelemetryWidget.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/cc/components/CcConfigDrawer.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cc/components/CcConfigDrawer.tsx",
       "target": "ws:packages/shared",
@@ -70659,8 +71256,36 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotAssessmentCertSopDetail.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotAssessmentCertSopDetail.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotAssessmentCertSopDetail.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotAssessmentCertSopDetail.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaModal.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaSopDetail.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaSopDetail.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaSopDetail.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaSopDetail.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -70701,6 +71326,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopDetailView.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopDetailView.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopModal.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopModal.tsx",
       "target": "ws:packages/shared",
@@ -70710,6 +71342,20 @@
     {
       "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotStepTimer.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotStepTimer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/SopTrainingPlaceholder.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/SopTrainingPlaceholder.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-table-columns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/pilot-table-columns.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -79122,6 +79768,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/architecture:route:GET:/api/kpi/cb-live-telemetry",
+      "source": "page:/dashboard/architecture",
+      "target": "route:GET:/api/kpi/cb-live-telemetry",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/architecture:route:GET:/api/kpi/cv-tip/customer-history",
       "source": "page:/dashboard/architecture",
       "target": "route:GET:/api/kpi/cv-tip/customer-history",
@@ -80231,6 +80884,13 @@
       "id": "edge:page:/dashboard/cc:route:DELETE:/api/kpi/bk/games/:id",
       "source": "page:/dashboard/cc",
       "target": "route:DELETE:/api/kpi/bk/games/:id",
+      "type": "API_CALL",
+      "label": "CALLS kpi.getCcXoayReport"
+    },
+    {
+      "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/cb-live-telemetry",
+      "source": "page:/dashboard/cc",
+      "target": "route:GET:/api/kpi/cb-live-telemetry",
       "type": "API_CALL",
       "label": "CALLS kpi.getCcXoayReport"
     },
@@ -81722,6 +82382,13 @@
       "id": "edge:page:/dashboard/design-system:route:DELETE:/api/kpi/bk/games/:id",
       "source": "page:/dashboard/design-system",
       "target": "route:DELETE:/api/kpi/bk/games/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:GET:/api/kpi/cb-live-telemetry",
+      "source": "page:/dashboard/design-system",
+      "target": "route:GET:/api/kpi/cb-live-telemetry",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -85723,6 +86390,13 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/cb-live-telemetry",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/kpi/cb-live-telemetry",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/cc-paystub",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/kpi/cc-paystub",
@@ -86314,6 +86988,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/sop-steps/seed-defaults",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/pilot/sop-steps/seed-defaults",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/pilot/sop-steps/empirical-stats",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/pilot/sop-steps/empirical-stats",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -90861,6 +91542,13 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/cb-live-telemetry",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/kpi/cb-live-telemetry",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/cc-paystub",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/kpi/cc-paystub",
@@ -91452,6 +92140,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/sop-steps/seed-defaults",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/pilot/sop-steps/seed-defaults",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/pilot/sop-steps/empirical-stats",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/pilot/sop-steps/empirical-stats",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -92936,6 +93631,13 @@
       "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sop-steps/seed-defaults",
       "source": "page:/dashboard/pilot-dark-lashes",
       "target": "route:POST:/api/pilot/sop-steps/seed-defaults",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:GET:/api/pilot/sop-steps/empirical-stats",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:GET:/api/pilot/sop-steps/empirical-stats",
       "type": "API_CALL",
       "label": "CALLS pilot.listSessions"
     },
@@ -95386,6 +96088,13 @@
       "id": "edge:page:/dashboard/staff/menu-access:route:DELETE:/api/kpi/bk/games/:id",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:DELETE:/api/kpi/bk/games/:id",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/kpi/cb-live-telemetry",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:GET:/api/kpi/cb-live-telemetry",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -99338,6 +100047,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/cb-live-telemetry",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/kpi/cb-live-telemetry",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/cc-paystub",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/kpi/cc-paystub",
@@ -99929,6 +100645,13 @@
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/sop-steps/seed-defaults",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/pilot/sop-steps/seed-defaults",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/pilot/sop-steps/empirical-stats",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/pilot/sop-steps/empirical-stats",
       "type": "API_CALL",
       "label": "CALLS teams.update"
     },
@@ -100830,31 +101553,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3614,
-    "totalEdges": 7684,
+    "totalNodes": 3649,
+    "totalEdges": 7724,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 176,
-      "FastifyRoute": 734,
-      "Component": 62,
-      "SharedType": 1312,
+      "FastifyRoute": 736,
+      "Component": 63,
+      "SharedType": 1323,
       "DesignToken": 12,
-      "UIComponent": 315,
-      "File": 1000
+      "UIComponent": 317,
+      "File": 1019
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1500,
-      "HANDLES_ROUTE": 734,
-      "RENDERS": 377,
-      "USES_TOKEN": 317,
-      "IMPORTS": 558,
+      "EXPORTS": 1511,
+      "HANDLES_ROUTE": 736,
+      "RENDERS": 380,
+      "USES_TOKEN": 319,
+      "IMPORTS": 569,
       "QUERIES_MODEL": 422,
-      "API_CALL": 3776
+      "API_CALL": 3787
     },
-    "fastifyRouteCount": 739,
+    "fastifyRouteCount": 741,
     "prismaModelCount": 176,
-    "nextPageCount": 62,
-    "sharedTypeCount": 1312
+    "nextPageCount": 63,
+    "sharedTypeCount": 1323
   },
   "routes": [
     {
@@ -104590,6 +105313,13 @@
     },
     {
       "method": "GET",
+      "path": "/api/kpi/cb-live-telemetry",
+      "filePath": "apps/api/src/modules/kpi/routes/cb-telemetry.routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "kpi"
+    },
+    {
+      "method": "GET",
       "path": "/api/kpi/cc-paystub",
       "filePath": "apps/api/src/modules/kpi/routes/cc-paystub.routes.ts",
       "handler": "inlineHandler",
@@ -105179,6 +105909,13 @@
     {
       "method": "POST",
       "path": "/api/pilot/sop-steps/seed-defaults",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "GET",
+      "path": "/api/pilot/sop-steps/empirical-stats",
       "filePath": "apps/api/src/modules/pilot/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
