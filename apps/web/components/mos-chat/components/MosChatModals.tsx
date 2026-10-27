@@ -639,6 +639,50 @@ export const MosChatModals: React.FC<MosChatModalsProps> = ({
                 dropdownStyle={{ zIndex: 1400 }}
                 status={!taskAssignee ? 'warning' : undefined}
                 placeholder="Chọn nhân sự phụ trách..."
+                optionRender={(option) => {
+                  const valStr = String(option.value || '').trim();
+                  const matchedStaff = staffDirectory.find(
+                    (s) =>
+                      String(s.displayName || '').toLowerCase() === valStr.toLowerCase() ||
+                      String(s.username || '').toLowerCase() === valStr.toLowerCase()
+                  );
+                  return (
+                    <div className="flex items-center gap-2 py-0.5 min-w-0">
+                      {renderUserAvatarNode({
+                        staffId: matchedStaff?.id,
+                        name: matchedStaff?.displayName || valStr,
+                        username: matchedStaff?.username,
+                        avatarUrl: matchedStaff?.avatarUrl,
+                        sizeClass: 'w-5 h-5',
+                        roundedClass: 'rounded-full',
+                        textSizeClass: 'text-[9px]',
+                      })}
+                      <span className="truncate text-xs font-medium">{option.label}</span>
+                    </div>
+                  );
+                }}
+                labelRender={(props) => {
+                  const valStr = String(props.value || '').trim();
+                  const matchedStaff = staffDirectory.find(
+                    (s) =>
+                      String(s.displayName || '').toLowerCase() === valStr.toLowerCase() ||
+                      String(s.username || '').toLowerCase() === valStr.toLowerCase()
+                  );
+                  return (
+                    <span className="inline-flex items-center gap-1.5 min-w-0">
+                      {renderUserAvatarNode({
+                        staffId: matchedStaff?.id,
+                        name: matchedStaff?.displayName || valStr,
+                        username: matchedStaff?.username,
+                        avatarUrl: matchedStaff?.avatarUrl,
+                        sizeClass: 'w-4 h-4',
+                        roundedClass: 'rounded-full',
+                        textSizeClass: 'text-[8px]',
+                      })}
+                      <span className="truncate">{props.label || props.value}</span>
+                    </span>
+                  );
+                }}
                 filterOption={(input, option) => {
                   const normInput = removeVietnameseTones(input.trim().toLowerCase());
                   if (!normInput) return true;

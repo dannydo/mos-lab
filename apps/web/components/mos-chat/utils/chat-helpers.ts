@@ -773,22 +773,33 @@ export function getAvatarColorPalette(name?: string | null): { bg: string; borde
 
 export function getAvatarInitials(name?: string | null, fallback?: string | null): string {
   const cleanFallback = String(fallback || '').trim();
-  if (cleanFallback && cleanFallback.length <= 3 && !cleanFallback.includes('/') && !cleanFallback.includes('.')) {
-    return cleanFallback.toUpperCase();
+  if (cleanFallback && !cleanFallback.includes('/') && !cleanFallback.includes('.')) {
+    const fbChars = Array.from(cleanFallback);
+    if (fbChars.length > 0 && fbChars.length <= 3) {
+      return fbChars.join('').toUpperCase();
+    }
   }
   const clean = String(name || '')
     .replace(/\s*\(Ghi chú cho tôi\)\s*$/i, '')
+    .replace(/^⭐\s*Chính tôi\s*\((.+)\)\s*$/i, '$1')
     .replace(/^Chuyên Viên\s+/i, '')
     .replace(/^(CV|KTV|Admin|Super Admin)\s+/i, '')
+    .replace(/^[^\p{L}\p{N}]+/gu, '')
     .trim();
-  if (!clean) return 'NV';
-  const parts = clean.split(/\s+/).filter(Boolean);
+  if (!clean) {
+    const rawChars = Array.from(String(name || '').trim());
+    return rawChars.length > 0 ? rawChars[0].toUpperCase() : 'NV';
+  }
+  const parts = clean
+    .split(/\s+/)
+    .map((p) => p.replace(/^[^\p{L}\p{N}]+/gu, ''))
+    .filter(Boolean);
   if (parts.length >= 2) {
-    const first = parts[0][0] || '';
-    const last = parts[parts.length - 1][0] || '';
+    const first = Array.from(parts[0])[0] || '';
+    const last = Array.from(parts[parts.length - 1])[0] || '';
     return `${first}${last}`.toUpperCase();
   }
-  return clean.slice(0, 2).toUpperCase();
+  return Array.from(clean).slice(0, 2).join('').toUpperCase();
 }
 
 export function normalizeAvatarImageUrl(raw?: string | null): string | null {

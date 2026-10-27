@@ -8783,6 +8783,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           <img
             src={resolvedImgUrl}
             alt={name || username || 'User avatar'}
+            referrerPolicy="no-referrer"
             className={`w-full h-full object-cover ${roundedClass} block`}
             onError={() => setBrokenAvatarUrls((prev) => ({ ...prev, [resolvedImgUrl]: true }))}
           />
