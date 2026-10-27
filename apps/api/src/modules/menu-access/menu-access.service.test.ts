@@ -292,6 +292,14 @@ test('simulates Production policies: locks CV strictly while preserving BK_TELES
     (await MenuAccessService.checkApiAccess(mockFastify, bkActor, '/api/catalog/services', 'GET')).allowed,
     true
   );
+  assert.equal(
+    (await MenuAccessService.checkApiAccess(mockFastify, bkActor, '/api/nyc/config', 'GET')).allowed,
+    true
+  );
+  assert.equal(
+    (await MenuAccessService.checkApiAccess(mockFastify, bkActor, '/api/saved-filters', 'GET')).allowed,
+    true
+  );
   // BK_TELESALES blocked from unauthorized modules & system mutations
   assert.equal(
     (await MenuAccessService.checkApiAccess(mockFastify, bkActor, '/api/qa-shop/sessions', 'GET')).allowed,

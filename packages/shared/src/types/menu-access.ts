@@ -227,6 +227,12 @@ export function resolveMenuKeysForApiPath(apiPath: string): string[] {
       'telesale-target',
     ];
   }
+  if (clean.startsWith('/nyc')) {
+    return ['nyc-main', 'nyc-campaigns-mgmt', 'loca', 'my-customers', 'customers-all'];
+  }
+  if (clean.startsWith('/saved-filters')) {
+    return ['customers-all', 'my-customers', 'nyc-main', 'loca', 'today', 'bk', 'cs'];
+  }
   if (clean.startsWith('/campaigns')) {
     return ['nyc-main', 'nyc-campaigns-mgmt', 'loca', 'my-customers', 'customers-all'];
   }

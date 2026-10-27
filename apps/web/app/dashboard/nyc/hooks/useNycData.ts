@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useDeferredValue, useRef } from 'reac
 import axios from 'axios';
 import dayjs from 'dayjs';
 import { apiClient } from '../../../../lib/api-client';
-import { Customer, SafeAny, Staff } from '@mos-lab/shared';
+import { Customer, SafeAny, Staff, isTelesalesRole } from '@mos-lab/shared';
 import { useOmiCall } from '../../../../context/OmiCallContext';
 
 export interface Touchpoint {
@@ -18,6 +18,37 @@ export interface Touchpoint {
 export interface TabConfigs {
   [key: string]: Touchpoint[];
 }
+
+export const DEFAULT_NYC_TAB_CONFIGS: TabConfigs = {
+  NYC_30: [
+    { key: 'now', label: 'Chăm sóc 24h', daysMin: 0, daysMax: 1, color: 'blue' },
+    { key: '3', label: 'Bảo hành kiểu Úc', daysMin: 2, daysMax: 3, color: 'cyan' },
+    { key: '7', label: 'Chạm 14', daysMin: 14, daysMax: 14, color: 'green' },
+    { key: '17', label: 'Chạm 19', daysMin: 19, daysMax: 19, color: 'orange' },
+    { key: '21', label: 'Chạm 21', daysMin: 21, daysMax: 21, color: 'red' },
+  ],
+  NYC_60: [
+    { key: '35', label: 'Chạm 35', daysMin: 31, daysMax: 35, color: 'blue' },
+    { key: '45', label: 'Chạm 45', daysMin: 41, daysMax: 45, color: 'orange' },
+    { key: '55', label: 'Chạm 55', daysMin: 51, daysMax: 55, color: 'red' },
+  ],
+  NYC_90: [
+    { key: '70', label: 'Chạm 70', daysMin: 65, daysMax: 70, color: 'blue' },
+    { key: '80', label: 'Chạm 80', daysMin: 75, daysMax: 80, color: 'orange' },
+  ],
+  NYC_180: [
+    { key: '100', label: 'Chạm 100', daysMin: 95, daysMax: 100, color: 'blue' },
+    { key: '150', label: 'Chạm 150', daysMin: 145, daysMax: 150, color: 'orange' },
+  ],
+  NYC_365: [
+    { key: '200', label: 'Chạm 200', daysMin: 195, daysMax: 200, color: 'blue' },
+    { key: '300', label: 'Chạm 300', daysMin: 295, daysMax: 300, color: 'orange' },
+  ],
+  NYC_365plus: [
+    { key: '400', label: 'Chạm 400', daysMin: 395, daysMax: 400, color: 'blue' },
+    { key: '500', label: 'Chạm 500', daysMin: 495, daysMax: 500, color: 'orange' },
+  ],
+};
 
 export const TAB_KEYS = [
   { id: 'NYC_30', name: 'NYC 30', rangeText: '0 - 30 ngày', minDays: 0, maxDays: 30 },
@@ -116,7 +147,7 @@ export function useNycData(options?: UseNycDataOptions) {
 
   // Dropdown lists
   const [staffList, setStaffList] = useState<Staff[]>([]);
-  const [configs, setConfigs] = useState<TabConfigs>({});
+  const [configs, setConfigs] = useState<TabConfigs>(DEFAULT_NYC_TAB_CONFIGS);
 
   // Modals Controls
   const [settingsModalVisible, setSettingsModalVisible] = useState(false);
@@ -165,10 +196,12 @@ export function useNycData(options?: UseNycDataOptions) {
   const fetchConfigs = useCallback(async () => {
     try {
       const data = await apiClient.nyc.getConfig();
-      setConfigs(data as SafeAny);
+      if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+        setConfigs(data as SafeAny);
+      }
     } catch (err) {
       console.error('Failed to load touchpoint config:', err);
-      optionsRef.current?.onError?.('Không thể tải cấu hình touchpoints.');
+      // Keep DEFAULT_NYC_TAB_CONFIGS so data and touchpoint counts load reliably
     }
   }, []);
 
@@ -183,7 +216,7 @@ export function useNycData(options?: UseNycDataOptions) {
   }, [currentUser]);
 
   useEffect(() => {
-    if (currentUser?.role === 'telesales') {
+    if (isTelesalesRole(currentUser?.role)) {
       setAssignedStaffId('me');
     }
   }, [currentUser]);
@@ -478,39 +511,9 @@ export function useNycData(options?: UseNycDataOptions) {
   };
 
   const resetConfigDefaults = async () => {
-    const defaultConfigs: TabConfigs = {
-      NYC_30: [
-        { key: 'now', label: 'Chăm sóc 24h', daysMin: 0, daysMax: 1, color: 'blue' },
-        { key: '3', label: 'Bảo hành kiểu Úc', daysMin: 2, daysMax: 3, color: 'cyan' },
-        { key: '7', label: 'Chạm 14', daysMin: 14, daysMax: 14, color: 'green' },
-        { key: '17', label: 'Chạm 19', daysMin: 19, daysMax: 19, color: 'orange' },
-        { key: '21', label: 'Chạm 21', daysMin: 21, daysMax: 21, color: 'red' },
-      ],
-      NYC_60: [
-        { key: '35', label: 'Chạm 35', daysMin: 31, daysMax: 35, color: 'blue' },
-        { key: '45', label: 'Chạm 45', daysMin: 41, daysMax: 45, color: 'orange' },
-        { key: '55', label: 'Chạm 55', daysMin: 51, daysMax: 55, color: 'red' },
-      ],
-      NYC_90: [
-        { key: '70', label: 'Chạm 70', daysMin: 65, daysMax: 70, color: 'blue' },
-        { key: '80', label: 'Chạm 80', daysMin: 75, daysMax: 80, color: 'orange' },
-      ],
-      NYC_180: [
-        { key: '100', label: 'Chạm 100', daysMin: 95, daysMax: 100, color: 'blue' },
-        { key: '150', label: 'Chạm 150', daysMin: 145, daysMax: 150, color: 'orange' },
-      ],
-      NYC_365: [
-        { key: '200', label: 'Chạm 200', daysMin: 195, daysMax: 200, color: 'blue' },
-        { key: '300', label: 'Chạm 300', daysMin: 295, daysMax: 300, color: 'orange' },
-      ],
-      NYC_365plus: [
-        { key: '400', label: 'Chạm 400', daysMin: 395, daysMax: 400, color: 'blue' },
-        { key: '500', label: 'Chạm 500', daysMin: 495, daysMax: 500, color: 'orange' },
-      ],
-    };
-    await apiClient.nyc.updateConfig(defaultConfigs);
-    setConfigs(defaultConfigs);
-    optionsRef.current?.settingsForm?.setFieldsValue({ touchpoints: defaultConfigs[selectedConfigTab] });
+    await apiClient.nyc.updateConfig(DEFAULT_NYC_TAB_CONFIGS);
+    setConfigs(DEFAULT_NYC_TAB_CONFIGS);
+    optionsRef.current?.settingsForm?.setFieldsValue({ touchpoints: DEFAULT_NYC_TAB_CONFIGS[selectedConfigTab] });
   };
 
   const handleAssignTelesales = async (customerIds: number[], staffId: number) => {
