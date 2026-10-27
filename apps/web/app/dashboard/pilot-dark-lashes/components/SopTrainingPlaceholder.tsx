@@ -20,7 +20,11 @@ import {
 import type { PilotSession } from '@mos-lab/shared';
 import { AppIcon } from '../../../../components/ui/AppIcon';
 import { PilotCriteriaSopDetail } from './PilotCriteriaSopDetail';
+<<<<<<< HEAD
 import { PilotAssessmentCertSopDetail } from './PilotAssessmentCertSopDetail';
+=======
+import { PilotSafetyRiskSopDetail } from './PilotSafetyRiskSopDetail';
+>>>>>>> a50520115aba280b59e87103bb831044ffa57f65
 
 interface TrainingModuleItem {
   id: string;
@@ -153,16 +157,27 @@ export function SopTrainingPlaceholder({
     );
   }
 
+<<<<<<< HEAD
   // If Hạng mục 5 is active, render detailed Assessment, CSAT & Certificate SOP
   if (activeModuleId === 'assessment') {
     return (
       <PilotAssessmentCertSopDetail
+=======
+  // If Hạng mục 4 is active, render Safety & Risk SOP specification
+  if (activeModuleId === 'safety') {
+    return (
+      <PilotSafetyRiskSopDetail
+>>>>>>> a50520115aba280b59e87103bb831044ffa57f65
         onBack={() => setActiveModuleId(null)}
         sessions={sessions}
         onOpenSessionFlow={onOpenSessionFlow}
       />
     );
   }
+<<<<<<< HEAD
+=======
+
+>>>>>>> a50520115aba280b59e87103bb831044ffa57f65
   return (
     <div className="space-y-4 antialiased" data-testid="sop-training-placeholder">
       {/* Banner Giới thiệu Placeholder */}
@@ -176,7 +191,11 @@ export function SopTrainingPlaceholder({
               </span>
               <span className="inline-flex items-center justify-center leading-none px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                 <AppIcon icon={Clock} size={12} className="mr-1" />
+<<<<<<< HEAD
                 Khung 5 hạng mục · Hạng mục 1, 2 &amp; 5 đã sẵn sàng
+=======
+                Khung 5 hạng mục · Hạng mục 1 &amp; 4 đã hoàn thiện
+>>>>>>> a50520115aba280b59e87103bb831044ffa57f65
               </span>
             </div>
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight m-0">
@@ -237,11 +256,15 @@ export function SopTrainingPlaceholder({
         <div className="mt-3.5 pt-3 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
           <AppIcon icon={Info} size={14} className="text-emerald-500 shrink-0" />
           <span>
+<<<<<<< HEAD
             <strong className="text-emerald-700 dark:text-emerald-300">
               Hạng mục 1, 2 &amp; 5 đã có nội dung chi tiết:
             </strong>{' '}
             Nhấp vào Hạng mục 1 (Tiêu chí dáng mi), Hạng mục 2 (SOP kỹ thuật 7 bước) hoặc Hạng mục 5 (Sát hạch tay nghề,
             CSAT &amp; Chứng chỉ) để xem chi tiết.
+=======
+            <strong className="text-emerald-700 dark:text-emerald-300">Hạng mục 1 &amp; Hạng mục 4 đã có nội dung chi tiết:</strong> Nhấp vào Hạng mục 1 (Tiêu chí dáng mi) hoặc Hạng mục 4 (Quản trị an toàn, rủi ro &amp; xử lý sự cố) bên dưới để xem quy trình SOP, checklist và biên bản an toàn.
+>>>>>>> a50520115aba280b59e87103bb831044ffa57f65
           </span>
         </div>
       </div>
@@ -252,30 +275,48 @@ export function SopTrainingPlaceholder({
           const IconComp = mod.icon;
           const badgeClass = BADGE_CLASSES[mod.badgeColor] || BADGE_CLASSES.blue;
           const isCriteriaModule = mod.id === 'criteria';
+<<<<<<< HEAD
           const isTechnicalModule = mod.id === 'technical-sop';
           const isAssessmentModule = mod.id === 'assessment';
           const isInteractiveModule = isCriteriaModule || isAssessmentModule;
           const isClickable = isInteractiveModule || (isTechnicalModule && Boolean(onViewSopDetail));
+=======
+          const isSafetyModule = mod.id === 'safety';
+>>>>>>> a50520115aba280b59e87103bb831044ffa57f65
 
           return (
             <Card
               key={mod.id}
               variant="outlined"
               className={`rounded-2xl transition-all duration-300 flex flex-col justify-between ${
+<<<<<<< HEAD
                 isClickable
                   ? isAssessmentModule
                     ? 'border-amber-500/40 bg-gradient-to-b from-amber-500/[0.04] to-transparent ring-1 ring-amber-500/20 hover:shadow-md cursor-pointer'
                     : 'border-emerald-500/40 bg-gradient-to-b from-emerald-500/[0.04] to-transparent ring-1 ring-emerald-500/20 hover:shadow-md cursor-pointer'
                   : 'border-slate-200 dark:border-slate-800 hover:shadow-md'
+=======
+                isCriteriaModule
+                  ? 'border-emerald-500/40 bg-gradient-to-b from-emerald-500/[0.04] to-transparent ring-1 ring-emerald-500/20 hover:shadow-md cursor-pointer'
+                  : isSafetyModule
+                    ? 'border-rose-500/40 bg-gradient-to-b from-rose-500/[0.04] to-transparent ring-1 ring-rose-500/20 hover:shadow-md cursor-pointer'
+                    : 'border-slate-200 dark:border-slate-800 hover:shadow-md'
+>>>>>>> a50520115aba280b59e87103bb831044ffa57f65
               }`}
               onClick={
                 isCriteriaModule
                   ? () => setActiveModuleId('criteria')
+<<<<<<< HEAD
                   : isAssessmentModule
                     ? () => setActiveModuleId('assessment')
                     : isTechnicalModule && onViewSopDetail
                       ? onViewSopDetail
                       : undefined
+=======
+                  : isSafetyModule
+                    ? () => setActiveModuleId('safety')
+                    : undefined
+>>>>>>> a50520115aba280b59e87103bb831044ffa57f65
               }
               data-testid={`training-module-card-${mod.id}`}
             >
@@ -285,11 +326,19 @@ export function SopTrainingPlaceholder({
                   <div className="flex items-center gap-2.5">
                     <div
                       className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+<<<<<<< HEAD
                         isClickable
                           ? isAssessmentModule
                             ? 'bg-amber-500 text-white shadow-xs'
                             : 'bg-emerald-500 text-white shadow-xs'
                           : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+=======
+                        isCriteriaModule
+                          ? 'bg-emerald-500 text-white shadow-xs'
+                          : isSafetyModule
+                            ? 'bg-rose-500 text-white shadow-xs'
+                            : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+>>>>>>> a50520115aba280b59e87103bb831044ffa57f65
                       }`}
                     >
                       <AppIcon icon={IconComp} size={16} />
@@ -360,16 +409,25 @@ export function SopTrainingPlaceholder({
                       <AppIcon icon={ArrowRight} size={12} />
                     </button>
                   </>
+<<<<<<< HEAD
                 ) : isTechnicalModule ? (
                   <>
                     <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
                       <Clock size={12} />
                       <span>Bản dự thảo 7 bước</span>
+=======
+                ) : isSafetyModule ? (
+                  <>
+                    <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 font-bold">
+                      <ShieldCheck size={12} />
+                      <span>Đã hoàn thiện nội dung</span>
+>>>>>>> a50520115aba280b59e87103bb831044ffa57f65
                     </span>
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
+<<<<<<< HEAD
                         onViewSopDetail?.();
                       }}
                       className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-bold inline-flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
@@ -395,6 +453,17 @@ export function SopTrainingPlaceholder({
                       <AppIcon icon={ArrowRight} size={11} />
                     </button>
                   </>
+=======
+                        setActiveModuleId('safety');
+                      }}
+                      className="text-rose-600 dark:text-rose-400 hover:text-rose-700 dark:hover:text-rose-300 font-bold inline-flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
+                      data-testid="view-safety-sop-btn"
+                    >
+                      <span>Xem chi tiết SOP</span>
+                      <AppIcon icon={ArrowRight} size={12} />
+                    </button>
+                  </>
+>>>>>>> a50520115aba280b59e87103bb831044ffa57f65
                 ) : (
                   <>
                     <span className="inline-flex items-center gap-1 text-slate-400">

@@ -190,7 +190,9 @@
         "fieldCount": 13,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["staffId"],
+        "relations": [
+          "staffId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -226,7 +228,9 @@
         "fieldCount": 9,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["activationId"],
+        "relations": [
+          "activationId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -244,7 +248,9 @@
         "fieldCount": 7,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["activationId"],
+        "relations": [
+          "activationId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -280,7 +286,9 @@
         "fieldCount": 7,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["decisionId"],
+        "relations": [
+          "decisionId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -298,7 +306,9 @@
         "fieldCount": 10,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["staffId"],
+        "relations": [
+          "staffId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -460,7 +470,9 @@
         "fieldCount": 17,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["departmentId"],
+        "relations": [
+          "departmentId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -478,7 +490,9 @@
         "fieldCount": 13,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["teamId"],
+        "relations": [
+          "teamId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -514,7 +528,9 @@
         "fieldCount": 6,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["policyId"],
+        "relations": [
+          "policyId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -568,7 +584,9 @@
         "fieldCount": 23,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["campaignId"],
+        "relations": [
+          "campaignId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -586,7 +604,9 @@
         "fieldCount": 11,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["batchId"],
+        "relations": [
+          "batchId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -694,7 +714,9 @@
         "fieldCount": 28,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["campaignId"],
+        "relations": [
+          "campaignId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -712,7 +734,10 @@
         "fieldCount": 12,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["campaignId", "campaignCustomerId"],
+        "relations": [
+          "campaignId",
+          "campaignCustomerId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -730,7 +755,9 @@
         "fieldCount": 13,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["campaignId"],
+        "relations": [
+          "campaignId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -748,7 +775,9 @@
         "fieldCount": 14,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["campaignId"],
+        "relations": [
+          "campaignId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -766,7 +795,10 @@
         "fieldCount": 11,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["campaignCustomerId", "touchpointId"],
+        "relations": [
+          "campaignCustomerId",
+          "touchpointId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -802,7 +834,9 @@
         "fieldCount": 22,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["happyCallTaskId"],
+        "relations": [
+          "happyCallTaskId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -820,7 +854,10 @@
         "fieldCount": 24,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["surveyRatingId", "happyCallTaskId"],
+        "relations": [
+          "surveyRatingId",
+          "happyCallTaskId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -838,7 +875,9 @@
         "fieldCount": 23,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["ticketId"],
+        "relations": [
+          "ticketId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -856,7 +895,9 @@
         "fieldCount": 8,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["ticketId"],
+        "relations": [
+          "ticketId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -892,7 +933,9 @@
         "fieldCount": 12,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["campaignId"],
+        "relations": [
+          "campaignId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1000,7 +1043,9 @@
         "fieldCount": 10,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["leadId"],
+        "relations": [
+          "leadId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1018,7 +1063,9 @@
         "fieldCount": 15,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["leadId"],
+        "relations": [
+          "leadId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1090,7 +1137,10 @@
         "fieldCount": 38,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["leadId", "workshopParticipantId"],
+        "relations": [
+          "leadId",
+          "workshopParticipantId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1126,7 +1176,9 @@
         "fieldCount": 11,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["assessmentId"],
+        "relations": [
+          "assessmentId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1162,7 +1214,10 @@
         "fieldCount": 14,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["campaignId", "leadId"],
+        "relations": [
+          "campaignId",
+          "leadId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1180,7 +1235,10 @@
         "fieldCount": 55,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["campaignId", "agendaTemplateId"],
+        "relations": [
+          "campaignId",
+          "agendaTemplateId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1216,7 +1274,9 @@
         "fieldCount": 10,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["templateId"],
+        "relations": [
+          "templateId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1234,7 +1294,11 @@
         "fieldCount": 41,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["workshopId", "campaignLeadId", "primaryInstructorId"],
+        "relations": [
+          "workshopId",
+          "campaignLeadId",
+          "primaryInstructorId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1252,7 +1316,9 @@
         "fieldCount": 12,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["workshopId"],
+        "relations": [
+          "workshopId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1288,7 +1354,9 @@
         "fieldCount": 11,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["templateId"],
+        "relations": [
+          "templateId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1306,7 +1374,10 @@
         "fieldCount": 8,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["participantId", "menuItemId"],
+        "relations": [
+          "participantId",
+          "menuItemId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1324,7 +1395,9 @@
         "fieldCount": 14,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["workshopId"],
+        "relations": [
+          "workshopId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1342,7 +1415,9 @@
         "fieldCount": 8,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["equipmentPackageId"],
+        "relations": [
+          "equipmentPackageId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1378,7 +1453,9 @@
         "fieldCount": 13,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["templateId"],
+        "relations": [
+          "templateId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1396,7 +1473,9 @@
         "fieldCount": 8,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["templatePackageId"],
+        "relations": [
+          "templatePackageId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1414,7 +1493,10 @@
         "fieldCount": 9,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["participantId", "equipmentPackageId"],
+        "relations": [
+          "participantId",
+          "equipmentPackageId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1432,7 +1514,9 @@
         "fieldCount": 13,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["workshopId"],
+        "relations": [
+          "workshopId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1450,7 +1534,9 @@
         "fieldCount": 8,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["designItemId"],
+        "relations": [
+          "designItemId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1486,7 +1572,9 @@
         "fieldCount": 12,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["templateId"],
+        "relations": [
+          "templateId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1504,7 +1592,9 @@
         "fieldCount": 8,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["templateItemId"],
+        "relations": [
+          "templateItemId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1522,7 +1612,10 @@
         "fieldCount": 9,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["participantId", "designItemId"],
+        "relations": [
+          "participantId",
+          "designItemId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1540,7 +1633,10 @@
         "fieldCount": 10,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["workshopId", "participantId"],
+        "relations": [
+          "workshopId",
+          "participantId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1558,7 +1654,9 @@
         "fieldCount": 11,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["participantId"],
+        "relations": [
+          "participantId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1576,7 +1674,9 @@
         "fieldCount": 11,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["participantId"],
+        "relations": [
+          "participantId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1594,7 +1694,9 @@
         "fieldCount": 20,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["workshopId"],
+        "relations": [
+          "workshopId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1612,7 +1714,10 @@
         "fieldCount": 10,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["workshopId", "agendaItemId"],
+        "relations": [
+          "workshopId",
+          "agendaItemId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1630,7 +1735,9 @@
         "fieldCount": 22,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["workshopId"],
+        "relations": [
+          "workshopId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1648,7 +1755,9 @@
         "fieldCount": 17,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["quizId"],
+        "relations": [
+          "quizId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1666,7 +1775,9 @@
         "fieldCount": 8,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["questionId"],
+        "relations": [
+          "questionId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1684,7 +1795,13 @@
         "fieldCount": 16,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["workshopId", "participantId", "quizId", "questionId", "optionId"],
+        "relations": [
+          "workshopId",
+          "participantId",
+          "quizId",
+          "questionId",
+          "optionId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1702,7 +1819,12 @@
         "fieldCount": 19,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["workshopId", "participantId", "quizId", "questionId"],
+        "relations": [
+          "workshopId",
+          "participantId",
+          "quizId",
+          "questionId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1720,7 +1842,12 @@
         "fieldCount": 18,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["workshopId", "participantId", "assessmentId", "instructorId"],
+        "relations": [
+          "workshopId",
+          "participantId",
+          "assessmentId",
+          "instructorId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1738,7 +1865,9 @@
         "fieldCount": 13,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["campaignId"],
+        "relations": [
+          "campaignId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1756,7 +1885,10 @@
         "fieldCount": 16,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["campaignLeadId", "touchpointId"],
+        "relations": [
+          "campaignLeadId",
+          "touchpointId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1792,7 +1924,9 @@
         "fieldCount": 13,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["payrollPeriodId"],
+        "relations": [
+          "payrollPeriodId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1810,7 +1944,9 @@
         "fieldCount": 16,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["payrollPeriodId"],
+        "relations": [
+          "payrollPeriodId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1828,7 +1964,9 @@
         "fieldCount": 12,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["payrollPeriodId"],
+        "relations": [
+          "payrollPeriodId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1846,7 +1984,9 @@
         "fieldCount": 8,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["settlementId"],
+        "relations": [
+          "settlementId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1882,7 +2022,9 @@
         "fieldCount": 15,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["caseId"],
+        "relations": [
+          "caseId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1900,7 +2042,10 @@
         "fieldCount": 21,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["caseId", "snapshotId"],
+        "relations": [
+          "caseId",
+          "snapshotId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1918,7 +2063,9 @@
         "fieldCount": 10,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["caseId"],
+        "relations": [
+          "caseId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1954,7 +2101,9 @@
         "fieldCount": 13,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["holidayId"],
+        "relations": [
+          "holidayId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1972,7 +2121,9 @@
         "fieldCount": 23,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["holidayId"],
+        "relations": [
+          "holidayId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1990,7 +2141,9 @@
         "fieldCount": 19,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["holidayId"],
+        "relations": [
+          "holidayId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2026,7 +2179,10 @@
         "fieldCount": 32,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["holidayId", "rosterId"],
+        "relations": [
+          "holidayId",
+          "rosterId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2044,7 +2200,10 @@
         "fieldCount": 9,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["holidayId", "ledgerId"],
+        "relations": [
+          "holidayId",
+          "ledgerId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2062,7 +2221,9 @@
         "fieldCount": 11,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["holidayId"],
+        "relations": [
+          "holidayId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2098,7 +2259,9 @@
         "fieldCount": 13,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["reportId"],
+        "relations": [
+          "reportId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2116,7 +2279,9 @@
         "fieldCount": 11,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["reportId"],
+        "relations": [
+          "reportId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2134,7 +2299,10 @@
         "fieldCount": 11,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["reportId", "commentId"],
+        "relations": [
+          "reportId",
+          "commentId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2152,7 +2320,9 @@
         "fieldCount": 10,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["reportId"],
+        "relations": [
+          "reportId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2170,7 +2340,9 @@
         "fieldCount": 10,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["reportId"],
+        "relations": [
+          "reportId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2206,7 +2378,9 @@
         "fieldCount": 9,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["jobId"],
+        "relations": [
+          "jobId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2260,7 +2434,9 @@
         "fieldCount": 7,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["workerId"],
+        "relations": [
+          "workerId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2296,7 +2472,9 @@
         "fieldCount": 6,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["conversationId"],
+        "relations": [
+          "conversationId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2314,7 +2492,9 @@
         "fieldCount": 16,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["reportId"],
+        "relations": [
+          "reportId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2332,7 +2512,9 @@
         "fieldCount": 19,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["reportId"],
+        "relations": [
+          "reportId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2350,7 +2532,9 @@
         "fieldCount": 45,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["reportId"],
+        "relations": [
+          "reportId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2458,7 +2642,9 @@
         "fieldCount": 10,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["gameId"],
+        "relations": [
+          "gameId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2476,7 +2662,10 @@
         "fieldCount": 16,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["gameId", "teamId"],
+        "relations": [
+          "gameId",
+          "teamId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2494,7 +2683,9 @@
         "fieldCount": 16,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["gameId"],
+        "relations": [
+          "gameId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2530,7 +2721,9 @@
         "fieldCount": 8,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["sessionId"],
+        "relations": [
+          "sessionId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2584,7 +2777,9 @@
         "fieldCount": 10,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["materialId"],
+        "relations": [
+          "materialId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2602,7 +2797,10 @@
         "fieldCount": 12,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["sessionId", "materialId"],
+        "relations": [
+          "sessionId",
+          "materialId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2638,7 +2836,10 @@
         "fieldCount": 14,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": ["sessionId", "stepTemplateId"],
+        "relations": [
+          "sessionId",
+          "stepTemplateId"
+        ],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -11784,6 +11985,48 @@
       }
     },
     {
+      "id": "route:GET:/api/pilot/material-sop",
+      "type": "FastifyRoute",
+      "label": "GET /api/pilot/material-sop",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/pilot/material-sop",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 142
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/material-sop",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/material-sop",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/material-sop",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 152
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/material-sop/review",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/material-sop/review",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/material-sop/review",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 162
+      }
+    },
+    {
       "id": "route:GET:/api/pilot/sop-steps",
       "type": "FastifyRoute",
       "label": "GET /api/pilot/sop-steps",
@@ -11794,7 +12037,7 @@
         "path": "/api/pilot/sop-steps",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 142
+        "line": 176
       }
     },
     {
@@ -11808,7 +12051,7 @@
         "path": "/api/pilot/sop-steps",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 152
+        "line": 186
       }
     },
     {
@@ -11822,7 +12065,7 @@
         "path": "/api/pilot/sop-steps/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 162
+        "line": 196
       }
     },
     {
@@ -11836,7 +12079,7 @@
         "path": "/api/pilot/sop-steps/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 177
+        "line": 211
       }
     },
     {
@@ -11850,7 +12093,7 @@
         "path": "/api/pilot/sop-steps/reorder",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 191
+        "line": 225
       }
     },
     {
@@ -11864,7 +12107,7 @@
         "path": "/api/pilot/sop-steps/seed-defaults",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 201
+        "line": 235
       }
     },
     {
@@ -11878,7 +12121,7 @@
         "path": "/api/pilot/sop-steps/empirical-stats",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 211
+        "line": 245
       }
     },
     {
@@ -11892,7 +12135,7 @@
         "path": "/api/pilot/assessment-criteria",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 225
+        "line": 259
       }
     },
     {
@@ -11906,7 +12149,7 @@
         "path": "/api/pilot/assessment-criteria",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 235
+        "line": 269
       }
     },
     {
@@ -11920,7 +12163,7 @@
         "path": "/api/pilot/assessment-criteria/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 245
+        "line": 279
       }
     },
     {
@@ -11934,7 +12177,7 @@
         "path": "/api/pilot/assessment-criteria/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 260
+        "line": 294
       }
     },
     {
@@ -11948,7 +12191,7 @@
         "path": "/api/pilot/assessment-criteria/reorder",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 274
+        "line": 308
       }
     },
     {
@@ -11962,7 +12205,7 @@
         "path": "/api/pilot/sessions/:id/assessment",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 285
+        "line": 319
       }
     },
     {
@@ -11976,7 +12219,7 @@
         "path": "/api/pilot/sessions/:id/ai-analyze",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 301
+        "line": 335
       }
     },
     {
@@ -11990,7 +12233,7 @@
         "path": "/api/pilot/sessions/:id/steps",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 321
+        "line": 355
       }
     },
     {
@@ -12004,7 +12247,7 @@
         "path": "/api/pilot/sessions/:id/steps/:stepId/start",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 336
+        "line": 370
       }
     },
     {
@@ -12018,7 +12261,7 @@
         "path": "/api/pilot/sessions/:id/steps/:stepId/finish",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 353
+        "line": 387
       }
     },
     {
@@ -12032,7 +12275,7 @@
         "path": "/api/pilot/sessions/:id/steps/:stepId/note",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 370
+        "line": 404
       }
     },
     {
@@ -12046,7 +12289,7 @@
         "path": "/api/pilot/sessions/:id/steps/:stepId/reset",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 387
+        "line": 421
       }
     },
     {
@@ -12060,7 +12303,7 @@
         "path": "/api/pilot/sessions",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 403
+        "line": 437
       }
     },
     {
@@ -12074,7 +12317,7 @@
         "path": "/api/pilot/metrics",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 414
+        "line": 448
       }
     },
     {
@@ -12088,7 +12331,7 @@
         "path": "/api/pilot/sessions",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 425
+        "line": 459
       }
     },
     {
@@ -12102,7 +12345,7 @@
         "path": "/api/pilot/sessions/:id/check-in",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 437
+        "line": 471
       }
     },
     {
@@ -12116,7 +12359,7 @@
         "path": "/api/pilot/sessions/:id/before-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 453
+        "line": 487
       }
     },
     {
@@ -12130,7 +12373,7 @@
         "path": "/api/pilot/sessions/:id/service-done",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 469
+        "line": 503
       }
     },
     {
@@ -12144,7 +12387,7 @@
         "path": "/api/pilot/sessions/:id/after-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 485
+        "line": 519
       }
     },
     {
@@ -12158,7 +12401,7 @@
         "path": "/api/pilot/sessions/:id/feedback",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 501
+        "line": 535
       }
     },
     {
@@ -12172,7 +12415,7 @@
         "path": "/api/pilot/sessions/:id/check-out",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 517
+        "line": 551
       }
     },
     {
@@ -12186,7 +12429,7 @@
         "path": "/api/pilot/upload-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 533
+        "line": 567
       }
     },
     {
@@ -12200,7 +12443,7 @@
         "path": "/api/pilot/sessions/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 544
+        "line": 578
       }
     },
     {
@@ -12214,7 +12457,7 @@
         "path": "/api/pilot/sessions/:id/deduct-stock",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 560
+        "line": 594
       }
     },
     {
@@ -12228,7 +12471,7 @@
         "path": "/api/pilot/inventory",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 575
+        "line": 609
       }
     },
     {
@@ -12242,7 +12485,7 @@
         "path": "/api/pilot/sessions/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 586
+        "line": 620
       }
     },
     {
@@ -13514,7 +13757,10 @@
       "metadata": {
         "routePath": "/academy/workshops/display/[code]",
         "apiCallsCount": 2,
-        "apiCalls": ["academyWorkshopsPublic.redeemDisplay", "academyWorkshopsPublic.getState"]
+        "apiCalls": [
+          "academyWorkshopsPublic.redeemDisplay",
+          "academyWorkshopsPublic.getState"
+        ]
       }
     },
     {
@@ -13526,7 +13772,9 @@
       "metadata": {
         "routePath": "/academy/workshops/join/[token]",
         "apiCallsCount": 1,
-        "apiCalls": ["academyWorkshopsPublic.redeemQr"]
+        "apiCalls": [
+          "academyWorkshopsPublic.redeemQr"
+        ]
       }
     },
     {
@@ -13627,7 +13875,11 @@
       "metadata": {
         "routePath": "/dashboard/academy-leads/campaigns",
         "apiCallsCount": 3,
-        "apiCalls": ["academySales.campaigns", "academySales.listStaff", "academySales.listCourses"]
+        "apiCalls": [
+          "academySales.campaigns",
+          "academySales.listStaff",
+          "academySales.listCourses"
+        ]
       }
     },
     {
@@ -13639,7 +13891,11 @@
       "metadata": {
         "routePath": "/dashboard/academy-leads/courses",
         "apiCallsCount": 3,
-        "apiCalls": ["academySales.listCourses", "academySales.updateCourse", "academySales.createCourse"]
+        "apiCalls": [
+          "academySales.listCourses",
+          "academySales.updateCourse",
+          "academySales.createCourse"
+        ]
       }
     },
     {
@@ -13709,7 +13965,10 @@
       "metadata": {
         "routePath": "/dashboard/academy-leads/payments",
         "apiCallsCount": 2,
-        "apiCalls": ["academySales.listTalentPaymentManagement", "academySales.recordTalentAssessmentPayment"]
+        "apiCalls": [
+          "academySales.listTalentPaymentManagement",
+          "academySales.recordTalentAssessmentPayment"
+        ]
       }
     },
     {
@@ -13721,7 +13980,9 @@
       "metadata": {
         "routePath": "/dashboard/academy-leads/workshops/[slug]/live",
         "apiCallsCount": 1,
-        "apiCalls": ["academySales.workshops"]
+        "apiCalls": [
+          "academySales.workshops"
+        ]
       }
     },
     {
@@ -13733,7 +13994,9 @@
       "metadata": {
         "routePath": "/dashboard/academy-leads/workshops/[slug]",
         "apiCallsCount": 1,
-        "apiCalls": ["academySales.workshops"]
+        "apiCalls": [
+          "academySales.workshops"
+        ]
       }
     },
     {
@@ -13745,7 +14008,9 @@
       "metadata": {
         "routePath": "/dashboard/academy-leads/workshops",
         "apiCallsCount": 1,
-        "apiCalls": ["academySales.workshops"]
+        "apiCalls": [
+          "academySales.workshops"
+        ]
       }
     },
     {
@@ -13757,7 +14022,9 @@
       "metadata": {
         "routePath": "/dashboard/appointments",
         "apiCallsCount": 1,
-        "apiCalls": ["customers.getMissedSummary"]
+        "apiCalls": [
+          "customers.getMissedSummary"
+        ]
       }
     },
     {
@@ -13769,7 +14036,9 @@
       "metadata": {
         "routePath": "/dashboard/architecture",
         "apiCallsCount": 1,
-        "apiCalls": ["auth.me"]
+        "apiCalls": [
+          "auth.me"
+        ]
       }
     },
     {
@@ -13793,7 +14062,9 @@
       "metadata": {
         "routePath": "/dashboard/branches",
         "apiCallsCount": 1,
-        "apiCalls": ["catalog.branches"]
+        "apiCalls": [
+          "catalog.branches"
+        ]
       }
     },
     {
@@ -13805,7 +14076,10 @@
       "metadata": {
         "routePath": "/dashboard/bug-reports",
         "apiCallsCount": 2,
-        "apiCalls": ["experienceJournal.list", "experienceJournal.triage"]
+        "apiCalls": [
+          "experienceJournal.list",
+          "experienceJournal.triage"
+        ]
       }
     },
     {
@@ -13894,7 +14168,10 @@
       "metadata": {
         "routePath": "/dashboard/cc",
         "apiCallsCount": 2,
-        "apiCalls": ["kpi.getCcXoayReport", "kpi.getCcLeaderboard"]
+        "apiCalls": [
+          "kpi.getCcXoayReport",
+          "kpi.getCcLeaderboard"
+        ]
       }
     },
     {
@@ -13966,7 +14243,9 @@
       "metadata": {
         "routePath": "/dashboard/design-system",
         "apiCallsCount": 1,
-        "apiCalls": ["auth.me"]
+        "apiCalls": [
+          "auth.me"
+        ]
       }
     },
     {
@@ -13990,7 +14269,11 @@
       "metadata": {
         "routePath": "/dashboard/fal",
         "apiCallsCount": 3,
-        "apiCalls": ["fal.listCases", "fal.submitLogExplanation", "fal.approveLog"]
+        "apiCalls": [
+          "fal.listCases",
+          "fal.submitLogExplanation",
+          "fal.approveLog"
+        ]
       }
     },
     {
@@ -14162,7 +14445,10 @@
       "metadata": {
         "routePath": "/dashboard",
         "apiCallsCount": 2,
-        "apiCalls": ["dashboard.getToday", "dashboard.getRevenueHourly"]
+        "apiCalls": [
+          "dashboard.getToday",
+          "dashboard.getRevenueHourly"
+        ]
       }
     },
     {
@@ -14174,7 +14460,10 @@
       "metadata": {
         "routePath": "/dashboard/payroll-pilot",
         "apiCallsCount": 2,
-        "apiCalls": ["payrollLedger.ccPilotDashboard", "payrollLedger.openCurrentCcPilotPeriod"]
+        "apiCalls": [
+          "payrollLedger.ccPilotDashboard",
+          "payrollLedger.openCurrentCcPilotPeriod"
+        ]
       }
     },
     {
@@ -14204,7 +14493,12 @@
       "metadata": {
         "routePath": "/dashboard/plans",
         "apiCallsCount": 4,
-        "apiCalls": ["plans.getWeekly", "plans.getSuggestions", "plans.create", "plans.confirm"]
+        "apiCalls": [
+          "plans.getWeekly",
+          "plans.getSuggestions",
+          "plans.create",
+          "plans.confirm"
+        ]
       }
     },
     {
@@ -14246,7 +14540,9 @@
       "metadata": {
         "routePath": "/dashboard/referrals",
         "apiCallsCount": 1,
-        "apiCalls": ["customers.getReferrals"]
+        "apiCalls": [
+          "customers.getReferrals"
+        ]
       }
     },
     {
@@ -14258,7 +14554,9 @@
       "metadata": {
         "routePath": "/dashboard/schedule-calendar",
         "apiCallsCount": 1,
-        "apiCalls": ["customers.getAppointments"]
+        "apiCalls": [
+          "customers.getAppointments"
+        ]
       }
     },
     {
@@ -14270,7 +14568,11 @@
       "metadata": {
         "routePath": "/dashboard/staff/menu-access",
         "apiCallsCount": 3,
-        "apiCalls": ["menuAccess.getConfiguration", "auth.me", "menuAccess.updatePolicy"]
+        "apiCalls": [
+          "menuAccess.getConfiguration",
+          "auth.me",
+          "menuAccess.updatePolicy"
+        ]
       }
     },
     {
@@ -14330,7 +14632,10 @@
       "metadata": {
         "routePath": "/dashboard/telesale-target",
         "apiCallsCount": 2,
-        "apiCalls": ["telesaleTarget.getMonths", "telesaleTarget.getOverview"]
+        "apiCalls": [
+          "telesaleTarget.getMonths",
+          "telesaleTarget.getOverview"
+        ]
       }
     },
     {
@@ -14366,7 +14671,10 @@
       "metadata": {
         "routePath": "/login",
         "apiCallsCount": 2,
-        "apiCalls": ["auth.google", "auth.login"]
+        "apiCalls": [
+          "auth.google",
+          "auth.login"
+        ]
       }
     },
     {
@@ -28283,6 +28591,102 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:SopItemReviewStatus",
+      "type": "SharedType",
+      "label": "SopItemReviewStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SopItemReviewStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SopDraftStatus",
+      "type": "SharedType",
+      "label": "SopDraftStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SopDraftStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ToolSanitizationClassification",
+      "type": "SharedType",
+      "label": "ToolSanitizationClassification",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ToolSanitizationClassification",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotSolutionNormItem",
+      "type": "SharedType",
+      "label": "PilotSolutionNormItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotSolutionNormItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotGlueRodStandardItem",
+      "type": "SharedType",
+      "label": "PilotGlueRodStandardItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotGlueRodStandardItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotSanitizationItem",
+      "type": "SharedType",
+      "label": "PilotSanitizationItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotSanitizationItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PilotMaterialSopDocument",
+      "type": "SharedType",
+      "label": "PilotMaterialSopDocument",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PilotMaterialSopDocument",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SavePilotMaterialSopRequest",
+      "type": "SharedType",
+      "label": "SavePilotMaterialSopRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SavePilotMaterialSopRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:PilotSopMaterialItem",
       "type": "SharedType",
       "label": "PilotSopMaterialItem",
@@ -38103,8 +38507,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 41927,
-        "lineCount": 1267,
+        "sizeBytes": 47410,
+        "lineCount": 1405,
         "ext": ".ts"
       }
     },
@@ -38116,8 +38520,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 69918,
-        "lineCount": 2033,
+        "sizeBytes": 87503,
+        "lineCount": 2459,
         "ext": ".ts"
       }
     },
@@ -38129,8 +38533,8 @@
       "filePath": "apps/api/src/modules/pilot/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 25755,
-        "lineCount": 600,
+        "sizeBytes": 27325,
+        "lineCount": 634,
         "ext": ".ts"
       }
     },
@@ -43823,8 +44227,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotAssessmentCertSopDetail.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 7876,
-        "lineCount": 196,
+        "sizeBytes": 7864,
+        "lineCount": 194,
         "ext": ".tsx"
       }
     },
@@ -43836,8 +44240,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotAssessmentCertSopDetail.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 70555,
-        "lineCount": 1295,
+        "sizeBytes": 71772,
+        "lineCount": 1352,
         "ext": ".tsx"
       }
     },
@@ -43920,6 +44324,32 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotMaterialSopModal.test.tsx",
+      "type": "File",
+      "label": "PilotMaterialSopModal.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotMaterialSopModal.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5928,
+        "lineCount": 159,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotMaterialSopModal.tsx",
+      "type": "File",
+      "label": "PilotMaterialSopModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotMaterialSopModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 66473,
+        "lineCount": 1405,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotMetricsGrid.tsx",
       "type": "File",
       "label": "PilotMetricsGrid.tsx",
@@ -43929,6 +44359,32 @@
       "metadata": {
         "sizeBytes": 10162,
         "lineCount": 197,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSafetyRiskSopDetail.test.tsx",
+      "type": "File",
+      "label": "PilotSafetyRiskSopDetail.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSafetyRiskSopDetail.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 5288,
+        "lineCount": 122,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSafetyRiskSopDetail.tsx",
+      "type": "File",
+      "label": "PilotSafetyRiskSopDetail.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSafetyRiskSopDetail.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 102679,
+        "lineCount": 1991,
         "ext": ".tsx"
       }
     },
@@ -44005,8 +44461,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/SopTrainingPlaceholder.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 4416,
-        "lineCount": 103,
+        "sizeBytes": 5859,
+        "lineCount": 134,
         "ext": ".tsx"
       }
     },
@@ -44018,8 +44474,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/SopTrainingPlaceholder.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 18403,
-        "lineCount": 387,
+        "sizeBytes": 21979,
+        "lineCount": 457,
         "ext": ".tsx"
       }
     },
@@ -44044,7 +44500,7 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/page.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1992,
+        "sizeBytes": 1993,
         "lineCount": 64,
         "ext": ".tsx"
       }
@@ -44057,8 +44513,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23066,
-        "lineCount": 561,
+        "sizeBytes": 23918,
+        "lineCount": 579,
         "ext": ".tsx"
       }
     },
@@ -46124,8 +46580,8 @@
       "filePath": "apps/web/lib/api/pilot.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9387,
-        "lineCount": 220,
+        "sizeBytes": 10157,
+        "lineCount": 238,
         "ext": ".ts"
       }
     },
@@ -47216,8 +47672,8 @@
       "filePath": "packages/shared/src/types/pilot.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 31657,
-        "lineCount": 751,
+        "sizeBytes": 34284,
+        "lineCount": 839,
         "ext": ".ts"
       }
     },
@@ -53002,6 +53458,27 @@
     {
       "id": "edge:route:POST:/api/pilot/materials/seed-defaults:ws:apps/api",
       "source": "route:POST:/api/pilot/materials/seed-defaults",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/pilot/material-sop:ws:apps/api",
+      "source": "route:GET:/api/pilot/material-sop",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/material-sop:ws:apps/api",
+      "source": "route:POST:/api/pilot/material-sop",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/material-sop/review:ws:apps/api",
+      "source": "route:POST:/api/pilot/material-sop/review",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -62394,6 +62871,62 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:SopItemReviewStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SopItemReviewStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SopDraftStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SopDraftStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ToolSanitizationClassification:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ToolSanitizationClassification",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotSolutionNormItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotSolutionNormItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotGlueRodStandardItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotGlueRodStandardItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotSanitizationItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotSanitizationItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PilotMaterialSopDocument:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PilotMaterialSopDocument",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SavePilotMaterialSopRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SavePilotMaterialSopRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:PilotSopMaterialItem:ws:packages/shared",
       "source": "type:@mos-lab/shared:PilotSopMaterialItem",
       "target": "ws:packages/shared",
@@ -71312,8 +71845,29 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotMaterialSopModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotMaterialSopModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotMetricsGrid.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotMetricsGrid.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSafetyRiskSopDetail.test.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSafetyRiskSopDetail.test.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSafetyRiskSopDetail.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotSafetyRiskSopDetail.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -86950,6 +87504,27 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/pilot/material-sop",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/pilot/material-sop",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/material-sop",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/material-sop",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/material-sop/review",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/material-sop/review",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/pilot/sop-steps",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/pilot/sop-steps",
@@ -92102,6 +92677,27 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/pilot/material-sop",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/pilot/material-sop",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/material-sop",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/material-sop",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/material-sop/review",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/material-sop/review",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/pilot/sop-steps",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/pilot/sop-steps",
@@ -93593,6 +94189,27 @@
       "label": "CALLS pilot.listSessions"
     },
     {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:GET:/api/pilot/material-sop",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:GET:/api/pilot/material-sop",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/material-sop",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/material-sop",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/material-sop/review",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/material-sop/review",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
       "id": "edge:page:/dashboard/pilot-dark-lashes:route:GET:/api/pilot/sop-steps",
       "source": "page:/dashboard/pilot-dark-lashes",
       "target": "route:GET:/api/pilot/sop-steps",
@@ -94053,6 +94670,13 @@
       "target": "route:GET:/api/kpi/leaderboard",
       "type": "API_CALL",
       "label": "CALLS postHub.getLeaderboard"
+    },
+    {
+      "id": "edge:page:/dashboard/post-hub:route:POST:/api/pilot/material-sop/review",
+      "source": "page:/dashboard/post-hub",
+      "target": "route:POST:/api/pilot/material-sop/review",
+      "type": "API_CALL",
+      "label": "CALLS postHub.review"
     },
     {
       "id": "edge:page:/dashboard/post-hub:route:GET:/api/post-hub/leaderboard",
@@ -100607,6 +101231,27 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/pilot/material-sop",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/pilot/material-sop",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/material-sop",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/material-sop",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/material-sop/review",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/material-sop/review",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/pilot/sop-steps",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/pilot/sop-steps",
@@ -101553,31 +102198,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3649,
-    "totalEdges": 7724,
+    "totalNodes": 3664,
+    "totalEdges": 7751,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 176,
-      "FastifyRoute": 736,
+      "FastifyRoute": 739,
       "Component": 63,
-      "SharedType": 1323,
+      "SharedType": 1331,
       "DesignToken": 12,
       "UIComponent": 317,
-      "File": 1019
+      "File": 1023
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1511,
-      "HANDLES_ROUTE": 736,
+      "EXPORTS": 1519,
+      "HANDLES_ROUTE": 739,
       "RENDERS": 380,
       "USES_TOKEN": 319,
-      "IMPORTS": 569,
+      "IMPORTS": 572,
       "QUERIES_MODEL": 422,
-      "API_CALL": 3787
+      "API_CALL": 3800
     },
-    "fastifyRouteCount": 741,
+    "fastifyRouteCount": 744,
     "prismaModelCount": 176,
     "nextPageCount": 63,
-    "sharedTypeCount": 1323
+    "sharedTypeCount": 1331
   },
   "routes": [
     {
@@ -105873,6 +106518,27 @@
     },
     {
       "method": "GET",
+      "path": "/api/pilot/material-sop",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/material-sop",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/material-sop/review",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "GET",
       "path": "/api/pilot/sop-steps",
       "filePath": "apps/api/src/modules/pilot/routes.ts",
       "handler": "inlineHandler",
@@ -106848,7 +107514,9 @@
       "fieldCount": 13,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["staffId"]
+      "relations": [
+        "staffId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -106866,7 +107534,9 @@
       "fieldCount": 9,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["activationId"]
+      "relations": [
+        "activationId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -106875,7 +107545,9 @@
       "fieldCount": 7,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["activationId"]
+      "relations": [
+        "activationId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -106893,7 +107565,9 @@
       "fieldCount": 7,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["decisionId"]
+      "relations": [
+        "decisionId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -106902,7 +107576,9 @@
       "fieldCount": 10,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["staffId"]
+      "relations": [
+        "staffId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -106983,7 +107659,9 @@
       "fieldCount": 17,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["departmentId"]
+      "relations": [
+        "departmentId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -106992,7 +107670,9 @@
       "fieldCount": 13,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["teamId"]
+      "relations": [
+        "teamId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107010,7 +107690,9 @@
       "fieldCount": 6,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["policyId"]
+      "relations": [
+        "policyId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107037,7 +107719,9 @@
       "fieldCount": 23,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["campaignId"]
+      "relations": [
+        "campaignId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107046,7 +107730,9 @@
       "fieldCount": 11,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["batchId"]
+      "relations": [
+        "batchId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107100,7 +107786,9 @@
       "fieldCount": 28,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["campaignId"]
+      "relations": [
+        "campaignId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107109,7 +107797,10 @@
       "fieldCount": 12,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["campaignId", "campaignCustomerId"]
+      "relations": [
+        "campaignId",
+        "campaignCustomerId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107118,7 +107809,9 @@
       "fieldCount": 13,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["campaignId"]
+      "relations": [
+        "campaignId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107127,7 +107820,9 @@
       "fieldCount": 14,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["campaignId"]
+      "relations": [
+        "campaignId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107136,7 +107831,10 @@
       "fieldCount": 11,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["campaignCustomerId", "touchpointId"]
+      "relations": [
+        "campaignCustomerId",
+        "touchpointId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107154,7 +107852,9 @@
       "fieldCount": 22,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["happyCallTaskId"]
+      "relations": [
+        "happyCallTaskId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107163,7 +107863,10 @@
       "fieldCount": 24,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["surveyRatingId", "happyCallTaskId"]
+      "relations": [
+        "surveyRatingId",
+        "happyCallTaskId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107172,7 +107875,9 @@
       "fieldCount": 23,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["ticketId"]
+      "relations": [
+        "ticketId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107181,7 +107886,9 @@
       "fieldCount": 8,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["ticketId"]
+      "relations": [
+        "ticketId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107199,7 +107906,9 @@
       "fieldCount": 12,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["campaignId"]
+      "relations": [
+        "campaignId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107253,7 +107962,9 @@
       "fieldCount": 10,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["leadId"]
+      "relations": [
+        "leadId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107262,7 +107973,9 @@
       "fieldCount": 15,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["leadId"]
+      "relations": [
+        "leadId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107298,7 +108011,10 @@
       "fieldCount": 38,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["leadId", "workshopParticipantId"]
+      "relations": [
+        "leadId",
+        "workshopParticipantId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107316,7 +108032,9 @@
       "fieldCount": 11,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["assessmentId"]
+      "relations": [
+        "assessmentId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107334,7 +108052,10 @@
       "fieldCount": 14,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["campaignId", "leadId"]
+      "relations": [
+        "campaignId",
+        "leadId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107343,7 +108064,10 @@
       "fieldCount": 55,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["campaignId", "agendaTemplateId"]
+      "relations": [
+        "campaignId",
+        "agendaTemplateId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107361,7 +108085,9 @@
       "fieldCount": 10,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["templateId"]
+      "relations": [
+        "templateId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107370,7 +108096,11 @@
       "fieldCount": 41,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["workshopId", "campaignLeadId", "primaryInstructorId"]
+      "relations": [
+        "workshopId",
+        "campaignLeadId",
+        "primaryInstructorId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107379,7 +108109,9 @@
       "fieldCount": 12,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["workshopId"]
+      "relations": [
+        "workshopId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107397,7 +108129,9 @@
       "fieldCount": 11,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["templateId"]
+      "relations": [
+        "templateId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107406,7 +108140,10 @@
       "fieldCount": 8,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["participantId", "menuItemId"]
+      "relations": [
+        "participantId",
+        "menuItemId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107415,7 +108152,9 @@
       "fieldCount": 14,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["workshopId"]
+      "relations": [
+        "workshopId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107424,7 +108163,9 @@
       "fieldCount": 8,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["equipmentPackageId"]
+      "relations": [
+        "equipmentPackageId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107442,7 +108183,9 @@
       "fieldCount": 13,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["templateId"]
+      "relations": [
+        "templateId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107451,7 +108194,9 @@
       "fieldCount": 8,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["templatePackageId"]
+      "relations": [
+        "templatePackageId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107460,7 +108205,10 @@
       "fieldCount": 9,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["participantId", "equipmentPackageId"]
+      "relations": [
+        "participantId",
+        "equipmentPackageId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107469,7 +108217,9 @@
       "fieldCount": 13,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["workshopId"]
+      "relations": [
+        "workshopId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107478,7 +108228,9 @@
       "fieldCount": 8,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["designItemId"]
+      "relations": [
+        "designItemId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107496,7 +108248,9 @@
       "fieldCount": 12,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["templateId"]
+      "relations": [
+        "templateId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107505,7 +108259,9 @@
       "fieldCount": 8,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["templateItemId"]
+      "relations": [
+        "templateItemId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107514,7 +108270,10 @@
       "fieldCount": 9,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["participantId", "designItemId"]
+      "relations": [
+        "participantId",
+        "designItemId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107523,7 +108282,10 @@
       "fieldCount": 10,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["workshopId", "participantId"]
+      "relations": [
+        "workshopId",
+        "participantId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107532,7 +108294,9 @@
       "fieldCount": 11,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["participantId"]
+      "relations": [
+        "participantId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107541,7 +108305,9 @@
       "fieldCount": 11,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["participantId"]
+      "relations": [
+        "participantId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107550,7 +108316,9 @@
       "fieldCount": 20,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["workshopId"]
+      "relations": [
+        "workshopId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107559,7 +108327,10 @@
       "fieldCount": 10,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["workshopId", "agendaItemId"]
+      "relations": [
+        "workshopId",
+        "agendaItemId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107568,7 +108339,9 @@
       "fieldCount": 22,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["workshopId"]
+      "relations": [
+        "workshopId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107577,7 +108350,9 @@
       "fieldCount": 17,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["quizId"]
+      "relations": [
+        "quizId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107586,7 +108361,9 @@
       "fieldCount": 8,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["questionId"]
+      "relations": [
+        "questionId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107595,7 +108372,13 @@
       "fieldCount": 16,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["workshopId", "participantId", "quizId", "questionId", "optionId"]
+      "relations": [
+        "workshopId",
+        "participantId",
+        "quizId",
+        "questionId",
+        "optionId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107604,7 +108387,12 @@
       "fieldCount": 19,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["workshopId", "participantId", "quizId", "questionId"]
+      "relations": [
+        "workshopId",
+        "participantId",
+        "quizId",
+        "questionId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107613,7 +108401,12 @@
       "fieldCount": 18,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["workshopId", "participantId", "assessmentId", "instructorId"]
+      "relations": [
+        "workshopId",
+        "participantId",
+        "assessmentId",
+        "instructorId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107622,7 +108415,9 @@
       "fieldCount": 13,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["campaignId"]
+      "relations": [
+        "campaignId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107631,7 +108426,10 @@
       "fieldCount": 16,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["campaignLeadId", "touchpointId"]
+      "relations": [
+        "campaignLeadId",
+        "touchpointId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107649,7 +108447,9 @@
       "fieldCount": 13,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["payrollPeriodId"]
+      "relations": [
+        "payrollPeriodId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107658,7 +108458,9 @@
       "fieldCount": 16,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["payrollPeriodId"]
+      "relations": [
+        "payrollPeriodId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107667,7 +108469,9 @@
       "fieldCount": 12,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["payrollPeriodId"]
+      "relations": [
+        "payrollPeriodId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107676,7 +108480,9 @@
       "fieldCount": 8,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["settlementId"]
+      "relations": [
+        "settlementId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107694,7 +108500,9 @@
       "fieldCount": 15,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["caseId"]
+      "relations": [
+        "caseId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107703,7 +108511,10 @@
       "fieldCount": 21,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["caseId", "snapshotId"]
+      "relations": [
+        "caseId",
+        "snapshotId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107712,7 +108523,9 @@
       "fieldCount": 10,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["caseId"]
+      "relations": [
+        "caseId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107730,7 +108543,9 @@
       "fieldCount": 13,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["holidayId"]
+      "relations": [
+        "holidayId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107739,7 +108554,9 @@
       "fieldCount": 23,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["holidayId"]
+      "relations": [
+        "holidayId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107748,7 +108565,9 @@
       "fieldCount": 19,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["holidayId"]
+      "relations": [
+        "holidayId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107766,7 +108585,10 @@
       "fieldCount": 32,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["holidayId", "rosterId"]
+      "relations": [
+        "holidayId",
+        "rosterId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107775,7 +108597,10 @@
       "fieldCount": 9,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["holidayId", "ledgerId"]
+      "relations": [
+        "holidayId",
+        "ledgerId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107784,7 +108609,9 @@
       "fieldCount": 11,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["holidayId"]
+      "relations": [
+        "holidayId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107802,7 +108629,9 @@
       "fieldCount": 13,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["reportId"]
+      "relations": [
+        "reportId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107811,7 +108640,9 @@
       "fieldCount": 11,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["reportId"]
+      "relations": [
+        "reportId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107820,7 +108651,10 @@
       "fieldCount": 11,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["reportId", "commentId"]
+      "relations": [
+        "reportId",
+        "commentId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107829,7 +108663,9 @@
       "fieldCount": 10,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["reportId"]
+      "relations": [
+        "reportId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107838,7 +108674,9 @@
       "fieldCount": 10,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["reportId"]
+      "relations": [
+        "reportId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107856,7 +108694,9 @@
       "fieldCount": 9,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["jobId"]
+      "relations": [
+        "jobId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107883,7 +108723,9 @@
       "fieldCount": 7,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["workerId"]
+      "relations": [
+        "workerId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107901,7 +108743,9 @@
       "fieldCount": 6,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["conversationId"]
+      "relations": [
+        "conversationId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107910,7 +108754,9 @@
       "fieldCount": 16,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["reportId"]
+      "relations": [
+        "reportId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107919,7 +108765,9 @@
       "fieldCount": 19,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["reportId"]
+      "relations": [
+        "reportId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107928,7 +108776,9 @@
       "fieldCount": 45,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["reportId"]
+      "relations": [
+        "reportId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107982,7 +108832,9 @@
       "fieldCount": 10,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["gameId"]
+      "relations": [
+        "gameId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -107991,7 +108843,10 @@
       "fieldCount": 16,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["gameId", "teamId"]
+      "relations": [
+        "gameId",
+        "teamId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -108000,7 +108855,9 @@
       "fieldCount": 16,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["gameId"]
+      "relations": [
+        "gameId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -108018,7 +108875,9 @@
       "fieldCount": 8,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["sessionId"]
+      "relations": [
+        "sessionId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -108045,7 +108904,9 @@
       "fieldCount": 10,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["materialId"]
+      "relations": [
+        "materialId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -108054,7 +108915,10 @@
       "fieldCount": 12,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["sessionId", "materialId"]
+      "relations": [
+        "sessionId",
+        "materialId"
+      ]
     },
     {
       "dbSource": "crm",
@@ -108072,7 +108936,10 @@
       "fieldCount": 14,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": ["sessionId", "stepTemplateId"]
+      "relations": [
+        "sessionId",
+        "stepTemplateId"
+      ]
     },
     {
       "dbSource": "crm",
