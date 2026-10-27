@@ -23,6 +23,7 @@ import { MosChatMobilePinnedTab } from './MosChatMobilePinnedTab';
 import { MosChatMobileTaskDetailSheet } from './MosChatMobileTaskDetailSheet';
 import { MosChatMobileEditTaskModal } from './MosChatMobileEditTaskModal';
 import { MosChatMobileNegotiateTaskModal } from './MosChatMobileNegotiateTaskModal';
+import { MosChatMobileDateTimePicker } from './MosChatMobileDateTimePicker';
 import { MosChatMobileMissionModal } from './MosChatMobileMissionModal';
 import { MosChatMobileStickerSheet } from './MosChatMobileStickerSheet';
 import { MosChatMobileEditModal } from './MosChatMobileEditModal';
@@ -720,8 +721,11 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
         okText={editingTaskForModal ? 'Lưu thay đổi' : 'Tạo công việc'}
         cancelText="Hủy"
         centered
+        width="calc(100vw - 24px)"
+        style={{ maxWidth: 440, margin: '0 auto' }}
+        className="mos-mobile-task-modal"
       >
-        <div className="space-y-3 py-2">
+        <div className="space-y-3.5 py-2">
           <div>
             <label className="text-xs font-semibold text-slate-300 block mb-1">Nội dung công việc *</label>
             <Input.TextArea
@@ -751,28 +755,12 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1">Thời hạn hoàn thành (Deadline)</label>
-            <div className="grid grid-cols-2 gap-1.5 mb-2">
-              {DEADLINE_PRESETS.slice(0, 4).map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => {
-                    const d = p.getDate();
-                    setTaskDueAt(d ? d.toISOString() : null);
-                  }}
-                  className="px-2.5 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700"
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-            <DatePicker
-              showTime
-              format="HH:mm DD/MM/YYYY"
-              className="w-full"
-              value={taskDueAt ? dayjs(taskDueAt) : null}
-              onChange={(d) => setTaskDueAt(d ? d.toISOString() : null)}
+            <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+              Thời hạn hoàn thành (Deadline)
+            </label>
+            <MosChatMobileDateTimePicker
+              value={taskDueAt}
+              onChange={(d) => setTaskDueAt(d)}
               placeholder="Hoặc chọn ngày giờ cụ thể"
             />
           </div>
@@ -784,9 +772,9 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
               value={taskPriority}
               onChange={(val) => setTaskPriority(val)}
               options={[
-                { value: 'NORMAL', label: 'Bình thường' },
-                { value: 'HIGH', label: 'Ưu tiên cao' },
-                { value: 'URGENT', label: 'Khẩn cấp' },
+                { value: 'NORMAL', label: 'P2 · Bình thường' },
+                { value: 'HIGH', label: 'P1 · Ưu tiên cao' },
+                { value: 'URGENT', label: 'P0 · Khẩn cấp' },
               ]}
             />
           </div>
