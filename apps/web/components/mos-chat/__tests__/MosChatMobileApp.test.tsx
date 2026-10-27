@@ -946,6 +946,67 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     });
   });
 
+  it('allows selecting deadline preset and custom date on iPhone task modal (MOS-BUG-157)', async () => {
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Shop Operations')).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByText('Shop Operations'));
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Nhắn tin trong #Shop Operations/i)).toBeTruthy();
+    });
+
+    // Open action sheet (+)
+    const plusBtn = screen.getByRole('button', { name: 'Tác vụ đính kèm' });
+    fireEvent.click(plusBtn);
+
+    // Tap "Giao việc & Hạn chót"
+    await waitFor(() => {
+      expect(screen.getByText('Giao việc & Hạn chót')).toBeTruthy();
+    });
+    fireEvent.click(screen.getByText('Giao việc & Hạn chót'));
+
+    // Verify modal appears
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Nhập chi tiết công việc cần giao...')).toBeTruthy();
+    });
+
+    // Enter title
+    const titleInput = screen.getByPlaceholderText('Nhập chi tiết công việc cần giao...');
+    fireEvent.change(titleInput, { target: { value: 'Task with deadline preset' } });
+
+    // Tap preset "17:30 hôm nay"
+    const presetBtn = screen.getByText('17:30 hôm nay');
+    expect(presetBtn).toBeInTheDocument();
+    fireEvent.click(presetBtn);
+
+    // Verify deadline display is updated with clear button
+    await waitFor(() => {
+      expect(screen.getByLabelText('Xóa hạn chót')).toBeInTheDocument();
+    });
+
+    // Submit task
+    const submitBtn = screen.getByRole('button', { name: 'Tạo công việc' });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(apiClient.chat.createTask).toHaveBeenCalledWith(
+        expect.objectContaining({
+          conversationId: 'space-cc',
+          title: 'Task with deadline preset',
+          dueAt: expect.any(String),
+        })
+      );
+    });
+  });
+
   it('opens Task Detail Bottom Sheet when tapping on task card without toggling done (MOS-FEAT-150)', async () => {
     render(
       <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>

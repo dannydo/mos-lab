@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Modal, Input, DatePicker, message as antdMessage } from 'antd';
+import { Modal, Input, message as antdMessage } from 'antd';
 import dayjs from 'dayjs';
 import { Handshake, Clock, AlertCircle } from 'lucide-react';
 import type { MosChatTaskItem } from '@mos-lab/shared';
+import { MosChatMobileDateTimePicker } from './MosChatMobileDateTimePicker';
 
 export interface MosChatMobileNegotiateTaskModalProps {
   task: MosChatTaskItem | null;
@@ -91,6 +92,9 @@ export const MosChatMobileNegotiateTaskModal: React.FC<MosChatMobileNegotiateTas
       okText="Gửi đề xuất dời hạn"
       cancelText="Hủy"
       centered
+      width="calc(100vw - 24px)"
+      style={{ maxWidth: 440, margin: '0 auto' }}
+      className="mos-mobile-task-modal"
     >
       <div className="space-y-3.5 py-2">
         {/* Task summary */}
@@ -109,39 +113,35 @@ export const MosChatMobileNegotiateTaskModal: React.FC<MosChatMobileNegotiateTas
 
         {/* Proposed Deadline */}
         <div>
-          <label className="text-xs font-semibold text-slate-300 block mb-1">
+          <label className="text-xs font-semibold text-slate-300 block mb-1.5">
             Thời hạn bạn muốn đề xuất dời sang *
           </label>
-          <div className="grid grid-cols-3 gap-1.5 mb-2">
-            <button
-              type="button"
-              onClick={() => handleQuickAdd(2)}
-              className="px-2 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 active:scale-95 transition-transform"
-            >
-              +2 giờ
-            </button>
-            <button
-              type="button"
-              onClick={handleSetEndOfDay}
-              className="px-2 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 active:scale-95 transition-transform"
-            >
-              18:00 Hôm nay
-            </button>
-            <button
-              type="button"
-              onClick={handleSetTomorrow}
-              className="px-2 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 active:scale-95 transition-transform"
-            >
-              12:00 Ngày mai
-            </button>
-          </div>
-          <DatePicker
-            showTime
-            format="HH:mm DD/MM/YYYY"
-            className="w-full"
+          <MosChatMobileDateTimePicker
             value={proposedDeadline}
-            onChange={(d) => setProposedDeadline(d)}
+            onChange={(d) => setProposedDeadline(d ? dayjs(d) : null)}
             placeholder="Chọn ngày giờ đề xuất"
+            presets={[
+              {
+                id: 'plus-2h',
+                label: '+2 giờ',
+                getDate: () => dayjs().add(2, 'hour'),
+              },
+              {
+                id: 'eod-today',
+                label: '18:00 Hôm nay',
+                getDate: () => {
+                  const now = dayjs();
+                  let t = now.hour(18).minute(0).second(0);
+                  if (t.isBefore(now)) t = t.add(1, 'day');
+                  return t;
+                },
+              },
+              {
+                id: 'noon-tomorrow',
+                label: '12:00 Ngày mai',
+                getDate: () => dayjs().add(1, 'day').hour(12).minute(0).second(0),
+              },
+            ]}
           />
         </div>
 

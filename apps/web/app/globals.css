@@ -3278,6 +3278,118 @@ body {
   opacity: 1 !important;
 }
 
+/* ==========================================================================
+   Mobile DatePicker & Task Modal Responsiveness (MOS-BUG-157)
+   ========================================================================== */
+@media (max-width: 640px) {
+  /* Prevent DatePicker dropdown from overflowing off-screen on mobile */
+  .ant-picker-dropdown {
+    max-width: calc(100vw - 16px) !important;
+    left: 8px !important;
+    right: 8px !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+  }
+
+  .ant-picker-dropdown .ant-picker-panel-container {
+    max-width: 100% !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  .ant-picker-dropdown .ant-picker-panels {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  .ant-picker-dropdown .ant-picker-panel {
+    width: 100% !important;
+  }
+
+  .ant-picker-dropdown .ant-picker-date-panel {
+    width: 100% !important;
+  }
+
+  .ant-picker-dropdown .ant-picker-date-panel .ant-picker-header {
+    padding: 4px 8px !important;
+  }
+
+  .ant-picker-dropdown .ant-picker-date-panel .ant-picker-body {
+    padding: 4px 6px !important;
+  }
+
+  .ant-picker-dropdown .ant-picker-content {
+    width: 100% !important;
+    table-layout: fixed !important;
+  }
+
+  .ant-picker-dropdown .ant-picker-content th,
+  .ant-picker-dropdown .ant-picker-content td {
+    padding: 2px 1px !important;
+  }
+
+  .ant-picker-dropdown .ant-picker-cell-inner {
+    min-width: 28px !important;
+    height: 28px !important;
+    line-height: 28px !important;
+    font-size: 13px !important;
+    padding: 0 !important;
+    margin: 0 auto !important;
+  }
+
+  .ant-picker-dropdown .ant-picker-time-panel {
+    width: 100% !important;
+    border-left: none !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+    max-height: 140px !important;
+  }
+
+  .ant-picker-dropdown .ant-picker-footer {
+    width: 100% !important;
+    padding: 6px 12px !important;
+  }
+
+  /* Mobile Task Modal styling */
+  .dark-theme .mos-mobile-task-modal .ant-modal-content {
+    padding: 18px 16px !important;
+    border-radius: 20px !important;
+    background: #0f172a !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .light-theme .mos-mobile-task-modal .ant-modal-content {
+    padding: 18px 16px !important;
+    border-radius: 20px !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  }
+
+  .mos-mobile-task-modal .ant-modal-header {
+    background: transparent !important;
+    margin-bottom: 12px !important;
+  }
+
+  .dark-theme .mos-mobile-task-modal .ant-modal-title {
+    color: #f1f5f9 !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+  }
+
+  .light-theme .mos-mobile-task-modal .ant-modal-title {
+    color: #0f172a !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+  }
+
+  .mos-mobile-task-modal .ant-modal-footer {
+    margin-top: 16px !important;
+    display: flex !important;
+    gap: 8px !important;
+    justify-content: flex-end !important;
+  }
+}
+
 /* Bulletproof Avatar fallback styles for legacy Chromebooks / Chrome 91 */
 .avatar-breath {
   width: 32px !important;

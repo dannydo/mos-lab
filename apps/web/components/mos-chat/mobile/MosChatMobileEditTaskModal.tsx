@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Modal, Input, Select, DatePicker } from 'antd';
+import { Modal, Input, Select } from 'antd';
 import dayjs from 'dayjs';
 import type { MosChatTaskItem, MosChatTaskPriority, SafeAny } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
 import { DEADLINE_PRESETS } from '../constants/chat-constants';
+import { MosChatMobileDateTimePicker } from './MosChatMobileDateTimePicker';
 
 export interface MosChatMobileEditTaskModalProps {
   task: MosChatTaskItem | null;
@@ -137,8 +138,11 @@ export const MosChatMobileEditTaskModal: React.FC<MosChatMobileEditTaskModalProp
       okText="Lưu thay đổi"
       cancelText="Hủy"
       centered
+      width="calc(100vw - 24px)"
+      style={{ maxWidth: 440, margin: '0 auto' }}
+      className="mos-mobile-task-modal"
     >
-      <div className="space-y-3 py-2">
+      <div className="space-y-3.5 py-2">
         <div>
           <label className="text-xs font-semibold text-slate-300 block mb-1">Nội dung công việc *</label>
           <Input.TextArea
@@ -168,28 +172,12 @@ export const MosChatMobileEditTaskModal: React.FC<MosChatMobileEditTaskModalProp
         </div>
 
         <div>
-          <label className="text-xs font-semibold text-slate-300 block mb-1">Thời hạn hoàn thành (Deadline)</label>
-          <div className="grid grid-cols-2 gap-1.5 mb-2">
-            {DEADLINE_PRESETS.slice(0, 4).map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => {
-                  const d = p.getDate();
-                  setDueAt(d ? d.toISOString() : null);
-                }}
-                className="px-2.5 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 active:scale-95 transition-transform"
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-          <DatePicker
-            showTime
-            format="HH:mm DD/MM/YYYY"
-            className="w-full"
-            value={dueAt ? dayjs(dueAt) : null}
-            onChange={(d) => setDueAt(d ? d.toISOString() : null)}
+          <label className="text-xs font-semibold text-slate-300 block mb-1.5">
+            Thời hạn hoàn thành (Deadline)
+          </label>
+          <MosChatMobileDateTimePicker
+            value={dueAt}
+            onChange={(d) => setDueAt(d)}
             placeholder="Hoặc chọn ngày giờ cụ thể"
           />
         </div>
