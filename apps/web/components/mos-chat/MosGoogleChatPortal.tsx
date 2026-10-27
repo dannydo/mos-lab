@@ -155,6 +155,7 @@ import type {
   MosChatStaffMember,
   MosChatTaskItem,
   MosChatTaskPriority,
+  UpdateMosChatTaskRequest,
   MosChatUserSidebarPrefs,
   MosChatWorkflowInstance,
   MosChatWorkflowTemplate,
@@ -5689,9 +5690,27 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       setActiveAlertTask(null);
     }
     try {
-      await apiClient.chat.updateTask(taskId, { done: nextDone });
+      const res = await apiClient.chat.updateTask(taskId, { done: nextDone });
+      if (res && res.task) {
+        setTasks((prev) => prev.map((t) => (t.id === taskId ? res.task : t)));
+      }
     } catch (_) {}
   };
+
+  const handleUpdateTask = useCallback(
+    async (taskId: string, payload: UpdateMosChatTaskRequest) => {
+      try {
+        const res = await apiClient.chat.updateTask(taskId, payload);
+        if (res && res.task) {
+          setTasks((prev) => prev.map((t) => (t.id === taskId ? res.task : t)));
+        }
+      } catch (err: any) {
+        console.error('handleUpdateTask error:', err);
+        antdMessage.error(err?.message || 'Không thể cập nhật công việc');
+      }
+    },
+    [antdMessage]
+  );
 
   const handleSnoozeTask = async (taskId: string, snoozeSec = 600) => {
     const nextRemindAt = new Date(Date.now() + snoozeSec * 1000).toISOString();
@@ -6846,6 +6865,31 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 <span>{priorityCode}</span>
               </span>
             </Tooltip>
+
+            {/* Checklist progress pill */}
+            {task.checklist &&
+              task.checklist.length > 0 &&
+              (() => {
+                const chkTotal = task.checklist.length;
+                const chkDone = task.checklist.filter((c) => c.done).length;
+                const isAllDone = chkDone === chkTotal;
+                return (
+                  <Tooltip title={`Tiến độ checklist: ${chkDone}/${chkTotal} việc hoàn thành`}>
+                    <span
+                      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold tabular-nums cursor-default ${
+                        isAllDone
+                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                          : 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                      }`}
+                    >
+                      <ListTodo size={9} />
+                      <span>
+                        {chkDone}/{chkTotal}
+                      </span>
+                    </span>
+                  </Tooltip>
+                );
+              })()}
 
             {/* Overdue alert badge */}
             {deadlineInfo?.isOverdue && !isDone && (
@@ -10330,6 +10374,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               movingThreadItemKey={movingThreadItemKey}
               openMovePopoverKey={openMovePopoverKey}
               setOpenMovePopoverKey={setOpenMovePopoverKey}
+              handleUpdateTask={handleUpdateTask}
+              renderTaskCard={renderTaskCard}
             />
           </>
         )}

@@ -8112,7 +8112,7 @@
         "path": "/api/chat/bootstrap",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1293
+        "line": 1297
       }
     },
     {
@@ -8126,7 +8126,7 @@
         "path": "/api/chat/unread-summary",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1378
+        "line": 1382
       }
     },
     {
@@ -8140,7 +8140,7 @@
         "path": "/api/chat/user-prefs",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1435
+        "line": 1439
       }
     },
     {
@@ -8154,7 +8154,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1510
+        "line": 1514
       }
     },
     {
@@ -8168,7 +8168,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1536
+        "line": 1540
       }
     },
     {
@@ -8182,7 +8182,7 @@
         "path": "/api/chat/upload-image",
         "module": "chat",
         "handler": "preHandler",
-        "line": 1626
+        "line": 1630
       }
     },
     {
@@ -8196,7 +8196,7 @@
         "path": "/api/chat/upload-file",
         "module": "chat",
         "handler": "preHandler",
-        "line": 1636
+        "line": 1640
       }
     },
     {
@@ -8210,7 +8210,7 @@
         "path": "/api/chat/media/:fileName",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1646
+        "line": 1650
       }
     },
     {
@@ -8224,7 +8224,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1742
+        "line": 1746
       }
     },
     {
@@ -8238,7 +8238,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1747
+        "line": 1751
       }
     },
     {
@@ -8252,7 +8252,7 @@
         "path": "/api/chat/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1752
+        "line": 1756
       }
     },
     {
@@ -8266,7 +8266,21 @@
         "path": "/api/chat/threads",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1889
+        "line": 1893
+      }
+    },
+    {
+      "id": "route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "type": "FastifyRoute",
+      "label": "POST /api/chat/threads/:messageId/extract-checklist",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/chat/threads/:messageId/extract-checklist",
+        "module": "chat",
+        "handler": "inlineHandler",
+        "line": 2031
       }
     },
     {
@@ -8280,7 +8294,7 @@
         "path": "/api/chat/threads/move",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2027
+        "line": 2109
       }
     },
     {
@@ -8294,7 +8308,7 @@
         "path": "/api/chat/messages/:messageId/reaction",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2168
+        "line": 2250
       }
     },
     {
@@ -8308,7 +8322,7 @@
         "path": "/api/chat/messages/:messageId/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2257
+        "line": 2339
       }
     },
     {
@@ -8322,7 +8336,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2288
+        "line": 2370
       }
     },
     {
@@ -8336,7 +8350,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2370
+        "line": 2452
       }
     },
     {
@@ -8350,7 +8364,7 @@
         "path": "/api/chat/messages/:messageId/restore",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2445
+        "line": 2527
       }
     },
     {
@@ -8364,7 +8378,7 @@
         "path": "/api/chat/messages/:messageId/buzz",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2527
+        "line": 2609
       }
     },
     {
@@ -8378,7 +8392,7 @@
         "path": "/api/chat/tasks",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2639
+        "line": 2721
       }
     },
     {
@@ -8392,7 +8406,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2840
+        "line": 2981
       }
     },
     {
@@ -8406,7 +8420,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2959
+        "line": 3217
       }
     },
     {
@@ -8420,7 +8434,7 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3008
+        "line": 3266
       }
     },
     {
@@ -8434,7 +8448,7 @@
         "path": "/api/chat/conversations/:id/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3203
+        "line": 3461
       }
     },
     {
@@ -8448,7 +8462,7 @@
         "path": "/api/chat/conversations/:id/threads/:messageId/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3287
+        "line": 3545
       }
     },
     {
@@ -8462,7 +8476,7 @@
         "path": "/api/chat/conversations/:id/unread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3347
+        "line": 3605
       }
     },
     {
@@ -8476,7 +8490,7 @@
         "path": "/api/chat/conversations/:id/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3391
+        "line": 3649
       }
     },
     {
@@ -8490,7 +8504,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3436
+        "line": 3694
       }
     },
     {
@@ -8504,7 +8518,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3542
+        "line": 3800
       }
     },
     {
@@ -8518,7 +8532,7 @@
         "path": "/api/chat/conversations/:id/nickname",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3617
+        "line": 3875
       }
     },
     {
@@ -8532,7 +8546,7 @@
         "path": "/api/chat/conversations/:id",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3723
+        "line": 3981
       }
     },
     {
@@ -8546,7 +8560,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3839
+        "line": 4097
       }
     },
     {
@@ -8560,7 +8574,7 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3920
+        "line": 4178
       }
     },
     {
@@ -8574,7 +8588,7 @@
         "path": "/api/chat/workflows",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3991
+        "line": 4249
       }
     },
     {
@@ -8588,7 +8602,7 @@
         "path": "/api/chat/workflows/instances",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4014
+        "line": 4272
       }
     },
     {
@@ -8602,7 +8616,7 @@
         "path": "/api/chat/workflows/instances/:instanceId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4195
+        "line": 4453
       }
     },
     {
@@ -8616,7 +8630,7 @@
         "path": "/api/chat/workflows/templates/from-thread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4372
+        "line": 4630
       }
     },
     {
@@ -8630,7 +8644,7 @@
         "path": "/api/chat/stream",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4467
+        "line": 4725
       }
     },
     {
@@ -8644,7 +8658,7 @@
         "path": "/api/chat/sync",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4480
+        "line": 4738
       }
     },
     {
@@ -8658,7 +8672,7 @@
         "path": "/api/chat/conversations/:conversationId/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4543
+        "line": 4801
       }
     },
     {
@@ -26101,6 +26115,42 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:MosChatTaskChecklistItem",
+      "type": "SharedType",
+      "label": "MosChatTaskChecklistItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatTaskChecklistItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatTaskActivityAction",
+      "type": "SharedType",
+      "label": "MosChatTaskActivityAction",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatTaskActivityAction",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatTaskActivityLogItem",
+      "type": "SharedType",
+      "label": "MosChatTaskActivityLogItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatTaskActivityLogItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:MosChatTaskItem",
       "type": "SharedType",
       "label": "MosChatTaskItem",
@@ -26421,6 +26471,42 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "UpdateMosChatTaskRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ExtractMosChatChecklistRequest",
+      "type": "SharedType",
+      "label": "ExtractMosChatChecklistRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ExtractMosChatChecklistRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ExtractMosChatChecklistSuggestion",
+      "type": "SharedType",
+      "label": "ExtractMosChatChecklistSuggestion",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ExtractMosChatChecklistSuggestion",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ExtractMosChatChecklistResponse",
+      "type": "SharedType",
+      "label": "ExtractMosChatChecklistResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ExtractMosChatChecklistResponse",
         "package": "@mos-lab/shared"
       }
     },
@@ -31801,6 +31887,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatDesktopThreadReply.test",
+      "type": "UIComponent",
+      "label": "<MosChatDesktopThreadReply.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatDesktopThreadReply.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatDesktopThreadReply.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatDockedWindows.test",
       "type": "UIComponent",
       "label": "<MosChatDockedWindows.test />",
@@ -31945,6 +32043,30 @@
       }
     },
     {
+      "id": "uicomp:MosChatSpaceScrollBug152.test",
+      "type": "UIComponent",
+      "label": "<MosChatSpaceScrollBug152.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatSpaceScrollBug152.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatSpaceScrollBug152.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatThreadChecklist.test",
+      "type": "UIComponent",
+      "label": "<MosChatThreadChecklist.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatThreadChecklist.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatThreadChecklist.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosGoogleChatPortal.test",
       "type": "UIComponent",
       "label": "<MosGoogleChatPortal.test />",
@@ -32049,6 +32171,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "MosChatTasksPane",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatThreadChecklist",
+      "type": "UIComponent",
+      "label": "<MosChatThreadChecklist />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/MosChatThreadChecklist.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatThreadChecklist",
         "isPrimitive": false
       }
     },
@@ -32241,6 +32375,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "MosChatMobileNegotiateTaskModal",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatMobilePinnedTab",
+      "type": "UIComponent",
+      "label": "<MosChatMobilePinnedTab />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/MosChatMobilePinnedTab.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobilePinnedTab",
         "isPrimitive": false
       }
     },
@@ -34739,8 +34885,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-ide-release.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 23518,
-        "lineCount": 524,
+        "sizeBytes": 23579,
+        "lineCount": 526,
         "ext": ".ts"
       }
     },
@@ -35434,6 +35580,19 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/chat/chat-task-checklist.test.ts",
+      "type": "File",
+      "label": "chat-task-checklist.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/chat/chat-task-checklist.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 3137,
+        "lineCount": 99,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/chat/chat-task-edit-archive-delete.test.ts",
       "type": "File",
       "label": "chat-task-edit-archive-delete.test.ts",
@@ -35493,8 +35652,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 176262,
-        "lineCount": 4607,
+        "sizeBytes": 186766,
+        "lineCount": 4865,
         "ext": ".ts"
       }
     },
@@ -36117,8 +36276,8 @@
       "filePath": "apps/api/src/modules/customers/services/customer-access.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 11843,
-        "lineCount": 402,
+        "sizeBytes": 11983,
+        "lineCount": 389,
         "ext": ".ts"
       }
     },
@@ -36130,8 +36289,8 @@
       "filePath": "apps/api/src/modules/customers/services/customer-access.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 8277,
-        "lineCount": 252,
+        "sizeBytes": 8269,
+        "lineCount": 251,
         "ext": ".ts"
       }
     },
@@ -39562,7 +39721,7 @@
       "filePath": "apps/web/app/chat/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3166,
+        "sizeBytes": 3209,
         "lineCount": 104,
         "ext": ".tsx"
       }
@@ -45308,8 +45467,8 @@
       "filePath": "apps/web/lib/api/chat.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 13689,
-        "lineCount": 336,
+        "sizeBytes": 14023,
+        "lineCount": 344,
         "ext": ".ts"
       }
     },
@@ -46374,8 +46533,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 23136,
-        "lineCount": 884,
+        "sizeBytes": 24725,
+        "lineCount": 946,
         "ext": ".ts"
       }
     },
@@ -50494,6 +50653,13 @@
     {
       "id": "edge:route:POST:/api/chat/threads:ws:apps/api",
       "source": "route:POST:/api/chat/threads",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/chat/threads/:messageId/extract-checklist:ws:apps/api",
+      "source": "route:POST:/api/chat/threads/:messageId/extract-checklist",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -60376,6 +60542,27 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:MosChatTaskChecklistItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatTaskChecklistItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatTaskActivityAction:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatTaskActivityAction",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatTaskActivityLogItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatTaskActivityLogItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:MosChatTaskItem:ws:packages/shared",
       "source": "type:@mos-lab/shared:MosChatTaskItem",
       "target": "ws:packages/shared",
@@ -60560,6 +60747,27 @@
     {
       "id": "edge:type:@mos-lab/shared:UpdateMosChatTaskRequest:ws:packages/shared",
       "source": "type:@mos-lab/shared:UpdateMosChatTaskRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ExtractMosChatChecklistRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ExtractMosChatChecklistRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ExtractMosChatChecklistSuggestion:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ExtractMosChatChecklistSuggestion",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ExtractMosChatChecklistResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ExtractMosChatChecklistResponse",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -64716,6 +64924,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatDesktopThreadReply.test:ws:apps/web",
+      "source": "uicomp:MosChatDesktopThreadReply.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatDesktopThreadReply.test:token:color:primary",
+      "source": "uicomp:MosChatDesktopThreadReply.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatDockedWindows.test:ws:apps/web",
       "source": "uicomp:MosChatDockedWindows.test",
       "target": "ws:apps/web",
@@ -64884,6 +65106,34 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatSpaceScrollBug152.test:ws:apps/web",
+      "source": "uicomp:MosChatSpaceScrollBug152.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatSpaceScrollBug152.test:token:color:primary",
+      "source": "uicomp:MosChatSpaceScrollBug152.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatThreadChecklist.test:ws:apps/web",
+      "source": "uicomp:MosChatThreadChecklist.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatThreadChecklist.test:token:color:primary",
+      "source": "uicomp:MosChatThreadChecklist.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosGoogleChatPortal.test:ws:apps/web",
       "source": "uicomp:MosGoogleChatPortal.test",
       "target": "ws:apps/web",
@@ -65005,6 +65255,20 @@
     {
       "id": "edge:uicomp:MosChatTasksPane:token:color:primary",
       "source": "uicomp:MosChatTasksPane",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatThreadChecklist:ws:apps/web",
+      "source": "uicomp:MosChatThreadChecklist",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatThreadChecklist:token:color:primary",
+      "source": "uicomp:MosChatThreadChecklist",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -65229,6 +65493,20 @@
     {
       "id": "edge:uicomp:MosChatMobileNegotiateTaskModal:token:color:primary",
       "source": "uicomp:MosChatMobileNegotiateTaskModal",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobilePinnedTab:ws:apps/web",
+      "source": "uicomp:MosChatMobilePinnedTab",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobilePinnedTab:token:color:primary",
+      "source": "uicomp:MosChatMobilePinnedTab",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -67560,6 +67838,13 @@
     {
       "id": "edge:file:apps/api/src/modules/chat/chat-space-privacy.test.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/chat/chat-space-privacy.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/chat/chat-task-checklist.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-task-checklist.test.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -77995,6 +78280,13 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/architecture:route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "source": "page:/dashboard/architecture",
+      "target": "route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/architecture:route:POST:/api/chat/messages/:messageId/reaction",
       "source": "page:/dashboard/architecture",
       "target": "route:POST:/api/chat/messages/:messageId/reaction",
@@ -78952,6 +79244,13 @@
       "target": "route:PATCH:/api/bug-reports/:id/triage",
       "type": "API_CALL",
       "label": "CALLS experienceJournal.triage"
+    },
+    {
+      "id": "edge:page:/dashboard/bug-reports:route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "source": "page:/dashboard/bug-reports",
+      "target": "route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "type": "API_CALL",
+      "label": "CALLS experienceJournal.list"
     },
     {
       "id": "edge:page:/dashboard/bug-reports:route:GET:/api/kpi/package-audit/list",
@@ -80560,6 +80859,13 @@
       "id": "edge:page:/dashboard/design-system:route:POST:/api/chat/messages",
       "source": "page:/dashboard/design-system",
       "target": "route:POST:/api/chat/messages",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "source": "page:/dashboard/design-system",
+      "target": "route:POST:/api/chat/threads/:messageId/extract-checklist",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -83892,6 +84198,13 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/chat/threads",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/chat/threads",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/chat/threads/:messageId/extract-checklist",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -89013,6 +89326,13 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.list"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/chat/threads/move",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/chat/threads/move",
@@ -91638,6 +91958,13 @@
       "label": "CALLS omicall.deleteConfig"
     },
     {
+      "id": "edge:page:/dashboard/omicall:route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "source": "page:/dashboard/omicall",
+      "target": "route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "type": "API_CALL",
+      "label": "CALLS staff.list"
+    },
+    {
       "id": "edge:page:/dashboard/omicall:route:DELETE:/api/chat/conversations/:id/members/:staffId",
       "source": "page:/dashboard/omicall",
       "target": "route:DELETE:/api/chat/conversations/:id/members/:staffId",
@@ -92567,6 +92894,13 @@
       "target": "route:PATCH:/api/bug-reports/:id/review",
       "type": "API_CALL",
       "label": "CALLS postHub.review"
+    },
+    {
+      "id": "edge:page:/dashboard/post-hub:route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "source": "page:/dashboard/post-hub",
+      "target": "route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "type": "API_CALL",
+      "label": "CALLS postHub.list"
     },
     {
       "id": "edge:page:/dashboard/post-hub:route:POST:/api/customers/revoke/preview",
@@ -94147,6 +94481,13 @@
       "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/chat/messages",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:POST:/api/chat/messages",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:POST:/api/chat/threads/:messageId/extract-checklist",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -97434,6 +97775,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "type": "API_CALL",
+      "label": "CALLS teams.list"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/chat/threads/move",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/chat/threads/move",
@@ -100102,31 +100450,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3589,
-    "totalEdges": 7624,
+    "totalNodes": 3602,
+    "totalEdges": 7651,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 176,
-      "FastifyRoute": 731,
+      "FastifyRoute": 732,
       "Component": 62,
-      "SharedType": 1300,
+      "SharedType": 1306,
       "DesignToken": 12,
-      "UIComponent": 307,
-      "File": 998
+      "UIComponent": 312,
+      "File": 999
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1488,
-      "HANDLES_ROUTE": 731,
-      "RENDERS": 369,
-      "USES_TOKEN": 309,
-      "IMPORTS": 552,
+      "EXPORTS": 1494,
+      "HANDLES_ROUTE": 732,
+      "RENDERS": 374,
+      "USES_TOKEN": 314,
+      "IMPORTS": 553,
       "QUERIES_MODEL": 421,
-      "API_CALL": 3754
+      "API_CALL": 3763
     },
-    "fastifyRouteCount": 736,
+    "fastifyRouteCount": 737,
     "prismaModelCount": 176,
     "nextPageCount": 62,
-    "sharedTypeCount": 1300
+    "sharedTypeCount": 1306
   },
   "routes": [
     {
@@ -102659,6 +103007,13 @@
     {
       "method": "POST",
       "path": "/api/chat/threads",
+      "filePath": "apps/api/src/modules/chat/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "chat"
+    },
+    {
+      "method": "POST",
+      "path": "/api/chat/threads/:messageId/extract-checklist",
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "chat"

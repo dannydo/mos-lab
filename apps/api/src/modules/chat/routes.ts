@@ -29,6 +29,10 @@ import {
   MosChatReadReceiptEntry,
   MosChatStaffMember,
   MosChatTaskItem,
+  MosChatTaskChecklistItem,
+  MosChatTaskActivityAction,
+  MosChatTaskActivityLogItem,
+  ExtractMosChatChecklistSuggestion,
   MosChatThreadMoveMode,
   MosChatThreadReadReceiptEntry,
   MosChatThreadReply,
@@ -2023,6 +2027,90 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
     }
   );
 
+  // POST /api/chat/threads/:messageId/extract-checklist
+  fastify.post(
+    '/chat/threads/:messageId/extract-checklist',
+    {
+      preHandler: [requireAuth],
+    },
+    async (request, reply) => {
+      const { messageId } = request.params as { messageId: string };
+      const body = (request.body || {}) as { conversationId?: string };
+      const user = request.user as JwtUserPayload;
+
+      const [{ conversations }, staffDirectory] = await Promise.all([
+        loadChatState(fastify),
+        loadStaffDirectoryCached(fastify),
+      ]);
+
+      let targetConv = conversations.find((c) => c.messages.some((m) => m.id === messageId));
+      if (!targetConv && body.conversationId) {
+        targetConv = conversations.find((c) => c.id === body.conversationId);
+      }
+      if (!targetConv) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy cuộc hội thoại' });
+      }
+      if (!canUserAccessConversation(targetConv, user, staffDirectory)) {
+        return reply.status(403).send({ error: 'Forbidden', message: 'Bạn không có quyền truy cập hội thoại này' });
+      }
+
+      const targetMsg = targetConv.messages.find((m) => m.id === messageId);
+      if (!targetMsg) {
+        return reply.status(404).send({ error: 'Not Found', message: 'Không tìm thấy tin nhắn gốc' });
+      }
+
+      const replies = (targetMsg.thread || []).filter((r) => !r.isDeleted && r.text?.trim() && !r.isAiBot);
+      const suggestions: ExtractMosChatChecklistSuggestion[] = [];
+
+      for (const rep of replies) {
+        const lines = rep.text
+          .split('\n')
+          .map((l) => l.trim())
+          .filter(Boolean);
+        for (const line of lines) {
+          const clean = line
+            .replace(/^[-*•]\s*(\[[ xX]\])?\s*/, '')
+            .replace(/^\d+[.)]\s*/, '')
+            .trim();
+          if (clean.length >= 3 && !suggestions.some((s) => s.title.toLowerCase() === clean.toLowerCase())) {
+            suggestions.push({
+              title: clean.slice(0, 150),
+              assigneeName: rep.senderName,
+              assigneeId: rep.senderId,
+              sourceReplyId: rep.id,
+            });
+          }
+        }
+      }
+
+      if (suggestions.length === 0 && targetMsg.text?.trim()) {
+        const lines = targetMsg.text
+          .split('\n')
+          .map((l) => l.trim())
+          .filter(Boolean);
+        for (const line of lines) {
+          const clean = line
+            .replace(/^[-*•]\s*(\[[ xX]\])?\s*/, '')
+            .replace(/^\d+[.)]\s*/, '')
+            .trim();
+          if (clean.length >= 3 && clean !== targetMsg.text.trim()) {
+            suggestions.push({
+              title: clean.slice(0, 150),
+              assigneeName: targetMsg.senderName,
+              assigneeId: targetMsg.senderId,
+              sourceReplyId: null,
+            });
+          }
+        }
+      }
+
+      return {
+        success: true,
+        suggestions,
+      };
+    }
+  );
+
   // POST /api/chat/threads/move (Merge root message into subthread, promote reply to root, or move reply between threads)
   fastify.post(
     '/chat/threads/move',
@@ -2804,6 +2892,63 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         }
       }
 
+      const initialChecklist: MosChatTaskChecklistItem[] = [];
+      if (Array.isArray(body.checklist) && body.checklist.length > 0) {
+        for (const item of body.checklist) {
+          if (item && typeof item.title === 'string' && item.title.trim()) {
+            initialChecklist.push({
+              id: `chk-${crypto.randomUUID().slice(0, 8)}`,
+              title: item.title.trim(),
+              done: Boolean(item.done),
+              assigneeId: item.assigneeId ?? null,
+              assigneeName: item.assigneeName ?? null,
+              sourceReplyId: item.sourceReplyId ?? null,
+              createdBy: creatorName,
+              createdAt: now.toISOString(),
+            });
+          }
+        }
+      } else if (body.importRepliesAsChecklist && targetMsgId) {
+        const sourceMsg = conv.messages.find((m) => m.id === targetMsgId);
+        if (sourceMsg?.thread) {
+          for (const reply of sourceMsg.thread) {
+            if (!reply.isDeleted && reply.text?.trim() && !reply.isAiBot) {
+              initialChecklist.push({
+                id: `chk-${crypto.randomUUID().slice(0, 8)}`,
+                title: reply.text.trim().slice(0, 150),
+                done: false,
+                assigneeId: reply.senderId,
+                assigneeName: reply.senderName,
+                sourceReplyId: reply.id,
+                createdBy: creatorName,
+                createdAt: now.toISOString(),
+              });
+            }
+          }
+        }
+      }
+
+      const initialActivityLog: MosChatTaskActivityLogItem[] = [
+        {
+          id: `act-${crypto.randomUUID().slice(0, 8)}`,
+          action: 'CREATE_TASK',
+          actorId: user.id,
+          actorName: creatorName,
+          description: `Tạo công việc "${title}"`,
+          timestamp: now.toISOString(),
+        },
+      ];
+      if (initialChecklist.length > 0) {
+        initialActivityLog.push({
+          id: `act-${crypto.randomUUID().slice(0, 8)}`,
+          action: 'ADD_ITEM',
+          actorId: user.id,
+          actorName: creatorName,
+          description: `Khởi tạo ${initialChecklist.length} mục việc từ phản hồi subthread`,
+          timestamp: now.toISOString(),
+        });
+      }
+
       const newTask: MosChatTaskItem = {
         id: taskId,
         conversationId: conv.id,
@@ -2823,6 +2968,8 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         done: false,
         fired: isNoReminder,
         createdAt: now.toISOString(),
+        checklist: initialChecklist,
+        activityLog: initialActivityLog,
       };
 
       tasks.unshift(newTask);
@@ -2873,12 +3020,129 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       if (body.priority && ['URGENT', 'HIGH', 'NORMAL'].includes(body.priority)) {
         task.priority = body.priority;
       }
-      if (typeof body.done === 'boolean') {
-        task.done = body.done;
-      }
       if (typeof body.archived === 'boolean') {
         task.archived = body.archived;
         task.archivedAt = body.archived ? now.toISOString() : null;
+      }
+
+      // Checklist management & smart 2-way sync
+      if (!Array.isArray(task.checklist)) {
+        task.checklist = [];
+      }
+      if (!Array.isArray(task.activityLog)) {
+        task.activityLog = [];
+      }
+
+      const actorName = user.displayName || user.username || 'Thành viên';
+      const actorId = user.id;
+      let activityDescription: string | null = null;
+      let activityAction: MosChatTaskActivityAction | null = null;
+
+      if (body.checklistAction === 'add' && body.checklistItem?.title?.trim()) {
+        const newItem: MosChatTaskChecklistItem = {
+          id: `chk-${crypto.randomUUID().slice(0, 8)}`,
+          title: body.checklistItem.title.trim(),
+          done: Boolean(body.checklistItem.done),
+          assigneeId: body.checklistItem.assigneeId ?? null,
+          assigneeName: body.checklistItem.assigneeName ?? null,
+          sourceReplyId: body.checklistItem.sourceReplyId ?? null,
+          createdBy: actorName,
+          createdAt: now.toISOString(),
+        };
+        task.checklist.push(newItem);
+        activityAction = 'ADD_ITEM';
+        activityDescription = `Thêm mục việc: "${newItem.title}"`;
+      } else if (body.checklistAction === 'toggle' && body.checklistItemId) {
+        const item = task.checklist.find((c) => c.id === body.checklistItemId);
+        if (item) {
+          item.done = !item.done;
+          item.completedAt = item.done ? now.toISOString() : null;
+          item.completedByName = item.done ? actorName : null;
+          activityAction = 'TOGGLE_ITEM';
+          activityDescription = `${item.done ? 'Hoàn thành' : 'Mở lại'} mục việc: "${item.title}"`;
+        }
+      } else if (body.checklistAction === 'edit' && body.checklistItemId && body.checklistItem) {
+        const item = task.checklist.find((c) => c.id === body.checklistItemId);
+        if (item) {
+          if (typeof body.checklistItem.title === 'string' && body.checklistItem.title.trim()) {
+            item.title = body.checklistItem.title.trim();
+          }
+          if (body.checklistItem.assigneeId !== undefined) {
+            item.assigneeId = body.checklistItem.assigneeId;
+          }
+          if (body.checklistItem.assigneeName !== undefined) {
+            item.assigneeName = body.checklistItem.assigneeName;
+          }
+          activityAction = 'EDIT_ITEM';
+          activityDescription = `Chỉnh sửa mục việc: "${item.title}"`;
+        }
+      } else if (body.checklistAction === 'delete' && body.checklistItemId) {
+        const idx = task.checklist.findIndex((c) => c.id === body.checklistItemId);
+        if (idx >= 0) {
+          const removed = task.checklist.splice(idx, 1)[0];
+          activityAction = 'DELETE_ITEM';
+          activityDescription = `Xóa mục việc: "${removed?.title || ''}"`;
+        }
+      } else if (Array.isArray(body.checklist)) {
+        task.checklist = body.checklist;
+      }
+
+      // Smart 2-Way Sync between Checklist & Main Task
+      if (typeof body.done === 'boolean') {
+        task.done = body.done;
+        if (body.done && task.checklist.length > 0) {
+          for (const item of task.checklist) {
+            if (!item.done) {
+              item.done = true;
+              item.completedAt = now.toISOString();
+              item.completedByName = actorName;
+            }
+          }
+        }
+        activityAction = body.done ? 'COMPLETE_TASK' : 'REOPEN_TASK';
+        activityDescription = body.done ? 'Đánh dấu hoàn thành toàn bộ công việc' : 'Mở lại công việc';
+      } else if (task.checklist.length > 0) {
+        const allDone = task.checklist.every((c) => c.done);
+        if (allDone && !task.done) {
+          task.done = true;
+          activityAction = 'COMPLETE_TASK';
+          activityDescription = 'Tự động hoàn thành công việc vì 100% mục checklist đã xong';
+        } else if (!allDone && task.done) {
+          task.done = false;
+          activityAction = 'REOPEN_TASK';
+          activityDescription = 'Mở lại công việc vì có mục checklist chưa hoàn thành';
+        }
+      }
+
+      if (activityAction && activityDescription) {
+        task.activityLog.push({
+          id: `act-${crypto.randomUUID().slice(0, 8)}`,
+          action: activityAction,
+          actorId,
+          actorName,
+          description: activityDescription,
+          timestamp: now.toISOString(),
+        });
+
+        // Send a system message to the subthread if linked
+        if (conv && task.sourceMessageId) {
+          const sourceMsg = conv.messages.find((m) => m.id === task.sourceMessageId);
+          if (sourceMsg && sourceMsg.thread) {
+            sourceMsg.thread.push({
+              id: `reply-chk-${Date.now()}`,
+              senderId: 'mOS Checklist System',
+              senderName: '📋 mOS Task Assistant',
+              senderRole: 'Hệ thống',
+              senderAvatar: '📋',
+              roleColor: '#10b981',
+              text: `[Checklist] ${actorName}: ${activityDescription}`,
+              timeLabel: formatTimeLabel(now),
+              createdAt: now.toISOString(),
+            });
+            conv.updatedAt = now.toISOString();
+            await saveConversations(fastify, conversations);
+          }
+        }
       }
       if (typeof body.snoozeSeconds === 'number' && body.snoozeSeconds > 0) {
         task.remindAt = new Date(now.getTime() + body.snoozeSeconds * 1000).toISOString();

@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   CheckSquare,
   Square,
+  ListTodo,
   ExternalLink,
   Check,
   RotateCcw,
@@ -42,6 +43,7 @@ import type {
   SafeAny,
 } from '@mos-lab/shared';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
+import { MosChatThreadChecklist } from '../components/MosChatThreadChecklist';
 import {
   isUserMentionedInText,
   extractMentionedStaff,
@@ -78,6 +80,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
     setMobileView,
     tasks,
     toggleTaskDone,
+    updateTask,
     executeMissionAction,
     isAiThinking,
   } = useMosChat();
@@ -907,6 +910,44 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
               </div>
+
+              {/* Mobile Thread Task Checklist */}
+              {liveThreadMsg && (
+                <div className="mt-2.5">
+                  <MosChatThreadChecklist
+                    task={linkedTask}
+                    activeThreadMessage={liveThreadMsg}
+                    onToggleChecklistItem={async (itemId) => {
+                      await updateTask(linkedTask.id, {
+                        checklistAction: 'toggle',
+                        checklistItemId: itemId,
+                      });
+                    }}
+                    onAddChecklistItem={async (title, sourceReplyId) => {
+                      await updateTask(linkedTask.id, {
+                        checklistAction: 'add',
+                        checklistItem: { title, sourceReplyId: sourceReplyId || null },
+                      });
+                    }}
+                    onDeleteChecklistItem={async (itemId) => {
+                      await updateTask(linkedTask.id, {
+                        checklistAction: 'delete',
+                        checklistItemId: itemId,
+                      });
+                    }}
+                    onScrollToReply={(replyId) => {
+                      const el = document.getElementById(`reply-bubble-${replyId}`);
+                      if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        el.classList.add('ring-2', 'ring-amber-500');
+                        setTimeout(() => el.classList.remove('ring-2', 'ring-amber-500'), 2000);
+                      }
+                    }}
+                    isDark={true}
+                    isMobile={true}
+                  />
+                </div>
+              )}
             </div>
           ) : (
             <div className="mt-2.5 pt-2 border-t border-slate-800/60 flex items-center justify-between">
@@ -1602,6 +1643,26 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                   {linkedTask ? 'Cập nhật Main Task từ phản hồi này' : 'Giao việc cho Main Task'}
                 </span>
               </button>
+
+              {linkedTask && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const replyText = actionSheetReply.text.slice(0, 150);
+                    const replyId = actionSheetReply.id;
+                    setActionSheetReply(null);
+                    await updateTask(linkedTask.id, {
+                      checklistAction: 'add',
+                      checklistItem: { title: replyText, sourceReplyId: replyId },
+                    });
+                    antdMessage.success('Đã thêm phản hồi vào Checklist của Task');
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-200 hover:bg-slate-800/80 rounded-xl transition-colors active:scale-98"
+                >
+                  <ListTodo className="w-4 h-4 text-amber-400" />
+                  <span className="font-medium">Thêm vào Checklist của Task</span>
+                </button>
+              )}
 
               <button
                 type="button"

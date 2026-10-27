@@ -266,6 +266,31 @@ export interface MosChatMessage {
   buzzHistory?: MosChatBuzzEvent[];
 }
 
+export interface MosChatTaskChecklistItem {
+  id: string;
+  title: string;
+  done: boolean;
+  assigneeId?: number | string | null;
+  assigneeName?: string | null;
+  sourceReplyId?: string | null;
+  createdBy?: string | null;
+  createdAt: string;
+  completedAt?: string | null;
+  completedByName?: string | null;
+}
+
+export type MosChatTaskActivityAction =
+  'CREATE_TASK' | 'ADD_ITEM' | 'TOGGLE_ITEM' | 'EDIT_ITEM' | 'DELETE_ITEM' | 'COMPLETE_TASK' | 'REOPEN_TASK';
+
+export interface MosChatTaskActivityLogItem {
+  id: string;
+  action: MosChatTaskActivityAction;
+  actorId?: number | string | null;
+  actorName: string;
+  description: string;
+  timestamp: string;
+}
+
 export interface MosChatTaskItem {
   id: string;
   conversationId: string;
@@ -295,6 +320,8 @@ export interface MosChatTaskItem {
   archived?: boolean;
   archivedAt?: string | null;
   updatedAt?: string;
+  checklist?: MosChatTaskChecklistItem[];
+  activityLog?: MosChatTaskActivityLogItem[];
 }
 
 export interface MosChatConversation {
@@ -506,6 +533,14 @@ export interface CreateMosChatTaskRequest {
   dueAt?: string | null;
   deadline?: string | null;
   negotiationNote?: string | null;
+  checklist?: Array<{
+    title: string;
+    done?: boolean;
+    assigneeId?: number | string | null;
+    assigneeName?: string | null;
+    sourceReplyId?: string | null;
+  }>;
+  importRepliesAsChecklist?: boolean;
 }
 
 export interface CreateMosChatConversationRequest {
@@ -561,6 +596,27 @@ export interface UpdateMosChatTaskRequest {
   done?: boolean;
   archived?: boolean;
   triggerReminderNow?: boolean;
+  checklist?: MosChatTaskChecklistItem[];
+  checklistAction?: 'add' | 'toggle' | 'edit' | 'delete' | 'reorder' | 'set';
+  checklistItem?: Partial<MosChatTaskChecklistItem>;
+  checklistItemId?: string;
+}
+
+export interface ExtractMosChatChecklistRequest {
+  messageId: string;
+  conversationId?: string;
+}
+
+export interface ExtractMosChatChecklistSuggestion {
+  title: string;
+  assigneeName?: string | null;
+  assigneeId?: number | string | null;
+  sourceReplyId?: string | null;
+}
+
+export interface ExtractMosChatChecklistResponse {
+  success: boolean;
+  suggestions: ExtractMosChatChecklistSuggestion[];
 }
 
 export interface DeleteMosChatTaskResponse {

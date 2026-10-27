@@ -15,6 +15,7 @@ import {
   FilePenLine,
   History,
   ImagePlus,
+  ListTodo,
   Maximize2,
   MessageSquareReply,
   Minimize2,
@@ -38,8 +39,10 @@ import {
   type MosChatMessage,
   type MosChatTaskItem,
   type MosChatThreadReply,
+  type UpdateMosChatTaskRequest,
   type SafeAny,
 } from '@mos-lab/shared';
+import { MosChatThreadChecklist } from './MosChatThreadChecklist';
 import { MosChatStickerVisual, parsePureStickerMessage, parseStickerReactionKey } from '../mos-chat-stickers';
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
 import { buildMaiUrgentVoiceAnnouncement } from '../utils/chat-helpers';
@@ -170,6 +173,12 @@ export interface MosChatThreadDrawerProps {
   movingThreadItemKey: string | null;
   openMovePopoverKey: string | null;
   setOpenMovePopoverKey: (key: string | null) => void;
+  handleUpdateTask?: (taskId: string, payload: UpdateMosChatTaskRequest) => Promise<void> | void;
+  renderTaskCard?: (
+    task: MosChatTaskItem,
+    sourceMsg?: MosChatMessage | null,
+    mode?: 'inline' | 'list' | 'thread'
+  ) => React.ReactNode;
 }
 
 export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.memo(
@@ -281,6 +290,8 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
     movingThreadItemKey,
     openMovePopoverKey,
     setOpenMovePopoverKey,
+    handleUpdateTask,
+    renderTaskCard,
   }) => {
     const [formatBarOpenThread, setFormatBarOpenThread] = useState<boolean>(true);
     const [isPreviewModeThread, setIsPreviewModeThread] = useState<boolean>(false);
@@ -709,6 +720,55 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
         </div>
 
         <div ref={threadMessagesContainerRef} className="flex-1 overflow-y-auto p-3 space-y-2.5">
+          {/* Linked Task & Interactive Checklist Pinned at Thread Top */}
+          {(() => {
+            const linkedTask =
+              uniqueTasks?.find(
+                (t) => t.id === activeThreadMessage.taskId || t.sourceMessageId === activeThreadMessage.id
+              ) || null;
+            if (!linkedTask) return null;
+            return (
+              <div className="mb-2.5">
+                {renderTaskCard ? renderTaskCard(linkedTask, activeThreadMessage, 'thread') : null}
+                <MosChatThreadChecklist
+                  task={linkedTask}
+                  activeThreadMessage={activeThreadMessage}
+                  onToggleChecklistItem={async (itemId) => {
+                    await handleUpdateTask?.(linkedTask.id, {
+                      checklistAction: 'toggle',
+                      checklistItemId: itemId,
+                    });
+                  }}
+                  onAddChecklistItem={async (title, sourceReplyId) => {
+                    await handleUpdateTask?.(linkedTask.id, {
+                      checklistAction: 'add',
+                      checklistItem: { title, sourceReplyId: sourceReplyId || null },
+                    });
+                  }}
+                  onDeleteChecklistItem={async (itemId) => {
+                    await handleUpdateTask?.(linkedTask.id, {
+                      checklistAction: 'delete',
+                      checklistItemId: itemId,
+                    });
+                  }}
+                  onScrollToReply={(replyId) => {
+                    const el =
+                      document.getElementById(`mos-chat-thread-reply-${replyId}`) ||
+                      document.getElementById(`reply-bubble-${replyId}`);
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      el.classList.add('ring-2', 'ring-amber-500');
+                      setTimeout(() => el.classList.remove('ring-2', 'ring-amber-500'), 2000);
+                    }
+                  }}
+                  isDark={isDark}
+                  token={token}
+                  isMobile={false}
+                />
+              </div>
+            );
+          })()}
+
           <div
             id={`mos-chat-thread-root-${activeThreadMessage.id}`}
             className="p-2.5 rounded-lg text-[12px] transition-all"
@@ -1278,6 +1338,35 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                           </Popover>
 
                           <span className="w-px h-3 mx-0.5" style={{ background: borderStrong }} />
+
+                          {/* Add to Task Checklist button */}
+                          {(() => {
+                            const linkedTask = uniqueTasks?.find(
+                              (t) => t.id === activeThreadMessage.taskId || t.sourceMessageId === activeThreadMessage.id
+                            );
+                            if (!linkedTask || r.isDeleted) return null;
+                            return (
+                              <Tooltip title="Thêm phản hồi này vào Checklist của Task">
+                                <button
+                                  type="button"
+                                  aria-label="Thêm vào Checklist của Task"
+                                  onClick={async () => {
+                                    const replyText = (r.text || '').trim().slice(0, 150);
+                                    if (replyText) {
+                                      await handleUpdateTask?.(linkedTask.id, {
+                                        checklistAction: 'add',
+                                        checklistItem: { title: replyText, sourceReplyId: r.id },
+                                      });
+                                      antdMessage.success('Đã thêm phản hồi vào Checklist của Task');
+                                    }
+                                  }}
+                                  className="w-5 h-5 rounded-full inline-flex items-center justify-center hover:bg-amber-500/20 cursor-pointer text-amber-500 transition-transform hover:scale-110"
+                                >
+                                  <ListTodo size={11} />
+                                </button>
+                              </Tooltip>
+                            );
+                          })()}
                         </>
                       )}
 

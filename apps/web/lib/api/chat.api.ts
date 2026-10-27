@@ -16,6 +16,7 @@ import type {
   DeleteMosChatMessageRequest,
   DeleteMosChatTaskResponse,
   EditMosChatMessageRequest,
+  ExtractMosChatChecklistResponse,
   MarkConversationAsUnreadResponse,
   MarkThreadAsReadResponse,
   MosChatAccessConfig,
@@ -243,6 +244,13 @@ export const chatApi = {
     deleteTask: async (taskId: string): Promise<DeleteMosChatTaskResponse> => {
       const res = await api.delete(`/chat/tasks/${encodeURIComponent(taskId)}`);
       invalidateApiGetCache(['/chat/bootstrap']);
+      return res.data;
+    },
+    extractChecklist: async (
+      messageId: string,
+      payload?: { conversationId?: string }
+    ): Promise<ExtractMosChatChecklistResponse> => {
+      const res = await api.post(`/chat/threads/${encodeURIComponent(messageId)}/extract-checklist`, payload || {});
       return res.data;
     },
     createConversation: async (
