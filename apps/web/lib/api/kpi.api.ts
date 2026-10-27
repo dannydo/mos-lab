@@ -77,6 +77,8 @@ import type {
   TelesaleTvQuoteItem,
   TelesaleTvQuotesConfig,
   TelesaleTvQuotesOverviewResponse,
+  CbLiveTelemetryResponse,
+  CbTelemetryQueryParams,
 } from '@mos-lab/shared';
 
 import { api } from './base';
@@ -304,6 +306,10 @@ export const kpiApi = {
         const response = await api.get('/kpi/cv-speed/styles');
         return response.data;
       },
+    },
+    getCbLiveTelemetry: async (params?: CbTelemetryQueryParams): Promise<CbLiveTelemetryResponse> => {
+      const response = await api.get('/kpi/cb-live-telemetry', { params });
+      return response.data?.data || response.data;
     },
   },
   gamification: {
