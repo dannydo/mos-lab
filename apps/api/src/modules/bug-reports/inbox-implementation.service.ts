@@ -847,6 +847,25 @@ export class InboxImplementationService {
   ): Promise<InboxIdeTaskProvisioningRequest | null> {
     safeWorkerId(provisionerId);
     const now = new Date();
+
+    // Guard: Max 3 concurrent active coding sessions for Antigravity (1 session reserved for Danny's manual work)
+    const MAX_CONCURRENT_CODING_SESSIONS = 3;
+    let activeCodingCount = 0;
+    if (typeof fastify.prisma?.crm?.crmInboxImplementationJob?.count === 'function') {
+      activeCodingCount = await fastify.prisma.crm.crmInboxImplementationJob.count({
+        where: {
+          executionOwner: { in: ['AG', 'IDE', 'AUTO'] },
+          status: 'PENDING',
+          ideTaskId: { not: null },
+          ideHandoffRevokedAt: null,
+          executionPhase: { in: ['IDE_HANDOFF_READY', 'RUNNING'] },
+        },
+      });
+    }
+    if (activeCodingCount >= MAX_CONCURRENT_CODING_SESSIONS) {
+      return null;
+    }
+
     const candidate = await fastify.prisma.crm.crmInboxImplementationJob.findFirst({
       where: {
         executionOwner: { in: ['AG', 'IDE', 'AUTO'] },

@@ -70,6 +70,20 @@ function WorkerDebugTooltip({ worker, reports }: { worker: InboxWorkerStatusSumm
           </span>
         </div>
 
+        {typeof worker.maxCodingSlots === 'number' && (
+          <div>
+            <span className="text-slate-400">Coding sessions: </span>
+            <span className="font-semibold text-white tabular-nums">
+              {worker.activeCodingCount ?? 0}/{worker.maxCodingSlots} slot
+            </span>
+            <div className="text-[10px] text-slate-400 mt-0.5">
+              {(worker.activeCodingCount ?? 0) >= worker.maxCodingSlots
+                ? 'Đã đủ 3 session đang code, ticket mới sẽ xếp hàng chờ. 1 session luôn bảo lưu riêng cho Danny.'
+                : 'Tối đa 3 session song song, 1 session luôn bảo lưu riêng cho Danny.'}
+            </div>
+          </div>
+        )}
+
         {activeTask ? (
           <>
             <div>
@@ -119,6 +133,8 @@ function MinimalWorkerPill({
   const isOnline = worker.isOnline;
   const activeTask = worker.activeTask;
   const shortName = worker.id === 'AG' ? 'AG' : 'Codex';
+  const hasSlotInfo = worker.id === 'AG' && typeof worker.maxCodingSlots === 'number';
+  const isSlotsFull = (worker.activeCodingCount ?? 0) >= (worker.maxCodingSlots ?? 3);
 
   return (
     <Tooltip title={<WorkerDebugTooltip worker={worker} reports={reports} />} placement="bottom">
@@ -135,6 +151,18 @@ function MinimalWorkerPill({
           }`}
         />
         <span className="text-[11px] text-slate-500 dark:text-slate-400">{isOnline ? 'Online' : 'Offline'}</span>
+
+        {hasSlotInfo && (
+          <span
+            className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums border leading-none ${
+              isSlotsFull
+                ? 'bg-amber-500/10 text-amber-600 border-amber-500/20 dark:bg-amber-400/10 dark:text-amber-400 dark:border-amber-400/20'
+                : 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:bg-emerald-400/10 dark:text-emerald-400 dark:border-emerald-400/20'
+            }`}
+          >
+            {worker.activeCodingCount ?? 0}/{worker.maxCodingSlots} slot
+          </span>
+        )}
 
         {activeTask && (
           <span className="ml-1 inline-flex items-center gap-1 border-l border-slate-300/60 pl-1.5 dark:border-slate-700/60">
@@ -186,6 +214,8 @@ export function InboxWorkerLiveBar({
       name: 'Antigravity (AG)',
       isOnline: Boolean(health?.state === 'ONLINE' && (!liveWorker || liveWorker.workerId?.startsWith('ag-'))),
       lastSeenAt: health?.lastHeartbeatAt ?? null,
+      activeCodingCount: 0,
+      maxCodingSlots: 3,
       activeTask:
         liveWorker && (!liveWorker.workerId || liveWorker.workerId.startsWith('ag-'))
           ? {

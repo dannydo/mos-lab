@@ -2099,6 +2099,23 @@ test('Antigravity (AG) task bridge claims provisioning for eligible execution ow
   });
 });
 
+test('Antigravity task bridge provisioning blocks when 3 coding sessions are already active', async () => {
+  const fastify = {
+    prisma: {
+      crm: {
+        crmInboxImplementationJob: {
+          count: async () => 3,
+          findFirst: async () => {
+            throw new Error('should not query candidate when slots are full');
+          },
+        },
+      },
+    },
+  };
+  const claimed = await InboxImplementationService.claimAgTaskProvisioning(fastify as never, 'antigravity-worker');
+  assert.equal(claimed, null);
+});
+
 test('Antigravity task bridge provisioning includes recent subthread comments when present', async () => {
   const commentCreatedAt = new Date('2026-10-25T11:00:00.000Z');
   const job = {

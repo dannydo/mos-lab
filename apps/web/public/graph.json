@@ -32047,6 +32047,30 @@
       }
     },
     {
+      "id": "uicomp:MosChatMobileAvatar.test",
+      "type": "UIComponent",
+      "label": "<MosChatMobileAvatar.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatMobileAvatar.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileAvatar.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatMobileDateTimePicker.test",
+      "type": "UIComponent",
+      "label": "<MosChatMobileDateTimePicker.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatMobileDateTimePicker.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileDateTimePicker.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatMobileMediaGallery.test",
       "type": "UIComponent",
       "label": "<MosChatMobileMediaGallery.test />",
@@ -32355,6 +32379,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "MosChatMobileComposer",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatMobileDateTimePicker",
+      "type": "UIComponent",
+      "label": "<MosChatMobileDateTimePicker />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/mobile/MosChatMobileDateTimePicker.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileDateTimePicker",
         "isPrimitive": false
       }
     },
@@ -35024,8 +35060,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-implementation.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 82442,
-        "lineCount": 2297,
+        "sizeBytes": 82977,
+        "lineCount": 2314,
         "ext": ".ts"
       }
     },
@@ -35037,8 +35073,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-implementation.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 162018,
-        "lineCount": 4075,
+        "sizeBytes": 162743,
+        "lineCount": 4094,
         "ext": ".ts"
       }
     },
@@ -35128,8 +35164,8 @@
       "filePath": "apps/api/src/modules/bug-reports/inbox-worker-status.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 6013,
-        "lineCount": 160,
+        "sizeBytes": 6540,
+        "lineCount": 177,
         "ext": ".ts"
       }
     },
@@ -41537,8 +41573,8 @@
       "filePath": "apps/web/app/dashboard/bug-reports/components/BugReportWorkerActivity.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 9089,
-        "lineCount": 245,
+        "sizeBytes": 10656,
+        "lineCount": 275,
         "ext": ".tsx"
       }
     },
@@ -46321,8 +46357,8 @@
       "filePath": "packages/shared/src/types/bug-report.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 46318,
-        "lineCount": 1440,
+        "sizeBytes": 46375,
+        "lineCount": 1442,
         "ext": ".ts"
       }
     },
@@ -65163,6 +65199,34 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatMobileAvatar.test:ws:apps/web",
+      "source": "uicomp:MosChatMobileAvatar.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileAvatar.test:token:color:primary",
+      "source": "uicomp:MosChatMobileAvatar.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileDateTimePicker.test:ws:apps/web",
+      "source": "uicomp:MosChatMobileDateTimePicker.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileDateTimePicker.test:token:color:primary",
+      "source": "uicomp:MosChatMobileDateTimePicker.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatMobileMediaGallery.test:ws:apps/web",
       "source": "uicomp:MosChatMobileMediaGallery.test",
       "target": "ws:apps/web",
@@ -65522,6 +65586,20 @@
     {
       "id": "edge:uicomp:MosChatMobileComposer:token:color:primary",
       "source": "uicomp:MosChatMobileComposer",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileDateTimePicker:ws:apps/web",
+      "source": "uicomp:MosChatMobileDateTimePicker",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileDateTimePicker:token:color:primary",
+      "source": "uicomp:MosChatMobileDateTimePicker",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -100752,8 +100830,8 @@
     }
   ],
   "stats": {
-    "totalNodes": 3611,
-    "totalEdges": 7678,
+    "totalNodes": 3614,
+    "totalEdges": 7684,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 176,
@@ -100761,14 +100839,14 @@
       "Component": 62,
       "SharedType": 1312,
       "DesignToken": 12,
-      "UIComponent": 312,
+      "UIComponent": 315,
       "File": 1000
     },
     "edgeTypeCounts": {
       "EXPORTS": 1500,
       "HANDLES_ROUTE": 734,
-      "RENDERS": 374,
-      "USES_TOKEN": 314,
+      "RENDERS": 377,
+      "USES_TOKEN": 317,
       "IMPORTS": 558,
       "QUERIES_MODEL": 422,
       "API_CALL": 3776

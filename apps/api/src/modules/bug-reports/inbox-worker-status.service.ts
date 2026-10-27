@@ -82,8 +82,23 @@ export class InboxWorkerStatusService {
     // Query active implementation jobs for both workers
     let agActiveJob: InboxWorkerStatusSummary['activeTask'] = null;
     let codexActiveJob: InboxWorkerStatusSummary['activeTask'] = null;
+    let agCodingCount = 0;
 
     if (fastify?.prisma?.crm?.crmInboxImplementationJob) {
+      try {
+        agCodingCount = await fastify.prisma.crm.crmInboxImplementationJob.count({
+          where: {
+            executionOwner: { in: ['AG', 'IDE', 'AUTO'] },
+            status: 'PENDING',
+            ideTaskId: { not: null },
+            ideHandoffRevokedAt: null,
+            executionPhase: { in: ['IDE_HANDOFF_READY', 'RUNNING'] },
+          },
+        });
+      } catch {
+        // Ignore count error
+      }
+
       try {
         const activeJobs = await fastify.prisma.crm.crmInboxImplementationJob.findMany({
           where: {
@@ -128,6 +143,8 @@ export class InboxWorkerStatusService {
         name: 'Antigravity (AG)',
         isOnline: agOnline,
         lastSeenAt: this.agLastSeenAt?.toISOString() ?? null,
+        activeCodingCount: agCodingCount,
+        maxCodingSlots: 3,
         activeTask: agActiveJob,
       },
       codex: {

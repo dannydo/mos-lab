@@ -326,6 +326,8 @@ export interface InboxWorkerStatusSummary {
   name: string;
   isOnline: boolean;
   lastSeenAt: string | null;
+  activeCodingCount?: number;
+  maxCodingSlots?: number;
   activeTask: {
     ticketId: number;
     ticketKey: string;
