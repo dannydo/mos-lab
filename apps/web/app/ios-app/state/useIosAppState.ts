@@ -12,7 +12,7 @@ export interface SegmentCounts {
   cancel: number;
 }
 
-export function useIosAppState(initialStep: number = 1) {
+export function useIosAppState(initialStep: number = 1, enabled: boolean = true) {
   const [bookings, setBookings] = useState<BookingItem[]>(INITIAL_BOOKINGS);
   const [activeBookingId, setActiveBookingId] = useState<number>(336695);
   const [currentStep, setCurrentStep] = useState<number>(initialStep);
@@ -43,8 +43,10 @@ export function useIosAppState(initialStep: number = 1) {
 
       setIsRefreshing(true);
       try {
+        const token = typeof window !== 'undefined' ? window.localStorage.getItem('mos_token') || '' : '';
         const res = await fetch(`/api/ios/bookings?storeId=${storeId}&segment=${seg}&date=2026-10-04&limit=30`, {
           cache: 'no-store',
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
@@ -80,9 +82,10 @@ export function useIosAppState(initialStep: number = 1) {
 
   // Auto fetch live data on mount and segment change
   useEffect(() => {
+    if (!enabled) return;
     console.log('[useIosAppState] Auto-fetching live bookings for segment:', bookingSegment);
     refreshDb();
-  }, [bookingSegment]);
+  }, [bookingSegment, enabled, refreshDb]);
 
   // Helper to update active booking
   const updateActiveBooking = (updater: (prev: BookingItem) => BookingItem) => {

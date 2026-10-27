@@ -31,7 +31,7 @@ import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import type { MosChatTaskItem, MosChatMissionActionType, SafeAny } from '@mos-lab/shared';
-import { isCanonicalSuperAdminIdentity, isSuperAdminRole } from '@mos-lab/shared';
+import { isCanonicalSuperAdminIdentity, isCvRole, isSuperAdminRole } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
 import { Popconfirm, message as antdMessage } from 'antd';
 import { MosChatAvatar } from '../MosChatAvatar';
@@ -457,7 +457,7 @@ export const MosChatMobileTaskDetailSheet: React.FC<MosChatMobileTaskDetailSheet
           )}
 
           {/* mOS Mission Card & Gate Controls (if linked) */}
-          {mission && (
+          {mission && !isCvRole(currentUser?.role) && (
             <div className="p-3.5 rounded-2xl bg-purple-950/40 border border-purple-500/40 space-y-2.5">
               {/* Top Row: Mission Key, Type, Stage Badge, Link */}
               <div className="flex items-center justify-between gap-1.5 flex-wrap">

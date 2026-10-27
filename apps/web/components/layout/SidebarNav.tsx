@@ -25,7 +25,7 @@ import {
   Compass,
 } from 'lucide-react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { isCanonicalSuperAdminIdentity, isSuperAdminRole, SafeAny, PinnedLinkItem } from '@mos-lab/shared';
+import { isCanonicalSuperAdminIdentity, isCvRole, isSuperAdminRole, SafeAny, PinnedLinkItem } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
 import {
   getSidebarGroups,
@@ -126,8 +126,11 @@ export default function SidebarNav({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const assignedStaffId = searchParams.get('assignedStaffId');
+  const isCvAccount = isCvRole(userRole);
 
-  const { pinnedLinks, isPinned, pinLink, unpinLink, reorderLinks } = usePinnedLinks(userId || userIdentity?.username);
+  const { pinnedLinks, isPinned, pinLink, unpinLink, reorderLinks } = usePinnedLinks(
+    isCvAccount ? undefined : userId || userIdentity?.username
+  );
 
   const [isAddPinnedModalOpen, setIsAddPinnedModalOpen] = useState(false);
   const [draggedPinId, setDraggedPinId] = useState<string | null>(null);
@@ -188,6 +191,10 @@ export default function SidebarNav({
   });
 
   const fetchActiveCampaigns = useCallback(() => {
+    if (isCvAccount) {
+      setActiveCampaigns([]);
+      return;
+    }
     apiClient.campaigns
       .list({ pageSize: 100 })
       .then((res: SafeAny) => {
@@ -197,10 +204,10 @@ export default function SidebarNav({
       .catch((err) => {
         console.error('Fetch campaigns for sidebar error:', err);
       });
-  }, []);
+  }, [isCvAccount]);
 
   const fetchAcademySidebarCampaigns = useCallback(() => {
-    if (!academyAccess) {
+    if (isCvAccount || !academyAccess) {
       setAcademySidebarCampaigns([]);
       return;
     }
@@ -208,9 +215,14 @@ export default function SidebarNav({
       .sidebar()
       .then((campaigns) => setAcademySidebarCampaigns(Array.isArray(campaigns) ? campaigns : []))
       .catch(() => setAcademySidebarCampaigns([]));
-  }, [academyAccess]);
+  }, [academyAccess, isCvAccount]);
 
   const fetchAcademyAccess = useCallback(() => {
+    if (isCvAccount) {
+      setAcademyAccess(false);
+      setAcademySidebarCampaigns([]);
+      return;
+    }
     apiClient.academySales
       .getAccess()
       .then((response) => setAcademyAccess(response.data.canAccess === true))
@@ -218,7 +230,7 @@ export default function SidebarNav({
         setAcademyAccess(false);
         setAcademySidebarCampaigns([]);
       });
-  }, []);
+  }, [isCvAccount]);
 
   const fetchMenuVisibility = useCallback(() => {
     apiClient.menuAccess
@@ -451,30 +463,25 @@ export default function SidebarNav({
     return { byKey, byPath };
   }, [sidebarGroups]);
 
-  const getResolvedPinnedIcon = useCallback(
-    (item: PinnedLinkItem, isExpanded = false) => {
-      // 1. Try finding in sidebar menu config (by menuKey first, then url)
-      const matched =
-        (item.menuKey ? menuItemLookup.byKey.get(item.menuKey) : undefined) ||
-        (item.url
-          ? menuItemLookup.byPath.get(item.url) || menuItemLookup.byPath.get(item.url.split('?')[0])
-          : undefined);
+  const getResolvedPinnedIcon = (item: PinnedLinkItem, isExpanded = false) => {
+    // 1. Try finding in sidebar menu config (by menuKey first, then url)
+    const matched =
+      (item.menuKey ? menuItemLookup.byKey.get(item.menuKey) : undefined) ||
+      (item.url ? menuItemLookup.byPath.get(item.url) || menuItemLookup.byPath.get(item.url.split('?')[0]) : undefined);
 
-      if (matched?.icon) {
-        return matched.icon;
-      }
+    if (matched?.icon) {
+      return matched.icon;
+    }
 
-      // 2. Custom icon selected from AddPinnedLinkModal
-      if (item.icon && item.icon !== 'Pin') {
-        const CustomIconComp = getPinnedIconComponent(item.icon);
-        return <AppIcon icon={CustomIconComp} size="sm" className={isExpanded ? 'text-pink-500' : undefined} />;
-      }
+    // 2. Custom icon selected from AddPinnedLinkModal
+    if (item.icon && item.icon !== 'Pin') {
+      const CustomIconComp = getPinnedIconComponent(item.icon);
+      return <AppIcon icon={CustomIconComp} size="sm" className={isExpanded ? 'text-pink-500' : undefined} />;
+    }
 
-      // 3. Fallback to Pin
-      return <AppIcon icon={Pin} size="sm" className="text-pink-500" />;
-    },
-    [menuItemLookup]
-  );
+    // 3. Fallback to Pin
+    return <AppIcon icon={Pin} size="sm" className="text-pink-500" />;
+  };
 
   const pinnedGroup: SidebarGroupConfig = {
     groupKey: 'grp-pinned',
@@ -493,7 +500,7 @@ export default function SidebarNav({
     ),
   };
 
-  const allDisplayedGroups: SidebarGroupConfig[] = [pinnedGroup, ...displayedGroups];
+  const allDisplayedGroups: SidebarGroupConfig[] = isCvAccount ? displayedGroups : [pinnedGroup, ...displayedGroups];
 
   const createMenuItem = (item: SidebarItemConfig, depth = 0): SafeAny => {
     const customItem = item as SafeAny;
@@ -610,33 +617,35 @@ export default function SidebarNav({
                 {item.badgeCount}
               </span>
             ) : null}
-            <button
-              type="button"
-              aria-label={isItemPinned ? 'Bỏ ghim khỏi menu' : 'Ghim lên đầu menu'}
-              title={isItemPinned ? 'Bỏ ghim khỏi menu' : 'Ghim lên đầu menu'}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (isItemPinned) {
-                  unpinLink(item.key);
-                  message.info(`Đã bỏ ghim "${typeof item.label === 'string' ? item.label : item.key}"`);
-                } else {
-                  pinLink({
-                    title: typeof item.label === 'string' ? item.label : String(item.key),
-                    url: item.path || '',
-                    menuKey: item.key,
-                  });
-                  message.success(`Đã ghim "${typeof item.label === 'string' ? item.label : item.key}" lên đầu menu`);
-                }
-              }}
-              className={`sidebar-pin-btn inline-flex items-center justify-center p-1 rounded transition-all duration-150 ${
-                isItemPinned
-                  ? 'text-pink-500 hover:text-pink-400 opacity-100'
-                  : 'text-neutral-400 hover:text-pink-500 opacity-0 group-hover/pin:opacity-100 hover:bg-neutral-800/30'
-              }`}
-            >
-              <AppIcon icon={Pin} size={13} className={isItemPinned ? 'fill-current' : ''} />
-            </button>
+            {!isCvAccount && (
+              <button
+                type="button"
+                aria-label={isItemPinned ? 'Bỏ ghim khỏi menu' : 'Ghim lên đầu menu'}
+                title={isItemPinned ? 'Bỏ ghim khỏi menu' : 'Ghim lên đầu menu'}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (isItemPinned) {
+                    unpinLink(item.key);
+                    message.info(`Đã bỏ ghim "${typeof item.label === 'string' ? item.label : item.key}"`);
+                  } else {
+                    pinLink({
+                      title: typeof item.label === 'string' ? item.label : String(item.key),
+                      url: item.path || '',
+                      menuKey: item.key,
+                    });
+                    message.success(`Đã ghim "${typeof item.label === 'string' ? item.label : item.key}" lên đầu menu`);
+                  }
+                }}
+                className={`sidebar-pin-btn inline-flex items-center justify-center p-1 rounded transition-all duration-150 ${
+                  isItemPinned
+                    ? 'text-pink-500 hover:text-pink-400 opacity-100'
+                    : 'text-neutral-400 hover:text-pink-500 opacity-0 group-hover/pin:opacity-100 hover:bg-neutral-800/30'
+                }`}
+              >
+                <AppIcon icon={Pin} size={13} className={isItemPinned ? 'fill-current' : ''} />
+              </button>
+            )}
           </span>
         </span>
       ) : (
@@ -759,7 +768,7 @@ export default function SidebarNav({
     return (
       <nav aria-label="Main Navigation" className="sidebar-nav-container sidebar-compact-nav">
         <ul className="sidebar-compact-list" role="menu">
-          {pinnedLinks.length > 0 && (
+          {!isCvAccount && pinnedLinks.length > 0 && (
             <>
               {pinnedLinks.map((item) => {
                 const isActive =

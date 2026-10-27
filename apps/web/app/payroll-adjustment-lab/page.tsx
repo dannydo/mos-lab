@@ -2,15 +2,17 @@
 
 import { Alert, Button, Card, Divider, Input, Segmented, Space, Statistic, Tag, Typography } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type {
-  FalAdjustmentSnapshotInput,
-  FalAdjustmentShadowResult,
-  PayrollAdjustmentLabApproverGroupResponse,
-  PayrollAdjustmentLabApprovalCheckResponse,
-  PayrollAdjustmentLabCase,
-  PayrollAdjustmentLabCaseResponse,
-  PayrollAdjustmentLabHrCustomResponse,
-  PayrollAdjustmentLabSettlementReviewResponse,
+import {
+  isAdminOrSuperAdminRole,
+  isCvRole,
+  type FalAdjustmentSnapshotInput,
+  type FalAdjustmentShadowResult,
+  type PayrollAdjustmentLabApproverGroupResponse,
+  type PayrollAdjustmentLabApprovalCheckResponse,
+  type PayrollAdjustmentLabCase,
+  type PayrollAdjustmentLabCaseResponse,
+  type PayrollAdjustmentLabHrCustomResponse,
+  type PayrollAdjustmentLabSettlementReviewResponse,
 } from '@mos-lab/shared';
 import { apiClient } from '../../lib/api-client';
 import { AdjustmentReviewQueue } from './adjustment-review-queue';
@@ -65,6 +67,7 @@ function statusColor(status: FalAdjustmentShadowResult['status']) {
 }
 
 export default function PayrollAdjustmentLabPage() {
+  const [authorized, setAuthorized] = useState<boolean>(false);
   const [beforeAmount, setBeforeAmount] = useState('2,990');
   const [afterAmount, setAfterAmount] = useState('2,925');
   const [sourceStatus, setSourceStatus] = useState<PeriodStatus>('LOCKED');
@@ -187,16 +190,9 @@ export default function PayrollAdjustmentLabPage() {
   }, [customAmount, customComment, customTargetStatus]);
 
   useEffect(() => {
+    if (!authorized) return;
     void runShadow();
-  }, [runShadow]);
-
-  useEffect(() => {
-    void apiClient.safeDevPayrollAdjustmentLab.approverGroup().then((response) => {
-      setApproverGroup(response.group);
-      setRequesterStaffId(response.group.members[0]?.staffId ?? null);
-      setApproverStaffId(response.group.members[1]?.staffId ?? response.group.members[0]?.staffId ?? null);
-    });
-  }, []);
+  }, [authorized, runShadow]);
 
   const refreshLocalCase = useCallback(async () => {
     const response = await apiClient.safeDevPayrollAdjustmentLab.getCase();
@@ -219,24 +215,18 @@ export default function PayrollAdjustmentLabPage() {
   }, []);
 
   useEffect(() => {
+    if (!authorized) return;
+    void apiClient.safeDevPayrollAdjustmentLab.approverGroup().then((response) => {
+      setApproverGroup(response.group);
+      setRequesterStaffId(response.group.members[0]?.staffId ?? null);
+      setApproverStaffId(response.group.members[1]?.staffId ?? response.group.members[0]?.staffId ?? null);
+    });
     void refreshLocalCase();
-  }, [refreshLocalCase]);
-
-  useEffect(() => {
     void refreshEligibleCase();
-  }, [refreshEligibleCase]);
-
-  useEffect(() => {
     void refreshHrCustomCase();
-  }, [refreshHrCustomCase]);
-
-  useEffect(() => {
     void refreshQueue();
-  }, [refreshQueue]);
-
-  useEffect(() => {
     void apiClient.safeDevPayrollAdjustmentLab.settlementReview().then(setSettlementReview);
-  }, []);
+  }, [authorized, refreshEligibleCase, refreshHrCustomCase, refreshLocalCase, refreshQueue]);
 
   const lockSettlementReview = useCallback(async () => {
     if (!settlementReview || approverStaffId === null) return;
@@ -435,6 +425,34 @@ export default function PayrollAdjustmentLabPage() {
     },
     [approverStaffId, refreshQueue]
   );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const token = window.localStorage.getItem('mos_token');
+      const rawUser = window.localStorage.getItem('mos_user');
+      if (!token || !rawUser) {
+        window.location.replace('/login');
+        return;
+      }
+      const parsed = JSON.parse(rawUser);
+      if (isCvRole(parsed?.role)) {
+        window.location.replace('/dashboard/cv');
+        return;
+      }
+      if (!isAdminOrSuperAdminRole(parsed?.role)) {
+        window.location.replace('/dashboard');
+        return;
+      }
+      setAuthorized(true);
+    } catch {
+      window.location.replace('/login');
+    }
+  }, []);
+
+  if (!authorized) {
+    return null;
+  }
 
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-8 text-slate-100 sm:px-10">

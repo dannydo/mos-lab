@@ -1,5 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mysql from 'mysql2/promise';
+import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
+
+async function verifyAdminAuth(request: NextRequest): Promise<{ ok: boolean; status: number; message?: string }> {
+  const authHeader = request.headers.get('authorization') || '';
+  if (!authHeader.toLowerCase().startsWith('bearer ') || authHeader.trim().length <= 7) {
+    return { ok: false, status: 401, message: 'Vui lòng đăng nhập để truy cập dữ liệu mô phỏng iOS App.' };
+  }
+  const apiBase = (
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.API_URL ||
+    'https://api.lab.masteros.app/api'
+  ).replace(/\/+$/, '');
+  const candidateUrls = [`${apiBase}/auth/me`, 'http://127.0.0.1:4001/api/auth/me'];
+
+  for (const url of candidateUrls) {
+    try {
+      const res = await fetch(url, {
+        headers: { Authorization: authHeader },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(3000),
+      });
+      if (res.status === 401 || res.status === 403) {
+        return { ok: false, status: res.status, message: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn.' };
+      }
+      if (!res.ok) continue;
+      const body = await res.json();
+      const user = body?.user || body;
+      if (!isAdminOrSuperAdminRole(user?.role)) {
+        return {
+          ok: false,
+          status: 403,
+          message: 'Chỉ Admin hoặc Super Admin được phép truy cập trình mô phỏng iOS App.',
+        };
+      }
+      return { ok: true, status: 200 };
+    } catch {
+      // try next candidate endpoint
+    }
+  }
+  return { ok: false, status: 403, message: 'Không thể xác thực quyền Admin cho trình mô phỏng iOS App.' };
+}
 
 let pool: mysql.Pool | null = null;
 
@@ -157,6 +198,19 @@ async function fetchFromWingsProductionApi(segment: string, targetDate: string, 
 
 export async function GET(request: NextRequest) {
   try {
+    const authCheck = await verifyAdminAuth(request);
+    if (!authCheck.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: authCheck.message || 'Forbidden',
+          counts: { incoming: 0, servicing: 0, done: 0, cancel: 0 },
+          bookings: [],
+        },
+        { status: authCheck.status }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const storeId = searchParams.get('storeId') ? Number(searchParams.get('storeId')) : 6;
     const segment = (searchParams.get('segment') || 'INCOMING').toUpperCase();

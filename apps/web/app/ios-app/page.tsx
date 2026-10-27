@@ -1,7 +1,8 @@
 'use client';
 
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { isAdminOrSuperAdminRole, isCvRole } from '@mos-lab/shared';
 import { useIosAppState, IosUserRole } from './state/useIosAppState';
 import { IosTabBar } from './components/ui-kit/IosTabBar';
 
@@ -26,10 +27,43 @@ import { ScreenCvPaystub } from './components/screens/ScreenCvPaystub';
 import { ScreenSettingsRoleSwitch } from './components/screens/ScreenSettingsRoleSwitch';
 
 function IosAppInner() {
+  const [authorized, setAuthorized] = useState<boolean>(false);
   const searchParams = useSearchParams();
   const stepStr = searchParams.get('step');
   const initialStep = stepStr ? parseInt(stepStr, 10) : undefined;
-  const state = useIosAppState(initialStep);
+  const state = useIosAppState(initialStep, authorized);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const token = window.localStorage.getItem('mos_token');
+      const rawUser = window.localStorage.getItem('mos_user');
+      if (!token || !rawUser) {
+        window.location.replace('/login');
+        return;
+      }
+      const parsed = JSON.parse(rawUser);
+      if (isCvRole(parsed?.role)) {
+        window.location.replace('/dashboard/cv');
+        return;
+      }
+      if (!isAdminOrSuperAdminRole(parsed?.role)) {
+        window.location.replace('/dashboard');
+        return;
+      }
+      setAuthorized(true);
+    } catch {
+      window.location.replace('/login');
+    }
+  }, []);
+
+  if (!authorized) {
+    return (
+      <div className="w-full min-h-[100dvh] bg-black flex items-center justify-center text-amber-500 font-bold">
+        Đang kiểm tra quyền truy cập...
+      </div>
+    );
+  }
 
   const renderActiveScreen = () => {
     // 1. Màn hình Cài đặt & Chuyển vai trò

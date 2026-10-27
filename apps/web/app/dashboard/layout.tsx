@@ -329,8 +329,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
   }, []);
 
+  const hasAuthenticatedUser = !loading && Boolean(user?.id);
+  const isCvAccount = isCvRole(user?.role);
+
   useEffect(() => {
     const handleOpenBible = (event: Event) => {
+      if (isCvAccount) return;
       const customEvent = event as CustomEvent<{ commandmentId?: string }>;
       setIsMosBibleOpen(true);
       if (customEvent.detail?.commandmentId) {
@@ -339,7 +343,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
     window.addEventListener('open-mos-bible', handleOpenBible);
     return () => window.removeEventListener('open-mos-bible', handleOpenBible);
-  }, []);
+  }, [isCvAccount]);
 
   const [isPendingAllocationOpen, setIsPendingAllocationOpen] = useState(false);
   const [pendingAllocationCount, setPendingAllocationCount] = useState(0);
@@ -350,8 +354,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [isQuickSearchOpen, setIsQuickSearchOpen] = useState(false);
   const [cvDrawerDate, setCvDrawerDate] = useState(() => dayjs());
   const [workingCvCount, setWorkingCvCount] = useState(0);
-  const hasAuthenticatedUser = !loading && Boolean(user?.id);
-  const isCvAccount = isCvRole(user?.role);
 
   const isDocumentVisible = () => typeof document === 'undefined' || document.visibilityState === 'visible';
 
@@ -700,12 +702,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const mobileUtilityMenu = {
     items: [
-      {
-        key: 'mos-bible',
-        icon: <BookOpenCheck size={16} aria-hidden />,
-        label: 'Mở Kinh Thánh mOS',
-        onClick: () => setIsMosBibleOpen(true),
-      },
+      ...(!isCvAccount
+        ? [
+            {
+              key: 'mos-bible',
+              icon: <BookOpenCheck size={16} aria-hidden />,
+              label: 'Mở Kinh Thánh mOS',
+              onClick: () => setIsMosBibleOpen(true),
+            },
+          ]
+        : []),
       ...(!isCvAccount && pendingAllocationCount > 0
         ? [
             {
@@ -1050,15 +1056,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   />
                 )}
 
-                <HeaderIconButton
-                  action="mos-bible"
-                  className="dashboard-desktop-only"
-                  label="Mở Kinh Thánh mOS theo trang hiện tại"
-                  icon={BookOpenCheck}
-                  onClick={() => setIsMosBibleOpen(true)}
-                />
+                {!isCvAccount && (
+                  <HeaderIconButton
+                    action="mos-bible"
+                    className="dashboard-desktop-only"
+                    label="Mở Kinh Thánh mOS theo trang hiện tại"
+                    icon={BookOpenCheck}
+                    onClick={() => setIsMosBibleOpen(true)}
+                  />
+                )}
 
-                {isMobileTier && (
+                {isMobileTier && (mobileUtilityMenu.items?.length || 0) > 0 && (
                   <Dropdown menu={mobileUtilityMenu} placement="bottomRight" arrow>
                     <HeaderActionIndicator
                       variant="status"
@@ -1236,15 +1244,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <QuickSearchModal open={isQuickSearchOpen} onClose={() => setIsQuickSearchOpen(false)} />
 
-          <MosBibleDrawer
-            open={isMosBibleOpen}
-            pathname={pathname}
-            targetCommandmentId={targetBibleCommandmentId}
-            onClose={() => {
-              setIsMosBibleOpen(false);
-              setTargetBibleCommandmentId(undefined);
-            }}
-          />
+          {!isCvAccount && (
+            <MosBibleDrawer
+              open={isMosBibleOpen}
+              pathname={pathname}
+              targetCommandmentId={targetBibleCommandmentId}
+              onClose={() => {
+                setIsMosBibleOpen(false);
+                setTargetBibleCommandmentId(undefined);
+              }}
+            />
+          )}
 
           <style jsx global>{`
             /* Compact persistent nav rail, never used for mobile navigation. */

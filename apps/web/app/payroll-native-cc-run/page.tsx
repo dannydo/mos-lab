@@ -1,7 +1,7 @@
 'use client';
 
 import { Alert, Card, Divider, Segmented, Space, Statistic, Tag, Typography } from 'antd';
-import type { NativeCcPayrollLocalRunResponse } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, isCvRole, type NativeCcPayrollLocalRunResponse } from '@mos-lab/shared';
 import { useEffect, useState } from 'react';
 import { apiClient } from '../../lib/api-client';
 
@@ -27,6 +27,7 @@ function capSourceLabel(component: string): string {
 }
 
 export default function PayrollNativeCcRunPage() {
+  const [authorized, setAuthorized] = useState<boolean>(false);
   const [run, setRun] = useState<NativeCcPayrollLocalRunResponse | null>(null);
   const [legacyComparison, setLegacyComparison] = useState<import('@mos-lab/shared').LegacyCcComparisonResponse | null>(
     null
@@ -39,6 +40,29 @@ export default function PayrollNativeCcRunPage() {
   const pilotSubjects = cohortAudit?.cc.filter((subject) => subject.status === 'PASS') ?? [];
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const token = window.localStorage.getItem('mos_token');
+      const rawUser = window.localStorage.getItem('mos_user');
+      if (!token || !rawUser) {
+        window.location.replace('/login');
+        return;
+      }
+      const parsed = JSON.parse(rawUser);
+      if (isCvRole(parsed?.role)) {
+        window.location.replace('/dashboard/cv');
+        return;
+      }
+      if (!isAdminOrSuperAdminRole(parsed?.role)) {
+        window.location.replace('/dashboard');
+        return;
+      }
+      setAuthorized(true);
+    } catch {
+      window.location.replace('/login');
+      return;
+    }
+
     void apiClient.safeDevNativeCcPayroll
       .run()
       .then(setRun)
@@ -60,6 +84,10 @@ export default function PayrollNativeCcRunPage() {
         setLegacyError('Không thể hoàn tất audit cohort CC từ nguồn Legacy chỉ-đọc.');
       });
   }, []);
+
+  if (!authorized) {
+    return null;
+  }
 
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-8 text-slate-100 sm:px-10">
