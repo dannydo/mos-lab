@@ -299,7 +299,7 @@ export const SemicircleGauge: React.FC<SemicircleGaugeProps> = ({
               strokeWidth={strokeWidthVal - (isTv ? 6 : 3)}
               strokeLinecap="butt"
               strokeDasharray={isTv ? '6 4' : '3 2'}
-              className="stroke-amber-300 dark:stroke-amber-400 drop-shadow-[0_0_8px_rgba(244,63,94,0.95)] animate-pulse"
+              className="stroke-amber-300 dark:stroke-amber-400 animate-pulse"
             />
           </g>
         )}

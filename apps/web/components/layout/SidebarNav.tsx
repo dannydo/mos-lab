@@ -113,7 +113,7 @@ function containsSelectedItem(item: SidebarItemConfig, selectedKey: string): boo
   return item.key === selectedKey || item.children?.some((child) => containsSelectedItem(child, selectedKey)) === true;
 }
 
-export default function SidebarNav({
+function SidebarNavComponent({
   collapsed,
   themeMode,
   token,
@@ -293,6 +293,7 @@ export default function SidebarNav({
   }, [fetchAcademySidebarCampaigns]);
 
   useEffect(() => {
+    if (!userRole) return;
     fetchAcademyAccess();
   }, [fetchAcademyAccess, userRole]);
 
@@ -303,13 +304,17 @@ export default function SidebarNav({
   }, [fetchMenuVisibility]);
 
   useEffect(() => {
+    if (!userRole) return;
     fetchMenuVisibility();
   }, [fetchMenuVisibility, userRole]);
 
   useEffect(() => {
     fetchBugInboxApprovalCount();
     if (!canTriageBugInbox) return;
-    const refresh = () => fetchBugInboxApprovalCount();
+    const refresh = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+      fetchBugInboxApprovalCount();
+    };
     const interval = window.setInterval(refresh, 30_000);
     window.addEventListener(BUG_INBOX_UPDATED_EVENT, refresh);
     return () => {
@@ -952,3 +957,7 @@ export default function SidebarNav({
     </>
   );
 }
+
+const SidebarNav = React.memo(SidebarNavComponent);
+SidebarNav.displayName = 'SidebarNav';
+export default SidebarNav;

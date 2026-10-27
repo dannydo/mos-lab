@@ -283,8 +283,8 @@ export const AvatarPromptModal: React.FC<AvatarPromptModalProps> = ({
             overflow: 'hidden',
           },
           mask: {
-            backdropFilter: 'blur(16px)',
-            backgroundColor: isDark ? 'rgba(0, 0, 0, 0.75)' : 'rgba(15, 23, 42, 0.45)',
+            backdropFilter: 'blur(6px)',
+            backgroundColor: isDark ? 'rgba(0, 0, 0, 0.78)' : 'rgba(15, 23, 42, 0.48)',
           },
         }}
       >
@@ -308,10 +308,11 @@ export const AvatarPromptModal: React.FC<AvatarPromptModalProps> = ({
             <div className="relative group">
               {/* Rotating Aurora Conic Gradient Ring */}
               <div
-                className="absolute -inset-1 rounded-full opacity-80 blur-[2px] transition duration-1000 group-hover:opacity-100"
+                className="absolute -inset-1 rounded-full opacity-80 transition duration-1000 group-hover:opacity-100"
                 style={{
                   background: 'conic-gradient(from 0deg, #f59e0b, #ec4899, #8b5cf6, #06b6d4, #10b981, #f59e0b)',
                   animation: 'spin 8s linear infinite',
+                  willChange: 'transform',
                 }}
               />
               <div

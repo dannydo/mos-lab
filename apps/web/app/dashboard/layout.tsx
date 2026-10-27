@@ -361,9 +361,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     await pollWithAbort('layout:workingCv', async (signal) => {
       const res = await apiClient.customers.getCvRealtimeStatus({ countOnly: true }, { signal, isPolling: true });
       if (res?.workingCvCount !== undefined) {
-        setWorkingCvCount(res.workingCvCount);
+        setWorkingCvCount((prev) => (prev === res.workingCvCount ? prev : res.workingCvCount!));
       } else if (res?.staffStatuses) {
-        setWorkingCvCount(res.staffStatuses.length);
+        setWorkingCvCount((prev) => (prev === res.staffStatuses.length ? prev : res.staffStatuses.length));
       }
       return res;
     });
@@ -491,7 +491,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         };
       });
 
-      setOnlineMembers(mapped);
+      setOnlineMembers((prev) => {
+        try {
+          return JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped;
+        } catch {
+          return mapped;
+        }
+      });
       return mapped;
     });
   }, []);

@@ -216,11 +216,12 @@ export const TelesaleTodayTvMonitorCard: React.FC<TelesaleTodayTvMonitorCardProp
     return true;
   }, []);
 
-  // Update clock every 5 seconds for smooth countdown
+  // Update clock every 30 seconds for shift pacing without causing 5s layout re-renders
   useEffect(() => {
     const timer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
       setNow(new Date());
-    }, 5000);
+    }, 30000);
     return () => clearInterval(timer);
   }, []);
 

@@ -99,7 +99,13 @@ function TelesaleTargetContent() {
       if (!isSilent) setRefreshing(true);
       try {
         const data = await apiClient.telesaleTarget.getOverview(monthToFetch);
-        setOverview(data);
+        setOverview((prev) => {
+          try {
+            return prev && JSON.stringify(prev) === JSON.stringify(data) ? prev : data;
+          } catch {
+            return data;
+          }
+        });
         setError(null);
       } catch (err: unknown) {
         const msg =
@@ -141,6 +147,7 @@ function TelesaleTargetContent() {
     // Auto-refresh: 5s if in TV fullscreen mode, 8s in normal War Room mode for prompt celebration
     const pollInterval = tvModeOpen ? 5000 : 8000;
     const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
       fetchOverview(selectedMonth, true);
     }, pollInterval);
 

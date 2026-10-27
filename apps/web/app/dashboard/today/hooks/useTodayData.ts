@@ -188,6 +188,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(60); // default to 60s
   const [countdown, setCountdown] = useState(60);
+  const [refreshResetSignal, setRefreshResetSignal] = useState(0);
   const [silentLoading, setSilentLoading] = useState(false);
 
   // Tabs states
@@ -515,46 +516,15 @@ export function useTodayData(options?: UseTodayDataOptions) {
     localStorage.setItem('today_date_range_mode', mode);
   };
 
-  // Auto-refresh countdown
-  useEffect(() => {
-    if (!autoRefresh || !selectedDate) return;
+  const triggerSilentRefresh = useCallback(() => {
+    if (!selectedDate) return;
+    void refreshTodayData(selectedDate, dateRangeMode, true, false);
+  }, [selectedDate, dateRangeMode, refreshTodayData]);
 
-    const isToday = selectedDate.isSame(dayjs(), 'day');
-    if (!isToday) return;
-
-    const tick = () => {
-      if (document.visibilityState !== 'visible') {
-        return;
-      }
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          void refreshTodayData(selectedDate, dateRangeMode, true, false);
-          return refreshInterval;
-        }
-        return prev - 1;
-      });
-    };
-
-    const timer = setInterval(tick, 1000);
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        void refreshTodayData(selectedDate, dateRangeMode, true, false);
-        setCountdown(refreshInterval);
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      clearInterval(timer);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [autoRefresh, selectedDate, dateRangeMode, refreshInterval, refreshTodayData]);
-
-  // Reset countdown if selectedDate changes or refreshInterval changes
+  // Reset countdown signal if selectedDate changes or refreshInterval changes
   useEffect(() => {
     setCountdown(refreshInterval);
+    setRefreshResetSignal((s) => s + 1);
   }, [selectedDate, refreshInterval]);
 
   const handleRefresh = async () => {
@@ -562,6 +532,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
       await refreshTodayData(selectedDate, dateRangeMode);
       optionsRef.current?.onSuccess?.('Đã làm mới dữ liệu vận hành từ cơ sở dữ liệu!');
       setCountdown(refreshInterval);
+      setRefreshResetSignal((s) => s + 1);
     }
   };
 
@@ -806,6 +777,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
     autoRefresh,
     refreshInterval,
     countdown,
+    refreshResetSignal,
     silentLoading,
     bookingFilter,
     bookingBranch,
@@ -870,6 +842,7 @@ export function useTodayData(options?: UseTodayDataOptions) {
     openCustomerDrawer,
     fetchDashboardData,
     handleRefresh,
+    triggerSilentRefresh,
     handlePrevDate,
     handleNextDate,
     getBranchLabel,

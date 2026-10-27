@@ -92,7 +92,13 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
       if (!isSilent) setLoading(true);
       try {
         const data = await apiClient.notifications.getFeed();
-        setFeed(data);
+        setFeed((prev) => {
+          try {
+            return prev && JSON.stringify(prev) === JSON.stringify(data) ? prev : data;
+          } catch {
+            return data;
+          }
+        });
 
         if (isInitialMountRef.current) {
           isInitialMountRef.current = false;
@@ -169,15 +175,23 @@ export const HeaderNotificationCenter: React.FC<HeaderNotificationCenterProps> =
   useEffect(() => {
     fetchFeed(false);
     const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
       fetchFeed(true);
-    }, 15_000);
+    }, 20_000);
     const handleRefresh = () => {
       void fetchFeed(true);
     };
+    const handleVisibility = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        void fetchFeed(true);
+      }
+    };
     window.addEventListener('mos-notifications:refresh', handleRefresh);
+    document.addEventListener('visibilitychange', handleVisibility);
     return () => {
       clearInterval(interval);
       window.removeEventListener('mos-notifications:refresh', handleRefresh);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [fetchFeed]);
 

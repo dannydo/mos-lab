@@ -278,10 +278,36 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
     tabNotificationManager.setUnreadCount('chat-context', totalUnreadCount);
   }, [totalUnreadCount, totalTaskCount, onUnreadCountChange]);
 
+  const lastVersionRef = useRef<number | undefined>(undefined);
+  const staffDirectoryHashRef = useRef<string>('');
+
   // Bootstrap data fetch
   const fetchBootstrap = useCallback(async () => {
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden' && lastVersionRef.current) {
+      return;
+    }
     try {
-      const res = await apiClient.chat.bootstrap();
+      const res = await apiClient.chat.bootstrap({ sinceVersion: lastVersionRef.current }, { isPolling: true });
+      if (res && res.staffDirectory && res.staffDirectory.length > 0) {
+        try {
+          const serialized = JSON.stringify(res.staffDirectory);
+          if (staffDirectoryHashRef.current !== serialized) {
+            staffDirectoryHashRef.current = serialized;
+            setStaffDirectory(res.staffDirectory);
+            if (localStorage.getItem(STAFF_DIRECTORY_CACHE_KEY) !== serialized) {
+              localStorage.setItem(STAFF_DIRECTORY_CACHE_KEY, serialized);
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+      if (res?.unchanged) {
+        return;
+      }
+      if (res?.version) {
+        lastVersionRef.current = res.version;
+      }
       if (res && res.conversations) {
         setConversations(res.conversations);
         const map: Record<string, MosChatMessage[]> = {};
@@ -315,17 +341,6 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       }
       if (res && res.workflowInstances) {
         setWorkflowInstances(res.workflowInstances);
-      }
-      if (res && res.staffDirectory && res.staffDirectory.length > 0) {
-        setStaffDirectory(res.staffDirectory);
-        try {
-          const serialized = JSON.stringify(res.staffDirectory);
-          if (localStorage.getItem(STAFF_DIRECTORY_CACHE_KEY) !== serialized) {
-            localStorage.setItem(STAFF_DIRECTORY_CACHE_KEY, serialized);
-          }
-        } catch {
-          // ignore
-        }
       }
     } catch {
       // offline or silent error

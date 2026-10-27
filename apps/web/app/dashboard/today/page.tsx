@@ -36,6 +36,7 @@ const RealtimeClock = React.memo(() => {
   const [time, setTime] = useState('');
   useEffect(() => {
     const updateTime = () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
       setTime(dayjs().format('HH:mm:ss - DD/MM/YYYY'));
     };
     updateTime();
@@ -56,6 +57,67 @@ const RealtimeClock = React.memo(() => {
   );
 });
 RealtimeClock.displayName = 'RealtimeClock';
+
+const AutoRefreshCountdown = React.memo(
+  ({
+    autoRefresh,
+    refreshInterval,
+    resetSignal,
+    onExpire,
+  }: {
+    autoRefresh: boolean;
+    refreshInterval: number;
+    resetSignal: number;
+    onExpire: () => void;
+  }) => {
+    const [secondsLeft, setSecondsLeft] = useState(refreshInterval);
+    const onExpireRef = React.useRef(onExpire);
+
+    useEffect(() => {
+      onExpireRef.current = onExpire;
+    }, [onExpire]);
+
+    useEffect(() => {
+      setSecondsLeft(refreshInterval);
+    }, [refreshInterval, resetSignal]);
+
+    useEffect(() => {
+      if (!autoRefresh) return;
+
+      const tick = () => {
+        if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+          return;
+        }
+        setSecondsLeft((prev) => {
+          if (prev <= 1) {
+            onExpireRef.current();
+            return refreshInterval;
+          }
+          return prev - 1;
+        });
+      };
+
+      const timer = setInterval(tick, 1000);
+
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          onExpireRef.current();
+          setSecondsLeft(refreshInterval);
+        }
+      };
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      return () => {
+        clearInterval(timer);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
+    }, [autoRefresh, refreshInterval]);
+
+    if (!autoRefresh) return null;
+    return <span className="tabular-nums">({secondsLeft}s)</span>;
+  }
+);
+AutoRefreshCountdown.displayName = 'AutoRefreshCountdown';
 
 export default function TodayDashboard() {
   const { themeMode } = useTheme();
@@ -147,7 +209,15 @@ export default function TodayDashboard() {
                 <ToolbarToggle
                   className="today-auto-refresh-control"
                   label={
-                    <span>F5 {data.autoRefresh && <span className="tabular-nums">({data.countdown}s)</span>}</span>
+                    <span>
+                      F5{' '}
+                      <AutoRefreshCountdown
+                        autoRefresh={data.autoRefresh}
+                        refreshInterval={data.refreshInterval}
+                        resetSignal={data.refreshResetSignal}
+                        onExpire={data.triggerSilentRefresh}
+                      />
+                    </span>
                   }
                   aria-label="Bật hoặc tắt tự động làm mới"
                   checked={data.autoRefresh}

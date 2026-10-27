@@ -39756,8 +39756,8 @@
       "filePath": "apps/web/app/api/ios/bookings/route.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 17889,
-        "lineCount": 482,
+        "sizeBytes": 17915,
+        "lineCount": 483,
         "ext": ".ts"
       }
     },
@@ -43318,8 +43318,8 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 70549,
-        "lineCount": 1782,
+        "sizeBytes": 70816,
+        "lineCount": 1788,
         "ext": ".tsx"
       }
     },
@@ -44332,7 +44332,7 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/SemicircleGauge.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 15897,
+        "sizeBytes": 15854,
         "lineCount": 415,
         "ext": ".tsx"
       }
@@ -44397,8 +44397,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/components/TelesaleTodayTvMonitorCard.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 47707,
-        "lineCount": 1034,
+        "sizeBytes": 47834,
+        "lineCount": 1035,
         "ext": ".tsx"
       }
     },
@@ -44592,8 +44592,8 @@
       "filePath": "apps/web/app/dashboard/telesale-target/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 30247,
-        "lineCount": 689,
+        "sizeBytes": 30517,
+        "lineCount": 696,
         "ext": ".tsx"
       }
     },
@@ -44800,8 +44800,8 @@
       "filePath": "apps/web/app/dashboard/today/hooks/useTodayData.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 31413,
-        "lineCount": 878,
+        "sizeBytes": 30766,
+        "lineCount": 851,
         "ext": ".ts"
       }
     },
@@ -44813,8 +44813,8 @@
       "filePath": "apps/web/app/dashboard/today/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21963,
-        "lineCount": 555,
+        "sizeBytes": 23937,
+        "lineCount": 625,
         "ext": ".tsx"
       }
     },

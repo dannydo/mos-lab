@@ -1589,19 +1589,29 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     [notifyLivePeers]
   );
 
+  const staffDirectoryHashRef = useRef<string>('');
+  const staffDirectoryLenRef = useRef<number>(staffDirectory.length);
+  staffDirectoryLenRef.current = staffDirectory.length;
+
   const fetchBootstrap = useCallback(
     async (forceFull = false) => {
       try {
-        const shouldForceFull = forceFull || staffDirectory.length === 0;
+        const shouldForceFull = forceFull || staffDirectoryLenRef.current === 0;
         const res = await apiClient.chat.bootstrap(
           { sinceVersion: shouldForceFull ? undefined : lastVersionRef.current || undefined },
           { isPolling: true }
         );
         if (res?.accessConfig) {
-          setAccessConfig(res.accessConfig);
+          setAccessConfig((prev) => {
+            try {
+              return JSON.stringify(prev) === JSON.stringify(res.accessConfig) ? prev : res.accessConfig!;
+            } catch {
+              return res.accessConfig!;
+            }
+          });
         }
         if (typeof res?.canAccessChat === 'boolean') {
-          setServerCanAccessChat(res.canAccessChat);
+          setServerCanAccessChat((prev) => (prev === res.canAccessChat ? prev : res.canAccessChat!));
         }
         if (res?.userPrefs) {
           setUserPrefs((prev) => {
@@ -1624,6 +1634,13 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               (isFirstHydration && hasServerCustomizations && serverTs >= localTs) ||
               serverTs > localTs
             ) {
+              try {
+                if (JSON.stringify(prev) === JSON.stringify(res.userPrefs)) {
+                  return prev;
+                }
+              } catch {
+                // ignore
+              }
               if (typeof window !== 'undefined') {
                 try {
                   window.localStorage.setItem(userSidebarPrefsStorageKey, JSON.stringify(res.userPrefs));
@@ -1637,12 +1654,21 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           });
         }
         if (Array.isArray(res?.staffDirectory) && res.staffDirectory.length > 0) {
-          setStaffDirectory(res.staffDirectory);
-          if (typeof window !== 'undefined') {
-            try {
-              window.localStorage.setItem(STAFF_DIRECTORY_CACHE_KEY, JSON.stringify(res.staffDirectory));
-            } catch {
-              // ignore
+          let serializedStaff = '';
+          try {
+            serializedStaff = JSON.stringify(res.staffDirectory);
+          } catch {
+            // ignore
+          }
+          if (!serializedStaff || staffDirectoryHashRef.current !== serializedStaff) {
+            staffDirectoryHashRef.current = serializedStaff;
+            setStaffDirectory(res.staffDirectory);
+            if (typeof window !== 'undefined' && serializedStaff) {
+              try {
+                window.localStorage.setItem(STAFF_DIRECTORY_CACHE_KEY, serializedStaff);
+              } catch {
+                // ignore
+              }
             }
           }
         }
@@ -1980,7 +2006,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         // Fallback state already initialized
       }
     },
-    [userSidebarPrefsStorageKey, staffDirectory.length, maiVoiceAnnounceEnabled, ttsSpeed]
+    [userSidebarPrefsStorageKey, maiVoiceAnnounceEnabled, ttsSpeed]
   );
 
   useMosChatBridgeListener(
@@ -2013,9 +2039,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
     const scheduleNext = () => {
       const isHidden = typeof document !== 'undefined' && document.hidden;
-      // In background tab: poll every 8000ms so tab title & favicon alerts trigger in near-real-time!
-      // In visible active tab: poll every 4000ms (if open or docked) or 15000ms.
-      const delay = isHidden ? 8000 : open || dockedConvIds.length > 0 ? 4000 : 15000;
+      // In background tab: poll every 20000ms so tab title & favicon alerts trigger without burning background CPU!
+      // In visible active tab: poll every 5000ms (if open or docked) or 15000ms.
+      const delay = isHidden ? 20000 : open || dockedConvIds.length > 0 ? 5000 : 15000;
       timer = setTimeout(() => {
         fetchBootstrap();
         scheduleNext();
@@ -2632,11 +2658,16 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     [presence, userPrefs.mutedIds, notifyLivePeers]
   );
 
-  // 1-second ticker for task reminder alerts
+  // 1-second ticker for task reminder alerts (only active when there are unfired pending tasks)
   useEffect(() => {
+    const pendingReminderTasks = uniqueTasks.filter(
+      (t) => !t.done && !t.archived && !t.fired && Boolean(t.remindAt) && !firedTaskIdsRef.current.has(t.id)
+    );
+    if (pendingReminderTasks.length === 0) return;
+
     const timer = setInterval(() => {
       const currentNow = Date.now();
-      uniqueTasks.forEach((t) => {
+      pendingReminderTasks.forEach((t) => {
         if (!t.done && !t.archived && !t.fired && !firedTaskIdsRef.current.has(t.id)) {
           const remainMs = new Date(t.remindAt).getTime() - currentNow;
           if (remainMs <= 0) {
