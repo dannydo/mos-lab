@@ -9,6 +9,7 @@ import type {
   LoginRequest,
   LoginResponse,
   MenuAccessConfigurationResponse,
+  MenuAccessInspectorResponse,
   MenuAccessPolicy,
   MenuAccessSidebarResponse,
   ReviseUiExperienceRequest,
@@ -24,6 +25,7 @@ import type {
   UiExperienceResolveParams,
   UiExperienceResolveResponse,
   UpdateMenuAccessPolicyRequest,
+  UpdateRoleGroupMatrixRequest,
   ConvertFrontendIssueToBugReportResponse,
   FrontendIssueAgAnalysis,
   FrontendIssueAgDispatchResponse,
@@ -249,6 +251,21 @@ export const systemApi = {
       data: UpdateMenuAccessPolicyRequest
     ): Promise<{ success: boolean; policy: MenuAccessPolicy }> => {
       const response = await api.put(`/menu-access/policies/${encodeURIComponent(menuKey)}`, data);
+      return response.data;
+    },
+    updateRoleGroupMatrix: async (
+      roleGroupId: number,
+      data: UpdateRoleGroupMatrixRequest
+    ): Promise<{ success: boolean; roleGroupId: number; allowedMenuKeys: string[] }> => {
+      const response = await api.put(`/menu-access/role-groups/${roleGroupId}`, data);
+      return response.data;
+    },
+    inspectPermissions: async (params: {
+      staffId?: number;
+      roleGroupId?: number;
+      at?: string;
+    }): Promise<MenuAccessInspectorResponse> => {
+      const response = await api.get<MenuAccessInspectorResponse>('/menu-access/inspect', { params });
       return response.data;
     },
   },

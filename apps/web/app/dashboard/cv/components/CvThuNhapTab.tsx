@@ -44,6 +44,7 @@ import {
 import {
   CvPaystubRecord,
   CvWorkLogDetailRecord,
+  isAdminOrSuperAdminRole,
   removeVietnameseTones,
   type ReportComparisonMode,
   calculateFractionToday,
@@ -96,6 +97,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
   // viewport into a vertically stacked phone composition.
   const isTabletDensityLandscape = viewportWidth >= 768 && viewportWidth > viewportHeight;
   const isMobile = tier === 'mobile' && !isTabletDensityLandscape;
+  const canManagePaystub = isAdminOrSuperAdminRole(currentUser?.role as string);
   const useCompactMetricFormat = tier === 'mobile' || tier === 'tablet';
   const formatMetricValue = (value: number) => (useCompactMetricFormat ? formatCompactVND(value) : formatVND(value));
   const previousPeriod = usePreviousReportPeriod(dateRange, comparisonMode);
@@ -658,7 +660,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                       max={120}
                       size="small"
                       value={rule.minMonths}
-                      disabled={currentUser?.role !== 'admin'}
+                      disabled={!canManagePaystub}
                       onChange={(val) => {
                         const updated = [...seniorityRules];
                         updated[idx].minMonths = val || 0;
@@ -672,7 +674,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                       max={100}
                       size="small"
                       value={rule.bonusPercent}
-                      disabled={currentUser?.role !== 'admin'}
+                      disabled={!canManagePaystub}
                       onChange={(val) => {
                         const updated = [...seniorityRules];
                         updated[idx].bonusPercent = val || 0;
@@ -684,7 +686,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                   </Space>
                 </Col>
                 <Col>
-                  {currentUser?.role === 'admin' && (
+                  {canManagePaystub && (
                     <Button
                       danger
                       type="text"
@@ -701,7 +703,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
           )}
         </div>
 
-        {currentUser?.role === 'admin' && (
+        {canManagePaystub && (
           <div className="flex justify-between items-center pt-2 border-t mt-2">
             <Button
               type="dashed"
@@ -1860,7 +1862,7 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                                   ? `Tạo ngày ${dayjs(item.createdAt).format('DD/MM/YYYY')}`
                                   : 'Khoản điều chỉnh'}
                             </span>
-                            {item.source === 'mos' && item.id ? (
+                            {canManagePaystub && item.source === 'mos' && item.id ? (
                               <Popconfirm
                                 title="Xoá phụ cấp này?"
                                 description={`Bạn có chắc muốn xoá khoản "${item.description}" (${item.amount >= 0 ? '+' : ''}${item.amount.toLocaleString('vi-VN')}đ) không?`}
@@ -1906,20 +1908,22 @@ export default function CvThuNhapTab({ dateRange, selectedStore, currentUser, co
                       <td className="py-1.5 px-3 text-right tabular-nums font-semibold text-slate-400">0đ</td>
                     </tr>
                   )}
-                  {/* Nút thêm phụ cấp khác tại mOS */}
-                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/20">
-                    <td colSpan={4} className="py-1.5 px-3 text-right">
-                      <Button
-                        type="dashed"
-                        size="small"
-                        icon={<PlusOutlined />}
-                        onClick={() => setIsAllowanceModalOpen(true)}
-                        className="text-xs text-sky-600 dark:text-sky-400 border-sky-300 dark:border-sky-800 hover:text-sky-500"
-                      >
-                        + Thêm phụ cấp khác tại mOS
-                      </Button>
-                    </td>
-                  </tr>
+                  {/* Nút thêm phụ cấp khác tại mOS (chỉ hiển thị cho Admin / Super Admin) */}
+                  {canManagePaystub && (
+                    <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/20">
+                      <td colSpan={4} className="py-1.5 px-3 text-right">
+                        <Button
+                          type="dashed"
+                          size="small"
+                          icon={<PlusOutlined />}
+                          onClick={() => setIsAllowanceModalOpen(true)}
+                          className="text-xs text-sky-600 dark:text-sky-400 border-sky-300 dark:border-sky-800 hover:text-sky-500"
+                        >
+                          + Thêm phụ cấp khác tại mOS
+                        </Button>
+                      </td>
+                    </tr>
+                  )}
 
                   {/* Phạt trừ thưởng nếu có */}
                   {selectedRecord.penalties && selectedRecord.penalties > 0 ? (

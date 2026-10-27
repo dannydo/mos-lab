@@ -35,7 +35,14 @@ import {
   Trophy,
 } from 'lucide-react';
 
-import { canAccessLoca, isAdminOrSuperAdminRole, isCvRole, isSuperAdminRole, SafeAny } from '@mos-lab/shared';
+import {
+  canAccessLoca,
+  CV_DEFAULT_ALLOWED_MENU_KEYS,
+  isAdminOrSuperAdminRole,
+  isCvRole,
+  isSuperAdminRole,
+  SafeAny,
+} from '@mos-lab/shared';
 import { AppIcon } from '../components/ui/AppIcon';
 
 export interface SidebarItemConfig {
@@ -569,36 +576,6 @@ export function getSidebarGroups(
 
   const filterItems = (items: SidebarItemConfig[]): SidebarItemConfig[] =>
     items.flatMap((item) => {
-      // Invariant: CV accounts must never see management dashboard
-      if (isCv && item.key === 'dashboard') return [];
-      // Invariant: CV accounts must always have access to CV report
-      if (isCv && item.key === 'cv') return [item];
-      // Invariant: CV accounts must never see customer CRM, telesales, campaigns & other role reports
-      if (
-        isCv &&
-        [
-          'customers-parent',
-          'customers-all',
-          'my-customers',
-          'referrals',
-          'nyc-parent',
-          'nyc-main',
-          'nyc-campaigns-mgmt',
-          'loca',
-          'cs-hub',
-          'telesale-target',
-          'telesale-competency',
-          'plans',
-          'calls',
-          'omicall',
-          'kpi',
-          'cc',
-          'bk',
-          'cs',
-        ].includes(item.key)
-      ) {
-        return [];
-      }
       // Dynamic campaign links do not have individual static menu keys. Their
       // parent category therefore enforces the category policy for every child.
       if (!isCrmCategoryVisible && item.key === 'nyc-parent') return [];
@@ -608,6 +585,13 @@ export function getSidebarGroups(
         // A parent is navigational structure, not a separate permission gate.
         // It stays when at least one visible child remains.
         return visibleChildren.length > 0 ? [{ ...item, children: visibleChildren }] : [];
+      }
+      // Strict CV Allowlist Invariant: CV accounts only see 'cv' and 'career-path'
+      // unless an admin explicitly enabled a module via menuVisibility[item.key] === true.
+      if (isCv) {
+        if (menuVisibility[item.key] === false) return [];
+        if (menuVisibility[item.key] === true) return [item];
+        return CV_DEFAULT_ALLOWED_MENU_KEYS.includes(item.key as any) ? [item] : [];
       }
       return menuVisibility[item.key] === false ? [] : [item];
     });

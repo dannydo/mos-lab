@@ -17,7 +17,7 @@ import {
   Moon,
   Phone,
 } from 'lucide-react';
-import { isAdminOrSuperAdminRole, type SafeAny } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, isCvRole, type SafeAny } from '@mos-lab/shared';
 import { useOmiCall } from '../../context/OmiCallContext';
 import { useBugReportLauncherPreferences } from '../bug-reports/useBugReportLauncherPreferences';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
@@ -192,6 +192,7 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   } = useOmiCall();
 
   const { preferences, ready: bugReportReady, setVisible: setBugReportVisible } = useBugReportLauncherPreferences();
+  const isCv = isCvRole(user?.role);
 
   const roleBadge = getRoleBadge(user?.role, token);
   const callStatus = getCallStatusInfo({ isRegistered, omicallReady, callState });
@@ -412,23 +413,25 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
         )}
 
         {/* Bug Report Launcher Toggle */}
-        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-          <div className="flex items-center gap-2.5 min-w-0 pr-2">
-            <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
-              <MessageSquareWarning size={15} />
-            </span>
-            <div className="min-w-0 text-[13px] font-medium leading-tight text-slate-800 dark:text-slate-200 truncate">
-              Nút phản hồi / báo lỗi
+        {!isCv && (
+          <div className="flex items-center justify-between px-2.5 py-1.5 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+            <div className="flex items-center gap-2.5 min-w-0 pr-2">
+              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <MessageSquareWarning size={15} />
+              </span>
+              <div className="min-w-0 text-[13px] font-medium leading-tight text-slate-800 dark:text-slate-200 truncate">
+                Nút phản hồi / báo lỗi
+              </div>
             </div>
+            <Switch
+              size="small"
+              checked={bugReportReady && preferences.visible}
+              disabled={!bugReportReady}
+              aria-label="Hiển thị nút phản hồi mOS"
+              onChange={setBugReportVisible}
+            />
           </div>
-          <Switch
-            size="small"
-            checked={bugReportReady && preferences.visible}
-            disabled={!bugReportReady}
-            aria-label="Hiển thị nút phản hồi mOS"
-            onChange={setBugReportVisible}
-          />
-        </div>
+        )}
       </div>
 
       {/* Section 2: Display Density & Tools */}
@@ -483,7 +486,7 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
         )}
 
         {/* Daily Calls History Button */}
-        {onOpenDailyCalls && (
+        {!isCv && onOpenDailyCalls && (
           <button
             type="button"
             onClick={() => {
@@ -523,17 +526,19 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
         </button>
 
         {/* Telesales Dashboard Button */}
-        <button
-          type="button"
-          onClick={handleTelesalesClick}
-          className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
-        >
-          <span className="flex items-center gap-2.5 text-[13px] font-medium text-slate-800 dark:text-slate-200">
-            <BarChart3 size={16} className="text-amber-500 shrink-0" />
-            KPI Đội Telesales
-          </span>
-          <ChevronRight size={14} className="text-slate-400 shrink-0" />
-        </button>
+        {!isCv && (
+          <button
+            type="button"
+            onClick={handleTelesalesClick}
+            className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-colors hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+          >
+            <span className="flex items-center gap-2.5 text-[13px] font-medium text-slate-800 dark:text-slate-200">
+              <BarChart3 size={16} className="text-amber-500 shrink-0" />
+              KPI Đội Telesales
+            </span>
+            <ChevronRight size={14} className="text-slate-400 shrink-0" />
+          </button>
+        )}
       </div>
 
       {/* Section 3: Logout & Exit Impersonation */}

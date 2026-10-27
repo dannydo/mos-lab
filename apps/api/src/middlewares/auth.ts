@@ -1,5 +1,12 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { isAdminOrSuperAdminRole, isCanonicalSuperAdminIdentity, isSuperAdminRole, UserRole } from '@mos-lab/shared';
+import {
+  isAdminOrSuperAdminRole,
+  isCanonicalSuperAdminIdentity,
+  isSuperAdminRole,
+  SafeAny,
+  UserRole,
+} from '@mos-lab/shared';
+import { MenuAccessService } from '../modules/menu-access/menu-access.service.js';
 
 // Interface for JWT payload
 export interface JwtUserPayload {
@@ -56,14 +63,52 @@ export async function requireAuth(request: FastifyRequest, reply: FastifyReply) 
          * DATABASE SCHEMA REFERENCE:
          * We update the CrmStaff model's lastActiveAt field (apps/api/prisma/crm.prisma)
          */
-        request.server.prisma.crm.crmStaff
-          .update({
+        request.server.prisma?.crm?.crmStaff
+          ?.update?.({
             where: { id: user.id },
             data: { lastActiveAt: new Date() },
           })
-          .catch((err) => {
+          ?.catch?.((err: SafeAny) => {
             request.log.error('Failed to update lastActiveAt in middleware:', err);
           });
+      }
+
+      // Enforce Unified Permission Matrix & CV API Lockdown at the API layer
+      const rawUrl = request.raw?.url || request.url || '/';
+      const accessCheck = await MenuAccessService.checkApiAccess(
+        request.server,
+        {
+          id: user.id,
+          role: user.role,
+          username: user.username,
+          displayName: user.displayName,
+          email: user.email,
+        },
+        rawUrl,
+        request.method
+      );
+      if (!accessCheck.allowed) {
+        void MenuAccessService.recordSecurityBlock(
+          request.server,
+          {
+            id: user.id,
+            role: user.role,
+            username: user.username,
+            displayName: user.displayName,
+            email: user.email,
+          },
+          {
+            moduleKey: accessCheck.moduleKey,
+            method: request.method,
+            path: rawUrl,
+            reason: accessCheck.message || 'Forbidden by Unified Permission Matrix',
+            ip: request.ip,
+          }
+        );
+        return reply.status(403).send({
+          error: 'Forbidden',
+          message: accessCheck.message || 'Bạn không có quyền truy cập tài nguyên này.',
+        });
       }
     }
   } catch (err: SafeAny) {

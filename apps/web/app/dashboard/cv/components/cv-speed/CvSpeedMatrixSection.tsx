@@ -11,6 +11,7 @@ import {
   CvSpeedMatrix,
   CvSpeedMatrixCell,
   CvSpeedMatrixRow,
+  isCvRole,
   SpeedRating,
   LashServiceMode,
   removeVietnameseTones,
@@ -61,6 +62,19 @@ export function CvSpeedMatrixSection({
   const { token } = antTheme.useToken();
   const tier = useResponsiveTier();
   const isMobile = tier === 'mobile';
+  const [isCvUser, setIsCvUser] = React.useState(false);
+
+  React.useEffect(() => {
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('mos_user') : null;
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setIsCvUser(isCvRole(parsed?.role));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const getRatingBadge = (rating: SpeedRating) => {
     if (rating === 'fast') {
@@ -199,9 +213,11 @@ export function CvSpeedMatrixSection({
                 { value: 'retain', label: 'Dặm Mi (Retain)' },
               ]}
             />
-            <Button type="primary" icon={<ReloadOutlined spin={seeding} />} loading={seeding} onClick={onSeed}>
-              Tính Lại Tốc Độ
-            </Button>
+            {!isCvUser && (
+              <Button type="primary" icon={<ReloadOutlined spin={seeding} />} loading={seeding} onClick={onSeed}>
+                Tính Lại Tốc Độ
+              </Button>
+            )}
           </Space>
         </div>
       }

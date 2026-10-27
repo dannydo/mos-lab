@@ -1,5 +1,293 @@
-/** Principal types that can receive a menu-visibility grant. */
-export type MenuAccessScopeType = 'DEPARTMENT' | 'TEAM' | 'STAFF';
+/** Principal types that can receive a menu & API permission grant. */
+export type MenuAccessScopeType = 'ROLE' | 'DEPARTMENT' | 'TEAM' | 'STAFF';
+
+/** Canonical role groups for group-based security management. */
+export interface MenuAccessRoleGroupOption {
+  id: number;
+  code: string;
+  name: string;
+  roles: string[];
+  description: string;
+}
+
+export const MENU_ACCESS_ROLE_GROUPS: readonly MenuAccessRoleGroupOption[] = [
+  {
+    id: 1,
+    code: 'CV',
+    name: 'Chuyên Viên (CV / KTV / LT)',
+    roles: ['cv', 'lt', 'technician', 'ktv'],
+    description: 'Đội ngũ Chuyên Viên Kỹ Thuật & Nghệ Nhân Mi (Mặc định chỉ xem Báo Cáo CV, Career Path & mOS Chat)',
+  },
+  {
+    id: 2,
+    code: 'CC',
+    name: 'Tư vấn viên (CC)',
+    roles: ['cc', 'consultant'],
+    description: 'Đội ngũ Client Consultant tại cửa hàng',
+  },
+  {
+    id: 3,
+    code: 'TELESALES',
+    name: 'Booker & Telesales',
+    roles: ['telesales', 'booker'],
+    description: 'Đội ngũ Booker & Telesales đặt lịch hẹn',
+  },
+  {
+    id: 4,
+    code: 'CS',
+    name: 'Chăm sóc khách hàng (CS / CoCa)',
+    roles: ['cs', 'coca', 'control'],
+    description: 'Đội ngũ CSKH, LoCa và Kiểm soát chất lượng dịch vụ',
+  },
+  {
+    id: 5,
+    code: 'OC_LS',
+    name: 'Điều phối & Giám sát (OC / LS)',
+    roles: ['oc', 'ls'],
+    description: 'Điều phối vận hành và Trưởng nhóm Sales',
+  },
+  {
+    id: 6,
+    code: 'QA_QC',
+    name: 'Kiểm soát chất lượng (QA / QC)',
+    roles: ['qa', 'qc', 'qa_qc'],
+    description: 'Đội ngũ QA/QC kiểm định chất lượng Shop, Chuyên Viên và CX',
+  },
+  {
+    id: 7,
+    code: 'HR',
+    name: 'Nhân sự (HR)',
+    roles: ['hr'],
+    description: 'Bộ phận Hành chính Nhân sự',
+  },
+  {
+    id: 8,
+    code: 'MANAGER',
+    name: 'Quản lý (Manager / FM / CHO / BOSS)',
+    roles: ['manager', 'fm', 'cho', 'boss', 'accountant'],
+    description: 'Cấp quản lý cửa hàng, Floor Manager, CHO, Đối tác chi nhánh & Kế toán',
+  },
+] as const;
+
+export function getRoleGroupForRole(role?: string | null): MenuAccessRoleGroupOption | undefined {
+  const normalized = String(role || '')
+    .trim()
+    .toLowerCase();
+  if (!normalized) return undefined;
+  return MENU_ACCESS_ROLE_GROUPS.find((group) => group.roles.includes(normalized));
+}
+
+export const CV_DEFAULT_ALLOWED_MENU_KEYS = ['cv', 'career-path'] as const;
+
+/**
+ * Strict allowlist of frontend paths accessible to CV accounts by default.
+ * Only Báo Cáo CV (/dashboard/cv), Career Path (/dashboard/career-path), and mOS Chat (/dashboard/chat, /chat) are allowed.
+ */
+export function isCvAllowedPath(pathname?: string | null, menuVisibility?: Record<string, boolean>): boolean {
+  if (!pathname) return false;
+  const cleanPath = pathname.split('?')[0].replace(/\/+$/, '') || '/';
+  if (
+    cleanPath === '/dashboard/cv' ||
+    cleanPath.startsWith('/dashboard/cv/') ||
+    cleanPath === '/dashboard/career-path' ||
+    cleanPath.startsWith('/dashboard/career-path/') ||
+    cleanPath === '/dashboard/chat' ||
+    cleanPath.startsWith('/dashboard/chat/') ||
+    cleanPath === '/chat' ||
+    cleanPath.startsWith('/chat/')
+  ) {
+    return true;
+  }
+  if (menuVisibility) {
+    for (const def of MENU_ACCESS_DEFINITIONS) {
+      const defBasePath = def.path.split('?')[0].replace(/\/+$/, '');
+      if (defBasePath && defBasePath !== '/dashboard' && cleanPath.startsWith(defBasePath)) {
+        if (menuVisibility[def.key] === true) return true;
+      }
+      if (defBasePath === '/dashboard' && cleanPath === '/dashboard' && menuVisibility.dashboard === true) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Maps a normalized backend API path (without `/api` prefix and without query string)
+ * to the canonical menu access keys that govern it.
+ * - Returns `['__SESSION_ALLOWED__']` for core session/shell/chat endpoints allowed for all signed-in staff.
+ * - Returns `['__BUG_REPORT_BLOCKED_FOR_CV__']` for bug report endpoints so CV is strictly blocked.
+ * - Returns matching `menuKey`s for module endpoints.
+ */
+export function resolveMenuKeysForApiPath(apiPath: string): string[] {
+  const clean =
+    (
+      '/' +
+      apiPath
+        .split('?')[0]
+        .replace(/^\/+/, '')
+        .replace(/^api\/+/, '')
+    ).replace(/\/+$/, '') || '/';
+
+  // 1. Core session, profile, chat, notifications, and shell bootstrap endpoints
+  if (
+    clean === '/health' ||
+    clean.startsWith('/health/') ||
+    clean === '/release' ||
+    clean.startsWith('/auth/') ||
+    clean === '/auth' ||
+    clean === '/menu-access/sidebar' ||
+    clean.startsWith('/chat/') ||
+    clean === '/chat' ||
+    clean.startsWith('/notifications') ||
+    clean.startsWith('/ui-experiences/active') ||
+    clean.startsWith('/user-preferences') ||
+    clean.startsWith('/table-config') ||
+    clean.startsWith('/bible')
+  ) {
+    return ['__SESSION_ALLOWED__'];
+  }
+
+  // 2. Bug Reports (mOS Mission) & Frontend Telemetry — explicitly blocked for CV
+  if (
+    clean.startsWith('/bug-reports') ||
+    clean.startsWith('/telemetry') ||
+    clean.startsWith('/frontend-telemetry') ||
+    clean.startsWith('/experience-journal')
+  ) {
+    return ['__BUG_REPORT_BLOCKED_FOR_CV__'];
+  }
+
+  // 3. CV Report & Career Path (Allowed for CV)
+  if (clean.startsWith('/kpi/cv') || clean.startsWith('/cv')) {
+    return ['cv'];
+  }
+  if (clean.startsWith('/career')) {
+    return ['career-path'];
+  }
+
+  // 4. Other KPI & Reports & Gamification
+  if (
+    clean.startsWith('/kpi/cc') ||
+    clean.startsWith('/cc') ||
+    clean.startsWith('/gamification') ||
+    clean.startsWith('/kpi/export-diamond')
+  ) {
+    return ['cc', 'kpi', 'dashboard'];
+  }
+  if (clean.startsWith('/kpi/bk') || clean.startsWith('/kpi/export-booker-salary') || clean.startsWith('/bk')) {
+    return ['bk', 'kpi', 'dashboard'];
+  }
+  if (clean.startsWith('/kpi/cs')) return ['cs', 'cs-hub', 'kpi', 'dashboard'];
+  if (clean.startsWith('/kpi')) return ['kpi', 'dashboard', 'cc', 'bk', 'cs', 'telesale-target'];
+
+  // 5. Home & Operations & CRM
+  if (clean.startsWith('/dashboard/today') || clean.startsWith('/today')) {
+    return ['today', 'dashboard'];
+  }
+  if (clean.startsWith('/schedule-calendar')) {
+    return ['schedule-calendar', 'my-appointments', 'today', 'my-customers', 'customers-all'];
+  }
+  if (clean.startsWith('/branches')) return ['branches', 'dashboard'];
+  if (clean.startsWith('/customers/today')) {
+    return ['today', 'dashboard', 'my-customers', 'customers-all', 'cc', 'bk', 'cs'];
+  }
+  if (
+    clean.startsWith('/customers/appointments') ||
+    clean.startsWith('/customers/booking-slots') ||
+    clean.startsWith('/customers/cv-status') ||
+    clean.startsWith('/customers/cv-schedule-roster')
+  ) {
+    return [
+      'my-appointments',
+      'schedule-calendar',
+      'today',
+      'my-customers',
+      'customers-all',
+      'loca',
+      'nyc-main',
+      'cs-hub',
+      'plans',
+      'bk',
+      'cs',
+      'cc',
+    ];
+  }
+  if (clean.startsWith('/customers')) {
+    return [
+      'customers-all',
+      'my-customers',
+      'referrals',
+      'loca',
+      'nyc-main',
+      'nyc-campaigns-mgmt',
+      'cs-hub',
+      'bk',
+      'cs',
+      'telesale-target',
+    ];
+  }
+  if (clean.startsWith('/campaigns')) {
+    return ['nyc-main', 'nyc-campaigns-mgmt', 'loca', 'my-customers', 'customers-all'];
+  }
+  if (clean.startsWith('/allocation')) {
+    return ['my-customers', 'customers-all', 'plans', 'nyc-main', 'loca', 'bk', 'cs'];
+  }
+  if (clean.startsWith('/cs')) return ['cs-hub', 'cs', 'my-customers', 'customers-all'];
+  if (
+    clean.startsWith('/plans') ||
+    clean.startsWith('/calls') ||
+    clean.startsWith('/omicall') ||
+    clean.startsWith('/sms')
+  ) {
+    return [
+      'calls',
+      'plans',
+      'omicall',
+      'my-customers',
+      'customers-all',
+      'loca',
+      'nyc-main',
+      'cs-hub',
+      'referrals',
+      'bk',
+      'cs',
+      'telesale-target',
+      'academy-customers',
+      'academy-lead-manager',
+      'academy-campaigns',
+    ];
+  }
+  if (clean.startsWith('/telesale-competency') || clean.startsWith('/telesale-target')) {
+    return ['telesale-target', 'bk', 'kpi'];
+  }
+
+  // 6. Quality, Schedule, Academy, Labs, System
+  if (clean.startsWith('/qa-shop')) return ['qa-shop'];
+  if (clean.startsWith('/fal')) return ['fal-control-tower'];
+  if (clean.startsWith('/holiday-work')) return ['holiday-work'];
+  if (clean.startsWith('/post-hub')) return ['post-hub'];
+  if (clean.startsWith('/academy-workshops')) return ['academy-workshops'];
+  if (clean.startsWith('/academy')) {
+    return [
+      'academy-customers',
+      'academy-lead-manager',
+      'academy-campaigns',
+      'academy-workshops',
+      'academy-courses',
+      'academy-payment-management',
+      'academy-instructors',
+    ];
+  }
+  if (clean.startsWith('/pilot')) return ['pilot-dark-lashes', 'labs-hub'];
+  if (clean.startsWith('/payroll-ledger')) return ['cc-payroll-pilot'];
+  if (clean.startsWith('/cash-flow')) return ['dashboard'];
+  if (clean.startsWith('/catalog')) return ['catalog'];
+  if (clean.startsWith('/teams')) return ['teams'];
+  if (clean.startsWith('/staff') || clean.startsWith('/roles')) return ['staff-directory', 'teams'];
+
+  return ['dashboard'];
+}
 
 /** Static sidebar entries governed by the organizational visibility matrix. */
 export interface MenuAccessDefinition {
@@ -380,15 +668,29 @@ export interface MenuAccessStaffOption {
   role: string;
 }
 
+export interface SecurityAccessBlockEntry {
+  id: number;
+  menuKey: string;
+  actorStaffId?: number | null;
+  actorLabel: string;
+  actorRole?: string;
+  method?: string;
+  path?: string;
+  reason?: string;
+  createdAt: string;
+}
+
 export interface MenuAccessConfigurationResponse {
   menus: MenuAccessDefinition[];
   policies: MenuAccessPolicy[];
   categories: MenuAccessCategoryDefinition[];
   categoryPolicies: MenuAccessPolicy[];
+  roleGroups?: MenuAccessRoleGroupOption[];
   departments: MenuAccessDepartmentOption[];
   teams: MenuAccessTeamOption[];
   staff: MenuAccessStaffOption[];
   recentAudits: MenuAccessAuditEntry[];
+  securityBlockLogs?: SecurityAccessBlockEntry[];
 }
 
 export interface MenuAccessAuditEntry {
@@ -401,12 +703,52 @@ export interface MenuAccessAuditEntry {
   afterIsRestricted: boolean;
   beforeSubjectCount: number;
   afterSubjectCount: number;
+  beforeSubjects?: string[];
+  afterSubjects?: string[];
   createdAt: string;
 }
 
 export interface UpdateMenuAccessPolicyRequest {
   isRestricted: boolean;
   subjects: MenuAccessSubjectInput[];
+}
+
+export interface UpdateRoleGroupMatrixRequest {
+  allowedMenuKeys: string[];
+}
+
+export interface MenuAccessInspectorAllowedItem {
+  key: string;
+  label: string;
+  groupLabel: string;
+  path: string;
+  grantSource: string;
+  grantedBy?: string | null;
+  grantedAt?: string | null;
+}
+
+export interface MenuAccessTimelineEvent {
+  id: string;
+  timestamp: string;
+  eventType: 'POLICY_CHANGE' | 'ROLE_CHANGE' | 'ACCOUNT_STATUS' | 'BLOCKED_403';
+  summary: string;
+  actorLabel: string;
+  details?: string;
+}
+
+export interface MenuAccessInspectorResponse {
+  targetType: 'STAFF' | 'ROLE';
+  targetId: number;
+  targetLabel: string;
+  evaluatedAt: string;
+  effectiveRole: string;
+  effectiveRoleGroup?: MenuAccessRoleGroupOption | null;
+  isAccountActive?: boolean;
+  activeTeams: Array<{ id: number; code: string; name: string }>;
+  activeDepartments: Array<{ id: number; code: string; name: string }>;
+  allowedMenus: MenuAccessInspectorAllowedItem[];
+  deniedMenusCount: number;
+  auditTimeline: MenuAccessTimelineEvent[];
 }
 
 export interface MenuAccessSidebarResponse {

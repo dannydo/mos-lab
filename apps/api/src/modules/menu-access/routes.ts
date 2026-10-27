@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import type { UpdateMenuAccessPolicyRequest } from '@mos-lab/shared';
+import type { UpdateMenuAccessPolicyRequest, UpdateRoleGroupMatrixRequest } from '@mos-lab/shared';
 import { requireAuth, requireSuperAdmin } from '../../middlewares/auth.js';
 import { MenuAccessError, MenuAccessService, type MenuAccessActor } from './menu-access.service.js';
 
@@ -8,6 +8,7 @@ function actorFrom(request: FastifyRequest): MenuAccessActor {
     id: request.user.id,
     role: request.user.role,
     username: request.user.username,
+    displayName: request.user.displayName,
     email: request.user.email,
   };
 }
@@ -22,8 +23,7 @@ function sendError(fastify: FastifyInstance, reply: FastifyReply, error: unknown
 }
 
 export async function menuAccessRoutes(fastify: FastifyInstance) {
-  // Every signed-in user can resolve their own menu. This only controls
-  // visibility; routes and APIs still perform their own authorization checks.
+  // Every signed-in user can resolve their own menu.
   fastify.get('/menu-access/sidebar', { preHandler: [requireAuth] }, async (request, reply) => {
     try {
       return reply.send(await MenuAccessService.getSidebarVisibility(fastify, actorFrom(request)));
@@ -62,4 +62,38 @@ export async function menuAccessRoutes(fastify: FastifyInstance) {
       }
     }
   );
+
+  fastify.put(
+    '/menu-access/role-groups/:roleGroupId',
+    { preHandler: [requireAuth, requireSuperAdmin] },
+    async (request, reply) => {
+      const { roleGroupId } = request.params as { roleGroupId: string };
+      const body = request.body as UpdateRoleGroupMatrixRequest;
+      try {
+        const configuration = await MenuAccessService.updateRoleGroupMatrix(
+          fastify,
+          actorFrom(request),
+          Number(roleGroupId),
+          Array.isArray(body?.allowedMenuKeys) ? body.allowedMenuKeys : []
+        );
+        return reply.send({ success: true, configuration });
+      } catch (error) {
+        sendError(fastify, reply, error, `Update role group matrix ${roleGroupId} error`);
+      }
+    }
+  );
+
+  fastify.get('/menu-access/inspect', { preHandler: [requireAuth, requireSuperAdmin] }, async (request, reply) => {
+    const query = request.query as { staffId?: string; roleGroupId?: string; at?: string };
+    try {
+      const result = await MenuAccessService.inspectPermissions(fastify, {
+        staffId: query.staffId ? Number(query.staffId) : undefined,
+        roleGroupId: query.roleGroupId ? Number(query.roleGroupId) : undefined,
+        at: query.at,
+      });
+      return reply.send(result);
+    } catch (error) {
+      sendError(fastify, reply, error, 'Inspect permissions error');
+    }
+  });
 }

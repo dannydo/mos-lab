@@ -7552,7 +7552,7 @@
         "path": "/api/career/my-progression",
         "module": "career",
         "handler": "inlineHandler",
-        "line": 54
+        "line": 60
       }
     },
     {
@@ -7566,7 +7566,7 @@
         "path": "/api/career/sync-prod",
         "module": "career",
         "handler": "inlineHandler",
-        "line": 101
+        "line": 115
       }
     },
     {
@@ -8294,7 +8294,7 @@
         "path": "/api/chat/threads/move",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2109
+        "line": 2115
       }
     },
     {
@@ -8308,7 +8308,7 @@
         "path": "/api/chat/messages/:messageId/reaction",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2250
+        "line": 2256
       }
     },
     {
@@ -8322,7 +8322,7 @@
         "path": "/api/chat/messages/:messageId/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2339
+        "line": 2345
       }
     },
     {
@@ -8336,7 +8336,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2370
+        "line": 2376
       }
     },
     {
@@ -8350,7 +8350,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2452
+        "line": 2458
       }
     },
     {
@@ -8364,7 +8364,7 @@
         "path": "/api/chat/messages/:messageId/restore",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2527
+        "line": 2533
       }
     },
     {
@@ -8378,7 +8378,7 @@
         "path": "/api/chat/messages/:messageId/buzz",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2609
+        "line": 2615
       }
     },
     {
@@ -8392,7 +8392,7 @@
         "path": "/api/chat/tasks",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2721
+        "line": 2727
       }
     },
     {
@@ -8406,7 +8406,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2981
+        "line": 2987
       }
     },
     {
@@ -8420,7 +8420,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3217
+        "line": 3223
       }
     },
     {
@@ -8434,7 +8434,7 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3266
+        "line": 3272
       }
     },
     {
@@ -8448,7 +8448,7 @@
         "path": "/api/chat/conversations/:id/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3461
+        "line": 3467
       }
     },
     {
@@ -8462,7 +8462,7 @@
         "path": "/api/chat/conversations/:id/threads/:messageId/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3545
+        "line": 3551
       }
     },
     {
@@ -8476,7 +8476,7 @@
         "path": "/api/chat/conversations/:id/unread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3605
+        "line": 3611
       }
     },
     {
@@ -8490,7 +8490,7 @@
         "path": "/api/chat/conversations/:id/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3649
+        "line": 3655
       }
     },
     {
@@ -8504,7 +8504,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3694
+        "line": 3700
       }
     },
     {
@@ -8518,7 +8518,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3800
+        "line": 3806
       }
     },
     {
@@ -8532,7 +8532,7 @@
         "path": "/api/chat/conversations/:id/nickname",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3875
+        "line": 3881
       }
     },
     {
@@ -8546,7 +8546,7 @@
         "path": "/api/chat/conversations/:id",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3981
+        "line": 3987
       }
     },
     {
@@ -8560,7 +8560,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4097
+        "line": 4103
       }
     },
     {
@@ -8574,7 +8574,7 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4178
+        "line": 4184
       }
     },
     {
@@ -8588,7 +8588,7 @@
         "path": "/api/chat/workflows",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4249
+        "line": 4255
       }
     },
     {
@@ -8602,7 +8602,7 @@
         "path": "/api/chat/workflows/instances",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4272
+        "line": 4278
       }
     },
     {
@@ -8616,7 +8616,7 @@
         "path": "/api/chat/workflows/instances/:instanceId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4453
+        "line": 4459
       }
     },
     {
@@ -8630,7 +8630,7 @@
         "path": "/api/chat/workflows/templates/from-thread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4630
+        "line": 4636
       }
     },
     {
@@ -8644,7 +8644,7 @@
         "path": "/api/chat/stream",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4725
+        "line": 4731
       }
     },
     {
@@ -8658,7 +8658,7 @@
         "path": "/api/chat/sync",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4738
+        "line": 4744
       }
     },
     {
@@ -8672,7 +8672,7 @@
         "path": "/api/chat/conversations/:conversationId/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4801
+        "line": 4807
       }
     },
     {
@@ -11462,6 +11462,34 @@
       }
     },
     {
+      "id": "route:PUT:/api/menu-access/role-groups/:roleGroupId",
+      "type": "FastifyRoute",
+      "label": "PUT /api/menu-access/role-groups/:roleGroupId",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/menu-access/routes.ts",
+      "metadata": {
+        "method": "PUT",
+        "path": "/api/menu-access/role-groups/:roleGroupId",
+        "module": "menu-access",
+        "handler": "inlineHandler",
+        "line": 66
+      }
+    },
+    {
+      "id": "route:GET:/api/menu-access/inspect",
+      "type": "FastifyRoute",
+      "label": "GET /api/menu-access/inspect",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/menu-access/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/menu-access/inspect",
+        "module": "menu-access",
+        "handler": "inlineHandler",
+        "line": 86
+      }
+    },
+    {
       "id": "route:GET:/api/notifications",
       "type": "FastifyRoute",
       "label": "GET /api/notifications",
@@ -14201,8 +14229,14 @@
       "filePath": "apps/web/app/dashboard/staff/menu-access/page.tsx",
       "metadata": {
         "routePath": "/dashboard/staff/menu-access",
-        "apiCallsCount": 3,
-        "apiCalls": ["menuAccess.getConfiguration", "auth.me", "menuAccess.updatePolicy"]
+        "apiCallsCount": 5,
+        "apiCalls": [
+          "menuAccess.getConfiguration",
+          "auth.me",
+          "menuAccess.updateRoleGroupMatrix",
+          "menuAccess.inspectPermissions",
+          "menuAccess.updatePolicy"
+        ]
       }
     },
     {
@@ -25587,6 +25621,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:MenuAccessRoleGroupOption",
+      "type": "SharedType",
+      "label": "MenuAccessRoleGroupOption",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/menu-access.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MenuAccessRoleGroupOption",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:MenuAccessDefinition",
       "type": "SharedType",
       "label": "MenuAccessDefinition",
@@ -25683,6 +25729,18 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:SecurityAccessBlockEntry",
+      "type": "SharedType",
+      "label": "SecurityAccessBlockEntry",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/menu-access.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SecurityAccessBlockEntry",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:MenuAccessConfigurationResponse",
       "type": "SharedType",
       "label": "MenuAccessConfigurationResponse",
@@ -25715,6 +25773,54 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "UpdateMenuAccessPolicyRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UpdateRoleGroupMatrixRequest",
+      "type": "SharedType",
+      "label": "UpdateRoleGroupMatrixRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/menu-access.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UpdateRoleGroupMatrixRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MenuAccessInspectorAllowedItem",
+      "type": "SharedType",
+      "label": "MenuAccessInspectorAllowedItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/menu-access.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MenuAccessInspectorAllowedItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MenuAccessTimelineEvent",
+      "type": "SharedType",
+      "label": "MenuAccessTimelineEvent",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/menu-access.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MenuAccessTimelineEvent",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MenuAccessInspectorResponse",
+      "type": "SharedType",
+      "label": "MenuAccessInspectorResponse",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/menu-access.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MenuAccessInspectorResponse",
         "package": "@mos-lab/shared"
       }
     },
@@ -34131,8 +34237,8 @@
       "filePath": "apps/api/src/middlewares/auth.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 5789,
-        "lineCount": 168,
+        "sizeBytes": 7111,
+        "lineCount": 213,
         "ext": ".ts"
       }
     },
@@ -35275,8 +35381,8 @@
       "filePath": "apps/api/src/modules/career/career.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14419,
-        "lineCount": 401,
+        "sizeBytes": 16584,
+        "lineCount": 463,
         "ext": ".ts"
       }
     },
@@ -35587,8 +35693,8 @@
       "filePath": "apps/api/src/modules/chat/chat-task-checklist.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 3137,
-        "lineCount": 99,
+        "sizeBytes": 3155,
+        "lineCount": 102,
         "ext": ".ts"
       }
     },
@@ -35652,8 +35758,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 186766,
-        "lineCount": 4865,
+        "sizeBytes": 186832,
+        "lineCount": 4871,
         "ext": ".ts"
       }
     },
@@ -37121,8 +37227,8 @@
       "filePath": "apps/api/src/modules/menu-access/menu-access.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 4002,
-        "lineCount": 98,
+        "sizeBytes": 13842,
+        "lineCount": 271,
         "ext": ".ts"
       }
     },
@@ -37134,8 +37240,8 @@
       "filePath": "apps/api/src/modules/menu-access/menu-access.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 15017,
-        "lineCount": 366,
+        "sizeBytes": 46900,
+        "lineCount": 1133,
         "ext": ".ts"
       }
     },
@@ -37147,8 +37253,8 @@
       "filePath": "apps/api/src/modules/menu-access/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2437,
-        "lineCount": 66,
+        "sizeBytes": 3797,
+        "lineCount": 104,
         "ext": ".ts"
       }
     },
@@ -38057,8 +38163,8 @@
       "filePath": "apps/api/src/modules/teams/team.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 29375,
-        "lineCount": 814,
+        "sizeBytes": 29792,
+        "lineCount": 821,
         "ext": ".ts"
       }
     },
@@ -41736,8 +41842,8 @@
       "filePath": "apps/web/app/dashboard/career-path/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 36508,
-        "lineCount": 819,
+        "sizeBytes": 37712,
+        "lineCount": 849,
         "ext": ".tsx"
       }
     },
@@ -42607,8 +42713,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/CvThuNhapTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 118037,
-        "lineCount": 2466,
+        "sizeBytes": 118248,
+        "lineCount": 2470,
         "ext": ".tsx"
       }
     },
@@ -42659,8 +42765,8 @@
       "filePath": "apps/web/app/dashboard/cv/components/cv-speed/CvSpeedMatrixSection.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 11746,
-        "lineCount": 315,
+        "sizeBytes": 12148,
+        "lineCount": 331,
         "ext": ".tsx"
       }
     },
@@ -42724,8 +42830,8 @@
       "filePath": "apps/web/app/dashboard/cv/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 10304,
-        "lineCount": 291,
+        "sizeBytes": 10455,
+        "lineCount": 294,
         "ext": ".tsx"
       }
     },
@@ -43218,8 +43324,8 @@
       "filePath": "apps/web/app/dashboard/layout.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 70187,
-        "lineCount": 1770,
+        "sizeBytes": 70234,
+        "lineCount": 1772,
         "ext": ".tsx"
       }
     },
@@ -43972,8 +44078,8 @@
       "filePath": "apps/web/app/dashboard/staff/menu-access/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22530,
-        "lineCount": 569,
+        "sizeBytes": 36933,
+        "lineCount": 899,
         "ext": ".tsx"
       }
     },
@@ -45597,8 +45703,8 @@
       "filePath": "apps/web/lib/api/system.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 12741,
-        "lineCount": 326,
+        "sizeBytes": 13419,
+        "lineCount": 343,
         "ext": ".ts"
       }
     },
@@ -46507,8 +46613,8 @@
       "filePath": "packages/shared/src/types/menu-access.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 11777,
-        "lineCount": 420,
+        "sizeBytes": 22310,
+        "lineCount": 755,
         "ext": ".ts"
       }
     },
@@ -46533,8 +46639,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 24725,
-        "lineCount": 946,
+        "sizeBytes": 24711,
+        "lineCount": 940,
         "ext": ".ts"
       }
     },
@@ -52249,6 +52355,20 @@
     {
       "id": "edge:route:PUT:/api/menu-access/policies/:menuKey:ws:apps/api",
       "source": "route:PUT:/api/menu-access/policies/:menuKey",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:PUT:/api/menu-access/role-groups/:roleGroupId:ws:apps/api",
+      "source": "route:PUT:/api/menu-access/role-groups/:roleGroupId",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/menu-access/inspect:ws:apps/api",
+      "source": "route:GET:/api/menu-access/inspect",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -60234,6 +60354,13 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:MenuAccessRoleGroupOption:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MenuAccessRoleGroupOption",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:MenuAccessDefinition:ws:packages/shared",
       "source": "type:@mos-lab/shared:MenuAccessDefinition",
       "target": "ws:packages/shared",
@@ -60290,6 +60417,13 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:SecurityAccessBlockEntry:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SecurityAccessBlockEntry",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:MenuAccessConfigurationResponse:ws:packages/shared",
       "source": "type:@mos-lab/shared:MenuAccessConfigurationResponse",
       "target": "ws:packages/shared",
@@ -60306,6 +60440,34 @@
     {
       "id": "edge:type:@mos-lab/shared:UpdateMenuAccessPolicyRequest:ws:packages/shared",
       "source": "type:@mos-lab/shared:UpdateMenuAccessPolicyRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UpdateRoleGroupMatrixRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UpdateRoleGroupMatrixRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MenuAccessInspectorAllowedItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MenuAccessInspectorAllowedItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MenuAccessTimelineEvent:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MenuAccessTimelineEvent",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MenuAccessInspectorResponse:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MenuAccessInspectorResponse",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -68424,6 +68586,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/menu-access/menu-access.service.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/menu-access/menu-access.service.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/menu-access/menu-access.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/menu-access/menu-access.service.ts",
       "target": "ws:packages/shared",
@@ -70078,6 +70247,13 @@
     {
       "id": "edge:file:apps/web/app/dashboard/cv/components/cv-speed/CvSpeedTrendLineChart.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/cv/components/cv-speed/CvSpeedTrendLineChart.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/cv/page.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/cv/page.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -73446,6 +73622,13 @@
       "id": "edge:file:apps/api/src/modules/menu-access/menu-access.service.ts:prisma:crm:CrmStaff",
       "source": "file:apps/api/src/modules/menu-access/menu-access.service.ts",
       "target": "prisma:crm:CrmStaff",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/menu-access/menu-access.service.ts:prisma:crm:CrmStaffAudit",
+      "source": "file:apps/api/src/modules/menu-access/menu-access.service.ts",
+      "target": "prisma:crm:CrmStaffAudit",
       "type": "QUERIES_MODEL",
       "label": "MUTATES_CRM_MODEL"
     },
@@ -78868,6 +79051,20 @@
       "label": "CALLS auth.me"
     },
     {
+      "id": "edge:page:/dashboard/architecture:route:PUT:/api/menu-access/role-groups/:roleGroupId",
+      "source": "page:/dashboard/architecture",
+      "target": "route:PUT:/api/menu-access/role-groups/:roleGroupId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/architecture:route:GET:/api/menu-access/inspect",
+      "source": "page:/dashboard/architecture",
+      "target": "route:GET:/api/menu-access/inspect",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
       "id": "edge:page:/dashboard/architecture:route:GET:/api/pilot/media/:filename",
       "source": "page:/dashboard/architecture",
       "target": "route:GET:/api/pilot/media/:filename",
@@ -79762,6 +79959,13 @@
       "target": "route:POST:/api/fal/logs/:orderServiceId/approval",
       "type": "API_CALL",
       "label": "CALLS catalog.updateService"
+    },
+    {
+      "id": "edge:page:/dashboard/catalog:route:PUT:/api/menu-access/role-groups/:roleGroupId",
+      "source": "page:/dashboard/catalog",
+      "target": "route:PUT:/api/menu-access/role-groups/:roleGroupId",
+      "type": "API_CALL",
+      "label": "CALLS catalog.getGroups"
     },
     {
       "id": "edge:page:/dashboard/catalog:route:POST:/api/pilot/sessions/:id/service-done",
@@ -81447,6 +81651,20 @@
       "id": "edge:page:/dashboard/design-system:route:PUT:/api/menu-access/policies/:menuKey",
       "source": "page:/dashboard/design-system",
       "target": "route:PUT:/api/menu-access/policies/:menuKey",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:PUT:/api/menu-access/role-groups/:roleGroupId",
+      "source": "page:/dashboard/design-system",
+      "target": "route:PUT:/api/menu-access/role-groups/:roleGroupId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/design-system:route:GET:/api/menu-access/inspect",
+      "source": "page:/dashboard/design-system",
+      "target": "route:GET:/api/menu-access/inspect",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -85794,6 +86012,20 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PUT:/api/menu-access/policies/:menuKey",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:PUT:/api/menu-access/policies/:menuKey",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:PUT:/api/menu-access/role-groups/:roleGroupId",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:PUT:/api/menu-access/role-groups/:roleGroupId",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/menu-access/inspect",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/menu-access/inspect",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -90922,6 +91154,20 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:PUT:/api/menu-access/role-groups/:roleGroupId",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:PUT:/api/menu-access/role-groups/:roleGroupId",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/menu-access/inspect",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/menu-access/inspect",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/notifications",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/notifications",
@@ -95069,6 +95315,20 @@
       "id": "edge:page:/dashboard/staff/menu-access:route:PUT:/api/menu-access/policies/:menuKey",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:PUT:/api/menu-access/policies/:menuKey",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:PUT:/api/menu-access/role-groups/:roleGroupId",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:PUT:/api/menu-access/role-groups/:roleGroupId",
+      "type": "API_CALL",
+      "label": "CALLS auth.me"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/menu-access/inspect",
+      "source": "page:/dashboard/staff/menu-access",
+      "target": "route:GET:/api/menu-access/inspect",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -99371,6 +99631,20 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:PUT:/api/menu-access/role-groups/:roleGroupId",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:PUT:/api/menu-access/role-groups/:roleGroupId",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/menu-access/inspect",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/menu-access/inspect",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/notifications",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/notifications",
@@ -100450,31 +100724,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3602,
-    "totalEdges": 7651,
+    "totalNodes": 3610,
+    "totalEdges": 7675,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 176,
-      "FastifyRoute": 732,
+      "FastifyRoute": 734,
       "Component": 62,
-      "SharedType": 1306,
+      "SharedType": 1312,
       "DesignToken": 12,
       "UIComponent": 312,
       "File": 999
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1494,
-      "HANDLES_ROUTE": 732,
+      "EXPORTS": 1500,
+      "HANDLES_ROUTE": 734,
       "RENDERS": 374,
       "USES_TOKEN": 314,
-      "IMPORTS": 553,
-      "QUERIES_MODEL": 421,
-      "API_CALL": 3763
+      "IMPORTS": 555,
+      "QUERIES_MODEL": 422,
+      "API_CALL": 3776
     },
-    "fastifyRouteCount": 737,
+    "fastifyRouteCount": 739,
     "prismaModelCount": 176,
     "nextPageCount": 62,
-    "sharedTypeCount": 1306
+    "sharedTypeCount": 1312
   },
   "routes": [
     {
@@ -104603,6 +104877,20 @@
     {
       "method": "PUT",
       "path": "/api/menu-access/policies/:menuKey",
+      "filePath": "apps/api/src/modules/menu-access/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "menu-access"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/menu-access/role-groups/:roleGroupId",
+      "filePath": "apps/api/src/modules/menu-access/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "menu-access"
+    },
+    {
+      "method": "GET",
+      "path": "/api/menu-access/inspect",
       "filePath": "apps/api/src/modules/menu-access/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "menu-access"

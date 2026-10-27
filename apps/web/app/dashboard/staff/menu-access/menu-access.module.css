@@ -151,6 +151,150 @@
   gap: 6px;
 }
 
+.matrixCard,
+.inspectorCard {
+  display: grid;
+  gap: 14px;
+}
+
+.matrixHeader,
+.inspectorControls {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.matrixControl {
+  display: grid;
+  flex: 1 1 320px;
+  gap: 6px;
+}
+
+.controlLabel {
+  color: var(--mos-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.matrixCheckboxGrid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.matrixItem {
+  align-items: flex-start;
+  background: var(--mos-surface-raised);
+  border: 1px solid var(--mos-surface-border);
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  transition: border-color 0.15s ease;
+}
+
+.matrixItem:hover {
+  border-color: var(--mos-accent);
+}
+
+.matrixItemCopy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.matrixItemCopy strong {
+  color: var(--mos-text);
+  font-size: 13px;
+}
+
+.matrixItemCopy span {
+  color: var(--mos-text-muted);
+  font-size: 11px;
+}
+
+.inspectorResult {
+  background: color-mix(in srgb, var(--mos-surface-muted) 42%, transparent);
+  border: 1px solid var(--mos-surface-border);
+  border-radius: 12px;
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.inspectorSummaryHeader {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.inspectorSummaryHeader > div {
+  display: grid;
+  gap: 2px;
+}
+
+.inspectorSummaryHeader strong {
+  color: var(--mos-text);
+  font-size: 14px;
+}
+
+.inspectorSummaryHeader span {
+  color: var(--mos-text-muted);
+  font-size: 12px;
+}
+
+.allowedPills {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.allowedPill {
+  align-items: center;
+  background: var(--mos-surface-raised);
+  border: 1px solid var(--mos-surface-border);
+  border-radius: 10px;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 8px 10px;
+}
+
+.allowedPill > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.allowedPill strong {
+  color: var(--mos-text);
+  font-size: 13px;
+}
+
+.allowedPill span {
+  color: var(--mos-text-muted);
+  font-size: 11px;
+}
+
+.timelineSection {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.timelineHeading {
+  align-items: center;
+  color: var(--mos-text);
+  display: inline-flex;
+  font-size: 13px;
+  gap: 6px;
+}
+
 @media (max-width: 767px), (max-width: 960px) and (max-height: 480px) and (orientation: landscape) {
   .menuRow {
     align-items: stretch;
@@ -165,4 +309,22 @@
     align-items: stretch;
     flex-direction: column;
   }
+}
+
+.roleGroupSelect {
+  width: 100%;
+  max-width: 520px;
+}
+
+.inspectorModeSelect {
+  width: 230px;
+}
+
+.inspectorSubjectSelect {
+  min-width: 280px;
+  flex: 1;
+}
+
+.inspectorDatePicker {
+  width: 260px;
 }

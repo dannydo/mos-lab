@@ -40,7 +40,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { SeasonalAccentProvider } from '../../context/SeasonalAccentContext';
 import { useResponsiveTier } from '../../hooks/useResponsiveTier';
 import { ThemeSelector } from '../../components/theme/ThemeSelector';
-import { isAdminOrSuperAdminRole, isCvRole } from '@mos-lab/shared';
+import { isAdminOrSuperAdminRole, isCvAllowedPath, isCvRole } from '@mos-lab/shared';
 
 const TelesalesDashboardModal = dynamic(() => import('../../components/TelesalesDashboardModal'), { ssr: false });
 const DailyCallsDrawer = dynamic(() => import('../../components/DailyCallsDrawer'), { ssr: false });
@@ -118,21 +118,7 @@ function ChatDeepLinkWatcher({
 }
 
 const isCvRestrictedPath = (path: string): boolean => {
-  return (
-    path === '/dashboard' ||
-    path.startsWith('/dashboard/customers') ||
-    path.startsWith('/dashboard/nyc') ||
-    path.startsWith('/dashboard/loca') ||
-    path.startsWith('/dashboard/plans') ||
-    path.startsWith('/dashboard/calls') ||
-    path.startsWith('/dashboard/omicall') ||
-    path.startsWith('/dashboard/cskh') ||
-    path.startsWith('/dashboard/telesale') ||
-    path.startsWith('/dashboard/cc') ||
-    path.startsWith('/dashboard/bk') ||
-    path.startsWith('/dashboard/cs') ||
-    path.startsWith('/dashboard/kpi')
-  );
+  return !isCvAllowedPath(path);
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -365,6 +351,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [cvDrawerDate, setCvDrawerDate] = useState(() => dayjs());
   const [workingCvCount, setWorkingCvCount] = useState(0);
   const hasAuthenticatedUser = !loading && Boolean(user?.id);
+  const isCvAccount = isCvRole(user?.role);
 
   const isDocumentVisible = () => typeof document === 'undefined' || document.visibilityState === 'visible';
 
@@ -381,13 +368,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   useEffect(() => {
-    if (!hasAuthenticatedUser) return;
+    if (!hasAuthenticatedUser || isCvAccount) return;
     fetchWorkingCvCount();
     const interval = setInterval(() => {
       if (isDocumentVisible()) fetchWorkingCvCount();
     }, 30000);
     return () => clearInterval(interval);
-  }, [fetchWorkingCvCount, hasAuthenticatedUser]);
+  }, [fetchWorkingCvCount, hasAuthenticatedUser, isCvAccount]);
 
   const fetchReleaseMarker = useCallback(async () => {
     await pollWithAbort('layout:releaseMarker', async (signal) => {
@@ -415,22 +402,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   useEffect(() => {
-    if (!hasAuthenticatedUser) return;
+    if (!hasAuthenticatedUser || isCvAccount) return;
     fetchPendingAllocationsCount();
     const interval = setInterval(() => {
       if (isDocumentVisible()) fetchPendingAllocationsCount();
     }, 35000);
     return () => clearInterval(interval);
-  }, [fetchPendingAllocationsCount, hasAuthenticatedUser]);
+  }, [fetchPendingAllocationsCount, hasAuthenticatedUser, isCvAccount]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && !isCvAccount) {
       const params = new URLSearchParams(window.location.search);
       if (params.get('telesalesModal') === 'true' || params.get('telesales_modal') === 'true') {
         setIsDashboardVisible(true);
       }
     }
-  }, []);
+  }, [isCvAccount]);
 
   const fetchDailyCallsCount = useCallback(async () => {
     await pollWithAbort('layout:dailyCalls', async (signal) => {
@@ -442,13 +429,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   useEffect(() => {
-    if (!hasAuthenticatedUser) return;
+    if (!hasAuthenticatedUser || isCvAccount) return;
     fetchDailyCallsCount();
     const interval = setInterval(() => {
       if (isDocumentVisible()) fetchDailyCallsCount();
     }, 40000);
     return () => clearInterval(interval);
-  }, [fetchDailyCallsCount, hasAuthenticatedUser]);
+  }, [fetchDailyCallsCount, hasAuthenticatedUser, isCvAccount]);
 
   const fetchOnlineStaff = useCallback(async () => {
     await pollWithAbort('layout:onlineStaff', async (signal) => {
@@ -508,16 +495,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   useEffect(() => {
-    if (!hasAuthenticatedUser) return;
+    if (!hasAuthenticatedUser || isCvAccount) return;
     fetchOnlineStaff();
     const interval = setInterval(() => {
       if (isDocumentVisible()) fetchOnlineStaff();
     }, 45000);
     return () => clearInterval(interval);
-  }, [fetchOnlineStaff, hasAuthenticatedUser]);
+  }, [fetchOnlineStaff, hasAuthenticatedUser, isCvAccount]);
 
   useEffect(() => {
-    if (!hasAuthenticatedUser) return;
+    if (!hasAuthenticatedUser || isCvAccount) return;
     const handleVisibilityChange = () => {
       if (typeof document === 'undefined') return;
       if (document.visibilityState === 'hidden') {
@@ -546,7 +533,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       pollingCoordinator.abortAll('UNMOUNT');
     };
-  }, [fetchWorkingCvCount, fetchPendingAllocationsCount, fetchDailyCallsCount, fetchOnlineStaff, hasAuthenticatedUser]);
+  }, [
+    fetchWorkingCvCount,
+    fetchPendingAllocationsCount,
+    fetchDailyCallsCount,
+    fetchOnlineStaff,
+    hasAuthenticatedUser,
+    isCvAccount,
+  ]);
 
   useEffect(() => {
     const saved = localStorage.getItem('mos_sidebar_collapsed');
@@ -712,7 +706,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         label: 'Mở Kinh Thánh mOS',
         onClick: () => setIsMosBibleOpen(true),
       },
-      ...(pendingAllocationCount > 0
+      ...(!isCvAccount && pendingAllocationCount > 0
         ? [
             {
               key: 'pending-allocation',
@@ -722,15 +716,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             },
           ]
         : []),
-      {
-        key: 'telesales-dashboard',
-        icon: <BarChartOutlined />,
-        label: 'KPI Đội Telesales',
-        onClick: () => {
-          setSelectedMemberId('DD');
-          setIsDashboardVisible(true);
-        },
-      },
+      ...(!isCvAccount
+        ? [
+            {
+              key: 'telesales-dashboard',
+              icon: <BarChartOutlined />,
+              label: 'KPI Đội Telesales',
+              onClick: () => {
+                setSelectedMemberId('DD');
+                setIsDashboardVisible(true);
+              },
+            },
+          ]
+        : []),
       ...(isImpersonating
         ? [
             {
@@ -895,7 +893,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {isMobileTier && (
                   <HeaderIconButton action="navigation" label="Mở điều hướng" icon={Menu} onClick={toggleSidebar} />
                 )}
-                {isMobileTier && (
+                {isMobileTier && !isCvAccount && (
                   <HeaderIconButton
                     action="quick-search"
                     label="Tìm nhanh KH hoặc SĐT"
@@ -903,14 +901,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     onClick={() => setIsQuickSearchOpen(true)}
                   />
                 )}
-                <HeaderLeftToolbar onOpenCvDrawer={() => setIsCvDrawerOpen(true)} workingCvCount={workingCvCount} />
-                <HeaderIconButton
-                  action="book-appointment"
-                  label="Book lịch"
-                  icon={CalendarPlus}
-                  tone="accent"
-                  onClick={() => setIsBookingWizardOpen(true)}
-                />
+                {!isCvAccount && (
+                  <>
+                    <HeaderLeftToolbar onOpenCvDrawer={() => setIsCvDrawerOpen(true)} workingCvCount={workingCvCount} />
+                    <HeaderIconButton
+                      action="book-appointment"
+                      label="Book lịch"
+                      icon={CalendarPlus}
+                      tone="accent"
+                      onClick={() => setIsBookingWizardOpen(true)}
+                    />
+                  </>
+                )}
               </div>
               <div className="dashboard-header-right">
                 {isImpersonating && (
@@ -949,7 +951,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </Tag>
                 )}
                 {/* Online User Avatar Bubbles Stack */}
-                {onlineMembers.length > 0 && (
+                {!isCvAccount && onlineMembers.length > 0 && (
                   <div className="dashboard-online-member-stack dashboard-desktop-only">
                     {onlineMembers.map((m, idx) => (
                       <button
@@ -1036,7 +1038,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </div>
                 )}
 
-                {pendingAllocationCount > 0 && (
+                {!isCvAccount && pendingAllocationCount > 0 && (
                   <HeaderIconButton
                     action="pending-allocation"
                     className="dashboard-desktop-only"

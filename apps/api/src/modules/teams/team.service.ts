@@ -192,12 +192,19 @@ export class TeamService {
       );
       const activeSet = new Set<number>(activeRows.map((r) => Number(r.user_id)));
 
-      // Also filter out any staff whose crmStaff record is explicitly set to isActive = false
+      // For CV salon roster, CRM login lock (isActive = false) must NOT wipe out salon booking slots.
+      // Only exclude CV staff who have actually resigned/terminated in HR, while non-CV teams also respect isActive = false.
       const disabledCrmStaff = await fastify.prisma.crm.crmStaff.findMany({
-        where: {
-          isActive: false,
-          legacyStaffId: { in: candidateIds },
-        },
+        where:
+          teamCode === 'CV'
+            ? {
+                employmentStatus: { in: ['RESIGNED', 'TERMINATED'] },
+                legacyStaffId: { in: candidateIds },
+              }
+            : {
+                OR: [{ isActive: false }, { employmentStatus: { in: ['RESIGNED', 'TERMINATED'] } }],
+                legacyStaffId: { in: candidateIds },
+              },
         select: { legacyStaffId: true },
       });
       const disabledCrmSet = new Set(

@@ -7,6 +7,7 @@ import { WalletOutlined, DashboardOutlined, MoneyCollectOutlined, SyncOutlined }
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
+import { isAdminOrSuperAdminRole } from '@mos-lab/shared';
 import { ReportPeriodNavigator, TableSettingsTrigger } from '../../../components/ui';
 import { useResponsiveTier } from '../../../hooks/useResponsiveTier';
 
@@ -191,11 +192,13 @@ export default function CvReportPage() {
             rangeValue={dateRange}
             onRangeChange={setDateRange}
           />
-          <TableSettingsTrigger
-            title="Cấu hình CV"
-            onClick={() => router.push('/dashboard/staff/teams?selected=CV')}
-            className="!border-[#D4A84B] !text-[#D4A84B] hover:!border-[#e7bd61] hover:!text-[#e7bd61]"
-          />
+          {isAdminOrSuperAdminRole(currentUser?.role as string) && (
+            <TableSettingsTrigger
+              title="Cấu hình CV"
+              onClick={() => router.push('/dashboard/staff/teams?selected=CV')}
+              className="!border-[#D4A84B] !text-[#D4A84B] hover:!border-[#e7bd61] hover:!text-[#e7bd61]"
+            />
+          )}
         </Space>
       </div>
 

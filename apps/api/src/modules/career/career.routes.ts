@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { requireAuth, requireSuperAdmin } from '../../middlewares/auth.js';
-import { CareerProgressionConfig, CareerPeriod } from '@mos-lab/shared';
+import { CareerProgressionConfig, CareerPeriod, isCvRole } from '@mos-lab/shared';
 import { CareerProgressionService } from './career.service.js';
 
 export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
@@ -8,15 +8,21 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
    * Lấy cấu hình lộ trình thăng tiến hiện hành
    * GET /api/career/config
    */
-  fastify.get('/career/config', async (request, reply) => {
-    try {
-      const config = await CareerProgressionService.getConfig(fastify);
-      return reply.send({ success: true, data: config });
-    } catch (err: any) {
-      fastify.log.error({ err }, 'Failed to get career config');
-      return reply.status(500).send({ success: false, message: 'Lỗi nạp cấu hình lộ trình thăng tiến' });
+  fastify.get(
+    '/career/config',
+    {
+      preHandler: [requireAuth],
+    },
+    async (_request, reply) => {
+      try {
+        const config = await CareerProgressionService.getConfig(fastify);
+        return reply.send({ success: true, data: config });
+      } catch (err: any) {
+        fastify.log.error({ err }, 'Failed to get career config');
+        return reply.status(500).send({ success: false, message: 'Lỗi nạp cấu hình lộ trình thăng tiến' });
+      }
     }
-  });
+  );
 
   /**
    * Cập nhật cấu hình lộ trình thăng tiến (Chỉ Super Admin - Danny)
@@ -85,7 +91,15 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
     },
     async (request, reply) => {
       try {
+        const user = (request as any).user;
         const staffList = await CareerProgressionService.listStaff(fastify, request.query);
+        if (isCvRole(user?.role)) {
+          const ownId = Number(user?.staffId || user?.id);
+          const filtered = Array.isArray(staffList)
+            ? staffList.filter((s: any) => Number(s.staffId ?? s.id) === ownId)
+            : [];
+          return reply.send({ success: true, data: filtered });
+        }
         return reply.send({ success: true, data: staffList });
       } catch (err: any) {
         fastify.log.error({ err }, 'Failed to list career staff');
@@ -103,7 +117,14 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
     {
       preHandler: [requireAuth],
     },
-    async (_request, reply) => {
+    async (request, reply) => {
+      const user = (request as any).user;
+      if (isCvRole(user?.role)) {
+        return reply.status(403).send({
+          success: false,
+          message: 'Tài khoản Chuyên Viên không có quyền đồng bộ bộ nhớ đệm hệ thống.',
+        });
+      }
       try {
         CareerProgressionService.invalidateCache();
         return reply.send({
@@ -131,6 +152,7 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       preHandler: [requireAuth],
     },
     async (request, reply) => {
+      const user = (request as any).user;
       const staffId = Number(request.params.staffId);
       const forceRefresh = request.query?.refresh === 'true';
       const targetRole = request.query?.targetRole as any;
@@ -138,6 +160,16 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
 
       if (isNaN(staffId) || staffId <= 0) {
         return reply.status(400).send({ success: false, message: 'ID nhân viên không hợp lệ' });
+      }
+
+      if (isCvRole(user?.role)) {
+        const ownId = Number(user?.staffId || user?.id);
+        if (staffId !== ownId) {
+          return reply.status(403).send({
+            success: false,
+            message: 'Tài khoản Chuyên Viên chỉ được xem lộ trình thăng tiến cá nhân của chính mình.',
+          });
+        }
       }
 
       try {
@@ -322,9 +354,20 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       preHandler: [requireAuth],
     },
     async (request, reply) => {
+      const user = (request as any).user;
       const staffId = Number(request.params.staffId);
       if (isNaN(staffId) || staffId <= 0) {
         return reply.status(400).send({ success: false, message: 'ID nhân viên không hợp lệ' });
+      }
+
+      if (isCvRole(user?.role)) {
+        const ownId = Number(user?.staffId || user?.id);
+        if (staffId !== ownId) {
+          return reply.status(403).send({
+            success: false,
+            message: 'Tài khoản Chuyên Viên chỉ được xem lịch sử giao dịch chuối của chính mình.',
+          });
+        }
       }
 
       try {
@@ -355,9 +398,20 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       preHandler: [requireAuth],
     },
     async (request, reply) => {
+      const user = (request as any).user;
       const staffId = Number(request.query?.staffId);
       if (isNaN(staffId) || staffId <= 0) {
         return reply.status(400).send({ success: false, message: 'ID nhân viên không hợp lệ' });
+      }
+
+      if (isCvRole(user?.role)) {
+        const ownId = Number(user?.staffId || user?.id);
+        if (staffId !== ownId) {
+          return reply.status(403).send({
+            success: false,
+            message: 'Tài khoản Chuyên Viên chỉ được xem quyền lợi CV+ của chính mình.',
+          });
+        }
       }
 
       try {
@@ -388,6 +442,14 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       preHandler: [requireAuth],
     },
     async (request, reply) => {
+      const user = (request as any).user;
+      if (isCvRole(user?.role)) {
+        return reply.status(403).send({
+          success: false,
+          message: 'Tài khoản Chuyên Viên không có quyền xem bảng mô phỏng tổng hợp toàn salon.',
+        });
+      }
+
       try {
         const result = await CareerProgressionService.getAllCvPlusSimulations(fastify, request.query?.month);
         return reply.send({ success: true, data: result });

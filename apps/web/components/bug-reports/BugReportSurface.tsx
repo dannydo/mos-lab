@@ -22,6 +22,7 @@ import {
   BUG_REPORT_MAX_ATTACHMENTS,
   BUG_REPORT_MAX_ATTACHMENT_BYTES,
   isAdminOrSuperAdminRole,
+  isCvRole,
   type BugReportClientError,
   type BugReportContext,
   type BugReportExpertDetails,
@@ -124,6 +125,7 @@ export function BugReportSurface() {
   const [rememberExpertDetails, setRememberExpertDetails] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
   const [authenticated, setAuthenticated] = React.useState(false);
+  const [isCvAccount, setIsCvAccount] = React.useState(false);
   const [canViewInbox, setCanViewInbox] = React.useState(false);
   const [release, setRelease] = React.useState<ReleaseMarker | null>(null);
   const [context, setContext] = React.useState<BugReportContext | null>(null);
@@ -188,15 +190,17 @@ export function BugReportSurface() {
     [activeRequestView, activeView]
   );
 
-  const enabled = authenticated && pathname.startsWith('/dashboard');
+  const enabled = authenticated && !isCvAccount && pathname.startsWith('/dashboard');
   const myBugs = useMyBugReports(enabled);
 
   React.useEffect(() => {
     setAuthenticated(Boolean(safeStorage.getItem('mos_token')));
     try {
       const user = JSON.parse(safeStorage.getItem('mos_user') || '{}') as { role?: string };
+      setIsCvAccount(isCvRole(user.role));
       setCanViewInbox(isAdminOrSuperAdminRole(user.role));
     } catch {
+      setIsCvAccount(false);
       setCanViewInbox(false);
     }
   }, [pathname]);

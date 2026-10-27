@@ -44,8 +44,32 @@ describe('Sidebar Configuration CV Invariants', () => {
     expect(allItemKeys.has('bk')).toBe(false);
     expect(allItemKeys.has('cs')).toBe(false);
 
-    // CV must see CV report
+    // CV must see ONLY cv and career-path (inside labs-parent) by default
     expect(allItemKeys.has('cv')).toBe(true);
+    expect(allItemKeys.has('career-path')).toBe(true);
+    expect([...allItemKeys].sort()).toEqual(['career-path', 'cv', 'labs-parent']);
+  });
+
+  it('should allow CV to see an additional item only when explicitly unlocked via menuVisibility', () => {
+    const groups = getSidebarGroups('cv', [], true, {}, [], false, {
+      cv: true,
+      'career-path': true,
+      'schedule-calendar': true,
+      'bug-reports': false,
+    });
+    const allItems = groups.flatMap((g) => g.items);
+    const allItemKeys = new Set<string>();
+    const collectKeys = (items: typeof allItems) => {
+      for (const item of items) {
+        allItemKeys.add(item.key);
+        if (item.children) collectKeys(item.children);
+      }
+    };
+    collectKeys(allItems);
+    expect(allItemKeys.has('cv')).toBe(true);
+    expect(allItemKeys.has('career-path')).toBe(true);
+    expect(allItemKeys.has('schedule-calendar')).toBe(true);
+    expect(allItemKeys.has('bug-reports')).toBe(false);
   });
 
   it('should show dashboard and customer list for admin and manager roles', () => {
