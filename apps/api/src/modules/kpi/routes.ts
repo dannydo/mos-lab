@@ -13,6 +13,7 @@ import { registerBkRoutes } from './routes/bk.routes.js';
 import { registerTelesaleTargetRoutes } from './routes/telesale-target.routes.js';
 import { registerCsTipRoutes } from './routes/cs-tip.routes.js';
 import { registerPackageAuditRoutes } from './routes/package-audit.routes.js';
+import { registerCbTelemetryRoutes } from './routes/cb-telemetry.routes.js';
 import { calculateBookerSalaryStats, getSalaryConfig, setCachedSalaryConfig } from './services/salary-calculator.js';
 import { getActiveBkTelesalesIds } from './services/bk-salary.service.js';
 import { compareBookerProductivity } from './utils/leaderboard.js';
@@ -217,6 +218,7 @@ export async function kpiRoutes(fastify: FastifyInstance) {
   await registerTelesaleTargetRoutes(fastify);
   await registerCsTipRoutes(fastify);
   await registerPackageAuditRoutes(fastify);
+  await registerCbTelemetryRoutes(fastify);
 
   const parseDateRange = (dateFrom?: string, dateTo?: string, defaultDaysStart = 7) => {
     const startStr =
