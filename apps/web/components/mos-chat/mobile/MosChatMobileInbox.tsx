@@ -341,10 +341,17 @@ export const MosChatMobileInbox: React.FC = () => {
                     className="w-full px-4 py-3 flex items-center gap-3 active:bg-slate-800/90 hover:bg-slate-800/40 transition-colors select-none cursor-pointer"
                   >
                     <div className="relative shrink-0">
-                      <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500/25 to-indigo-500/25 border border-amber-500/40 flex items-center justify-center text-amber-300 font-bold text-base shadow-sm">
-                        {staffName.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-slate-900 shadow-sm" />
+                      <MosChatAvatar
+                        size={44}
+                        shape="square"
+                        showOnline
+                        isOnline={Boolean(staff.isOnline ?? true)}
+                        src={staff.avatarUrl}
+                        name={staffName}
+                        staffId={staff.id}
+                        username={staff.username}
+                        staffDirectory={staffDirectory}
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-1.5 mb-0.5">

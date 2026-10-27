@@ -32,12 +32,15 @@ describe('MosChatAvatar & Avatar Helpers', () => {
     },
   ];
 
-  it('calculates clean 2-letter initials for single and multi-word names', () => {
+  it('calculates clean 2-letter initials for single, multi-word, and emoji-prefixed names without UTF-16 surrogate splitting', () => {
     expect(getAvatarInitials('Nguyễn Quang Khải')).toBe('NK');
     expect(getAvatarInitials('Bùi Sinh Nguyên')).toBe('BN');
     expect(getAvatarInitials('Danny Do')).toBe('DD');
     expect(getAvatarInitials('Chuyên Viên Mai')).toBe('MA');
     expect(getAvatarInitials('Admin Tâm')).toBe('TÂ');
+    expect(getAvatarInitials('🚀 mOS Mission')).toBe('MM');
+    expect(getAvatarInitials('🤖 MAI')).toBe('MA');
+    expect(getAvatarInitials('⭐ Chính tôi (Nguyễn Quang Khải)')).toBe('NK');
     expect(getAvatarInitials('')).toBe('NV');
     expect(getAvatarInitials(null)).toBe('NV');
   });
@@ -85,6 +88,7 @@ describe('MosChatAvatar & Avatar Helpers', () => {
     const img = screen.getByRole('img');
     expect(img).toBeTruthy();
     expect(img.getAttribute('src')).toBe('https://lh3.googleusercontent.com/a/khai-avatar=s96-c');
+    expect(img.getAttribute('referrerpolicy')).toBe('no-referrer');
   });
 
   it('renders initials badge when staff has no avatar image', () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { MosChatStaffMember } from '@mos-lab/shared';
 import { resolveStaffAvatarUrl, getAvatarInitials, getAvatarColorPalette } from './utils/chat-helpers';
 
@@ -67,8 +67,12 @@ export const MosChatAvatar: React.FC<MosChatAvatarProps> = ({
     });
   }, [src, name, staffId, username, staffDirectory]);
 
+  useEffect(() => {
+    setImgError(false);
+  }, [resolvedUrl]);
+
   // Initials & Color Palette
-  const initials = useMemo(() => getAvatarInitials(name), [name]);
+  const initials = useMemo(() => getAvatarInitials(name, src), [name, src]);
   const palette = useMemo(() => getAvatarColorPalette(name), [name]);
 
   const roundedClass = shape === 'square' ? 'rounded-2xl' : 'rounded-full';
@@ -87,6 +91,7 @@ export const MosChatAvatar: React.FC<MosChatAvatarProps> = ({
         <img
           src={resolvedUrl}
           alt={alt || name || 'Avatar'}
+          referrerPolicy="no-referrer"
           onError={() => setImgError(true)}
           className={`w-full h-full object-cover ${roundedClass} shadow-sm border border-white/10`}
           loading="lazy"

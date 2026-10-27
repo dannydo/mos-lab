@@ -225,12 +225,16 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
           </div>
         )}
 
-        {/* Sender info for others */}
-        {!isMe && !isConsecutive && (
-          <div className="flex items-center gap-2 mb-1 px-1">
+        {/* Sender info & avatar for both own and other messages */}
+        {!isConsecutive && (
+          <div className={`flex items-center gap-2 mb-1 px-1 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
             {isAiBot ? (
               <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-sm shrink-0">
                 <Sparkles className="w-3.5 h-3.5" />
+              </div>
+            ) : message.senderId === 'mos-mission-bot' ? (
+              <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-amber-500/30 to-indigo-500/30 border border-amber-500/50 flex items-center justify-center text-[11px] shadow-sm shrink-0">
+                🚀
               </div>
             ) : (
               <MosChatAvatar
@@ -241,7 +245,11 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
                 staffDirectory={staffDirectory}
               />
             )}
-            <span className={`text-xs font-semibold ${isAiBot ? 'text-purple-300' : 'text-slate-300'}`}>
+            <span
+              className={`text-xs font-semibold ${
+                isAiBot ? 'text-purple-300' : isMe ? 'text-amber-300' : 'text-slate-300'
+              }`}
+            >
               {message.senderName}
             </span>
             {isAiBot ? (

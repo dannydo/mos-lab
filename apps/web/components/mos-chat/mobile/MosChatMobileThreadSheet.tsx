@@ -949,8 +949,14 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                   </p>
 
                   <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[11px] text-slate-400">
-                    <span className="flex items-center gap-1 text-slate-300 font-medium">
-                      👤 {linkedTask.assigneeName || 'Chưa gán'}
+                    <span className="flex items-center gap-1.5 text-slate-300 font-medium">
+                      <MosChatAvatar
+                        size="xs"
+                        staffId={linkedTask.assigneeId}
+                        name={linkedTask.assigneeName || 'Chưa gán'}
+                        staffDirectory={staffDirectory}
+                      />
+                      <span>{linkedTask.assigneeName || 'Chưa gán'}</span>
                     </span>
                     {(linkedTask.dueAt || linkedTask.deadline) && (
                       <span
@@ -1304,16 +1310,36 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                 </div>
               )}
 
-              {!isMe && !reply.isDeleted && (
-                <div className="flex items-center gap-1.5 mb-1 px-1">
-                  <MosChatAvatar
-                    size="xs"
-                    src={reply.senderAvatar}
-                    name={reply.senderName}
-                    staffId={reply.senderId}
-                    staffDirectory={staffDirectory}
-                  />
-                  <span className="text-[11px] font-semibold text-slate-300">{reply.senderName}</span>
+              {!reply.isDeleted && (
+                <div className={`flex items-center gap-1.5 mb-1 px-1 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                  {reply.isAiBot || reply.senderId === 'wings-ai-copilot' ? (
+                    <div className="w-5 h-5 rounded-md bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-sm shrink-0">
+                      <Sparkles className="w-3 h-3" />
+                    </div>
+                  ) : reply.senderId === 'mos-mission-bot' ? (
+                    <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-amber-500/30 to-indigo-500/30 border border-amber-500/50 flex items-center justify-center text-[10px] shadow-sm shrink-0">
+                      🚀
+                    </div>
+                  ) : (
+                    <MosChatAvatar
+                      size="xs"
+                      src={reply.senderAvatar}
+                      name={reply.senderName}
+                      staffId={reply.senderId}
+                      staffDirectory={staffDirectory}
+                    />
+                  )}
+                  <span
+                    className={`text-[11px] font-semibold ${
+                      reply.isAiBot || reply.senderId === 'wings-ai-copilot'
+                        ? 'text-purple-300'
+                        : isMe
+                          ? 'text-amber-300'
+                          : 'text-slate-300'
+                    }`}
+                  >
+                    {reply.senderName}
+                  </span>
                   {reply.senderRole && (
                     <span className="text-[9px] px-1 py-0.2 rounded bg-slate-800 text-slate-400 font-medium uppercase border border-slate-700/50">
                       {reply.senderRole}

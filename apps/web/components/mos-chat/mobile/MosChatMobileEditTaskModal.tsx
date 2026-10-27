@@ -7,6 +7,7 @@ import type { MosChatTaskItem, MosChatTaskPriority, SafeAny } from '@mos-lab/sha
 import { useMosChat } from '../context/MosChatContext';
 import { DEADLINE_PRESETS } from '../constants/chat-constants';
 import { MosChatMobileDateTimePicker } from './MosChatMobileDateTimePicker';
+import { MosChatAvatar } from '../MosChatAvatar';
 
 export interface MosChatMobileEditTaskModalProps {
   task: MosChatTaskItem | null;
@@ -90,6 +91,11 @@ export const MosChatMobileEditTaskModal: React.FC<MosChatMobileEditTaskModalProp
       return {
         value: String(s.id),
         label: isMe ? `⭐ Chính tôi (${name})` : `${name}${emailHint}${roleStr}`,
+        staffId: s.id,
+        displayName: name,
+        avatarUrl: s.avatarUrl || null,
+        role: s.role || null,
+        isMe,
       };
     });
 
@@ -97,6 +103,11 @@ export const MosChatMobileEditTaskModal: React.FC<MosChatMobileEditTaskModalProp
       opts.unshift({
         value: String(myId),
         label: `⭐ Chính tôi (${myName})`,
+        staffId: myId,
+        displayName: myName,
+        avatarUrl: currentStaff?.avatarUrl || currentUser?.avatarUrl || currentUser?.avatar || null,
+        role: currentStaff?.role || currentUser?.role || null,
+        isMe: true,
       });
     }
 
@@ -168,6 +179,38 @@ export const MosChatMobileEditTaskModal: React.FC<MosChatMobileEditTaskModalProp
                 .includes(input.toLowerCase())
             }
             options={assigneeOptions}
+            optionRender={(option) => {
+              const data = option.data as SafeAny;
+              const staffName = data?.displayName || String(option.label || '');
+              return (
+                <div className="flex items-center gap-2 py-0.5 min-w-0">
+                  <MosChatAvatar
+                    size="xs"
+                    src={data?.avatarUrl}
+                    name={staffName}
+                    staffId={data?.staffId ?? option.value}
+                    staffDirectory={staffDirectory}
+                  />
+                  <span className="truncate text-xs font-medium">{option.label}</span>
+                </div>
+              );
+            }}
+            labelRender={(props) => {
+              const matched = assigneeOptions.find((o) => String(o.value) === String(props.value));
+              const staffName = matched?.displayName || String(props.label || props.value || '');
+              return (
+                <span className="inline-flex items-center gap-2 min-w-0">
+                  <MosChatAvatar
+                    size="xs"
+                    src={matched?.avatarUrl}
+                    name={staffName}
+                    staffId={matched?.staffId ?? (props.value as string | number)}
+                    staffDirectory={staffDirectory}
+                  />
+                  <span className="truncate">{matched?.label || props.label || props.value}</span>
+                </span>
+              );
+            }}
           />
         </div>
 

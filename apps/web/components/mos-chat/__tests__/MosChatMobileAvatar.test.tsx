@@ -5,6 +5,7 @@ import { MosChatMobileMessageItem } from '../mobile/MosChatMobileMessageItem';
 import { MosChatMobileThreadSheet } from '../mobile/MosChatMobileThreadSheet';
 import { MosChatMobileComposer } from '../mobile/MosChatMobileComposer';
 import { MosChatMobileStream } from '../mobile/MosChatMobileStream';
+import { MosChatMobileEditTaskModal } from '../mobile/MosChatMobileEditTaskModal';
 import { MosChatProvider, useMosChat } from '../context/MosChatContext';
 import { apiClient } from '../../../lib/api-client';
 import type { MosChatMessage, MosChatStaffMember, MosChatConversation } from '@mos-lab/shared';
@@ -267,5 +268,93 @@ describe('MOS-BUG-158: Mobile Chat Avatar Standardization', () => {
     const avatars = await screen.findAllByRole('img');
     const welcomeAvatar = avatars.find((img) => img.getAttribute('src')?.includes('danny.jpg'));
     expect(welcomeAvatar).toBeDefined();
+  });
+
+  it('renders avatar for own messages (isMe) in both MosChatMobileMessageItem and MosChatMobileThreadSheet', async () => {
+    const ownMsgWithSelfReply: MosChatMessage = {
+      id: 'msg-self-1',
+      conversationId: 'dm-pair-1-6',
+      senderId: 6,
+      senderName: 'Nguyễn Quang Khải',
+      senderRole: 'Kỹ thuật',
+      senderAvatar: 'https://cdn.wingslashes.com/avatars/khai.jpg',
+      text: 'Tin nhắn của chính Khải gửi trên mobile',
+      timeLabel: '16:15',
+      createdAt: new Date().toISOString(),
+      thread: [
+        {
+          id: 'rep-self-1',
+          senderId: 6,
+          senderName: 'Nguyễn Quang Khải',
+          senderRole: 'Kỹ thuật',
+          senderAvatar: 'https://cdn.wingslashes.com/avatars/khai.jpg',
+          text: 'Phản hồi của chính Khải trong thread',
+          timeLabel: '16:17',
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    };
+
+    const SelfThreadContainer = () => {
+      const { setActiveThreadMsg } = useMosChat();
+      return (
+        <div>
+          <MosChatMobileMessageItem message={ownMsgWithSelfReply} />
+          <button data-testid="open-self-thread" onClick={() => setActiveThreadMsg(ownMsgWithSelfReply)}>
+            Open Self Thread
+          </button>
+          <MosChatMobileThreadSheet />
+        </div>
+      );
+    };
+
+    render(
+      <MosChatProvider currentUser={mockCurrentUser} initialConvId="dm-pair-1-6">
+        <SelfThreadContainer />
+      </MosChatProvider>
+    );
+
+    const streamAvatar = await screen.findByRole('img', { name: 'Nguyễn Quang Khải' });
+    expect(streamAvatar).toHaveAttribute('src', 'https://cdn.wingslashes.com/avatars/khai.jpg');
+    expect(streamAvatar).toHaveAttribute('referrerpolicy', 'no-referrer');
+
+    fireEvent.click(screen.getByTestId('open-self-thread'));
+
+    await waitFor(() => {
+      const allKhaiAvatars = screen.getAllByRole('img', { name: 'Nguyễn Quang Khải' });
+      // 1 in stream + 1 in thread parent + 1 in thread reply = 3
+      expect(allKhaiAvatars.length).toBeGreaterThanOrEqual(3);
+    });
+  });
+
+  it('renders assignee avatar inside MosChatMobileEditTaskModal assignee selector', async () => {
+    render(
+      <MosChatProvider currentUser={mockCurrentUser} initialConvId="dm-pair-1-6">
+        <MosChatMobileEditTaskModal
+          open={true}
+          onClose={vi.fn()}
+          onSave={vi.fn()}
+          task={{
+            id: 'task-157',
+            conversationId: 'dm-pair-1-6',
+            conversationName: 'Danny Do',
+            title: 'Kiểm tra giao diện giao task trên mobile',
+            assigneeId: '6',
+            assigneeName: 'Nguyễn Quang Khải',
+            creatorName: 'Danny Do',
+            remindAt: new Date().toISOString(),
+            priority: 'HIGH',
+            done: false,
+            createdAt: new Date().toISOString(),
+          }}
+        />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      const assigneeAvatar = screen.getByRole('img', { name: 'Nguyễn Quang Khải' });
+      expect(assigneeAvatar).toBeInTheDocument();
+      expect(assigneeAvatar).toHaveAttribute('src', 'https://cdn.wingslashes.com/avatars/khai.jpg');
+    });
   });
 });
