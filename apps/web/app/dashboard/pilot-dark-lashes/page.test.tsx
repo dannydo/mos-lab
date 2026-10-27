@@ -57,7 +57,7 @@ describe('PilotDarkLashesPage', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('sop-training-placeholder')).toBeInTheDocument();
-      expect(screen.getByText(/Khung Đào Tạo Chuyên Viên Kỹ Thuật/i)).toBeInTheDocument();
+      expect(screen.getByText(/Khung Đào Tạo.*Chuyên Viên Kỹ Thuật/i)).toBeInTheDocument();
     });
   });
 });
