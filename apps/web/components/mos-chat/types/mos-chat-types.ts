@@ -5,6 +5,7 @@ import type {
   MosChatTaskItem,
   MosChatStaffMember,
   MosChatImageAttachment,
+  MosChatCustomerCard,
   MosChatPresenceStatus,
   MosChatTaskPriority,
   MosChatWorkflowInstance,
@@ -52,6 +53,7 @@ export interface MosChatContextValue {
     text: string,
     options?: {
       attachments?: MosChatImageAttachment[];
+      customerCard?: MosChatCustomerCard | null;
       targetConvId?: string;
       replyToId?: string;
     }

@@ -64,6 +64,7 @@ import {
   type MosChatWorkflowTemplate,
   type MosChatWorkflowInstance,
   type MosChatAccessConfig,
+  type MosChatCustomerCard,
   type SafeAny,
   removeVietnameseTones,
 } from '@mos-lab/shared';
@@ -78,6 +79,7 @@ import { MosChatSpaceEmojiColorPicker } from '../MosChatSpaceEmojiColorPicker';
 import { MosChatSpaceConfigModal } from '../MosChatSpaceConfigModal';
 import { MosChatTriggerWorkflowModal, MosChatSaveThreadWorkflowModal } from '../workflows/MosChatWorkflowModals';
 import { MosChatRichEditorModal, type RichEditorViewMode } from '../MosChatRichEditorModal';
+import { MosChatCustomerPickerModal } from '../MosChatCustomerPickerModal';
 
 export interface MosChatModalsProps {
   isDark: boolean;
@@ -320,6 +322,11 @@ export interface MosChatModalsProps {
   threadAttachments: MosChatImageAttachment[];
   setThreadAttachments: React.Dispatch<React.SetStateAction<MosChatImageAttachment[]>>;
   scrollToChatBottom: (scope: any, behavior: any) => void;
+
+  // Customer & Booking Picker Modal
+  customerPickerOpen?: boolean;
+  setCustomerPickerOpen?: (open: boolean) => void;
+  onSelectCustomerCard?: (card: MosChatCustomerCard, sendImmediately?: boolean) => void;
 }
 
 export const MosChatModals: React.FC<MosChatModalsProps> = ({
@@ -528,6 +535,10 @@ export const MosChatModals: React.FC<MosChatModalsProps> = ({
   threadAttachments,
   setThreadAttachments,
   scrollToChatBottom,
+
+  customerPickerOpen,
+  setCustomerPickerOpen,
+  onSelectCustomerCard,
 }) => {
   return (
     <>
@@ -3777,6 +3788,16 @@ export const MosChatModals: React.FC<MosChatModalsProps> = ({
         isDark={isDark}
         canUseAiCopilot={canUseAiCopilot}
       />
+
+      {/* ================= MODAL: ATTACH CUSTOMER / BOOKING ================= */}
+      {customerPickerOpen && onSelectCustomerCard && (
+        <MosChatCustomerPickerModal
+          open={customerPickerOpen}
+          onClose={() => setCustomerPickerOpen?.(false)}
+          onSelectCustomerCard={onSelectCustomerCard}
+          isDark={isDark}
+        />
+      )}
     </>
   );
 };

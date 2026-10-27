@@ -235,6 +235,9 @@ import {
 } from './components/MosChatDockedWindows';
 import { MosChatReminderAlert } from './components/MosChatReminderAlert';
 import { tabNotificationManager, playMessengerChime, showDesktopNotification } from '../../lib/tab-notification';
+import dynamic from 'next/dynamic';
+
+const CustomerDetailDrawer = dynamic(() => import('../CustomerDetailDrawer'), { ssr: false });
 
 export { AI_COPILOT_CONV_ID };
 
@@ -1028,6 +1031,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   // Composer state
   const [composerText, setComposerText] = useState('');
   const [stagedAttachments, setStagedAttachments] = useState<MosChatImageAttachment[]>([]);
+  const [stagedCustomerCard, setStagedCustomerCard] = useState<MosChatCustomerCard | null>(null);
+  const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
+  const [customerDrawerOpen, setCustomerDrawerOpen] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [sampleCardIndex, setSampleCardIndex] = useState(0);
   const [formatBarOpenMain, setFormatBarOpenMain] = useState(true);
   const [formatBarOpenThread, setFormatBarOpenThread] = useState(false);
@@ -4104,11 +4111,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     if (!activeConversation) return;
     const text = composerText;
     const attachmentsToSend = stagedAttachments;
-    if (!text.trim() && attachmentsToSend.length === 0) return;
+    const cardToSend = stagedCustomerCard;
+    if (!text.trim() && attachmentsToSend.length === 0 && !cardToSend) return;
 
     // Super Admin Slash Commands for Dynamic Workflow Engine (/tam-ung, /kiem-kho, /tao-quy-trinh)
     const trimmedCmd = text.trim().toLowerCase();
-    if (isStrictDannySuperAdmin && attachmentsToSend.length === 0) {
+    if (isStrictDannySuperAdmin && attachmentsToSend.length === 0 && !cardToSend) {
       if (trimmedCmd === '/tam-ung' || trimmedCmd.startsWith('/tam-ung ')) {
         setComposerText('');
         if (composerInputRef.current) composerInputRef.current.value = '';
@@ -4139,21 +4147,34 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     setMentionState((prev) => (prev.open ? { ...prev, open: false } : prev));
     setComposerText('');
     setStagedAttachments([]);
+    setStagedCustomerCard(null);
     if (composerInputRef.current) {
       composerInputRef.current.value = '';
     }
-    const sent = await handleSendMessage(activeConversation.id, text, null, attachmentsToSend);
+    const sent = await handleSendMessage(activeConversation.id, text, cardToSend, attachmentsToSend);
     if (wasUrgent && sent?.id) {
       void handleBuzzMessage(sent.id);
     }
   };
 
+  const handleSelectCustomerCard = async (card: MosChatCustomerCard, sendImmediately = false) => {
+    if (sendImmediately && activeConversation) {
+      await handleSendMessage(activeConversation.id, `Lưu ý hỗ trợ chu đáo khách hàng ${card.name}:`, card);
+      antdMessage.success(`Đã gửi thẻ khách hàng ${card.name}`);
+    } else {
+      setStagedCustomerCard(card);
+      antdMessage.success(`Đã đính kèm thẻ khách hàng ${card.name} vào ô soạn thảo`);
+    }
+    setCustomerPickerOpen(false);
+  };
+
+  const openCustomerDetail = (customerId: number) => {
+    setSelectedCustomerId(customerId);
+    setCustomerDrawerOpen(true);
+  };
+
   const handleSendQuickCustomerCard = async () => {
-    if (!activeConversation) return;
-    const card = SAMPLE_CUSTOMER_CARDS[sampleCardIndex % SAMPLE_CUSTOMER_CARDS.length];
-    setSampleCardIndex((prev) => prev + 1);
-    await handleSendMessage(activeConversation.id, `Lưu ý hỗ trợ chu đáo khách hàng ${card.name}:`, card);
-    antdMessage.success(`Đã đính kèm thẻ khách hàng ${card.name}`);
+    setCustomerPickerOpen(true);
   };
 
   const currentUserReactionKey = String(currentUser?.id || 'me');
@@ -10201,6 +10222,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     isDraggingOver={isDraggingOver}
                     antdMessage={antdMessage}
                     renderMessageAttachments={renderMessageAttachments}
+                    openCustomerDetail={openCustomerDetail}
                   />
 
                   {/* Clean Single-Line Composer with Staging Thumbnails, AI Quick Prompts & Icon-only Toolbar */}
@@ -10224,12 +10246,15 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     composerInputRef={composerInputRef}
                     stagedAttachments={stagedAttachments}
                     renderStagedAttachmentsStrip={renderStagedAttachmentsStrip}
+                    stagedCustomerCard={stagedCustomerCard}
+                    setStagedCustomerCard={setStagedCustomerCard}
                     isUrgentSend={isUrgentSend}
                     setIsUrgentSend={setIsUrgentSend}
                     handleSendMessage={handleSendMessage}
                     handleSendMain={handleSendMain}
                     triggerFilePicker={triggerFilePicker}
                     handleSendQuickCustomerCard={handleSendQuickCustomerCard}
+                    handleOpenCustomerPicker={() => setCustomerPickerOpen(true)}
                     openTaskModalFromMessage={openTaskModalFromMessage}
                     checkForMentionTrigger={checkForMentionTrigger}
                     handleClipboardPaste={handleClipboardPaste}
@@ -10678,7 +10703,22 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         threadAttachments={threadAttachments}
         setThreadAttachments={setThreadAttachments}
         scrollToChatBottom={scrollToChatBottom}
+        customerPickerOpen={customerPickerOpen}
+        setCustomerPickerOpen={setCustomerPickerOpen}
+        onSelectCustomerCard={handleSelectCustomerCard}
       />
+
+      {/* ================= CUSTOMER DETAIL DRAWER ================= */}
+      {customerDrawerOpen && selectedCustomerId && (
+        <CustomerDetailDrawer
+          open={customerDrawerOpen}
+          customerId={selectedCustomerId}
+          onClose={() => {
+            setCustomerDrawerOpen(false);
+            setSelectedCustomerId(null);
+          }}
+        />
+      )}
     </>
   );
 };
