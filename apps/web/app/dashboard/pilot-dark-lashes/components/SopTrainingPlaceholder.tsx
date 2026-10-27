@@ -19,6 +19,7 @@ import {
 import type { PilotSession } from '@mos-lab/shared';
 import { AppIcon } from '../../../../components/ui/AppIcon';
 import { PilotCriteriaSopDetail } from './PilotCriteriaSopDetail';
+import { PilotAssessmentCertSopDetail } from './PilotAssessmentCertSopDetail';
 
 interface TrainingModuleItem {
   id: string;
@@ -147,6 +148,17 @@ export function SopTrainingPlaceholder({
     );
   }
 
+  // If Hạng mục 5 is active, render detailed Assessment, CSAT & Certificate SOP
+  if (activeModuleId === 'assessment') {
+    return (
+      <PilotAssessmentCertSopDetail
+        onBack={() => setActiveModuleId(null)}
+        sessions={sessions}
+        onOpenSessionFlow={onOpenSessionFlow}
+      />
+    );
+  }
+
   return (
     <div className="space-y-4 antialiased" data-testid="sop-training-placeholder">
       {/* Banner Giới thiệu Placeholder */}
@@ -160,7 +172,7 @@ export function SopTrainingPlaceholder({
               </span>
               <span className="inline-flex items-center justify-center leading-none px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                 <AppIcon icon={Clock} size={12} className="mr-1" />
-                Khung 5 hạng mục · Hạng mục 1 đã hoàn thiện
+                Khung 5 hạng mục · Hạng mục 1 &amp; 5 đã hoàn thiện
               </span>
             </div>
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight m-0">
@@ -201,7 +213,7 @@ export function SopTrainingPlaceholder({
         <div className="mt-3.5 pt-3 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
           <AppIcon icon={Info} size={14} className="text-emerald-500 shrink-0" />
           <span>
-            <strong className="text-emerald-700 dark:text-emerald-300">Hạng mục 1 đã có nội dung chi tiết:</strong> Nhấp vào Hạng mục 1 bên dưới để xem hướng dẫn quan sát 5 tiêu chí, minh chứng thực tế 17 ca Pilot và quy trình xử lý điều kiện mi.
+            <strong className="text-emerald-700 dark:text-emerald-300">Hạng mục 1 &amp; Hạng mục 5 đã hoàn thiện chi tiết:</strong> Nhấp vào Hạng mục 1 (SOP Tiêu chí dáng mi) hoặc Hạng mục 5 (Sát hạch tay nghề, CSAT &amp; Chứng chỉ vận hành) để xem và quản lý đầy đủ.
           </span>
         </div>
       </div>
@@ -212,6 +224,8 @@ export function SopTrainingPlaceholder({
           const IconComp = mod.icon;
           const badgeClass = BADGE_CLASSES[mod.badgeColor] || BADGE_CLASSES.blue;
           const isCriteriaModule = mod.id === 'criteria';
+          const isAssessmentModule = mod.id === 'assessment';
+          const isInteractiveModule = isCriteriaModule || isAssessmentModule;
 
           return (
             <Card
@@ -220,9 +234,11 @@ export function SopTrainingPlaceholder({
               className={`rounded-2xl transition-all duration-300 flex flex-col justify-between ${
                 isCriteriaModule
                   ? 'border-emerald-500/40 bg-gradient-to-b from-emerald-500/[0.04] to-transparent ring-1 ring-emerald-500/20 hover:shadow-md cursor-pointer'
+                  : isAssessmentModule
+                  ? 'border-amber-500/40 bg-gradient-to-b from-amber-500/[0.04] to-transparent ring-1 ring-amber-500/20 hover:shadow-md cursor-pointer'
                   : 'border-slate-200 dark:border-slate-800 hover:shadow-md'
               }`}
-              onClick={isCriteriaModule ? () => setActiveModuleId('criteria') : undefined}
+              onClick={isInteractiveModule ? () => setActiveModuleId(mod.id) : undefined}
               data-testid={`training-module-card-${mod.id}`}
             >
               <div className="space-y-3 flex-1">
@@ -233,6 +249,8 @@ export function SopTrainingPlaceholder({
                       className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
                         isCriteriaModule
                           ? 'bg-emerald-500 text-white shadow-xs'
+                          : isAssessmentModule
+                          ? 'bg-amber-500 text-white shadow-xs'
                           : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                       }`}
                     >
@@ -275,9 +293,15 @@ export function SopTrainingPlaceholder({
 
               {/* Card Footer */}
               <div className="mt-4 pt-2.5 border-t border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px]">
-                {isCriteriaModule ? (
+                {isInteractiveModule ? (
                   <>
-                    <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
+                    <span
+                      className={`inline-flex items-center gap-1 font-bold ${
+                        isAssessmentModule
+                          ? 'text-amber-600 dark:text-amber-400'
+                          : 'text-emerald-600 dark:text-emerald-400'
+                      }`}
+                    >
                       <Sparkles size={12} />
                       <span>Đã hoàn thiện nội dung</span>
                     </span>
@@ -285,10 +309,14 @@ export function SopTrainingPlaceholder({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setActiveModuleId('criteria');
+                        setActiveModuleId(mod.id);
                       }}
-                      className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-bold inline-flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
-                      data-testid="view-criteria-sop-btn"
+                      className={`font-bold inline-flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0 ${
+                        isAssessmentModule
+                          ? 'text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300'
+                          : 'text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300'
+                      }`}
+                      data-testid={isAssessmentModule ? 'view-assessment-sop-btn' : 'view-criteria-sop-btn'}
                     >
                       <span>Xem chi tiết SOP</span>
                       <AppIcon icon={ArrowRight} size={12} />

@@ -64,4 +64,25 @@ describe('SopTrainingPlaceholder', () => {
     // Should return to overview
     expect(screen.getByTestId('sop-training-placeholder')).toBeInTheDocument();
   });
+
+  it('navigates to Hạng mục 5 SOP Detail when clicking "Xem chi tiết SOP" or card and navigates back', () => {
+    render(<SopTrainingPlaceholder />);
+
+    // Click "Xem chi tiết SOP" button on Hạng mục 5
+    const viewAssessmentBtn = screen.getByTestId('view-assessment-sop-btn');
+    fireEvent.click(viewAssessmentBtn);
+
+    // Should now show PilotAssessmentCertSopDetail
+    expect(screen.getByTestId('pilot-assessment-sop-detail')).toBeInTheDocument();
+    expect(
+      screen.getByText('Sát Hạch Năng Lực Chuyên Môn, Thẩm Định CSAT & Cấp Chứng Chỉ Vận Hành')
+    ).toBeInTheDocument();
+
+    // Click back button
+    const backBtn = screen.getByTestId('sop-assessment-back-button');
+    fireEvent.click(backBtn);
+
+    // Should return to overview
+    expect(screen.getByTestId('sop-training-placeholder')).toBeInTheDocument();
+  });
 });
