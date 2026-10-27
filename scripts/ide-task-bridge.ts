@@ -393,7 +393,8 @@ async function main() {
   }
 
   if (command === 'wait-and-deploy') {
-    const worktreePath = resolve(args[args.indexOf('--worktree') + 1] || process.cwd());
+    const worktreeIndex = args.indexOf('--worktree');
+    const worktreePath = resolve(worktreeIndex !== -1 ? args[worktreeIndex + 1] : process.cwd());
     const ticketIdIndex = args.indexOf('--ticketId');
     const ticketIdOverride = ticketIdIndex !== -1 ? parseInt(args[ticketIdIndex + 1], 10) : undefined;
     await handleWaitAndDeploy(apiUrl, token, taskId, worktreePath, ticketIdOverride);
@@ -401,7 +402,8 @@ async function main() {
   }
 
   if (command === 'wait-and-commit') {
-    const worktreePath = resolve(args[args.indexOf('--worktree') + 1] || process.cwd());
+    const worktreeIndex = args.indexOf('--worktree');
+    const worktreePath = resolve(worktreeIndex !== -1 ? args[worktreeIndex + 1] : process.cwd());
     const commitMessage =
       (args.indexOf('--message') !== -1 ? args[args.indexOf('--message') + 1] : null) ||
       'feat: implementation completed through mOS Inbox';
