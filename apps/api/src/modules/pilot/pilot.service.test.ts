@@ -1194,3 +1194,142 @@ test('PilotService: aiAnalyzeSession persists AI assessment JSON to session', as
   const parsed = JSON.parse(savedData.aiAssessmentJson);
   assert.equal(parsed.suitability, 'PASS');
 });
+
+test('PilotService: Hạng mục 3 Material SOP - default initialization, calculations and expert review', async () => {
+  let storedConfigValue: string | null = null;
+
+  const fakeMaterials = [
+    {
+      id: 10,
+      pilotCode: 'DARK_LASHES',
+      name: 'Thuốc uốn số 1 (Perming Cream)',
+      purchasePrice: 450000,
+      volume: 15,
+      unit: 'ml',
+      costPerUnit: 30000,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    {
+      id: 20,
+      pilotCode: 'DARK_LASHES',
+      name: 'Thuốc số 2 (Setting Cream)',
+      purchasePrice: 450000,
+      volume: 15,
+      unit: 'ml',
+      costPerUnit: 30000,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+    {
+      id: 30,
+      pilotCode: 'DARK_LASHES',
+      name: 'Keratin dưỡng mi',
+      purchasePrice: 380000,
+      volume: 20,
+      unit: 'ml',
+      costPerUnit: 19000,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  ];
+
+  const fakeFastify: SafeAny = {
+    prisma: {
+      crm: {
+        crmConfig: {
+          findUnique: async ({ where }: { where: { key: string } }) => {
+            if (where.key === PilotService.MATERIAL_SOP_CONFIG_KEY && storedConfigValue) {
+              return { key: where.key, value: storedConfigValue, updatedAt: new Date() };
+            }
+            return null;
+          },
+          upsert: async ({ create, update }: { create: { value: string }; update: { value: string } }) => {
+            storedConfigValue = update?.value || create?.value;
+            return { key: PilotService.MATERIAL_SOP_CONFIG_KEY, value: storedConfigValue };
+          },
+        },
+        crmPilotMaterial: {
+          findMany: async () => fakeMaterials,
+          count: async () => fakeMaterials.length,
+        },
+      },
+    },
+  };
+
+  // 1. Initial get creates default document
+  const initialDoc = await PilotService.getMaterialSop(fakeFastify, 'DARK_LASHES');
+  assert.equal(initialDoc.pilotCode, 'DARK_LASHES');
+  assert.equal(initialDoc.overallStatus, 'DRAFT');
+  assert.equal(initialDoc.isPublished, false);
+  assert.equal(initialDoc.expertReviewer, 'Cô Giang Đàm');
+  assert.equal(initialDoc.projectOwner, 'Danny Do');
+
+  // Verify Part 1 (Solution Norms)
+  assert.ok(initialDoc.solutionNorms.length >= 4);
+  const norm1 = initialDoc.solutionNorms.find((s) => s.id === 'norm-solution-1');
+  assert.ok(norm1);
+  assert.equal(norm1.standardDosagePerSession, 0.8);
+  assert.equal(norm1.costPerUnit, 30000);
+  assert.equal(norm1.costPerSession, 24000);
+  assert.equal(norm1.status, 'PENDING_REVIEW');
+
+  // Verify Part 2 (Glue & Rod Standards)
+  assert.ok(initialDoc.glueRodStandards.length >= 3);
+  const rodC = initialDoc.glueRodStandards.find((g) => g.id === 'std-rod-form-c');
+  assert.ok(rodC);
+  assert.equal(rodC.category, 'SILICON_ROD');
+  assert.equal(rodC.status, 'PENDING_REVIEW');
+
+  // Verify Part 3 (Sanitization & Hygiene Procedures)
+  assert.ok(initialDoc.sanitizationProcedures.length >= 4);
+  const reusableRod = initialDoc.sanitizationProcedures.find((p) => p.id === 'sanit-silicon-rod');
+  assert.ok(reusableRod);
+  assert.equal(reusableRod.classification, 'REUSABLE');
+  const disposableEyePad = initialDoc.sanitizationProcedures.find((p) => p.id === 'sanit-eyepad');
+  assert.ok(disposableEyePad);
+  assert.equal(disposableEyePad.classification, 'DISPOSABLE');
+
+  // Verify Summary totals
+  assert.ok(initialDoc.summary.totalNormCostPerSession > 0);
+  assert.equal(initialDoc.summary.verifiedCount, 0);
+  assert.equal(initialDoc.summary.pendingReviewCount, initialDoc.summary.totalItemsCount);
+
+  // 2. Save modifications
+  const updatedDoc = await PilotService.saveMaterialSop(fakeFastify, {
+    solutionNorms: initialDoc.solutionNorms.map((s) =>
+      s.id === 'norm-solution-1' ? { ...s, standardDosagePerSession: 1.0 } : s
+    ),
+    isPublished: true, // Should remain false because status is DRAFT
+  });
+  const updatedNorm1 = updatedDoc.solutionNorms.find((s) => s.id === 'norm-solution-1');
+  assert.equal(updatedNorm1?.standardDosagePerSession, 1.0);
+  assert.equal(updatedNorm1?.costPerSession, 30000);
+  assert.equal(updatedDoc.isPublished, false); // Invariant enforced
+
+  // 3. Cô Giang Đàm Expert Review Endorsement
+  const endorsedDoc = await PilotService.reviewMaterialSop(fakeFastify, {
+    reviewerName: 'Cô Giang Đàm',
+    decision: 'EXPERT_ENDORSE',
+    note: 'Đã thẩm định chuẩn thao tác và định mức thuốc uốn.',
+  });
+  assert.equal(endorsedDoc.overallStatus, 'REVIEWED_BY_EXPERT');
+  assert.equal(endorsedDoc.expertReviewer, 'Cô Giang Đàm');
+  assert.ok(endorsedDoc.solutionNorms.every((s) => s.status === 'VERIFIED' && s.verifiedBy === 'Cô Giang Đàm'));
+  assert.ok(endorsedDoc.glueRodStandards.every((g) => g.status === 'VERIFIED' && g.verifiedBy === 'Cô Giang Đàm'));
+  assert.ok(endorsedDoc.sanitizationProcedures.every((p) => p.status === 'VERIFIED' && p.verifiedBy === 'Cô Giang Đàm'));
+  assert.equal(endorsedDoc.summary.verifiedCount, endorsedDoc.summary.totalItemsCount);
+  assert.equal(endorsedDoc.summary.pendingReviewCount, 0);
+
+  // 4. CEO Scale Approval
+  const approvedDoc = await PilotService.reviewMaterialSop(fakeFastify, {
+    decision: 'APPROVE_SCALE',
+    note: 'Phê duyệt ban hành SOP và triển khai Scale toàn chuỗi.',
+  });
+  assert.equal(approvedDoc.overallStatus, 'APPROVED_SCALE');
+  assert.equal(approvedDoc.isPublished, true);
+});
+

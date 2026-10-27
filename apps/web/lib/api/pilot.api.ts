@@ -24,6 +24,8 @@ import type {
   StockInventoryItem,
   PilotAiAnalyzeRequest,
   PilotAiAssessmentResponse,
+  PilotMaterialSopDocument,
+  SavePilotMaterialSopRequest,
 } from '@mos-lab/shared';
 
 import { api } from './base';
@@ -208,6 +210,22 @@ export const pilotApi = {
     },
     listInventory: async (params?: { warehouse?: string }): Promise<StockInventoryItem[]> => {
       const response = await api.get('/pilot/inventory', { params });
+      return response.data;
+    },
+    getMaterialSop: async (params?: { pilotCode?: string }): Promise<PilotMaterialSopDocument> => {
+      const response = await api.get('/pilot/material-sop', { params });
+      return response.data;
+    },
+    saveMaterialSop: async (data: SavePilotMaterialSopRequest): Promise<PilotMaterialSopDocument> => {
+      const response = await api.post('/pilot/material-sop', data);
+      return response.data;
+    },
+    reviewMaterialSop: async (data: {
+      reviewerName?: string;
+      decision: 'EXPERT_ENDORSE' | 'APPROVE_SCALE';
+      note?: string;
+    }): Promise<PilotMaterialSopDocument> => {
+      const response = await api.post('/pilot/material-sop/review', data);
       return response.data;
     },
   },

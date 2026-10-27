@@ -118,9 +118,14 @@ const TRAINING_MODULES: TrainingModuleItem[] = [
 interface SopTrainingPlaceholderProps {
   onOpenSopModal?: () => void;
   onOpenCriteriaModal?: () => void;
+  onOpenMaterialsSop?: () => void;
 }
 
-export function SopTrainingPlaceholder({ onOpenSopModal, onOpenCriteriaModal }: SopTrainingPlaceholderProps) {
+export function SopTrainingPlaceholder({
+  onOpenSopModal,
+  onOpenCriteriaModal,
+  onOpenMaterialsSop,
+}: SopTrainingPlaceholderProps) {
   return (
     <div className="space-y-4 antialiased" data-testid="sop-training-placeholder">
       {/* Banner Giới thiệu Placeholder */}
@@ -166,6 +171,16 @@ export function SopTrainingPlaceholder({ onOpenSopModal, onOpenCriteriaModal }: 
               >
                 <AppIcon icon={Sparkles} size={14} />
                 <span>Xem tiêu chí mi</span>
+              </button>
+            )}
+            {onOpenMaterialsSop && (
+              <button
+                type="button"
+                onClick={onOpenMaterialsSop}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border border-purple-500/30 text-purple-700 dark:text-purple-300 bg-purple-500/10 hover:bg-purple-100 dark:hover:bg-purple-950/40 transition-colors shadow-sm"
+              >
+                <AppIcon icon={FileText} size={14} />
+                <span>Hạng mục 3: Định mức vật tư</span>
               </button>
             )}
           </div>
@@ -236,14 +251,32 @@ export function SopTrainingPlaceholder({ onOpenSopModal, onOpenCriteriaModal }: 
               </div>
 
               {/* Card Footer */}
-              <div className="mt-4 pt-2.5 border-t border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-                <span className="inline-flex items-center gap-1">
-                  <Clock size={12} />
-                  <span>Dự kiến tích hợp Giai đoạn 2</span>
-                </span>
-                <span className="text-slate-400 font-medium inline-flex items-center gap-0.5">
-                  Chi tiết <AppIcon icon={ArrowRight} size={11} />
-                </span>
+              <div className="mt-4 pt-2.5 border-t border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px]">
+                {mod.id === 'materials' && onOpenMaterialsSop ? (
+                  <>
+                    <span className="inline-flex items-center gap-1 text-purple-600 dark:text-purple-400 font-medium">
+                      <Sparkles size={12} />
+                      <span>Đã có giao diện chi tiết 3 phần</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={onOpenMaterialsSop}
+                      className="text-purple-600 dark:text-purple-400 font-bold hover:underline inline-flex items-center gap-1 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded-lg border border-purple-500/20"
+                    >
+                      Mở chi tiết &amp; Nhập liệu SOP <AppIcon icon={ArrowRight} size={11} />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="inline-flex items-center gap-1 text-slate-400">
+                      <Clock size={12} />
+                      <span>Dự kiến tích hợp Giai đoạn 2</span>
+                    </span>
+                    <span className="text-slate-400 font-medium inline-flex items-center gap-0.5">
+                      Chi tiết <AppIcon icon={ArrowRight} size={11} />
+                    </span>
+                  </>
+                )}
               </div>
             </Card>
           );

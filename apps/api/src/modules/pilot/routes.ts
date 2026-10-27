@@ -136,6 +136,40 @@ export async function pilotRoutes(fastify: FastifyInstance) {
   });
 
   // ═══════════════════════════════════════════
+  // Hạng mục 3 – Định mức & Kiểm soát vật tư tiêu hao (MOS-FEAT-164)
+  // ═══════════════════════════════════════════
+
+  fastify.get('/pilot/material-sop', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const query = request.query as { pilotCode?: string };
+      const doc = await PilotService.getMaterialSop(fastify, query?.pilotCode);
+      return reply.send(doc);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Get pilot material SOP error');
+    }
+  });
+
+  fastify.post('/pilot/material-sop', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const body = request.body as SafeAny;
+      const doc = await PilotService.saveMaterialSop(fastify, body);
+      return reply.send(doc);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Save pilot material SOP error');
+    }
+  });
+
+  fastify.post('/pilot/material-sop/review', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const body = request.body as { reviewerName?: string; decision: 'EXPERT_ENDORSE' | 'APPROVE_SCALE'; note?: string };
+      const doc = await PilotService.reviewMaterialSop(fastify, body);
+      return reply.send(doc);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Review pilot material SOP error');
+    }
+  });
+
+  // ═══════════════════════════════════════════
   // Pilot SOP Technical Steps Endpoints
   // ═══════════════════════════════════════════
 

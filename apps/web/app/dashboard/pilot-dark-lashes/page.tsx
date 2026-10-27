@@ -9,6 +9,7 @@ import {
   CheckCircle,
   Clock,
   Edit,
+  FileText,
   GraduationCap,
   HeartHandshake,
   ListOrdered,
@@ -48,6 +49,7 @@ import { PilotMaterialModal } from './components/PilotMaterialModal';
 import { PilotFlowDrawer } from './components/PilotFlowDrawer';
 import { PilotSopModal } from './components/PilotSopModal';
 import { PilotCriteriaModal } from './components/PilotCriteriaModal';
+import { PilotMaterialSopModal } from './components/PilotMaterialSopModal';
 import { SopTrainingPlaceholder } from './components/SopTrainingPlaceholder';
 
 const { Title } = Typography;
@@ -141,6 +143,7 @@ export default function PilotDarkLashesPage() {
   const [materialModalOpen, setMaterialModalOpen] = useState(false);
   const [sopModalOpen, setSopModalOpen] = useState(false);
   const [criteriaModalOpen, setCriteriaModalOpen] = useState(false);
+  const [materialSopModalOpen, setMaterialSopModalOpen] = useState(false);
   const [flowDrawerOpen, setFlowDrawerOpen] = useState(false);
   const [selectedFlowSession, setSelectedFlowSession] = useState<PilotSession | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -703,6 +706,14 @@ export default function PilotDarkLashesPage() {
           </Button>
           <Button
             size="small"
+            icon={<AppIcon icon={FileText} size={13} />}
+            onClick={() => setMaterialSopModalOpen(true)}
+            className="rounded-lg font-medium text-xs h-7 px-2 border-purple-500/30 text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-950/30"
+          >
+            Định mức vật tư
+          </Button>
+          <Button
+            size="small"
             icon={<AppIcon icon={Package} size={13} />}
             onClick={() => setMaterialModalOpen(true)}
             className="rounded-lg font-medium text-xs h-7 px-2 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
@@ -825,6 +836,7 @@ export default function PilotDarkLashesPage() {
                 <SopTrainingPlaceholder
                   onOpenSopModal={() => setSopModalOpen(true)}
                   onOpenCriteriaModal={() => setCriteriaModalOpen(true)}
+                  onOpenMaterialsSop={() => setMaterialSopModalOpen(true)}
                 />
               </div>
             ),
@@ -859,6 +871,12 @@ export default function PilotDarkLashesPage() {
       />
       <PilotSopModal open={sopModalOpen} onClose={() => setSopModalOpen(false)} onRefresh={fetchPilotData} />
       <PilotCriteriaModal open={criteriaModalOpen} onClose={() => setCriteriaModalOpen(false)} />
+      <PilotMaterialSopModal
+        open={materialSopModalOpen}
+        onClose={() => setMaterialSopModalOpen(false)}
+        materialsCatalog={materialsCatalog}
+        onRefreshMaterials={fetchMaterials}
+      />
       <PilotFlowDrawer
         open={flowDrawerOpen}
         session={selectedFlowSession}

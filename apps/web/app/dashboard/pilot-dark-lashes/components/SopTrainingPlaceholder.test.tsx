@@ -31,9 +31,14 @@ describe('SopTrainingPlaceholder', () => {
   it('triggers preview callbacks when action buttons are clicked', () => {
     const handleOpenSop = vi.fn();
     const handleOpenCriteria = vi.fn();
+    const handleOpenMaterials = vi.fn();
 
     render(
-      <SopTrainingPlaceholder onOpenSopModal={handleOpenSop} onOpenCriteriaModal={handleOpenCriteria} />
+      <SopTrainingPlaceholder
+        onOpenSopModal={handleOpenSop}
+        onOpenCriteriaModal={handleOpenCriteria}
+        onOpenMaterialsSop={handleOpenMaterials}
+      />
     );
 
     const sopBtn = screen.getByRole('button', { name: /Xem trước SOP 7 bước/i });
@@ -43,5 +48,13 @@ describe('SopTrainingPlaceholder', () => {
     const criteriaBtn = screen.getByRole('button', { name: /Xem tiêu chí mi/i });
     fireEvent.click(criteriaBtn);
     expect(handleOpenCriteria).toHaveBeenCalledTimes(1);
+
+    const materialsHeaderBtn = screen.getByRole('button', { name: /Hạng mục 3: Định mức vật tư/i });
+    fireEvent.click(materialsHeaderBtn);
+    expect(handleOpenMaterials).toHaveBeenCalledTimes(1);
+
+    const materialsCardBtn = screen.getByRole('button', { name: /Mở chi tiết & Nhập liệu SOP/i });
+    fireEvent.click(materialsCardBtn);
+    expect(handleOpenMaterials).toHaveBeenCalledTimes(2);
   });
 });
