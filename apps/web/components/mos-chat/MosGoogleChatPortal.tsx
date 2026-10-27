@@ -7390,6 +7390,20 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     return Array.from(set).sort((a, b) => b.length - a.length);
   }, [staffDirectory, activeConversation?.memberNicknames]);
 
+  // Tổng hợp toàn bộ biệt danh từ mọi không gian (conversations) và không gian hiện tại để nhận diện tag chuẩn xác
+  const allSpaceNicknames = useMemo(() => {
+    const map: Record<string, string> = {};
+    conversations.forEach((c) => {
+      if (c.memberNicknames) {
+        Object.assign(map, c.memberNicknames);
+      }
+    });
+    if (activeConversation?.memberNicknames) {
+      Object.assign(map, activeConversation.memberNicknames);
+    }
+    return map;
+  }, [conversations, activeConversation?.memberNicknames]);
+
   /**
    * Bộ Renderer chuẩn Rich Text / Markdown / HTML cho bong bóng chat và thread/subthread:
    * Hỗ trợ toàn diện bảng biểu Markdown, thẻ HTML (<br>, <b>, <i>, <u>, <table>...), Headings, KaTeX, Mermaid.
@@ -7403,12 +7417,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           isMe={_isMine}
           isDark={isDark}
           staffDirectory={staffDirectory}
-          memberNicknames={activeConversation?.memberNicknames}
+          memberNicknames={allSpaceNicknames}
           currentUser={currentUser}
         />
       );
     },
-    [isDark]
+    [isDark, staffDirectory, allSpaceNicknames, currentUser]
   );
 
   /**

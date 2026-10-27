@@ -143,6 +143,55 @@ describe('MosChatRichText', () => {
     });
   });
 
+  it('correctly isolates space nicknames and does not swallow subsequent message text into mention pills', () => {
+    const md =
+      '@Bảo Hân, @Đãi Khì  hiện tại mình đang còn dư 1 máy MPOS bên PXL mang về, có thể backup cho 1 máy để dưới Đề Thám hoạt động.';
+    const mockStaff = [
+      { id: 1, displayName: 'Võ Bảo Hân', nickname: 'Bảo Hân' },
+      { id: 2, displayName: 'Bùi Sinh Nguyên', nickname: 'Nguyên' },
+    ];
+    const mockNicknames = { '2': 'Đãi Khì' };
+
+    const { container } = render(
+      <MosChatRichText content={md} isDark={true} staffDirectory={mockStaff as any} memberNicknames={mockNicknames} />
+    );
+
+    // Mentions should be exactly Bảo Hân and Đãi Khì
+    expect(screen.getByText('Bảo Hân')).toBeDefined();
+    expect(screen.getByText('Đãi Khì')).toBeDefined();
+
+    // Verify there are exactly 2 mention pills rendered
+    const mentionPills = container.querySelectorAll('span.inline-flex.items-center');
+    expect(mentionPills.length).toBe(2);
+
+    // The text following Đãi Khì must NOT be inside any mention pill
+    mentionPills.forEach((pill) => {
+      expect(pill.textContent).not.toContain('hiện tại mình đang còn dư');
+    });
+
+    // The normal text must be rendered in the document
+    expect(
+      screen.getByText((content) => content.includes('hiện tại mình đang còn dư 1 máy MPOS bên PXL mang về'))
+    ).toBeDefined();
+  });
+
+  it('correctly handles single-letter or short nicknames without swallowing following text', () => {
+    const md = '@K  hiện tại mình đang còn dư thiết bị, nhờ @Hân gửi lại';
+    const mockNicknames = { '5': 'K', '1': 'Hân' };
+
+    const { container } = render(<MosChatRichText content={md} isDark={true} memberNicknames={mockNicknames} />);
+
+    expect(screen.getByText('K')).toBeDefined();
+    expect(screen.getByText('Hân')).toBeDefined();
+
+    const mentionPills = container.querySelectorAll('span.inline-flex.items-center');
+    expect(mentionPills.length).toBe(2);
+
+    mentionPills.forEach((pill) => {
+      expect(pill.textContent).not.toContain('hiện tại mình đang còn dư');
+    });
+  });
+
   it('renders inline HTML tags: <b>, <strong>, <i>, <em>, <u>, <s>, <del>, <code>, <mark>, <a href="...">', () => {
     const htmlText =
       '<b>Bold HTML</b>, <strong>Strong HTML</strong>, <i>Italic HTML</i>, ' +
@@ -287,10 +336,7 @@ describe('MosChatRichText', () => {
   });
 
   it('renders markdown tables with minimal separators and empty cells without collapsing', () => {
-    const tableMd =
-      '| Cột 1 | Cột 2 | Cột 3 |\n' +
-      '| - | :-: | -: |\n' +
-      '| Dữ liệu 1 | | Dữ liệu 3 |\n';
+    const tableMd = '| Cột 1 | Cột 2 | Cột 3 |\n' + '| - | :-: | -: |\n' + '| Dữ liệu 1 | | Dữ liệu 3 |\n';
 
     const { container } = render(<MosChatRichText content={tableMd} isDark={true} />);
 
@@ -305,10 +351,7 @@ describe('MosChatRichText', () => {
   });
 
   it('renders indented sub-bullets with visual hierarchy padding', () => {
-    const indentedBullets =
-      '• Mục chính 1\n' +
-      '  • Mục phụ 1.1\n' +
-      '    • Mục phụ 1.1.1\n';
+    const indentedBullets = '• Mục chính 1\n' + '  • Mục phụ 1.1\n' + '    • Mục phụ 1.1.1\n';
 
     const { container } = render(<MosChatRichText content={indentedBullets} isDark={true} />);
 

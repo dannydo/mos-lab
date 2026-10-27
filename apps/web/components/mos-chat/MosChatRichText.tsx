@@ -113,6 +113,13 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
             }
           }
         });
+        if (s.displayName && typeof s.displayName === 'string') {
+          const parts = s.displayName.trim().split(/\s+/).filter(Boolean);
+          if (parts.length >= 2) {
+            set.add(parts[parts.length - 1]);
+            set.add(`${parts[parts.length - 2]} ${parts[parts.length - 1]}`);
+          }
+        }
       });
       if (memberNicknames) {
         Object.values(memberNicknames).forEach((nick) => {
@@ -129,37 +136,52 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
       return Array.from(set).sort((a, b) => b.length - a.length);
     }, [staffDirectory, memberNicknames]);
 
+    const toCaseInsensitivePattern = useCallback((str: string): string => {
+      return str
+        .split('')
+        .map((c) => {
+          const up = c.toUpperCase();
+          const lo = c.toLowerCase();
+          if (up !== lo) {
+            return `[${up}${lo}]`;
+          }
+          return c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        })
+        .join('');
+    }, []);
+
     const staffPattern = useMemo(() => {
       return knownMultiWordStaffNames.length > 0
-        ? `|(@(?:${knownMultiWordStaffNames.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})(?:\\s*[\\p{Extended_Pictographic}\\uFE0F\\u200D]+)?(?=\\s|[.,!?:;]|$))`
+        ? `|(@(?:${knownMultiWordStaffNames.map(toCaseInsensitivePattern).join('|')})(?:\\s*[\\p{Extended_Pictographic}\\uFE0F\\u200D]+)?(?=\\s|[.,!?:;]|$))`
         : '';
-    }, [knownMultiWordStaffNames]);
+    }, [knownMultiWordStaffNames, toCaseInsensitivePattern]);
 
     const inlineRegexSource = useMemo(() => {
       return (
-        `(<br\\s*\\/?>)|` +
-        `(<span\\s+[^>]*>[\\s\\S]+?<\\/span>)|` +
-        `(<a\\s+[^>]*href=["'][^"']+["'][^>]*>[\\s\\S]+?<\\/a>)|` +
+        `(<[bB][rR]\\s*\\/?>)|` +
+        `(<[sS][pP][aA][nN]\\s+[^>]*>[\\s\\S]+?<\\/[sS][pP][aA][nN]>)|` +
+        `(<[aA]\\s+[^>]*[hH][rR][eE][fF]=["'][^"']+["'][^>]*>[\\s\\S]+?<\\/[aA]>)|` +
         `(\\[([^\\]\\n]+)\\]\\((https?:\\/\\/[^\\s)]+)\\))|` +
-        `(<(?:b|strong)[^>]*>[\\s\\S]+?<\\/(?:b|strong)>)|` +
+        `(<(?:[bB]|[sS][tT][rR][oO][nN][gG])[^>]*>[\\s\\S]+?<\\/(?:[bB]|[sS][tT][rR][oO][nN][gG])>)|` +
         `(\\*\\*(.+?)\\*\\*)|` +
-        `(<(?:i|em)[^>]*>[\\s\\S]+?<\\/(?:i|em)>)|` +
+        `(<(?:[iI]|[eE][mM])[^>]*>[\\s\\S]+?<\\/(?:[iI]|[eE][mM])>)|` +
         `(\\*([^\\*\\n]+)\\*)|` +
-        `(<(?:u|ins)[^>]*>[\\s\\S]+?<\\/(?:u|ins)>)|` +
-        `(<(?:s|del|strike)[^>]*>[\\s\\S]+?<\\/(?:s|del|strike)>)|` +
+        `(<(?:[uU]|[iI][nN][sS])[^>]*>[\\s\\S]+?<\\/(?:[uU]|[iI][nN][sS])>)|` +
+        `(<(?:[sS]|[dD][eE][lL]|[sS][tT][rR][iI][kK][eE])[^>]*>[\\s\\S]+?<\\/(?:[sS]|[dD][eE][lL]|[sS][tT][rR][iI][kK][eE])>)|` +
         `(~~(.+?)~~)|` +
-        `(<code[^>]*>[\\s\\S]+?<\\/code>)|` +
+        `(<[cC][oO][dD][eE][^>]*>[\\s\\S]+?<\\/[cC][oO][dD][eE]>)|` +
         `(\`([^\`]+)\`)|` +
-        `(<mark[^>]*>[\\s\\S]+?<\\/mark>)|` +
-        `(<small[^>]*>[\\s\\S]+?<\\/small>)|` +
-        `(<sub[^>]*>[\\s\\S]+?<\\/sub>)|` +
-        `(<sup[^>]*>[\\s\\S]+?<\\/sup>)|` +
-        `(<(?:p|div)[^>]*>[\\s\\S]+?<\\/(?:p|div)>)|` +
+        `(<[mM][aA][rR][kK][^>]*>[\\s\\S]+?<\\/[mM][aA][rR][kK]>)|` +
+        `(<[sS][mM][aA][lL][lL][^>]*>[\\s\\S]+?<\\/[sS][mM][aA][lL][lL]>)|` +
+        `(<[sS][uU][bB][^>]*>[\\s\\S]+?<\\/[sS][uU][bB]>)|` +
+        `(<[sS][uU][pP][^>]*>[\\s\\S]+?<\\/[sS][uU][pP]>)|` +
+        `(<(?:[pP]|[dD][iI][vV])[^>]*>[\\s\\S]+?<\\/(?:[pP]|[dD][iI][vV])>)|` +
         `(https?:\\/\\/[^\\s<)]+)|` +
         `(\\$\\$([^\\$]+?)\\$\\$)|` +
         `(\\$([^\\$\\s\\n](?:[^\\$\\n]*?[^\\$\\s\\n])?)\\$)|` +
-        `(@\\s*(?:AI|copilot|MAI|mai|all|mọi\\s+người|moi\\s+nguoi)(?=\\s|[.,!?:;]|$))${staffPattern}|` +
-        `(@[A-ZÀ-Ỹa-zà-ỹ0-9_]+(?:\\s+[A-ZÀ-Ỹ][a-zà-ỹ0-9_]*)*(?:\\s*[\\p{Extended_Pictographic}\\uFE0F\\u200D]+)?(?=\\s|[.,!?:;]|$))`
+        `(@\\s*(?:[aA][iI]|[cC][oO][pP][iI][lL][oO][tT]|[mM][aA][iI]|[aA][lL][lL]|[mM]ọi\\s+[nN]gười|[mM]oi\\s+[nN]guoi)(?=\\s|[.,!?:;]|$))` +
+        `${staffPattern}|` +
+        `(@[\\p{L}0-9_]+(?:\\s*[\\p{Extended_Pictographic}\\uFE0F\\u200D]+)?(?=\\s|[.,!?:;]|$))`
       );
     }, [staffPattern]);
 
@@ -177,7 +199,7 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
           return [decodeHtmlEntities(text)];
         }
 
-        const regex = new RegExp(inlineRegexSource, 'gui');
+        const regex = new RegExp(inlineRegexSource, 'gu');
 
         const elements: React.ReactNode[] = [];
         let lastIndex = 0;
@@ -1038,7 +1060,11 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
 
           result.push(
             <div key={`h${level}-${idx}`} className={headingClass}>
-              {headingText ? parseInlineRichText(headingText, `h${level}-${idx}`) : <span className="opacity-0">&nbsp;</span>}
+              {headingText ? (
+                parseInlineRichText(headingText, `h${level}-${idx}`)
+              ) : (
+                <span className="opacity-0">&nbsp;</span>
+              )}
             </div>
           );
           continue;
@@ -1097,7 +1123,11 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
           const indentPadding = indentLevel > 0 ? { paddingLeft: indentLevel * 16 } : undefined;
 
           result.push(
-            <div key={`bullet-${idx}`} style={indentPadding} className="flex items-start gap-1.5 my-0.5 text-xs select-text">
+            <div
+              key={`bullet-${idx}`}
+              style={indentPadding}
+              className="flex items-start gap-1.5 my-0.5 text-xs select-text"
+            >
               <span className={`shrink-0 select-none font-bold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
                 •
               </span>
@@ -1120,7 +1150,11 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
           const indentPadding = indentLevel > 0 ? { paddingLeft: indentLevel * 16 } : undefined;
 
           result.push(
-            <div key={`num-${idx}`} style={indentPadding} className="flex items-start gap-1.5 my-0.5 text-xs select-text">
+            <div
+              key={`num-${idx}`}
+              style={indentPadding}
+              className="flex items-start gap-1.5 my-0.5 text-xs select-text"
+            >
               <span
                 className={`shrink-0 tabular-nums select-none font-semibold text-[11.5px] min-w-[14px] ${
                   isDark ? 'text-amber-400 dark:text-amber-300' : 'text-amber-700'
@@ -1201,7 +1235,24 @@ const MosChatRichTextWithContext: React.FC<MosChatRichTextProps> = (props) => {
   const chatContext = useContext(MosChatContext);
   const currentUser = props.currentUser || chatContext?.currentUser;
   const staffDirectory = props.staffDirectory || chatContext?.staffDirectory || [];
-  const memberNicknames = props.memberNicknames || chatContext?.activeConversation?.memberNicknames;
+
+  const memberNicknames = useMemo(() => {
+    const merged: Record<string, string> = {};
+    if (chatContext?.conversations) {
+      chatContext.conversations.forEach((c) => {
+        if (c.memberNicknames) {
+          Object.assign(merged, c.memberNicknames);
+        }
+      });
+    }
+    if (chatContext?.activeConversation?.memberNicknames) {
+      Object.assign(merged, chatContext.activeConversation.memberNicknames);
+    }
+    if (props.memberNicknames) {
+      Object.assign(merged, props.memberNicknames);
+    }
+    return merged;
+  }, [chatContext, props.memberNicknames]);
 
   return (
     <MosChatRichTextPure
@@ -1214,7 +1265,7 @@ const MosChatRichTextWithContext: React.FC<MosChatRichTextProps> = (props) => {
 };
 
 export const MosChatRichText: React.FC<MosChatRichTextProps> = React.memo((props) => {
-  if (props.staffDirectory !== undefined && props.currentUser !== undefined) {
+  if (props.staffDirectory !== undefined && props.currentUser !== undefined && props.memberNicknames !== undefined) {
     return <MosChatRichTextPure {...props} />;
   }
   return <MosChatRichTextWithContext {...props} />;
