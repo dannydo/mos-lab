@@ -12,7 +12,7 @@ vi.mock('mermaid', () => {
         if (text.includes('INVALID_SYNTAX')) {
           throw new Error('Parse error on line 1');
         }
-        return { svg: `<svg data-testid="mock-mermaid-svg"><text>${text}</text></svg>` };
+        return { svg: `<svg data-testid="mock-mermaid-svg" viewBox="0 0 600 400"><text>${text}</text></svg>` };
       }),
     },
   };
@@ -93,5 +93,35 @@ flowchart TD
 
     // Code is still displayed
     expect(container.querySelector('code')?.textContent?.trim()).toBe('INVALID_SYNTAX_CODE');
+  });
+
+  it('opens interactive zoom & pan modal and handles zoom controls', async () => {
+    const code = 'graph TD\n  StepA --> StepB';
+    render(<MosChatMermaidBlock code={code} isDark={false} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-mermaid-svg')).toBeDefined();
+    });
+
+    // Click fullscreen / zoom button
+    const expandBtn = screen.getByRole('button', { name: /Xem toàn màn hình/i });
+    fireEvent.click(expandBtn);
+
+    // Modal title should appear
+    await waitFor(() => {
+      expect(screen.getByText(/Sơ đồ quy trình \(Toàn màn hình & Phóng to\)/i)).toBeDefined();
+    });
+
+    // Zoom In button works
+    const zoomInBtn = screen.getByRole('button', { name: /Phóng to sơ đồ/i });
+    fireEvent.click(zoomInBtn);
+
+    // Zoom Out button works
+    const zoomOutBtn = screen.getByRole('button', { name: /Thu nhỏ sơ đồ/i });
+    fireEvent.click(zoomOutBtn);
+
+    // Fit screen button works
+    const fitBtn = screen.getByRole('button', { name: /Vừa khung hình/i });
+    fireEvent.click(fitBtn);
   });
 });
