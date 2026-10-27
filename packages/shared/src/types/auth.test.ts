@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { isCvRole, getDefaultRouteForRole } from './auth.js';
+import { isCvRole, getDefaultRouteForRole, isTelesalesRole } from './auth.js';
+import { resolveMenuKeysForApiPath } from './menu-access.js';
 
 describe('Auth Role Invariants & Routing Tests', () => {
   it('should correctly identify CV roles', () => {
@@ -26,6 +27,25 @@ describe('Auth Role Invariants & Routing Tests', () => {
     assert.equal(isCvRole(null), false);
     assert.equal(isCvRole(undefined), false);
     assert.equal(isCvRole(''), false);
+  });
+
+  it('should correctly identify Telesales & Booker roles', () => {
+    assert.equal(isTelesalesRole('telesales'), true);
+    assert.equal(isTelesalesRole('booker'), true);
+    assert.equal(isTelesalesRole('TELESALES'), true);
+    assert.equal(isTelesalesRole('BOOKER'), true);
+    assert.equal(isTelesalesRole('cv'), false);
+    assert.equal(isTelesalesRole('admin'), false);
+  });
+
+  it('should resolve menu keys accurately for /nyc and /saved-filters API paths', () => {
+    const nycKeys = resolveMenuKeysForApiPath('/api/nyc/config');
+    assert.ok(nycKeys.includes('nyc-main'));
+    assert.ok(nycKeys.includes('nyc-campaigns-mgmt'));
+
+    const savedFilterKeys = resolveMenuKeysForApiPath('/api/saved-filters');
+    assert.ok(savedFilterKeys.includes('nyc-main'));
+    assert.ok(savedFilterKeys.includes('customers-all'));
   });
 
   it('should return /dashboard/cv for CV roles and /dashboard for others', () => {

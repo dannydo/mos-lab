@@ -312,7 +312,9 @@ export class MenuAccessService {
         cleanPath === '/catalog' ||
         cleanPath.startsWith('/catalog/') ||
         cleanPath.startsWith('/pinned-links') ||
-        cleanPath.startsWith('/ui-experiences'))
+        cleanPath.startsWith('/ui-experiences') ||
+        cleanPath === '/nyc/config' ||
+        cleanPath === '/saved-filters')
     ) {
       return { allowed: true, moduleKey: 'shared-lookup' };
     }
