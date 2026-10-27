@@ -79,6 +79,8 @@ import type {
   TelesaleTvQuotesOverviewResponse,
   CbLiveTelemetryResponse,
   CbTelemetryQueryParams,
+  CbTargetConfig,
+  CbDrilldownItem,
 } from '@mos-lab/shared';
 
 import { api } from './base';
@@ -309,6 +311,21 @@ export const kpiApi = {
     },
     getCbLiveTelemetry: async (params?: CbTelemetryQueryParams): Promise<CbLiveTelemetryResponse> => {
       const response = await api.get('/kpi/cb-live-telemetry', { params });
+      return response.data?.data || response.data;
+    },
+    saveCbTargetConfig: async (
+      target: Partial<CbTargetConfig> & { month: string; storeScope?: string }
+    ): Promise<CbTargetConfig> => {
+      const response = await api.post('/kpi/cb-live-telemetry/target-config', target);
+      return response.data?.data || response.data;
+    },
+    getCbDrilldown: async (params: {
+      category: 'COMBO' | 'PRODUCT' | 'GREEN_FUNNEL' | 'PACKAGE_USAGE';
+      month?: string;
+      storeScope?: string;
+      limit?: number;
+    }): Promise<CbDrilldownItem[]> => {
+      const response = await api.get('/kpi/cb-live-telemetry/drilldown', { params });
       return response.data?.data || response.data;
     },
   },
