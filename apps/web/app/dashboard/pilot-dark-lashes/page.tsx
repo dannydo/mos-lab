@@ -1,28 +1,16 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Button, Card, Form, Input, Popconfirm, Radio, Tabs, Tooltip, Typography, message } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { Button, Card, Form, Input, Radio, Tabs, Tooltip, Typography, message } from 'antd';
 import {
-  AlertTriangle,
-  Camera,
-  CheckCircle,
-  Clock,
-  Edit,
   FileText,
   GraduationCap,
-  HeartHandshake,
   ListOrdered,
   Package,
-  Image as ImageIcon,
-  Phone,
   Plus,
   RotateCw,
   Search,
   Sparkles,
-  Star,
-  Trash2,
-  User,
   ClipboardCheck,
   Maximize2,
   Minimize2,
@@ -31,17 +19,14 @@ import {
 import dayjs from 'dayjs';
 import type {
   CreatePilotSessionRequest,
-  DarkLashesSessionStatus,
-  PilotFollowUpStatus,
   PilotMaterial,
   PilotMetricsSummary,
   PilotSession,
   UpdatePilotSessionRequest,
 } from '@mos-lab/shared';
-import { apiClient, resolveMediaUrl } from '../../../lib/api-client';
+import { apiClient } from '../../../lib/api-client';
 import { AppIcon } from '../../../components/ui/AppIcon';
 import { DataTable } from '../../../components/ui/DataTable';
-import { CopyPhoneButton } from '../../../components/ui/CopyPhoneButton';
 import { PilotMetricsGrid } from './components/PilotMetricsGrid';
 import { PilotSessionDrawer } from './components/PilotSessionDrawer';
 import { PilotFollowUpDrawer } from './components/PilotFollowUpDrawer';
@@ -51,59 +36,17 @@ import { PilotSopModal } from './components/PilotSopModal';
 import { PilotCriteriaModal } from './components/PilotCriteriaModal';
 import { PilotMaterialSopModal } from './components/PilotMaterialSopModal';
 import { SopTrainingPlaceholder } from './components/SopTrainingPlaceholder';
+import { PilotSopDetailView } from './components/PilotSopDetailView';
+import { createPilotColumns } from './components/pilot-table-columns';
 
 const { Title } = Typography;
-
-function formatVND(value: number): string {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-const OP_STATUS_CONFIG: Record<DarkLashesSessionStatus, { text: string; badge: string }> = {
-  BOOKED: { text: '1. Đã đặt lịch', badge: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20' },
-  CHECKED_IN: { text: '2. Đã đến shop', badge: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20' },
-  ASSESSED: { text: '3. Đã đánh giá đạt', badge: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20' },
-  INELIGIBLE: { text: 'Không đủ điều kiện', badge: 'bg-rose-500/10 text-rose-700 dark:text-rose-300 border-rose-500/20' },
-  BEFORE_PHOTO: { text: '4. Đã chụp Before', badge: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' },
-  SERVICE_DONE: { text: '5. Làm xong', badge: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20' },
-  AFTER_PHOTO: { text: '6. Đã chụp After', badge: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20' },
-  FEEDBACK_DONE: { text: '7. Đã feedback', badge: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20' },
-  CHECKED_OUT: { text: '8. Đã check-out', badge: 'bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/20' },
-};
-
-function renderFollowUpBadge(status: PilotFollowUpStatus, hours: '24h' | '72h') {
-  if (status === 'DONE') {
-    return (
-      <span className="inline-flex items-center justify-center leading-none px-2 py-1 rounded-md border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-medium">
-        <AppIcon icon={CheckCircle} size="sm" className="mr-1" /> Đã gọi {hours}
-      </span>
-    );
-  }
-  if (status === 'SKIPPED') {
-    return <span className="text-slate-400 px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-xs">Bỏ qua</span>;
-  }
-  const is24 = hours === '24h';
-  return (
-    <span
-      className={`inline-flex items-center justify-center leading-none px-2 py-1 rounded-md border text-xs font-medium ${
-        is24
-          ? 'border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300'
-          : 'border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300'
-      }`}
-    >
-      <AppIcon icon={is24 ? Clock : AlertTriangle} size="sm" className={`mr-1 ${is24 ? '' : 'text-rose-500'}`} /> Chờ gọi {hours}
-    </span>
-  );
-}
 
 export default function PilotDarkLashesPage() {
   const [loading, setLoading] = useState(false);
   const [sessions, setSessions] = useState<PilotSession[]>([]);
   const [metrics, setMetrics] = useState<PilotMetricsSummary | null>(null);
   const [activeTab, setActiveTab] = useState<'sessions' | 'sop'>('sessions');
+  const [activeSopSubView, setActiveSopSubView] = useState<'overview' | 'module-2-detail'>('overview');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -111,6 +54,10 @@ export default function PilotDarkLashesPage() {
       const tabParam = params.get('tab');
       if (tabParam === 'sop' || tabParam === 'sop-training') {
         setActiveTab('sop');
+      }
+      if (tabParam === 'sop-detail' || params.get('subview') === 'module-2') {
+        setActiveTab('sop');
+        setActiveSopSubView('module-2-detail');
       }
     }
   }, []);
@@ -293,6 +240,28 @@ export default function PilotDarkLashesPage() {
     setFlowDrawerOpen(true);
   };
 
+  const handleOpenSessionFromSop = useCallback(
+    async (sessionId: number) => {
+      const found = sessions.find((s) => s.id === sessionId);
+      if (found) {
+        handleOpenFlow(found);
+      } else {
+        try {
+          const res = await apiClient.pilot.listSessions({ pilotCode: 'DARK_LASHES' });
+          const loaded = res.sessions?.find((s) => s.id === sessionId);
+          if (loaded) {
+            handleOpenFlow(loaded);
+          } else {
+            message.info(`Ca dịch vụ #${sessionId} nằm trong kho lưu trữ dữ liệu Pilot.`);
+          }
+        } catch {
+          message.info(`Ca dịch vụ #${sessionId} nằm trong kho lưu trữ dữ liệu Pilot.`);
+        }
+      }
+    },
+    [sessions]
+  );
+
   const handleFlowSessionUpdated = (updated: PilotSession) => {
     setSelectedFlowSession(updated);
     setSessions((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
@@ -338,306 +307,16 @@ export default function PilotDarkLashesPage() {
   }, [sessions, searchText, statusFilter, opStatusFilter]);
 
   // Columns definition
-  const columns: ColumnsType<PilotSession> = [
-    {
-      title: 'Ngày làm',
-      dataIndex: 'sessionDate',
-      key: 'sessionDate',
-      width: 105,
-      render: (val: string, r) => (
-        <div className="flex flex-col">
-          <span className="tabular-nums font-medium text-xs">{val ? dayjs(val).format('DD/MM/YYYY') : '--'}</span>
-          {r.bookingTime && (
-            <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
-              {r.bookingTime}
-            </span>
-          )}
-        </div>
-      ),
-    },
-    {
-      title: 'Khách hàng',
-      key: 'customer',
-      width: 220,
-      render: (_, r) => (
-        <div className="flex flex-col gap-0.5">
-          <span className="font-semibold text-sm leading-tight text-slate-800 dark:text-slate-100">
-            {r.customerName}
-          </span>
-          <div className="flex items-center gap-1.5 text-xs text-slate-500">
-            <span className="tabular-nums">{r.customerPhone}</span>
-            <CopyPhoneButton phone={r.customerPhone} size="xs" />
-            {r.source && (
-              <span className="inline-flex items-center text-[10px] leading-tight px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
-                {r.source}
-              </span>
-            )}
-          </div>
-          {r.bookingNote && (
-            <div className="text-[11px] text-slate-400 truncate max-w-xs xl:max-w-sm" title={r.bookingNote}>
-              📝 {r.bookingNote}
-            </div>
-          )}
-        </div>
-      ),
-    },
-    {
-      title: 'Tiến trình (8 bước)',
-      key: 'opStatus',
-      width: 175,
-      render: (_, r) => {
-        const status = r.status || 'BOOKED';
-        const cfg = OP_STATUS_CONFIG[status] || OP_STATUS_CONFIG.BOOKED;
-
-        return (
-          <div className="flex flex-col gap-1.5 items-start">
-            <span
-              className={`inline-flex items-center justify-center leading-none px-2 py-1 rounded-md text-xs font-semibold border ${cfg.badge}`}
-            >
-              {cfg.text}
-            </span>
-            {r.assessmentStatus === 'FAIL' && r.assessmentReason && (
-              <span className="text-[10px] text-rose-500 font-medium truncate max-w-[150px]" title={r.assessmentReason}>
-                Lý do: {r.assessmentReason}
-              </span>
-            )}
-            <Button
-              size="small"
-              type="primary"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-lg h-7 px-2.5 flex items-center gap-1 shadow-sm"
-              onClick={() => handleOpenFlow(r)}
-            >
-              <AppIcon icon={Camera} size="sm" />
-              <span>Vận hành ca</span>
-            </Button>
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Ảnh Before / After',
-      key: 'photos',
-      width: 140,
-      render: (_, r) => {
-        if (!r.beforePhotoUrl && !r.afterPhotoUrl) return <span className="text-slate-400 text-xs">Chưa có ảnh</span>;
-        return (
-          <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => handleOpenFlow(r)}>
-            {r.beforePhotoUrl ? (
-              <Tooltip title="Xem ảnh Before">
-                <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-900 shrink-0">
-                  <img src={resolveMediaUrl(r.beforePhotoUrl)} alt="Before" className="w-full h-full object-cover" loading="lazy" decoding="async" />
-                </div>
-              </Tooltip>
-            ) : (
-              <div className="w-10 h-10 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center text-[10px] text-slate-400 shrink-0">Tr</div>
-            )}
-            {r.afterPhotoUrl ? (
-              <Tooltip title="Xem ảnh After">
-                <div className="w-10 h-10 rounded-lg overflow-hidden border border-emerald-300 dark:border-emerald-700 bg-slate-900 shrink-0">
-                  <img src={resolveMediaUrl(r.afterPhotoUrl)} alt="After" className="w-full h-full object-cover" loading="lazy" decoding="async" />
-                </div>
-              </Tooltip>
-            ) : (
-              <div className="w-10 h-10 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 flex items-center justify-center text-[10px] text-slate-400 shrink-0">Sau</div>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Thời lượng',
-      key: 'duration',
-      width: 130,
-      render: (_, r) => {
-        const totalTechnicalMin = r.totalTechnicalDurationSeconds && r.totalTechnicalDurationSeconds > 0 ? Math.round(r.totalTechnicalDurationSeconds / 60) : null;
-        return (
-          <div className="flex flex-col gap-0.5">
-            {r.totalDurationMinutes ? (
-              <div className="flex items-center gap-1">
-                <span className="tabular-nums font-bold text-emerald-700 dark:text-emerald-400 text-xs">{r.totalDurationMinutes} phút</span>
-                <span className="text-[10px] text-slate-400">(Visit)</span>
-              </div>
-            ) : r.checkInAt ? (
-              <span className="inline-flex items-center text-[11px] text-cyan-600 dark:text-cyan-400 font-medium">Đang làm...</span>
-            ) : (
-              <span className="text-slate-400 text-xs">--</span>
-            )}
-            {totalTechnicalMin !== null && (
-              <Tooltip title={`Tổng thời gian kỹ thuật (SOP): ${Math.floor(r.totalTechnicalDurationSeconds! / 60)} phút ${r.totalTechnicalDurationSeconds! % 60}s`}>
-                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-700 dark:text-teal-300 tabular-nums">
-                  <AppIcon icon={Clock} size="sm" /> KT: {totalTechnicalMin}p
-                </span>
-              </Tooltip>
-            )}
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Chuyên Viên',
-      dataIndex: 'technicianName',
-      key: 'technicianName',
-      width: 130,
-      render: (val: string) => (
-        <span className="inline-flex items-center justify-center leading-none px-2 py-1 rounded-md font-medium border border-violet-200 dark:border-violet-900 bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 text-xs">
-          <AppIcon icon={User} size="sm" className="mr-1" />
-          {val || 'Chưa gán'}
-        </span>
-      ),
-    },
-    {
-      title: 'Doanh thu',
-      dataIndex: 'revenue',
-      key: 'revenue',
-      width: 120,
-      align: 'right',
-      render: (val: number) => (
-        <span className="tabular-nums font-semibold text-slate-900 dark:text-slate-100">{formatVND(val)}</span>
-      ),
-    },
-    {
-      title: 'Chi phí trực tiếp',
-      key: 'directCost',
-      width: 150,
-      align: 'right',
-      render: (_, r) => (
-        <Tooltip
-          title={
-            <div className="text-xs space-y-1.5 p-1 max-w-xs">
-              <div className="border-b border-slate-700 dark:border-slate-600 pb-1">
-                <div className="font-semibold text-emerald-400">Vật tư tiêu hao: {formatVND(r.materialCost)}</div>
-                {r.materials && r.materials.length > 0 && (
-                  <div className="mt-1 pl-1 space-y-0.5 text-[11px] text-slate-300">
-                    {r.materials.map((m) => (
-                      <div key={m.id} className="flex justify-between gap-2">
-                        <span>
-                          • {m.materialName} ({m.usageAmount} {m.unit}):
-                        </span>
-                        <span className="tabular-nums font-medium text-slate-200">
-                          {formatVND(m.calculatedCost ?? 0)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="space-y-0.5">
-                <div>Kỹ thuật: {formatVND(r.technicianCost)}</div>
-                <div>Commission: {formatVND(r.commissionAmount)}</div>
-                <div>Voucher/Promo: {formatVND(r.promoAmount)}</div>
-                {r.refundAmount > 0 && <div>Đền bù/Refund: {formatVND(r.refundAmount)}</div>}
-              </div>
-            </div>
-          }
-        >
-          <div className="cursor-pointer">
-            <span className="tabular-nums font-medium text-slate-600 dark:text-slate-300 underline decoration-dotted">
-              {formatVND(r.totalDirectCost)}
-            </span>
-          </div>
-        </Tooltip>
-      ),
-    },
-    {
-      title: 'Contribution Margin',
-      key: 'contribution',
-      width: 160,
-      align: 'right',
-      render: (_, r) => {
-        const marginPct = r.revenue > 0 ? Math.round((r.contributionMargin / r.revenue) * 100) : 0;
-        const isPositive = r.contributionMargin > 0;
-        return (
-          <div className="flex flex-col items-end">
-            <span
-              className={`tabular-nums font-bold ${
-                isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-              }`}
-            >
-              {formatVND(r.contributionMargin)}
-            </span>
-            <span className="text-[11px] tabular-nums font-medium text-slate-400">{marginPct}% doanh thu</span>
-          </div>
-        );
-      },
-    },
-    {
-      title: 'CSAT',
-      dataIndex: 'csatScore',
-      key: 'csatScore',
-      width: 100,
-      align: 'center',
-      render: (score: number | null) => {
-        if (!score) return <span className="text-slate-400 text-xs">Chưa chấm</span>;
-        return (
-          <div className="inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 px-2 py-0.5 rounded-full">
-            <AppIcon icon={Star} size="sm" className="text-amber-500 fill-amber-500" />
-            <span className="tabular-nums font-bold text-xs text-amber-700 dark:text-amber-300">{score}.0</span>
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Follow-up 24h',
-      dataIndex: 'followUp24hStatus',
-      key: 'followUp24hStatus',
-      width: 120,
-      render: (status: PilotFollowUpStatus) => renderFollowUpBadge(status, '24h'),
-    },
-    {
-      title: 'Follow-up 72h',
-      dataIndex: 'followUp72hStatus',
-      key: 'followUp72hStatus',
-      width: 120,
-      render: (status: PilotFollowUpStatus) => renderFollowUpBadge(status, '72h'),
-    },
-    {
-      title: 'Thao tác',
-      key: 'actions',
-      width: 140,
-      fixed: 'right',
-      render: (_, r) => (
-        <div className="flex items-center gap-1">
-          <Tooltip title="Mở Flow Vận Hành 7 Bước (Chụp ảnh, Feedback, Check-out)">
-            <Button
-              type="text"
-              size="small"
-              className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
-              icon={<AppIcon icon={Camera} size="sm" />}
-              onClick={() => handleOpenFlow(r)}
-            />
-          </Tooltip>
-          <Tooltip title="Chăm sóc & Đánh giá CSAT">
-            <Button
-              type="text"
-              size="small"
-              className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/40"
-              icon={<AppIcon icon={HeartHandshake} size="sm" />}
-              onClick={() => handleOpenFollowUp(r)}
-            />
-          </Tooltip>
-          <Tooltip title="Chỉnh sửa ca">
-            <Button
-              type="text"
-              size="small"
-              className="text-slate-600 hover:text-slate-900 dark:text-slate-300"
-              icon={<AppIcon icon={Edit} size="sm" />}
-              onClick={() => handleOpenEdit(r)}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Xóa ca pilot này?"
-            description="Bạn có chắc chắn muốn xóa bản ghi ca dịch vụ này không?"
-            onConfirm={() => handleDeleteSession(r.id)}
-            okText="Xóa"
-            cancelText="Hủy"
-            okButtonProps={{ danger: true }}
-          >
-            <Button type="text" size="small" danger icon={<AppIcon icon={Trash2} size="sm" />} />
-          </Popconfirm>
-        </div>
-      ),
-    },
-  ];
+  const columns = useMemo(
+    () =>
+      createPilotColumns({
+        handleOpenFlow,
+        handleOpenFollowUp,
+        handleOpenEdit,
+        handleDeleteSession,
+      }),
+    [handleOpenFlow, handleOpenFollowUp, handleOpenEdit, handleDeleteSession]
+  );
 
   return (
     <div
@@ -833,11 +512,22 @@ export default function PilotDarkLashesPage() {
             ),
             children: (
               <div className="mt-1">
-                <SopTrainingPlaceholder
-                  onOpenSopModal={() => setSopModalOpen(true)}
-                  onOpenCriteriaModal={() => setCriteriaModalOpen(true)}
-                  onOpenMaterialsSop={() => setMaterialSopModalOpen(true)}
-                />
+                {activeSopSubView === 'module-2-detail' ? (
+                  <PilotSopDetailView
+                    onBack={() => setActiveSopSubView('overview')}
+                    onOpenSopModal={() => setSopModalOpen(true)}
+                    onViewSessionId={handleOpenSessionFromSop}
+                  />
+                ) : (
+                  <SopTrainingPlaceholder
+                    onOpenSopModal={() => setSopModalOpen(true)}
+                    onOpenCriteriaModal={() => setCriteriaModalOpen(true)}
+                    onOpenMaterialsSop={() => setMaterialSopModalOpen(true)}
+                    sessions={sessions}
+                    onOpenSessionFlow={handleOpenFlow}
+                    onViewSopDetail={() => setActiveSopSubView('module-2-detail')}
+                  />
+                )}
               </div>
             ),
           },

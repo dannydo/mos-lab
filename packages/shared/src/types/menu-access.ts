@@ -170,10 +170,12 @@ export function resolveMenuKeysForApiPath(apiPath: string): string[] {
   if (
     clean.startsWith('/kpi/cc') ||
     clean.startsWith('/cc') ||
+    clean.startsWith('/kpi/cb') ||
+    clean.startsWith('/cb') ||
     clean.startsWith('/gamification') ||
     clean.startsWith('/kpi/export-diamond')
   ) {
-    return ['cc', 'kpi', 'dashboard'];
+    return ['cb', 'cc', 'kpi', 'dashboard'];
   }
   if (clean.startsWith('/kpi/bk') || clean.startsWith('/kpi/export-booker-salary') || clean.startsWith('/bk')) {
     return ['bk', 'kpi', 'dashboard'];
@@ -560,6 +562,7 @@ export const MENU_ACCESS_DEFINITIONS: readonly MenuAccessDefinition[] = [
   },
 
   { key: 'kpi', label: 'KPI hiệu suất', groupKey: 'reports', groupLabel: 'Báo cáo & KPI', path: '/dashboard/kpi' },
+  { key: 'cb', label: 'Dashboard $CB (Live)', groupKey: 'reports', groupLabel: 'Báo cáo & KPI', path: '/dashboard/cb' },
   { key: 'cc', label: 'Báo cáo CC', groupKey: 'reports', groupLabel: 'Báo cáo & KPI', path: '/dashboard/cc' },
   { key: 'cv', label: 'Báo cáo CV', groupKey: 'reports', groupLabel: 'Báo cáo & KPI', path: '/dashboard/cv' },
   { key: 'bk', label: 'Báo cáo BK', groupKey: 'reports', groupLabel: 'Báo cáo & KPI', path: '/dashboard/bk' },

@@ -10,18 +10,20 @@ import {
   MoneyCollectOutlined,
   SketchOutlined,
   SyncOutlined,
+  ThunderboltOutlined,
   TrophyOutlined,
 } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import dynamic from 'next/dynamic';
+import { Zap } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
 import { apiClient } from '../../../lib/api-client';
 import { CcLeaderboardEntry, CcXoayRecord, CcXoayReportResponse } from '@mos-lab/shared';
 import { useResponsiveTier } from '~/hooks/useResponsiveTier';
 
 import CcLeaderboardCard from './components/CcLeaderboardCard';
-import { ReportPeriodNavigator, TableSettingsTrigger, ToolbarToggle } from '../../../components/ui';
+import { IconButton, ReportPeriodNavigator, TableSettingsTrigger, ToolbarToggle } from '../../../components/ui';
 
 const CcXoayTab = dynamic(() => import('./components/CcXoayTab'), {
   ssr: false,
@@ -72,6 +74,14 @@ const CcThuNhapTab = dynamic(() => import('./components/CcThuNhapTab'), {
   ),
 });
 const CcThuongConfigModal = dynamic(() => import('./components/CcThuongConfigModal'), { ssr: false });
+const CbLiveTelemetryWidget = dynamic(() => import('../cb/components/CbLiveTelemetryWidget'), {
+  ssr: false,
+  loading: () => (
+    <div className="p-8 text-center">
+      <Spin />
+    </div>
+  ),
+});
 
 dayjs.extend(isoWeek);
 
@@ -149,7 +159,7 @@ export default function CcDashboardPage() {
       const tabParam = urlParams.get('tab');
       const savedTab = localStorage.getItem('cc_active_tab');
       const initialTab = tabParam || savedTab;
-      if (initialTab && ['xoay', 'thuong', 'game', 'tip', 'diamond', 'thunhap'].includes(initialTab)) {
+      if (initialTab && ['xoay', 'thuong', 'game', 'tip', 'diamond', 'thunhap', 'cb'].includes(initialTab)) {
         return initialTab;
       }
     }
@@ -349,6 +359,15 @@ export default function CcDashboardPage() {
         ) : null,
     },
     {
+      key: 'cb',
+      label: (
+        <CcTabLabel icon={<ThunderboltOutlined className="text-emerald-500 animate-pulse" />}>
+          $CB Live
+        </CcTabLabel>
+      ),
+      children: activeTab === 'cb' ? <CbLiveTelemetryWidget showCardWrapper={false} /> : null,
+    },
+    {
       key: 'xoay',
       label: <CcTabLabel icon={<SyncOutlined />}>Xoay</CcTabLabel>,
       children:
@@ -454,6 +473,13 @@ export default function CcDashboardPage() {
               className="cc-toolbar-vat-toggle text-amber-500 dark:text-amber-300"
             />
           </div>
+          <IconButton
+            label="$CB Live"
+            icon={Zap}
+            tone="primary"
+            onClick={() => handleTabChange('cb')}
+            className="!text-emerald-500 !border-emerald-500/50 hover:!border-emerald-500"
+          />
           <Dropdown
             trigger={['click']}
             menu={{
