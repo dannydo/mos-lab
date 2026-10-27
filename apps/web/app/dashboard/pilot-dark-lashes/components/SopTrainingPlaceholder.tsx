@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card } from 'antd';
 import {
   GraduationCap,
@@ -16,7 +16,9 @@ import {
   ArrowRight,
   type LucideIcon,
 } from 'lucide-react';
+import type { PilotSession } from '@mos-lab/shared';
 import { AppIcon } from '../../../../components/ui/AppIcon';
+import { PilotCriteriaSopDetail } from './PilotCriteriaSopDetail';
 
 interface TrainingModuleItem {
   id: string;
@@ -42,7 +44,7 @@ const TRAINING_MODULES: TrainingModuleItem[] = [
     id: 'criteria',
     order: 1,
     title: 'Tiêu chuẩn đánh giá & Phân loại dáng mi',
-    badge: 'Khung tiêu chuẩn',
+    badge: 'Khung tiêu chuẩn · Chi tiết SOP v1.0',
     badgeColor: 'blue',
     icon: Sparkles,
     description:
@@ -118,9 +120,33 @@ const TRAINING_MODULES: TrainingModuleItem[] = [
 interface SopTrainingPlaceholderProps {
   onOpenSopModal?: () => void;
   onOpenCriteriaModal?: () => void;
+  sessions?: PilotSession[];
+  onOpenSessionFlow?: (session: PilotSession) => void;
+  initialModuleId?: string | null;
 }
 
-export function SopTrainingPlaceholder({ onOpenSopModal, onOpenCriteriaModal }: SopTrainingPlaceholderProps) {
+export function SopTrainingPlaceholder({
+  onOpenSopModal,
+  onOpenCriteriaModal,
+  sessions,
+  onOpenSessionFlow,
+  initialModuleId = null,
+}: SopTrainingPlaceholderProps) {
+  const [activeModuleId, setActiveModuleId] = useState<string | null>(initialModuleId);
+
+  // If Hạng mục 1 is active, render detailed SOP specification
+  if (activeModuleId === 'criteria') {
+    return (
+      <PilotCriteriaSopDetail
+        onBack={() => setActiveModuleId(null)}
+        onOpenCriteriaModal={onOpenCriteriaModal}
+        onOpenSopModal={onOpenSopModal}
+        sessions={sessions}
+        onOpenSessionFlow={onOpenSessionFlow}
+      />
+    );
+  }
+
   return (
     <div className="space-y-4 antialiased" data-testid="sop-training-placeholder">
       {/* Banner Giới thiệu Placeholder */}
@@ -134,7 +160,7 @@ export function SopTrainingPlaceholder({ onOpenSopModal, onOpenCriteriaModal }: 
               </span>
               <span className="inline-flex items-center justify-center leading-none px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                 <AppIcon icon={Clock} size={12} className="mr-1" />
-                Đang phát triển · Khung 5 hạng mục
+                Khung 5 hạng mục · Hạng mục 1 đã hoàn thiện
               </span>
             </div>
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight m-0">
@@ -171,13 +197,11 @@ export function SopTrainingPlaceholder({ onOpenSopModal, onOpenCriteriaModal }: 
           </div>
         </div>
 
-        {/* Thông báo trạng thái đang phát triển */}
+        {/* Thông báo trạng thái */}
         <div className="mt-3.5 pt-3 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-          <AppIcon icon={Info} size={14} className="text-amber-500 shrink-0" />
+          <AppIcon icon={Info} size={14} className="text-emerald-500 shrink-0" />
           <span>
-            Nội dung chi tiết của 5 hạng mục đang được phòng Kỹ Thuật và Đào Tạo hoàn thiện giáo trình điện tử và video
-            thị phạm. Toàn bộ ca dịch vụ thực tế và chỉ số KPI vẫn được quản lý liền mạch tại tab{' '}
-            <strong className="text-slate-700 dark:text-slate-200">Ca dịch vụ &amp; Hiệu quả</strong>.
+            <strong className="text-emerald-700 dark:text-emerald-300">Hạng mục 1 đã có nội dung chi tiết:</strong> Nhấp vào Hạng mục 1 bên dưới để xem hướng dẫn quan sát 5 tiêu chí, minh chứng thực tế 17 ca Pilot và quy trình xử lý điều kiện mi.
           </span>
         </div>
       </div>
@@ -187,17 +211,31 @@ export function SopTrainingPlaceholder({ onOpenSopModal, onOpenCriteriaModal }: 
         {TRAINING_MODULES.map((mod) => {
           const IconComp = mod.icon;
           const badgeClass = BADGE_CLASSES[mod.badgeColor] || BADGE_CLASSES.blue;
+          const isCriteriaModule = mod.id === 'criteria';
+
           return (
             <Card
               key={mod.id}
               variant="outlined"
-              className="rounded-2xl border border-slate-200 dark:border-slate-800 transition-all duration-300 hover:shadow-md flex flex-col justify-between"
+              className={`rounded-2xl transition-all duration-300 flex flex-col justify-between ${
+                isCriteriaModule
+                  ? 'border-emerald-500/40 bg-gradient-to-b from-emerald-500/[0.04] to-transparent ring-1 ring-emerald-500/20 hover:shadow-md cursor-pointer'
+                  : 'border-slate-200 dark:border-slate-800 hover:shadow-md'
+              }`}
+              onClick={isCriteriaModule ? () => setActiveModuleId('criteria') : undefined}
+              data-testid={`training-module-card-${mod.id}`}
             >
               <div className="space-y-3 flex-1">
                 {/* Header Card */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <div
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                        isCriteriaModule
+                          ? 'bg-emerald-500 text-white shadow-xs'
+                          : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                      }`}
+                    >
                       <AppIcon icon={IconComp} size={16} />
                     </div>
                     <div>
@@ -236,14 +274,37 @@ export function SopTrainingPlaceholder({ onOpenSopModal, onOpenCriteriaModal }: 
               </div>
 
               {/* Card Footer */}
-              <div className="mt-4 pt-2.5 border-t border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-                <span className="inline-flex items-center gap-1">
-                  <Clock size={12} />
-                  <span>Dự kiến tích hợp Giai đoạn 2</span>
-                </span>
-                <span className="text-slate-400 font-medium inline-flex items-center gap-0.5">
-                  Chi tiết <AppIcon icon={ArrowRight} size={11} />
-                </span>
+              <div className="mt-4 pt-2.5 border-t border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-between text-[11px]">
+                {isCriteriaModule ? (
+                  <>
+                    <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold">
+                      <Sparkles size={12} />
+                      <span>Đã hoàn thiện nội dung</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveModuleId('criteria');
+                      }}
+                      className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-bold inline-flex items-center gap-1 cursor-pointer bg-transparent border-0 p-0"
+                      data-testid="view-criteria-sop-btn"
+                    >
+                      <span>Xem chi tiết SOP</span>
+                      <AppIcon icon={ArrowRight} size={12} />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="inline-flex items-center gap-1 text-slate-400">
+                      <Clock size={12} />
+                      <span>Dự kiến tích hợp Giai đoạn 2</span>
+                    </span>
+                    <span className="text-slate-400 font-medium inline-flex items-center gap-0.5">
+                      Chi tiết <AppIcon icon={ArrowRight} size={11} />
+                    </span>
+                  </>
+                )}
               </div>
             </Card>
           );

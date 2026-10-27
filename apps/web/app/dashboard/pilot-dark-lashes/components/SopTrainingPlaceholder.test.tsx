@@ -9,9 +9,8 @@ describe('SopTrainingPlaceholder', () => {
 
     expect(screen.getByTestId('sop-training-placeholder')).toBeInTheDocument();
     expect(screen.getByText('SOP & Đào tạo KTV')).toBeInTheDocument();
-    expect(screen.getByText('Khung Đào Tạo & Chuẩn Hóa Tay Nghề Chuyên Viên Kỹ Thuật')).toBeInTheDocument();
     expect(
-      screen.getByText(/Khu vực SOP & Đào tạo KTV đang được phát triển/i, { selector: 'p' })
+      screen.getByText('Khung Đào Tạo & Chuẩn Hóa Tay Nghề Chuyên Viên Kỹ Thuật')
     ).toBeInTheDocument();
   });
 
@@ -43,5 +42,26 @@ describe('SopTrainingPlaceholder', () => {
     const criteriaBtn = screen.getByRole('button', { name: /Xem tiêu chí mi/i });
     fireEvent.click(criteriaBtn);
     expect(handleOpenCriteria).toHaveBeenCalledTimes(1);
+  });
+
+  it('navigates to Hạng mục 1 SOP Detail when clicking "Xem chi tiết SOP" or card and navigates back', () => {
+    render(<SopTrainingPlaceholder />);
+
+    // Click "Xem chi tiết SOP" button on Hạng mục 1
+    const viewDetailBtn = screen.getByTestId('view-criteria-sop-btn');
+    fireEvent.click(viewDetailBtn);
+
+    // Should now show PilotCriteriaSopDetail
+    expect(screen.getByTestId('pilot-criteria-sop-detail')).toBeInTheDocument();
+    expect(
+      screen.getByText('SOP Đánh Giá & Phân Loại Dáng Mi Trước Dịch Vụ')
+    ).toBeInTheDocument();
+
+    // Click back button
+    const backBtn = screen.getByTestId('sop-detail-back-button');
+    fireEvent.click(backBtn);
+
+    // Should return to overview
+    expect(screen.getByTestId('sop-training-placeholder')).toBeInTheDocument();
   });
 });

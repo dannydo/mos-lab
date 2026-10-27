@@ -825,6 +825,8 @@ export default function PilotDarkLashesPage() {
                 <SopTrainingPlaceholder
                   onOpenSopModal={() => setSopModalOpen(true)}
                   onOpenCriteriaModal={() => setCriteriaModalOpen(true)}
+                  sessions={sessions}
+                  onOpenSessionFlow={handleOpenFlow}
                 />
               </div>
             ),
