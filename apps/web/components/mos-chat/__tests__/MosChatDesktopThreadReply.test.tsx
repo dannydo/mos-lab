@@ -172,7 +172,9 @@ describe('MosChatDesktopThreadReply - Reply feature in desktop sub-thread (MOS-B
 
     // Quoting banner should appear
     expect(screen.getByText('Trả lời Bảo Hân:')).toBeInTheDocument();
-    expect(screen.getAllByText('Em thấy trên mobile có nút vuốt và trích dẫn rất tiện ạ').length).toBeGreaterThanOrEqual(2);
+    expect(
+      screen.getAllByText('Em thấy trên mobile có nút vuốt và trích dẫn rất tiện ạ').length
+    ).toBeGreaterThanOrEqual(2);
 
     // Cancel quote button should be rendered
     const cancelBtn = screen.getByRole('button', { name: 'Hủy trích dẫn' });
@@ -190,7 +192,9 @@ describe('MosChatDesktopThreadReply - Reply feature in desktop sub-thread (MOS-B
     fireEvent.click(rootReplyBtn);
 
     expect(screen.getByText('Trả lời Anh Danny:')).toBeInTheDocument();
-    expect(screen.getAllByText('Cần kiểm tra lại tính năng reply trong subthread trên desktop').length).toBeGreaterThanOrEqual(2);
+    expect(
+      screen.getAllByText('Cần kiểm tra lại tính năng reply trong subthread trên desktop').length
+    ).toBeGreaterThanOrEqual(2);
   });
 
   it('submits quote-formatted text when sending a reply while quoting banner is active', () => {
@@ -233,5 +237,44 @@ describe('MosChatDesktopThreadReply - Reply feature in desktop sub-thread (MOS-B
     fireEvent.keyDown(textarea, { key: 'Escape' });
 
     expect(screen.queryByText('Trả lời Bảo Hân:')).not.toBeInTheDocument();
+  });
+
+  it('supports Shift+Enter in subthread and handles smart list continuation (e.g. • or 1.)', () => {
+    const setThreadInput = vi.fn();
+    const handleSmartListEnterKey = vi.fn().mockReturnValue({
+      handled: true,
+      nextText: '• Ý 1\n• ',
+      nextCursor: 7,
+    });
+
+    render(
+      <MosChatThreadDrawer
+        {...defaultProps}
+        threadInput="• Ý 1"
+        setThreadInput={setThreadInput}
+        handleSmartListEnterKey={handleSmartListEnterKey}
+      />
+    );
+
+    const textarea = screen.getByPlaceholderText(/Trả lời vào luồng/) as HTMLTextAreaElement;
+    fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: true });
+
+    expect(handleSmartListEnterKey).toHaveBeenCalledWith('• Ý 1', 0, 0);
+    expect(setThreadInput).toHaveBeenCalledWith('• Ý 1\n• ');
+  });
+
+  it('renders quick newline button (CornerDownLeft) and Enter/Shift+Enter hint in subthread', () => {
+    const setThreadInput = vi.fn();
+    render(<MosChatThreadDrawer {...defaultProps} threadInput="Đoạn văn" setThreadInput={setThreadInput} />);
+
+    // Quick newline button
+    const newlineBtn = screen.getByRole('button', { name: 'Xuống dòng trong luồng' });
+    expect(newlineBtn).toBeInTheDocument();
+
+    fireEvent.click(newlineBtn);
+    expect(setThreadInput).toHaveBeenCalledWith('Đoạn văn\n');
+
+    // Shortcut hint
+    expect(screen.getByText('Enter gửi · Shift+Enter xuống dòng')).toBeInTheDocument();
   });
 });

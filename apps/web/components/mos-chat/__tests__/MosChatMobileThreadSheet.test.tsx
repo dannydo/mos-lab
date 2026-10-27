@@ -4,7 +4,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MosChatProvider, useMosChat } from '../context/MosChatContext';
 import { MosChatMobileThreadSheet } from '../mobile/MosChatMobileThreadSheet';
 import { apiClient } from '../../../lib/api-client';
-import type { MosChatMissionSummary } from '@mos-lab/shared';
+import type { MosChatMissionSummary, MosChatMessage } from '@mos-lab/shared';
 
 // Mock apiClient.chat
 vi.mock('../../../lib/api-client', () => ({
@@ -524,5 +524,62 @@ describe('MosChatMobileThreadSheet - Subthread Gate Approval on iPhone', () => {
       });
       expect(screen.getByText(/Phản hồi này đã bị xoá/i)).toBeTruthy();
     });
+  });
+
+  it('supports Shift+Enter smart list continuation and quick newline button on mobile subthread sheet', async () => {
+    const mockParentMsg: MosChatMessage = {
+      id: 'msg-parent-newline',
+      conversationId: 'dm-pair-1-6',
+      senderId: 'staff-6',
+      senderName: 'Bảo Hân',
+      senderRole: 'CV',
+      timeLabel: '08:00',
+      text: 'Tin nhắn cần test xuống dòng',
+      createdAt: '2026-10-27T08:00:00.000Z',
+    };
+
+    (apiClient.chat.bootstrap as any).mockResolvedValue({
+      conversations: [{ id: 'dm-pair-1-6', name: 'Bảo Hân', type: 'direct' }],
+      messages: [mockParentMsg],
+      tasks: [],
+      staffDirectory: [{ id: 1, displayName: 'Danny Do', role: 'Super Admin' }],
+      accessConfig: { allowAllStaff: true, allowedGroupKeys: [], allowedStaffIds: [] },
+      canAccessChat: true,
+    });
+
+    const TestHost: React.FC = () => {
+      const { setActiveThreadMsg, setMobileView } = useMosChat();
+      React.useEffect(() => {
+        setActiveThreadMsg(mockParentMsg as any);
+        setMobileView('thread');
+      }, [setActiveThreadMsg, setMobileView]);
+
+      return <MosChatMobileThreadSheet />;
+    };
+
+    render(
+      <MosChatProvider currentUser={mockCurrentUser} initialConvId="dm-pair-1-6">
+        <TestHost />
+      </MosChatProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Trả lời trong luồng...')).toBeTruthy();
+    });
+
+    const textarea = screen.getByPlaceholderText('Trả lời trong luồng...') as HTMLTextAreaElement;
+    fireEvent.change(textarea, { target: { value: '• Việc 1' } });
+
+    // Press Shift+Enter in smart list
+    fireEvent.keyDown(textarea, { key: 'Enter', shiftKey: true });
+    expect(textarea.value).toBe('• Việc 1\n• ');
+
+    // Click quick newline button
+    const newlineBtn = screen.getByRole('button', { name: 'Xuống dòng (Shift+Enter)' });
+    expect(newlineBtn).toBeTruthy();
+
+    fireEvent.click(newlineBtn);
+    // Inside empty bullet • , smart list exits cleanly
+    expect(textarea.value).toBe('• Việc 1\n');
   });
 });

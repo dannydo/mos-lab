@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronUp,
   Copy,
+  CornerDownLeft,
   CornerDownRight,
   Eye,
   FilePenLine,
@@ -304,6 +305,14 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
     React.useEffect(() => {
       setReplyingToReply(null);
     }, [activeThreadMessage?.id, threadOpen]);
+
+    // Tự động căn chỉnh chiều cao textarea subthread khi có nhiều dòng (Shift+Enter)
+    React.useEffect(() => {
+      const el = threadInputRef.current;
+      if (!el) return;
+      el.style.height = 'auto';
+      el.style.height = `${Math.min(el.scrollHeight, 140)}px`;
+    }, [threadInput, threadInputRef]);
 
     const handleThreadSubmit = () => {
       const trimmed = threadInput.trim();
@@ -1706,7 +1715,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                   if (e.key === 'Enter' && e.shiftKey) {
                     const el = e.currentTarget;
                     const smart = handleSmartListEnterKey(threadInput, el.selectionStart || 0, el.selectionEnd || 0);
-                    if (smart) {
+                    if (smart?.handled) {
                       e.preventDefault();
                       setThreadInput(smart.nextText);
                       setThreadCursorPos(smart.nextCursor);
@@ -1895,27 +1904,68 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                     <ImagePlus size={15} />
                   </button>
                 </Tooltip>
+
+                {/* [↵] Quick Down-line / Xuống dòng Button */}
+                <Tooltip title="Xuống dòng (Shift+Enter)">
+                  <button
+                    type="button"
+                    aria-label="Xuống dòng trong luồng"
+                    onClick={() => {
+                      const el = threadInputRef.current;
+                      if (!el) return;
+                      const isFocused = typeof document !== 'undefined' && document.activeElement === el;
+                      const start = isFocused ? (el.selectionStart ?? threadInput.length) : threadInput.length;
+                      const end = isFocused ? (el.selectionEnd ?? threadInput.length) : threadInput.length;
+                      const smart = handleSmartListEnterKey(threadInput, start, end);
+                      if (smart?.handled) {
+                        setThreadInput(smart.nextText);
+                        setThreadCursorPos(smart.nextCursor);
+                        setTimeout(() => {
+                          el.focus();
+                          el.setSelectionRange(smart.nextCursor, smart.nextCursor);
+                        }, 0);
+                      } else {
+                        const next = threadInput.substring(0, start) + '\n' + threadInput.substring(end);
+                        setThreadInput(next);
+                        setThreadCursorPos(start + 1);
+                        setTimeout(() => {
+                          el.focus();
+                          el.setSelectionRange(start + 1, start + 1);
+                        }, 0);
+                      }
+                    }}
+                    className="w-7 h-7 rounded-lg inline-flex items-center justify-center shrink-0 cursor-pointer hover:bg-black/5 dark:hover:bg-white/10 active:scale-95 transition-transform"
+                    style={{ color: token.colorTextSecondary }}
+                  >
+                    <CornerDownLeft size={14} />
+                  </button>
+                </Tooltip>
               </div>
 
-              <Tooltip title="Gửi vào luồng (Enter)">
-                <button
-                  type="button"
-                  aria-label="Gửi vào luồng"
-                  onClick={() => void handleThreadSubmit()}
-                  className="w-7 h-7 rounded-full inline-flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-sm"
-                  style={{
-                    background:
-                      threadInput.trim() || threadAttachments.length > 0
-                        ? '#d4a84b'
-                        : isDark
-                          ? 'rgba(255, 255, 255, 0.08)'
-                          : 'rgba(0, 0, 0, 0.06)',
-                    color: threadInput.trim() || threadAttachments.length > 0 ? '#000' : token.colorTextQuaternary,
-                  }}
-                >
-                  <SendHorizontal size={14} />
-                </button>
-              </Tooltip>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-[11px] select-none hidden sm:inline" style={{ color: token.colorTextQuaternary }}>
+                  Enter gửi · Shift+Enter xuống dòng
+                </span>
+                <Tooltip title="Gửi vào luồng (Enter)">
+                  <button
+                    type="button"
+                    aria-label="Gửi vào luồng"
+                    onClick={() => void handleThreadSubmit()}
+                    className="w-7 h-7 rounded-full inline-flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-sm"
+                    style={{
+                      background:
+                        threadInput.trim() || threadAttachments.length > 0
+                          ? '#d4a84b'
+                          : isDark
+                            ? 'rgba(255, 255, 255, 0.08)'
+                            : 'rgba(0, 0, 0, 0.06)',
+                      color: threadInput.trim() || threadAttachments.length > 0 ? '#000' : token.colorTextQuaternary,
+                    }}
+                  >
+                    <SendHorizontal size={14} />
+                  </button>
+                </Tooltip>
+              </div>
             </div>
           </div>
         </div>

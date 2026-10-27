@@ -1,12 +1,25 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, SendHorizontal, Mic, Smile, X, ImagePlus, Loader2, FileText, File, Sparkles } from 'lucide-react';
+import {
+  Plus,
+  SendHorizontal,
+  Mic,
+  Smile,
+  X,
+  ImagePlus,
+  Loader2,
+  FileText,
+  File,
+  Sparkles,
+  CornerDownLeft,
+} from 'lucide-react';
 import { message as antdMessage } from 'antd';
-import type { MosChatImageAttachment } from '@mos-lab/shared';
+import type { MosChatImageAttachment, SafeAny } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
 import type { MosChatStickerPackId } from '../mos-chat-stickers';
 import { MosChatMobileMentionAutocomplete } from './MosChatMobileMentionAutocomplete';
+import { handleSmartListEnterKey } from '../MosChatRichEditorModal';
 import {
   extractMentionedStaff,
   isStaffInConversationMembers,
@@ -133,8 +146,60 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
     }
   };
 
+  const handleInsertNewline = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const isFocused = typeof document !== 'undefined' && document.activeElement === el;
+    const start = isFocused ? (el.selectionStart ?? text.length) : text.length;
+    const end = isFocused ? (el.selectionEnd ?? text.length) : text.length;
+    const smart = handleSmartListEnterKey(text, start, end);
+    if (smart?.handled) {
+      setText(smart.nextText);
+      setTimeout(() => {
+        el.focus();
+        el.setSelectionRange(smart.nextCursor, smart.nextCursor);
+      }, 0);
+    } else {
+      const nextText = text.substring(0, start) + '\n' + text.substring(end);
+      setText(nextText);
+      setTimeout(() => {
+        el.focus();
+        el.setSelectionRange(start + 1, start + 1);
+      }, 0);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && e.shiftKey) {
+      const el = e.currentTarget;
+      const smart = handleSmartListEnterKey(text, el.selectionStart || 0, el.selectionEnd || 0);
+      if (smart?.handled) {
+        e.preventDefault();
+        setText(smart.nextText);
+        setTimeout(() => {
+          el.focus();
+          el.setSelectionRange(smart.nextCursor, smart.nextCursor);
+        }, 0);
+        return;
+      }
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
+      if (e.nativeEvent.isComposing || (e as SafeAny).keyCode === 229) {
+        return;
+      }
+      // Khi đang gõ danh sách tự động (•, 1., - [ ]), cho phép Enter tiếp tục danh sách
+      const el = e.currentTarget;
+      const smart = handleSmartListEnterKey(text, el.selectionStart || 0, el.selectionEnd || 0);
+      if (smart?.handled) {
+        e.preventDefault();
+        setText(smart.nextText);
+        setTimeout(() => {
+          el.focus();
+          el.setSelectionRange(smart.nextCursor, smart.nextCursor);
+        }, 0);
+        return;
+      }
       e.preventDefault();
       handleSend();
     }
@@ -143,12 +208,12 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
   const isAiChat = activeConversation?.id === AI_COPILOT_CONV_ID;
   const isKeyboardOpen = keyboardOffset > 50;
   const placeholder = isAiChat
-    ? 'Hỏi MAI bất kỳ điều gì (báo cáo, khách hàng, số liệu...)...'
+    ? 'Hỏi MAI bất kỳ điều gì (báo cáo, khách hàng, số liệu...)... (Shift+Enter để xuống dòng)'
     : replyingToMessage
-      ? 'Nhập câu trả lời...'
+      ? 'Nhập câu trả lời... (Shift+Enter để xuống dòng)'
       : activeConversation?.name
-        ? `Nhắn tin trong #${activeConversation.name}...`
-        : 'Nhập tin nhắn...';
+        ? `Nhắn tin trong #${activeConversation.name}... (Shift+Enter để xuống dòng)`
+        : 'Nhập tin nhắn... (Shift+Enter để xuống dòng)';
 
   return (
     <div
@@ -329,6 +394,18 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
             placeholder={placeholder}
             className="flex-1 bg-transparent border-none outline-none text-sm text-white placeholder-slate-400 resize-none max-h-[110px] py-1 leading-snug"
           />
+
+          {/* Quick Xuống dòng (Shift+Enter) button */}
+          <button
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={handleInsertNewline}
+            className="p-1 text-slate-400 hover:text-amber-400 active:scale-90 transition-transform shrink-0"
+            aria-label="Xuống dòng (Shift+Enter)"
+            title="Xuống dòng (Shift+Enter)"
+          >
+            <CornerDownLeft className="w-4 h-4" />
+          </button>
 
           {/* Quick Emoji / Sticker Icon */}
           <button

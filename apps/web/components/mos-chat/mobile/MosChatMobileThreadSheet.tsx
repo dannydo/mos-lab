@@ -20,6 +20,7 @@ import {
   ExternalLink,
   Check,
   RotateCcw,
+  CornerDownLeft,
   CornerDownRight,
 } from 'lucide-react';
 import { message as antdMessage } from 'antd';
@@ -32,6 +33,7 @@ import { MosChatMobileMentionAutocomplete } from './MosChatMobileMentionAutocomp
 import { MosChatMobileEditModal } from './MosChatMobileEditModal';
 import { MosChatMobileMediaGallery, type MosChatGalleryImage } from './MosChatMobileMediaGallery';
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
+import { handleSmartListEnterKey } from '../MosChatRichEditorModal';
 import { apiClient } from '../../../lib/api-client';
 import { uploadMultipleChatImages } from '../utils/chat-upload';
 import type {
@@ -401,8 +403,60 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
     }
   };
 
+  const handleInsertNewline = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const isFocused = typeof document !== 'undefined' && document.activeElement === el;
+    const start = isFocused ? (el.selectionStart ?? text.length) : text.length;
+    const end = isFocused ? (el.selectionEnd ?? text.length) : text.length;
+    const smart = handleSmartListEnterKey(text, start, end);
+    if (smart?.handled) {
+      setText(smart.nextText);
+      setTimeout(() => {
+        el.focus();
+        el.setSelectionRange(smart.nextCursor, smart.nextCursor);
+      }, 0);
+    } else {
+      const nextText = text.substring(0, start) + '\n' + text.substring(end);
+      setText(nextText);
+      setTimeout(() => {
+        el.focus();
+        el.setSelectionRange(start + 1, start + 1);
+      }, 0);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && e.shiftKey) {
+      const el = e.currentTarget;
+      const smart = handleSmartListEnterKey(text, el.selectionStart || 0, el.selectionEnd || 0);
+      if (smart?.handled) {
+        e.preventDefault();
+        setText(smart.nextText);
+        setTimeout(() => {
+          el.focus();
+          el.setSelectionRange(smart.nextCursor, smart.nextCursor);
+        }, 0);
+        return;
+      }
+      return;
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
+      if (e.nativeEvent.isComposing || (e as SafeAny).keyCode === 229) {
+        return;
+      }
+      // Khi đang gõ danh sách tự động (•, 1., - [ ]), cho phép Enter tiếp tục danh sách
+      const el = e.currentTarget;
+      const smart = handleSmartListEnterKey(text, el.selectionStart || 0, el.selectionEnd || 0);
+      if (smart?.handled) {
+        e.preventDefault();
+        setText(smart.nextText);
+        setTimeout(() => {
+          el.focus();
+          el.setSelectionRange(smart.nextCursor, smart.nextCursor);
+        }, 0);
+        return;
+      }
       e.preventDefault();
       handleSend();
     }
@@ -1553,7 +1607,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
           </button>
 
           {/* Text Area */}
-          <div className="flex-1 bg-slate-800/90 border border-slate-700/80 rounded-2xl px-3 py-1.5 focus-within:border-amber-400/80 transition-colors">
+          <div className="flex-1 bg-slate-800/90 border border-slate-700/80 rounded-2xl px-3 py-1.5 flex items-center gap-1.5 focus-within:border-amber-400/80 transition-colors">
             <textarea
               ref={textareaRef}
               rows={1}
@@ -1561,8 +1615,19 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
               onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Trả lời trong luồng..."
-              className="w-full bg-transparent border-none outline-none text-sm text-white placeholder-slate-400 resize-none max-h-[100px] py-1 leading-snug"
+              className="flex-1 bg-transparent border-none outline-none text-sm text-white placeholder-slate-400 resize-none max-h-[100px] py-1 leading-snug"
             />
+            {/* Quick Xuống dòng (Shift+Enter) button on mobile */}
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={handleInsertNewline}
+              className="p-1 text-slate-400 hover:text-amber-400 active:scale-90 transition-transform shrink-0"
+              aria-label="Xuống dòng (Shift+Enter)"
+              title="Xuống dòng (Shift+Enter)"
+            >
+              <CornerDownLeft className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Send Button */}

@@ -19,6 +19,7 @@ import {
   Paperclip,
   Bot,
   Activity,
+  CornerDownLeft,
 } from 'lucide-react';
 import type { MosChatConversation, MosChatMessage, MosChatImageAttachment, SafeAny } from '@mos-lab/shared';
 import { AI_COPILOT_CONV_ID, AI_QUICK_PROMPTS } from '../constants/chat-constants';
@@ -412,6 +413,25 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                       handleApplyFormat('underline', 'main');
                       return;
                     }
+                    if (e.key === 'Enter' && e.shiftKey) {
+                      const el = e.currentTarget;
+                      const smart = handleSmartListEnterKey(
+                        composerText,
+                        el.selectionStart ?? composerText.length,
+                        el.selectionEnd ?? composerText.length
+                      );
+                      if (smart?.handled) {
+                        e.preventDefault();
+                        setComposerText(smart.nextText);
+                        setComposerCursorPos(smart.nextCursor);
+                        setTimeout(() => {
+                          el.focus();
+                          el.setSelectionRange(smart.nextCursor, smart.nextCursor);
+                        }, 0);
+                        return;
+                      }
+                      return;
+                    }
                     if (e.key === 'Enter' && !e.shiftKey) {
                       if (
                         e.nativeEvent.isComposing ||
@@ -419,6 +439,23 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                         e.keyCode === 229 ||
                         Date.now() - lastCompositionEndMsRef.current < 60
                       ) {
+                        return;
+                      }
+                      // Khi đang trong danh sách tự động (•, 1., - [ ]), cho phép Enter tiếp tục danh sách
+                      const el = e.currentTarget;
+                      const smart = handleSmartListEnterKey(
+                        composerText,
+                        el.selectionStart ?? composerText.length,
+                        el.selectionEnd ?? composerText.length
+                      );
+                      if (smart?.handled) {
+                        e.preventDefault();
+                        setComposerText(smart.nextText);
+                        setComposerCursorPos(smart.nextCursor);
+                        setTimeout(() => {
+                          el.focus();
+                          el.setSelectionRange(smart.nextCursor, smart.nextCursor);
+                        }, 0);
                         return;
                       }
                       e.preventDefault();
@@ -429,6 +466,42 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                   className="flex-1 bg-transparent border-0 outline-none text-[13.5px] resize-none leading-relaxed py-1"
                   style={{ color: token.colorText, maxHeight: 110 }}
                 />
+
+                {/* Quick Xuống dòng (Shift+Enter) button on mobile */}
+                <button
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    const el = composerInputRef.current;
+                    if (!el) return;
+                    const isFocused = typeof document !== 'undefined' && document.activeElement === el;
+                    const start = isFocused ? (el.selectionStart ?? composerText.length) : composerText.length;
+                    const end = isFocused ? (el.selectionEnd ?? composerText.length) : composerText.length;
+                    const smart = handleSmartListEnterKey(composerText, start, end);
+                    if (smart?.handled) {
+                      setComposerText(smart.nextText);
+                      setComposerCursorPos(smart.nextCursor);
+                      setTimeout(() => {
+                        el.focus();
+                        el.setSelectionRange(smart.nextCursor, smart.nextCursor);
+                      }, 0);
+                    } else {
+                      const next = composerText.substring(0, start) + '\n' + composerText.substring(end);
+                      setComposerText(next);
+                      setComposerCursorPos(start + 1);
+                      setTimeout(() => {
+                        el.focus();
+                        el.setSelectionRange(start + 1, start + 1);
+                      }, 0);
+                    }
+                  }}
+                  className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10 active:scale-95"
+                  style={{ color: token.colorTextSecondary }}
+                  aria-label="Xuống dòng (Shift+Enter)"
+                  title="Xuống dòng (Shift+Enter)"
+                >
+                  <CornerDownLeft size={14} />
+                </button>
 
                 <Popover
                   trigger="click"
