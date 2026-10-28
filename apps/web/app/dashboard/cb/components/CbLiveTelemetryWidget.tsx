@@ -14,6 +14,7 @@ import {
   Layers,
   Radio,
   RefreshCw,
+  ShieldCheck,
   Sliders,
   Sparkles,
   Target,
@@ -60,7 +61,7 @@ export default function CbLiveTelemetryWidget({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isLive, setIsLive] = useState(true);
-  const [selectedMonth, setSelectedMonth] = useState('2026-11');
+  const [selectedMonth, setSelectedMonth] = useState('2026-10');
   const [storeScope, setStoreScope] = useState<'DE_THAM_ESTELLA' | 'DE_THAM' | 'ESTELLA' | 'ALL'>('DE_THAM_ESTELLA');
   const [secondsAgo, setSecondsAgo] = useState(0);
 
@@ -76,7 +77,7 @@ export default function CbLiveTelemetryWidget({
   const [drilldownTitle, setDrilldownTitle] = useState('');
 
   // Chế độ xem bảng ngày: 7 ngày gần nhất hoặc Cả tháng
-  const [dailyViewMode, setDailyViewMode] = useState<'RECENT_7' | 'ALL_MONTH'>('RECENT_7');
+  const [dailyViewMode, setDailyViewMode] = useState<'RECENT_7' | 'ALL_MONTH'>('ALL_MONTH');
 
   const fetchTelemetry = useCallback(async () => {
     try {
@@ -105,9 +106,9 @@ export default function CbLiveTelemetryWidget({
     if (!isLive) return;
     const interval = setInterval(() => {
       fetchTelemetry();
-    }, 20000);
+    }, autoRefreshIntervalSec * 1000);
     return () => clearInterval(interval);
-  }, [isLive, fetchTelemetry]);
+  }, [isLive, fetchTelemetry, autoRefreshIntervalSec]);
 
   // Seconds counter
   useEffect(() => {
@@ -166,7 +167,7 @@ export default function CbLiveTelemetryWidget({
         category,
         month: selectedMonth,
         storeScope,
-        limit: 50,
+        limit: 100,
       });
       setDrilldownItems(items);
     } catch {
@@ -189,6 +190,21 @@ export default function CbLiveTelemetryWidget({
       displayedDailyRecords = slice.length > 0 ? slice : data.daily.slice(0, 7);
     }
   }
+
+  // Dữ liệu tổng kết bảng ngày
+  const dailyTotals = useMemo(() => {
+    return displayedDailyRecords.reduce(
+      (acc, r) => {
+        acc.combo += r.comboSalesNet || 0;
+        acc.product += r.productSalesNet || 0;
+        acc.total += r.totalSalesNet || 0;
+        acc.greenVisits += r.greenVisitsCount || 0;
+        acc.packageUsageVisits += r.packageUsageVisitsCount || 0;
+        return acc;
+      },
+      { combo: 0, product: 0, total: 0, greenVisits: 0, packageUsageVisits: 0 }
+    );
+  }, [displayedDailyRecords]);
 
   // Dữ liệu cho biểu đồ lũy kế
   let chartPoints = { actualPath: '', planPath: '', maxVal: 560_000_000, points: [] as { x: number; y: number; val: number; day: string }[] };
@@ -255,6 +271,7 @@ export default function CbLiveTelemetryWidget({
   const targets = data.targets;
   const isConfigured = targets.configured;
   const pacingStatus = data.meta.pacingStatus;
+  const isFuturePeriod = data.meta.periodState === 'future';
 
   return (
     <div className="space-y-4">
@@ -262,7 +279,7 @@ export default function CbLiveTelemetryWidget({
       <div className="bg-slate-900/90 dark:bg-black/80 border border-amber-500/30 rounded-2xl p-4 shadow-xl backdrop-blur-md">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <span className="text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-500">
                 $CB SALES COMMAND BOARD
               </span>
@@ -276,10 +293,16 @@ export default function CbLiveTelemetryWidget({
                 <span className={`w-2 h-2 rounded-full ${isLive ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
                 {isLive ? 'LIVE STREAMING' : 'TẠM DỪNG'}
               </span>
+              {isFuturePeriod && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                  <Clock className="w-3 h-3" />
+                  Kế hoạch tháng tới (Chưa bắt đầu)
+                </span>
+              )}
             </div>
             <div className="text-xs text-amber-200/70 mt-1 flex flex-wrap items-center gap-2 font-mono">
               <span>
-                {selectedMonth === '2026-11' ? 'THÁNG 11/2026' : selectedMonth === '2026-10' ? 'THÁNG 10/2026 (DỮ LIỆU NỀN)' : selectedMonth}
+                {selectedMonth === '2026-11' ? 'THÁNG 11/2026 ($CB)' : selectedMonth === '2026-10' ? 'THÁNG 10/2026 (DỮ LIỆU THỰC TẾ NỀN)' : selectedMonth}
               </span>
               <span>•</span>
               <span>
@@ -299,14 +322,14 @@ export default function CbLiveTelemetryWidget({
           </div>
 
           {/* Action Toolbar */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Select
               value={selectedMonth}
               onChange={setSelectedMonth}
-              className="w-36 text-xs"
+              className="w-44 text-xs"
               options={[
-                { value: '2026-10', label: 'Tháng 10/2026 (Nền)' },
-                { value: '2026-11', label: 'Tháng 11/2026 ($CB)' },
+                { value: '2026-10', label: 'Tháng 10/2026 (Dữ liệu nền)' },
+                { value: '2026-11', label: 'Tháng 11/2026 (Kế hoạch $CB)' },
                 { value: '2026-12', label: 'Tháng 12/2026' },
               ]}
             />
@@ -337,6 +360,26 @@ export default function CbLiveTelemetryWidget({
             />
           </div>
         </div>
+
+        {/* Future period announcement banner */}
+        {isFuturePeriod && (
+          <div className="mt-3 p-3 bg-blue-950/40 border border-blue-500/30 rounded-xl flex items-center justify-between text-xs text-blue-200">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-blue-400 shrink-0" />
+              <span>
+                <strong>Tháng {selectedMonth} chưa bắt đầu:</strong> Đang hiển thị Kế hoạch mục tiêu $CB{' '}
+                <strong className="text-amber-300 font-mono">{formatMillions(targets.totalSalesTarget)}</strong> ({formatMillions(targets.comboSalesTarget)} gói + {formatMillions(targets.productSalesTarget)} SP) với nhịp{' '}
+                <strong className="text-emerald-300 font-mono">{formatMillions(targets.dailyPlanPace)}/ngày</strong>.
+              </span>
+            </div>
+            <button
+              onClick={() => setSelectedMonth('2026-10')}
+              className="px-2.5 py-1 bg-blue-600/30 hover:bg-blue-600/50 text-blue-200 border border-blue-400/40 rounded-lg text-[11px] font-semibold transition-colors shrink-0 ml-3"
+            >
+              Xem Tháng 10 có số liệu →
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 2. HÀNG 1: 4 TOP CARDS (Mockup Ảnh 239) */}
@@ -428,7 +471,7 @@ export default function CbLiveTelemetryWidget({
         <div className="bg-slate-900/90 dark:bg-black/75 border border-slate-800 rounded-2xl p-4 shadow-lg">
           <div className="flex items-center justify-between text-xs text-slate-400 mb-2 font-medium">
             <span className="tracking-wide text-slate-300">NHỊP KẾ HOẠCH</span>
-            <span className="text-[11px] text-emerald-400/80 font-mono">30 ngày</span>
+            <span className="text-[11px] text-emerald-400/80 font-mono">{targets.daysInMonth} ngày</span>
           </div>
           <div className="flex items-baseline gap-2 mb-1">
             <span className="text-3xl font-black text-emerald-400 tracking-tight font-mono">
@@ -445,6 +488,94 @@ export default function CbLiveTelemetryWidget({
           </div>
         </div>
       </div>
+
+      {/* 2.5 CARD ĐỐI SOÁT NGUỒN DOANH SỐ GÓI (Guideline v1.1 Mục 4.3 & Tiêu chí nghiệm thu Mục 12) */}
+      {data.attribution && (
+        <div className="bg-slate-900/90 dark:bg-black/75 border border-emerald-500/30 rounded-2xl p-4 shadow-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-emerald-400" />
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                Đối Soát Nguồn Doanh Số Gói (Phân Rã Loại Trừ Nhau 100%)
+              </span>
+            </div>
+            <span
+              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wider ${
+                data.attribution.reconciliationStatus === 'MATCHED'
+                  ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/40'
+                  : 'bg-amber-500/15 text-amber-300 border border-amber-500/40'
+              }`}
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              {data.attribution.reconciliationStatus === 'MATCHED'
+                ? 'Khớp 100% Ba Nguồn Gói (Không Trùng Lặp)'
+                : 'Cần Kiểm Tra Lệch Nguồn'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+            {/* Nguồn 1: Vòng Xanh */}
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-emerald-500/20">
+              <div className="flex items-center justify-between text-slate-400 mb-1">
+                <span className="font-semibold text-emerald-400">1. Vòng Xanh</span>
+                <span className="text-[10px] font-mono">{data.greenFunnel.greenVisitsCount} Done VX</span>
+              </div>
+              <div className="text-lg font-black text-slate-100 font-mono">
+                {formatMillions(data.attribution.vongXanh.comboSalesNet)}
+              </div>
+              <div className="text-[11px] text-slate-400 flex items-center justify-between mt-1">
+                <span>{data.attribution.vongXanh.comboOrderCount} đơn gói chốt</span>
+                <span className="text-emerald-400 font-semibold">{data.greenFunnel.closingRatePercent}% chốt</span>
+              </div>
+            </div>
+
+            {/* Nguồn 2: Dùng Gói Ngoài VX */}
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-purple-500/20">
+              <div className="flex items-center justify-between text-slate-400 mb-1">
+                <span className="font-semibold text-purple-400">2. Dùng Gói Ngoài VX</span>
+                <span className="text-[10px] font-mono">{data.retention.packageUsageNonGreenVisitsCount} Done</span>
+              </div>
+              <div className="text-lg font-black text-slate-100 font-mono">
+                {formatMillions(data.attribution.dungGoiNgoaiVx.comboSalesNet)}
+              </div>
+              <div className="text-[11px] text-slate-400 flex items-center justify-between mt-1">
+                <span>{data.attribution.dungGoiNgoaiVx.comboOrderCount} đơn mua tiếp</span>
+                <span className="text-purple-300 font-semibold">Gia hạn / Upgrade</span>
+              </div>
+            </div>
+
+            {/* Nguồn 3: Khách Lẻ Khác */}
+            <div className="p-3 rounded-xl bg-slate-950/60 border border-blue-500/20">
+              <div className="flex items-center justify-between text-slate-400 mb-1">
+                <span className="font-semibold text-blue-400">3. Khách Lẻ Khác</span>
+                <span className="text-[10px] font-mono">{data.attribution.leKhac.doneVisitsCount} Done</span>
+              </div>
+              <div className="text-lg font-black text-slate-100 font-mono">
+                {formatMillions(data.attribution.leKhac.comboSalesNet)}
+              </div>
+              <div className="text-[11px] text-slate-400 flex items-center justify-between mt-1">
+                <span>{data.attribution.leKhac.comboOrderCount} đơn lẻ mua gói</span>
+                <span className="text-blue-300 font-semibold">Ngoại lệ</span>
+              </div>
+            </div>
+
+            {/* Tổng Đối Soát Gói */}
+            <div className="p-3 rounded-xl bg-slate-950/80 border border-amber-500/30">
+              <div className="flex items-center justify-between text-slate-400 mb-1">
+                <span className="font-bold text-amber-300">TỔNG DOANH SỐ GÓI</span>
+                <span className="text-[10px] font-mono">{data.revenue.comboOrderCount} đơn</span>
+              </div>
+              <div className="text-lg font-black text-amber-300 font-mono">
+                {formatMillions(data.attribution.totalComboSalesNet)}
+              </div>
+              <div className="text-[11px] text-slate-400 flex items-center justify-between mt-1">
+                <span>{formatVnd(data.attribution.totalComboSalesNet)}</span>
+                <span className="text-emerald-400 font-mono">47 + 55 + 3 = 105</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 3. HÀNG 2: NHỊP DOANH SỐ LŨY KẾ + VÒNG XANH + DÙNG GÓI (Mockup Ảnh 239) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -587,15 +718,19 @@ export default function CbLiveTelemetryWidget({
                 Mốc: 1.000 Done
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 mb-3">Done có trừ lượt gói</p>
+            <p className="text-[11px] text-slate-400 mb-2">Done có trừ lượt gói</p>
 
-            <div className="flex items-baseline gap-2 mb-2 font-mono">
+            <div className="flex items-baseline gap-2 mb-1 font-mono">
               <span className="text-3xl font-black text-purple-400">
                 {data.retention.balanceDeductionVisitsCount}
               </span>
               <span className="text-slate-500 text-sm font-semibold">
                 / {data.retention.targetVisits} Done
               </span>
+            </div>
+
+            <div className="text-[11px] text-purple-300/80 mb-2 font-mono">
+              ({data.retention.packageUsageNonGreenVisitsCount} ngoài VX + {Math.max(0, data.retention.balanceDeductionVisitsCount - data.retention.packageUsageNonGreenVisitsCount)} trong VX)
             </div>
 
             {/* Progress Bar */}
@@ -611,11 +746,11 @@ export default function CbLiveTelemetryWidget({
 
             <div className="space-y-1.5 text-xs">
               <div className="flex items-center justify-between text-slate-300">
-                <span>• Đơn mua tiếp:</span>
+                <span>• Đơn mua tiếp / gia hạn:</span>
                 <strong className="text-purple-400 font-mono">{data.retention.repurchaseOrdersCount} đơn</strong>
               </div>
               <div className="flex items-center justify-between text-slate-300">
-                <span>• Doanh số gói:</span>
+                <span>• Doanh số gói mua tiếp:</span>
                 <strong className="text-purple-400 font-mono">
                   {formatMillions(data.retention.repurchaseComboSalesNet)} / {formatMillions(targets.repeatComboSalesTarget || 349_000_000)}
                 </strong>
@@ -625,7 +760,7 @@ export default function CbLiveTelemetryWidget({
 
           <div className="mt-3 pt-2 border-t border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
             <span>Renew / Upgrade:</span>
-            <span className="font-mono text-slate-300">AOV kế hoạch 5,55M</span>
+            <span className="font-mono text-slate-300">Mục tiêu 349M gói</span>
           </div>
         </div>
       </div>
@@ -641,7 +776,7 @@ export default function CbLiveTelemetryWidget({
                 Phân Tích Theo Ngày
               </span>
               <p className="text-[11px] text-slate-400">
-                Doanh số chưa VAT • Đơn vị M
+                Doanh số chưa VAT • Đơn vị M • Có dòng tổng kết khớp 100% với Card trên
               </p>
             </div>
             <div className="flex items-center gap-1 bg-slate-800/80 p-0.5 rounded-lg border border-slate-700">
@@ -661,7 +796,7 @@ export default function CbLiveTelemetryWidget({
                   dailyViewMode === 'ALL_MONTH' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                Cả tháng
+                Cả tháng ({data.daily.length} ngày)
               </button>
             </div>
           </div>
@@ -709,6 +844,31 @@ export default function CbLiveTelemetryWidget({
                   );
                 })}
               </tbody>
+              <tfoot className="border-t-2 border-slate-700 bg-slate-950/80 font-mono font-bold">
+                <tr>
+                  <td className="py-2.5 px-2 text-amber-300">
+                    TỔNG CỘNG ({displayedDailyRecords.length}N)
+                  </td>
+                  <td className="py-2.5 px-2 text-right text-blue-400">
+                    {formatMillions(dailyTotals.combo)}
+                  </td>
+                  <td className="py-2.5 px-2 text-right text-purple-400">
+                    {formatMillions(dailyTotals.product)}
+                  </td>
+                  <td className="py-2.5 px-2 text-right text-amber-300">
+                    {formatMillions(dailyTotals.total)}
+                  </td>
+                  <td className="py-2.5 px-2 text-right text-emerald-400">
+                    {dailyTotals.greenVisits}
+                  </td>
+                  <td className="py-2.5 px-2 text-right text-purple-400">
+                    {dailyTotals.packageUsageVisits}
+                  </td>
+                  <td className="py-2.5 px-2 text-right text-slate-400">
+                    {isConfigured ? `${Math.round(data.revenue.totalAttainmentPercent || 0)}%` : '---'}
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
@@ -795,14 +955,14 @@ export default function CbLiveTelemetryWidget({
         <div className="bg-slate-900/90 dark:bg-black/75 border border-slate-800 rounded-2xl p-4 shadow-lg flex items-center justify-between">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
-              Khách Hàng Duy Nhất
+              Khách Hàng Duy Nhất (Unique Pax)
             </span>
             <div className="text-2xl font-black text-slate-100 font-mono mt-1">
               {data.retention.uniquePaxCount} <span className="text-sm font-normal text-slate-400">khách</span>
             </div>
           </div>
           <div className="text-right text-xs text-slate-400 font-mono">
-            <div>{data.meta.totalDoneVisits} lượt Done</div>
+            <div>{data.meta.totalDoneVisits} lượt Done toàn hệ thống</div>
             <div className="text-amber-300">{data.meta.uniquePaxPerVisit} lượt / khách</div>
           </div>
         </div>
@@ -841,8 +1001,8 @@ export default function CbLiveTelemetryWidget({
             </div>
           </div>
           <div className="text-right text-xs text-slate-400 font-mono">
-            <div>Ngưỡng: 18,7M/ngày</div>
-            <div>1.000 Done dùng gói</div>
+            <div>Nhịp: {isConfigured ? `${formatMillions(targets.dailyPlanPace)}/ngày` : '---'}</div>
+            <div>Mốc: {targets.packageUsageDoneTarget || 1000} Done dùng gói</div>
           </div>
         </div>
       </div>

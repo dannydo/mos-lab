@@ -28,86 +28,121 @@ vi.mock('../../../../lib/api-client', () => ({
       getCbLiveTelemetry: vi.fn().mockResolvedValue({
         targets: {
           configured: true,
-          month: '2026-11',
+          month: '2026-10',
           storeScope: 'DE_THAM_ESTELLA',
-          comboSalesTarget: 550000000,
+          comboSalesTarget: 450000000,
           productSalesTarget: 10000000,
-          totalSalesTarget: 560000000,
-          dailyPlanPace: 18666667,
+          totalSalesTarget: 460000000,
+          dailyPlanPace: 14838710,
           greenFunnelBookTarget: 780,
           greenFunnelDoneTarget: 540,
           greenFunnelConversionTarget: 10.0,
           packageUsageDoneTarget: 1000,
           repeatComboSalesTarget: 349000000,
           aovPackageUsageTarget: 5550000,
-          daysInMonth: 30,
+          daysInMonth: 31,
         },
         revenue: {
-          comboSalesNet: 275000000,
-          productSalesNet: 5000000,
-          totalSalesNet: 280000000,
-          comboOrderCount: 60,
-          comboItemCount: 60,
-          productOrderCount: 10,
-          productItemCount: 10,
-          comboAov: 4583333,
-          comboAttainmentPercent: 50.0,
-          productAttainmentPercent: 50.0,
-          totalAttainmentPercent: 50.0,
-          shortfallOrSurplus: -280000000,
+          comboSalesNet: 472849000,
+          productSalesNet: 7638889,
+          totalSalesNet: 480487889,
+          comboOrderCount: 105,
+          comboItemCount: 105,
+          productOrderCount: 8,
+          productItemCount: 8,
+          comboAov: 4503324,
+          comboAttainmentPercent: 105.1,
+          productAttainmentPercent: 76.4,
+          totalAttainmentPercent: 104.5,
+          shortfallOrSurplus: 20487889,
         },
         greenFunnel: {
-          greenVisitsCount: 270,
+          greenVisitsCount: 478,
           greenVisitsTarget: 540,
-          greenComboOrdersCount: 27,
-          closingRatePercent: 10.0,
+          greenComboOrdersCount: 47,
+          closingRatePercent: 9.8,
           benchmarkRatePercent: 10.0,
-          progressPercent: 50.0,
+          progressPercent: 88.5,
           status: 'ON_TRACK',
           greenBookingsCount: 780,
         },
         retention: {
-          balanceDeductionVisitsCount: 500,
+          balanceDeductionVisitsCount: 850,
+          packageUsageNonGreenVisitsCount: 794,
           targetVisits: 1000,
-          repurchaseOrdersCount: 32,
-          repurchaseComboSalesNet: 175000000,
-          uniquePaxCount: 620,
-          progressPercent: 50.0,
+          repurchaseOrdersCount: 55,
+          repurchaseComboSalesNet: 301123000,
+          uniquePaxCount: 720,
+          progressPercent: 85.0,
+        },
+        attribution: {
+          vongXanh: {
+            sourceGroup: 'VONG_XANH',
+            name: '1. Vòng Xanh',
+            doneVisitsCount: 478,
+            comboOrderCount: 47,
+            comboItemCount: 47,
+            comboSalesNet: 159776000,
+            comboAov: 3399489,
+          },
+          dungGoiNgoaiVx: {
+            sourceGroup: 'DUNG_GOI_NGOAI_VX',
+            name: '2. Dùng Gói Ngoài VX',
+            doneVisitsCount: 794,
+            comboOrderCount: 55,
+            comboItemCount: 55,
+            comboSalesNet: 301123000,
+            comboAov: 5474964,
+          },
+          leKhac: {
+            sourceGroup: 'LE_KHAC',
+            name: '3. Khách Lẻ Khác',
+            doneVisitsCount: 50,
+            comboOrderCount: 3,
+            comboItemCount: 3,
+            comboSalesNet: 11950000,
+            comboAov: 3983333,
+          },
+          totalComboSalesNet: 472849000,
+          totalComboOrderCount: 105,
+          totalDoneVisitsCount: 1322,
+          reconciliationStatus: 'MATCHED',
         },
         daily: [
           {
-            date: '2026-11-15',
-            displayDate: '15/11',
+            date: '2026-10-15',
+            displayDate: '15/10',
             comboSalesNet: 20600000,
             productSalesNet: 400000,
             totalSalesNet: 21000000,
             greenVisitsCount: 20,
             packageUsageVisitsCount: 36,
-            varianceToPace: 2333333,
+            varianceToPace: 6161290,
             cumulativeSales: 280000000,
-            targetCumulativeSales: 280000000,
+            targetCumulativeSales: 222580645,
           },
         ],
         forecast: {
           last7DaysAvg: 18860000,
           last7DaysTotal: 132000000,
-          remainingDays: 15,
-          forecastTotal: 563000000,
-          forecastPercent: 100.5,
-          forecastVariance: 3000000,
-          summaryFormula: '7 ngày qua: 132M • TB 18.86M/ngày; 280M đã đạt + 15 ngày x 18.86M',
+          remainingDays: 0,
+          forecastTotal: 480487889,
+          forecastPercent: 104.5,
+          forecastVariance: 20487889,
+          summaryFormula: 'Thực tế lũy kế: 480.5M • Vượt mục tiêu 20.5M',
           status: 'ON_TRACK',
         },
         meta: {
           lastSyncAt: new Date().toISOString(),
-          dateFrom: '2026-11-01',
-          dateTo: '2026-11-30',
-          month: '2026-11',
+          dateFrom: '2026-10-01',
+          dateTo: '2026-10-31',
+          month: '2026-10',
           isCurrentMonth: true,
+          periodState: 'in_progress',
           storeScope: 'DE_THAM_ESTELLA',
           pacingStatus: 'ĐÚNG TIẾN ĐỘ',
-          uniquePaxPerVisit: 1.29,
-          totalDoneVisits: 800,
+          uniquePaxPerVisit: 1.84,
+          totalDoneVisits: 1322,
         },
       }),
       saveCbTargetConfig: vi.fn(),
@@ -117,7 +152,7 @@ vi.mock('../../../../lib/api-client', () => ({
 }));
 
 describe('$CB Sales Command Board (MOS-FEAT-156)', () => {
-  it('renders the Sales Command Board and all core sections correctly', async () => {
+  it('renders the Sales Command Board and all core sections correctly including attribution', async () => {
     render(<CbLiveTelemetryWidget />);
 
     // Header and Status
@@ -130,6 +165,10 @@ describe('$CB Sales Command Board (MOS-FEAT-156)', () => {
     expect(screen.getByText('TỔNG DOANH SỐ')).toBeInTheDocument();
     expect(screen.getByText('NHỊP KẾ HOẠCH')).toBeInTheDocument();
 
+    // Attribution Breakdown Card
+    expect(screen.getByText(/Đối Soát Nguồn Doanh Số Gói/i)).toBeInTheDocument();
+    expect(screen.getByText(/Khớp 100% Ba Nguồn Gói/i)).toBeInTheDocument();
+
     // Middle Sections
     expect(screen.getByText('Vòng Xanh')).toBeInTheDocument();
     expect(screen.getByText('Khách Đang Dùng Gói')).toBeInTheDocument();
@@ -139,7 +178,7 @@ describe('$CB Sales Command Board (MOS-FEAT-156)', () => {
     expect(screen.getByText('Dự Báo Chốt Tháng')).toBeInTheDocument();
 
     // Bottom Bar
-    expect(screen.getByText('Khách Hàng Duy Nhất')).toBeInTheDocument();
+    expect(screen.getByText(/Khách Hàng Duy Nhất/i)).toBeInTheDocument();
     expect(screen.getByText('Cảnh Báo Nhịp')).toBeInTheDocument();
   });
 

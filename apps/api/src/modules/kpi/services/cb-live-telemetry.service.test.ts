@@ -36,7 +36,7 @@ test('Dashboard $CB Live Telemetry Target Config Defaults (MOS-FEAT-156)', async
   assert.equal(t10.daysInMonth, 31);
 });
 
-test('Dashboard $CB Live Telemetry Data Structure & Forecast calculation', async () => {
+test('Dashboard $CB Live Telemetry Mutually Exclusive Attribution & Forecast (MOS-FEAT-156)', async () => {
   const mockFastify = {
     prisma: {
       crm: {
@@ -46,17 +46,31 @@ test('Dashboard $CB Live Telemetry Data Structure & Forecast calculation', async
       },
       legacy: {
         $queryRawUnsafe: async (sql: string) => {
-          if (sql.includes('green_visits_count')) {
-            return [{ green_visits_count: 270, green_combo_orders_count: 27 }];
+          if (sql.includes('source_group') && sql.includes('GROUP BY source_group')) {
+            if (sql.includes('combo_net')) {
+              return [
+                { source_group: 'VONG_XANH', order_count: 47, item_count: 51, combo_net: 159776000 },
+                { source_group: 'DUNG_GOI_NGOAI_VX', order_count: 55, item_count: 57, combo_net: 301123000 },
+                { source_group: 'LE_KHAC', order_count: 3, item_count: 3, combo_net: 11950000 },
+              ];
+            }
+            return [
+              { source_group: 'VONG_XANH', done_visits_count: 478 },
+              { source_group: 'DUNG_GOI_NGOAI_VX', done_visits_count: 794 },
+              { source_group: 'LE_KHAC', done_visits_count: 50 },
+            ];
+          }
+          if (sql.includes('total_package_usage_done')) {
+            return [{ total_package_usage_done: 850, unique_pax_count: 720 }];
+          }
+          if (sql.includes('total_done_count')) {
+            return [{ total_done_count: 1322, all_unique_pax_count: 720 }];
           }
           if (sql.includes('combo_sales_net')) {
-            return [{ combo_sales_net: 280000000, combo_order_count: 50, combo_item_count: 50 }];
+            return [{ combo_sales_net: 472849000, combo_order_count: 105, combo_item_count: 111 }];
           }
           if (sql.includes('product_sales_net')) {
-            return [{ product_sales_net: 5000000, product_order_count: 10, product_item_count: 10 }];
-          }
-          if (sql.includes('balance_deduction_visits_count')) {
-            return [{ balance_deduction_visits_count: 500, unique_pax_count: 400 }];
+            return [{ product_sales_net: 7638889, product_order_count: 8, product_item_count: 8 }];
           }
           return [];
         },
@@ -64,16 +78,39 @@ test('Dashboard $CB Live Telemetry Data Structure & Forecast calculation', async
     },
   } as unknown as FastifyInstance;
 
-  const result = await CbLiveTelemetryService.getTelemetry(mockFastify, { month: '2026-11' });
+  const result = await CbLiveTelemetryService.getTelemetry(mockFastify, { month: '2026-10' });
 
-  assert.equal(result.revenue.comboSalesNet, 280000000);
-  assert.equal(result.revenue.productSalesNet, 5000000);
-  assert.equal(result.revenue.totalSalesNet, 285000000);
-  assert.equal(result.greenFunnel.greenVisitsCount, 270);
-  assert.equal(result.greenFunnel.closingRatePercent, 10.0);
-  assert.equal(result.greenFunnel.status, 'ON_TRACK');
-  assert.equal(result.retention.balanceDeductionVisitsCount, 500);
-  assert.equal(result.retention.targetVisits, 1000);
-  assert.equal(result.daily.length, 30);
+  // 1. Revenue
+  assert.equal(result.revenue.comboSalesNet, 472849000);
+  assert.equal(result.revenue.productSalesNet, 7638889);
+  assert.equal(result.revenue.totalSalesNet, 480487889);
+  assert.equal(result.revenue.comboOrderCount, 105);
+  assert.equal(result.revenue.comboAov, 4503324);
+
+  // 2. Attribution Reconciliation (100% matched)
+  assert.equal(result.attribution.vongXanh.comboOrderCount, 47);
+  assert.equal(result.attribution.vongXanh.comboSalesNet, 159776000);
+  assert.equal(result.attribution.dungGoiNgoaiVx.comboOrderCount, 55);
+  assert.equal(result.attribution.dungGoiNgoaiVx.comboSalesNet, 301123000);
+  assert.equal(result.attribution.leKhac.comboOrderCount, 3);
+  assert.equal(result.attribution.leKhac.comboSalesNet, 11950000);
+  assert.equal(result.attribution.totalComboOrderCount, 105);
+  assert.equal(result.attribution.totalComboSalesNet, 472849000);
+  assert.equal(result.attribution.reconciliationStatus, 'MATCHED');
+
+  // 3. Green Funnel
+  assert.equal(result.greenFunnel.greenVisitsCount, 478);
+  assert.equal(result.greenFunnel.greenComboOrdersCount, 47);
+  assert.equal(result.greenFunnel.closingRatePercent, 9.8); // 47 / 478 = 9.8%
+
+  // 4. Retention (Two distinct metrics per Guideline 2.2)
+  assert.equal(result.retention.balanceDeductionVisitsCount, 850); // Total package usage done (target 1000)
+  assert.equal(result.retention.packageUsageNonGreenVisitsCount, 794); // Non-green done (baseline 900)
+  assert.equal(result.retention.repurchaseOrdersCount, 55); // Repeat package orders from non-green
+  assert.equal(result.retention.repurchaseComboSalesNet, 301123000);
+
+  // 5. Daily & Forecast
+  assert.equal(result.daily.length, 31);
   assert.ok(result.forecast);
+  assert.ok(result.meta.periodState);
 });
