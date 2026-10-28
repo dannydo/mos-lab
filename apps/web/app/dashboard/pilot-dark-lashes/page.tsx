@@ -15,6 +15,7 @@ import {
   Maximize2,
   Minimize2,
   Info,
+  ClipboardList,
 } from 'lucide-react';
 import dayjs from 'dayjs';
 import type {
@@ -37,6 +38,7 @@ import { PilotCriteriaModal } from './components/PilotCriteriaModal';
 import { PilotMaterialSopModal } from './components/PilotMaterialSopModal';
 import { SopTrainingPlaceholder } from './components/SopTrainingPlaceholder';
 import { PilotSopDetailView } from './components/PilotSopDetailView';
+import { SopPreparationTabContent } from './components/SopPreparationTabContent';
 import { createPilotColumns } from './components/pilot-table-columns';
 
 const { Title } = Typography;
@@ -45,7 +47,7 @@ export default function PilotDarkLashesPage() {
   const [loading, setLoading] = useState(false);
   const [sessions, setSessions] = useState<PilotSession[]>([]);
   const [metrics, setMetrics] = useState<PilotMetricsSummary | null>(null);
-  const [activeTab, setActiveTab] = useState<'sessions' | 'sop'>('sessions');
+  const [activeTab, setActiveTab] = useState<'sessions' | 'sop' | 'sop-preparation'>('sessions');
   const [activeSopSubView, setActiveSopSubView] = useState<'overview' | 'module-2-detail'>('overview');
 
   useEffect(() => {
@@ -54,6 +56,8 @@ export default function PilotDarkLashesPage() {
       const tabParam = params.get('tab');
       if (tabParam === 'sop' || tabParam === 'sop-training') {
         setActiveTab('sop');
+      } else if (tabParam === 'sop-preparation' || tabParam === 'sop-prep') {
+        setActiveTab('sop-preparation');
       }
       if (tabParam === 'sop-detail' || params.get('subview') === 'module-2') {
         setActiveTab('sop');
@@ -63,12 +67,15 @@ export default function PilotDarkLashesPage() {
   }, []);
 
   const handleTabChange = (key: string) => {
-    const nextTab = key === 'sop' ? 'sop' : 'sessions';
+    const nextTab =
+      key === 'sop' ? 'sop' : key === 'sop-preparation' ? 'sop-preparation' : 'sessions';
     setActiveTab(nextTab);
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       if (nextTab === 'sop') {
         url.searchParams.set('tab', 'sop');
+      } else if (nextTab === 'sop-preparation') {
+        url.searchParams.set('tab', 'sop-preparation');
       } else {
         url.searchParams.delete('tab');
       }
@@ -528,6 +535,23 @@ export default function PilotDarkLashesPage() {
                     onViewSopDetail={() => setActiveSopSubView('module-2-detail')}
                   />
                 )}
+              </div>
+            ),
+          },
+          {
+            key: 'sop-preparation',
+            label: (
+              <span
+                className="flex items-center gap-1.5 font-semibold text-xs sm:text-sm"
+                data-testid="sop-preparation-tab-header"
+              >
+                <AppIcon icon={ClipboardList} size={15} />
+                <span>SOP Preparation – Chuẩn bị SOP</span>
+              </span>
+            ),
+            children: (
+              <div className="mt-1">
+                <SopPreparationTabContent />
               </div>
             ),
           },

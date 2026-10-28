@@ -40,12 +40,13 @@ describe('PilotDarkLashesPage', () => {
     apiMocks.listAssessmentCriteria.mockResolvedValue([]);
   });
 
-  it('renders both navigation tabs: Ca dịch vụ & Hiệu quả and SOP & Đào tạo KTV', async () => {
+  it('renders all three navigation tabs: Ca dịch vụ & Hiệu quả, SOP & Đào tạo KTV, and SOP Preparation – Chuẩn bị SOP', async () => {
     render(<PilotDarkLashesPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Ca dịch vụ & Hiệu quả')).toBeInTheDocument();
       expect(screen.getByText('SOP & Đào tạo KTV')).toBeInTheDocument();
+      expect(screen.getByText('SOP Preparation – Chuẩn bị SOP')).toBeInTheDocument();
     });
   });
 
@@ -58,6 +59,26 @@ describe('PilotDarkLashesPage', () => {
     await waitFor(() => {
       expect(screen.getByTestId('sop-training-placeholder')).toBeInTheDocument();
       expect(screen.getByText(/Khung Đào Tạo.*Chuyên Viên Kỹ Thuật/i)).toBeInTheDocument();
+    });
+  });
+
+  it('switches to SOP Preparation – Chuẩn bị SOP tab when clicked and displays Hạng mục 1 content', async () => {
+    render(<PilotDarkLashesPage />);
+
+    const prepTab = screen.getByTestId('sop-preparation-tab-header');
+    fireEvent.click(prepTab);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('sop-preparation-tab-content')).toBeInTheDocument();
+      expect(screen.getByTestId('sop-prep-category-1-title')).toHaveTextContent(
+        'Hạng mục 1 – Kiểm tra & Đánh giá tình trạng mi thật'
+      );
+      expect(screen.getByTestId('sop-prep-category-1-objective')).toHaveTextContent(
+        'Thu thập thông tin về tình trạng mi thật của khách hàng, làm cơ sở xác định khách đủ hay không đủ điều kiện thực hiện dịch vụ Uốn Mi Bóng Tối.'
+      );
+      expect(screen.getByTestId('sop-prep-category-1-owner')).toHaveTextContent('Cô Giang Phạm');
+      expect(screen.getByTestId('sop-prep-category-1-status')).toHaveTextContent('Chưa thu thập dữ liệu');
+      expect(screen.getByTestId('sop-prep-category-1-detail-btn')).toBeInTheDocument();
     });
   });
 });
