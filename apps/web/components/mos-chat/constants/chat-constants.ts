@@ -202,6 +202,7 @@ export const FALLBACK_CONVERSATIONS: MosChatConversation[] = [
           name: 'Chị Nguyễn Bích Ngọc',
           meta: 'VIP Diamond · 15:15 hôm nay',
           cvName: 'Chuyên Viên Minh Thư (CV+)',
+          avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80',
         },
         thread: [
           {
@@ -295,16 +296,19 @@ export const SAMPLE_CUSTOMER_CARDS: MosChatCustomerCard[] = [
     name: 'Chị Nguyễn Bích Ngọc',
     meta: 'VIP Diamond · 15:15 hôm nay',
     cvName: 'Chuyên Viên Minh Thư (CV+)',
+    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80',
   },
   {
     name: 'Chị Trần Bảo Trân',
     meta: 'Khách Mới · 16:15 Mi Thiết Kế',
     cvName: 'Chuyên Viên Thanh Tâm (CV)',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
   },
   {
     name: 'Chị Lê Hoàng Yến',
     meta: 'Cần xác nhận · 17:30 hôm nay',
     cvName: 'Chuyên Viên Ngọc Ánh (CV+)',
+    avatarUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=120&auto=format&fit=crop&q=80',
   },
 ];
 

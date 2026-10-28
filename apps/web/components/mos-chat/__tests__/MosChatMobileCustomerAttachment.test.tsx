@@ -56,6 +56,27 @@ describe('MosChatCustomerCardAttachment', () => {
     expect(screen.getByText(/Chi nhánh Estella Place/)).toBeInTheDocument();
   });
 
+  it('renders customer avatar image when avatarUrl is provided [MOS-BUG-175]', () => {
+    const cardWithAvatar: MosChatCustomerCard = {
+      ...sampleCard,
+      avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120',
+    };
+    render(<MosChatCustomerCardAttachment card={cardWithAvatar} />);
+
+    const avatarEl = screen.getByTestId('mos-chat-customer-card-avatar');
+    expect(avatarEl).toBeInTheDocument();
+    const imgEl = avatarEl.querySelector('img');
+    expect(imgEl).toHaveAttribute('src', cardWithAvatar.avatarUrl);
+  });
+
+  it('renders customer initials when avatarUrl is absent [MOS-BUG-175]', () => {
+    render(<MosChatCustomerCardAttachment card={sampleCard} />);
+
+    const avatarEl = screen.getByTestId('mos-chat-customer-card-avatar');
+    expect(avatarEl).toBeInTheDocument();
+    expect(avatarEl).toHaveTextContent('H');
+  });
+
   it('calls openCustomerDetail when clicking the attachment card or external link button', () => {
     render(<MosChatCustomerCardAttachment card={sampleCard} />);
 
