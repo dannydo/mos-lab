@@ -71,7 +71,8 @@ export function getSidebarGroups(
   menuVisibility: Record<string, boolean> = {},
   categoryVisibility: Record<string, boolean> = {},
   _currentUser: { username?: string | null; email?: string | null } = {},
-  bugInboxApprovalCount: number = 0
+  bugInboxApprovalCount: number = 0,
+  activeFunds: SafeAny[] = []
 ): SidebarGroupConfig[] {
   const normalizedRole = userRole?.toLowerCase() || '';
   const isAdmin = isAdminOrSuperAdminRole(normalizedRole);
@@ -548,14 +549,24 @@ export function getSidebarGroups(
   // Group: TÀI CHÍNH
   const financeItems: SidebarItemConfig[] = [];
   if (isAdmin || ['manager', 'accountant', 'boss', 'cho'].includes(normalizedRole)) {
-    const fundChildren: SidebarItemConfig[] = [
-      {
-        key: 'finance-funds-manage',
-        label: 'Quản lý Quỹ',
-        icon: <AppIcon icon={Settings2} size="sm" />,
-        path: '/dashboard/funds',
-      },
-    ];
+    const fundChildren: SidebarItemConfig[] = [];
+    if (Array.isArray(activeFunds) && activeFunds.length > 0) {
+      activeFunds.forEach((f: SafeAny) => {
+        fundChildren.push({
+          key: `finance-fund-${f.id || f.code}`,
+          label: f.name,
+          icon: <AppIcon icon={WalletCards} size="sm" className="text-emerald-500" />,
+          path: `/dashboard/funds?fundId=${f.id || f.code}`,
+        });
+      });
+    }
+
+    fundChildren.push({
+      key: 'finance-funds-manage',
+      label: 'Quản lý Quỹ',
+      icon: <AppIcon icon={Settings2} size="sm" />,
+      path: '/dashboard/funds',
+    });
 
     financeItems.push({
       key: 'finance-funds-parent',

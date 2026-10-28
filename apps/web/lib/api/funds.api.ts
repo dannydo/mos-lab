@@ -9,6 +9,8 @@ import type {
   RecordExpenseRequest,
   ReconcileAndLockPeriodRequest,
   UpdateFundConfigRequest,
+  CreateFundRequest,
+  UpdateFundRequest,
 } from '@mos-lab/shared';
 import { api } from './base';
 
@@ -16,6 +18,19 @@ export const fundsApi = {
   funds: {
     list: async (): Promise<{ success: boolean; data: Fund[] }> => {
       const response = await api.get('/funds');
+      return response.data;
+    },
+
+    create: async (data: CreateFundRequest): Promise<{ success: boolean; data: Fund }> => {
+      const response = await api.post('/funds', data);
+      return response.data;
+    },
+
+    update: async (
+      fundId: string,
+      data: UpdateFundRequest
+    ): Promise<{ success: boolean; data: Fund }> => {
+      const response = await api.put(`/funds/${encodeURIComponent(fundId)}`, data);
       return response.data;
     },
 

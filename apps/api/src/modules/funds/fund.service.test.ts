@@ -308,3 +308,193 @@ test('FundService - listFunds returns empty array and does not auto-seed when no
   assert.deepEqual(funds, []);
   assert.equal(createdCount, 0, 'Must not auto-seed default fund when list is called');
 });
+
+test('FundService - createFund creates new fund with 0 balance, DRAFT status, roles and approval config (MOS-FEAT-177 Step 2)', async () => {
+  const fundsStore: any[] = [];
+  const rolesStore: any[] = [];
+  const assignmentsStore: any[] = [];
+
+  const mockCrm: any = {
+    crmFund: {
+      findUnique: async ({ where }: any) => {
+        if (where.code) return fundsStore.find((f) => f.code === where.code) || null;
+        if (where.id) return fundsStore.find((f) => f.id === where.id) || null;
+        return null;
+      },
+      create: async ({ data }: any) => {
+        const record = {
+          ...data,
+          currentBalance: Number(data.currentBalance || 0),
+          maxQuota: Number(data.maxQuota),
+          unitQuota: Number(data.unitQuota),
+          toleranceAmount: Number(data.toleranceAmount || 0),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          roles: [],
+          assignments: [],
+          periods: [],
+          transactions: [],
+          proposals: [],
+        };
+        fundsStore.push(record);
+        return record;
+      },
+      update: async ({ where, data }: any) => {
+        const idx = fundsStore.findIndex((f) => f.id === where.id);
+        if (idx !== -1) {
+          fundsStore[idx] = {
+            ...fundsStore[idx],
+            ...data,
+            maxQuota: data.maxQuota !== undefined ? Number(data.maxQuota) : fundsStore[idx].maxQuota,
+            unitQuota: data.unitQuota !== undefined ? Number(data.unitQuota) : fundsStore[idx].unitQuota,
+          };
+          return fundsStore[idx];
+        }
+        return null;
+      },
+    },
+    crmStaff: {
+      findMany: async ({ where }: any) => [
+        { id: 10, displayName: 'Nguyễn Văn A', username: 'nguyenvana' },
+        { id: 20, displayName: 'Trần Thị B', username: 'tranthib' },
+      ],
+    },
+    crmFundRole: {
+      create: async ({ data }: any) => {
+        rolesStore.push(data);
+        return data;
+      },
+    },
+    crmFundRoleAssignment: {
+      create: async ({ data }: any) => {
+        assignmentsStore.push(data);
+        return data;
+      },
+    },
+    $transaction: async (fn: any) => fn(mockCrm),
+  };
+
+  // Mock getFundOverview dependencies
+  mockCrm.crmFund.findUnique = async ({ where }: any) => {
+    const f = fundsStore.find((item) => (where.id ? item.id === where.id : item.code === where.code));
+    if (!f) return null;
+    return {
+      ...f,
+      roles: rolesStore.filter((r) => r.fundId === f.id).map((r) => ({ ...r, createdAt: new Date(), updatedAt: new Date() })),
+      assignments: assignmentsStore.filter((a) => a.fundId === f.id).map((a) => ({ ...a, createdAt: new Date(), updatedAt: new Date() })),
+      periods: [],
+      transactions: [],
+      proposals: [],
+    };
+  };
+
+  const actor = { id: 1, name: 'Danny Do', role: 'admin' };
+
+  // 1. Tạo Quỹ mới hợp lệ
+  const newFund = await FundService.createFund(
+    mockCrm,
+    {
+      name: 'Quỹ Tiếp Thị Kỹ Thuật Số 2026',
+      code: 'FUND_DIGITAL_MARKETING',
+      description: 'Chi phí quảng cáo Google & Meta',
+      maxQuota: 5000000,
+      unitQuota: 200000,
+      alertThresholdPercent: 85,
+      toleranceMode: 'TOLERANCE_FIXED',
+      toleranceAmount: 50000,
+      status: 'DRAFT',
+      roles: [
+        {
+          roleKey: 'HOLDER',
+          roleName: 'Thủ Quỹ Marketing',
+          permissions: ['VIEW', 'PROPOSE'],
+          assignedStaffIds: [10],
+        },
+        {
+          roleKey: 'APPROVER',
+          roleName: 'Trưởng Phòng Marketing',
+          permissions: ['VIEW', 'APPROVE'],
+          assignedStaffIds: [20],
+        },
+      ],
+      approvalConfig: {
+        enabled: true,
+        steps: [
+          {
+            level: 1,
+            name: 'Cấp 1 – Trưởng phòng duyệt',
+            approverRoleKey: 'APPROVER',
+            requiredAmountAbove: 0,
+          },
+        ],
+      },
+    },
+    actor
+  );
+
+  assert.equal(newFund.code, 'FUND_DIGITAL_MARKETING');
+  assert.equal(newFund.name, 'Quỹ Tiếp Thị Kỹ Thuật Số 2026');
+  assert.equal(newFund.currentBalance, 0, 'Quỹ mới tạo bắt buộc có số dư 0đ');
+  assert.equal(newFund.status, 'DRAFT', 'Quỹ mới tạo mặc định trạng thái DRAFT');
+  assert.equal(newFund.maxQuota, 5000000);
+  assert.equal(newFund.unitQuota, 200000);
+  assert.equal(newFund.toleranceMode, 'TOLERANCE_FIXED');
+  assert.equal(newFund.toleranceAmount, 50000);
+  assert.equal(newFund.approvalConfig?.enabled, true);
+  assert.equal(newFund.approvalConfig?.steps.length, 1);
+  assert.equal(newFund.roles?.length, 2);
+  assert.equal(newFund.assignments?.length, 2);
+  assert.equal(newFund.assignments?.[0].staffName, 'Nguyễn Văn A');
+
+  // 2. Chống trùng mã quỹ (Throws 409 Conflict)
+  await assert.rejects(
+    async () => {
+      await FundService.createFund(
+        mockCrm,
+        {
+          name: 'Quỹ Trùng Mã',
+          code: 'FUND_DIGITAL_MARKETING',
+          maxQuota: 1000000,
+          unitQuota: 50000,
+        },
+        actor
+      );
+    },
+    (err: any) => err instanceof FundError && err.statusCode === 409
+  );
+
+  // 3. Validation lỗi mã quỹ không hợp lệ
+  await assert.rejects(
+    async () => {
+      await FundService.createFund(
+        mockCrm,
+        {
+          name: 'Quỹ Tên Sai',
+          code: 'FUND INVALID CODE',
+          maxQuota: 1000000,
+          unitQuota: 50000,
+        },
+        actor
+      );
+    },
+    (err: any) => err instanceof FundError && err.message.includes('chỉ được chứa ký tự')
+  );
+
+  // 4. Update Fund toàn diện
+  const updatedFund = await FundService.updateFund(
+    mockCrm,
+    newFund.id,
+    {
+      name: 'Quỹ Tiếp Thị Kỹ Thuật Số Đã Cập Nhật',
+      maxQuota: 10000000,
+      unitQuota: 500000,
+      status: 'ACTIVE',
+    },
+    actor
+  );
+
+  assert.equal(updatedFund.name, 'Quỹ Tiếp Thị Kỹ Thuật Số Đã Cập Nhật');
+  assert.equal(updatedFund.maxQuota, 10000000);
+  assert.equal(updatedFund.unitQuota, 500000);
+  assert.equal(updatedFund.status, 'ACTIVE');
+});

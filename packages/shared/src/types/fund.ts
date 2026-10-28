@@ -1,5 +1,5 @@
 export type ToleranceMode = 'STRICT' | 'TOLERANCE_FIXED';
-export type FundStatus = 'ACTIVE' | 'FROZEN' | 'CLOSED';
+export type FundStatus = 'DRAFT' | 'ACTIVE' | 'FROZEN' | 'CLOSED';
 export type ProposalType = 'REPLENISHMENT' | 'SPECIAL_EXPENSE';
 export type ProposalStatus =
   | 'DRAFT'
@@ -35,6 +35,21 @@ export interface FundRoleAssignment {
   updatedAt: string;
 }
 
+export interface FundApprovalStepConfig {
+  level: number;
+  name: string;
+  approverRoleKey?: string;
+  approverStaffIds?: number[];
+  approverStaffNames?: string[];
+  requiredAmountAbove?: number;
+  note?: string;
+}
+
+export interface FundApprovalWorkflowConfig {
+  enabled: boolean;
+  steps: FundApprovalStepConfig[];
+}
+
 export interface Fund {
   id: string;
   code: string;
@@ -52,6 +67,7 @@ export interface Fund {
   usedPercent: number;
   roles?: FundRole[];
   assignments?: FundRoleAssignment[];
+  approvalConfig?: FundApprovalWorkflowConfig | null;
   currentPeriod?: FundPeriod | null;
   createdAt: string;
   updatedAt: string;
@@ -178,4 +194,39 @@ export interface UpdateFundConfigRequest {
   alertThresholdPercent?: number;
   toleranceMode?: ToleranceMode;
   toleranceAmount?: number;
+}
+
+export interface CreateFundRoleInput {
+  roleKey: string;
+  roleName: string;
+  permissions: string[];
+  assignedStaffIds?: number[];
+}
+
+export interface CreateFundRequest {
+  code: string;
+  name: string;
+  description?: string;
+  maxQuota: number;
+  unitQuota: number;
+  alertThresholdPercent?: number;
+  toleranceMode?: ToleranceMode;
+  toleranceAmount?: number;
+  status?: FundStatus;
+  roles?: CreateFundRoleInput[];
+  approvalConfig?: FundApprovalWorkflowConfig;
+}
+
+export interface UpdateFundRequest {
+  code?: string;
+  name?: string;
+  description?: string;
+  maxQuota?: number;
+  unitQuota?: number;
+  alertThresholdPercent?: number;
+  toleranceMode?: ToleranceMode;
+  toleranceAmount?: number;
+  status?: FundStatus;
+  roles?: CreateFundRoleInput[];
+  approvalConfig?: FundApprovalWorkflowConfig;
 }

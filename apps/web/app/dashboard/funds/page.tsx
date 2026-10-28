@@ -33,6 +33,7 @@ import {
   StatusTag,
 } from '~/components/ui';
 import { removeVietnameseTones } from '~/lib/utils/search';
+import FundFormModal from './components/FundFormModal';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -41,7 +42,8 @@ export default function FundsManagementPage() {
   const [funds, setFunds] = useState<Fund[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedFund, setSelectedFund] = useState<Fund | null>(null);
 
   const loadFunds = async () => {
     try {
@@ -67,7 +69,13 @@ export default function FundsManagementPage() {
   }, []);
 
   const handleOpenCreate = () => {
-    setCreateModalOpen(true);
+    setSelectedFund(null);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEdit = (fund: Fund) => {
+    setSelectedFund(fund);
+    setIsModalOpen(true);
   };
 
   const filteredFunds = useMemo(() => {
@@ -105,6 +113,8 @@ export default function FundsManagementPage() {
       );
     }
     switch (status) {
+      case 'DRAFT':
+        return <StatusTag status="default" label="📝 BẢN NHÁP (DRAFT)" />;
       case 'ACTIVE':
         return <StatusTag status="success" label="🟢 ĐANG HOẠT ĐỘNG" />;
       case 'FROZEN':
@@ -208,24 +218,20 @@ export default function FundsManagementPage() {
       width: 120,
       render: (_: unknown, record: Fund) => (
         <Space size={6} align="center">
-          <Tooltip title={`Xem chi tiết quỹ ${record.name}`}>
+          <Tooltip title={`Chỉnh sửa / Cấu hình quỹ ${record.name}`}>
             <Button
               type="primary"
               size="small"
               className="bg-emerald-600 hover:bg-emerald-500 text-white"
               icon={<AppIcon icon={Eye} size="sm" />}
-              onClick={() => {
-                message.info(`Chi tiết Quỹ "${record.name}" sẽ được mở rộng trong Bước 2.`);
-              }}
+              onClick={() => handleOpenEdit(record)}
             />
           </Tooltip>
           <Tooltip title="Cấu hình quỹ">
             <Button
               size="small"
               icon={<AppIcon icon={Settings2} size="sm" />}
-              onClick={() => {
-                message.info(`Cấu hình Quỹ "${record.name}" sẽ được hỗ trợ trong Bước 2.`);
-              }}
+              onClick={() => handleOpenEdit(record)}
             />
           </Tooltip>
         </Space>
@@ -290,6 +296,7 @@ export default function FundsManagementPage() {
               className="w-full"
               options={[
                 { value: 'ALL', label: 'Tất cả trạng thái' },
+                { value: 'DRAFT', label: '📝 Bản nháp (DRAFT)' },
                 { value: 'ACTIVE', label: '🟢 Đang hoạt động (ACTIVE)' },
                 { value: 'FROZEN', label: '⏸️ Tạm ngưng (FROZEN)' },
                 { value: 'CLOSED', label: '🔒 Đã đóng (CLOSED)' },
@@ -357,33 +364,16 @@ export default function FundsManagementPage() {
         />
       )}
 
-      {/* Modal Placeholder for Create Fund (Step 2 Preview) */}
-      <AdaptiveModal
-        intent="form"
-        title={
-          <div className="flex items-center gap-2 font-bold text-lg">
-            <AppIcon icon={Sparkles} size="sm" className="text-emerald-500" />
-            <span>Thiết Lập Quỹ Hoạt Động Nội Bộ Mới</span>
-          </div>
-        }
-        open={createModalOpen}
-        onCancel={() => setCreateModalOpen(false)}
-        footer={[
-          <Button key="close" onClick={() => setCreateModalOpen(false)}>
-            Đóng
-          </Button>,
-        ]}
-        width={560}
-      >
-        <div className="py-4 space-y-3">
-          <Paragraph>
-            Tính năng khởi tạo Quỹ Hoạt Động Mới (bao gồm thiết lập Mã Quỹ, Hạn Mức, Định Mức Chi Tiêu, Cấu Hình Dung Sai và Gán Vai Trò Thủ Quỹ/Phê Duyệt) đang được chuẩn bị triển khai trong <strong>Bước 2: Form Khởi Tạo & Quản Trị Quỹ Động</strong>.
-          </Paragraph>
-          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg text-xs text-emerald-700 dark:text-emerald-300">
-            💡 <strong>Bước 1 hoàn tất</strong>: Cơ sở dữ liệu đã được làm sạch, không còn quỹ mẫu giả lập, Sidebar và giao diện Quản Lý Quỹ đã được tái cấu trúc đồng bộ theo chuẩn Quản Lý Chiến Dịch NYC.
-          </div>
-        </div>
-      </AdaptiveModal>
+      {/* Create / Edit Fund Modal (MOS-FEAT-177 Step 2) */}
+      <FundFormModal
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+        onSuccess={() => {
+          setIsModalOpen(false);
+          loadFunds();
+        }}
+        initialFund={selectedFund}
+      />
     </div>
   );
 }

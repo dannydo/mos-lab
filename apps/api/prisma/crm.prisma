@@ -3959,6 +3959,7 @@ model CrmFund {
   alertThresholdPercent Int      @default(80) @map("alert_threshold_percent")
   toleranceMode         String   @default("STRICT") @map("tolerance_mode") @db.VarChar(32)
   toleranceAmount       Decimal  @default(0) @map("tolerance_amount") @db.Decimal(15, 2)
+  approvalConfigJson    String?  @map("approval_config_json") @db.Text
   status                String   @default("ACTIVE") @db.VarChar(32)
   createdAt             DateTime @default(now()) @map("created_at") @db.DateTime(0)
   updatedAt             DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)

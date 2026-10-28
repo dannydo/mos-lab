@@ -3,9 +3,11 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import FundsManagementPage from './page';
 
-const { mockFundsApi } = vi.hoisted(() => {
+const { mockFundsApi, mockStaffApi } = vi.hoisted(() => {
   const mockFundsApi = {
     list: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
     getOverview: vi.fn(),
     recordExpense: vi.fn(),
     createProposal: vi.fn(),
@@ -15,12 +17,25 @@ const { mockFundsApi } = vi.hoisted(() => {
     updateConfig: vi.fn(),
   };
 
-  return { mockFundsApi };
+  const mockStaffApi = {
+    list: vi.fn().mockResolvedValue([
+      { id: 1, name: 'Danny Do', role: 'admin' },
+      { id: 10, name: 'Nguyễn Văn A', role: 'telesale' },
+    ]),
+  };
+
+  return { mockFundsApi, mockStaffApi };
 });
 
 vi.mock('~/lib/api-client', () => ({
-  apiClient: { funds: mockFundsApi },
-  default: { funds: mockFundsApi },
+  apiClient: {
+    funds: mockFundsApi,
+    staff: mockStaffApi,
+  },
+  default: {
+    funds: mockFundsApi,
+    staff: mockStaffApi,
+  },
 }));
 
 describe('FundsManagementPage Component (MOS-BUG-174 Step 1)', () => {
@@ -111,7 +126,7 @@ describe('FundsManagementPage Component (MOS-BUG-174 Step 1)', () => {
     expect(screen.getByRole('columnheader', { name: 'Thao tác' })).toBeDefined();
   });
 
-  it('opens preview modal when clicking Tạo Quỹ Mới', async () => {
+  it('opens 4-tab creation modal when clicking Tạo Quỹ Mới (MOS-FEAT-177 Step 2)', async () => {
     mockFundsApi.list.mockResolvedValueOnce({ success: true, data: [] });
 
     render(<FundsManagementPage />);
@@ -125,9 +140,77 @@ describe('FundsManagementPage Component (MOS-BUG-174 Step 1)', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Thiết Lập Quỹ Hoạt Động Nội Bộ Mới')).toBeDefined();
-      expect(
-        screen.getByText(/Bước 2: Form Khởi Tạo & Quản Trị Quỹ Động/i)
-      ).toBeDefined();
+      expect(screen.getByText('Tab 1 – Thông tin')).toBeDefined();
+      expect(screen.getByText('Tab 2 – Cấu hình tài chính')).toBeDefined();
+      expect(screen.getByText('Tab 3 – Vai trò & Nhân sự')).toBeDefined();
+      expect(screen.getByText('Tab 4 – Quy trình phê duyệt')).toBeDefined();
+    });
+  });
+
+  it('submits create fund form and refreshes list on success (MOS-FEAT-177 Step 2)', async () => {
+    mockFundsApi.list
+      .mockResolvedValueOnce({ success: true, data: [] })
+      .mockResolvedValueOnce({
+        success: true,
+        data: [
+          {
+            id: 'fund-new',
+            code: 'FUND_NEW',
+            name: 'Quỹ Hoạt Động Mới',
+            currentBalance: 0,
+            maxQuota: 2000000,
+            unitQuota: 50000,
+            status: 'DRAFT',
+            alertThresholdPercent: 80,
+            toleranceMode: 'STRICT',
+            toleranceAmount: 0,
+            isLowBalance: false,
+            usedAmount: 0,
+            usedPercent: 0,
+            createdAt: '2026-10-28T00:00:00.000Z',
+            updatedAt: '2026-10-28T00:00:00.000Z',
+          },
+        ],
+      });
+
+    mockFundsApi.create.mockResolvedValueOnce({
+      success: true,
+      data: {
+        id: 'fund-new',
+        code: 'FUND_NEW',
+        name: 'Quỹ Hoạt Động Mới',
+        currentBalance: 0,
+        status: 'DRAFT',
+      },
+    });
+
+    render(<FundsManagementPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Chưa có quỹ hoạt động nào')).toBeDefined();
+    });
+
+    const createBtn = screen.getAllByRole('button', { name: /Tạo Quỹ Mới/i })[0];
+    fireEvent.click(createBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText('Thiết Lập Quỹ Hoạt Động Nội Bộ Mới')).toBeDefined();
+    });
+
+    // Fill Fund Name
+    const nameInput = screen.getByPlaceholderText(/Ví dụ: Quỹ Nạp Card Telesale/i);
+    fireEvent.change(nameInput, { target: { value: 'Quỹ Hoạt Động Mới' } });
+
+    // Submit
+    const submitBtn = screen.getByRole('button', { name: /Khởi Tạo Quỹ/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(mockFundsApi.create).toHaveBeenCalled();
+      const callArg = mockFundsApi.create.mock.calls[0][0];
+      expect(callArg.name).toBe('Quỹ Hoạt Động Mới');
+      expect(callArg.code).toBe('FUND_HOAT_DONG_MOI');
+      expect(callArg.status).toBe('DRAFT');
     });
   });
 });

@@ -102,4 +102,32 @@ describe('Sidebar Configuration CV Invariants', () => {
 
     expect(getSelectedMenuKey('/dashboard/funds')).toBe('finance-funds-manage');
   });
+
+  it('should render dynamic fund items under Quỹ Hoạt Động Nội Bộ when active funds are provided (MOS-FEAT-177 Step 2)', () => {
+    const mockFunds = [
+      { id: 'fund-telesale', code: 'FUND_TELESALE', name: 'Quỹ Telesale' },
+      { id: 'fund-marketing', code: 'FUND_MARKETING', name: 'Quỹ Marketing' },
+    ];
+    const adminGroups = getSidebarGroups(
+      'admin',
+      [],
+      true,
+      {},
+      [],
+      false,
+      {},
+      {},
+      {},
+      0,
+      mockFunds
+    );
+    const financeGroup = adminGroups.find((g) => g.groupKey === 'grp-finance');
+    const fundsParent = financeGroup?.items.find((item) => item.key === 'finance-funds-parent');
+    expect(fundsParent?.children).toHaveLength(3);
+    expect(fundsParent?.children?.[0].key).toBe('finance-fund-fund-telesale');
+    expect(fundsParent?.children?.[0].label).toBe('Quỹ Telesale');
+    expect(fundsParent?.children?.[1].key).toBe('finance-fund-fund-marketing');
+    expect(fundsParent?.children?.[1].label).toBe('Quỹ Marketing');
+    expect(fundsParent?.children?.[2].key).toBe('finance-funds-manage');
+  });
 });

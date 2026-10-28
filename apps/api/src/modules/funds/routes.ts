@@ -6,6 +6,8 @@ import type {
   RecordExpenseRequest,
   ReconcileAndLockPeriodRequest,
   UpdateFundConfigRequest,
+  CreateFundRequest,
+  UpdateFundRequest,
 } from '@mos-lab/shared';
 import { requireAuth, type JwtUserPayload } from '../../middlewares/auth.js';
 import { FundError, FundService, type FundActor } from './fund.service.js';
@@ -45,6 +47,41 @@ export async function fundRoutes(fastify: FastifyInstance) {
       return handleFundError(fastify, reply, err, 'funds:list');
     }
   });
+
+  // 1b. Khởi tạo Quỹ mới (MOS-FEAT-177)
+  fastify.post<{ Body: CreateFundRequest }>(
+    '/funds',
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      try {
+        const actor = getActor(request);
+        const data = await FundService.createFund(fastify.prisma.crm, request.body, actor);
+        return reply.status(201).send({ success: true, data });
+      } catch (err) {
+        return handleFundError(fastify, reply, err, 'funds:create');
+      }
+    }
+  );
+
+  // 1c. Cập nhật / Chỉnh sửa Quỹ (MOS-FEAT-177)
+  fastify.put<{ Params: { fundId: string }; Body: UpdateFundRequest }>(
+    '/funds/:fundId',
+    { preHandler: [requireAuth] },
+    async (request, reply) => {
+      try {
+        const actor = getActor(request);
+        const data = await FundService.updateFund(
+          fastify.prisma.crm,
+          request.params.fundId,
+          request.body,
+          actor
+        );
+        return reply.send({ success: true, data });
+      } catch (err) {
+        return handleFundError(fastify, reply, err, 'funds:update');
+      }
+    }
+  );
 
   // 2. Chi tiết & Tổng quan một Quỹ
   fastify.get<{ Params: { fundId: string } }>(
