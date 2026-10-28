@@ -1,8 +1,9 @@
 import dayjs from 'dayjs';
-import type { MosChatImageAttachment, MosChatImageMimeType, MosChatStaffMember, SafeAny } from '@mos-lab/shared';
+import type { AiChatMessage, MosChatImageAttachment, MosChatImageMimeType, MosChatMessage, MosChatStaffMember, SafeAny } from '@mos-lab/shared';
 import { removeVietnameseTones } from '@mos-lab/shared';
 import { cleanMarkdownForSpeech } from '../../voice-assistant/speech-utils';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
+import { AI_COPILOT_CONV_ID } from '../constants/chat-constants';
 
 export function matchesStaffGroup(member: MosChatStaffMember, groupKey: string): boolean {
   const role = String(member.role || '')
@@ -1016,3 +1017,60 @@ export function isUserMessageOwner(
   }
   return false;
 }
+
+/**
+ * Chuẩn hóa tin nhắn AI từ backend sang định dạng MosChatMessage hiển thị trên cả desktop và mobile (MOS-BUG-170).
+ */
+export function formatBackendAiMessage(
+  bm: AiChatMessage,
+  currentUser?: { id?: number | string; displayName?: string; username?: string; role?: string } | null
+): MosChatMessage {
+  const isBot = bm.role === 'assistant';
+  const rawContent = bm.content || '';
+  const actionMatches: NonNullable<MosChatMessage['aiAction']>[] = [];
+  const regex = /<action(?:\s+type="([^"]*)")?(?:\s+label="([^"]*)")?>([\s\S]*?)<\/action>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(rawContent)) !== null) {
+    try {
+      actionMatches.push({
+        type: match[1]?.trim() || 'APPLY_FILTER',
+        label: match[2]?.trim() || 'Áp dụng bộ lọc gợi ý',
+        payload: JSON.parse(match[3]?.trim() || '{}'),
+      });
+    } catch {
+      // ignore
+    }
+  }
+  const cleanText = rawContent
+    .replace(/<action[\s\S]*?<\/action>/gi, '')
+    .replace(/<\/?action[^>]*>/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  const existingActions = bm.suggestedActions || (bm.suggestedAction ? [bm.suggestedAction] : []);
+  const allActions = [...existingActions, ...actionMatches].filter(
+    (act, index, self) =>
+      index ===
+      self.findIndex((a) => a.label === act.label && JSON.stringify(a.payload) === JSON.stringify(act.payload))
+  );
+
+  return {
+    id: bm.id,
+    conversationId: AI_COPILOT_CONV_ID,
+    senderId: isBot ? 'wings-ai-copilot' : String(currentUser?.id || 'me'),
+    senderName: isBot ? '🤖 MAI' : currentUser?.displayName || currentUser?.username || 'Bạn',
+    senderRole: isBot ? 'mOS AI' : currentUser?.role || 'Staff',
+    senderAvatar: isBot ? 'MAI' : 'U',
+    roleColor: isBot ? '#8b5cf6' : '#2563eb',
+    isAiBot: isBot,
+    text: cleanText,
+    aiThinking: bm.thinking || null,
+    aiAction: allActions[0] || bm.suggestedAction || null,
+    aiActions: allActions.length > 0 ? allActions : null,
+    timeLabel: dayjs(bm.createdAt).format('HH:mm'),
+    createdAt: bm.createdAt,
+    reactions: {},
+    thread: [],
+  };
+}
+

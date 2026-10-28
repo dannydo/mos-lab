@@ -33,6 +33,7 @@ import {
 } from '../constants/chat-constants';
 import { useMosChatBridgeListener } from '../store/mos-chat-bridge';
 import { mergeDeltaConversations, mergeDeltaTasks, useChatRealtimeSync } from '../store/useChatRealtimeSync';
+import { formatBackendAiMessage } from '../utils/chat-helpers';
 import type {
   MosChatActiveSubtab,
   MosChatContextValue,
@@ -204,6 +205,77 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       // ignore
     }
   }, [aiPersonalStorageKey, aiSessionId, aiMessages]);
+
+  // Synchronize AI chat session & messages with backend (MOS-BUG-170)
+  const isSyncingAiRef = useRef<boolean>(false);
+  const syncAiChatSession = useCallback(
+    async (targetSessionId?: string | null) => {
+      if (!effectiveUser?.id && !effectiveUser?.username) return;
+      if (isSyncingAiRef.current) return;
+      isSyncingAiRef.current = true;
+      try {
+        let resolvedSessionId = targetSessionId || aiSessionId;
+
+        // Discover active mos-chat-private session if missing locally
+        if (!resolvedSessionId) {
+          const sessionsRes = await apiClient.ai.listSessions({ scope: 'mos-chat-private' });
+          if (sessionsRes?.sessions && sessionsRes.sessions.length > 0) {
+            resolvedSessionId = sessionsRes.sessions[0].id;
+            setAiSessionId(resolvedSessionId);
+          }
+        }
+
+        if (!resolvedSessionId) return;
+
+        const sessRes = await apiClient.ai.getSession(resolvedSessionId);
+        if (!sessRes?.messages || sessRes.messages.length === 0) return;
+
+        const mappedBackend = sessRes.messages.map((bm) => formatBackendAiMessage(bm, effectiveUser));
+        const welcome = buildInitialAiWelcomeMessage();
+
+        setAiMessages((prev) => {
+          const serverMsgIds = new Set(mappedBackend.map((m) => m.id));
+          const pendingOptimistic = prev.filter(
+            (m) => (m.id.startsWith('temp_') || m.id.startsWith('msg-user-')) && !serverMsgIds.has(m.id)
+          );
+          return [welcome, ...mappedBackend, ...pendingOptimistic];
+        });
+      } catch {
+        // ignore transient network/sync error
+      } finally {
+        isSyncingAiRef.current = false;
+      }
+    },
+    [effectiveUser, aiSessionId, buildInitialAiWelcomeMessage]
+  );
+
+  // Initial sync from backend when user is loaded or sessionId resolved
+  useEffect(() => {
+    void syncAiChatSession();
+  }, [syncAiChatSession]);
+
+  // Synchronize when switching into AI conversation on mobile
+  useEffect(() => {
+    if (activeConvId === AI_COPILOT_CONV_ID) {
+      void syncAiChatSession();
+    }
+  }, [activeConvId, syncAiChatSession]);
+
+  // Re-sync on mobile tab visibility/focus
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && (activeConvId === AI_COPILOT_CONV_ID || aiSessionId)) {
+        void syncAiChatSession();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
+    };
+  }, [activeConvId, aiSessionId, syncAiChatSession]);
 
   const aiCopilotConversation = useMemo<MosChatConversation>(() => {
     return {
@@ -386,6 +458,9 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       }
       if (delta.updatedTasks.length > 0 || delta.updatedMissions.length > 0) {
         setTasks((prev) => mergeDeltaTasks(prev, delta.updatedTasks, delta.updatedMissions));
+      }
+      if (activeConvId === AI_COPILOT_CONV_ID) {
+        void syncAiChatSession();
       }
     },
   });
@@ -717,53 +792,22 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
             setAiSessionId(aiRes.session.id);
           }
 
-          const rawContent = aiRes?.message?.content || 'MAI đã xử lý xong yêu cầu của bạn.';
-          const actionMatches: NonNullable<MosChatMessage['aiAction']>[] = [];
-          const regex = /<action(?:\s+type="([^"]*)")?(?:\s+label="([^"]*)")?>([\s\S]*?)<\/action>/gi;
-          let match: RegExpExecArray | null;
-          while ((match = regex.exec(rawContent)) !== null) {
-            try {
-              actionMatches.push({
-                type: match[1]?.trim() || 'APPLY_FILTER',
-                label: match[2]?.trim() || 'Áp dụng bộ lọc gợi ý',
-                payload: JSON.parse(match[3]?.trim() || '{}'),
-              });
-            } catch {
-              // ignore
-            }
-          }
-          const cleanText = rawContent
-            .replace(/<action[\s\S]*?<\/action>/gi, '')
-            .replace(/<\/?action[^>]*>/gi, '')
-            .trim();
-
-          const existingActions =
-            aiRes?.message?.suggestedActions ||
-            aiRes?.message?.suggestedAction?.actions ||
-            (aiRes?.message?.suggestedAction ? [aiRes.message.suggestedAction] : []);
-          const allActions = [...existingActions, ...actionMatches].filter(
-            (act, index, self) =>
-              index ===
-              self.findIndex((a) => a.label === act.label && JSON.stringify(a.payload) === JSON.stringify(act.payload))
-          );
-
-          const botMsg: MosChatMessage = {
-            id: aiRes?.message?.id || `msg-ai-${Date.now()}`,
-            conversationId: AI_COPILOT_CONV_ID,
-            senderId: 'wings-ai-copilot',
-            senderName: '🤖 MAI',
-            senderRole: 'mOS AI',
-            senderAvatar: 'MAI',
-            roleColor: '#8b5cf6',
-            isAiBot: true,
-            text: cleanText,
-            aiThinking: aiRes?.message?.thinking || null,
-            aiAction: allActions[0] || null,
-            aiActions: allActions.length > 0 ? allActions : null,
-            timeLabel: dayjs().format('HH:mm'),
-            createdAt: new Date().toISOString(),
-            reactions: {},
-          };
+          const botMsg: MosChatMessage = aiRes?.message
+            ? formatBackendAiMessage(aiRes.message, effectiveUser)
+            : {
+                id: `msg-ai-${Date.now()}`,
+                conversationId: AI_COPILOT_CONV_ID,
+                senderId: 'wings-ai-copilot',
+                senderName: '🤖 MAI',
+                senderRole: 'mOS AI',
+                senderAvatar: 'MAI',
+                roleColor: '#8b5cf6',
+                isAiBot: true,
+                text: 'MAI đã xử lý xong yêu cầu của bạn.',
+                timeLabel: dayjs().format('HH:mm'),
+                createdAt: new Date().toISOString(),
+                reactions: {},
+              };
           setAiMessages((prev) => [...prev, botMsg]);
         } catch {
           const errorMsg: MosChatMessage = {

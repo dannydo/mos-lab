@@ -566,6 +566,13 @@ export class AiAssistantService {
         })
       : null;
 
+    if (!session && scope === 'mos-chat-private') {
+      session = await crm.crmAiChatSession.findFirst({
+        where: { staffId, scope: 'mos-chat-private' },
+        orderBy: { updatedAt: 'desc' },
+      });
+    }
+
     if (!session) {
       // Derive session title from first prompt (up to 40 chars)
       const sessionTitle = trimmedMessage.slice(0, 40) + (trimmedMessage.length > 40 ? '...' : '');
@@ -576,6 +583,11 @@ export class AiAssistantService {
           scope,
           metadataJson: context ? JSON.stringify(context) : null,
         },
+      });
+    } else {
+      await crm.crmAiChatSession.update({
+        where: { id: session.id },
+        data: { updatedAt: new Date() },
       });
     }
 
