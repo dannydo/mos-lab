@@ -25,12 +25,33 @@ export interface CbGreenFunnelTelemetry {
 }
 
 export interface CbRetentionTelemetry {
-  balanceDeductionVisitsCount: number;
+  balanceDeductionVisitsCount: number; // Tổng lượt Done có trừ lượt gói (850 / Target 1000)
+  packageUsageNonGreenVisitsCount: number; // Done nguồn dùng gói ngoài VX (794 / mô hình 900)
   targetVisits: number;
-  repurchaseOrdersCount: number;
-  repurchaseComboSalesNet?: number;
+  repurchaseOrdersCount: number; // Đơn mua tiếp/gia hạn từ nhóm dùng gói ngoài VX (55 đơn)
+  repurchaseComboSalesNet: number; // Doanh số gói từ nhóm dùng gói ngoài VX (301,1M)
   uniquePaxCount: number;
   progressPercent: number;
+}
+
+export interface CbAttributionGroup {
+  sourceGroup: 'VONG_XANH' | 'DUNG_GOI_NGOAI_VX' | 'LE_KHAC';
+  name: string;
+  doneVisitsCount: number;
+  comboOrderCount: number;
+  comboItemCount: number;
+  comboSalesNet: number;
+  comboAov: number;
+}
+
+export interface CbAttributionTelemetry {
+  vongXanh: CbAttributionGroup;
+  dungGoiNgoaiVx: CbAttributionGroup;
+  leKhac: CbAttributionGroup;
+  totalComboSalesNet: number;
+  totalComboOrderCount: number;
+  totalDoneVisitsCount: number;
+  reconciliationStatus: 'MATCHED' | 'DISCREPANCY';
 }
 
 export interface CbDailyRecord {
@@ -40,10 +61,14 @@ export interface CbDailyRecord {
   productSalesNet: number;
   totalSalesNet: number;
   greenVisitsCount: number;
+  greenComboOrdersCount: number;
   packageUsageVisitsCount: number;
+  packageUsageComboOrdersCount: number;
   varianceToPace: number;
   cumulativeSales: number;
   targetCumulativeSales: number;
+  dailyPlanTarget: number;
+  isClosedDate: boolean;
 }
 
 export interface CbForecastTelemetry {
@@ -92,6 +117,7 @@ export interface CbLiveTelemetryResponse {
   revenue: CbRevenueTelemetry;
   greenFunnel: CbGreenFunnelTelemetry;
   retention: CbRetentionTelemetry;
+  attribution: CbAttributionTelemetry;
   daily: CbDailyRecord[];
   forecast: CbForecastTelemetry;
   meta: {
@@ -100,6 +126,7 @@ export interface CbLiveTelemetryResponse {
     dateTo: string;
     month: string;
     isCurrentMonth: boolean;
+    periodState: 'future' | 'in_progress' | 'closed';
     storeScope: string;
     pacingStatus: 'ĐÚNG TIẾN ĐỘ' | 'SÁT MỤC TIÊU' | 'HỤT MỤC TIÊU' | 'CHƯA CẤU HÌNH';
     uniquePaxPerVisit: number;
