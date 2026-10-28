@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { PilotSopDetailView } from './PilotSopDetailView';
 import { apiClient } from '../../../../lib/api-client';
@@ -12,7 +12,7 @@ vi.mock('../../../../lib/api-client', () => ({
   },
 }));
 
-describe('PilotSopDetailView (MOS-FEAT-163)', () => {
+describe('PilotSopDetailView (MOS-FEAT-171 SOP Hạng Mục 2)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (apiClient.pilot.getSopEmpiricalStats as any).mockResolvedValue({
@@ -120,6 +120,95 @@ describe('PilotSopDetailView (MOS-FEAT-163)', () => {
     expect(screen.getByText(/Chờ Cô Giang Đàm xác nhận định lượng bọt chuyên dụng/i)).toBeInTheDocument();
   });
 
+  it('supports expanding and collapsing all steps via quick action buttons', async () => {
+    render(<PilotSopDetailView />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('collapse-all-btn')).toBeInTheDocument();
+    });
+
+    // Initially expanded
+    expect(screen.getAllByText('Mục đích chuyên môn').length).toBe(7);
+
+    // Click collapse all
+    fireEvent.click(screen.getByTestId('collapse-all-btn'));
+    expect(screen.queryByText('Mục đích chuyên môn')).not.toBeInTheDocument();
+
+    // Click expand all
+    fireEvent.click(screen.getByTestId('expand-all-btn'));
+    expect(screen.getAllByText('Mục đích chuyên môn').length).toBe(7);
+  });
+
+  it('toggles individual step accordion open and closed', async () => {
+    render(<PilotSopDetailView />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('step-header-1')).toBeInTheDocument();
+    });
+
+    // Step 1 is initially expanded
+    expect(screen.getByText(/Đánh giá chất mi, độ khỏe nang lông và loại bỏ 100% bã nhờn/i)).toBeInTheDocument();
+
+    // Click step 1 header to collapse
+    fireEvent.click(screen.getByTestId('step-header-1'));
+    expect(screen.queryByText(/Đánh giá chất mi, độ khỏe nang lông và loại bỏ 100% bã nhờn/i)).not.toBeInTheDocument();
+
+    // Click again to re-expand
+    fireEvent.click(screen.getByTestId('step-header-1'));
+    expect(screen.getByText(/Đánh giá chất mi, độ khỏe nang lông và loại bỏ 100% bã nhờn/i)).toBeInTheDocument();
+  });
+
+  it('toggles technical glossary explaining technical terms in plain language', async () => {
+    render(<PilotSopDetailView />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('toggle-glossary-btn')).toBeInTheDocument();
+    });
+
+    // Initially hidden
+    expect(screen.queryByTestId('sop-glossary-section')).not.toBeInTheDocument();
+
+    // Click to open glossary
+    fireEvent.click(screen.getByTestId('toggle-glossary-btn'));
+    const glossarySection = screen.getByTestId('sop-glossary-section');
+    expect(glossarySection).toBeInTheDocument();
+    expect(within(glossarySection).getByText(/Từ Điển Thuật Ngữ Kỹ Thuật/i)).toBeInTheDocument();
+    expect(within(glossarySection).getByText(/Liên kết Disunfua/i)).toBeInTheDocument();
+    expect(within(glossarySection).getByText(/Cân bằng pH/i)).toBeInTheDocument();
+
+    // Click to close
+    fireEvent.click(screen.getByTestId('toggle-glossary-btn'));
+    expect(screen.queryByTestId('sop-glossary-section')).not.toBeInTheDocument();
+  });
+
+  it('classifies instructions with tags: Bắt buộc, Lưu ý kỹ thuật, Cảnh báo an toàn', async () => {
+    render(<PilotSopDetailView />);
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Mục đích chuyên môn').length).toBe(7);
+    });
+
+    expect(screen.getAllByText('Bắt buộc').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Lưu ý kỹ thuật').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Cảnh báo an toàn').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('toggles deep dive section for empirical statistics and sample sessions', async () => {
+    render(<PilotSopDetailView />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('deep-dive-toggle-1')).toBeInTheDocument();
+    });
+
+    // Click deep dive toggle on Step 1
+    fireEvent.click(screen.getByTestId('deep-dive-toggle-1'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Đo kiểm thời gian thực tế qua bộ đếm tự động/i)).toBeInTheDocument();
+      expect(screen.getByText(/Ca #18 · Nguyệt/i)).toBeInTheDocument();
+    });
+  });
+
   it('filters by step when a step pill is clicked in navigator', async () => {
     render(<PilotSopDetailView />);
 
@@ -145,7 +234,12 @@ describe('PilotSopDetailView (MOS-FEAT-163)', () => {
     fireEvent.click(backBtn);
     expect(handleBack).toHaveBeenCalledTimes(1);
 
-    // Wait for empirical stats to render sample sessions
+    // Open deep dive on step 1 to access sample sessions
+    await waitFor(() => {
+      expect(screen.getByTestId('deep-dive-toggle-1')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByTestId('deep-dive-toggle-1'));
+
     await waitFor(() => {
       const viewSessionBtn = screen.queryAllByRole('button', { name: /Xem ca gốc →/i });
       if (viewSessionBtn.length > 0) {
@@ -160,6 +254,10 @@ describe('PilotSopDetailView (MOS-FEAT-163)', () => {
     await waitFor(() => {
       expect(screen.getByText('Hạng mục 2: Quy trình Kỹ thuật 7 Bước Uốn Mi Bóng Tối')).toBeInTheDocument();
     });
+
+    // Also open glossary to ensure glossary doesn't contain forbidden word
+    fireEvent.click(screen.getByTestId('toggle-glossary-btn'));
+
     const textContent = container.textContent?.toLowerCase() || '';
 
     const forbiddenWords = ['thợ mi', 'thợ kỹ thuật', 'thợ tự chủ', 'thợ lash', 'thợ cứng', 'tay nghề thợ'];
