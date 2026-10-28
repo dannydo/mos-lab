@@ -289,3 +289,22 @@ test('FundService - Period Reconciliation & Lock detects variance, creates adjus
   assert.equal(result.adjustmentTransaction?.type, 'ADJUSTMENT');
   assert.equal(result.adjustmentTransaction?.amount, 20000);
 });
+
+test('FundService - listFunds returns empty array and does not auto-seed when no funds exist (MOS-BUG-174)', async () => {
+  let createdCount = 0;
+  const mockCrm: any = {
+    crmFund: {
+      findMany: async () => [],
+      findUnique: async () => null,
+      create: async () => {
+        createdCount++;
+        return {};
+      },
+    },
+    $transaction: async (fn: any) => fn(mockCrm),
+  };
+
+  const funds = await FundService.listFunds(mockCrm);
+  assert.deepEqual(funds, []);
+  assert.equal(createdCount, 0, 'Must not auto-seed default fund when list is called');
+});
