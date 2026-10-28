@@ -579,7 +579,6 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
                   setStickerPickerInitialPack(pack);
                   setStickerPickerOpen(true);
                 }}
-                onSelectImage={() => fileInputRef.current?.click()}
                 attachedImages={attachedImages}
                 onRemoveAttachment={(id) => setAttachedImages((prev) => prev.filter((img) => img.id !== id))}
                 isUploadingImages={isUploadingImages}
@@ -798,9 +797,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-300 block mb-1.5">
-              Thời hạn hoàn thành (Deadline)
-            </label>
+            <label className="text-xs font-semibold text-slate-300 block mb-1.5">Thời hạn hoàn thành (Deadline)</label>
             <MosChatMobileDateTimePicker
               value={taskDueAt}
               onChange={(d) => setTaskDueAt(d)}

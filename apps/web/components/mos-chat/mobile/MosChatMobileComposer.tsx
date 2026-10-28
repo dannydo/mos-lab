@@ -1,19 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  Plus,
-  SendHorizontal,
-  Mic,
-  Smile,
-  X,
-  ImagePlus,
-  Loader2,
-  FileText,
-  File,
-  Sparkles,
-  CornerDownLeft,
-} from 'lucide-react';
+import { Plus, SendHorizontal, Mic, Smile, X, Loader2, FileText, File, Sparkles } from 'lucide-react';
 import { message as antdMessage } from 'antd';
 import type { MosChatImageAttachment, SafeAny } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
@@ -33,7 +21,6 @@ import { MosChatAvatar } from '../MosChatAvatar';
 export interface MosChatMobileComposerProps {
   onOpenActionSheet: () => void;
   onOpenStickerSheet: (pack?: MosChatStickerPackId) => void;
-  onSelectImage?: () => void;
   attachedImages?: MosChatImageAttachment[];
   onRemoveAttachment?: (id: string) => void;
   isUploadingImages?: boolean;
@@ -45,7 +32,6 @@ export interface MosChatMobileComposerProps {
 export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
   onOpenActionSheet,
   onOpenStickerSheet,
-  onSelectImage,
   attachedImages = [],
   onRemoveAttachment,
   isUploadingImages = false,
@@ -147,29 +133,6 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
     }
   };
 
-  const handleInsertNewline = () => {
-    const el = textareaRef.current;
-    if (!el) return;
-    const isFocused = typeof document !== 'undefined' && document.activeElement === el;
-    const start = isFocused ? (el.selectionStart ?? text.length) : text.length;
-    const end = isFocused ? (el.selectionEnd ?? text.length) : text.length;
-    const smart = handleSmartListEnterKey(text, start, end);
-    if (smart?.handled) {
-      setText(smart.nextText);
-      setTimeout(() => {
-        el.focus();
-        el.setSelectionRange(smart.nextCursor, smart.nextCursor);
-      }, 0);
-    } else {
-      const nextText = text.substring(0, start) + '\n' + text.substring(end);
-      setText(nextText);
-      setTimeout(() => {
-        el.focus();
-        el.setSelectionRange(start + 1, start + 1);
-      }, 0);
-    }
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && e.shiftKey) {
       const el = e.currentTarget;
@@ -209,12 +172,12 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
   const isAiChat = activeConversation?.id === AI_COPILOT_CONV_ID;
   const isKeyboardOpen = keyboardOffset > 50;
   const placeholder = isAiChat
-    ? 'Hỏi MAI bất kỳ điều gì (báo cáo, khách hàng, số liệu...)... (Shift+Enter để xuống dòng)'
+    ? 'Hỏi MAI...'
     : replyingToMessage
-      ? 'Nhập câu trả lời... (Shift+Enter để xuống dòng)'
+      ? 'Nhập câu trả lời...'
       : activeConversation?.name
-        ? `Nhắn tin trong #${activeConversation.name}... (Shift+Enter để xuống dòng)`
-        : 'Nhập tin nhắn... (Shift+Enter để xuống dòng)';
+        ? `Nhắn tin #${activeConversation.name}...`
+        : 'Nhắn tin...';
 
   return (
     <div
@@ -377,20 +340,6 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
           <Plus className="w-5 h-5 text-amber-400" />
         </button>
 
-        {/* Quick Image Picker Button */}
-        {onSelectImage && (
-          <button
-            type="button"
-            onClick={onSelectImage}
-            disabled={isUploadingImages}
-            className="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700/80 flex items-center justify-center text-slate-300 active:scale-90 transition-transform shrink-0 mb-0.5 disabled:opacity-50"
-            aria-label="Chọn nhiều hình ảnh"
-            title="Chọn nhiều hình ảnh"
-          >
-            <ImagePlus className="w-4 h-4 text-emerald-400" />
-          </button>
-        )}
-
         {/* Text Input Box */}
         <div className="flex-1 min-h-[38px] max-h-[120px] bg-slate-800/90 border border-slate-700/80 rounded-2xl px-3 py-1.5 flex items-center gap-2 focus-within:border-amber-400/80 transition-colors">
           <textarea
@@ -402,18 +351,6 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
             placeholder={placeholder}
             className="flex-1 bg-transparent border-none outline-none text-sm text-white placeholder-slate-400 resize-none max-h-[110px] py-1 leading-snug"
           />
-
-          {/* Quick Xuống dòng (Shift+Enter) button */}
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={handleInsertNewline}
-            className="p-1 text-slate-400 hover:text-amber-400 active:scale-90 transition-transform shrink-0"
-            aria-label="Xuống dòng (Shift+Enter)"
-            title="Xuống dòng (Shift+Enter)"
-          >
-            <CornerDownLeft className="w-4 h-4" />
-          </button>
 
           {/* Quick Emoji / Sticker Icon */}
           <button
