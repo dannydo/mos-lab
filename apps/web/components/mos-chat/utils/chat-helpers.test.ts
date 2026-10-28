@@ -5,6 +5,7 @@ import {
   cleanTextForUrgentVoiceAnnouncement,
   buildMaiUrgentVoiceAnnouncement,
   isStaffInConversationMembers,
+  formatBackendAiMessage,
 } from './chat-helpers';
 
 describe('mOS Chat Urgent Voice Announcement Helpers (MOS-BUG-135)', () => {
@@ -212,6 +213,80 @@ describe('mOS Chat Urgent Voice Announcement Helpers (MOS-BUG-135)', () => {
       };
       const staffOutsider = { id: 99, displayName: 'Nguyễn Thị Hoa' };
       expect(isStaffInConversationMembers(staffOutsider, dmConversation, mockStaffDirectory)).toBe(true);
+    });
+  });
+
+  describe('formatBackendAiMessage (MOS-BUG-170)', () => {
+    const mockCurrentUser = {
+      id: 1,
+      displayName: 'Danny Do',
+      username: 'danny.do@wingslashes.com',
+      role: 'super_admin',
+    };
+
+    it('formats assistant message with thinking, clean text, and extracted actions', () => {
+      const backendMsg = {
+        id: 'msg-backend-1',
+        sessionId: 'session-ai-1',
+        role: 'assistant' as const,
+        content: 'Chào anh Danny! Em đã lọc danh sách.\n<action type="APPLY_FILTER" label="🎯 Lọc VIP">{"filter":"vip"}</action>',
+        thinking: 'Phân tích yêu cầu lọc VIP của quản trị viên...',
+        createdAt: '2026-10-28T04:00:00.000Z',
+      };
+
+      const result = formatBackendAiMessage(backendMsg, mockCurrentUser);
+
+      expect(result.id).toBe('msg-backend-1');
+      expect(result.isAiBot).toBe(true);
+      expect(result.senderId).toBe('wings-ai-copilot');
+      expect(result.senderName).toBe('🤖 MAI');
+      expect(result.senderRole).toBe('mOS AI');
+      expect(result.text).toBe('Chào anh Danny! Em đã lọc danh sách.');
+      expect(result.aiThinking).toBe('Phân tích yêu cầu lọc VIP của quản trị viên...');
+      expect(result.aiAction).toEqual({
+        type: 'APPLY_FILTER',
+        label: '🎯 Lọc VIP',
+        payload: { filter: 'vip' },
+      });
+      expect(result.aiActions).toHaveLength(1);
+    });
+
+    it('formats user message with current user info', () => {
+      const backendMsg = {
+        id: 'msg-user-1',
+        sessionId: 'session-ai-1',
+        role: 'user' as const,
+        content: 'Cho anh xem doanh thu hôm nay của tiệm',
+        createdAt: '2026-10-28T04:01:00.000Z',
+      };
+
+      const result = formatBackendAiMessage(backendMsg, mockCurrentUser);
+
+      expect(result.id).toBe('msg-user-1');
+      expect(result.isAiBot).toBe(false);
+      expect(result.senderId).toBe('1');
+      expect(result.senderName).toBe('Danny Do');
+      expect(result.senderRole).toBe('super_admin');
+      expect(result.text).toBe('Cho anh xem doanh thu hôm nay của tiệm');
+    });
+
+    it('deduplicates multiple suggested actions correctly', () => {
+      const backendMsg = {
+        id: 'msg-backend-2',
+        sessionId: 'session-ai-1',
+        role: 'assistant' as const,
+        content:
+          'Gợi ý bộ lọc:\n<action type="APPLY_FILTER" label="Lọc 1">{"f":1}</action>\n<action type="APPLY_FILTER" label="Lọc 2">{"f":2}</action>',
+        suggestedActions: [{ type: 'APPLY_FILTER' as const, label: 'Lọc 1', payload: { f: 1 } }],
+        createdAt: '2026-10-28T04:02:00.000Z',
+      };
+
+      const result = formatBackendAiMessage(backendMsg, mockCurrentUser);
+
+      expect(result.text).toBe('Gợi ý bộ lọc:');
+      expect(result.aiActions).toHaveLength(2);
+      expect(result.aiActions?.[0].label).toBe('Lọc 1');
+      expect(result.aiActions?.[1].label).toBe('Lọc 2');
     });
   });
 });

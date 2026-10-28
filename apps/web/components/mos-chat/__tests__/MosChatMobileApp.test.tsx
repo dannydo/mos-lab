@@ -173,6 +173,7 @@ vi.mock('../../../lib/api-client', () => ({
         },
       }),
       listSessions: vi.fn().mockResolvedValue({ sessions: [] }),
+      getSession: vi.fn().mockResolvedValue({ session: { id: 'sess-1' }, messages: [] }),
       createSession: vi.fn().mockResolvedValue({ session: { id: 'sess-1' } }),
     },
   },
@@ -1690,5 +1691,67 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     await waitFor(() => {
       expect(screen.getByText('Trợ lý mOS AI (MAI)')).toBeTruthy();
     });
+  });
+
+  it('synchronizes AI chat messages between mobile and desktop from backend session (MOS-BUG-170)', async () => {
+    // Mock existing desktop session discovered on backend
+    (apiClient.ai.listSessions as ReturnType<typeof vi.fn>).mockResolvedValue({
+      sessions: [
+        {
+          id: 'sess-sync-desktop',
+          title: 'Phân tích doanh số desktop',
+          scope: 'mos-chat-private',
+          createdAt: '2026-10-28T03:00:00.000Z',
+          updatedAt: '2026-10-28T03:30:00.000Z',
+        },
+      ],
+    });
+
+    (apiClient.ai.getSession as ReturnType<typeof vi.fn>).mockResolvedValue({
+      session: {
+        id: 'sess-sync-desktop',
+        title: 'Phân tích doanh số desktop',
+      },
+      messages: [
+        {
+          id: 'msg-desk-user-1',
+          sessionId: 'sess-sync-desktop',
+          role: 'user',
+          content: 'Tin nhắn gửi từ Desktop',
+          createdAt: '2026-10-28T03:10:00.000Z',
+        },
+        {
+          id: 'msg-desk-bot-1',
+          sessionId: 'sess-sync-desktop',
+          role: 'assistant',
+          content: 'Phản hồi từ MAI trên Desktop',
+          thinking: 'Đã tổng hợp số liệu cho Danny',
+          createdAt: '2026-10-28T03:10:05.000Z',
+        },
+      ],
+    });
+
+    render(
+      <MosChatProvider currentUser={{ id: 99, name: 'Danny Do', role: 'super_admin' }}>
+        <MosChatMobileApp standalone={true} />
+      </MosChatProvider>
+    );
+
+    // Navigate to AI Copilot conversation
+    await waitFor(() => {
+      expect(screen.getByText('🤖 MAI')).toBeTruthy();
+    });
+    fireEvent.click(screen.getByText('🤖 MAI'));
+
+    // Verify messages sent on desktop are rendered on mobile
+    await waitFor(() => {
+      expect(screen.getByText('Tin nhắn gửi từ Desktop')).toBeTruthy();
+      expect(screen.getByText('Phản hồi từ MAI trên Desktop')).toBeTruthy();
+    });
+
+    expect(apiClient.ai.listSessions).toHaveBeenCalledWith(
+      expect.objectContaining({ scope: 'mos-chat-private' })
+    );
+    expect(apiClient.ai.getSession).toHaveBeenCalledWith('sess-sync-desktop');
   });
 });

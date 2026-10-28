@@ -213,6 +213,7 @@ import {
   isPdfAttachment,
   formatFileSize,
   getFileExtension,
+  formatBackendAiMessage,
 } from './utils/chat-helpers';
 import { useMosChatBridgeListener } from './store/mos-chat-bridge';
 import { mergeDeltaConversations, mergeDeltaTasks, useChatRealtimeSync } from './store/useChatRealtimeSync';
@@ -793,88 +794,72 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     }
   }, [aiPersonalStorageKey, aiSessionId, aiMessages]);
 
-  // Synchronize latest messages from backend if aiSessionId exists
-  useEffect(() => {
-    if (!aiSessionId) return;
-    let isCancelled = false;
-    (async () => {
+  // Synchronize latest messages from backend if aiSessionId exists or discover active session (MOS-BUG-170)
+  const isSyncingDesktopAiRef = useRef<boolean>(false);
+  const syncDesktopAiSession = useCallback(
+    async (targetSessionId?: string | null) => {
+      if (!currentUser?.id && !currentUser?.username) return;
+      if (isSyncingDesktopAiRef.current) return;
+      isSyncingDesktopAiRef.current = true;
       try {
-        const sessRes = await apiClient.ai.getSession(aiSessionId);
-        if (isCancelled || !sessRes?.messages || sessRes.messages.length === 0) return;
+        let resolvedSessionId = targetSessionId || aiSessionId;
 
-        const mappedBackend: MosChatMessage[] = sessRes.messages.map((bm) => {
-          const isBot = bm.role === 'assistant';
-          const rawContent = bm.content || '';
-          const actionMatches: NonNullable<MosChatMessage['aiAction']>[] = [];
-          const regex = /<action(?:\s+type="([^"]*)")?(?:\s+label="([^"]*)")?>([\s\S]*?)<\/action>/gi;
-          let match: RegExpExecArray | null;
-          while ((match = regex.exec(rawContent)) !== null) {
-            try {
-              actionMatches.push({
-                type: match[1]?.trim() || 'APPLY_FILTER',
-                label: match[2]?.trim() || 'Áp dụng bộ lọc gợi ý',
-                payload: JSON.parse(match[3]?.trim() || '{}'),
-              });
-            } catch {
-              // ignore
-            }
+        // Discover active mos-chat-private session if missing locally
+        if (!resolvedSessionId) {
+          const sessionsRes = await apiClient.ai.listSessions({ scope: 'mos-chat-private' });
+          if (sessionsRes?.sessions && sessionsRes.sessions.length > 0) {
+            resolvedSessionId = sessionsRes.sessions[0].id;
+            setAiSessionId(resolvedSessionId);
           }
-          const cleanText = rawContent
-            .replace(/<action[\s\S]*?<\/action>/gi, '')
-            .replace(/<\/?action[^>]*>/gi, '')
-            .replace(/\n{3,}/g, '\n\n')
-            .trim();
+        }
 
-          const existingActions = bm.suggestedActions || (bm.suggestedAction ? [bm.suggestedAction] : []);
-          const allActions = [...existingActions, ...actionMatches].filter(
-            (act, index, self) =>
-              index ===
-              self.findIndex((a) => a.label === act.label && JSON.stringify(a.payload) === JSON.stringify(act.payload))
-          );
+        if (!resolvedSessionId) return;
 
-          return {
-            id: bm.id,
-            conversationId: AI_COPILOT_CONV_ID,
-            senderId: isBot ? 'wings-ai-copilot' : String(currentUser?.id || 'me'),
-            senderName: isBot ? '🤖 MAI' : currentUser?.displayName || currentUser?.username || 'Bạn',
-            senderRole: isBot ? 'mOS AI' : currentUser?.role || 'Staff',
-            senderAvatar: isBot ? 'MAI' : 'U',
-            roleColor: isBot ? '#8b5cf6' : '#2563eb',
-            isAiBot: isBot,
-            text: cleanText,
-            aiThinking: bm.thinking || null,
-            aiAction: allActions[0] || bm.suggestedAction || null,
-            aiActions: allActions.length > 0 ? allActions : null,
-            timeLabel: dayjs(bm.createdAt).format('HH:mm'),
-            createdAt: bm.createdAt,
-            reactions: {},
-            thread: [],
-          };
-        });
+        const sessRes = await apiClient.ai.getSession(resolvedSessionId);
+        if (!sessRes?.messages || sessRes.messages.length === 0) return;
 
+        const mappedBackend: MosChatMessage[] = sessRes.messages.map((bm) => formatBackendAiMessage(bm, currentUser));
         const welcome = buildInitialAiWelcomeMessage();
         setAiMessages((prev) => {
-          // If local has pending optimistic messages, keep them
-          if (prev.length > mappedBackend.length + 1) {
-            return prev;
-          }
-          return [welcome, ...mappedBackend];
+          const serverMsgIds = new Set(mappedBackend.map((m) => m.id));
+          const pendingOptimistic = prev.filter(
+            (m) => (m.id.startsWith('temp_') || m.id.startsWith('msg-user-')) && !serverMsgIds.has(m.id)
+          );
+          return [welcome, ...mappedBackend, ...pendingOptimistic];
         });
       } catch {
         // ignore sync error
+      } finally {
+        isSyncingDesktopAiRef.current = false;
       }
-    })();
-    return () => {
-      isCancelled = true;
+    },
+    [aiSessionId, buildInitialAiWelcomeMessage, currentUser]
+  );
+
+  useEffect(() => {
+    void syncDesktopAiSession();
+  }, [syncDesktopAiSession]);
+
+  useEffect(() => {
+    if (activeConvId === AI_COPILOT_CONV_ID) {
+      void syncDesktopAiSession();
+    }
+  }, [activeConvId, syncDesktopAiSession]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && (activeConvId === AI_COPILOT_CONV_ID || aiSessionId)) {
+        void syncDesktopAiSession();
+      }
     };
-  }, [
-    aiSessionId,
-    buildInitialAiWelcomeMessage,
-    currentUser?.id,
-    currentUser?.displayName,
-    currentUser?.username,
-    currentUser?.role,
-  ]);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
+    };
+  }, [activeConvId, aiSessionId, syncDesktopAiSession]);
 
   const currentUserStaffMember = useMemo<MosChatStaffMember>(() => {
     const myId = Number(currentUser?.id);
