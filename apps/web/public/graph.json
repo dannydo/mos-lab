@@ -190,9 +190,7 @@
         "fieldCount": 13,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "staffId"
-        ],
+        "relations": ["staffId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -228,9 +226,7 @@
         "fieldCount": 9,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "activationId"
-        ],
+        "relations": ["activationId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -248,9 +244,7 @@
         "fieldCount": 7,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "activationId"
-        ],
+        "relations": ["activationId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -286,9 +280,7 @@
         "fieldCount": 7,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "decisionId"
-        ],
+        "relations": ["decisionId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -306,9 +298,7 @@
         "fieldCount": 10,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "staffId"
-        ],
+        "relations": ["staffId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -470,9 +460,7 @@
         "fieldCount": 17,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "departmentId"
-        ],
+        "relations": ["departmentId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -490,9 +478,7 @@
         "fieldCount": 13,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "teamId"
-        ],
+        "relations": ["teamId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -528,9 +514,7 @@
         "fieldCount": 6,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "policyId"
-        ],
+        "relations": ["policyId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -584,9 +568,7 @@
         "fieldCount": 23,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "campaignId"
-        ],
+        "relations": ["campaignId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -604,9 +586,7 @@
         "fieldCount": 11,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "batchId"
-        ],
+        "relations": ["batchId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -714,9 +694,7 @@
         "fieldCount": 28,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "campaignId"
-        ],
+        "relations": ["campaignId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -734,10 +712,7 @@
         "fieldCount": 12,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "campaignId",
-          "campaignCustomerId"
-        ],
+        "relations": ["campaignId", "campaignCustomerId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -755,9 +730,7 @@
         "fieldCount": 13,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "campaignId"
-        ],
+        "relations": ["campaignId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -775,9 +748,7 @@
         "fieldCount": 14,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "campaignId"
-        ],
+        "relations": ["campaignId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -795,10 +766,7 @@
         "fieldCount": 11,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "campaignCustomerId",
-          "touchpointId"
-        ],
+        "relations": ["campaignCustomerId", "touchpointId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -834,9 +802,7 @@
         "fieldCount": 22,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "happyCallTaskId"
-        ],
+        "relations": ["happyCallTaskId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -854,10 +820,7 @@
         "fieldCount": 24,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "surveyRatingId",
-          "happyCallTaskId"
-        ],
+        "relations": ["surveyRatingId", "happyCallTaskId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -875,9 +838,7 @@
         "fieldCount": 23,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "ticketId"
-        ],
+        "relations": ["ticketId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -895,9 +856,7 @@
         "fieldCount": 8,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "ticketId"
-        ],
+        "relations": ["ticketId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -933,9 +892,7 @@
         "fieldCount": 12,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "campaignId"
-        ],
+        "relations": ["campaignId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1043,9 +1000,7 @@
         "fieldCount": 10,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "leadId"
-        ],
+        "relations": ["leadId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1063,9 +1018,7 @@
         "fieldCount": 15,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "leadId"
-        ],
+        "relations": ["leadId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1137,10 +1090,7 @@
         "fieldCount": 38,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "leadId",
-          "workshopParticipantId"
-        ],
+        "relations": ["leadId", "workshopParticipantId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1176,9 +1126,7 @@
         "fieldCount": 11,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "assessmentId"
-        ],
+        "relations": ["assessmentId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1214,10 +1162,7 @@
         "fieldCount": 14,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "campaignId",
-          "leadId"
-        ],
+        "relations": ["campaignId", "leadId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1235,10 +1180,7 @@
         "fieldCount": 55,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "campaignId",
-          "agendaTemplateId"
-        ],
+        "relations": ["campaignId", "agendaTemplateId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1274,9 +1216,7 @@
         "fieldCount": 10,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "templateId"
-        ],
+        "relations": ["templateId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1294,11 +1234,7 @@
         "fieldCount": 41,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "workshopId",
-          "campaignLeadId",
-          "primaryInstructorId"
-        ],
+        "relations": ["workshopId", "campaignLeadId", "primaryInstructorId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1316,9 +1252,7 @@
         "fieldCount": 12,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "workshopId"
-        ],
+        "relations": ["workshopId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1354,9 +1288,7 @@
         "fieldCount": 11,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "templateId"
-        ],
+        "relations": ["templateId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1374,10 +1306,7 @@
         "fieldCount": 8,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "participantId",
-          "menuItemId"
-        ],
+        "relations": ["participantId", "menuItemId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1395,9 +1324,7 @@
         "fieldCount": 14,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "workshopId"
-        ],
+        "relations": ["workshopId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1415,9 +1342,7 @@
         "fieldCount": 8,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "equipmentPackageId"
-        ],
+        "relations": ["equipmentPackageId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1453,9 +1378,7 @@
         "fieldCount": 13,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "templateId"
-        ],
+        "relations": ["templateId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1473,9 +1396,7 @@
         "fieldCount": 8,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "templatePackageId"
-        ],
+        "relations": ["templatePackageId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1493,10 +1414,7 @@
         "fieldCount": 9,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "participantId",
-          "equipmentPackageId"
-        ],
+        "relations": ["participantId", "equipmentPackageId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1514,9 +1432,7 @@
         "fieldCount": 13,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "workshopId"
-        ],
+        "relations": ["workshopId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1534,9 +1450,7 @@
         "fieldCount": 8,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "designItemId"
-        ],
+        "relations": ["designItemId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1572,9 +1486,7 @@
         "fieldCount": 12,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "templateId"
-        ],
+        "relations": ["templateId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1592,9 +1504,7 @@
         "fieldCount": 8,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "templateItemId"
-        ],
+        "relations": ["templateItemId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1612,10 +1522,7 @@
         "fieldCount": 9,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "participantId",
-          "designItemId"
-        ],
+        "relations": ["participantId", "designItemId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1633,10 +1540,7 @@
         "fieldCount": 10,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "workshopId",
-          "participantId"
-        ],
+        "relations": ["workshopId", "participantId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1654,9 +1558,7 @@
         "fieldCount": 11,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "participantId"
-        ],
+        "relations": ["participantId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1674,9 +1576,7 @@
         "fieldCount": 11,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "participantId"
-        ],
+        "relations": ["participantId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1694,9 +1594,7 @@
         "fieldCount": 20,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "workshopId"
-        ],
+        "relations": ["workshopId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1714,10 +1612,7 @@
         "fieldCount": 10,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "workshopId",
-          "agendaItemId"
-        ],
+        "relations": ["workshopId", "agendaItemId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1735,9 +1630,7 @@
         "fieldCount": 22,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "workshopId"
-        ],
+        "relations": ["workshopId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1755,9 +1648,7 @@
         "fieldCount": 17,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "quizId"
-        ],
+        "relations": ["quizId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1775,9 +1666,7 @@
         "fieldCount": 8,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "questionId"
-        ],
+        "relations": ["questionId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1795,13 +1684,7 @@
         "fieldCount": 16,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "workshopId",
-          "participantId",
-          "quizId",
-          "questionId",
-          "optionId"
-        ],
+        "relations": ["workshopId", "participantId", "quizId", "questionId", "optionId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1819,12 +1702,7 @@
         "fieldCount": 19,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "workshopId",
-          "participantId",
-          "quizId",
-          "questionId"
-        ],
+        "relations": ["workshopId", "participantId", "quizId", "questionId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1842,12 +1720,7 @@
         "fieldCount": 18,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "workshopId",
-          "participantId",
-          "assessmentId",
-          "instructorId"
-        ],
+        "relations": ["workshopId", "participantId", "assessmentId", "instructorId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1865,9 +1738,7 @@
         "fieldCount": 13,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "campaignId"
-        ],
+        "relations": ["campaignId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1885,10 +1756,7 @@
         "fieldCount": 16,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "campaignLeadId",
-          "touchpointId"
-        ],
+        "relations": ["campaignLeadId", "touchpointId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1924,9 +1792,7 @@
         "fieldCount": 13,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "payrollPeriodId"
-        ],
+        "relations": ["payrollPeriodId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1944,9 +1810,7 @@
         "fieldCount": 16,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "payrollPeriodId"
-        ],
+        "relations": ["payrollPeriodId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1964,9 +1828,7 @@
         "fieldCount": 12,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "payrollPeriodId"
-        ],
+        "relations": ["payrollPeriodId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -1984,9 +1846,7 @@
         "fieldCount": 8,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "settlementId"
-        ],
+        "relations": ["settlementId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2022,9 +1882,7 @@
         "fieldCount": 15,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "caseId"
-        ],
+        "relations": ["caseId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2042,10 +1900,7 @@
         "fieldCount": 21,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "caseId",
-          "snapshotId"
-        ],
+        "relations": ["caseId", "snapshotId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2063,9 +1918,7 @@
         "fieldCount": 10,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "caseId"
-        ],
+        "relations": ["caseId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2101,9 +1954,7 @@
         "fieldCount": 13,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "holidayId"
-        ],
+        "relations": ["holidayId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2121,9 +1972,7 @@
         "fieldCount": 23,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "holidayId"
-        ],
+        "relations": ["holidayId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2141,9 +1990,7 @@
         "fieldCount": 19,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "holidayId"
-        ],
+        "relations": ["holidayId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2179,10 +2026,7 @@
         "fieldCount": 32,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "holidayId",
-          "rosterId"
-        ],
+        "relations": ["holidayId", "rosterId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2200,10 +2044,7 @@
         "fieldCount": 9,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "holidayId",
-          "ledgerId"
-        ],
+        "relations": ["holidayId", "ledgerId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2221,9 +2062,7 @@
         "fieldCount": 11,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "holidayId"
-        ],
+        "relations": ["holidayId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2259,9 +2098,7 @@
         "fieldCount": 13,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "reportId"
-        ],
+        "relations": ["reportId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2279,9 +2116,7 @@
         "fieldCount": 11,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "reportId"
-        ],
+        "relations": ["reportId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2299,10 +2134,7 @@
         "fieldCount": 11,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "reportId",
-          "commentId"
-        ],
+        "relations": ["reportId", "commentId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2320,9 +2152,7 @@
         "fieldCount": 10,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "reportId"
-        ],
+        "relations": ["reportId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2340,9 +2170,7 @@
         "fieldCount": 10,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "reportId"
-        ],
+        "relations": ["reportId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2378,9 +2206,7 @@
         "fieldCount": 9,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "jobId"
-        ],
+        "relations": ["jobId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2434,9 +2260,7 @@
         "fieldCount": 7,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "workerId"
-        ],
+        "relations": ["workerId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2472,9 +2296,7 @@
         "fieldCount": 6,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "conversationId"
-        ],
+        "relations": ["conversationId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2492,9 +2314,7 @@
         "fieldCount": 16,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "reportId"
-        ],
+        "relations": ["reportId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2512,9 +2332,7 @@
         "fieldCount": 19,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "reportId"
-        ],
+        "relations": ["reportId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2532,9 +2350,7 @@
         "fieldCount": 45,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "reportId"
-        ],
+        "relations": ["reportId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2642,9 +2458,7 @@
         "fieldCount": 10,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "gameId"
-        ],
+        "relations": ["gameId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2662,10 +2476,7 @@
         "fieldCount": 16,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "gameId",
-          "teamId"
-        ],
+        "relations": ["gameId", "teamId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2683,9 +2494,7 @@
         "fieldCount": 16,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "gameId"
-        ],
+        "relations": ["gameId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2721,9 +2530,7 @@
         "fieldCount": 8,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "sessionId"
-        ],
+        "relations": ["sessionId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2777,9 +2584,7 @@
         "fieldCount": 10,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "materialId"
-        ],
+        "relations": ["materialId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2797,10 +2602,7 @@
         "fieldCount": 12,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "sessionId",
-          "materialId"
-        ],
+        "relations": ["sessionId", "materialId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -2836,10 +2638,7 @@
         "fieldCount": 14,
         "readOnly": false,
         "isCatalogException": false,
-        "relations": [
-          "sessionId",
-          "stepTemplateId"
-        ],
+        "relations": ["sessionId", "stepTemplateId"],
         "dbName": "mos_lab",
         "accessMode": "Read-Write (CRM)"
       }
@@ -8313,7 +8112,7 @@
         "path": "/api/chat/bootstrap",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1297
+        "line": 1317
       }
     },
     {
@@ -8327,7 +8126,7 @@
         "path": "/api/chat/unread-summary",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1382
+        "line": 1402
       }
     },
     {
@@ -8341,7 +8140,7 @@
         "path": "/api/chat/user-prefs",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1439
+        "line": 1459
       }
     },
     {
@@ -8355,7 +8154,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1514
+        "line": 1534
       }
     },
     {
@@ -8369,7 +8168,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1540
+        "line": 1560
       }
     },
     {
@@ -8383,7 +8182,7 @@
         "path": "/api/chat/upload-image",
         "module": "chat",
         "handler": "preHandler",
-        "line": 1630
+        "line": 1650
       }
     },
     {
@@ -8397,7 +8196,7 @@
         "path": "/api/chat/upload-file",
         "module": "chat",
         "handler": "preHandler",
-        "line": 1640
+        "line": 1660
       }
     },
     {
@@ -8411,7 +8210,7 @@
         "path": "/api/chat/media/:fileName",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1650
+        "line": 1670
       }
     },
     {
@@ -8425,7 +8224,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1746
+        "line": 1766
       }
     },
     {
@@ -8439,7 +8238,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1751
+        "line": 1771
       }
     },
     {
@@ -8453,7 +8252,7 @@
         "path": "/api/chat/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1756
+        "line": 1776
       }
     },
     {
@@ -8467,7 +8266,7 @@
         "path": "/api/chat/threads",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1893
+        "line": 1913
       }
     },
     {
@@ -8481,7 +8280,7 @@
         "path": "/api/chat/threads/:messageId/extract-checklist",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2031
+        "line": 2051
       }
     },
     {
@@ -8495,7 +8294,7 @@
         "path": "/api/chat/threads/move",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2115
+        "line": 2135
       }
     },
     {
@@ -8509,7 +8308,7 @@
         "path": "/api/chat/messages/:messageId/reaction",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2256
+        "line": 2276
       }
     },
     {
@@ -8523,7 +8322,7 @@
         "path": "/api/chat/messages/:messageId/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2345
+        "line": 2365
       }
     },
     {
@@ -8537,7 +8336,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2376
+        "line": 2396
       }
     },
     {
@@ -8551,7 +8350,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2458
+        "line": 2478
       }
     },
     {
@@ -8565,7 +8364,7 @@
         "path": "/api/chat/messages/:messageId/restore",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2533
+        "line": 2553
       }
     },
     {
@@ -8579,7 +8378,7 @@
         "path": "/api/chat/messages/:messageId/buzz",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2615
+        "line": 2635
       }
     },
     {
@@ -8593,7 +8392,7 @@
         "path": "/api/chat/tasks",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2727
+        "line": 2747
       }
     },
     {
@@ -8607,7 +8406,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2987
+        "line": 3007
       }
     },
     {
@@ -8621,7 +8420,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3223
+        "line": 3243
       }
     },
     {
@@ -8635,7 +8434,7 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3272
+        "line": 3292
       }
     },
     {
@@ -8649,7 +8448,7 @@
         "path": "/api/chat/conversations/:id/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3467
+        "line": 3487
       }
     },
     {
@@ -8663,7 +8462,7 @@
         "path": "/api/chat/conversations/:id/threads/:messageId/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3551
+        "line": 3571
       }
     },
     {
@@ -8677,7 +8476,7 @@
         "path": "/api/chat/conversations/:id/unread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3611
+        "line": 3631
       }
     },
     {
@@ -8691,7 +8490,7 @@
         "path": "/api/chat/conversations/:id/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3655
+        "line": 3675
       }
     },
     {
@@ -8705,7 +8504,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3700
+        "line": 3720
       }
     },
     {
@@ -8719,7 +8518,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3806
+        "line": 3826
       }
     },
     {
@@ -8733,7 +8532,7 @@
         "path": "/api/chat/conversations/:id/nickname",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3881
+        "line": 3901
       }
     },
     {
@@ -8747,7 +8546,7 @@
         "path": "/api/chat/conversations/:id",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3987
+        "line": 4007
       }
     },
     {
@@ -8761,7 +8560,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4103
+        "line": 4123
       }
     },
     {
@@ -8775,7 +8574,7 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4184
+        "line": 4204
       }
     },
     {
@@ -8789,7 +8588,7 @@
         "path": "/api/chat/workflows",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4255
+        "line": 4275
       }
     },
     {
@@ -8803,7 +8602,7 @@
         "path": "/api/chat/workflows/instances",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4278
+        "line": 4298
       }
     },
     {
@@ -8817,7 +8616,7 @@
         "path": "/api/chat/workflows/instances/:instanceId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4459
+        "line": 4479
       }
     },
     {
@@ -8831,7 +8630,7 @@
         "path": "/api/chat/workflows/templates/from-thread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4636
+        "line": 4656
       }
     },
     {
@@ -8845,7 +8644,7 @@
         "path": "/api/chat/stream",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4731
+        "line": 4751
       }
     },
     {
@@ -8859,7 +8658,7 @@
         "path": "/api/chat/sync",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4744
+        "line": 4764
       }
     },
     {
@@ -8873,7 +8672,7 @@
         "path": "/api/chat/conversations/:conversationId/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4807
+        "line": 4827
       }
     },
     {
@@ -10862,20 +10661,6 @@
         "module": "kpi",
         "handler": "inlineHandler",
         "line": 1414
-      }
-    },
-    {
-      "id": "route:GET:/api/kpi/cb-live-telemetry",
-      "type": "FastifyRoute",
-      "label": "GET /api/kpi/cb-live-telemetry",
-      "category": "Fastify REST Route",
-      "filePath": "apps/api/src/modules/kpi/routes/cb-telemetry.routes.ts",
-      "metadata": {
-        "method": "GET",
-        "path": "/api/kpi/cb-live-telemetry",
-        "module": "kpi",
-        "handler": "inlineHandler",
-        "line": 7
       }
     },
     {
@@ -13757,10 +13542,7 @@
       "metadata": {
         "routePath": "/academy/workshops/display/[code]",
         "apiCallsCount": 2,
-        "apiCalls": [
-          "academyWorkshopsPublic.redeemDisplay",
-          "academyWorkshopsPublic.getState"
-        ]
+        "apiCalls": ["academyWorkshopsPublic.redeemDisplay", "academyWorkshopsPublic.getState"]
       }
     },
     {
@@ -13772,9 +13554,7 @@
       "metadata": {
         "routePath": "/academy/workshops/join/[token]",
         "apiCallsCount": 1,
-        "apiCalls": [
-          "academyWorkshopsPublic.redeemQr"
-        ]
+        "apiCalls": ["academyWorkshopsPublic.redeemQr"]
       }
     },
     {
@@ -13875,11 +13655,7 @@
       "metadata": {
         "routePath": "/dashboard/academy-leads/campaigns",
         "apiCallsCount": 3,
-        "apiCalls": [
-          "academySales.campaigns",
-          "academySales.listStaff",
-          "academySales.listCourses"
-        ]
+        "apiCalls": ["academySales.campaigns", "academySales.listStaff", "academySales.listCourses"]
       }
     },
     {
@@ -13891,11 +13667,7 @@
       "metadata": {
         "routePath": "/dashboard/academy-leads/courses",
         "apiCallsCount": 3,
-        "apiCalls": [
-          "academySales.listCourses",
-          "academySales.updateCourse",
-          "academySales.createCourse"
-        ]
+        "apiCalls": ["academySales.listCourses", "academySales.updateCourse", "academySales.createCourse"]
       }
     },
     {
@@ -13965,10 +13737,7 @@
       "metadata": {
         "routePath": "/dashboard/academy-leads/payments",
         "apiCallsCount": 2,
-        "apiCalls": [
-          "academySales.listTalentPaymentManagement",
-          "academySales.recordTalentAssessmentPayment"
-        ]
+        "apiCalls": ["academySales.listTalentPaymentManagement", "academySales.recordTalentAssessmentPayment"]
       }
     },
     {
@@ -13980,9 +13749,7 @@
       "metadata": {
         "routePath": "/dashboard/academy-leads/workshops/[slug]/live",
         "apiCallsCount": 1,
-        "apiCalls": [
-          "academySales.workshops"
-        ]
+        "apiCalls": ["academySales.workshops"]
       }
     },
     {
@@ -13994,9 +13761,7 @@
       "metadata": {
         "routePath": "/dashboard/academy-leads/workshops/[slug]",
         "apiCallsCount": 1,
-        "apiCalls": [
-          "academySales.workshops"
-        ]
+        "apiCalls": ["academySales.workshops"]
       }
     },
     {
@@ -14008,9 +13773,7 @@
       "metadata": {
         "routePath": "/dashboard/academy-leads/workshops",
         "apiCallsCount": 1,
-        "apiCalls": [
-          "academySales.workshops"
-        ]
+        "apiCalls": ["academySales.workshops"]
       }
     },
     {
@@ -14022,9 +13785,7 @@
       "metadata": {
         "routePath": "/dashboard/appointments",
         "apiCallsCount": 1,
-        "apiCalls": [
-          "customers.getMissedSummary"
-        ]
+        "apiCalls": ["customers.getMissedSummary"]
       }
     },
     {
@@ -14036,9 +13797,7 @@
       "metadata": {
         "routePath": "/dashboard/architecture",
         "apiCallsCount": 1,
-        "apiCalls": [
-          "auth.me"
-        ]
+        "apiCalls": ["auth.me"]
       }
     },
     {
@@ -14062,9 +13821,7 @@
       "metadata": {
         "routePath": "/dashboard/branches",
         "apiCallsCount": 1,
-        "apiCalls": [
-          "catalog.branches"
-        ]
+        "apiCalls": ["catalog.branches"]
       }
     },
     {
@@ -14076,10 +13833,7 @@
       "metadata": {
         "routePath": "/dashboard/bug-reports",
         "apiCallsCount": 2,
-        "apiCalls": [
-          "experienceJournal.list",
-          "experienceJournal.triage"
-        ]
+        "apiCalls": ["experienceJournal.list", "experienceJournal.triage"]
       }
     },
     {
@@ -14168,10 +13922,7 @@
       "metadata": {
         "routePath": "/dashboard/cc",
         "apiCallsCount": 2,
-        "apiCalls": [
-          "kpi.getCcXoayReport",
-          "kpi.getCcLeaderboard"
-        ]
+        "apiCalls": ["kpi.getCcXoayReport", "kpi.getCcLeaderboard"]
       }
     },
     {
@@ -14243,9 +13994,7 @@
       "metadata": {
         "routePath": "/dashboard/design-system",
         "apiCallsCount": 1,
-        "apiCalls": [
-          "auth.me"
-        ]
+        "apiCalls": ["auth.me"]
       }
     },
     {
@@ -14269,11 +14018,7 @@
       "metadata": {
         "routePath": "/dashboard/fal",
         "apiCallsCount": 3,
-        "apiCalls": [
-          "fal.listCases",
-          "fal.submitLogExplanation",
-          "fal.approveLog"
-        ]
+        "apiCalls": ["fal.listCases", "fal.submitLogExplanation", "fal.approveLog"]
       }
     },
     {
@@ -14445,10 +14190,7 @@
       "metadata": {
         "routePath": "/dashboard",
         "apiCallsCount": 2,
-        "apiCalls": [
-          "dashboard.getToday",
-          "dashboard.getRevenueHourly"
-        ]
+        "apiCalls": ["dashboard.getToday", "dashboard.getRevenueHourly"]
       }
     },
     {
@@ -14460,10 +14202,7 @@
       "metadata": {
         "routePath": "/dashboard/payroll-pilot",
         "apiCallsCount": 2,
-        "apiCalls": [
-          "payrollLedger.ccPilotDashboard",
-          "payrollLedger.openCurrentCcPilotPeriod"
-        ]
+        "apiCalls": ["payrollLedger.ccPilotDashboard", "payrollLedger.openCurrentCcPilotPeriod"]
       }
     },
     {
@@ -14493,12 +14232,7 @@
       "metadata": {
         "routePath": "/dashboard/plans",
         "apiCallsCount": 4,
-        "apiCalls": [
-          "plans.getWeekly",
-          "plans.getSuggestions",
-          "plans.create",
-          "plans.confirm"
-        ]
+        "apiCalls": ["plans.getWeekly", "plans.getSuggestions", "plans.create", "plans.confirm"]
       }
     },
     {
@@ -14540,9 +14274,7 @@
       "metadata": {
         "routePath": "/dashboard/referrals",
         "apiCallsCount": 1,
-        "apiCalls": [
-          "customers.getReferrals"
-        ]
+        "apiCalls": ["customers.getReferrals"]
       }
     },
     {
@@ -14554,9 +14286,7 @@
       "metadata": {
         "routePath": "/dashboard/schedule-calendar",
         "apiCallsCount": 1,
-        "apiCalls": [
-          "customers.getAppointments"
-        ]
+        "apiCalls": ["customers.getAppointments"]
       }
     },
     {
@@ -14568,11 +14298,7 @@
       "metadata": {
         "routePath": "/dashboard/staff/menu-access",
         "apiCallsCount": 3,
-        "apiCalls": [
-          "menuAccess.getConfiguration",
-          "auth.me",
-          "menuAccess.updatePolicy"
-        ]
+        "apiCalls": ["menuAccess.getConfiguration", "auth.me", "menuAccess.updatePolicy"]
       }
     },
     {
@@ -14632,10 +14358,7 @@
       "metadata": {
         "routePath": "/dashboard/telesale-target",
         "apiCallsCount": 2,
-        "apiCalls": [
-          "telesaleTarget.getMonths",
-          "telesaleTarget.getOverview"
-        ]
+        "apiCalls": ["telesaleTarget.getMonths", "telesaleTarget.getOverview"]
       }
     },
     {
@@ -14671,10 +14394,7 @@
       "metadata": {
         "routePath": "/login",
         "apiCallsCount": 2,
-        "apiCalls": [
-          "auth.google",
-          "auth.login"
-        ]
+        "apiCalls": ["auth.google", "auth.login"]
       }
     },
     {
@@ -22507,6 +22227,54 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:CbDailyRecord",
+      "type": "SharedType",
+      "label": "CbDailyRecord",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cb-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CbDailyRecord",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CbForecastTelemetry",
+      "type": "SharedType",
+      "label": "CbForecastTelemetry",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cb-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CbForecastTelemetry",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CbTargetConfig",
+      "type": "SharedType",
+      "label": "CbTargetConfig",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cb-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CbTargetConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CbDrilldownItem",
+      "type": "SharedType",
+      "label": "CbDrilldownItem",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cb-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CbDrilldownItem",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:CbLiveTelemetryResponse",
       "type": "SharedType",
       "label": "CbLiveTelemetryResponse",
@@ -26727,6 +26495,30 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "MosChatCustomSection",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatNotificationMode",
+      "type": "SharedType",
+      "label": "MosChatNotificationMode",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatNotificationMode",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:MosChatChannelNotificationOverride",
+      "type": "SharedType",
+      "label": "MosChatChannelNotificationOverride",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/mos-chat.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "MosChatChannelNotificationOverride",
         "package": "@mos-lab/shared"
       }
     },
@@ -32851,6 +32643,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatNotificationSettings",
+      "type": "UIComponent",
+      "label": "<MosChatNotificationSettings />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/MosChatNotificationSettings.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatNotificationSettings",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatPinnedPane",
       "type": "UIComponent",
       "label": "<MosChatPinnedPane />",
@@ -36388,8 +36192,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 186832,
-        "lineCount": 4871,
+        "sizeBytes": 187972,
+        "lineCount": 4891,
         "ext": ".ts"
       }
     },
@@ -37363,8 +37167,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/cb-telemetry.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 925,
-        "lineCount": 24,
+        "sizeBytes": 1933,
+        "lineCount": 52,
         "ext": ".ts"
       }
     },
@@ -37649,8 +37453,8 @@
       "filePath": "apps/api/src/modules/kpi/services/cb-live-telemetry.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2736,
-        "lineCount": 93,
+        "sizeBytes": 2985,
+        "lineCount": 80,
         "ext": ".ts"
       }
     },
@@ -37662,8 +37466,8 @@
       "filePath": "apps/api/src/modules/kpi/services/cb-live-telemetry.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 8106,
-        "lineCount": 200,
+        "sizeBytes": 27980,
+        "lineCount": 684,
         "ext": ".ts"
       }
     },
@@ -42641,8 +42445,8 @@
       "filePath": "apps/web/app/dashboard/cb/__tests__/CbDashboard.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 3818,
-        "lineCount": 107,
+        "sizeBytes": 5011,
+        "lineCount": 152,
         "ext": ".tsx"
       }
     },
@@ -42654,8 +42458,8 @@
       "filePath": "apps/web/app/dashboard/cb/components/CbLiveTelemetryWidget.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20319,
-        "lineCount": 429,
+        "sizeBytes": 43642,
+        "lineCount": 990,
         "ext": ".tsx"
       }
     },
@@ -44461,8 +44265,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/SopTrainingPlaceholder.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5859,
-        "lineCount": 134,
+        "sizeBytes": 5927,
+        "lineCount": 135,
         "ext": ".tsx"
       }
     },
@@ -44474,8 +44278,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/SopTrainingPlaceholder.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 21979,
-        "lineCount": 457,
+        "sizeBytes": 23023,
+        "lineCount": 481,
         "ext": ".tsx"
       }
     },
@@ -46528,8 +46332,8 @@
       "filePath": "apps/web/lib/api/kpi.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 20645,
-        "lineCount": 530,
+        "sizeBytes": 21338,
+        "lineCount": 547,
         "ext": ".ts"
       }
     },
@@ -47308,8 +47112,8 @@
       "filePath": "packages/shared/src/types/cb-telemetry.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 1133,
-        "lineCount": 49,
+        "sizeBytes": 3019,
+        "lineCount": 117,
         "ext": ".ts"
       }
     },
@@ -47568,8 +47372,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 24711,
-        "lineCount": 940,
+        "sizeBytes": 25933,
+        "lineCount": 963,
         "ext": ".ts"
       }
     },
@@ -52898,13 +52702,6 @@
     {
       "id": "edge:route:DELETE:/api/kpi/bk/games/:id:ws:apps/api",
       "source": "route:DELETE:/api/kpi/bk/games/:id",
-      "target": "ws:apps/api",
-      "type": "HANDLES_ROUTE",
-      "label": "REGISTERED_IN"
-    },
-    {
-      "id": "edge:route:GET:/api/kpi/cb-live-telemetry:ws:apps/api",
-      "source": "route:GET:/api/kpi/cb-live-telemetry",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -59322,6 +59119,34 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:CbDailyRecord:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CbDailyRecord",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CbForecastTelemetry:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CbForecastTelemetry",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CbTargetConfig:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CbTargetConfig",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CbDrilldownItem:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CbDrilldownItem",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:CbLiveTelemetryResponse:ws:packages/shared",
       "source": "type:@mos-lab/shared:CbLiveTelemetryResponse",
       "target": "ws:packages/shared",
@@ -61781,6 +61606,20 @@
     {
       "id": "edge:type:@mos-lab/shared:MosChatCustomSection:ws:packages/shared",
       "source": "type:@mos-lab/shared:MosChatCustomSection",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatNotificationMode:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatNotificationMode",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:MosChatChannelNotificationOverride:ws:packages/shared",
+      "source": "type:@mos-lab/shared:MosChatChannelNotificationOverride",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -66539,6 +66378,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatNotificationSettings:ws:apps/web",
+      "source": "uicomp:MosChatNotificationSettings",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatNotificationSettings:token:color:primary",
+      "source": "uicomp:MosChatNotificationSettings",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatPinnedPane:ws:apps/web",
       "source": "uicomp:MosChatPinnedPane",
       "target": "ws:apps/web",
@@ -69698,13 +69551,6 @@
     {
       "id": "edge:file:apps/api/src/modules/kpi/services/bk-salary.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/kpi/services/bk-salary.service.ts",
-      "target": "ws:packages/shared",
-      "type": "IMPORTS",
-      "label": "IMPORTS_PACKAGE"
-    },
-    {
-      "id": "edge:file:apps/api/src/modules/kpi/services/cb-live-telemetry.service.test.ts:ws:packages/shared",
-      "source": "file:apps/api/src/modules/kpi/services/cb-live-telemetry.service.test.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -74839,6 +74685,13 @@
       "target": "prisma:legacy:user_service_balance",
       "type": "QUERIES_MODEL",
       "label": "READS_LEGACY_MODEL"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/kpi/services/cb-live-telemetry.service.ts:prisma:crm:CrmConfig",
+      "source": "file:apps/api/src/modules/kpi/services/cb-live-telemetry.service.ts",
+      "target": "prisma:crm:CrmConfig",
+      "type": "QUERIES_MODEL",
+      "label": "MUTATES_CRM_MODEL"
     },
     {
       "id": "edge:file:apps/api/src/modules/kpi/services/cc-kpi.service.ts:prisma:crm:CrmLashTypeBenchmark",
@@ -80322,13 +80175,6 @@
       "label": "CALLS auth.me"
     },
     {
-      "id": "edge:page:/dashboard/architecture:route:GET:/api/kpi/cb-live-telemetry",
-      "source": "page:/dashboard/architecture",
-      "target": "route:GET:/api/kpi/cb-live-telemetry",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
       "id": "edge:page:/dashboard/architecture:route:GET:/api/kpi/cv-tip/customer-history",
       "source": "page:/dashboard/architecture",
       "target": "route:GET:/api/kpi/cv-tip/customer-history",
@@ -81438,13 +81284,6 @@
       "id": "edge:page:/dashboard/cc:route:DELETE:/api/kpi/bk/games/:id",
       "source": "page:/dashboard/cc",
       "target": "route:DELETE:/api/kpi/bk/games/:id",
-      "type": "API_CALL",
-      "label": "CALLS kpi.getCcXoayReport"
-    },
-    {
-      "id": "edge:page:/dashboard/cc:route:GET:/api/kpi/cb-live-telemetry",
-      "source": "page:/dashboard/cc",
-      "target": "route:GET:/api/kpi/cb-live-telemetry",
       "type": "API_CALL",
       "label": "CALLS kpi.getCcXoayReport"
     },
@@ -82936,13 +82775,6 @@
       "id": "edge:page:/dashboard/design-system:route:DELETE:/api/kpi/bk/games/:id",
       "source": "page:/dashboard/design-system",
       "target": "route:DELETE:/api/kpi/bk/games/:id",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
-      "id": "edge:page:/dashboard/design-system:route:GET:/api/kpi/cb-live-telemetry",
-      "source": "page:/dashboard/design-system",
-      "target": "route:GET:/api/kpi/cb-live-telemetry",
       "type": "API_CALL",
       "label": "CALLS auth.me"
     },
@@ -86940,13 +86772,6 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:DELETE:/api/kpi/bk/games/:id",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:DELETE:/api/kpi/bk/games/:id",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.update"
-    },
-    {
-      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/kpi/cb-live-telemetry",
-      "source": "page:/dashboard/nyc/campaigns/[slug]",
-      "target": "route:GET:/api/kpi/cb-live-telemetry",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -92117,13 +91942,6 @@
       "label": "CALLS campaigns.delete"
     },
     {
-      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/cb-live-telemetry",
-      "source": "page:/dashboard/nyc/campaigns",
-      "target": "route:GET:/api/kpi/cb-live-telemetry",
-      "type": "API_CALL",
-      "label": "CALLS campaigns.delete"
-    },
-    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/kpi/cc-paystub",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/kpi/cc-paystub",
@@ -96716,13 +96534,6 @@
       "label": "CALLS auth.me"
     },
     {
-      "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/kpi/cb-live-telemetry",
-      "source": "page:/dashboard/staff/menu-access",
-      "target": "route:GET:/api/kpi/cb-live-telemetry",
-      "type": "API_CALL",
-      "label": "CALLS auth.me"
-    },
-    {
       "id": "edge:page:/dashboard/staff/menu-access:route:GET:/api/kpi/cv-tip/customer-history",
       "source": "page:/dashboard/staff/menu-access",
       "target": "route:GET:/api/kpi/cv-tip/customer-history",
@@ -100671,13 +100482,6 @@
       "label": "CALLS teams.update"
     },
     {
-      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/cb-live-telemetry",
-      "source": "page:/dashboard/staff/teams",
-      "target": "route:GET:/api/kpi/cb-live-telemetry",
-      "type": "API_CALL",
-      "label": "CALLS teams.update"
-    },
-    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/kpi/cc-paystub",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/kpi/cc-paystub",
@@ -102198,31 +102002,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3664,
+    "totalNodes": 3670,
     "totalEdges": 7751,
     "nodeTypeCounts": {
       "Workspace": 3,
       "PrismaModel": 176,
-      "FastifyRoute": 739,
+      "FastifyRoute": 738,
       "Component": 63,
-      "SharedType": 1331,
+      "SharedType": 1337,
       "DesignToken": 12,
-      "UIComponent": 317,
+      "UIComponent": 318,
       "File": 1023
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1519,
-      "HANDLES_ROUTE": 739,
-      "RENDERS": 380,
-      "USES_TOKEN": 319,
-      "IMPORTS": 572,
-      "QUERIES_MODEL": 422,
-      "API_CALL": 3800
+      "EXPORTS": 1525,
+      "HANDLES_ROUTE": 738,
+      "RENDERS": 381,
+      "USES_TOKEN": 320,
+      "IMPORTS": 571,
+      "QUERIES_MODEL": 423,
+      "API_CALL": 3793
     },
-    "fastifyRouteCount": 744,
+    "fastifyRouteCount": 743,
     "prismaModelCount": 176,
     "nextPageCount": 63,
-    "sharedTypeCount": 1331
+    "sharedTypeCount": 1337
   },
   "routes": [
     {
@@ -105958,13 +105762,6 @@
     },
     {
       "method": "GET",
-      "path": "/api/kpi/cb-live-telemetry",
-      "filePath": "apps/api/src/modules/kpi/routes/cb-telemetry.routes.ts",
-      "handler": "inlineHandler",
-      "moduleName": "kpi"
-    },
-    {
-      "method": "GET",
       "path": "/api/kpi/cc-paystub",
       "filePath": "apps/api/src/modules/kpi/routes/cc-paystub.routes.ts",
       "handler": "inlineHandler",
@@ -107514,9 +107311,7 @@
       "fieldCount": 13,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "staffId"
-      ]
+      "relations": ["staffId"]
     },
     {
       "dbSource": "crm",
@@ -107534,9 +107329,7 @@
       "fieldCount": 9,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "activationId"
-      ]
+      "relations": ["activationId"]
     },
     {
       "dbSource": "crm",
@@ -107545,9 +107338,7 @@
       "fieldCount": 7,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "activationId"
-      ]
+      "relations": ["activationId"]
     },
     {
       "dbSource": "crm",
@@ -107565,9 +107356,7 @@
       "fieldCount": 7,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "decisionId"
-      ]
+      "relations": ["decisionId"]
     },
     {
       "dbSource": "crm",
@@ -107576,9 +107365,7 @@
       "fieldCount": 10,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "staffId"
-      ]
+      "relations": ["staffId"]
     },
     {
       "dbSource": "crm",
@@ -107659,9 +107446,7 @@
       "fieldCount": 17,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "departmentId"
-      ]
+      "relations": ["departmentId"]
     },
     {
       "dbSource": "crm",
@@ -107670,9 +107455,7 @@
       "fieldCount": 13,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "teamId"
-      ]
+      "relations": ["teamId"]
     },
     {
       "dbSource": "crm",
@@ -107690,9 +107473,7 @@
       "fieldCount": 6,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "policyId"
-      ]
+      "relations": ["policyId"]
     },
     {
       "dbSource": "crm",
@@ -107719,9 +107500,7 @@
       "fieldCount": 23,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "campaignId"
-      ]
+      "relations": ["campaignId"]
     },
     {
       "dbSource": "crm",
@@ -107730,9 +107509,7 @@
       "fieldCount": 11,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "batchId"
-      ]
+      "relations": ["batchId"]
     },
     {
       "dbSource": "crm",
@@ -107786,9 +107563,7 @@
       "fieldCount": 28,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "campaignId"
-      ]
+      "relations": ["campaignId"]
     },
     {
       "dbSource": "crm",
@@ -107797,10 +107572,7 @@
       "fieldCount": 12,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "campaignId",
-        "campaignCustomerId"
-      ]
+      "relations": ["campaignId", "campaignCustomerId"]
     },
     {
       "dbSource": "crm",
@@ -107809,9 +107581,7 @@
       "fieldCount": 13,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "campaignId"
-      ]
+      "relations": ["campaignId"]
     },
     {
       "dbSource": "crm",
@@ -107820,9 +107590,7 @@
       "fieldCount": 14,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "campaignId"
-      ]
+      "relations": ["campaignId"]
     },
     {
       "dbSource": "crm",
@@ -107831,10 +107599,7 @@
       "fieldCount": 11,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "campaignCustomerId",
-        "touchpointId"
-      ]
+      "relations": ["campaignCustomerId", "touchpointId"]
     },
     {
       "dbSource": "crm",
@@ -107852,9 +107617,7 @@
       "fieldCount": 22,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "happyCallTaskId"
-      ]
+      "relations": ["happyCallTaskId"]
     },
     {
       "dbSource": "crm",
@@ -107863,10 +107626,7 @@
       "fieldCount": 24,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "surveyRatingId",
-        "happyCallTaskId"
-      ]
+      "relations": ["surveyRatingId", "happyCallTaskId"]
     },
     {
       "dbSource": "crm",
@@ -107875,9 +107635,7 @@
       "fieldCount": 23,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "ticketId"
-      ]
+      "relations": ["ticketId"]
     },
     {
       "dbSource": "crm",
@@ -107886,9 +107644,7 @@
       "fieldCount": 8,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "ticketId"
-      ]
+      "relations": ["ticketId"]
     },
     {
       "dbSource": "crm",
@@ -107906,9 +107662,7 @@
       "fieldCount": 12,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "campaignId"
-      ]
+      "relations": ["campaignId"]
     },
     {
       "dbSource": "crm",
@@ -107962,9 +107716,7 @@
       "fieldCount": 10,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "leadId"
-      ]
+      "relations": ["leadId"]
     },
     {
       "dbSource": "crm",
@@ -107973,9 +107725,7 @@
       "fieldCount": 15,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "leadId"
-      ]
+      "relations": ["leadId"]
     },
     {
       "dbSource": "crm",
@@ -108011,10 +107761,7 @@
       "fieldCount": 38,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "leadId",
-        "workshopParticipantId"
-      ]
+      "relations": ["leadId", "workshopParticipantId"]
     },
     {
       "dbSource": "crm",
@@ -108032,9 +107779,7 @@
       "fieldCount": 11,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "assessmentId"
-      ]
+      "relations": ["assessmentId"]
     },
     {
       "dbSource": "crm",
@@ -108052,10 +107797,7 @@
       "fieldCount": 14,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "campaignId",
-        "leadId"
-      ]
+      "relations": ["campaignId", "leadId"]
     },
     {
       "dbSource": "crm",
@@ -108064,10 +107806,7 @@
       "fieldCount": 55,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "campaignId",
-        "agendaTemplateId"
-      ]
+      "relations": ["campaignId", "agendaTemplateId"]
     },
     {
       "dbSource": "crm",
@@ -108085,9 +107824,7 @@
       "fieldCount": 10,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "templateId"
-      ]
+      "relations": ["templateId"]
     },
     {
       "dbSource": "crm",
@@ -108096,11 +107833,7 @@
       "fieldCount": 41,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "workshopId",
-        "campaignLeadId",
-        "primaryInstructorId"
-      ]
+      "relations": ["workshopId", "campaignLeadId", "primaryInstructorId"]
     },
     {
       "dbSource": "crm",
@@ -108109,9 +107842,7 @@
       "fieldCount": 12,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "workshopId"
-      ]
+      "relations": ["workshopId"]
     },
     {
       "dbSource": "crm",
@@ -108129,9 +107860,7 @@
       "fieldCount": 11,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "templateId"
-      ]
+      "relations": ["templateId"]
     },
     {
       "dbSource": "crm",
@@ -108140,10 +107869,7 @@
       "fieldCount": 8,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "participantId",
-        "menuItemId"
-      ]
+      "relations": ["participantId", "menuItemId"]
     },
     {
       "dbSource": "crm",
@@ -108152,9 +107878,7 @@
       "fieldCount": 14,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "workshopId"
-      ]
+      "relations": ["workshopId"]
     },
     {
       "dbSource": "crm",
@@ -108163,9 +107887,7 @@
       "fieldCount": 8,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "equipmentPackageId"
-      ]
+      "relations": ["equipmentPackageId"]
     },
     {
       "dbSource": "crm",
@@ -108183,9 +107905,7 @@
       "fieldCount": 13,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "templateId"
-      ]
+      "relations": ["templateId"]
     },
     {
       "dbSource": "crm",
@@ -108194,9 +107914,7 @@
       "fieldCount": 8,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "templatePackageId"
-      ]
+      "relations": ["templatePackageId"]
     },
     {
       "dbSource": "crm",
@@ -108205,10 +107923,7 @@
       "fieldCount": 9,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "participantId",
-        "equipmentPackageId"
-      ]
+      "relations": ["participantId", "equipmentPackageId"]
     },
     {
       "dbSource": "crm",
@@ -108217,9 +107932,7 @@
       "fieldCount": 13,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "workshopId"
-      ]
+      "relations": ["workshopId"]
     },
     {
       "dbSource": "crm",
@@ -108228,9 +107941,7 @@
       "fieldCount": 8,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "designItemId"
-      ]
+      "relations": ["designItemId"]
     },
     {
       "dbSource": "crm",
@@ -108248,9 +107959,7 @@
       "fieldCount": 12,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "templateId"
-      ]
+      "relations": ["templateId"]
     },
     {
       "dbSource": "crm",
@@ -108259,9 +107968,7 @@
       "fieldCount": 8,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "templateItemId"
-      ]
+      "relations": ["templateItemId"]
     },
     {
       "dbSource": "crm",
@@ -108270,10 +107977,7 @@
       "fieldCount": 9,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "participantId",
-        "designItemId"
-      ]
+      "relations": ["participantId", "designItemId"]
     },
     {
       "dbSource": "crm",
@@ -108282,10 +107986,7 @@
       "fieldCount": 10,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "workshopId",
-        "participantId"
-      ]
+      "relations": ["workshopId", "participantId"]
     },
     {
       "dbSource": "crm",
@@ -108294,9 +107995,7 @@
       "fieldCount": 11,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "participantId"
-      ]
+      "relations": ["participantId"]
     },
     {
       "dbSource": "crm",
@@ -108305,9 +108004,7 @@
       "fieldCount": 11,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "participantId"
-      ]
+      "relations": ["participantId"]
     },
     {
       "dbSource": "crm",
@@ -108316,9 +108013,7 @@
       "fieldCount": 20,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "workshopId"
-      ]
+      "relations": ["workshopId"]
     },
     {
       "dbSource": "crm",
@@ -108327,10 +108022,7 @@
       "fieldCount": 10,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "workshopId",
-        "agendaItemId"
-      ]
+      "relations": ["workshopId", "agendaItemId"]
     },
     {
       "dbSource": "crm",
@@ -108339,9 +108031,7 @@
       "fieldCount": 22,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "workshopId"
-      ]
+      "relations": ["workshopId"]
     },
     {
       "dbSource": "crm",
@@ -108350,9 +108040,7 @@
       "fieldCount": 17,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "quizId"
-      ]
+      "relations": ["quizId"]
     },
     {
       "dbSource": "crm",
@@ -108361,9 +108049,7 @@
       "fieldCount": 8,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "questionId"
-      ]
+      "relations": ["questionId"]
     },
     {
       "dbSource": "crm",
@@ -108372,13 +108058,7 @@
       "fieldCount": 16,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "workshopId",
-        "participantId",
-        "quizId",
-        "questionId",
-        "optionId"
-      ]
+      "relations": ["workshopId", "participantId", "quizId", "questionId", "optionId"]
     },
     {
       "dbSource": "crm",
@@ -108387,12 +108067,7 @@
       "fieldCount": 19,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "workshopId",
-        "participantId",
-        "quizId",
-        "questionId"
-      ]
+      "relations": ["workshopId", "participantId", "quizId", "questionId"]
     },
     {
       "dbSource": "crm",
@@ -108401,12 +108076,7 @@
       "fieldCount": 18,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "workshopId",
-        "participantId",
-        "assessmentId",
-        "instructorId"
-      ]
+      "relations": ["workshopId", "participantId", "assessmentId", "instructorId"]
     },
     {
       "dbSource": "crm",
@@ -108415,9 +108085,7 @@
       "fieldCount": 13,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "campaignId"
-      ]
+      "relations": ["campaignId"]
     },
     {
       "dbSource": "crm",
@@ -108426,10 +108094,7 @@
       "fieldCount": 16,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "campaignLeadId",
-        "touchpointId"
-      ]
+      "relations": ["campaignLeadId", "touchpointId"]
     },
     {
       "dbSource": "crm",
@@ -108447,9 +108112,7 @@
       "fieldCount": 13,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "payrollPeriodId"
-      ]
+      "relations": ["payrollPeriodId"]
     },
     {
       "dbSource": "crm",
@@ -108458,9 +108121,7 @@
       "fieldCount": 16,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "payrollPeriodId"
-      ]
+      "relations": ["payrollPeriodId"]
     },
     {
       "dbSource": "crm",
@@ -108469,9 +108130,7 @@
       "fieldCount": 12,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "payrollPeriodId"
-      ]
+      "relations": ["payrollPeriodId"]
     },
     {
       "dbSource": "crm",
@@ -108480,9 +108139,7 @@
       "fieldCount": 8,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "settlementId"
-      ]
+      "relations": ["settlementId"]
     },
     {
       "dbSource": "crm",
@@ -108500,9 +108157,7 @@
       "fieldCount": 15,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "caseId"
-      ]
+      "relations": ["caseId"]
     },
     {
       "dbSource": "crm",
@@ -108511,10 +108166,7 @@
       "fieldCount": 21,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "caseId",
-        "snapshotId"
-      ]
+      "relations": ["caseId", "snapshotId"]
     },
     {
       "dbSource": "crm",
@@ -108523,9 +108175,7 @@
       "fieldCount": 10,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "caseId"
-      ]
+      "relations": ["caseId"]
     },
     {
       "dbSource": "crm",
@@ -108543,9 +108193,7 @@
       "fieldCount": 13,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "holidayId"
-      ]
+      "relations": ["holidayId"]
     },
     {
       "dbSource": "crm",
@@ -108554,9 +108202,7 @@
       "fieldCount": 23,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "holidayId"
-      ]
+      "relations": ["holidayId"]
     },
     {
       "dbSource": "crm",
@@ -108565,9 +108211,7 @@
       "fieldCount": 19,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "holidayId"
-      ]
+      "relations": ["holidayId"]
     },
     {
       "dbSource": "crm",
@@ -108585,10 +108229,7 @@
       "fieldCount": 32,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "holidayId",
-        "rosterId"
-      ]
+      "relations": ["holidayId", "rosterId"]
     },
     {
       "dbSource": "crm",
@@ -108597,10 +108238,7 @@
       "fieldCount": 9,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "holidayId",
-        "ledgerId"
-      ]
+      "relations": ["holidayId", "ledgerId"]
     },
     {
       "dbSource": "crm",
@@ -108609,9 +108247,7 @@
       "fieldCount": 11,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "holidayId"
-      ]
+      "relations": ["holidayId"]
     },
     {
       "dbSource": "crm",
@@ -108629,9 +108265,7 @@
       "fieldCount": 13,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "reportId"
-      ]
+      "relations": ["reportId"]
     },
     {
       "dbSource": "crm",
@@ -108640,9 +108274,7 @@
       "fieldCount": 11,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "reportId"
-      ]
+      "relations": ["reportId"]
     },
     {
       "dbSource": "crm",
@@ -108651,10 +108283,7 @@
       "fieldCount": 11,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "reportId",
-        "commentId"
-      ]
+      "relations": ["reportId", "commentId"]
     },
     {
       "dbSource": "crm",
@@ -108663,9 +108292,7 @@
       "fieldCount": 10,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "reportId"
-      ]
+      "relations": ["reportId"]
     },
     {
       "dbSource": "crm",
@@ -108674,9 +108301,7 @@
       "fieldCount": 10,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "reportId"
-      ]
+      "relations": ["reportId"]
     },
     {
       "dbSource": "crm",
@@ -108694,9 +108319,7 @@
       "fieldCount": 9,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "jobId"
-      ]
+      "relations": ["jobId"]
     },
     {
       "dbSource": "crm",
@@ -108723,9 +108346,7 @@
       "fieldCount": 7,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "workerId"
-      ]
+      "relations": ["workerId"]
     },
     {
       "dbSource": "crm",
@@ -108743,9 +108364,7 @@
       "fieldCount": 6,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "conversationId"
-      ]
+      "relations": ["conversationId"]
     },
     {
       "dbSource": "crm",
@@ -108754,9 +108373,7 @@
       "fieldCount": 16,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "reportId"
-      ]
+      "relations": ["reportId"]
     },
     {
       "dbSource": "crm",
@@ -108765,9 +108382,7 @@
       "fieldCount": 19,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "reportId"
-      ]
+      "relations": ["reportId"]
     },
     {
       "dbSource": "crm",
@@ -108776,9 +108391,7 @@
       "fieldCount": 45,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "reportId"
-      ]
+      "relations": ["reportId"]
     },
     {
       "dbSource": "crm",
@@ -108832,9 +108445,7 @@
       "fieldCount": 10,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "gameId"
-      ]
+      "relations": ["gameId"]
     },
     {
       "dbSource": "crm",
@@ -108843,10 +108454,7 @@
       "fieldCount": 16,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "gameId",
-        "teamId"
-      ]
+      "relations": ["gameId", "teamId"]
     },
     {
       "dbSource": "crm",
@@ -108855,9 +108463,7 @@
       "fieldCount": 16,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "gameId"
-      ]
+      "relations": ["gameId"]
     },
     {
       "dbSource": "crm",
@@ -108875,9 +108481,7 @@
       "fieldCount": 8,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "sessionId"
-      ]
+      "relations": ["sessionId"]
     },
     {
       "dbSource": "crm",
@@ -108904,9 +108508,7 @@
       "fieldCount": 10,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "materialId"
-      ]
+      "relations": ["materialId"]
     },
     {
       "dbSource": "crm",
@@ -108915,10 +108517,7 @@
       "fieldCount": 12,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "sessionId",
-        "materialId"
-      ]
+      "relations": ["sessionId", "materialId"]
     },
     {
       "dbSource": "crm",
@@ -108936,10 +108535,7 @@
       "fieldCount": 14,
       "readOnly": false,
       "isCatalogException": false,
-      "relations": [
-        "sessionId",
-        "stepTemplateId"
-      ]
+      "relations": ["sessionId", "stepTemplateId"]
     },
     {
       "dbSource": "crm",

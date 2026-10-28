@@ -410,6 +410,24 @@ function normalizeUserSidebarPrefs(raw: SafeAny): MosChatUserSidebarPrefs {
     (id) => id === 'dm' || id === 'spaces' || customIds.includes(id)
   );
 
+  // Notification mode (tiered notification filtering)
+  const validNotifModes = ['ALL', 'MENTIONS_ONLY', 'NOTHING'] as const;
+  const notificationMode =
+    typeof raw.notificationMode === 'string' && (validNotifModes as readonly string[]).includes(raw.notificationMode)
+      ? (raw.notificationMode as (typeof validNotifModes)[number])
+      : undefined;
+
+  const validChannelOverrides = ['INHERIT', 'ALL', 'MENTIONS_ONLY', 'MUTED'] as const;
+  type ChannelOverrideValue = (typeof validChannelOverrides)[number];
+  const channelNotificationOverrides: Record<string, ChannelOverrideValue> = {};
+  if (raw.channelNotificationOverrides && typeof raw.channelNotificationOverrides === 'object') {
+    for (const [k, v] of Object.entries(raw.channelNotificationOverrides as Record<string, unknown>)) {
+      if (typeof v === 'string' && (validChannelOverrides as readonly string[]).includes(v)) {
+        channelNotificationOverrides[k] = v as ChannelOverrideValue;
+      }
+    }
+  }
+
   return {
     pinnedIds: cleanStrList(raw.pinnedIds),
     mutedIds: cleanStrList(raw.mutedIds),
@@ -427,6 +445,8 @@ function normalizeUserSidebarPrefs(raw: SafeAny): MosChatUserSidebarPrefs {
     customSections,
     conversationOrder,
     updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : def.updatedAt,
+    ...(notificationMode ? { notificationMode } : {}),
+    ...(Object.keys(channelNotificationOverrides).length > 0 ? { channelNotificationOverrides } : {}),
   };
 }
 

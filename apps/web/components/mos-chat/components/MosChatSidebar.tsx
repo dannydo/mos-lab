@@ -26,6 +26,8 @@ import {
   MailOpen,
   Bell,
   BellOff,
+  BellRing,
+  AtSign,
   ExternalLink,
   EyeOff,
   Settings,
@@ -38,6 +40,7 @@ import type {
   MosChatMessage,
   MosChatTaskItem,
   MosChatUserSidebarPrefs,
+  MosChatChannelNotificationOverride,
   MosChatAccessConfig,
   MosChatPresenceStatus,
   SafeAny,
@@ -96,6 +99,7 @@ export interface MosChatSidebarProps {
   togglePinConversation: (id: string) => void;
   toggleManualUnreadConversation: (conv: MosChatConversation) => void;
   toggleMuteConversation: (id: string) => void;
+  onChangeChannelNotificationOverride?: (convId: string, mode: MosChatChannelNotificationOverride) => void;
   moveConversationToSection: (convId: string, sectionId: string) => void;
   moveConversationOrderInSection: (
     convId: string,
@@ -185,6 +189,7 @@ export const MosChatSidebar: React.FC<MosChatSidebarProps> = React.memo(
     togglePinConversation,
     toggleManualUnreadConversation,
     toggleMuteConversation,
+    onChangeChannelNotificationOverride,
     moveConversationToSection,
     moveConversationOrderInSection,
     reorderConversationByDragDrop,
@@ -778,6 +783,72 @@ export const MosChatSidebar: React.FC<MosChatSidebarProps> = React.memo(
                               )}
                               <span>{isMuted ? 'Bật thông báo' : 'Tắt thông báo (Mute)'}</span>
                             </button>
+
+                            {/* Notification Override Quick Selectors (for Space conversations) */}
+                            {isSpace && onChangeChannelNotificationOverride && (
+                              <div className="px-2 py-1">
+                                <div
+                                  className="text-[10px] font-bold uppercase tracking-wider px-0.5 pb-1"
+                                  style={{ color: token.colorTextSecondary }}
+                                >
+                                  Chế độ thông báo nhóm
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  {[
+                                    {
+                                      value: 'INHERIT' as const,
+                                      icon: <ChevronRight size={11} />,
+                                      tip: 'Theo mặc định chung',
+                                    },
+                                    { value: 'ALL' as const, icon: <BellRing size={11} />, tip: 'Bật tất cả' },
+                                    {
+                                      value: 'MENTIONS_ONLY' as const,
+                                      icon: <AtSign size={11} />,
+                                      tip: 'Chỉ @Mention',
+                                    },
+                                    { value: 'MUTED' as const, icon: <BellOff size={11} />, tip: 'Tắt tiếng' },
+                                  ].map((opt) => {
+                                    const currentOverride =
+                                      userPrefs.channelNotificationOverrides?.[conv.id] || 'INHERIT';
+                                    const isActive = currentOverride === opt.value;
+                                    return (
+                                      <Tooltip key={opt.value} title={opt.tip} placement="top">
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            onChangeChannelNotificationOverride(conv.id, opt.value);
+                                            setOpenConvMenuId(null);
+                                          }}
+                                          className="flex-1 h-6 rounded-md inline-flex items-center justify-center cursor-pointer transition-all"
+                                          style={{
+                                            background: isActive
+                                              ? opt.value === 'MUTED'
+                                                ? 'rgba(239, 68, 68, 0.15)'
+                                                : 'rgba(212, 168, 75, 0.15)'
+                                              : 'transparent',
+                                            border: `1px solid ${
+                                              isActive
+                                                ? opt.value === 'MUTED'
+                                                  ? 'rgba(239, 68, 68, 0.4)'
+                                                  : 'rgba(212, 168, 75, 0.4)'
+                                                : borderColor
+                                            }`,
+                                            color: isActive
+                                              ? opt.value === 'MUTED'
+                                                ? '#f87171'
+                                                : '#d4a84b'
+                                              : token.colorTextTertiary,
+                                          }}
+                                        >
+                                          {opt.icon}
+                                        </button>
+                                      </Tooltip>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
 
                             <div className="my-1" style={{ borderTop: `1px solid ${borderColor}` }} />
 

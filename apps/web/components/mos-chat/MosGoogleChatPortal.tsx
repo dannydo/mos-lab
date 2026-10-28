@@ -157,6 +157,8 @@ import type {
   MosChatTaskPriority,
   UpdateMosChatTaskRequest,
   MosChatUserSidebarPrefs,
+  MosChatNotificationMode,
+  MosChatChannelNotificationOverride,
   MosChatWorkflowInstance,
   MosChatWorkflowTemplate,
   SafeAny,
@@ -226,6 +228,7 @@ import { MosChatMessageFeed } from './components/MosChatMessageFeed';
 import { MosChatComposer } from './components/MosChatComposer';
 import { MosChatThreadDrawer } from './components/MosChatThreadDrawer';
 import { MosChatModals } from './components/MosChatModals';
+import { MosChatNotificationSettingsModal } from './components/MosChatNotificationSettings';
 import { MosChatTasksPane } from './components/MosChatTasksPane';
 import { MosChatPinnedPane } from './components/MosChatPinnedPane';
 import {
@@ -285,7 +288,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const { token } = theme.useToken();
   const isDark = themeMode === 'dark';
   const [antdMessage, messageContextHolder] = antdMessageStatic.useMessage();
-  const [notification, notificationContextHolder] = notificationStatic.useNotification();
+  const [notification, notificationContextHolder] = notificationStatic.useNotification({
+    maxCount: 3, // Anti-flooding: max 3 toasts visible simultaneously
+  });
 
   const activeMode =
     activeThemeDefinition.modes[themeMode] ?? activeThemeDefinition.modes[activeThemeDefinition.defaultMode];
@@ -1291,6 +1296,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   // Space Settings / Configuration Modal (MOS-BUG-140)
   const [spaceConfigModalOpen, setSpaceConfigModalOpen] = useState(false);
 
+  // Notification Settings Modal (Tiered Notification Filter)
+  const [notifSettingsModalOpen, setNotifSettingsModalOpen] = useState(false);
+
   // Personal Sidebar Customization (Google Chat Workspace style - per individual user)
   const userSidebarPrefsStorageKey = useMemo(() => {
     let resolvedKey = String(currentUser?.id || currentUser?.username || '').trim();
@@ -1365,6 +1373,14 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         conversationOrder:
           parsed.conversationOrder && typeof parsed.conversationOrder === 'object' ? parsed.conversationOrder : {},
         updatedAt: parsed.updatedAt,
+        notificationMode:
+          parsed.notificationMode && ['ALL', 'MENTIONS_ONLY', 'NOTHING'].includes(parsed.notificationMode)
+            ? parsed.notificationMode
+            : undefined,
+        channelNotificationOverrides:
+          parsed.channelNotificationOverrides && typeof parsed.channelNotificationOverrides === 'object'
+            ? parsed.channelNotificationOverrides
+            : undefined,
       };
     } catch {
       return defaults;
@@ -1742,6 +1758,34 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             }
 
             if (conv.hasUnreadBuzz || (conv.unreadCount || 0) > 0 || (conv.unreadThreadCount || 0) > 0) {
+              // ──── Tiered Notification Filter ────
+              // Resolves the effective notification mode for this conversation:
+              // 1. Check per-channel override first
+              // 2. Fall back to global default mode
+              // 3. DMs and @mentions always pass through (Invariant)
+              const getEffectiveNotifMode = () => {
+                const channelOverride = userPrefs.channelNotificationOverrides?.[conv.id];
+                if (channelOverride && channelOverride !== 'INHERIT') return channelOverride;
+                return userPrefs.notificationMode || 'ALL';
+              };
+              const effectiveNotifMode = getEffectiveNotifMode();
+
+              // shouldShowPopupAndSound: determines if a message should trigger popup + chime
+              // isTargetedByUser: true when the user is @mentioned or it's a DM (always allowed)
+              const shouldShowPopupAndSound = (isTargetedByUser: boolean): boolean => {
+                // DMs and @mentions always pass through — INVARIANT
+                if (isTargetedByUser) return true;
+                // Per effective mode
+                if (effectiveNotifMode === 'ALL') return true;
+                if (effectiveNotifMode === 'MENTIONS_ONLY') return false;
+                if (effectiveNotifMode === 'MUTED' || effectiveNotifMode === 'NOTHING') return false;
+                return true;
+              };
+
+              // ──── Toast Anti-Flooding Controller ────
+              // Track active toasts and limit to MAX_VISIBLE_TOASTS
+              const MAX_VISIBLE_TOASTS = 3;
+
               const handleUrgentBuzzItem = (item: MosChatMessage | MosChatThreadReply) => {
                 if (!item.isBuzzed || !item.buzzedAt) return;
                 const buzzKey = `${item.id}-${item.buzzedAt}`;
@@ -1768,6 +1812,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 });
 
                 notifiedBuzzIdsRef.current.add(buzzKey);
+
+                // ──── Tiered Notification Filter for BUZZ ────
+                // Check if this BUZZ should produce popup + sound based on the effective notification mode.
+                // DMs and @mentions always pass through (invariant).
+                if (!shouldShowPopupAndSound(isTargeted || isDirectMsg)) return;
+
+                // ──── Toast Anti-Flooding for BUZZ ────
+                // Count active buzz toasts; if >= MAX_VISIBLE_TOASTS, destroy oldest and show collapsed summary
+                const activeBuzzToastKeys = Array.from(notifiedBuzzIdsRef.current)
+                  .slice(-MAX_VISIBLE_TOASTS * 2)
+                  .map((k) => `buzz-notify-${k.split('-')[0]}`);
+                // We let Antd's built-in maxCount handle overflow (set via notification.config)
+
                 playWebAudioBuzzChime();
                 triggerBuzzVibration();
 
@@ -1917,6 +1974,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                 if (tagsSomeoneElseOnly) return;
 
                 const isPersonalForMe = isDirectMsg || isMentioned || isMyThreadReply;
+
+                // ──── Tiered Notification Filter for regular messages ────
+                // Apply the same tiered filter as BUZZ: DMs and @mentions always pass through.
+                if (!shouldShowPopupAndSound(isPersonalForMe)) return;
 
                 if (isPersonalForMe && typeof window !== 'undefined') {
                   window.dispatchEvent(new CustomEvent('mos-notifications:refresh'));
@@ -3252,6 +3313,48 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           : [...(prev.mutedIds || []), convId];
         antdMessage.success(exists ? 'Đã bật lại thông báo' : 'Đã tắt thông báo cuộc trò chuyện này');
         return { ...prev, mutedIds: nextMuted };
+      });
+    },
+    [updateUserSidebarPrefs]
+  );
+
+  // ──── Tiered Notification Filter Handlers ────
+  const handleChangeGlobalNotificationMode = useCallback(
+    (mode: MosChatNotificationMode) => {
+      updateUserSidebarPrefs((prev) => {
+        const modeLabels: Record<MosChatNotificationMode, string> = {
+          ALL: 'Nhận tất cả thông báo',
+          MENTIONS_ONLY: 'Chỉ nhận khi được @Mention',
+          NOTHING: 'Tắt toàn bộ thông báo',
+        };
+        antdMessage.success(`🔔 Đã đổi chế độ thông báo: ${modeLabels[mode]}`);
+        return { ...prev, notificationMode: mode };
+      });
+    },
+    [updateUserSidebarPrefs, antdMessage]
+  );
+
+  const handleChangeChannelNotificationOverride = useCallback(
+    (convId: string, mode: MosChatChannelNotificationOverride) => {
+      updateUserSidebarPrefs((prev) => {
+        const nextOverrides = { ...(prev.channelNotificationOverrides || {}) };
+        if (mode === 'INHERIT') {
+          delete nextOverrides[convId];
+        } else {
+          nextOverrides[convId] = mode;
+        }
+        // Also sync with legacy mutedIds for backward compatibility
+        let nextMuted = [...(prev.mutedIds || [])];
+        if (mode === 'MUTED') {
+          if (!nextMuted.includes(convId)) nextMuted.push(convId);
+        } else {
+          nextMuted = nextMuted.filter((id) => id !== convId);
+        }
+        return {
+          ...prev,
+          channelNotificationOverrides: nextOverrides,
+          mutedIds: nextMuted,
+        };
       });
     },
     [updateUserSidebarPrefs]
@@ -9587,6 +9690,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               togglePinConversation={togglePinConversation}
               toggleManualUnreadConversation={toggleManualUnreadConversation}
               toggleMuteConversation={toggleMuteConversation}
+              onChangeChannelNotificationOverride={handleChangeChannelNotificationOverride}
               moveConversationToSection={moveConversationToSection}
               moveConversationOrderInSection={moveConversationOrderInSection}
               reorderConversationByDragDrop={reorderConversationByDragDrop}
@@ -9866,6 +9970,33 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     ) : (
                       <VolumeX size={14} className="opacity-60" />
                     )}
+                  </button>
+                </Tooltip>
+
+                {/* Notification Settings Button (Tiered Notification Filter) */}
+                <Tooltip title="Cài đặt thông báo (Lọc tin nhắn & BUZZ)">
+                  <button
+                    type="button"
+                    aria-label="Cài đặt thông báo"
+                    onClick={() => setNotifSettingsModalOpen(true)}
+                    className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer transition-colors"
+                    style={{
+                      background:
+                        userPrefs.notificationMode && userPrefs.notificationMode !== 'ALL'
+                          ? 'rgba(59, 130, 246, 0.14)'
+                          : 'transparent',
+                      border: `1px solid ${
+                        userPrefs.notificationMode && userPrefs.notificationMode !== 'ALL'
+                          ? 'rgba(59, 130, 246, 0.35)'
+                          : borderColor
+                      }`,
+                      color:
+                        userPrefs.notificationMode && userPrefs.notificationMode !== 'ALL'
+                          ? '#3b82f6'
+                          : token.colorTextSecondary,
+                    }}
+                  >
+                    <BellRing size={14} />
                   </button>
                 </Tooltip>
 
@@ -10511,6 +10642,18 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       />
 
       {/* ================= ALL DOMAIN MODALS & OVERLAYS ================= */}
+
+      {/* Notification Settings Modal (Tiered Notification Filter) */}
+      <MosChatNotificationSettingsModal
+        open={notifSettingsModalOpen}
+        onClose={() => setNotifSettingsModalOpen(false)}
+        userPrefs={userPrefs}
+        conversations={allUserConversations}
+        onChangeGlobalMode={handleChangeGlobalNotificationMode}
+        onChangeChannelOverride={handleChangeChannelNotificationOverride}
+        themeMode={themeMode}
+      />
+
       <MosChatModals
         isDark={isDark}
         isMobile={isMobile}

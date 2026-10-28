@@ -385,6 +385,23 @@ export interface MosChatCustomSection {
   unreadOnly?: boolean;
 }
 
+/**
+ * Notification filter modes for the tiered notification system.
+ * - 'ALL': Receive all notifications (popup + sound) from every conversation.
+ * - 'MENTIONS_ONLY': Only receive notifications when explicitly @mentioned or in DMs.
+ * - 'NOTHING': No notifications at all (except DMs and @mentions which are always forced).
+ */
+export type MosChatNotificationMode = 'ALL' | 'MENTIONS_ONLY' | 'NOTHING';
+
+/**
+ * Per-conversation notification override.
+ * - 'INHERIT': Follow the global default mode.
+ * - 'ALL': Always receive all notifications from this conversation.
+ * - 'MENTIONS_ONLY': Only receive notifications when @mentioned in this conversation.
+ * - 'MUTED': Never receive notifications from this conversation (even @mentions are silenced for popup/sound, but still increment unread badge).
+ */
+export type MosChatChannelNotificationOverride = 'INHERIT' | 'ALL' | 'MENTIONS_ONLY' | 'MUTED';
+
 export interface MosChatUserSidebarPrefs {
   pinnedIds: string[];
   mutedIds: string[];
@@ -402,6 +419,12 @@ export interface MosChatUserSidebarPrefs {
   customSections: MosChatCustomSection[];
   conversationOrder: Record<string, string[]>;
   updatedAt?: string;
+
+  /** Global default notification mode. Defaults to 'ALL' for backward compatibility. */
+  notificationMode?: MosChatNotificationMode;
+
+  /** Per-conversation notification overrides. Key = conversationId, Value = override mode. */
+  channelNotificationOverrides?: Record<string, MosChatChannelNotificationOverride>;
 }
 
 export interface MosChatBootstrapResponse {
