@@ -26,13 +26,7 @@ describe('MosChatCustomerPickerModal', () => {
     const handleClose = vi.fn();
     const handleSelect = vi.fn();
 
-    render(
-      <MosChatCustomerPickerModal
-        open={true}
-        onClose={handleClose}
-        onSelectCustomerCard={handleSelect}
-      />
-    );
+    render(<MosChatCustomerPickerModal open={true} onClose={handleClose} onSelectCustomerCard={handleSelect} />);
 
     expect(screen.getByText('Đính kèm thẻ Khách hàng / Booking mOS')).toBeInTheDocument();
     expect(screen.getByText('Tra cứu Khách hàng')).toBeInTheDocument();
@@ -44,13 +38,7 @@ describe('MosChatCustomerPickerModal', () => {
     const handleClose = vi.fn();
     const handleSelect = vi.fn();
 
-    render(
-      <MosChatCustomerPickerModal
-        open={true}
-        onClose={handleClose}
-        onSelectCustomerCard={handleSelect}
-      />
-    );
+    render(<MosChatCustomerPickerModal open={true} onClose={handleClose} onSelectCustomerCard={handleSelect} />);
 
     fireEvent.click(screen.getByText('Thẻ Mẫu Nhanh'));
 
@@ -70,13 +58,7 @@ describe('MosChatCustomerPickerModal', () => {
     const handleClose = vi.fn();
     const handleSelect = vi.fn();
 
-    render(
-      <MosChatCustomerPickerModal
-        open={true}
-        onClose={handleClose}
-        onSelectCustomerCard={handleSelect}
-      />
-    );
+    render(<MosChatCustomerPickerModal open={true} onClose={handleClose} onSelectCustomerCard={handleSelect} />);
 
     fireEvent.click(screen.getByText('Thẻ Mẫu Nhanh'));
 
@@ -111,13 +93,7 @@ describe('MosChatCustomerPickerModal', () => {
     const handleClose = vi.fn();
     const handleSelect = vi.fn();
 
-    render(
-      <MosChatCustomerPickerModal
-        open={true}
-        onClose={handleClose}
-        onSelectCustomerCard={handleSelect}
-      />
-    );
+    render(<MosChatCustomerPickerModal open={true} onClose={handleClose} onSelectCustomerCard={handleSelect} />);
 
     const searchInput = screen.getByPlaceholderText(/Tìm theo tên khách, số điện thoại/i);
     fireEvent.change(searchInput, { target: { value: 'Mai Phương' } });
@@ -163,7 +139,9 @@ describe('MosChatComposer Customer Card Staging', () => {
     surfaceRaised: '#1f1f1f',
     borderColor: '#303030',
     borderStrong: '#444',
-    composerText: '',
+    composerTextRef: { current: '' },
+    composerHasText: false,
+    updateComposerText: vi.fn(),
     setComposerText: vi.fn(),
     composerCursorPos: 0,
     setComposerCursorPos: vi.fn(),

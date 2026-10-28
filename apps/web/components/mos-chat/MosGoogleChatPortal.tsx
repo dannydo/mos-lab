@@ -1018,8 +1018,42 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [threadInput, setThreadInput] = useState('');
   const [threadAttachments, setThreadAttachments] = useState<MosChatImageAttachment[]>([]);
 
-  // Composer state
-  const [composerText, setComposerText] = useState('');
+  // Composer state — Performance: composerText is stored in a ref (NOT useState)
+  // to avoid re-rendering the entire 10K+ line God Component on every keystroke.
+  // Only `composerHasText` (boolean) is a state to control send-button styling.
+  const composerTextRef = useRef('');
+  const [composerHasText, setComposerHasText] = useState(false);
+  const composerHasTextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** Write to composerTextRef + sync DOM + debounce hasText boolean state */
+  const updateComposerText = useCallback(
+    (val: string) => {
+      composerTextRef.current = val;
+      if (composerInputRef.current && composerInputRef.current.value !== val) {
+        composerInputRef.current.value = val;
+      }
+      // Debounced boolean state update for send button styling (no full re-render per key)
+      if (composerHasTextTimerRef.current) clearTimeout(composerHasTextTimerRef.current);
+      const hasText = val.trim().length > 0;
+      if (hasText !== composerHasText) {
+        composerHasTextTimerRef.current = setTimeout(() => setComposerHasText(hasText), 80);
+      }
+    },
+    [composerHasText]
+  );
+
+  // Legacy compatibility: setComposerText alias for child components that still use the setter pattern
+  const setComposerText = useCallback(
+    (valOrFn: string | ((prev: string) => string)) => {
+      const nextVal = typeof valOrFn === 'function' ? valOrFn(composerTextRef.current) : valOrFn;
+      updateComposerText(nextVal);
+    },
+    [updateComposerText]
+  );
+
+  // Legacy compatibility: composerText getter for read-only usages (callbacks, memos)
+  // IMPORTANT: This is NOT reactive — do NOT use it in render paths that need re-render on change.
+  const composerText = composerTextRef.current;
   const [stagedAttachments, setStagedAttachments] = useState<MosChatImageAttachment[]>([]);
   const [stagedCustomerCard, setStagedCustomerCard] = useState<MosChatCustomerCard | null>(null);
   const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
@@ -2078,7 +2112,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
             setActiveConvId(payload.conversationId);
           }
           if (payload.initialDraftText) {
-            setComposerText(payload.initialDraftText);
+            updateComposerText(payload.initialDraftText);
           }
         }
       },
@@ -4197,7 +4231,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
   const handleSendMain = async () => {
     if (!activeConversation) return;
-    const text = composerText;
+    const text = composerTextRef.current;
     const attachmentsToSend = stagedAttachments;
     const cardToSend = stagedCustomerCard;
     if (!text.trim() && attachmentsToSend.length === 0 && !cardToSend) return;
@@ -4206,22 +4240,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     const trimmedCmd = text.trim().toLowerCase();
     if (isStrictDannySuperAdmin && attachmentsToSend.length === 0 && !cardToSend) {
       if (trimmedCmd === '/tam-ung' || trimmedCmd.startsWith('/tam-ung ')) {
-        setComposerText('');
-        if (composerInputRef.current) composerInputRef.current.value = '';
+        updateComposerText('');
         setInitialWorkflowCode('WF_CASH_ADVANCE');
         setTriggerWorkflowModalOpen(true);
         return;
       }
       if (trimmedCmd === '/kiem-kho' || trimmedCmd.startsWith('/kiem-kho ')) {
-        setComposerText('');
-        if (composerInputRef.current) composerInputRef.current.value = '';
+        updateComposerText('');
         setInitialWorkflowCode('WF_INVENTORY_AUDIT');
         setTriggerWorkflowModalOpen(true);
         return;
       }
       if (trimmedCmd === '/tao-quy-trinh' || trimmedCmd === '/workflow') {
-        setComposerText('');
-        if (composerInputRef.current) composerInputRef.current.value = '';
+        updateComposerText('');
         setSaveThreadWorkflowModalOpen(true);
         return;
       }
@@ -4233,12 +4264,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     }
 
     setMentionState((prev) => (prev.open ? { ...prev, open: false } : prev));
-    setComposerText('');
+    updateComposerText('');
     setStagedAttachments([]);
     setStagedCustomerCard(null);
-    if (composerInputRef.current) {
-      composerInputRef.current.value = '';
-    }
     const sent = await handleSendMessage(activeConversation.id, text, cardToSend, attachmentsToSend);
     if (wasUrgent && sent?.id) {
       void handleBuzzMessage(sent.id);
@@ -5377,7 +5405,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     }
     const existingTask = msg ? uniqueTasks.find((t) => t.sourceMessageId === msg.id || t.id === msg.taskId) : null;
     setTaskTitle(
-      existingTask?.title || (msg ? msg.text : composerText.trim() || 'Kiểm tra lịch hẹn & chuẩn bị đón khách VIP')
+      existingTask?.title ||
+        (msg ? msg.text : composerTextRef.current.trim() || 'Kiểm tra lịch hẹn & chuẩn bị đón khách VIP')
     );
     const existingAssignee =
       existingTask?.assigneeName &&
@@ -7641,8 +7670,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       customColorHex?: string
     ) => {
       const textarea = scope === 'main' ? composerInputRef.current : threadInputRef.current;
-      const currentValue = scope === 'main' ? composerText : threadInput;
-      const setValue = scope === 'main' ? setComposerText : setThreadInput;
+      const currentValue = scope === 'main' ? composerTextRef.current : threadInput;
+      const setValue = scope === 'main' ? updateComposerText : setThreadInput;
       const setCursor = scope === 'main' ? setComposerCursorPos : setThreadCursorPos;
 
       if (!textarea) return;
@@ -7834,7 +7863,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         }
       }, 0);
     },
-    [composerText, threadInput, inlineTextColor]
+    [composerTextRef, threadInput, inlineTextColor]
   );
 
   /**
@@ -7845,7 +7874,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     (scope: 'main' | 'thread', variant: 'inline' | 'floating' = 'floating') => {
       const isMain = scope === 'main';
       const isPreview = isMain ? isPreviewModeMain : isPreviewModeThread;
-      const currentVal = isMain ? composerText : threadInput;
+      const currentVal = isMain ? composerTextRef.current : threadInput;
       const currentPos = isMain ? composerCursorPos : threadCursorPos;
       const activeFormats = detectActiveFormatsAtCursor(currentVal, currentPos);
 
@@ -8134,7 +8163,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       isDark,
       isPreviewModeMain,
       isPreviewModeThread,
-      composerText,
+      composerTextRef,
       threadInput,
       composerCursorPos,
       threadCursorPos,
@@ -8451,7 +8480,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const handleSelectMention = useCallback(
     (item: MentionItem, scope: 'main' | 'thread') => {
       const textarea = scope === 'main' ? composerInputRef.current : threadInputRef.current;
-      const currentVal = (textarea?.value ?? (scope === 'main' ? composerText : threadInput)) || '';
+      const currentVal = (textarea?.value ?? (scope === 'main' ? composerTextRef.current : threadInput)) || '';
       if (!textarea) return;
 
       const atIdx = mentionState.atIndex >= 0 ? mentionState.atIndex : currentVal.lastIndexOf('@');
@@ -8467,7 +8496,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       lastCompositionEndMsRef.current = Date.now();
 
       if (scope === 'main') {
-        setComposerText(nextVal);
+        updateComposerText(nextVal);
       } else {
         setThreadInput(nextVal);
       }
@@ -8489,7 +8518,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         textarea.style.height = `${Math.min(textarea.scrollHeight, scope === 'main' ? 180 : 140)}px`;
       });
     },
-    [composerText, threadInput, mentionState.atIndex, mentionState.cursorIndex]
+    [composerTextRef, threadInput, mentionState.atIndex, mentionState.cursorIndex]
   );
 
   // Điều hướng bằng phím mũi tên Lên/Xuống, Enter/Tab để chọn, Escape để đóng
@@ -9451,7 +9480,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       mode="composer"
       onSelectEmoji={(emoji) => {
         if (target === 'main') {
-          setComposerText((prev) => `${prev}${emoji}`);
+          updateComposerText(composerTextRef.current + emoji);
           composerInputRef.current?.focus();
         } else if (target === 'thread') {
           setThreadInput((prev) => `${prev}${emoji}`);
@@ -10394,7 +10423,9 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     surfaceRaised={surfaceRaised}
                     borderColor={borderColor}
                     borderStrong={borderStrong}
-                    composerText={composerText}
+                    composerTextRef={composerTextRef}
+                    composerHasText={composerHasText}
+                    updateComposerText={updateComposerText}
                     setComposerText={setComposerText}
                     composerCursorPos={composerCursorPos}
                     setComposerCursorPos={setComposerCursorPos}
@@ -10857,7 +10888,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         fetchBootstrap={fetchBootstrap}
         richEditorModalState={richEditorModalState}
         setRichEditorModalState={setRichEditorModalState}
-        composerText={composerText}
+        composerText={composerTextRef.current}
         setComposerText={setComposerText}
         threadInput={threadInput}
         setThreadInput={setThreadInput}

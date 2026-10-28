@@ -21,7 +21,13 @@ import {
   Activity,
   CornerDownLeft,
 } from 'lucide-react';
-import type { MosChatConversation, MosChatMessage, MosChatImageAttachment, MosChatCustomerCard, SafeAny } from '@mos-lab/shared';
+import type {
+  MosChatConversation,
+  MosChatMessage,
+  MosChatImageAttachment,
+  MosChatCustomerCard,
+  SafeAny,
+} from '@mos-lab/shared';
 import { AI_COPILOT_CONV_ID, AI_QUICK_PROMPTS } from '../constants/chat-constants';
 import { handleSmartListEnterKey } from '../MosChatRichEditorModal';
 
@@ -39,7 +45,13 @@ export interface MosChatComposerProps {
   borderColor: string;
   borderStrong: string;
 
-  composerText: string;
+  /** Ref-based text for perf: read composerTextRef.current instead of state */
+  composerTextRef: React.RefObject<string>;
+  /** Lightweight boolean state for send-button styling */
+  composerHasText: boolean;
+  /** Write to ref + sync DOM + debounce hasText boolean */
+  updateComposerText: (val: string) => void;
+  /** Legacy setter (wraps updateComposerText for callback pattern) */
   setComposerText: React.Dispatch<React.SetStateAction<string>>;
   composerCursorPos: number;
   setComposerCursorPos: React.Dispatch<React.SetStateAction<number>>;
@@ -93,7 +105,9 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
     surfaceRaised,
     borderColor,
     borderStrong,
-    composerText,
+    composerTextRef,
+    composerHasText,
+    updateComposerText,
     setComposerText,
     composerCursorPos,
     setComposerCursorPos,
@@ -137,7 +151,7 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
         composerInputRef.current.style.height = 'auto';
         composerInputRef.current.style.height = `${Math.min(composerInputRef.current.scrollHeight, 180)}px`;
       }
-    }, [composerText, composerInputRef]);
+    }, [composerHasText, composerInputRef]);
 
     return (
       <div className="p-3" style={{ background: surfaceBg, borderTop: `1px solid ${borderColor}` }}>
@@ -407,10 +421,10 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                 <textarea
                   ref={composerInputRef}
                   rows={1}
-                  value={composerText}
+                  defaultValue={composerTextRef.current}
                   onChange={(e) => {
                     const val = e.target.value;
-                    setComposerText(val);
+                    updateComposerText(val);
                     e.target.style.height = 'auto';
                     e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
                     checkForMentionTrigger(val, e.target.selectionStart ?? val.length, 'main');
@@ -454,14 +468,15 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                     }
                     if (e.key === 'Enter' && e.shiftKey) {
                       const el = e.currentTarget;
+                      const currentText = el.value;
                       const smart = handleSmartListEnterKey(
-                        composerText,
-                        el.selectionStart ?? composerText.length,
-                        el.selectionEnd ?? composerText.length
+                        currentText,
+                        el.selectionStart ?? currentText.length,
+                        el.selectionEnd ?? currentText.length
                       );
                       if (smart?.handled) {
                         e.preventDefault();
-                        setComposerText(smart.nextText);
+                        updateComposerText(smart.nextText);
                         setComposerCursorPos(smart.nextCursor);
                         setTimeout(() => {
                           el.focus();
@@ -482,14 +497,15 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                       }
                       // Khi đang trong danh sách tự động (•, 1., - [ ]), cho phép Enter tiếp tục danh sách
                       const el = e.currentTarget;
+                      const currentText = el.value;
                       const smart = handleSmartListEnterKey(
-                        composerText,
-                        el.selectionStart ?? composerText.length,
-                        el.selectionEnd ?? composerText.length
+                        currentText,
+                        el.selectionStart ?? currentText.length,
+                        el.selectionEnd ?? currentText.length
                       );
                       if (smart?.handled) {
                         e.preventDefault();
-                        setComposerText(smart.nextText);
+                        updateComposerText(smart.nextText);
                         setComposerCursorPos(smart.nextCursor);
                         setTimeout(() => {
                           el.focus();
@@ -513,20 +529,21 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                   onClick={() => {
                     const el = composerInputRef.current;
                     if (!el) return;
+                    const currentText = el.value;
                     const isFocused = typeof document !== 'undefined' && document.activeElement === el;
-                    const start = isFocused ? (el.selectionStart ?? composerText.length) : composerText.length;
-                    const end = isFocused ? (el.selectionEnd ?? composerText.length) : composerText.length;
-                    const smart = handleSmartListEnterKey(composerText, start, end);
+                    const start = isFocused ? (el.selectionStart ?? currentText.length) : currentText.length;
+                    const end = isFocused ? (el.selectionEnd ?? currentText.length) : currentText.length;
+                    const smart = handleSmartListEnterKey(currentText, start, end);
                     if (smart?.handled) {
-                      setComposerText(smart.nextText);
+                      updateComposerText(smart.nextText);
                       setComposerCursorPos(smart.nextCursor);
                       setTimeout(() => {
                         el.focus();
                         el.setSelectionRange(smart.nextCursor, smart.nextCursor);
                       }, 0);
                     } else {
-                      const next = composerText.substring(0, start) + '\n' + composerText.substring(end);
-                      setComposerText(next);
+                      const next = currentText.substring(0, start) + '\n' + currentText.substring(end);
+                      updateComposerText(next);
                       setComposerCursorPos(start + 1);
                       setTimeout(() => {
                         el.focus();
@@ -567,9 +584,13 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                 onClick={handleSendMain}
                 className="w-[34px] h-[34px] rounded-full flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-sm overflow-hidden"
                 style={{
-                  background: composerText.trim() || stagedAttachments.length > 0 || stagedCustomerCard ? '#d4a84b' : surfaceRaised,
-                  border: `1px solid ${composerText.trim() || stagedAttachments.length > 0 || stagedCustomerCard ? '#d4a84b' : borderStrong}`,
-                  color: composerText.trim() || stagedAttachments.length > 0 || stagedCustomerCard ? '#000' : token.colorTextSecondary,
+                  background:
+                    composerHasText || stagedAttachments.length > 0 || stagedCustomerCard ? '#d4a84b' : surfaceRaised,
+                  border: `1px solid ${composerHasText || stagedAttachments.length > 0 || stagedCustomerCard ? '#d4a84b' : borderStrong}`,
+                  color:
+                    composerHasText || stagedAttachments.length > 0 || stagedCustomerCard
+                      ? '#000'
+                      : token.colorTextSecondary,
                 }}
               >
                 <SendHorizontal size={14} />
@@ -610,8 +631,10 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                       Quay lại chỉnh sửa
                     </button>
                   </div>
-                  {composerText.trim() ? (
-                    <div className="prose max-w-none text-[13.5px]">{renderRichTextMessage(composerText, false)}</div>
+                  {composerTextRef.current.trim() ? (
+                    <div className="prose max-w-none text-[13.5px]">
+                      {renderRichTextMessage(composerTextRef.current, false)}
+                    </div>
                   ) : (
                     <div className="text-zinc-500 text-[12px] italic py-2">
                       Chưa có nội dung để xem trước... Nhập văn bản để xem hiển thị định dạng.
@@ -622,11 +645,11 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                 <textarea
                   ref={composerInputRef}
                   rows={1}
-                  value={composerText}
+                  defaultValue={composerTextRef.current}
                   onChange={(e) => {
                     const val = e.target.value;
                     const cur = e.target.selectionStart ?? val.length;
-                    setComposerText(val);
+                    updateComposerText(val);
                     setComposerCursorPos(cur);
                     e.target.style.height = 'auto';
                     e.target.style.height = `${Math.min(e.target.scrollHeight, 180)}px`;
@@ -675,14 +698,15 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                     }
                     if (e.key === 'Enter' && e.shiftKey) {
                       const el = e.currentTarget;
+                      const currentText = el.value;
                       const smart = handleSmartListEnterKey(
-                        composerText,
-                        el.selectionStart ?? composerText.length,
-                        el.selectionEnd ?? composerText.length
+                        currentText,
+                        el.selectionStart ?? currentText.length,
+                        el.selectionEnd ?? currentText.length
                       );
                       if (smart.handled) {
                         e.preventDefault();
-                        setComposerText(smart.nextText);
+                        updateComposerText(smart.nextText);
                         setComposerCursorPos(smart.nextCursor);
                         setTimeout(() => {
                           el.focus();
@@ -970,12 +994,12 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                       className="w-8 h-8 rounded-full inline-flex items-center justify-center cursor-pointer shadow-sm active:scale-95 transition-all"
                       style={{
                         background:
-                          composerText.trim() || stagedAttachments.length > 0
+                          composerHasText || stagedAttachments.length > 0
                             ? '#d4a84b'
                             : isDark
                               ? 'rgba(255, 255, 255, 0.08)'
                               : 'rgba(0, 0, 0, 0.06)',
-                        color: composerText.trim() || stagedAttachments.length > 0 ? '#000' : token.colorTextQuaternary,
+                        color: composerHasText || stagedAttachments.length > 0 ? '#000' : token.colorTextQuaternary,
                       }}
                     >
                       <SendHorizontal size={15} />
