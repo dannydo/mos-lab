@@ -844,6 +844,8 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       }
 
       const tempId = `temp_${Date.now()}`;
+      const effectiveText =
+        trimmed || (options?.customerCard?.name ? `Đính kèm thẻ khách hàng ${options.customerCard.name}` : '');
       const optimisticMsg: MosChatMessage = {
         id: tempId,
         conversationId: targetId,
@@ -851,7 +853,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
         senderName: currentUser?.fullName || currentUser?.name || 'Tôi',
         senderRole: currentUser?.role || 'user',
         senderAvatar: currentUser?.avatarUrl,
-        text: trimmed,
+        text: effectiveText,
         timeLabel: dayjs().format('HH:mm'),
         createdAt: new Date().toISOString(),
         customerCard: options?.customerCard || null,
@@ -868,7 +870,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       try {
         const res = await apiClient.chat.sendMessage({
           conversationId: targetId,
-          text: trimmed,
+          text: effectiveText,
           customerCard: options?.customerCard || null,
           attachments: options?.attachments,
         });

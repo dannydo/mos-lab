@@ -663,10 +663,12 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
       {/* Customer / Booking Picker Modal */}
       <MosChatCustomerPickerModal
         open={customerPickerOpen}
+        zIndex={1400}
         onClose={() => setCustomerPickerOpen(false)}
         onSelectCustomerCard={(card, sendImmediately = false) => {
           if (sendImmediately) {
-            sendMessage('', { customerCard: card });
+            sendMessage(`Đính kèm thẻ khách hàng ${card.name}:`, { customerCard: card });
+            antdMessage.success(`Đã gửi thẻ khách hàng ${card.name}`);
           } else {
             setStagedCustomerCard(card);
             antdMessage.success(`Đã đính kèm thẻ khách hàng ${card.name} vào ô soạn thảo`);

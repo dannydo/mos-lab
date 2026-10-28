@@ -123,7 +123,8 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
     }
 
     setIsSending(true);
-    const success = await sendMessage(trimmed, {
+    const sendText = trimmed || (stagedCustomerCard?.name ? `Đính kèm thẻ khách hàng ${stagedCustomerCard.name}` : '');
+    const success = await sendMessage(sendText, {
       replyToId: replyingToMessage?.id,
       attachments: hasAttachments ? attachedImages : undefined,
       customerCard: stagedCustomerCard || undefined,

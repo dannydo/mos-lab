@@ -3840,6 +3840,7 @@ export const MosChatModals: React.FC<MosChatModalsProps> = ({
           onClose={() => setCustomerPickerOpen?.(false)}
           onSelectCustomerCard={onSelectCustomerCard}
           isDark={isDark}
+          zIndex={1400}
         />
       )}
     </>

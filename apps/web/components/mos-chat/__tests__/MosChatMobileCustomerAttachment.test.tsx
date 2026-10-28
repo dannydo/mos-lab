@@ -169,4 +169,30 @@ describe('MosChatMobileComposer with customerCard staging', () => {
       })
     );
   });
+
+  it('sends customerCard with fallback text when user submits without typing text', async () => {
+    const handleRemove = vi.fn();
+    const handleSuccess = vi.fn();
+
+    render(
+      <MosChatMobileComposer
+        onOpenActionSheet={vi.fn()}
+        onOpenStickerSheet={vi.fn()}
+        stagedCustomerCard={stagedCard}
+        onRemoveCustomerCard={handleRemove}
+        onSendSuccess={handleSuccess}
+        text=""
+      />
+    );
+
+    const sendBtn = screen.getByLabelText('Gửi tin nhắn');
+    fireEvent.click(sendBtn);
+
+    expect(mockSendMessage).toHaveBeenCalledWith(
+      'Đính kèm thẻ khách hàng Khánh Vy',
+      expect.objectContaining({
+        customerCard: stagedCard,
+      })
+    );
+  });
 });

@@ -25,6 +25,7 @@ export interface MosChatCustomerPickerModalProps {
   onClose: () => void;
   onSelectCustomerCard: (card: MosChatCustomerCard, sendImmediately?: boolean) => void;
   isDark?: boolean;
+  zIndex?: number;
 }
 
 export const MosChatCustomerPickerModal: React.FC<MosChatCustomerPickerModalProps> = ({
@@ -32,6 +33,7 @@ export const MosChatCustomerPickerModal: React.FC<MosChatCustomerPickerModalProp
   onClose,
   onSelectCustomerCard,
   isDark = true,
+  zIndex = 1400,
 }) => {
   const { token } = theme.useToken();
   const [activeTab, setActiveTab] = useState<string>('customers');
@@ -162,7 +164,8 @@ export const MosChatCustomerPickerModal: React.FC<MosChatCustomerPickerModalProp
       open={open}
       onCancel={onClose}
       footer={null}
-      width={640}
+      width="min(640px, calc(100vw - 24px))"
+      zIndex={zIndex}
       centered
       title={
         <div className="flex items-center gap-2.5 pb-1">
@@ -184,7 +187,7 @@ export const MosChatCustomerPickerModal: React.FC<MosChatCustomerPickerModalProp
           backgroundColor: surfaceBg,
           border: `1px solid ${borderColor}`,
           borderRadius: 16,
-          padding: '20px 24px',
+          padding: '16px 18px',
         },
         header: {
           backgroundColor: surfaceBg,
@@ -242,7 +245,7 @@ export const MosChatCustomerPickerModal: React.FC<MosChatCustomerPickerModalProp
                       return (
                         <div
                           key={c.id}
-                          className="flex items-center justify-between p-2.5 rounded-xl border transition-all hover:border-amber-400/40"
+                          className="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 rounded-xl border gap-2.5 transition-all hover:border-amber-400/40"
                           style={{
                             backgroundColor: surfaceRaised,
                             borderColor,
@@ -259,8 +262,8 @@ export const MosChatCustomerPickerModal: React.FC<MosChatCustomerPickerModalProp
                             >
                               {initials}
                             </Avatar>
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <span className="font-semibold text-sm truncate" style={{ color: token.colorText }}>
                                   {c.name}
                                 </span>
@@ -271,7 +274,7 @@ export const MosChatCustomerPickerModal: React.FC<MosChatCustomerPickerModalProp
                                   {isVip ? 'VIP Combo' : 'Khách lẻ'}
                                 </Tag>
                               </div>
-                              <div className="text-xs text-slate-400 flex items-center gap-3 mt-0.5">
+                              <div className="text-xs text-slate-400 flex items-center gap-3 mt-0.5 flex-wrap">
                                 {c.phone && (
                                   <span className="flex items-center gap-1">
                                     <Phone size={11} />
@@ -280,7 +283,7 @@ export const MosChatCustomerPickerModal: React.FC<MosChatCustomerPickerModalProp
                                 )}
                                 <span>{c.totalVisits || 0} lần ghé</span>
                                 {c.assignedStaff?.displayName && (
-                                  <span className="hidden sm:inline-block">
+                                  <span>
                                     CV: {c.assignedStaff.displayName}
                                   </span>
                                 )}
@@ -288,7 +291,7 @@ export const MosChatCustomerPickerModal: React.FC<MosChatCustomerPickerModalProp
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1.5 shrink-0 ml-3">
+                          <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center ml-auto sm:ml-3">
                             <Button
                               size="small"
                               onClick={() => handleSelectCustomer(c, false)}
@@ -354,14 +357,14 @@ export const MosChatCustomerPickerModal: React.FC<MosChatCustomerPickerModalProp
                       return (
                         <div
                           key={apt.id}
-                          className="flex items-center justify-between p-2.5 rounded-xl border transition-all hover:border-amber-400/40"
+                          className="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 rounded-xl border gap-2.5 transition-all hover:border-amber-400/40"
                           style={{
                             backgroundColor: surfaceRaised,
                             borderColor,
                           }}
                         >
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-semibold text-sm truncate" style={{ color: token.colorText }}>
                                 {apt.customerName}
                               </span>
@@ -370,7 +373,7 @@ export const MosChatCustomerPickerModal: React.FC<MosChatCustomerPickerModalProp
                                 {timeStr}
                               </Tag>
                             </div>
-                            <div className="text-xs text-slate-400 flex items-center gap-3 mt-0.5">
+                            <div className="text-xs text-slate-400 flex items-center gap-3 mt-0.5 flex-wrap">
                               <span>{apt.serviceName || 'Mi Thiết Kế'}</span>
                               {apt.branchName && (
                                 <span className="flex items-center gap-1">
@@ -379,12 +382,12 @@ export const MosChatCustomerPickerModal: React.FC<MosChatCustomerPickerModalProp
                                 </span>
                               )}
                               {apt.customerPhone && (
-                                <span className="hidden sm:inline">{apt.customerPhone}</span>
+                                <span>{apt.customerPhone}</span>
                               )}
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1.5 shrink-0 ml-3">
+                          <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center ml-auto sm:ml-3">
                             <Button
                               size="small"
                               onClick={() => handleSelectAppointment(apt, false)}
@@ -427,20 +430,20 @@ export const MosChatCustomerPickerModal: React.FC<MosChatCustomerPickerModalProp
                 {SAMPLE_CUSTOMER_CARDS.map((sample, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between p-3 rounded-xl border transition-all hover:border-amber-400/40"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl border gap-2.5 transition-all hover:border-amber-400/40"
                     style={{
                       backgroundColor: surfaceRaised,
                       borderColor,
                     }}
                   >
-                    <div>
-                      <div className="font-semibold text-sm" style={{ color: token.colorText }}>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-sm truncate" style={{ color: token.colorText }}>
                         {sample.name} · <span className="text-amber-500">{sample.meta}</span>
                       </div>
-                      {sample.cvName && <div className="text-xs text-slate-400 mt-0.5">{sample.cvName}</div>}
+                      {sample.cvName && <div className="text-xs text-slate-400 mt-0.5 truncate">{sample.cvName}</div>}
                     </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0 ml-3">
+                    <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center ml-auto sm:ml-3">
                       <Button
                         size="small"
                         onClick={() => handleSelectSample(sample, false)}

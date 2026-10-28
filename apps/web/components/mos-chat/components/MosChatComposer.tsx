@@ -567,9 +567,9 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
                 onClick={handleSendMain}
                 className="w-[34px] h-[34px] rounded-full flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all shadow-sm overflow-hidden"
                 style={{
-                  background: composerText.trim() || stagedAttachments.length > 0 ? '#d4a84b' : surfaceRaised,
-                  border: `1px solid ${composerText.trim() || stagedAttachments.length > 0 ? '#d4a84b' : borderStrong}`,
-                  color: composerText.trim() || stagedAttachments.length > 0 ? '#000' : token.colorTextSecondary,
+                  background: composerText.trim() || stagedAttachments.length > 0 || stagedCustomerCard ? '#d4a84b' : surfaceRaised,
+                  border: `1px solid ${composerText.trim() || stagedAttachments.length > 0 || stagedCustomerCard ? '#d4a84b' : borderStrong}`,
+                  color: composerText.trim() || stagedAttachments.length > 0 || stagedCustomerCard ? '#000' : token.colorTextSecondary,
                 }}
               >
                 <SendHorizontal size={14} />
