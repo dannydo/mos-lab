@@ -2238,10 +2238,15 @@
           let customerCardHtml = '';
           if (m.customerCard) {
             customerCardHtml = `
-              <div class="mos-smart-card">
-                <div style="min-width:0;">
-                  <div style="font-size:12px; font-weight:700;">${m.customerCard.name} · <span style="color:var(--wings-gold);">${m.customerCard.meta}</span></div>
-                  <div style="font-size:11px; color:var(--text-secondary);">${m.customerCard.cv}</div>
+              <div class="mos-smart-card" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                <div style="display:flex; align-items:center; gap:10px; min-width:0; flex:1;">
+                  <div style="width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg, #d4a84b, #9a7322); color:#fff; font-weight:700; font-size:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; border:1px solid rgba(212,168,75,0.4);">
+                    ${m.customerCard.avatarUrl ? `<img src="${m.customerCard.avatarUrl}" style="width:100%; height:100%; object-fit:cover;" />` : (m.customerCard.name || 'KH').split(' ').map(w => w[0]).filter(Boolean).slice(-2).join('').toUpperCase()}
+                  </div>
+                  <div style="min-width:0; flex:1;">
+                    <div style="font-size:12px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${m.customerCard.name} · <span style="color:var(--wings-gold);">${m.customerCard.meta}</span></div>
+                    <div style="font-size:11px; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${m.customerCard.cv || m.customerCard.cvName || ''}</div>
+                  </div>
                 </div>
                 <button class="icon-btn icon-btn--surface icon-btn--sm" data-tooltip="Mở Hồ sơ Khách hàng" onclick="showQuickToast('Đã mở Hồ sơ: ${m.customerCard.name}')">
                   ${ICONS.externalLink}

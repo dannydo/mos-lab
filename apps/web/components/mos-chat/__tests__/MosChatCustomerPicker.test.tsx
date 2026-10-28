@@ -119,6 +119,49 @@ describe('MosChatCustomerPickerModal', () => {
         customerId: 101,
         name: 'Võ Thị Mai Phương',
         phone: '0901234567',
+        avatarUrl: null,
+      }),
+      false
+    );
+  });
+
+  it('passes avatarUrl when selecting customer with avatar [MOS-BUG-175]', async () => {
+    const mockList = vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: 202,
+          name: 'Nguyễn Bích Ngọc',
+          phone: '0988776655',
+          bucket: 'COMBO_LIVE',
+          totalVisits: 18,
+          avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120',
+          assignedStaff: { displayName: 'Minh Thư' },
+        },
+      ],
+      meta: { total: 1 },
+    });
+    (apiClient.customers.list as any) = mockList;
+
+    const handleClose = vi.fn();
+    const handleSelect = vi.fn();
+
+    render(<MosChatCustomerPickerModal open={true} onClose={handleClose} onSelectCustomerCard={handleSelect} />);
+
+    const searchInput = screen.getByPlaceholderText(/Tìm theo tên khách, số điện thoại/i);
+    fireEvent.change(searchInput, { target: { value: 'Bích Ngọc' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('Nguyễn Bích Ngọc')).toBeInTheDocument();
+    });
+
+    const attachButton = screen.getByRole('button', { name: /Đính kèm/i });
+    fireEvent.click(attachButton);
+
+    expect(handleSelect).toHaveBeenCalledWith(
+      expect.objectContaining({
+        customerId: 202,
+        name: 'Nguyễn Bích Ngọc',
+        avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120',
       }),
       false
     );

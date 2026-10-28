@@ -2,7 +2,7 @@
 
 import React, { useContext } from 'react';
 import { ExternalLink } from 'lucide-react';
-import { message as antdMessage, Tooltip } from 'antd';
+import { message as antdMessage, Tooltip, Avatar } from 'antd';
 import type { MosChatCustomerCard } from '@mos-lab/shared';
 import { useTheme } from '../../../context/ThemeContext';
 import { MosChatContext } from '../context/MosChatContext';
@@ -34,6 +34,15 @@ export const MosChatCustomerCardAttachment: React.FC<MosChatCustomerCardAttachme
     }
   };
 
+  const initials = (card.name || 'KH')
+    .trim()
+    .split(/\s+/)
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(-2)
+    .join('')
+    .toUpperCase();
+
   return (
     <div
       data-testid="mos-chat-customer-card"
@@ -52,18 +61,33 @@ export const MosChatCustomerCardAttachment: React.FC<MosChatCustomerCardAttachme
         }
       }}
     >
-      <div className="min-w-0 flex-1">
-        <div className="text-[12px] font-bold text-white truncate flex items-center gap-1.5">
-          <span className="truncate">{card.name}</span>
-          <span className="text-amber-400 font-semibold truncate shrink-0">· {card.meta}</span>
-        </div>
-        {(card.cvName || card.phone) && (
-          <div className="text-[11px] text-slate-400 truncate mt-0.5">
-            {card.cvName || ''}
-            {card.cvName && card.phone ? ' · ' : ''}
-            {card.phone || ''}
+      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+        <Avatar
+          size={36}
+          src={card.avatarUrl || undefined}
+          data-testid="mos-chat-customer-card-avatar"
+          className="shrink-0 font-bold border border-amber-400/40 select-none shadow-sm"
+          style={{
+            backgroundColor: isDark ? '#b45309' : '#d97706',
+            color: '#ffffff',
+          }}
+        >
+          {initials}
+        </Avatar>
+
+        <div className="min-w-0 flex-1">
+          <div className="text-[12px] font-bold text-white truncate flex items-center gap-1.5">
+            <span className="truncate">{card.name}</span>
+            <span className="text-amber-400 font-semibold truncate shrink-0">· {card.meta}</span>
           </div>
-        )}
+          {(card.cvName || card.phone) && (
+            <div className="text-[11px] text-slate-400 truncate mt-0.5">
+              {card.cvName || ''}
+              {card.cvName && card.phone ? ' · ' : ''}
+              {card.phone || ''}
+            </div>
+          )}
+        </div>
       </div>
 
       <Tooltip title="Mở hồ sơ khách hàng">

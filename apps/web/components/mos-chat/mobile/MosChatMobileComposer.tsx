@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, SendHorizontal, Mic, Smile, X, Loader2, FileText, File, Sparkles, User } from 'lucide-react';
-import { message as antdMessage } from 'antd';
+import { message as antdMessage, Avatar } from 'antd';
 import type { MosChatImageAttachment, MosChatCustomerCard, SafeAny } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
 import type { MosChatStickerPackId } from '../mos-chat-stickers';
@@ -237,9 +237,24 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
           className="mb-2 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/35 flex items-center justify-between text-xs animate-in fade-in duration-200"
         >
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-5 h-5 rounded-full bg-amber-500/25 text-amber-400 flex items-center justify-center shrink-0">
-              <User size={12} />
-            </div>
+            <Avatar
+              size={22}
+              src={stagedCustomerCard.avatarUrl || undefined}
+              className="shrink-0 font-bold text-[10px] border border-amber-400/40 select-none shadow-sm"
+              style={{
+                backgroundColor: '#d97706',
+                color: '#ffffff',
+              }}
+            >
+              {(stagedCustomerCard.name || 'KH')
+                .trim()
+                .split(/\s+/)
+                .map((w) => w[0])
+                .filter(Boolean)
+                .slice(-2)
+                .join('')
+                .toUpperCase()}
+            </Avatar>
             <span className="font-bold text-white truncate">{stagedCustomerCard.name}</span>
             <span className="text-amber-400 font-medium truncate">({stagedCustomerCard.meta})</span>
             {stagedCustomerCard.cvName && (

@@ -123,6 +123,7 @@ export const MosChatCustomerPickerModal: React.FC<MosChatCustomerPickerModalProp
       meta: `${tierLabel} · ${c.totalVisits || 0} lần ghé`,
       phone: c.phone || '',
       cvName: c.assignedStaff?.displayName ? `CV phụ trách: ${c.assignedStaff.displayName}` : undefined,
+      avatarUrl: c.avatar || (c as SafeAny).avatarUrl || null,
     };
     onSelectCustomerCard(card, sendImmediately);
   };
@@ -136,6 +137,7 @@ export const MosChatCustomerPickerModal: React.FC<MosChatCustomerPickerModalProp
       meta: `Booking ${timeLabel} · ${serviceName}`,
       phone: apt.customerPhone || '',
       cvName: apt.branchName ? `Chi nhánh ${apt.branchName}` : undefined,
+      avatarUrl: apt.customerAvatar || (apt as SafeAny).avatar || null,
     };
     onSelectCustomerCard(card, sendImmediately);
   };
@@ -254,6 +256,7 @@ export const MosChatCustomerPickerModal: React.FC<MosChatCustomerPickerModalProp
                           <div className="flex items-center gap-3 min-w-0">
                             <Avatar
                               size={38}
+                              src={c.avatar || (c as SafeAny).avatarUrl || undefined}
                               style={{
                                 backgroundColor: isVip ? '#d4a84b' : '#3b82f6',
                                 color: '#ffffff',
@@ -363,27 +366,47 @@ export const MosChatCustomerPickerModal: React.FC<MosChatCustomerPickerModalProp
                             borderColor,
                           }}
                         >
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-semibold text-sm truncate" style={{ color: token.colorText }}>
-                                {apt.customerName}
-                              </span>
-                              <Tag color="cyan" className="text-[10.5px] px-1.5 py-0 rounded flex items-center gap-1">
-                                <Clock size={10} />
-                                {timeStr}
-                              </Tag>
-                            </div>
-                            <div className="text-xs text-slate-400 flex items-center gap-3 mt-0.5 flex-wrap">
-                              <span>{apt.serviceName || 'Mi Thiết Kế'}</span>
-                              {apt.branchName && (
-                                <span className="flex items-center gap-1">
-                                  <Building size={11} />
-                                  {apt.branchName}
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <Avatar
+                              size={38}
+                              src={apt.customerAvatar || (apt as SafeAny).avatar || undefined}
+                              style={{
+                                backgroundColor: '#0ea5e9',
+                                color: '#ffffff',
+                                fontWeight: 700,
+                              }}
+                            >
+                              {(apt.customerName || 'KH')
+                                .trim()
+                                .split(/\s+/)
+                                .map((w) => w[0])
+                                .filter(Boolean)
+                                .slice(-2)
+                                .join('')
+                                .toUpperCase()}
+                            </Avatar>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-semibold text-sm truncate" style={{ color: token.colorText }}>
+                                  {apt.customerName}
                                 </span>
-                              )}
-                              {apt.customerPhone && (
-                                <span>{apt.customerPhone}</span>
-                              )}
+                                <Tag color="cyan" className="text-[10.5px] px-1.5 py-0 rounded flex items-center gap-1">
+                                  <Clock size={10} />
+                                  {timeStr}
+                                </Tag>
+                              </div>
+                              <div className="text-xs text-slate-400 flex items-center gap-3 mt-0.5 flex-wrap">
+                                <span>{apt.serviceName || 'Mi Thiết Kế'}</span>
+                                {apt.branchName && (
+                                  <span className="flex items-center gap-1">
+                                    <Building size={11} />
+                                    {apt.branchName}
+                                  </span>
+                                )}
+                                {apt.customerPhone && (
+                                  <span>{apt.customerPhone}</span>
+                                )}
+                              </div>
                             </div>
                           </div>
 
@@ -436,11 +459,31 @@ export const MosChatCustomerPickerModal: React.FC<MosChatCustomerPickerModalProp
                       borderColor,
                     }}
                   >
-                    <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-sm truncate" style={{ color: token.colorText }}>
-                        {sample.name} · <span className="text-amber-500">{sample.meta}</span>
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <Avatar
+                        size={38}
+                        src={sample.avatarUrl || undefined}
+                        style={{
+                          backgroundColor: '#d4a84b',
+                          color: '#ffffff',
+                          fontWeight: 700,
+                        }}
+                      >
+                        {(sample.name || 'KH')
+                          .trim()
+                          .split(/\s+/)
+                          .map((w) => w[0])
+                          .filter(Boolean)
+                          .slice(-2)
+                          .join('')
+                          .toUpperCase()}
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-sm truncate" style={{ color: token.colorText }}>
+                          {sample.name} · <span className="text-amber-500">{sample.meta}</span>
+                        </div>
+                        {sample.cvName && <div className="text-xs text-slate-400 mt-0.5 truncate">{sample.cvName}</div>}
                       </div>
-                      {sample.cvName && <div className="text-xs text-slate-400 mt-0.5 truncate">{sample.cvName}</div>}
                     </div>
 
                     <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center ml-auto sm:ml-3">

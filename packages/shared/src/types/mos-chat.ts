@@ -43,6 +43,7 @@ export interface MosChatCustomerCard {
   meta: string;
   cvName?: string;
   phone?: string;
+  avatarUrl?: string | null;
 }
 
 export interface MosChatMessageEditHistoryItem {

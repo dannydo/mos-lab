@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Tooltip, Popover } from 'antd';
+import { Tooltip, Popover, Avatar } from 'antd';
 import {
   Sparkles,
   ImagePlus,
@@ -187,7 +187,24 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
               borderColor: 'rgba(212, 168, 75, 0.35)',
             }}
           >
-            <UserRoundPlus size={14} className="text-amber-400 shrink-0" />
+            <Avatar
+              size={22}
+              src={stagedCustomerCard.avatarUrl || undefined}
+              className="shrink-0 font-bold text-[10px] border border-amber-400/40 select-none shadow-sm"
+              style={{
+                backgroundColor: isDark ? '#b45309' : '#d97706',
+                color: '#ffffff',
+              }}
+            >
+              {(stagedCustomerCard.name || 'KH')
+                .trim()
+                .split(/\s+/)
+                .map((w) => w[0])
+                .filter(Boolean)
+                .slice(-2)
+                .join('')
+                .toUpperCase()}
+            </Avatar>
             <span className="font-semibold truncate" style={{ color: token.colorText }}>
               {stagedCustomerCard.name}
             </span>
