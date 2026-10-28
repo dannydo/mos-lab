@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import dayjs from 'dayjs';
 import type {
   MosChatConversation,
@@ -57,6 +58,8 @@ async function convertAttachmentToDataUrl(attachment?: MosChatImageAttachment): 
     return undefined;
   }
 }
+
+const CustomerDetailDrawer = dynamic(() => import('../../CustomerDetailDrawer'), { ssr: false });
 
 export const MosChatContext = createContext<MosChatContextValue | null>(null);
 
@@ -129,6 +132,15 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
 
   // Thread
   const [activeThreadMsg, setActiveThreadMsg] = useState<MosChatMessage | null>(null);
+
+  // Customer Detail Drawer state
+  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
+  const [customerDrawerOpen, setCustomerDrawerOpen] = useState<boolean>(false);
+
+  const openCustomerDetail = useCallback((customerId: number) => {
+    setSelectedCustomerId(customerId);
+    setCustomerDrawerOpen(true);
+  }, []);
 
   // AI Copilot
   const [isAiThinking, setIsAiThinking] = useState<boolean>(false);
@@ -1727,6 +1739,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       updateSpaceConfig,
       resetAiChat,
       refresh: fetchBootstrap,
+      openCustomerDetail,
     }),
     [
       effectiveUser,
@@ -1780,10 +1793,25 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
       updateMemberNickname,
       updateSpaceConfig,
       fetchBootstrap,
+      openCustomerDetail,
     ]
   );
 
-  return <MosChatContext.Provider value={value}>{children}</MosChatContext.Provider>;
+  return (
+    <MosChatContext.Provider value={value}>
+      {children}
+      {customerDrawerOpen && selectedCustomerId && (
+        <CustomerDetailDrawer
+          open={customerDrawerOpen}
+          customerId={selectedCustomerId}
+          onClose={() => {
+            setCustomerDrawerOpen(false);
+            setSelectedCustomerId(null);
+          }}
+        />
+      )}
+    </MosChatContext.Provider>
+  );
 };
 
 export function useMosChat(): MosChatContextValue {

@@ -136,4 +136,7 @@ export interface MosChatContextValue {
   // Refresh & AI
   resetAiChat?: () => Promise<void>;
   refresh: () => Promise<void>;
+
+  // Customer Detail Drawer Integration
+  openCustomerDetail?: (customerId: number) => void;
 }

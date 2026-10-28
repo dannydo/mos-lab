@@ -31,6 +31,7 @@ import { resolveMediaUrl } from '../../../lib/api-base-url';
 import { isImageAttachment, formatFileSize, getFileExtension, isUserMessageOwner } from '../utils/chat-helpers';
 import { speakText, stopSpeaking } from '../../voice-assistant/speech-utils';
 import { MosChatAvatar } from '../MosChatAvatar';
+import { MosChatCustomerCardAttachment } from '../components/MosChatCustomerCardAttachment';
 
 export interface MosChatMobileMessageItemProps {
   message: MosChatMessage;
@@ -345,6 +346,11 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
 
             {/* Rich Text / Markdown / Mermaid / Sticker Render */}
             <MosChatRichText content={message.text} isMe={isMe} isDark={true} />
+
+            {/* Customer Card Attachment */}
+            {message.customerCard && (
+              <MosChatCustomerCardAttachment card={message.customerCard} isMe={isMe} />
+            )}
 
             {/* Attachments */}
             {message.attachments &&

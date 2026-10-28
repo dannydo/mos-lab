@@ -38,6 +38,7 @@ import { handleSmartListEnterKey } from '../MosChatRichEditorModal';
 import { apiClient } from '../../../lib/api-client';
 import { uploadMultipleChatImages } from '../utils/chat-upload';
 import { MosChatAvatar } from '../MosChatAvatar';
+import { MosChatCustomerCardAttachment } from '../components/MosChatCustomerCardAttachment';
 import type {
   MosChatImageAttachment,
   MosChatMissionActionType,
@@ -811,6 +812,11 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
             </div>
           )}
 
+          {/* Customer Card Attachment */}
+          {!activeThreadMsg.isDeleted && activeThreadMsg.customerCard && (
+            <MosChatCustomerCardAttachment card={activeThreadMsg.customerCard} />
+          )}
+
           {/* Parent Message Attachments */}
           {!activeThreadMsg.isDeleted && activeThreadMsg.attachments && activeThreadMsg.attachments.length > 0 && (
             <div className="mt-2.5">
@@ -1426,6 +1432,11 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                   <div className="select-text">
                     <MosChatRichText content={reply.text} isMe={isMe} isDark={true} />
                   </div>
+
+                  {/* Customer Card Attachment for Reply */}
+                  {!reply.isDeleted && (reply as any).customerCard && (
+                    <MosChatCustomerCardAttachment card={(reply as any).customerCard} isMe={isMe} />
+                  )}
 
                   <div
                     className={`flex items-center justify-end gap-1 mt-1 text-[10px] tabular-nums ${

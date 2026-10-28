@@ -228,7 +228,12 @@ export const MosChatMobileStream: React.FC<MosChatMobileStreamProps> = ({
                 staffDirectory={staffDirectory}
               />
               <span className="font-semibold text-white shrink-0">{currentPinnedMsg.senderName}:</span>
-              <span className="text-slate-300 truncate">{currentPinnedMsg.text || 'Tệp đính kèm'}</span>
+              <span className="text-slate-300 truncate">
+                {currentPinnedMsg.text ||
+                  (currentPinnedMsg.customerCard
+                    ? `[Khách hàng: ${currentPinnedMsg.customerCard.name}]`
+                    : 'Tệp đính kèm')}
+              </span>
             </div>
           </div>
 

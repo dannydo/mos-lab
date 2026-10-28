@@ -41,6 +41,7 @@ import { buildMaiUrgentVoiceAnnouncement } from '../utils/chat-helpers';
 import { playNeuralSpeech } from '../../voice-assistant/speech-utils';
 import { MosChatWorkflowCard } from '../workflows/MosChatWorkflowCard';
 import { sanitizeMovedThreadDuplicates } from '../store/useChatRealtimeSync';
+import { MosChatCustomerCardAttachment } from './MosChatCustomerCardAttachment';
 
 export interface MosChatMessageFeedProps {
   isMobile: boolean;
@@ -1138,47 +1139,12 @@ export const MosChatMessageFeed: React.FC<MosChatMessageFeedProps> = React.memo(
 
                   {/* Customer Card Attachment */}
                   {m.customerCard && (
-                    <div
-                      className="mt-2 p-2.5 rounded-xl border flex items-center justify-between gap-3 max-w-[85%] cursor-pointer hover:border-amber-400/50 transition-colors"
-                      style={{
-                        background: isDark ? 'rgba(212, 168, 75, 0.1)' : 'rgba(212, 168, 75, 0.08)',
-                        borderColor: 'rgba(212, 168, 75, 0.3)',
-                      }}
-                      onClick={() => {
-                        if (m.customerCard?.customerId && openCustomerDetail) {
-                          openCustomerDetail(m.customerCard.customerId);
-                        } else {
-                          antdMessage.info(`Hồ sơ khách hàng: ${m.customerCard?.name}`);
-                        }
-                      }}
-                    >
-                      <div className="min-w-0">
-                        <div className="text-[12px] font-bold truncate">
-                          {m.customerCard.name} · <span style={{ color: '#d4a84b' }}>{m.customerCard.meta}</span>
-                        </div>
-                        {m.customerCard.cvName && (
-                          <div className="text-[11px] text-slate-400 truncate">{m.customerCard.cvName}</div>
-                        )}
-                      </div>
-                      <Tooltip title="Mở hồ sơ khách hàng">
-                        <button
-                          type="button"
-                          aria-label="Mở hồ sơ khách hàng"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (m.customerCard?.customerId && openCustomerDetail) {
-                              openCustomerDetail(m.customerCard.customerId);
-                            } else {
-                              antdMessage.info(`Hồ sơ khách hàng: ${m.customerCard?.name}`);
-                            }
-                          }}
-                          className="w-7 h-7 rounded-md inline-flex items-center justify-center shrink-0 cursor-pointer"
-                          style={{ background: surfaceRaised, border: `1px solid ${borderColor}` }}
-                        >
-                          <ExternalLink size={14} />
-                        </button>
-                      </Tooltip>
-                    </div>
+                    <MosChatCustomerCardAttachment
+                      card={m.customerCard}
+                      isMe={isMine}
+                      onOpenCustomer={openCustomerDetail}
+                      className="max-w-[85%]"
+                    />
                   )}
 
                   {/* Inline Task & Reminder Card (mOS Mission Inspired) */}
