@@ -221,7 +221,7 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
 
     // Should now be in room view
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/Nhắn tin trong #Shop Operations/i)).toBeTruthy();
+      expect(screen.getByPlaceholderText(/Nhắn tin #Shop Operations/i)).toBeTruthy();
       expect(screen.getByText('Chào cả nhà, hôm nay lịch dặm mi kín chỗ rồi nha!')).toBeTruthy();
     });
 
@@ -229,7 +229,7 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     expect(screen.getByLabelText('Tác vụ đính kèm')).toBeTruthy();
 
     // Type text into composer
-    const textarea = screen.getByPlaceholderText(/Nhắn tin trong #Shop Operations/i);
+    const textarea = screen.getByPlaceholderText(/Nhắn tin #Shop Operations/i);
     fireEvent.change(textarea, { target: { value: 'Tin nhắn gửi thử từ iPhone 12' } });
 
     // Send button appears when text is entered
@@ -287,7 +287,7 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     fireEvent.click(screen.getByText('Shop Operations'));
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/Nhắn tin trong #Shop Operations/i)).toBeTruthy();
+      expect(screen.getByPlaceholderText(/Nhắn tin #Shop Operations/i)).toBeTruthy();
     });
 
     // Tap Emoji button
@@ -310,7 +310,7 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     fireEvent.click(closeSheetBtn);
 
     // Textarea should contain the inserted emoji and send button is active
-    const textarea = screen.getByPlaceholderText(/Nhắn tin trong #Shop Operations/i) as HTMLTextAreaElement;
+    const textarea = screen.getByPlaceholderText(/Nhắn tin #Shop Operations/i) as HTMLTextAreaElement;
     expect(textarea.value).toContain('❤️');
     expect(screen.getByLabelText('Gửi tin nhắn')).toBeTruthy();
   });
@@ -570,10 +570,10 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     fireEvent.click(screen.getByText('Shop Operations'));
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/Nhắn tin trong #Shop Operations/i)).toBeTruthy();
+      expect(screen.getByPlaceholderText(/Nhắn tin #Shop Operations/i)).toBeTruthy();
     });
 
-    const textarea = screen.getByPlaceholderText(/Nhắn tin trong #Shop Operations/i);
+    const textarea = screen.getByPlaceholderText(/Nhắn tin #Shop Operations/i);
 
     // Type @ in composer
     fireEvent.change(textarea, { target: { value: '@' } });
@@ -764,7 +764,7 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     fireEvent.click(screen.getByText('Shop Operations'));
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/Nhắn tin trong #Shop Operations/i)).toBeTruthy();
+      expect(screen.getByPlaceholderText(/Nhắn tin #Shop Operations/i)).toBeTruthy();
     });
 
     // 1. Check file input has multiple and supports heic/heif
@@ -804,7 +804,7 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     });
 
     // 5. Type a message caption
-    const textarea = screen.getByPlaceholderText(/Nhắn tin trong #Shop Operations/i);
+    const textarea = screen.getByPlaceholderText(/Nhắn tin #Shop Operations/i);
     fireEvent.change(textarea, { target: { value: 'Bộ mi Katun hoàn thành' } });
 
     // 6. Send the message with attachments
@@ -909,7 +909,7 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     fireEvent.click(screen.getByText('Shop Operations'));
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/Nhắn tin trong #Shop Operations/i)).toBeTruthy();
+      expect(screen.getByPlaceholderText(/Nhắn tin #Shop Operations/i)).toBeTruthy();
     });
 
     // Open action sheet (+)
@@ -960,7 +960,7 @@ describe('MosChatMobileApp iPhone 12 Experience', () => {
     fireEvent.click(screen.getByText('Shop Operations'));
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/Nhắn tin trong #Shop Operations/i)).toBeTruthy();
+      expect(screen.getByPlaceholderText(/Nhắn tin #Shop Operations/i)).toBeTruthy();
     });
 
     // Open action sheet (+)
