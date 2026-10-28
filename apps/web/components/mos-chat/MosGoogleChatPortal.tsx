@@ -1077,8 +1077,17 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   });
   const [isPreviewModeMain, setIsPreviewModeMain] = useState(false);
   const [isPreviewModeThread, setIsPreviewModeThread] = useState(false);
-  const [composerCursorPos, setComposerCursorPos] = useState(0);
-  const [threadCursorPos, setThreadCursorPos] = useState(0);
+  // Performance: cursor positions stored as refs — they're only read in useCallback
+  // bodies (renderAppleNotesFormatToolbar), never in render/JSX paths.
+  // Converting to refs avoids ~2 parent re-renders per keystroke.
+  const composerCursorPosRef = useRef(0);
+  const setComposerCursorPos = useCallback((v: React.SetStateAction<number>) => {
+    composerCursorPosRef.current = typeof v === 'function' ? v(composerCursorPosRef.current) : v;
+  }, []);
+  const threadCursorPosRef = useRef(0);
+  const setThreadCursorPos = useCallback((v: React.SetStateAction<number>) => {
+    threadCursorPosRef.current = typeof v === 'function' ? v(threadCursorPosRef.current) : v;
+  }, []);
   const [inlineTextColor, setInlineTextColor] = useState('#f59e0b');
   const [colorPopoverScope, setColorPopoverScope] = useState<'main' | 'thread' | null>(null);
 
@@ -1098,6 +1107,10 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
     cursorIndex: -1,
     highlightedIndex: 0,
   });
+  // Performance: ref mirror for mention state to skip identical setMentionState calls
+  // that would trigger parent re-render cascade on every keystroke.
+  const mentionStateRef = useRef(mentionState);
+  mentionStateRef.current = mentionState;
 
   // Nickname Editing State (Per-Space Nicknames)
   const [editingNicknameTarget, setEditingNicknameTarget] = useState<{
@@ -7875,7 +7888,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       const isMain = scope === 'main';
       const isPreview = isMain ? isPreviewModeMain : isPreviewModeThread;
       const currentVal = isMain ? composerTextRef.current : threadInput;
-      const currentPos = isMain ? composerCursorPos : threadCursorPos;
+      const currentPos = isMain ? composerCursorPosRef.current : threadCursorPosRef.current;
       const activeFormats = detectActiveFormatsAtCursor(currentVal, currentPos);
 
       const togglePreview = () => {
@@ -8165,8 +8178,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
       isPreviewModeThread,
       composerTextRef,
       threadInput,
-      composerCursorPos,
-      threadCursorPos,
+      // composerCursorPosRef and threadCursorPosRef are refs — no dep needed
       colorPopoverScope,
       inlineTextColor,
       token.colorText,
@@ -8449,6 +8461,8 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   }, [mentionState.open, mentionState.query, mentionCandidates]);
 
   // Kiểm tra con trỏ chuột có đang nằm trong từ khoá bắt đầu bằng @ hay không
+  // Performance: uses mentionStateRef to skip setMentionState when state is unchanged,
+  // avoiding parent re-render cascade on every keystroke.
   const checkForMentionTrigger = useCallback((text: string, cursor: number, scope: 'main' | 'thread') => {
     const textBeforeCursor = text.slice(0, cursor);
     const match = textBeforeCursor.match(/(?:^|\s)@([a-zA-Z0-9_\u00C0-\u1EF9\s]*)$/u);
@@ -8460,6 +8474,12 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
 
       if (query.includes('\n') || query.length > 25 || (query.match(/\s/g) || []).length > 2) {
         setMentionState((prev) => (prev.open ? { ...prev, open: false } : prev));
+        return;
+      }
+
+      // Skip state update if mention popup is already showing the same query/position
+      const prev = mentionStateRef.current;
+      if (prev.open && prev.scope === scope && prev.query === query && prev.atIndex === atIndex) {
         return;
       }
 
@@ -10427,7 +10447,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     composerHasText={composerHasText}
                     updateComposerText={updateComposerText}
                     setComposerText={setComposerText}
-                    composerCursorPos={composerCursorPos}
+                    composerCursorPos={composerCursorPosRef.current}
                     setComposerCursorPos={setComposerCursorPos}
                     composerInputRef={composerInputRef}
                     stagedAttachments={stagedAttachments}

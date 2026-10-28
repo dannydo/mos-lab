@@ -53,8 +53,8 @@ export interface MosChatComposerProps {
   updateComposerText: (val: string) => void;
   /** Legacy setter (wraps updateComposerText for callback pattern) */
   setComposerText: React.Dispatch<React.SetStateAction<string>>;
-  composerCursorPos: number;
-  setComposerCursorPos: React.Dispatch<React.SetStateAction<number>>;
+  composerCursorPos?: number; // deprecated — now ref-based in parent, kept for compat
+  setComposerCursorPos: (v: React.SetStateAction<number>) => void;
   composerInputRef: React.RefObject<HTMLTextAreaElement | null>;
 
   stagedAttachments: MosChatImageAttachment[];
