@@ -177,7 +177,6 @@ describe('MosChatComposer Customer Card Staging', () => {
     isStrictDannySuperAdmin: true,
     aiThinkingActive: false,
     isDark: true,
-    token: { colorText: '#fff', colorBgElevated: '#1f1f1f' } as any,
     surfaceBg: '#141414',
     surfaceRaised: '#1f1f1f',
     borderColor: '#303030',

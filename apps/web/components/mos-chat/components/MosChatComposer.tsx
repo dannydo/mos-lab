@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Tooltip, Popover, Avatar } from 'antd';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Tooltip, Popover, Avatar, theme } from 'antd';
 import {
   Sparkles,
   ImagePlus,
@@ -39,7 +39,6 @@ export interface MosChatComposerProps {
   isStrictDannySuperAdmin: boolean;
   aiThinkingActive: boolean;
   isDark: boolean;
-  token: SafeAny;
   surfaceBg: string;
   surfaceRaised: string;
   borderColor: string;
@@ -100,7 +99,6 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
     isStrictDannySuperAdmin,
     aiThinkingActive,
     isDark,
-    token,
     surfaceBg,
     surfaceRaised,
     borderColor,
@@ -140,6 +138,10 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
     isComposingRef,
     lastCompositionEndMsRef,
   }) => {
+    // Performance: get token locally via hook instead of receiving as prop
+    // (parent's token object has a new identity on every render, defeating React.memo)
+    const { token } = theme.useToken();
+
     const [mobileActionOpen, setMobileActionOpen] = useState<boolean>(false);
     const [formatBarOpenMain, setFormatBarOpenMain] = useState<boolean>(true);
     const [isPreviewModeMain, setIsPreviewModeMain] = useState<boolean>(false);
@@ -1028,6 +1030,27 @@ export const MosChatComposer: React.FC<MosChatComposerProps> = React.memo(
           </div>
         )}
       </div>
+    );
+  },
+  // Performance: custom comparator — only re-render when DATA props change.
+  // Skip function/ref/render props (they change identity on every parent render
+  // but are behaviorally stable). Token is now sourced internally via useToken().
+  (prev, next) => {
+    return (
+      prev.isMobile === next.isMobile &&
+      prev.isDark === next.isDark &&
+      prev.surfaceBg === next.surfaceBg &&
+      prev.surfaceRaised === next.surfaceRaised &&
+      prev.borderColor === next.borderColor &&
+      prev.borderStrong === next.borderStrong &&
+      prev.composerHasText === next.composerHasText &&
+      prev.canUseAiCopilot === next.canUseAiCopilot &&
+      prev.isStrictDannySuperAdmin === next.isStrictDannySuperAdmin &&
+      prev.aiThinkingActive === next.aiThinkingActive &&
+      prev.isUrgentSend === next.isUrgentSend &&
+      prev.activeConversation?.id === next.activeConversation?.id &&
+      prev.stagedAttachments === next.stagedAttachments &&
+      prev.stagedCustomerCard === next.stagedCustomerCard
     );
   }
 );

@@ -1057,6 +1057,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
   const [stagedAttachments, setStagedAttachments] = useState<MosChatImageAttachment[]>([]);
   const [stagedCustomerCard, setStagedCustomerCard] = useState<MosChatCustomerCard | null>(null);
   const [customerPickerOpen, setCustomerPickerOpen] = useState(false);
+  const handleOpenCustomerPicker = useCallback(() => setCustomerPickerOpen(true), []);
   const [customerDrawerOpen, setCustomerDrawerOpen] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [sampleCardIndex, setSampleCardIndex] = useState(0);
@@ -10438,7 +10439,6 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     isStrictDannySuperAdmin={isStrictDannySuperAdmin}
                     aiThinkingActive={aiThinkingActive}
                     isDark={isDark}
-                    token={token}
                     surfaceBg={surfaceBg}
                     surfaceRaised={surfaceRaised}
                     borderColor={borderColor}
@@ -10460,7 +10460,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     handleSendMain={handleSendMain}
                     triggerFilePicker={triggerFilePicker}
                     handleSendQuickCustomerCard={handleSendQuickCustomerCard}
-                    handleOpenCustomerPicker={() => setCustomerPickerOpen(true)}
+                    handleOpenCustomerPicker={handleOpenCustomerPicker}
                     openTaskModalFromMessage={openTaskModalFromMessage}
                     checkForMentionTrigger={checkForMentionTrigger}
                     handleClipboardPaste={handleClipboardPaste}
