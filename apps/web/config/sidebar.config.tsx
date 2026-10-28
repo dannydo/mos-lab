@@ -548,11 +548,20 @@ export function getSidebarGroups(
   // Group: TÀI CHÍNH
   const financeItems: SidebarItemConfig[] = [];
   if (isAdmin || ['manager', 'accountant', 'boss', 'cho'].includes(normalizedRole)) {
+    const fundChildren: SidebarItemConfig[] = [
+      {
+        key: 'finance-funds-manage',
+        label: 'Quản lý Quỹ',
+        icon: <AppIcon icon={Settings2} size="sm" />,
+        path: '/dashboard/funds',
+      },
+    ];
+
     financeItems.push({
-      key: 'finance-funds',
-      label: 'Quỹ hoạt động nội bộ',
+      key: 'finance-funds-parent',
+      label: 'Quỹ Hoạt Động Nội Bộ',
       icon: <AppIcon icon={WalletCards} size="sm" className="text-emerald-500" />,
-      path: '/dashboard/funds',
+      children: fundChildren,
     });
     financeItems.push({
       key: 'finance-cash-flow',
@@ -668,6 +677,8 @@ export function getSelectedMenuKey(
   if (pathname.includes('/dashboard/catalog')) return 'catalog';
   if (pathname.includes('/dashboard/architecture')) return 'architecture';
   if (pathname.includes('/dashboard/design-system')) return 'design-system';
+  if (pathname.includes('/dashboard/funds')) return 'finance-funds-manage';
+  if (pathname.includes('/dashboard/finance/cash-flow')) return 'finance-cash-flow';
   if (pathname.includes('/dashboard/bug-reports')) return 'bug-reports';
   if (pathname.includes('/dashboard/cskh')) return 'cs-hub';
   if (pathname.includes('/dashboard/cs')) return 'cs';

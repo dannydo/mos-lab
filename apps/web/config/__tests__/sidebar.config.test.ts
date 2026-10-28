@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getSidebarGroups } from '../sidebar.config';
+import { getSidebarGroups, getSelectedMenuKey } from '../sidebar.config';
 
 describe('Sidebar Configuration CV Invariants', () => {
   const cvRoles = ['cv', 'lt', 'technician', 'ktv'];
@@ -82,5 +82,24 @@ describe('Sidebar Configuration CV Invariants', () => {
     const managerItems = managerGroups.flatMap((g) => g.items);
     expect(managerItems.some((item) => item.key === 'dashboard')).toBe(true);
     expect(managerItems.some((item) => item.key === 'customers-parent')).toBe(true);
+  });
+
+  it('should configure internal funds under finance group with parent Quỹ Hoạt Động Nội Bộ and child Quản lý Quỹ (MOS-BUG-174)', () => {
+    const adminGroups = getSidebarGroups('admin');
+    const financeGroup = adminGroups.find((g) => g.groupKey === 'grp-finance');
+    expect(financeGroup).toBeDefined();
+
+    const fundsParent = financeGroup?.items.find((item) => item.key === 'finance-funds-parent');
+    expect(fundsParent).toBeDefined();
+    expect(fundsParent?.label).toBe('Quỹ Hoạt Động Nội Bộ');
+    expect(fundsParent?.children).toBeDefined();
+    expect(fundsParent?.children?.length).toBe(1);
+
+    const fundsManage = fundsParent?.children?.[0];
+    expect(fundsManage?.key).toBe('finance-funds-manage');
+    expect(fundsManage?.label).toBe('Quản lý Quỹ');
+    expect(fundsManage?.path).toBe('/dashboard/funds');
+
+    expect(getSelectedMenuKey('/dashboard/funds')).toBe('finance-funds-manage');
   });
 });

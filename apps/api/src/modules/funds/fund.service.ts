@@ -35,165 +35,18 @@ export const DEFAULT_TELESALE_FUND_ID = 'fund-telesale-card';
 
 export class FundService {
   /**
-   * Khởi tạo cấu hình mặc định cho Quỹ Nạp Card Telesale nếu chưa tồn tại
+   * @deprecated Vô hiệu hóa khởi tạo tự động theo Bước 1 Tái cấu trúc Quản lý Quỹ (MOS-BUG-174).
+   * Không tự động tạo Quỹ Nạp Card Telesale giả lập nữa. Quỹ phải do Quản trị viên thiết lập.
    */
-  static async ensureDefaultFund(crm: CrmPrismaClient): Promise<void> {
-    const existing = await crm.crmFund.findUnique({
-      where: { id: DEFAULT_TELESALE_FUND_ID },
-    });
-
-    if (existing) return;
-
-    const now = new Date();
-    const currentMonth = now.getMonth() + 1;
-    const currentYear = now.getFullYear();
-    const periodName = `Kỳ Tháng ${currentMonth}/${currentYear}`;
-    const startDate = new Date(currentYear, now.getMonth(), 1);
-    const endDate = new Date(currentYear, now.getMonth() + 1, 0, 23, 59, 59);
-
-    await crm.$transaction(async (tx) => {
-      // 1. Tạo Quỹ Nạp Card Telesale
-      const fund = await tx.crmFund.create({
-        data: {
-          id: DEFAULT_TELESALE_FUND_ID,
-          code: 'TELESALE_CARD',
-          name: 'Quỹ Nạp Card Telesale',
-          description:
-            'Quỹ nạp tiền điện thoại trực tiếp cho nhân sự Telesale phục vụ tư vấn khách hàng chuỗi Wings',
-          currentBalance: new Prisma.Decimal(1000000),
-          maxQuota: new Prisma.Decimal(1000000),
-          unitQuota: new Prisma.Decimal(30000),
-          alertThresholdPercent: 80,
-          toleranceMode: 'STRICT',
-          toleranceAmount: new Prisma.Decimal(20000),
-          status: 'ACTIVE',
-        },
-      });
-
-      // 2. Tạo các vai trò động của Quỹ
-      const rolesData = [
-        {
-          id: `${fund.id}-role-holder`,
-          fundId: fund.id,
-          roleKey: 'HOLDER',
-          roleName: 'Thủ Quỹ (Nạp Card & Báo Cáo)',
-          permissionsJson: JSON.stringify([
-            'CREATE_EXPENSE',
-            'REQUEST_REPLENISHMENT',
-            'VIEW_REPORTS',
-          ]),
-        },
-        {
-          id: `${fund.id}-role-approver-l1`,
-          fundId: fund.id,
-          roleKey: 'APPROVER_L1',
-          roleName: 'Quản Lý (Phê Duyệt L1)',
-          permissionsJson: JSON.stringify(['APPROVE_L1', 'VIEW_REPORTS']),
-        },
-        {
-          id: `${fund.id}-role-approver-l2`,
-          fundId: fund.id,
-          roleKey: 'APPROVER_L2',
-          roleName: 'CEO Danny (Phê Duyệt Chủ Trương L2)',
-          permissionsJson: JSON.stringify([
-            'APPROVE_L2',
-            'CONFIG_FUND',
-            'VIEW_REPORTS',
-          ]),
-        },
-        {
-          id: `${fund.id}-role-disburser`,
-          fundId: fund.id,
-          roleKey: 'DISBURSER',
-          roleName: 'Kế Toán (Kiểm Tra & Thực Thi Giải Ngân)',
-          permissionsJson: JSON.stringify([
-            'DISBURSE',
-            'RECONCILE',
-            'VIEW_REPORTS',
-          ]),
-        },
-      ];
-
-      for (const r of rolesData) {
-        await tx.crmFundRole.create({ data: r });
-      }
-
-      // 3. Gán nhân sự đảm nhiệm mặc định
-      const assignments = [
-        {
-          id: `${fund.id}-assign-holder`,
-          fundId: fund.id,
-          roleKey: 'HOLDER',
-          staffId: 2, // Bích Phượng
-          staffName: 'Bích Phượng',
-        },
-        {
-          id: `${fund.id}-assign-approver-l1`,
-          fundId: fund.id,
-          roleKey: 'APPROVER_L1',
-          staffId: 3, // Quản lý
-          staffName: 'Quản Lý Vận Hành',
-        },
-        {
-          id: `${fund.id}-assign-approver-l2`,
-          fundId: fund.id,
-          roleKey: 'APPROVER_L2',
-          staffId: 1, // Danny Do
-          staffName: 'Danny Do (CEO)',
-        },
-        {
-          id: `${fund.id}-assign-disburser`,
-          fundId: fund.id,
-          roleKey: 'DISBURSER',
-          staffId: 4, // Bùi Sinh Nguyên / Bùi Tổng
-          staffName: 'Bùi Sinh Nguyên (Kế Toán)',
-        },
-      ];
-
-      for (const a of assignments) {
-        await tx.crmFundRoleAssignment.create({ data: a });
-      }
-
-      // 4. Tạo Kỳ kế toán đầu tiên
-      const period = await tx.crmFundPeriod.create({
-        data: {
-          id: `${fund.id}-period-${currentYear}-${String(currentMonth).padStart(2, '0')}`,
-          fundId: fund.id,
-          periodName,
-          startDate,
-          endDate,
-          openingBalance: new Prisma.Decimal(1000000),
-          totalIncome: new Prisma.Decimal(1000000),
-          totalExpense: new Prisma.Decimal(0),
-          systemBalance: new Prisma.Decimal(1000000),
-          status: 'OPEN',
-        },
-      });
-
-      // 5. Giao dịch cấp vốn ban đầu
-      await tx.crmFundTransaction.create({
-        data: {
-          id: `${fund.id}-tx-initial`,
-          fundId: fund.id,
-          periodId: period.id,
-          type: 'TOPUP',
-          amount: new Prisma.Decimal(1000000),
-          balanceBefore: new Prisma.Decimal(0),
-          balanceAfter: new Prisma.Decimal(1000000),
-          description: 'Cấp vốn khởi tạo định mức Quỹ Nạp Card Telesale',
-          status: 'COMPLETED',
-          actorStaffId: 1,
-          actorStaffName: 'Danny Do (CEO)',
-        },
-      });
-    });
+  static async ensureDefaultFund(_crm: CrmPrismaClient): Promise<void> {
+    // Disabled per MOS-BUG-174: All funds must be explicitly configured.
+    return;
   }
 
   /**
    * Danh sách toàn bộ quỹ hoạt động nội bộ
    */
   static async listFunds(crm: CrmPrismaClient): Promise<Fund[]> {
-    await this.ensureDefaultFund(crm);
     const funds = await crm.crmFund.findMany({
       include: {
         roles: true,
@@ -290,8 +143,6 @@ export class FundService {
    * Chi tiết & Tổng quan một Quỹ
    */
   static async getFundOverview(crm: CrmPrismaClient, fundId: string): Promise<Fund & { recentTransactions: FundTransaction[]; pendingProposals: FundProposal[] }> {
-    await this.ensureDefaultFund(crm);
-
     const f = await crm.crmFund.findUnique({
       where: { id: fundId },
       include: {
