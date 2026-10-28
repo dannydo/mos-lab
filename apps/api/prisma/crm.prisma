@@ -3944,4 +3944,156 @@ model CrmChatWorkflowInstance {
   @@map("crm_chat_workflow_instances")
 }
 
+// ==========================================
+// mOS Fund Master - Quản lý Quỹ Hoạt Động Nội Bộ
+// ==========================================
+
+model CrmFund {
+  id                    String   @id @db.VarChar(64)
+  code                  String   @unique @db.VarChar(64)
+  name                  String   @db.VarChar(255)
+  description           String?  @db.Text
+  currentBalance        Decimal  @default(0) @map("current_balance") @db.Decimal(15, 2)
+  maxQuota              Decimal  @default(1000000) @map("max_quota") @db.Decimal(15, 2)
+  unitQuota             Decimal  @default(30000) @map("unit_quota") @db.Decimal(15, 2)
+  alertThresholdPercent Int      @default(80) @map("alert_threshold_percent")
+  toleranceMode         String   @default("STRICT") @map("tolerance_mode") @db.VarChar(32)
+  toleranceAmount       Decimal  @default(0) @map("tolerance_amount") @db.Decimal(15, 2)
+  status                String   @default("ACTIVE") @db.VarChar(32)
+  createdAt             DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  roles        CrmFundRole[]
+  assignments  CrmFundRoleAssignment[]
+  proposals    CrmFundProposal[]
+  transactions CrmFundTransaction[]
+  periods      CrmFundPeriod[]
+
+  @@map("crm_funds")
+}
+
+model CrmFundRole {
+  id              String   @id @db.VarChar(64)
+  fundId          String   @map("fund_id") @db.VarChar(64)
+  roleKey         String   @map("role_key") @db.VarChar(64)
+  roleName        String   @map("role_name") @db.VarChar(128)
+  permissionsJson String?  @map("permissions_json") @db.Text
+  createdAt       DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  fund CrmFund @relation(fields: [fundId], references: [id], onDelete: Cascade)
+
+  @@unique([fundId, roleKey], map: "crm_fund_role_fund_key_uniq")
+  @@index([fundId], map: "crm_fund_role_fund_idx")
+  @@map("crm_fund_roles")
+}
+
+model CrmFundRoleAssignment {
+  id                String   @id @db.VarChar(64)
+  fundId            String   @map("fund_id") @db.VarChar(64)
+  roleKey           String   @map("role_key") @db.VarChar(64)
+  staffId           Int      @map("staff_id")
+  staffName         String   @map("staff_name") @db.VarChar(150)
+  assignedByStaffId Int?     @map("assigned_by_staff_id")
+  createdAt         DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  fund CrmFund @relation(fields: [fundId], references: [id], onDelete: Cascade)
+
+  @@index([fundId, roleKey], map: "crm_fund_assignment_fund_role_idx")
+  @@index([staffId], map: "crm_fund_assignment_staff_idx")
+  @@map("crm_fund_role_assignments")
+}
+
+model CrmFundProposal {
+  id                          String    @id @db.VarChar(64)
+  fundId                      String    @map("fund_id") @db.VarChar(64)
+  proposalType                String    @map("proposal_type") @db.VarChar(32)
+  title                       String    @db.VarChar(255)
+  description                 String?   @db.Text
+  requestedAmount             Decimal   @map("requested_amount") @db.Decimal(15, 2)
+  approvedAmount              Decimal?  @map("approved_amount") @db.Decimal(15, 2)
+  actualDisbursedAmount       Decimal?  @map("actual_disbursed_amount") @db.Decimal(15, 2)
+  status                      String    @default("PENDING_APPROVAL") @db.VarChar(32)
+  currentApprovalLevel        Int       @default(1) @map("current_approval_level")
+  approvalsJson               String?   @map("approvals_json") @db.Text
+  disbursedByStaffId          Int?      @map("disbursed_by_staff_id")
+  disbursedByName             String?   @map("disbursed_by_name") @db.VarChar(150)
+  disbursedAt                 DateTime? @map("disbursed_at") @db.DateTime(0)
+  paymentMethod               String?   @map("payment_method") @db.VarChar(64)
+  bankRefCode                 String?   @map("bank_ref_code") @db.VarChar(128)
+  disbursementReceiptUrlsJson String?   @map("disbursement_receipt_urls_json") @db.Text
+  disbursementNote            String?   @map("disbursement_note") @db.Text
+  reapprovalReason            String?   @map("reapproval_reason") @db.Text
+  createdByStaffId            Int       @map("created_by_staff_id")
+  createdByName               String    @map("created_by_name") @db.VarChar(150)
+  createdAt                   DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt                   DateTime  @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  fund         CrmFund              @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  transactions CrmFundTransaction[]
+
+  @@index([fundId, status], map: "crm_fund_proposal_fund_status_idx")
+  @@map("crm_fund_proposals")
+}
+
+model CrmFundTransaction {
+  id                   String   @id @db.VarChar(64)
+  fundId               String   @map("fund_id") @db.VarChar(64)
+  periodId             String?  @map("period_id") @db.VarChar(64)
+  proposalId           String?  @map("proposal_id") @db.VarChar(64)
+  type                 String   @db.VarChar(32)
+  amount               Decimal  @db.Decimal(15, 2)
+  balanceBefore        Decimal  @map("balance_before") @db.Decimal(15, 2)
+  balanceAfter         Decimal  @map("balance_after") @db.Decimal(15, 2)
+  description          String   @db.Text
+  status               String   @default("COMPLETED") @db.VarChar(32)
+  beneficiaryStaffId   Int?     @map("beneficiary_staff_id")
+  beneficiaryStaffName String?  @map("beneficiary_staff_name") @db.VarChar(150)
+  beneficiaryPhone     String?  @map("beneficiary_phone") @db.VarChar(32)
+  telco                String?  @db.VarChar(32)
+  receiptUrlsJson      String?  @map("receipt_urls_json") @db.Text
+  actorStaffId         Int      @map("actor_staff_id")
+  actorStaffName       String   @map("actor_staff_name") @db.VarChar(150)
+  createdAt            DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  fund     CrmFund          @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  period   CrmFundPeriod?   @relation(fields: [periodId], references: [id], onDelete: SetNull)
+  proposal CrmFundProposal? @relation(fields: [proposalId], references: [id], onDelete: SetNull)
+
+  @@index([fundId, createdAt], map: "crm_fund_tx_fund_created_idx")
+  @@index([periodId], map: "crm_fund_tx_period_idx")
+  @@index([proposalId], map: "crm_fund_tx_proposal_idx")
+  @@map("crm_fund_transactions")
+}
+
+model CrmFundPeriod {
+  id                      String    @id @db.VarChar(64)
+  fundId                  String    @map("fund_id") @db.VarChar(64)
+  periodName              String    @map("period_name") @db.VarChar(128)
+  startDate               DateTime  @map("start_date") @db.DateTime(0)
+  endDate                 DateTime  @map("end_date") @db.DateTime(0)
+  openingBalance          Decimal   @map("opening_balance") @db.Decimal(15, 2)
+  closingBalance          Decimal?  @map("closing_balance") @db.Decimal(15, 2)
+  totalIncome             Decimal   @default(0) @map("total_income") @db.Decimal(15, 2)
+  totalExpense            Decimal   @default(0) @map("total_expense") @db.Decimal(15, 2)
+  systemBalance           Decimal?  @map("system_balance") @db.Decimal(15, 2)
+  actualBalance           Decimal?  @map("actual_balance") @db.Decimal(15, 2)
+  variance                Decimal?  @db.Decimal(15, 2)
+  adjustmentTransactionId String?   @map("adjustment_transaction_id") @db.VarChar(64)
+  status                  String    @default("OPEN") @db.VarChar(32)
+  lockedByStaffId         Int?      @map("locked_by_staff_id")
+  lockedByName            String?   @map("locked_by_name") @db.VarChar(150)
+  lockedAt                DateTime? @map("locked_at") @db.DateTime(0)
+  notes                   String?   @db.Text
+  createdAt               DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt               DateTime  @default(now()) @updatedAt @map("updated_at") @db.DateTime(0)
+
+  fund         CrmFund              @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  transactions CrmFundTransaction[]
+
+  @@index([fundId, status], map: "crm_fund_period_fund_status_idx")
+  @@map("crm_fund_periods")
+}
+
 

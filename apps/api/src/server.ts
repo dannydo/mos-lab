@@ -50,6 +50,7 @@ import { telesaleCompetencyRoutes } from './modules/telesale-competency/telesale
 import { mosChatRoutes } from './modules/chat/routes.js';
 import { bibleRoutes } from './modules/bible/bible.routes.js';
 import { cashFlowRoutes } from './modules/cash-flow/routes.js';
+import { fundRoutes } from './modules/funds/routes.js';
 import notificationRoutes from './modules/notifications/routes.js';
 import { startBugReportCleanup } from './modules/bug-reports/bug-report.service.js';
 import { RequestClassificationService } from './modules/bug-reports/request-classification.service.js';
@@ -364,6 +365,7 @@ const start = async () => {
     await server.register(mosChatRoutes, { prefix: '/api' });
     await server.register(bibleRoutes, { prefix: '/api' });
     await server.register(cashFlowRoutes, { prefix: '/api' });
+    await server.register(fundRoutes, { prefix: '/api' });
     await server.register(notificationRoutes, { prefix: '/api' });
 
     if (isSafeDev()) {

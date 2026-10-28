@@ -549,6 +549,12 @@ export function getSidebarGroups(
   const financeItems: SidebarItemConfig[] = [];
   if (isAdmin || ['manager', 'accountant', 'boss', 'cho'].includes(normalizedRole)) {
     financeItems.push({
+      key: 'finance-funds',
+      label: 'Quỹ hoạt động nội bộ',
+      icon: <AppIcon icon={WalletCards} size="sm" className="text-emerald-500" />,
+      path: '/dashboard/funds',
+    });
+    financeItems.push({
       key: 'finance-cash-flow',
       label: 'Dự báo dòng tiền',
       icon: <AppIcon icon={WalletCards} size="sm" className="text-emerald-500" />,
