@@ -8940,10 +8940,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         return { seenBy: [] as MosChatReadReceiptEntry[], unseenBy: [] as MosChatReadReceiptEntry[] };
       }
       const myStaffId = Number(currentUserStaffMember.id || currentUser?.id || 0);
-      const otherReceipts = (conv.readReceipts || []).filter(
+      const rawReceipts = (conv.readReceipts || []).filter(
         (r) =>
           r.staffId !== myStaffId && !doesReceiptMatchAuthor(r.staffId, r.displayName, msg.senderId, msg.senderName)
       );
+      // Dedup by staffId — keep the entry with the highest readCount (most recently read)
+      const receiptMap = new Map<number, (typeof rawReceipts)[0]>();
+      for (const r of rawReceipts) {
+        const existing = receiptMap.get(r.staffId);
+        if (!existing || r.readCount > existing.readCount) {
+          receiptMap.set(r.staffId, r);
+        }
+      }
+      const otherReceipts = Array.from(receiptMap.values());
       const seenBy = otherReceipts.filter((r) => r.readCount >= msgIdx + 1);
       const unseenBy = otherReceipts.filter((r) => r.readCount < msgIdx + 1);
       return { seenBy, unseenBy };
@@ -8962,10 +8971,19 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         return { seenBy: [] as MosChatThreadReadReceiptEntry[], unseenBy: [] as MosChatThreadReadReceiptEntry[] };
       }
       const myStaffId = Number(currentUserStaffMember.id || currentUser?.id || 0);
-      const otherReceipts = (parentMsg.threadReadReceipts || []).filter(
+      const rawThreadReceipts = (parentMsg.threadReadReceipts || []).filter(
         (r) =>
           r.staffId !== myStaffId && !doesReceiptMatchAuthor(r.staffId, r.displayName, reply.senderId, reply.senderName)
       );
+      // Dedup by staffId — keep the entry with the highest readReplyCount
+      const threadReceiptMap = new Map<number, (typeof rawThreadReceipts)[0]>();
+      for (const r of rawThreadReceipts) {
+        const existing = threadReceiptMap.get(r.staffId);
+        if (!existing || r.readReplyCount > existing.readReplyCount) {
+          threadReceiptMap.set(r.staffId, r);
+        }
+      }
+      const otherReceipts = Array.from(threadReceiptMap.values());
       const seenBy = otherReceipts.filter((r) => r.readReplyCount >= replyIdx + 1);
       const unseenBy = otherReceipts.filter((r) => r.readReplyCount < replyIdx + 1);
       return { seenBy, unseenBy };
