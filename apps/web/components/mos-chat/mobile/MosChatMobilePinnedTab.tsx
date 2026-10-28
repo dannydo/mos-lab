@@ -20,6 +20,7 @@ import type { MosChatMessage, MosChatImageAttachment } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
 import { MosChatAvatar } from '../MosChatAvatar';
 import { MosChatRichText } from '../MosChatRichText';
+import { MosChatCustomerCardAttachment } from '../components/MosChatCustomerCardAttachment';
 import { resolveMediaUrl } from '../../../lib/api-base-url';
 
 export interface MosChatMobilePinnedTabProps {
@@ -206,6 +207,11 @@ export const MosChatMobilePinnedTab: React.FC<MosChatMobilePinnedTabProps> = ({
                   <div className="text-slate-200 line-clamp-4 break-words leading-relaxed pl-0.5">
                     <MosChatRichText content={m.text} isMe={false} isDark={true} />
                   </div>
+                )}
+
+                {/* Customer Card Attachment */}
+                {m.customerCard && (
+                  <MosChatCustomerCardAttachment card={m.customerCard} />
                 )}
 
                 {/* Attachments preview */}

@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, SendHorizontal, Mic, Smile, X, Loader2, FileText, File, Sparkles } from 'lucide-react';
+import { Plus, SendHorizontal, Mic, Smile, X, Loader2, FileText, File, Sparkles, User } from 'lucide-react';
 import { message as antdMessage } from 'antd';
-import type { MosChatImageAttachment, SafeAny } from '@mos-lab/shared';
+import type { MosChatImageAttachment, MosChatCustomerCard, SafeAny } from '@mos-lab/shared';
 import { useMosChat } from '../context/MosChatContext';
 import type { MosChatStickerPackId } from '../mos-chat-stickers';
 import { MosChatMobileMentionAutocomplete } from './MosChatMobileMentionAutocomplete';
@@ -27,6 +27,8 @@ export interface MosChatMobileComposerProps {
   onSendSuccess?: () => void;
   text?: string;
   onTextChange?: (text: string) => void;
+  stagedCustomerCard?: MosChatCustomerCard | null;
+  onRemoveCustomerCard?: () => void;
 }
 
 export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
@@ -38,6 +40,8 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
   onSendSuccess,
   text: controlledText,
   onTextChange,
+  stagedCustomerCard,
+  onRemoveCustomerCard,
 }) => {
   const { sendMessage, replyingToMessage, setReplyingToMessage, activeConversation, staffDirectory } = useMosChat();
 
@@ -92,11 +96,12 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
   }, [text]);
 
   const hasAttachments = attachedImages.length > 0;
-  const hasSendableContent = Boolean(text.trim() || hasAttachments);
+  const hasCustomerCard = Boolean(stagedCustomerCard);
+  const hasSendableContent = Boolean(text.trim() || hasAttachments || hasCustomerCard);
 
   const handleSend = async () => {
     const trimmed = text.trim();
-    if ((!trimmed && !hasAttachments) || isSending || isUploadingImages) return;
+    if ((!trimmed && !hasAttachments && !hasCustomerCard) || isSending || isUploadingImages) return;
 
     // Chỉ cho phép tag thành viên trong nhóm. Nếu có người ngoài nhóm, cảnh báo mời vào nhóm trước
     if (trimmed && activeConversation?.type?.toLowerCase() === 'space') {
@@ -121,11 +126,13 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
     const success = await sendMessage(trimmed, {
       replyToId: replyingToMessage?.id,
       attachments: hasAttachments ? attachedImages : undefined,
+      customerCard: stagedCustomerCard || undefined,
     });
     setIsSending(false);
 
     if (success) {
       setText('');
+      onRemoveCustomerCard?.();
       onSendSuccess?.();
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
@@ -216,6 +223,34 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
             type="button"
             onClick={() => setReplyingToMessage(null)}
             className="p-1 text-slate-400 hover:text-white rounded-full"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      {/* Staged Customer Card Preview */}
+      {stagedCustomerCard && (
+        <div
+          data-testid="mos-chat-mobile-staged-customer"
+          className="mb-2 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/35 flex items-center justify-between text-xs animate-in fade-in duration-200"
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-5 h-5 rounded-full bg-amber-500/25 text-amber-400 flex items-center justify-center shrink-0">
+              <User size={12} />
+            </div>
+            <span className="font-bold text-white truncate">{stagedCustomerCard.name}</span>
+            <span className="text-amber-400 font-medium truncate">({stagedCustomerCard.meta})</span>
+            {stagedCustomerCard.cvName && (
+              <span className="text-slate-400 truncate hidden sm:inline">· {stagedCustomerCard.cvName}</span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onRemoveCustomerCard}
+            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 active:scale-95 transition-all shrink-0"
+            title="Bỏ đính kèm thẻ khách hàng"
+            aria-label="Bỏ đính kèm thẻ khách hàng"
           >
             <X className="w-3.5 h-3.5" />
           </button>

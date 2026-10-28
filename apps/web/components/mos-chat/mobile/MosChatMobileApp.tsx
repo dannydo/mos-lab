@@ -41,7 +41,8 @@ import {
 } from '../constants/chat-constants';
 import { apiClient } from '../../../lib/api-client';
 import { uploadMultipleChatImages } from '../utils/chat-upload';
-import type { MosChatImageAttachment } from '@mos-lab/shared';
+import { MosChatCustomerPickerModal } from '../MosChatCustomerPickerModal';
+import type { MosChatImageAttachment, MosChatCustomerCard } from '@mos-lab/shared';
 
 export interface MosChatMobileAppProps {
   standalone?: boolean;
@@ -87,6 +88,8 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
   } | null>(null);
   const [attachedImages, setAttachedImages] = useState<MosChatImageAttachment[]>([]);
   const [isUploadingImages, setIsUploadingImages] = useState<boolean>(false);
+  const [stagedCustomerCard, setStagedCustomerCard] = useState<MosChatCustomerCard | null>(null);
+  const [customerPickerOpen, setCustomerPickerOpen] = useState<boolean>(false);
 
   const prevMsgForMoving = useMemo(() => {
     if (!movingMsgForThread) return null;
@@ -582,9 +585,14 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
                 attachedImages={attachedImages}
                 onRemoveAttachment={(id) => setAttachedImages((prev) => prev.filter((img) => img.id !== id))}
                 isUploadingImages={isUploadingImages}
-                onSendSuccess={() => setAttachedImages([])}
+                onSendSuccess={() => {
+                  setAttachedImages([]);
+                  setStagedCustomerCard(null);
+                }}
                 text={composerText}
                 onTextChange={setComposerText}
+                stagedCustomerCard={stagedCustomerCard}
+                onRemoveCustomerCard={() => setStagedCustomerCard(null)}
               />
             </>
           )}
@@ -632,6 +640,7 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
       <MosChatMobileActionSheet
         open={actionSheetOpen}
         onClose={() => setActionSheetOpen(false)}
+        onSelectCustomer={() => setCustomerPickerOpen(true)}
         onSelectFile={() => fileInputRef.current?.click()}
         onSelectImage={() => fileInputRef.current?.click()}
         onSelectDrive={() => antdMessage.info('Mở liên kết Google Drive')}
@@ -648,6 +657,21 @@ export const MosChatMobileApp: React.FC<MosChatMobileAppProps> = ({ standalone =
           setActiveConvId(AI_COPILOT_CONV_ID);
           setMobileView('room');
           setActiveSubtab('chat');
+        }}
+      />
+
+      {/* Customer / Booking Picker Modal */}
+      <MosChatCustomerPickerModal
+        open={customerPickerOpen}
+        onClose={() => setCustomerPickerOpen(false)}
+        onSelectCustomerCard={(card, sendImmediately = false) => {
+          if (sendImmediately) {
+            sendMessage('', { customerCard: card });
+          } else {
+            setStagedCustomerCard(card);
+            antdMessage.success(`Đã đính kèm thẻ khách hàng ${card.name} vào ô soạn thảo`);
+          }
+          setCustomerPickerOpen(false);
         }}
       />
 
