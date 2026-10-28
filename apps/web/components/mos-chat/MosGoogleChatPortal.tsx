@@ -9934,189 +9934,35 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                   </Tooltip>
                 </div>
 
-                {/* MOS-BUG-135: MAI Spoken Urgent Announcements Toggle */}
-                <Tooltip
-                  title={
-                    maiVoiceAnnounceEnabled
-                      ? 'Đang BẬT @MAI đọc thông báo khẩn cấp khi bạn được tag (Siri-style). Nhấp để tắt tiếng'
-                      : 'Đang TẮT @MAI đọc thông báo khẩn cấp. Nhấp để bật lại'
-                  }
-                >
-                  <button
-                    type="button"
-                    aria-label="Bật tắt @MAI đọc thông báo khẩn cấp"
-                    onClick={() => {
-                      const next = !maiVoiceAnnounceEnabled;
-                      handleToggleMaiVoiceAnnounce(next);
-                      if (next) {
-                        antdMessage.success('Đã BẬT @MAI tự động phát âm thanh thông báo khẩn cấp khi bạn được tag');
-                        void playNeuralSpeech('MAI đã sẵn sàng đọc thông báo khẩn cấp khi bạn được tag.', {
-                          voice: 'vi-VN-HoaiMyNeural',
-                          speed: ttsSpeed,
-                        });
-                      } else {
-                        antdMessage.info('Đã TẮT @MAI đọc thông báo khẩn cấp');
-                      }
-                    }}
-                    className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer transition-colors"
-                    style={{
-                      background: maiVoiceAnnounceEnabled ? 'rgba(212, 168, 75, 0.16)' : 'transparent',
-                      border: `1px solid ${maiVoiceAnnounceEnabled ? 'rgba(212, 168, 75, 0.35)' : borderColor}`,
-                      color: maiVoiceAnnounceEnabled ? '#d4a84b' : token.colorTextSecondary,
-                    }}
-                  >
-                    {maiVoiceAnnounceEnabled ? (
-                      <Volume2 size={14} className="text-amber-500 animate-pulse" />
-                    ) : (
-                      <VolumeX size={14} className="opacity-60" />
-                    )}
-                  </button>
-                </Tooltip>
-
-                {/* Notification Settings Button (Tiered Notification Filter) */}
-                <Tooltip title="Cài đặt thông báo (Lọc tin nhắn & BUZZ)">
-                  <button
-                    type="button"
-                    aria-label="Cài đặt thông báo"
-                    onClick={() => setNotifSettingsModalOpen(true)}
-                    className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer transition-colors"
-                    style={{
-                      background:
-                        userPrefs.notificationMode && userPrefs.notificationMode !== 'ALL'
-                          ? 'rgba(59, 130, 246, 0.14)'
-                          : 'transparent',
-                      border: `1px solid ${
-                        userPrefs.notificationMode && userPrefs.notificationMode !== 'ALL'
-                          ? 'rgba(59, 130, 246, 0.35)'
-                          : borderColor
-                      }`,
-                      color:
-                        userPrefs.notificationMode && userPrefs.notificationMode !== 'ALL'
-                          ? '#3b82f6'
-                          : token.colorTextSecondary,
-                    }}
-                  >
-                    <BellRing size={14} />
-                  </button>
-                </Tooltip>
-
-                {/* 100% Icon-only Window Controls (Right-aligned close button invariant) */}
-                <div className="flex items-center gap-1">
-                  {activeConversation && (
-                    <Tooltip
-                      title={
-                        (userPrefs.pinnedIds || []).includes(activeConversation.id)
-                          ? 'Bỏ ghim cuộc trò chuyện'
-                          : 'Ghim cuộc trò chuyện lên đầu mục (Pin)'
-                      }
-                    >
-                      <button
-                        type="button"
-                        aria-label="Ghim cuộc trò chuyện"
-                        onClick={() => togglePinConversation(activeConversation.id)}
-                        className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-                        style={{
-                          background: (userPrefs.pinnedIds || []).includes(activeConversation.id)
-                            ? 'rgba(212, 168, 75, 0.16)'
+                {/* ── Header Right: Essential Icons + ⋯ More Overflow ── */}
+                <div className="flex items-center gap-0.5">
+                  {/* Group 1: Notification & Thread (feature toggles) */}
+                  {/* Notification Settings Button (Tiered Notification Filter) */}
+                  <Tooltip title="Cài đặt thông báo (Lọc tin nhắn & BUZZ)">
+                    <button
+                      type="button"
+                      aria-label="Cài đặt thông báo"
+                      onClick={() => setNotifSettingsModalOpen(true)}
+                      className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer transition-colors"
+                      style={{
+                        background:
+                          userPrefs.notificationMode && userPrefs.notificationMode !== 'ALL'
+                            ? 'rgba(59, 130, 246, 0.14)'
                             : 'transparent',
-                          color: (userPrefs.pinnedIds || []).includes(activeConversation.id)
-                            ? '#d4a84b'
+                        border: `1px solid ${
+                          userPrefs.notificationMode && userPrefs.notificationMode !== 'ALL'
+                            ? 'rgba(59, 130, 246, 0.35)'
+                            : borderColor
+                        }`,
+                        color:
+                          userPrefs.notificationMode && userPrefs.notificationMode !== 'ALL'
+                            ? '#3b82f6'
                             : token.colorTextSecondary,
-                        }}
-                      >
-                        <Pin
-                          size={15}
-                          className={
-                            (userPrefs.pinnedIds || []).includes(activeConversation.id) ? 'fill-amber-400' : ''
-                          }
-                        />
-                      </button>
-                    </Tooltip>
-                  )}
-
-                  {activeConversation && activeConversation.id !== AI_COPILOT_CONV_ID && (
-                    <Tooltip
-                      title={
-                        (userPrefs.manualUnreadIds || []).includes(activeConversation.id)
-                          ? 'Đánh dấu đã đọc'
-                          : 'Đánh dấu chưa đọc (Mark as unread)'
-                      }
+                      }}
                     >
-                      <button
-                        type="button"
-                        aria-label="Đánh dấu chưa đọc"
-                        onClick={() => toggleManualUnreadConversation(activeConversation)}
-                        className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-                        style={{
-                          background: (userPrefs.manualUnreadIds || []).includes(activeConversation.id)
-                            ? 'rgba(244, 63, 94, 0.16)'
-                            : 'transparent',
-                          color: (userPrefs.manualUnreadIds || []).includes(activeConversation.id)
-                            ? '#f43f5e'
-                            : token.colorTextSecondary,
-                        }}
-                      >
-                        {(userPrefs.manualUnreadIds || []).includes(activeConversation.id) ? (
-                          <MailOpen size={15} />
-                        ) : (
-                          <Mail size={15} />
-                        )}
-                      </button>
-                    </Tooltip>
-                  )}
-
-                  {!isMobile && activeConversation && (
-                    <Tooltip title="Mở cửa sổ thu nhỏ (Mini Dock / Box chat)">
-                      <button
-                        type="button"
-                        aria-label="Mở cửa sổ thu nhỏ"
-                        onClick={handlePopOutToMiniDock}
-                        className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-black/10 dark:hover:bg-white/10"
-                        style={{ color: token.colorTextSecondary }}
-                      >
-                        <ExternalLink size={15} />
-                      </button>
-                    </Tooltip>
-                  )}
-
-                  {activeConversation?.id === AI_COPILOT_CONV_ID && (
-                    <Tooltip title="Làm mới phiên hội thoại riêng tư với MAI">
-                      <button
-                        type="button"
-                        aria-label="Làm mới phiên hội thoại AI"
-                        onClick={handleClearAiChat}
-                        className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-rose-500/15 hover:text-rose-400"
-                        style={{ color: token.colorTextSecondary }}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </Tooltip>
-                  )}
-
-                  {isDannyAccount && (
-                    <Tooltip title="Phân quyền Đội nhóm & Cá nhân vào mOS Chat & AI">
-                      <button
-                        type="button"
-                        aria-label="Phân quyền Đội nhóm & Cá nhân vào mOS Chat & AI"
-                        onClick={() => {
-                          setAccessConfigTab(activeConversation?.id === AI_COPILOT_CONV_ID ? 'ai' : 'chat');
-                          setAccessConfigModalOpen(true);
-                        }}
-                        className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer transition-colors"
-                        style={{
-                          background:
-                            accessConfig.allowAllStaff ||
-                            accessConfig.allowedGroupKeys.length > 0 ||
-                            accessConfig.allowedStaffIds.length > 0
-                              ? 'rgba(139, 92, 246, 0.16)'
-                              : 'transparent',
-                          color: '#a78bfa',
-                        }}
-                      >
-                        <ShieldCheck size={15} />
-                      </button>
-                    </Tooltip>
-                  )}
+                      <BellRing size={14} />
+                    </button>
+                  </Tooltip>
 
                   <Tooltip title="Đóng / Mở cột Luồng trả lời (Threads)">
                     <button
@@ -10133,6 +9979,180 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
                     </button>
                   </Tooltip>
 
+                  {/* ⋯ More overflow menu */}
+                  <Dropdown
+                    trigger={['click']}
+                    placement="bottomRight"
+                    menu={{
+                      items: [
+                        // MAI Voice toggle
+                        {
+                          key: 'mai-voice',
+                          icon: maiVoiceAnnounceEnabled ? (
+                            <Volume2 size={15} className="text-amber-500" />
+                          ) : (
+                            <VolumeX size={15} className="opacity-60" />
+                          ),
+                          label: (
+                            <span style={{ color: maiVoiceAnnounceEnabled ? '#d4a84b' : undefined }}>
+                              {maiVoiceAnnounceEnabled ? '@MAI đọc thông báo ✓ BẬT' : '@MAI đọc thông báo · Tắt'}
+                            </span>
+                          ),
+                        },
+                        // Pin conversation
+                        ...(activeConversation
+                          ? [
+                              {
+                                key: 'pin-conv',
+                                icon: (
+                                  <Pin
+                                    size={15}
+                                    className={
+                                      (userPrefs.pinnedIds || []).includes(activeConversation.id)
+                                        ? 'fill-amber-400 text-amber-400'
+                                        : ''
+                                    }
+                                  />
+                                ),
+                                label: (
+                                  <span
+                                    style={{
+                                      color: (userPrefs.pinnedIds || []).includes(activeConversation.id)
+                                        ? '#d4a84b'
+                                        : undefined,
+                                    }}
+                                  >
+                                    {(userPrefs.pinnedIds || []).includes(activeConversation.id)
+                                      ? 'Bỏ ghim cuộc trò chuyện ✓'
+                                      : 'Ghim cuộc trò chuyện'}
+                                  </span>
+                                ),
+                              },
+                            ]
+                          : []),
+                        // Mark unread
+                        ...(activeConversation && activeConversation.id !== AI_COPILOT_CONV_ID
+                          ? [
+                              {
+                                key: 'mark-unread',
+                                icon: (userPrefs.manualUnreadIds || []).includes(activeConversation.id) ? (
+                                  <MailOpen size={15} className="text-rose-400" />
+                                ) : (
+                                  <Mail size={15} />
+                                ),
+                                label: (
+                                  <span
+                                    style={{
+                                      color: (userPrefs.manualUnreadIds || []).includes(activeConversation.id)
+                                        ? '#f43f5e'
+                                        : undefined,
+                                    }}
+                                  >
+                                    {(userPrefs.manualUnreadIds || []).includes(activeConversation.id)
+                                      ? 'Đánh dấu đã đọc ✓'
+                                      : 'Đánh dấu chưa đọc'}
+                                  </span>
+                                ),
+                              },
+                            ]
+                          : []),
+                        // Mini Dock (desktop only)
+                        ...(!isMobile && activeConversation
+                          ? [
+                              {
+                                key: 'mini-dock',
+                                icon: <ExternalLink size={15} />,
+                                label: 'Mở cửa sổ thu nhỏ (Mini Dock)',
+                              },
+                            ]
+                          : []),
+                        // Clear AI Chat (AI copilot only)
+                        ...(activeConversation?.id === AI_COPILOT_CONV_ID
+                          ? [
+                              { type: 'divider' as const },
+                              {
+                                key: 'clear-ai',
+                                icon: <Trash2 size={15} className="text-rose-400" />,
+                                label: <span style={{ color: '#f43f5e' }}>Làm mới hội thoại MAI</span>,
+                                danger: true,
+                              },
+                            ]
+                          : []),
+                        // Access config (Danny only)
+                        ...(isDannyAccount
+                          ? [
+                              { type: 'divider' as const },
+                              {
+                                key: 'access-config',
+                                icon: <ShieldCheck size={15} className="text-violet-400" />,
+                                label: (
+                                  <span style={{ color: '#a78bfa' }}>
+                                    Phân quyền Đội nhóm
+                                    {accessConfig.allowAllStaff ||
+                                    accessConfig.allowedGroupKeys.length > 0 ||
+                                    accessConfig.allowedStaffIds.length > 0
+                                      ? ' ✓'
+                                      : ''}
+                                  </span>
+                                ),
+                              },
+                            ]
+                          : []),
+                      ],
+                      onClick: ({ key }) => {
+                        if (key === 'mai-voice') {
+                          const next = !maiVoiceAnnounceEnabled;
+                          handleToggleMaiVoiceAnnounce(next);
+                          if (next) {
+                            antdMessage.success(
+                              'Đã BẬT @MAI tự động phát âm thanh thông báo khẩn cấp khi bạn được tag'
+                            );
+                            void playNeuralSpeech('MAI đã sẵn sàng đọc thông báo khẩn cấp khi bạn được tag.', {
+                              voice: 'vi-VN-HoaiMyNeural',
+                              speed: ttsSpeed,
+                            });
+                          } else {
+                            antdMessage.info('Đã TẮT @MAI đọc thông báo khẩn cấp');
+                          }
+                        } else if (key === 'pin-conv' && activeConversation) {
+                          togglePinConversation(activeConversation.id);
+                        } else if (key === 'mark-unread' && activeConversation) {
+                          toggleManualUnreadConversation(activeConversation);
+                        } else if (key === 'mini-dock') {
+                          handlePopOutToMiniDock();
+                        } else if (key === 'clear-ai') {
+                          handleClearAiChat();
+                        } else if (key === 'access-config') {
+                          setAccessConfigTab(activeConversation?.id === AI_COPILOT_CONV_ID ? 'ai' : 'chat');
+                          setAccessConfigModalOpen(true);
+                        }
+                      },
+                    }}
+                  >
+                    <Tooltip title="Thêm tùy chọn">
+                      <button
+                        type="button"
+                        aria-label="Thêm tùy chọn"
+                        className="w-7 h-7 rounded-md inline-flex items-center justify-center cursor-pointer hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                        style={{ color: token.colorTextSecondary }}
+                      >
+                        <MoreVertical size={15} />
+                      </button>
+                    </Tooltip>
+                  </Dropdown>
+
+                  {/* 1px Separator */}
+                  <div
+                    className="mx-1 self-stretch"
+                    style={{
+                      width: 1,
+                      background: token.colorBorderSecondary,
+                      marginTop: 4,
+                      marginBottom: 4,
+                    }}
+                  />
+
+                  {/* Group 2: Window controls */}
                   {!isMobile && (
                     <Tooltip title={maximized ? 'Thu hẹp khung Chat' : 'Phóng to toàn màn hình'}>
                       <button
