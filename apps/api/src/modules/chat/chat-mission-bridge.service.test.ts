@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import type { MosChatConversation, MosChatThreadReply, SafeAny } from '@mos-lab/shared';
 import { buildMissionSummaryFromReport, ChatMissionBridgeService } from './chat-mission-bridge.service.js';
 import { deduplicateMovedMessagesInConversation } from './chat-repository.service.js';
 import { deduplicateTasks, moveChatThreadItemInMemory } from './routes.js';
@@ -411,7 +412,7 @@ describe('ChatMissionBridgeService.buildMissionSummaryFromReport', () => {
       phone: '0901234567',
     };
 
-    const conv = {
+    const conv: MosChatConversation = {
       id: 'space-test',
       type: 'space' as const,
       name: 'Test Space',
@@ -430,7 +431,7 @@ describe('ChatMissionBridgeService.buildMissionSummaryFromReport', () => {
           customerCard: sampleCustomerCard,
           timeLabel: '12:21',
           createdAt: '2026-10-29T05:21:00Z',
-          thread: [],
+          thread: [] as MosChatThreadReply[],
         },
         {
           id: 'msg-target-thread',
@@ -441,7 +442,7 @@ describe('ChatMissionBridgeService.buildMissionSummaryFromReport', () => {
           text: 'Luồng thảo luận hỗ trợ kỹ thuật',
           timeLabel: '11:28',
           createdAt: '2026-10-29T04:28:00Z',
-          thread: [],
+          thread: [] as MosChatThreadReply[],
         },
       ],
     };
