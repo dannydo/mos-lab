@@ -114,35 +114,50 @@ try {
 
       <!-- Customer Detail Drawer [MOS-BUG-179 FIXED: z-index: 2000, 100vw fullscreen mobile] -->
       <div id="customer-drawer" class="hidden adaptive-overlay-mobile-fullscreen flex flex-col transition-all duration-300">
-        <!-- Drawer Header with title left and close button right [UI Invariant] -->
-        <header class="px-4 py-3 bg-slate-900 border-b border-slate-800 flex items-center justify-between shrink-0 shadow-lg">
-          <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-full bg-amber-600 border border-amber-400/50 flex items-center justify-center text-white font-bold text-xs shadow">
-              NU
-            </div>
-            <div>
-              <div class="flex items-center gap-1.5">
-                <span class="font-bold text-white text-sm">Nadhira Ulya</span>
-                <span class="text-amber-400 text-xs">⭐⭐⭐⭐•</span>
-                <span class="px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 font-semibold text-[10px] border border-purple-500/30">🌐 Nước ngoài</span>
-              </div>
-              <p class="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
-                <span>📞 0909 123 456</span>
-                <span class="text-slate-600">·</span>
-                <span>ID: #5678</span>
-              </p>
-            </div>
+        <!-- Drawer Header with safe area, title left and close button right [UI Invariant] -->
+        <header class="px-4 pb-3 pt-[max(14px,env(safe-area-inset-top))] bg-slate-900 border-b border-slate-800 flex flex-col shrink-0 shadow-lg">
+          <!-- Mobile Top Navigation Bar -->
+          <div class="flex items-center justify-between w-full pb-2 mb-2 border-b border-slate-700/50">
+            <button
+              id="back-drawer-btn"
+              class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-amber-400 bg-amber-400/10 hover:bg-amber-400/20 active:scale-95 transition-all cursor-pointer"
+              onclick="document.getElementById('customer-drawer').classList.add('hidden')"
+              aria-label="Quay lại"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+              <span>Quay lại</span>
+            </button>
+            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Hồ sơ khách hàng</span>
+            <!-- Close button on top-right [MANDATORY INVARIANT] -->
+            <button
+              id="close-drawer-btn"
+              class="w-8 h-8 rounded-lg bg-slate-800 text-slate-200 hover:text-white flex items-center justify-center border border-slate-700/60 cursor-pointer"
+              onclick="document.getElementById('customer-drawer').classList.add('hidden')"
+              aria-label="Đóng chi tiết khách hàng"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
           </div>
 
-          <!-- Close button on top-right [MANDATORY INVARIANT] -->
-          <button
-            id="close-drawer-btn"
-            class="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center"
-            onclick="document.getElementById('customer-drawer').classList.add('hidden')"
-            aria-label="Đóng chi tiết khách hàng"
-          >
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-          </button>
+          <div class="flex items-center justify-between w-full pt-1">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-full bg-amber-600 border border-amber-400/50 flex items-center justify-center text-white font-bold text-xs shadow">
+                NU
+              </div>
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <span class="font-bold text-white text-sm">Nadhira Ulya</span>
+                  <span class="text-amber-400 text-xs">⭐⭐⭐⭐•</span>
+                  <span class="px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 font-semibold text-[10px] border border-purple-500/30">🌐 Nước ngoài</span>
+                </div>
+                <p class="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
+                  <span>📞 0909 123 456</span>
+                  <span class="text-slate-600">·</span>
+                  <span>ID: #5678</span>
+                </p>
+              </div>
+            </div>
+          </div>
         </header>
 
         <!-- Drawer Content: KPI Stats & Tabs -->

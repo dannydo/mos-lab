@@ -44,7 +44,7 @@ export const ComboBalancesCard: React.FC<ComboBalancesCardProps> = React.memo(
     const warningTextColor = themeMode === 'dark' ? '#fbbf24' : '#92400e';
     const infoTextColor = themeMode === 'dark' ? '#60a5fa' : '#1d4ed8';
 
-    const activeCombos = comboBalances.filter((cb: SafeAny) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0);
+    const activeCombos = (comboBalances || []).filter((cb: SafeAny) => (cb.normalCount || 0) + (cb.retainCount || 0) > 0);
     const effectiveCustomerId = customerId || customer?.id;
     const isElsaActive =
       customer?.bucket === 'COMBO_ELSA' ||

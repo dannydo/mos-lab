@@ -20,7 +20,7 @@ export interface AdaptiveDrawerProps extends DrawerProps {
   intent?: OverlayIntent;
 }
 
-export function AdaptiveDrawer({ intent = 'detail', className = '', width, closable, ...props }: AdaptiveDrawerProps) {
+export function AdaptiveDrawer({ intent = 'detail', className = '', width, closable, styles, ...props }: AdaptiveDrawerProps) {
   const tier = useResponsiveTier();
   const isMobile = tier === 'mobile';
   const isBottom = props.placement === 'bottom';
@@ -33,9 +33,18 @@ export function AdaptiveDrawer({ intent = 'detail', className = '', width, closa
         ? { placement: 'end' as const, ...closable }
         : { placement: 'end' as const };
 
+  const mergedStyles = {
+    ...styles,
+    header: {
+      ...(isMobile && !isBottom ? { paddingTop: 'max(14px, env(safe-area-inset-top, 0px))' } : {}),
+      ...styles?.header,
+    },
+  };
+
   return (
     <Drawer
       {...props}
+      styles={mergedStyles}
       closable={mergedClosable}
       width={isBottom ? undefined : isMobile ? '100vw' : (width ?? getOverlayWidth(tier, intent))}
       height={isBottom ? (props.height ?? (isMobile ? '80vh' : '80vh')) : props.height}

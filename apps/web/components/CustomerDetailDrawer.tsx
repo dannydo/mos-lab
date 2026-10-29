@@ -321,13 +321,15 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
       return null;
     };
 
-    if (notes.length === 0 && calls.length === 0) {
+    const safeNotes = notes || [];
+    const safeCalls = calls || [];
+    if (safeNotes.length === 0 && safeCalls.length === 0) {
       return bookingIdsWithNotes.size;
     }
 
     let hasGeneralNotes = false;
 
-    notes.forEach((n: SafeAny) => {
+    safeNotes.forEach((n: SafeAny) => {
       let targetBookingId = n.orderId ? String(n.orderId) : null;
       if (!targetBookingId) {
         const closest = findClosestBooking(n.dateCreated);
@@ -401,6 +403,42 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
               paddingRight: '12px',
             }}
           >
+            {isCompactTier && (
+              <div
+                className="customer-detail-mobile-topbar"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  paddingBottom: '8px',
+                  marginBottom: '6px',
+                  borderBottom: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold text-amber-400 bg-amber-400/10 hover:bg-amber-400/20 active:scale-95 transition-all cursor-pointer"
+                  style={{ minHeight: '32px' }}
+                  aria-label="Quay lại"
+                >
+                  <UndoOutlined style={{ fontSize: '13px' }} />
+                  <span>Quay lại</span>
+                </button>
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: mutedTextColor,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  Hồ sơ khách hàng
+                </span>
+              </div>
+            )}
             <div className="customer-detail-identity" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <Avatar
                 className="customer-detail-avatar"
@@ -664,11 +702,12 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
       styles={{
         body: {
           background: themeMode === 'dark' ? '#0f172a' : '#f9fafb',
-          padding: '24px',
+          padding: isCompactTier ? '16px 12px 32px' : '24px',
         },
         header: {
           background: themeMode === 'dark' ? '#1e293b' : '#ffffff',
           borderBottom: `1px solid ${themeMode === 'dark' ? '#334155' : '#e5e7eb'}`,
+          paddingTop: isCompactTier ? 'max(14px, env(safe-area-inset-top, 0px))' : undefined,
         },
       }}
     >

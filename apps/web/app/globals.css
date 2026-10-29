@@ -7027,6 +7027,26 @@ body {
     border-radius: 0;
   }
 
+  .adaptive-overlay-mobile-fullscreen.ant-drawer .ant-drawer-header {
+    padding-top: max(14px, env(safe-area-inset-top, 0px)) !important;
+  }
+
+  .adaptive-overlay-mobile-fullscreen.ant-drawer .ant-drawer-close {
+    border-radius: 8px !important;
+    color: #cbd5e1 !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 36px !important;
+    min-width: 36px !important;
+  }
+
+  .light-theme .adaptive-overlay-mobile-fullscreen.ant-drawer .ant-drawer-close {
+    color: #334155 !important;
+    background: rgba(0, 0, 0, 0.05) !important;
+  }
+
   /* The campaign editor is a multi-step form, not a clipped desktop modal.
      Keep the header and submit controls stable while each tab owns its own
      vertical scroll area. */
@@ -7466,7 +7486,10 @@ body {
      unpredictably as text wrapped. */
   .customer-detail-overlay .ant-drawer-header {
     align-items: flex-start;
-    padding: 12px var(--mos-page-gutter) !important;
+    padding-top: max(14px, env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: 12px !important;
+    padding-left: var(--mos-page-gutter) !important;
+    padding-right: var(--mos-page-gutter) !important;
   }
 
   .customer-detail-overlay .ant-drawer-header-title,
@@ -7483,6 +7506,30 @@ body {
     min-width: 36px;
     padding: 0 !important;
     width: 36px !important;
+    border-radius: 8px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #f1f5f9 !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .customer-detail-overlay .ant-drawer-close:hover,
+  .customer-detail-overlay .ant-drawer-close:active {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: #ffffff !important;
+  }
+
+  .light-theme .customer-detail-overlay .ant-drawer-close {
+    background: rgba(0, 0, 0, 0.06) !important;
+    color: #1e293b !important;
+  }
+
+  .light-theme .customer-detail-overlay .ant-drawer-close:hover,
+  .light-theme .customer-detail-overlay .ant-drawer-close:active {
+    background: rgba(0, 0, 0, 0.12) !important;
+    color: #0f172a !important;
   }
 
   .customer-detail-header {
