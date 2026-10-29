@@ -1,4 +1,4 @@
-import { basename, join } from 'node:path';
+import { basename, join, extname } from 'node:path';
 import { readFile } from 'node:fs/promises';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import type {
@@ -24,6 +24,9 @@ import type {
   ReorderPilotAssessmentCriteriaRequest,
   SavePilotAssessmentRequest,
   PilotAiAnalyzeRequest,
+  SaveSopPrepCategory1Request,
+  SaveSopPrepCriterionRequest,
+  UploadSopPrepEvidenceRequest,
 } from '@mos-lab/shared';
 import { requireAuth, type JwtUserPayload } from '../../middlewares/auth.js';
 import { PilotService, PilotServiceError, pilotMediaDir } from './pilot.service.js';
@@ -40,7 +43,7 @@ function sendError(fastify: FastifyInstance, reply: FastifyReply, error: unknown
 }
 
 export async function pilotRoutes(fastify: FastifyInstance) {
-  // Public media access for pilot photos
+  // Public media access for pilot photos, videos and evidence documents
   fastify.get('/pilot/media/:filename', async (request, reply) => {
     try {
       const { filename } = request.params as { filename: string };
@@ -49,11 +52,19 @@ export async function pilotRoutes(fastify: FastifyInstance) {
       const filePath = join(dir, safeName);
       const content = await readFile(filePath);
       let mimeType = 'image/jpeg';
-      if (safeName.endsWith('.png')) mimeType = 'image/png';
-      else if (safeName.endsWith('.webp')) mimeType = 'image/webp';
+      const ext = extname(safeName).toLowerCase();
+      if (ext === '.png') mimeType = 'image/png';
+      else if (ext === '.webp') mimeType = 'image/webp';
+      else if (ext === '.mp4') mimeType = 'video/mp4';
+      else if (ext === '.webm') mimeType = 'video/webm';
+      else if (ext === '.pdf') mimeType = 'application/pdf';
+      else if (ext === '.doc') mimeType = 'application/msword';
+      else if (ext === '.docx')
+        mimeType =
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
       return reply.type(mimeType).send(content);
     } catch {
-      return reply.status(404).send({ error: 'NOT_FOUND', message: 'Không tìm thấy hình ảnh.' });
+      return reply.status(404).send({ error: 'NOT_FOUND', message: 'Không tìm thấy hình ảnh hoặc tệp tin.' });
     }
   });
 
@@ -166,6 +177,72 @@ export async function pilotRoutes(fastify: FastifyInstance) {
       return reply.send(doc);
     } catch (error) {
       return sendError(fastify, reply, error, 'Review pilot material SOP error');
+    }
+  });
+
+  // ═══════════════════════════════════════════
+  // Pilot SOP Preparation - Category 1 Endpoints (MOS-FEAT-176)
+  // ═══════════════════════════════════════════
+
+  fastify.get('/pilot/sop-preparation/category-1', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const query = request.query as { pilotCode?: string };
+      const doc = await PilotService.getSopPreparationCategory1(fastify, query?.pilotCode);
+      return reply.send(doc);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Get pilot SOP Preparation Category 1 error');
+    }
+  });
+
+  fastify.post('/pilot/sop-preparation/category-1', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const body = request.body as SaveSopPrepCategory1Request;
+      const doc = await PilotService.saveSopPreparationCategory1(fastify, body);
+      return reply.send(doc);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Save pilot SOP Preparation Category 1 error');
+    }
+  });
+
+  fastify.post('/pilot/sop-preparation/category-1/criterion/:criterionId', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const params = request.params as { criterionId: string };
+      const criterionId = parseInt(params.criterionId, 10);
+      if (isNaN(criterionId) || criterionId < 1 || criterionId > 5) {
+        return reply.status(400).send({ error: 'INVALID_CRITERION_ID', message: 'Mã tiêu chí phải từ 1 đến 5.' });
+      }
+      const body = request.body as SaveSopPrepCriterionRequest;
+      const doc = await PilotService.saveSopPrepCriterion(fastify, criterionId, body);
+      return reply.send(doc);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Save pilot SOP Preparation criterion error');
+    }
+  });
+
+  fastify.post('/pilot/sop-preparation/upload-evidence', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const body = request.body as UploadSopPrepEvidenceRequest;
+      const file = await PilotService.uploadSopPrepEvidence(fastify, body);
+      return reply.send(file);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Upload pilot SOP evidence error');
+    }
+  });
+
+  fastify.delete('/pilot/sop-preparation/category-1/criterion/:criterionId/evidence/:fileId', { preHandler: [requireAuth] }, async (request, reply) => {
+    try {
+      const params = request.params as { criterionId: string; fileId: string };
+      const criterionId = parseInt(params.criterionId, 10);
+      if (isNaN(criterionId) || criterionId < 1 || criterionId > 5) {
+        return reply.status(400).send({ error: 'INVALID_CRITERION_ID', message: 'Mã tiêu chí phải từ 1 đến 5.' });
+      }
+      if (!params.fileId) {
+        return reply.status(400).send({ error: 'INVALID_FILE_ID', message: 'Mã tệp minh chứng không hợp lệ.' });
+      }
+      const doc = await PilotService.deleteSopPrepEvidence(fastify, criterionId, params.fileId);
+      return reply.send(doc);
+    } catch (error) {
+      return sendError(fastify, reply, error, 'Delete pilot SOP evidence error');
     }
   });
 

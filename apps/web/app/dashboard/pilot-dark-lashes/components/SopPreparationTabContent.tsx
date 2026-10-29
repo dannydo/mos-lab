@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Button, Typography } from 'antd';
 import {
   ClipboardList,
@@ -11,14 +11,45 @@ import {
   Shield,
   Layers,
   Sparkles,
+  FileEdit,
+  FolderOpen,
 } from 'lucide-react';
 import { AppIcon } from '../../../../components/ui/AppIcon';
 import { AdaptiveModal } from '../../../../components/ui';
+import { SopPrepCategory1DetailView } from './SopPrepCategory1DetailView';
+import { apiClient } from '../../../../lib/api-client';
+import type { SopPreparationCategory1Document } from '@mos-lab/shared';
+import { DEFAULT_SOP_PREPARATION_CATEGORY_1 } from '@mos-lab/shared';
 
 const { Paragraph } = Typography;
 
 export function SopPreparationTabContent() {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [subView, setSubView] = useState<'overview' | 'cat1-detail'>('overview');
+  const [doc, setDoc] = useState<SopPreparationCategory1Document>(
+    DEFAULT_SOP_PREPARATION_CATEGORY_1
+  );
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const res = await apiClient.pilot.getSopPreparationCategory1({ pilotCode: 'DARK_LASHES' });
+        if (res && res.criteria) setDoc(res);
+      } catch {
+        // fallback to default
+      }
+    }
+    loadData();
+  }, []);
+
+  if (subView === 'cat1-detail') {
+    return <SopPrepCategory1DetailView onBack={() => setSubView('overview')} />;
+  }
+
+  const totalEvidenceCount = doc.criteria.reduce(
+    (acc, c) => acc + (c.evidenceFiles?.length || 0),
+    0
+  );
 
   return (
     <div
@@ -95,7 +126,7 @@ export function SopPreparationTabContent() {
                   data-testid="sop-prep-category-1-status"
                 >
                   <AppIcon icon={Clock} size={13} className="mr-1.5" />
-                  Chưa thu thập dữ liệu
+                  Chưa thu thập dữ liệu ({totalEvidenceCount} tệp minh chứng)
                 </span>
               </div>
             </div>
@@ -144,28 +175,39 @@ export function SopPreparationTabContent() {
               </div>
             </div>
 
-            {/* Action Area: Chi tiết Hạng mục 1 */}
+            {/* Action Area: Chi tiết Hạng mục 1 & Thu thập 5 tiêu chí */}
             <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-slate-100 dark:border-slate-800">
               <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                 <AppIcon icon={Shield} size={14} className="text-slate-400" />
-                <span>Khu vực cấu trúc sẵn sàng cho chức năng thu thập dữ liệu ở bước tiếp theo</span>
+                <span>Khu vực thu thập kiến thức chuyên môn, phương pháp &amp; tệp minh chứng 5 tiêu chí</span>
               </div>
 
-              <Button
-                type="primary"
-                icon={<AppIcon icon={ArrowRight} size={14} />}
-                onClick={() => setDetailModalOpen(true)}
-                className="rounded-xl font-medium text-xs sm:text-sm h-8 px-3.5 bg-indigo-600 hover:bg-indigo-700 border-none shadow-sm flex items-center justify-center self-start sm:self-auto"
-                data-testid="sop-prep-category-1-detail-btn"
-              >
-                Chi tiết Hạng mục 1
-              </Button>
+              <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+                <Button
+                  icon={<AppIcon icon={FolderOpen} size={14} />}
+                  onClick={() => setDetailModalOpen(true)}
+                  className="rounded-xl font-medium text-xs sm:text-sm h-8 px-3 flex items-center justify-center"
+                  data-testid="sop-prep-category-1-detail-btn"
+                >
+                  Chi tiết Hạng mục 1
+                </Button>
+
+                <Button
+                  type="primary"
+                  icon={<AppIcon icon={FileEdit} size={14} />}
+                  onClick={() => setSubView('cat1-detail')}
+                  className="rounded-xl font-medium text-xs sm:text-sm h-8 px-3.5 bg-indigo-600 hover:bg-indigo-700 border-none shadow-sm flex items-center justify-center"
+                  data-testid="sop-prep-open-workspace-btn"
+                >
+                  Nhập liệu &amp; Minh chứng 5 tiêu chí
+                </Button>
+              </div>
             </div>
           </div>
         </Card>
       </div>
 
-      {/* Modal for Chi tiết Hạng mục 1 Placeholder */}
+      {/* Modal for Chi tiết Hạng mục 1 Overview / Placeholder */}
       <AdaptiveModal
         intent="detail"
         title={
@@ -183,6 +225,19 @@ export function SopPreparationTabContent() {
             className="rounded-xl font-medium"
           >
             Đóng
+          </Button>,
+          <Button
+            key="workspace"
+            type="primary"
+            icon={<AppIcon icon={ArrowRight} size={14} />}
+            onClick={() => {
+              setDetailModalOpen(false);
+              setSubView('cat1-detail');
+            }}
+            className="rounded-xl font-medium bg-indigo-600 hover:bg-indigo-700 border-none"
+            data-testid="open-workspace-from-modal"
+          >
+            Mở Biểu Mẫu Nhập Liệu &amp; Thu Thập Minh Chứng 5 Tiêu Chí
           </Button>,
         ]}
         className="rounded-2xl"
