@@ -44,6 +44,7 @@ import {
   type SafeAny,
 } from '@mos-lab/shared';
 import { MosChatThreadChecklist } from './MosChatThreadChecklist';
+import { MosChatCustomerCardAttachment } from './MosChatCustomerCardAttachment';
 import { MosChatStickerVisual, parsePureStickerMessage, parseStickerReactionKey } from '../mos-chat-stickers';
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
 import { buildMaiUrgentVoiceAnnouncement } from '../utils/chat-helpers';
@@ -919,6 +920,11 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
               true,
               activeThreadMessage.senderId === currentUser?.id
             )}
+            {!activeThreadMessage.isDeleted && activeThreadMessage.customerCard && (
+              <div className="mt-2">
+                <MosChatCustomerCardAttachment card={activeThreadMessage.customerCard} />
+              </div>
+            )}
             {activeThreadMessage.reactions &&
               Object.entries(activeThreadMessage.reactions).filter(([, count]) => count > 0).length > 0 && (
                 <div className="mt-1.5 flex flex-wrap items-center gap-1">
@@ -1225,6 +1231,12 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
                     )}
 
                     {renderMessageAttachments(r.attachments, true, isReplyMine)}
+
+                    {!r.isDeleted && r.customerCard && (
+                      <div className="mt-1.5">
+                        <MosChatCustomerCardAttachment card={r.customerCard} isMe={isReplyMine} />
+                      </div>
+                    )}
 
                     {/* Reaction Pills for Thread Reply */}
                     {r.reactions && Object.entries(r.reactions).filter(([, count]) => count > 0).length > 0 && (

@@ -691,6 +691,7 @@ export function moveChatThreadItemInMemory(
       senderAvatar: sourceMsg.senderAvatar,
       text: resolvedText,
       attachments: sourceMsg.attachments && sourceMsg.attachments.length > 0 ? sourceMsg.attachments : undefined,
+      customerCard: sourceMsg.customerCard || undefined,
       timeLabel: sourceMsg.timeLabel,
       createdAt: sourceMsg.createdAt || new Date().toISOString(),
       editHistory: sourceMsg.editHistory,
@@ -708,7 +709,10 @@ export function moveChatThreadItemInMemory(
     const existingIds = new Set(existingTargetThread.map((r) => r.id));
 
     const toAppend: MosChatThreadReply[] = [];
-    if (!existingIds.has(convertedReply.id) && (convertedReply.text.trim() || convertedReply.attachments?.length)) {
+    if (
+      !existingIds.has(convertedReply.id) &&
+      (convertedReply.text.trim() || convertedReply.attachments?.length || convertedReply.customerCard)
+    ) {
       toAppend.push(convertedReply);
       existingIds.add(convertedReply.id);
     }
@@ -780,7 +784,7 @@ export function moveChatThreadItemInMemory(
       timeLabel: replyItem.timeLabel,
       createdAt: replyItem.createdAt || new Date().toISOString(),
       reactions: {},
-      customerCard: null,
+      customerCard: replyItem.customerCard || null,
       thread: [],
       aiThinking: null,
       aiAction: null,
@@ -1919,8 +1923,10 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
       const user = request.user as JwtUserPayload;
       const body = request.body as CreateMosChatThreadReplyRequest;
       const text = String(body?.text || '').trim();
+      const customerCard = body?.customerCard || undefined;
+      const sendText = text || (customerCard?.name ? `Đính kèm thẻ khách hàng ${customerCard.name}` : '');
       const attachments = sanitizeChatAttachments(body?.attachments);
-      if (!body?.conversationId || !body?.messageId || (!text && attachments.length === 0)) {
+      if (!body?.conversationId || !body?.messageId || (!sendText && attachments.length === 0 && !customerCard)) {
         return reply.status(400).send({ error: 'Bad Request', message: 'Thiếu nội dung phản hồi luồng' });
       }
 
@@ -1985,8 +1991,9 @@ export async function mosChatRoutes(fastify: FastifyInstance) {
         senderRole: isAiBot ? 'mOS AI' : roleInfo.label,
         senderAvatar: isAiBot ? 'MAI' : staffRecord?.avatarUrl || getInitials(senderName, user.username),
         roleColor: isAiBot ? '#8b5cf6' : roleInfo.color,
-        text,
+        text: sendText,
         attachments: attachments.length > 0 ? attachments : undefined,
+        customerCard: customerCard || undefined,
         timeLabel: formatTimeLabel(now),
         createdAt: now.toISOString(),
         isAiBot: isAiBot || undefined,

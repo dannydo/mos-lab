@@ -23,8 +23,9 @@ import {
   CornerDownLeft,
   CornerDownRight,
   Sparkles,
+  UserCheck,
 } from 'lucide-react';
-import { message as antdMessage } from 'antd';
+import { message as antdMessage, Avatar } from 'antd';
 import dayjs from 'dayjs';
 import { useMosChat } from '../context/MosChatContext';
 import { MosChatMobileStickerSheet } from './MosChatMobileStickerSheet';
@@ -39,7 +40,9 @@ import { apiClient } from '../../../lib/api-client';
 import { uploadMultipleChatImages } from '../utils/chat-upload';
 import { MosChatAvatar } from '../MosChatAvatar';
 import { MosChatCustomerCardAttachment } from '../components/MosChatCustomerCardAttachment';
+import { MosChatCustomerPickerModal } from '../MosChatCustomerPickerModal';
 import type {
+  MosChatCustomerCard,
   MosChatImageAttachment,
   MosChatMissionActionType,
   MosChatThreadReply,
@@ -296,6 +299,10 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
   const [attachedImages, setAttachedImages] = useState<MosChatImageAttachment[]>([]);
   const [isUploadingImages, setIsUploadingImages] = useState<boolean>(false);
 
+  // Customer Card Attachment inside Thread
+  const [customerPickerOpen, setCustomerPickerOpen] = useState<boolean>(false);
+  const [stagedCustomerCard, setStagedCustomerCard] = useState<MosChatCustomerCard | null>(null);
+
   // Sticker & Emoji Sheet
   const [stickerPickerOpen, setStickerPickerOpen] = useState<boolean>(false);
   const [keyboardOffset, setKeyboardOffset] = useState<number>(0);
@@ -364,7 +371,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
   const handleSend = async () => {
     const trimmed = text.trim();
-    if ((!trimmed && attachedImages.length === 0) || isSending || isUploadingImages) return;
+    if ((!trimmed && attachedImages.length === 0 && !stagedCustomerCard) || isSending || isUploadingImages) return;
 
     // Enforce in-group tagging check for group spaces
     if (activeConversation && activeConversation.type?.toLowerCase() === 'space') {
@@ -385,20 +392,25 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
       }
     }
 
-    let payloadText = trimmed;
+    const sendBaseText =
+      trimmed || (stagedCustomerCard?.name ? `Đính kèm thẻ khách hàng ${stagedCustomerCard.name}:` : '');
+
+    let payloadText = sendBaseText;
     if (replyingToReply) {
-      payloadText = `> Trích dẫn @${replyingToReply.senderName}: ${replyingToReply.text}\n\n${trimmed}`;
+      payloadText = `> Trích dẫn @${replyingToReply.senderName}: ${replyingToReply.text}\n\n${sendBaseText}`;
     }
 
     setIsSending(true);
     const success = await sendThreadReply(payloadText, {
       attachments: attachedImages.length > 0 ? attachedImages : undefined,
+      customerCard: stagedCustomerCard || undefined,
     });
     setIsSending(false);
 
     if (success) {
       setText('');
       setAttachedImages([]);
+      setStagedCustomerCard(null);
       setReplyingToReply(null);
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
@@ -1434,8 +1446,8 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
                   </div>
 
                   {/* Customer Card Attachment for Reply */}
-                  {!reply.isDeleted && (reply as any).customerCard && (
-                    <MosChatCustomerCardAttachment card={(reply as any).customerCard} isMe={isMe} />
+                  {!reply.isDeleted && reply.customerCard && (
+                    <MosChatCustomerCardAttachment card={reply.customerCard} isMe={isMe} />
                   )}
 
                   <div
@@ -1650,6 +1662,49 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
           </div>
         )}
 
+        {/* Staged Customer Card Preview */}
+        {stagedCustomerCard && (
+          <div
+            data-testid="mos-chat-mobile-staged-customer-thread"
+            className="mb-2 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/35 flex items-center justify-between text-xs animate-in fade-in duration-200"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <Avatar
+                size={22}
+                src={stagedCustomerCard.avatarUrl || undefined}
+                className="shrink-0 font-bold text-[10px] border border-amber-400/40 select-none shadow-sm"
+                style={{
+                  backgroundColor: '#d97706',
+                  color: '#ffffff',
+                }}
+              >
+                {(stagedCustomerCard.name || 'KH')
+                  .trim()
+                  .split(/\s+/)
+                  .map((w) => w[0])
+                  .filter(Boolean)
+                  .slice(-2)
+                  .join('')
+                  .toUpperCase()}
+              </Avatar>
+              <span className="font-bold text-white truncate">{stagedCustomerCard.name}</span>
+              <span className="text-amber-400 font-medium truncate">({stagedCustomerCard.meta})</span>
+              {stagedCustomerCard.cvName && (
+                <span className="text-slate-400 truncate hidden sm:inline">· {stagedCustomerCard.cvName}</span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setStagedCustomerCard(null)}
+              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 active:scale-95 transition-all shrink-0"
+              title="Bỏ đính kèm thẻ khách hàng"
+              aria-label="Bỏ đính kèm thẻ khách hàng"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* Composer Input Bar */}
         <div className="flex items-end gap-1.5">
           {/* Sticker & Emoji Button */}
@@ -1672,6 +1727,17 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
             title="Đính kèm nhiều ảnh"
           >
             <ImageIcon className="w-5 h-5" />
+          </button>
+
+          {/* Customer / Booking Attachment Button */}
+          <button
+            type="button"
+            onClick={() => setCustomerPickerOpen(true)}
+            className="w-8 h-8 rounded-full text-slate-400 hover:text-amber-400 active:scale-95 flex items-center justify-center shrink-0 mb-0.5"
+            aria-label="Đính kèm khách hàng"
+            title="Đính kèm khách hàng"
+          >
+            <UserCheck className="w-5 h-5 text-amber-400/90" />
           </button>
 
           {/* Text Area */}
@@ -1702,7 +1768,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
           <button
             type="button"
             onClick={handleSend}
-            disabled={(!text.trim() && attachedImages.length === 0) || isSending || isUploadingImages}
+            disabled={(!text.trim() && attachedImages.length === 0 && !stagedCustomerCard) || isSending || isUploadingImages}
             className="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-500 to-amber-600 flex items-center justify-center text-slate-950 shadow-md shadow-amber-500/30 active:scale-90 transition-transform shrink-0 mb-0.5 disabled:opacity-50"
             aria-label="Gửi phản hồi luồng"
           >
@@ -1920,6 +1986,23 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
         images={threadGalleryImages}
         initialIndex={galleryInitialIndex}
         onClose={() => setGalleryOpen(false)}
+      />
+
+      {/* Customer / Booking Picker Modal inside Thread */}
+      <MosChatCustomerPickerModal
+        open={customerPickerOpen}
+        zIndex={1400}
+        onClose={() => setCustomerPickerOpen(false)}
+        onSelectCustomerCard={(card, sendImmediately = false) => {
+          if (sendImmediately) {
+            void sendThreadReply(`Đính kèm thẻ khách hàng ${card.name}:`, { customerCard: card });
+            antdMessage.success(`Đã gửi thẻ khách hàng ${card.name} vào luồng`);
+          } else {
+            setStagedCustomerCard(card);
+            antdMessage.success(`Đã đính kèm thẻ khách hàng ${card.name} vào ô phản hồi luồng`);
+          }
+          setCustomerPickerOpen(false);
+        }}
       />
 
       {/* Sticker & Emoji Sheet */}

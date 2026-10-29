@@ -402,6 +402,75 @@ describe('ChatMissionBridgeService.buildMissionSummaryFromReport', () => {
     assert.equal(tasks[0]?.sourceMessageId, 'msg-cycle-fix');
   });
 
+  it('preserves customerCard when merging root message into subthread and promoting reply to root [MOS-BUG-178]', () => {
+    const sampleCustomerCard = {
+      customerId: 5678,
+      name: 'Nadhira Ulya',
+      meta: 'Booking 12:20 · Thiết Kế Mi Tự Nhiên',
+      cvName: 'Chi nhánh Estella',
+      phone: '0901234567',
+    };
+
+    const conv = {
+      id: 'space-test',
+      type: 'space' as const,
+      name: 'Test Space',
+      avatar: 'TS',
+      color: '#38bdf8',
+      unreadCount: 0,
+      updatedAt: '2026-10-29T10:00:00Z',
+      messages: [
+        {
+          id: 'msg-root-customer',
+          conversationId: 'space-test',
+          senderId: '6',
+          senderName: 'Nguyễn Quang Khải',
+          senderRole: 'ADMIN',
+          text: 'Đính kèm thẻ khách hàng Nadhira Ulya :',
+          customerCard: sampleCustomerCard,
+          timeLabel: '12:21',
+          createdAt: '2026-10-29T05:21:00Z',
+          thread: [],
+        },
+        {
+          id: 'msg-target-thread',
+          conversationId: 'space-test',
+          senderId: 'wings-ai-copilot',
+          senderName: '🤖 MAI',
+          senderRole: 'mOS AI',
+          text: 'Luồng thảo luận hỗ trợ kỹ thuật',
+          timeLabel: '11:28',
+          createdAt: '2026-10-29T04:28:00Z',
+          thread: [],
+        },
+      ],
+    };
+
+    // 1. Merge root message with customerCard into target subthread
+    const mergeRes = moveChatThreadItemInMemory(conv, [], {
+      mode: 'MERGE_ROOT_TO_THREAD',
+      sourceMessageId: 'msg-root-customer',
+      targetMessageId: 'msg-target-thread',
+    });
+
+    const targetMsg = conv.messages.find((m) => m.id === 'msg-target-thread');
+    assert.ok(targetMsg);
+    assert.equal(targetMsg.thread?.length, 1);
+    assert.equal(targetMsg.thread?.[0]?.customerCard?.customerId, 5678);
+    assert.equal(targetMsg.thread?.[0]?.customerCard?.name, 'Nadhira Ulya');
+
+    // 2. Promote reply with customerCard back to root message
+    const promoteRes = moveChatThreadItemInMemory(conv, [], {
+      mode: 'PROMOTE_REPLY_TO_ROOT',
+      sourceMessageId: 'msg-target-thread',
+      replyId: targetMsg.thread![0].id,
+    });
+
+    assert.ok(promoteRes.promotedMessage);
+    assert.equal(promoteRes.promotedMessage.customerCard?.customerId, 5678);
+    assert.equal(promoteRes.promotedMessage.customerCard?.name, 'Nadhira Ulya');
+  });
+
   it('promotes a subthread reply to a standalone root message and moves a reply between threads', () => {
     const conv = {
       id: 'space-ops',

@@ -167,6 +167,7 @@ export interface MosChatThreadReply {
   timeLabel: string;
   createdAt: string;
   attachments?: MosChatImageAttachment[];
+  customerCard?: MosChatCustomerCard | null;
   editedAt?: string | null;
   editedBy?: string | number | null;
   editHistory?: MosChatMessageEditHistoryItem[];
@@ -508,6 +509,7 @@ export interface CreateMosChatThreadReplyRequest {
   messageId: string;
   text: string;
   attachments?: MosChatImageAttachment[];
+  customerCard?: MosChatCustomerCard | null;
   isAiBot?: boolean;
   aiThinking?: string | null;
   aiAction?: {

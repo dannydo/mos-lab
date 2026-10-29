@@ -919,10 +919,15 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
 
   // Send thread reply
   const sendThreadReply = useCallback(
-    async (text: string, options?: { attachments?: MosChatImageAttachment[] }): Promise<boolean> => {
+    async (
+      text: string,
+      options?: { attachments?: MosChatImageAttachment[]; customerCard?: MosChatCustomerCard | null }
+    ): Promise<boolean> => {
       if (!activeThreadMsg) return false;
       const trimmed = text.trim();
-      if (!trimmed && (!options?.attachments || options.attachments.length === 0)) return false;
+      const customerCard = options?.customerCard || undefined;
+      const sendText = trimmed || (customerCard?.name ? `Đính kèm thẻ khách hàng ${customerCard.name}` : '');
+      if (!sendText && (!options?.attachments || options.attachments.length === 0) && !customerCard) return false;
 
       const currentThreadMsg = activeThreadMsg;
       const targetConv = activeConversation;
@@ -933,10 +938,11 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
         senderName: currentUser?.fullName || currentUser?.name || 'Tôi',
         senderRole: currentUser?.role || 'user',
         senderAvatar: currentUser?.avatarUrl,
-        text: trimmed,
+        text: sendText,
         timeLabel: dayjs().format('HH:mm'),
         createdAt: new Date().toISOString(),
         attachments: options?.attachments,
+        customerCard: customerCard || null,
         reactions: {},
       };
 
@@ -952,8 +958,9 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
         const res = await apiClient.chat.sendThreadReply({
           conversationId: activeConvId,
           messageId: currentThreadMsg.id,
-          text: trimmed,
+          text: sendText,
           attachments: options?.attachments,
+          customerCard: customerCard || undefined,
         });
         if (res && res.reply) {
           setActiveThreadMsg((prev) => {

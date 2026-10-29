@@ -69,7 +69,10 @@ export interface MosChatContextValue {
   activeThreadMsg: MosChatMessage | null;
   setActiveThreadMsg: (msg: MosChatMessage | null) => void;
   threadReplies: MosChatThreadReply[];
-  sendThreadReply: (text: string, options?: { attachments?: MosChatImageAttachment[] }) => Promise<boolean>;
+  sendThreadReply: (
+    text: string,
+    options?: { attachments?: MosChatImageAttachment[]; customerCard?: MosChatCustomerCard | null }
+  ) => Promise<boolean>;
   moveThreadItem: (params: {
     mode: MosChatThreadMoveMode;
     sourceMessageId: string;
