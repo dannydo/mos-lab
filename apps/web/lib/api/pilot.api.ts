@@ -27,6 +27,12 @@ import type {
   PilotMaterialSopDocument,
   SavePilotMaterialSopRequest,
   PilotSopEmpiricalStatsResponse,
+  SopPreparationCategory1Document,
+  SopPrepCriterionData,
+  SopPrepEvidenceFile,
+  SaveSopPrepCategory1Request,
+  SaveSopPrepCriterionRequest,
+  UploadSopPrepEvidenceRequest,
 } from '@mos-lab/shared';
 
 import { api } from './base';
@@ -231,6 +237,34 @@ export const pilotApi = {
       note?: string;
     }): Promise<PilotMaterialSopDocument> => {
       const response = await api.post('/pilot/material-sop/review', data);
+      return response.data;
+    },
+    getSopPreparationCategory1: async (params?: { pilotCode?: string }): Promise<SopPreparationCategory1Document> => {
+      const response = await api.get('/pilot/sop-preparation/category-1', { params });
+      return response.data;
+    },
+    saveSopPreparationCategory1: async (
+      data: SaveSopPrepCategory1Request
+    ): Promise<SopPreparationCategory1Document> => {
+      const response = await api.post('/pilot/sop-preparation/category-1', data);
+      return response.data;
+    },
+    saveSopPreparationCriterion: async (
+      criterionId: number,
+      data: SaveSopPrepCriterionRequest
+    ): Promise<SopPreparationCategory1Document> => {
+      const response = await api.post(`/pilot/sop-preparation/category-1/criterion/${criterionId}`, data);
+      return response.data;
+    },
+    uploadSopPrepEvidence: async (data: UploadSopPrepEvidenceRequest): Promise<SopPrepEvidenceFile> => {
+      const response = await api.post('/pilot/sop-preparation/upload-evidence', data);
+      return response.data;
+    },
+    deleteSopPrepEvidence: async (
+      criterionId: number,
+      fileId: string
+    ): Promise<SopPreparationCategory1Document> => {
+      const response = await api.delete(`/pilot/sop-preparation/category-1/criterion/${criterionId}/evidence/${fileId}`);
       return response.data;
     },
   },

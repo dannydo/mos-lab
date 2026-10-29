@@ -1402,3 +1402,79 @@ test('PilotService: Hạng mục 3 Material SOP - default initialization, calcul
   assert.equal(approvedDoc.overallStatus, 'APPROVED_SCALE');
   assert.equal(approvedDoc.isPublished, true);
 });
+
+test('PilotService: Hạng mục 1 SOP Preparation Category 1 - get, update criterion, upload evidence and delete evidence (MOS-FEAT-176)', async () => {
+  let storedConfigValue: string | null = null;
+
+  const fakeFastify: SafeAny = {
+    prisma: {
+      crm: {
+        crmConfig: {
+          findUnique: async ({ where }: { where: { key: string } }) => {
+            if (where.key === PilotService.SOP_PREP_CAT1_CONFIG_KEY && storedConfigValue) {
+              return { key: where.key, value: storedConfigValue, updatedAt: new Date() };
+            }
+            return null;
+          },
+          upsert: async ({ create, update }: { create: { value: string }; update: { value: string } }) => {
+            storedConfigValue = update?.value || create?.value;
+            return { key: PilotService.SOP_PREP_CAT1_CONFIG_KEY, value: storedConfigValue };
+          },
+        },
+      },
+    },
+  };
+
+  // 1. Initial get creates default document
+  const initialDoc = await PilotService.getSopPreparationCategory1(fakeFastify, 'DARK_LASHES');
+  assert.equal(initialDoc.categoryNumber, 1);
+  assert.equal(initialDoc.owner, 'Cô Giang Phạm');
+  assert.equal(initialDoc.criteria.length, 5);
+  assert.equal(initialDoc.criteria[0].name, 'Độ dài mi');
+  assert.equal(initialDoc.criteria[0].status, 'DRAFT_UNVERIFIED');
+  assert.ok(initialDoc.criteria[0].evidenceFiles.length >= 1);
+
+  // 2. Update specific criterion 1
+  const updatedDoc = await PilotService.saveSopPrepCriterion(fakeFastify, 1, {
+    expertiseKnowledge: 'Cập nhật kiến thức chuyên môn về chu kỳ Anagen chuẩn.',
+    practicalMethod: 'Quy trình đo bằng cữ thước 2 bên khóe mắt.',
+    evaluationGrounds: 'Đạt khi mi >= 8.5mm.',
+    status: 'VERIFIED',
+    updatedBy: 'Cô Giang Phạm',
+  });
+  const crit1 = updatedDoc.criteria.find((c) => c.id === 1);
+  assert.equal(crit1?.expertiseKnowledge, 'Cập nhật kiến thức chuyên môn về chu kỳ Anagen chuẩn.');
+  assert.equal(crit1?.status, 'VERIFIED');
+  assert.equal(crit1?.statusLabel, 'Đã kiểm chứng thực tế');
+  assert.equal(crit1?.updatedBy, 'Cô Giang Phạm');
+
+  // 3. Upload evidence file for criterion 2
+  const fakePngBase64 =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+  const uploadedFile = await PilotService.uploadSopPrepEvidence(fakeFastify, {
+    fileData: `data:image/png;base64,${fakePngBase64}`,
+    fileName: 'test-evidence-do-day.png',
+    mimeType: 'image/png',
+    description: 'Ảnh soi sợi mi 0.12mm',
+    sourceOrigin: 'Ca Pilot thực tế',
+    pilotSessionCode: 'PILOT-010',
+    criterionId: 2,
+    uploadedBy: 'Cô Giang Phạm',
+  });
+  assert.ok(uploadedFile.id.startsWith('ev-'));
+  assert.equal(uploadedFile.fileType, 'image');
+  assert.equal(uploadedFile.name, 'test-evidence-do-day.png');
+  assert.equal(uploadedFile.pilotSessionCode, 'PILOT-010');
+
+  // Verify the evidence was added to criterion 2
+  const docAfterUpload = await PilotService.getSopPreparationCategory1(fakeFastify, 'DARK_LASHES');
+  const crit2 = docAfterUpload.criteria.find((c) => c.id === 2);
+  const foundFile = crit2?.evidenceFiles.find((f) => f.id === uploadedFile.id);
+  assert.ok(foundFile);
+  assert.equal(foundFile?.name, 'test-evidence-do-day.png');
+
+  // 4. Delete the evidence file
+  const docAfterDelete = await PilotService.deleteSopPrepEvidence(fakeFastify, 2, uploadedFile.id);
+  const crit2AfterDelete = docAfterDelete.criteria.find((c) => c.id === 2);
+  assert.equal(crit2AfterDelete?.evidenceFiles.some((f) => f.id === uploadedFile.id), false);
+});
