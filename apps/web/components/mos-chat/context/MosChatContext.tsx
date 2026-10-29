@@ -138,9 +138,12 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
   const [customerDrawerOpen, setCustomerDrawerOpen] = useState<boolean>(false);
 
-  const openCustomerDetail = useCallback((customerId: number) => {
-    setSelectedCustomerId(customerId);
-    setCustomerDrawerOpen(true);
+  const openCustomerDetail = useCallback((customerId: number | string) => {
+    const parsedId = typeof customerId === 'number' ? customerId : parseInt(String(customerId), 10);
+    if (parsedId && !isNaN(parsedId) && parsedId > 0) {
+      setSelectedCustomerId(parsedId);
+      setCustomerDrawerOpen(true);
+    }
   }, []);
 
   // AI Copilot
@@ -1857,6 +1860,7 @@ export const MosChatProvider: React.FC<MosChatProviderProps> = ({
         <CustomerDetailDrawer
           open={customerDrawerOpen}
           customerId={selectedCustomerId}
+          zIndex={2000}
           onClose={() => {
             setCustomerDrawerOpen(false);
             setSelectedCustomerId(null);

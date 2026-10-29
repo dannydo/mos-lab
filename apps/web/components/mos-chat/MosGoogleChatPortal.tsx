@@ -10638,6 +10638,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
               setOpenMovePopoverKey={setOpenMovePopoverKey}
               handleUpdateTask={handleUpdateTask}
               renderTaskCard={renderTaskCard}
+              openCustomerDetail={openCustomerDetail}
             />
           </>
         )}
@@ -10931,6 +10932,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
         <CustomerDetailDrawer
           open={customerDrawerOpen}
           customerId={selectedCustomerId}
+          zIndex={2000}
           onClose={() => {
             setCustomerDrawerOpen(false);
             setSelectedCustomerId(null);

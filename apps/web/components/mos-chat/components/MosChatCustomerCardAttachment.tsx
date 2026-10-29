@@ -25,10 +25,38 @@ export const MosChatCustomerCardAttachment: React.FC<MosChatCustomerCardAttachme
   const chatContext = useContext(MosChatContext);
   const handleOpen = onOpenCustomer || chatContext?.openCustomerDetail;
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (card.customerId && handleOpen) {
-      handleOpen(card.customerId);
+  const resolveCustomerId = (): number | undefined => {
+    if (typeof card.customerId === 'number' && !isNaN(card.customerId) && card.customerId > 0) {
+      return card.customerId;
+    }
+    if (typeof card.customerId === 'string') {
+      const parsed = parseInt(card.customerId, 10);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    const anyCard = card as any;
+    const fallbackId = anyCard?.id ?? anyCard?.clientId;
+    if (typeof fallbackId === 'number' && !isNaN(fallbackId) && fallbackId > 0) {
+      return fallbackId;
+    }
+    if (typeof fallbackId === 'string') {
+      const parsed = parseInt(fallbackId, 10);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    if (card.meta) {
+      const match = card.meta.match(/#(\d+)/);
+      if (match) {
+        const parsed = parseInt(match[1], 10);
+        if (!isNaN(parsed) && parsed > 0) return parsed;
+      }
+    }
+    return undefined;
+  };
+
+  const handleClick = (e?: React.SyntheticEvent) => {
+    e?.stopPropagation?.();
+    const resolvedId = resolveCustomerId();
+    if (resolvedId && handleOpen) {
+      handleOpen(resolvedId);
     } else {
       antdMessage.info(`Hồ sơ khách hàng: ${card.name}`);
     }

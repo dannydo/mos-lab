@@ -91,6 +91,7 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
     updateTask,
     executeMissionAction,
     isAiThinking,
+    openCustomerDetail,
   } = useMosChat();
 
   const [text, setText] = useState<string>('');
@@ -826,7 +827,10 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
           {/* Customer Card Attachment */}
           {!activeThreadMsg.isDeleted && activeThreadMsg.customerCard && (
-            <MosChatCustomerCardAttachment card={activeThreadMsg.customerCard} />
+            <MosChatCustomerCardAttachment
+              card={activeThreadMsg.customerCard}
+              onOpenCustomer={openCustomerDetail}
+            />
           )}
 
           {/* Parent Message Attachments */}
@@ -1447,7 +1451,11 @@ export const MosChatMobileThreadSheet: React.FC<MosChatMobileThreadSheetProps> =
 
                   {/* Customer Card Attachment for Reply */}
                   {!reply.isDeleted && reply.customerCard && (
-                    <MosChatCustomerCardAttachment card={reply.customerCard} isMe={isMe} />
+                    <MosChatCustomerCardAttachment
+                      card={reply.customerCard}
+                      isMe={isMe}
+                      onOpenCustomer={openCustomerDetail}
+                    />
                   )}
 
                   <div

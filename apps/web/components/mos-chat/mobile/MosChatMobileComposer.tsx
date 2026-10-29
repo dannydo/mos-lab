@@ -43,7 +43,7 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
   stagedCustomerCard,
   onRemoveCustomerCard,
 }) => {
-  const { sendMessage, replyingToMessage, setReplyingToMessage, activeConversation, staffDirectory } = useMosChat();
+  const { sendMessage, replyingToMessage, setReplyingToMessage, activeConversation, staffDirectory, openCustomerDetail } = useMosChat();
 
   const [internalText, setInternalText] = useState<string>('');
   const text = controlledText !== undefined ? controlledText : internalText;
@@ -234,7 +234,13 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
       {stagedCustomerCard && (
         <div
           data-testid="mos-chat-mobile-staged-customer"
-          className="mb-2 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/35 flex items-center justify-between text-xs animate-in fade-in duration-200"
+          onClick={() => {
+            const cid = stagedCustomerCard.customerId;
+            if (cid && openCustomerDetail) {
+              openCustomerDetail(cid);
+            }
+          }}
+          className="mb-2 px-3 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/35 flex items-center justify-between text-xs animate-in fade-in duration-200 cursor-pointer active:scale-[0.99] transition-transform"
         >
           <div className="flex items-center gap-2 min-w-0">
             <Avatar
@@ -263,7 +269,10 @@ export const MosChatMobileComposer: React.FC<MosChatMobileComposerProps> = ({
           </div>
           <button
             type="button"
-            onClick={onRemoveCustomerCard}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemoveCustomerCard?.();
+            }}
             className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 active:scale-95 transition-all shrink-0"
             title="Bỏ đính kèm thẻ khách hàng"
             aria-label="Bỏ đính kèm thẻ khách hàng"

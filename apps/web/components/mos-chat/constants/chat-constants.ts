@@ -293,18 +293,21 @@ export const FALLBACK_TASKS: MosChatTaskItem[] = [];
 
 export const SAMPLE_CUSTOMER_CARDS: MosChatCustomerCard[] = [
   {
+    customerId: 45103,
     name: 'Chị Nguyễn Bích Ngọc',
     meta: 'VIP Diamond · 15:15 hôm nay',
     cvName: 'Chuyên Viên Minh Thư (CV+)',
     avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80',
   },
   {
+    customerId: 45104,
     name: 'Chị Trần Bảo Trân',
     meta: 'Khách Mới · 16:15 Mi Thiết Kế',
     cvName: 'Chuyên Viên Thanh Tâm (CV)',
     avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80',
   },
   {
+    customerId: 45105,
     name: 'Chị Lê Hoàng Yến',
     meta: 'Cần xác nhận · 17:30 hôm nay',
     cvName: 'Chuyên Viên Ngọc Ánh (CV+)',

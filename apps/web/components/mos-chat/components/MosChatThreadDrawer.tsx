@@ -181,6 +181,7 @@ export interface MosChatThreadDrawerProps {
     sourceMsg?: MosChatMessage | null,
     mode?: 'inline' | 'list' | 'thread'
   ) => React.ReactNode;
+  openCustomerDetail?: (customerId: number) => void;
 }
 
 export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.memo(
@@ -294,6 +295,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
     setOpenMovePopoverKey,
     handleUpdateTask,
     renderTaskCard,
+    openCustomerDetail,
   }) => {
     const [formatBarOpenThread, setFormatBarOpenThread] = useState<boolean>(true);
     const [isPreviewModeThread, setIsPreviewModeThread] = useState<boolean>(false);
@@ -922,7 +924,10 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
             )}
             {!activeThreadMessage.isDeleted && activeThreadMessage.customerCard && (
               <div className="mt-2">
-                <MosChatCustomerCardAttachment card={activeThreadMessage.customerCard} />
+                <MosChatCustomerCardAttachment
+                  card={activeThreadMessage.customerCard}
+                  onOpenCustomer={openCustomerDetail}
+                />
               </div>
             )}
             {activeThreadMessage.reactions &&
@@ -1234,7 +1239,11 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
 
                     {!r.isDeleted && r.customerCard && (
                       <div className="mt-1.5">
-                        <MosChatCustomerCardAttachment card={r.customerCard} isMe={isReplyMine} />
+                        <MosChatCustomerCardAttachment
+                          card={r.customerCard}
+                          isMe={isReplyMine}
+                          onOpenCustomer={openCustomerDetail}
+                        />
                       </div>
                     )}
 

@@ -184,4 +184,14 @@ describe('MosChatMobileThreadSheet - Customer Card Attachment [MOS-BUG-178]', ()
       );
     });
   });
+
+  it('opens customer detail when clicking on customer card attachment inside thread [MOS-BUG-179]', () => {
+    render(<MosChatMobileThreadSheet />);
+
+    const customerCardEl = screen.getByTestId('mos-chat-customer-card');
+    expect(customerCardEl).toBeInTheDocument();
+
+    fireEvent.click(customerCardEl);
+    expect(mockOpenCustomerDetail).toHaveBeenCalledWith(5678);
+  });
 });

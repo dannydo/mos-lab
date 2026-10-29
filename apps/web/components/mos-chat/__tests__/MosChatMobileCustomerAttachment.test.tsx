@@ -90,6 +90,26 @@ describe('MosChatCustomerCardAttachment', () => {
     fireEvent.click(openBtn);
     expect(mockOpenCustomerDetail).toHaveBeenCalledWith(1234);
   });
+
+  it('resolves string customerId and meta fallback #id when opening customer details [MOS-BUG-179]', () => {
+    // String customerId
+    const cardWithStringId = { ...sampleCard, customerId: '9999' as unknown as number };
+    const { unmount } = render(<MosChatCustomerCardAttachment card={cardWithStringId} />);
+    fireEvent.click(screen.getByTestId('mos-chat-customer-card'));
+    expect(mockOpenCustomerDetail).toHaveBeenCalledWith(9999);
+    unmount();
+
+    mockOpenCustomerDetail.mockClear();
+
+    // Meta fallback #7777
+    const cardWithMetaFallback: MosChatCustomerCard = {
+      name: 'Thu Trang',
+      meta: 'Booking 14:00 · #7777 Thiết Kế Mi',
+    };
+    render(<MosChatCustomerCardAttachment card={cardWithMetaFallback} />);
+    fireEvent.click(screen.getByTestId('mos-chat-customer-card'));
+    expect(mockOpenCustomerDetail).toHaveBeenCalledWith(7777);
+  });
 });
 
 describe('MosChatMobileMessageItem with customerCard [MOS-BUG-168]', () => {
@@ -159,6 +179,10 @@ describe('MosChatMobileComposer with customerCard staging', () => {
     expect(screen.getByTestId('mos-chat-mobile-staged-customer')).toBeInTheDocument();
     expect(screen.getByText('Khánh Vy')).toBeInTheDocument();
     expect(screen.getByText('(Combo Volume 500k)')).toBeInTheDocument();
+
+    // Clicking staged card opens customer detail [MOS-BUG-179]
+    fireEvent.click(screen.getByTestId('mos-chat-mobile-staged-customer'));
+    expect(mockOpenCustomerDetail).toHaveBeenCalledWith(8888);
 
     const removeBtn = screen.getByLabelText('Bỏ đính kèm thẻ khách hàng');
     fireEvent.click(removeBtn);

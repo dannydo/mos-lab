@@ -38,12 +38,20 @@ export interface MosChatMobileMessageItemProps {
   prevMessage?: MosChatMessage;
   onOpenThread?: (msg: MosChatMessage) => void;
   onOpenGallery?: (message: MosChatMessage, attachmentIndex: number) => void;
+  onOpenCustomer?: (customerId: number) => void;
 }
 
 export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> = React.memo(
-  ({ message, prevMessage, onOpenThread, onOpenGallery }) => {
-    const { currentUser, reactToMessage, setSelectedMsgForAction, setReplyingToMessage, messages, staffDirectory } =
-      useMosChat();
+  ({ message, prevMessage, onOpenThread, onOpenGallery, onOpenCustomer }) => {
+    const {
+      currentUser,
+      reactToMessage,
+      setSelectedMsgForAction,
+      setReplyingToMessage,
+      messages,
+      staffDirectory,
+      openCustomerDetail,
+    } = useMosChat();
 
     const isMe = isUserMessageOwner(message, currentUser);
 
@@ -349,7 +357,11 @@ export const MosChatMobileMessageItem: React.FC<MosChatMobileMessageItemProps> =
 
             {/* Customer Card Attachment */}
             {message.customerCard && (
-              <MosChatCustomerCardAttachment card={message.customerCard} isMe={isMe} />
+              <MosChatCustomerCardAttachment
+                card={message.customerCard}
+                isMe={isMe}
+                onOpenCustomer={onOpenCustomer || openCustomerDetail}
+              />
             )}
 
             {/* Attachments */}

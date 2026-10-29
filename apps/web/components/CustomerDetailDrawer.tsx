@@ -68,12 +68,13 @@ const RevenueHistoryModal = dynamic(
   { ssr: false }
 );
 
-interface CustomerDetailDrawerProps {
+export interface CustomerDetailDrawerProps {
   open: boolean;
   customerId: number | null;
   onClose: () => void;
   onDeleteSuccess?: () => void;
   onUpdate?: () => void;
+  zIndex?: number;
 }
 
 const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
@@ -82,6 +83,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
   onClose,
   onDeleteSuccess,
   onUpdate,
+  zIndex = 2000,
 }) => {
   const { themeMode } = useTheme();
   const { token } = theme.useToken();
@@ -386,6 +388,7 @@ const CustomerDetailDrawer: React.FC<CustomerDetailDrawerProps> = ({
     <AdaptiveDrawer
       intent="detail"
       className="customer-detail-overlay"
+      zIndex={zIndex}
       title={
         customer && (
           <div
