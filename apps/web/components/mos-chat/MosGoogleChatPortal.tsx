@@ -7636,7 +7636,11 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
    * Hỗ trợ toàn diện bảng biểu Markdown, thẻ HTML (<br>, <b>, <i>, <u>, <table>...), Headings, KaTeX, Mermaid.
    */
   const renderRichTextMessage = useCallback(
-    (rawText?: string | null, _isMine = false): React.ReactNode => {
+    (
+      rawText?: string | null,
+      _isMine = false,
+      opts?: { onQuoteClick?: (senderName: string, quotedContent: string) => void }
+    ): React.ReactNode => {
       if (!rawText) return null;
       return (
         <MosChatRichText
@@ -7646,6 +7650,7 @@ export const MosGoogleChatPortal: React.FC<MosGoogleChatPortalProps> = ({
           staffDirectory={staffDirectory}
           memberNicknames={allSpaceNicknames}
           currentUser={currentUser}
+          onQuoteClick={opts?.onQuoteClick}
         />
       );
     },

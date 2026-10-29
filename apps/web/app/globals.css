@@ -8267,3 +8267,35 @@ button:not(:disabled):not(.ant-btn-loading):active,
 .light-theme .katex {
   color: #0f172a;
 }
+
+/* ==========================================================================
+   mOS Chat — Quote Flash Highlight Animation
+   Triggered via JS: el.classList.add('mos-chat-quote-flash')
+   ========================================================================== */
+@keyframes mosChatQuoteFlash {
+  0% {
+    background-color: rgba(251, 191, 36, 0);
+  }
+  20% {
+    background-color: rgba(251, 191, 36, 0.4);
+  }
+  60% {
+    background-color: rgba(251, 191, 36, 0.28);
+  }
+  100% {
+    background-color: rgba(251, 191, 36, 0);
+  }
+}
+
+.mos-chat-quote-flash {
+  animation: mosChatQuoteFlash 0.9s ease-out forwards;
+  border-radius: 8px;
+}
+
+/* Blockquote line-clamp override — ensures 2-line truncation renders correctly */
+.mos-chat-blockquote-truncated {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

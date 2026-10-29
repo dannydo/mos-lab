@@ -369,26 +369,35 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
     },
     {
       title: (
-        <Tooltip title="Phân định Khách Lẻ (KPI chính xét Rank & Milestone theo Điều răn BK-005) và Khách đi bằng gói Combo Live">
+        <Tooltip title="Tổng Done = Khách Lẻ + Khách Combo Live (Tính Thưởng Hạng Milestone & xếp hạng Leaderboard)">
           <span className="cursor-help font-semibold text-xs">Done (Lẻ / Combo)</span>
         </Tooltip>
       ),
       dataIndex: 'doneCount',
       key: 'doneCount',
       align: 'center' as const,
+      sorter: (a: BkDoneLeaderboardEntry, b: BkDoneLeaderboardEntry) =>
+        (a.singleDoneCount ?? 0) +
+        (a.comboLiveDoneCount ?? 0) -
+        ((b.singleDoneCount ?? 0) + (b.comboLiveDoneCount ?? 0)),
       render: (_: number, record: BkDoneLeaderboardEntry) => {
         const single = record.singleDoneCount ?? record.doneCount;
         const combo = record.comboLiveDoneCount ?? 0;
+        const total = single + combo;
         return (
           <div className="flex items-center justify-center gap-1.5 flex-wrap">
-            <Tooltip title={`Khách Lẻ Done: ${single} lượt (KPI xếp hạng & thưởng bậc thang Milestone)`}>
+            <Tooltip
+              title={`Khách Lẻ Done: ${single} lượt. Tổng Done (Lẻ + Combo) = ${total} lượt (xét thưởng Hạng Milestone)`}
+            >
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 tabular-nums">
                 <span className="text-[10px] uppercase font-semibold opacity-75">Lẻ</span>
                 {single}
               </span>
             </Tooltip>
             {combo > 0 && (
-              <Tooltip title={`Combo Live: +${combo} lượt khách dùng gói (+1.000đ/lượt chăm sóc)`}>
+              <Tooltip
+                title={`Combo Live: +${combo} lượt khách dùng gói (+1.000đ/lượt chăm sóc). Tổng Done = ${total}`}
+              >
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-semibold bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 tabular-nums">
                   <span className="text-[9px] uppercase font-semibold opacity-75">Combo</span>+{combo}
                 </span>
@@ -427,9 +436,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
       sorter: (a: BkDoneLeaderboardEntry, b: BkDoneLeaderboardEntry) =>
         (a.newCustomerRatePercent ?? 0) - (b.newCustomerRatePercent ?? 0),
       render: (rate: number = 0) => (
-        <span className="tabular-nums font-semibold text-xs text-rose-500 dark:text-rose-400">
-          {rate}%
-        </span>
+        <span className="tabular-nums font-semibold text-xs text-rose-500 dark:text-rose-400">{rate}%</span>
       ),
     },
     {
@@ -496,10 +503,13 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
       key: 'penaltyBonus',
       align: 'right' as const,
       render: (val: number, record: BkDoneLeaderboardEntry) => {
-        const effectiveDone = (record.singleDoneCount ?? 0) > 0 ? (record.singleDoneCount ?? 0) : record.doneCount;
+        const totalDone = (record.singleDoneCount ?? 0) + (record.comboLiveDoneCount ?? 0);
+        const effectiveDone = totalDone > 0 ? totalDone : record.doneCount;
         if (effectiveDone < 100) {
           return (
-            <Tooltip title="Chưa đạt mốc tối thiểu 100 khách Done trong kỳ, không tính thưởng/phạt Missed">
+            <Tooltip
+              title={`Chưa đạt mốc tối thiểu 100 khách Done (Lẻ + Combo = ${effectiveDone}) trong kỳ, không tính thưởng/phạt Missed`}
+            >
               <span className="tabular-nums font-semibold text-xs text-slate-400 dark:text-slate-500">-</span>
             </Tooltip>
           );
@@ -814,9 +824,7 @@ export default function BkDoneTab({ dateRange, selectedStore, selectedBooker, co
           />
           <div className="text-xs font-medium text-slate-400 mt-2 flex items-center justify-between border-t border-slate-700/20 pt-1.5">
             <span>Tỷ lệ / Tổng Done:</span>
-            <span className="tabular-nums font-semibold text-rose-400">
-              {summary.avgNewCustomerRate ?? 0}%
-            </span>
+            <span className="tabular-nums font-semibold text-rose-400">{summary.avgNewCustomerRate ?? 0}%</span>
           </div>
           <PeriodComparison
             comparison={previousPeriod?.comparison}

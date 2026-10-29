@@ -309,6 +309,33 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker,
       render: (val: number) => <span className="tabular-nums font-bold text-xs text-sky-400">{val}</span>,
     },
     {
+      title: 'Doanh Thu (Lẻ / Combo)',
+      key: 'revenueBreakdown',
+      align: 'center' as const,
+      render: (_: any, r: BkRevenueLeaderboardEntry) => {
+        const singleRev = r.singleRevenue || 0;
+        const comboRev = r.comboRevenue || 0;
+        return (
+          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+            <Tooltip title={`Doanh thu dịch vụ lẻ: ${formatCurrency(singleRev)}`}>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 tabular-nums">
+                <span className="text-[10px] uppercase font-semibold opacity-75">Lẻ</span>
+                {formatCurrency(singleRev)}
+              </span>
+            </Tooltip>
+            {comboRev > 0 && (
+              <Tooltip title={`Doanh thu bán gói combo: ${formatCurrency(comboRev)}`}>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 tabular-nums">
+                  <span className="text-[10px] uppercase font-semibold opacity-75">Combo</span>
+                  {formatCurrency(comboRev)}
+                </span>
+              </Tooltip>
+            )}
+          </div>
+        );
+      },
+    },
+    {
       title: '∑ Doanh Thu Net',
       dataIndex: 'totalRevenue',
       key: 'totalRevenue',
@@ -400,6 +427,24 @@ export default function BkRevenueTab({ dateRange, selectedStore, selectedBooker,
       render: (val: string) => (
         <span className="text-xs font-medium text-slate-400 whitespace-nowrap">· {formatStoreCode(val)}</span>
       ),
+    },
+    {
+      title: 'Loại Đơn',
+      dataIndex: 'orderCategory',
+      key: 'orderCategory',
+      align: 'center' as const,
+      render: (cat: string, r: BkRevenueRecord) => {
+        const isCombo = r.isCombo || cat === 'COMBO';
+        return isCombo ? (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 tabular-nums">
+            Combo
+          </span>
+        ) : (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 tabular-nums">
+            Lẻ
+          </span>
+        );
+      },
     },
     {
       title: 'Doanh Thu Net',

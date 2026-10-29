@@ -692,33 +692,93 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           ORDER BY totalCustomerTip DESC
         `;
 
-        const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql);
+        const tippedOrdersSql = `
+          SELECT 
+            o.id as orderId,
+            o.created_staff_id as bookerId,
+            MAX(CASE WHEN st.tip_percentage > 0 THEN st.tip_amount / (st.tip_percentage / 100) ELSE st.tip_amount END) as customer_tip_100
+          FROM \`order\` o
+          JOIN staff_tip st ON st.order_id = o.id AND st.tip_amount > 0
+          LEFT JOIN report_order ro ON o.id = ro.order_id
+          WHERE o.order_state = 'Completed'
+            AND o.created_staff_id IN (${bkIdsStr})
+            AND o.booking_date_start >= '${startPart} 00:00:00' - INTERVAL 2 DAY
+            AND o.booking_date_start <= '${endPart} 23:59:59' + INTERVAL 2 DAY
+            AND (
+              (ro.actual_booking_date_start >= '${startPart} 00:00:00' AND ro.actual_booking_date_start <= '${endPart} 23:59:59')
+              OR (ro.actual_booking_date_start IS NULL AND o.booking_date_start >= '${startPart} 00:00:00' AND o.booking_date_start <= '${endPart} 23:59:59')
+            )
+            ${storeFilter}
+          GROUP BY o.id, o.created_staff_id
+        `;
+
+        const [rows, tippedOrders, { orderCheckinMap }] = await Promise.all([
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql),
+          fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(tippedOrdersSql),
+          computeBkOrderCheckins(fastify, startPart, endPart, activeBkIds, storeFilter),
+        ]);
+
+        const tippedOrderIds = tippedOrders.map((to) => Number(to.orderId));
+        const comboSoldOrderRows =
+          tippedOrderIds.length > 0
+            ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+                SELECT DISTINCT order_id FROM order_service_combo WHERE order_id IN (${tippedOrderIds.join(',')})
+              `)
+            : [];
+        const comboOrderIdSet = new Set<number>();
+        comboSoldOrderRows.forEach((r) => comboOrderIdSet.add(Number(r.order_id)));
+        orderCheckinMap.forEach((checkin, ordId) => {
+          if (checkin.isCombo) comboOrderIdSet.add(ordId);
+        });
+
+        const singleTipByBooker = new Map<number, number>();
+        const comboTipByBooker = new Map<number, number>();
+
+        tippedOrders.forEach((to) => {
+          const bId = Number(to.bookerId);
+          const oId = Number(to.orderId);
+          const tip = Number(to.customer_tip_100 || 0);
+          if (comboOrderIdSet.has(oId)) {
+            comboTipByBooker.set(bId, (comboTipByBooker.get(bId) || 0) + tip);
+          } else {
+            singleTipByBooker.set(bId, (singleTipByBooker.get(bId) || 0) + tip);
+          }
+        });
 
         let rank = 1;
         let grandTotalBookings = 0;
         let grandTippedBookings = 0;
+        let grandTotalSingleCustomerTip = 0;
+        let grandTotalComboCustomerTip = 0;
         let grandTotalCustomerTip = 0;
         let grandTotalBkTipBonus = 0;
 
         const leaderboard: BkTipLeaderboardEntry[] = rows.map((r) => {
+          const bookerId = Number(r.bookerId);
           const totalBookingsCount = Number(r.totalBookingsCount || 0);
           const tippedBookingsCount = Number(r.tippedBookingsCount || 0);
-          const totalCustomerTip = Number(r.totalCustomerTip || 0);
+          const singleCustomerTip = Math.round(singleTipByBooker.get(bookerId) || 0);
+          const comboCustomerTip = Math.round(comboTipByBooker.get(bookerId) || 0);
+          const totalCustomerTip = singleCustomerTip + comboCustomerTip;
           const totalBkTipBonus = Math.round((totalCustomerTip * (config.tipsPercent || 7)) / 100);
 
           grandTotalBookings += totalBookingsCount;
           grandTippedBookings += tippedBookingsCount;
+          grandTotalSingleCustomerTip += singleCustomerTip;
+          grandTotalComboCustomerTip += comboCustomerTip;
           grandTotalCustomerTip += totalCustomerTip;
           grandTotalBkTipBonus += totalBkTipBonus;
 
           return {
             rank: rank++,
-            bookerId: Number(r.bookerId),
+            bookerId,
             displayName: String(r.displayName || `BK #${r.bookerId}`),
             avatar: r.avatar ? String(r.avatar) : null,
             store: String(r.store || 'PXL'),
             totalBookingsCount,
             tippedBookingsCount,
+            singleCustomerTip,
+            comboCustomerTip,
             totalCustomerTip,
             totalBkTipBonus,
           };
@@ -729,6 +789,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           summary: {
             totalBookingsCount: grandTotalBookings,
             tippedBookingsCount: grandTippedBookings,
+            totalSingleCustomerTip: grandTotalSingleCustomerTip,
+            totalComboCustomerTip: grandTotalComboCustomerTip,
             totalCustomerTip: grandTotalCustomerTip,
             totalBkTipBonus: grandTotalBkTipBonus,
           },
@@ -811,12 +873,12 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
     try {
       const config = await getBkSalaryConfig(fastify);
 
+      const targetBkIds = bookerId && bookerId !== 'ALL' ? [Number(bookerId)] : config.activeBkIds;
       let bookerFilter = '';
       if (bookerId && bookerId !== 'ALL') {
         bookerFilter = `AND o.created_staff_id = ${Number(bookerId)}`;
       } else {
-        const activeBkIds = config.activeBkIds;
-        bookerFilter = `AND o.created_staff_id IN (${activeBkIds.join(',')})`;
+        bookerFilter = `AND o.created_staff_id IN (${targetBkIds.join(',')})`;
       }
 
       let storeFilter = '';
@@ -855,18 +917,42 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
 
         const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql);
 
+        const orderIds = rows.map((r) => Number(r.orderId));
+        const [comboSoldOrderRows, { orderCheckinMap }] = await Promise.all([
+          orderIds.length > 0
+            ? fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+                SELECT DISTINCT order_id FROM order_service_combo WHERE order_id IN (${orderIds.join(',')})
+              `)
+            : Promise.resolve([]),
+          computeBkOrderCheckins(fastify, startPart, endPart, targetBkIds, storeFilter),
+        ]);
+        const comboOrderIdSet = new Set<number>();
+        comboSoldOrderRows.forEach((r) => comboOrderIdSet.add(Number(r.order_id)));
+        orderCheckinMap.forEach((checkin, ordId) => {
+          if (checkin.isCombo) comboOrderIdSet.add(ordId);
+        });
+
         let totalCustomerTipSum = 0;
+        let totalSingleCustomerTipSum = 0;
+        let totalComboCustomerTipSum = 0;
         let totalBkTipBonusSum = 0;
 
         const data: BkTipRecord[] = rows.map((r) => {
+          const ordId = Number(r.orderId);
           const totalCustomerTip = Number(r.totalCustomerTip || 0);
           const bkTipAmount = Math.round((totalCustomerTip * (config.tipsPercent || 7)) / 100);
+          const isCombo = comboOrderIdSet.has(ordId);
 
           totalCustomerTipSum += totalCustomerTip;
+          if (isCombo) {
+            totalComboCustomerTipSum += totalCustomerTip;
+          } else {
+            totalSingleCustomerTipSum += totalCustomerTip;
+          }
           totalBkTipBonusSum += bkTipAmount;
 
           return {
-            orderId: Number(r.orderId),
+            orderId: ordId,
             checkinTime: r.checkinTime ? new Date(r.checkinTime).toISOString() : '',
             clientName: String(r.clientName),
             clientAvatar: r.clientAvatar ? String(r.clientAvatar) : null,
@@ -876,6 +962,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
             totalCustomerTip,
             bkTipAmount,
             bkTipPercentage: config.tipsPercent || 7,
+            isCombo,
+            bookingCategory: isCombo ? 'COMBO' : 'SINGLE',
           };
         });
 
@@ -885,6 +973,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           summary: {
             totalBookingsCount: data.length,
             tippedBookingsCount: data.length,
+            totalSingleCustomerTip: totalSingleCustomerTipSum,
+            totalComboCustomerTip: totalComboCustomerTipSum,
             totalCustomerTip: totalCustomerTipSum,
             totalBkTipBonus: totalBkTipBonusSum,
           },
@@ -1017,21 +1107,42 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
 
       const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql);
 
+      const returnedOrderIds = rows.map((r) => Number(r.orderId));
+      const comboRows =
+        returnedOrderIds.length > 0
+          ? await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(`
+              SELECT order_id, COALESCE(SUM(total_price), 0) as combo_price
+              FROM order_service_combo
+              WHERE order_id IN (${returnedOrderIds.join(',')})
+              GROUP BY order_id
+            `)
+          : [];
+      const comboPriceMap = new Map<number, number>();
+      comboRows.forEach((cr) => comboPriceMap.set(Number(cr.order_id), Number(cr.combo_price || 0)));
+
       let totalRevenueSum = 0;
+      let totalSingleRevenueSum = 0;
+      let totalComboRevenueSum = 0;
       let totalCommissionSum = 0;
 
       const data: BkRevenueRecord[] = rows.map((r) => {
         // Keep the per-order detail aligned with the leaderboard's net-revenue basis.
+        const ordId = Number(r.orderId);
         const totalOrderPrice = Math.round(Number(r.totalOrderPrice || 0));
+        const comboPrice = Math.round(comboPriceMap.get(ordId) || 0);
+        const isCombo = comboPrice > 0;
+        const singlePrice = Math.max(0, totalOrderPrice - comboPrice);
         const commissionRate = getRevCommissionRate(totalOrderPrice, config.revBonusTiers);
         const commissionBonus = Math.round((totalOrderPrice * commissionRate) / 100);
 
         totalRevenueSum += totalOrderPrice;
+        totalSingleRevenueSum += singlePrice;
+        totalComboRevenueSum += comboPrice;
         totalCommissionSum += commissionBonus;
 
         return {
-          orderId: Number(r.orderId),
-          orderKey: String(r.orderKey || `#${r.orderId}`),
+          orderId: ordId,
+          orderKey: String(r.orderKey || `#${ordId}`),
           orderDate: r.orderDate ? new Date(r.orderDate).toISOString() : '',
           clientName: String(r.clientName),
           clientAvatar: r.clientAvatar ? String(r.clientAvatar) : null,
@@ -1039,6 +1150,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
           totalOrderPrice,
           commissionRate,
           commissionBonus,
+          isCombo,
+          orderCategory: isCombo ? 'COMBO' : 'SINGLE',
         };
       });
 
@@ -1047,6 +1160,8 @@ export async function registerBkRoutes(fastify: FastifyInstance) {
         total: data.length,
         summary: {
           completedOrdersCount: data.length,
+          totalSingleRevenue: totalSingleRevenueSum,
+          totalComboRevenue: totalComboRevenueSum,
           totalRevenue: totalRevenueSum,
           totalCommissionBonus: totalCommissionSum,
         },

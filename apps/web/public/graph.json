@@ -2932,6 +2932,114 @@
       }
     },
     {
+      "id": "prisma:crm:CrmFund",
+      "type": "PrismaModel",
+      "label": "crm.CrmFund",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmFund",
+        "tableName": "crm_funds",
+        "fieldCount": 19,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": [],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmFundRole",
+      "type": "PrismaModel",
+      "label": "crm.CrmFundRole",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmFundRole",
+        "tableName": "crm_fund_roles",
+        "fieldCount": 8,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": ["fundId"],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmFundRoleAssignment",
+      "type": "PrismaModel",
+      "label": "crm.CrmFundRoleAssignment",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmFundRoleAssignment",
+        "tableName": "crm_fund_role_assignments",
+        "fieldCount": 9,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": ["fundId"],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmFundProposal",
+      "type": "PrismaModel",
+      "label": "crm.CrmFundProposal",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmFundProposal",
+        "tableName": "crm_fund_proposals",
+        "fieldCount": 25,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": ["fundId"],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmFundTransaction",
+      "type": "PrismaModel",
+      "label": "crm.CrmFundTransaction",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmFundTransaction",
+        "tableName": "crm_fund_transactions",
+        "fieldCount": 21,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": ["fundId", "periodId", "proposalId"],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
+      "id": "prisma:crm:CrmFundPeriod",
+      "type": "PrismaModel",
+      "label": "crm.CrmFundPeriod",
+      "category": "Prisma CRM Model",
+      "filePath": "apps/api/prisma/crm.prisma",
+      "metadata": {
+        "dbSource": "crm",
+        "modelName": "CrmFundPeriod",
+        "tableName": "crm_fund_periods",
+        "fieldCount": 22,
+        "readOnly": false,
+        "isCatalogException": false,
+        "relations": ["fundId"],
+        "dbName": "mos_lab",
+        "accessMode": "Read-Write (CRM)"
+      }
+    },
+    {
       "id": "prisma:legacy:client_store_language",
       "type": "PrismaModel",
       "label": "legacy.client_store_language",
@@ -8112,7 +8220,7 @@
         "path": "/api/chat/bootstrap",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1317
+        "line": 1321
       }
     },
     {
@@ -8126,7 +8234,7 @@
         "path": "/api/chat/unread-summary",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1402
+        "line": 1406
       }
     },
     {
@@ -8140,7 +8248,7 @@
         "path": "/api/chat/user-prefs",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1459
+        "line": 1463
       }
     },
     {
@@ -8154,7 +8262,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1534
+        "line": 1538
       }
     },
     {
@@ -8168,7 +8276,7 @@
         "path": "/api/chat/access-config",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1560
+        "line": 1564
       }
     },
     {
@@ -8182,7 +8290,7 @@
         "path": "/api/chat/upload-image",
         "module": "chat",
         "handler": "preHandler",
-        "line": 1650
+        "line": 1654
       }
     },
     {
@@ -8196,7 +8304,7 @@
         "path": "/api/chat/upload-file",
         "module": "chat",
         "handler": "preHandler",
-        "line": 1660
+        "line": 1664
       }
     },
     {
@@ -8210,7 +8318,7 @@
         "path": "/api/chat/media/:fileName",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1670
+        "line": 1674
       }
     },
     {
@@ -8224,7 +8332,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1766
+        "line": 1770
       }
     },
     {
@@ -8238,7 +8346,7 @@
         "path": "/api/chat/tts",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1771
+        "line": 1775
       }
     },
     {
@@ -8252,7 +8360,7 @@
         "path": "/api/chat/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1776
+        "line": 1780
       }
     },
     {
@@ -8266,7 +8374,7 @@
         "path": "/api/chat/threads",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 1913
+        "line": 1917
       }
     },
     {
@@ -8280,7 +8388,7 @@
         "path": "/api/chat/threads/:messageId/extract-checklist",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2051
+        "line": 2058
       }
     },
     {
@@ -8294,7 +8402,7 @@
         "path": "/api/chat/threads/move",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2135
+        "line": 2142
       }
     },
     {
@@ -8308,7 +8416,7 @@
         "path": "/api/chat/messages/:messageId/reaction",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2276
+        "line": 2283
       }
     },
     {
@@ -8322,7 +8430,7 @@
         "path": "/api/chat/messages/:messageId/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2365
+        "line": 2372
       }
     },
     {
@@ -8336,7 +8444,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2396
+        "line": 2403
       }
     },
     {
@@ -8350,7 +8458,7 @@
         "path": "/api/chat/messages/:messageId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2478
+        "line": 2485
       }
     },
     {
@@ -8364,7 +8472,7 @@
         "path": "/api/chat/messages/:messageId/restore",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2553
+        "line": 2560
       }
     },
     {
@@ -8378,7 +8486,7 @@
         "path": "/api/chat/messages/:messageId/buzz",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2635
+        "line": 2642
       }
     },
     {
@@ -8392,7 +8500,7 @@
         "path": "/api/chat/tasks",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 2747
+        "line": 2754
       }
     },
     {
@@ -8406,7 +8514,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3007
+        "line": 3014
       }
     },
     {
@@ -8420,7 +8528,7 @@
         "path": "/api/chat/tasks/:taskId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3243
+        "line": 3250
       }
     },
     {
@@ -8434,7 +8542,7 @@
         "path": "/api/chat/conversations",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3292
+        "line": 3299
       }
     },
     {
@@ -8448,7 +8556,7 @@
         "path": "/api/chat/conversations/:id/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3487
+        "line": 3494
       }
     },
     {
@@ -8462,7 +8570,7 @@
         "path": "/api/chat/conversations/:id/threads/:messageId/read",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3571
+        "line": 3578
       }
     },
     {
@@ -8476,7 +8584,7 @@
         "path": "/api/chat/conversations/:id/unread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3631
+        "line": 3638
       }
     },
     {
@@ -8490,7 +8598,7 @@
         "path": "/api/chat/conversations/:id/pin",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3675
+        "line": 3682
       }
     },
     {
@@ -8504,7 +8612,7 @@
         "path": "/api/chat/conversations/:id/members",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3720
+        "line": 3727
       }
     },
     {
@@ -8518,7 +8626,7 @@
         "path": "/api/chat/conversations/:id/members/:staffId",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3826
+        "line": 3833
       }
     },
     {
@@ -8532,7 +8640,7 @@
         "path": "/api/chat/conversations/:id/nickname",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 3901
+        "line": 3908
       }
     },
     {
@@ -8546,7 +8654,7 @@
         "path": "/api/chat/conversations/:id",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4007
+        "line": 4014
       }
     },
     {
@@ -8560,7 +8668,7 @@
         "path": "/api/chat/missions",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4123
+        "line": 4130
       }
     },
     {
@@ -8574,7 +8682,7 @@
         "path": "/api/chat/missions/:reportId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4204
+        "line": 4211
       }
     },
     {
@@ -8588,7 +8696,7 @@
         "path": "/api/chat/workflows",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4275
+        "line": 4282
       }
     },
     {
@@ -8602,7 +8710,7 @@
         "path": "/api/chat/workflows/instances",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4298
+        "line": 4305
       }
     },
     {
@@ -8616,7 +8724,7 @@
         "path": "/api/chat/workflows/instances/:instanceId/action",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4479
+        "line": 4486
       }
     },
     {
@@ -8630,7 +8738,7 @@
         "path": "/api/chat/workflows/templates/from-thread",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4656
+        "line": 4663
       }
     },
     {
@@ -8644,7 +8752,7 @@
         "path": "/api/chat/stream",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4751
+        "line": 4758
       }
     },
     {
@@ -8658,7 +8766,7 @@
         "path": "/api/chat/sync",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4764
+        "line": 4771
       }
     },
     {
@@ -8672,7 +8780,7 @@
         "path": "/api/chat/conversations/:conversationId/messages",
         "module": "chat",
         "handler": "inlineHandler",
-        "line": 4827
+        "line": 4834
       }
     },
     {
@@ -10034,6 +10142,20 @@
       }
     },
     {
+      "id": "route:GET:/api/funds",
+      "type": "FastifyRoute",
+      "label": "GET /api/funds",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/funds/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/funds",
+        "module": "funds",
+        "handler": "inlineHandler",
+        "line": 42
+      }
+    },
+    {
       "id": "route:GET:/api/gamification/daily-sales-bonus/consultant",
       "type": "FastifyRoute",
       "label": "GET /api/gamification/daily-sales-bonus/consultant",
@@ -10450,7 +10572,7 @@
         "path": "/api/kpi/bk/tip/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 798
+        "line": 860
       }
     },
     {
@@ -10464,7 +10586,7 @@
         "path": "/api/kpi/bk/revenue/leaderboard",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 954
+        "line": 1044
       }
     },
     {
@@ -10478,7 +10600,7 @@
         "path": "/api/kpi/bk/revenue/details",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 965
+        "line": 1055
       }
     },
     {
@@ -10492,7 +10614,7 @@
         "path": "/api/kpi/bk/paystub",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1061
+        "line": 1176
       }
     },
     {
@@ -10506,7 +10628,7 @@
         "path": "/api/kpi/bk/work-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1094
+        "line": 1209
       }
     },
     {
@@ -10520,7 +10642,7 @@
         "path": "/api/kpi/bk/attendance-exception",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1128
+        "line": 1243
       }
     },
     {
@@ -10534,7 +10656,7 @@
         "path": "/api/kpi/bk/attendance-exception/audit-logs",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1183
+        "line": 1298
       }
     },
     {
@@ -10548,7 +10670,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1201
+        "line": 1316
       }
     },
     {
@@ -10562,7 +10684,7 @@
         "path": "/api/kpi/bk/config",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1246
+        "line": 1361
       }
     },
     {
@@ -10576,7 +10698,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1298
+        "line": 1413
       }
     },
     {
@@ -10590,7 +10712,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1310
+        "line": 1425
       }
     },
     {
@@ -10604,7 +10726,7 @@
         "path": "/api/kpi/bk/games/:id/done-bonuses",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1331
+        "line": 1446
       }
     },
     {
@@ -10618,7 +10740,7 @@
         "path": "/api/kpi/bk/games",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1354
+        "line": 1469
       }
     },
     {
@@ -10632,7 +10754,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1372
+        "line": 1487
       }
     },
     {
@@ -10646,7 +10768,7 @@
         "path": "/api/kpi/bk/games/:id/finalize",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1393
+        "line": 1508
       }
     },
     {
@@ -10660,7 +10782,7 @@
         "path": "/api/kpi/bk/games/:id",
         "module": "kpi",
         "handler": "inlineHandler",
-        "line": 1414
+        "line": 1529
       }
     },
     {
@@ -11682,7 +11804,7 @@
         "path": "/api/pilot/media/:filename",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 44
+        "line": 47
       }
     },
     {
@@ -11696,7 +11818,7 @@
         "path": "/api/pilot/feature-flag",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 61
+        "line": 72
       }
     },
     {
@@ -11710,7 +11832,7 @@
         "path": "/api/pilot/materials",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 75
+        "line": 86
       }
     },
     {
@@ -11724,7 +11846,7 @@
         "path": "/api/pilot/materials",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 86
+        "line": 97
       }
     },
     {
@@ -11738,7 +11860,7 @@
         "path": "/api/pilot/materials/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 97
+        "line": 108
       }
     },
     {
@@ -11752,7 +11874,7 @@
         "path": "/api/pilot/materials/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 113
+        "line": 124
       }
     },
     {
@@ -11766,7 +11888,7 @@
         "path": "/api/pilot/materials/seed-defaults",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 128
+        "line": 139
       }
     },
     {
@@ -11780,7 +11902,7 @@
         "path": "/api/pilot/material-sop",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 142
+        "line": 153
       }
     },
     {
@@ -11794,7 +11916,7 @@
         "path": "/api/pilot/material-sop",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 152
+        "line": 163
       }
     },
     {
@@ -11808,7 +11930,77 @@
         "path": "/api/pilot/material-sop/review",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 162
+        "line": 173
+      }
+    },
+    {
+      "id": "route:GET:/api/pilot/sop-preparation/category-1",
+      "type": "FastifyRoute",
+      "label": "GET /api/pilot/sop-preparation/category-1",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "GET",
+        "path": "/api/pilot/sop-preparation/category-1",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 187
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/sop-preparation/category-1",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/sop-preparation/category-1",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/sop-preparation/category-1",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 197
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/sop-preparation/category-1/criterion/:criterionId",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/sop-preparation/category-1/criterion/:criterionId",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/sop-preparation/category-1/criterion/:criterionId",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 207
+      }
+    },
+    {
+      "id": "route:POST:/api/pilot/sop-preparation/upload-evidence",
+      "type": "FastifyRoute",
+      "label": "POST /api/pilot/sop-preparation/upload-evidence",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "POST",
+        "path": "/api/pilot/sop-preparation/upload-evidence",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 222
+      }
+    },
+    {
+      "id": "route:DELETE:/api/pilot/sop-preparation/category-1/criterion/:criterionId/evidence/:fileId",
+      "type": "FastifyRoute",
+      "label": "DELETE /api/pilot/sop-preparation/category-1/criterion/:criterionId/evidence/:fileId",
+      "category": "Fastify REST Route",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "metadata": {
+        "method": "DELETE",
+        "path": "/api/pilot/sop-preparation/category-1/criterion/:criterionId/evidence/:fileId",
+        "module": "pilot",
+        "handler": "inlineHandler",
+        "line": 232
       }
     },
     {
@@ -11822,7 +12014,7 @@
         "path": "/api/pilot/sop-steps",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 176
+        "line": 253
       }
     },
     {
@@ -11836,7 +12028,7 @@
         "path": "/api/pilot/sop-steps",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 186
+        "line": 263
       }
     },
     {
@@ -11850,7 +12042,7 @@
         "path": "/api/pilot/sop-steps/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 196
+        "line": 273
       }
     },
     {
@@ -11864,7 +12056,7 @@
         "path": "/api/pilot/sop-steps/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 211
+        "line": 288
       }
     },
     {
@@ -11878,7 +12070,7 @@
         "path": "/api/pilot/sop-steps/reorder",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 225
+        "line": 302
       }
     },
     {
@@ -11892,7 +12084,7 @@
         "path": "/api/pilot/sop-steps/seed-defaults",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 235
+        "line": 312
       }
     },
     {
@@ -11906,7 +12098,7 @@
         "path": "/api/pilot/sop-steps/empirical-stats",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 245
+        "line": 322
       }
     },
     {
@@ -11920,7 +12112,7 @@
         "path": "/api/pilot/assessment-criteria",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 259
+        "line": 336
       }
     },
     {
@@ -11934,7 +12126,7 @@
         "path": "/api/pilot/assessment-criteria",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 269
+        "line": 346
       }
     },
     {
@@ -11948,7 +12140,7 @@
         "path": "/api/pilot/assessment-criteria/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 279
+        "line": 356
       }
     },
     {
@@ -11962,7 +12154,7 @@
         "path": "/api/pilot/assessment-criteria/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 294
+        "line": 371
       }
     },
     {
@@ -11976,7 +12168,7 @@
         "path": "/api/pilot/assessment-criteria/reorder",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 308
+        "line": 385
       }
     },
     {
@@ -11990,7 +12182,7 @@
         "path": "/api/pilot/sessions/:id/assessment",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 319
+        "line": 396
       }
     },
     {
@@ -12004,7 +12196,7 @@
         "path": "/api/pilot/sessions/:id/ai-analyze",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 335
+        "line": 412
       }
     },
     {
@@ -12018,7 +12210,7 @@
         "path": "/api/pilot/sessions/:id/steps",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 355
+        "line": 432
       }
     },
     {
@@ -12032,7 +12224,7 @@
         "path": "/api/pilot/sessions/:id/steps/:stepId/start",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 370
+        "line": 447
       }
     },
     {
@@ -12046,7 +12238,7 @@
         "path": "/api/pilot/sessions/:id/steps/:stepId/finish",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 387
+        "line": 464
       }
     },
     {
@@ -12060,7 +12252,7 @@
         "path": "/api/pilot/sessions/:id/steps/:stepId/note",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 404
+        "line": 481
       }
     },
     {
@@ -12074,7 +12266,7 @@
         "path": "/api/pilot/sessions/:id/steps/:stepId/reset",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 421
+        "line": 498
       }
     },
     {
@@ -12088,7 +12280,7 @@
         "path": "/api/pilot/sessions",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 437
+        "line": 514
       }
     },
     {
@@ -12102,7 +12294,7 @@
         "path": "/api/pilot/metrics",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 448
+        "line": 525
       }
     },
     {
@@ -12116,7 +12308,7 @@
         "path": "/api/pilot/sessions",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 459
+        "line": 536
       }
     },
     {
@@ -12130,7 +12322,7 @@
         "path": "/api/pilot/sessions/:id/check-in",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 471
+        "line": 548
       }
     },
     {
@@ -12144,7 +12336,7 @@
         "path": "/api/pilot/sessions/:id/before-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 487
+        "line": 564
       }
     },
     {
@@ -12158,7 +12350,7 @@
         "path": "/api/pilot/sessions/:id/service-done",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 503
+        "line": 580
       }
     },
     {
@@ -12172,7 +12364,7 @@
         "path": "/api/pilot/sessions/:id/after-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 519
+        "line": 596
       }
     },
     {
@@ -12186,7 +12378,7 @@
         "path": "/api/pilot/sessions/:id/feedback",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 535
+        "line": 612
       }
     },
     {
@@ -12200,7 +12392,7 @@
         "path": "/api/pilot/sessions/:id/check-out",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 551
+        "line": 628
       }
     },
     {
@@ -12214,7 +12406,7 @@
         "path": "/api/pilot/upload-photo",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 567
+        "line": 644
       }
     },
     {
@@ -12228,7 +12420,7 @@
         "path": "/api/pilot/sessions/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 578
+        "line": 655
       }
     },
     {
@@ -12242,7 +12434,7 @@
         "path": "/api/pilot/sessions/:id/deduct-stock",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 594
+        "line": 671
       }
     },
     {
@@ -12256,7 +12448,7 @@
         "path": "/api/pilot/inventory",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 609
+        "line": 686
       }
     },
     {
@@ -12270,7 +12462,7 @@
         "path": "/api/pilot/sessions/:id",
         "module": "pilot",
         "handler": "inlineHandler",
-        "line": 620
+        "line": 697
       }
     },
     {
@@ -14039,6 +14231,18 @@
           "cashFlow.deleteEntry",
           "cashFlow.updateAccount"
         ]
+      }
+    },
+    {
+      "id": "page:/dashboard/funds",
+      "type": "Component",
+      "label": "App Page: /dashboard/funds",
+      "category": "Next.js 16 Page",
+      "filePath": "apps/web/app/dashboard/funds/page.tsx",
+      "metadata": {
+        "routePath": "/dashboard/funds",
+        "apiCallsCount": 1,
+        "apiCalls": ["funds.list"]
       }
     },
     {
@@ -22227,6 +22431,30 @@
       }
     },
     {
+      "id": "type:@mos-lab/shared:CbAttributionGroup",
+      "type": "SharedType",
+      "label": "CbAttributionGroup",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cb-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CbAttributionGroup",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CbAttributionTelemetry",
+      "type": "SharedType",
+      "label": "CbAttributionTelemetry",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/cb-telemetry.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CbAttributionTelemetry",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
       "id": "type:@mos-lab/shared:CbDailyRecord",
       "type": "SharedType",
       "label": "CbDailyRecord",
@@ -25031,6 +25259,318 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "FrontendIssueSyncResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ToleranceMode",
+      "type": "SharedType",
+      "label": "ToleranceMode",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ToleranceMode",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FundStatus",
+      "type": "SharedType",
+      "label": "FundStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FundStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ProposalType",
+      "type": "SharedType",
+      "label": "ProposalType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ProposalType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ProposalStatus",
+      "type": "SharedType",
+      "label": "ProposalStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ProposalStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TransactionType",
+      "type": "SharedType",
+      "label": "TransactionType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TransactionType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:TransactionStatus",
+      "type": "SharedType",
+      "label": "TransactionStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "TransactionStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:PeriodStatus",
+      "type": "SharedType",
+      "label": "PeriodStatus",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "PeriodStatus",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FundRoleKey",
+      "type": "SharedType",
+      "label": "FundRoleKey",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FundRoleKey",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FundRole",
+      "type": "SharedType",
+      "label": "FundRole",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FundRole",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FundRoleAssignment",
+      "type": "SharedType",
+      "label": "FundRoleAssignment",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FundRoleAssignment",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FundApprovalStepConfig",
+      "type": "SharedType",
+      "label": "FundApprovalStepConfig",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FundApprovalStepConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FundApprovalWorkflowConfig",
+      "type": "SharedType",
+      "label": "FundApprovalWorkflowConfig",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FundApprovalWorkflowConfig",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:Fund",
+      "type": "SharedType",
+      "label": "Fund",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "Fund",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ProposalApprovalStep",
+      "type": "SharedType",
+      "label": "ProposalApprovalStep",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ProposalApprovalStep",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FundProposal",
+      "type": "SharedType",
+      "label": "FundProposal",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FundProposal",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FundTransaction",
+      "type": "SharedType",
+      "label": "FundTransaction",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FundTransaction",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:FundPeriod",
+      "type": "SharedType",
+      "label": "FundPeriod",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "FundPeriod",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:RecordExpenseRequest",
+      "type": "SharedType",
+      "label": "RecordExpenseRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "RecordExpenseRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreateProposalRequest",
+      "type": "SharedType",
+      "label": "CreateProposalRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreateProposalRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ApproveProposalRequest",
+      "type": "SharedType",
+      "label": "ApproveProposalRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ApproveProposalRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:DisburseProposalRequest",
+      "type": "SharedType",
+      "label": "DisburseProposalRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "DisburseProposalRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:ReconcileAndLockPeriodRequest",
+      "type": "SharedType",
+      "label": "ReconcileAndLockPeriodRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "ReconcileAndLockPeriodRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UpdateFundConfigRequest",
+      "type": "SharedType",
+      "label": "UpdateFundConfigRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UpdateFundConfigRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreateFundRoleInput",
+      "type": "SharedType",
+      "label": "CreateFundRoleInput",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreateFundRoleInput",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:CreateFundRequest",
+      "type": "SharedType",
+      "label": "CreateFundRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "CreateFundRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UpdateFundRequest",
+      "type": "SharedType",
+      "label": "UpdateFundRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UpdateFundRequest",
         "package": "@mos-lab/shared"
       }
     },
@@ -28547,6 +29087,90 @@
       "packageName": "@mos-lab/shared",
       "metadata": {
         "typeName": "PilotSopEmpiricalStatsResponse",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SopPrepFileType",
+      "type": "SharedType",
+      "label": "SopPrepFileType",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SopPrepFileType",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SopPrepEvidenceFile",
+      "type": "SharedType",
+      "label": "SopPrepEvidenceFile",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SopPrepEvidenceFile",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SopPrepCriterionData",
+      "type": "SharedType",
+      "label": "SopPrepCriterionData",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SopPrepCriterionData",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SopPreparationCategory1Document",
+      "type": "SharedType",
+      "label": "SopPreparationCategory1Document",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SopPreparationCategory1Document",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SaveSopPrepCategory1Request",
+      "type": "SharedType",
+      "label": "SaveSopPrepCategory1Request",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SaveSopPrepCategory1Request",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:SaveSopPrepCriterionRequest",
+      "type": "SharedType",
+      "label": "SaveSopPrepCriterionRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "SaveSopPrepCriterionRequest",
+        "package": "@mos-lab/shared"
+      }
+    },
+    {
+      "id": "type:@mos-lab/shared:UploadSopPrepEvidenceRequest",
+      "type": "SharedType",
+      "label": "UploadSopPrepEvidenceRequest",
+      "category": "Shared DTO / Contract",
+      "filePath": "packages/shared/src/types/pilot.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "typeName": "UploadSopPrepEvidenceRequest",
         "package": "@mos-lab/shared"
       }
     },
@@ -32451,6 +33075,18 @@
       }
     },
     {
+      "id": "uicomp:MosChatMobileCustomerAttachment.test",
+      "type": "UIComponent",
+      "label": "<MosChatMobileCustomerAttachment.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatMobileCustomerAttachment.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileCustomerAttachment.test",
+        "isPrimitive": false
+      }
+    },
+    {
       "id": "uicomp:MosChatMobileDateTimePicker.test",
       "type": "UIComponent",
       "label": "<MosChatMobileDateTimePicker.test />",
@@ -32495,6 +33131,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "MosChatMobileThreadBug148.test",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatMobileThreadCustomerAttachment.test",
+      "type": "UIComponent",
+      "label": "<MosChatMobileThreadCustomerAttachment.test />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/__tests__/MosChatMobileThreadCustomerAttachment.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatMobileThreadCustomerAttachment.test",
         "isPrimitive": false
       }
     },
@@ -32603,6 +33251,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "MosChatComposer",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:MosChatCustomerCardAttachment",
+      "type": "UIComponent",
+      "label": "<MosChatCustomerCardAttachment />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/components/MosChatCustomerCardAttachment.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "MosChatCustomerCardAttachment",
         "isPrimitive": false
       }
     },
@@ -33131,6 +33791,18 @@
       "packageName": "@mos-lab/web",
       "metadata": {
         "componentName": "chat-upload",
+        "isPrimitive": false
+      }
+    },
+    {
+      "id": "uicomp:quoteUtils",
+      "type": "UIComponent",
+      "label": "<quoteUtils />",
+      "category": "UI Feature Component",
+      "filePath": "apps/web/components/mos-chat/utils/quoteUtils.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "componentName": "quoteUtils",
         "isPrimitive": false
       }
     },
@@ -34515,8 +35187,8 @@
       "filePath": "apps/api/src/generated/crm-client/index.d.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 14246909,
-        "lineCount": 312804,
+        "sizeBytes": 14737237,
+        "lineCount": 324572,
         "ext": ".ts"
       }
     },
@@ -35048,8 +35720,8 @@
       "filePath": "apps/api/src/modules/ai/ai.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 40500,
-        "lineCount": 940,
+        "sizeBytes": 40860,
+        "lineCount": 952,
         "ext": ".ts"
       }
     },
@@ -36049,8 +36721,8 @@
       "filePath": "apps/api/src/modules/chat/chat-mission-bridge.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 29408,
-        "lineCount": 846,
+        "sizeBytes": 31942,
+        "lineCount": 916,
         "ext": ".ts"
       }
     },
@@ -36192,8 +36864,8 @@
       "filePath": "apps/api/src/modules/chat/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 187972,
-        "lineCount": 4891,
+        "sizeBytes": 188358,
+        "lineCount": 4898,
         "ext": ".ts"
       }
     },
@@ -37069,6 +37741,45 @@
       }
     },
     {
+      "id": "file:apps/api/src/modules/funds/fund.service.test.ts",
+      "type": "File",
+      "label": "fund.service.test.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/funds/fund.service.test.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 15208,
+        "lineCount": 501,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/funds/fund.service.ts",
+      "type": "File",
+      "label": "fund.service.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/funds/fund.service.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 48282,
+        "lineCount": 1216,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/modules/funds/routes.ts",
+      "type": "File",
+      "label": "routes.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/modules/funds/routes.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 7338,
+        "lineCount": 225,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/modules/gamification/daily-sales-bonus-transactions.test.ts",
       "type": "File",
       "label": "daily-sales-bonus-transactions.test.ts",
@@ -37154,8 +37865,8 @@
       "filePath": "apps/api/src/modules/kpi/routes/bk.routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 57115,
-        "lineCount": 1430,
+        "sizeBytes": 62707,
+        "lineCount": 1545,
         "ext": ".ts"
       }
     },
@@ -37414,8 +38125,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-leaderboard.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 30186,
-        "lineCount": 783,
+        "sizeBytes": 33135,
+        "lineCount": 849,
         "ext": ".ts"
       }
     },
@@ -37440,8 +38151,8 @@
       "filePath": "apps/api/src/modules/kpi/services/bk-salary.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 62581,
-        "lineCount": 1806,
+        "sizeBytes": 62730,
+        "lineCount": 1808,
         "ext": ".ts"
       }
     },
@@ -37453,8 +38164,8 @@
       "filePath": "apps/api/src/modules/kpi/services/cb-live-telemetry.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 2985,
-        "lineCount": 80,
+        "sizeBytes": 4951,
+        "lineCount": 117,
         "ext": ".ts"
       }
     },
@@ -37466,8 +38177,8 @@
       "filePath": "apps/api/src/modules/kpi/services/cb-live-telemetry.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 27980,
-        "lineCount": 684,
+        "sizeBytes": 35964,
+        "lineCount": 869,
         "ext": ".ts"
       }
     },
@@ -38311,8 +39022,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.test.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 47410,
-        "lineCount": 1405,
+        "sizeBytes": 51016,
+        "lineCount": 1481,
         "ext": ".ts"
       }
     },
@@ -38324,8 +39035,8 @@
       "filePath": "apps/api/src/modules/pilot/pilot.service.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 87503,
-        "lineCount": 2459,
+        "sizeBytes": 97094,
+        "lineCount": 2743,
         "ext": ".ts"
       }
     },
@@ -38337,8 +39048,8 @@
       "filePath": "apps/api/src/modules/pilot/routes.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 27325,
-        "lineCount": 634,
+        "sizeBytes": 31174,
+        "lineCount": 711,
         "ext": ".ts"
       }
     },
@@ -39747,6 +40458,32 @@
       }
     },
     {
+      "id": "file:apps/api/src/scripts/data-migrations/20261028153000_remove_mock_telesale_card_fund.ts",
+      "type": "File",
+      "label": "20261028153000_remove_mock_telesale_card_fund.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/scripts/data-migrations/20261028153000_remove_mock_telesale_card_fund.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 1654,
+        "lineCount": 59,
+        "ext": ".ts"
+      }
+    },
+    {
+      "id": "file:apps/api/src/scripts/data-migrations/20261028173000_add_approval_config_to_crm_funds.ts",
+      "type": "File",
+      "label": "20261028173000_add_approval_config_to_crm_funds.ts",
+      "category": "Source File",
+      "filePath": "apps/api/src/scripts/data-migrations/20261028173000_add_approval_config_to_crm_funds.ts",
+      "packageName": "@mos-lab/api",
+      "metadata": {
+        "sizeBytes": 1056,
+        "lineCount": 31,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/api/src/scripts/data-migrations/types.ts",
       "type": "File",
       "label": "types.ts",
@@ -40027,8 +40764,8 @@
       "filePath": "apps/api/src/server.ts",
       "packageName": "@mos-lab/api",
       "metadata": {
-        "sizeBytes": 17048,
-        "lineCount": 424,
+        "sizeBytes": 17163,
+        "lineCount": 426,
         "ext": ".ts"
       }
     },
@@ -41574,8 +42311,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkDoneTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 47971,
-        "lineCount": 1137,
+        "sizeBytes": 48330,
+        "lineCount": 1141,
         "ext": ".tsx"
       }
     },
@@ -41691,8 +42428,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkRevenueTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22458,
-        "lineCount": 589,
+        "sizeBytes": 24637,
+        "lineCount": 634,
         "ext": ".tsx"
       }
     },
@@ -41717,8 +42454,8 @@
       "filePath": "apps/web/app/dashboard/bk/components/BkTipTab.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 22817,
-        "lineCount": 604,
+        "sizeBytes": 25001,
+        "lineCount": 649,
         "ext": ".tsx"
       }
     },
@@ -42445,8 +43182,8 @@
       "filePath": "apps/web/app/dashboard/cb/__tests__/CbDashboard.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 5011,
-        "lineCount": 152,
+        "sizeBytes": 6356,
+        "lineCount": 191,
         "ext": ".tsx"
       }
     },
@@ -42458,8 +43195,8 @@
       "filePath": "apps/web/app/dashboard/cb/components/CbLiveTelemetryWidget.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 43642,
-        "lineCount": 990,
+        "sizeBytes": 53065,
+        "lineCount": 1150,
         "ext": ".tsx"
       }
     },
@@ -43543,6 +44280,71 @@
       }
     },
     {
+      "id": "file:apps/web/app/dashboard/funds/components/FundFormModal.tsx",
+      "type": "File",
+      "label": "FundFormModal.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/components/FundFormModal.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 37892,
+        "lineCount": 979,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/components/FundModals.tsx",
+      "type": "File",
+      "label": "FundModals.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/components/FundModals.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 16145,
+        "lineCount": 473,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/components/fundColumns.tsx",
+      "type": "File",
+      "label": "fundColumns.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/components/fundColumns.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7622,
+        "lineCount": 235,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/page.test.tsx",
+      "type": "File",
+      "label": "page.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/page.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 7582,
+        "lineCount": 217,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/funds/page.tsx",
+      "type": "File",
+      "label": "page.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/funds/page.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 12815,
+        "lineCount": 380,
+        "ext": ".tsx"
+      }
+    },
+    {
       "id": "file:apps/web/app/dashboard/holiday-work/components/HolidayCalendarSection.tsx",
       "type": "File",
       "label": "HolidayCalendarSection.tsx",
@@ -44070,8 +44872,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaSopDetail.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6564,
-        "lineCount": 152,
+        "sizeBytes": 10903,
+        "lineCount": 239,
         "ext": ".tsx"
       }
     },
@@ -44083,8 +44885,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotCriteriaSopDetail.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 62709,
-        "lineCount": 1209,
+        "sizeBytes": 111849,
+        "lineCount": 2149,
         "ext": ".tsx"
       }
     },
@@ -44213,8 +45015,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopDetailView.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 6841,
-        "lineCount": 172,
+        "sizeBytes": 10862,
+        "lineCount": 270,
         "ext": ".tsx"
       }
     },
@@ -44226,8 +45028,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/PilotSopDetailView.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 42020,
-        "lineCount": 756,
+        "sizeBytes": 69154,
+        "lineCount": 1264,
         "ext": ".tsx"
       }
     },
@@ -44254,6 +45056,45 @@
       "metadata": {
         "sizeBytes": 18806,
         "lineCount": 410,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/SopPrepCategory1DetailView.tsx",
+      "type": "File",
+      "label": "SopPrepCategory1DetailView.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/SopPrepCategory1DetailView.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 40808,
+        "lineCount": 915,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/SopPreparationTabContent.test.tsx",
+      "type": "File",
+      "label": "SopPreparationTabContent.test.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/SopPreparationTabContent.test.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 11308,
+        "lineCount": 252,
+        "ext": ".tsx"
+      }
+    },
+    {
+      "id": "file:apps/web/app/dashboard/pilot-dark-lashes/components/SopPreparationTabContent.tsx",
+      "type": "File",
+      "label": "SopPreparationTabContent.tsx",
+      "category": "Source File",
+      "filePath": "apps/web/app/dashboard/pilot-dark-lashes/components/SopPreparationTabContent.tsx",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 14181,
+        "lineCount": 288,
         "ext": ".tsx"
       }
     },
@@ -44304,8 +45145,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/page.test.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1993,
-        "lineCount": 64,
+        "sizeBytes": 3284,
+        "lineCount": 85,
         "ext": ".tsx"
       }
     },
@@ -44317,8 +45158,8 @@
       "filePath": "apps/web/app/dashboard/pilot-dark-lashes/page.tsx",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 23918,
-        "lineCount": 579,
+        "sizeBytes": 24882,
+        "lineCount": 603,
         "ext": ".tsx"
       }
     },
@@ -46312,6 +47153,19 @@
       }
     },
     {
+      "id": "file:apps/web/lib/api/funds.api.ts",
+      "type": "File",
+      "label": "funds.api.ts",
+      "category": "Source File",
+      "filePath": "apps/web/lib/api/funds.api.ts",
+      "packageName": "@mos-lab/web",
+      "metadata": {
+        "sizeBytes": 3432,
+        "lineCount": 123,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:apps/web/lib/api/index.ts",
       "type": "File",
       "label": "index.ts",
@@ -46319,8 +47173,8 @@
       "filePath": "apps/web/lib/api/index.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 1566,
-        "lineCount": 58,
+        "sizeBytes": 1650,
+        "lineCount": 61,
         "ext": ".ts"
       }
     },
@@ -46384,8 +47238,8 @@
       "filePath": "apps/web/lib/api/pilot.api.ts",
       "packageName": "@mos-lab/web",
       "metadata": {
-        "sizeBytes": 10157,
-        "lineCount": 238,
+        "sizeBytes": 11648,
+        "lineCount": 272,
         "ext": ".ts"
       }
     },
@@ -46839,8 +47693,8 @@
       "filePath": "packages/shared/src/index.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 2802,
-        "lineCount": 71,
+        "sizeBytes": 2835,
+        "lineCount": 72,
         "ext": ".ts"
       }
     },
@@ -47021,8 +47875,8 @@
       "filePath": "packages/shared/src/types/bk.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 12315,
-        "lineCount": 464,
+        "sizeBytes": 13180,
+        "lineCount": 484,
         "ext": ".ts"
       }
     },
@@ -47112,8 +47966,8 @@
       "filePath": "packages/shared/src/types/cb-telemetry.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 3019,
-        "lineCount": 117,
+        "sizeBytes": 4071,
+        "lineCount": 144,
         "ext": ".ts"
       }
     },
@@ -47313,6 +48167,19 @@
       }
     },
     {
+      "id": "file:packages/shared/src/types/fund.ts",
+      "type": "File",
+      "label": "fund.ts",
+      "category": "Source File",
+      "filePath": "packages/shared/src/types/fund.ts",
+      "packageName": "@mos-lab/shared",
+      "metadata": {
+        "sizeBytes": 5573,
+        "lineCount": 233,
+        "ext": ".ts"
+      }
+    },
+    {
       "id": "file:packages/shared/src/types/holiday-work.ts",
       "type": "File",
       "label": "holiday-work.ts",
@@ -47372,8 +48239,8 @@
       "filePath": "packages/shared/src/types/mos-chat.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 25933,
-        "lineCount": 963,
+        "sizeBytes": 26052,
+        "lineCount": 966,
         "ext": ".ts"
       }
     },
@@ -47476,8 +48343,8 @@
       "filePath": "packages/shared/src/types/pilot.ts",
       "packageName": "@mos-lab/shared",
       "metadata": {
-        "sizeBytes": 34284,
-        "lineCount": 839,
+        "sizeBytes": 47913,
+        "lineCount": 1085,
         "ext": ".ts"
       }
     },
@@ -48866,6 +49733,48 @@
     {
       "id": "edge:prisma:crm:CrmChatWorkflowInstance:ws:apps/api",
       "source": "prisma:crm:CrmChatWorkflowInstance",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmFund:ws:apps/api",
+      "source": "prisma:crm:CrmFund",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmFundRole:ws:apps/api",
+      "source": "prisma:crm:CrmFundRole",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmFundRoleAssignment:ws:apps/api",
+      "source": "prisma:crm:CrmFundRoleAssignment",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmFundProposal:ws:apps/api",
+      "source": "prisma:crm:CrmFundProposal",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmFundTransaction:ws:apps/api",
+      "source": "prisma:crm:CrmFundTransaction",
+      "target": "ws:apps/api",
+      "type": "EXPORTS",
+      "label": "DEFINED_IN"
+    },
+    {
+      "id": "edge:prisma:crm:CrmFundPeriod:ws:apps/api",
+      "source": "prisma:crm:CrmFundPeriod",
       "target": "ws:apps/api",
       "type": "EXPORTS",
       "label": "DEFINED_IN"
@@ -52392,6 +53301,13 @@
       "label": "REGISTERED_IN"
     },
     {
+      "id": "edge:route:GET:/api/funds:ws:apps/api",
+      "source": "route:GET:/api/funds",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
       "id": "edge:route:GET:/api/gamification/daily-sales-bonus/consultant:ws:apps/api",
       "source": "route:GET:/api/gamification/daily-sales-bonus/consultant",
       "target": "ws:apps/api",
@@ -53276,6 +54192,41 @@
     {
       "id": "edge:route:POST:/api/pilot/material-sop/review:ws:apps/api",
       "source": "route:POST:/api/pilot/material-sop/review",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:GET:/api/pilot/sop-preparation/category-1:ws:apps/api",
+      "source": "route:GET:/api/pilot/sop-preparation/category-1",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/sop-preparation/category-1:ws:apps/api",
+      "source": "route:POST:/api/pilot/sop-preparation/category-1",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/sop-preparation/category-1/criterion/:criterionId:ws:apps/api",
+      "source": "route:POST:/api/pilot/sop-preparation/category-1/criterion/:criterionId",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:POST:/api/pilot/sop-preparation/upload-evidence:ws:apps/api",
+      "source": "route:POST:/api/pilot/sop-preparation/upload-evidence",
+      "target": "ws:apps/api",
+      "type": "HANDLES_ROUTE",
+      "label": "REGISTERED_IN"
+    },
+    {
+      "id": "edge:route:DELETE:/api/pilot/sop-preparation/category-1/criterion/:criterionId/evidence/:fileId:ws:apps/api",
+      "source": "route:DELETE:/api/pilot/sop-preparation/category-1/criterion/:criterionId/evidence/:fileId",
       "target": "ws:apps/api",
       "type": "HANDLES_ROUTE",
       "label": "REGISTERED_IN"
@@ -54389,6 +55340,13 @@
     {
       "id": "edge:page:/dashboard/finance/cash-flow:ws:apps/web",
       "source": "page:/dashboard/finance/cash-flow",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "PAGE_OF"
+    },
+    {
+      "id": "edge:page:/dashboard/funds:ws:apps/web",
+      "source": "page:/dashboard/funds",
       "target": "ws:apps/web",
       "type": "RENDERS",
       "label": "PAGE_OF"
@@ -59119,6 +60077,20 @@
       "label": "EXPORTED_BY"
     },
     {
+      "id": "edge:type:@mos-lab/shared:CbAttributionGroup:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CbAttributionGroup",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CbAttributionTelemetry:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CbAttributionTelemetry",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
       "id": "edge:type:@mos-lab/shared:CbDailyRecord:ws:packages/shared",
       "source": "type:@mos-lab/shared:CbDailyRecord",
       "target": "ws:packages/shared",
@@ -60752,6 +61724,188 @@
     {
       "id": "edge:type:@mos-lab/shared:FrontendIssueSyncResponse:ws:packages/shared",
       "source": "type:@mos-lab/shared:FrontendIssueSyncResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ToleranceMode:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ToleranceMode",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FundStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FundStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ProposalType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ProposalType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ProposalStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ProposalStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TransactionType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TransactionType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:TransactionStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:TransactionStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:PeriodStatus:ws:packages/shared",
+      "source": "type:@mos-lab/shared:PeriodStatus",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FundRoleKey:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FundRoleKey",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FundRole:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FundRole",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FundRoleAssignment:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FundRoleAssignment",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FundApprovalStepConfig:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FundApprovalStepConfig",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FundApprovalWorkflowConfig:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FundApprovalWorkflowConfig",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:Fund:ws:packages/shared",
+      "source": "type:@mos-lab/shared:Fund",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ProposalApprovalStep:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ProposalApprovalStep",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FundProposal:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FundProposal",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FundTransaction:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FundTransaction",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:FundPeriod:ws:packages/shared",
+      "source": "type:@mos-lab/shared:FundPeriod",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:RecordExpenseRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:RecordExpenseRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CreateProposalRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CreateProposalRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ApproveProposalRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ApproveProposalRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:DisburseProposalRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:DisburseProposalRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:ReconcileAndLockPeriodRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:ReconcileAndLockPeriodRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UpdateFundConfigRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UpdateFundConfigRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CreateFundRoleInput:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CreateFundRoleInput",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:CreateFundRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:CreateFundRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UpdateFundRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UpdateFundRequest",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -62803,6 +63957,55 @@
     {
       "id": "edge:type:@mos-lab/shared:PilotSopEmpiricalStatsResponse:ws:packages/shared",
       "source": "type:@mos-lab/shared:PilotSopEmpiricalStatsResponse",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SopPrepFileType:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SopPrepFileType",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SopPrepEvidenceFile:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SopPrepEvidenceFile",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SopPrepCriterionData:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SopPrepCriterionData",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SopPreparationCategory1Document:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SopPreparationCategory1Document",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SaveSopPrepCategory1Request:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SaveSopPrepCategory1Request",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:SaveSopPrepCriterionRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:SaveSopPrepCriterionRequest",
+      "target": "ws:packages/shared",
+      "type": "EXPORTS",
+      "label": "EXPORTED_BY"
+    },
+    {
+      "id": "edge:type:@mos-lab/shared:UploadSopPrepEvidenceRequest:ws:packages/shared",
+      "source": "type:@mos-lab/shared:UploadSopPrepEvidenceRequest",
       "target": "ws:packages/shared",
       "type": "EXPORTS",
       "label": "EXPORTED_BY"
@@ -66154,6 +67357,20 @@
       "label": "USES_DESIGN_TOKEN"
     },
     {
+      "id": "edge:uicomp:MosChatMobileCustomerAttachment.test:ws:apps/web",
+      "source": "uicomp:MosChatMobileCustomerAttachment.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileCustomerAttachment.test:token:color:primary",
+      "source": "uicomp:MosChatMobileCustomerAttachment.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
       "id": "edge:uicomp:MosChatMobileDateTimePicker.test:ws:apps/web",
       "source": "uicomp:MosChatMobileDateTimePicker.test",
       "target": "ws:apps/web",
@@ -66205,6 +67422,20 @@
     {
       "id": "edge:uicomp:MosChatMobileThreadBug148.test:token:color:primary",
       "source": "uicomp:MosChatMobileThreadBug148.test",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileThreadCustomerAttachment.test:ws:apps/web",
+      "source": "uicomp:MosChatMobileThreadCustomerAttachment.test",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatMobileThreadCustomerAttachment.test:token:color:primary",
+      "source": "uicomp:MosChatMobileThreadCustomerAttachment.test",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -66331,6 +67562,20 @@
     {
       "id": "edge:uicomp:MosChatComposer:token:color:primary",
       "source": "uicomp:MosChatComposer",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:MosChatCustomerCardAttachment:ws:apps/web",
+      "source": "uicomp:MosChatCustomerCardAttachment",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:MosChatCustomerCardAttachment:token:color:primary",
+      "source": "uicomp:MosChatCustomerCardAttachment",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -66947,6 +68192,20 @@
     {
       "id": "edge:uicomp:chat-upload:token:color:primary",
       "source": "uicomp:chat-upload",
+      "target": "token:color:primary",
+      "type": "USES_TOKEN",
+      "label": "USES_DESIGN_TOKEN"
+    },
+    {
+      "id": "edge:uicomp:quoteUtils:ws:apps/web",
+      "source": "uicomp:quoteUtils",
+      "target": "ws:apps/web",
+      "type": "RENDERS",
+      "label": "DECLARED_IN_WEB"
+    },
+    {
+      "id": "edge:uicomp:quoteUtils:token:color:primary",
+      "source": "uicomp:quoteUtils",
       "target": "token:color:primary",
       "type": "USES_TOKEN",
       "label": "USES_DESIGN_TOKEN"
@@ -69010,6 +70269,13 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/api/src/modules/chat/chat-mission-bridge.service.test.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/chat/chat-mission-bridge.service.test.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/api/src/modules/chat/chat-mission-bridge.service.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/chat/chat-mission-bridge.service.ts",
       "target": "ws:packages/shared",
@@ -69383,6 +70649,20 @@
     {
       "id": "edge:file:apps/api/src/modules/fal/routes.ts:ws:packages/shared",
       "source": "file:apps/api/src/modules/fal/routes.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/funds/fund.service.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/funds/fund.service.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/api/src/modules/funds/routes.ts:ws:packages/shared",
+      "source": "file:apps/api/src/modules/funds/routes.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -71411,6 +72691,34 @@
       "label": "IMPORTS_PACKAGE"
     },
     {
+      "id": "edge:file:apps/web/app/dashboard/funds/components/FundFormModal.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/funds/components/FundFormModal.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/funds/components/FundModals.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/funds/components/FundModals.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/funds/components/fundColumns.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/funds/components/fundColumns.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/funds/page.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/funds/page.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
       "id": "edge:file:apps/web/app/dashboard/holiday-work/components/HolidayCalendarSection.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/holiday-work/components/HolidayCalendarSection.tsx",
       "target": "ws:packages/shared",
@@ -71742,6 +73050,20 @@
     {
       "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotStepTimer.tsx:ws:packages/shared",
       "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/PilotStepTimer.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/SopPrepCategory1DetailView.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/SopPrepCategory1DetailView.tsx",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/app/dashboard/pilot-dark-lashes/components/SopPreparationTabContent.tsx:ws:packages/shared",
+      "source": "file:apps/web/app/dashboard/pilot-dark-lashes/components/SopPreparationTabContent.tsx",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -72379,6 +73701,13 @@
     {
       "id": "edge:file:apps/web/lib/api/customers.api.ts:ws:packages/shared",
       "source": "file:apps/web/lib/api/customers.api.ts",
+      "target": "ws:packages/shared",
+      "type": "IMPORTS",
+      "label": "IMPORTS_PACKAGE"
+    },
+    {
+      "id": "edge:file:apps/web/lib/api/funds.api.ts:ws:packages/shared",
+      "source": "file:apps/web/lib/api/funds.api.ts",
       "target": "ws:packages/shared",
       "type": "IMPORTS",
       "label": "IMPORTS_PACKAGE"
@@ -83045,6 +84374,27 @@
       "label": "CALLS cashFlow.updateAccount"
     },
     {
+      "id": "edge:page:/dashboard/funds:route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "source": "page:/dashboard/funds",
+      "target": "route:POST:/api/chat/threads/:messageId/extract-checklist",
+      "type": "API_CALL",
+      "label": "CALLS funds.list"
+    },
+    {
+      "id": "edge:page:/dashboard/funds:route:GET:/api/funds",
+      "source": "page:/dashboard/funds",
+      "target": "route:GET:/api/funds",
+      "type": "API_CALL",
+      "label": "CALLS funds.list"
+    },
+    {
+      "id": "edge:page:/dashboard/funds:route:GET:/api/kpi/package-audit/list",
+      "source": "page:/dashboard/funds",
+      "target": "route:GET:/api/kpi/package-audit/list",
+      "type": "API_CALL",
+      "label": "CALLS funds.list"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/academy-sales/access",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/academy-sales/access",
@@ -86461,6 +87811,13 @@
       "label": "CALLS campaigns.update"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/funds",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/funds",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/gamification/daily-sales-bonus/consultant",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:GET:/api/gamification/daily-sales-bonus/consultant",
@@ -87346,6 +88703,41 @@
       "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/material-sop/review",
       "source": "page:/dashboard/nyc/campaigns/[slug]",
       "target": "route:POST:/api/pilot/material-sop/review",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:GET:/api/pilot/sop-preparation/category-1",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:GET:/api/pilot/sop-preparation/category-1",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/sop-preparation/category-1",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/sop-preparation/category-1",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/sop-preparation/category-1/criterion/:criterionId",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/sop-preparation/category-1/criterion/:criterionId",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:POST:/api/pilot/sop-preparation/upload-evidence",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:POST:/api/pilot/sop-preparation/upload-evidence",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.update"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns/[slug]:route:DELETE:/api/pilot/sop-preparation/category-1/criterion/:criterionId/evidence/:fileId",
+      "source": "page:/dashboard/nyc/campaigns/[slug]",
+      "target": "route:DELETE:/api/pilot/sop-preparation/category-1/criterion/:criterionId/evidence/:fileId",
       "type": "API_CALL",
       "label": "CALLS campaigns.update"
     },
@@ -91627,6 +93019,13 @@
       "label": "CALLS campaigns.delete"
     },
     {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/funds",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/funds",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
       "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/gamification/daily-sales-bonus/consultant",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:GET:/api/gamification/daily-sales-bonus/consultant",
@@ -92512,6 +93911,41 @@
       "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/material-sop/review",
       "source": "page:/dashboard/nyc/campaigns",
       "target": "route:POST:/api/pilot/material-sop/review",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:GET:/api/pilot/sop-preparation/category-1",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:GET:/api/pilot/sop-preparation/category-1",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/sop-preparation/category-1",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/sop-preparation/category-1",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/sop-preparation/category-1/criterion/:criterionId",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/sop-preparation/category-1/criterion/:criterionId",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:POST:/api/pilot/sop-preparation/upload-evidence",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:POST:/api/pilot/sop-preparation/upload-evidence",
+      "type": "API_CALL",
+      "label": "CALLS campaigns.delete"
+    },
+    {
+      "id": "edge:page:/dashboard/nyc/campaigns:route:DELETE:/api/pilot/sop-preparation/category-1/criterion/:criterionId/evidence/:fileId",
+      "source": "page:/dashboard/nyc/campaigns",
+      "target": "route:DELETE:/api/pilot/sop-preparation/category-1/criterion/:criterionId/evidence/:fileId",
       "type": "API_CALL",
       "label": "CALLS campaigns.delete"
     },
@@ -94024,6 +95458,41 @@
       "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/material-sop/review",
       "source": "page:/dashboard/pilot-dark-lashes",
       "target": "route:POST:/api/pilot/material-sop/review",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:GET:/api/pilot/sop-preparation/category-1",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:GET:/api/pilot/sop-preparation/category-1",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sop-preparation/category-1",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/sop-preparation/category-1",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sop-preparation/category-1/criterion/:criterionId",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/sop-preparation/category-1/criterion/:criterionId",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:POST:/api/pilot/sop-preparation/upload-evidence",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:POST:/api/pilot/sop-preparation/upload-evidence",
+      "type": "API_CALL",
+      "label": "CALLS pilot.listSessions"
+    },
+    {
+      "id": "edge:page:/dashboard/pilot-dark-lashes:route:DELETE:/api/pilot/sop-preparation/category-1/criterion/:criterionId/evidence/:fileId",
+      "source": "page:/dashboard/pilot-dark-lashes",
+      "target": "route:DELETE:/api/pilot/sop-preparation/category-1/criterion/:criterionId/evidence/:fileId",
       "type": "API_CALL",
       "label": "CALLS pilot.listSessions"
     },
@@ -100167,6 +101636,13 @@
       "label": "CALLS teams.update"
     },
     {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/funds",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/funds",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
       "id": "edge:page:/dashboard/staff/teams:route:GET:/api/gamification/daily-sales-bonus/consultant",
       "source": "page:/dashboard/staff/teams",
       "target": "route:GET:/api/gamification/daily-sales-bonus/consultant",
@@ -101052,6 +102528,41 @@
       "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/material-sop/review",
       "source": "page:/dashboard/staff/teams",
       "target": "route:POST:/api/pilot/material-sop/review",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:GET:/api/pilot/sop-preparation/category-1",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:GET:/api/pilot/sop-preparation/category-1",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/sop-preparation/category-1",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/sop-preparation/category-1",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/sop-preparation/category-1/criterion/:criterionId",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/sop-preparation/category-1/criterion/:criterionId",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:POST:/api/pilot/sop-preparation/upload-evidence",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:POST:/api/pilot/sop-preparation/upload-evidence",
+      "type": "API_CALL",
+      "label": "CALLS teams.update"
+    },
+    {
+      "id": "edge:page:/dashboard/staff/teams:route:DELETE:/api/pilot/sop-preparation/category-1/criterion/:criterionId/evidence/:fileId",
+      "source": "page:/dashboard/staff/teams",
+      "target": "route:DELETE:/api/pilot/sop-preparation/category-1/criterion/:criterionId/evidence/:fileId",
       "type": "API_CALL",
       "label": "CALLS teams.update"
     },
@@ -102002,31 +103513,31 @@
     }
   ],
   "stats": {
-    "totalNodes": 3670,
-    "totalEdges": 7751,
+    "totalNodes": 3737,
+    "totalEdges": 7843,
     "nodeTypeCounts": {
       "Workspace": 3,
-      "PrismaModel": 176,
-      "FastifyRoute": 738,
-      "Component": 63,
-      "SharedType": 1337,
+      "PrismaModel": 182,
+      "FastifyRoute": 744,
+      "Component": 64,
+      "SharedType": 1372,
       "DesignToken": 12,
-      "UIComponent": 318,
-      "File": 1023
+      "UIComponent": 322,
+      "File": 1038
     },
     "edgeTypeCounts": {
-      "EXPORTS": 1525,
-      "HANDLES_ROUTE": 738,
-      "RENDERS": 381,
-      "USES_TOKEN": 320,
-      "IMPORTS": 571,
+      "EXPORTS": 1566,
+      "HANDLES_ROUTE": 744,
+      "RENDERS": 386,
+      "USES_TOKEN": 324,
+      "IMPORTS": 581,
       "QUERIES_MODEL": 423,
-      "API_CALL": 3793
+      "API_CALL": 3819
     },
-    "fastifyRouteCount": 743,
-    "prismaModelCount": 176,
-    "nextPageCount": 63,
-    "sharedTypeCount": 1337
+    "fastifyRouteCount": 749,
+    "prismaModelCount": 182,
+    "nextPageCount": 64,
+    "sharedTypeCount": 1372
   },
   "routes": [
     {
@@ -105447,6 +106958,13 @@
     },
     {
       "method": "GET",
+      "path": "/api/funds",
+      "filePath": "apps/api/src/modules/funds/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "funds"
+    },
+    {
+      "method": "GET",
       "path": "/api/gamification/daily-sales-bonus/consultant",
       "filePath": "apps/api/src/modules/gamification/routes.ts",
       "handler": "inlineHandler",
@@ -106330,6 +107848,41 @@
     {
       "method": "POST",
       "path": "/api/pilot/material-sop/review",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "GET",
+      "path": "/api/pilot/sop-preparation/category-1",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/sop-preparation/category-1",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/sop-preparation/category-1/criterion/:criterionId",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "POST",
+      "path": "/api/pilot/sop-preparation/upload-evidence",
+      "filePath": "apps/api/src/modules/pilot/routes.ts",
+      "handler": "inlineHandler",
+      "moduleName": "pilot"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/pilot/sop-preparation/category-1/criterion/:criterionId/evidence/:fileId",
       "filePath": "apps/api/src/modules/pilot/routes.ts",
       "handler": "inlineHandler",
       "moduleName": "pilot"
@@ -108680,6 +110233,60 @@
       "readOnly": false,
       "isCatalogException": false,
       "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmFund",
+      "tableName": "crm_funds",
+      "fieldCount": 19,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": []
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmFundRole",
+      "tableName": "crm_fund_roles",
+      "fieldCount": 8,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": ["fundId"]
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmFundRoleAssignment",
+      "tableName": "crm_fund_role_assignments",
+      "fieldCount": 9,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": ["fundId"]
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmFundProposal",
+      "tableName": "crm_fund_proposals",
+      "fieldCount": 25,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": ["fundId"]
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmFundTransaction",
+      "tableName": "crm_fund_transactions",
+      "fieldCount": 21,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": ["fundId", "periodId", "proposalId"]
+    },
+    {
+      "dbSource": "crm",
+      "modelName": "CrmFundPeriod",
+      "tableName": "crm_fund_periods",
+      "fieldCount": 22,
+      "readOnly": false,
+      "isCatalogException": false,
+      "relations": ["fundId"]
     },
     {
       "dbSource": "legacy",

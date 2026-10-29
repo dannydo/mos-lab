@@ -308,6 +308,33 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker, com
       ),
     },
     {
+      title: 'Tip (Lẻ / Combo)',
+      key: 'tipBreakdown',
+      align: 'center' as const,
+      render: (_: any, r: BkTipLeaderboardEntry) => {
+        const singleTip = r.singleCustomerTip || 0;
+        const comboTip = r.comboCustomerTip || 0;
+        return (
+          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+            <Tooltip title={`Tip từ đơn dịch vụ lẻ: ${formatCurrency(singleTip)}`}>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 tabular-nums">
+                <span className="text-[10px] uppercase font-semibold opacity-75">Lẻ</span>
+                {formatCurrency(singleTip)}
+              </span>
+            </Tooltip>
+            {comboTip > 0 && (
+              <Tooltip title={`Tip từ đơn dùng/bán combo: ${formatCurrency(comboTip)}`}>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 tabular-nums">
+                  <span className="text-[10px] uppercase font-semibold opacity-75">Combo</span>
+                  {formatCurrency(comboTip)}
+                </span>
+              </Tooltip>
+            )}
+          </div>
+        );
+      },
+    },
+    {
       title: 'Tổng Tip Khách Cho',
       dataIndex: 'totalCustomerTip',
       key: 'totalCustomerTip',
@@ -401,6 +428,24 @@ export default function BkTipTab({ dateRange, selectedStore, selectedBooker, com
       render: (val: string) => (
         <span className="text-xs font-medium text-slate-400 whitespace-nowrap">· {formatStoreCode(val)}</span>
       ),
+    },
+    {
+      title: 'Loại Đơn',
+      dataIndex: 'bookingCategory',
+      key: 'bookingCategory',
+      align: 'center' as const,
+      render: (cat: string, r: BkTipRecord) => {
+        const isCombo = r.isCombo || cat === 'COMBO';
+        return isCombo ? (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 tabular-nums">
+            Combo
+          </span>
+        ) : (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 tabular-nums">
+            Lẻ
+          </span>
+        );
+      },
     },
     {
       title: 'Tip',

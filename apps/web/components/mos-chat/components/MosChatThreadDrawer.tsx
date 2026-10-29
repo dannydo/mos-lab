@@ -49,6 +49,7 @@ import { MosChatStickerVisual, parsePureStickerMessage, parseStickerReactionKey 
 import { GOOGLE_CHAT_QUICK_EMOJIS } from '../constants/chat-constants';
 import { buildMaiUrgentVoiceAnnouncement } from '../utils/chat-helpers';
 import { playNeuralSpeech } from '../../voice-assistant/speech-utils';
+import { findSourceMessage, scrollToMessageAndFlash } from '../utils/quoteUtils';
 
 export interface MosChatThreadDrawerProps {
   threadOpen: boolean;
@@ -102,7 +103,11 @@ export interface MosChatThreadDrawerProps {
   navigateToMessage: (convId: string, msgId: string) => void;
   highlightedMsgId: string | null;
   renderUserAvatarNode: (opts: SafeAny) => React.ReactNode;
-  renderRichTextMessage: (text?: string, isMine?: boolean) => React.ReactNode;
+  renderRichTextMessage: (
+    text?: string,
+    isMine?: boolean,
+    opts?: { onQuoteClick?: (senderName: string, quotedContent: string) => void }
+  ) => React.ReactNode;
   speakingMsgId: string | null;
   ttsSpeed: number;
   handleSpeakAiMessage: (msg: SafeAny) => void;
@@ -981,7 +986,7 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
             const replyBreakdown = getThreadReplyReadBreakdown(activeConversation, activeThreadMessage, r);
             const stoppedReadersForReply = stoppedReadersByReplyId[r.id] || [];
             return (
-              <div key={r.id} id={`mos-chat-reply-${r.id}`} className="space-y-1">
+              <div key={r.id} data-message-id={r.id} id={`mos-chat-reply-${r.id}`} className="space-y-1">
                 <div className={`flex gap-2 items-start ${isReplyMine ? 'flex-row-reverse' : 'flex-row'}`}>
                   {renderUserAvatarNode({
                     name: r.senderName,
@@ -1179,7 +1184,20 @@ export const MosChatThreadDrawer: React.FC<MosChatThreadDrawerProps> = React.mem
 
                         {r.text && (
                           <div className="leading-relaxed break-words text-left">
-                            {renderRichTextMessage(r.text, isReplyMine)}
+                            {renderRichTextMessage(r.text, isReplyMine, {
+                              onQuoteClick: (senderName, quotedContent) => {
+                                const threadReplies = (activeThreadMessage?.thread ?? []) as Array<{
+                                  id: string;
+                                  senderName?: string;
+                                  text?: string | null;
+                                }>;
+                                const foundId = findSourceMessage(threadReplies, {
+                                  senderName,
+                                  content: quotedContent,
+                                });
+                                if (foundId) scrollToMessageAndFlash(foundId, threadMessagesContainerRef.current);
+                              },
+                            })}
                           </div>
                         )}
 

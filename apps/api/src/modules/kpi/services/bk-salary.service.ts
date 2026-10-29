@@ -1386,13 +1386,17 @@ export async function getBkPaystubData(
 
   const bkIdsStr = activeBkIds.join(',');
 
-  const [{ clientBonusMap, orderCheckinMap, singleDoneMap }, holidayBreakdownMap, attendanceMap, workDaysOverrides] =
-    await Promise.all([
-      computeBkOrderCheckins(fastify, startPart, endPart, activeBkIds, storeFilter),
-      HolidayWorkService.getPayBreakdownByLegacyStaffIds(fastify, activeBkIds, startPart, endPart),
-      fetchBkAttendanceMap(fastify, startPart, endPart, activeBkIds),
-      getBkWorkDaysOverrides(fastify),
-    ]);
+  const [
+    { clientBonusMap, orderCheckinMap, singleDoneMap, comboLiveDoneMap },
+    holidayBreakdownMap,
+    attendanceMap,
+    workDaysOverrides,
+  ] = await Promise.all([
+    computeBkOrderCheckins(fastify, startPart, endPart, activeBkIds, storeFilter),
+    HolidayWorkService.getPayBreakdownByLegacyStaffIds(fastify, activeBkIds, startPart, endPart),
+    fetchBkAttendanceMap(fastify, startPart, endPart, activeBkIds),
+    getBkWorkDaysOverrides(fastify),
+  ]);
 
   const effectiveAttendanceMap = await fetchBkExceptionAdjustedAttendanceMap(
     fastify,
@@ -1481,7 +1485,9 @@ export async function getBkPaystubData(
       standardWorkDays > 0 ? Math.round((monthlyBaseSalary / standardWorkDays) * actualWorkDays) : 0;
 
     const singleDoneCount = singleDoneMap?.get(staffId) || 0;
-    const effectiveDone = singleDoneCount > 0 ? singleDoneCount : doneCount;
+    const comboLiveDoneCount = comboLiveDoneMap?.get(staffId) || 0;
+    const totalDoneCount = singleDoneCount + comboLiveDoneCount;
+    const effectiveDone = totalDoneCount > 0 ? totalDoneCount : doneCount;
     const minDone = config.minDoneForMissedBonus ?? 100;
 
     const basicCheckinBonus = clientBonusMap.get(staffId) || 0;

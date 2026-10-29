@@ -169,15 +169,7 @@ export interface BkDoneLeaderboardResponse {
 }
 
 export type BkDoneDetailsFilter =
-  | 'ALL'
-  | 'COMPLETED'
-  | 'NEW_CUSTOMER'
-  | 'SINGLE'
-  | 'COMBO_LIVE'
-  | 'COMBO_SOLD'
-  | 'MISSED'
-  | 'TIP'
-  | 'COMBO';
+  'ALL' | 'COMPLETED' | 'NEW_CUSTOMER' | 'SINGLE' | 'COMBO_LIVE' | 'COMBO_SOLD' | 'MISSED' | 'TIP' | 'COMBO';
 
 export interface BkDoneDetailsParams {
   bookerId?: string;
@@ -218,6 +210,9 @@ export interface BkTipRecord {
   bkTipAmount: number;
   bkTipPercentage: number;
   customerId?: number;
+  /** Indicates whether the tipped order was a combo service/sale or retail single service. */
+  isCombo?: boolean;
+  bookingCategory?: 'SINGLE' | 'COMBO';
 }
 
 export interface BkTipLeaderboardEntry {
@@ -229,6 +224,8 @@ export interface BkTipLeaderboardEntry {
   totalBookingsCount: number;
   tippedBookingsCount: number;
   totalCustomerTip: number;
+  singleCustomerTip: number;
+  comboCustomerTip: number;
   totalBkTipBonus: number;
 }
 
@@ -238,6 +235,8 @@ export interface BkTipLeaderboardResponse {
     totalBookingsCount: number;
     tippedBookingsCount: number;
     totalCustomerTip: number;
+    totalSingleCustomerTip?: number;
+    totalComboCustomerTip?: number;
     totalBkTipBonus: number;
   };
 }
@@ -249,6 +248,8 @@ export interface BkTipResponse {
     totalBookingsCount: number;
     tippedBookingsCount: number;
     totalCustomerTip: number;
+    totalSingleCustomerTip?: number;
+    totalComboCustomerTip?: number;
     totalBkTipBonus: number;
   };
 }
@@ -267,6 +268,9 @@ export interface BkRevenueRecord {
   commissionRate: number;
   commissionBonus: number;
   customerId?: number;
+  /** Indicates whether this revenue comes from a combo package sale or retail single service. */
+  isCombo?: boolean;
+  orderCategory?: 'SINGLE' | 'COMBO';
 }
 
 export interface BkRevenueLeaderboardEntry {
@@ -276,7 +280,11 @@ export interface BkRevenueLeaderboardEntry {
   avatar?: string | null;
   store: string;
   completedOrdersCount: number;
-  /** Recognized net VND from completed orders in the selected period. */
+  /** Recognized net VND from retail single service orders. */
+  singleRevenue: number;
+  /** Recognized net VND from combo package sales (order_service_combo). */
+  comboRevenue: number;
+  /** Recognized net VND from completed orders in the selected period (singleRevenue + comboRevenue). */
   totalRevenue: number;
   commissionRate: number;
   totalCommissionBonus: number;
@@ -286,6 +294,8 @@ export interface BkRevenueLeaderboardResponse {
   leaderboard: BkRevenueLeaderboardEntry[];
   summary: {
     completedOrdersCount: number;
+    totalSingleRevenue?: number;
+    totalComboRevenue?: number;
     totalRevenue: number;
     totalCommissionBonus: number;
   };
@@ -296,6 +306,8 @@ export interface BkRevenueResponse {
   total: number;
   summary: {
     completedOrdersCount: number;
+    totalSingleRevenue?: number;
+    totalComboRevenue?: number;
     totalRevenue: number;
     totalCommissionBonus: number;
   };

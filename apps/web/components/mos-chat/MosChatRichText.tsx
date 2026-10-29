@@ -8,6 +8,7 @@ import { MosChatContext } from './context/MosChatContext';
 import { parsePureStickerMessage, MosChatStickerVisual } from './mos-chat-stickers';
 import { MosChatMermaidBlock } from './MosChatMermaidBlock';
 import { MosChatMathBlock, MosChatMathInline, isMathValid } from './MosChatMathBlock';
+import { parseQuoteMeta, isStandardQuote } from './utils/quoteUtils';
 
 export interface MosChatRichTextProps {
   content?: string | null;
@@ -17,6 +18,8 @@ export interface MosChatRichTextProps {
   staffDirectory?: any[];
   memberNicknames?: Record<string, string>;
   currentUser?: any;
+  /** Callback khi user click vào blockquote — dùng để scroll về message gốc */
+  onQuoteClick?: (senderName: string, quotedContent: string) => void;
 }
 
 /**
@@ -90,7 +93,16 @@ const parseTableRowCells = (rowText: string): string[] => {
  * 13. Giải mã HTML entities (&nbsp;, &amp;, &lt;, &gt;, &quot;, &#39;)
  */
 export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
-  ({ content, isMe = false, isDark = true, className = '', staffDirectory = [], memberNicknames, currentUser }) => {
+  ({
+    content,
+    isMe = false,
+    isDark = true,
+    className = '',
+    staffDirectory = [],
+    memberNicknames,
+    currentUser,
+    onQuoteClick,
+  }) => {
     // Danh sách tên nhân sự nhiều từ để khớp chính xác @Tên Đầy Đủ
     const knownMultiWordStaffNames = useMemo(() => {
       const set = new Set<string>([
@@ -935,7 +947,10 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
             result.push(
               <div key={`html-list-${idx}`} className="my-1.5 space-y-1">
                 {liMatches.map((liText, liIdx) => (
-                  <div key={`html-li-${idx}-${liIdx}`} className="flex items-start gap-1.5 text-xs text-left select-text">
+                  <div
+                    key={`html-li-${idx}-${liIdx}`}
+                    className="flex items-start gap-1.5 text-xs text-left select-text"
+                  >
                     {isOrdered ? (
                       <span
                         className={`shrink-0 tabular-nums select-none font-semibold text-[11.5px] min-w-[14px] ${
@@ -951,7 +966,9 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
                         •
                       </span>
                     )}
-                    <span className="flex-1 break-words text-left">{parseInlineRichText(liText, `hli-${idx}-${liIdx}`)}</span>
+                    <span className="flex-1 break-words text-left">
+                      {parseInlineRichText(liText, `hli-${idx}-${liIdx}`)}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -974,14 +991,32 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
             .replace(/<\/blockquote>$/i, '')
             .trim();
 
+          // Kiểm tra có phải quote chuẩn mOS Chat không (để render clickable)
+          const bqQuoteLine = `> ${bqHtml}`;
+          const bqMeta = isStandardQuote(bqQuoteLine) ? parseQuoteMeta(bqQuoteLine) : null;
+          const bqClickable = Boolean(bqMeta && onQuoteClick);
+
           result.push(
             <blockquote
               key={`html-quote-${idx}`}
-              className={`my-1.5 pl-2.5 py-1 border-l-2 italic text-xs rounded-r ${
+              onClick={
+                bqClickable && bqMeta
+                  ? (e) => {
+                      e.stopPropagation();
+                      onQuoteClick!(bqMeta.senderName, bqMeta.content);
+                    }
+                  : undefined
+              }
+              title={bqClickable ? 'Xem tin nhắn gốc' : undefined}
+              className={[
+                'my-1.5 pl-2.5 py-1 border-l-2 text-xs rounded-r',
+                'overflow-hidden line-clamp-2',
+                'transition-all duration-150',
+                bqClickable ? 'cursor-pointer select-none' : 'select-text',
                 isDark
-                  ? 'border-amber-500/80 bg-amber-500/10 text-slate-200'
-                  : 'border-amber-600/80 bg-amber-50 text-slate-700'
-              }`}
+                  ? `border-amber-500/80 bg-amber-500/10 text-slate-200${bqClickable ? ' hover:bg-amber-500/20 hover:border-amber-400' : ''}`
+                  : `border-amber-600/80 bg-amber-50 text-slate-700${bqClickable ? ' hover:bg-amber-100 hover:border-amber-500' : ''}`,
+              ].join(' ')}
             >
               {parseInlineRichText(bqHtml, `hbq-${idx}`)}
             </blockquote>
@@ -1072,16 +1107,34 @@ export const MosChatRichTextPure: React.FC<MosChatRichTextProps> = React.memo(
 
         // Blockquote Markdown: > text
         if (trimmed.startsWith('> ') || trimmed === '>') {
+          const rawQuoteLine = trimmed;
+          const mdMeta = isStandardQuote(rawQuoteLine) ? parseQuoteMeta(rawQuoteLine) : null;
+          const mdClickable = Boolean(mdMeta && onQuoteClick);
+          const mdContent = trimmed.replace(/^>\s?/, '');
+
           result.push(
             <blockquote
               key={`quote-${idx}`}
-              className={`my-1.5 pl-2.5 py-1 border-l-2 italic text-xs rounded-r ${
+              onClick={
+                mdClickable && mdMeta
+                  ? (e) => {
+                      e.stopPropagation();
+                      onQuoteClick!(mdMeta.senderName, mdMeta.content);
+                    }
+                  : undefined
+              }
+              title={mdClickable ? 'Xem tin nhắn gốc' : undefined}
+              className={[
+                'my-1.5 pl-2.5 py-1 border-l-2 text-xs rounded-r',
+                'overflow-hidden line-clamp-2',
+                'transition-all duration-150',
+                mdClickable ? 'cursor-pointer select-none' : 'select-text',
                 isDark
-                  ? 'border-amber-500/80 bg-amber-500/10 text-slate-200'
-                  : 'border-amber-600/80 bg-amber-50 text-slate-700'
-              }`}
+                  ? `border-amber-500/80 bg-amber-500/10 text-slate-200${mdClickable ? ' hover:bg-amber-500/20 hover:border-amber-400' : ''}`
+                  : `border-amber-600/80 bg-amber-50 text-slate-700${mdClickable ? ' hover:bg-amber-100 hover:border-amber-500' : ''}`,
+              ].join(' ')}
             >
-              {parseInlineRichText(trimmed.replace(/^>\s?/, ''), `q-${idx}`)}
+              {parseInlineRichText(mdContent, `q-${idx}`)}
             </blockquote>
           );
           continue;

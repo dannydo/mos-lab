@@ -79,6 +79,8 @@ export interface BkRevenueLeaderboardResult {
   leaderboard: BkRevenueLeaderboardEntry[];
   summary: {
     completedOrdersCount: number;
+    totalSingleRevenue?: number;
+    totalComboRevenue?: number;
     totalRevenue: number;
     totalCommissionBonus: number;
   };
@@ -508,10 +510,11 @@ export class BkLeaderboardService {
         const basicBonus = clientBonusMap.get(bookerId) || 0;
         const promoBonus = 0;
 
-        // Invariant BK-005: Rank & Milestone bonus for Booker is strictly calculated on singleDoneCount
-        const milestoneBonus = getMilestoneBonus(singleDoneCount, config.doneBonusTiers);
+        // Invariant BK-005 upgrade: Milestone bonus & Missed penalty for Booker is calculated on Total Done = Lẻ + Combo Live
+        const totalDoneCount = singleDoneCount + comboLiveDoneCount;
+        const milestoneBonus = getMilestoneBonus(totalDoneCount, config.doneBonusTiers);
         const minDoneForMissed = config.minDoneForMissedBonus ?? 100;
-        const effectiveDone = singleDoneCount > 0 ? singleDoneCount : doneCount;
+        const effectiveDone = totalDoneCount > 0 ? totalDoneCount : doneCount;
         const penaltyBonus = getMissedRateBonus(
           missedRatePercent,
           config.missedBonusTiers,
@@ -555,8 +558,12 @@ export class BkLeaderboardService {
         };
       });
 
-      // Invariant BK-005: Sort primarily by singleDoneCount DESC, then doneCount DESC
-      entries.sort((a, b) => (b.singleDoneCount ?? 0) - (a.singleDoneCount ?? 0) || b.doneCount - a.doneCount);
+      // Invariant BK-005 upgrade: Sort primarily by Total Done (singleDoneCount + comboLiveDoneCount) DESC, then singleDoneCount DESC, then doneCount DESC
+      entries.sort((a, b) => {
+        const totalA = (a.singleDoneCount ?? 0) + (a.comboLiveDoneCount ?? 0);
+        const totalB = (b.singleDoneCount ?? 0) + (b.comboLiveDoneCount ?? 0);
+        return totalB - totalA || (b.singleDoneCount ?? 0) - (a.singleDoneCount ?? 0) || b.doneCount - a.doneCount;
+      });
       entries.forEach((e, idx) => {
         e.rank = idx + 1;
       });
@@ -689,30 +696,87 @@ export class BkLeaderboardService {
       ORDER BY totalRevenue DESC
     `;
 
-    const rows = await fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql);
+    let comboStoreFilter = '';
+    if (storeId && storeId !== 'ALL') {
+      comboStoreFilter = `AND o.client_store_id IN (SELECT id FROM client_store WHERE UPPER(client_store_key) = '${storeId.toUpperCase()}')`;
+    }
+
+    const startDateTimeStr = `${startPart} 00:00:00`;
+    const endDateTimeStr = `${endPart} 23:59:59`;
+    const candidateIdsStr = activeTelesalesIds.join(',');
+
+    const comboSoldSql = `
+      SELECT 
+        matched_orders.created_staff_id as bookerId,
+        COALESCE(SUM(osc.total_price), 0) as comboSoldRevenue
+      FROM (
+        SELECT ro.order_id, o.created_staff_id
+        FROM report_order ro
+        JOIN \`order\` o ON o.id = ro.order_id
+        WHERE ro.actual_booking_date_start >= '${startDateTimeStr}'
+          AND ro.actual_booking_date_start <= '${endDateTimeStr}'
+          AND o.created_staff_id IN (${candidateIdsStr})
+          AND o.order_state = 'Completed'
+          ${comboStoreFilter}
+        UNION
+        SELECT o.id as order_id, o.created_staff_id
+        FROM \`order\` o
+        LEFT JOIN report_order ro ON ro.order_id = o.id
+        WHERE (
+          (o.booking_date_start >= '${startDateTimeStr}' AND o.booking_date_start <= '${endDateTimeStr}')
+          OR (o.booking_date_start IS NULL AND o.date_created >= '${startDateTimeStr}' AND o.date_created <= '${endDateTimeStr}')
+        )
+          AND o.created_staff_id IN (${candidateIdsStr})
+          AND o.order_state = 'Completed'
+          AND ro.actual_booking_date_start IS NULL
+          ${comboStoreFilter}
+      ) matched_orders
+      JOIN \`order_service_combo\` osc ON osc.order_id = matched_orders.order_id
+      GROUP BY matched_orders.created_staff_id
+    `;
+
+    const [rows, comboSoldRows] = await Promise.all([
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(sql),
+      fastify.prisma.legacy.$queryRawUnsafe<SafeAny[]>(comboSoldSql),
+    ]);
+
+    const comboSoldMap = new Map<number, number>();
+    comboSoldRows.forEach((r) => {
+      comboSoldMap.set(Number(r.bookerId), Number(r.comboSoldRevenue || 0));
+    });
 
     let rank = 1;
     let grandTotalOrders = 0;
+    let grandTotalSingleRevenue = 0;
+    let grandTotalComboRevenue = 0;
     let grandTotalRevenue = 0;
     let grandTotalCommission = 0;
 
     const leaderboard: BkRevenueLeaderboardEntry[] = rows.map((r) => {
+      const bookerId = Number(r.bookerId);
       const completedOrdersCount = Number(r.completedOrdersCount || 0);
-      const totalRevenue = Math.round(Number(r.totalRevenue || 0));
+      const totalOrderRevenue = Math.round(Number(r.totalRevenue || 0));
+      const comboRevenue = Math.round(comboSoldMap.get(bookerId) || 0);
+      const singleRevenue = Math.max(0, totalOrderRevenue - comboRevenue);
+      const totalRevenue = singleRevenue + comboRevenue;
       const commissionRate = getRevCommissionRate(totalRevenue, config.revBonusTiers);
       const commissionBonus = Math.round((totalRevenue * commissionRate) / 100);
 
       grandTotalOrders += completedOrdersCount;
+      grandTotalSingleRevenue += singleRevenue;
+      grandTotalComboRevenue += comboRevenue;
       grandTotalRevenue += totalRevenue;
       grandTotalCommission += commissionBonus;
 
       return {
         rank: rank++,
-        bookerId: Number(r.bookerId),
+        bookerId,
         displayName: String(r.displayName || `BK #${r.bookerId}`),
         avatar: r.avatar ? String(r.avatar) : null,
         store: String(r.store || 'PXL'),
         completedOrdersCount,
+        singleRevenue,
+        comboRevenue,
         totalRevenue,
         commissionRate,
         totalCommissionBonus: commissionBonus,
@@ -723,6 +787,8 @@ export class BkLeaderboardService {
       leaderboard,
       summary: {
         completedOrdersCount: grandTotalOrders,
+        totalSingleRevenue: grandTotalSingleRevenue,
+        totalComboRevenue: grandTotalComboRevenue,
         totalRevenue: grandTotalRevenue,
         totalCommissionBonus: grandTotalCommission,
       },

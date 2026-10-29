@@ -39,6 +39,7 @@ import type {
   MosChatImageAttachment,
   SafeAny,
 } from '@mos-lab/shared';
+import { parseQuoteMeta, isStandardQuote, findSourceMessage, scrollToMessageAndFlash } from '../utils/quoteUtils';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
@@ -96,7 +97,11 @@ export interface MosChatDockedWindowsProps {
   getMessageReadBreakdown: (conv: MosChatConversation, m: MosChatMessage) => { seenBy: SafeAny[]; unseenBy: SafeAny[] };
   renderReadStatusCheckmark: (seenBy: SafeAny[], unseenBy: SafeAny[], opts?: SafeAny) => React.ReactNode;
   openTaskModalFromMessage: (m: MosChatMessage | null) => void;
-  renderRichTextMessage: (text: string, isMine?: boolean) => React.ReactNode;
+  renderRichTextMessage: (
+    text: string,
+    isMine?: boolean,
+    opts?: { onQuoteClick?: (senderName: string, quotedContent: string) => void }
+  ) => React.ReactNode;
   renderMessageAttachments: (atts?: SafeAny[], compact?: boolean) => React.ReactNode;
   renderStagedAttachmentsStrip: (attachments: SafeAny[], scope: SafeAny, convId?: string) => React.ReactNode;
   dockInputRefs: React.MutableRefObject<Record<string, HTMLTextAreaElement | null>>;
@@ -693,6 +698,7 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                           return (
                             <div
                               key={reply.id}
+                              data-message-id={reply.id}
                               className={`flex gap-2 items-start ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
                             >
                               {renderUserAvatarNode({
@@ -732,7 +738,20 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                                   </button>
                                 </div>
                                 <div className="break-words leading-relaxed">
-                                  {renderRichTextMessage(reply.text, isMine)}
+                                  {renderRichTextMessage(reply.text, isMine, {
+                                    onQuoteClick: (senderName, quotedContent) => {
+                                      const threadMsgs = (activeThreadMsg?.thread ?? []) as Array<{
+                                        id: string;
+                                        senderName?: string;
+                                        text?: string | null;
+                                      }>;
+                                      const foundId = findSourceMessage(threadMsgs, {
+                                        senderName,
+                                        content: quotedContent,
+                                      });
+                                      if (foundId) scrollToMessageAndFlash(foundId, threadFeedRefs.current[cid]);
+                                    },
+                                  })}
                                 </div>
                                 {renderMessageAttachments(reply.attachments, true)}
                               </div>
@@ -986,6 +1005,7 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                           return (
                             <div
                               key={m.id}
+                              data-message-id={m.id}
                               className={`group/msg flex gap-2 items-start ${isDockMine ? 'flex-row-reverse' : 'flex-row'}`}
                             >
                               {renderUserAvatarNode({
@@ -1057,7 +1077,21 @@ export const MosChatDockedWindows: React.FC<MosChatDockedWindowsProps> = React.m
                                 {/* Message Text */}
                                 {m.text && (
                                   <div className="break-words leading-relaxed text-[12.5px]">
-                                    {renderRichTextMessage(m.text, isDockMine)}
+                                    {renderRichTextMessage(m.text, isDockMine, {
+                                      onQuoteClick: (senderName, quotedContent) => {
+                                        const allMsgs = (conv?.messages ?? []) as Array<{
+                                          id: string;
+                                          senderName?: string;
+                                          text?: string | null;
+                                        }>;
+                                        const foundId = findSourceMessage(allMsgs, {
+                                          senderName,
+                                          content: quotedContent,
+                                        });
+                                        if (foundId)
+                                          scrollToMessageAndFlash(foundId, dockMessagesContainerRefs.current[cid]);
+                                      },
+                                    })}
                                   </div>
                                 )}
 
