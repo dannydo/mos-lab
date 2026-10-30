@@ -179,6 +179,7 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       preHandler: [requireAuth, requireSuperAdmin],
     },
     async (request, reply) => {
+      const user = (request as any).user;
       const staffId = Number(request.params.staffId);
 
       try {
@@ -205,6 +206,7 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       preHandler: [requireAuth, requireSuperAdmin],
     },
     async (request, reply) => {
+      const user = (request as any).user;
       const staffId = Number(request.params.staffId);
       const newRole = request.body?.newRole;
       const force = request.body?.force === true;
@@ -237,6 +239,7 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       preHandler: [requireAuth, requireSuperAdmin],
     },
     async (request, reply) => {
+      const user = (request as any).user;
       const staffId = Number(request.params.staffId);
       const role = request.body?.role;
       const reason = request.body?.reason;
@@ -269,6 +272,7 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       preHandler: [requireAuth, requireSuperAdmin],
     },
     async (request, reply) => {
+      const user = (request as any).user;
       const staffId = Number(request.params.staffId);
       const newRole = request.body?.newRole;
       const reason = request.body?.reason;
@@ -301,6 +305,7 @@ export const careerRoutes: FastifyPluginAsync = async (fastify: FastifyInstance)
       preHandler: [requireAuth, requireSuperAdmin],
     },
     async (request, reply) => {
+      const user = (request as any).user;
       const staffId = Number(request.params.staffId);
 
       try {
